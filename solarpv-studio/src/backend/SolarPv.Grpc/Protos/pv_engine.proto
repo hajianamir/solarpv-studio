@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option csharp_namespace = "SolarPv.Grpc.Protos";
+
+package solarpv.grpc;
+
+service PvEngineGrpc {
+  rpc CalculateSolarPosition (SolarPositionGrpcRequest) returns (SolarPositionGrpcResponse);
+  rpc CalculateStringSizing (StringSizingGrpcRequest) returns (StringSizingGrpcResponse);
+}
+
+message SolarPositionGrpcRequest {
+  double latitude_deg = 1;
+  double longitude_deg = 2;
+  int64 utc_ts = 3;
+}
+
+message SolarPositionGrpcResponse {
+  double zenith_deg = 1;
+  double azimuth_deg = 2;
+}
+
+message StringSizingGrpcRequest {
+  double panel_voc = 1;
+  double panel_vmp = 2;
+  double temp_min_c = 3;
+  double temp_max_c = 4;
+  double beta_voc_per_c = 5;
+  double inverter_vdc_max = 6;
+  double inverter_mppt_min = 7;
+  double inverter_mppt_max = 8;
+}
+
+message StringSizingGrpcResponse {
+  uint32 min_modules = 1;
+  uint32 max_modules = 2;
+  bool has_warning = 3;
+}

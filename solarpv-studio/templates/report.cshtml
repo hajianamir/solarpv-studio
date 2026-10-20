@@ -1,0 +1,30 @@
+@model SolarPv.Application.Services.GenerateReportRequest
+
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; color: #1e293b; padding: 20px; }
+        h1 { color: #0284c7; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+        th { background-color: #f1f5f9; }
+    </style>
+</head>
+<body>
+    <h1>SolarPV Studio — Official EPC Design Proposal</h1>
+    <p>Project Name: @Model.ProjectName</p>
+    <p>Project ID: @Model.ProjectId</p>
+
+    <h2>System Summary & BOM</h2>
+    <table>
+        <tr><th>Metric / Component</th><th>Value</th></tr>
+        <tr><td>System Capacity</td><td>@Model.SystemCapacityKwp.ToString("F2") kWp</td></tr>
+        <tr><td>PV Panels</td><td>@Model.PanelCount x 575W N-Type</td></tr>
+        <tr><td>Inverters</td><td>@Model.InverterCount x 10kW String Inverter</td></tr>
+        <tr><td>Battery Bank</td><td>@Model.BatteryCount x 10.2kWh LiFePO4 Units</td></tr>
+        <tr><td>Annual Yield Forecast</td><td>@Model.AnnualYieldKwh.ToString("N0") kWh/yr</td></tr>
+        <tr><td>Levelized Cost of Energy (LCOE)</td><td>$@Model.LcoeUsdPerKwh.ToString("F4") / kWh</td></tr>
+    </table>
+</body>
+</html>
