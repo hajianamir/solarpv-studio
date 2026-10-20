@@ -1,6 +1,0 @@
-[package]
-name = "pv-math"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
