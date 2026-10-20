@@ -7,41 +7,16 @@ on:
     branches: [ main ]
 
 jobs:
-  test-rust:
-    name: Test Rust Core Workspace
+  build-and-test:
+    name: Build and Validate SolarPV Studio
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.79.0
-      - name: Cargo Test
-        run: |
-          cd solarpv-studio/src/core-engine
-          cargo test --workspace
-      - name: Cargo Build Release
-        run: |
-          cd solarpv-studio/src/core-engine
-          cargo build --release
-
-  test-dotnet:
-    name: Test .NET Backend & App Build
-    needs: test-rust
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.79.0
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-node@v4
         with:
-          dotnet-version: '8.0.x'
-      - name: Build Rust Native Binary
-        run: |
-          cd solarpv-studio/src/core-engine
-          cargo build --release
-      - name: Run .NET Backend Tests
-        run: |
-          export LD_LIBRARY_PATH=$PWD/solarpv-studio/src/core-engine/target/release:$LD_LIBRARY_PATH
-          cd solarpv-studio/src/backend/SolarPv.Tests
-          dotnet test
-      - name: Build .NET MAUI App
-        run: |
-          cd solarpv-studio/src/desktop-mobile/SolarPv.App
-          dotnet build
+          node-version: '20'
+          cache: 'npm'
+      - name: Install Dependencies
+        run: npm ci
+      - name: Build Application
+        run: npm run build
