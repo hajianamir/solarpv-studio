@@ -1,0 +1,7 @@
+{
+  "name": "SolarPV Studio",
+  "description": "Cross-platform solar PV engineering, sizing calculator, 3D shading ray-tracer, and EPC proposal engine.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
