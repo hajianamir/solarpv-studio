@@ -1,0 +1,116 @@
+@using System.Net.Http.Json
+@inject IHttpClientFactory HttpClientFactory
+
+<div class="card">
+    <h1>SolarPV Studio — Sizing Calculator</h1>
+    <p>Phase 0 Cross-Platform Sizing Engine connected to ASP.NET Core & Rust FFI Backend</p>
+</div>
+
+<div class="card">
+    <h2>1. String Sizing Calculator (IEC 62548)</h2>
+    <div class="form-group">
+        <label>Panel Voc (V)</label>
+        <input type="number" @bind="panelVoc" step="0.1" />
+    </div>
+    <div class="form-group">
+        <label>Panel Vmp (V)</label>
+        <input type="number" @bind="panelVmp" step="0.1" />
+    </div>
+    <div class="form-group">
+        <label>Min Temp (°C)</label>
+        <input type="number" @bind="tempMinC" />
+    </div>
+    <div class="form-group">
+        <label>Inverter Max Vdc (V)</label>
+        <input type="number" @bind="inverterVdcMax" />
+    </div>
+    <button @onclick="CalculateStringSizing">Calculate String Sizing</button>
+
+    @if (stringResult != null)
+    {
+        <div class="result-box">
+            <h3>Result:</h3>
+            <p><strong>Min Modules per String:</strong> @stringResult.MinModules</p>
+            <p><strong>Max Modules per String:</strong> @stringResult.MaxModules</p>
+            <p><strong>Has Warning:</strong> @stringResult.HasWarning</p>
+        </div>
+    }
+</div>
+
+<div class="card">
+    <h2>2. Financial LCOE Calculator</h2>
+    <div class="form-group">
+        <label>Capex ($)</label>
+        <input type="number" @bind="capex" />
+    </div>
+    <div class="form-group">
+        <label>Annual Opex ($/yr)</label>
+        <input type="number" @bind="opexAnnual" />
+    </div>
+    <div class="form-group">
+        <label>Annual Energy (kWh/yr)</label>
+        <input type="number" @bind="energyAnnual" />
+    </div>
+    <button @onclick="CalculateLcoe">Calculate LCOE</button>
+
+    @if (lcoeResult != null)
+    {
+        <div class="result-box">
+            <h3>LCOE: $@lcoeResult.LcoeValue.ToString("F4") / kWh</h3>
+        </div>
+    }
+</div>
+
+@code {
+    private double panelVoc = 50.0;
+    private double panelVmp = 42.0;
+    private double tempMinC = -10.0;
+    private double inverterVdcMax = 1000.0;
+    private StringSizingResponse? stringResult;
+
+    private double capex = 10000.0;
+    private double opexAnnual = 200.0;
+    private double energyAnnual = 6000.0;
+    private LcoeResponse? lcoeResult;
+
+    private async Task CalculateStringSizing()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("SolarPvApi");
+            var req = new StringSizingRequest(panelVoc, panelVmp, tempMinC, 60.0, -0.0028, inverterVdcMax, 200.0, 800.0);
+            var res = await client.PostAsJsonAsync("/api/v1/electrical/string-sizing", req);
+            if (res.IsSuccessStatusCode)
+            {
+                stringResult = await res.Content.ReadFromJsonAsync<StringSizingResponse>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    private async Task CalculateLcoe()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("SolarPvApi");
+            var req = new LcoeRequest(capex, opexAnnual, energyAnnual, 0.05, 25);
+            var res = await client.PostAsJsonAsync("/api/v1/finance/lcoe", req);
+            if (res.IsSuccessStatusCode)
+            {
+                lcoeResult = await res.Content.ReadFromJsonAsync<LcoeResponse>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    public record StringSizingRequest(double PanelVoc, double PanelVmp, double TempMinC, double TempMaxC, double BetaVocPerC, double InverterVdcMax, double InverterMpptMin, double InverterMpptMax);
+    public record StringSizingResponse(uint MinModules, uint MaxModules, bool HasWarning);
+    public record LcoeRequest(double Capex, double OpexAnnual, double EnergyAnnual, double DiscountRate, uint LifetimeYears);
+    public record LcoeResponse(double LcoeValue);
+}

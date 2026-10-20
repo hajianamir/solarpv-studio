@@ -1,0 +1,6 @@
+[package]
+name = "pv-finance"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

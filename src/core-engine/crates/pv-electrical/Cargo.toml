@@ -1,0 +1,6 @@
+[package]
+name = "pv-electrical"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

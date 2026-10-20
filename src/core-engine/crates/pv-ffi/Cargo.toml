@@ -1,0 +1,13 @@
+[package]
+name = "pv-ffi"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pv-math = { path = "../pv-math" }
+pv-electrical = { path = "../pv-electrical" }
+pv-finance = { path = "../pv-finance" }
+pv-shading = { path = "../pv-shading" }
