@@ -1,0 +1,274 @@
+import React from 'react';
+import { Sun, Cpu, AlertTriangle, CheckCircle2, Layers, Maximize2, Zap, ArrowUpRight } from 'lucide-react';
+import { PvArrayDesignResult, ModuleSpecs, InverterSpecs } from '../engine/pvEngineAdvanced';
+import { InverterClusteringResult } from '../engine/inverterClustering';
+import { CATALOG_MODULES, CATALOG_INVERTERS } from '../engine/equipmentCatalogData';
+
+interface PvArrayEngineeringTabProps {
+  selectedModule: ModuleSpecs;
+  onModuleChange: (mod: ModuleSpecs) => void;
+  selectedInverter: InverterSpecs;
+  onInverterChange: (inv: InverterSpecs) => void;
+  arrayDesign: PvArrayDesignResult;
+  inverterClustering: InverterClusteringResult;
+}
+
+export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
+  selectedModule,
+  onModuleChange,
+  selectedInverter,
+  onInverterChange,
+  arrayDesign,
+  inverterClustering,
+}) => {
+  return (
+    <div className="space-y-6">
+      {/* Title */}
+      <div className="studio-card">
+        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
+          <Sun className="w-5 h-5 text-amber-400" />
+          مهندسی آرایه فتوولتائیک و کلاسترینگ اینورتر (PV Array & Inverter Engineering)
+        </h1>
+        <p className="text-slate-400 text-xs">
+          پیکربندی استرینگ‌ها بر اساس ولتاژ MPPT و سرمای زمستان (NEC 690.7)، ضریب افت حرارتی NOCT، و کلاسترینگ هوشمند اینورترها
+        </p>
+      </div>
+
+      {/* Hardware Selectors */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Module Picker */}
+        <div className="studio-card">
+          <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
+            <span>انتخاب مدل پنل فتوولتائیک:</span>
+            <span className="text-amber-400 font-mono font-bold">{selectedModule.pmpWatts}W</span>
+          </label>
+          <select
+            value={selectedModule.modelName}
+            onChange={(e) => {
+              const found = CATALOG_MODULES.find((m) => m.modelName === e.target.value);
+              if (found) {
+                onModuleChange({
+                  manufacturer: found.manufacturer,
+                  modelName: found.modelName,
+                  pmpWatts: found.pmpWatts,
+                  vocVolts: found.vocVolts,
+                  vmpVolts: found.vmpVolts,
+                  iscAmps: found.iscAmps,
+                  impAmps: found.impAmps,
+                  tempCoeffVocPct: found.tempCoeffVocPct,
+                  tempCoeffPmpPct: found.tempCoeffPmpPct,
+                  noctC: 45.0,
+                  lengthM: found.lengthMm / 1000.0,
+                  widthM: found.widthMm / 1000.0,
+                });
+              }
+            }}
+            className="studio-input text-xs"
+          >
+            {CATALOG_MODULES.map((m) => (
+              <option key={m.id} value={m.modelName}>
+                {m.manufacturer} {m.modelName} ({m.pmpWatts}W - {m.cellType})
+              </option>
+            ))}
+          </select>
+
+          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] text-slate-300 bg-slate-900/60 p-2.5 rounded border border-slate-700/60">
+            <div>Voc: <strong className="font-mono text-sky-400">{selectedModule.vocVolts}V</strong></div>
+            <div>Vmp: <strong className="font-mono text-sky-400">{selectedModule.vmpVolts}V</strong></div>
+            <div>Isc: <strong className="font-mono text-emerald-400">{selectedModule.iscAmps}A</strong></div>
+            <div>ضریب دما Voc: <span className="font-mono">{selectedModule.tempCoeffVocPct}%/°C</span></div>
+            <div>ضریب دما Pmp: <span className="font-mono">{selectedModule.tempCoeffPmpPct}%/°C</span></div>
+            <div>ابعاد: <span className="font-mono">{selectedModule.lengthM.toFixed(2)}×{selectedModule.widthM.toFixed(2)}m</span></div>
+          </div>
+        </div>
+
+        {/* Inverter Picker */}
+        <div className="studio-card">
+          <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
+            <span>انتخاب مدل اینورتر خورشیدی:</span>
+            <span className="text-sky-400 font-mono font-bold">{selectedInverter.pnomAcKw}kW</span>
+          </label>
+          <select
+            value={selectedInverter.modelName}
+            onChange={(e) => {
+              const found = CATALOG_INVERTERS.find((i) => i.modelName === e.target.value);
+              if (found) {
+                onInverterChange({
+                  manufacturer: found.manufacturer,
+                  modelName: found.modelName,
+                  pnomAcKw: found.pnomKw,
+                  vdcMaxVolts: found.vdcMaxVolts,
+                  vmpptMinVolts: found.vmpptMinVolts,
+                  vmpptMaxVolts: found.vmpptMaxVolts,
+                  iscMaxAmpsPerMppt: 26.0,
+                  imppMaxAmpsPerMppt: 22.0,
+                  mpptChannelsCount: found.mpptCount,
+                  efficiencyMaxPct: found.efficiencyMaxPct,
+                  isThreePhase: found.isThreePhase,
+                });
+              }
+            }}
+            className="studio-input text-xs"
+          >
+            {CATALOG_INVERTERS.map((i) => (
+              <option key={i.id} value={i.modelName}>
+                {i.manufacturer} {i.modelName} ({i.pnomKw}kW - {i.isThreePhase ? '3P' : '1P'})
+              </option>
+            ))}
+          </select>
+
+          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] text-slate-300 bg-slate-900/60 p-2.5 rounded border border-slate-700/60">
+            <div>Vdc Max: <strong className="font-mono text-red-400">{selectedInverter.vdcMaxVolts}V</strong></div>
+            <div>MPPT Min: <strong className="font-mono text-sky-400">{selectedInverter.vmpptMinVolts}V</strong></div>
+            <div>MPPT Max: <strong className="font-mono text-sky-400">{selectedInverter.vmpptMaxVolts}V</strong></div>
+            <div>تعداد MPPT: <span className="font-mono font-bold">{selectedInverter.mpptChannelsCount} کانال</span></div>
+            <div>سیستم فاز: <span>{selectedInverter.isThreePhase ? 'سه فاز (400V)' : 'تکفاز (230V)'}</span></div>
+            <div>راندمان: <span className="font-mono text-emerald-400">{selectedInverter.efficiencyMaxPct}%</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sizing & String Configuration Results */}
+      <div className="studio-card">
+        <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
+          <Layers className="w-4 h-4 text-sky-400" />
+          پیکربندی استرینگ‌ها و آرایه خورشیدی (String Configuration)
+        </h3>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-4">
+          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <span className="text-slate-400 block mb-0.5">توان کل آرایه DC</span>
+            <span className="text-lg font-bold font-mono text-amber-400">
+              {arrayDesign.totalPvCapacityKwp.toFixed(2)} kWp
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">{arrayDesign.totalModulesCount} عدد پنل</span>
+          </div>
+
+          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <span className="text-slate-400 block mb-0.5">پیکربندی رشته‌ها</span>
+            <span className="text-lg font-bold font-mono text-sky-400">
+              {arrayDesign.parallelStringsCount}P × {arrayDesign.modulesPerString}S
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              مجاز: {arrayDesign.minModulesPerStringAllowed} تا {arrayDesign.maxModulesPerStringAllowed} در استرینگ
+            </span>
+          </div>
+
+          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <span className="text-slate-400 block mb-0.5">ولتاژ سردترین روز (Voc,max)</span>
+            <span className="text-lg font-bold font-mono text-cyan-400">
+              {arrayDesign.stringVocMaxColdVolts.toFixed(1)} V
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              سقف اینورتر: {selectedInverter.vdcMaxVolts}V ({arrayDesign.stringVocMaxColdVolts <= selectedInverter.vdcMaxVolts ? '✓ ایمن' : '✗ خطر'})
+            </span>
+          </div>
+
+          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <span className="text-slate-400 block mb-0.5">نسبت DC به AC</span>
+            <span className="text-lg font-bold font-mono text-emerald-400">
+              {arrayDesign.dcAcRatio.toFixed(2)}
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              {arrayDesign.dcAcRatio <= 1.35 ? 'بهینه بدون Clipping' : 'ممکن است افت برش داشته باشد'}
+            </span>
+          </div>
+        </div>
+
+        {/* Area and Inter-row shading */}
+        <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-700/60 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <span className="text-slate-400 block">مساحت خالص پنل‌ها:</span>
+            <span className="text-white font-mono font-bold text-sm">
+              {Math.round(arrayDesign.netArrayAreaM2)} متر مربع
+            </span>
+          </div>
+          <div>
+            <span className="text-slate-400 block">فاصله ردیف‌ها جهت عدم سایه‌اندازی (Pitch):</span>
+            <span className="text-sky-300 font-mono font-bold text-sm">
+              {arrayDesign.interRowSpacingM.toFixed(2)} متر
+            </span>
+            <span className="text-[10px] text-slate-400 block">بر مبنای ظهر انقلاب زمستانی</span>
+          </div>
+          <div>
+            <span className="text-slate-400 block">مساحت ناخالص عرصه مورد نیاز:</span>
+            <span className="text-emerald-400 font-mono font-bold text-sm">
+              {Math.round(arrayDesign.grossRequiredLandAreaM2)} متر مربع
+            </span>
+            <span className="text-[10px] text-slate-400 block">شامل راهروهای دسترسی و نگهداری</span>
+          </div>
+        </div>
+
+        {/* Warnings */}
+        {arrayDesign.warnings.length > 0 && (
+          <div className="mt-3 p-2.5 bg-amber-950/40 border border-amber-600/50 rounded-lg text-xs text-amber-200 space-y-1">
+            {arrayDesign.warnings.map((w, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>{w}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Inverter Clustering & Auto Voltage Stepping */}
+      <div className="studio-card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-sky-400 text-sm flex items-center gap-2">
+            <Zap className="w-4 h-4 text-emerald-400" />
+            سیستم تطبیق خودکار و کلاسترینگ اینورترها (Auto-Stepping & Paralleling)
+          </h3>
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-sky-300 border border-slate-700">
+            کلاس: {inverterClustering.engineeringClass.titleFa}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-4">
+          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <span className="text-slate-400 block mb-0.5">ولتاژ نامی باسبار DC (Auto-Stepped)</span>
+            <span className="text-xl font-bold font-mono text-purple-400">
+              {inverterClustering.recommendedDcVoltageVdc} V DC
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              {inverterClustering.autoSteppingReasonFa}
+            </span>
+          </div>
+
+          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <span className="text-slate-400 block mb-0.5">تعداد اینورترهای پارالل مورد نیاز</span>
+            <span className="text-xl font-bold font-mono text-sky-400">
+              {inverterClustering.parallelUnitsCount} دستگاه
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              مجموع ظرفیت: {inverterClustering.totalInverterCapacityKw} kW AC
+            </span>
+          </div>
+
+          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <span className="text-slate-400 block mb-0.5">جریان پیوسته / هجومی باسبار DC</span>
+            <div className="font-mono text-slate-200 mt-1">
+              پیوسته: <strong className="text-emerald-400">{inverterClustering.inverterDcContinuousCurrentAmps.toFixed(1)}A</strong>
+            </div>
+            <div className="font-mono text-slate-200">
+              هجومی: <strong className="text-red-400">{inverterClustering.inverterDcSurgeCurrentAmps.toFixed(1)}A</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Health status badge */}
+        <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-700/60 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs">
+            {inverterClustering.healthStatus === 'compatible' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            )}
+            <span className="font-semibold text-white">{inverterClustering.healthStatusTextFa}:</span>
+            <span className="text-slate-300">{inverterClustering.recommendationFa}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
