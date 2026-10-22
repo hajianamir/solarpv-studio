@@ -5,6 +5,7 @@ import {
   LoadCategory,
   LOAD_CATEGORY_LABELS,
   LOAD_PRESETS,
+  STANDARD_APPLIANCE_LIBRARY,
   analyzeLoadProfile,
   LoadAnalysisResult,
 } from '../engine/loadProfiles';
@@ -31,6 +32,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [dayHours, setDayHours] = useState(4);
   const [nightHours, setNightHours] = useState(4);
+  const [isDc, setIsDc] = useState(false);
 
   const handleApplyPreset = (presetId: string) => {
     setSelectedPresetId(presetId);
@@ -51,7 +53,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
       quantity: Number(quantity),
       dayHours: Number(dayHours),
       nightHours: Number(nightHours),
-      isDc: false,
+      isDc: Boolean(isDc),
     };
     onLoadsChange([...loads, newItem]);
     setName('');
@@ -277,7 +279,42 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
       {showAddForm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-700 rounded-lg p-5 max-w-md w-full">
-            <h3 className="text-base font-bold text-sky-400 mb-3">تعریف بار الکتریکی جدید</h3>
+            <h3 className="text-base font-bold text-sky-400 mb-2">تعریف بار الکتریکی جدید</h3>
+            
+            {/* Quick appliance picker */}
+            <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg mb-3">
+              <label className="block text-[11px] font-semibold text-amber-400 mb-1 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                انتخاب سریع از بانک تجهیزات استاندارد (۴۰+ بار خانگی و صنعتی):
+              </label>
+              <select
+                onChange={(e) => {
+                  const idx = parseInt(e.target.value);
+                  if (!isNaN(idx) && STANDARD_APPLIANCE_LIBRARY[idx]) {
+                    const item = STANDARD_APPLIANCE_LIBRARY[idx];
+                    setName(item.nameFa);
+                    setCategory(item.category);
+                    setRatedWatts(item.ratedWatts);
+                    setSurgeMultiplier(item.surgeMultiplier);
+                    setDayHours(item.typicalDayHours);
+                    setNightHours(item.typicalNightHours);
+                    setIsDc(!!item.isDc);
+                  }
+                }}
+                defaultValue=""
+                className="studio-input text-xs"
+              >
+                <option value="" disabled>
+                  -- انتخاب بار الکتریکی (خانگی، کارگاهی، مرغداری، ماینینگ، پمپ، چیلر) --
+                </option>
+                {STANDARD_APPLIANCE_LIBRARY.map((app, idx) => (
+                  <option key={idx} value={idx}>
+                    {app.nameFa} ({app.ratedWatts >= 1000 ? `${(app.ratedWatts / 1000).toFixed(1)} kW` : `${app.ratedWatts} W`})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <form onSubmit={handleAddLoad} className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">نام وسیله</label>

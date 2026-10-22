@@ -31,18 +31,53 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours }
 
   const maxMonthlyWater = Math.max(...pumpResult.monthlyWaterDeliveryM3);
 
+  const [isEnabled, setIsEnabled] = useState<boolean>(true);
+
   return (
     <div className="space-y-6">
-      {/* Title */}
+      {/* Title & Optional Activation Toggle */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Droplet className="w-5 h-5 text-cyan-400" />
-          ایستگاه پمپاژ خورشیدی کشاورزی و چاه‌های عمیق (Solar Agricultural Pumping)
-        </h1>
-        <p className="text-slate-400 text-xs">
-          محاسبه دقیق هد دینامیکی کل (TDH)، افت اصطکاک لوله‌ها، توان الکتروموتور شناور، درایو VFD اینورتر پمپ و آرایه خورشیدی مستقیم بدون نیاز به باتری
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
+              <Droplet className="w-5 h-5 text-cyan-400" />
+              ایستگاه پمپاژ خورشیدی کشاورزی و چاه‌های عمیق (Optional Solar Pumping)
+            </h1>
+            <p className="text-slate-400 text-xs">
+              قابلیت مهندسی اختیاری: محاسبه دقیق هد دینامیکی کل (TDH)، دبی آب، توان الکتروموتور شناور و درایو خورشیدی VFD بدون نیاز به باتری
+            </p>
+          </div>
+
+          <label className="flex items-center gap-2.5 p-2 px-3 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer text-xs font-bold text-cyan-300">
+            <input
+              type="checkbox"
+              checked={isEnabled}
+              onChange={(e) => setIsEnabled(e.target.checked)}
+              className="w-4 h-4 rounded text-cyan-500"
+            />
+            {isEnabled ? 'ماژول پمپاژ فعال است' : 'فعال‌سازی ماژول پمپاژ آب'}
+          </label>
+        </div>
       </div>
+
+      {!isEnabled && (
+        <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-xl">
+          <Droplet className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-slate-300 mb-1">سیستم پمپاژ خورشیدی آب غیرفعال است</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
+            این قابلیت برای پروژه‌های آبرسانی، کشاورزی و استخرهای ذخیره آب کاربرد دارد و مستقل از بخش مالی نیروگاه عمل می‌کند.
+          </p>
+          <button
+            onClick={() => setIsEnabled(true)}
+            className="studio-btn-primary text-xs py-2 px-4 rounded-lg font-bold"
+          >
+            فعال‌سازی محاسبات پمپاژ خورشیدی
+          </button>
+        </div>
+      )}
+
+      {isEnabled && (
+        <>
 
       {/* Hydraulic Parameter Inputs */}
       <div className="studio-card">
@@ -199,6 +234,8 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours }
           ))}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

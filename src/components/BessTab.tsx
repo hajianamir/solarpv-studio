@@ -101,37 +101,52 @@ export const BessTab: React.FC<BessTabProps> = ({
         </div>
       )}
 
-      {/* Chemistry Selector Cards */}
+      {/* Chemistry Selector Dropdown List */}
       <div className="studio-card">
-        <label className="block text-xs font-semibold text-slate-300 mb-2">
-          {lang === 'fa' ? 'انتخاب فناوری شیمیایی باتری:' : 'Select Battery Chemistry:'}
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {Object.entries(BATTERY_CHEMISTRIES).map(([chemKey, profile]) => {
-            const isSelected = selectedChemistry === chemKey;
-            return (
-              <div
-                key={chemKey}
-                onClick={() => onChemistryChange(chemKey as BatteryChemistry)}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                  isSelected
-                    ? 'bg-indigo-950/60 border-indigo-400 shadow-md ring-1 ring-indigo-400'
-                    : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-bold text-xs text-white">{profile.nameFa}</span>
-                  {isSelected && <CheckCircle2 className="w-4 h-4 text-indigo-400" />}
-                </div>
-                <div className="space-y-0.5 text-[10.5px] text-slate-300">
-                  <div>عمق دشارژ مجاز (DoD): <strong className="text-sky-300">{profile.recommendedDoDPct}%</strong></div>
-                  <div>طول عمر سیکلی: <strong className="text-emerald-300">{profile.standardCycleLifeAt80DoD} سیکل</strong></div>
-                  <div>حداکثر دشارژ پیوسته: <strong className="text-amber-300">{profile.maxContinuousCRate}C</strong></div>
-                  <div>طول عمر معمول: <strong className="text-purple-300">{profile.typicalLifespanYears} سال</strong></div>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <div>
+            <label className="block text-xs font-bold text-sky-400 mb-1.5 flex items-center gap-2">
+              <Boxes className="w-4 h-4 text-indigo-400" />
+              {lang === 'fa' ? 'انتخاب فناوری شیمیایی باتری (Dropdown List):' : 'Select Battery Chemistry Technology (Dropdown List):'}
+            </label>
+            <select
+              value={selectedChemistry}
+              onChange={(e) => onChemistryChange(e.target.value as BatteryChemistry)}
+              className="studio-input w-full text-xs font-bold py-2 bg-slate-900 border-indigo-500/50 text-white focus:border-indigo-400"
+            >
+              <option value="lifepo4">
+                {lang === 'fa' ? '۱. لیتیوم آهن فسفات (LiFePO4) — راندمان ۹۵٪، طول عمر ۵۵۰۰ سیکل' : '1. Lithium Iron Phosphate (LiFePO4) - 95% Eff, 5500 Cycles'}
+              </option>
+              <option value="gel_deep_cycle">
+                {lang === 'fa' ? '۲. ژل عمیق دشارژ (Gel Deep Cycle) — راندمان ۸۵٪، اقتصادی، ۱۰۰۰ سیکل' : '2. Gel Deep Cycle - 85% Eff, 1000 Cycles'}
+              </option>
+              <option value="agm_flooded">
+                {lang === 'fa' ? '۳. اسید-سرب سیلد خورشیدی (AGM VRLA) — راندمان ۸۰٪، ۷۰۰ سیکل' : '3. Sealed Lead-Acid (AGM VRLA) - 80% Eff, 700 Cycles'}
+              </option>
+              <option value="ternary_ncm">
+                {lang === 'fa' ? '۴. لیتیم ترنری (Ternary NCM) — چگالی انرژی بالا، ۲۲۰۰ سیکل' : '4. Ternary Lithium (NCM) - High Density, 2200 Cycles'}
+              </option>
+            </select>
+          </div>
+
+          {/* Quick Active Chemistry Specs Preview */}
+          {BATTERY_CHEMISTRIES[selectedChemistry] && (
+            <div className="p-3 bg-indigo-950/40 border border-indigo-600/40 rounded-lg text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-indigo-300">
+                  {BATTERY_CHEMISTRIES[selectedChemistry].nameFa}
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200">
+                  {BATTERY_CHEMISTRIES[selectedChemistry].typicalLifespanYears} سال عمر مفید
+                </span>
               </div>
-            );
-          })}
+              <div className="grid grid-cols-3 gap-2 text-[11px] pt-1 text-slate-300 font-mono">
+                <div>DoD مجاز: <strong className="text-sky-300">{BATTERY_CHEMISTRIES[selectedChemistry].recommendedDoDPct}%</strong></div>
+                <div>سیکل کاری: <strong className="text-emerald-300">{BATTERY_CHEMISTRIES[selectedChemistry].standardCycleLifeAt80DoD}</strong></div>
+                <div>نرخ دشارژ: <strong className="text-amber-300">{BATTERY_CHEMISTRIES[selectedChemistry].maxContinuousCRate}C</strong></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

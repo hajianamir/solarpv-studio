@@ -11,6 +11,9 @@ export const translations = {
     powerplantMode: 'نیروگاه خورشیدی (IPP/Grid-Tied Generation)',
     ongridMode: 'متصل به شبکه با پشتیبان (On-grid with Backup)',
     offgridMode: 'مستقل از شبکه (Off-grid Standalone)',
+    modePowerplant: 'نیروگاهی',
+    modeOnGrid: 'On-Grid',
+    modeOffGrid: 'Off-Grid',
 
     // Categories / Workflow Steps
     workflow: 'فرآیند و محاسبات مهندسی',
@@ -43,10 +46,24 @@ export const translations = {
     tabIranRegs: 'قوانین خرید تضمینی (ایران)',
     tabSolarPumping: 'پمپاژ خورشیدی آب',
 
+    tabCablesBom: 'سایزینگ کابل، ارتینگ و صاعقه',
+    tabMvBays: 'آرایش بی‌های MV و اینورترها',
+    tabShading: 'تحلیل سایه‌اندازی و مسیر خورشید',
+    saveProjectSuccess: 'پروژه با موفقیت ذخیره شد',
+    lastSaved: 'آخرین ذخیره:',
+    inverterTechnology: 'تکنولوژی اینورتر',
+    stringInverter: 'اینورتر رشته‌ای (String)',
+    mvTurnkey: 'پست یکپارچه کانتینری (MV Turnkey Skid)',
+
     // Buttons & Labels
     generateReport: 'صدور گزارش رسمی EPC',
     exportPdf: 'خروجی PDF',
+    exportWord: 'خروجی Word',
+    exportExcel: 'خروجی Excel',
     saveProject: 'ذخیره پروژه',
+    mobileMenu: 'منوی ناوبری',
+    closeMenu: 'بستن',
+    geotechnicalParams: 'پارامترهای ژئوتکنیک و خاک',
     powerplantNoBatteryNotice: 'در حالت نیروگاهی (IPP) نیازی به محاسبه بانک باتری پشتیبان نیست و کل توان به شبکه تزریق می‌شود.',
     outageDurationHours: 'مدت زمان خاموشی شبکه (ساعت در روز)',
     blackoutHours: 'ساعات قطعی شبکه',
@@ -61,6 +78,9 @@ export const translations = {
     powerplantMode: 'Utility Powerplant (IPP / Grid-Tied Generation)',
     ongridMode: 'On-grid with Battery Backup',
     offgridMode: 'Off-grid Standalone System',
+    modePowerplant: 'Powerplant',
+    modeOnGrid: 'On-Grid',
+    modeOffGrid: 'Off-Grid',
 
     // Categories / Workflow Steps
     workflow: 'Engineering Workflow Steps',
@@ -93,10 +113,24 @@ export const translations = {
     tabIranRegs: 'Iranian PPA Tariff Regulations',
     tabSolarPumping: 'Solar Water Pumping System',
 
+    tabCablesBom: 'Cables, Earthing (IEEE 80) & Lightning',
+    tabMvBays: 'MV Bays & Inverters Architecture',
+    tabShading: '3D Shading & Sun Path Analysis',
+    saveProjectSuccess: 'Project saved successfully',
+    lastSaved: 'Last saved:',
+    inverterTechnology: 'Inverter Technology',
+    stringInverter: 'String Inverter',
+    mvTurnkey: 'MV Turnkey Skid Station',
+
     // Buttons & Labels
     generateReport: 'Generate Official EPC Report',
     exportPdf: 'Export PDF',
+    exportWord: 'Export Word (.doc)',
+    exportExcel: 'Export Excel (.xls)',
     saveProject: 'Save Project',
+    mobileMenu: 'Navigation Menu',
+    closeMenu: 'Close',
+    geotechnicalParams: 'Geotechnical & Soil Parameters',
     powerplantNoBatteryNotice: 'In Utility Powerplant mode (IPP), backup battery calculations are bypassed as all power is exported to the grid.',
     outageDurationHours: 'Grid Blackout Duration (Hours/Day)',
     blackoutHours: 'Blackout Hours',

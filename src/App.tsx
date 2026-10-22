@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Sun,
   Zap,
@@ -26,22 +26,51 @@ import {
   Settings,
   Hammer,
   AlertTriangle,
+  Save,
+  FolderOpen,
+  Download,
+  Upload,
+  Radio,
+  Boxes,
+  HelpCircle,
+  Wrench,
+  Menu,
+  X,
 } from 'lucide-react';
 
 // i18n
 import { Language, translations } from './i18n';
 
 // Engines & Data
-import { IRANIAN_CLIMATE_CITIES, ClimateCity } from './engine/climaticData';
+import { IRANIAN_CLIMATE_CITIES, ClimateCity, SiteGeotechnicalOverrides } from './engine/climaticData';
 import { LOAD_PRESETS, ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
 import { designPvArray, ModuleSpecs, InverterSpecs } from './engine/pvEngineAdvanced';
-import { sizeBatteryBank, BatteryChemistry } from './engine/batteryEngine';
+import { sizeBatteryBank, BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
 import { evaluateInverterClustering } from './engine/inverterClustering';
-import { generateProtectionBom } from './engine/protectionBomEngine';
+import {
+  calculateAdvancedCableRun,
+  calculateEarthingSystem,
+  calculateLightningProtection,
+  CompleteProtectionSystemResult,
+} from './engine/protectionBomEngine';
 import { simulate24hEnergyBalance, sizeDieselGenerator } from './engine/simulation24hEngine';
-import { performFinancialAnalysis } from './engine/financialEngine';
+import {
+  performFinancialAnalysis,
+  UserFinancialPricing,
+  DEFAULT_FINANCIAL_PRICING,
+} from './engine/financialEngine';
 import { generateScenarios } from './engine/scenarioEngine';
-import { CATALOG_MODULES, CATALOG_INVERTERS } from './engine/equipmentCatalogData';
+import {
+  CATALOG_MODULES,
+  CATALOG_INVERTERS,
+  getFullModulesCatalog,
+  getFullInvertersCatalog,
+} from './engine/equipmentCatalogData';
+import {
+  designPowerplantBays,
+  InverterTechnology,
+  PowerplantBayArchitectureResult,
+} from './engine/powerplantBayEngine';
 
 // Components - Core Suite
 import { LoadProfilingTab } from './components/LoadProfilingTab';
@@ -91,6 +120,8 @@ export type ActiveModuleTab =
   | 'solar_pumping'
   | 'iv_curve';
 
+const LOCAL_STORAGE_KEY = 'solarpv_project_save';
+
 export const App: React.FC = () => {
   // Language & i18n
   const [lang, setLang] = useState<Language>('fa');
@@ -100,12 +131,19 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveModuleTab>('climate');
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Inverter Technology & MV Bay Architecture (for Powerplant mode)
+  const [inverterTech, setInverterTech] = useState<InverterTechnology>('string_inverter');
+  const [customBaysCount, setCustomBaysCount] = useState<number>(2);
+  const [mvVoltageKv, setMvVoltageKv] = useState<number>(20); // 20 kV standard in Iran
 
   // Core System State
   const [projectName, setProjectName] = useState(
-    lang === 'fa' ? 'طرح نیروگاه خورشیدی مهندسی و EPC' : 'Solar PV Engineering & EPC Project'
+    lang === 'fa' ? 'طرح مهندسی نیروگاه خورشیدی و EPC' : 'Solar PV Engineering & EPC Project'
   );
   const [city, setCity] = useState<ClimateCity>(IRANIAN_CLIMATE_CITIES[0]); // Default Tehran
+  const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
 
   const [selectedModule, setSelectedModule] = useState<ModuleSpecs>({
@@ -116,28 +154,158 @@ export const App: React.FC = () => {
     vmpVolts: CATALOG_MODULES[0].vmpVolts,
     iscAmps: CATALOG_MODULES[0].iscAmps,
     impAmps: CATALOG_MODULES[0].impAmps,
-    tempCoeffVocPctPerC: CATALOG_MODULES[0].tempCoeffVocPctPerC,
-    tempCoeffPmpPctPerC: CATALOG_MODULES[0].tempCoeffPmpPctPerC,
+    tempCoeffVocPct: CATALOG_MODULES[0].tempCoeffVocPct,
+    tempCoeffPmpPct: CATALOG_MODULES[0].tempCoeffPmpPct,
+    noctC: 45.0,
+    lengthM: CATALOG_MODULES[0].lengthMm / 1000.0,
+    widthM: CATALOG_MODULES[0].widthMm / 1000.0,
   });
+
+  // Default utility inverter
+  const defaultUtilInv = CATALOG_INVERTERS.find((i) => i.id === 'inv-huawei-330ktl') || CATALOG_INVERTERS[0];
 
   const [selectedInverter, setSelectedInverter] = useState<InverterSpecs>({
-    manufacturer: CATALOG_INVERTERS[0].manufacturer,
-    modelName: CATALOG_INVERTERS[0].modelName,
-    pnomAcKw: CATALOG_INVERTERS[0].pnomAcKw,
-    maxMpptVoltageVolts: CATALOG_INVERTERS[0].maxMpptVoltageVolts,
-    minMpptVoltageVolts: CATALOG_INVERTERS[0].minMpptVoltageVolts,
-    maxDcVoltageVolts: CATALOG_INVERTERS[0].maxDcVoltageVolts,
-    maxDcCurrentAmps: CATALOG_INVERTERS[0].maxDcCurrentAmps,
-    efficiencyPct: CATALOG_INVERTERS[0].efficiencyPct,
-    isThreePhase: CATALOG_INVERTERS[0].isThreePhase,
+    manufacturer: defaultUtilInv.manufacturer,
+    modelName: defaultUtilInv.modelName,
+    pnomAcKw: defaultUtilInv.pnomKw,
+    vdcMaxVolts: defaultUtilInv.vdcMaxVolts,
+    vmpptMinVolts: defaultUtilInv.vmpptMinVolts,
+    vmpptMaxVolts: defaultUtilInv.vmpptMaxVolts,
+    iscMaxAmpsPerMppt: 26.0,
+    imppMaxAmpsPerMppt: 22.0,
+    mpptChannelsCount: defaultUtilInv.mpptCount,
+    efficiencyMaxPct: defaultUtilInv.efficiencyMaxPct,
+    isThreePhase: defaultUtilInv.isThreePhase,
   });
 
-  const [selectedChemistry, setSelectedChemistry] = useState<BatteryChemistry>('LiFePO4');
+  const [selectedChemistry, setSelectedChemistry] = useState<BatteryChemistry>('lifepo4');
   const [autonomyDays, setAutonomyDays] = useState<number>(1.5);
   const [outageHours, setOutageHours] = useState<number>(6); // For ongrid mode blackout calculation
   const [targetPowerplantCapacityKw, setTargetPowerplantCapacityKw] = useState<number>(1000); // 1MW default
-  const [usdToTomanRate, setUsdToTomanRate] = useState<number>(650000);
-  const [gridTariffToman, setGridTariffToman] = useState<number>(3000);
+  
+  // Custom User Financial Pricing
+  const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
+
+  // Persistence & Save State
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+
+  // Auto-switch inverters when Inverter Technology changes
+  const handleInverterTechChange = (tech: InverterTechnology) => {
+    setInverterTech(tech);
+    if (tech === 'mv_turnkey') {
+      const turnkey = CATALOG_INVERTERS.find((i) => i.technology === 'mv_turnkey');
+      if (turnkey) {
+        setSelectedInverter({
+          manufacturer: turnkey.manufacturer,
+          modelName: turnkey.modelName,
+          pnomAcKw: turnkey.pnomKw,
+          vdcMaxVolts: turnkey.vdcMaxVolts,
+          vmpptMinVolts: turnkey.vmpptMinVolts,
+          vmpptMaxVolts: turnkey.vmpptMaxVolts,
+          iscMaxAmpsPerMppt: 100.0,
+          imppMaxAmpsPerMppt: 85.0,
+          mpptChannelsCount: turnkey.mpptCount,
+          efficiencyMaxPct: turnkey.efficiencyMaxPct,
+          isThreePhase: true,
+        });
+      }
+    } else {
+      const stringInv = CATALOG_INVERTERS.find((i) => i.technology === 'string_inverter');
+      if (stringInv) {
+        setSelectedInverter({
+          manufacturer: stringInv.manufacturer,
+          modelName: stringInv.modelName,
+          pnomAcKw: stringInv.pnomKw,
+          vdcMaxVolts: stringInv.vdcMaxVolts,
+          vmpptMinVolts: stringInv.vmpptMinVolts,
+          vmpptMaxVolts: stringInv.vmpptMaxVolts,
+          iscMaxAmpsPerMppt: 30.0,
+          imppMaxAmpsPerMppt: 26.0,
+          mpptChannelsCount: stringInv.mpptCount,
+          efficiencyMaxPct: stringInv.efficiencyMaxPct,
+          isThreePhase: true,
+        });
+      }
+    }
+  };
+
+  // Redirect invalid active tabs when switching system mode
+  useEffect(() => {
+    if (systemMode === 'powerplant') {
+      if (activeTab === 'loads' || activeTab === 'bess' || activeTab === 'scenarios') {
+        setActiveTab('system_mode');
+      }
+    } else {
+      if (activeTab === 'mv_substation') {
+        setActiveTab('system_mode');
+      }
+    }
+  }, [systemMode, activeTab]);
+
+  // Load saved project on initial mount if available
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.savedAt) setLastSavedTime(data.savedAt);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
+
+  // Save Project to LocalStorage
+  const handleSaveProject = () => {
+    const timeStr = new Date().toLocaleTimeString(lang === 'fa' ? 'fa-IR' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const projectData = {
+      version: '2.0.0',
+      savedAt: timeStr,
+      projectName,
+      systemMode,
+      inverterTech,
+      customBaysCount,
+      mvVoltageKv,
+      city,
+      siteOverrides,
+      loads,
+      selectedModule,
+      selectedInverter,
+      selectedChemistry,
+      autonomyDays,
+      outageHours,
+      targetPowerplantCapacityKw,
+      userPricing,
+    };
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projectData));
+      setLastSavedTime(timeStr);
+      setSaveToast(lang === 'fa' ? `پروژه با موفقیت در ساعت ${timeStr} ذخیره شد.` : `Project saved successfully at ${timeStr}`);
+      setTimeout(() => setSaveToast(null), 3500);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Load Project from LocalStorage
+  const handleLoadLastProject = () => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        handleImportProject(data);
+        setSaveToast(lang === 'fa' ? 'پروژه ذخیره‌شده بازیابی شد.' : 'Project successfully restored.');
+        setTimeout(() => setSaveToast(null), 3000);
+      }
+    } catch (e) {
+      alert(lang === 'fa' ? 'خطا در بارگذاری پروژه ذخیره شده.' : 'Error loading project.');
+    }
+  };
 
   // 1. Analyze Loads
   const loadAnalysis = useMemo(() => analyzeLoadProfile(loads), [loads]);
@@ -145,37 +313,53 @@ export const App: React.FC = () => {
   // 2. Compute Target Energy Demand Based on System Mode
   const effectiveDailyKwhDemand = useMemo(() => {
     if (systemMode === 'powerplant') {
-      return targetPowerplantCapacityKw * city.peakSunHours * 0.82; // Commercial Generation target
+      return (targetPowerplantCapacityKw || 1000) * city.peakSunHours * 0.82; // Commercial Generation target
     } else if (systemMode === 'ongrid') {
-      // Outage duration energy coverage
-      const averagePowerKw = loadAnalysis.totalDailyKwh / 24.0;
-      return averagePowerKw * outageHours;
+      const averagePowerKw = (loadAnalysis.totalDailyEnergyKwh || 20) / 24.0;
+      return Math.max(1, averagePowerKw * (outageHours || 6));
     } else {
-      // Offgrid: Full 24h daily energy demand
-      return loadAnalysis.totalDailyKwh;
+      return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
     }
-  }, [systemMode, targetPowerplantCapacityKw, city.peakSunHours, loadAnalysis.totalDailyKwh, outageHours]);
+  }, [systemMode, targetPowerplantCapacityKw, city.peakSunHours, loadAnalysis.totalDailyEnergyKwh, outageHours]);
 
   // 3. Advanced PV Array Engineering Sizing
   const arrayDesign = useMemo(() => {
     return designPvArray(
       effectiveDailyKwhDemand,
       city.peakSunHours,
-      city.tempMinC,
-      city.tempMaxC,
       selectedModule,
-      selectedInverter
+      selectedInverter,
+      {
+        ambientTempMinC: city.tempMinC,
+        ambientTempMaxC: city.tempMaxC,
+        soilingLossPct: city.soilingLossPct,
+        dcCableLossPct: 1.5,
+        mismatchAndLidLossPct: 2.0,
+        inverterClippingLossPct: 1.0,
+        systemAvailabilityPct: 99.0,
+        groundAlbedo: city.albedo,
+        arrayTiltDeg: city.optimalTiltAnnualDeg,
+      }
     );
   }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter]);
 
   // 4. Inverter Clustering Evaluation
   const inverterClustering = useMemo(() => {
+    const contWatts =
+      systemMode === 'powerplant'
+        ? (targetPowerplantCapacityKw || 1000) * 1000
+        : loadAnalysis.continuousActivePowerWatts;
+    const peakWatts =
+      systemMode === 'powerplant'
+        ? (targetPowerplantCapacityKw || 1000) * 1100
+        : loadAnalysis.maxSurgePeakPowerWatts;
+
     return evaluateInverterClustering(
-      arrayDesign.totalPvCapacityKwp,
-      arrayDesign.parallelStringsCount,
-      selectedInverter
+      contWatts,
+      peakWatts,
+      selectedInverter.pnomAcKw
     );
-  }, [arrayDesign, selectedInverter]);
+  }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter]);
 
   // 5. Battery Storage Sizing
   const batterySizing = useMemo(() => {
@@ -183,164 +367,282 @@ export const App: React.FC = () => {
       systemMode === 'powerplant'
         ? 0
         : systemMode === 'ongrid'
-        ? (loadAnalysis.totalDailyKwh / 24.0) * outageHours
-        : loadAnalysis.totalDailyKwh;
+        ? (loadAnalysis.nighttimeEnergyWh / 1000.0) * ((outageHours || 6) / 24.0)
+        : loadAnalysis.nighttimeEnergyWh / 1000.0;
 
     return sizeBatteryBank(
       energyRequirementKwh,
       systemMode === 'powerplant' ? 0 : autonomyDays,
       selectedChemistry,
-      48
+      inverterClustering.recommendedDcVoltageVdc || 48,
+      loadAnalysis.maxSurgePeakPowerWatts,
+      loadAnalysis.continuousActivePowerWatts,
+      city.tempMinC
     );
-  }, [systemMode, loadAnalysis.totalDailyKwh, outageHours, autonomyDays, selectedChemistry]);
+  }, [systemMode, loadAnalysis, outageHours, autonomyDays, selectedChemistry, inverterClustering, city]);
 
-  // 6. Protection BOM Engine
-  const protectionResult = useMemo(() => {
-    return generateProtectionBom(
-      arrayDesign.totalPvCapacityKwp,
-      selectedModule.vocVolts,
-      arrayDesign.modulesPerString,
-      selectedModule.iscAmps,
-      arrayDesign.parallelStringsCount,
-      inverterClustering.totalInverterCapacityKw,
-      selectedInverter.isThreePhase,
-      batterySizing.grossCapacityKwh,
-      batterySizing.systemVoltageVdc
+  // 6. Powerplant MV Bay Architecture (for Powerplant mode)
+  const bayArchitecture: PowerplantBayArchitectureResult | undefined = useMemo(() => {
+    if (systemMode !== 'powerplant') return undefined;
+    return designPowerplantBays(
+      (targetPowerplantCapacityKw || 1000) / 1000.0,
+      arrayDesign.totalPvCapacityKwp / 1000.0,
+      inverterTech,
+      customBaysCount,
+      mvVoltageKv,
+      selectedInverter.pnomAcKw
     );
-  }, [arrayDesign, selectedModule, inverterClustering, selectedInverter, batterySizing]);
+  }, [
+    systemMode,
+    targetPowerplantCapacityKw,
+    arrayDesign.totalPvCapacityKwp,
+    inverterTech,
+    customBaysCount,
+    mvVoltageKv,
+    selectedInverter,
+  ]);
 
-  // 7. 24-Hour Balance Simulation
+  // 7. Complete Protection System (Cables, Earthing & Lightning)
+  const protectionSystem: CompleteProtectionSystemResult = useMemo(() => {
+    const dcStringRun = calculateAdvancedCableRun({
+      id: 'dc-str',
+      sectionNameFa: 'کابل DC استرینگ خورشیدی',
+      sectionNameEn: 'PV DC String Cable',
+      oneWayLengthM: 35,
+      designCurrentAmps: selectedModule.iscAmps * 1.25,
+      nominalVoltageVolts: arrayDesign.stringVocMaxColdVolts * 0.85,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.5,
+      isDc: true,
+    });
+
+    const isUtil = systemMode === 'powerplant';
+    const earthing = calculateEarthingSystem(
+      systemMode === 'powerplant' ? targetPowerplantCapacityKw : inverterClustering.totalInverterCapacityKw,
+      100,
+      'solidly_grounded',
+      isUtil
+    );
+
+    const lightning = calculateLightningProtection(
+      systemMode === 'powerplant' ? targetPowerplantCapacityKw : inverterClustering.totalInverterCapacityKw,
+      isUtil
+    );
+
+    return {
+      cableRuns: [dcStringRun],
+      earthing,
+      lightning,
+      protectionBom: [],
+    };
+  }, [arrayDesign, selectedModule, inverterClustering, systemMode, targetPowerplantCapacityKw]);
+
+  // 8. 24-Hour Balance Simulation
   const simulationResult = useMemo(() => {
     return simulate24hEnergyBalance(
-      loadAnalysis.hourlyProfileKw,
       arrayDesign.totalPvCapacityKwp,
       city.peakSunHours,
+      loadAnalysis.daytimeEnergyWh / 1000.0,
+      loadAnalysis.nighttimeEnergyWh / 1000.0,
       batterySizing.usableCapacityKwh,
-      0.92
+      batterySizing.grossCapacityKwh
     );
-  }, [loadAnalysis, arrayDesign, city, batterySizing]);
+  }, [arrayDesign, city, loadAnalysis, batterySizing]);
 
-  // 8. Diesel Backup Generator Sizing
+  // 9. Diesel Backup Generator Sizing
   const generatorSizing = useMemo(() => {
     return sizeDieselGenerator(
-      loadAnalysis.peakDemandKw,
-      loadAnalysis.surgeDemandKw,
-      batterySizing.usableCapacityKwh
+      loadAnalysis.continuousActivePowerWatts,
+      loadAnalysis.maxSurgePeakPowerWatts,
+      outageHours
     );
-  }, [loadAnalysis, batterySizing]);
+  }, [loadAnalysis, outageHours]);
 
-  // 9. Financial Analysis
+  // 10. Financial Analysis with User Unit Pricing
+  const estimatedAnnualYieldMwh = (arrayDesign.totalPvCapacityKwp * city.peakSunHours * 365 * 0.82) / 1000;
+
   const financialResult = useMemo(() => {
+    const annualYieldKwh = estimatedAnnualYieldMwh * 1000.0;
     return performFinancialAnalysis(
       arrayDesign.totalPvCapacityKwp,
       batterySizing.grossCapacityKwh,
       inverterClustering.totalInverterCapacityKw,
-      loadAnalysis.totalDailyKwh * 365.0,
-      usdToTomanRate,
-      gridTariffToman
+      annualYieldKwh,
+      userPricing
     );
-  }, [arrayDesign, batterySizing, inverterClustering, loadAnalysis, usdToTomanRate, gridTariffToman]);
+  }, [arrayDesign, batterySizing, inverterClustering, estimatedAnnualYieldMwh, userPricing]);
 
-  // 10. Scenario Analysis
+  // 11. Scenario Analysis (only for Battery modes)
   const scenarios = useMemo(() => {
     return generateScenarios(
-      loadAnalysis.totalDailyKwh,
-      city.peakSunHours,
-      city.tempMinC,
-      city.tempMaxC,
-      selectedModule,
-      selectedInverter,
-      selectedChemistry,
+      arrayDesign.totalPvCapacityKwp,
+      loadAnalysis.totalDailyEnergyKwh,
       autonomyDays,
-      usdToTomanRate,
-      gridTariffToman
+      userPricing.usdToTomanRate
     );
-  }, [loadAnalysis, city, selectedModule, selectedInverter, selectedChemistry, autonomyDays, usdToTomanRate, gridTariffToman]);
-
-  const estimatedAnnualYieldMwh = (arrayDesign.totalPvCapacityKwp * city.peakSunHours * 365 * 0.82) / 1000;
+  }, [arrayDesign, loadAnalysis, autonomyDays, userPricing.usdToTomanRate]);
 
   // Handler for restoring imported project from JSON
   const handleImportProject = (importedData: any) => {
     if (importedData.city) setCity(importedData.city);
+    if (importedData.siteOverrides) setSiteOverrides(importedData.siteOverrides);
     if (importedData.loads) setLoads(importedData.loads);
     if (importedData.module) setSelectedModule(importedData.module);
     if (importedData.inverter) setSelectedInverter(importedData.inverter);
     if (importedData.projectName) setProjectName(importedData.projectName);
+    if (importedData.systemMode) setSystemMode(importedData.systemMode);
+    if (importedData.inverterTech) setInverterTech(importedData.inverterTech);
+    if (importedData.customBaysCount) setCustomBaysCount(importedData.customBaysCount);
+    if (importedData.mvVoltageKv) setMvVoltageKv(importedData.mvVoltageKv);
+    if (importedData.targetPowerplantCapacityKw) setTargetPowerplantCapacityKw(importedData.targetPowerplantCapacityKw);
+    if (importedData.userPricing) setUserPricing(importedData.userPricing);
   };
 
-  // Structured Workflow Sections
-  const menuSections = [
-    {
-      categoryTitle: t.catSiteClimate,
-      tabs: [
-        { id: 'climate' as ActiveModuleTab, title: t.tabSiteLocation, icon: <MapPin className="w-4 h-4 text-amber-400" /> },
-      ],
-    },
-    {
-      categoryTitle: t.catLoads,
-      tabs: [
-        { id: 'loads' as ActiveModuleTab, title: t.tabLoads, icon: <Zap className="w-4 h-4 text-yellow-400" /> },
-      ],
-    },
-    {
-      categoryTitle: t.catSystemMode,
-      tabs: [
-        { id: 'system_mode' as ActiveModuleTab, title: t.tabSystemMode, icon: <Sliders className="w-4 h-4 text-sky-400" /> },
-      ],
-    },
-    {
-      categoryTitle: t.catPvEngineering,
-      tabs: [
-        { id: 'array' as ActiveModuleTab, title: t.tabPvEngineering, icon: <Sun className="w-4 h-4 text-amber-500" /> },
-        { id: 'iv_curve' as ActiveModuleTab, title: t.tabIvCurve, icon: <Activity className="w-4 h-4 text-teal-400" /> },
-        { id: 'waterfall_loss' as ActiveModuleTab, title: t.tabLossWaterfall, icon: <BarChart3 className="w-4 h-4 text-red-400" /> },
-      ],
-    },
-    {
-      categoryTitle: t.catUpstreamGrid,
-      tabs: [
-        { id: 'harmonics_grid' as ActiveModuleTab, title: t.tabUpstreamGrid, icon: <Activity className="w-4 h-4 text-indigo-400" /> },
-      ],
-    },
-    {
-      categoryTitle: t.catMvSubstation,
-      tabs: [
-        { id: 'mv_substation' as ActiveModuleTab, title: t.tabMvSubstation, icon: <Building2 className="w-4 h-4 text-purple-400" /> },
-        { id: 'cables_bom' as ActiveModuleTab, title: 'BOM & حفاظت الکتریکی', icon: <Shield className="w-4 h-4 text-emerald-400" /> },
-      ],
-    },
-    {
-      categoryTitle: t.catBess,
-      tabs: [
-        { id: 'bess' as ActiveModuleTab, title: t.tabBess, icon: <BatteryIcon className="w-4 h-4 text-green-400" /> },
-      ],
-    },
-    {
-      categoryTitle: t.catStructural,
-      tabs: [
-        { id: 'structural' as ActiveModuleTab, title: t.tabStructural, icon: <Hammer className="w-4 h-4 text-amber-600" /> },
-      ],
-    },
-    {
-      categoryTitle: t.catSimulation,
-      tabs: [
-        { id: 'sim24h' as ActiveModuleTab, title: t.tabSimulation24h, icon: <Workflow className="w-4 h-4 text-cyan-400" /> },
-        { id: 'financial' as ActiveModuleTab, title: t.tabFinancial, icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
-        { id: 'sld' as ActiveModuleTab, title: 'نقشه تک خطی SLD', icon: <Layers className="w-4 h-4 text-purple-400" /> },
-        { id: 'cad_layout' as ActiveModuleTab, title: t.tabCadLayout, icon: <Grid className="w-4 h-4 text-blue-400" /> },
-        { id: '3d_viewer' as ActiveModuleTab, title: t.tab3dViewer, icon: <Eye className="w-4 h-4 text-orange-400" /> },
-        { id: 'scenarios' as ActiveModuleTab, title: 'مقایسه سناریوها', icon: <GitCompare className="w-4 h-4 text-pink-400" /> },
-        { id: 'solar_pumping' as ActiveModuleTab, title: t.tabSolarPumping, icon: <Droplet className="w-4 h-4 text-blue-400" /> },
-        { id: 'iran_regulations' as ActiveModuleTab, title: t.tabIranRegs, icon: <Scale className="w-4 h-4 text-emerald-400" /> },
-        { id: 'catalog' as ActiveModuleTab, title: t.tabCatalog, icon: <Database className="w-4 h-4 text-slate-400" /> },
-      ],
-    },
-  ];
+  // Structured Workflow Sections dynamically conditioned on systemMode
+  const menuSections = useMemo(() => {
+    if (systemMode === 'powerplant') {
+      // In Powerplant mode: HIDE Loads, HIDE Scenarios, HIDE Battery Sizing
+      return [
+        {
+          categoryTitle: t.catSiteClimate,
+          tabs: [
+            { id: 'climate' as ActiveModuleTab, title: t.tabSiteLocation, icon: <MapPin className="w-4 h-4 text-amber-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catSystemMode,
+          tabs: [
+            { id: 'system_mode' as ActiveModuleTab, title: `${t.tabSystemMode} & بی‌های MV`, icon: <Sliders className="w-4 h-4 text-sky-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catPvEngineering,
+          tabs: [
+            { id: 'array' as ActiveModuleTab, title: t.tabPvEngineering, icon: <Sun className="w-4 h-4 text-amber-500" /> },
+            { id: 'iv_curve' as ActiveModuleTab, title: t.tabIvCurve, icon: <Activity className="w-4 h-4 text-teal-400" /> },
+            { id: 'waterfall_loss' as ActiveModuleTab, title: t.tabLossWaterfall, icon: <BarChart3 className="w-4 h-4 text-red-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catUpstreamGrid,
+          tabs: [
+            { id: 'harmonics_grid' as ActiveModuleTab, title: t.tabUpstreamGrid, icon: <Activity className="w-4 h-4 text-indigo-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catMvSubstation,
+          tabs: [
+            { id: 'mv_substation' as ActiveModuleTab, title: t.tabMvSubstation, icon: <Building2 className="w-4 h-4 text-purple-400" /> },
+            { id: 'cables_bom' as ActiveModuleTab, title: t.tabCablesBom, icon: <Shield className="w-4 h-4 text-emerald-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catStructural,
+          tabs: [
+            { id: 'structural' as ActiveModuleTab, title: t.tabStructural, icon: <Hammer className="w-4 h-4 text-amber-600" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catSimulation,
+          tabs: [
+            { id: 'sim24h' as ActiveModuleTab, title: t.tabSimulation24h, icon: <Workflow className="w-4 h-4 text-cyan-400" /> },
+            { id: 'financial' as ActiveModuleTab, title: t.tabFinancial, icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
+            { id: 'cad_layout' as ActiveModuleTab, title: t.tabCadLayout, icon: <Grid className="w-4 h-4 text-blue-400" /> },
+            { id: '3d_viewer' as ActiveModuleTab, title: t.tab3dViewer, icon: <Eye className="w-4 h-4 text-orange-400" /> },
+            { id: 'catalog' as ActiveModuleTab, title: t.tabCatalog, icon: <Database className="w-4 h-4 text-slate-400" /> },
+            { id: 'solar_pumping' as ActiveModuleTab, title: t.tabSolarPumping, icon: <Droplet className="w-4 h-4 text-blue-400" /> },
+            { id: 'iran_regulations' as ActiveModuleTab, title: t.tabIranRegs, icon: <Scale className="w-4 h-4 text-emerald-400" /> },
+          ],
+        },
+      ];
+    } else {
+      // In On-Grid & Off-Grid modes: SHOW Loads, MOVE Battery to PV Engineering, HIDE MV Substation
+      return [
+        {
+          categoryTitle: t.catSiteClimate,
+          tabs: [
+            { id: 'climate' as ActiveModuleTab, title: t.tabSiteLocation, icon: <MapPin className="w-4 h-4 text-amber-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catLoads,
+          tabs: [
+            { id: 'loads' as ActiveModuleTab, title: t.tabLoads, icon: <Zap className="w-4 h-4 text-yellow-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catSystemMode,
+          tabs: [
+            { id: 'system_mode' as ActiveModuleTab, title: t.tabSystemMode, icon: <Sliders className="w-4 h-4 text-sky-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catPvEngineering,
+          tabs: [
+            { id: 'array' as ActiveModuleTab, title: t.tabPvEngineering, icon: <Sun className="w-4 h-4 text-amber-500" /> },
+            { id: 'bess' as ActiveModuleTab, title: t.tabBess, icon: <BatteryIcon className="w-4 h-4 text-green-400" /> },
+            { id: 'iv_curve' as ActiveModuleTab, title: t.tabIvCurve, icon: <Activity className="w-4 h-4 text-teal-400" /> },
+            { id: 'waterfall_loss' as ActiveModuleTab, title: t.tabLossWaterfall, icon: <BarChart3 className="w-4 h-4 text-red-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catUpstreamGrid,
+          tabs: [
+            { id: 'harmonics_grid' as ActiveModuleTab, title: t.tabUpstreamGrid, icon: <Activity className="w-4 h-4 text-indigo-400" /> },
+            { id: 'cables_bom' as ActiveModuleTab, title: t.tabCablesBom, icon: <Shield className="w-4 h-4 text-emerald-400" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catStructural,
+          tabs: [
+            { id: 'structural' as ActiveModuleTab, title: t.tabStructural, icon: <Hammer className="w-4 h-4 text-amber-600" /> },
+          ],
+        },
+        {
+          categoryTitle: t.catSimulation,
+          tabs: [
+            { id: 'sim24h' as ActiveModuleTab, title: t.tabSimulation24h, icon: <Workflow className="w-4 h-4 text-cyan-400" /> },
+            { id: 'financial' as ActiveModuleTab, title: t.tabFinancial, icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
+            { id: 'scenarios' as ActiveModuleTab, title: 'مقایسه سناریوها', icon: <GitCompare className="w-4 h-4 text-pink-400" /> },
+            { id: 'cad_layout' as ActiveModuleTab, title: t.tabCadLayout, icon: <Grid className="w-4 h-4 text-blue-400" /> },
+            { id: '3d_viewer' as ActiveModuleTab, title: t.tab3dViewer, icon: <Eye className="w-4 h-4 text-orange-400" /> },
+            { id: 'catalog' as ActiveModuleTab, title: t.tabCatalog, icon: <Database className="w-4 h-4 text-slate-400" /> },
+            { id: 'solar_pumping' as ActiveModuleTab, title: t.tabSolarPumping, icon: <Droplet className="w-4 h-4 text-blue-400" /> },
+            { id: 'iran_regulations' as ActiveModuleTab, title: t.tabIranRegs, icon: <Scale className="w-4 h-4 text-emerald-400" /> },
+          ],
+        },
+      ];
+    }
+  }, [systemMode, t]);
 
   return (
-    <div className={`min-h-screen bg-slate-950 text-slate-100 flex ${lang === 'fa' ? 'font-vazir' : 'font-sans'}`} dir={lang === 'fa' ? 'rtl' : 'ltr'}>
-      {/* Fixed Operational Sidebar */}
-      <aside className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col fixed inset-y-0 z-30 shadow-2xl overflow-hidden">
+    <div
+      className={`min-h-screen bg-slate-950 text-slate-100 flex ${lang === 'fa' ? 'font-vazir' : 'font-sans'}`}
+      dir={lang === 'fa' ? 'rtl' : 'ltr'}
+    >
+      {/* Toast Notification */}
+      {saveToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 border border-emerald-400 animate-bounce">
+          <CheckCircle2 className="w-4 h-4" />
+          <span>{saveToast}</span>
+        </div>
+      )}
+
+      {/* BACKDROP OVERLAY FOR MOBILE SIDEBAR */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm transition-opacity"
+        />
+      )}
+
+      {/* FIXED OPERATIONAL SIDEBAR — DOCKED ON THE RIGHT SIDE, RESPONSIVE SLIDE-OVER ON MOBILE */}
+      <aside
+        className={`w-72 bg-slate-900 right-0 border-l border-slate-800 flex flex-col fixed inset-y-0 z-40 shadow-2xl overflow-hidden transition-transform duration-300 lg:translate-x-0 ${
+          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -353,15 +655,25 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Language Switcher */}
-          <button
-            onClick={() => setLang(lang === 'fa' ? 'en' : 'fa')}
-            className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition"
-            title={t.language}
-          >
-            <Globe className="w-3.5 h-3.5 text-sky-400" />
-            <span>{lang === 'fa' ? 'EN' : 'فا'}</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            {/* Language Switcher */}
+            <button
+              onClick={() => setLang(lang === 'fa' ? 'en' : 'fa')}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 hover:border-sky-500 transition shadow-sm font-bold"
+              title={t.language}
+            >
+              <Globe className="w-3.5 h-3.5 text-sky-400" />
+              <span>{lang === 'fa' ? 'English' : 'فارسی'}</span>
+            </button>
+
+            {/* Mobile Close Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="lg:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Operating System Mode Quick Selector in Sidebar */}
@@ -381,7 +693,7 @@ export const App: React.FC = () => {
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
-              نیروگاهی
+              {t.modePowerplant}
             </button>
             <button
               onClick={() => setSystemMode('ongrid')}
@@ -391,7 +703,7 @@ export const App: React.FC = () => {
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
-              On-Grid
+              {t.modeOnGrid}
             </button>
             <button
               onClick={() => setSystemMode('offgrid')}
@@ -401,7 +713,7 @@ export const App: React.FC = () => {
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
-              Off-Grid
+              {t.modeOffGrid}
             </button>
           </div>
         </div>
@@ -410,23 +722,23 @@ export const App: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-3 space-y-4 text-xs scrollbar-thin scrollbar-thumb-slate-700">
           {menuSections.map((section, idx) => (
             <div key={idx} className="space-y-1">
-              <div className="text-[11px] font-bold text-sky-400 px-2 py-1 uppercase tracking-wider bg-slate-950/30 rounded border-l-2 border-sky-500">
+              <div className="text-[11px] font-bold text-sky-400 px-2 py-1 uppercase tracking-wider bg-slate-950/30 rounded border-r-2 border-sky-500">
                 {section.categoryTitle}
               </div>
               <div className="space-y-0.5">
                 {section.tabs.map((tab) => {
                   const isActive = activeTab === tab.id;
-                  const isBessDisabled = systemMode === 'powerplant' && tab.id === 'bess';
 
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsMobileMenuOpen(false);
+                      }}
                       className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-all text-xs text-right ${
                         isActive
                           ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white font-bold shadow-md'
-                          : isBessDisabled
-                          ? 'opacity-50 text-slate-500 hover:bg-slate-800/40'
                           : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
@@ -434,9 +746,6 @@ export const App: React.FC = () => {
                         {tab.icon}
                         <span>{tab.title}</span>
                       </div>
-                      {isBessDisabled && (
-                        <span className="text-[9px] bg-amber-500/20 text-amber-400 px-1 rounded">غیرضروری</span>
-                      )}
                     </button>
                   );
                 })}
@@ -445,11 +754,30 @@ export const App: React.FC = () => {
           ))}
         </div>
 
-        {/* Sidebar Footer Report Generator */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950/90">
+        {/* Sidebar Footer with Save & Report Generator */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/90 space-y-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleSaveProject}
+              className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[11px] font-bold text-slate-200 flex items-center justify-center gap-1.5 transition"
+            >
+              <Save className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t.saveProject}</span>
+            </button>
+            {lastSavedTime && (
+              <button
+                onClick={handleLoadLastProject}
+                className="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] text-sky-300"
+                title={lang === 'fa' ? 'بازیابی آخرین وضعیت ذخیره‌شده' : 'Restore last saved'}
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
           <button
             onClick={() => setShowReportModal(true)}
-            className="w-full py-2.5 px-3 studio-btn-primary flex items-center justify-center gap-2 text-xs font-bold rounded-lg shadow-lg"
+            className="w-full py-2 px-3 studio-btn-primary flex items-center justify-center gap-2 text-xs font-bold rounded-lg shadow-lg"
           >
             <FileText className="w-4 h-4 text-amber-300" />
             <span>{t.generateReport}</span>
@@ -457,34 +785,66 @@ export const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content Workspace Offset by Sidebar */}
-      <div className={`flex-1 flex flex-col ${lang === 'fa' ? 'mr-72' : 'ml-72'} min-h-screen`}>
+      {/* MAIN CONTENT WORKSPACE OFFSET BY FIXED RIGHT SIDEBAR (RESPONSIVE) */}
+      <div className="flex-1 flex flex-col lg:mr-72 mr-0 min-h-screen">
         {/* Top Header Bar */}
-        <header className="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-20 px-6 py-3.5 flex items-center justify-between">
-          <div>
-            <input
-              type="text"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              className="bg-transparent text-lg font-bold text-white border-b border-transparent hover:border-slate-600 focus:border-sky-400 focus:outline-none transition px-1 py-0.5"
-            />
-            <p className="text-xs text-slate-400 px-1 mt-0.5">
-              مکان: <strong className="text-sky-300">{city.cityNameFa}</strong> | تابش شیبدار: <strong className="text-amber-300">{city.peakSunHours} PSH</strong> | نوع سیستم: <strong className="text-emerald-300">{systemMode.toUpperCase()}</strong>
-            </p>
+        <header className="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-20 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white shrink-0"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu className="w-5 h-5 text-sky-400" />
+            </button>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className="bg-transparent text-sm sm:text-base font-bold text-white border-b border-transparent hover:border-slate-600 focus:border-sky-400 focus:outline-none transition px-1 py-0.5"
+                />
+                {lastSavedTime && (
+                  <span className="hidden sm:inline-block text-[10px] text-slate-400 font-mono px-2 py-0.5 rounded bg-slate-800/80">
+                    {t.lastSaved} {lastSavedTime}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-400 px-1 mt-0.5 truncate max-w-xs sm:max-w-md">
+                {lang === 'en' ? 'Location:' : 'مکان:'}{' '}
+                <strong className="text-sky-300">{lang === 'en' ? city.nameEn : city.nameFa}</strong> |{' '}
+                {lang === 'en' ? 'POA Irradiance:' : 'تابش شیبدار:'}{' '}
+                <strong className="text-amber-300">{city.peakSunHours} PSH</strong> |{' '}
+                {lang === 'en' ? 'Mode:' : 'حالت:'}{' '}
+                <strong className="text-emerald-300">{systemMode.toUpperCase()}</strong>
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono">
-            <div className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
-              <span className="text-slate-400">ظرفیت PV:</span>
+          <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
+            <button
+              onClick={handleSaveProject}
+              className="studio-btn text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1.5 font-bold"
+            >
+              <Save className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">{t.saveProject}</span>
+            </button>
+
+            <div className="hidden md:flex bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 items-center gap-2">
+              <span className="text-slate-400">{lang === 'en' ? 'PV Peak:' : 'ظرفیت PV:'}</span>
               <span className="text-amber-400 font-bold">{arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp</span>
             </div>
-            <div className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
-              <span className="text-slate-400">ظرفیت اینورتر:</span>
+
+            <div className="hidden md:flex bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 items-center gap-2">
+              <span className="text-slate-400">{lang === 'en' ? 'Inverter:' : 'اینورتر:'}</span>
               <span className="text-sky-400 font-bold">{inverterClustering.totalInverterCapacityKw.toFixed(1)} kW</span>
             </div>
+
             {systemMode !== 'powerplant' && (
-              <div className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
-                <span className="text-slate-400">بانک باتری:</span>
+              <div className="hidden md:flex bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 items-center gap-2">
+                <span className="text-slate-400">{lang === 'en' ? 'Battery:' : 'باتری:'}</span>
                 <span className="text-emerald-400 font-bold">{batterySizing.grossCapacityKwh.toFixed(1)} kWh</span>
               </div>
             )}
@@ -493,31 +853,23 @@ export const App: React.FC = () => {
 
         {/* Main Operational Workspace Content */}
         <main className="p-6 flex-1 w-full max-w-7xl mx-auto space-y-6">
-          {/* Notification banner if battery is not needed in powerplant mode */}
-          {systemMode === 'powerplant' && activeTab === 'bess' && (
-            <div className="studio-card border-amber-500/40 bg-amber-950/20 text-amber-200 p-4 flex items-center gap-3">
-              <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0" />
-              <div>
-                <h4 className="font-bold text-amber-300">{t.powerplantNoBatteryNotice}</h4>
-                <p className="text-xs text-amber-200/80 mt-1">
-                  در حالت نیروگاهی (IPP) تولید انرژی مستقیماً به شبکه سراسری تزریق می‌شود. در صورت نیاز به افزودن ذخیره‌ساز فرکانسی یا پیک‌سایی می‌توانید پارامترها را تنظیم کنید.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* System Mode Tab */}
+          {/* SYSTEM MODE & GRID ARCHITECTURE TAB */}
           {activeTab === 'system_mode' && (
             <div className="space-y-6">
               <div className="studio-card">
                 <h2 className="text-xl font-bold text-sky-400 mb-2 flex items-center gap-2">
                   <Sliders className="w-6 h-6 text-amber-400" />
-                  تعیین ساختار و نحوه اتصال به شبکه (On-grid / Off-grid / Utility Powerplant)
+                  {lang === 'fa'
+                    ? 'تعیین ساختار کاری سیستم و نحوه اتصال به شبکه (System Mode & Grid Strategy)'
+                    : 'System Architecture & Grid Interconnection Strategy'}
                 </h2>
                 <p className="text-slate-300 text-xs leading-relaxed">
-                  نحوه تعامل سیستم با شبکه برق بالادست پایه محاسبات سایزینگ PV، باتری و تجهیزات حفاظتی است.
+                  {lang === 'fa'
+                    ? 'نحوه اتصال به شبکه مبنای محاسبات آرایه PV، عدم نیاز یا سایزینگ باتری، اینورترهای رشته‌ای در برابر پست‌های یکپارچه Turnkey و آرایش بی‌های فشار متوسط است.'
+                    : 'Select operating topology between commercial utility powerplant (IPP), grid-tied with backup, or standalone off-grid.'}
                 </p>
 
+                {/* 3 Main Topologies */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                   {/* Powerplant */}
                   <div
@@ -531,12 +883,12 @@ export const App: React.FC = () => {
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-bold text-amber-400 flex items-center gap-2">
                         <Building2 className="w-5 h-5" />
-                        نیروگاه خورشیدی (IPP Powerplant)
+                        نیروگاه تجاری (IPP Powerplant)
                       </h3>
                       {systemMode === 'powerplant' && <CheckCircle2 className="w-5 h-5 text-amber-400" />}
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      اتصال مستقیم به شبکه فشار متوسط/قوی جهت فروش برق تجاری. محاسبات باتری پشتیبان کاملاً غیرضروری و حذف می‌شود.
+                      اتصال مستقیم به شبکه فشار متوسط (20kV/33kV). محاسبات باتری و بارهای الکتریکی به طور کامل غیرضروری و حذف می‌شوند.
                     </p>
                   </div>
 
@@ -557,7 +909,7 @@ export const App: React.FC = () => {
                       {systemMode === 'ongrid' && <CheckCircle2 className="w-5 h-5 text-sky-400" />}
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      تامین بار از شبکه و PV. باتری صرفاً بر اساس میزان ساعات قطعی و خاموشی شبکه پشتیبان محاسبه می‌شود.
+                      تأمین بار از شبکه و PV. باتری صرفاً بر مبنای ساعات قطعی و خاموشی شبکه در ساعات اوج بار سایز می‌شود.
                     </p>
                   </div>
 
@@ -578,76 +930,189 @@ export const App: React.FC = () => {
                       {systemMode === 'offgrid' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      عدم دسترسی به شبکه. سایزینگ بر اساس بار ۲۴ ساعته، عدم تولید PV در شب و روزهای ابری (Autonomy) انجام می‌پذیرد.
+                      عدم دسترسی به شبکه سراسری. سایزینگ بر مبنای بار ۲۴ ساعته و روزهای خودمختاری ابری (Autonomy) انجام می‌پذیرد.
                     </p>
                   </div>
                 </div>
 
-                {/* Specific Parameter Config per Mode */}
-                <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800">
-                  {systemMode === 'powerplant' && (
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold text-amber-300 block">
-                        ظرفیت هدف نیروگاه (kW AC / Target Plant Capacity):
-                      </label>
-                      <input
-                        type="number"
-                        value={targetPowerplantCapacityKw}
-                        onChange={(e) => setTargetPowerplantCapacityKw(Math.max(1, Number(e.target.value)))}
-                        className="studio-input w-64"
-                      />
-                      <p className="text-[11px] text-slate-400">
-                        طراحی بر اساس حداکثر توان خروجی تزریقی به پست MV/HV و متناسب با دیماند درخواستی از شبکه.
-                      </p>
-                    </div>
-                  )}
+                {/* POWERPLANT SPECIFIC ARCHITECTURE: STRING vs MV TURNKEY & BAY BREAKDOWN */}
+                {systemMode === 'powerplant' && (
+                  <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-5">
+                    <h3 className="text-sm font-bold text-amber-300 flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-amber-400" />
+                      انتخاب فناوری اینورتر نیروگاهی و طراحی بی‌های فشار متوسط (MV Bays):
+                    </h3>
 
-                  {systemMode === 'ongrid' && (
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold text-sky-300 block">
-                        مدت زمان انتظار خاموشی و قطعی شبکه (ساعت در روز / Blackout Hours):
-                      </label>
-                      <input
-                        type="number"
-                        value={outageHours}
-                        onChange={(e) => setOutageHours(Math.max(1, Math.min(24, Number(e.target.value))))}
-                        className="studio-input w-64"
-                      />
-                      <p className="text-[11px] text-slate-400">
-                        سایزینگ باتری برای تامین انرژی بار در طی ساعات خاموشی شبکه محاسبه خواهد شد.
-                      </p>
-                    </div>
-                  )}
+                    {/* Technology Selector */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div
+                        onClick={() => handleInverterTechChange('string_inverter')}
+                        className={`p-3.5 rounded-lg border cursor-pointer transition ${
+                          inverterTech === 'string_inverter'
+                            ? 'border-sky-400 bg-sky-950/30 ring-1 ring-sky-400'
+                            : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <strong className="text-white text-xs">۱. اینورترهای رشته‌ای (String Inverter 1500V)</strong>
+                          {inverterTech === 'string_inverter' && <CheckCircle2 className="w-4 h-4 text-sky-400" />}
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          اینورترهای رشته‌ای ۲۵۰ تا ۳۵۰ کیلوواتی (مانند Huawei 330KTL یا Sungrow 350HX). بازدهی بالا در سایه‌اندازی، چند MPPT، نگهداری آسان با MTTR زیر ۲ ساعت.
+                        </p>
+                      </div>
 
-                  {systemMode === 'offgrid' && (
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold text-emerald-300 block">
-                        روزهای خودکفایی و پشتیبانی ابری (Autonomy Days):
-                      </label>
-                      <input
-                        type="number"
-                        step="0.5"
-                        value={autonomyDays}
-                        onChange={(e) => setAutonomyDays(Math.max(0.5, Number(e.target.value)))}
-                        className="studio-input w-64"
-                      />
-                      <p className="text-[11px] text-slate-400">
-                        تعداد روزهایی که سیستم باید بدون تابش آفتاب بار را کلا از باتری تغذیه نماید.
-                      </p>
+                      <div
+                        onClick={() => handleInverterTechChange('mv_turnkey')}
+                        className={`p-3.5 rounded-lg border cursor-pointer transition ${
+                          inverterTech === 'mv_turnkey'
+                            ? 'border-purple-400 bg-purple-950/30 ring-1 ring-purple-400'
+                            : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <strong className="text-white text-xs">۲. پست‌های یکپارچه کانتینری (MV Turnkey Skid Station)</strong>
+                          {inverterTech === 'mv_turnkey' && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          بلوک‌های متمرکز ۲.۵ تا ۶ مگاواتی یکپارچه (مانند Sungrow 3.125MW Skid یا Huawei STS 6MW). شامل اینورتر سنترال + ترانسفورماتور MV + دژنکتور RMU در یک پکیج آماده.
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Capacity & Bay Settings */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
+                      <div>
+                        <label className="text-slate-300 font-bold block mb-1">
+                          ظرفیت هدف نیروگاه (kW AC):
+                        </label>
+                        <input
+                          type="number"
+                          step="500"
+                          value={targetPowerplantCapacityKw}
+                          onChange={(e) => setTargetPowerplantCapacityKw(Math.max(100, Number(e.target.value)))}
+                          className="studio-input w-full font-mono font-bold text-amber-300"
+                        />
+                        <span className="text-[10px] text-slate-400">معادل {(targetPowerplantCapacityKw / 1000).toFixed(2)} مگاوات AC</span>
+                      </div>
+
+                      <div>
+                        <label className="text-slate-300 font-bold block mb-1">
+                          تعداد بی‌های خروجی MV (توسط نرم‌افزار بهینه‌سازی شده):
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={customBaysCount}
+                          onChange={(e) => setCustomBaysCount(Math.max(1, Number(e.target.value)))}
+                          className="studio-input w-full font-mono font-bold text-sky-300"
+                        />
+                        <span className="text-[10px] text-slate-400">
+                          پیشنهاد بهینه: {bayArchitecture?.optimalBaysCount || 2} بی
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="text-slate-300 font-bold block mb-1">
+                          سطح ولتاژ باسبار جمع‌آوری توان (MV Busbar):
+                        </label>
+                        <select
+                          value={mvVoltageKv}
+                          onChange={(e) => setMvVoltageKv(Number(e.target.value))}
+                          className="studio-input w-full font-mono font-bold text-emerald-300"
+                        >
+                          <option value="20">۲۰ کیلوولت (استاندارد شبکه توزیع ایران)</option>
+                          <option value="33">۳۳ کیلوولت (فشار متوسط مزارع بزرگ)</option>
+                          <option value="11">۱۱ کیلوولت</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* MV Bays Layout Diagram Cards */}
+                    {bayArchitecture && (
+                      <div className="mt-4 pt-3 border-t border-slate-800 space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <strong className="text-sky-300 font-bold">
+                            آرایش بی‌های فشار متوسط تولید شده ({bayArchitecture.actualBaysCount} Bay):
+                          </strong>
+                          <span className="font-mono text-slate-400">
+                            باسبار اصلی: {bayArchitecture.mainCollectorBusbar.recommendedBusbarRatingAmps}A Cu @ {bayArchitecture.mainCollectorBusbar.voltageKv}kV
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                          {bayArchitecture.bays.map((bay) => (
+                            <div key={bay.bayIndex} className="p-3 bg-slate-900 border border-slate-800 rounded-lg space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-amber-300">{bay.bayNameFa}</span>
+                                <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono text-[11px] font-bold">
+                                  {bay.allocatedAcCapacityMw} MW AC
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+                                <div>تعداد اینورتر: <strong className="text-white">{bay.inverterCount} × ({bay.inverterUnitRatingKw} kW)</strong></div>
+                                <div>ترانسفورماتور: <strong className="text-purple-300">{bay.transformerRatingMva} MVA ({bay.transformerVoltageRatio})</strong></div>
+                                <div>جریان نامی MV: <strong className="text-emerald-300">{bay.mvRatedCurrentAmps} A</strong></div>
+                                <div>حفاظت دژنکتور: <strong className="text-slate-200">VCB 630A / 25kA</strong></div>
+                              </div>
+                              <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-800/80">
+                                کابل فیدر: <span className="font-mono text-slate-300">{bay.collectorCableSpec}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Specific Parameter Config for On-Grid / Off-Grid */}
+                {systemMode === 'ongrid' && (
+                  <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <label className="text-xs font-bold text-sky-300 block">
+                      مدت زمان انتظار خاموشی و قطعی شبکه (ساعت در روز / Blackout Hours):
+                    </label>
+                    <input
+                      type="number"
+                      value={outageHours}
+                      onChange={(e) => setOutageHours(Math.max(1, Math.min(24, Number(e.target.value))))}
+                      className="studio-input w-64"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      سایزینگ باتری برای تأمین انرژی بار در طی ساعات خاموشی شبکه محاسبه خواهد شد.
+                    </p>
+                  </div>
+                )}
+
+                {systemMode === 'offgrid' && (
+                  <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <label className="text-xs font-bold text-emerald-300 block">
+                      روزهای خودکفایی و پشتیبانی ابری (Autonomy Days):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={autonomyDays}
+                      onChange={(e) => setAutonomyDays(Math.max(0.5, Number(e.target.value)))}
+                      className="studio-input w-64"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      تعداد روزهایی که سیستم باید بدون تابش آفتاب بار را کلاً از باتری تغذیه نماید.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Site & Climate Map Tab */}
+          {/* SITE & CLIMATE MAP TAB */}
           {activeTab === 'climate' && (
             <ClimateTab selectedCity={city} onCityChange={setCity} />
           )}
 
-          {/* Loads Tab */}
-          {activeTab === 'loads' && (
+          {/* ELECTRICAL LOADS TAB (Hidden in Powerplant mode) */}
+          {activeTab === 'loads' && systemMode !== 'powerplant' && (
             <LoadProfilingTab
               loads={loads}
               onLoadsChange={setLoads}
@@ -655,7 +1120,7 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Array Engineering Tab */}
+          {/* PV ARRAY ENGINEERING TAB */}
           {activeTab === 'array' && (
             <PvArrayEngineeringTab
               selectedModule={selectedModule}
@@ -664,39 +1129,76 @@ export const App: React.FC = () => {
               onInverterChange={setSelectedInverter}
               arrayDesign={arrayDesign}
               inverterClustering={inverterClustering}
+              city={city}
+              lang={lang}
             />
           )}
 
-          {/* Harmonics & Upstream Grid Tab */}
-          {activeTab === 'harmonics_grid' && <HarmonicsGridTab />}
-
-          {/* MV Substation Tab */}
-          {activeTab === 'mv_substation' && (
-            <MvSubstationTab
-              plantCapacityAcMw={inverterClustering.totalInverterCapacityKw / 1000.0}
-            />
-          )}
-
-          {/* Cables & Protection BOM Tab */}
-          {activeTab === 'cables_bom' && (
-            <ProtectionBomTab protectionResult={protectionResult} />
-          )}
-
-          {/* BESS Battery Storage Tab */}
-          {activeTab === 'bess' && (
+          {/* BESS BATTERY STORAGE TAB (Only shown for On-Grid / Off-Grid) */}
+          {activeTab === 'bess' && systemMode !== 'powerplant' && (
             <BessTab
               selectedChemistry={selectedChemistry}
               onChemistryChange={setSelectedChemistry}
               autonomyDays={autonomyDays}
               onAutonomyDaysChange={setAutonomyDays}
               batterySizing={batterySizing}
+              systemTopology={systemMode === 'ongrid' ? 'hybrid' : 'off_grid'}
+              onTopologyChange={(top) => setSystemMode(top === 'hybrid' ? 'ongrid' : 'offgrid')}
+              lang={lang}
             />
           )}
 
-          {/* Structural & Foundation Design Tab */}
-          {activeTab === 'structural' && <StructuralFoundationTab />}
+          {/* HARMONICS & UPSTREAM GRID TAB */}
+          {activeTab === 'harmonics_grid' && (
+            <HarmonicsGridTab
+              plantCapacityMw={
+                systemMode === 'powerplant'
+                  ? (targetPowerplantCapacityKw || 1000) / 1000.0
+                  : inverterClustering.totalInverterCapacityKw / 1000.0
+              }
+              lang={lang}
+            />
+          )}
 
-          {/* 24h Simulation Tab */}
+          {/* MV SUBSTATION TAB (Only shown for Powerplant mode) */}
+          {activeTab === 'mv_substation' && systemMode === 'powerplant' && (
+            <MvSubstationTab
+              plantCapacityAcMw={(targetPowerplantCapacityKw || 1000) / 1000.0}
+            />
+          )}
+
+          {/* CABLES, EARTHING & LIGHTNING TAB */}
+          {activeTab === 'cables_bom' && (
+            <ProtectionBomTab
+              systemCapacityKw={
+                systemMode === 'powerplant'
+                  ? targetPowerplantCapacityKw
+                  : inverterClustering.totalInverterCapacityKw
+              }
+              isUtilityPowerplant={systemMode === 'powerplant'}
+              stringVocMaxVolts={arrayDesign.stringVocMaxColdVolts}
+              stringIscAmps={selectedModule.iscAmps}
+              parallelStringsCount={arrayDesign.parallelStringsCount}
+              inverterDcContinuousCurrentAmps={inverterClustering.inverterDcContinuousCurrentAmps}
+              systemDcVoltage={inverterClustering.recommendedDcVoltageVdc || 48}
+              isThreePhase={selectedInverter.isThreePhase}
+              lang={lang}
+            />
+          )}
+
+          {/* STRUCTURAL & FOUNDATION TAB */}
+          {activeTab === 'structural' && (
+            <StructuralFoundationTab
+              totalModulesCount={arrayDesign.totalModulesCount}
+              arrayTiltDeg={city.optimalTiltAnnualDeg}
+              city={city}
+              siteOverrides={siteOverrides}
+              onUpdateSiteOverrides={(overrides) => setSiteOverrides((prev) => ({ ...prev, ...overrides }))}
+              lang={lang}
+            />
+          )}
+
+          {/* 24-HOUR BALANCE SIMULATION */}
           {activeTab === 'sim24h' && (
             <Simulation24hTab
               simulationResult={simulationResult}
@@ -706,7 +1208,7 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Waterfall Loss Tab */}
+          {/* WATERFALL LOSS TAB */}
           {activeTab === 'waterfall_loss' && (
             <WaterfallLossTab
               installedCapacityKwp={arrayDesign.totalPvCapacityKwp}
@@ -720,104 +1222,104 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Financial Analysis Tab */}
+          {/* I-V CURVE TRACER */}
+          {activeTab === 'iv_curve' && <IvCurveTracerTab />}
+
+          {/* FINANCIAL ANALYSIS TAB */}
           {activeTab === 'financial' && (
             <FinancialTab
               financial={financialResult}
-              usdToTomanRate={usdToTomanRate}
-              onUsdToTomanRateChange={setUsdToTomanRate}
-              gridTariffToman={gridTariffToman}
-              onGridTariffTomanChange={setGridTariffToman}
+              pricing={userPricing}
+              onPricingChange={setUserPricing}
+              lang={lang}
             />
           )}
 
-          {/* Single Line Diagram Tab */}
+          {/* SINGLE LINE DIAGRAM */}
           {activeTab === 'sld' && (
-            <div className="space-y-4">
-              <div className="studio-card">
-                <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-purple-400" />
-                  نقشه شماتیک تک‌خطی تعاملی سیستم فتوولتائیک (Interactive Single-Line Diagram)
-                </h1>
-                <p className="text-slate-400 text-xs">
-                  نقشه الکتریکی استاندارد مهندسی شامل آرایه پنل‌ها، تابلوی تجمیع DC، سرج ارسترها، باسبار اشتراکی، اینورترها، باتری و تابلوی توزیع AC
-                </p>
-              </div>
-              <SingleLineDiagram
-                pvCapacityKwp={arrayDesign.totalPvCapacityKwp}
-                panelCount={arrayDesign.totalModulesCount}
-                modulesPerString={arrayDesign.modulesPerString}
-                parallelStrings={arrayDesign.parallelStringsCount}
-                stringVocVolts={arrayDesign.stringVocMaxColdVolts}
-                stringVmpVolts={arrayDesign.stringVmpMinHotVolts}
-                stringIscAmps={selectedModule.iscAmps}
-                inverterKw={selectedInverter.pnomAcKw}
-                inverterCount={inverterClustering.parallelUnitsCount}
-                isThreePhase={selectedInverter.isThreePhase}
-                batteryKwh={batterySizing.grossCapacityKwh}
-                batteryVoltageVdc={batterySizing.systemVoltageVdc}
-                batteryAh={batterySizing.totalCapacityAh}
-                batteryFuseAmps={Math.max(
-                  100,
-                  Math.ceil((inverterClustering.inverterDcContinuousCurrentAmps * 1.35) / 25) * 25
-                )}
-                acCurrentAmps={
-                  (inverterClustering.totalInverterCapacityKw * 1000) /
-                  (selectedInverter.isThreePhase ? Math.sqrt(3) * 400 * 0.95 : 230 * 0.95)
-                }
-                dcCableMm2={protectionResult.cableRuns[0]?.selectedStandardCrossSectionMm2 || 6.0}
-                batCableMm2={protectionResult.cableRuns[1]?.selectedStandardCrossSectionMm2 || 35.0}
-                acCableMm2={protectionResult.cableRuns[2]?.selectedStandardCrossSectionMm2 || 10.0}
-              />
-            </div>
+            <SingleLineDiagram
+              pvCapacityKwp={
+                systemMode === 'powerplant'
+                  ? targetPowerplantCapacityKw
+                  : arrayDesign.totalPvCapacityKwp
+              }
+              panelCount={arrayDesign.totalModulesCount}
+              modulesPerString={arrayDesign.modulesPerString}
+              parallelStrings={arrayDesign.parallelStringsCount}
+              stringVocVolts={arrayDesign.stringVocMaxColdVolts}
+              stringVmpVolts={arrayDesign.stringVmpMinHotVolts}
+              stringIscAmps={selectedModule.iscAmps}
+              inverterKw={inverterClustering.totalInverterCapacityKw}
+              inverterCount={inverterClustering.parallelUnitsCount}
+              isThreePhase={inverterClustering.acPhaseType === 'three_phase_400v'}
+              batteryKwh={batterySizing.grossCapacityKwh}
+              batteryVoltageVdc={batterySizing.systemVoltageVdc}
+              batteryAh={batterySizing.totalCapacityAh}
+              batteryFuseAmps={Math.ceil(batterySizing.continuousDischargeCurrentAmps * 1.25)}
+              acCurrentAmps={
+                inverterClustering.acPhaseType === 'three_phase_400v'
+                  ? (inverterClustering.totalInverterCapacityKw * 1000) / (1.732 * 400 * 0.95)
+                  : (inverterClustering.totalInverterCapacityKw * 1000) / 230
+              }
+              dcCableMm2={protectionSystem.cableRuns[0]?.totalEffectiveCrossSectionMm2 || 6}
+              batCableMm2={protectionSystem.cableRuns[1]?.totalEffectiveCrossSectionMm2 || 35}
+              acCableMm2={protectionSystem.cableRuns[2]?.totalEffectiveCrossSectionMm2 || 50}
+            />
           )}
 
-          {/* CAD Layout Tab */}
+          {/* CAD LAYOUT TAB */}
           {activeTab === 'cad_layout' && <PowerplantCadLayoutTab />}
 
-          {/* 3D Ray-Tracer Viewer Tab */}
+          {/* 3D VIEWER TAB */}
           {activeTab === '3d_viewer' && <ThreeJsViewer />}
 
-          {/* Scenario Comparison Tab */}
-          {activeTab === 'scenarios' && <ScenarioComparisonTab scenarios={scenarios} />}
-
-          {/* Equipment Catalog Tab */}
-          {activeTab === 'catalog' && <CatalogTab />}
-
-          {/* Iranian PPA Regulations Tab */}
-          {activeTab === 'iran_regulations' && (
-            <IranianRegulationsTab
-              capacityKwp={arrayDesign.totalPvCapacityKwp}
-              annualGenerationMwh={estimatedAnnualYieldMwh}
-            />
+          {/* SCENARIOS COMPARISON TAB (Only for Battery modes) */}
+          {activeTab === 'scenarios' && systemMode !== 'powerplant' && (
+            <ScenarioComparisonTab scenarios={scenarios} />
           )}
 
-          {/* Solar Pumping Tab */}
+          {/* SOLAR WATER PUMPING TAB */}
           {activeTab === 'solar_pumping' && (
             <SolarPumpingTab peakSunHours={city.peakSunHours} />
           )}
 
-          {/* IV Curve Tracer Tab */}
-          {activeTab === 'iv_curve' && <IvCurveTracerTab />}
+          {/* IRANIAN PPA REGULATIONS TAB */}
+          {activeTab === 'iran_regulations' && (
+            <IranianRegulationsTab
+              capacityKwp={
+                systemMode === 'powerplant'
+                  ? targetPowerplantCapacityKw
+                  : arrayDesign.totalPvCapacityKwp
+              }
+              annualGenerationMwh={(simulationResult.totalGeneration24hKwh * 365) / 1000}
+            />
+          )}
+
+          {/* EQUIPMENT CATALOG TAB */}
+          {activeTab === 'catalog' && <CatalogTab />}
         </main>
       </div>
 
-      {/* Official EPC Report Modal */}
+      {/* OFFICIAL EPC REPORT MODAL */}
       {showReportModal && (
         <OfficialReportModal
           projectName={projectName}
+          systemMode={systemMode}
           city={city}
           loadAnalysis={loadAnalysis}
           module={selectedModule}
           inverter={selectedInverter}
           arrayDesign={arrayDesign}
           batterySizing={batterySizing}
-          protection={protectionResult}
+          protection={protectionSystem}
           simulation={simulationResult}
           generator={generatorSizing}
           financial={financialResult}
+          bayArchitecture={bayArchitecture}
+          siteOverrides={siteOverrides}
           onClose={() => setShowReportModal(false)}
           onImportProject={handleImportProject}
+          lang={lang}
         />
       )}
     </div>

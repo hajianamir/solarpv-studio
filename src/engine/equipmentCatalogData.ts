@@ -24,6 +24,7 @@ export interface CatalogInverter {
   manufacturer: string;
   modelName: string;
   type: 'hybrid_offgrid' | 'grid_tied' | 'microinverter' | 'central';
+  technology?: 'string_inverter' | 'mv_turnkey' | 'hybrid_offgrid' | 'grid_tied';
   pnomKw: number;
   maxPvInputKw: number;
   vdcMaxVolts: number;
@@ -36,6 +37,8 @@ export interface CatalogInverter {
   maxParallelUnits: number;
   efficiencyMaxPct: number;
   weightKg: number;
+  mvOutputVoltageKv?: number; // e.g. 20kV or 33kV for Turnkey stations
+  acVoltageVac?: number; // e.g. 800V AC or 600V AC or 400V AC
 }
 
 export interface CatalogBattery {
@@ -110,8 +113,197 @@ export const CATALOG_INVERTERS: CatalogInverter[] = [
   { id: 'inv-sungrow-sh10rt', manufacturer: 'Sungrow', modelName: 'SH10RT Hybrid 3-Phase', type: 'hybrid_offgrid', pnomKw: 10.0, maxPvInputKw: 15.0, vdcMaxVolts: 1000, vmpptMinVolts: 200, vmpptMaxVolts: 950, mpptCount: 2, batteryVoltageVdc: 400, isThreePhase: true, parallelCapable: true, maxParallelUnits: 5, efficiencyMaxPct: 98.4, weightKg: 27.0 },
 
   // Must Solar & Axpert (Affordable Residential)
-  { id: 'inv-must-pv18-3k', manufacturer: 'Must Solar', modelName: 'PV18-3024 VHM 3kW', type: 'hybrid_offgrid', pnomKw: 3.0, maxPvInputKw: 4.0, vdcMaxVolts: 145, vmpptMinVolts: 30, vmpptMaxVolts: 130, mpptCount: 1, batteryVoltageVdc: 24, isThreePhase: false, parallelCapable: false, maxParallelUnits: 1, efficiencyMaxPct: 93.0, weightKg: 8.5 },
-  { id: 'inv-axpert-vm3-5k', manufacturer: 'Voltronic Axpert', modelName: 'Axpert VM III 5000W 48V', type: 'hybrid_offgrid', pnomKw: 5.0, maxPvInputKw: 5.0, vdcMaxVolts: 500, vmpptMinVolts: 120, vmpptMaxVolts: 450, mpptCount: 1, batteryVoltageVdc: 48, isThreePhase: false, parallelCapable: false, maxParallelUnits: 1, efficiencyMaxPct: 93.0, weightKg: 10.0 },
+  { id: 'inv-must-pv18-3k', manufacturer: 'Must Solar', modelName: 'PV18-3024 VHM 3kW', type: 'hybrid_offgrid', technology: 'hybrid_offgrid', pnomKw: 3.0, maxPvInputKw: 4.0, vdcMaxVolts: 145, vmpptMinVolts: 30, vmpptMaxVolts: 130, mpptCount: 1, batteryVoltageVdc: 24, isThreePhase: false, parallelCapable: false, maxParallelUnits: 1, efficiencyMaxPct: 93.0, weightKg: 8.5 },
+  { id: 'inv-axpert-vm3-5k', manufacturer: 'Voltronic Axpert', modelName: 'Axpert VM III 5000W 48V', type: 'hybrid_offgrid', technology: 'hybrid_offgrid', pnomKw: 5.0, maxPvInputKw: 5.0, vdcMaxVolts: 500, vmpptMinVolts: 120, vmpptMaxVolts: 450, mpptCount: 1, batteryVoltageVdc: 48, isThreePhase: false, parallelCapable: false, maxParallelUnits: 1, efficiencyMaxPct: 93.0, weightKg: 10.0 },
+
+  // --- Utility-Scale 1500V String Inverters (اینورترهای رشته‌ای نیروگاهی) ---
+  {
+    id: 'inv-huawei-330ktl',
+    manufacturer: 'Huawei',
+    modelName: 'SUN2000-330KTL-H1 (330 kW 1500V)',
+    type: 'grid_tied',
+    technology: 'string_inverter',
+    pnomKw: 330.0,
+    maxPvInputKw: 450.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 500,
+    vmpptMaxVolts: 1500,
+    mpptCount: 6,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 100,
+    efficiencyMaxPct: 99.0,
+    weightKg: 112.0,
+    acVoltageVac: 800,
+  },
+  {
+    id: 'inv-sungrow-sg350hx',
+    manufacturer: 'Sungrow',
+    modelName: 'SG350HX Multi-MPPT 1500V (352 kW)',
+    type: 'grid_tied',
+    technology: 'string_inverter',
+    pnomKw: 352.0,
+    maxPvInputKw: 480.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 500,
+    vmpptMaxVolts: 1500,
+    mpptCount: 12,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 100,
+    efficiencyMaxPct: 99.02,
+    weightKg: 118.0,
+    acVoltageVac: 800,
+  },
+  {
+    id: 'inv-solis-250k',
+    manufacturer: 'Solis (Ginlong)',
+    modelName: 'S6-GR3P(250)K-HV 1500V String (250 kW)',
+    type: 'grid_tied',
+    technology: 'string_inverter',
+    pnomKw: 250.0,
+    maxPvInputKw: 375.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 500,
+    vmpptMaxVolts: 1500,
+    mpptCount: 12,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 100,
+    efficiencyMaxPct: 99.0,
+    weightKg: 110.0,
+    acVoltageVac: 800,
+  },
+  {
+    id: 'inv-sma-peak3-150',
+    manufacturer: 'SMA',
+    modelName: 'Sunny Highpower PEAK3 SHP 150-20 (150 kW)',
+    type: 'grid_tied',
+    technology: 'string_inverter',
+    pnomKw: 150.0,
+    maxPvInputKw: 225.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 590,
+    vmpptMaxVolts: 1450,
+    mpptCount: 1,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 100,
+    efficiencyMaxPct: 99.1,
+    weightKg: 98.0,
+    acVoltageVac: 600,
+  },
+
+  // --- Utility-Scale MV Turnkey Skid/Container Central Stations (پست‌های یکپارچه کانتینری / Turnkey) ---
+  {
+    id: 'inv-sungrow-turnkey-3125',
+    manufacturer: 'Sungrow',
+    modelName: 'SG3125HV-MV Turnkey Skid Station (3.125 MW / 20kV)',
+    type: 'central',
+    technology: 'mv_turnkey',
+    pnomKw: 3125.0,
+    maxPvInputKw: 4500.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 860,
+    vmpptMaxVolts: 1450,
+    mpptCount: 1,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 40,
+    efficiencyMaxPct: 99.0,
+    weightKg: 16500.0,
+    mvOutputVoltageKv: 20,
+    acVoltageVac: 600,
+  },
+  {
+    id: 'inv-huawei-turnkey-sts6000',
+    manufacturer: 'Huawei',
+    modelName: 'FusionSolar Smart Transformer Station STS-6000K (6.0 MW / 20-33kV)',
+    type: 'central',
+    technology: 'mv_turnkey',
+    pnomKw: 6000.0,
+    maxPvInputKw: 9000.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 800,
+    vmpptMaxVolts: 1500,
+    mpptCount: 18,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 20,
+    efficiencyMaxPct: 99.0,
+    weightKg: 28000.0,
+    mvOutputVoltageKv: 20,
+    acVoltageVac: 800,
+  },
+  {
+    id: 'inv-sma-mvps-4400',
+    manufacturer: 'SMA',
+    modelName: 'Medium Voltage Power Station MVPS 4400 (4.4 MW / 20kV)',
+    type: 'central',
+    technology: 'mv_turnkey',
+    pnomKw: 4400.0,
+    maxPvInputKw: 6600.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 875,
+    vmpptMaxVolts: 1425,
+    mpptCount: 2,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 25,
+    efficiencyMaxPct: 98.9,
+    weightKg: 21500.0,
+    mvOutputVoltageKv: 20,
+    acVoltageVac: 600,
+  },
+  {
+    id: 'inv-fimer-pvs980-4m',
+    manufacturer: 'Fimer',
+    modelName: 'PVS980-CS Compact Turnkey Station (4.0 MW / 20kV)',
+    type: 'central',
+    technology: 'mv_turnkey',
+    pnomKw: 4000.0,
+    maxPvInputKw: 6000.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 850,
+    vmpptMaxVolts: 1400,
+    mpptCount: 2,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 25,
+    efficiencyMaxPct: 98.8,
+    weightKg: 19800.0,
+    mvOutputVoltageKv: 20,
+    acVoltageVac: 600,
+  },
+  {
+    id: 'inv-tmeic-2500hv',
+    manufacturer: 'TMEIC',
+    modelName: 'Solar Ware 2500HV Turnkey Skid (2.5 MW / 20kV)',
+    type: 'central',
+    technology: 'mv_turnkey',
+    pnomKw: 2500.0,
+    maxPvInputKw: 3750.0,
+    vdcMaxVolts: 1500,
+    vmpptMinVolts: 850,
+    vmpptMaxVolts: 1300,
+    mpptCount: 1,
+    batteryVoltageVdc: 0,
+    isThreePhase: true,
+    parallelCapable: true,
+    maxParallelUnits: 30,
+    efficiencyMaxPct: 98.8,
+    weightKg: 14000.0,
+    mvOutputVoltageKv: 20,
+    acVoltageVac: 600,
+  },
 ];
 
 export const CATALOG_BATTERIES: CatalogBattery[] = [
@@ -140,3 +332,80 @@ export const CATALOG_BATTERIES: CatalogBattery[] = [
   // Huawei LUNA
   { id: 'bat-huawei-luna-10', manufacturer: 'Huawei', modelName: 'LUNA2000-10-S0 Smart String BESS', chemistry: 'LiFePO4', capacityKwh: 10.0, nominalVoltageVolts: 360.0, nominalCapacityAh: 28, recommendedDoDPct: 95, cycleLifeAt80DoD: 6000, maxContinuousDischargeA: 30, weightKg: 113.8, hasIntegratedBms: true },
 ];
+
+const LS_CUSTOM_MODULES = 'solarpv_custom_modules';
+const LS_CUSTOM_INVERTERS = 'solarpv_custom_inverters';
+const LS_CUSTOM_BATTERIES = 'solarpv_custom_batteries';
+
+export function getFullModulesCatalog(): CatalogPvModule[] {
+  try {
+    const raw = localStorage.getItem(LS_CUSTOM_MODULES);
+    if (raw) {
+      const custom: CatalogPvModule[] = JSON.parse(raw);
+      return [...CATALOG_MODULES, ...custom];
+    }
+  } catch (e) {
+    // fallback
+  }
+  return CATALOG_MODULES;
+}
+
+export function saveCustomModule(mod: CatalogPvModule): void {
+  try {
+    const raw = localStorage.getItem(LS_CUSTOM_MODULES);
+    const existing: CatalogPvModule[] = raw ? JSON.parse(raw) : [];
+    existing.push(mod);
+    localStorage.setItem(LS_CUSTOM_MODULES, JSON.stringify(existing));
+  } catch (e) {
+    console.error('Failed to save module to localStorage', e);
+  }
+}
+
+export function getFullInvertersCatalog(): CatalogInverter[] {
+  try {
+    const raw = localStorage.getItem(LS_CUSTOM_INVERTERS);
+    if (raw) {
+      const custom: CatalogInverter[] = JSON.parse(raw);
+      return [...CATALOG_INVERTERS, ...custom];
+    }
+  } catch (e) {
+    // fallback
+  }
+  return CATALOG_INVERTERS;
+}
+
+export function saveCustomInverter(inv: CatalogInverter): void {
+  try {
+    const raw = localStorage.getItem(LS_CUSTOM_INVERTERS);
+    const existing: CatalogInverter[] = raw ? JSON.parse(raw) : [];
+    existing.push(inv);
+    localStorage.setItem(LS_CUSTOM_INVERTERS, JSON.stringify(existing));
+  } catch (e) {
+    console.error('Failed to save inverter to localStorage', e);
+  }
+}
+
+export function getFullBatteriesCatalog(): CatalogBattery[] {
+  try {
+    const raw = localStorage.getItem(LS_CUSTOM_BATTERIES);
+    if (raw) {
+      const custom: CatalogBattery[] = JSON.parse(raw);
+      return [...CATALOG_BATTERIES, ...custom];
+    }
+  } catch (e) {
+    // fallback
+  }
+  return CATALOG_BATTERIES;
+}
+
+export function saveCustomBattery(bat: CatalogBattery): void {
+  try {
+    const raw = localStorage.getItem(LS_CUSTOM_BATTERIES);
+    const existing: CatalogBattery[] = raw ? JSON.parse(raw) : [];
+    existing.push(bat);
+    localStorage.setItem(LS_CUSTOM_BATTERIES, JSON.stringify(existing));
+  } catch (e) {
+    console.error('Failed to save battery to localStorage', e);
+  }
+}
+

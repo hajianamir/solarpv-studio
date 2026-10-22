@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check } from 'lucide-react';
+import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe } from 'lucide-react';
 import { ClimateCity, IRANIAN_CLIMATE_CITIES } from '../engine/climaticData';
+import { SiteLocationMap } from './SiteLocationMap';
 
 interface ClimateTabProps {
   selectedCity: ClimateCity;
@@ -10,6 +11,7 @@ interface ClimateTabProps {
 export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
+  const [viewMode, setViewMode] = useState<'map' | 'presets'>('map');
 
   const handleSelectCityId = (cityId: string) => {
     const found = IRANIAN_CLIMATE_CITIES.find((c) => c.id === cityId);
@@ -29,14 +31,44 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-amber-400" />
-          پایگاه داده اقلیمی و تحلیل ساعات آفتابی اوج (PSH & Climatic Database)
-        </h1>
-        <p className="text-slate-400 text-xs">
-          دیتابیس تشعشعی شهرهای مرجع اقلیمی ایران، دمای طراحی بیشینه و کمینه، آلبیدو و زوایای بهینه شیب فصلی
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-amber-400" />
+              مکان‌یابی، نقشه ماهواره‌ای و تحلیل تشعشع (Site Location & Solar Resource)
+            </h1>
+            <p className="text-slate-400 text-xs">
+              امکان انتخاب محل نصب از روی نقشه ماهواره‌ای، دیتابیس اقلیمی شهرهای ایران، ساعات آفتابی اوج (PSH) و شیب بهینه سالانه
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
+            <button
+              onClick={() => setViewMode('map')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition ${
+                viewMode === 'map' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              نقشه تعاملی ماهواره‌ای
+            </button>
+            <button
+              onClick={() => setViewMode('presets')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition ${
+                viewMode === 'presets' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              شهرهای اقلیمی ایران
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Interactive Map View */}
+      {viewMode === 'map' && (
+        <SiteLocationMap currentCity={selectedCity} onSelectLocation={onCityChange} lang="fa" />
+      )}
 
       {/* City Selector Buttons */}
       <div className="studio-card">

@@ -32,13 +32,16 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
 
+  const initialLat = currentCity.latitude || (currentCity as any).latitudeDeg || 35.6892;
+  const initialLng = currentCity.longitude || (currentCity as any).longitudeDeg || 51.3890;
+
   const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite'>('satellite');
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({
-    lat: currentCity.latitudeDeg,
-    lng: currentCity.longitudeDeg,
+    lat: initialLat,
+    lng: initialLng,
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [estimatedPsh, setEstimatedPsh] = useState(currentCity.peakSunHours);
+  const [estimatedPsh, setEstimatedPsh] = useState(currentCity.peakSunHours || 5.35);
   const [siteAltitudeM, setSiteAltitudeM] = useState(currentCity.elevationM || 1200);
 
   // Map Tile Layers
@@ -52,7 +55,9 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     let minDistance = 999999;
 
     for (const city of IRANIAN_CLIMATE_CITIES) {
-      const d = Math.hypot(city.latitudeDeg - lat, city.longitudeDeg - lng);
+      const cityLat = city.latitude || (city as any).latitudeDeg || 35.6892;
+      const cityLng = city.longitude || (city as any).longitudeDeg || 51.3890;
+      const d = Math.hypot(cityLat - lat, cityLng - lng);
       if (d < minDistance) {
         minDistance = d;
         closest = city;
@@ -60,8 +65,6 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     }
 
     // Solar irradiance model based on latitude & longitude in Iranian plateau
-    // Central & Southeastern Iran (Yazd, Kerman, Sistan, Fars) have higher PSH (5.6 - 6.2)
-    // Northern / Caspian has lower PSH (4.0 - 4.8)
     let psh = 5.3;
     if (lat < 32 && lng > 52) {
       psh = 5.8 + (32 - lat) * 0.04;
@@ -73,27 +76,35 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     }
     psh = Math.round(Math.min(6.4, Math.max(3.8, psh)) * 10) / 10;
 
-    // Optimal tilt ~ latitude - 2 deg in Iran
     const optTilt = Math.round(Math.max(15, Math.min(36, lat - 2)));
-
-    // Ambient design temps
     const tempMax = lat < 33 ? (lat < 31 && lng < 50 ? 51 : 44) : 40;
     const tempMin = lat > 34 ? (lng < 50 ? -16 : -8) : (lat < 28 ? 6 : -4);
 
+    const safeLat = Number(lat.toFixed(4));
+    const safeLng = Number(lng.toFixed(4));
+
     return {
+      ...closest,
       id: `custom_${lat.toFixed(3)}_${lng.toFixed(3)}`,
       nameFa: minDistance < 0.6 ? closest.nameFa : `مختصات (${lat.toFixed(2)}°N, ${lng.toFixed(2)}°E)`,
       nameEn: minDistance < 0.6 ? closest.nameEn : `Site (${lat.toFixed(2)}°N, ${lng.toFixed(2)}°E)`,
       provinceFa: closest.provinceFa,
-      latitudeDeg: Number(lat.toFixed(4)),
-      longitudeDeg: Number(lng.toFixed(4)),
+      provinceEn: closest.provinceEn,
+      latitude: safeLat,
+      longitude: safeLng,
+      latitudeDeg: safeLat,
+      longitudeDeg: safeLng,
       peakSunHours: psh,
       tempMinC: tempMin,
       tempMaxC: tempMax,
       optimalTiltAnnualDeg: optTilt,
+      optimalTiltWinterDeg: Math.min(60, optTilt + 15),
+      optimalTiltSummerDeg: Math.max(10, optTilt - 15),
       soilingLossPct: closest.soilingLossPct || 4.0,
       albedo: closest.albedo || 0.22,
       elevationM: Math.round(1100 + (lat - 30) * 50),
+      descriptionFa: minDistance < 0.6 ? closest.descriptionFa : 'سایت سفارشی انتخاب شده از روی نقشه ماهواره‌ای',
+      descriptionEn: minDistance < 0.6 ? closest.descriptionEn : 'Custom site location selected from satellite map',
     };
   };
 
@@ -226,14 +237,16 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
   // Sync coords with external currentCity changes
   useEffect(() => {
+    const currentLat = currentCity.latitude || (currentCity as any).latitudeDeg || 35.6892;
+    const currentLng = currentCity.longitude || (currentCity as any).longitudeDeg || 51.3890;
     if (
       mapInstanceRef.current &&
       markerRef.current &&
-      (currentCity.latitudeDeg !== coords.lat || currentCity.longitudeDeg !== coords.lng)
+      (Math.abs(currentLat - coords.lat) > 0.0001 || Math.abs(currentLng - coords.lng) > 0.0001)
     ) {
-      setCoords({ lat: currentCity.latitudeDeg, lng: currentCity.longitudeDeg });
-      markerRef.current.setLatLng([currentCity.latitudeDeg, currentCity.longitudeDeg]);
-      mapInstanceRef.current.panTo([currentCity.latitudeDeg, currentCity.longitudeDeg]);
+      setCoords({ lat: currentLat, lng: currentLng });
+      markerRef.current.setLatLng([currentLat, currentLng]);
+      mapInstanceRef.current.panTo([currentLat, currentLng]);
     }
   }, [currentCity]);
 

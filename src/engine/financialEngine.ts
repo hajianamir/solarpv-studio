@@ -1,4 +1,42 @@
-// Financial Engine: CAPEX, OPEX Savings, Payback, NPV, LCOE & CO2 Abatement
+// Comprehensive Financial Engine: User-Driven Pricing, CAPEX, OPEX, LCOE, NPV, IRR & 25-Year Cash Flow
+
+export interface UserFinancialPricing {
+  moduleUsdPerWp: number; // e.g. 0.14 $/Wp
+  inverterUsdPerKw: number; // e.g. 55 $/kW
+  batteryUsdPerKwh: number; // e.g. 160 $/kWh
+  structureUsdPerWp: number; // e.g. 0.045 $/Wp
+  cablingBopUsdPerWp: number; // e.g. 0.035 $/Wp
+  substationUsdPerMva: number; // e.g. 35,000 $/MVA
+  epcLaborUsdPerKw: number; // e.g. 25 $/kW
+  gridTariffTomanPerKwh: number; // e.g. 3,800 Toman/kWh
+  usdToTomanRate: number; // e.g. 90,000 Toman/$
+  annualOpexPctOfCapex: number; // e.g. 1.2% / year
+  discountRatePct: number; // e.g. 18% IRR discount rate
+  tariffEscalationPct: number; // e.g. 15% annual tariff indexation in Iran
+  includeDieselGenSet?: boolean;
+  dieselGenSetCapexUsd?: number;
+  dieselAnnualFuelLiters?: number;
+  dieselFuelPriceTomanPerLiter?: number;
+}
+
+export const DEFAULT_FINANCIAL_PRICING: UserFinancialPricing = {
+  moduleUsdPerWp: 0.14,
+  inverterUsdPerKw: 55,
+  batteryUsdPerKwh: 160,
+  structureUsdPerWp: 0.045,
+  cablingBopUsdPerWp: 0.035,
+  substationUsdPerMva: 35000,
+  epcLaborUsdPerKw: 25,
+  gridTariffTomanPerKwh: 3800,
+  usdToTomanRate: 90000,
+  annualOpexPctOfCapex: 1.2,
+  discountRatePct: 18.0,
+  tariffEscalationPct: 15.0,
+  includeDieselGenSet: false,
+  dieselGenSetCapexUsd: 0,
+  dieselAnnualFuelLiters: 0,
+  dieselFuelPriceTomanPerLiter: 3500,
+};
 
 export interface FinancialCapexBreakdown {
   pvModulesUsd: number;
@@ -11,10 +49,25 @@ export interface FinancialCapexBreakdown {
   structuresToman: number;
   cablesAndProtectionUsd: number;
   cablesAndProtectionToman: number;
+  substationMvUsd: number;
+  substationMvToman: number;
+  dieselGenSetUsd: number;
+  dieselGenSetToman: number;
   engineeringAndInstallationUsd: number;
   engineeringAndInstallationToman: number;
   totalCapexUsd: number;
   totalCapexToman: number;
+}
+
+export interface YearCashFlowItem {
+  year: number;
+  generationKwh: number;
+  revenueToman: number;
+  opexToman: number;
+  fuelCostToman: number;
+  netCashFlowToman: number;
+  cumulativeCashFlowToman: number;
+  discountedCashFlowToman: number;
 }
 
 export interface FinancialAnalysisResult {
@@ -22,15 +75,18 @@ export interface FinancialAnalysisResult {
   annualEnergyYieldKwh: number;
   annualOpexUsd: number;
   annualOpexToman: number;
-  annualElectricitySavingsUsd: number;
-  annualElectricitySavingsToman: number;
+  annualRevenueToman: number;
+  annualRevenueUsd: number;
   simplePaybackPeriodYears: number;
+  discountedPaybackPeriodYears: number;
   lcoeUsdPerKwh: number;
   lcoeTomanPerKwh: number;
   npvUsd: number;
   npvToman: number;
+  irrPct: number;
   annualCo2ReductionTons: number;
   lifetime25yCo2ReductionTons: number;
+  cashFlow25Years: YearCashFlowItem[];
 }
 
 export function performFinancialAnalysis(
@@ -38,120 +94,166 @@ export function performFinancialAnalysis(
   batteryCapacityKwh: number,
   inverterCapacityKw: number,
   annualYieldKwh: number,
-  usdToTomanRate: number = 90_000,
-  gridTariffTomanPerKwh: number = 3_500,
-  discountRate: number = 0.18, // 18% standard Iranian Rial WACC or 6% USD
+  customPricing?: Partial<UserFinancialPricing>,
   lifetimeYears: number = 25
 ): FinancialAnalysisResult {
-  // Equipment Unit Cost Benchmarks (Competitive 2025/2026 rates in Iran)
-  // Modules: ~$0.17/Wp (Tier 1 N-Type TOPCon)
-  const modulesUsd = totalPvCapacityKwp * 1000.0 * 0.17;
-  const modulesToman = modulesUsd * usdToTomanRate;
+  const p: UserFinancialPricing = {
+    ...DEFAULT_FINANCIAL_PRICING,
+    ...(customPricing || {}),
+  };
 
-  // Inverters: ~$110/kW (Hybrid bidirectional with MPPT)
-  const invertersUsd = inverterCapacityKw * 110.0;
-  const invertersToman = invertersUsd * usdToTomanRate;
+  const pvWatts = totalPvCapacityKwp * 1000.0;
+  const plantMva = Math.max(0.1, (inverterCapacityKw / 1000.0) * 1.15);
 
-  // Batteries: ~$190/kWh (LiFePO4 high quality)
-  const batteriesUsd = batteryCapacityKwh * 190.0;
-  const batteriesToman = batteriesUsd * usdToTomanRate;
+  // 1. CAPEX itemized calculation
+  const modulesUsd = pvWatts * p.moduleUsdPerWp;
+  const invertersUsd = inverterCapacityKw * p.inverterUsdPerKw;
+  const batteriesUsd = batteryCapacityKwh * p.batteryUsdPerKwh;
+  const structuresUsd = pvWatts * p.structureUsdPerWp;
+  const cablesBopUsd = pvWatts * p.cablingBopUsdPerWp;
+  const substationUsd = inverterCapacityKw > 500 ? plantMva * p.substationUsdPerMva : 0;
+  const epcLaborUsd = inverterCapacityKw * p.epcLaborUsdPerKw;
+  const dieselUsd = p.includeDieselGenSet ? p.dieselGenSetCapexUsd || 0 : 0;
 
-  // Racking / Galvanized structures: ~$0.045/Wp
-  const structuresUsd = totalPvCapacityKwp * 1000.0 * 0.045;
-  const structuresToman = structuresUsd * usdToTomanRate;
+  const totalCapexUsd =
+    modulesUsd +
+    invertersUsd +
+    batteriesUsd +
+    structuresUsd +
+    cablesBopUsd +
+    substationUsd +
+    epcLaborUsd +
+    dieselUsd;
 
-  // Cables, Combiner, SPD & Protection: ~$0.04/Wp
-  const cablesAndProtectionUsd = totalPvCapacityKwp * 1000.0 * 0.04;
-  const cablesAndProtectionToman = cablesAndProtectionUsd * usdToTomanRate;
-
-  // Labor, engineering, commissioning: ~10% of hardware
-  const hardwareSumUsd = modulesUsd + invertersUsd + batteriesUsd + structuresUsd + cablesAndProtectionUsd;
-  const engineeringUsd = hardwareSumUsd * 0.10;
-  const engineeringToman = engineeringUsd * usdToTomanRate;
-
-  const totalCapexUsd = hardwareSumUsd + engineeringUsd;
-  const totalCapexToman = totalCapexUsd * usdToTomanRate;
+  const totalCapexToman = totalCapexUsd * p.usdToTomanRate;
 
   const capexBreakdown: FinancialCapexBreakdown = {
     pvModulesUsd: Math.round(modulesUsd),
-    pvModulesToman: Math.round(modulesToman),
+    pvModulesToman: Math.round(modulesUsd * p.usdToTomanRate),
     invertersUsd: Math.round(invertersUsd),
-    invertersToman: Math.round(invertersToman),
+    invertersToman: Math.round(invertersUsd * p.usdToTomanRate),
     batteriesUsd: Math.round(batteriesUsd),
-    batteriesToman: Math.round(batteriesToman),
+    batteriesToman: Math.round(batteriesUsd * p.usdToTomanRate),
     structuresUsd: Math.round(structuresUsd),
-    structuresToman: Math.round(structuresToman),
-    cablesAndProtectionUsd: Math.round(cablesAndProtectionUsd),
-    cablesAndProtectionToman: Math.round(cablesAndProtectionToman),
-    engineeringAndInstallationUsd: Math.round(engineeringUsd),
-    engineeringAndInstallationToman: Math.round(engineeringToman),
+    structuresToman: Math.round(structuresUsd * p.usdToTomanRate),
+    cablesAndProtectionUsd: Math.round(cablesBopUsd),
+    cablesAndProtectionToman: Math.round(cablesBopUsd * p.usdToTomanRate),
+    substationMvUsd: Math.round(substationUsd),
+    substationMvToman: Math.round(substationUsd * p.usdToTomanRate),
+    dieselGenSetUsd: Math.round(dieselUsd),
+    dieselGenSetToman: Math.round(dieselUsd * p.usdToTomanRate),
+    engineeringAndInstallationUsd: Math.round(epcLaborUsd),
+    engineeringAndInstallationToman: Math.round(epcLaborUsd * p.usdToTomanRate),
     totalCapexUsd: Math.round(totalCapexUsd),
     totalCapexToman: Math.round(totalCapexToman),
   };
 
-  // OPEX (O&M, cleaning, insurance: ~1.2% of CAPEX per year)
-  const annualOpexUsd = totalCapexUsd * 0.012;
-  const annualOpexToman = annualOpexUsd * usdToTomanRate;
+  // 2. OPEX & Fuel
+  const baseAnnualOpexToman = (totalCapexToman * (p.annualOpexPctOfCapex / 100.0));
+  const baseAnnualOpexUsd = totalCapexUsd * (p.annualOpexPctOfCapex / 100.0);
 
-  // Annual Electricity bill savings
-  const annualElectricitySavingsToman = annualYieldKwh * gridTariffTomanPerKwh;
-  const annualElectricitySavingsUsd = annualElectricitySavingsToman / usdToTomanRate;
+  const annualDieselFuelCostToman = p.includeDieselGenSet
+    ? (p.dieselAnnualFuelLiters || 0) * (p.dieselFuelPriceTomanPerLiter || 3500)
+    : 0;
 
-  // Simple Payback Period
-  const netAnnualSavingsUsd = annualElectricitySavingsUsd - annualOpexUsd;
-  const simplePaybackPeriodYears = netAnnualSavingsUsd > 0
-    ? Math.round((totalCapexUsd / netAnnualSavingsUsd) * 10) / 10
-    : 99.0;
+  // 3. Year 1 Revenue / Energy Savings
+  const year1RevenueToman = annualYieldKwh * p.gridTariffTomanPerKwh;
+  const year1RevenueUsd = year1RevenueToman / p.usdToTomanRate;
 
-  // LCOE calculation over 25 years with 0.5% degradation
-  let presentValueCostsUsd = totalCapexUsd;
-  let presentValueEnergyKwh = 0;
-  const degradationRate = 0.005;
+  // 4. 25-Year Cash Flow Pro-Forma Projection
+  const cashFlow25Years: YearCashFlowItem[] = [];
+  let cumulativeCashFlow = -totalCapexToman;
+  let discountedNpvSum = -totalCapexToman;
+  let simplePayback = lifetimeYears;
+  let discountedPayback = lifetimeYears;
+  let foundSimple = false;
+  let foundDiscounted = false;
 
-  for (let t = 1; t <= lifetimeYears; t++) {
-    const discountFactor = Math.pow(1.0 + 0.06, t); // 6% USD real discount rate for LCOE
-    presentValueCostsUsd += annualOpexUsd / discountFactor;
+  const r = p.discountRatePct / 100.0;
+  const degradationRate = 0.005; // 0.5% module degradation per year
 
-    // Battery replacement around year 12
-    if (t === 12 && batteryCapacityKwh > 0) {
-      presentValueCostsUsd += (batteriesUsd * 0.70) / discountFactor; // battery expected 30% cheaper in 12y
+  for (let yr = 1; yr <= lifetimeYears; yr++) {
+    const degradedGen = annualYieldKwh * Math.pow(1 - degradationRate, yr - 1);
+    const tariffEscalated = p.gridTariffTomanPerKwh * Math.pow(1 + p.tariffEscalationPct / 100.0, yr - 1);
+    const revenue = degradedGen * tariffEscalated;
+    const opex = baseAnnualOpexToman * Math.pow(1.08, yr - 1); // 8% opex inflation
+    const fuel = annualDieselFuelCostToman * Math.pow(1.08, yr - 1);
+    const netCashFlow = revenue - (opex + fuel);
+
+    cumulativeCashFlow += netCashFlow;
+    const discountedCashFlow = netCashFlow / Math.pow(1 + r, yr);
+    discountedNpvSum += discountedCashFlow;
+
+    if (!foundSimple && cumulativeCashFlow >= 0) {
+      simplePayback = yr - 1 + Math.abs(cumulativeCashFlow - netCashFlow) / netCashFlow;
+      foundSimple = true;
     }
 
-    const energyInYear = annualYieldKwh * Math.pow(1.0 - degradationRate, t - 1);
-    presentValueEnergyKwh += energyInYear / discountFactor;
+    if (!foundDiscounted && discountedNpvSum >= 0) {
+      discountedPayback = yr;
+      foundDiscounted = true;
+    }
+
+    cashFlow25Years.push({
+      year: yr,
+      generationKwh: Math.round(degradedGen),
+      revenueToman: Math.round(revenue),
+      opexToman: Math.round(opex),
+      fuelCostToman: Math.round(fuel),
+      netCashFlowToman: Math.round(netCashFlow),
+      cumulativeCashFlowToman: Math.round(cumulativeCashFlow),
+      discountedCashFlowToman: Math.round(discountedCashFlow),
+    });
   }
 
-  const lcoeUsdPerKwh = presentValueEnergyKwh > 0
-    ? presentValueCostsUsd / presentValueEnergyKwh
-    : 0.0;
-  const lcoeTomanPerKwh = lcoeUsdPerKwh * usdToTomanRate;
-
-  // Net Present Value (NPV)
-  let npvUsd = -totalCapexUsd;
-  for (let t = 1; t <= lifetimeYears; t++) {
-    const discountFactor = Math.pow(1.0 + 0.08, t);
-    const netCashflow = annualElectricitySavingsUsd - annualOpexUsd;
-    npvUsd += netCashflow / discountFactor;
+  // 5. IRR Calculation using Binary Search
+  let lowIrr = -0.5;
+  let highIrr = 1.0;
+  for (let iter = 0; iter < 40; iter++) {
+    const midIrr = (lowIrr + highIrr) / 2.0;
+    let npvAtMid = -totalCapexToman;
+    for (let yr = 1; yr <= lifetimeYears; yr++) {
+      npvAtMid += cashFlow25Years[yr - 1].netCashFlowToman / Math.pow(1 + midIrr, yr);
+    }
+    if (npvAtMid > 0) {
+      lowIrr = midIrr;
+    } else {
+      highIrr = midIrr;
+    }
   }
-  const npvToman = npvUsd * usdToTomanRate;
+  const calculatedIrrPct = Number(((lowIrr + highIrr) / 2.0 * 100.0).toFixed(1));
 
-  // CO2 Emissions Reduction (Grid emission factor approx 0.65 kg CO2 per kWh)
-  const annualCo2ReductionTons = Math.round((annualYieldKwh * 0.65) / 1000.0 * 10) / 10;
-  const lifetime25yCo2ReductionTons = Math.round(annualCo2ReductionTons * 25.0 * 0.94);
+  // 6. LCOE Calculation
+  let sumDiscountedCosts = totalCapexToman;
+  let sumDiscountedEnergyKwh = 0;
+  for (let yr = 1; yr <= lifetimeYears; yr++) {
+    const yrCost = cashFlow25Years[yr - 1].opexToman + cashFlow25Years[yr - 1].fuelCostToman;
+    sumDiscountedCosts += yrCost / Math.pow(1 + r, yr);
+    sumDiscountedEnergyKwh += cashFlow25Years[yr - 1].generationKwh / Math.pow(1 + r, yr);
+  }
+  const lcoeTomanPerKwh = Number((sumDiscountedCosts / Math.max(1, sumDiscountedEnergyKwh)).toFixed(0));
+  const lcoeUsdPerKwh = Number((lcoeTomanPerKwh / p.usdToTomanRate).toFixed(4));
+
+  // 7. CO2 Abatement
+  const annualCo2ReductionTons = (annualYieldKwh * 0.00062);
+  const lifetime25yCo2ReductionTons = annualCo2ReductionTons * lifetimeYears * 0.94;
 
   return {
     capexBreakdown,
     annualEnergyYieldKwh: Math.round(annualYieldKwh),
-    annualOpexUsd: Math.round(annualOpexUsd),
-    annualOpexToman: Math.round(annualOpexToman),
-    annualElectricitySavingsUsd: Math.round(annualElectricitySavingsUsd),
-    annualElectricitySavingsToman: Math.round(annualElectricitySavingsToman),
-    simplePaybackPeriodYears,
+    annualOpexUsd: Math.round(baseAnnualOpexUsd),
+    annualOpexToman: Math.round(baseAnnualOpexToman),
+    annualRevenueToman: Math.round(year1RevenueToman),
+    annualRevenueUsd: Math.round(year1RevenueUsd),
+    simplePaybackPeriodYears: Number(simplePayback.toFixed(1)),
+    discountedPaybackPeriodYears: Number(discountedPayback.toFixed(1)),
     lcoeUsdPerKwh,
-    lcoeTomanPerKwh: Math.round(lcoeTomanPerKwh),
-    npvUsd: Math.round(npvUsd),
-    npvToman: Math.round(npvToman),
-    annualCo2ReductionTons,
-    lifetime25yCo2ReductionTons,
+    lcoeTomanPerKwh,
+    npvUsd: Math.round(discountedNpvSum / p.usdToTomanRate),
+    npvToman: Math.round(discountedNpvSum),
+    irrPct: calculatedIrrPct,
+    annualCo2ReductionTons: Math.round(annualCo2ReductionTons),
+    lifetime25yCo2ReductionTons: Math.round(lifetime25yCo2ReductionTons),
+    cashFlow25Years,
   };
 }

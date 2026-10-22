@@ -26,6 +26,14 @@ export interface StructuralParametersInput {
   groundSnowLoadKgM2: number;  // e.g. 50 kg/m²
   foundationType: FoundationType;
   soilType: SoilType;
+  // Geotechnical and environmental parameters
+  soilBearingCapacityKpa?: number;
+  soilInternalFrictionAngleDeg?: number;
+  soilCohesionKpa?: number;
+  soilDensityKnM3?: number;
+  annualRainfallMm?: number;
+  frostDepthCm?: number;
+  seismicZoneCoefficientA?: number;
 }
 
 export interface StructuralAnalysisResult {
@@ -56,6 +64,14 @@ export interface StructuralAnalysisResult {
   foundationNameEn: string;
   recommendedDepthM: number;
   foundationDimensionsDesc: string;
+  foundationDimensionsDescEn: string;
+
+  // Geotechnical Checks
+  allowableSoilBearingKpa: number;
+  appliedPostBearingPressureKpa: number;
+  isBearingCapacitySafe: boolean;
+  frostDepthCm: number;
+  isFrostDepthRespected: boolean;
 
   // Civil Bill of Materials (BOM)
   concreteVolumeTotalM3: number;
@@ -70,6 +86,7 @@ export interface StructuralAnalysisResult {
   fosUplift: number;
   isStructurallySafe: boolean;
   engineeringRemarksFa: string;
+  engineeringRemarksEn: string;
 }
 
 export function calculateStructuralAndFoundations(
@@ -164,6 +181,7 @@ export function calculateStructuralAndFoundations(
   let foundationNameFa = 'پایه کوبشی فولادی C شکل (Rammed Steel C-Pile)';
   let foundationNameEn = 'Rammed Galvanized Steel C-Pile (Direct Driving)';
   let foundationDimensionsDesc = 'پروفیل فولادی C120×50×20×3.5 mm، عمق نفوذ ۱.۶ متر';
+  let foundationDimensionsDescEn = 'C120x50x20x3.5mm galvanized steel profile, 1.6m embedment depth';
   let concreteVolumeTotalM3 = 0;
   let steelRebarWeightTotalKg = 0;
 
@@ -175,6 +193,7 @@ export function calculateStructuralAndFoundations(
     foundationNameFa = 'پایه کوبشی فولادی C شکل گالوانیزه گرم';
     foundationNameEn = 'Hot-Dip Galvanized Rammed Steel C-Pile';
     foundationDimensionsDesc = `پروفیل فولادی C120×50×25×3.5mm، عمق کوبش در خاک: ${recommendedDepthM} متر (بدون بتن‌ریزی)`;
+    foundationDimensionsDescEn = `C120x50x25x3.5mm steel post, direct ramming depth: ${recommendedDepthM} m (concrete-free)`;
     concreteVolumeTotalM3 = 0;
     steelRebarWeightTotalKg = 0;
   } else if (foundationType === 'concrete_pier') {
@@ -186,11 +205,13 @@ export function calculateStructuralAndFoundations(
     foundationNameFa = 'فونداسیون استوانه‌ای بتن درجا (Cast-in-Place Concrete Pier)';
     foundationNameEn = 'Cast-in-Place Reinforced Concrete Pier';
     foundationDimensionsDesc = `پایه بتنی مسلح قطر ۴۰ سانتی‌متر، عمق: ${recommendedDepthM} متر با انکربولت‌های M20 گالوانیزه`;
+    foundationDimensionsDescEn = `Reinforced concrete cylinder dia 40cm, depth: ${recommendedDepthM} m with M20 HDG anchor bolts`;
   } else if (foundationType === 'ground_screw') {
     recommendedDepthM = Number((1.6 * soilFactor).toFixed(1));
     foundationNameFa = 'شمع‌های پیچشی فولادی (Ground Screws)';
     foundationNameEn = 'Galvanized Continuous Ground Screw';
     foundationDimensionsDesc = `شمع پیچشی گالوانیزه قطر ۷۶mm، طول رزوه ۱۲۰۰mm، عمق نفوذ: ${recommendedDepthM} متر`;
+    foundationDimensionsDescEn = `Continuous helical ground screw dia 76mm, flight 1200mm, depth: ${recommendedDepthM} m`;
     concreteVolumeTotalM3 = 0;
     steelRebarWeightTotalKg = 0;
   } else {
@@ -202,6 +223,7 @@ export function calculateStructuralAndFoundations(
     foundationNameFa = 'بلوک‌های بتنی وزنی پیش‌ساخته پشت‌بام (Ballasted Rooftop Blocks)';
     foundationNameEn = 'Precast Concrete Ballast Blocks (Non-Penetrating)';
     foundationDimensionsDesc = `بلوک‌های بتنی پیش‌ساخته با وزن ${Math.round(ballastKgPerTable)} کیلوگرم به ازای هر استراکچر`;
+    foundationDimensionsDescEn = `Precast concrete blocks weighing ${Math.round(ballastKgPerTable)} kg per mounting table`;
   }
 
   // Cement and sand breakdown
@@ -209,17 +231,33 @@ export function calculateStructuralAndFoundations(
   const sandGravelTon = Number((concreteVolumeTotalM3 * 1.85).toFixed(1));
   const structuralSteelRackingWeightKg = Number((rackingWeightPerTable * totalTablesCount).toFixed(0));
 
+  // Geotechnical Checks
+  const allowableSoilBearingKpa = input.soilBearingCapacityKpa || (soilType === 'dense_sand_gravel' ? 250 : soilType === 'medium_clay' ? 180 : soilType === 'loose_sand' ? 140 : 350);
+  const footingFootprintM2 = foundationType === 'concrete_pier' ? (Math.PI * 0.2 * 0.2) : foundationType === 'rooftop_ballasted_block' ? 0.8 : 0.15;
+  const appliedPostBearingPressureKpa = Number((compressionPerPostKn / footingFootprintM2).toFixed(1));
+  const isBearingCapacitySafe = appliedPostBearingPressureKpa <= allowableSoilBearingKpa;
+
+  const siteFrostDepthCm = input.frostDepthCm ?? 30;
+  const isFrostDepthRespected = (recommendedDepthM * 100) >= siteFrostDepthCm;
+
   // 6. Factors of Safety (FoS)
   const stabilizingMoment = (deadLoadTableKn * (tableSlopedWidthM / 2.0)) * Math.cos(tiltRad);
   const fosOverturning = Number((stabilizingMoment / Math.max(0.1, windOverturningMomentKnM)).toFixed(2));
   const fosSliding = Number((((deadLoadTableKn * 0.45) / Math.max(0.1, lateralShearPerPostKn * postsPerTable))).toFixed(2));
   const fosUplift = Number(((deadLoadTableKn / Math.max(0.1, windUpliftForceKn))).toFixed(2));
 
-  const isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4;
+  const isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isBearingCapacitySafe;
 
-  let engineeringRemarksFa = 'پایداری سازه و فونداسیون طبق آیین‌نامه مبحث ۶ مقررات ملی ساختمان و ASCE 7 تأیید است.';
+  let engineeringRemarksFa = 'پایداری سازه و فونداسیون طبق آیین‌نامه مبحث ۶ مقررات ملی ساختمان و ASCE 7-22 تأیید است.';
+  let engineeringRemarksEn = 'Structural stability and foundation sizing compliant with INBC Part 6 & ASCE 7-22.';
   if (!isStructurallySafe) {
-    engineeringRemarksFa = 'هشدار مهندسی: ضریب اطمینان واژگونی کمتر از ۱.۵ است. عمق فونداسیون یا وزن پایه‌ها را افزایش دهید.';
+    if (!isBearingCapacitySafe) {
+      engineeringRemarksFa = `هشدار مهندسی: تنش وارده به خاک (${appliedPostBearingPressureKpa} kPa) از ظرفیت باربری مجاز خاک (${allowableSoilBearingKpa} kPa) فراتر رفته است. ابعاد پی را گسترش دهید.`;
+      engineeringRemarksEn = `Engineering Warning: Bearing pressure (${appliedPostBearingPressureKpa} kPa) exceeds allowable soil capacity (${allowableSoilBearingKpa} kPa). Enlarge footing area.`;
+    } else {
+      engineeringRemarksFa = 'هشدار مهندسی: ضریب اطمینان واژگونی کمتر از ۱.۵ است. عمق فونداسیون یا وزن پایه‌ها را افزایش دهید.';
+      engineeringRemarksEn = 'Engineering Warning: Factor of safety against overturning is below 1.5. Increase pile depth or ballast weight.';
+    }
   }
 
   return {
@@ -244,6 +282,12 @@ export function calculateStructuralAndFoundations(
     foundationNameEn,
     recommendedDepthM,
     foundationDimensionsDesc,
+    foundationDimensionsDescEn,
+    allowableSoilBearingKpa,
+    appliedPostBearingPressureKpa,
+    isBearingCapacitySafe,
+    frostDepthCm: siteFrostDepthCm,
+    isFrostDepthRespected,
     concreteVolumeTotalM3,
     steelRebarWeightTotalKg,
     structuralSteelRackingWeightKg,
@@ -254,5 +298,6 @@ export function calculateStructuralAndFoundations(
     fosUplift,
     isStructurallySafe,
     engineeringRemarksFa,
+    engineeringRemarksEn,
   };
 }
