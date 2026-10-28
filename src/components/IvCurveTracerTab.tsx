@@ -2,7 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { Activity, Sun, Thermometer, Layers, AlertCircle, RefreshCw } from 'lucide-react';
 import { calculateSingleDiodeCurve, IvCurveResult } from '../engine/singleDiodeModel';
 
-export const IvCurveTracerTab: React.FC = () => {
+interface IvCurveTracerTabProps {
+  lang?: 'fa' | 'en';
+}
+
+export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' }) => {
+  const isEn = lang === 'en';
   const [irradiance, setIrradiance] = useState<number>(1000);
   const [cellTempC, setCellTempC] = useState<number>(25);
   const [seriesModules, setSeriesModules] = useState<number>(18);
@@ -49,7 +54,6 @@ export const IvCurveTracerTab: React.FC = () => {
   const ivPath = curveResult.points
     .map((pt, idx) => {
       let currentI = pt.i;
-      // If partial shading is toggled, simulate bypass diode notch
       if (hasPartialShading && pt.v > curveResult.vmp * 0.65) {
         currentI = Math.min(currentI, curveResult.isc * 0.65);
       }
@@ -83,10 +87,14 @@ export const IvCurveTracerTab: React.FC = () => {
       <div className="studio-card">
         <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
           <Activity className="w-5 h-5 text-sky-400" />
-          تحلیلگر مشخصه جریان-ولتاژ و توان-ولتاژ (I-V & P-V Curve Tracer)
+          {isEn
+            ? 'I-V & P-V Characteristic Curve Tracer (Single-Diode Model)'
+            : 'تحلیلگر مشخصه جریان-ولتاژ و توان-ولتاژ (I-V & P-V Curve Tracer)'}
         </h1>
         <p className="text-slate-400 text-xs">
-          شبیه‌سازی مدل پنج‌پارامتری تک‌دیودی سلول خورشیدی (Single-Diode Model) با حلگر نیوتن-رافسون و پایش فعال شدن دیودهای بای‌پس
+          {isEn
+            ? '5-parameter single-diode solar cell modeling with Newton-Raphson solver, irradiance/temperature sweeps, and bypass diode multi-peak simulation.'
+            : 'شبیه‌سازی مدل پنج‌پارامتری تک‌دیودی سلول خورشیدی (Single-Diode Model) با حلگر نیوتن-رافسون و پایش فعال شدن دیودهای بای‌پس'}
         </p>
       </div>
 
@@ -96,7 +104,7 @@ export const IvCurveTracerTab: React.FC = () => {
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-slate-300 font-semibold flex items-center gap-1">
-                <Sun className="w-3.5 h-3.5 text-amber-400" /> شدت تابش (Irradiance G):
+                <Sun className="w-3.5 h-3.5 text-amber-400" /> {isEn ? 'Solar Irradiance (G):' : 'شدت تابش (Irradiance G):'}
               </span>
               <span className="font-mono text-amber-400 font-bold">{irradiance} W/m²</span>
             </div>
@@ -114,7 +122,7 @@ export const IvCurveTracerTab: React.FC = () => {
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-slate-300 font-semibold flex items-center gap-1">
-                <Thermometer className="w-3.5 h-3.5 text-red-400" /> دمای سلول (Cell Temp T):
+                <Thermometer className="w-3.5 h-3.5 text-red-400" /> {isEn ? 'Cell Temperature (T):' : 'دمای سلول (Cell Temp T):'}
               </span>
               <span className="font-mono text-cyan-400 font-bold">{cellTempC}°C</span>
             </div>
@@ -132,9 +140,11 @@ export const IvCurveTracerTab: React.FC = () => {
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-slate-300 font-semibold flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-sky-400" /> تعداد پنل سری در استرینگ:
+                <Layers className="w-3.5 h-3.5 text-sky-400" /> {isEn ? 'Series Modules in String:' : 'تعداد پنل سری در استرینگ:'}
               </span>
-              <span className="font-mono text-sky-400 font-bold">{seriesModules} ماژول</span>
+              <span className="font-mono text-sky-400 font-bold">
+                {seriesModules} {isEn ? 'Modules' : 'ماژول'}
+              </span>
             </div>
             <input
               type="range"
@@ -156,58 +166,62 @@ export const IvCurveTracerTab: React.FC = () => {
               onChange={(e) => setHasPartialShading(e.target.checked)}
               className="accent-amber-500 rounded"
             />
-            <span className="font-semibold">شبیه‌سازی سایه‌اندازی جزئی و پله دیود بای‌پس (Partial Shading Multi-Peak)</span>
+            <span className="font-semibold">
+              {isEn
+                ? 'Simulate Partial Shading & Bypass Diode Activation (Multi-Peak Curve)'
+                : 'شبیه‌سازی سایه‌اندازی جزئی و پله دیود بای‌پس (Partial Shading Multi-Peak)'}
+            </span>
           </label>
         </div>
       </div>
 
       {/* KPI Specs Matrix */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
         <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
-          <span className="text-slate-400 block mb-0.5">توان ماکزیمم (Pmp)</span>
+          <span className="text-slate-400 block mb-0.5">{isEn ? 'Max Power (Pmp)' : 'توان ماکزیمم (Pmp)'}</span>
           <span className="text-base font-bold font-mono text-emerald-400">
             {curveResult.pmp >= 1000 ? `${(curveResult.pmp / 1000).toFixed(2)} kW` : `${curveResult.pmp} W`}
           </span>
         </div>
 
         <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
-          <span className="text-slate-400 block mb-0.5">ولتاژ نقطه کار (Vmp)</span>
+          <span className="text-slate-400 block mb-0.5">{isEn ? 'Voltage at MPP (Vmp)' : 'ولتاژ نقطه کار (Vmp)'}</span>
           <span className="text-base font-bold font-mono text-sky-400">{curveResult.vmp} V</span>
         </div>
 
         <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
-          <span className="text-slate-400 block mb-0.5">جریان نقطه کار (Imp)</span>
+          <span className="text-slate-400 block mb-0.5">{isEn ? 'Current at MPP (Imp)' : 'جریان نقطه کار (Imp)'}</span>
           <span className="text-base font-bold font-mono text-sky-400">{curveResult.imp} A</span>
         </div>
 
         <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
-          <span className="text-slate-400 block mb-0.5">ولتاژ مدار باز (Voc)</span>
+          <span className="text-slate-400 block mb-0.5">{isEn ? 'Open-Circuit Voc' : 'ولتاژ مدار باز (Voc)'}</span>
           <span className="text-base font-bold font-mono text-cyan-400">{curveResult.voc} V</span>
         </div>
 
         <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
-          <span className="text-slate-400 block mb-0.5">جریان اتصال کوتاه (Isc)</span>
+          <span className="text-slate-400 block mb-0.5">{isEn ? 'Short-Circuit Isc' : 'جریان اتصال کوتاه (Isc)'}</span>
           <span className="text-base font-bold font-mono text-amber-400">{curveResult.isc} A</span>
         </div>
 
         <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
-          <span className="text-slate-400 block mb-0.5">ضریب پرشدگی (FF)</span>
+          <span className="text-slate-400 block mb-0.5">{isEn ? 'Fill Factor (FF)' : 'ضریب پرشدگی (FF)'}</span>
           <span className="text-base font-bold font-mono text-purple-400">{(curveResult.fillFactor * 100).toFixed(1)}%</span>
         </div>
       </div>
 
       {/* Interactive SVG Plot */}
       <div className="studio-card">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <h3 className="font-bold text-sky-400 text-sm">
-            منحنی‌های ولتاژ-جریان (I-V) و ولتاژ-توان (P-V)
+            {isEn ? 'I-V (Current-Voltage) and P-V (Power-Voltage) Curves' : 'منحنی‌های ولتاژ-جریان (I-V) و ولتاژ-توان (P-V)'}
           </h3>
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1 font-semibold text-sky-400">
-              <span className="w-3 h-0.5 bg-sky-400"></span> منحنی جریان (I-V Curve)
+              <span className="w-3 h-0.5 bg-sky-400"></span> {isEn ? 'I-V Curve' : 'منحنی جریان (I-V)'}
             </span>
             <span className="flex items-center gap-1 font-semibold text-emerald-400">
-              <span className="w-3 h-0.5 bg-emerald-400"></span> منحنی توان (P-V Curve)
+              <span className="w-3 h-0.5 bg-emerald-400"></span> {isEn ? 'P-V Curve' : 'منحنی توان (P-V)'}
             </span>
           </div>
         </div>
@@ -246,7 +260,7 @@ export const IvCurveTracerTab: React.FC = () => {
             {/* Vertical line through MPP */}
             <line x1={mppX} y1={padTop} x2={mppX} y2={padTop + plotH} stroke="#f59e0b" strokeWidth="1" strokeDasharray="3 3" />
             <text x={mppX} y={padTop - 5} textAnchor="middle" fill="#f59e0b" fontSize="9" fontWeight="bold">
-              نقطه MPP ({curveResult.vmp}V)
+              MPP ({curveResult.vmp}V, {curveResult.imp}A)
             </text>
 
             {/* X-Axis labels (Voltage) */}
@@ -258,7 +272,7 @@ export const IvCurveTracerTab: React.FC = () => {
               {maxV.toFixed(0)}V
             </text>
             <text x={padLeft + plotW / 2} y={padTop + plotH + 34} textAnchor="middle" fill="#cbd5e1" fontSize="11" fontWeight="bold">
-              ولتاژ رشته فتوولتائیک Voltage (V)
+              {isEn ? 'Array String Voltage (V)' : 'ولتاژ رشته فتوولتائیک Voltage (V)'}
             </text>
 
             {/* Y-Axis Left (Current A) */}
@@ -273,7 +287,7 @@ export const IvCurveTracerTab: React.FC = () => {
               fontSize="11"
               fontWeight="bold"
             >
-              جریان Current (A)
+              {isEn ? 'Current (A)' : 'جریان Current (A)'}
             </text>
 
             {/* Y-Axis Right (Power W) */}
@@ -288,7 +302,7 @@ export const IvCurveTracerTab: React.FC = () => {
               fontSize="11"
               fontWeight="bold"
             >
-              توان Power (W)
+              {isEn ? 'Power (W)' : 'توان Power (W)'}
             </text>
           </svg>
         </div>
@@ -297,7 +311,9 @@ export const IvCurveTracerTab: React.FC = () => {
           <div className="mt-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded border border-amber-600/50 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              پدیده سایه‌اندازی جزئی: دیودهای بای‌پاس در ولتاژ بالاتر از ۷۰٪ فعال شده و شکل مشخصه I-V پله‌ای می‌شود؛ اینورترهای مجهز به Global MPPT Scan نقطه توان ماکزیمم سراسری را بدون گیر افتادن در قله‌های فرعی پیدا می‌کنند.
+              {isEn
+                ? 'Partial Shading Phenomenon: Bypass diodes conduct when cell groups are shaded, creating a characteristic multi-peak knee in the I-V curve. Modern inverters with Global MPPT Scanning locate the true global peak.'
+                : 'پدیده سایه‌اندازی جزئی: دیودهای بای‌پاس در ولتاژ بالاتر از ۷۰٪ فعال شده و شکل مشخصه I-V پله‌ای می‌شود؛ اینورترهای مجهز به Global MPPT Scan نقطه توان ماکزیمم سراسری را بدون گیر افتادن در قله‌های فرعی پیدا می‌کنند.'}
             </span>
           </div>
         )}
@@ -305,3 +321,4 @@ export const IvCurveTracerTab: React.FC = () => {
     </div>
   );
 };
+export default IvCurveTracerTab;

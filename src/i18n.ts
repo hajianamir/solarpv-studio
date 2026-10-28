@@ -45,6 +45,7 @@ export const translations = {
     tabCatalog: 'کاتالوگ تجهیزات',
     tabIranRegs: 'قوانین خرید تضمینی (ایران)',
     tabSolarPumping: 'پمپاژ خورشیدی آب',
+    tabScenarios: 'مقایسه هوشمند سناریوها',
 
     tabCablesBom: 'سایزینگ کابل، ارتینگ و صاعقه',
     tabMvBays: 'آرایش بی‌های MV و اینورترها',
@@ -112,6 +113,7 @@ export const translations = {
     tabCatalog: 'Equipment Catalog',
     tabIranRegs: 'Iranian PPA Tariff Regulations',
     tabSolarPumping: 'Solar Water Pumping System',
+    tabScenarios: 'Scenario Comparison',
 
     tabCablesBom: 'Cables, Earthing (IEEE 80) & Lightning',
     tabMvBays: 'MV Bays & Inverters Architecture',

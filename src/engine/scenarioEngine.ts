@@ -5,6 +5,7 @@ export interface ScenarioDetails {
   titleFa: string;
   titleEn: string;
   descriptionFa: string;
+  descriptionEn: string;
   panelTypeFa: string;
   inverterTypeFa: string;
   batteryChemistryFa: string;
@@ -20,7 +21,9 @@ export interface ScenarioDetails {
   reliabilityIndexPct: number;
   lcoeUsdPerKwh: number;
   advantagesFa: string[];
+  advantagesEn: string[];
   disadvantagesFa: string[];
+  disadvantagesEn: string[];
 }
 
 export function generateScenarios(
@@ -62,6 +65,7 @@ export function generateScenarios(
       titleFa: 'سیستم بهینه پیشنهادی (Standard Optimized LiFePO4)',
       titleEn: 'Standard Optimized LiFePO4',
       descriptionFa: 'بهترین تعادل میان هزینه اولیه، بازدهی انرژی و طول عمر باتری لیتیومی با حداقل فضای اشغالی',
+      descriptionEn: 'Optimal balance between CAPEX, round-trip efficiency, and 12-year battery life with compact footprint.',
       panelTypeFa: 'پنل‌های N-Type TOPCon راندمان بالا (Jinko / LONGi)',
       inverterTypeFa: 'اینورتر شارژر هیبرید هوشمند با راندمان ۹۷٪ (Deye / Growatt)',
       batteryChemistryFa: 'لیتیوم آهن فسفات (LiFePO4) با عمق دشارژ ۸۵٪ و ۵۵۰۰ سیکل',
@@ -82,8 +86,17 @@ export function generateScenarios(
         'حداقل هزینه مالکیت ۲۵ ساله (TCO)',
         'پشتیبانی از پروتکل‌های مانیتورینگ هوشمند CAN/BMS'
       ],
+      advantagesEn: [
+        'Extended battery operational life (>12 years, 6000 cycles)',
+        'Lightweight and compact footprint in electrical room',
+        'Lowest 25-year Total Cost of Ownership (TCO)',
+        'Smart BMS closed-loop communication over CAN/RS485'
+      ],
       disadvantagesFa: [
         'هزینه اولیه خرید باتری بالاتر از ژل و سرب‌اسید'
+      ],
+      disadvantagesEn: [
+        'Higher upfront initial CAPEX compared to lead-acid'
       ]
     },
     {
@@ -91,6 +104,7 @@ export function generateScenarios(
       titleFa: 'سیستم اقتصادی کم‌هزینه (Budget Gel Deep-Cycle)',
       titleEn: 'Budget Gel Deep-Cycle',
       descriptionFa: 'حداقل سرمایه‌گذاری اولیه در روز اول، مناسب پروژه‌های با بودجه اولیه محدود',
+      descriptionEn: 'Lowest initial Day-1 investment, ideal for projects with tight initial budget constraints.',
       panelTypeFa: 'پنل‌های مونوکریستال PERC استاندارد',
       inverterTypeFa: 'اینورتر آف‌گرید تکفاز استاندارد',
       batteryChemistryFa: 'باتری‌های ژل عمیق دشارژ (Gel Deep Cycle) با عمق ۵۰٪',
@@ -110,10 +124,20 @@ export function generateScenarios(
         'دسترسی و فراوانی بالا در بازار سنتی ایران',
         'عدم نیاز به تنظیمات پیچیده پروتکل BMS'
       ],
+      advantagesEn: [
+        'Lowest initial procurement cost for budget-constrained projects',
+        'Abundant local spare parts availability in conventional markets',
+        'No digital BMS communication configuration required'
+      ],
       disadvantagesFa: [
         'نیاز به تعویض مجدد باتری‌ها هر ۳ الی ۴ سال یک‌بار',
         'وزن فوق‌العاده سنگین (۳ برابر لیتیوم)',
         'حساسیت بسیار شدید به گرمای بالای ۳۰ درجه'
+      ],
+      disadvantagesEn: [
+        'Frequent battery replacement required every 3 to 4 years',
+        'Substantially heavier weight (3x heavier than LiFePO4)',
+        'High temperature degradation sensitivity above 30°C'
       ]
     },
     {
@@ -121,6 +145,7 @@ export function generateScenarios(
       titleFa: 'سیستم فوق‌پایدار صنعتی (High-Reliability Industrial Redundant)',
       titleEn: 'High-Reliability Industrial Redundant',
       descriptionFa: 'پایداری ۱۰۰٪ با افزونگی N+1 اینورترها، باتری رک‌مانت پیشرفته و ادوات حفاظتی دابل',
+      descriptionEn: 'Mission-critical 99.9% uptime with N+1 parallel redundant inverters, server rack LiFePO4, and dual SPD protection.',
       panelTypeFa: 'پنل‌های بایفیشیال دوطرفه شیشه-شیشه (Trina / Jinko)',
       inverterTypeFa: 'کلاستر اینورترهای سنکرون پارالل N+1 با سیستم بای‌پس اتوماتیک STS',
       batteryChemistryFa: 'رک باتری سروری LiFePO4 مجهز به اکتیو بالانسر و ایزولاسیون حرارتی',
@@ -141,8 +166,17 @@ export function generateScenarios(
         'تلفات کابل‌کشی زیر ۱٪ و بالاترین ضریب ایمنی ضدحریق',
         'حفاظت کامل صاعقه با ارسترهای کلاس I+II'
       ],
+      advantagesEn: [
+        'Continuous 99.9% power availability for telecom, hospitals, and datacenters',
+        'Full N+1 hot-standby redundancy across inverter clusters',
+        'Ultra-low cable voltage drop (<0.8%) and premium fire safety compliance',
+        'Comprehensive Class I+II surge arresters and lightning protection'
+      ],
       disadvantagesFa: [
         'هزینه اولیه بالاتر تجهیزات حفاظتی و افزونگی'
+      ],
+      disadvantagesEn: [
+        'Higher initial capital cost due to redundant hardware'
       ]
     }
   ];

@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Clock, Sun, Battery as BatteryIcon, Zap, Fuel, Activity, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Clock, Sun, Battery as BatteryIcon, Zap, Fuel, Activity, CheckCircle2, AlertCircle, Power } from 'lucide-react';
 import {
-  simulate24hEnergyBalance,
-  sizeDieselGenerator,
   Simulation24hResult,
   GeneratorSizingResult,
 } from '../engine/simulation24hEngine';
@@ -12,6 +10,10 @@ interface Simulation24hTabProps {
   generatorSizing: GeneratorSizingResult;
   outageHours: number;
   onOutageHoursChange: (hours: number) => void;
+  enableDieselGenerator?: boolean;
+  onToggleDieselGenerator?: (enabled: boolean) => void;
+  systemMode?: 'powerplant' | 'ongrid' | 'offgrid';
+  lang?: 'fa' | 'en';
 }
 
 export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
@@ -19,7 +21,12 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
   generatorSizing,
   outageHours,
   onOutageHoursChange,
+  enableDieselGenerator = false,
+  onToggleDieselGenerator,
+  systemMode = 'powerplant',
+  lang = 'fa',
 }) => {
+  const isEn = lang === 'en';
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
   // Maximum value for SVG scaling
@@ -34,45 +41,49 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
       <div className="studio-card">
         <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
           <Activity className="w-5 h-5 text-amber-400" />
-          شبیه‌سازی ۲۴ ساعته تراز انرژی و دیزل ژنراتور هیبرید (24h Simulation & Genset)
+          {isEn
+            ? '24-Hour Energy Balance Simulation & Backup Genset'
+            : 'شبیه‌سازی ۲۴ ساعته تراز انرژی و دیزل ژنراتور هیبرید (24h Simulation & Genset)'}
         </h1>
         <p className="text-slate-400 text-xs">
-          شبیه‌سازی دینامیک ساعت‌به‌ساعت (از ۰۰:۰۰ الی ۲۳:۰۰)، پایش سطح شارژ باتری (SoC)، مازاد تولید و محاسبه سایز دیزل ژنراتور اضطراری
+          {isEn
+            ? 'Hour-by-hour dynamic energy flow simulation (00:00 to 23:00), battery state of charge (SoC) tracking, surplus/deficit analytics, and optional auxiliary backup diesel generator sizing.'
+            : 'شبیه‌سازی دینامیک ساعت‌به‌ساعت (از ۰۰:۰۰ الی ۲۳:۰۰)، پایش سطح شارژ باتری (SoC)، مازاد تولید و محاسبه سایز دیزل ژنراتور اضطراری'}
         </p>
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">تولید ۲۴ ساعته خورشیدی</div>
+          <div className="text-xs text-slate-400">{isEn ? '24h Solar Generation' : 'تولید ۲۴ ساعته خورشیدی'}</div>
           <div className="text-xl font-bold font-mono text-amber-400 mt-1">
             {simulationResult.totalGeneration24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">مصرف کل بار ۲۴ ساعته</div>
+          <div className="text-xs text-slate-400">{isEn ? '24h Total Demand' : 'مصرف کل بار ۲۴ ساعته'}</div>
           <div className="text-xl font-bold font-mono text-sky-400 mt-1">
             {simulationResult.totalConsumption24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">مازاد انرژی تزریق/اتلاف</div>
+          <div className="text-xs text-slate-400">{isEn ? '24h Energy Surplus' : 'مازاد انرژی تزریق/اتلاف'}</div>
           <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
             {simulationResult.totalSurplus24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">کسری انرژی (Deficit)</div>
+          <div className="text-xs text-slate-400">{isEn ? '24h Energy Deficit' : 'کسری انرژی (Deficit)'}</div>
           <div className="text-xl font-bold font-mono text-red-400 mt-1">
             {simulationResult.totalDeficit24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">حداقل سطح شارژ باتری (Min SoC)</div>
+          <div className="text-xs text-slate-400">{isEn ? 'Min Battery SoC' : 'حداقل سطح شارژ باتری (Min SoC)'}</div>
           <div className="text-xl font-bold font-mono text-purple-400 mt-1">
             {simulationResult.minBatterySocPct}%
           </div>
@@ -81,25 +92,27 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
 
       {/* 24-Hour Visual Hourly Energy Chart */}
       <div className="studio-card">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h3 className="font-bold text-sky-400 text-sm flex items-center gap-2">
             <Clock className="w-4 h-4 text-sky-400" />
-            نمودار ۲۴ ساعته تراز تولید خورشیدی، مصرف بار و سطح شارژ باتری (SoC %)
+            {isEn
+              ? '24-Hour Solar Production, Load Demand & Battery SoC (%) Profile'
+              : 'نمودار ۲۴ ساعته تراز تولید خورشیدی، مصرف بار و سطح شارژ باتری (SoC %)'}
           </h3>
-          <div className="flex items-center gap-3 text-xs text-slate-300">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-amber-400 rounded-sm"></span> تولید خورشیدی
+              <span className="w-3 h-3 bg-amber-400 rounded-sm"></span> {isEn ? 'Solar PV' : 'تولید خورشیدی'}
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-sky-400 rounded-sm"></span> مصرف بار
+              <span className="w-3 h-3 bg-sky-400 rounded-sm"></span> {isEn ? 'Load' : 'مصرف بار'}
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-1 bg-purple-400"></span> سطح شارژ باتری (%)
+              <span className="w-3 h-1 bg-purple-400"></span> {isEn ? 'Battery SoC (%)' : 'سطح شارژ باتری (%)'}
             </span>
           </div>
         </div>
 
-        {/* SVG Bar & Line Chart */}
+        {/* SVG Bar & Line Chart with Touch-Friendly Horizontal Scroll */}
         <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 overflow-x-auto">
           <svg width="100%" height="220" viewBox="0 0 960 220" className="select-none font-sans min-w-[700px]">
             {/* Horizontal Grid lines */}
@@ -119,9 +132,6 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
               // Load Bar (Sky blue)
               const loadHeight = (step.loadDemandKwh / maxVal) * 140;
               const loadY = 170 - loadHeight;
-
-              // Battery SoC Line Coordinate (0% = y: 170, 100% = y: 30)
-              const socY = 170 - (step.batterySocPct / 100) * 140;
 
               const isHovered = selectedHour === step.hour;
 
@@ -154,118 +164,208 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
                     opacity={0.85}
                   />
 
-                  {/* SoC Circle marker */}
-                  <circle cx={xCenter} cy={socY} r="3.5" fill="#c084fc" stroke="#581c87" strokeWidth="1" />
-
-                  {/* Hour label */}
-                  {idx % 2 === 0 && (
-                    <text x={xCenter} y="195" textAnchor="middle" fill="#64748b" fontSize="9 font-mono">
-                      {step.timeLabel}
-                    </text>
-                  )}
+                  {/* Hour text label */}
+                  <text
+                    x={xCenter}
+                    y="190"
+                    fill="#64748b"
+                    fontSize="9"
+                    textAnchor="middle"
+                    className="font-mono"
+                  >
+                    {step.hour.toString().padStart(2, '0')}:00
+                  </text>
                 </g>
               );
             })}
 
-            {/* Connect Battery SoC with Polyline */}
-            <polyline
-              fill="none"
-              stroke="#c084fc"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              points={simulationResult.hourlySteps
-                .map((step, idx) => `${50 + idx * 37},${170 - (step.batterySocPct / 100) * 140}`)
+            {/* SoC Curve connecting line */}
+            <path
+              d={simulationResult.hourlySteps
+                .map((step, idx) => {
+                  const x = 50 + idx * 37;
+                  const y = 170 - (step.batterySocPct / 100) * 140;
+                  return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
+                })
                 .join(' ')}
+              fill="none"
+              stroke="#a855f7"
+              strokeWidth="2.5"
             />
+
+            {/* SoC Points */}
+            {simulationResult.hourlySteps.map((step, idx) => {
+              const x = 50 + idx * 37;
+              const y = 170 - (step.batterySocPct / 100) * 140;
+              return (
+                <circle
+                  key={`dot-${idx}`}
+                  cx={x}
+                  cy={y}
+                  r={selectedHour === step.hour ? '5' : '3'}
+                  fill={selectedHour === step.hour ? '#ffffff' : '#c084fc'}
+                  stroke="#a855f7"
+                  strokeWidth="1.5"
+                />
+              );
+            })}
           </svg>
         </div>
 
+        {/* Selected Hour Details Box */}
         {selectedHour !== null && (
-          <div className="mt-3 p-2 bg-slate-900 rounded border border-slate-700/80 text-xs flex items-center justify-between font-mono animate-fadeIn">
-            <span className="font-bold text-white">ساعت {selectedHour.toString().padStart(2, '0')}:00:</span>
+          <div className="mt-3 p-3 bg-slate-900/90 rounded-lg border border-slate-700 flex flex-wrap items-center justify-between text-xs font-mono">
+            <span className="text-white font-bold">
+              {isEn ? 'Hour:' : 'ساعت:'} {selectedHour}:00
+            </span>
             <span className="text-amber-400">
-              تولید: {simulationResult.hourlySteps[selectedHour].solarGenKwh} kWh
+              {isEn ? 'Solar:' : 'تولید خورشیدی:'} {simulationResult.hourlySteps[selectedHour].solarGenKwh} kWh
             </span>
             <span className="text-sky-400">
-              مصرف: {simulationResult.hourlySteps[selectedHour].loadDemandKwh} kWh
+              {isEn ? 'Demand:' : 'مصرف:'} {simulationResult.hourlySteps[selectedHour].loadDemandKwh} kWh
             </span>
             <span className="text-purple-400">
-              سطح شارژ باتری: {simulationResult.hourlySteps[selectedHour].batterySocPct}%
+              {isEn ? 'Battery SoC:' : 'سطح شارژ باتری:'} {simulationResult.hourlySteps[selectedHour].batterySocPct}%
             </span>
             <span className="text-emerald-400">
-              شارژ باتری: {simulationResult.hourlySteps[selectedHour].batteryChargeKwh} kWh
+              {isEn ? 'Charge:' : 'شارژ باتری:'} {simulationResult.hourlySteps[selectedHour].batteryChargeKwh} kWh
             </span>
             <span className="text-indigo-400">
-              دشارژ باتری: {simulationResult.hourlySteps[selectedHour].batteryDischargeKwh} kWh
+              {isEn ? 'Discharge:' : 'دشارژ باتری:'} {simulationResult.hourlySteps[selectedHour].batteryDischargeKwh} kWh
             </span>
           </div>
         )}
       </div>
 
-      {/* Auxiliary Diesel Generator Sizer */}
+      {/* AUXILIARY DIESEL GENERATOR SIZER (RULE: Optional by user choice, active for powerplant) */}
       <div className="studio-card">
-        <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-          <Fuel className="w-4 h-4 text-amber-400" />
-          ماژول سایزینگ دیزل ژنراتور اضطراری / کمکی (Auxiliary Generator Sizer)
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Fuel className="w-5 h-5 text-amber-400" />
+            <div>
+              <h3 className="font-bold text-sky-400 text-sm">
+                {isEn
+                  ? 'Emergency Backup Diesel Generator Sizing (Substation & Auxiliaries)'
+                  : 'ماژول سایزینگ دیزل ژنراتور اضطراری مصارف داخلی نیروگاه / پست'}
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                {isEn
+                  ? 'Optional auxiliary sizing for substation MV switchgear trip coils, SCADA, tracker drives, and black-start capability.'
+                  : 'برآورد ژنراتور دیزلی اضطراری جهت تأمین مصارف داخلی پست فشار متوسط، مدارات فرمان، ترکرها و بازیابی شبکه (Black-Start)'}
+              </p>
+            </div>
+          </div>
 
-        <div className="mb-4">
-          <label className="block text-xs font-semibold text-slate-300 mb-1">
-            ساعات قطعی مداوم شبکه جهت برآورد حجم مخزن سوخت:
-          </label>
-          <div className="flex items-center gap-3">
+          {/* User Activation Toggle Checkbox (User Request #4) */}
+          <label className="flex items-center gap-2 cursor-pointer bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-amber-500/60 transition">
             <input
-              type="range"
-              min="6"
-              max="72"
-              step="6"
-              value={outageHours}
-              onChange={(e) => onOutageHoursChange(parseInt(e.target.value) || 24)}
-              className="w-48 accent-amber-400"
+              type="checkbox"
+              checked={enableDieselGenerator}
+              onChange={(e) => onToggleDieselGenerator && onToggleDieselGenerator(e.target.checked)}
+              className="accent-amber-500 w-4 h-4 cursor-pointer"
             />
-            <span className="font-mono text-sm font-bold text-amber-400">{outageHours} ساعت مداوم</span>
-          </div>
+            <span className="text-xs font-semibold text-white">
+              {enableDieselGenerator
+                ? isEn
+                  ? '✓ Generator Sizing Enabled'
+                  : '✓ سایزینگ ژنراتور فعال است'
+                : isEn
+                ? 'Enable Generator Sizing (Optional)'
+                : 'فعال‌سازی سایزینگ ژنراتور (اختیاری)'}
+            </span>
+          </label>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
-          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-            <span className="text-slate-400 block mb-0.5">ظرفیت ژنراتور پیشنهادی (kVA)</span>
-            <span className="text-lg font-bold font-mono text-amber-400">
-              {generatorSizing.recommendedCapacityKva} kVA
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">ضریب توان: cosφ = 0.8</span>
-          </div>
+        {enableDieselGenerator ? (
+          <div className="space-y-4 animate-fadeIn">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                {isEn
+                  ? 'Target Continuous Outage Duration for Fuel Storage Calculation:'
+                  : 'ساعات قطعی مداوم شبکه جهت برآورد حجم مخزن سوخت:'}
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="6"
+                  max="72"
+                  step="6"
+                  value={outageHours}
+                  onChange={(e) => onOutageHoursChange(parseInt(e.target.value) || 24)}
+                  className="w-48 accent-amber-400"
+                />
+                <span className="font-mono text-sm font-bold text-amber-400">
+                  {outageHours} {isEn ? 'Continuous Hours' : 'ساعت مداوم'}
+                </span>
+              </div>
+            </div>
 
-          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-            <span className="text-slate-400 block mb-0.5">توان اکتیو خروجی (kW)</span>
-            <span className="text-lg font-bold font-mono text-emerald-400">
-              {generatorSizing.recommendedCapacityKw.toFixed(1)} kW
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">توان پرایم پیوسته</span>
-          </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+                <span className="text-slate-400 block mb-0.5">
+                  {isEn ? 'Recommended Rating (kVA)' : 'ظرفیت ژنراتور پیشنهادی (kVA)'}
+                </span>
+                <span className="text-lg font-bold font-mono text-amber-400">
+                  {generatorSizing.recommendedCapacityKva} kVA
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  {isEn ? 'Power Factor: cosφ = 0.8' : 'ضریب توان: cosφ = 0.8'}
+                </span>
+              </div>
 
-          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-            <span className="text-slate-400 block mb-0.5">نرخ مصرف سوخت گازوئیل</span>
-            <span className="text-lg font-bold font-mono text-red-400">
-              {generatorSizing.fuelConsumptionLitersPerHour} L/h
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">در بار میانگین ۸۵٪</span>
-          </div>
+              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+                <span className="text-slate-400 block mb-0.5">
+                  {isEn ? 'Active Output (kW)' : 'توان اکتیو خروجی (kW)'}
+                </span>
+                <span className="text-lg font-bold font-mono text-emerald-400">
+                  {generatorSizing.recommendedCapacityKw.toFixed(1)} kW
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  {isEn ? 'Prime Continuous Rating' : 'توان پرایم پیوسته'}
+                </span>
+              </div>
 
-          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-            <span className="text-slate-400 block mb-0.5">حداقل حجم باک سوخت</span>
-            <span className="text-lg font-bold font-mono text-sky-400">
-              {generatorSizing.minFuelTankSizeLiters} لیتر
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">برای {outageHours} ساعت کار مداوم</span>
-          </div>
-        </div>
+              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+                <span className="text-slate-400 block mb-0.5">
+                  {isEn ? 'Fuel Consumption Rate' : 'نرخ مصرف سوخت گازوئیل'}
+                </span>
+                <span className="text-lg font-bold font-mono text-red-400">
+                  {generatorSizing.fuelConsumptionLitersPerHour} L/h
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  {isEn ? 'At 85% average load' : 'در بار میانگین ۸۵٪'}
+                </span>
+              </div>
 
-        <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-700/60 text-xs text-slate-300">
-          {generatorSizing.notesFa}
-        </div>
+              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+                <span className="text-slate-400 block mb-0.5">
+                  {isEn ? 'Min Fuel Tank Size' : 'حداقل حجم باک سوخت'}
+                </span>
+                <span className="text-lg font-bold font-mono text-sky-400">
+                  {generatorSizing.minFuelTankSizeLiters} {isEn ? 'Liters' : 'لیتر'}
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  {isEn ? `For ${outageHours}h autonomy` : `برای ${outageHours} ساعت کار مداوم`}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-700/60 text-xs text-slate-300">
+              {isEn ? generatorSizing.notesEn : generatorSizing.notesFa}
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 bg-slate-900/40 rounded-lg border border-slate-800 text-center text-xs text-slate-400 space-y-2">
+            <Power className="w-6 h-6 text-slate-500 mx-auto" />
+            <p>
+              {isEn
+                ? 'Diesel generator sizing is currently disabled. Check the toggle above to activate auxiliary genset sizing for substation & black-start power.'
+                : 'ماژول دیزل ژنراتور اضطراری در حال حاضر غیرفعال است. با علامت زدن گزینه بالا، سایزینگ ژنراتور اضطراری برای مصارف داخلی پست و بلک‌استارت فعال می‌گردد.'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+export default Simulation24hTab;

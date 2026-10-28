@@ -6,9 +6,11 @@ import { SiteLocationMap } from './SiteLocationMap';
 interface ClimateTabProps {
   selectedCity: ClimateCity;
   onCityChange: (city: ClimateCity) => void;
+  lang?: 'fa' | 'en';
 }
 
-export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChange }) => {
+export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChange, lang = 'fa' }) => {
+  const isEn = lang === 'en';
   const [isEditing, setIsEditing] = useState(false);
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
   const [viewMode, setViewMode] = useState<'map' | 'presets'>('map');
@@ -35,10 +37,14 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
           <div>
             <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
               <MapPin className="w-5 h-5 text-amber-400" />
-              مکان‌یابی، نقشه ماهواره‌ای و تحلیل تشعشع (Site Location & Solar Resource)
+              {isEn
+                ? 'Site Location, Hybrid Satellite Map & Solar Resource'
+                : 'مکان‌یابی، نقشه ماهواره‌ای و تحلیل تشعشع (Site Location & Solar Resource)'}
             </h1>
             <p className="text-slate-400 text-xs">
-              امکان انتخاب محل نصب از روی نقشه ماهواره‌ای، دیتابیس اقلیمی شهرهای ایران، ساعات آفتابی اوج (PSH) و شیب بهینه سالانه
+              {isEn
+                ? 'Select project site on interactive hybrid satellite map, access regional meteorological solar irradiation (PSH), and optimal tilt angles.'
+                : 'امکان انتخاب محل نصب از روی نقشه ماهواره‌ای، دیتابیس اقلیمی شهرهای ایران، ساعات آفتابی اوج (PSH) و شیب بهینه سالانه'}
             </p>
           </div>
 
@@ -50,7 +56,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               }`}
             >
               <Globe className="w-3.5 h-3.5" />
-              نقشه تعاملی ماهواره‌ای
+              {isEn ? 'Interactive Satellite Map' : 'نقشه تعاملی ماهواره‌ای'}
             </button>
             <button
               onClick={() => setViewMode('presets')}
@@ -59,7 +65,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               }`}
             >
               <MapPin className="w-3.5 h-3.5" />
-              شهرهای اقلیمی ایران
+              {isEn ? 'Regional Climate Cities' : 'شهرهای اقلیمی ایران'}
             </button>
           </div>
         </div>
@@ -67,13 +73,13 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
 
       {/* Interactive Map View */}
       {viewMode === 'map' && (
-        <SiteLocationMap currentCity={selectedCity} onSelectLocation={onCityChange} lang="fa" />
+        <SiteLocationMap currentCity={selectedCity} onSelectLocation={onCityChange} lang={lang} />
       )}
 
       {/* City Selector Buttons */}
       <div className="studio-card">
         <label className="block text-xs font-semibold text-slate-300 mb-2">
-          انتخاب شهر اقلیمی ایران:
+          {isEn ? 'Quick Select Regional Iranian Climate City:' : 'انتخاب شهر اقلیمی ایران:'}
         </label>
         <div className="flex flex-wrap gap-2">
           {IRANIAN_CLIMATE_CITIES.map((c) => (
@@ -86,7 +92,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
                   : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
               }`}
             >
-              {c.nameFa} <span className="text-[10px] opacity-75">({c.peakSunHours} PSH)</span>
+              {isEn ? c.nameEn : c.nameFa} <span className="text-[10px] opacity-75">({c.peakSunHours} PSH)</span>
             </button>
           ))}
         </div>
@@ -98,16 +104,24 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Sun className="w-5 h-5 text-amber-400" />
-              اطلاعات اقلیمی: {selectedCity.nameFa} ({selectedCity.nameEn})
+              {isEn ? 'Climate & Solar Metrics:' : 'اطلاعات اقلیمی:'} {isEn ? selectedCity.nameEn : selectedCity.nameFa}
             </h2>
-            <p className="text-xs text-sky-400 mt-0.5">{selectedCity.descriptionFa}</p>
+            <p className="text-xs text-sky-400 mt-0.5">
+              {isEn ? selectedCity.descriptionEn : selectedCity.descriptionFa}
+            </p>
           </div>
           <button
             onClick={() => setIsEditing(!isEditing)}
             className="studio-btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
           >
             <Edit3 className="w-3.5 h-3.5" />
-            {isEditing ? 'انصراف از ویرایش' : 'ویرایش پارامترهای اقلیمی'}
+            {isEditing
+              ? isEn
+                ? 'Cancel Edit'
+                : 'انصراف از ویرایش'
+              : isEn
+              ? 'Edit Climate Parameters'
+              : 'ویرایش پارامترهای اقلیمی'}
           </button>
         </div>
 
@@ -115,67 +129,99 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
         {!isEditing ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
             <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-              <span className="text-slate-400 block mb-1">میانگین ساعات آفتابی اوج (PSH)</span>
+              <span className="text-slate-400 block mb-1">
+                {isEn ? 'Peak Sun Hours (PSH)' : 'میانگین ساعات آفتابی اوج (PSH)'}
+              </span>
               <span className="text-xl font-bold font-mono text-amber-400">
                 {selectedCity.peakSunHours}
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">ساعت در روز (kWh/m²/day)</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {isEn ? 'Hours/Day (kWh/m²/day)' : 'ساعت در روز (kWh/m²/day)'}
+              </span>
             </div>
 
             <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-              <span className="text-slate-400 block mb-1">حداقل دمای طراحی (T_min)</span>
+              <span className="text-slate-400 block mb-1">
+                {isEn ? 'Min Design Temp (T_min)' : 'حداقل دمای طراحی (T_min)'}
+              </span>
               <span className="text-xl font-bold font-mono text-cyan-400">
                 {selectedCity.tempMinC}°C
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">معیار ولتاژ حداکثر استرینگ (Voc)</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {isEn ? 'Coldest record for Voc,max (NEC 690.7)' : 'معیار ولتاژ حداکثر استرینگ (Voc)'}
+              </span>
             </div>
 
             <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-              <span className="text-slate-400 block mb-1">حداکثر دمای طراحی (T_max)</span>
+              <span className="text-slate-400 block mb-1">
+                {isEn ? 'Max Design Temp (T_max)' : 'حداکثر دمای طراحی (T_max)'}
+              </span>
               <span className="text-xl font-bold font-mono text-red-400">
                 {selectedCity.tempMaxC}°C
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">معیار افت حرارتی توان (Pmp)</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {isEn ? 'Hottest record for Vmp,min drop' : 'معیار افت حرارتی توان (Pmp)'}
+              </span>
             </div>
 
             <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-              <span className="text-slate-400 block mb-1">مختصات جغرافیایی و ارتفاع</span>
+              <span className="text-slate-400 block mb-1">
+                {isEn ? 'Coordinates & Elevation' : 'مختصات جغرافیایی و ارتفاع'}
+              </span>
               <span className="font-mono text-slate-200 block text-xs">
                 {selectedCity.latitude}° N, {selectedCity.longitude}° E
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">ارتفاع از دریا: {selectedCity.elevationM} متر</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {isEn ? `Elevation: ${selectedCity.elevationM} m MSL` : `ارتفاع از دریا: ${selectedCity.elevationM} متر`}
+              </span>
             </div>
 
             <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-              <span className="text-slate-400 block mb-1">شیب بهینه سالانه (Annual Tilt)</span>
+              <span className="text-slate-400 block mb-1">
+                {isEn ? 'Optimal Annual Tilt' : 'شیب بهینه سالانه (Annual Tilt)'}
+              </span>
               <span className="text-xl font-bold font-mono text-sky-400">
                 {selectedCity.optimalTiltAnnualDeg}°
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">زاویه استراکچر ثابت تمام فصول</span>
-            </div>
-
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-              <span className="text-slate-400 block mb-1">شیب زمستانه / تابستانه</span>
-              <span className="font-mono text-slate-200 block text-xs">
-                زمستان: <strong className="text-sky-300">{selectedCity.optimalTiltWinterDeg}°</strong> | تابستان: <strong className="text-amber-300">{selectedCity.optimalTiltSummerDeg}°</strong>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {isEn ? 'Fixed racking optimal slope' : 'زاویه استراکچر ثابت تمام فصول'}
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">برای سازه‌های با شیب قابل تنظیم فصلی</span>
             </div>
 
             <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-              <span className="text-slate-400 block mb-1">افت گرد و غبار (Soiling Loss)</span>
+              <span className="text-slate-400 block mb-1">
+                {isEn ? 'Winter / Summer Tilt' : 'شیب زمستانه / تابستانه'}
+              </span>
+              <span className="font-mono text-slate-200 block text-xs">
+                {isEn ? 'Winter: ' : 'زمستان: '}<strong className="text-sky-300">{selectedCity.optimalTiltWinterDeg}°</strong> | {isEn ? 'Summer: ' : 'تابستان: '}<strong className="text-amber-300">{selectedCity.optimalTiltSummerDeg}°</strong>
+              </span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {isEn ? 'For seasonal adjustable racking' : 'برای سازه‌های با شیب قابل تنظیم فصلی'}
+              </span>
+            </div>
+
+            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <span className="text-slate-400 block mb-1">
+                {isEn ? 'Soiling Loss Factor' : 'افت گرد و غبار (Soiling Loss)'}
+              </span>
               <span className="text-xl font-bold font-mono text-amber-300">
                 {selectedCity.soilingLossPct}%
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">کاهش بازدهی ناشی از نشست ذرات</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {isEn ? 'Atmospheric particulate derate' : 'کاهش بازدهی ناشی از نشست ذرات'}
+              </span>
             </div>
 
             <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
-              <span className="text-slate-400 block mb-1">ضریب آلبیدو زمین (Albedo)</span>
+              <span className="text-slate-400 block mb-1">
+                {isEn ? 'Ground Albedo Factor' : 'ضریب آلبیدو زمین (Albedo)'}
+              </span>
               <span className="text-xl font-bold font-mono text-emerald-400">
                 {selectedCity.albedo}
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">بازتابش تشعشع برای پنل‌های دوطرفه</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {isEn ? 'Bifacial rear reflection' : 'بازتابش تشعشع برای پنل‌های دوطرفه'}
+              </span>
             </div>
           </div>
         ) : (
@@ -183,7 +229,9 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
           <div className="space-y-4 text-xs">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-slate-300 mb-1">ساعات آفتابی اوج (PSH)</label>
+                <label className="block text-slate-300 mb-1">
+                  {isEn ? 'Peak Sun Hours (PSH)' : 'ساعات آفتابی اوج (PSH)'}
+                </label>
                 <input
                   type="number"
                   step="0.05"
@@ -194,7 +242,9 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">حداقل دمای طراحی (°C)</label>
+                <label className="block text-slate-300 mb-1">
+                  {isEn ? 'Min Design Temp (°C)' : 'حداقل دمای طراحی (°C)'}
+                </label>
                 <input
                   type="number"
                   step="1"
@@ -205,7 +255,9 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">حداکثر دمای طراحی (°C)</label>
+                <label className="block text-slate-300 mb-1">
+                  {isEn ? 'Max Design Temp (°C)' : 'حداکثر دمای طراحی (°C)'}
+                </label>
                 <input
                   type="number"
                   step="1"
@@ -216,7 +268,9 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">شیب بهینه سالانه (°)</label>
+                <label className="block text-slate-300 mb-1">
+                  {isEn ? 'Optimal Annual Tilt (°)' : 'شیب بهینه سالانه (°)'}
+                </label>
                 <input
                   type="number"
                   step="1"
@@ -227,7 +281,9 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">افت گرد و غبار (%)</label>
+                <label className="block text-slate-300 mb-1">
+                  {isEn ? 'Soiling Loss (%)' : 'افت گرد و غبار (%)'}
+                </label>
                 <input
                   type="number"
                   step="0.5"
@@ -238,7 +294,9 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">ضریب آلبیدو</label>
+                <label className="block text-slate-300 mb-1">
+                  {isEn ? 'Albedo Factor' : 'ضریب آلبیدو'}
+                </label>
                 <input
                   type="number"
                   step="0.02"
@@ -249,7 +307,9 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">عرض جغرافیایی (°)</label>
+                <label className="block text-slate-300 mb-1">
+                  {isEn ? 'Latitude (°N)' : 'عرض جغرافیایی (°)'}
+                </label>
                 <input
                   type="number"
                   step="0.0001"
@@ -260,7 +320,9 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">طول جغرافیایی (°)</label>
+                <label className="block text-slate-300 mb-1">
+                  {isEn ? 'Longitude (°E)' : 'طول جغرافیایی (°)'}
+                </label>
                 <input
                   type="number"
                   step="0.0001"
@@ -277,14 +339,15 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
                 onClick={() => setIsEditing(false)}
                 className="studio-btn-secondary text-xs"
               >
-                انصراف
+                {isEn ? 'Cancel' : 'انصراف'}
               </button>
               <button
                 type="button"
                 onClick={handleSaveCustom}
                 className="studio-btn-primary text-xs flex items-center gap-1.5"
               >
-                <Check className="w-3.5 h-3.5" /> اعمال پارامترهای سفارشی
+                <Check className="w-3.5 h-3.5" />
+                {isEn ? 'Apply Custom Parameters' : 'اعمال پارامترهای سفارشی'}
               </button>
             </div>
           </div>
@@ -293,3 +356,4 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
     </div>
   );
 };
+export default ClimateTab;

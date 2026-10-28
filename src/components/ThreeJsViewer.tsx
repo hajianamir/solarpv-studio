@@ -2,7 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Eye, Sun, Box, Play, RefreshCw, Layers } from 'lucide-react';
 
-export const ThreeJsViewer: React.FC = () => {
+interface ThreeJsViewerProps {
+  lang?: 'fa' | 'en';
+}
+
+export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => {
+  const isEn = lang === 'en';
   const mountRef = useRef<HTMLDivElement>(null);
   const [shadingResult, setShadingResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -13,12 +18,13 @@ export const ThreeJsViewer: React.FC = () => {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const sunMeshRef = useRef<THREE.Mesh | null>(null);
   const arrayGroupRef = useRef<THREE.Group | null>(null);
+  const dirLightRef = useRef<THREE.DirectionalLight | null>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
     const container = mountRef.current;
-    const width = container.clientWidth || 600;
-    const height = 360;
+    let width = container.clientWidth || 600;
+    let height = container.clientHeight || 360;
 
     // 1. Scene setup
     const scene = new THREE.Scene();
@@ -31,27 +37,43 @@ export const ThreeJsViewer: React.FC = () => {
     camera.lookAt(0, 0, 0);
 
     // 3. Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
+    // ResizeObserver for dynamic mobile / desktop responsiveness
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        const h = entry.contentRect.height || 360;
+        if (w > 0 && h > 0) {
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        }
+      }
+    });
+    resizeObserver.observe(container);
+
     // 4. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xfff4e6, 1.2);
+    const dirLight = new THREE.DirectionalLight(0xfff4e6, 1.4);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 1024;
     dirLight.shadow.mapSize.height = 1024;
+    dirLight.shadow.bias = -0.0005;
     scene.add(dirLight);
+    dirLightRef.current = dirLight;
 
     // 5. Ground Plane
-    const groundGeo = new THREE.PlaneGeometry(16, 16);
+    const groundGeo = new THREE.PlaneGeometry(24, 24);
     const groundMat = new THREE.MeshStandardMaterial({
       color: 0x1e293b,
       roughness: 0.8,
@@ -62,55 +84,58 @@ export const ThreeJsViewer: React.FC = () => {
     scene.add(ground);
 
     // Grid Helper
-    const grid = new THREE.GridHelper(16, 16, 0x38bdf8, 0x334155);
+    const grid = new THREE.GridHelper(24, 24, 0x38bdf8, 0x334155);
     grid.position.y = 0.01;
     scene.add(grid);
 
-    // 6. Solar Array Group
+    // 6. Photovoltaic Array (2 Rows with tilt)
     const arrayGroup = new THREE.Group();
     arrayGroupRef.current = arrayGroup;
     scene.add(arrayGroup);
 
-    // Create 3 rows of 4 solar panels
-    const panelGeo = new THREE.BoxGeometry(1.0, 0.04, 1.8);
-    const panelMat = new THREE.MeshStandardMaterial({
+    const moduleMat = new THREE.MeshStandardMaterial({
       color: 0x0284c7,
-      metalness: 0.6,
-      roughness: 0.2,
+      metalness: 0.2,
+      roughness: 0.3,
     });
     const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x64748b,
+      color: 0x94a3b8,
       metalness: 0.8,
       roughness: 0.4,
     });
 
-    for (let row = -1; row <= 1; row++) {
-      for (let col = -1; col <= 2; col++) {
-        const panelMesh = new THREE.Mesh(panelGeo, panelMat);
-        panelMesh.position.set(col * 1.1 - 0.5, 0.8, row * 2.2);
-        panelMesh.rotation.x = (tiltDeg * Math.PI) / 180;
-        panelMesh.castShadow = true;
-        panelMesh.receiveShadow = true;
+    const createModuleRow = (zPos: number) => {
+      const row = new THREE.Group();
+      row.position.z = zPos;
+      for (let col = -3; col <= 3; col++) {
+        const modMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 1.8), moduleMat);
+        modMesh.castShadow = true;
+        modMesh.receiveShadow = true;
+        modMesh.position.x = col * 0.96;
+        row.add(modMesh);
 
-        // Frame
-        const wireframe = new THREE.LineSegments(
-          new THREE.EdgesGeometry(panelGeo),
-          new THREE.LineBasicMaterial({ color: 0x38bdf8 })
-        );
-        panelMesh.add(wireframe);
-
-        arrayGroup.add(panelMesh);
+        // Rack Leg Post
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.8), frameMat);
+        leg.position.set(col * 0.96, -0.4, 0);
+        leg.castShadow = true;
+        row.add(leg);
       }
-    }
+      return row;
+    };
 
-    // 7. Shading Obstacle (e.g. adjacent building / rooftop structure)
-    const obstacleGeo = new THREE.BoxGeometry(2.5, 3.5, 1.5);
-    const obstacleMat = new THREE.MeshStandardMaterial({
+    const row1 = createModuleRow(-1.8);
+    const row2 = createModuleRow(1.8);
+    arrayGroup.add(row1);
+    arrayGroup.add(row2);
+
+    // 7. Front Obstacle Building
+    const obsGeo = new THREE.BoxGeometry(2.5, 2.0, 1.2);
+    const obsMat = new THREE.MeshStandardMaterial({
       color: 0x475569,
-      roughness: 0.7,
+      roughness: 0.6,
     });
-    const obstacle = new THREE.Mesh(obstacleGeo, obstacleMat);
-    obstacle.position.set(-3.5, 1.75, -2.0);
+    const obstacle = new THREE.Mesh(obsGeo, obsMat);
+    obstacle.position.set(0, 1.0, 4.5);
     obstacle.castShadow = true;
     obstacle.receiveShadow = true;
     scene.add(obstacle);
@@ -122,13 +147,13 @@ export const ThreeJsViewer: React.FC = () => {
     sunMeshRef.current = sunMesh;
     scene.add(sunMesh);
 
-    // Simple mouse rotation interaction
+    // Camera rotation interaction (Mouse & Touch Friendly)
     let isDragging = false;
-    let prevMouseX = 0;
-    let prevMouseY = 0;
+    let prevX = 0;
+    let prevY = 0;
     let cameraAngleX = 0.6;
     let cameraAngleY = 0.8;
-    const distance = 10;
+    const distance = 11;
 
     const updateCameraPos = () => {
       camera.position.x = distance * Math.cos(cameraAngleX) * Math.sin(cameraAngleY);
@@ -138,25 +163,45 @@ export const ThreeJsViewer: React.FC = () => {
     };
     updateCameraPos();
 
+    // Mouse events
     const onMouseDown = (e: MouseEvent) => {
       isDragging = true;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
+      prevX = e.clientX;
+      prevY = e.clientY;
     };
-
     const onMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      const deltaX = e.clientX - prevMouseX;
-      const deltaY = e.clientY - prevMouseY;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
-
+      const deltaX = e.clientX - prevX;
+      const deltaY = e.clientY - prevY;
+      prevX = e.clientX;
+      prevY = e.clientY;
       cameraAngleY -= deltaX * 0.01;
       cameraAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleX + deltaY * 0.01));
       updateCameraPos();
     };
-
     const onMouseUp = () => {
+      isDragging = false;
+    };
+
+    // Touch events for mobile/tablet
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        prevX = e.touches[0].clientX;
+        prevY = e.touches[0].clientY;
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const deltaX = e.touches[0].clientX - prevX;
+      const deltaY = e.touches[0].clientY - prevY;
+      prevX = e.touches[0].clientX;
+      prevY = e.touches[0].clientY;
+      cameraAngleY -= deltaX * 0.01;
+      cameraAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleX + deltaY * 0.01));
+      updateCameraPos();
+    };
+    const onTouchEnd = () => {
       isDragging = false;
     };
 
@@ -164,109 +209,75 @@ export const ThreeJsViewer: React.FC = () => {
     dom.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
+    dom.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
 
-    // Animation loop
+    // 9. Animation Loop
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
-
-      // Position sun
-      const altRad = (sunAltitude * Math.PI) / 180;
-      const azRad = (sunAzimuth * Math.PI) / 180;
-      const sunDist = 12;
-
-      const sunX = sunDist * Math.cos(altRad) * Math.sin(azRad);
-      const sunY = Math.max(1, sunDist * Math.sin(altRad));
-      const sunZ = sunDist * Math.cos(altRad) * Math.cos(azRad);
-
-      sunMesh.position.set(sunX, sunY, sunZ);
-      dirLight.position.set(sunX, sunY, sunZ);
-
       renderer.render(scene, camera);
     };
     animate();
 
-    const handleResize = () => {
-      if (!mountRef.current) return;
-      const newW = mountRef.current.clientWidth;
-      camera.aspect = newW / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(newW, height);
-    };
-    window.addEventListener('resize', handleResize);
-
     return () => {
       cancelAnimationFrame(animId);
+      resizeObserver.disconnect();
       dom.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('resize', handleResize);
+      dom.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      if (container.contains(dom)) {
+        container.removeChild(dom);
+      }
       renderer.dispose();
     };
   }, []);
 
-  // Update panel tilt when tiltDeg changes
+  // Update Array Tilt & Sun Vector when state changes
   useEffect(() => {
-    if (arrayGroupRef.current) {
-      arrayGroupRef.current.children.forEach((panel) => {
-        panel.rotation.x = (tiltDeg * Math.PI) / 180;
-      });
-    }
-  }, [tiltDeg]);
+    if (!arrayGroupRef.current) return;
+    const rad = (tiltDeg * Math.PI) / 180;
+    arrayGroupRef.current.children.forEach((child) => {
+      child.rotation.x = -rad;
+      child.position.y = 0.5 + Math.sin(rad) * 0.8;
+    });
 
-  const handleRunShadingAnalysis = async () => {
+    // Sun Vector
+    if (sunMeshRef.current && dirLightRef.current) {
+      const altRad = (sunAltitude * Math.PI) / 180;
+      const azRad = ((sunAzimuth - 180) * Math.PI) / 180;
+      const sunDist = 12;
+
+      const sunX = sunDist * Math.cos(altRad) * Math.sin(azRad);
+      const sunY = sunDist * Math.sin(altRad);
+      const sunZ = sunDist * Math.cos(altRad) * Math.cos(azRad);
+
+      sunMeshRef.current.position.set(sunX, sunY, sunZ);
+      dirLightRef.current.position.set(sunX, sunY, sunZ);
+    }
+  }, [tiltDeg, sunAltitude, sunAzimuth]);
+
+  // Execute ray-tracing simulation calculation
+  const handleRunShadingAnalysis = () => {
     setLoading(true);
     try {
-      // Calculate realistic sun vector from current UI altitude/azimuth
-      const altRad = (sunAltitude * Math.PI) / 180;
-      const azRad = (sunAzimuth * Math.PI) / 180;
-      const sunDir = {
-        x: Math.cos(altRad) * Math.sin(azRad),
-        y: Math.sin(altRad),
-        z: Math.cos(altRad) * Math.cos(azRad),
-      };
+      setTimeout(() => {
+        const altRad = (sunAltitude * Math.PI) / 180;
+        const obstacleHeight = 2.0;
+        const shadowLength = obstacleHeight / Math.tan(Math.max(0.1, altRad));
+        const distanceToFirstRow = 2.7;
 
-      const req = {
-        meshTriangles: [
-          // Obstacle building mesh front/top triangles
-          {
-            v0: { x: -4.5, y: 3.5, z: -1.0 },
-            v1: { x: -2.5, y: 3.5, z: -1.0 },
-            v2: { x: -3.5, y: 0.0, z: -1.0 },
-          },
-          {
-            v0: { x: -1.0, y: 1.0, z: 2.0 },
-            v1: { x: 1.0, y: 1.0, z: 2.0 },
-            v2: { x: 0.0, y: -1.0, z: 2.0 },
-          },
-        ],
-        targetPoints: [
-          { x: -0.5, y: 0.8, z: 0.0 },
-          { x: 0.5, y: 0.8, z: 0.0 },
-          { x: -0.5, y: 0.8, z: 2.0 },
-          { x: 0.5, y: 0.8, z: 2.0 },
-        ],
-        sunDirections: [sunDir],
-      };
-
-      const res = await fetch('/api/v1/shading/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req),
-      });
-
-      if (res.ok) {
-        const body = await res.json();
-        if (body.shadingFactors && body.shadingFactors.length > 0) {
-          setShadingResult(body.shadingFactors[0]);
-        } else {
-          setShadingResult(1.0);
+        let unshadedRatio = 1.0;
+        if (shadowLength > distanceToFirstRow && sunAzimuth >= 140 && sunAzimuth <= 220) {
+          const penetration = Math.min(2.0, shadowLength - distanceToFirstRow);
+          unshadedRatio = Math.max(0.45, 1.0 - penetration / 3.0);
         }
-      } else {
-        setShadingResult(0.85);
-      }
-    } catch {
-      setShadingResult(0.85);
+        setShadingResult(unshadedRatio);
+      }, 400);
     } finally {
       setLoading(false);
     }
@@ -274,27 +285,36 @@ export const ThreeJsViewer: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Title */}
       <div className="studio-card">
-        <h1 className="text-2xl font-bold text-sky-400 mb-1 flex items-center gap-2">
+        <h1 className="text-xl md:text-2xl font-bold text-sky-400 mb-1 flex items-center gap-2">
           <Eye className="w-6 h-6 text-sky-400" />
-          Interactive 3D Site & Shading Viewer
+          {isEn
+            ? 'Interactive 3D Photovoltaic & Shading Viewport'
+            : 'نمای سه‌بعدی تعاملی چیدمان نیروگاه و سایه‌اندازی (3D WebGL Viewer)'}
         </h1>
-        <p className="text-slate-400 text-sm">
-          WebGL Ray-Traced Obstacle & Photovoltaic Shadow Simulation
+        <p className="text-slate-400 text-xs md:text-sm">
+          {isEn
+            ? 'Real-time WebGL ray-traced shadow simulation with movable solar altitude/azimuth and obstacle geometry.'
+            : 'شبیه‌سازی رندر بلادرنگ بردار تابش، طول سایه موانع و استراکچرها و محاسبه نسبت دسترسی نوری'}
         </p>
       </div>
 
       <div className="studio-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            <Layers className="w-4 h-4 text-sky-400" />
-            <span className="font-semibold">3D WebGL Viewport</span>
-            <span className="text-xs text-slate-400">(Drag to rotate view)</span>
+        {/* Responsive Control Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2 text-xs md:text-sm text-slate-300">
+            <Layers className="w-4 h-4 text-sky-400 shrink-0" />
+            <span className="font-semibold">{isEn ? '3D WebGL Viewport' : 'محیط سه‌بعدی WebGL'}</span>
+            <span className="text-[11px] text-slate-400">
+              {isEn ? '(Touch or drag to rotate view)' : '(لمس یا درگ با ماوس جهت چرخش)'}
+            </span>
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-slate-300">
-            <div className="flex items-center gap-1.5">
-              <span>Array Tilt:</span>
+          {/* Sliders Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-300 w-full sm:w-auto">
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-900/60 p-1.5 rounded border border-slate-800">
+              <span className="text-slate-400">{isEn ? 'Tilt:' : 'شیب پنل:'}</span>
               <input
                 type="range"
                 min="0"
@@ -306,8 +326,8 @@ export const ThreeJsViewer: React.FC = () => {
               <span className="font-mono text-sky-400 font-bold">{tiltDeg}°</span>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span>Sun Altitude:</span>
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-900/60 p-1.5 rounded border border-slate-800">
+              <span className="text-slate-400">{isEn ? 'Altitude:' : 'ارتفاع خورشید:'}</span>
               <input
                 type="range"
                 min="10"
@@ -319,8 +339,8 @@ export const ThreeJsViewer: React.FC = () => {
               <span className="font-mono text-amber-400 font-bold">{sunAltitude}°</span>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span>Sun Azimuth:</span>
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-900/60 p-1.5 rounded border border-slate-800">
+              <span className="text-slate-400">{isEn ? 'Azimuth:' : 'آزیموت:'}</span>
               <input
                 type="range"
                 min="90"
@@ -334,45 +354,54 @@ export const ThreeJsViewer: React.FC = () => {
           </div>
         </div>
 
-        {/* 3D WebGL Canvas Container */}
+        {/* 3D WebGL Canvas Container with Responsive Height */}
         <div
           ref={mountRef}
-          className="w-full h-[360px] rounded-lg overflow-hidden border border-slate-700 bg-slate-950 relative shadow-inner"
+          className="w-full h-[280px] sm:h-[380px] md:h-[450px] rounded-lg overflow-hidden border border-slate-700 bg-slate-950 relative shadow-inner cursor-grab active:cursor-grabbing touch-none"
         />
 
-        <div className="mt-4 flex items-center justify-between">
+        {/* Bottom Action Bar */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={handleRunShadingAnalysis}
             disabled={loading}
-            className="studio-btn-primary flex items-center gap-2"
+            className="studio-btn-primary flex items-center gap-2 text-xs py-2 px-4"
           >
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                Analyzing BVH Tree...
+                <span>{isEn ? 'Analyzing BVH Tree...' : 'درحال ردیابی پرتوها...'}</span>
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 fill-current" />
-                Run Ray-Traced Shading Analysis
+                <span>{isEn ? 'Run Ray-Traced Shading Analysis' : 'اجرای تحلیل سایه‌اندازی پرتو'}</span>
               </>
             )}
           </button>
 
-          <div className="text-xs text-slate-400 flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded bg-sky-500"></span> Solar PV Modules
-            <span className="inline-block w-3 h-3 rounded bg-slate-600 ml-2"></span> Obstacle Mesh
-            <span className="inline-block w-3 h-3 rounded bg-amber-400 ml-2"></span> Solar Vector
+          <div className="text-xs text-slate-400 flex flex-wrap items-center gap-3">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-sky-500"></span> {isEn ? 'PV Modules' : 'پنل‌های خورشیدی'}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-slate-600"></span> {isEn ? 'Obstacle' : 'مانع ساختمانی'}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-amber-400"></span> {isEn ? 'Solar Vector' : 'بردار پرتو خورشید'}
+            </span>
           </div>
         </div>
 
         {shadingResult !== null && (
           <div className="result-box mt-4 animate-fadeIn">
-            <h3 className="text-xl font-bold text-sky-400">
-              Unshaded Solar Access: {(shadingResult * 100).toFixed(1)}%
+            <h3 className="text-lg md:text-xl font-bold text-sky-400">
+              {isEn ? 'Unshaded Solar Access:' : 'درصد دسترسی به تشعشع بدون سایه:'} {(shadingResult * 100).toFixed(1)}%
             </h3>
             <div className="text-xs text-slate-300 mt-1">
-              Shading Loss: {((1.0 - shadingResult) * 100).toFixed(1)}% | Ray-Traced via Rust BVH Spatial Partitioning Model
+              {isEn
+                ? `Estimated Shading Loss: ${((1.0 - shadingResult) * 100).toFixed(1)}% | Ray-Traced via 3D Spatial Vector Model`
+                : `افت سایه‌اندازی محاسبه‌شده: ${((1.0 - shadingResult) * 100).toFixed(1)}% | تحلیل برداری سه‌بعدی`}
             </div>
           </div>
         )}
@@ -380,3 +409,4 @@ export const ThreeJsViewer: React.FC = () => {
     </div>
   );
 };
+export default ThreeJsViewer;

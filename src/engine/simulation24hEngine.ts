@@ -26,12 +26,14 @@ export interface Simulation24hResult {
 export interface GeneratorSizingResult {
   recommendedCapacityKva: number;
   recommendedCapacityKw: number;
+  estimatedCapexUsd: number;
   fuelConsumptionLitersPerHour: number;
   dailyFuelConsumptionLiters: number;
   minFuelTankSizeLiters: number;
   powerFactor: number;
   startingCurrentCapabilityAmps: number;
   notesFa: string;
+  notesEn: string;
 }
 
 export function simulate24hEnergyBalance(
@@ -172,15 +174,18 @@ export function sizeDieselGenerator(
   const startingCurrentCapabilityAmps = Math.round((recommendedKva * 1000.0) / (Math.sqrt(3) * 400.0) * 1.8);
 
   const notesFa = `دیزل ژنراتور کمکی با توان نامی ${recommendedKva} kVA (${recommendedKw.toFixed(1)} kW) جهت شارژ اضطراری باتری‌ها و راه‌اندازی بارهای القایی هجومی. مصرف میانگین سوخت حدود ${fuelConsumptionLitersPerHour} لیتر در ساعت.`;
+  const notesEn = `Auxiliary diesel backup generator rated at ${recommendedKva} kVA (${recommendedKw.toFixed(1)} kW) for emergency battery charging, substation auxiliary power, and motor inrush handling. Estimated average diesel fuel burn is ~${fuelConsumptionLitersPerHour} L/h.`;
 
   return {
     recommendedCapacityKva: recommendedKva,
     recommendedCapacityKw: recommendedKw,
+    estimatedCapexUsd: Math.round(recommendedKw * 380),
     fuelConsumptionLitersPerHour,
     dailyFuelConsumptionLiters,
     minFuelTankSizeLiters,
     powerFactor,
     startingCurrentCapabilityAmps,
     notesFa,
+    notesEn,
   };
 }

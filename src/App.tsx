@@ -182,6 +182,7 @@ export const App: React.FC = () => {
   const [autonomyDays, setAutonomyDays] = useState<number>(1.5);
   const [outageHours, setOutageHours] = useState<number>(6); // For ongrid mode blackout calculation
   const [targetPowerplantCapacityKw, setTargetPowerplantCapacityKw] = useState<number>(1000); // 1MW default
+  const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
   
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
@@ -280,6 +281,7 @@ export const App: React.FC = () => {
       autonomyDays,
       outageHours,
       targetPowerplantCapacityKw,
+      enableDieselGenerator,
       userPricing,
     };
     try {
@@ -450,16 +452,25 @@ export const App: React.FC = () => {
     );
   }, [arrayDesign, city, loadAnalysis, batterySizing]);
 
-  // 9. Diesel Backup Generator Sizing
+  // 9. Diesel Backup Generator Sizing (Optionally activated by user)
   const generatorSizing = useMemo(() => {
-    return sizeDieselGenerator(
-      loadAnalysis.continuousActivePowerWatts,
-      loadAnalysis.maxSurgePeakPowerWatts,
-      outageHours
-    );
-  }, [loadAnalysis, outageHours]);
+    const contWatts =
+      systemMode === 'powerplant'
+        ? Math.max(15000, (targetPowerplantCapacityKw || 1000) * 15) // Substation auxiliary power (~1.5%)
+        : loadAnalysis.continuousActivePowerWatts;
+    const peakWatts =
+      systemMode === 'powerplant'
+        ? contWatts * 2.2
+        : loadAnalysis.maxSurgePeakPowerWatts;
 
-  // 10. Financial Analysis with User Unit Pricing
+    return sizeDieselGenerator(
+      contWatts,
+      peakWatts,
+      systemMode === 'powerplant' ? 4 : outageHours
+    );
+  }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, outageHours]);
+
+  // 10. Financial Analysis with User Unit Pricing & Optional Genset CAPEX
   const estimatedAnnualYieldMwh = (arrayDesign.totalPvCapacityKwp * city.peakSunHours * 365 * 0.82) / 1000;
 
   const financialResult = useMemo(() => {
@@ -469,9 +480,14 @@ export const App: React.FC = () => {
       batterySizing.grossCapacityKwh,
       inverterClustering.totalInverterCapacityKw,
       annualYieldKwh,
-      userPricing
+      {
+        ...userPricing,
+        includeDieselGenSet: enableDieselGenerator,
+        dieselGenSetCapexUsd: enableDieselGenerator ? generatorSizing.estimatedCapexUsd : 0,
+        dieselAnnualFuelLiters: enableDieselGenerator ? Math.round(generatorSizing.fuelConsumptionLitersPerHour * 100) : 0,
+      }
     );
-  }, [arrayDesign, batterySizing, inverterClustering, estimatedAnnualYieldMwh, userPricing]);
+  }, [arrayDesign, batterySizing, inverterClustering, estimatedAnnualYieldMwh, userPricing, enableDieselGenerator, generatorSizing]);
 
   // 11. Scenario Analysis (only for Battery modes)
   const scenarios = useMemo(() => {
@@ -496,6 +512,7 @@ export const App: React.FC = () => {
     if (importedData.customBaysCount) setCustomBaysCount(importedData.customBaysCount);
     if (importedData.mvVoltageKv) setMvVoltageKv(importedData.mvVoltageKv);
     if (importedData.targetPowerplantCapacityKw) setTargetPowerplantCapacityKw(importedData.targetPowerplantCapacityKw);
+    if (importedData.enableDieselGenerator !== undefined) setEnableDieselGenerator(Boolean(importedData.enableDieselGenerator));
     if (importedData.userPricing) setUserPricing(importedData.userPricing);
   };
 
@@ -513,7 +530,7 @@ export const App: React.FC = () => {
         {
           categoryTitle: t.catSystemMode,
           tabs: [
-            { id: 'system_mode' as ActiveModuleTab, title: `${t.tabSystemMode} & بی‌های MV`, icon: <Sliders className="w-4 h-4 text-sky-400" /> },
+            { id: 'system_mode' as ActiveModuleTab, title: lang === 'fa' ? `${t.tabSystemMode} & بی‌های MV` : `${t.tabSystemMode} & MV Bays`, icon: <Sliders className="w-4 h-4 text-sky-400" /> },
           ],
         },
         {
@@ -604,7 +621,7 @@ export const App: React.FC = () => {
           tabs: [
             { id: 'sim24h' as ActiveModuleTab, title: t.tabSimulation24h, icon: <Workflow className="w-4 h-4 text-cyan-400" /> },
             { id: 'financial' as ActiveModuleTab, title: t.tabFinancial, icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
-            { id: 'scenarios' as ActiveModuleTab, title: 'مقایسه سناریوها', icon: <GitCompare className="w-4 h-4 text-pink-400" /> },
+            { id: 'scenarios' as ActiveModuleTab, title: t.tabScenarios, icon: <GitCompare className="w-4 h-4 text-pink-400" /> },
             { id: 'cad_layout' as ActiveModuleTab, title: t.tabCadLayout, icon: <Grid className="w-4 h-4 text-blue-400" /> },
             { id: '3d_viewer' as ActiveModuleTab, title: t.tab3dViewer, icon: <Eye className="w-4 h-4 text-orange-400" /> },
             { id: 'catalog' as ActiveModuleTab, title: t.tabCatalog, icon: <Database className="w-4 h-4 text-slate-400" /> },
@@ -614,7 +631,7 @@ export const App: React.FC = () => {
         },
       ];
     }
-  }, [systemMode, t]);
+  }, [systemMode, t, lang]);
 
   return (
     <div
@@ -866,7 +883,7 @@ export const App: React.FC = () => {
                 <p className="text-slate-300 text-xs leading-relaxed">
                   {lang === 'fa'
                     ? 'نحوه اتصال به شبکه مبنای محاسبات آرایه PV، عدم نیاز یا سایزینگ باتری، اینورترهای رشته‌ای در برابر پست‌های یکپارچه Turnkey و آرایش بی‌های فشار متوسط است.'
-                    : 'Select operating topology between commercial utility powerplant (IPP), grid-tied with backup, or standalone off-grid.'}
+                    : 'The grid connection topology governs PV sizing, battery requirements, inverter selection (string vs MV Turnkey), and medium-voltage collector bay architecture.'}
                 </p>
 
                 {/* 3 Main Topologies */}
@@ -881,14 +898,16 @@ export const App: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-amber-400 flex items-center gap-2">
-                        <Building2 className="w-5 h-5" />
-                        نیروگاه تجاری (IPP Powerplant)
+                      <h3 className="font-bold text-amber-400 flex items-center gap-2 text-sm sm:text-base">
+                        <Building2 className="w-5 h-5 shrink-0" />
+                        {lang === 'fa' ? 'نیروگاه تجاری (IPP Powerplant)' : 'Utility Powerplant (IPP)'}
                       </h3>
-                      {systemMode === 'powerplant' && <CheckCircle2 className="w-5 h-5 text-amber-400" />}
+                      {systemMode === 'powerplant' && <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />}
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      اتصال مستقیم به شبکه فشار متوسط (20kV/33kV). محاسبات باتری و بارهای الکتریکی به طور کامل غیرضروری و حذف می‌شوند.
+                      {lang === 'fa'
+                        ? 'اتصال مستقیم به شبکه فشار متوسط (20kV/33kV). محاسبات باتری و بارهای الکتریکی به طور کامل غیرضروری و حذف می‌شوند.'
+                        : 'Direct MV grid injection (20kV/33kV). Battery storage and local load profiling are bypassed.'}
                     </p>
                   </div>
 
@@ -902,14 +921,16 @@ export const App: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-sky-400 flex items-center gap-2">
-                        <Grid className="w-5 h-5" />
-                        متصل به شبکه با پشتیبان (On-grid)
+                      <h3 className="font-bold text-sky-400 flex items-center gap-2 text-sm sm:text-base">
+                        <Grid className="w-5 h-5 shrink-0" />
+                        {lang === 'fa' ? 'متصل به شبکه با پشتیبان (On-grid)' : 'On-Grid with Backup'}
                       </h3>
-                      {systemMode === 'ongrid' && <CheckCircle2 className="w-5 h-5 text-sky-400" />}
+                      {systemMode === 'ongrid' && <CheckCircle2 className="w-5 h-5 text-sky-400 shrink-0" />}
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      تأمین بار از شبکه و PV. باتری صرفاً بر مبنای ساعات قطعی و خاموشی شبکه در ساعات اوج بار سایز می‌شود.
+                      {lang === 'fa'
+                        ? 'تأمین بار از شبکه و PV. باتری صرفاً بر مبنای ساعات قطعی و خاموشی شبکه در ساعات اوج بار سایز می‌شود.'
+                        : 'Supplies local loads via grid and PV. Battery storage is sized strictly for grid outage hours.'}
                     </p>
                   </div>
 
@@ -923,14 +944,16 @@ export const App: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-emerald-400 flex items-center gap-2">
-                        <Zap className="w-5 h-5" />
-                        مستقل از شبکه (Off-grid Standalone)
+                      <h3 className="font-bold text-emerald-400 flex items-center gap-2 text-sm sm:text-base">
+                        <Zap className="w-5 h-5 shrink-0" />
+                        {lang === 'fa' ? 'مستقل از شبکه (Off-grid Standalone)' : 'Standalone Off-Grid'}
                       </h3>
-                      {systemMode === 'offgrid' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
+                      {systemMode === 'offgrid' && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      عدم دسترسی به شبکه سراسری. سایزینگ بر مبنای بار ۲۴ ساعته و روزهای خودمختاری ابری (Autonomy) انجام می‌پذیرد.
+                      {lang === 'fa'
+                        ? 'عدم دسترسی به شبکه سراسری. سایزینگ بر مبنای بار ۲۴ ساعته و روزهای خودمختاری ابری (Autonomy) انجام می‌پذیرد.'
+                        : '100% autonomous off-grid operation. Sizing is governed by 24h load profile and autonomy days.'}
                     </p>
                   </div>
                 </div>
@@ -940,7 +963,9 @@ export const App: React.FC = () => {
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-5">
                     <h3 className="text-sm font-bold text-amber-300 flex items-center gap-2">
                       <Cpu className="w-4 h-4 text-amber-400" />
-                      انتخاب فناوری اینورتر نیروگاهی و طراحی بی‌های فشار متوسط (MV Bays):
+                      {lang === 'fa'
+                        ? 'انتخاب فناوری اینورتر نیروگاهی و طراحی بی‌های فشار متوسط (MV Bays):'
+                        : 'Utility Inverter Technology & MV Collector Bays Design:'}
                     </h3>
 
                     {/* Technology Selector */}
@@ -954,11 +979,15 @@ export const App: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <strong className="text-white text-xs">۱. اینورترهای رشته‌ای (String Inverter 1500V)</strong>
+                          <strong className="text-white text-xs">
+                            {lang === 'fa' ? '۱. اینورترهای رشته‌ای (String Inverter 1500V)' : '1. High-Power String Inverters (1500V)'}
+                          </strong>
                           {inverterTech === 'string_inverter' && <CheckCircle2 className="w-4 h-4 text-sky-400" />}
                         </div>
                         <p className="text-[11px] text-slate-400 leading-relaxed">
-                          اینورترهای رشته‌ای ۲۵۰ تا ۳۵۰ کیلوواتی (مانند Huawei 330KTL یا Sungrow 350HX). بازدهی بالا در سایه‌اندازی، چند MPPT، نگهداری آسان با MTTR زیر ۲ ساعت.
+                          {lang === 'fa'
+                            ? 'اینورترهای رشته‌ای ۲۵۰ تا ۳۵۰ کیلوواتی (مانند Huawei 330KTL یا Sungrow 350HX). بازدهی بالا در سایه‌اندازی، چند MPPT، نگهداری آسان با MTTR زیر ۲ ساعت.'
+                            : 'Distributed 250kW-350kW string units (e.g. Sungrow 350HX, Huawei 330KTL). Multi-MPPT shading tolerance, easy maintenance, and <2h MTTR.'}
                         </p>
                       </div>
 
@@ -971,11 +1000,15 @@ export const App: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <strong className="text-white text-xs">۲. پست‌های یکپارچه کانتینری (MV Turnkey Skid Station)</strong>
+                          <strong className="text-white text-xs">
+                            {lang === 'fa' ? '۲. پست‌های یکپارچه کانتینری (MV Turnkey Skid Station)' : '2. Integrated MV Turnkey Skid Stations'}
+                          </strong>
                           {inverterTech === 'mv_turnkey' && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
                         </div>
                         <p className="text-[11px] text-slate-400 leading-relaxed">
-                          بلوک‌های متمرکز ۲.۵ تا ۶ مگاواتی یکپارچه (مانند Sungrow 3.125MW Skid یا Huawei STS 6MW). شامل اینورتر سنترال + ترانسفورماتور MV + دژنکتور RMU در یک پکیج آماده.
+                          {lang === 'fa'
+                            ? 'بلوک‌های متمرکز ۲.۵ تا ۶ مگاواتی یکپارچه (مانند Sungrow 3.125MW Skid یا Huawei STS 6MW). شامل اینورتر سنترال + ترانسفورماتور MV + دژنکتور RMU در یک پکیج آماده.'
+                            : 'Centralized 2.5MW to 6.25MW outdoor power stations (e.g. Sungrow 4.4MW, Huawei STS 6MW). Integrates central inverter, MV oil transformer, and SF6 RMU.'}
                         </p>
                       </div>
                     </div>
@@ -984,7 +1017,7 @@ export const App: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
                       <div>
                         <label className="text-slate-300 font-bold block mb-1">
-                          ظرفیت هدف نیروگاه (kW AC):
+                          {lang === 'fa' ? 'ظرفیت هدف نیروگاه (kW AC):' : 'Target Plant Capacity (kW AC):'}
                         </label>
                         <input
                           type="number"
@@ -993,12 +1026,16 @@ export const App: React.FC = () => {
                           onChange={(e) => setTargetPowerplantCapacityKw(Math.max(100, Number(e.target.value)))}
                           className="studio-input w-full font-mono font-bold text-amber-300"
                         />
-                        <span className="text-[10px] text-slate-400">معادل {(targetPowerplantCapacityKw / 1000).toFixed(2)} مگاوات AC</span>
+                        <span className="text-[10px] text-slate-400">
+                          {lang === 'fa'
+                            ? `معادل ${(targetPowerplantCapacityKw / 1000).toFixed(2)} مگاوات AC`
+                            : `Equivalent to ${(targetPowerplantCapacityKw / 1000).toFixed(2)} MW AC`}
+                        </span>
                       </div>
 
                       <div>
                         <label className="text-slate-300 font-bold block mb-1">
-                          تعداد بی‌های خروجی MV (توسط نرم‌افزار بهینه‌سازی شده):
+                          {lang === 'fa' ? 'تعداد بی‌های خروجی MV (بهینه‌سازی نرم‌افزار):' : 'MV Output Bays Count (Optimized):'}
                         </label>
                         <input
                           type="number"
@@ -1009,22 +1046,24 @@ export const App: React.FC = () => {
                           className="studio-input w-full font-mono font-bold text-sky-300"
                         />
                         <span className="text-[10px] text-slate-400">
-                          پیشنهاد بهینه: {bayArchitecture?.optimalBaysCount || 2} بی
+                          {lang === 'fa'
+                            ? `پیشنهاد بهینه: ${bayArchitecture?.optimalBaysCount || 2} بی`
+                            : `Optimal recommendation: ${bayArchitecture?.optimalBaysCount || 2} Bays`}
                         </span>
                       </div>
 
                       <div>
                         <label className="text-slate-300 font-bold block mb-1">
-                          سطح ولتاژ باسبار جمع‌آوری توان (MV Busbar):
+                          {lang === 'fa' ? 'سطح ولتاژ باسبار جمع‌آوری (MV Busbar):' : 'MV Collector Busbar Voltage Level:'}
                         </label>
                         <select
                           value={mvVoltageKv}
                           onChange={(e) => setMvVoltageKv(Number(e.target.value))}
                           className="studio-input w-full font-mono font-bold text-emerald-300"
                         >
-                          <option value="20">۲۰ کیلوولت (استاندارد شبکه توزیع ایران)</option>
-                          <option value="33">۳۳ کیلوولت (فشار متوسط مزارع بزرگ)</option>
-                          <option value="11">۱۱ کیلوولت</option>
+                          <option value="20">{lang === 'fa' ? '۲۰ کیلوولت (استاندارد شبکه توزیع ایران)' : '20 kV (Standard Iran Distribution)'}</option>
+                          <option value="33">{lang === 'fa' ? '۳۳ کیلوولت (فشار متوسط مزارع بزرگ)' : '33 kV (Utility Scale Large Farms)'}</option>
+                          <option value="11">11 kV</option>
                         </select>
                       </div>
                     </div>
@@ -1034,10 +1073,12 @@ export const App: React.FC = () => {
                       <div className="mt-4 pt-3 border-t border-slate-800 space-y-3">
                         <div className="flex items-center justify-between text-xs">
                           <strong className="text-sky-300 font-bold">
-                            آرایش بی‌های فشار متوسط تولید شده ({bayArchitecture.actualBaysCount} Bay):
+                            {lang === 'fa'
+                              ? `آرایش بی‌های فشار متوسط تولید شده (${bayArchitecture.actualBaysCount} Bay):`
+                              : `Engineered MV Collector Bays Architecture (${bayArchitecture.actualBaysCount} Bays):`}
                           </strong>
                           <span className="font-mono text-slate-400">
-                            باسبار اصلی: {bayArchitecture.mainCollectorBusbar.recommendedBusbarRatingAmps}A Cu @ {bayArchitecture.mainCollectorBusbar.voltageKv}kV
+                            {lang === 'fa' ? 'باسبار اصلی:' : 'Main Busbar:'} {bayArchitecture.mainCollectorBusbar.recommendedBusbarRatingAmps}A Cu @ {bayArchitecture.mainCollectorBusbar.voltageKv}kV
                           </span>
                         </div>
 
@@ -1045,19 +1086,19 @@ export const App: React.FC = () => {
                           {bayArchitecture.bays.map((bay) => (
                             <div key={bay.bayIndex} className="p-3 bg-slate-900 border border-slate-800 rounded-lg space-y-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-amber-300">{bay.bayNameFa}</span>
+                                <span className="font-bold text-amber-300">{lang === 'fa' ? bay.bayNameFa : bay.bayNameEn}</span>
                                 <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono text-[11px] font-bold">
                                   {bay.allocatedAcCapacityMw} MW AC
                                 </span>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
-                                <div>تعداد اینورتر: <strong className="text-white">{bay.inverterCount} × ({bay.inverterUnitRatingKw} kW)</strong></div>
-                                <div>ترانسفورماتور: <strong className="text-purple-300">{bay.transformerRatingMva} MVA ({bay.transformerVoltageRatio})</strong></div>
-                                <div>جریان نامی MV: <strong className="text-emerald-300">{bay.mvRatedCurrentAmps} A</strong></div>
-                                <div>حفاظت دژنکتور: <strong className="text-slate-200">VCB 630A / 25kA</strong></div>
+                                <div>{lang === 'fa' ? 'اینورترها:' : 'Inverters:'} <strong className="text-white">{bay.inverterCount} × ({bay.inverterUnitRatingKw} kW)</strong></div>
+                                <div>{lang === 'fa' ? 'ترانسفورماتور:' : 'Transformer:'} <strong className="text-purple-300">{bay.transformerRatingMva} MVA ({bay.transformerVoltageRatio})</strong></div>
+                                <div>{lang === 'fa' ? 'جریان نامی MV:' : 'Rated MV Amps:'} <strong className="text-emerald-300">{bay.mvRatedCurrentAmps} A</strong></div>
+                                <div>{lang === 'fa' ? 'حفاظت دژنکتور:' : 'Breaker Rating:'} <strong className="text-slate-200">VCB 630A / 25kA</strong></div>
                               </div>
                               <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-800/80">
-                                کابل فیدر: <span className="font-mono text-slate-300">{bay.collectorCableSpec}</span>
+                                {lang === 'fa' ? 'کابل فیدر:' : 'Feeder Cable:'} <span className="font-mono text-slate-300">{bay.collectorCableSpec}</span>
                               </div>
                             </div>
                           ))}
@@ -1071,7 +1112,9 @@ export const App: React.FC = () => {
                 {systemMode === 'ongrid' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
                     <label className="text-xs font-bold text-sky-300 block">
-                      مدت زمان انتظار خاموشی و قطعی شبکه (ساعت در روز / Blackout Hours):
+                      {lang === 'fa'
+                        ? 'مدت زمان انتظار خاموشی و قطعی شبکه (ساعت در روز / Blackout Hours):'
+                        : 'Grid Blackout & Outage Hours Per Day:'}
                     </label>
                     <input
                       type="number"
@@ -1080,7 +1123,9 @@ export const App: React.FC = () => {
                       className="studio-input w-64"
                     />
                     <p className="text-[11px] text-slate-400">
-                      سایزینگ باتری برای تأمین انرژی بار در طی ساعات خاموشی شبکه محاسبه خواهد شد.
+                      {lang === 'fa'
+                        ? 'سایزینگ باتری برای تأمین انرژی بار در طی ساعات خاموشی شبکه محاسبه خواهد شد.'
+                        : 'Battery BESS capacity will be sized to supply critical loads during scheduled grid blackout hours.'}
                     </p>
                   </div>
                 )}
@@ -1088,7 +1133,9 @@ export const App: React.FC = () => {
                 {systemMode === 'offgrid' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
                     <label className="text-xs font-bold text-emerald-300 block">
-                      روزهای خودکفایی و پشتیبانی ابری (Autonomy Days):
+                      {lang === 'fa'
+                        ? 'روزهای خودکفایی و پشتیبانی ابری (Autonomy Days):'
+                        : 'Autonomy Days (Days without Sunshine):'}
                     </label>
                     <input
                       type="number"
@@ -1098,7 +1145,9 @@ export const App: React.FC = () => {
                       className="studio-input w-64"
                     />
                     <p className="text-[11px] text-slate-400">
-                      تعداد روزهایی که سیستم باید بدون تابش آفتاب بار را کلاً از باتری تغذیه نماید.
+                      {lang === 'fa'
+                        ? 'تعداد روزهایی که سیستم باید بدون تابش آفتاب بار را کلاً از باتری تغذیه نماید.'
+                        : 'Number of consecutive cloudy/rainy days during which BESS maintains uninterrupted load support.'}
                     </p>
                   </div>
                 )}
@@ -1108,7 +1157,7 @@ export const App: React.FC = () => {
 
           {/* SITE & CLIMATE MAP TAB */}
           {activeTab === 'climate' && (
-            <ClimateTab selectedCity={city} onCityChange={setCity} />
+            <ClimateTab selectedCity={city} onCityChange={setCity} lang={lang} />
           )}
 
           {/* ELECTRICAL LOADS TAB (Hidden in Powerplant mode) */}
@@ -1117,6 +1166,7 @@ export const App: React.FC = () => {
               loads={loads}
               onLoadsChange={setLoads}
               analysisResult={loadAnalysis}
+              lang={lang}
             />
           )}
 
@@ -1130,6 +1180,7 @@ export const App: React.FC = () => {
               arrayDesign={arrayDesign}
               inverterClustering={inverterClustering}
               city={city}
+              systemMode={systemMode}
               lang={lang}
             />
           )}
@@ -1164,6 +1215,7 @@ export const App: React.FC = () => {
           {activeTab === 'mv_substation' && systemMode === 'powerplant' && (
             <MvSubstationTab
               plantCapacityAcMw={(targetPowerplantCapacityKw || 1000) / 1000.0}
+              lang={lang}
             />
           )}
 
@@ -1205,6 +1257,10 @@ export const App: React.FC = () => {
               generatorSizing={generatorSizing}
               outageHours={outageHours}
               onOutageHoursChange={setOutageHours}
+              enableDieselGenerator={enableDieselGenerator}
+              onToggleDieselGenerator={setEnableDieselGenerator}
+              systemMode={systemMode}
+              lang={lang}
             />
           )}
 
@@ -1219,11 +1275,12 @@ export const App: React.FC = () => {
                 arrayDesign.totalPvCapacityKwp /
                 Math.max(0.1, inverterClustering.totalInverterCapacityKw)
               }
+              lang={lang}
             />
           )}
 
           {/* I-V CURVE TRACER */}
-          {activeTab === 'iv_curve' && <IvCurveTracerTab />}
+          {activeTab === 'iv_curve' && <IvCurveTracerTab lang={lang} />}
 
           {/* FINANCIAL ANALYSIS TAB */}
           {activeTab === 'financial' && (
@@ -1264,23 +1321,24 @@ export const App: React.FC = () => {
               dcCableMm2={protectionSystem.cableRuns[0]?.totalEffectiveCrossSectionMm2 || 6}
               batCableMm2={protectionSystem.cableRuns[1]?.totalEffectiveCrossSectionMm2 || 35}
               acCableMm2={protectionSystem.cableRuns[2]?.totalEffectiveCrossSectionMm2 || 50}
+              lang={lang}
             />
           )}
 
           {/* CAD LAYOUT TAB */}
-          {activeTab === 'cad_layout' && <PowerplantCadLayoutTab />}
+          {activeTab === 'cad_layout' && <PowerplantCadLayoutTab lang={lang} />}
 
           {/* 3D VIEWER TAB */}
-          {activeTab === '3d_viewer' && <ThreeJsViewer />}
+          {activeTab === '3d_viewer' && <ThreeJsViewer lang={lang} />}
 
           {/* SCENARIOS COMPARISON TAB (Only for Battery modes) */}
           {activeTab === 'scenarios' && systemMode !== 'powerplant' && (
-            <ScenarioComparisonTab scenarios={scenarios} />
+            <ScenarioComparisonTab scenarios={scenarios} lang={lang} />
           )}
 
           {/* SOLAR WATER PUMPING TAB */}
           {activeTab === 'solar_pumping' && (
-            <SolarPumpingTab peakSunHours={city.peakSunHours} />
+            <SolarPumpingTab peakSunHours={city.peakSunHours} lang={lang} />
           )}
 
           {/* IRANIAN PPA REGULATIONS TAB */}
@@ -1292,11 +1350,12 @@ export const App: React.FC = () => {
                   : arrayDesign.totalPvCapacityKwp
               }
               annualGenerationMwh={(simulationResult.totalGeneration24hKwh * 365) / 1000}
+              lang={lang}
             />
           )}
 
           {/* EQUIPMENT CATALOG TAB */}
-          {activeTab === 'catalog' && <CatalogTab />}
+          {activeTab === 'catalog' && <CatalogTab lang={lang} />}
         </main>
       </div>
 

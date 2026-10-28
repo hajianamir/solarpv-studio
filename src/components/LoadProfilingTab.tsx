@@ -14,13 +14,16 @@ interface LoadProfilingTabProps {
   loads: ElectricalLoadItem[];
   onLoadsChange: (loads: ElectricalLoadItem[]) => void;
   analysisResult: LoadAnalysisResult;
+  lang?: 'fa' | 'en';
 }
 
 export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
   loads,
   onLoadsChange,
   analysisResult,
+  lang = 'fa',
 }) => {
+  const isFa = lang === 'fa';
   const [selectedPresetId, setSelectedPresetId] = useState<string>('');
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -46,7 +49,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
     e.preventDefault();
     const newItem: ElectricalLoadItem = {
       id: `load-${Date.now()}`,
-      name: name.trim() || 'بار جدید',
+      name: name.trim() || (isFa ? 'بار جدید' : 'New Appliance'),
       category,
       ratedWatts: Number(ratedWatts),
       surgeMultiplier: Number(surgeMultiplier),
@@ -78,64 +81,74 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">کل مصرف روزانه</div>
+          <div className="text-xs text-slate-400">
+            {isFa ? 'کل مصرف روزانه' : 'Total Daily Energy Consumption'}
+          </div>
           <div className="text-xl font-bold font-mono text-amber-400 mt-1">
             {analysisResult.totalDailyEnergyKwh.toFixed(2)} <span className="text-xs font-normal text-slate-300">kWh/day</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {Math.round(analysisResult.totalDailyEnergyWh).toLocaleString()} Wh/روز
+            {Math.round(analysisResult.totalDailyEnergyWh).toLocaleString()} Wh/{isFa ? 'روز' : 'day'}
           </div>
         </div>
 
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">تفکیک مصرف روز / شب</div>
+          <div className="text-xs text-slate-400">
+            {isFa ? 'تفکیک مصرف روز / شب' : 'Day vs Night Split'}
+          </div>
           <div className="text-sm font-mono text-slate-200 mt-1">
-            روز: <span className="text-sky-400 font-bold">{(analysisResult.daytimeEnergyWh / 1000).toFixed(1)}k</span> | شب:{' '}
-            <span className="text-indigo-400 font-bold">{(analysisResult.nighttimeEnergyWh / 1000).toFixed(1)}k</span>
+            {isFa ? 'روز:' : 'Day:'} <span className="text-sky-400 font-bold">{(analysisResult.daytimeEnergyWh / 1000).toFixed(1)}k</span> | {isFa ? 'شب:' : 'Night:'}{' '}
+            <span className="text-indigo-400 font-bold">{(analysisResult.nighttimeEnergyWh / 1000).toFixed(1)}k</span> Wh
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            بار شب جهت سایزینگ بانک باتری
+            {isFa ? 'بار شب جهت سایزینگ بانک باتری' : 'Nighttime load drives battery sizing'}
           </div>
         </div>
 
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">توان پیوسته اکتیو</div>
+          <div className="text-xs text-slate-400">
+            {isFa ? 'توان پیوسته اکتیو' : 'Continuous Active Power'}
+          </div>
           <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
             {Math.round(analysisResult.continuousActivePowerWatts).toLocaleString()} <span className="text-xs font-normal text-slate-300">W</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            مجموع توان همزمان تجهیزات
+            {isFa ? 'مجموع توان همزمان تجهیزات' : 'Coincident base load power'}
           </div>
         </div>
 
         <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
-          <div className="text-xs text-slate-400">حداکثر توان هجومی (Surge)</div>
+          <div className="text-xs text-slate-400">
+            {isFa ? 'حداکثر توان هجومی (Surge)' : 'Peak Inrush Surge Power'}
+          </div>
           <div className="text-xl font-bold font-mono text-red-400 mt-1">
             {Math.round(analysisResult.maxSurgePeakPowerWatts).toLocaleString()} <span className="text-xs font-normal text-slate-300">W</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            بر مبنای ضریب همزمانی موتورها
+            {isFa ? 'بر مبنای ضریب همزمانی موتورها' : 'Inductive motor start tolerance'}
           </div>
         </div>
       </div>
 
       {/* Preset Selector & Action Bar */}
       <div className="studio-card">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-400" />
-            <span className="font-semibold text-sm text-slate-200">الگوهای مصرف از پیش‌آماده (Presets):</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+            <span className="font-semibold text-xs sm:text-sm text-slate-200">
+              {isFa ? 'الگوهای مصرف از پیش‌آماده (Presets):' : 'Predefined Load Presets:'}
+            </span>
             <select
               value={selectedPresetId}
               onChange={(e) => handleApplyPreset(e.target.value)}
-              className="studio-input text-xs py-1.5 px-3 w-auto max-w-xs"
+              className="studio-input text-xs py-1.5 px-3 w-full sm:w-auto max-w-xs"
             >
-              <option value="">-- انتخاب پکیج آماده مصرف --</option>
+              <option value="">{isFa ? '-- انتخاب پکیج آماده مصرف --' : '-- Choose a Preset Package --'}</option>
               {LOAD_PRESETS.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.nameFa}
+                  {isFa ? p.nameFa : p.nameEn}
                 </option>
               ))}
             </select>
@@ -143,15 +156,17 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
           <button
             onClick={() => setShowAddForm(true)}
-            className="studio-btn-primary flex items-center gap-1.5 text-xs py-1.5 px-3"
+            className="studio-btn-primary flex items-center gap-1.5 text-xs py-1.5 px-3 self-start sm:self-auto"
           >
-            <Plus className="w-4 h-4" /> افزودن بار مصرفی جدید
+            <Plus className="w-4 h-4" /> {isFa ? 'افزودن بار مصرفی جدید' : 'Add New Electrical Load'}
           </button>
         </div>
 
         {selectedPresetId && (
           <div className="mt-2 text-xs text-sky-400/90 bg-sky-950/40 p-2 rounded border border-sky-800/40">
-            {LOAD_PRESETS.find((p) => p.id === selectedPresetId)?.descriptionFa}
+            {isFa
+              ? LOAD_PRESETS.find((p) => p.id === selectedPresetId)?.descriptionFa
+              : LOAD_PRESETS.find((p) => p.id === selectedPresetId)?.descriptionEn}
           </div>
         )}
       </div>
@@ -160,29 +175,31 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
       <div className="studio-card overflow-hidden">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold text-sky-400 text-sm flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400" />
-            لیست تجهیزات و بارهای الکتریکی ({loads.length} مورد)
+            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+            {isFa ? `لیست تجهیزات و بارهای الکتریکی (${loads.length} مورد)` : `Electrical Appliance Registry (${loads.length} items)`}
           </h3>
         </div>
 
         {loads.length === 0 ? (
           <div className="text-center py-10 text-slate-400 text-sm">
-            هیچ بار مصرفی تعریف نشده است. از منوی پکیج‌های آماده بالا استفاده کنید یا بارهای خود را اضافه نمایید.
+            {isFa
+              ? 'هیچ بار مصرفی تعریف نشده است. از منوی پکیج‌های آماده بالا استفاده کنید یا بارهای خود را اضافه نمایید.'
+              : 'No electrical loads defined yet. Select a preset package above or add appliances manually.'}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs text-slate-300">
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            <table className={`w-full text-xs text-slate-300 min-w-[700px] ${isFa ? 'text-right' : 'text-left'}`}>
               <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-700">
                 <tr>
-                  <th className="p-2.5">نام وسیله برقی</th>
-                  <th className="p-2.5">دسته‌بندی</th>
-                  <th className="p-2.5">توان (Watt)</th>
-                  <th className="p-2.5">ضریب هجومی (Surge)</th>
-                  <th className="p-2.5">تعداد</th>
-                  <th className="p-2.5">ساعات روز</th>
-                  <th className="p-2.5">ساعات شب</th>
-                  <th className="p-2.5">انرژی روزانه (Wh)</th>
-                  <th className="p-2.5 text-center">عملیات</th>
+                  <th className="p-2.5">{isFa ? 'نام وسیله برقی' : 'Appliance Name'}</th>
+                  <th className="p-2.5">{isFa ? 'دسته‌بندی' : 'Category'}</th>
+                  <th className="p-2.5">{isFa ? 'توان (Watt)' : 'Power (W)'}</th>
+                  <th className="p-2.5">{isFa ? 'ضریب هجومی' : 'Surge Multiplier'}</th>
+                  <th className="p-2.5">{isFa ? 'تعداد' : 'Qty'}</th>
+                  <th className="p-2.5">{isFa ? 'ساعات روز' : 'Day (hrs)'}</th>
+                  <th className="p-2.5">{isFa ? 'ساعات شب' : 'Night (hrs)'}</th>
+                  <th className="p-2.5">{isFa ? 'انرژی روزانه (Wh)' : 'Daily Wh'}</th>
+                  <th className="p-2.5 text-center">{isFa ? 'عملیات' : 'Action'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
@@ -200,7 +217,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                       </td>
                       <td className="p-2.5">
                         <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                          {LOAD_CATEGORY_LABELS[item.category]?.fa || item.category}
+                          {isFa ? (LOAD_CATEGORY_LABELS[item.category]?.fa || item.category) : (LOAD_CATEGORY_LABELS[item.category]?.en || item.category)}
                         </span>
                       </td>
                       <td className="p-2.5">
@@ -220,7 +237,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           className="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-red-300 font-mono"
                         />
                         {item.surgeMultiplier > 2.0 && (
-                          <span className="text-[10px] text-red-400 mr-1" title="بار موتوری هجومی">⚡</span>
+                          <span className="text-[10px] text-red-400 mx-1" title={isFa ? 'بار موتوری هجومی' : 'Inductive Surge Load'}>⚡</span>
                         )}
                       </td>
                       <td className="p-2.5">
@@ -254,14 +271,14 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           className="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-indigo-400 font-mono"
                         />
                       </td>
-                      <td className="p-2.5 font-mono font-bold text-amber-300">
+                      <td className="p-2.5 font-mono text-amber-300 font-bold">
                         {Math.round(itemDailyWh).toLocaleString()}
                       </td>
                       <td className="p-2.5 text-center">
                         <button
                           onClick={() => handleRemoveLoad(item.id)}
-                          className="p-1 hover:bg-red-950/60 text-slate-400 hover:text-red-400 rounded"
-                          title="حذف"
+                          className="text-slate-500 hover:text-red-400 p-1"
+                          title={isFa ? 'حذف' : 'Remove'}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -275,76 +292,54 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
         )}
       </div>
 
-      {/* Add Form Modal */}
+      {/* Add Load Form Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-700 rounded-lg p-5 max-w-md w-full">
-            <h3 className="text-base font-bold text-sky-400 mb-2">تعریف بار الکتریکی جدید</h3>
-            
-            {/* Quick appliance picker */}
-            <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg mb-3">
-              <label className="block text-[11px] font-semibold text-amber-400 mb-1 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                انتخاب سریع از بانک تجهیزات استاندارد (۴۰+ بار خانگی و صنعتی):
-              </label>
-              <select
-                onChange={(e) => {
-                  const idx = parseInt(e.target.value);
-                  if (!isNaN(idx) && STANDARD_APPLIANCE_LIBRARY[idx]) {
-                    const item = STANDARD_APPLIANCE_LIBRARY[idx];
-                    setName(item.nameFa);
-                    setCategory(item.category);
-                    setRatedWatts(item.ratedWatts);
-                    setSurgeMultiplier(item.surgeMultiplier);
-                    setDayHours(item.typicalDayHours);
-                    setNightHours(item.typicalNightHours);
-                    setIsDc(!!item.isDc);
-                  }
-                }}
-                defaultValue=""
-                className="studio-input text-xs"
-              >
-                <option value="" disabled>
-                  -- انتخاب بار الکتریکی (خانگی، کارگاهی، مرغداری، ماینینگ، پمپ، چیلر) --
-                </option>
-                {STANDARD_APPLIANCE_LIBRARY.map((app, idx) => (
-                  <option key={idx} value={idx}>
-                    {app.nameFa} ({app.ratedWatts >= 1000 ? `${(app.ratedWatts / 1000).toFixed(1)} kW` : `${app.ratedWatts} W`})
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-400" />
+              {isFa ? 'تعریف بار الکتریکی مصرف‌کننده جدید' : 'Add New Electrical Appliance'}
+            </h3>
 
             <form onSubmit={handleAddLoad} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">نام وسیله</label>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {isFa ? 'نام وسیله برقی:' : 'Appliance Name:'}
+                </label>
                 <input
                   type="text"
                   required
+                  placeholder={isFa ? 'مثال: یخچال، پمپ آب، اسپلیت' : 'e.g. Refrigerator, Pump, AC'}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="مثال: پمپ آب کشاورزی"
                   className="studio-input"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">دسته‌بندی</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {isFa ? 'دسته‌بندی:' : 'Category:'}
+                  </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as LoadCategory)}
                     className="studio-input"
                   >
-                    {Object.entries(LOAD_CATEGORY_LABELS).map(([catKey, label]) => (
-                      <option key={catKey} value={catKey}>
-                        {label.fa}
-                      </option>
-                    ))}
+                    <option value="lighting">{isFa ? 'روشنایی' : 'Lighting'}</option>
+                    <option value="refrigeration">{isFa ? 'سرمایشی و یخچال' : 'Refrigeration'}</option>
+                    <option value="pump_motor">{isFa ? 'پمپ و الکتروموتور' : 'Pump / Motor'}</option>
+                    <option value="cooling_hvac">{isFa ? 'کولر و تهویه' : 'HVAC / Cooling'}</option>
+                    <option value="electronics_it">{isFa ? 'الکترونیک و IT' : 'Electronics / IT'}</option>
+                    <option value="heating">{isFa ? 'گرمایشی' : 'Heating'}</option>
+                    <option value="other">{isFa ? 'سایر' : 'Other'}</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">تعداد</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {isFa ? 'تعداد:' : 'Quantity:'}
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -357,7 +352,9 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">توان نامی (Watt)</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {isFa ? 'توان نامی (Watt):' : 'Rated Power (W):'}
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -367,7 +364,9 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">ضریب استارت هجومی</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {isFa ? 'ضریب استارت هجومی:' : 'Surge Multiplier:'}
+                  </label>
                   <input
                     type="number"
                     step="0.1"
@@ -376,13 +375,17 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                     onChange={(e) => setSurgeMultiplier(parseFloat(e.target.value) || 1)}
                     className="studio-input"
                   />
-                  <span className="text-[10px] text-slate-400">روشنایی=۱، پمپ و کولر=۳ الی ۵</span>
+                  <span className="text-[10px] text-slate-400">
+                    {isFa ? 'روشنایی=۱، پمپ=۳ الی ۵' : 'Resistive=1, Motors=3-5'}
+                  </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">ساعات کارکرد روز (۰ تا ۱۲)</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {isFa ? 'ساعات روز (۰ تا ۱۲):' : 'Day Operation (0-12h):'}
+                  </label>
                   <input
                     type="number"
                     step="0.5"
@@ -394,7 +397,9 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">ساعات کارکرد شب (۰ تا ۱۲)</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {isFa ? 'ساعات شب (۰ تا ۱۲):' : 'Night Operation (0-12h):'}
+                  </label>
                   <input
                     type="number"
                     step="0.5"
@@ -413,10 +418,10 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                   onClick={() => setShowAddForm(false)}
                   className="studio-btn-secondary text-xs"
                 >
-                  انصراف
+                  {isFa ? 'انصراف' : 'Cancel'}
                 </button>
                 <button type="submit" className="studio-btn-primary text-xs flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" /> افزودن به لیست
+                  <Check className="w-3.5 h-3.5" /> {isFa ? 'افزودن به لیست' : 'Add Appliance'}
                 </button>
               </div>
             </form>
