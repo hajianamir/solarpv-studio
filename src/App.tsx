@@ -95,6 +95,10 @@ import { SolarPumpingTab } from './components/SolarPumpingTab';
 import { IranianRegulationsTab } from './components/IranianRegulationsTab';
 import { StructuralFoundationTab } from './components/StructuralFoundationTab';
 import { HarmonicsGridTab } from './components/HarmonicsGridTab';
+import { AdvancedFeaturesModal } from './components/AdvancedFeaturesModal';
+import { useFeatureFlags } from './engine/core/FeatureFlagContext';
+import { migrateProjectToV3 } from './engine/core/projectMigration';
+import { generateTraceId } from './engine/core/modelRegistry';
 
 export type SystemMode = 'powerplant' | 'ongrid' | 'offgrid';
 
@@ -131,7 +135,11 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveModuleTab>('climate');
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // RFC 3.0 Advanced Feature Flags
+  const { flags, setAllFlags, activeCount } = useFeatureFlags();
 
   // Inverter Technology & MV Bay Architecture (for Powerplant mode)
   const [inverterTech, setInverterTech] = useState<InverterTechnology>('string_inverter');
@@ -257,16 +265,18 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Save Project to LocalStorage
+  // Save Project to LocalStorage (v3.0.0 Compliant with Trace ID)
   const handleSaveProject = () => {
     const timeStr = new Date().toLocaleTimeString(lang === 'fa' ? 'fa-IR' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
     });
+    const traceId = generateTraceId();
     const projectData = {
-      version: '2.0.0',
+      version: '3.0.0',
       savedAt: timeStr,
+      traceId,
       projectName,
       systemMode,
       inverterTech,
@@ -283,11 +293,16 @@ export const App: React.FC = () => {
       targetPowerplantCapacityKw,
       enableDieselGenerator,
       userPricing,
+      featureFlags: flags,
     };
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projectData));
       setLastSavedTime(timeStr);
-      setSaveToast(lang === 'fa' ? `پروژه با موفقیت در ساعت ${timeStr} ذخیره شد.` : `Project saved successfully at ${timeStr}`);
+      setSaveToast(
+        lang === 'fa'
+          ? `پروژه v3 با کد ردگیری ${traceId.slice(0, 8)} در ساعت ${timeStr} ذخیره شد.`
+          : `Project v3 saved with trace ${traceId.slice(0, 8)} at ${timeStr}`
+      );
       setTimeout(() => setSaveToast(null), 3500);
     } catch (e) {
       console.error(e);
@@ -499,21 +514,45 @@ export const App: React.FC = () => {
     );
   }, [arrayDesign, loadAnalysis, autonomyDays, userPricing.usdToTomanRate]);
 
-  // Handler for restoring imported project from JSON
+  // Handler for restoring imported project from JSON with Zod migration & fallback recovery
   const handleImportProject = (importedData: any) => {
-    if (importedData.city) setCity(importedData.city);
-    if (importedData.siteOverrides) setSiteOverrides(importedData.siteOverrides);
-    if (importedData.loads) setLoads(importedData.loads);
-    if (importedData.module) setSelectedModule(importedData.module);
-    if (importedData.inverter) setSelectedInverter(importedData.inverter);
-    if (importedData.projectName) setProjectName(importedData.projectName);
-    if (importedData.systemMode) setSystemMode(importedData.systemMode);
-    if (importedData.inverterTech) setInverterTech(importedData.inverterTech);
-    if (importedData.customBaysCount) setCustomBaysCount(importedData.customBaysCount);
-    if (importedData.mvVoltageKv) setMvVoltageKv(importedData.mvVoltageKv);
-    if (importedData.targetPowerplantCapacityKw) setTargetPowerplantCapacityKw(importedData.targetPowerplantCapacityKw);
-    if (importedData.enableDieselGenerator !== undefined) setEnableDieselGenerator(Boolean(importedData.enableDieselGenerator));
-    if (importedData.userPricing) setUserPricing(importedData.userPricing);
+    try {
+      const migrationResult = migrateProjectToV3(importedData);
+      const clean = migrationResult.project;
+
+      if (clean.city) setCity(clean.city as unknown as ClimateCity);
+      if (clean.siteOverrides) setSiteOverrides(clean.siteOverrides);
+      if (clean.loads) setLoads(clean.loads as ElectricalLoadItem[]);
+      if (clean.selectedModule) setSelectedModule(clean.selectedModule as ModuleSpecs);
+      if (clean.selectedInverter) setSelectedInverter(clean.selectedInverter as InverterSpecs);
+      if (clean.projectName) setProjectName(clean.projectName);
+      if (clean.systemMode) setSystemMode(clean.systemMode as SystemMode);
+      if (clean.inverterTech) setInverterTech(clean.inverterTech as InverterTechnology);
+      if (clean.customBaysCount) setCustomBaysCount(clean.customBaysCount);
+      if (clean.mvVoltageKv) setMvVoltageKv(clean.mvVoltageKv);
+      if (clean.targetPowerplantCapacityKw) setTargetPowerplantCapacityKw(clean.targetPowerplantCapacityKw);
+      if (clean.enableDieselGenerator !== undefined) setEnableDieselGenerator(Boolean(clean.enableDieselGenerator));
+      if (clean.userPricing) setUserPricing(clean.userPricing as UserFinancialPricing);
+      if (clean.selectedChemistry) setSelectedChemistry(clean.selectedChemistry as BatteryChemistry);
+      if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
+      if (clean.outageHours !== undefined) setOutageHours(clean.outageHours);
+      if (clean.featureFlags) setAllFlags(clean.featureFlags);
+
+      if (migrationResult.migratedFromVersion !== '3.0.0') {
+        setSaveToast(
+          lang === 'fa'
+            ? `پروژه نسخه ${migrationResult.migratedFromVersion} با موفقیت به نسخه 3.0.0 ارتقا یافت.`
+            : `Project migrated from v${migrationResult.migratedFromVersion} to v3.0.0.`
+        );
+        setTimeout(() => setSaveToast(null), 3500);
+      }
+    } catch (err) {
+      console.error('Project import migration error:', err);
+      // Direct fallback
+      if (importedData.city) setCity(importedData.city);
+      if (importedData.loads) setLoads(importedData.loads);
+      if (importedData.projectName) setProjectName(importedData.projectName);
+    }
   };
 
   // Structured Workflow Sections dynamically conditioned on systemMode
@@ -841,6 +880,18 @@ export const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
+            <button
+              onClick={() => setShowAdvancedModal(true)}
+              className="py-1.5 px-2.5 sm:px-3 bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 rounded-lg text-indigo-300 flex items-center gap-1.5 text-xs font-bold transition shadow-sm"
+              title={lang === 'fa' ? 'قابلیت‌های پیشرفته مهندسی و اعتبارسنجی' : 'Advanced Engineering & Validation Suite'}
+            >
+              <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">RFC 3.0</span>
+              <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-200 text-[10px] font-mono border border-indigo-500/30">
+                {activeCount}
+              </span>
+            </button>
+
             <button
               onClick={handleSaveProject}
               className="studio-btn text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1.5 font-bold"
@@ -1381,6 +1432,13 @@ export const App: React.FC = () => {
           lang={lang}
         />
       )}
+
+      {/* ADVANCED ENGINEERING & COMPLIANCE MODAL */}
+      <AdvancedFeaturesModal
+        isOpen={showAdvancedModal}
+        onClose={() => setShowAdvancedModal(false)}
+        lang={lang}
+      />
     </div>
   );
 };
