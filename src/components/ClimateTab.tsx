@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe } from 'lucide-react';
-import { ClimateCity, IRANIAN_CLIMATE_CITIES } from '../engine/climaticData';
+import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers } from 'lucide-react';
+import { ClimateCity, IRANIAN_CLIMATE_CITIES, INTERNATIONAL_CLIMATE_CITIES, ALL_CLIMATE_CITIES } from '../engine/climaticData';
 import { SiteLocationMap } from './SiteLocationMap';
 
 interface ClimateTabProps {
@@ -14,9 +14,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
   const [isEditing, setIsEditing] = useState(false);
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
   const [viewMode, setViewMode] = useState<'map' | 'presets'>('map');
+  const [regionFilter, setRegionFilter] = useState<'all' | 'international' | 'iranian'>('all');
 
   const handleSelectCityId = (cityId: string) => {
-    const found = IRANIAN_CLIMATE_CITIES.find((c) => c.id === cityId);
+    const found = ALL_CLIMATE_CITIES.find((c) => c.id === cityId);
     if (found) {
       onCityChange(found);
       setCustomCity(found);
@@ -76,19 +77,53 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
         <SiteLocationMap currentCity={selectedCity} onSelectLocation={onCityChange} lang={lang} />
       )}
 
-      {/* City Selector Buttons */}
+      {/* City Selector Buttons with International / Regional Filter */}
       <div className="studio-card">
-        <label className="block text-xs font-semibold text-slate-300 mb-2">
-          {isEn ? 'Quick Select Regional Iranian Climate City:' : 'انتخاب شهر اقلیمی ایران:'}
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {IRANIAN_CLIMATE_CITIES.map((c) => (
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <label className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+            <Globe className="w-4 h-4 text-sky-400" />
+            {isEn ? 'Global & Regional Solar Climate Hubs:' : 'هاب‌های اقلیمی و خورشیدی بین‌المللی و منطقه‌ای:'}
+          </label>
+          <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-700">
+            <button
+              onClick={() => setRegionFilter('all')}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
+                regionFilter === 'all' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isEn ? 'All Locations' : 'همه مکان‌ها'}
+            </button>
+            <button
+              onClick={() => setRegionFilter('international')}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
+                regionFilter === 'international' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isEn ? 'International (US, EU, MENA, Chile)' : 'بین‌المللی (جهانی)'}
+            </button>
+            <button
+              onClick={() => setRegionFilter('iranian')}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
+                regionFilter === 'iranian' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isEn ? 'Iran Regional' : 'ایران'}
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto pr-1">
+          {(regionFilter === 'all'
+            ? ALL_CLIMATE_CITIES
+            : regionFilter === 'international'
+            ? INTERNATIONAL_CLIMATE_CITIES
+            : IRANIAN_CLIMATE_CITIES
+          ).map((c) => (
             <button
               key={c.id}
               onClick={() => handleSelectCityId(c.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                 selectedCity.id === c.id
-                  ? 'bg-sky-600 border-sky-400 text-white shadow-md'
+                  ? 'bg-sky-600 border-sky-400 text-white shadow-md ring-1 ring-sky-300'
                   : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
               }`}
             >

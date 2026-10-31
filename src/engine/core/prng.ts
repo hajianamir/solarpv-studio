@@ -39,7 +39,8 @@ export class Mulberry32PRNG {
   public nextGaussian(mean: number = 0, stdDev: number = 1): number {
     let u1 = this.next();
     let u2 = this.next();
-    while (u1 <= 1e-15) u1 = this.next(); // Avoid log(0)
+    // Defensive singularity guard: rejects u1 <= 1e-15 to prevent Math.log(0) -> -Infinity
+    while (u1 <= 1e-15) u1 = this.next();
     const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
     return mean + z0 * stdDev;
   }
@@ -51,6 +52,7 @@ export class Mulberry32PRNG {
    */
   public nextGumbel(locationMu: number, scaleBeta: number): number {
     let u = this.next();
+    // Defensive singularity guard: rejects boundaries u <= 1e-15 and u >= (1 - 1e-15) to prevent ln(-ln(u)) evaluation at asymptotes
     while (u <= 1e-15 || u >= 1.0 - 1e-15) u = this.next();
     return locationMu - scaleBeta * Math.log(-Math.log(u));
   }
@@ -62,6 +64,7 @@ export class Mulberry32PRNG {
    */
   public nextWeibull(scaleC: number, shapeK: number): number {
     let u = this.next();
+    // Defensive singularity guard: rejects boundaries u <= 1e-15 and u >= (1 - 1e-15) to prevent Math.log(1 - u) = log(0) -> -Infinity
     while (u <= 1e-15 || u >= 1.0 - 1e-15) u = this.next();
     return scaleC * Math.pow(-Math.log(1.0 - u), 1.0 / shapeK);
   }

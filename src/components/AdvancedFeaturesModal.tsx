@@ -17,11 +17,14 @@ import {
   Hammer,
   HelpCircle,
   FileCheck,
+  Activity,
 } from 'lucide-react';
 import { useFeatureFlags } from '../engine/core/FeatureFlagContext';
 import { FEATURE_FLAG_METADATA, AdvancedFeatureFlags } from '../engine/core/featureFlags';
 import { runSystemCrossValidation, SystemValidationReport } from '../engine/core/benchmarks/crossValidation';
 import { PHYSICS_MODEL_REGISTRY, ModelSemverEntry } from '../engine/core/modelRegistry';
+import { runLhsVsCmcBenchmark, LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
+import { runMigrationTestSuite, MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
 
 interface AdvancedFeaturesModalProps {
   isOpen: boolean;
@@ -35,8 +38,10 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
   lang,
 }) => {
   const { flags, setFlag, setAllFlags, resetFlags, activeCount } = useFeatureFlags();
-  const [activeTab, setActiveTab] = useState<'flags' | 'validation' | 'registry'>('flags');
+  const [activeTab, setActiveTab] = useState<'flags' | 'validation' | 'lhs_stats' | 'migration' | 'registry'>('flags');
   const [validationReport, setValidationReport] = useState<SystemValidationReport | null>(null);
+  const [lhsBenchmark, setLhsBenchmark] = useState<LhsStatisticalBenchmarkResult | null>(null);
+  const [migrationSummary, setMigrationSummary] = useState<MigrationTestSummary | null>(null);
   const [isRunningValidation, setIsRunningValidation] = useState(false);
 
   if (!isOpen) return null;
@@ -48,6 +53,16 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
       setValidationReport(report);
       setIsRunningValidation(false);
     }, 150);
+  };
+
+  const handleRunLhsBenchmark = () => {
+    const res = runLhsVsCmcBenchmark();
+    setLhsBenchmark(res);
+  };
+
+  const handleRunMigrationSuite = () => {
+    const res = runMigrationTestSuite();
+    setMigrationSummary(res);
   };
 
   const pillarIcons: Record<string, React.ReactNode> = {
@@ -135,6 +150,34 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           >
             <FileCheck className="w-4 h-4" />
             <span>{lang === 'fa' ? 'گواهی اعتبارسنجی (Cross-Validation)' : 'Validation Benchmark'}</span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('lhs_stats');
+              if (!lhsBenchmark) handleRunLhsBenchmark();
+            }}
+            className={`py-3 px-4 border-b-2 flex items-center gap-2 transition ${
+              activeTab === 'lhs_stats'
+                ? 'border-amber-400 text-amber-300 bg-amber-500/10'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>{lang === 'fa' ? 'اثبات آماری LHS vs CMC' : 'LHS vs CMC Statistical Proof'}</span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('migration');
+              if (!migrationSummary) handleRunMigrationSuite();
+            }}
+            className={`py-3 px-4 border-b-2 flex items-center gap-2 transition ${
+              activeTab === 'migration'
+                ? 'border-purple-400 text-purple-300 bg-purple-500/10'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>{lang === 'fa' ? 'آزمون مهاجرت v2 (۵ فایل)' : 'v2 Migration Suite'}</span>
           </button>
           <button
             onClick={() => setActiveTab('registry')}
@@ -348,6 +391,176 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                         <li key={idx}>{note}</li>
                       ))}
                     </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: LHS VS CMC STATISTICAL PROOF */}
+          {activeTab === 'lhs_stats' && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-amber-400" />
+                    <span>{lang === 'fa' ? 'اثبات دقت و شتاب ابرمکعب لاتین (LHS) در برابر CMC' : 'LHS vs CMC Statistical Rigor Benchmark'}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {lang === 'fa'
+                      ? 'مقایسه آماری ۱۰۰ نمونه‌گیری طبقه‌بندی‌شده LHS با ۱۰,۰۰۰ اجرای مونت‌کارلوی خام (CMC) بر روی توزیع باد حدی گامبل'
+                      : 'Empirical comparison of 100 stratified LHS draws vs 10,000 Crude Monte Carlo draws on Gumbel extreme gust distribution'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleRunLhsBenchmark}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg transition"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  <span>{lang === 'fa' ? 'اجرای بنچمارک آماری' : 'Run Benchmark'}</span>
+                </button>
+              </div>
+
+              {lhsBenchmark && (
+                <div className="space-y-4">
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                      <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'شتاب محاسباتی' : 'Compute Speedup'}</div>
+                      <div className="text-base font-black text-amber-400 mt-1 font-mono">{lhsBenchmark.speedupFactor}x</div>
+                      <div className="text-[10px] text-slate-500">{lhsBenchmark.lhsExecutionTimeMs}ms vs {lhsBenchmark.cmcExecutionTimeMs}ms</div>
+                    </div>
+                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                      <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'انحراف میانگین (Mean)' : 'Mean Error'}</div>
+                      <div className="text-base font-mono font-bold text-emerald-400 mt-1">
+                        {lhsBenchmark.metrics.find(m => m.statistic === 'mean')?.relativeErrorPercent}%
+                      </div>
+                      <div className="text-[10px] text-slate-500">&lt; 1.0% limit</div>
+                    </div>
+                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                      <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'انحراف صدک ۹۰ (P90)' : 'P90 Error'}</div>
+                      <div className="text-base font-mono font-bold text-sky-400 mt-1">
+                        {lhsBenchmark.metrics.find(m => m.statistic === 'p90')?.relativeErrorPercent}%
+                      </div>
+                      <div className="text-[10px] text-slate-500">&lt; 3.5% limit</div>
+                    </div>
+                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                      <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'کاهش حجم ارزیابی' : 'Workload Reduction'}</div>
+                      <div className="text-base font-mono font-bold text-purple-400 mt-1">99.0%</div>
+                      <div className="text-[10px] text-slate-500">100 vs 10,000 samples</div>
+                    </div>
+                  </div>
+
+                  {/* Detailed Moments Table */}
+                  <div className="overflow-x-auto border border-slate-800 rounded-xl">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-950 text-slate-400 text-[11px] font-mono">
+                        <tr>
+                          <th className="p-3">{lang === 'fa' ? 'آماره هدف' : 'Target Statistic'}</th>
+                          <th className="p-3 text-right">CMC (10,000 draws)</th>
+                          <th className="p-3 text-right">LHS (100 draws)</th>
+                          <th className="p-3 text-right">{lang === 'fa' ? 'خطای نسبی' : 'Rel. Error'}</th>
+                          <th className="p-3 text-center">{lang === 'fa' ? 'حد مجاز' : 'Limit'}</th>
+                          <th className="p-3 text-center">{lang === 'fa' ? 'وضعیت' : 'Status'}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 bg-slate-900/60 font-mono text-[11px]">
+                        {lhsBenchmark.metrics.map(m => (
+                          <tr key={m.statistic} className="hover:bg-slate-800/40">
+                            <td className="p-3 font-sans font-bold text-slate-200 uppercase">{m.statistic}</td>
+                            <td className="p-3 text-right text-slate-300">{m.cmc10kValue} m/s</td>
+                            <td className="p-3 text-right text-amber-400 font-bold">{m.lhs100Value} m/s</td>
+                            <td className="p-3 text-right font-bold text-sky-300">{m.relativeErrorPercent.toFixed(2)}%</td>
+                            <td className="p-3 text-center text-slate-400">&le; {m.acceptableTolerancePercent}%</td>
+                            <td className="p-3 text-center">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                {m.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-300 space-y-1">
+                    <div className="font-bold text-amber-300">{lang === 'fa' ? 'نتیجه‌گیری آماری:' : 'Statistical Conclusion:'}</div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">{lhsBenchmark.conclusionNote}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: V2 MIGRATION TEST SUITE */}
+          {activeTab === 'migration' && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-purple-400" />
+                    <span>{lang === 'fa' ? 'آزمون مهاجرت فایل‌های پروژه v2 و موروثی (۵ فایل واقعی)' : 'Real-World v2 & Legacy Project Migration Suite'}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {lang === 'fa'
+                      ? 'بررسی مقاومت سیستم در برابر داده‌های ناقص، فایل‌های بدون نسخه v1، و بازیابی امن بدون کرش'
+                      : 'Validation of zero runtime exceptions across utility powerplant, commercial, telecom, v1, and corrupted JSON payloads'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleRunMigrationSuite}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  <span>{lang === 'fa' ? 'اجرای آزمون‌های مهاجرت' : 'Run Suite'}</span>
+                </button>
+              </div>
+
+              {migrationSummary && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                      <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'کل آزمون‌ها' : 'Vectors Tested'}</div>
+                      <div className="text-base font-bold text-white mt-1">{migrationSummary.totalVectorsTested}</div>
+                    </div>
+                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                      <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'مهاجرت معتبر (Valid)' : 'Valid (Lossless)'}</div>
+                      <div className="text-base font-bold text-emerald-400 mt-1">{migrationSummary.validMigrations}</div>
+                    </div>
+                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                      <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'بازیابی با هشدار' : 'Recovered (Warnings)'}</div>
+                      <div className="text-base font-bold text-amber-400 mt-1">{migrationSummary.recoveredWithWarnings}</div>
+                    </div>
+                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                      <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'مسدودشده (Blocked)' : 'Blocked (Inconsistent)'}</div>
+                      <div className="text-base font-bold text-red-400 mt-1">{migrationSummary.blockedInconsistent}</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {migrationSummary.results.map(r => (
+                      <div key={r.caseId} className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between gap-4">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white">{r.name}</span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
+                              {r.caseId}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-400">{r.notes}</div>
+                        </div>
+
+                        <span className={`px-2.5 py-1 rounded text-[10px] font-bold shrink-0 font-mono ${
+                          r.status === 'VALID'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : r.status === 'RECOVERED_WITH_WARNINGS'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        }`}>
+                          {r.status}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

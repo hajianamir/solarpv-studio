@@ -423,6 +423,15 @@ export const IRANIAN_CLIMATE_CITIES: ClimateCity[] = [
   }
 ];
 
+import { INTERNATIONAL_CLIMATE_HUBS } from './climate/internationalHubs';
+
+export const INTERNATIONAL_CLIMATE_CITIES: ClimateCity[] = INTERNATIONAL_CLIMATE_HUBS;
+
+export const ALL_CLIMATE_CITIES: ClimateCity[] = [
+  ...IRANIAN_CLIMATE_CITIES,
+  ...INTERNATIONAL_CLIMATE_CITIES
+];
+
 export function getEffectiveClimateCity(
   baseCity: ClimateCity,
   overrides?: SiteGeotechnicalOverrides

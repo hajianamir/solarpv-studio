@@ -7,7 +7,10 @@
     "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "tsx scripts/run-all-benchmarks.ts",
+    "test:coverage": "c8 --include='src/engine/core/**' tsx scripts/run-all-benchmarks.ts",
+    "test:smoke": "tsx scripts/smoke-test.ts"
   },
   "dependencies": {
     "express": "^4.21.2",
@@ -27,6 +30,7 @@
     "@types/three": "^0.174.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "c8": "^12.0.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.3",

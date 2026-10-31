@@ -27,7 +27,9 @@ export function computeWaterfallLosses(
   ambientTempMaxC: number,
   soilingLossPct: number = 4.5,
   dcAcRatio: number = 1.25,
-  hasTracker: boolean = false
+  hasTracker: boolean = false,
+  snowLossPct: number = 0.0,
+  iamLossPct: number = -2.2
 ): WaterfallLossReport {
   // 1. Raw Global Horizontal Irradiance (GHI)
   // GHI annual = PSH * 365 days * 1 kW/m² reference
@@ -74,24 +76,40 @@ export function computeWaterfallLosses(
     'Inter-row module self-shading during low solar elevation angles (morning/evening).'
   );
 
-  // 2. Incidence Angle Modifier (IAM - Fresnel optical reflection)
+  // 2. Incidence Angle Modifier (IAM - Fresnel optical reflection / Martin & Ruiz ARC)
   addStage(
     'iam',
     'تلفات انعکاس اپتیکی شیشه (IAM / Fresnel)',
     'Incidence Angle Modifier (IAM)',
-    -2.2,
-    'زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل',
-    'Fresnel optical reflection at oblique sun incidence angles on anti-reflective glass.'
+    -Math.abs(iamLossPct),
+    'زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل با کوپل حرارتی dn/dT',
+    'Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling.'
   );
 
-  // 3. Soiling & Dust Loss
+  // 3. Soiling & Dust Loss (Kimber Model)
   addStage(
     'soiling',
-    'تلفات نشست گرد و خاک و آلودگی سطحی',
-    'Soiling & Environmental Dust Loss',
+    'تلفات نشست گرد و خاک و آلودگی سطحی (Kimber)',
+    'Soiling & Environmental Dust Loss (Kimber)',
     -Math.abs(soilingLossPct),
     'رسوب ذرات غبار و معلقات هوا روی سطح پنل‌ها بین دوره‌های شستشو',
     'Particulate dust accumulation on front glass between planned cleaning cycles.'
+  );
+
+  // 3b. Snow Shedding & Damming Loss (Marion Model)
+  // Invariant 14-stage structure across all global climates.
+  // In snow-free climates (snowLossPct = 0), operates as a strict 0.0% no-op.
+  addStage(
+    'snow',
+    'تلفات پوشش و ریزش برف (Marion Model)',
+    'Snow Coverage & Shedding Loss (Marion)',
+    -Math.abs(snowLossPct),
+    snowLossPct > 0
+      ? 'پوشش برف، تاخیر در لغزش حرارتی و سدشدگی در انتهای ماژول'
+      : 'عدم وجود پوشش برف در این اقلیم (تلفات صفر)',
+    snowLossPct > 0
+      ? 'Module snow obscuration, sliding delay, and base frame damming risk.'
+      : 'Zero snow accumulation in this climate zone (no-op 0.0% loss stage).'
   );
 
   // 4. PV Cell Temperature Thermal Loss (U-value model based on ambient design temperature)

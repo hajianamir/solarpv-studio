@@ -514,15 +514,28 @@ export const App: React.FC = () => {
     );
   }, [arrayDesign, loadAnalysis, autonomyDays, userPricing.usdToTomanRate]);
 
-  // Handler for restoring imported project from JSON with Zod migration & fallback recovery
+  // Handler for restoring imported project from JSON with three-state safety model
   const handleImportProject = (importedData: any) => {
     try {
       const migrationResult = migrateProjectToV3(importedData);
+
+      // State 3: BLOCKED INCONSISTENT
+      if (migrationResult.migrationStatus === 'BLOCKED_INCONSISTENT') {
+        const blockerMsg = migrationResult.blockerReasons[0] || 'Physical contradiction detected';
+        setSaveToast(
+          lang === 'fa'
+            ? `مهاجرت مسدود شد: ${blockerMsg} (کد: ${migrationResult.traceId.slice(0, 8)})`
+            : `Migration blocked: ${blockerMsg} (Trace: ${migrationResult.traceId.slice(0, 8)})`
+        );
+        setTimeout(() => setSaveToast(null), 5500);
+        return;
+      }
+
       const clean = migrationResult.project;
 
       if (clean.city) setCity(clean.city as unknown as ClimateCity);
       if (clean.siteOverrides) setSiteOverrides(clean.siteOverrides);
-      if (clean.loads) setLoads(clean.loads as ElectricalLoadItem[]);
+      if (clean.loads) setLoads(clean.loads as unknown as ElectricalLoadItem[]);
       if (clean.selectedModule) setSelectedModule(clean.selectedModule as ModuleSpecs);
       if (clean.selectedInverter) setSelectedInverter(clean.selectedInverter as InverterSpecs);
       if (clean.projectName) setProjectName(clean.projectName);
@@ -532,26 +545,31 @@ export const App: React.FC = () => {
       if (clean.mvVoltageKv) setMvVoltageKv(clean.mvVoltageKv);
       if (clean.targetPowerplantCapacityKw) setTargetPowerplantCapacityKw(clean.targetPowerplantCapacityKw);
       if (clean.enableDieselGenerator !== undefined) setEnableDieselGenerator(Boolean(clean.enableDieselGenerator));
-      if (clean.userPricing) setUserPricing(clean.userPricing as UserFinancialPricing);
+      if (clean.userPricing) setUserPricing(clean.userPricing as unknown as UserFinancialPricing);
       if (clean.selectedChemistry) setSelectedChemistry(clean.selectedChemistry as BatteryChemistry);
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
       if (clean.outageHours !== undefined) setOutageHours(clean.outageHours);
       if (clean.featureFlags) setAllFlags(clean.featureFlags);
 
-      if (migrationResult.migratedFromVersion !== '3.0.0') {
+      // State 2: RECOVERED WITH WARNINGS
+      if (migrationResult.migrationStatus === 'RECOVERED_WITH_WARNINGS') {
         setSaveToast(
           lang === 'fa'
-            ? `پروژه نسخه ${migrationResult.migratedFromVersion} با موفقیت به نسخه 3.0.0 ارتقا یافت.`
-            : `Project migrated from v${migrationResult.migratedFromVersion} to v3.0.0.`
+            ? `پروژه بازیابی شد (${migrationResult.warnings.length} هشدار فیلدهای مفقود). لطفاً پارامترها را بررسی و تأیید کنید.`
+            : `Project recovered with ${migrationResult.warnings.length} warning(s). Please review and confirm parameters.`
         );
-        setTimeout(() => setSaveToast(null), 3500);
+        setTimeout(() => setSaveToast(null), 4500);
+      } else {
+        // State 1: VALID
+        setSaveToast(
+          lang === 'fa'
+            ? `پروژه نسخه 3.0.0 با کد ردگیری ${migrationResult.traceId.slice(0, 8)} با موفقیت بارگذاری شد.`
+            : `Project v3.0.0 loaded successfully (Trace: ${migrationResult.traceId.slice(0, 8)})`
+        );
+        setTimeout(() => setSaveToast(null), 3000);
       }
     } catch (err) {
       console.error('Project import migration error:', err);
-      // Direct fallback
-      if (importedData.city) setCity(importedData.city);
-      if (importedData.loads) setLoads(importedData.loads);
-      if (importedData.projectName) setProjectName(importedData.projectName);
     }
   };
 

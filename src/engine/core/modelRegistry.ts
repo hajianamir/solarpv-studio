@@ -123,6 +123,45 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
       'Cell temperature: -20C to +85C',
     ],
   },
+  optical_iam_thermo_coupled: {
+    modelId: 'optical_iam_thermo_coupled',
+    name: 'Temperature-Coupled Incidence Angle Modifier (IAM) & Fresnel ARC Engine',
+    version: '3.0.0',
+    lastModified: '2026-10-30',
+    governingStandards: ['IEC 61853-2', 'ASHRAE Standard 93'],
+    referenceLiterature: 'Martin & Ruiz (2001) for ARC solar glass; Brandemuehl & Beckman (1980) for diffuse integration; Ghosh (1995) for thermo-optic dn/dT coefficients',
+    analyticalAssumptions: [
+      'Martin & Ruiz exponential formulation for modern anti-reflective textured glass (a_r = 0.16)',
+      'Coupled optical-thermal expansion: thermo-optic coefficient dn/dT = +4.5e-5 K^-1 modifies oblique reflection at high cell temperatures',
+      'Brandemuehl & Beckman polynomial diffuse equivalent angles for sky diffuse and ground albedo components',
+    ],
+    validityBoundaries: [
+      'Incidence angle: 0 deg to 90 deg',
+      'Cell temperature: -40C to +90C',
+      'Refractive index range: 1.25 to 1.65',
+    ],
+  },
+  bipv_thermal_multiphysics: {
+    modelId: 'bipv_thermal_multiphysics',
+    name: 'BIPV/T Multiphysics Coupling & Thermal Non-Uniformity Engine',
+    version: '3.0.0',
+    lastModified: '2026-10-31',
+    governingStandards: ['ISO 9806:2017', 'IEA SHC Task 60', 'IEC 61215'],
+    referenceLiterature: 'Florschuetz (1979) for Hottel-Whillier-Bliss PV/T air duct extension; Tripanagnostopoulos et al. (2002); Brinkworth et al. (2000)',
+    analyticalAssumptions: [
+      'Florschuetz modified Hottel-Whillier-Bliss collector heat removal factor for ventilated cavity duct',
+      'Vertical thermal non-uniformity gradient from eave to ridge induces series string I-V deformation and mismatch loss',
+      'Dual-sided soiling: front glass Kimber deposition + rear cavity duct particulate intake filtration',
+      'Direct coupling to optical IAM engine for temperature-dependent angular transmittance',
+      'Zero-overhead fallback to single-node NOCT/Faiman for standard non-BIPV installations',
+    ],
+    validityBoundaries: [
+      'Cavity depth: 0.04m to 0.40m',
+      'Duct air mass flow: 0.01 to 0.12 kg/s·m²',
+      'Roof slope / facade tilt: 5° to 90°',
+      'Ambient temperature: -20°C to +50°C',
+    ],
+  },
 };
 
 /**

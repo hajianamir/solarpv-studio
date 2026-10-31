@@ -28,6 +28,14 @@ export const DEFAULT_FEATURE_FLAGS: Readonly<AdvancedFeatureFlags> = Object.free
   enableAdvancedGeotechnicalCivil: false,
 });
 
+/**
+ * ARCHITECTURAL POLICY: Continuous Compliance Mode
+ * Standards-based cross-validation suites, benchmark engines, and golden dataset
+ * verifications execute independently of user-level Feature Flag toggles.
+ * This guarantees continuous bankable auditability across all builds and runtime states.
+ * User-facing sizing and design workflows only utilize newly activated physics when the
+ * corresponding feature flag is explicitly enabled by the engineer.
+ */
 export interface FeatureFlagMeta {
   key: keyof AdvancedFeatureFlags;
   titleFa: string;
