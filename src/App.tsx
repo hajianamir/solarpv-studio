@@ -486,7 +486,10 @@ export const App: React.FC = () => {
   }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, outageHours]);
 
   // 10. Financial Analysis with User Unit Pricing & Optional Genset CAPEX
-  const estimatedAnnualYieldMwh = (arrayDesign.totalPvCapacityKwp * city.peakSunHours * 365 * 0.82) / 1000;
+  const thermalDeratePct = Math.max(0, (city.tempMaxC - 45) * 1.5);
+  const altitudeDeratePct = Math.max(0, ((city.elevationM - 2000) / 100) * 1.0);
+  const climaticDerateFactor = (1 - thermalDeratePct / 100) * (1 - altitudeDeratePct / 100);
+  const estimatedAnnualYieldMwh = (arrayDesign.totalPvCapacityKwp * city.peakSunHours * 365 * 0.82 * climaticDerateFactor) / 1000;
 
   const financialResult = useMemo(() => {
     const annualYieldKwh = estimatedAnnualYieldMwh * 1000.0;
@@ -1357,6 +1360,7 @@ export const App: React.FC = () => {
               financial={financialResult}
               pricing={userPricing}
               onPricingChange={setUserPricing}
+              city={city}
               lang={lang}
             />
           )}

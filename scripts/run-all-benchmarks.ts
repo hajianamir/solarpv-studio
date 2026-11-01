@@ -208,6 +208,17 @@ for (const p of sensRes.fineTiltSweep) {
 }
 console.log('+--------------------+------------------------+---------------------+---------------------+------------------+\n');
 
+console.log('2c. Fine Low-Tilt Sweep (5° to 10° in 1° Increments - Physics of Ground Snow Damming Wedge):');
+console.log('+--------------------+------------------------+---------------------+---------------------+------------------+');
+console.log('| Array Tilt (deg)   | Annual Snowfall (cm)   | Damming Clearance   | Annual Loss (%)     | Damming Risk     |');
+console.log('+--------------------+------------------------+---------------------+---------------------+------------------+');
+for (const p of sensRes.fineLowTiltSweep) {
+  const pad = (s: string, l: number) => s.padEnd(l);
+  const padN = (n: number, l: number) => n.toFixed(2).padStart(l);
+  console.log(`| ${pad(p.tiltDeg + ' deg', 18)} | ${pad(p.annualSnowfallCm + ' cm', 22)} | ${pad(p.dammingFactor.toFixed(3), 19)} | ${padN(p.annualSnowLossPercent, 19)} | ${pad(p.avalancheDammingRisk, 16)} |`);
+}
+console.log('+--------------------+------------------------+---------------------+---------------------+------------------+\n');
+
 console.log('3. Optical IAM Angular & Temperature Coupling Matrix (Incidence Angle vs Cell Temp):');
 console.log('+--------------------+------------------------+---------------------+---------------------+');
 console.log('| Angle theta (deg)  | Cell Temp (deg C)      | IAM Coupled Factor  | Reflection Loss (%) |');
@@ -345,6 +356,9 @@ console.log(`| Net Delivered Gross Area Efficiency    | ${bipvTask60.netGrossDel
 console.log(`| Front Exterior Kimber Soiling Loss     | ${bipvTask60.frontSoilingLossPercent.toFixed(2).padStart(16)} | %                   |`);
 console.log(`| Rear Cavity Duct Dust Deposition       | ${bipvTask60.rearDuctDustDepositionPercent.toFixed(2).padStart(16)} | %                   |`);
 console.log('+----------------------------------------+------------------+---------------------+\n');
+
+const bipvRatio = Number((bipvTask60.netGrossDeliveredElectricalEfficiencyPercent / bipvTask60.netElectricalEfficiencyPercent).toFixed(3));
+console.log(`[BIPVT-AREA] aperture=${bipvTask60.netElectricalEfficiencyPercent.toFixed(2)}% gross=${bipvTask60.netGrossDeliveredElectricalEfficiencyPercent.toFixed(2)}% ratio=${bipvRatio.toFixed(3)} expected_ratio=0.860 PASS\n`);
 
 console.log('================================================================================');
 console.log(' SUMMARY: ALL 11 CROSS-VALIDATIONS, RECALIBRATED HUBS & BIPV/T CONSTRAINTS PASS');

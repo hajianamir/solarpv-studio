@@ -46,10 +46,14 @@ export interface SensitivityAnalysisReport {
   kimberMatrix: KimberSensitivityPoint[];
   marionMatrix: MarionSensitivityPoint[];
   fineTiltSweep: MarionTiltSweepPoint[];
+  fineLowTiltSweep: MarionTiltSweepPoint[];
+  fineTransitionSweep: MarionTiltSweepPoint[];
   iamMatrix: IamSensitivityPoint[];
   isKimberMonotonic: boolean;
   isMarionMonotonic: boolean;
   isIamMonotonic: boolean;
+  isLowTiltMonotonic: boolean;
+  isTransitionMonotonic: boolean;
   passedAllMonotonicityChecks: boolean;
 }
 
@@ -239,7 +243,7 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     const pts = marionMatrix.filter(p => p.annualSnowfallCm === depth);
     for (let i = 0; i < pts.length - 1; i++) {
       if (pts[i].annualSnowLossPercent < pts[i + 1].annualSnowLossPercent) {
-        // Defensive assertion branch (lines 226-228): Flags non-physical tilt inversion where steeper tilt exhibits higher loss
+        // Defensive assertion branch (lines 243-247): Flags non-physical tilt inversion where steeper tilt exhibits higher loss
         isMarionMonotonic = false;
       }
     }
@@ -248,7 +252,7 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     const pts = marionMatrix.filter(p => p.tiltDeg === tilt);
     if (!(pts[0].annualSnowLossPercent < pts[1].annualSnowLossPercent &&
           pts[1].annualSnowLossPercent < pts[2].annualSnowLossPercent)) {
-      // Defensive assertion branch (lines 234-236): Flags non-physical snowfall depth inversion where heavier snow produces less loss
+      // Defensive assertion branch (lines 251-255): Flags non-physical snowfall depth inversion where heavier snow produces less loss
       isMarionMonotonic = false;
     }
   }
@@ -288,7 +292,7 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     const pts = iamMatrix.filter(p => p.cellTemperatureC === t);
     for (let i = 0; i < pts.length - 1; i++) {
       if (pts[i].iamCoupled < pts[i + 1].iamCoupled) {
-        // Defensive assertion branch (lines 278-280): Flags non-physical angular inversion where higher incidence transmits more light
+        // Defensive assertion branch (lines 292-296): Flags non-physical angular inversion where higher incidence transmits more light
         isIamMonotonic = false;
       }
     }
@@ -327,16 +331,89 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     });
   }
 
-  const passedAllMonotonicityChecks = isKimberMonotonic && isMarionMonotonic && isIamMonotonic;
+  // ==========================================================================
+  // 4b. Fine Low-Tilt Sweep (5° to 10° in 1° Increments)
+  // Explores the physics of the toe damming wedge and freezing persistence
+  // ==========================================================================
+  const lowTilts = [5, 6, 7, 8, 9, 10];
+  const fineLowTiltSweep: MarionTiltSweepPoint[] = [];
+
+  for (const t of lowTilts) {
+    const sim = simulateAnnualSnowShedding(
+      {
+        tiltDeg: t,
+        groundClearanceM: 0.80,
+        moduleBottomClearanceM: 0.80,
+        dammingRiskThresholdM: 0.50,
+        slideTemperatureThresholdC: 0.5,
+        surfaceSheddingCoeff: 1.0,
+        snowDensityKgPerM3: 100.0,
+      },
+      fineWeather
+    );
+    const dammingFactor = 0.20 + 0.80 / (1.0 + Math.exp(-(t - 19.0) / 2.8));
+
+    fineLowTiltSweep.push({
+      tiltDeg: t,
+      annualSnowfallCm: 150,
+      annualSnowLossPercent: sim.annualSnowLossPercent,
+      dammingFactor: Number(dammingFactor.toFixed(3)),
+      avalancheDammingRisk: sim.avalancheDammingRisk,
+    });
+  }
+
+  // ==========================================================================
+  // 4c. Fine Sweep (10° to 15° in 1° Increments per PR-2a-6)
+  // Verifies smooth transition across the 10-15 degree damming regime
+  // ==========================================================================
+  const transitionTilts = [10, 11, 12, 13, 14, 15];
+  const fineTransitionSweep: MarionTiltSweepPoint[] = [];
+
+  for (const t of transitionTilts) {
+    const sim = simulateAnnualSnowShedding(
+      {
+        tiltDeg: t,
+        groundClearanceM: 0.80,
+        moduleBottomClearanceM: 0.80,
+        dammingRiskThresholdM: 0.50,
+        slideTemperatureThresholdC: 0.5,
+        surfaceSheddingCoeff: 1.0,
+        snowDensityKgPerM3: 100.0,
+      },
+      fineWeather
+    );
+    const dammingFactor = 0.20 + 0.80 / (1.0 + Math.exp(-(t - 19.0) / 2.8));
+
+    fineTransitionSweep.push({
+      tiltDeg: t,
+      annualSnowfallCm: 150,
+      annualSnowLossPercent: sim.annualSnowLossPercent,
+      dammingFactor: Number(dammingFactor.toFixed(3)),
+      avalancheDammingRisk: sim.avalancheDammingRisk,
+    });
+  }
+
+  let isTransitionMonotonic = true;
+  for (let i = 0; i < fineTransitionSweep.length - 1; i++) {
+    if (fineTransitionSweep[i].annualSnowLossPercent < fineTransitionSweep[i + 1].annualSnowLossPercent) {
+      isTransitionMonotonic = false;
+    }
+  }
+
+  const passedAllMonotonicityChecks = isKimberMonotonic && isMarionMonotonic && isIamMonotonic && isLowTiltMonotonic && isTransitionMonotonic;
 
   return {
     kimberMatrix,
     marionMatrix,
     fineTiltSweep,
+    fineLowTiltSweep,
+    fineTransitionSweep,
     iamMatrix,
     isKimberMonotonic,
     isMarionMonotonic,
     isIamMonotonic,
+    isLowTiltMonotonic,
+    isTransitionMonotonic,
     passedAllMonotonicityChecks,
   };
 }

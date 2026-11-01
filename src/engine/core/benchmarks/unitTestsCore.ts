@@ -38,6 +38,8 @@ import { runMarionSnowRecalibrationSuite } from '../../snow/marionSnowRecalibrat
 import { runExternalEmpiricalValidationSuite } from './externalValidation';
 import { simulateBipvThermalStep } from '../../bipv/bipvThermalEngine';
 import { runMigrationTestSuite } from './migrationTestVectors';
+import { getClimateData } from '../../climaticData';
+import { ExternalDataGateway, CircuitBreaker } from '../../dataGateway';
 
 export interface UnitTestResult {
   suite: string;
@@ -700,6 +702,117 @@ export function runCoreUnitTests(): { passed: number; failed: number; results: U
     'Unhandled Exception Catch Branch',
     throwingReport.results[0].migratedVersion === 'FAILED' && throwingReport.results[0].notes.includes('Simulated binary IO bus failure'),
     `migrationTestVectors.ts catch block safely caught unhandled runtime exception and categorized as BLOCKED_INCONSISTENT`
+  );
+
+  // ==========================================================================
+  // Suite 13: Global Geographic Resolution & Data Gateway Resilience (Axis 1 & 3)
+  // ==========================================================================
+  // 13.1 Worldwide Resolution: Munich Coordinates (48.1351, 11.5820)
+  const munichSite = getClimateData(48.1351, 11.5820);
+  assert(
+    'Coordinates',
+    'Munich Geographic Resolution',
+    munichSite.id === 'munich-germany' &&
+    munichSite.nameEn.includes('Munich') &&
+    munichSite.provinceEn.includes('Bavaria') &&
+    munichSite.latitude === 48.1351 &&
+    munichSite.longitude === 11.5820 &&
+    !munichSite.id.includes('tehran'),
+    `Munich coordinates (48.1351, 11.5820) resolved to ${munichSite.nameEn} (${munichSite.provinceEn}) without Iranian fallback.`
+  );
+
+  // 13.2 Negative Regression Test: Invalid Out-of-Bounds Coordinates
+  let outOfBoundsThrew = false;
+  let exceptionMessage = '';
+  try {
+    getClimateData(999, 999);
+  } catch (err: any) {
+    outOfBoundsThrew = true;
+    exceptionMessage = err?.message || '';
+  }
+  assert(
+    'Coordinates',
+    'Negative Out-of-Bounds Validation Guard',
+    outOfBoundsThrew && exceptionMessage.includes('Invalid geographic coordinates'),
+    `Coordinates (999, 999) triggered explicit error: "${exceptionMessage}" instead of silent fallback to Tehran.`
+  );
+
+  // 13.3 Global Interpolation Path (Arbitrary Point Outside Predefined Hubs)
+  const berlinSite = getClimateData(52.5200, 13.4050);
+  assert(
+    'Coordinates',
+    'Global Geospatial Model Fallback',
+    berlinSite.latitude === 52.52 &&
+    berlinSite.longitude === 13.405 &&
+    berlinSite.provinceEn.includes('Europe') &&
+    berlinSite.dataSourceEn.includes('NSRDB / PVGIS / NASA POWER'),
+    `Non-hub coordinates (52.52, 13.405) routed through Global Geospatial Model: ${berlinSite.nameEn} (${berlinSite.dataSourceEn}).`
+  );
+
+  // 13.4 BIPV/T Area Ratio & Electrical Efficiency Analytic Equality
+  const bipvtAnalytical = simulateBipvThermalStep(
+    {
+      isBipvSystem: true,
+      ventilationMode: 'forced_convection',
+      forcedMassFlowKgPerSM2: 0.05,
+      ductLengthM: 2.0,
+      ductWidthM: 1.0,
+      cavityAirGapM: 0.10,
+      stcElectricalEfficiency: 0.16,
+      tempCoeffPmpPercentPerC: -0.40,
+    },
+    1000.0,
+    20.0,
+    1.5,
+    30.0
+  );
+  const expectedGrossDelivered = Number((bipvtAnalytical.netElectricalEfficiencyPercent * bipvtAnalytical.apertureToGrossRatio).toFixed(2));
+  assert(
+    'BIPVT',
+    'Aperture-to-Gross Analytic Equality',
+    Math.abs(expectedGrossDelivered - bipvtAnalytical.netGrossDeliveredElectricalEfficiencyPercent) < 0.01 &&
+    bipvtAnalytical.apertureToGrossRatio === 0.860 &&
+    bipvtAnalytical.grossCollectorAreaM2 === 2.00 &&
+    bipvtAnalytical.netApertureAreaM2 === 1.72,
+    `Analytic consistency verified: netAperture (${bipvtAnalytical.netElectricalEfficiencyPercent}%) * areaRatio (${bipvtAnalytical.apertureToGrossRatio}) = netGross (${bipvtAnalytical.netGrossDeliveredElectricalEfficiencyPercent}%); Aperture Area = ${bipvtAnalytical.netApertureAreaM2} m2, Gross Area = ${bipvtAnalytical.grossCollectorAreaM2} m2.`
+  );
+
+  // 13.5 Marion Fine Low-Tilt Monotonicity Sweep (5° to 10° in 1° Increments)
+  const lowTiltSensReport = runPhysicalSensitivityAnalysis();
+  assert(
+    'Marion',
+    'Fine Low-Tilt Monotonicity (5-10 deg)',
+    lowTiltSensReport.isLowTiltMonotonic && lowTiltSensReport.fineLowTiltSweep.length === 6,
+    `Low-tilt snow loss monotonically decreases from ${lowTiltSensReport.fineLowTiltSweep[0].annualSnowLossPercent}% (5°) to ${lowTiltSensReport.fineLowTiltSweep[5].annualSnowLossPercent}% (10°) due to gravity slide force and toe damming alleviation.`
+  );
+
+  // 13.6 Data Gateway Circuit Breaker Fault Tolerance
+  const cb = new CircuitBreaker({ failureThreshold: 2, resetTimeoutMs: 10000, halfOpenMaxTrials: 1 });
+  cb.recordFailure();
+  cb.recordFailure();
+  const cbState = cb.getState();
+  assert(
+    'DataGateway',
+    'Circuit Breaker Tripping on Consecutive Failures',
+    cbState === 'OPEN',
+    `Circuit breaker successfully transitioned to OPEN after 2 consecutive failures.`
+  );
+
+  // 13.7 Data Gateway Multi-Provider Traceability & Geotechnical Mapping
+  const gw = ExternalDataGateway.getInstance();
+  const climateResource = gw.climateProvider.computeAnalyticalClimateResource(48.1351, 11.5820);
+  const soilResource = gw.soilProvider.computeAnalyticalSoilProperties(48.1351, 11.5820);
+  const hazardResource = gw.structuralProvider.computeAnalyticalHazard(48.1351, 11.5820);
+
+  assert(
+    'DataGateway',
+    'Multi-Provider Traceability & Geotechnical Linking',
+    climateResource.metadata.traceId.startsWith('TRC-CLM') &&
+    soilResource.metadata.traceId.startsWith('TRC-SOIL') &&
+    soilResource.estimatedFromGlobalModel === true &&
+    hazardResource.windStandardCode === 'EN_1991_1_4' &&
+    hazardResource.snowStandardCode === 'EN_1991_1_3',
+    `DataGateway generated trace IDs: ${climateResource.metadata.traceId}, ${soilResource.metadata.traceId}; correctly mapped Eurocodes for Munich.`
   );
 
   const passed = results.filter(r => r.status === 'PASS').length;

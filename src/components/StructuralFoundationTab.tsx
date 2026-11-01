@@ -17,6 +17,7 @@ import {
   ThermometerSnowflake,
   CloudRain,
   MapPin,
+  FileText,
 } from 'lucide-react';
 import {
   calculateStructuralAndFoundations,
@@ -25,6 +26,10 @@ import {
   StructuralAnalysisResult,
 } from '../engine/structuralEngine';
 import { ClimateCity, SiteGeotechnicalOverrides } from '../engine/climaticData';
+import {
+  recommendFoundation,
+  FoundationRecommendationResult,
+} from '../engine/structureRecommendationEngine';
 
 interface StructuralFoundationTabProps {
   totalModulesCount?: number;
@@ -83,6 +88,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   const [modulesPerTable, setModulesPerTable] = useState<number>(28);
   const [groundClearanceM, setGroundClearanceM] = useState<number>(0.9);
   const [foundationType, setFoundationType] = useState<FoundationType>('rammed_steel_pile');
+  const [showReportModal, setShowReportModal] = useState<boolean>(false);
 
   // Geotechnical and climate parameters (initialized from city / overrides)
   const [basicWindSpeedKmh, setBasicWindSpeedKmh] = useState<number>(
@@ -205,6 +211,39 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     annualRainfallMm,
     frostDepthCm,
     seismicZoneA,
+  ]);
+
+  const recResult: FoundationRecommendationResult = useMemo(() => {
+    return recommendFoundation({
+      siteName: isEn ? city.nameEn : city.nameFa,
+      latitude: city.latitude,
+      longitude: city.longitude,
+      soilClassification: soilType,
+      soilBearingCapacityKpa,
+      soilInternalFrictionAngleDeg: soilFrictionAngleDeg,
+      soilCohesionKpa,
+      soilDensityKnM3,
+      frostDepthCm,
+      basicWindSpeedKmh,
+      groundSnowLoadKgM2,
+      tableAreaM2: 52.0,
+      arrayTiltDeg: tiltDeg,
+      postsPerTable: 4,
+      clearanceHeightM: groundClearanceM,
+    });
+  }, [
+    city,
+    soilType,
+    soilBearingCapacityKpa,
+    soilFrictionAngleDeg,
+    soilCohesionKpa,
+    soilDensityKnM3,
+    frostDepthCm,
+    basicWindSpeedKmh,
+    groundSnowLoadKgM2,
+    tiltDeg,
+    groundClearanceM,
+    isEn,
   ]);
 
   return (
@@ -510,6 +549,146 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
         </div>
       </div>
+
+      {/* Automated Foundation Recommendation Engine Card (PR-2a-6) */}
+      <div className="studio-card border border-emerald-500/40 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-4 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">
+                  {isEn ? 'Automated Foundation Recommendation Engine' : 'پیشنهاد هوشمند نوع فونداسیون و سایزینگ برومز'}
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  ASCE 7-22 & Eurocode 7
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {isEn
+                  ? 'Decision tree multi-criteria analysis + Broms lateral capacity & frost heave depth calculation.'
+                  : 'تحلیل چندمعیاره درخت تصمیم، ظرفیت باربری جانبی برومز و بررسی عمق یخبندان.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 flex items-center gap-1.5 transition"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>{isEn ? 'View 6-Section Report' : 'گزارش ۶ بخشی مهندسی'}</span>
+            </button>
+            <button
+              onClick={() => setFoundationType(recResult.primaryRecommendation)}
+              className="text-xs px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-emerald-950 transition"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{isEn ? '1-Click Apply Recommendation' : 'اعمال فونداسیون پیشنهادی (۱-کلیک)'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Top 3 Foundation Options Ranking */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          {recResult.allRankedOptions.slice(0, 3).map((opt) => (
+            <div
+              key={opt.type}
+              className={`p-3 rounded-lg border transition ${
+                foundationType === opt.type
+                  ? 'bg-emerald-950/30 border-emerald-500/60 ring-1 ring-emerald-500'
+                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                  Rank #{opt.rank}
+                </span>
+                <span className="font-mono font-bold text-emerald-400 text-xs">
+                  {opt.suitabilityScore}/100
+                </span>
+              </div>
+              <strong className="text-white block text-xs mt-1">
+                {isEn ? opt.nameEn : opt.nameFa}
+              </strong>
+              <div className="text-[10px] text-slate-400 mt-2 space-y-1">
+                <div className="flex justify-between">
+                  <span>{isEn ? 'Est. CAPEX:' : 'هزینه برآوردی:'}</span>
+                  <span className="text-slate-200 font-mono">${opt.estimatedCapexUsdPerKw.toFixed(2)}/kW</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{isEn ? 'Install Speed:' : 'سرعت اجرا:'}</span>
+                  <span className="text-slate-200 font-mono">{opt.installSpeedMwPerWeek} MW/wk</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2 italic border-t border-slate-800/80 pt-1">
+                {opt.pros[0]}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Broms Pile Sizing & Frost Compliance Bar */}
+        <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-lg text-xs grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <span className="text-slate-400 block text-[10px]">{isEn ? 'Broms Steel Profile:' : 'پروفیل شمع کوبشی:'}</span>
+            <span className="font-mono font-bold text-amber-300 text-sm">{recResult.recommendedPileSizing.pileSection}</span>
+            <span className="text-[9px] text-slate-400 block mt-0.5">Fy = 345 MPa</span>
+          </div>
+
+          <div>
+            <span className="text-slate-400 block text-[10px]">{isEn ? 'Required Embedment (L):' : 'عمق کوبش الزامی (L):'}</span>
+            <span className="font-mono font-bold text-sky-300 text-sm">{recResult.recommendedPileSizing.embedmentDepthM} m</span>
+            <span className="text-[9px] text-emerald-400 block mt-0.5">
+              &gt; Frost depth + 1.0m ({recResult.recommendedPileSizing.minDepthForFrostM}m)
+            </span>
+          </div>
+
+          <div>
+            <span className="text-slate-400 block text-[10px]">{isEn ? 'Lateral Factor of Safety:' : 'ضریب اطمینان جانبی (FoS):'}</span>
+            <span className="font-mono font-bold text-emerald-300 text-sm">{recResult.recommendedPileSizing.fosLateral}</span>
+            <span className="text-[9px] text-slate-400 block mt-0.5">
+              Hu={recResult.recommendedPileSizing.appliedLateralShearKn}kN vs Cap={recResult.recommendedPileSizing.lateralCapacityKn}kN
+            </span>
+          </div>
+
+          <div>
+            <span className="text-slate-400 block text-[10px]">{isEn ? '+20% Wind Gust Adequacy:' : 'مقاومت در باد تندباد (+20%):'}</span>
+            <span className={`font-mono font-bold text-sm ${recResult.sensitivityPlus20Wind.pileAdequate ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {recResult.sensitivityPlus20Wind.pileAdequate ? 'ADEQUATE' : 'UPGRADE PROFILE'}
+            </span>
+            <span className="text-[9px] text-slate-400 block mt-0.5">
+              FoS = {recResult.sensitivityPlus20Wind.fosLateral} @ {recResult.sensitivityPlus20Wind.windSpeedKmh} km/h
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 6-Section Engineering Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-3xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
+            <div className="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-sky-400" />
+                <h3 className="font-bold text-sm text-white">{isEn ? 'Civil Foundation Engineering Sizing Report' : 'گزارش محاسبات ژئوتکنیک و سایزینگ فونداسیون'}</h3>
+              </div>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700"
+              >
+                ✕ {isEn ? 'Close' : 'بستن'}
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
+              {recResult.reportMarkdown}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Structure & Foundation Configuration Controls */}
       <div className="studio-card">

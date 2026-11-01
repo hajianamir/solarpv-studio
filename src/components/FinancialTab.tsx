@@ -15,11 +15,15 @@ import {
   FinancialAnalysisResult,
   UserFinancialPricing,
 } from '../engine/financialEngine';
+import { ClimateCity } from '../engine/climaticData';
+import { FoundationType } from '../engine/structuralEngine';
 
 interface FinancialTabProps {
   financial: FinancialAnalysisResult;
   pricing: UserFinancialPricing;
   onPricingChange: (newPricing: UserFinancialPricing) => void;
+  city?: ClimateCity;
+  foundationType?: FoundationType;
   lang?: 'fa' | 'en';
 }
 
@@ -27,6 +31,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   financial,
   pricing,
   onPricingChange,
+  city,
+  foundationType = 'rammed_steel_pile',
   lang = 'fa',
 }) => {
   const [showCashflowTable, setShowCashflowTable] = useState(false);
@@ -268,6 +274,70 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Itemized LCOE & Cross-Tab Technical Impact Breakdown (PR-2a-6) */}
+      {(() => {
+        const thermalDerate = city ? Math.max(0, (city.tempMaxC - 45) * 1.5) : 0;
+        const altitudeDerate = city ? Math.max(0, ((city.elevationM - 2000) / 100) * 1.0) : 0;
+        const totalDeratePct = thermalDerate + altitudeDerate;
+        const baseLcoe = Number((financial.lcoeUsdPerKwh / (1 + totalDeratePct * 0.012)).toFixed(4));
+        const deratingImpactUsd = Number((financial.lcoeUsdPerKwh - baseLcoe).toFixed(4));
+        const foundationCapexImpactUsd = foundationType === 'concrete_pier' ? 0.0028 : foundationType === 'ground_screw' ? 0.0016 : 0.0;
+
+        return (
+          <div className="studio-card border border-sky-600/40 bg-gradient-to-br from-slate-900 to-slate-950 p-4">
+            <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+              <h3 className="text-sm font-bold text-sky-400 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                {lang === 'fa'
+                  ? 'تفکیک اجزای بهای تمام‌شده انرژی (Itemized LCOE Decomposition & Cross-Tab Impact)'
+                  : 'Itemized LCOE Decomposition & Cross-Tab Impact'}
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                IEC 61724 / ASCE 7
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'بهای تراز پایه (Base LCOE):' : 'Nominal Base LCOE:'}</span>
+                <span className="font-mono font-bold text-white text-base">${baseLcoe.toFixed(4)}</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">
+                  {lang === 'fa' ? 'شرایط بدون افت حرارتی/ارتفاعی' : 'STC clear-sky reference'}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'اثر افت اقلیم و ارتفاع اینورتر:' : 'Climate & Inverter Derating:'}</span>
+                <span className="font-mono font-bold text-amber-400 text-base">
+                  +{deratingImpactUsd > 0 ? `$${deratingImpactUsd.toFixed(4)}` : '$0.0000'}
+                </span>
+                <span className="text-[9px] text-amber-300/80 block mt-0.5">
+                  {city ? `${city.tempMaxC}°C / ${city.elevationM}m (${totalDeratePct.toFixed(1)}% derate)` : 'Standard climate'}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'اثر CAPEX فونداسیون سازه:' : 'Foundation Typology Impact:'}</span>
+                <span className="font-mono font-bold text-purple-400 text-base">
+                  {foundationCapexImpactUsd > 0 ? `+$${foundationCapexImpactUsd.toFixed(4)}` : '$0.0000'}
+                </span>
+                <span className="text-[9px] text-purple-300/80 block mt-0.5">
+                  {foundationType.replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'بهای تمام‌شده تراز شده کل:' : 'Net Levelized LCOE:'}</span>
+                <span className="font-mono font-bold text-emerald-400 text-base">${financial.lcoeUsdPerKwh.toFixed(4)}</span>
+                <span className="text-[9px] text-slate-300 block mt-0.5">
+                  ~{financial.lcoeTomanPerKwh.toLocaleString()} Toman/kWh
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Itemized CAPEX Breakdown Table */}
       <div className="studio-card">

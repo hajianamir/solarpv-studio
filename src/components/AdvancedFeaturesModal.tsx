@@ -29,16 +29,18 @@ import { runMigrationTestSuite, MigrationTestSummary } from '../engine/core/benc
 interface AdvancedFeaturesModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onJumpTab?: (tab: any) => void;
   lang: 'fa' | 'en';
 }
 
 export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
   isOpen,
   onClose,
+  onJumpTab,
   lang,
 }) => {
   const { flags, setFlag, setAllFlags, resetFlags, activeCount } = useFeatureFlags();
-  const [activeTab, setActiveTab] = useState<'flags' | 'validation' | 'lhs_stats' | 'migration' | 'registry'>('flags');
+  const [activeTab, setActiveTab] = useState<'flags' | 'impact' | 'validation' | 'lhs_stats' | 'migration' | 'registry'>('flags');
   const [validationReport, setValidationReport] = useState<SystemValidationReport | null>(null);
   const [lhsBenchmark, setLhsBenchmark] = useState<LhsStatisticalBenchmarkResult | null>(null);
   const [migrationSummary, setMigrationSummary] = useState<MigrationTestSummary | null>(null);
@@ -136,6 +138,17 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           >
             <Sliders className="w-4 h-4" />
             <span>{lang === 'fa' ? 'ویژگی‌ها و پرچم‌ها (Feature Flags)' : 'Engineering Feature Flags'}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('impact')}
+            className={`py-3 px-4 border-b-2 flex items-center gap-2 transition ${
+              activeTab === 'impact'
+                ? 'border-sky-400 text-sky-300 bg-sky-500/10'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>{lang === 'fa' ? 'انتشار داده‌ها و داشبورد اثرگذاری' : 'Data Propagation & Impact'}</span>
           </button>
           <button
             onClick={() => {
@@ -284,6 +297,145 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: DATA PROPAGATION & IMPACT DASHBOARD (RFC 3.0 / PR-2a-6) */}
+          {activeTab === 'impact' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <h3 className="text-sm font-bold text-sky-400 flex items-center gap-2 mb-1">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  <span>{lang === 'fa' ? 'داشبورد جامع انتشار داده‌ها و اثرات فنی متقابل (Cross-Tab Telemetry Propagation)' : 'Cross-Tab Telemetry Propagation & Engineering Impact Dashboard'}</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {lang === 'fa'
+                    ? 'مشاهده وضعیت اتصال و انتشار خودکار متغیرهای اقلیمی، ژئوتکنیکی و بارها به تب‌های اینورتر، سازه و مالی.'
+                    : 'Real-time telemetry propagation from scientific climate and soil providers to Inverter, Structural, and Financial engines.'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Climate -> Inverter */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-white flex items-center gap-2">
+                      <Thermometer className="w-4 h-4 text-amber-400" />
+                      <span>{lang === 'fa' ? '۱. داده‌های اقلیم ⟵ تب اینورتر (Inverter Sizing)' : '1. Climate Provider ⟵ Inverter Sizing Tab'}</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      Applied
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    {lang === 'fa'
+                      ? 'انتشار خودکار دمای بیشینه محیط (افت ۱.۵٪ به‌ازای هر درجه بالای ۴۵°C) و ارتفاع از سطح دریا (افت ۱.۰٪ به‌ازای هر ۱۰۰ متر بالای ۲۰۰۰ متر بر اساس IEC 62109-1).'
+                      : 'Automatic derating for ambient T_max > 45°C (1.5%/°C) and altitude > 2000m (1.0%/100m per IEC 62109-1).'}
+                  </p>
+                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                    <button
+                      onClick={() => {
+                        onJumpTab?.('array');
+                        onClose();
+                      }}
+                      className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <span>{lang === 'fa' ? 'انتقال به تب اینورتر' : 'Jump to Inverter Tab'}</span>
+                      <span>➔</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Soil, Wind, Snow -> Structural */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-white flex items-center gap-2">
+                      <Hammer className="w-4 h-4 text-purple-400" />
+                      <span>{lang === 'fa' ? '۲. خاک، باد و برف ⟵ تب سازه و فونداسیون' : '2. Soil & Hazards ⟵ Structural Foundation Tab'}</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      Applied
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    {lang === 'fa'
+                      ? 'انتشار فشار دینامیکی باد (qz)، بار برف زمین (Sk)، عمق یخبندان و سایزینگ شمع کوبشی فولادی به روش برومز (FoS >= 1.5).'
+                      : 'Propagation of wind pressure qz, ground snow Sk, frost depth, and Broms lateral steel pile sizing (FoS >= 1.5).'}
+                  </p>
+                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                    <button
+                      onClick={() => {
+                        onJumpTab?.('structural');
+                        onClose();
+                      }}
+                      className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <span>{lang === 'fa' ? 'انتقال به تب سازه' : 'Jump to Structural Tab'}</span>
+                      <span>➔</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Derating & Foundation -> Financial */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-white flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-emerald-400" />
+                      <span>{lang === 'fa' ? '۳. افت تولید و CAPEX ⟵ تب مالی و LCOE' : '3. Derated Yield & CAPEX ⟵ Financial Tab'}</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      Applied
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    {lang === 'fa'
+                      ? 'تفکیک بهای تمام‌شده تراز شده انرژی (LCOE) به اقلام: بهای پایه، اثر افت اقلیمی و ارتفاعی اینورتر، و اثر نوع فونداسیون سازه.'
+                      : 'Itemized LCOE decomposition into base plant LCOE, climate derating impact, and foundation typology CAPEX.'}
+                  </p>
+                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                    <button
+                      onClick={() => {
+                        onJumpTab?.('financial');
+                        onClose();
+                      }}
+                      className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <span>{lang === 'fa' ? 'انتقال به تب مالی' : 'Jump to Financial Tab'}</span>
+                      <span>➔</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. GIS & Map -> Climate Tab */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-white flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-sky-400" />
+                      <span>{lang === 'fa' ? '۴. نقشه چندلایه آزاد و Overpass ⟵ تب اقلیم' : '4. Free GIS & Overpass Footprints ⟵ Climate Map Tab'}</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      Applied
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    {lang === 'fa'
+                      ? 'سوئیچر ۴ لایه Leaflet (تصاویر ماهواره‌ای Esri، توپوگرافی OpenTopoMap و OSM) + شناسایی ابعاد سقف با Overpass بدون نیاز به کلید Google Maps.'
+                      : '4-layer Leaflet switcher (Esri Satellite, OpenTopoMap, OSM) + Overpass API rooftop footprint detection with zero Google API fees.'}
+                  </p>
+                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                    <button
+                      onClick={() => {
+                        onJumpTab?.('climate');
+                        onClose();
+                      }}
+                      className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <span>{lang === 'fa' ? 'انتقال به تب نقشه' : 'Jump to Climate Tab'}</span>
+                      <span>➔</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

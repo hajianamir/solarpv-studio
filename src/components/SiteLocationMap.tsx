@@ -16,7 +16,7 @@ import {
   Map as MapIcon,
   Compass,
 } from 'lucide-react';
-import { ClimateCity, IRANIAN_CLIMATE_CITIES } from '../engine/climaticData';
+import { ClimateCity, ALL_CLIMATE_CITIES, getClimateData } from '../engine/climaticData';
 
 interface SiteLocationMapProps {
   currentCity: ClimateCity;
@@ -51,8 +51,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const initialLat = currentCity.latitude || (currentCity as any).latitudeDeg || 35.6892;
   const initialLng = currentCity.longitude || (currentCity as any).longitudeDeg || 51.3890;
 
-  // Layer state: 'hybrid' (satellite + labels/roads), 'satellite_pure', 'streets'
-  const [activeLayer, setActiveLayer] = useState<'hybrid' | 'satellite_pure' | 'streets'>('hybrid');
+  // Layer state: 'hybrid' (satellite + labels/roads), 'satellite_pure', 'streets', 'topo' (topography & contours)
+  const [activeLayer, setActiveLayer] = useState<'hybrid' | 'satellite_pure' | 'streets' | 'topo'>('hybrid');
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({
     lat: initialLat,
     lng: initialLng,
@@ -72,51 +72,18 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const hybridLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const satellitePureLayerRef = useRef<L.TileLayer | null>(null);
   const streetLayerRef = useRef<L.TileLayer | null>(null);
+  const topoLayerRef = useRef<L.TileLayer | null>(null);
 
-  // Geospatial resource calculator
+  // Geospatial resource calculator utilizing global climate & geotechnical gateway
   const calculateGeospatialSolarResource = (lat: number, lng: number): ClimateCity => {
-    let closest = IRANIAN_CLIMATE_CITIES[0];
-    let minDistance = 999999;
-
-    for (const city of IRANIAN_CLIMATE_CITIES) {
-      const cityLat = city.latitude || (city as any).latitudeDeg || 35.6892;
-      const cityLng = city.longitude || (city as any).longitudeDeg || 51.3890;
-      const d = Math.hypot(cityLat - lat, cityLng - lng);
-      if (d < minDistance) {
-        minDistance = d;
-        closest = city;
-      }
+    try {
+      return getClimateData(lat, lng);
+    } catch {
+      // Fallback in case of out-of-range coordinates during drag
+      const safeLat = Math.max(-89.9, Math.min(89.9, lat));
+      const safeLng = Math.max(-179.9, Math.min(179.9, lng));
+      return getClimateData(safeLat, safeLng);
     }
-
-    const psh = Math.max(3.8, Math.min(6.5, Number((closest.peakSunHours + (33 - lat) * 0.04).toFixed(2))));
-    const optTilt = Math.max(15, Math.min(42, Math.round(lat * 0.88)));
-    const tempMax = lat < 33 ? (lat < 31 && lng < 50 ? 51 : 44) : 40;
-    const tempMin = lat > 34 ? (lng < 50 ? -16 : -8) : (lat < 28 ? 6 : -4);
-
-    const safeLat = Number(lat.toFixed(4));
-    const safeLng = Number(lng.toFixed(4));
-
-    return {
-      ...closest,
-      id: `custom_${lat.toFixed(3)}_${lng.toFixed(3)}`,
-      nameFa: minDistance < 0.6 ? closest.nameFa : `مختصات (${lat.toFixed(2)}°N, ${lng.toFixed(2)}°E)`,
-      nameEn: minDistance < 0.6 ? closest.nameEn : `Site (${lat.toFixed(2)}°N, ${lng.toFixed(2)}°E)`,
-      provinceFa: closest.provinceFa,
-      provinceEn: closest.provinceEn,
-      latitude: safeLat,
-      longitude: safeLng,
-      peakSunHours: psh,
-      tempMinC: tempMin,
-      tempMaxC: tempMax,
-      optimalTiltAnnualDeg: optTilt,
-      optimalTiltWinterDeg: Math.min(60, optTilt + 15),
-      optimalTiltSummerDeg: Math.max(10, optTilt - 15),
-      soilingLossPct: closest.soilingLossPct || 4.0,
-      albedo: closest.albedo || 0.22,
-      elevationM: Math.round(1100 + (lat - 30) * 50),
-      descriptionFa: minDistance < 0.6 ? closest.descriptionFa : 'سایت سفارشی انتخاب شده از روی نقشه ماهواره‌ای',
-      descriptionEn: minDistance < 0.6 ? closest.descriptionEn : 'Custom site location selected from satellite map',
-    };
   };
 
   // Initialize Leaflet Map
@@ -159,6 +126,13 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
       const hybridGroup = L.layerGroup([satelliteBase, labelsOverlay, roadsOverlay]);
       hybridLayerGroupRef.current = hybridGroup;
+
+      // 4. OpenTopoMap Topographic & Elevation Contours
+      const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)',
+      });
+      topoLayerRef.current = topoLayer;
 
       // Add default hybrid layer to map
       hybridGroup.addTo(map);
@@ -259,7 +233,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   }, [currentCity]);
 
   // Layer Switcher Handler
-  const handleSwitchLayer = (layer: 'hybrid' | 'satellite_pure' | 'streets') => {
+  const handleSwitchLayer = (layer: 'hybrid' | 'satellite_pure' | 'streets' | 'topo') => {
     if (!mapInstanceRef.current) return;
     setActiveLayer(layer);
 
@@ -267,13 +241,16 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     if (hybridLayerGroupRef.current) mapInstanceRef.current.removeLayer(hybridLayerGroupRef.current);
     if (satellitePureLayerRef.current) mapInstanceRef.current.removeLayer(satellitePureLayerRef.current);
     if (streetLayerRef.current) mapInstanceRef.current.removeLayer(streetLayerRef.current);
+    if (topoLayerRef.current) mapInstanceRef.current.removeLayer(topoLayerRef.current);
 
     if (layer === 'hybrid') {
       if (hybridLayerGroupRef.current) mapInstanceRef.current.addLayer(hybridLayerGroupRef.current);
     } else if (layer === 'satellite_pure') {
       if (satellitePureLayerRef.current) mapInstanceRef.current.addLayer(satellitePureLayerRef.current);
-    } else {
+    } else if (layer === 'streets') {
       if (streetLayerRef.current) mapInstanceRef.current.addLayer(streetLayerRef.current);
+    } else if (layer === 'topo') {
+      if (topoLayerRef.current) mapInstanceRef.current.addLayer(topoLayerRef.current);
     }
   };
 
@@ -322,7 +299,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
   // Filtered Local Predefined Cities & Industrial Parks
   const filteredLocalSites = searchQuery.trim()
-    ? [...IRANIAN_CLIMATE_CITIES, ...INDUSTRIAL_PARKS_AND_HUBS].filter((item) => {
+    ? [...ALL_CLIMATE_CITIES, ...INDUSTRIAL_PARKS_AND_HUBS].filter((item) => {
         const q = searchQuery.toLowerCase();
         return (
           item.nameFa.toLowerCase().includes(q) ||
@@ -335,16 +312,31 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     <div className="space-y-4">
       {/* Top Map Action & Coordinate Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700/80">
-        <div className="flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-sky-400 shrink-0" />
-          <div>
-            <span className="text-xs text-slate-400 block">
-              {isEn ? 'Selected Geographic Coordinates & Site:' : 'محل انتخاب‌شده بر روی نقشه:'}
-            </span>
-            <span className="font-bold text-sm text-white">
-              {isEn ? currentCity.nameEn : currentCity.nameFa} {currentCity.provinceEn ? `(${isEn ? currentCity.provinceEn : currentCity.provinceFa})` : ''}
-            </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-sky-400 shrink-0" />
+            <div>
+              <span className="text-xs text-slate-400 block">
+                {isEn ? 'Selected Geographic Coordinates & Site:' : 'محل انتخاب‌شده بر روی نقشه:'}
+              </span>
+              <span className="font-bold text-sm text-white">
+                {isEn ? currentCity.nameEn : currentCity.nameFa} {currentCity.provinceEn ? `(${isEn ? currentCity.provinceEn : currentCity.provinceFa})` : ''}
+              </span>
+            </div>
           </div>
+
+          {/* Explicit Data Confidence Badge */}
+          {currentCity.confidence === 'analytical_estimate' ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>{isEn ? 'Estimated Model (not measured data)' : 'مدل تخمینی منطقه‌ای (داده غیراندازه‌گیری‌شده)'}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
+              <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>{isEn ? 'Calibrated Reference Hub' : 'هاب مرجع کالیبره‌شده'}</span>
+            </div>
+          )}
         </div>
 
         {/* Live Coordinate Badges */}
@@ -365,7 +357,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           </div>
         </div>
 
-        {/* 3-Way Layer Switcher */}
+        {/* 4-Way Layer Switcher */}
         <div className="flex flex-wrap items-center gap-1 bg-slate-800 p-1 rounded border border-slate-700 text-xs">
           <button
             type="button"
@@ -376,7 +368,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             title={isEn ? 'Satellite Imagery with Roads and Places labels' : 'تصاویر ماهواره‌ای به همراه اسامی اماکن، جاده‌ها و مرزها'}
           >
             <Layers className="w-3.5 h-3.5 text-amber-300" />
-            <span>{isEn ? 'Hybrid Satellite' : 'ماهواره‌ای ترکیبی (با جاده و اسامی)'}</span>
+            <span>{isEn ? 'Hybrid Satellite' : 'ماهواره‌ای ترکیبی'}</span>
           </button>
           <button
             type="button"
@@ -398,7 +390,18 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             title={isEn ? 'Detailed Street Map' : 'نقشه خیابانی و معابر'}
           >
             <MapIcon className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Streets Map' : 'نقشه شهری معابر'}</span>
+            <span>{isEn ? 'Streets Map' : 'معابر شهری'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSwitchLayer('topo')}
+            className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
+              activeLayer === 'topo' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+            title={isEn ? 'Topographic & Elevation Contour Map' : 'نقشه توپوگرافی و تراز ارتفاعی زمین (OpenTopoMap)'}
+          >
+            <Compass className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isEn ? 'Topography' : 'توپوگرافی و شیب'}</span>
           </button>
         </div>
       </div>

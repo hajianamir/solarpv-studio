@@ -486,6 +486,68 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Climatic & Altitude Inverter Derating (IEC 62109-1 / PR-2a-6) */}
+            {(() => {
+              const thermalDerate = Math.max(0, (city.tempMaxC - 45) * 1.5);
+              const altitudeDerate = Math.max(0, ((city.elevationM - 2000) / 100) * 1.0);
+              const combinedFactor = (1 - thermalDerate / 100) * (1 - altitudeDerate / 100);
+              const totalDeratePct = Number(((1 - combinedFactor) * 100).toFixed(1));
+              const deratedUnitKw = Number((selectedInverter.pnomAcKw * combinedFactor).toFixed(1));
+              const totalEffectiveKw = Number((inverterClustering.totalInverterCapacityKw * combinedFactor).toFixed(1));
+
+              return (
+                <div className="mt-3 p-3 bg-slate-950/80 border border-slate-700/70 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-sky-300 flex items-center gap-1.5">
+                      <Sun className="w-3.5 h-3.5 text-amber-400" />
+                      {isEn
+                        ? 'Climatic & Elevation Inverter Derating (IEC 62109-1)'
+                        : 'افت حرارتی و ارتفاعی اینورتر بر مبنای استاندارد IEC 62109-1'}
+                    </span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                      totalDeratePct > 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    }`}>
+                      {totalDeratePct > 0 ? `-${totalDeratePct}% Derating Applied` : '0% Full Nominal Power'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Max Ambient Temp:' : 'دمای حداکثر محیط:'}</span>
+                      <span className="font-mono font-bold text-slate-200">{city.tempMaxC}°C</span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        {city.tempMaxC > 45 ? `>${45}°C: -${thermalDerate.toFixed(1)}%` : 'No thermal derating (<=45°C)'}
+                      </span>
+                    </div>
+
+                    <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Site Elevation:' : 'ارتفاع از سطح دریا:'}</span>
+                      <span className="font-mono font-bold text-slate-200">{city.elevationM} m</span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        {city.elevationM > 2000 ? `>2000m: -${altitudeDerate.toFixed(1)}% (1%/100m)` : 'Sea level to 2000m (0% derate)'}
+                      </span>
+                    </div>
+
+                    <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Derated Unit AC Rating:' : 'توان موثر هر دستگاه:'}</span>
+                      <span className="font-mono font-bold text-amber-300">{deratedUnitKw} kW</span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        Nominal: {selectedInverter.pnomAcKw} kW
+                      </span>
+                    </div>
+
+                    <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Effective Plant AC Output:' : 'خروجی خالص موثر کل:'}</span>
+                      <span className="font-mono font-bold text-emerald-300">{totalEffectiveKw} kW</span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        {inverterClustering.parallelUnitsCount} units in parallel
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
