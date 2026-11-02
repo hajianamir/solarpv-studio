@@ -243,8 +243,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-emerald-400" />
+        <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-industrial-success" />
           {lang === 'fa'
             ? 'سایزینگ پیشرفته کابل‌ها، کابل‌های موازی، سیستم ارتینگ و حفاظت صاعقه'
             : 'Advanced Cable Sizing, Parallel Runs, Earthing (IEEE 80) & Lightning Protection'}
@@ -256,12 +256,12 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         </p>
 
         {/* Sub-tabs selector */}
-        <div className="flex items-center gap-2 mt-4 border-b border-slate-800 pb-2">
+        <div className="flex items-center gap-2 mt-4 border-b border-industrial-border pb-2">
           <button
             onClick={() => setActiveSubTab('cables')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
               activeSubTab === 'cables'
-                ? 'bg-sky-600 text-white shadow'
+                ? 'bg-sky-600 text-white '
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -272,7 +272,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             onClick={() => setActiveSubTab('earthing')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
               activeSubTab === 'earthing'
-                ? 'bg-sky-600 text-white shadow'
+                ? 'bg-sky-600 text-white '
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -283,7 +283,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             onClick={() => setActiveSubTab('lightning')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
               activeSubTab === 'lightning'
-                ? 'bg-sky-600 text-white shadow'
+                ? 'bg-sky-600 text-white '
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -294,7 +294,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             onClick={() => setActiveSubTab('bom')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
               activeSubTab === 'bom'
-                ? 'bg-sky-600 text-white shadow'
+                ? 'bg-sky-600 text-white '
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -309,15 +309,15 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         <div className="space-y-6">
           {/* User Parameters Configuration Card */}
           <div className="studio-card">
-            <h3 className="text-sm font-bold text-sky-400 mb-3 flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-amber-400" />
+            <h3 className="text-sm font-bold text-industrial-accent mb-3 flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-industrial-warning" />
               {lang === 'fa' ? 'تنظیم طول فواصل، جنس هادی و نوع عایق کابل‌ها' : 'Cable Distance, Material & Insulation Settings'}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               {/* DC String */}
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg space-y-2">
-                <span className="font-bold text-amber-300 block">
+              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
+                <span className="font-bold text-industrial-warning block">
                   {lang === 'fa' ? 'کابل DC استرینگ خورشیدی' : 'DC Solar String Cable'}
                 </span>
                 <div>
@@ -360,7 +360,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
 
               {/* DC Main Feeder */}
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg space-y-2">
+              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
                 <span className="font-bold text-sky-300 block">
                   {lang === 'fa' ? 'کابل باسبار اصلی DC آرایه' : 'Main DC Array Feeder'}
                 </span>
@@ -404,8 +404,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
 
               {/* AC Output */}
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg space-y-2">
-                <span className="font-bold text-emerald-300 block">
+              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
+                <span className="font-bold text-industrial-success block">
                   {lang === 'fa' ? 'کابل AC خروجی اینورتر' : 'Inverter AC Output Cable'}
                 </span>
                 <div>
@@ -451,14 +451,14 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
 
           {/* Sizing & Parallel Runs Results Table */}
           <div className="studio-card">
-            <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-400" />
+            <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-industrial-warning" />
               {lang === 'fa' ? 'نتایج سایزینگ کابل، کابل‌های موازی و افت ولتاژ' : 'Cable Sizing & Parallel Run Verification'}
             </h3>
 
             <div className="overflow-x-auto">
               <table className="w-full text-right text-xs text-slate-300">
-                <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-700">
+                <thead className="bg-industrial-surface/90 text-slate-400 border-b border-industrial-border">
                   <tr>
                     <th className="p-2.5">{lang === 'fa' ? 'بخش مدار' : 'Circuit Section'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'طول' : 'Length'}</th>
@@ -477,17 +477,17 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         {lang === 'fa' ? run.config.sectionNameFa : run.config.sectionNameEn}
                       </td>
                       <td className="p-2.5 font-mono">{run.config.oneWayLengthM} m</td>
-                      <td className="p-2.5 font-mono text-emerald-400 font-bold">
+                      <td className="p-2.5 font-mono text-industrial-success font-bold">
                         {run.config.designCurrentAmps.toFixed(1)} A
                       </td>
-                      <td className="p-2.5 font-mono text-sky-400">{run.config.nominalVoltageVolts.toFixed(0)} V</td>
+                      <td className="p-2.5 font-mono text-industrial-accent">{run.config.nominalVoltageVolts.toFixed(0)} V</td>
                       <td className="p-2.5 font-mono text-slate-300">
                         {run.calculatedTheoreticalCrossSectionMm2} mm²
                       </td>
-                      <td className="p-2.5 font-mono font-bold text-amber-300 text-sm">
+                      <td className="p-2.5 font-mono font-bold text-industrial-warning text-sm">
                         {lang === 'fa' ? run.cableDesignationFa : run.cableDesignationEn}
                         {run.parallelRunsCount > 1 && (
-                          <span className="block text-[10px] text-sky-400 font-sans">
+                          <span className="block text-[10px] text-industrial-accent font-sans">
                             {lang === 'fa'
                               ? `(${run.parallelRunsCount} رشته موازی × ${run.perRunCrossSectionMm2} mm²)`
                               : `(${run.parallelRunsCount} parallel runs per phase)`}
@@ -495,7 +495,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         )}
                       </td>
                       <td className="p-2.5 font-mono font-bold">
-                        <span className={run.isCompliant ? 'text-emerald-400' : 'text-red-400'}>
+                        <span className={run.isCompliant ? 'text-industrial-success' : 'text-industrial-error'}>
                           {run.actualVoltageDropPct}% ({run.actualVoltageDropVolts}V)
                         </span>
                       </td>
@@ -503,8 +503,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
                             run.isCompliant
-                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                              : 'bg-red-950 text-red-400 border border-red-800'
+                              ? 'bg-industrial-success text-industrial-success border border-industrial-success'
+                              : 'bg-red-950 text-industrial-error border border-red-800'
                           }`}
                         >
                           {run.isCompliant ? (
@@ -531,7 +531,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   .filter((r) => !r.isCompliant)
                   .map((r, i) => (
                     <div key={i} className="p-3 bg-red-950/40 border border-red-800/80 rounded-lg text-xs text-red-200 flex items-start gap-2.5">
-                      <Wrench className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <Wrench className="w-4 h-4 text-industrial-warning shrink-0 mt-0.5" />
                       <div>
                         <strong className="text-white block font-bold mb-1">
                           {lang === 'fa' ? r.config.sectionNameFa : r.config.sectionNameEn}:
@@ -552,15 +552,15 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       {activeSubTab === 'earthing' && (
         <div className="space-y-6">
           <div className="studio-card">
-            <h3 className="text-sm font-bold text-sky-400 mb-3 flex items-center gap-2">
-              <Anchor className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm font-bold text-industrial-accent mb-3 flex items-center gap-2">
+              <Anchor className="w-4 h-4 text-industrial-success" />
               {lang === 'fa'
                 ? 'محاسبات سیستم ارتینگ، هم‌بندی و پتانسیل گام و لمس (IEEE 80 / IEC 60364-5-54)'
                 : 'Earthing System Design & Touch/Step Potential (IEEE 80)'}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg space-y-2 text-xs">
+              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2 text-xs">
                 <label className="text-slate-300 font-semibold block">
                   {lang === 'fa' ? 'مقاومت ویژه خاک محوطه (Ω·m / Soil Resistivity):' : 'Soil Resistivity (Ω·m):'}
                 </label>
@@ -577,7 +577,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg space-y-2 text-xs">
+              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2 text-xs">
                 <label className="text-slate-300 font-semibold block">
                   {lang === 'fa' ? 'سیستم زمین و اتصال به شبکه بالادست:' : 'Upstream Grid Earthing Scheme:'}
                 </label>
@@ -604,29 +604,29 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-4">
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'مقاومت هدف زمین' : 'Target Rg'}</span>
-                <span className="text-lg font-bold font-mono text-sky-400">{earthingResult.targetGroundResistanceOhms} Ω</span>
+                <span className="text-lg font-bold font-mono text-industrial-accent">{earthingResult.targetGroundResistanceOhms} Ω</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'مقاومت محاسبه‌شده' : 'Calculated Rg'}</span>
-                <span className={`text-lg font-bold font-mono ${earthingResult.isResistanceCompliant ? 'text-emerald-400' : 'text-red-400'}`}>
+                <span className={`text-lg font-bold font-mono ${earthingResult.isResistanceCompliant ? 'text-industrial-success' : 'text-industrial-error'}`}>
                   {earthingResult.calculatedGroundResistanceOhms} Ω
                 </span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'تعداد رادهای ارت' : 'Ground Rods'}</span>
-                <span className="text-lg font-bold font-mono text-amber-400">{earthingResult.groundRodsCount} عدد (۳m)</span>
+                <span className="text-lg font-bold font-mono text-industrial-warning">{earthingResult.groundRodsCount} عدد (۳m)</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'هادی دفنی لخت' : 'Buried Conductor'}</span>
                 <span className="text-lg font-bold font-mono text-purple-400">{earthingResult.buriedBareConductorLengthM} متر ({earthingResult.buriedConductorCrossSectionMm2}mm²)</span>
               </div>
             </div>
 
             {/* Execution Steps */}
-            <div className="mt-4 p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-              <h4 className="text-xs font-bold text-amber-300 mb-2 flex items-center gap-1.5">
+            <div className="mt-4 p-4 rounded-xl bg-industrial-bg/80 border border-industrial-border">
+              <h4 className="text-xs font-bold text-industrial-warning mb-2 flex items-center gap-1.5">
                 <Wrench className="w-3.5 h-3.5" />
                 {lang === 'fa' ? 'دستورالعمل اجرایی و الزامات نصب ارتینگ در کارگاه:' : 'Practical Field Earthing Execution Steps:'}
               </h4>
@@ -634,7 +634,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 {(lang === 'fa' ? earthingResult.earthingExecutionStepsFa : earthingResult.earthingExecutionStepsEn).map(
                   (step, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-industrial-success shrink-0 mt-0.5" />
                       <span>{step}</span>
                     </li>
                   )
@@ -649,45 +649,45 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       {activeSubTab === 'lightning' && (
         <div className="space-y-6">
           <div className="studio-card">
-            <h3 className="text-sm font-bold text-sky-400 mb-3 flex items-center gap-2">
-              <Radio className="w-4 h-4 text-amber-400" />
+            <h3 className="text-sm font-bold text-industrial-accent mb-3 flex items-center gap-2">
+              <Radio className="w-4 h-4 text-industrial-warning" />
               {lang === 'fa'
                 ? 'حفاظت در برابر برخورد مستقیم و اضافه ولتاژ صاعقه (IEC 62305 / IEC 62548)'
                 : 'Direct Strike & Surge Lightning Protection (IEC 62305)'}
             </h3>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-4">
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'کلاس حفاظت LPS' : 'LPS Class'}</span>
-                <span className="text-lg font-bold font-mono text-amber-400">{lightningResult.lpsClass}</span>
+                <span className="text-lg font-bold font-mono text-industrial-warning">{lightningResult.lpsClass}</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'شعاع گوی غلتان' : 'Rolling Sphere Radius'}</span>
-                <span className="text-lg font-bold font-mono text-sky-400">{lightningResult.rollingSphereRadiusM} متر</span>
+                <span className="text-lg font-bold font-mono text-industrial-accent">{lightningResult.rollingSphereRadiusM} متر</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'دکل‌های صاعقه‌گیر' : 'Air Terminal Masts'}</span>
-                <span className="text-lg font-bold font-mono text-emerald-400">{lightningResult.airTerminalsCount} عدد ({lightningResult.airTerminalHeightM}m)</span>
+                <span className="text-lg font-bold font-mono text-industrial-success">{lightningResult.airTerminalsCount} عدد ({lightningResult.airTerminalHeightM}m)</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'هادی‌های نزولی' : 'Down Conductors'}</span>
                 <span className="text-lg font-bold font-mono text-purple-400">{lightningResult.downConductorsCount} مسیر (۵۰mm²)</span>
               </div>
             </div>
 
             {/* SPD Specifications */}
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs space-y-2 mb-4">
-              <span className="font-bold text-amber-300 block">{lang === 'fa' ? 'مشخصات سرج ارسترهای مورد نیاز:' : 'Required SPD Specifications:'}</span>
+            <div className="p-3 bg-industrial-bg border border-industrial-border rounded-lg text-xs space-y-2 mb-4">
+              <span className="font-bold text-industrial-warning block">{lang === 'fa' ? 'مشخصات سرج ارسترهای مورد نیاز:' : 'Required SPD Specifications:'}</span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px]">
-                <div className="p-2 bg-slate-900 rounded border border-slate-800">
-                  <strong className="text-sky-400 block">DC SPD (Array Input):</strong>
+                <div className="p-2 bg-industrial-surface rounded border border-industrial-border">
+                  <strong className="text-industrial-accent block">DC SPD (Array Input):</strong>
                   <span className="text-slate-300">{lightningResult.dcSpdSpec}</span>
                 </div>
-                <div className="p-2 bg-slate-900 rounded border border-slate-800">
-                  <strong className="text-emerald-400 block">AC SPD (Inverter Output):</strong>
+                <div className="p-2 bg-industrial-surface rounded border border-industrial-border">
+                  <strong className="text-industrial-success block">AC SPD (Inverter Output):</strong>
                   <span className="text-slate-300">{lightningResult.acSpdSpec}</span>
                 </div>
-                <div className="p-2 bg-slate-900 rounded border border-slate-800">
+                <div className="p-2 bg-industrial-surface rounded border border-industrial-border">
                   <strong className="text-purple-400 block">MV Surge Arrester:</strong>
                   <span className="text-slate-300">{lightningResult.mvArresterSpec}</span>
                 </div>
@@ -695,14 +695,14 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             </div>
 
             {/* Guidelines */}
-            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-              <h4 className="text-xs font-bold text-amber-300 mb-2">
+            <div className="p-4 rounded-xl bg-industrial-bg/80 border border-industrial-border">
+              <h4 className="text-xs font-bold text-industrial-warning mb-2">
                 {lang === 'fa' ? 'اصول طراحی و اجرای سیستم صاعقه‌گیر در مزارع خورشیدی:' : 'Solar Farm Lightning Protection Design Principles:'}
               </h4>
               <ul className="space-y-1.5 text-xs text-slate-300">
                 {lightningResult.installationGuidelinesFa.map((g, idx) => (
                   <li key={idx} className="flex items-start gap-2">
-                    <ArrowRight className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+                    <ArrowRight className="w-3.5 h-3.5 text-industrial-accent shrink-0 mt-0.5" />
                     <span>{g}</span>
                   </li>
                 ))}
@@ -715,14 +715,14 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       {/* SUB-TAB 4: BOM TABLE */}
       {activeSubTab === 'bom' && (
         <div className="studio-card">
-          <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-emerald-400" />
+          <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
+            <Layers className="w-4 h-4 text-industrial-success" />
             {lang === 'fa' ? 'فهرست کامل ادوات حفاظتی و صاعقه (Protection Bill of Materials)' : 'Protection Bill of Materials'}
           </h3>
 
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs text-slate-300">
-              <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-700">
+              <thead className="bg-industrial-surface/90 text-slate-400 border-b border-industrial-border">
                 <tr>
                   <th className="p-2.5">{lang === 'fa' ? 'نام و مدل تجهیز' : 'Equipment Name'}</th>
                   <th className="p-2.5">{lang === 'fa' ? 'مشخصات فنی و استاندارد' : 'Specification & Standard'}</th>
@@ -738,8 +738,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                       {lang === 'fa' ? item.deviceFa : item.deviceEn}
                     </td>
                     <td className="p-2.5 text-slate-300">{item.specificationFa}</td>
-                    <td className="p-2.5 font-mono font-bold text-amber-300">{item.rating}</td>
-                    <td className="p-2.5 font-mono text-emerald-400 font-bold">{item.quantity}</td>
+                    <td className="p-2.5 font-mono font-bold text-industrial-warning">{item.rating}</td>
+                    <td className="p-2.5 font-mono text-industrial-success font-bold">{item.quantity}</td>
                     <td className="p-2.5 text-slate-400">{item.locationFa}</td>
                   </tr>
                 ))}

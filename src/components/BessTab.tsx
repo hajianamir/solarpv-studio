@@ -59,7 +59,7 @@ export const BessTab: React.FC<BessTabProps> = ({
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
+        <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
           <BatteryIcon className="w-5 h-5 text-indigo-400" />
           {lang === 'fa'
             ? 'سیستم ذخیره‌ساز انرژی باتری، انتخاب سایز و تعداد واحدها (BESS Sizing & Architecture)'
@@ -74,9 +74,9 @@ export const BessTab: React.FC<BessTabProps> = ({
 
       {/* On-Grid / Powerplant Notice */}
       {systemTopology === 'on_grid' && (
-        <div className="p-4 bg-amber-950/40 border border-amber-600/50 rounded-lg text-xs text-amber-200 flex items-start justify-between gap-3">
+        <div className="p-4 bg-industrial-warning/20 border border-industrial-warning/50 rounded-lg text-xs text-industrial-warning flex items-start justify-between gap-3">
           <div className="flex items-start gap-2.5">
-            <Zap className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <Zap className="w-5 h-5 text-industrial-warning shrink-0 mt-0.5" />
             <div>
               <strong className="text-white text-sm block mb-0.5">
                 {lang === 'fa'
@@ -105,14 +105,14 @@ export const BessTab: React.FC<BessTabProps> = ({
       <div className="studio-card">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <div>
-            <label className="block text-xs font-bold text-sky-400 mb-1.5 flex items-center gap-2">
+            <label className="block text-xs font-bold text-industrial-accent mb-1.5 flex items-center gap-2">
               <Boxes className="w-4 h-4 text-indigo-400" />
               {lang === 'fa' ? 'انتخاب فناوری شیمیایی باتری (Dropdown List):' : 'Select Battery Chemistry Technology (Dropdown List):'}
             </label>
             <select
               value={selectedChemistry}
               onChange={(e) => onChemistryChange(e.target.value as BatteryChemistry)}
-              className="studio-input w-full text-xs font-bold py-2 bg-slate-900 border-indigo-500/50 text-white focus:border-indigo-400"
+              className="studio-input w-full text-xs font-bold py-2 bg-industrial-surface border-indigo-500/50 text-white focus:border-indigo-400"
             >
               <option value="lifepo4">
                 {lang === 'fa' ? '۱. لیتیوم آهن فسفات (LiFePO4) — راندمان ۹۵٪، طول عمر ۵۵۰۰ سیکل' : '1. Lithium Iron Phosphate (LiFePO4) - 95% Eff, 5500 Cycles'}
@@ -142,8 +142,8 @@ export const BessTab: React.FC<BessTabProps> = ({
               </div>
               <div className="grid grid-cols-3 gap-2 text-[11px] pt-1 text-slate-300 font-mono">
                 <div>DoD مجاز: <strong className="text-sky-300">{BATTERY_CHEMISTRIES[selectedChemistry].recommendedDoDPct}%</strong></div>
-                <div>سیکل کاری: <strong className="text-emerald-300">{BATTERY_CHEMISTRIES[selectedChemistry].standardCycleLifeAt80DoD}</strong></div>
-                <div>نرخ دشارژ: <strong className="text-amber-300">{BATTERY_CHEMISTRIES[selectedChemistry].maxContinuousCRate}C</strong></div>
+                <div>سیکل کاری: <strong className="text-industrial-success">{BATTERY_CHEMISTRIES[selectedChemistry].standardCycleLifeAt80DoD}</strong></div>
+                <div>نرخ دشارژ: <strong className="text-industrial-warning">{BATTERY_CHEMISTRIES[selectedChemistry].maxContinuousCRate}C</strong></div>
               </div>
             </div>
           )}
@@ -153,7 +153,7 @@ export const BessTab: React.FC<BessTabProps> = ({
       {/* Autonomy Days Control & Unit Sizing */}
       <div className="studio-card">
         <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-          <Sliders className="w-4 h-4 text-sky-400" />
+          <Sliders className="w-4 h-4 text-industrial-accent" />
           {lang === 'fa' ? 'تنظیم روزهای خودمختاری و مشخصات هر واحد باتری:' : 'Autonomy Days & Single Unit Battery Specifications:'}
         </h3>
 
@@ -231,15 +231,15 @@ export const BessTab: React.FC<BessTabProps> = ({
 
       {/* Battery Sizing & Unit Quantity Matrix */}
       <div className="studio-card">
-        <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-400" />
+        <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
+          <Zap className="w-4 h-4 text-industrial-warning" />
           {lang === 'fa'
             ? 'ماتریس محاسباتی تعداد و ابعاد فیزیکی بانک باتری:'
             : 'Battery Sizing Matrix & Physical Quantity:'}
         </h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-4">
-          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+          <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
             <span className="text-slate-400 block mb-0.5">ظرفیت کل ناخالص</span>
             <span className="text-lg font-bold font-mono text-indigo-400">
               {batterySizing.grossCapacityKwh.toFixed(1)} kWh
@@ -249,9 +249,9 @@ export const BessTab: React.FC<BessTabProps> = ({
             </span>
           </div>
 
-          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+          <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
             <span className="text-slate-400 block mb-0.5">ظرفیت قابل استفاده (Net Usable)</span>
-            <span className="text-lg font-bold font-mono text-emerald-400">
+            <span className="text-lg font-bold font-mono text-industrial-success">
               {batterySizing.usableCapacityKwh.toFixed(1)} kWh
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -259,9 +259,9 @@ export const BessTab: React.FC<BessTabProps> = ({
             </span>
           </div>
 
-          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+          <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
             <span className="text-slate-400 block mb-0.5">تعداد کل باتری‌های مورد نیاز</span>
-            <span className="text-lg font-bold font-mono text-sky-400">
+            <span className="text-lg font-bold font-mono text-industrial-accent">
               {calculatedTotalUnits} عدد باتری
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -269,7 +269,7 @@ export const BessTab: React.FC<BessTabProps> = ({
             </span>
           </div>
 
-          <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+          <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
             <span className="text-slate-400 block mb-0.5">وزن و مساحت اتاق باتری</span>
             <span className="text-lg font-bold font-mono text-purple-400">
               {totalWeightKg.toLocaleString()} kg
@@ -281,7 +281,7 @@ export const BessTab: React.FC<BessTabProps> = ({
         </div>
 
         {/* Physical Rack Arrangement Box */}
-        <div className="p-3 bg-slate-900 rounded border border-slate-800 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3 bg-industrial-surface rounded border border-industrial-border text-xs text-slate-300 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Boxes className="w-6 h-6 text-indigo-400" />
             <div>
@@ -301,7 +301,7 @@ export const BessTab: React.FC<BessTabProps> = ({
         </div>
 
         {/* C-Rate & Current Limits */}
-        <div className="mt-3 p-3 bg-slate-900/60 rounded-lg border border-slate-700/60 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="mt-3 p-3 bg-industrial-surface/60 rounded-lg border border-industrial-border/60 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <span className="text-slate-400 block">جریان دشارژ پیوسته دائم:</span>
             <span className="text-white font-mono font-bold text-sm">
@@ -313,14 +313,14 @@ export const BessTab: React.FC<BessTabProps> = ({
           </div>
           <div>
             <span className="text-slate-400 block">جریان دشارژ لحظه‌ای هجومی (Peak Surge):</span>
-            <span className="text-red-400 font-mono font-bold text-sm">
+            <span className="text-industrial-error font-mono font-bold text-sm">
               {batterySizing.peakSurgeDischargeCurrentAmps.toFixed(1)} آمپر
             </span>
             <span className="text-[10px] text-slate-400 block">جهت استارت بارهای موتوری</span>
           </div>
           <div>
             <span className="text-slate-400 block">تخمین طول عمر مفید و سیکل:</span>
-            <span className="text-emerald-400 font-mono font-bold text-sm">
+            <span className="text-industrial-success font-mono font-bold text-sm">
               ~{batterySizing.estimatedLifespanYears} سال
             </span>
             <span className="text-[10px] text-slate-400 block">
@@ -334,7 +334,7 @@ export const BessTab: React.FC<BessTabProps> = ({
           <div className="mt-3 p-2.5 bg-red-950/40 border border-red-600/50 rounded-lg text-xs text-red-200 space-y-1">
             {batterySizing.warnings.map((w, idx) => (
               <div key={idx} className="flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                <AlertTriangle className="w-3.5 h-3.5 text-industrial-error shrink-0" />
                 <span>{w}</span>
               </div>
             ))}

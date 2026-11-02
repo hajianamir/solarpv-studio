@@ -39,8 +39,8 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-amber-400" />
+        <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-industrial-warning" />
           {isEn
             ? '24-Hour Energy Balance Simulation & Backup Genset'
             : 'شبیه‌سازی ۲۴ ساعته تراز انرژی و دیزل ژنراتور هیبرید (24h Simulation & Genset)'}
@@ -54,35 +54,35 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? '24h Solar Generation' : 'تولید ۲۴ ساعته خورشیدی'}</div>
-          <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
             {simulationResult.totalGeneration24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? '24h Total Demand' : 'مصرف کل بار ۲۴ ساعته'}</div>
-          <div className="text-xl font-bold font-mono text-sky-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
             {simulationResult.totalConsumption24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? '24h Energy Surplus' : 'مازاد انرژی تزریق/اتلاف'}</div>
-          <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-success mt-1">
             {simulationResult.totalSurplus24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? '24h Energy Deficit' : 'کسری انرژی (Deficit)'}</div>
-          <div className="text-xl font-bold font-mono text-red-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-error mt-1">
             {simulationResult.totalDeficit24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Min Battery SoC' : 'حداقل سطح شارژ باتری (Min SoC)'}</div>
           <div className="text-xl font-bold font-mono text-purple-400 mt-1">
             {simulationResult.minBatterySocPct}%
@@ -93,15 +93,15 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
       {/* 24-Hour Visual Hourly Energy Chart */}
       <div className="studio-card">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <h3 className="font-bold text-sky-400 text-sm flex items-center gap-2">
-            <Clock className="w-4 h-4 text-sky-400" />
+          <h3 className="font-bold text-industrial-accent text-sm flex items-center gap-2">
+            <Clock className="w-4 h-4 text-industrial-accent" />
             {isEn
               ? '24-Hour Solar Production, Load Demand & Battery SoC (%) Profile'
               : 'نمودار ۲۴ ساعته تراز تولید خورشیدی، مصرف بار و سطح شارژ باتری (SoC %)'}
           </h3>
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-amber-400 rounded-sm"></span> {isEn ? 'Solar PV' : 'تولید خورشیدی'}
+              <span className="w-3 h-3 bg-industrial-warning rounded-sm"></span> {isEn ? 'Solar PV' : 'تولید خورشیدی'}
             </span>
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 bg-sky-400 rounded-sm"></span> {isEn ? 'Load' : 'مصرف بار'}
@@ -113,7 +113,7 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
         </div>
 
         {/* SVG Bar & Line Chart with Touch-Friendly Horizontal Scroll */}
-        <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 overflow-x-auto">
+        <div className="bg-industrial-bg p-4 rounded-lg border border-industrial-border overflow-x-auto">
           <svg width="100%" height="220" viewBox="0 0 960 220" className="select-none font-sans min-w-[700px]">
             {/* Horizontal Grid lines */}
             {[0, 50, 100, 150].map((y, idx) => (
@@ -214,20 +214,20 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
 
         {/* Selected Hour Details Box */}
         {selectedHour !== null && (
-          <div className="mt-3 p-3 bg-slate-900/90 rounded-lg border border-slate-700 flex flex-wrap items-center justify-between text-xs font-mono">
+          <div className="mt-3 p-3 bg-industrial-surface/90 rounded-lg border border-industrial-border flex flex-wrap items-center justify-between text-xs font-mono">
             <span className="text-white font-bold">
               {isEn ? 'Hour:' : 'ساعت:'} {selectedHour}:00
             </span>
-            <span className="text-amber-400">
+            <span className="text-industrial-warning">
               {isEn ? 'Solar:' : 'تولید خورشیدی:'} {simulationResult.hourlySteps[selectedHour].solarGenKwh} kWh
             </span>
-            <span className="text-sky-400">
+            <span className="text-industrial-accent">
               {isEn ? 'Demand:' : 'مصرف:'} {simulationResult.hourlySteps[selectedHour].loadDemandKwh} kWh
             </span>
             <span className="text-purple-400">
               {isEn ? 'Battery SoC:' : 'سطح شارژ باتری:'} {simulationResult.hourlySteps[selectedHour].batterySocPct}%
             </span>
-            <span className="text-emerald-400">
+            <span className="text-industrial-success">
               {isEn ? 'Charge:' : 'شارژ باتری:'} {simulationResult.hourlySteps[selectedHour].batteryChargeKwh} kWh
             </span>
             <span className="text-indigo-400">
@@ -239,11 +239,11 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
 
       {/* AUXILIARY DIESEL GENERATOR SIZER (RULE: Optional by user choice, active for powerplant) */}
       <div className="studio-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-industrial-border pb-3 mb-4">
           <div className="flex items-center gap-2">
-            <Fuel className="w-5 h-5 text-amber-400" />
+            <Fuel className="w-5 h-5 text-industrial-warning" />
             <div>
-              <h3 className="font-bold text-sky-400 text-sm">
+              <h3 className="font-bold text-industrial-accent text-sm">
                 {isEn
                   ? 'Emergency Backup Diesel Generator Sizing (Substation & Auxiliaries)'
                   : 'ماژول سایزینگ دیزل ژنراتور اضطراری مصارف داخلی نیروگاه / پست'}
@@ -257,7 +257,7 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
           </div>
 
           {/* User Activation Toggle Checkbox (User Request #4) */}
-          <label className="flex items-center gap-2 cursor-pointer bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-amber-500/60 transition">
+          <label className="flex items-center gap-2 cursor-pointer bg-industrial-surface px-3 py-1.5 rounded-lg border border-industrial-border hover:border-industrial-warning/60 transition">
             <input
               type="checkbox"
               checked={enableDieselGenerator}
@@ -294,18 +294,18 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
                   onChange={(e) => onOutageHoursChange(parseInt(e.target.value) || 24)}
                   className="w-48 accent-amber-400"
                 />
-                <span className="font-mono text-sm font-bold text-amber-400">
+                <span className="font-mono text-sm font-bold text-industrial-warning">
                   {outageHours} {isEn ? 'Continuous Hours' : 'ساعت مداوم'}
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">
                   {isEn ? 'Recommended Rating (kVA)' : 'ظرفیت ژنراتور پیشنهادی (kVA)'}
                 </span>
-                <span className="text-lg font-bold font-mono text-amber-400">
+                <span className="text-lg font-bold font-mono text-industrial-warning">
                   {generatorSizing.recommendedCapacityKva} kVA
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -313,11 +313,11 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">
                   {isEn ? 'Active Output (kW)' : 'توان اکتیو خروجی (kW)'}
                 </span>
-                <span className="text-lg font-bold font-mono text-emerald-400">
+                <span className="text-lg font-bold font-mono text-industrial-success">
                   {generatorSizing.recommendedCapacityKw.toFixed(1)} kW
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -325,11 +325,11 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">
                   {isEn ? 'Fuel Consumption Rate' : 'نرخ مصرف سوخت گازوئیل'}
                 </span>
-                <span className="text-lg font-bold font-mono text-red-400">
+                <span className="text-lg font-bold font-mono text-industrial-error">
                   {generatorSizing.fuelConsumptionLitersPerHour} L/h
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -337,11 +337,11 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">
                   {isEn ? 'Min Fuel Tank Size' : 'حداقل حجم باک سوخت'}
                 </span>
-                <span className="text-lg font-bold font-mono text-sky-400">
+                <span className="text-lg font-bold font-mono text-industrial-accent">
                   {generatorSizing.minFuelTankSizeLiters} {isEn ? 'Liters' : 'لیتر'}
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -350,12 +350,12 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
               </div>
             </div>
 
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-700/60 text-xs text-slate-300">
+            <div className="p-3 bg-industrial-surface/60 rounded-lg border border-industrial-border/60 text-xs text-slate-300">
               {isEn ? generatorSizing.notesEn : generatorSizing.notesFa}
             </div>
           </div>
         ) : (
-          <div className="p-4 bg-slate-900/40 rounded-lg border border-slate-800 text-center text-xs text-slate-400 space-y-2">
+          <div className="p-4 bg-industrial-surface/40 rounded-lg border border-industrial-border text-center text-xs text-slate-400 space-y-2">
             <Power className="w-6 h-6 text-slate-500 mx-auto" />
             <p>
               {isEn

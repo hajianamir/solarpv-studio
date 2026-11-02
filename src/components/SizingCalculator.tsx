@@ -136,8 +136,8 @@ export const SizingCalculator: React.FC = () => {
     <div className="space-y-6">
       {/* Title Card */}
       <div className="studio-card">
-        <h1 className="text-2xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Calculator className="w-6 h-6 text-sky-400" />
+        <h1 className="text-2xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Calculator className="w-6 h-6 text-industrial-accent" />
           SolarPV Studio — Sizing Calculator
         </h1>
         <p className="text-slate-400 text-sm">
@@ -148,8 +148,8 @@ export const SizingCalculator: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 1. String Sizing Calculator */}
         <div className="studio-card">
-          <h2 className="text-lg font-semibold text-sky-400 mb-3 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-400" />
+          <h2 className="text-lg font-semibold text-industrial-accent mb-3 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-industrial-warning" />
             1. String Sizing Calculator (IEC 62548)
           </h2>
 
@@ -210,26 +210,26 @@ export const SizingCalculator: React.FC = () => {
                 <div className="space-y-1">
                   <p>
                     <strong>Min Modules per String:</strong>{' '}
-                    <span className="text-emerald-400 font-mono text-base">{stringResult.minModules}</span>
+                    <span className="text-industrial-success font-mono text-base">{stringResult.minModules}</span>
                   </p>
                   <p>
                     <strong>Max Modules per String:</strong>{' '}
-                    <span className="text-emerald-400 font-mono text-base">{stringResult.maxModules}</span>
+                    <span className="text-industrial-success font-mono text-base">{stringResult.maxModules}</span>
                   </p>
                   <p className="flex items-center gap-1.5">
                     <strong>Has Warning:</strong>{' '}
                     {stringResult.hasWarning ? (
-                      <span className="text-amber-400 flex items-center gap-1 font-semibold">
+                      <span className="text-industrial-warning flex items-center gap-1 font-semibold">
                         <AlertTriangle className="w-4 h-4" /> True
                       </span>
                     ) : (
-                      <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                      <span className="text-industrial-success flex items-center gap-1 font-semibold">
                         <CheckCircle className="w-4 h-4" /> False
                       </span>
                     )}
                   </p>
                   {stringResult.warnings && stringResult.warnings.length > 0 && (
-                    <div className="text-xs text-amber-300 mt-2 bg-amber-950/40 p-2 rounded">
+                    <div className="text-xs text-industrial-warning mt-2 bg-industrial-warning/20 p-2 rounded">
                       {stringResult.warnings.join(', ')}
                     </div>
                   )}
@@ -241,8 +241,8 @@ export const SizingCalculator: React.FC = () => {
 
         {/* 2. Financial LCOE Calculator */}
         <div className="studio-card">
-          <h2 className="text-lg font-semibold text-sky-400 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-400" />
+          <h2 className="text-lg font-semibold text-industrial-accent mb-3 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-industrial-success" />
             2. Financial LCOE Calculator
           </h2>
 
@@ -310,7 +310,7 @@ export const SizingCalculator: React.FC = () => {
             {lcoeResult && (
               <div className="result-box text-sm">
                 <h3 className="font-bold text-sky-300 mb-1">Calculated LCOE:</h3>
-                <div className="text-xl font-bold text-emerald-400 font-mono">
+                <div className="text-xl font-bold text-industrial-success font-mono">
                   ${lcoeResult.lcoeValue.toFixed(4)} / kWh
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
@@ -323,7 +323,7 @@ export const SizingCalculator: React.FC = () => {
 
         {/* 3. DC Cable Voltage Drop (IEC 60364-5-52) */}
         <div className="studio-card">
-          <h2 className="text-lg font-semibold text-sky-400 mb-3 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-industrial-accent mb-3 flex items-center gap-2">
             <Zap className="w-5 h-5 text-indigo-400" />
             3. DC Cable Voltage Drop (IEC 60364-5-52)
           </h2>
@@ -385,11 +385,11 @@ export const SizingCalculator: React.FC = () => {
               <div className="result-box text-sm">
                 <h3 className="font-bold text-sky-300 mb-1">Voltage Drop Result:</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold font-mono text-emerald-400">
+                  <span className="text-lg font-bold font-mono text-industrial-success">
                     {voltageDropResult.voltageDropPct.toFixed(3)}%
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                    voltageDropResult.voltageDropPct <= 1.5 ? 'bg-emerald-950 text-emerald-400 border border-emerald-700' : 'bg-amber-950 text-amber-400 border border-amber-700'
+                    voltageDropResult.voltageDropPct <= 1.5 ? 'bg-industrial-success text-industrial-success border border-industrial-success' : 'bg-industrial-warning text-industrial-warning border border-industrial-warning'
                   }`}>
                     {voltageDropResult.voltageDropPct <= 1.5 ? 'IEC Compliant (≤ 1.5%)' : 'Exceeds 1.5% Guideline'}
                   </span>
@@ -401,8 +401,8 @@ export const SizingCalculator: React.FC = () => {
 
         {/* 4. Real-time Solar Position (NOAA) */}
         <div className="studio-card">
-          <h2 className="text-lg font-semibold text-sky-400 mb-3 flex items-center gap-2">
-            <SunMedium className="w-5 h-5 text-amber-400" />
+          <h2 className="text-lg font-semibold text-industrial-accent mb-3 flex items-center gap-2">
+            <SunMedium className="w-5 h-5 text-industrial-warning" />
             4. Solar Position Calculator (NOAA)
           </h2>
 

@@ -22,15 +22,15 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-lg max-w-3xl w-full p-6 text-slate-100 relative my-8">
+      <div className="bg-industrial-surface border border-industrial-border rounded-lg max-w-3xl w-full p-6 text-slate-100 relative my-8">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-700 pb-4 mb-6">
+        <div className="flex items-center justify-between border-b border-industrial-border pb-4 mb-6">
           <div>
-            <div className="text-xs uppercase tracking-wider text-sky-400 font-bold mb-1">
+            <div className="text-xs uppercase tracking-wider text-industrial-accent font-bold mb-1">
               Engineering, Procurement & Construction (EPC)
             </div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Sun className="w-6 h-6 text-amber-400" />
+              <Sun className="w-6 h-6 text-industrial-warning" />
               SolarPV Studio — Design Proposal
             </h2>
           </div>
@@ -39,7 +39,7 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
               onClick={handlePrint}
               className="studio-btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
             >
-              <Printer className="w-4 h-4 text-sky-400" /> Print / Export PDF
+              <Printer className="w-4 h-4 text-industrial-accent" /> Print / Export PDF
             </button>
             <button
               onClick={onClose}
@@ -51,14 +51,14 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
         </div>
 
         {/* Project Meta */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-800/60 p-4 rounded-lg border border-slate-700/60 mb-6 text-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-800/60 p-4 rounded-lg border border-industrial-border/60 mb-6 text-sm">
           <div>
             <span className="text-xs text-slate-400 block">Project Name:</span>
             <span className="font-bold text-white">{project.projectName}</span>
           </div>
           <div>
             <span className="text-xs text-slate-400 block">Project Reference ID:</span>
-            <span className="font-mono text-xs text-sky-400">{project.projectId}</span>
+            <span className="font-mono text-xs text-industrial-accent">{project.projectId}</span>
           </div>
           <div>
             <span className="text-xs text-slate-400 block">Proposal Date:</span>
@@ -69,9 +69,9 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
         </div>
 
         {/* Specifications Table */}
-        <div className="overflow-hidden border border-slate-700 rounded-lg mb-6">
+        <div className="overflow-hidden border border-industrial-border rounded-lg mb-6">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-800 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-700">
+            <thead className="bg-slate-800 text-xs text-slate-400 uppercase tracking-wider border-b border-industrial-border">
               <tr>
                 <th className="py-3 px-4 font-semibold">Component / Metric</th>
                 <th className="py-3 px-4 font-semibold">Specification / Value</th>
@@ -80,7 +80,7 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
             <tbody className="divide-y divide-slate-800">
               <tr className="hover:bg-slate-800/40">
                 <td className="py-3 px-4 font-medium text-slate-300 flex items-center gap-2">
-                  <Sun className="w-4 h-4 text-amber-400" /> System Capacity (DC)
+                  <Sun className="w-4 h-4 text-industrial-warning" /> System Capacity (DC)
                 </td>
                 <td className="py-3 px-4 font-mono font-bold text-white text-base">
                   {project.systemCapacityKwp.toFixed(2)} kWp
@@ -88,7 +88,7 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
               </tr>
               <tr className="hover:bg-slate-800/40">
                 <td className="py-3 px-4 font-medium text-slate-300 flex items-center gap-2">
-                  <Sun className="w-4 h-4 text-sky-400" /> PV Solar Modules
+                  <Sun className="w-4 h-4 text-industrial-accent" /> PV Solar Modules
                 </td>
                 <td className="py-3 px-4 text-slate-200">
                   {project.panelCount} x 575W N-Type Bifacial Monocrystalline Modules
@@ -96,7 +96,7 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
               </tr>
               <tr className="hover:bg-slate-800/40">
                 <td className="py-3 px-4 font-medium text-slate-300 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-emerald-400" /> String Inverters
+                  <Zap className="w-4 h-4 text-industrial-success" /> String Inverters
                 </td>
                 <td className="py-3 px-4 text-slate-200">
                   {project.inverterCount} x 10kW String Inverters (Three-Phase, Dual MPPT)
@@ -112,9 +112,9 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
               </tr>
               <tr className="hover:bg-slate-800/40">
                 <td className="py-3 px-4 font-medium text-slate-300 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-400" /> Estimated Annual Generation
+                  <Zap className="w-4 h-4 text-industrial-warning" /> Estimated Annual Generation
                 </td>
-                <td className="py-3 px-4 font-mono font-bold text-emerald-400 text-base">
+                <td className="py-3 px-4 font-mono font-bold text-industrial-success text-base">
                   {Math.round(project.estimatedAnnualYieldKwh).toLocaleString()} kWh/year
                 </td>
               </tr>
@@ -122,7 +122,7 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
                 <td className="py-3 px-4 font-medium text-slate-300 flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-green-400" /> Levelized Cost of Energy (LCOE)
                 </td>
-                <td className="py-3 px-4 font-mono font-bold text-emerald-400 text-base">
+                <td className="py-3 px-4 font-mono font-bold text-industrial-success text-base">
                   ${project.lcoeUsdPerKwh.toFixed(4)} / kWh
                 </td>
               </tr>
@@ -131,8 +131,8 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
         </div>
 
         {/* Traceability & Compliance */}
-        <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/60 mb-6">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase text-sky-400 mb-2">
+        <div className="bg-slate-800/40 p-4 rounded-lg border border-industrial-border/60 mb-6">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase text-industrial-accent mb-2">
             <ShieldCheck className="w-4 h-4" /> Engineering Standards Compliance
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-300">
@@ -143,7 +143,7 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
           </div>
         </div>
 
-        <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-800">
+        <div className="text-center text-xs text-slate-500 pt-2 border-t border-industrial-border">
           Generated by SolarPV Studio Core Simulation Engine | Certified EPC Engineering Specification
         </div>
       </div>

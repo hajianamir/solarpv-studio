@@ -1,0 +1,40 @@
+================================================================================
+ PR-2a-6 REPAIR — Foundation engine per-coordinate variance (Ambiguity A)
+================================================================================
+
+
+--- Tehran, IR (35.6892°, 51.3890°) | trace TRC-STR-mvzra... ---
+  INPUTS : wind=130 km/h | snow=50 kg/m² | bearing=220 kPa | phi=32° | c=15 kPa | frost=35 cm | tilt=31°
+  OUTPUT : primary=rammed_steel_pile | embedment=1.95 m | FoS_lateral=1.89 | FoS_moment=3.22 | lateralShear=5.454697314415305 kN | uplift=10.149576340663577 kN | compression=8.27138729292702 kN
+
+--- Boulder, CO, US (40.0150°, -105.2705°) | trace TRC-STR-mvzra... ---
+  INPUTS : wind=130 km/h | snow=60 kg/m² | bearing=220 kPa | phi=32° | c=15 kPa | frost=45 cm | tilt=35°
+  OUTPUT : primary=rammed_steel_pile | embedment=2.05 m | FoS_lateral=1.91 | FoS_moment=2.85 | lateralShear=6.074669037861606 kN | uplift=10.149576340663577 kN | compression=9.073647612490507 kN
+
+--- Munich, DE (48.1351°, 11.5820°) | trace TRC-STR-mvzra... ---
+  INPUTS : wind=140 km/h | snow=81 kg/m² | bearing=220 kPa | phi=32° | c=15 kPa | frost=41 cm | tilt=42°
+  OUTPUT : primary=rammed_steel_pile | embedment=2.31 m | FoS_lateral=1.87 | FoS_moment=2.02 | lateralShear=8.218859987887587 kN | uplift=11.771106288580246 kN | compression=10.4822940270437 kN
+
+--- Phoenix, AZ, US (33.4484°, -112.0740°) | trace TRC-STR-mvzra... ---
+  INPUTS : wind=130 km/h | snow=0 kg/m² | bearing=220 kPa | phi=32° | c=15 kPa | frost=0 cm | tilt=29°
+  OUTPUT : primary=rammed_steel_pile | embedment=1.9 m | FoS_lateral=1.89 | FoS_moment=3.45 | lateralShear=5.1345519144817215 kN | uplift=10.149576340663577 kN | compression=2.8056600000000005 kN
+
+--- Singapore (1.3521°, 103.8198°) | trace TRC-STR-mvzra... ---
+  INPUTS : wind=120 km/h | snow=0 kg/m² | bearing=160 kPa | phi=24° | c=35 kPa | frost=0 cm | tilt=8°
+  OUTPUT : primary=rammed_steel_pile | embedment=1 m | FoS_lateral=9.08 | FoS_moment=6.44 | lateralShear=1.2559212585804573 kN | uplift=8.648159722222223 kN | compression=2.8056600000000005 kN
+
+================================================================================
+ ASSERTIONS
+================================================================================
+
+  Distinct input values across 5 sites: { wind: 3, snow: 4, bearing: 2, phi: 2, frost: 4 }
+  [PASS] >= 3 input parameters vary across sites (got 3): {"wind":3,"snow":4,"bearing":2,"phi":2,"frost":4}
+  Distinct output values across 5 sites: { embedment: 5, fos: 4, shear: 5, primary: 1 }
+  [PASS] >= 2 outputs vary across sites (got 3): {"embedment":5,"fos":4,"shear":5,"primary":1}
+  [PASS] Tehran, IR: trace_id present
+  [PASS] Boulder, CO, US: trace_id present
+  [PASS] Munich, DE: trace_id present
+  [PASS] Phoenix, AZ, US: trace_id present
+  [PASS] Singapore: trace_id present
+
+ALL FOUNDATION VARIANCE ASSERTIONS PASSED

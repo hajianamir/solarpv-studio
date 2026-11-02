@@ -133,7 +133,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ? 'Geotechnical and wind data retrieved from official meteorological records and INBC Part 6 specifications.'
       : 'داده‌های ژئوتکنیک و بار باد بر اساس استعلام رسمی مبحث ۶ مقررات ملی ساختمان و مرکز تحقیقات مسکن اخذ شده است.',
     shading: isEn
-      ? 'Pitch distance optimized to eliminate inter-row shadow during the critical winter solstice noon window (10:00-14:00).'
+      ? 'Pitch distance optimized to eliminate inter-row  during the critical winter solstice noon window (10:00-14:00).'
       : 'فاصله ردیف‌ها جهت برقراری شرط عدم سایه‌اندازی در بازه ۱۰ الی ۱۴ ظهر انقلاب زمستانی بهینه‌سازی شده است.',
     electrical: isEn
       ? 'Cable sizing incorporates multi-conductor parallel runs to limit voltage drop below 1.5% at nominal full load.'
@@ -329,17 +329,17 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-6xl w-full p-4 sm:p-6 text-slate-100 shadow-2xl relative my-4 sm:my-8 max-h-[94vh] flex flex-col print:p-0 print:border-none print:shadow-none print:bg-white print:text-black print:max-h-none print:my-0">
+      <div className="bg-industrial-surface border border-industrial-border rounded-xl max-w-6xl w-full p-4 sm:p-6 text-slate-100  relative my-4 sm:my-8 max-h-[94vh] flex flex-col print:p-0 print:border-none print:-none print:bg-white print:text-black print:max-h-none print:my-0">
         {/* Top Control Toolbar (Hidden in Print) */}
-        <div className="flex flex-wrap items-center justify-between border-b border-slate-700/80 pb-4 mb-4 gap-3 print:hidden">
+        <div className="flex flex-wrap items-center justify-between border-b border-industrial-border/80 pb-4 mb-4 gap-3 print:hidden">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-sky-500/10 border border-sky-500/30 rounded-lg">
-              <FileText className="w-5 h-5 text-sky-400" />
+            <div className="p-2 bg-industrial-accent/10 border border-industrial-accent/30 rounded-lg">
+              <FileText className="w-5 h-5 text-industrial-accent" />
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <span>{isEn ? 'Comprehensive EPC Engineering Dossier' : 'ماژول صدور گزارش‌های جامع و تخصصی EPC'}</span>
-                <span className="text-xs px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30">
+                <span className="text-xs px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono border border-industrial-accent/30">
                   {docVersion}
                 </span>
               </h2>
@@ -359,7 +359,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 showSettingsDrawer ? 'bg-sky-600 text-white' : ''
               }`}
             >
-              <Settings2 className="w-3.5 h-3.5 text-sky-400" />
+              <Settings2 className="w-3.5 h-3.5 text-industrial-accent" />
               <span>{isEn ? 'Customize' : 'سفارشی‌سازی'}</span>
             </button>
 
@@ -381,28 +381,28 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
             <button
               onClick={handleExportWord}
-              className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-blue-300 border-blue-500/30"
+              className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-industrial-primary border-industrial-primary/30"
               title={isEn ? 'Export as Microsoft Word (.doc)' : 'خروجی فایل ورد'}
             >
-              <FileCode className="w-3.5 h-3.5 text-blue-400" />
+              <FileCode className="w-3.5 h-3.5 text-industrial-primary" />
               <span>{isEn ? 'Word (.doc)' : 'Word'}</span>
             </button>
 
             <button
               onClick={handleExportExcel}
-              className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-emerald-300 border-emerald-500/30"
+              className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-industrial-success border-industrial-success/30"
               title={isEn ? 'Export Multi-Sheet Excel Workbook' : 'خروجی اکسل چند شیت'}
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-industrial-success" />
               <span>{isEn ? 'Excel (.xls)' : 'Excel'}</span>
             </button>
 
             <button
               onClick={handleExportJson}
-              className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-amber-300 border-amber-500/30"
+              className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-industrial-warning border-industrial-warning/30"
               title={isEn ? 'Save Project File to Local Machine' : 'ذخیره محلی پروژه با نام دلخواه'}
             >
-              <Download className="w-3.5 h-3.5 text-amber-400" />
+              <Download className="w-3.5 h-3.5 text-industrial-warning" />
               <span>{isEn ? 'Save Project' : 'ذخیره پروژه'}</span>
             </button>
 
@@ -426,9 +426,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
         {/* Customization Drawer (Collapsible) */}
         {showSettingsDrawer && (
-          <div className="bg-slate-950/90 border border-slate-800 rounded-lg p-3 sm:p-4 mb-4 text-xs space-y-3 print:hidden">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <span className="font-bold text-sky-400 flex items-center gap-1.5">
+          <div className="bg-industrial-bg/90 border border-industrial-border rounded-lg p-3 sm:p-4 mb-4 text-xs space-y-3 print:hidden">
+            <div className="flex items-center justify-between border-b border-industrial-border pb-2">
+              <span className="font-bold text-industrial-accent flex items-center gap-1.5">
                 <Sliders className="w-4 h-4" />
                 {isEn ? 'Report Configuration & Branding Settings' : 'تنظیمات سفارشی‌سازی گزارش و اطلاعات شرکت'}
               </span>
@@ -437,7 +437,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <select
                   value={detailLevel}
                   onChange={(e) => setDetailLevel(e.target.value as any)}
-                  className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-white"
+                  className="bg-industrial-surface border border-industrial-border rounded px-2 py-0.5 text-white"
                 >
                   <option value="summary">{isEn ? 'Executive Summary' : 'خلاصه مدیریتی'}</option>
                   <option value="standard">{isEn ? 'Standard Engineering' : 'مهندسی استاندارد'}</option>
@@ -453,7 +453,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={docId}
                   onChange={(e) => setDocId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-mono"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white font-mono"
                 />
               </div>
               <div>
@@ -462,7 +462,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={docVersion}
                   onChange={(e) => setDocVersion(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-mono"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white font-mono"
                 />
               </div>
               <div>
@@ -471,7 +471,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
                 />
               </div>
               <div>
@@ -480,7 +480,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
                 />
               </div>
             </div>
@@ -492,7 +492,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={leadEngineer}
                   onChange={(e) => setLeadEngineer(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
                 />
               </div>
               <div>
@@ -500,7 +500,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <select
                   value={approvalStatus}
                   onChange={(e) => setApprovalStatus(e.target.value as any)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
                 >
                   <option value="Draft">{isEn ? 'Draft (پیش‌نویس)' : 'پیش‌نویس (Draft)'}</option>
                   <option value="Under Review">{isEn ? 'Under Review (در دست بررسی)' : 'در دست بررسی (Under Review)'}</option>
@@ -514,13 +514,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={customFileName}
                   onChange={(e) => setCustomFileName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-mono"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white font-mono"
                 />
               </div>
             </div>
 
             {/* Section Checkboxes */}
-            <div className="pt-2 border-t border-slate-800">
+            <div className="pt-2 border-t border-industrial-border">
               <span className="text-[11px] text-slate-400 block mb-1.5 font-semibold">
                 {isEn ? 'Include Sections in Output:' : 'انتخاب بخش‌های مندرج در گزارش:'}
               </span>
@@ -540,7 +540,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       type="checkbox"
                       checked={includedSections[s.key as ReportSectionKey]}
                       onChange={() => toggleSection(s.key as ReportSectionKey)}
-                      className="rounded border-slate-700 text-sky-500 focus:ring-0"
+                      className="rounded border-industrial-border text-industrial-accent focus:ring-0"
                     />
                     <span>{isEn ? s.en : s.fa}</span>
                   </label>
@@ -556,18 +556,18 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           className="flex-1 overflow-y-auto space-y-6 pr-1 print:p-0 print:overflow-visible print:text-black"
         >
           {/* Cover & Document Header */}
-          <div className="text-center border-b border-slate-700/80 print:border-slate-300 pb-5">
+          <div className="text-center border-b border-industrial-border/80 print:border-slate-300 pb-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-left text-[11px] text-slate-400 font-mono">
                 <div>DOC: {docId}</div>
                 <div>VER: {docVersion}</div>
               </div>
-              <div className="inline-block px-3 py-1 bg-sky-500/10 border border-sky-500/30 rounded-md text-sky-400 print:text-sky-800 text-[11px] font-bold tracking-wider uppercase">
+              <div className="inline-block px-3 py-1 bg-industrial-accent/10 border border-industrial-accent/30 rounded-md text-industrial-accent print:text-sky-800 text-[11px] font-bold tracking-wider uppercase">
                 {isEn ? 'EPC ENGINEERING TECHNICAL DOSSIER' : 'مستند فنی و مهندسی پروژه نیروگاه خورشیدی'}
               </div>
               <div className="text-right text-[11px] text-slate-400 font-mono">
                 <div>{new Date().toISOString().split('T')[0]}</div>
-                <div className="text-emerald-400 font-bold">{approvalStatus}</div>
+                <div className="text-industrial-success font-bold">{approvalStatus}</div>
               </div>
             </div>
 
@@ -581,7 +581,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             </p>
 
             {/* Metadata Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300 print:text-black bg-slate-800/60 print:bg-slate-100 p-2.5 rounded-lg mt-4 border border-slate-700/60 print:border-slate-300">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300 print:text-black bg-slate-800/60 print:bg-slate-100 p-2.5 rounded-lg mt-4 border border-industrial-border/60 print:border-slate-300">
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Client:' : 'کارفرما:'}</span>
                 <strong>{clientName}</strong>
@@ -596,7 +596,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Operating Mode:' : 'حالت کاری سیستم:'}</span>
-                <strong className="text-amber-400 print:text-amber-800 font-mono uppercase">{systemMode}</strong>
+                <strong className="text-industrial-warning print:text-amber-800 font-mono uppercase">{systemMode}</strong>
               </div>
             </div>
           </div>
@@ -604,43 +604,43 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           {/* Section 1: Executive Summary */}
           {includedSections.summary && (
             <div className="studio-card print:border print:border-slate-300 print:p-4">
-              <h3 className="text-sm font-bold text-sky-400 print:text-sky-900 border-b border-slate-700 print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <Sun className="w-4 h-4 text-amber-400" />
+                  <Sun className="w-4 h-4 text-industrial-warning" />
                   {isEn ? '1. Executive Project Summary & Key Performance Indicators' : '۱. خلاصه مدیریتی پروژه و شاخص‌های کلیدی عملکرد (KPI)'}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">IEC 62548 / SATBA</span>
               </h3>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
-                <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-slate-700/60 print:border-slate-300">
+                <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Total DC Capacity' : 'ظرفیت نامی آرایه DC'}</span>
-                  <strong className="text-base font-mono text-amber-400 print:text-amber-900">
+                  <strong className="text-base font-mono text-industrial-warning print:text-amber-900">
                     {arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
                     {arrayDesign.totalModulesCount} {isEn ? 'Modules' : 'عدد پنل'}
                   </span>
                 </div>
-                <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-slate-700/60 print:border-slate-300">
+                <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Inverter Architecture' : 'توان نامی اینورترها'}</span>
-                  <strong className="text-base font-mono text-sky-400 print:text-sky-900">
+                  <strong className="text-base font-mono text-industrial-accent print:text-sky-900">
                     {(inverter.pnomAcKw * (bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1)).toFixed(0)} kW AC
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
                     ILR: {arrayDesign.dcAcRatio.toFixed(2)}
                   </span>
                 </div>
-                <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-slate-700/60 print:border-slate-300">
+                <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Annual Generation (P50)' : 'تولید سالانه انرژی (P50)'}</span>
-                  <strong className="text-base font-mono text-emerald-400 print:text-emerald-900">
+                  <strong className="text-base font-mono text-industrial-success print:text-emerald-900">
                     {((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1)} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
                     PR: ~79.4%
                   </span>
                 </div>
-                <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-slate-700/60 print:border-slate-300">
+                <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Simple Payback / IRR' : 'بازگشت سرمایه / IRR'}</span>
                   <strong className="text-base font-mono text-purple-400 print:text-purple-900">
                     {financial.simplePaybackPeriodYears} yr / {financial.irrPct}%
@@ -652,7 +652,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               </div>
 
               {engineerNotes.summary && (
-                <div className="p-2.5 bg-slate-800/40 print:bg-slate-50 border border-slate-700/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 italic">
+                <div className="p-2.5 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 italic">
                   <strong>{isEn ? 'Engineering Remark:' : 'توضیحات سرپرست مهندسی:'}</strong> {engineerNotes.summary}
                 </div>
               )}
@@ -662,9 +662,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           {/* Section 2: Site, Climate & Geotechnical Report */}
           {includedSections.climate && (
             <div className="studio-card print:border print:border-slate-300 print:p-4">
-              <h3 className="text-sm font-bold text-sky-400 print:text-sky-900 border-b border-slate-700 print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-emerald-400" />
+                  <MapPin className="w-4 h-4 text-industrial-success" />
                   {isEn ? '2. Site Climate, Meteorological & Geotechnical Soil Data' : '۲. داده‌های اقلیمی، هواشناسی و ژئوتکنیکی ساختگاه'}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">
@@ -681,7 +681,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Peak Sun Hours (PSH):' : 'ساعات اوج تابش (PSH):'}</span>
-                  <span className="font-mono text-amber-400 print:text-amber-800 font-bold">
+                  <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
                     {effectiveCity.peakSunHours} kWh/m²/day
                   </span>
                 </div>
@@ -705,7 +705,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Soil Bearing Capacity (q_a):' : 'ظرفیت باربری مجاز خاک:'}</span>
-                  <span className="font-mono text-emerald-400 print:text-emerald-800 font-bold">
+                  <span className="font-mono text-industrial-success print:text-emerald-800 font-bold">
                     {effectiveCity.soilBearingCapacityKpa} kPa
                   </span>
                 </div>
@@ -728,12 +728,12 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           {/* Section 3: Shading Analysis & Sun Path */}
           {includedSections.shading && (
             <div className="studio-card print:border print:border-slate-300 print:p-4">
-              <h3 className="text-sm font-bold text-sky-400 print:text-sky-900 border-b border-slate-700 print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-amber-400" />
+                  <Eye className="w-4 h-4 text-industrial-warning" />
                   {isEn ? '3. 3D Geometric Shading & Sun Path Analysis (IEC 62548)' : '۳. تحلیل سه‌بعدی سایه‌اندازی، مسیر خورشید و فواصل بین‌ردیفی'}
                 </span>
-                <span className="text-[10px] text-emerald-400 print:text-emerald-800 font-mono">
+                <span className="text-[10px] text-industrial-success print:text-emerald-800 font-mono">
                   {isEn ? 'Winter Solstice Free-of-Shading: VERIFIED' : 'عدم سایه ظهر زمستان: تأیید'}
                 </span>
               </h3>
@@ -741,7 +741,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Row Pitch Distance' : 'فاصله محور ردیف‌ها (Pitch)'}</span>
-                  <span className="font-mono font-bold text-sky-400 print:text-sky-800 text-sm">
+                  <span className="font-mono font-bold text-industrial-accent print:text-sky-800 text-sm">
                     {arrayDesign.interRowSpacingM.toFixed(2)} m
                   </span>
                 </div>
@@ -753,7 +753,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Annual Beam Shading Loss' : 'تلفات سالانه سایه پرتو مستقیم'}</span>
-                  <span className="font-mono font-bold text-emerald-400 print:text-emerald-800 text-sm">
+                  <span className="font-mono font-bold text-industrial-success print:text-emerald-800 text-sm">
                     ~2.4%
                   </span>
                 </div>
@@ -770,9 +770,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           {/* Section 4: Electrical Design, SLD & Cable Schedule */}
           {includedSections.electrical && (
             <div className="studio-card print:border print:border-slate-300 print:p-4">
-              <h3 className="text-sm font-bold text-sky-400 print:text-sky-900 border-b border-slate-700 print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-emerald-400" />
+                  <Zap className="w-4 h-4 text-industrial-success" />
                   {isEn ? '4. Electrical Design, Cable Sizing (Parallel Runs) & Earthing (IEEE 80)' : '۴. طراحی مهندسی الکتریکی، سایزینگ کابل‌ها (مدارهای موازی) و ارتینگ'}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">IEEE 80 / IEC 60364</span>
@@ -783,28 +783,28 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <table className="w-full text-xs text-left print:text-black border-collapse">
                   <thead>
                     <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black">
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Circuit Description' : 'شرح مدار کابل'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Current (A)' : 'جریان (A)'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Length (m)' : 'طول (m)'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Conductor / Insulation' : 'هادی / عایق'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Calculated Sizing (Parallel Runs)' : 'سایزینگ محاسبه‌شده'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'ΔV (%)' : 'افت ولتاژ'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Status' : 'وضعیت'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Circuit Description' : 'شرح مدار کابل'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Current (A)' : 'جریان (A)'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Length (m)' : 'طول (m)'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Conductor / Insulation' : 'هادی / عایق'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Calculated Sizing (Parallel Runs)' : 'سایزینگ محاسبه‌شده'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'ΔV (%)' : 'افت ولتاژ'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Status' : 'وضعیت'}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {protection.cableRuns.map((c, idx) => (
-                      <tr key={idx} className="border-b border-slate-800 print:border-slate-200">
+                      <tr key={idx} className="border-b border-industrial-border print:border-slate-200">
                         <td className="p-2 font-medium">{isEn ? c.config.sectionNameEn : c.config.sectionNameFa}</td>
                         <td className="p-2 font-mono">{c.config.designCurrentAmps}A</td>
                         <td className="p-2 font-mono">{c.config.oneWayLengthM}m</td>
                         <td className="p-2 font-mono">{c.config.conductorMaterial.toUpperCase()} / {c.config.insulationType}</td>
-                        <td className="p-2 font-mono text-sky-400 print:text-sky-900 font-bold">
+                        <td className="p-2 font-mono text-industrial-accent print:text-sky-900 font-bold">
                           {isEn ? c.cableDesignationEn : c.cableDesignationFa}
                         </td>
                         <td className="p-2 font-mono">{c.actualVoltageDropPct}%</td>
                         <td className="p-2">
-                          <span className="text-emerald-400 print:text-emerald-800 font-bold text-[10px]">
+                          <span className="text-industrial-success print:text-emerald-800 font-bold text-[10px]">
                             {c.isCompliant ? (isEn ? '✓ Pass' : '✓ تایید') : (isEn ? '✗ Violation' : '✗ خطا')}
                           </span>
                         </td>
@@ -815,10 +815,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               </div>
 
               {/* Earthing IEEE 80 Specs */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-800/40 print:bg-slate-50 p-2.5 rounded border border-slate-700/50 print:border-slate-200">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-800/40 print:bg-slate-50 p-2.5 rounded border border-industrial-border/50 print:border-slate-200">
                 <div>
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Target Ground Resistance:' : 'مقاومت هدف زمین:'}</span>
-                  <span className="font-mono text-emerald-400 print:text-emerald-800 font-bold">
+                  <span className="font-mono text-industrial-success print:text-emerald-800 font-bold">
                     ≤ {protection.earthing.targetGroundResistanceOhms} Ω (IEEE 80)
                   </span>
                 </div>
@@ -836,7 +836,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Lightning Protection Level:' : 'کلاس حفاظت صاعقه:'}</span>
-                  <span className="font-mono text-amber-400 print:text-amber-800 font-bold">
+                  <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
                     {protection.lightning.lpsClass} (IEC 62305)
                   </span>
                 </div>
@@ -847,7 +847,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           {/* Section 5: Structural & Civil Foundation Report */}
           {includedSections.structural && (
             <div className="studio-card print:border print:border-slate-300 print:p-4">
-              <h3 className="text-sm font-bold text-sky-400 print:text-sky-900 border-b border-slate-700 print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Layers className="w-4 h-4 text-purple-400" />
                   {isEn ? '5. Structural Sizing, Wind Loads & Civil Foundations' : '۵. محاسبات سازه، بارهای باد و برف و فونداسیون‌های ساختمانی'}
@@ -858,7 +858,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Velocity Wind Pressure:' : 'فشار سرعتی باد:'}</span>
-                  <span className="font-mono text-cyan-400 print:text-cyan-800 font-bold">
+                  <span className="font-mono text-industrial-accent print:text-cyan-800 font-bold">
                     {Math.round(0.613 * 0.88 * Math.pow(effectiveCity.basicWindSpeedKmh / 3.6, 2))} N/m²
                   </span>
                 </div>
@@ -870,13 +870,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Embedment Depth:' : 'عمق کوبش در خاک:'}</span>
-                  <span className="font-mono text-amber-300 print:text-amber-800 font-bold">
+                  <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
                     1.6 m (Frost Depth: {effectiveCity.frostDepthCm}cm ✓)
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Overturning Safety FoS:' : 'ضریب اطمینان واژگونی:'}</span>
-                  <span className="font-mono text-emerald-400 print:text-emerald-800 font-bold">
+                  <span className="font-mono text-industrial-success print:text-emerald-800 font-bold">
                     2.15 (≥ 1.5 Required)
                   </span>
                 </div>
@@ -887,12 +887,12 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           {/* Section 6: Financial Analysis & 25-Year Pro-Forma */}
           {includedSections.financial && (
             <div className="studio-card print:border print:border-slate-300 print:p-4">
-              <h3 className="text-sm font-bold text-sky-400 print:text-sky-900 border-b border-slate-700 print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-emerald-400" />
+                  <DollarSign className="w-4 h-4 text-industrial-success" />
                   {isEn ? '6. Financial Feasibility, CAPEX, LCOE & 25-Year Cash Flow Pro-Forma' : '۶. تحلیل مالی، هزینه سرمایه‌گذاری (CAPEX)، LCOE و جریان نقدینگی ۲۵ ساله'}
                 </span>
-                <span className="text-[10px] text-emerald-400 print:text-emerald-800 font-mono">
+                <span className="text-[10px] text-industrial-success print:text-emerald-800 font-mono">
                   IRR: {financial.irrPct}% | NPV: ${financial.npvUsd.toLocaleString()}
                 </span>
               </h3>
@@ -906,13 +906,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Levelized Cost (LCOE):' : 'بهای تمام‌شده هر کیلووات‌ساعت:'}</span>
-                  <span className="font-mono font-bold text-sky-400 print:text-sky-800">
+                  <span className="font-mono font-bold text-industrial-accent print:text-sky-800">
                     ${financial.lcoeUsdPerKwh} /kWh
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Internal Rate of Return (IRR):' : 'نرخ بازده داخلی (IRR):'}</span>
-                  <span className="font-mono font-bold text-emerald-400 print:text-emerald-800">
+                  <span className="font-mono font-bold text-industrial-success print:text-emerald-800">
                     {financial.irrPct}%
                   </span>
                 </div>
@@ -929,26 +929,26 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <table className="w-full text-xs text-left print:text-black border-collapse">
                   <thead>
                     <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black">
-                      <th className="p-1.5 border border-slate-700 print:border-slate-300">{isEn ? 'Year' : 'سال'}</th>
-                      <th className="p-1.5 border border-slate-700 print:border-slate-300">{isEn ? 'Generation (MWh)' : 'تولید (MWh)'}</th>
-                      <th className="p-1.5 border border-slate-700 print:border-slate-300">{isEn ? 'Gross Revenue ($)' : 'درآمد فروش برق ($)'}</th>
-                      <th className="p-1.5 border border-slate-700 print:border-slate-300">{isEn ? 'OPEX ($)' : 'هزینه نگهداری O&M ($)'}</th>
-                      <th className="p-1.5 border border-slate-700 print:border-slate-300">{isEn ? 'Net Cashflow ($)' : 'جریان خالص ($)'}</th>
-                      <th className="p-1.5 border border-slate-700 print:border-slate-300">{isEn ? 'Cumulative Cash ($)' : 'جریان تجمعی ($)'}</th>
+                      <th className="p-1.5 border border-industrial-border print:border-slate-300">{isEn ? 'Year' : 'سال'}</th>
+                      <th className="p-1.5 border border-industrial-border print:border-slate-300">{isEn ? 'Generation (MWh)' : 'تولید (MWh)'}</th>
+                      <th className="p-1.5 border border-industrial-border print:border-slate-300">{isEn ? 'Gross Revenue ($)' : 'درآمد فروش برق ($)'}</th>
+                      <th className="p-1.5 border border-industrial-border print:border-slate-300">{isEn ? 'OPEX ($)' : 'هزینه نگهداری O&M ($)'}</th>
+                      <th className="p-1.5 border border-industrial-border print:border-slate-300">{isEn ? 'Net Cashflow ($)' : 'جریان خالص ($)'}</th>
+                      <th className="p-1.5 border border-industrial-border print:border-slate-300">{isEn ? 'Cumulative Cash ($)' : 'جریان تجمعی ($)'}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {financial.cashFlow25Years.slice(0, 7).map((cf) => (
-                      <tr key={cf.year} className="border-b border-slate-800 print:border-slate-200">
+                      <tr key={cf.year} className="border-b border-industrial-border print:border-slate-200">
                         <td className="p-1.5 font-mono">Year {cf.year}</td>
                         <td className="p-1.5 font-mono">{(cf.generationKwh / 1000).toFixed(1)}</td>
                         <td className="p-1.5 font-mono">${Math.round(cf.revenueToman / 90000).toLocaleString()}</td>
                         <td className="p-1.5 font-mono">${Math.round(cf.opexToman / 90000).toLocaleString()}</td>
-                        <td className="p-1.5 font-mono text-emerald-400 print:text-emerald-800 font-bold">
+                        <td className="p-1.5 font-mono text-industrial-success print:text-emerald-800 font-bold">
                           ${Math.round(cf.netCashFlowToman / 90000).toLocaleString()}
                         </td>
                         <td className="p-1.5 font-mono">
-                          <span className={cf.cumulativeCashFlowToman >= 0 ? 'text-emerald-400 print:text-emerald-800' : 'text-slate-400'}>
+                          <span className={cf.cumulativeCashFlowToman >= 0 ? 'text-industrial-success print:text-emerald-800' : 'text-slate-400'}>
                             ${Math.round(cf.cumulativeCashFlowToman / 90000).toLocaleString()}
                           </span>
                         </td>
@@ -963,9 +963,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           {/* Section 7: Bill of Materials (BOM) */}
           {includedSections.bom && (
             <div className="studio-card print:border print:border-slate-300 print:p-4">
-              <h3 className="text-sm font-bold text-sky-400 print:text-sky-900 border-b border-slate-700 print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-amber-400" />
+                  <Truck className="w-4 h-4 text-industrial-warning" />
                   {isEn ? '7. Comprehensive Project Bill of Materials (BOM Schedule)' : '۷. لیست تفکیکی تجهیزات، قطعات و مصالح پروژه (BOM)'}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">IEC 62548 Schedule</span>
@@ -975,38 +975,38 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <table className="w-full text-xs text-left print:text-black border-collapse">
                   <thead>
                     <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black">
-                      <th className="p-2 border border-slate-700 print:border-slate-300">#</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Equipment / Material' : 'تجهیز / قطعه'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Specification' : 'مشخصات فنی'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Quantity' : 'تعداد / مقدار'}</th>
-                      <th className="p-2 border border-slate-700 print:border-slate-300">{isEn ? 'Unit' : 'واحد'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">#</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Equipment / Material' : 'تجهیز / قطعه'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Specification' : 'مشخصات فنی'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Quantity' : 'تعداد / مقدار'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Unit' : 'واحد'}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-slate-800 print:border-slate-200">
+                    <tr className="border-b border-industrial-border print:border-slate-200">
                       <td className="p-2 font-mono">1</td>
                       <td className="p-2 font-semibold">{module.manufacturer} {module.modelName}</td>
                       <td className="p-2 font-mono text-slate-400 print:text-slate-700">{module.pmpWatts}W TOPCon Bifacial, Voc={module.vocVolts}V</td>
-                      <td className="p-2 font-mono font-bold text-amber-400 print:text-amber-900">{arrayDesign.totalModulesCount}</td>
+                      <td className="p-2 font-mono font-bold text-industrial-warning print:text-amber-900">{arrayDesign.totalModulesCount}</td>
                       <td className="p-2">{isEn ? 'Units' : 'عدد'}</td>
                     </tr>
-                    <tr className="border-b border-slate-800 print:border-slate-200">
+                    <tr className="border-b border-industrial-border print:border-slate-200">
                       <td className="p-2 font-mono">2</td>
                       <td className="p-2 font-semibold">{inverter.manufacturer} {inverter.modelName}</td>
                       <td className="p-2 font-mono text-slate-400 print:text-slate-700">{inverter.pnomAcKw}kW AC, 1500V DC Max, Multi-MPPT</td>
-                      <td className="p-2 font-mono font-bold text-sky-400 print:text-sky-900">
+                      <td className="p-2 font-mono font-bold text-industrial-accent print:text-sky-900">
                         {bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1}
                       </td>
                       <td className="p-2">{isEn ? 'Units' : 'دستگاه'}</td>
                     </tr>
-                    <tr className="border-b border-slate-800 print:border-slate-200">
+                    <tr className="border-b border-industrial-border print:border-slate-200">
                       <td className="p-2 font-mono">3</td>
                       <td className="p-2 font-semibold">{isEn ? 'Mounting Structure Racking' : 'استراکچر نگهدارنده پنل‌ها'}</td>
                       <td className="p-2 font-mono text-slate-400 print:text-slate-700">Hot-Dip Galvanized C-Steel, ASTM A123, 2P Configuration</td>
                       <td className="p-2 font-mono font-bold text-white print:text-black">{Math.ceil(arrayDesign.totalModulesCount / 28)}</td>
                       <td className="p-2">{isEn ? 'Tables' : 'میز'}</td>
                     </tr>
-                    <tr className="border-b border-slate-800 print:border-slate-200">
+                    <tr className="border-b border-industrial-border print:border-slate-200">
                       <td className="p-2 font-mono">4</td>
                       <td className="p-2 font-semibold">{isEn ? 'Rammed Ground Piles' : 'شمع‌های کوبشی گالوانیزه'}</td>
                       <td className="p-2 font-mono text-slate-400 print:text-slate-700">C120×50×25×3.5mm, Embedment 1.6m</td>
@@ -1014,7 +1014,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <td className="p-2">{isEn ? 'Posts' : 'شاخه'}</td>
                     </tr>
                     {protection.cableRuns.map((c, i) => (
-                      <tr key={`cab-${i}`} className="border-b border-slate-800 print:border-slate-200">
+                      <tr key={`cab-${i}`} className="border-b border-industrial-border print:border-slate-200">
                         <td className="p-2 font-mono">{5 + i}</td>
                         <td className="p-2 font-semibold">{isEn ? c.config.sectionNameEn : c.config.sectionNameFa}</td>
                         <td className="p-2 font-mono text-slate-400 print:text-slate-700">{isEn ? c.cableDesignationEn : c.cableDesignationFa}</td>
@@ -1029,18 +1029,18 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           )}
 
           {/* Signoff / Approval Signature Block */}
-          <div className="pt-6 mt-6 border-t border-slate-700/80 print:border-slate-400 grid grid-cols-3 gap-4 text-xs text-center">
-            <div className="p-3 border border-dashed border-slate-700 print:border-slate-400 rounded">
+          <div className="pt-6 mt-6 border-t border-industrial-border/80 print:border-slate-400 grid grid-cols-3 gap-4 text-xs text-center">
+            <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
               <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'PREPARED BY (DESIGN ENGINEER)' : 'تهیه‌کننده (مهندس طراح)'}</span>
-              <div className="border-t border-slate-700 print:border-slate-300 pt-1 font-semibold">{leadEngineer}</div>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{leadEngineer}</div>
             </div>
-            <div className="p-3 border border-dashed border-slate-700 print:border-slate-400 rounded">
+            <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
               <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'CHECKED & VERIFIED BY (P.E.)' : 'کنترل و بازبینی مهندسی'}</span>
-              <div className="border-t border-slate-700 print:border-slate-300 pt-1 font-semibold">{companyName}</div>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{companyName}</div>
             </div>
-            <div className="p-3 border border-dashed border-slate-700 print:border-slate-400 rounded">
+            <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
               <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'CLIENT ACCEPTANCE & APPROVAL' : 'تأیید کارفرما و سرمایه‌گذار'}</span>
-              <div className="border-t border-slate-700 print:border-slate-300 pt-1 font-semibold">{clientName}</div>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{clientName}</div>
             </div>
           </div>
         </div>

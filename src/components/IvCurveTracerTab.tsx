@@ -85,8 +85,8 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-sky-400" />
+        <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-industrial-accent" />
           {isEn
             ? 'I-V & P-V Characteristic Curve Tracer (Single-Diode Model)'
             : 'تحلیلگر مشخصه جریان-ولتاژ و توان-ولتاژ (I-V & P-V Curve Tracer)'}
@@ -104,9 +104,9 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-slate-300 font-semibold flex items-center gap-1">
-                <Sun className="w-3.5 h-3.5 text-amber-400" /> {isEn ? 'Solar Irradiance (G):' : 'شدت تابش (Irradiance G):'}
+                <Sun className="w-3.5 h-3.5 text-industrial-warning" /> {isEn ? 'Solar Irradiance (G):' : 'شدت تابش (Irradiance G):'}
               </span>
-              <span className="font-mono text-amber-400 font-bold">{irradiance} W/m²</span>
+              <span className="font-mono text-industrial-warning font-bold">{irradiance} W/m²</span>
             </div>
             <input
               type="range"
@@ -122,9 +122,9 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-slate-300 font-semibold flex items-center gap-1">
-                <Thermometer className="w-3.5 h-3.5 text-red-400" /> {isEn ? 'Cell Temperature (T):' : 'دمای سلول (Cell Temp T):'}
+                <Thermometer className="w-3.5 h-3.5 text-industrial-error" /> {isEn ? 'Cell Temperature (T):' : 'دمای سلول (Cell Temp T):'}
               </span>
-              <span className="font-mono text-cyan-400 font-bold">{cellTempC}°C</span>
+              <span className="font-mono text-industrial-accent font-bold">{cellTempC}°C</span>
             </div>
             <input
               type="range"
@@ -140,9 +140,9 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-slate-300 font-semibold flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-sky-400" /> {isEn ? 'Series Modules in String:' : 'تعداد پنل سری در استرینگ:'}
+                <Layers className="w-3.5 h-3.5 text-industrial-accent" /> {isEn ? 'Series Modules in String:' : 'تعداد پنل سری در استرینگ:'}
               </span>
-              <span className="font-mono text-sky-400 font-bold">
+              <span className="font-mono text-industrial-accent font-bold">
                 {seriesModules} {isEn ? 'Modules' : 'ماژول'}
               </span>
             </div>
@@ -158,13 +158,13 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-2 border-t border-slate-800">
+        <div className="flex items-center gap-3 pt-2 border-t border-industrial-border">
           <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
             <input
               type="checkbox"
               checked={hasPartialShading}
               onChange={(e) => setHasPartialShading(e.target.checked)}
-              className="accent-amber-500 rounded"
+              className="accent-industrial-warning rounded"
             />
             <span className="font-semibold">
               {isEn
@@ -177,34 +177,34 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
 
       {/* KPI Specs Matrix */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
-        <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
+        <div className="p-2.5 bg-industrial-surface border border-industrial-border rounded-lg">
           <span className="text-slate-400 block mb-0.5">{isEn ? 'Max Power (Pmp)' : 'توان ماکزیمم (Pmp)'}</span>
-          <span className="text-base font-bold font-mono text-emerald-400">
+          <span className="text-base font-bold font-mono text-industrial-success">
             {curveResult.pmp >= 1000 ? `${(curveResult.pmp / 1000).toFixed(2)} kW` : `${curveResult.pmp} W`}
           </span>
         </div>
 
-        <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
+        <div className="p-2.5 bg-industrial-surface border border-industrial-border rounded-lg">
           <span className="text-slate-400 block mb-0.5">{isEn ? 'Voltage at MPP (Vmp)' : 'ولتاژ نقطه کار (Vmp)'}</span>
-          <span className="text-base font-bold font-mono text-sky-400">{curveResult.vmp} V</span>
+          <span className="text-base font-bold font-mono text-industrial-accent">{curveResult.vmp} V</span>
         </div>
 
-        <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
+        <div className="p-2.5 bg-industrial-surface border border-industrial-border rounded-lg">
           <span className="text-slate-400 block mb-0.5">{isEn ? 'Current at MPP (Imp)' : 'جریان نقطه کار (Imp)'}</span>
-          <span className="text-base font-bold font-mono text-sky-400">{curveResult.imp} A</span>
+          <span className="text-base font-bold font-mono text-industrial-accent">{curveResult.imp} A</span>
         </div>
 
-        <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
+        <div className="p-2.5 bg-industrial-surface border border-industrial-border rounded-lg">
           <span className="text-slate-400 block mb-0.5">{isEn ? 'Open-Circuit Voc' : 'ولتاژ مدار باز (Voc)'}</span>
-          <span className="text-base font-bold font-mono text-cyan-400">{curveResult.voc} V</span>
+          <span className="text-base font-bold font-mono text-industrial-accent">{curveResult.voc} V</span>
         </div>
 
-        <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
+        <div className="p-2.5 bg-industrial-surface border border-industrial-border rounded-lg">
           <span className="text-slate-400 block mb-0.5">{isEn ? 'Short-Circuit Isc' : 'جریان اتصال کوتاه (Isc)'}</span>
-          <span className="text-base font-bold font-mono text-amber-400">{curveResult.isc} A</span>
+          <span className="text-base font-bold font-mono text-industrial-warning">{curveResult.isc} A</span>
         </div>
 
-        <div className="p-2.5 bg-slate-900 border border-slate-700 rounded-lg">
+        <div className="p-2.5 bg-industrial-surface border border-industrial-border rounded-lg">
           <span className="text-slate-400 block mb-0.5">{isEn ? 'Fill Factor (FF)' : 'ضریب پرشدگی (FF)'}</span>
           <span className="text-base font-bold font-mono text-purple-400">{(curveResult.fillFactor * 100).toFixed(1)}%</span>
         </div>
@@ -213,20 +213,20 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
       {/* Interactive SVG Plot */}
       <div className="studio-card">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <h3 className="font-bold text-sky-400 text-sm">
+          <h3 className="font-bold text-industrial-accent text-sm">
             {isEn ? 'I-V (Current-Voltage) and P-V (Power-Voltage) Curves' : 'منحنی‌های ولتاژ-جریان (I-V) و ولتاژ-توان (P-V)'}
           </h3>
           <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1 font-semibold text-sky-400">
+            <span className="flex items-center gap-1 font-semibold text-industrial-accent">
               <span className="w-3 h-0.5 bg-sky-400"></span> {isEn ? 'I-V Curve' : 'منحنی جریان (I-V)'}
             </span>
-            <span className="flex items-center gap-1 font-semibold text-emerald-400">
-              <span className="w-3 h-0.5 bg-emerald-400"></span> {isEn ? 'P-V Curve' : 'منحنی توان (P-V)'}
+            <span className="flex items-center gap-1 font-semibold text-industrial-success">
+              <span className="w-3 h-0.5 bg-industrial-success"></span> {isEn ? 'P-V Curve' : 'منحنی توان (P-V)'}
             </span>
           </div>
         </div>
 
-        <div className="overflow-x-auto bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-center">
+        <div className="overflow-x-auto bg-industrial-bg p-3 rounded-lg border border-industrial-border flex justify-center">
           <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="select-none font-sans min-w-[600px]">
             {/* Axis Lines */}
             <line x1={padLeft} y1={padTop + plotH} x2={padLeft + plotW} y2={padTop + plotH} stroke="#475569" strokeWidth="1.5" />
@@ -308,8 +308,8 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
         </div>
 
         {hasPartialShading && (
-          <div className="mt-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded border border-amber-600/50 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="mt-2 text-xs text-industrial-warning bg-industrial-warning/20 p-2.5 rounded border border-industrial-warning/50 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-industrial-warning shrink-0" />
             <span>
               {isEn
                 ? 'Partial Shading Phenomenon: Bypass diodes conduct when cell groups are shaded, creating a characteristic multi-peak knee in the I-V curve. Modern inverters with Global MPPT Scanning locate the true global peak.'

@@ -69,8 +69,8 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-lg sm:text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Scale className="w-5 h-5 text-amber-400 shrink-0" />
+        <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Scale className="w-5 h-5 text-industrial-warning shrink-0" />
           {isFa
             ? 'مقررات تجدیدپذیر ایران، ماده ۱۶ و تابلو سبز بورس انرژی (Iranian Regulations & PPA)'
             : 'Iranian Renewable Regulatory Frameworks, Article 16 & IRENEX Green Board'}
@@ -95,7 +95,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
               className={`p-3 rounded-lg border cursor-pointer transition-all ${
                 framework === item.id
                   ? 'bg-sky-950/70 border-sky-400 ring-1 ring-sky-400'
-                  : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                  : 'bg-industrial-surface border-industrial-border hover:border-slate-500'
               }`}
             >
               <div className="font-bold text-xs text-white mb-0.5">
@@ -109,7 +109,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
         </div>
 
         {/* Financial Drivers */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-3 border-t border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-3 border-t border-industrial-border">
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'نرخ فروش برق (تومان/kWh):' : 'Electricity Tariff (Toman/kWh):'}
@@ -119,7 +119,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
               step="100"
               value={customTariffToman}
               onChange={(e) => setCustomTariffToman(parseFloat(e.target.value) || 3000)}
-              className="studio-input font-mono text-emerald-400 font-bold"
+              className="studio-input font-mono text-industrial-success font-bold"
             />
           </div>
 
@@ -168,17 +168,17 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'نرخ بازده داخلی آورده (Equity IRR)' : 'Equity IRR (%)'}
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
+          <div className="text-2xl font-bold font-mono text-industrial-success mt-1">
             {modelResult.equityIrrPct}%
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">Project IRR: {modelResult.projectIrrPct}%</div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'ارزش خالص فعلی پروژه (NPV)' : 'Project NPV'}
           </div>
@@ -190,11 +190,11 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'دوره بازگشت سرمایه آورده' : 'Equity Simple Payback'}
           </div>
-          <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
             {modelResult.simplePaybackYears} <span className="text-xs font-normal text-slate-300">{isFa ? 'سال' : 'years'}</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -202,7 +202,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'صرفه‌جویی جریمه ماده ۱۶ / خاموشی' : 'Avoided Penalty / Outage Savings'}
           </div>
@@ -217,8 +217,8 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
 
       {/* 25-Year Cash Flow Projection Table */}
       <div className="studio-card overflow-hidden">
-        <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-          <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
+        <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
+          <FileSpreadsheet className="w-4 h-4 text-industrial-success shrink-0" />
           {isFa
             ? 'جدول جریان وجوه نقد سالانه ۲۵ ساله (25-Year Cash Flow & DSCR Matrix)'
             : '25-Year Cash Flow Matrix & Debt Service Coverage Ratio (DSCR)'}
@@ -226,7 +226,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
 
         <div className="overflow-x-auto max-h-[380px] -mx-3 sm:mx-0">
           <table className={`w-full text-xs text-slate-300 min-w-[700px] ${isFa ? 'text-right' : 'text-left'}`}>
-            <thead className="bg-slate-900 text-slate-400 sticky top-0 border-b border-slate-700">
+            <thead className="bg-industrial-surface text-slate-400 sticky top-0 border-b border-industrial-border">
               <tr>
                 <th className="p-2.5">{isFa ? 'سال' : 'Year'}</th>
                 <th className="p-2.5">{isFa ? 'تولید (MWh)' : 'Generation (MWh)'}</th>
@@ -245,17 +245,17 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
                     {isFa ? `سال ${cf.year}` : `Yr ${cf.year}`}
                   </td>
                   <td className="p-2.5 text-slate-200">{cf.generationMwh.toLocaleString()}</td>
-                  <td className="p-2.5 text-emerald-400 font-bold">{cf.revenueMillionToman.toLocaleString()}</td>
+                  <td className="p-2.5 text-industrial-success font-bold">{cf.revenueMillionToman.toLocaleString()}</td>
                   <td className="p-2.5 text-slate-400">{cf.opexMillionToman.toLocaleString()}</td>
                   <td className="p-2.5 text-red-300">{cf.debtServiceMillionToman > 0 ? cf.debtServiceMillionToman.toLocaleString() : '-'}</td>
                   <td className="p-2.5 text-sky-300 font-bold">{cf.netCashFlowMillionToman.toLocaleString()}</td>
                   <td className="p-2.5">
-                    <span className={cf.cumulativeCashFlowMillionToman >= 0 ? 'text-emerald-400 font-bold' : 'text-red-400'}>
+                    <span className={cf.cumulativeCashFlowMillionToman >= 0 ? 'text-industrial-success font-bold' : 'text-industrial-error'}>
                       {cf.cumulativeCashFlowMillionToman.toLocaleString()}
                     </span>
                   </td>
                   <td className="p-2.5 text-center">
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${cf.dscr >= 1.25 ? 'bg-emerald-950 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${cf.dscr >= 1.25 ? 'bg-industrial-success text-industrial-success' : 'bg-slate-800 text-slate-400'}`}>
                       {cf.dscr > 5 ? '> 5.0' : cf.dscr.toFixed(2)}
                     </span>
                   </td>

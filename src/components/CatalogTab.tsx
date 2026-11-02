@@ -177,7 +177,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-lg sm:text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
+            <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
               <Database className="w-5 h-5 text-indigo-400 shrink-0" />
               {isFa
                 ? 'کتابخانه جامع تجهیزات خورشیدی و ادوات بازار ایران و جهان (Equipment Catalog)'
@@ -203,7 +203,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
       {/* Tabs & Search Header */}
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div className="flex overflow-x-auto border-b border-slate-700 pb-1 sm:pb-0 gap-1">
+          <div className="flex overflow-x-auto border-b border-industrial-border pb-1 sm:pb-0 gap-1">
             <button
               onClick={() => {
                 setActiveTab('modules');
@@ -211,7 +211,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               }}
               className={`py-2 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                 activeTab === 'modules'
-                  ? 'border-sky-400 text-sky-400'
+                  ? 'border-sky-400 text-industrial-accent'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -225,7 +225,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               }}
               className={`py-2 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                 activeTab === 'inverters'
-                  ? 'border-sky-400 text-sky-400'
+                  ? 'border-sky-400 text-industrial-accent'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -239,7 +239,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               }}
               className={`py-2 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                 activeTab === 'batteries'
-                  ? 'border-sky-400 text-sky-400'
+                  ? 'border-sky-400 text-industrial-accent'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -287,7 +287,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
         <div className="overflow-x-auto -mx-3 sm:mx-0">
           {activeTab === 'modules' && (
             <table className={`w-full text-xs text-slate-300 min-w-[760px] ${isFa ? 'text-right' : 'text-left'}`}>
-              <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-700">
+              <thead className="bg-industrial-surface/90 text-slate-400 border-b border-industrial-border">
                 <tr>
                   <th className="p-2.5">{isFa ? 'سازنده' : 'Manufacturer'}</th>
                   <th className="p-2.5">{isFa ? 'مدل ماژول' : 'Module Model'}</th>
@@ -307,12 +307,12 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     <td className="p-2.5 font-bold text-white">{m.manufacturer}</td>
                     <td className="p-2.5 text-sky-300 font-mono">{m.modelName}</td>
                     <td className="p-2.5 text-[11px] text-slate-400">{m.cellType}</td>
-                    <td className="p-2.5 font-mono font-bold text-emerald-400">{m.pmpWatts} W</td>
+                    <td className="p-2.5 font-mono font-bold text-industrial-success">{m.pmpWatts} W</td>
                     <td className="p-2.5 font-mono">{m.vocVolts} V</td>
                     <td className="p-2.5 font-mono">{m.vmpVolts} V</td>
                     <td className="p-2.5 font-mono">{m.iscAmps} A</td>
                     <td className="p-2.5 font-mono">{m.impAmps} A</td>
-                    <td className="p-2.5 font-mono text-amber-300 font-bold">{m.efficiencyPct}%</td>
+                    <td className="p-2.5 font-mono text-industrial-warning font-bold">{m.efficiencyPct}%</td>
                     <td className="p-2.5 text-[11px] text-slate-400 font-mono">
                       {m.lengthMm} × {m.widthMm}
                     </td>
@@ -324,7 +324,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
           {activeTab === 'inverters' && (
             <table className={`w-full text-xs text-slate-300 min-w-[760px] ${isFa ? 'text-right' : 'text-left'}`}>
-              <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-700">
+              <thead className="bg-industrial-surface/90 text-slate-400 border-b border-industrial-border">
                 <tr>
                   <th className="p-2.5">{isFa ? 'سازنده' : 'Manufacturer'}</th>
                   <th className="p-2.5">{isFa ? 'مدل اینورتر' : 'Inverter Model'}</th>
@@ -348,25 +348,25 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                           {isFa ? 'پست یکپارچه (MV Turnkey Skid)' : 'MV Turnkey Skid Station'}
                         </span>
                       ) : i.technology === 'string_inverter' ? (
-                        <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold">
+                        <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-industrial-accent/30 font-bold">
                           {isFa ? 'اینورتر رشته‌ای (String)' : 'String Inverter'}
                         </span>
                       ) : (
                         <span className="text-slate-400">Standard</span>
                       )}
                     </td>
-                    <td className="p-2.5 font-mono font-bold text-emerald-400">
+                    <td className="p-2.5 font-mono font-bold text-industrial-success">
                       {i.pnomKw >= 1000 ? `${(i.pnomKw / 1000).toFixed(2)} MW` : `${i.pnomKw} kW`}
                     </td>
-                    <td className="p-2.5 font-mono text-amber-300 font-bold">
+                    <td className="p-2.5 font-mono text-industrial-warning font-bold">
                       {i.mvOutputVoltageKv ? `${i.mvOutputVoltageKv} kV (MV)` : i.acVoltageVac ? `${i.acVoltageVac} V` : '400 V'}
                     </td>
                     <td className="p-2.5 font-mono text-red-300">{i.vdcMaxVolts} V</td>
                     <td className="p-2.5 font-mono text-[11px]">
                       {i.vmpptMinVolts}V - {i.vmpptMaxVolts}V
                     </td>
-                    <td className="p-2.5 font-mono text-sky-400">{i.mpptCount} MPPT</td>
-                    <td className="p-2.5 font-mono text-amber-300 font-bold">{i.efficiencyMaxPct}%</td>
+                    <td className="p-2.5 font-mono text-industrial-accent">{i.mpptCount} MPPT</td>
+                    <td className="p-2.5 font-mono text-industrial-warning font-bold">{i.efficiencyMaxPct}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -375,7 +375,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
           {activeTab === 'batteries' && (
             <table className={`w-full text-xs text-slate-300 min-w-[760px] ${isFa ? 'text-right' : 'text-left'}`}>
-              <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-700">
+              <thead className="bg-industrial-surface/90 text-slate-400 border-b border-industrial-border">
                 <tr>
                   <th className="p-2.5">{isFa ? 'سازنده' : 'Manufacturer'}</th>
                   <th className="p-2.5">{isFa ? 'مدل باتری' : 'Battery Model'}</th>
@@ -394,16 +394,16 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     <td className="p-2.5 font-bold text-white">{b.manufacturer}</td>
                     <td className="p-2.5 text-sky-300 font-mono">{b.modelName}</td>
                     <td className="p-2.5 text-[11px] text-slate-300">{b.chemistry}</td>
-                    <td className="p-2.5 font-mono font-bold text-emerald-400">
+                    <td className="p-2.5 font-mono font-bold text-industrial-success">
                       {b.capacityKwh >= 1000 ? `${(b.capacityKwh / 1000).toFixed(2)} MWh` : `${b.capacityKwh} kWh`}
                     </td>
                     <td className="p-2.5 font-mono">{b.nominalVoltageVolts} V</td>
                     <td className="p-2.5 font-mono">{b.nominalCapacityAh} Ah</td>
-                    <td className="p-2.5 font-mono text-sky-400 font-bold">{b.recommendedDoDPct}%</td>
+                    <td className="p-2.5 font-mono text-industrial-accent font-bold">{b.recommendedDoDPct}%</td>
                     <td className="p-2.5 font-mono text-purple-300">{b.cycleLifeAt80DoD} {isFa ? 'سیکل' : 'cycles'}</td>
                     <td className="p-2.5 text-slate-300">
                       {b.hasIntegratedBms ? (
-                        <span className="text-emerald-400 font-semibold">{isFa ? 'دارد (CAN/RS485)' : 'Yes (CAN/RS485)'}</span>
+                        <span className="text-industrial-success font-semibold">{isFa ? 'دارد (CAN/RS485)' : 'Yes (CAN/RS485)'}</span>
                       ) : (
                         <span className="text-slate-500">{isFa ? 'ندارد' : 'External'}</span>
                       )}
@@ -419,10 +419,10 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
       {/* ADD CUSTOM EQUIPMENT MODAL */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <h3 className="font-bold text-sky-400 text-sm flex items-center gap-2">
-                <Plus className="w-4 h-4 text-amber-400" />
+          <div className="bg-industrial-surface border border-industrial-border rounded-xl p-5 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-industrial-border mb-4">
+              <h3 className="font-bold text-industrial-accent text-sm flex items-center gap-2">
+                <Plus className="w-4 h-4 text-industrial-warning" />
                 {isFa ? 'تعریف و ثبت تجهیز جدید در کاتالوگ مهندسی' : 'Register New Custom Equipment in Catalog'}
               </h3>
               <button
@@ -441,7 +441,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                 className={`flex-1 py-1.5 rounded-lg font-bold border transition ${
                   activeTab === 'modules'
                     ? 'bg-sky-600 text-white border-sky-500'
-                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                    : 'bg-slate-800 text-slate-400 border-industrial-border'
                 }`}
               >
                 {isFa ? 'پنل خورشیدی' : 'PV Module'}
@@ -452,7 +452,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                 className={`flex-1 py-1.5 rounded-lg font-bold border transition ${
                   activeTab === 'inverters'
                     ? 'bg-sky-600 text-white border-sky-500'
-                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                    : 'bg-slate-800 text-slate-400 border-industrial-border'
                 }`}
               >
                 {isFa ? 'اینورتر' : 'Inverter'}
@@ -463,7 +463,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                 className={`flex-1 py-1.5 rounded-lg font-bold border transition ${
                   activeTab === 'batteries'
                     ? 'bg-sky-600 text-white border-sky-500'
-                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                    : 'bg-slate-800 text-slate-400 border-industrial-border'
                 }`}
               >
                 {isFa ? 'باتری' : 'Battery'}

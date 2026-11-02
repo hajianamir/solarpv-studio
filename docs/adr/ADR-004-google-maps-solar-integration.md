@@ -57,3 +57,17 @@ $$\text{NASA POWER} \longrightarrow \text{PVGIS 5.3} \longrightarrow \text{Calib
 - **Total Independence from Proprietary Fees**: 0$ API billing.
 - **Global Coverage**: 100% of Earth coordinates ($-90^\circ$ to $+90^\circ$, $-180^\circ$ to $+180^\circ$) resolve valid engineering parameters.
 - **Audit Compliance**: All data provenance, confidence levels (`measured`, `hub_calibrated`, `analytical_estimate`), and disclaimers are transparently displayed in the user interface.
+
+## 6. Notes (PR-2a-6 Phase 2 — Salt Corrosion & Mobile Responsiveness)
+
+### Salt Corrosion Proximity Mapping (ADR-006)
+
+Because the map stack is keyed by coordinates (Leaflet center + marker), shoreline distance for ISO 9223 salt-corrosion categorization is resolved from the same point: OSM Nominatim reverse geocode of the selected marker coordinate supplies the place context; `distanceToSeaKm` drives the C1–C5 category (Bushehr, Persian Gulf coast = 0 km = C5). No static coastal city list is embedded — consistent with ADR-005's abolition of climate hubs.
+
+### Mobile Responsiveness (P1-2)
+
+Leaflet was selected in part because it is touch-friendly and mobile-responsive out of the box. Phase 2 adds:
+- Aspect-ratio constrained map container (`h-[360px] sm:h-[460px]`) so satellite imagery does not break small-viewport layouts.
+- Scrollable tables below 768px (`overflow-x-auto`) for benchmark and LCOE decomposition tables.
+- Bottom-navigation sidebar behavior below 640px and 1/2/3-column responsive grids across DataTable / MetricCard layouts.
+- Validated at 375×667, 768×1024, and 1920×1080 viewports (P1-2 acceptance).
