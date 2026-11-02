@@ -10,7 +10,8 @@
     "lint": "tsc --noEmit",
     "test": "tsx scripts/run-all-benchmarks.ts",
     "test:coverage": "c8 --include='src/engine/core/**' tsx scripts/run-all-benchmarks.ts",
-    "test:smoke": "tsx scripts/smoke-test.ts"
+    "test:smoke": "tsx scripts/smoke-test.ts",
+    "sync-docs": "tsx scripts/sync-docs.ts"
   },
   "dependencies": {
     "express": "^4.21.2",

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers } from 'lucide-react';
-import { ClimateCity, IRANIAN_CLIMATE_CITIES, INTERNATIONAL_CLIMATE_CITIES, ALL_CLIMATE_CITIES } from '../engine/climaticData';
+import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck } from 'lucide-react';
+import { ClimateCity } from '../engine/climaticData';
 import { SiteLocationMap } from './SiteLocationMap';
 
 interface ClimateTabProps {
@@ -13,17 +13,6 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
   const isEn = lang === 'en';
   const [isEditing, setIsEditing] = useState(false);
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
-  const [viewMode, setViewMode] = useState<'map' | 'presets'>('map');
-  const [regionFilter, setRegionFilter] = useState<'all' | 'international' | 'iranian'>('all');
-
-  const handleSelectCityId = (cityId: string) => {
-    const found = ALL_CLIMATE_CITIES.find((c) => c.id === cityId);
-    if (found) {
-      onCityChange(found);
-      setCustomCity(found);
-      setIsEditing(false);
-    }
-  };
 
   const handleSaveCustom = () => {
     onCityChange(customCity);
@@ -39,99 +28,25 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
             <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
               <MapPin className="w-5 h-5 text-amber-400" />
               {isEn
-                ? 'Site Location, Hybrid Satellite Map & Solar Resource'
+                ? 'Site Location, Satellite Map & Pure API Solar Resource'
                 : 'مکان‌یابی، نقشه ماهواره‌ای و تحلیل تشعشع (Site Location & Solar Resource)'}
             </h1>
             <p className="text-slate-400 text-xs">
               {isEn
-                ? 'Select project site on interactive hybrid satellite map, access regional meteorological solar irradiation (PSH), and optimal tilt angles.'
-                : 'امکان انتخاب محل نصب از روی نقشه ماهواره‌ای، دیتابیس اقلیمی شهرهای ایران، ساعات آفتابی اوج (PSH) و شیب بهینه سالانه'}
+                ? 'Select project site on interactive hybrid satellite map. Environmental metrics, PSH, and geotechnical data are resolved dynamically via NASA POWER and PVGIS APIs (ADR-005).'
+                : 'انتخاب محل نصب از روی نقشه ماهواره‌ای تعاملی. پارامترهای تابش خورشیدی (PSH)، باد، برف و ژئوتکنیک به صورت پویا از پایگاه‌های داده جهانی ناسا و PVGIS استخراج می‌شوند.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
-            <button
-              onClick={() => setViewMode('map')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition ${
-                viewMode === 'map' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              {isEn ? 'Interactive Satellite Map' : 'نقشه تعاملی ماهواره‌ای'}
-            </button>
-            <button
-              onClick={() => setViewMode('presets')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition ${
-                viewMode === 'presets' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              {isEn ? 'Regional Climate Cities' : 'شهرهای اقلیمی ایران'}
-            </button>
+          <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-mono text-sky-400">
+            <Globe className="w-4 h-4 text-emerald-400 animate-spin-slow" />
+            <span>{isEn ? 'API Gateway: NASA POWER / PVGIS Active' : 'درگاه داده: NASA POWER و PVGIS فعال'}</span>
           </div>
         </div>
       </div>
 
       {/* Interactive Map View */}
-      {viewMode === 'map' && (
-        <SiteLocationMap currentCity={selectedCity} onSelectLocation={onCityChange} lang={lang} />
-      )}
-
-      {/* City Selector Buttons with International / Regional Filter */}
-      <div className="studio-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <label className="text-xs font-semibold text-slate-300 flex items-center gap-2">
-            <Globe className="w-4 h-4 text-sky-400" />
-            {isEn ? 'Global & Regional Solar Climate Hubs:' : 'هاب‌های اقلیمی و خورشیدی بین‌المللی و منطقه‌ای:'}
-          </label>
-          <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-700">
-            <button
-              onClick={() => setRegionFilter('all')}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
-                regionFilter === 'all' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {isEn ? 'All Locations' : 'همه مکان‌ها'}
-            </button>
-            <button
-              onClick={() => setRegionFilter('international')}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
-                regionFilter === 'international' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {isEn ? 'International (US, EU, MENA, Chile)' : 'بین‌المللی (جهانی)'}
-            </button>
-            <button
-              onClick={() => setRegionFilter('iranian')}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
-                regionFilter === 'iranian' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {isEn ? 'Iran Regional' : 'ایران'}
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto pr-1">
-          {(regionFilter === 'all'
-            ? ALL_CLIMATE_CITIES
-            : regionFilter === 'international'
-            ? INTERNATIONAL_CLIMATE_CITIES
-            : IRANIAN_CLIMATE_CITIES
-          ).map((c) => (
-            <button
-              key={c.id}
-              onClick={() => handleSelectCityId(c.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                selectedCity.id === c.id
-                  ? 'bg-sky-600 border-sky-400 text-white shadow-md ring-1 ring-sky-300'
-                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
-              }`}
-            >
-              {isEn ? c.nameEn : c.nameFa} <span className="text-[10px] opacity-75">({c.peakSunHours} PSH)</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <SiteLocationMap currentCity={selectedCity} onSelectLocation={onCityChange} lang={lang} />
 
       {/* Selected City Details Card */}
       <div className="studio-card">

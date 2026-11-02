@@ -20,7 +20,7 @@ import { REAL_WORLD_V2_TEST_VECTORS } from '../src/engine/core/benchmarks/migrat
 import { runSystemCrossValidation } from '../src/engine/core/benchmarks/crossValidation';
 import { runLhsVsCmcBenchmark } from '../src/engine/core/benchmarks/lhsBenchmark';
 import { calculateBifacialViewFactor } from '../src/engine/bifacial/bifacial2dViewFactor';
-import { ALL_CLIMATE_CITIES } from '../src/engine/climaticData';
+import { getClimateData, getDefaultClimateCity } from '../src/engine/climaticData';
 import { CATALOG_MODULES, CATALOG_INVERTERS } from '../src/engine/equipmentCatalogData';
 import { DEFAULT_FEATURE_FLAGS } from '../src/engine/core/featureFlags';
 
@@ -29,17 +29,39 @@ console.log(' SolarPV Studio v3.0 - Automated Module Integration & Runtime Smoke
 console.log('================================================================================\n');
 
 // -----------------------------------------------------------------------------
-// Step 1: Initialize Application State & Catalogs
+// Step 1: Initialize Application State & Catalogs (ADR-005 API-Driven Architecture)
 // -----------------------------------------------------------------------------
-console.log('[Step 1/5] Initializing application state, climate hubs, and equipment catalogs...');
-const totalCities = ALL_CLIMATE_CITIES.length;
+console.log('[Step 1/5] Initializing API-Driven Climate Gateway and equipment catalogs (ADR-005)...');
+const testCoordinates = [
+  { name: 'Tehran', lat: 35.6892, lng: 51.3890 },
+  { name: 'Boulder', lat: 40.0150, lng: -105.2705 },
+  { name: 'Phoenix', lat: 33.4484, lng: -112.0740 },
+  { name: 'Munich', lat: 48.1351, lng: 11.5820 },
+  { name: 'Singapore', lat: 1.3521, lng: 103.8198 },
+  { name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+  { name: 'Sydney', lat: -33.8688, lng: 151.2093 },
+  { name: 'Santiago', lat: -33.4489, lng: -70.6693 },
+  { name: 'Cairo', lat: 30.0444, lng: 31.2357 },
+  { name: 'London', lat: 51.5074, lng: -0.1278 },
+];
+
+let validLocationsCount = 0;
+for (const loc of testCoordinates) {
+  const data = getClimateData(loc.lat, loc.lng);
+  if (data.peakSunHours > 0 && !isNaN(data.optimalTiltAnnualDeg)) {
+    validLocationsCount++;
+  }
+}
+
+const defaultSite = getDefaultClimateCity();
 const totalModules = CATALOG_MODULES.length;
 const totalInverters = CATALOG_INVERTERS.length;
-console.log(`  ✓ Climate Hubs loaded: ${totalCities} (Global & Regional)`);
+console.log(`  ✓ Dynamic Global Coordinates Tested: ${validLocationsCount}/${testCoordinates.length} (ADR-005 Pure API Model)`);
+console.log(`  ✓ Default Site: ${defaultSite.nameEn} (${defaultSite.peakSunHours} PSH)`);
 console.log(`  ✓ Equipment Catalog: ${totalModules} PV Modules, ${totalInverters} Inverters`);
 console.log(`  ✓ Default System Mode: 'powerplant' (Utility scale 1000 kW)`);
-if (totalCities < 10 || totalModules === 0 || totalInverters === 0) {
-  console.error('FATAL: Step 1 failed to initialize base catalogs.');
+if (validLocationsCount < 10 || totalModules === 0 || totalInverters === 0) {
+  console.error('FATAL: Step 1 failed to initialize API-driven climate gateway.');
   process.exit(1);
 }
 console.log('  -> Status: SUCCESS [PASS]\n');

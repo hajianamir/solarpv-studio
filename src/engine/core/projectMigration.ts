@@ -10,7 +10,7 @@
 import { z } from 'zod';
 import { AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
 import { generateTraceId } from './modelRegistry';
-import { IRANIAN_CLIMATE_CITIES } from '../climaticData';
+import { getDefaultClimateCity } from '../climaticData';
 
 // ----------------------------------------------------------------------------
 // Zod Schemas for Atomic Engineering Objects
@@ -359,7 +359,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
 // ----------------------------------------------------------------------------
 
 function getFallbackCity() {
-  return { ...IRANIAN_CLIMATE_CITIES[0] };
+  return getDefaultClimateCity();
 }
 
 function getFallbackModule() {

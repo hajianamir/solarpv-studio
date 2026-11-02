@@ -15,28 +15,15 @@ import {
   ExternalLink,
   Map as MapIcon,
   Compass,
+  AlertTriangle,
 } from 'lucide-react';
-import { ClimateCity, ALL_CLIMATE_CITIES, getClimateData } from '../engine/climaticData';
+import { ClimateCity, getClimateData } from '../engine/climaticData';
 
 interface SiteLocationMapProps {
   currentCity: ClimateCity;
   onSelectLocation: (city: ClimateCity) => void;
   lang?: 'fa' | 'en';
 }
-
-// Major Iranian Industrial Parks & Key Solar Hubs with coordinates
-const INDUSTRIAL_PARKS_AND_HUBS = [
-  { nameFa: 'شهرک صنعتی شمس‌آباد (تهران)', nameEn: 'Shamsabad Industrial Park (Tehran)', lat: 35.3412, lng: 51.2312, psh: 5.4, minC: -5, maxC: 43 },
-  { nameFa: 'شهرک صنعتی مورچه‌خورت (اصفهان)', nameEn: 'Moorchehkhoort Industrial Park (Isfahan)', lat: 33.0845, lng: 51.4821, psh: 5.7, minC: -8, maxC: 41 },
-  { nameFa: 'شهرک صنعتی کاوه (ساوه)', nameEn: 'Kaveh Industrial City (Saveh)', lat: 35.0567, lng: 50.4123, psh: 5.5, minC: -6, maxC: 42 },
-  { nameFa: 'منطقه ویژه اقتصادی یزد (قطب خورشیدی)', nameEn: 'Yazd Special Economic Solar Zone', lat: 31.8974, lng: 54.3569, psh: 5.9, minC: -4, maxC: 45 },
-  { nameFa: 'منطقه انرژی‌های تجدیدپذیر کرمان', nameEn: 'Kerman Renewable Energy Hub', lat: 30.2839, lng: 57.0834, psh: 6.0, minC: -6, maxC: 42 },
-  { nameFa: 'شهرک صنعتی بین‌المللی اروند (خوزستان)', nameEn: 'Arvand Free Zone (Khuzestan)', lat: 30.4398, lng: 48.1812, psh: 5.8, minC: 4, maxC: 51 },
-  { nameFa: 'شهرک صنعتی چابهار (منطقه آزاد)', nameEn: 'Chabahar Free Trade Zone', lat: 25.2969, lng: 60.6433, psh: 5.7, minC: 12, maxC: 40 },
-  { nameFa: 'سایت خورشیدی دامغان و سمنان', nameEn: 'Damghan-Semnan Solar Park', lat: 36.1683, lng: 54.3486, psh: 5.8, minC: -9, maxC: 41 },
-  { nameFa: 'شهرک صنعتی سلفچگان (قم)', nameEn: 'Salafchegan Special Economic Zone', lat: 34.4821, lng: 50.4532, psh: 5.6, minC: -7, maxC: 43 },
-  { nameFa: 'شهرک صنعتی کاسپین (قزوین)', nameEn: 'Caspian Industrial City (Qazvin)', lat: 36.1523, lng: 50.1874, psh: 5.1, minC: -10, maxC: 38 },
-];
 
 export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   currentCity,
@@ -297,17 +284,6 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     }
   };
 
-  // Filtered Local Predefined Cities & Industrial Parks
-  const filteredLocalSites = searchQuery.trim()
-    ? [...ALL_CLIMATE_CITIES, ...INDUSTRIAL_PARKS_AND_HUBS].filter((item) => {
-        const q = searchQuery.toLowerCase();
-        return (
-          item.nameFa.toLowerCase().includes(q) ||
-          item.nameEn.toLowerCase().includes(q)
-        );
-      })
-    : [];
-
   return (
     <div className="space-y-4">
       {/* Top Map Action & Coordinate Bar */}
@@ -472,30 +448,9 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                     </button>
                   </form>
 
-                  {/* Search Results Dropdown List */}
-                  {(filteredLocalSites.length > 0 || onlineResults.length > 0) && (
+                  {/* Search Results Dropdown List (OSM Online Geocoding) */}
+                  {onlineResults.length > 0 && (
                     <div className="max-h-44 overflow-y-auto space-y-1 bg-slate-950/90 rounded border border-slate-800 p-1 divide-y divide-slate-800/60">
-                      {/* Local Matches */}
-                      {filteredLocalSites.slice(0, 6).map((item, idx) => (
-                        <button
-                          key={`loc-${idx}`}
-                          type="button"
-                          onClick={() => {
-                            const lat = (item as any).latitude || (item as any).lat;
-                            const lng = (item as any).longitude || (item as any).lng;
-                            handleJumpToCoordinate(lat, lng, isEn ? item.nameEn : item.nameFa);
-                            setSearchQuery('');
-                          }}
-                          className="w-full text-right p-1.5 rounded hover:bg-slate-800 text-[11px] flex items-center justify-between text-slate-200 transition"
-                        >
-                          <span className="font-semibold">{isEn ? item.nameEn : item.nameFa}</span>
-                          <span className="text-[10px] text-amber-400 font-mono">
-                            {((item as any).latitude || (item as any).lat).toFixed(2)}°N
-                          </span>
-                        </button>
-                      ))}
-
-                      {/* Online Nominatim Geocoding Results */}
                       {onlineResults.map((item, idx) => (
                         <button
                           key={`online-${idx}`}
@@ -576,30 +531,6 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
               ? 'Click anywhere on the map or drag the solar pin to calculate site resource.'
               : 'روی هر نقطه‌ای از نقشه کلیک کنید یا نشانگر را بکشید تا مختصات و تابش اختصاصی محاسبه گردد.'}
           </span>
-        </div>
-      </div>
-
-      {/* Quick Iranian Industrial Zones & Solar Parks Selector */}
-      <div className="studio-card">
-        <label className="block text-xs font-semibold text-slate-300 mb-2">
-          {isEn
-            ? 'Quick Siting in Iranian Major Industrial Parks & Solar Hubs:'
-            : 'مکان‌یابی سریع در شهرک‌های صنعتی و قطب‌های نیروگاه خورشیدی ایران:'}
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs">
-          {INDUSTRIAL_PARKS_AND_HUBS.map((hub) => (
-            <button
-              key={hub.nameFa}
-              onClick={() => handleJumpToCoordinate(hub.lat, hub.lng, isEn ? hub.nameEn : hub.nameFa)}
-              className="p-2 rounded bg-slate-800/80 hover:bg-slate-750 border border-slate-700/80 hover:border-sky-500/60 text-right transition-all flex flex-col justify-between"
-            >
-              <div className="font-semibold text-white truncate text-[11px]">{isEn ? hub.nameEn : hub.nameFa}</div>
-              <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1 font-mono">
-                <span className="text-amber-400 font-bold">{hub.psh} PSH</span>
-                <span>{hub.lat.toFixed(1)}°N, {hub.lng.toFixed(1)}°E</span>
-              </div>
-            </button>
-          ))}
         </div>
       </div>
     </div>

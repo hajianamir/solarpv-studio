@@ -362,6 +362,13 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     });
   }
 
+  let isLowTiltMonotonic = true;
+  for (let i = 0; i < fineLowTiltSweep.length - 1; i++) {
+    if (fineLowTiltSweep[i].annualSnowLossPercent < fineLowTiltSweep[i + 1].annualSnowLossPercent) {
+      isLowTiltMonotonic = false;
+    }
+  }
+
   // ==========================================================================
   // 4c. Fine Sweep (10° to 15° in 1° Increments per PR-2a-6)
   // Verifies smooth transition across the 10-15 degree damming regime
