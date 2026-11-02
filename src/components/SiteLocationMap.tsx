@@ -18,6 +18,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { ClimateCity, getClimateData } from '../engine/climaticData';
+import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 
 interface SiteLocationMapProps {
   currentCity: ClimateCity;
@@ -52,8 +53,57 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const [inputLat, setInputLat] = useState(initialLat.toFixed(4));
   const [inputLng, setInputLng] = useState(initialLng.toFixed(4));
   const [isSearchingOnline, setIsSearchingOnline] = useState(false);
-  const [onlineResults, setOnlineResults] = useState<any[]>([]);
+  const [onlineResults, setOnlineResults] = useState<Array<{ lat: number; lon: number; display_name: string; type: string }>>([]);
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Recent searches persisted in localStorage (client-side only, no API calls)
+  const RECENT_SEARCHES_KEY = 'solarpv_recent_searches';
+  const MAX_RECENT = 5;
+  const [recentSearches, setRecentSearches] = useState<Array<{ lat: number; lng: number; label: string }>>(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const addRecentSearch = (lat: number, lng: number, label: string) => {
+    setRecentSearches((prev) => {
+      const next = [{ lat, lng, label }, ...prev.filter((r) => r.lat !== lat || r.lng !== lng)].slice(0, MAX_RECENT);
+      try {
+        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+      } catch {
+        /* localStorage unavailable in private mode — ignore */
+      }
+      return next;
+    });
+  };
+
+  // Debounced Nominatim autocomplete (500ms) — city/place name → coordinates
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    if (!searchQuery.trim()) {
+      setOnlineResults([]);
+      setIsSearchingOnline(false);
+      return;
+    }
+    setIsSearchingOnline(true);
+    debounceTimer.current = setTimeout(async () => {
+      try {
+        const results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(searchQuery);
+        setOnlineResults(results);
+      } catch {
+        setOnlineResults([]);
+      } finally {
+        setIsSearchingOnline(false);
+      }
+    }, 500);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [searchQuery]);
 
   // Layer references
   const hybridLayerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -130,7 +180,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         html: `
           <div style="position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
             <div style="position:absolute; width:34px; height:34px; border-radius:50%; background:rgba(14, 165, 233, 0.4); animation:ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-            <div style="width:20px; height:20px; border-radius:50%; background:#0284c7; border:3px solid #ffffff; box-shadow:0 0 14px #38bdf8; display:flex; align-items:center; justify-content:center;">
+            <div style="width:20px; height:20px; border-radius:50%; background:#0284c7; border:3px solid #ffffff; box-:0 0 14px #38bdf8; display:flex; align-items:center; justify-content:center;">
               <div style="width:6px; height:6px; border-radius:50%; background:#ffffff;"></div>
             </div>
           </div>
@@ -263,34 +313,34 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     onSelectLocation(locationData);
   };
 
-  // Online Geocoding Search via OpenStreetMap Nominatim
-  const handleOnlineSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
+  // Browser geolocation — jump map to user's measured location
+  const handleGeolocate = () => {
+    if (!navigator.geolocation) return;
     setIsSearchingOnline(true);
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&accept-language=${isEn ? 'en' : 'fa'}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setOnlineResults(data || []);
-      }
-    } catch (err) {
-      console.warn('Online geocoding service unavailable, falling back to local database.', err);
-    } finally {
-      setIsSearchingOnline(false);
-    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setCoords({ lat: latitude, lng: longitude });
+        setInputLat(latitude.toFixed(4));
+        setInputLng(longitude.toFixed(4));
+        addRecentSearch(latitude, longitude, isEn ? 'My Location' : 'محل من');
+        handleJumpToCoordinate(latitude, longitude, isEn ? 'My Location' : 'محل من');
+        setIsSearchingOnline(false);
+      },
+      () => {
+        setIsSearchingOnline(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   return (
     <div className="space-y-4">
       {/* Top Map Action & Coordinate Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700/80">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-industrial-surface p-3 rounded-lg border border-industrial-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-sky-400 shrink-0" />
+            <MapPin className="w-5 h-5 text-industrial-accent shrink-0" />
             <div>
               <span className="text-xs text-slate-400 block">
                 {isEn ? 'Selected Geographic Coordinates & Site:' : 'محل انتخاب‌شده بر روی نقشه:'}
@@ -304,13 +354,13 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           {/* Explicit Data Confidence Badge — climate hubs are deleted (ADR-005), so only
                analytical_estimate (deterministic model) or measured (live API) remain. */}
           {currentCity.confidence === 'measured' ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
-              <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-industrial-success/20 border border-emerald-500/40 text-industrial-success text-[11px] font-bold">
+              <Check className="w-3.5 h-3.5 text-industrial-success shrink-0" />
               <span>{isEn ? 'Measured (live global API)' : 'اندازه‌گیری‌شده (API اقلیمی زنده)'}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-industrial-warning/20 border border-industrial-warning/40 text-industrial-warning text-[11px] font-bold">
+              <AlertTriangle className="w-3.5 h-3.5 text-industrial-warning shrink-0" />
               <span>{isEn ? 'Estimated Model (deterministic geospatial model)' : 'مدل تخمینی مهندسی (مدل جغروفازای محاسبه‌شده)'}</span>
             </div>
           )}
@@ -318,24 +368,24 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
         {/* Live Coordinate Badges */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <div className="bg-slate-800 px-2.5 py-1 rounded border border-slate-700 text-sky-300">
+          <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-sky-300">
             LAT: <strong className="text-white">{coords.lat.toFixed(4)}°N</strong>
           </div>
-          <div className="bg-slate-800 px-2.5 py-1 rounded border border-slate-700 text-sky-300">
+          <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-sky-300">
             LNG: <strong className="text-white">{coords.lng.toFixed(4)}°E</strong>
           </div>
-          <div className="bg-slate-800 px-2.5 py-1 rounded border border-slate-700 text-amber-300 flex items-center gap-1">
+          <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-industrial-warning flex items-center gap-1">
             <Sun className="w-3.5 h-3.5" />
-            PSH: <strong className="text-amber-400">{estimatedPsh} h/d</strong>
+            PSH: <strong className="text-industrial-warning">{estimatedPsh} h/d</strong>
           </div>
-          <div className="bg-slate-800 px-2.5 py-1 rounded border border-slate-700 text-emerald-300 flex items-center gap-1">
+          <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-industrial-success flex items-center gap-1">
             <Compass className="w-3.5 h-3.5" />
-            {isEn ? 'Opt Tilt:' : 'شیب بهینه:'} <strong className="text-emerald-400">{currentCity.optimalTiltAnnualDeg}°</strong>
+            {isEn ? 'Opt Tilt:' : 'شیب بهینه:'} <strong className="text-industrial-success">{currentCity.optimalTiltAnnualDeg}°</strong>
           </div>
         </div>
 
         {/* 4-Way Layer Switcher */}
-        <div className="flex flex-wrap items-center gap-1 bg-slate-800 p-1 rounded border border-slate-700 text-xs">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-800 p-1 rounded border border-industrial-border text-xs">
           <button
             type="button"
             onClick={() => handleSwitchLayer('hybrid')}
@@ -344,7 +394,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             }`}
             title={isEn ? 'Satellite Imagery with Roads and Places labels' : 'تصاویر ماهواره‌ای به همراه اسامی اماکن، جاده‌ها و مرزها'}
           >
-            <Layers className="w-3.5 h-3.5 text-amber-300" />
+            <Layers className="w-3.5 h-3.5 text-industrial-warning" />
             <span>{isEn ? 'Hybrid Satellite' : 'ماهواره‌ای ترکیبی'}</span>
           </button>
           <button
@@ -377,23 +427,23 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             }`}
             title={isEn ? 'Topographic & Elevation Contour Map' : 'نقشه توپوگرافی و تراز ارتفاعی زمین (OpenTopoMap)'}
           >
-            <Compass className="w-3.5 h-3.5 text-emerald-400" />
+            <Compass className="w-3.5 h-3.5 text-industrial-success" />
             <span>{isEn ? 'Topography' : 'توپوگرافی و شیب'}</span>
           </button>
         </div>
       </div>
 
       {/* Main Map Container with Embedded Floating Search Window */}
-      <div className="relative rounded-lg overflow-hidden border border-slate-700 h-[360px] sm:h-[460px] md:h-[520px]">
+      <div className="relative rounded-lg overflow-hidden border border-industrial-border h-[360px] sm:h-[460px] md:h-[520px]">
         {/* Leaflet Map Canvas */}
         <div ref={mapContainerRef} className="w-full h-full z-10" />
 
         {/* FLOATING SEARCH & COORDINATES WINDOW (پنجره تعبیه شده جستجوی مکان و مختصات) */}
-        <div className="absolute top-3 left-3 z-20 max-w-sm w-[92%] sm:w-80 bg-slate-900/95 rounded-xl border border-slate-700/90 overflow-hidden transition-all duration-150">
+        <div className="absolute top-3 left-3 z-20 max-w-sm w-[92%] sm:w-80 bg-industrial-surface/95 rounded-xl border border-industrial-border/90 overflow-hidden transition-all duration-150">
           {/* Header Bar */}
-          <div className="flex items-center justify-between p-2.5 bg-slate-800/90 border-b border-slate-700/80">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
-              <Search className="w-3.5 h-3.5 text-amber-400" />
+          <div className="flex items-center justify-between p-2.5 bg-slate-800/90 border-b border-industrial-border/80">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-industrial-accent">
+              <Search className="w-3.5 h-3.5 text-industrial-warning" />
               <span>{isEn ? 'Site & Coordinate Finder' : 'پنجره جستجوی مکان و مختصات'}</span>
             </div>
             <button
@@ -408,12 +458,12 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           {isPanelExpanded && (
             <div className="p-3 space-y-3 text-xs">
               {/* Tab Selector: Location Name vs Exact Coordinates */}
-              <div className="flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+              <div className="flex rounded-lg bg-industrial-bg p-1 border border-industrial-border">
                 <button
                   type="button"
                   onClick={() => setSearchTab('name')}
                   className={`flex-1 py-1 text-center font-semibold rounded transition ${
-                    searchTab === 'name' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                    searchTab === 'name' ? 'bg-sky-600 text-white ' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   {isEn ? 'By Location Name' : 'جستجوی نام مکان'}
@@ -422,7 +472,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                   type="button"
                   onClick={() => setSearchTab('coords')}
                   className={`flex-1 py-1 text-center font-semibold rounded transition ${
-                    searchTab === 'coords' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                    searchTab === 'coords' ? 'bg-sky-600 text-white ' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   {isEn ? 'By Coordinates' : 'ورود با مختصات'}
@@ -432,7 +482,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
               {/* Tab 1: Search by Location Name */}
               {searchTab === 'name' && (
                 <div className="space-y-2">
-                  <form onSubmit={handleOnlineSearch} className="flex gap-1.5">
+                  <form onSubmit={(e) => e.preventDefault()} className="flex gap-1.5">
                     <input
                       type="text"
                       placeholder={isEn ? 'City, town, industrial zone...' : 'نام شهر، شهرک صنعتی یا منطقه...'}
@@ -441,25 +491,51 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                       className="studio-input text-xs flex-1 py-1.5"
                     />
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleGeolocate}
                       disabled={isSearchingOnline}
                       className="studio-btn-primary px-3 py-1.5 text-xs flex items-center gap-1"
+                      title={isEn ? 'Use browser geolocation (My Location)' : 'استفاده از مکان‌یابی مرورگر (محل من)'}
                     >
-                      {isSearchingOnline ? '...' : <Search className="w-3.5 h-3.5" />}
+                      {isSearchingOnline ? '...' : <Crosshair className="w-3.5 h-3.5" />}
                     </button>
                   </form>
 
+                  {/* Recent Searches (localStorage) */}
+                  {recentSearches.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-[9px] text-slate-500 font-semibold uppercase">{isEn ? 'Recent' : 'جستارهای اخیر'}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {recentSearches.map((item, idx) => (
+                          <button
+                            key={`recent-${idx}`}
+                            type="button"
+                            onClick={() => {
+                              handleJumpToCoordinate(item.lat, item.lng, item.label);
+                              setOnlineResults([]);
+                            }}
+                            className="text-right p-1.5 rounded hover:bg-slate-800 text-[10px] flex items-center gap-1.5 text-sky-300 transition"
+                          >
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            <span className="truncate max-w-[170px] text-left">{item.label}</span>
+                            <span className="text-[9px] text-slate-500 font-mono shrink-0 ml-1">{item.lat.toFixed(3)}, {item.lng.toFixed(3)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Search Results Dropdown List (OSM Online Geocoding) */}
                   {onlineResults.length > 0 && (
-                    <div className="max-h-44 overflow-y-auto space-y-1 bg-slate-950/90 rounded border border-slate-800 p-1 divide-y divide-slate-800/60">
+                    <div className="max-h-44 overflow-y-auto space-y-1 bg-industrial-bg/90 rounded border border-industrial-border p-1 divide-y divide-slate-800/60">
                       {onlineResults.map((item, idx) => (
                         <button
                           key={`online-${idx}`}
                           type="button"
                           onClick={() => {
-                            const lat = parseFloat(item.lat);
-                            const lng = parseFloat(item.lon);
-                            handleJumpToCoordinate(lat, lng, item.display_name.split(',')[0]);
+                            handleJumpToCoordinate(item.lat, item.lon, item.display_name.split(',')[0]);
                             setOnlineResults([]);
                             setSearchQuery('');
                           }}
@@ -488,7 +564,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                         value={inputLat}
                         onChange={(e) => setInputLat(e.target.value)}
                         className="studio-input text-xs font-mono py-1 w-full"
-                        placeholder="35.6892"
+                        placeholder=""
                       />
                     </div>
                     <div>
@@ -501,7 +577,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                         value={inputLng}
                         onChange={(e) => setInputLng(e.target.value)}
                         className="studio-input text-xs font-mono py-1 w-full"
-                        placeholder="51.3890"
+                        placeholder=""
                       />
                     </div>
                   </div>
@@ -525,8 +601,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         </div>
 
         {/* Map Overlay Instructions */}
-        <div className="absolute bottom-3 right-3 z-20 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-700/80 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
-          <Crosshair className="w-3.5 h-3.5 text-sky-400" />
+        <div className="absolute bottom-3 right-3 z-20 bg-industrial-surface/90 px-3 py-1.5 rounded-lg border border-industrial-border/80 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
+          <Crosshair className="w-3.5 h-3.5 text-industrial-accent" />
           <span>
             {isEn
               ? 'Click anywhere on the map or drag the solar pin to calculate site resource.'

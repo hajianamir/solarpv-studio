@@ -30,6 +30,7 @@ import {
   recommendFoundation,
   FoundationRecommendationResult,
 } from '../engine/structureRecommendationEngine';
+import { assessSaltCorrosion, SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
 
 interface StructuralFoundationTabProps {
   totalModulesCount?: number;
@@ -89,6 +90,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   const [groundClearanceM, setGroundClearanceM] = useState<number>(0.9);
   const [foundationType, setFoundationType] = useState<FoundationType>('rammed_steel_pile');
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
+  const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
+
+  // Salt corrosion / ISO 9223 categorization (resolved via OSM Nominatim shoreline distance)
+  useEffect(() => {
+    let mounted = true;
+    assessSaltCorrosion({ latitude: city.latitude, longitude: city.longitude, resolveDistance: true })
+      .then((res) => { if (mounted) setCorrosion(res); })
+      .catch(() => { if (mounted) setCorrosion(null); });
+    return () => { mounted = false; };
+  }, [city.latitude, city.longitude]);
 
   // Geotechnical and climate parameters (initialized from city / overrides)
   const [basicWindSpeedKmh, setBasicWindSpeedKmh] = useState<number>(
@@ -251,8 +262,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Layers className="w-5 h-5 text-amber-400" />
+        <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Layers className="w-5 h-5 text-industrial-warning" />
           {isEn
             ? 'Structural Engineering, Geotechnical Soil & Civil Foundations Sizing'
             : 'مهندسی سازه، داده‌های خاک، باد، برف و محاسبات فونداسیون'}
@@ -265,16 +276,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       </div>
 
       {/* Geotechnical & Climatic Site Data Card (Automated with Manual Override) */}
-      <div className="studio-card border border-sky-800/40 bg-slate-900/90 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-700/80 gap-2">
+      <div className="studio-card border border-sky-800/40 bg-industrial-surface/90 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-industrial-border/80 gap-2">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-sky-500/10 border border-sky-500/30 rounded text-sky-400">
+            <div className="p-1.5 bg-industrial-accent/10 border border-industrial-accent/30 rounded text-industrial-accent">
               <Database className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>{isEn ? 'Site Geotechnical, Soil & Climatic Parameters' : 'اطلاعات ژئوتکنیک، خاک و اقلیم سایت پروژه:'}</span>
-                <span className="text-xs font-normal text-sky-400 flex items-center gap-1 font-mono">
+                <span className="text-xs font-normal text-industrial-accent flex items-center gap-1 font-mono">
                   <MapPin className="w-3 h-3" />
                   {isEn ? city.nameEn : city.nameFa}
                 </span>
@@ -285,7 +296,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 </span>
                 <span>•</span>
                 <span>
-                  {isEn ? 'Retrieved:' : 'تاریخ دریافت:'} <span className="font-mono text-amber-400">{city.dataRetrievalDate}</span>
+                  {isEn ? 'Retrieved:' : 'تاریخ دریافت:'} <span className="font-mono text-industrial-warning">{city.dataRetrievalDate}</span>
                 </span>
               </p>
             </div>
@@ -293,10 +304,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           <button
             onClick={handleResetToDefaults}
-            className="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1.5 self-start sm:self-auto"
+            className="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-industrial-border flex items-center gap-1.5 self-start sm:self-auto"
             title={isEn ? 'Reset to official weather station defaults' : 'بازنشانی مقادیر به داده‌های رسمی ایستگاه'}
           >
-            <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
+            <RotateCcw className="w-3.5 h-3.5 text-industrial-accent" />
             <span>{isEn ? 'Reset to Climate Defaults' : 'بازنشانی به پیش‌فرض اقلیم'}</span>
           </button>
         </div>
@@ -304,9 +315,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         {/* 9 Geotechnical & Climatic Editable Inputs */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
           {/* Wind Speed */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
-              <Wind className="w-3.5 h-3.5 text-cyan-400" />
+              <Wind className="w-3.5 h-3.5 text-industrial-accent" />
               <span>{isEn ? 'Basic Wind Speed:' : 'سرعت مبنای باد (V_b):'}</span>
             </label>
             <div className="flex items-center gap-1.5">
@@ -321,7 +332,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setBasicWindSpeedKmh(val);
                   handleUpdateParam({ basicWindSpeedKmh: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">km/h</span>
             </div>
@@ -331,7 +342,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
 
           {/* Ground Snow Load */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
               <ThermometerSnowflake className="w-3.5 h-3.5 text-sky-300" />
               <span>{isEn ? 'Ground Snow (S_k):' : 'بار برف مبنای زمین:'}</span>
@@ -348,7 +359,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setGroundSnowLoadKgM2(val);
                   handleUpdateParam({ groundSnowLoadKgM2: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">kg/m²</span>
             </div>
@@ -358,7 +369,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
 
           {/* Soil Bearing Capacity */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Allowable Bearing (q_a):' : 'ظرفیت باربری خاک (q_a):'}
             </label>
@@ -374,7 +385,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSoilBearingCapacityKpa(val);
                   handleUpdateParam({ soilBearingCapacityKpa: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-emerald-400 font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-industrial-success font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">kPa</span>
             </div>
@@ -384,7 +395,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
 
           {/* Soil Friction Angle */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Friction Angle (φ):' : 'زاویه اصطکاک داخلی (φ):'}
             </label>
@@ -400,7 +411,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSoilFrictionAngleDeg(val);
                   handleUpdateParam({ soilInternalFrictionAngleDeg: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">deg</span>
             </div>
@@ -410,7 +421,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
 
           {/* Frost Depth */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Frost Penetration Depth:' : 'عمق یخبندان منطقه:'}
             </label>
@@ -426,7 +437,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setFrostDepthCm(val);
                   handleUpdateParam({ frostDepthCm: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">cm</span>
             </div>
@@ -436,7 +447,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
 
           {/* Soil Cohesion */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Soil Cohesion (c):' : 'چسبندگی خاک (c):'}
             </label>
@@ -452,14 +463,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSoilCohesionKpa(val);
                   handleUpdateParam({ soilCohesionKpa: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">kPa</span>
             </div>
           </div>
 
           {/* Soil Unit Weight */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Soil Unit Weight (γ):' : 'وزن مخصوص خاک (γ):'}
             </label>
@@ -475,16 +486,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSoilDensityKnM3(val);
                   handleUpdateParam({ soilDensityKnM3: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">kN/m³</span>
             </div>
           </div>
 
           {/* Annual Rainfall */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
-              <CloudRain className="w-3.5 h-3.5 text-blue-400" />
+              <CloudRain className="w-3.5 h-3.5 text-industrial-primary" />
               <span>{isEn ? 'Annual Rainfall:' : 'بارش سالانه:'}</span>
             </label>
             <div className="flex items-center gap-1.5">
@@ -499,14 +510,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setAnnualRainfallMm(val);
                   handleUpdateParam({ annualRainfallMm: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">mm/yr</span>
             </div>
           </div>
 
           {/* Seismic Zone Coefficient */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Seismic Coeff (A - Std 2800):' : 'شتاب مبنا زلزله (استاندارد ۲۸۰۰):'}
             </label>
@@ -522,14 +533,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSeismicZoneA(val);
                   handleUpdateParam({ seismicZoneCoefficientA: val });
                 }}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">g</span>
             </div>
           </div>
 
           {/* Soil Classification Selector */}
-          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+          <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
             <label className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Geotech Category:' : 'تیپ خاک ژئوتکنیکی:'}
             </label>
@@ -540,7 +551,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 setSoilType(val);
                 handleUpdateParam({ soilType: val });
               }}
-              className="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs text-white"
+              className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-white"
             >
               <option value="dense_sand_gravel">{isEn ? 'Dense Sand/Gravel' : 'شن و ماسه متراکم'}</option>
               <option value="medium_clay">{isEn ? 'Medium-Stiff Clay' : 'خاک رس متوسط تا سخت'}</option>
@@ -551,11 +562,62 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         </div>
       </div>
 
+      {/* Salt Corrosion / ISO 9223 Coastal Salinity Card (P2-4 / ADR-006) */}
+      <div className="studio-card border border-industrial-border p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-industrial-border/80 gap-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-industrial-accent/10 border border-industrial-accent/30 rounded text-industrial-accent">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white">
+                {isEn ? 'Salt Corrosion &amp; Salinity Exposure (ISO 9223)' : 'خورده شوری و زهکش دریایی (ISO 9223)'}
+              </h3>
+            </div>
+          </div>
+        </div>
+        {corrosion ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'ISO 9223 Category:' : 'دسته زهکش ISO 9223:'}</span>
+                <span className={`font-mono font-bold text-sm ${corrosion.iso9223Category === 'C5' ? 'text-industrial-error' : corrosion.iso9223Category === 'C4' ? 'text-industrial-warning' : 'text-industrial-success'}`}>
+                  {corrosion.categoryLabel}
+                </span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">{corrosion.corrosionRisk}</span>
+              </div>
+              <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Distance to Sea:' : 'فاصله تا دریای:'}</span>
+                <span className="font-mono font-bold text-sm text-sky-300">{corrosion.distanceToSeaKm} km</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">{isEn ? corrosion.source : 'منبع: ' + (corrosion.source === 'osm_nominatim' ? 'OpenStreetMap' : 'ورودی کاربر')}</span>
+              </div>
+              <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Module Derating:' : 'افزایش ماژول:'}</span>
+                <span className="font-mono font-bold text-sm text-industrial-warning">-{corrosion.moduleDeratePct}%</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">{isEn ? 'Inverter:' : 'اینورتر:'} -{corrosion.inverterDeratePct}%</span>
+              </div>
+              <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Maintenance OPEX Adder:' : 'افزودن OPEX نگهداری:'}</span>
+                <span className="font-mono font-bold text-sm text-slate-200">+{corrosion.maintenanceOpexAdderPct}%</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">{corrosion.traceId}</span>
+              </div>
+            </div>
+            <div className="p-2.5 bg-industrial-bg border border-industrial-border rounded-lg text-xs">
+              <span className="text-slate-400 block text-[10px]">{isEn ? 'Durability Guidance:' : 'راهنمای دوام:'}</span>
+              <span className={isEn ? 'text-slate-200' : 'text-slate-200'}>{corrosion.durabilityNote}</span>
+              <span className="text-slate-400 block text-[10px] mt-1">{corrosion.durabilityNoteFa}</span>
+            </div>
+          </>
+        ) : (
+          <div className="p-2.5 text-slate-500 text-xs italic">{isEn ? 'Resolving shoreline distance...' : 'در حال حل فاصله ساحلی...'}</div>
+        )}
+      </div>
+
       {/* Automated Foundation Recommendation Engine Card (PR-2a-6) */}
       <div className="studio-card border border-emerald-500/40 p-4 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-industrial-border gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400">
+            <div className="p-2 bg-industrial-success/10 border border-industrial-success/30 rounded-lg text-industrial-success">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
@@ -563,7 +625,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 <h3 className="text-sm font-bold text-white">
                   {isEn ? 'Automated Foundation Recommendation Engine' : 'پیشنهاد هوشمند نوع فونداسیون و سایزینگ برومز'}
                 </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-industrial-success/20 text-industrial-success border border-emerald-500/40">
                   ASCE 7-22 & Eurocode 7
                 </span>
               </div>
@@ -578,14 +640,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowReportModal(true)}
-              className="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 flex items-center gap-1.5 transition"
+              className="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 border border-industrial-border flex items-center gap-1.5 transition"
             >
               <FileText className="w-3.5 h-3.5" />
               <span>{isEn ? 'View 6-Section Report' : 'گزارش ۶ بخشی مهندسی'}</span>
             </button>
             <button
               onClick={() => setFoundationType(recResult.primaryRecommendation)}
-              className="text-xs px-3.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition"
+              className="text-xs px-3.5 py-1.5 rounded-md bg-industrial-success hover:bg-industrial-success text-white font-bold flex items-center gap-1.5 transition"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>{isEn ? '1-Click Apply Recommendation' : 'اعمال فونداسیون پیشنهادی (۱-کلیک)'}</span>
@@ -600,15 +662,15 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               key={opt.type}
               className={`p-3 rounded-lg border transition ${
                 foundationType === opt.type
-                  ? 'bg-emerald-950/30 border-emerald-500/60 ring-1 ring-emerald-500'
-                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                  ? 'bg-industrial-success/30 border-industrial-success/60 ring-1 ring-industrial-success'
+                  : 'bg-industrial-surface/60 border-industrial-border hover:border-industrial-border'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
                   Rank #{opt.rank}
                 </span>
-                <span className="font-mono font-bold text-emerald-400 text-xs">
+                <span className="font-mono font-bold text-industrial-success text-xs">
                   {opt.suitabilityScore}/100
                 </span>
               </div>
@@ -625,7 +687,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   <span className="text-slate-200 font-mono">{opt.installSpeedMwPerWeek} MW/wk</span>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-400 mt-2 italic border-t border-slate-800/80 pt-1">
+              <p className="text-[10px] text-slate-400 mt-2 italic border-t border-industrial-border/80 pt-1">
                 {opt.pros[0]}
               </p>
             </div>
@@ -633,24 +695,24 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         </div>
 
         {/* Broms Pile Sizing & Frost Compliance Bar */}
-        <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-lg text-xs grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-lg text-xs grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <span className="text-slate-400 block text-[10px]">{isEn ? 'Broms Steel Profile:' : 'پروفیل شمع کوبشی:'}</span>
-            <span className="font-mono font-bold text-amber-300 text-sm">{recResult.recommendedPileSizing.pileSection}</span>
+            <span className="font-mono font-bold text-industrial-warning text-sm">{recResult.recommendedPileSizing.pileSection}</span>
             <span className="text-[9px] text-slate-400 block mt-0.5">Fy = 345 MPa</span>
           </div>
 
           <div>
             <span className="text-slate-400 block text-[10px]">{isEn ? 'Required Embedment (L):' : 'عمق کوبش الزامی (L):'}</span>
             <span className="font-mono font-bold text-sky-300 text-sm">{recResult.recommendedPileSizing.embedmentDepthM} m</span>
-            <span className="text-[9px] text-emerald-400 block mt-0.5">
+            <span className="text-[9px] text-industrial-success block mt-0.5">
               &gt; Frost depth + 1.0m ({recResult.recommendedPileSizing.minDepthForFrostM}m)
             </span>
           </div>
 
           <div>
             <span className="text-slate-400 block text-[10px]">{isEn ? 'Lateral Factor of Safety:' : 'ضریب اطمینان جانبی (FoS):'}</span>
-            <span className="font-mono font-bold text-emerald-300 text-sm">{recResult.recommendedPileSizing.fosLateral}</span>
+            <span className="font-mono font-bold text-industrial-success text-sm">{recResult.recommendedPileSizing.fosLateral}</span>
             <span className="text-[9px] text-slate-400 block mt-0.5">
               Hu={recResult.recommendedPileSizing.appliedLateralShearKn}kN vs Cap={recResult.recommendedPileSizing.lateralCapacityKn}kN
             </span>
@@ -658,7 +720,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           <div>
             <span className="text-slate-400 block text-[10px]">{isEn ? '+20% Wind Gust Adequacy:' : 'مقاومت در باد تندباد (+20%):'}</span>
-            <span className={`font-mono font-bold text-sm ${recResult.sensitivityPlus20Wind.pileAdequate ? 'text-emerald-400' : 'text-amber-400'}`}>
+            <span className={`font-mono font-bold text-sm ${recResult.sensitivityPlus20Wind.pileAdequate ? 'text-industrial-success' : 'text-industrial-warning'}`}>
               {recResult.sensitivityPlus20Wind.pileAdequate ? 'ADEQUATE' : 'UPGRADE PROFILE'}
             </span>
             <span className="text-[9px] text-slate-400 block mt-0.5">
@@ -671,10 +733,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       {/* 6-Section Engineering Report Modal */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60">
-          <div className="relative w-full max-w-3xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-lg flex flex-col overflow-hidden text-slate-100">
-            <div className="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+          <div className="relative w-full max-w-3xl max-h-[90vh] bg-industrial-surface border border-industrial-border rounded-lg flex flex-col overflow-hidden text-slate-100">
+            <div className="px-5 py-3.5 bg-industrial-bg border-b border-industrial-border flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-sky-400" />
+                <FileText className="w-4 h-4 text-industrial-accent" />
                 <h3 className="font-bold text-sm text-white">{isEn ? 'Civil Foundation Engineering Sizing Report' : 'گزارش محاسبات ژئوتکنیک و سایزینگ فونداسیون'}</h3>
               </div>
               <button
@@ -694,7 +756,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       {/* Structure & Foundation Configuration Controls */}
       <div className="studio-card">
         <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-          <Hammer className="w-4 h-4 text-sky-400" />
+          <Hammer className="w-4 h-4 text-industrial-accent" />
           {isEn ? 'Mounting Table & Foundation Configuration:' : 'پیکربندی میز سازه و نوع فونداسیون:'}
         </h3>
 
@@ -770,9 +832,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
       {/* Structural Force Badges & Geotechnical Safety Checks */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Velocity Wind Pressure (q_z)' : 'فشار سرعتی باد (q_z)'}</div>
-          <div className="text-xl font-bold font-mono text-cyan-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
             {structResult.velocityWindPressureQzN_M2} <span className="text-xs font-normal">N/m²</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
@@ -780,7 +842,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Table Wind Uplift Force' : 'نیروی مکش باد بر هر میز (Uplift)'}</div>
           <div className="text-xl font-bold font-mono text-rose-400 mt-1">
             {structResult.windUpliftForceKn} <span className="text-xs font-normal">kN</span>
@@ -790,11 +852,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Post Bearing Pressure' : 'تنش باربری اعمالی به خاک'}</div>
           <div
             className={`text-xl font-bold font-mono mt-1 ${
-              structResult.isBearingCapacitySafe ? 'text-emerald-400' : 'text-rose-400'
+              structResult.isBearingCapacitySafe ? 'text-industrial-success' : 'text-rose-400'
             }`}
           >
             {structResult.appliedPostBearingPressureKpa} <span className="text-xs font-normal">kPa</span>
@@ -805,18 +867,18 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Overturning Safety Factor (FoS)' : 'ضریب اطمینان واژگونی (FoS)'}</div>
           <div
             className={`text-xl font-bold font-mono mt-1 ${
-              structResult.isStructurallySafe ? 'text-emerald-400' : 'text-rose-400'
+              structResult.isStructurallySafe ? 'text-industrial-success' : 'text-rose-400'
             }`}
           >
             {structResult.fosOverturning}
           </div>
           <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
             {structResult.isStructurallySafe ? (
-              <span className="text-emerald-400 flex items-center gap-1">
+              <span className="text-industrial-success flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Stable (FoS ≥ 1.5)' : 'مجاز (حداقل ۱.۵)'}
               </span>
             ) : (
@@ -832,42 +894,42 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Box 1: Foundation Technical Specifications */}
         <div className="studio-card">
-          <h3 className="text-sm font-bold text-sky-400 mb-3 flex items-center gap-2">
-            <Boxes className="w-4 h-4 text-emerald-400" />
+          <h3 className="text-sm font-bold text-industrial-accent mb-3 flex items-center gap-2">
+            <Boxes className="w-4 h-4 text-industrial-success" />
             {isEn ? 'Foundation & Geotechnical Dimensions:' : 'مشخصات ژئوتکنیکی و ابعاد فونداسیون:'}
           </h3>
 
           <div className="space-y-2.5 text-xs text-slate-300">
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Selected Foundation:' : 'نوع فونداسیون منتخب:'}</span>
               <strong className="text-white">
                 {isEn ? structResult.foundationNameEn : structResult.foundationNameFa}
               </strong>
             </div>
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Dimensions & Depth:' : 'ابعاد و عمق نفوذ در خاک:'}</span>
-              <span className="font-mono text-amber-300">
+              <span className="font-mono text-industrial-warning">
                 {isEn ? structResult.foundationDimensionsDescEn : structResult.foundationDimensionsDesc}
               </span>
             </div>
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Frost Penetration Depth Check:' : 'کنترل عمق یخبندان:'}</span>
-              <span className={`font-mono ${structResult.isFrostDepthRespected ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <span className={`font-mono ${structResult.isFrostDepthRespected ? 'text-industrial-success' : 'text-rose-400'}`}>
                 {structResult.recommendedDepthM * 100} cm &gt; {structResult.frostDepthCm} cm (
                 {structResult.isFrostDepthRespected ? (isEn ? '✓ Pass' : '✓ تأیید') : (isEn ? '✗ Too Shallow' : '✗ کم‌عمق')})
               </span>
             </div>
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Total Tables Count:' : 'تعداد کل میزهای سازه (Tables):'}</span>
               <span className="font-mono text-sky-300">
                 {structResult.totalTablesCount} {isEn ? 'tables' : 'میز'} ({structResult.postsPerTable} {isEn ? 'posts/table' : 'پایه در هر میز'})
               </span>
             </div>
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Total Piles / Posts:' : 'تعداد کل پایه‌ها / شمع‌های کوبشی:'}</span>
-              <strong className="font-mono text-emerald-400">{structResult.totalPostsCount} {isEn ? 'posts' : 'پایه'}</strong>
+              <strong className="font-mono text-industrial-success">{structResult.totalPostsCount} {isEn ? 'posts' : 'پایه'}</strong>
             </div>
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Compression Load per Post:' : 'نیروی فشاری روی هر پایه (Compression):'}</span>
               <span className="font-mono text-slate-200">{structResult.compressionPerPostKn} kN</span>
             </div>
@@ -880,37 +942,37 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
         {/* Box 2: Civil Works Bill of Materials (BOM) */}
         <div className="studio-card">
-          <h3 className="text-sm font-bold text-sky-400 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-industrial-accent mb-3 flex items-center gap-2">
             <Truck className="w-4 h-4 text-purple-400" />
             {isEn ? 'Civil Works Bill of Materials (BOM):' : 'احجام عملیات عمرانی و متره مواد مصرفی (Civil BOM):'}
           </h3>
 
           <div className="space-y-2.5 text-xs text-slate-300">
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Total Foundation Concrete:' : 'حجم کل بتن‌ریزی فونداسیون:'}</span>
-              <span className="font-mono font-bold text-emerald-400 text-sm">
+              <span className="font-mono font-bold text-industrial-success text-sm">
                 {structResult.concreteVolumeTotalM3} m³ {structResult.concreteVolumeTotalM3 === 0 && (isEn ? '(Zero for Rammed Steel Piles)' : '(صفر در روش پایه‌های کوبشی)')}
               </span>
             </div>
             {structResult.concreteVolumeTotalM3 > 0 && (
               <>
-                <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+                <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
                   <span className="text-slate-400">{isEn ? 'C25 Cement Bags Required:' : 'تعداد کیسه سیمان مورد نیاز (C25):'}</span>
                   <span className="font-mono text-sky-300">
                     ~{structResult.cementBagsCount} {isEn ? 'bags (50kg)' : 'کیسه ۵۰ کیلویی'}
                   </span>
                 </div>
-                <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+                <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
                   <span className="text-slate-400">{isEn ? 'Sand & Washed Gravel:' : 'شن و ماسه شسته:'}</span>
                   <span className="font-mono text-slate-200">{structResult.sandGravelTon} {isEn ? 'tons' : 'تن'}</span>
                 </div>
-                <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+                <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
                   <span className="text-slate-400">{isEn ? 'Total Steel Rebar Cages:' : 'وزن کل آرماتور و میلگرد مسلح:'}</span>
-                  <span className="font-mono text-amber-300">{structResult.steelRebarWeightTotalKg} kg</span>
+                  <span className="font-mono text-industrial-warning">{structResult.steelRebarWeightTotalKg} kg</span>
                 </div>
               </>
             )}
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Galvanized Racking Weight:' : 'وزن کل استراکچر فولادی گالوانیزه:'}</span>
               <span className="font-mono font-bold text-white">
                 {(structResult.structuralSteelRackingWeightKg / 1000).toFixed(1)} {isEn ? 'tons HDG Steel' : 'تن فولاد گالوانیزه گرم'}
@@ -925,9 +987,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       </div>
 
       {/* Engineering Signoff Banner */}
-      <div className="studio-card bg-slate-900/90 border border-slate-800">
+      <div className="studio-card bg-industrial-surface/90 border border-industrial-border">
         <div className="flex items-start gap-3">
-          <div className="p-2 rounded bg-sky-500/10 border border-sky-500/30 text-sky-400 mt-0.5">
+          <div className="p-2 rounded bg-industrial-accent/10 border border-industrial-accent/30 text-industrial-accent mt-0.5">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
@@ -938,11 +1000,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               {isEn ? structResult.engineeringRemarksEn : structResult.engineeringRemarksFa}
             </p>
             <div className="flex flex-wrap gap-2 text-[11px] text-slate-400 font-mono">
-              <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">INBC Part 6 (مبحث ۶ مقررات ملی)</span>
-              <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">ASCE 7-22 Wind Criteria</span>
-              <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">ACI 318 Concrete Piers</span>
-              <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">ASTM A123 Hot-Dip Galvanizing</span>
-              <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">Iranian Standard 2800 (Seismic)</span>
+              <span className="px-2 py-0.5 rounded bg-slate-800 border border-industrial-border">INBC Part 6 (مبحث ۶ مقررات ملی)</span>
+              <span className="px-2 py-0.5 rounded bg-slate-800 border border-industrial-border">ASCE 7-22 Wind Criteria</span>
+              <span className="px-2 py-0.5 rounded bg-slate-800 border border-industrial-border">ACI 318 Concrete Piers</span>
+              <span className="px-2 py-0.5 rounded bg-slate-800 border border-industrial-border">ASTM A123 Hot-Dip Galvanizing</span>
+              <span className="px-2 py-0.5 rounded bg-slate-800 border border-industrial-border">Iranian Standard 2800 (Seismic)</span>
             </div>
           </div>
         </div>

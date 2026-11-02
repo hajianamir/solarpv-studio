@@ -287,15 +287,15 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl md:text-2xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Eye className="w-6 h-6 text-sky-400" />
+        <h1 className="text-xl md:text-2xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Eye className="w-6 h-6 text-industrial-accent" />
           {isEn
             ? 'Interactive 3D Photovoltaic & Shading Viewport'
             : 'نمای سه‌بعدی تعاملی چیدمان نیروگاه و سایه‌اندازی (3D WebGL Viewer)'}
         </h1>
         <p className="text-slate-400 text-xs md:text-sm">
           {isEn
-            ? 'Real-time WebGL ray-traced shadow simulation with movable solar altitude/azimuth and obstacle geometry.'
+            ? 'Real-time WebGL ray-traced  simulation with movable solar altitude/azimuth and obstacle geometry.'
             : 'شبیه‌سازی رندر بلادرنگ بردار تابش، طول سایه موانع و استراکچرها و محاسبه نسبت دسترسی نوری'}
         </p>
       </div>
@@ -304,7 +304,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
         {/* Responsive Control Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <div className="flex items-center gap-2 text-xs md:text-sm text-slate-300">
-            <Layers className="w-4 h-4 text-sky-400 shrink-0" />
+            <Layers className="w-4 h-4 text-industrial-accent shrink-0" />
             <span className="font-semibold">{isEn ? '3D WebGL Viewport' : 'محیط سه‌بعدی WebGL'}</span>
             <span className="text-[11px] text-slate-400">
               {isEn ? '(Touch or drag to rotate view)' : '(لمس یا درگ با ماوس جهت چرخش)'}
@@ -313,7 +313,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
 
           {/* Sliders Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-300 w-full sm:w-auto">
-            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-900/60 p-1.5 rounded border border-slate-800">
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-industrial-surface/60 p-1.5 rounded border border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Tilt:' : 'شیب پنل:'}</span>
               <input
                 type="range"
@@ -323,10 +323,10 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
                 onChange={(e) => setTiltDeg(Number(e.target.value))}
                 className="w-20 accent-sky-400"
               />
-              <span className="font-mono text-sky-400 font-bold">{tiltDeg}°</span>
+              <span className="font-mono text-industrial-accent font-bold">{tiltDeg}°</span>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-900/60 p-1.5 rounded border border-slate-800">
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-industrial-surface/60 p-1.5 rounded border border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Altitude:' : 'ارتفاع خورشید:'}</span>
               <input
                 type="range"
@@ -336,10 +336,10 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
                 onChange={(e) => setSunAltitude(Number(e.target.value))}
                 className="w-20 accent-amber-400"
               />
-              <span className="font-mono text-amber-400 font-bold">{sunAltitude}°</span>
+              <span className="font-mono text-industrial-warning font-bold">{sunAltitude}°</span>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-900/60 p-1.5 rounded border border-slate-800">
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-industrial-surface/60 p-1.5 rounded border border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Azimuth:' : 'آزیموت:'}</span>
               <input
                 type="range"
@@ -349,7 +349,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
                 onChange={(e) => setSunAzimuth(Number(e.target.value))}
                 className="w-20 accent-amber-400"
               />
-              <span className="font-mono text-amber-400 font-bold">{sunAzimuth}°</span>
+              <span className="font-mono text-industrial-warning font-bold">{sunAzimuth}°</span>
             </div>
           </div>
         </div>
@@ -357,7 +357,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
         {/* 3D WebGL Canvas Container with Responsive Height */}
         <div
           ref={mountRef}
-          className="w-full h-[280px] sm:h-[380px] md:h-[450px] rounded-lg overflow-hidden border border-slate-700 bg-slate-950 relative cursor-grab active:cursor-grabbing touch-none"
+          className="w-full h-[280px] sm:h-[380px] md:h-[450px] rounded-lg overflow-hidden border border-industrial-border bg-industrial-bg relative cursor-grab active:cursor-grabbing touch-none"
         />
 
         {/* Bottom Action Bar */}
@@ -388,14 +388,14 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
               <span className="w-3 h-3 rounded bg-slate-600"></span> {isEn ? 'Obstacle' : 'مانع ساختمانی'}
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-amber-400"></span> {isEn ? 'Solar Vector' : 'بردار پرتو خورشید'}
+              <span className="w-3 h-3 rounded bg-industrial-warning"></span> {isEn ? 'Solar Vector' : 'بردار پرتو خورشید'}
             </span>
           </div>
         </div>
 
         {shadingResult !== null && (
           <div className="result-box mt-4 animate-fadeIn">
-            <h3 className="text-lg md:text-xl font-bold text-sky-400">
+            <h3 className="text-lg md:text-xl font-bold text-industrial-accent">
               {isEn ? 'Unshaded Solar Access:' : 'درصد دسترسی به تشعشع بدون سایه:'} {(shadingResult * 100).toFixed(1)}%
             </h3>
             <div className="text-xs text-slate-300 mt-1">

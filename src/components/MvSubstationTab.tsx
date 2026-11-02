@@ -26,8 +26,8 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-lg sm:text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-amber-400 shrink-0" />
+        <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-industrial-warning shrink-0" />
           {isFa
             ? 'مهندسی پست فشار متوسط، ترانسفورماتور و ارتینگ (MV/HV Substation & IEEE 80)'
             : 'MV/HV Collector Substation, Transformer & IEEE 80 Earth Grid Engineering'}
@@ -102,11 +102,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'ظرفیت ترانسفورماتور افزاینده' : 'Step-up Transformer Rating'}
           </div>
-          <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
             {subResult.transformer.ratedPowerMva} <span className="text-xs font-normal text-slate-300">MVA</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -114,11 +114,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'جریان اتصال کوتاه (Isc\'\')' : 'Initial Symmetrical SC (Isc\'\')'}
           </div>
-          <div className="text-xl font-bold font-mono text-red-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-error mt-1">
             {subResult.shortCircuit.initialSymmetricalIscKa} <span className="text-xs font-normal text-slate-300">kA</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -126,11 +126,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'قدرت قطع بریکر خلاء (VCB)' : 'VCB Breaking Capacity'}
           </div>
-          <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-success mt-1">
             {subResult.shortCircuit.breakingCapacityKa} <span className="text-xs font-normal text-slate-300">kA</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -138,7 +138,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'مقاومت کل مش ارتینگ پست (Rg)' : 'Substation Earth Resistance (Rg)'}
           </div>
@@ -157,64 +157,64 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Transformer Specs */}
         <div className="studio-card">
-          <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+          <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-industrial-warning shrink-0" />
             {isFa ? 'مشخصات فنی ترانسفورماتور قدرت (Power Transformer)' : 'Step-Up Power Transformer Specifications'}
           </h3>
           <div className="space-y-2 text-xs text-slate-300">
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'تیپ ترانسفورماتور:' : 'Cooling Type:'}</span>
               <strong className="text-white">{subResult.transformer.coolingType}</strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'گروه برداری (Vector Group):' : 'Vector Group:'}</span>
               <strong className="text-sky-300 font-mono">{subResult.transformer.vectorGroup}</strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'نسبت تبدیل ولتاژ:' : 'Voltage Ratio:'}</span>
               <strong className="text-white font-mono">{inverterVoltageV}V / {gridVoltageKv}kV</strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'تلفات بی‌باری (هسته P0):' : 'No-Load Core Losses (P0):'}</span>
-              <strong className="text-amber-400 font-mono">{subResult.transformer.noLoadLossesKw} kW</strong>
+              <strong className="text-industrial-warning font-mono">{subResult.transformer.noLoadLossesKw} kW</strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'تلفات بارداری (سیم‌پیچ Pk):' : 'Load Copper Losses (Pk):'}</span>
-              <strong className="text-amber-400 font-mono">{subResult.transformer.loadLossesKw} kW</strong>
+              <strong className="text-industrial-warning font-mono">{subResult.transformer.loadLossesKw} kW</strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'راندمان در بار کامل:' : 'Full-Load Efficiency:'}</span>
-              <strong className="text-emerald-400 font-mono">{subResult.transformer.efficiencyAtFullLoadPct}%</strong>
+              <strong className="text-industrial-success font-mono">{subResult.transformer.efficiencyAtFullLoadPct}%</strong>
             </div>
           </div>
         </div>
 
         {/* IEEE 80 Earthing Grid */}
         <div className="studio-card">
-          <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
+          <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
             <Anchor className="w-4 h-4 text-teal-400 shrink-0" />
             {isFa ? 'طراحی مش ارتینگ پست بر اساس استاندارد IEEE 80' : 'Substation Grounding Grid Design (IEEE 80)'}
           </h3>
           <div className="space-y-2 text-xs text-slate-300">
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'سطح مقطع هادی مسی مش ارت:' : 'Grid Conductor Size:'}</span>
               <strong className="text-teal-300 font-mono text-sm">{subResult.earthing.groundGridConductorMm2} mm² Cu</strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'حد ولتاژ تماس مجاز (Touch):' : 'Tolerable Touch Voltage:'}</span>
               <strong className="text-white font-mono">{subResult.earthing.touchVoltageLimitVolts} V</strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'حد ولتاژ گام مجاز (Step):' : 'Tolerable Step Voltage:'}</span>
               <strong className="text-white font-mono">{subResult.earthing.stepVoltageLimitVolts} V</strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'مقاومت الکتریکی کل مش زمین:' : 'Grid Resistance (Rg):'}</span>
-              <strong className="text-emerald-400 font-mono font-bold text-sm">
+              <strong className="text-industrial-success font-mono font-bold text-sm">
                 {subResult.earthing.calculatedGridResistanceOhms} Ω (&lt; 1.0 Ω)
               </strong>
             </div>
-            <div className="flex justify-between p-2 bg-slate-900/60 rounded">
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'کنترل توان راکتیو Q(U):' : 'Reactive Power Support Q(U):'}</span>
               <strong className="text-sky-300 font-mono">{subResult.reactivePowerCapacityMvar} Mvar ({subResult.powerFactorRange})</strong>
             </div>
@@ -224,10 +224,10 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
 
       {/* Switchgear & Engineering Notes */}
       <div className="studio-card">
-        <h3 className="font-bold text-sky-400 text-sm mb-2">
+        <h3 className="font-bold text-industrial-accent text-sm mb-2">
           {isFa ? 'تجهیزات تابلویی و رله‌های حفاظتی فشار متوسط (MV Switchgear)' : 'Medium-Voltage Switchgear & Protection Relays'}
         </h3>
-        <p className="text-xs text-slate-300 bg-slate-900/60 p-3 rounded-lg border border-slate-700/60 mb-3">
+        <p className="text-xs text-slate-300 bg-industrial-surface/60 p-3 rounded-lg border border-industrial-border/60 mb-3">
           {isFa ? subResult.switchgearDescriptionFa : 'Gas-Insulated Ring Main Unit (GIS RMU) with integrated vacuum circuit breaker (VCB), motorized disconnectors, numerical multifunctional protection relay (50/51/51N/27/59/81), surge arresters (Class 2), and SCADA telecontrol gateway.'}
         </p>
 
@@ -239,7 +239,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
             'Harmonic filter connection point provisioned at main 20kV/33kV MV busbar.'
           ]).map((note, i) => (
             <div key={i} className="flex items-start gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-industrial-success shrink-0 mt-0.5" />
               <span>{note}</span>
             </div>
           ))}

@@ -108,7 +108,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Sub-Tab Navigation Header */}
-      <div className="flex border-b border-slate-800 pb-2 gap-2">
+      <div className="flex border-b border-industrial-border pb-2 gap-2">
         <button
           onClick={() => setActiveSubTab('sizing')}
           className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-colors ${
@@ -128,7 +128,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Eye className="w-4 h-4 text-amber-400" />
+          <Eye className="w-4 h-4 text-industrial-warning" />
           <span>{isEn ? '3D Shading & Sun Path Analysis' : 'تحلیل سه‌بعدی سایه‌اندازی و مسیر خورشید'}</span>
         </button>
       </div>
@@ -143,8 +143,8 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
         <div className="space-y-6">
           {/* Title Card */}
           <div className="studio-card">
-            <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-              <Sun className="w-5 h-5 text-amber-400" />
+            <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+              <Sun className="w-5 h-5 text-industrial-warning" />
               {isEn
                 ? 'PV Array Sizing & Inverter Clustering (IEC 62548)'
                 : 'مهندسی آرایه فتوولتائیک و کلاسترینگ اینورتر (PV Array & Inverter Engineering)'}
@@ -164,7 +164,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 <label className="text-xs font-semibold text-slate-300">
                   {isEn ? 'Select PV Module Model:' : 'انتخاب مدل پنل فتوولتائیک:'}
                 </label>
-                <span className="text-amber-400 font-mono font-bold text-xs">{selectedModule.pmpWatts}W TOPCon</span>
+                <span className="text-industrial-warning font-mono font-bold text-xs">{selectedModule.pmpWatts}W TOPCon</span>
               </div>
 
               {/* Module Search Bar */}
@@ -209,10 +209,10 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 ))}
               </select>
 
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-300 bg-slate-900/60 p-2.5 rounded border border-slate-700/60">
-                <div>Voc: <strong className="font-mono text-sky-400">{selectedModule.vocVolts}V</strong></div>
-                <div>Vmp: <strong className="font-mono text-sky-400">{selectedModule.vmpVolts}V</strong></div>
-                <div>Isc: <strong className="font-mono text-emerald-400">{selectedModule.iscAmps}A</strong></div>
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-300 bg-industrial-surface/60 p-2.5 rounded border border-industrial-border/60">
+                <div>Voc: <strong className="font-mono text-industrial-accent">{selectedModule.vocVolts}V</strong></div>
+                <div>Vmp: <strong className="font-mono text-industrial-accent">{selectedModule.vmpVolts}V</strong></div>
+                <div>Isc: <strong className="font-mono text-industrial-success">{selectedModule.iscAmps}A</strong></div>
                 <div>{isEn ? 'Voc Temp Coeff:' : 'ضریب دما Voc:'} <span className="font-mono">{selectedModule.tempCoeffVocPct}%/°C</span></div>
                 <div>{isEn ? 'Pmp Temp Coeff:' : 'ضریب دما Pmp:'} <span className="font-mono">{selectedModule.tempCoeffPmpPct}%/°C</span></div>
                 <div>{isEn ? 'Dimensions:' : 'ابعاد:'} <span className="font-mono">{selectedModule.lengthM.toFixed(2)}×{selectedModule.widthM.toFixed(2)}m</span></div>
@@ -225,7 +225,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 <label className="text-xs font-semibold text-slate-300">
                   {isEn ? 'Select Solar Inverter Model:' : 'انتخاب مدل اینورتر خورشیدی:'}
                 </label>
-                <span className="text-sky-400 font-mono font-bold text-xs">{selectedInverter.pnomAcKw} kW AC</span>
+                <span className="text-industrial-accent font-mono font-bold text-xs">{selectedInverter.pnomAcKw} kW AC</span>
               </div>
 
               {/* Inverter Quick Category Tabs */}
@@ -264,7 +264,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                     type="button"
                     onClick={() => setInverterCategory('hybrid')}
                     className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${
-                      inverterCategory === 'hybrid' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-emerald-300 hover:text-white'
+                      inverterCategory === 'hybrid' ? 'bg-industrial-success text-white' : 'bg-slate-800 text-industrial-success hover:text-white'
                     }`}
                   >
                     {isEn ? 'Hybrid / Off-Grid' : 'هیبرید و آفگرید'}
@@ -320,36 +320,36 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 ))}
               </select>
 
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-300 bg-slate-900/60 p-2.5 rounded border border-slate-700/60">
-                <div>Vdc Max: <strong className="font-mono text-red-400">{selectedInverter.vdcMaxVolts}V</strong></div>
-                <div>MPPT Min: <strong className="font-mono text-sky-400">{selectedInverter.vmpptMinVolts}V</strong></div>
-                <div>MPPT Max: <strong className="font-mono text-sky-400">{selectedInverter.vmpptMaxVolts}V</strong></div>
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-300 bg-industrial-surface/60 p-2.5 rounded border border-industrial-border/60">
+                <div>Vdc Max: <strong className="font-mono text-industrial-error">{selectedInverter.vdcMaxVolts}V</strong></div>
+                <div>MPPT Min: <strong className="font-mono text-industrial-accent">{selectedInverter.vmpptMinVolts}V</strong></div>
+                <div>MPPT Max: <strong className="font-mono text-industrial-accent">{selectedInverter.vmpptMaxVolts}V</strong></div>
                 <div>{isEn ? 'MPPT Channels:' : 'تعداد MPPT:'} <span className="font-mono font-bold">{selectedInverter.mpptChannelsCount} {isEn ? 'Ch' : 'کانال'}</span></div>
                 <div>{isEn ? 'Phases:' : 'سیستم فاز:'} <span>{selectedInverter.isThreePhase ? (isEn ? 'Three-Phase 400/800V' : 'سه فاز') : (isEn ? 'Single-Phase 230V' : 'تکفاز')}</span></div>
-                <div>{isEn ? 'Efficiency:' : 'راندمان:'} <span className="font-mono text-emerald-400">{selectedInverter.efficiencyMaxPct}%</span></div>
+                <div>{isEn ? 'Efficiency:' : 'راندمان:'} <span className="font-mono text-industrial-success">{selectedInverter.efficiencyMaxPct}%</span></div>
               </div>
             </div>
           </div>
 
           {/* Sizing & String Configuration Results */}
           <div className="studio-card">
-            <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-sky-400" />
+            <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-industrial-accent" />
               {isEn ? 'Array String Configuration & MPPT Verification' : 'پیکربندی استرینگ‌ها و آرایه خورشیدی (String Configuration)'}
             </h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-4">
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">{isEn ? 'Total Array DC Peak' : 'توان کل آرایه DC'}</span>
-                <span className="text-lg font-bold font-mono text-amber-400">
+                <span className="text-lg font-bold font-mono text-industrial-warning">
                   {arrayDesign.totalPvCapacityKwp.toFixed(2)} kWp
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">{arrayDesign.totalModulesCount} {isEn ? 'Modules' : 'عدد پنل'}</span>
               </div>
 
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">{isEn ? 'String Architecture' : 'پیکربندی رشته‌ها'}</span>
-                <span className="text-lg font-bold font-mono text-sky-400">
+                <span className="text-lg font-bold font-mono text-industrial-accent">
                   {arrayDesign.parallelStringsCount}P × {arrayDesign.modulesPerString}S
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -359,9 +359,9 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">{isEn ? 'Coldest Day Voc,max' : 'ولتاژ سردترین روز (Voc,max)'}</span>
-                <span className="text-lg font-bold font-mono text-cyan-400">
+                <span className="text-lg font-bold font-mono text-industrial-accent">
                   {arrayDesign.stringVocMaxColdVolts.toFixed(1)} V
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -370,9 +370,9 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">{isEn ? 'DC-to-AC Ratio (ILR)' : 'نسبت DC به AC'}</span>
-                <span className="text-lg font-bold font-mono text-emerald-400">
+                <span className="text-lg font-bold font-mono text-industrial-success">
                   {arrayDesign.dcAcRatio.toFixed(2)}
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -382,7 +382,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             </div>
 
             {/* Area and Inter-row shading */}
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-700/60 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3 bg-industrial-surface/60 rounded-lg border border-industrial-border/60 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <span className="text-slate-400 block">{isEn ? 'Net Module Active Area:' : 'مساحت خالص پنل‌ها:'}</span>
                 <span className="text-white font-mono font-bold text-sm">
@@ -398,7 +398,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 block">{isEn ? 'Gross Land Footprint Area:' : 'مساحت ناخالص عرصه مورد نیاز:'}</span>
-                <span className="text-emerald-400 font-mono font-bold text-sm">
+                <span className="text-industrial-success font-mono font-bold text-sm">
                   {Math.round(arrayDesign.grossRequiredLandAreaM2)} {isEn ? 'm²' : 'متر مربع'}
                 </span>
                 <span className="text-[10px] text-slate-400 block">{isEn ? 'Includes access aisles & buffer' : 'شامل راهروهای دسترسی و نگهداری'}</span>
@@ -407,10 +407,10 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
 
             {/* Warnings */}
             {arrayDesign.warnings.length > 0 && (
-              <div className="mt-3 p-2.5 bg-amber-950/40 border border-amber-600/50 rounded-lg text-xs text-amber-200 space-y-1">
+              <div className="mt-3 p-2.5 bg-industrial-warning/20 border border-industrial-warning/50 rounded-lg text-xs text-industrial-warning space-y-1">
                 {arrayDesign.warnings.map((w, idx) => (
                   <div key={idx} className="flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-industrial-warning shrink-0" />
                     <span>{w}</span>
                   </div>
                 ))}
@@ -421,17 +421,17 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
           {/* Inverter Clustering & Auto Voltage Stepping */}
           <div className="studio-card">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-sky-400 text-sm flex items-center gap-2">
-                <Zap className="w-4 h-4 text-emerald-400" />
+              <h3 className="font-bold text-industrial-accent text-sm flex items-center gap-2">
+                <Zap className="w-4 h-4 text-industrial-success" />
                 {isEn ? 'Auto-Stepping & Inverter Paralleling Architecture' : 'سیستم تطبیق خودکار و کلاسترینگ اینورترها (Auto-Stepping & Paralleling)'}
               </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-800 text-sky-300 border border-slate-700">
+              <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-800 text-sky-300 border border-industrial-border">
                 {isEn ? 'Class:' : 'کلاس:'} {isEn ? inverterClustering.engineeringClass.titleEn : inverterClustering.engineeringClass.titleFa}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-4">
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">{isEn ? 'Nominal Busbar DC Voltage' : 'ولتاژ نامی باسبار DC (Auto-Stepped)'}</span>
                 <span className="text-xl font-bold font-mono text-purple-400">
                   {inverterClustering.recommendedDcVoltageVdc} V DC
@@ -441,9 +441,9 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">{isEn ? 'Required Inverter Units' : 'تعداد اینورترهای پارالل مورد نیاز'}</span>
-                <span className="text-xl font-bold font-mono text-sky-400">
+                <span className="text-xl font-bold font-mono text-industrial-accent">
                   {inverterClustering.parallelUnitsCount} {isEn ? 'Units' : 'دستگاه'}
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -451,24 +451,24 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">{isEn ? 'Continuous / Surge DC Bus Current' : 'جریان پیوسته / هجومی باسبار DC'}</span>
                 <div className="font-mono text-slate-200 mt-1">
-                  {isEn ? 'Continuous:' : 'پیوسته:'} <strong className="text-emerald-400">{inverterClustering.inverterDcContinuousCurrentAmps.toFixed(1)}A</strong>
+                  {isEn ? 'Continuous:' : 'پیوسته:'} <strong className="text-industrial-success">{inverterClustering.inverterDcContinuousCurrentAmps.toFixed(1)}A</strong>
                 </div>
                 <div className="font-mono text-slate-200">
-                  {isEn ? 'Surge Peak:' : 'هجومی:'} <strong className="text-red-400">{inverterClustering.inverterDcSurgeCurrentAmps.toFixed(1)}A</strong>
+                  {isEn ? 'Surge Peak:' : 'هجومی:'} <strong className="text-industrial-error">{inverterClustering.inverterDcSurgeCurrentAmps.toFixed(1)}A</strong>
                 </div>
               </div>
             </div>
 
             {/* Health status badge */}
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-700/60 flex items-center justify-between">
+            <div className="p-3 bg-industrial-surface/60 rounded-lg border border-industrial-border/60 flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs">
                 {inverterClustering.healthStatus === 'compatible' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-industrial-success shrink-0" />
                 ) : (
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <AlertTriangle className="w-4 h-4 text-industrial-warning shrink-0" />
                 )}
                 <span className="font-semibold text-white">
                   {isEn
@@ -497,23 +497,23 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               const totalEffectiveKw = Number((inverterClustering.totalInverterCapacityKw * combinedFactor).toFixed(1));
 
               return (
-                <div className="mt-3 p-3 bg-slate-950/80 border border-slate-700/70 rounded-lg">
+                <div className="mt-3 p-3 bg-industrial-bg/80 border border-industrial-border/70 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-sky-300 flex items-center gap-1.5">
-                      <Sun className="w-3.5 h-3.5 text-amber-400" />
+                      <Sun className="w-3.5 h-3.5 text-industrial-warning" />
                       {isEn
                         ? 'Climatic & Elevation Inverter Derating (IEC 62109-1)'
                         : 'افت حرارتی و ارتفاعی اینورتر بر مبنای استاندارد IEC 62109-1'}
                     </span>
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                      totalDeratePct > 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      totalDeratePct > 0 ? 'bg-industrial-warning/20 text-industrial-warning border border-industrial-warning/40' : 'bg-industrial-success/20 text-industrial-success border border-emerald-500/40'
                     }`}>
                       {totalDeratePct > 0 ? `-${totalDeratePct}% Derating Applied` : '0% Full Nominal Power'}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                    <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Max Ambient Temp:' : 'دمای حداکثر محیط:'}</span>
                       <span className="font-mono font-bold text-slate-200">{city.tempMaxC}°C</span>
                       <span className="text-[9px] text-slate-400 block mt-0.5">
@@ -521,7 +521,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                       </span>
                     </div>
 
-                    <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                    <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Site Elevation:' : 'ارتفاع از سطح دریا:'}</span>
                       <span className="font-mono font-bold text-slate-200">{city.elevationM} m</span>
                       <span className="text-[9px] text-slate-400 block mt-0.5">
@@ -529,17 +529,17 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                       </span>
                     </div>
 
-                    <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                    <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Derated Unit AC Rating:' : 'توان موثر هر دستگاه:'}</span>
-                      <span className="font-mono font-bold text-amber-300">{deratedUnitKw} kW</span>
+                      <span className="font-mono font-bold text-industrial-warning">{deratedUnitKw} kW</span>
                       <span className="text-[9px] text-slate-400 block mt-0.5">
                         Nominal: {selectedInverter.pnomAcKw} kW
                       </span>
                     </div>
 
-                    <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                    <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Effective Plant AC Output:' : 'خروجی خالص موثر کل:'}</span>
-                      <span className="font-mono font-bold text-emerald-300">{totalEffectiveKw} kW</span>
+                      <span className="font-mono font-bold text-industrial-success">{totalEffectiveKw} kW</span>
                       <span className="text-[9px] text-slate-400 block mt-0.5">
                         {inverterClustering.parallelUnitsCount} units in parallel
                       </span>

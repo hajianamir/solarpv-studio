@@ -39,8 +39,8 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Grid className="w-5 h-5 text-amber-400" />
+        <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Grid className="w-5 h-5 text-industrial-warning" />
           {isEn
             ? '2D Powerplant CAD Layout & Civil Siting'
             : 'طراحی آرایش دوبعدی نیروگاه خورشیدی (2D/3D Powerplant CAD Layout & Siting)'}
@@ -149,9 +149,9 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div className="flex items-end">
-            <div className="p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg w-full text-center">
+            <div className="p-2.5 bg-industrial-surface border border-industrial-border/80 rounded-lg w-full text-center">
               <span className="text-[10px] text-slate-400 block">{isEn ? 'Estimated Capacity:' : 'ظرفیت کل زمین:'}</span>
-              <span className="text-base font-bold font-mono text-amber-400">
+              <span className="text-base font-bold font-mono text-industrial-warning">
                 {cadResult.installedCapacityDcMwp.toFixed(2)} MWp
               </span>
             </div>
@@ -161,9 +161,9 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Total Module Count' : 'تعداد کل پنل‌ها'}</div>
-          <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
             {cadResult.totalModulesCount.toLocaleString()}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -171,15 +171,15 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Ground Coverage Ratio (GCR)' : 'نسبت پوشش زمین (GCR)'}</div>
-          <div className="text-xl font-bold font-mono text-sky-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
             {(cadResult.groundCoverageRatioGcr * 100).toFixed(1)}%
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
             {cadResult.groundCoverageRatioGcr <= 0.45
               ? isEn
-                ? '✓ Optimal (No critical shadow)'
+                ? '✓ Optimal (No critical )'
                 : '✓ بدون سایه بحرانی'
               : isEn
               ? 'Dense layout'
@@ -187,7 +187,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Total Land Footprint' : 'مساحت کل عرصه زمین'}</div>
           <div className="text-xl font-bold font-mono text-purple-400 mt-1">
             {cadResult.totalLandAreaHectares} <span className="text-xs font-normal text-slate-300">{isEn ? 'Ha' : 'هکتار'}</span>
@@ -195,7 +195,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           <div className="text-[10px] text-slate-400 mt-0.5">{cadResult.totalLandAreaM2.toLocaleString()} m²</div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Shading Limit Angle' : 'زاویه حد سایه‌اندازی (Limit)'}</div>
           <div className="text-xl font-bold font-mono text-teal-400 mt-1">
             {cadResult.shadingLimitAngleDeg}°
@@ -209,8 +209,8 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
       {/* Interactive 2D CAD Canvas */}
       <div className="studio-card">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <h3 className="font-bold text-sky-400 text-sm flex items-center gap-2">
-            <Layers className="w-4 h-4 text-sky-400" />
+          <h3 className="font-bold text-industrial-accent text-sm flex items-center gap-2">
+            <Layers className="w-4 h-4 text-industrial-accent" />
             {isEn
               ? 'CAD Spatial Layout of PV Tables, Internal Roads & MV Substations'
               : 'نقشه‌برداری CAD جانمایی استراکچرها، جاده‌ها و پست‌های فشار متوسط'}
@@ -219,21 +219,21 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           <div className="flex items-center gap-2 text-xs">
             <button
               onClick={() => setZoomLevel((prev) => Math.max(0.6, prev - 0.1))}
-              className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
+              className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-industrial-border"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
             <span className="font-mono text-slate-300 px-1">{Math.round(zoomLevel * 100)}%</span>
             <button
               onClick={() => setZoomLevel((prev) => Math.min(1.5, prev + 0.1))}
-              className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
+              className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-industrial-border"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        <div className="overflow-x-auto bg-slate-950 p-4 rounded-lg border border-slate-800 flex justify-center">
+        <div className="overflow-x-auto bg-industrial-bg p-4 rounded-lg border border-industrial-border flex justify-center">
           <div
             style={{
               transform: `scale(${zoomLevel})`,
@@ -353,7 +353,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
               {isEn ? 'MV Transformer & Inverter Substation' : 'پست ترانسفورماتور و اینورتر فشار متوسط (MV)'}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-4 h-1 bg-amber-500"></span>{' '}
+              <span className="w-4 h-1 bg-industrial-warning"></span>{' '}
               {isEn ? 'Internal Service & Maintenance Roads' : 'جاده‌های اصلی و راهروهای تعمیر و نگهداری'}
             </span>
           </div>

@@ -82,11 +82,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
     <div className="space-y-6">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'کل مصرف روزانه' : 'Total Daily Energy Consumption'}
           </div>
-          <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
             {analysisResult.totalDailyEnergyKwh.toFixed(2)} <span className="text-xs font-normal text-slate-300">kWh/day</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -94,12 +94,12 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'تفکیک مصرف روز / شب' : 'Day vs Night Split'}
           </div>
           <div className="text-sm font-mono text-slate-200 mt-1">
-            {isFa ? 'روز:' : 'Day:'} <span className="text-sky-400 font-bold">{(analysisResult.daytimeEnergyWh / 1000).toFixed(1)}k</span> | {isFa ? 'شب:' : 'Night:'}{' '}
+            {isFa ? 'روز:' : 'Day:'} <span className="text-industrial-accent font-bold">{(analysisResult.daytimeEnergyWh / 1000).toFixed(1)}k</span> | {isFa ? 'شب:' : 'Night:'}{' '}
             <span className="text-indigo-400 font-bold">{(analysisResult.nighttimeEnergyWh / 1000).toFixed(1)}k</span> Wh
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -107,11 +107,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'توان پیوسته اکتیو' : 'Continuous Active Power'}
           </div>
-          <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-success mt-1">
             {Math.round(analysisResult.continuousActivePowerWatts).toLocaleString()} <span className="text-xs font-normal text-slate-300">W</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -119,11 +119,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'حداکثر توان هجومی (Surge)' : 'Peak Inrush Surge Power'}
           </div>
-          <div className="text-xl font-bold font-mono text-red-400 mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-error mt-1">
             {Math.round(analysisResult.maxSurgePeakPowerWatts).toLocaleString()} <span className="text-xs font-normal text-slate-300">W</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -136,7 +136,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+            <Sparkles className="w-5 h-5 text-industrial-warning shrink-0" />
             <span className="font-semibold text-xs sm:text-sm text-slate-200">
               {isFa ? 'الگوهای مصرف از پیش‌آماده (Presets):' : 'Predefined Load Presets:'}
             </span>
@@ -163,7 +163,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
         </div>
 
         {selectedPresetId && (
-          <div className="mt-2 text-xs text-sky-400/90 bg-sky-950/40 p-2 rounded border border-sky-800/40">
+          <div className="mt-2 text-xs text-industrial-accent/90 bg-sky-950/40 p-2 rounded border border-sky-800/40">
             {isFa
               ? LOAD_PRESETS.find((p) => p.id === selectedPresetId)?.descriptionFa
               : LOAD_PRESETS.find((p) => p.id === selectedPresetId)?.descriptionEn}
@@ -174,8 +174,8 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
       {/* Loads Table */}
       <div className="studio-card overflow-hidden">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-sky-400 text-sm flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+          <h3 className="font-bold text-industrial-accent text-sm flex items-center gap-2">
+            <Zap className="w-4 h-4 text-industrial-warning shrink-0" />
             {isFa ? `لیست تجهیزات و بارهای الکتریکی (${loads.length} مورد)` : `Electrical Appliance Registry (${loads.length} items)`}
           </h3>
         </div>
@@ -189,7 +189,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
         ) : (
           <div className="overflow-x-auto -mx-3 sm:mx-0">
             <table className={`w-full text-xs text-slate-300 min-w-[700px] ${isFa ? 'text-right' : 'text-left'}`}>
-              <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-700">
+              <thead className="bg-industrial-surface/90 text-slate-400 border-b border-industrial-border">
                 <tr>
                   <th className="p-2.5">{isFa ? 'نام وسیله برقی' : 'Appliance Name'}</th>
                   <th className="p-2.5">{isFa ? 'دسته‌بندی' : 'Category'}</th>
@@ -212,7 +212,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           type="text"
                           value={item.name}
                           onChange={(e) => handleUpdateItem(item.id, 'name', e.target.value)}
-                          className="bg-transparent border-b border-slate-700 focus:border-sky-400 outline-none w-full text-xs text-white"
+                          className="bg-transparent border-b border-industrial-border focus:border-sky-400 outline-none w-full text-xs text-white"
                         />
                       </td>
                       <td className="p-2.5">
@@ -225,7 +225,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           type="number"
                           value={item.ratedWatts}
                           onChange={(e) => handleUpdateItem(item.id, 'ratedWatts', parseFloat(e.target.value) || 0)}
-                          className="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-emerald-400 font-mono"
+                          className="w-16 bg-industrial-surface border border-industrial-border rounded px-1.5 py-0.5 text-xs text-industrial-success font-mono"
                         />
                       </td>
                       <td className="p-2.5">
@@ -234,10 +234,10 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           step="0.1"
                           value={item.surgeMultiplier}
                           onChange={(e) => handleUpdateItem(item.id, 'surgeMultiplier', parseFloat(e.target.value) || 1)}
-                          className="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-red-300 font-mono"
+                          className="w-14 bg-industrial-surface border border-industrial-border rounded px-1.5 py-0.5 text-xs text-red-300 font-mono"
                         />
                         {item.surgeMultiplier > 2.0 && (
-                          <span className="text-[10px] text-red-400 mx-1" title={isFa ? 'بار موتوری هجومی' : 'Inductive Surge Load'}>⚡</span>
+                          <span className="text-[10px] text-industrial-error mx-1" title={isFa ? 'بار موتوری هجومی' : 'Inductive Surge Load'}>⚡</span>
                         )}
                       </td>
                       <td className="p-2.5">
@@ -246,7 +246,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           min="1"
                           value={item.quantity}
                           onChange={(e) => handleUpdateItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                          className="w-12 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs font-mono"
+                          className="w-12 bg-industrial-surface border border-industrial-border rounded px-1.5 py-0.5 text-xs font-mono"
                         />
                       </td>
                       <td className="p-2.5">
@@ -257,7 +257,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           max="12"
                           value={item.dayHours}
                           onChange={(e) => handleUpdateItem(item.id, 'dayHours', parseFloat(e.target.value) || 0)}
-                          className="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-sky-400 font-mono"
+                          className="w-14 bg-industrial-surface border border-industrial-border rounded px-1.5 py-0.5 text-xs text-industrial-accent font-mono"
                         />
                       </td>
                       <td className="p-2.5">
@@ -268,16 +268,16 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           max="12"
                           value={item.nightHours}
                           onChange={(e) => handleUpdateItem(item.id, 'nightHours', parseFloat(e.target.value) || 0)}
-                          className="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-indigo-400 font-mono"
+                          className="w-14 bg-industrial-surface border border-industrial-border rounded px-1.5 py-0.5 text-xs text-indigo-400 font-mono"
                         />
                       </td>
-                      <td className="p-2.5 font-mono text-amber-300 font-bold">
+                      <td className="p-2.5 font-mono text-industrial-warning font-bold">
                         {Math.round(itemDailyWh).toLocaleString()}
                       </td>
                       <td className="p-2.5 text-center">
                         <button
                           onClick={() => handleRemoveLoad(item.id)}
-                          className="text-slate-500 hover:text-red-400 p-1"
+                          className="text-slate-500 hover:text-industrial-error p-1"
                           title={isFa ? 'حذف' : 'Remove'}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -295,9 +295,9 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
       {/* Add Load Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-emerald-400" />
+          <div className="bg-industrial-surface border border-industrial-border rounded-xl p-5 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-industrial-success" />
               {isFa ? 'تعریف بار الکتریکی مصرف‌کننده جدید' : 'Add New Electrical Appliance'}
             </h3>
 
@@ -412,7 +412,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-industrial-border">
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}

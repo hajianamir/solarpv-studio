@@ -211,6 +211,35 @@ export class ClimateDataProvider {
   }
 
   /**
+   * Nominatim Forward Geocoding (OpenStreetMap) — resolves a free-text place query
+   * to candidate coordinates (city search / autocomplete). Falls back to an empty
+   * list when the API is unreachable (offline/sandbox environments).
+   */
+  public async forwardGeocodeNominatim(query: string): Promise<Array<{ lat: number; lon: number; display_name: string; type: string }>> {
+    if (!query.trim()) return [];
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=5&accept-language=fa+en`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+
+    try {
+      const resp = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!resp.ok) throw new Error(`Nominatim HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (!Array.isArray(data)) return [];
+      return data.map((item: any) => ({
+        lat: Number(item.lat),
+        lon: Number(item.lon),
+        display_name: String(item.display_name ?? item.lat + ', ' + item.lon),
+        type: String(item.type ?? 'place'),
+      }));
+    } catch {
+      clearTimeout(timeout);
+      return [];
+    }
+  }
+
+  /**
    * Free Building Footprint Detection using Overpass API (OpenStreetMap)
    * Alternative to Google Places API / Google Solar Rooftop API
    */

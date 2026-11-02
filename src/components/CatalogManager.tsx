@@ -67,8 +67,8 @@ export const CatalogManager: React.FC = () => {
       <div className="studio-card">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-              <Database className="w-6 h-6 text-sky-400" />
+            <h1 className="text-2xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+              <Database className="w-6 h-6 text-industrial-accent" />
               SolarPV Component Catalog
             </h1>
             <p className="text-slate-400 text-sm">
@@ -85,12 +85,12 @@ export const CatalogManager: React.FC = () => {
       </div>
 
       <div className="studio-card">
-        <div className="flex border-b border-slate-700 mb-4">
+        <div className="flex border-b border-industrial-border mb-4">
           <button
             onClick={() => setActiveTab('modules')}
             className={`py-2 px-4 text-sm font-semibold border-b-2 transition-colors ${
               activeTab === 'modules'
-                ? 'border-sky-400 text-sky-400'
+                ? 'border-sky-400 text-industrial-accent'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -100,7 +100,7 @@ export const CatalogManager: React.FC = () => {
             onClick={() => setActiveTab('inverters')}
             className={`py-2 px-4 text-sm font-semibold border-b-2 transition-colors ${
               activeTab === 'inverters'
-                ? 'border-sky-400 text-sky-400'
+                ? 'border-sky-400 text-industrial-accent'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -110,7 +110,7 @@ export const CatalogManager: React.FC = () => {
             onClick={() => setActiveTab('batteries')}
             className={`py-2 px-4 text-sm font-semibold border-b-2 transition-colors ${
               activeTab === 'batteries'
-                ? 'border-sky-400 text-sky-400'
+                ? 'border-sky-400 text-industrial-accent'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -126,7 +126,7 @@ export const CatalogManager: React.FC = () => {
           <div className="overflow-x-auto">
             {activeTab === 'modules' && (
               <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-900/80 text-xs uppercase text-slate-400">
+                <thead className="bg-industrial-surface/80 text-xs uppercase text-slate-400">
                   <tr>
                     <th className="p-3">Manufacturer</th>
                     <th className="p-3">Model</th>
@@ -141,7 +141,7 @@ export const CatalogManager: React.FC = () => {
                     <tr key={m.id} className="hover:bg-slate-800/50">
                       <td className="p-3 font-semibold text-white">{m.manufacturer}</td>
                       <td className="p-3 text-sky-300">{m.modelName}</td>
-                      <td className="p-3 font-mono font-bold text-emerald-400">{m.pmpWatts} W</td>
+                      <td className="p-3 font-mono font-bold text-industrial-success">{m.pmpWatts} W</td>
                       <td className="p-3 font-mono">{m.vocVolts} V</td>
                       <td className="p-3 font-mono">{m.vmpVolts} V</td>
                       <td className="p-3 font-mono text-xs">{m.betaVocPerC}/°C</td>
@@ -153,7 +153,7 @@ export const CatalogManager: React.FC = () => {
 
             {activeTab === 'inverters' && (
               <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-900/80 text-xs uppercase text-slate-400">
+                <thead className="bg-industrial-surface/80 text-xs uppercase text-slate-400">
                   <tr>
                     <th className="p-3">Manufacturer</th>
                     <th className="p-3">Model</th>
@@ -167,7 +167,7 @@ export const CatalogManager: React.FC = () => {
                     <tr key={inv.id} className="hover:bg-slate-800/50">
                       <td className="p-3 font-semibold text-white">{inv.manufacturer}</td>
                       <td className="p-3 text-sky-300">{inv.modelName}</td>
-                      <td className="p-3 font-mono font-bold text-emerald-400">{inv.pnomAcKw} kW</td>
+                      <td className="p-3 font-mono font-bold text-industrial-success">{inv.pnomAcKw} kW</td>
                       <td className="p-3 font-mono">{inv.vdcMaxVolts} V</td>
                       <td className="p-3 font-mono text-xs">
                         {inv.vmpptMinVolts}V - {inv.vmpptMaxVolts}V
@@ -180,7 +180,7 @@ export const CatalogManager: React.FC = () => {
 
             {activeTab === 'batteries' && (
               <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-900/80 text-xs uppercase text-slate-400">
+                <thead className="bg-industrial-surface/80 text-xs uppercase text-slate-400">
                   <tr>
                     <th className="p-3">Manufacturer</th>
                     <th className="p-3">Model</th>
@@ -194,7 +194,7 @@ export const CatalogManager: React.FC = () => {
                     <tr key={b.id} className="hover:bg-slate-800/50">
                       <td className="p-3 font-semibold text-white">{b.manufacturer}</td>
                       <td className="p-3 text-sky-300">{b.modelName}</td>
-                      <td className="p-3 font-mono font-bold text-emerald-400">{b.capacityKwh} kWh</td>
+                      <td className="p-3 font-mono font-bold text-industrial-success">{b.capacityKwh} kWh</td>
                       <td className="p-3 font-mono">{b.nominalVoltageVolts} V</td>
                       <td className="p-3 font-mono text-xs">{(b.depthOfDischargeMax * 100).toFixed(0)}%</td>
                     </tr>
@@ -209,8 +209,8 @@ export const CatalogManager: React.FC = () => {
       {/* Add Component Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-sky-400 mb-3">Add Photovoltaic Module</h3>
+          <div className="bg-slate-800 border border-industrial-border rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-industrial-accent mb-3">Add Photovoltaic Module</h3>
             <form onSubmit={handleAddModule} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Manufacturer</label>
@@ -265,7 +265,7 @@ export const CatalogManager: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-700">
+              <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-industrial-border">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}

@@ -12,6 +12,12 @@
  */
 
 import { FoundationType, SoilType } from './structuralEngine';
+import {
+  recommendSharedFoundation,
+  scoreFoundationOptions,
+  FoundationRecommendationInput,
+  FoundationRecommendationOutput,
+} from './geotech/foundationRecommendation';
 
 export interface StructuralRecommendationInput {
   siteName?: string;
@@ -83,162 +89,102 @@ export interface FoundationRecommendationResult {
   reportMarkdown: string;
 }
 
-export function recommendFoundation(input: StructuralRecommendationInput): FoundationRecommendationResult {
-  // Ambiguity A: every input comes from the caller (live climate/structural data or
-  // explicit user entry). No hard-coded defaults or fallbacks exist in this engine.
-  const tableArea = input.tableAreaM2;
-  const tilt = input.arrayTiltDeg;
-  const posts = input.postsPerTable;
-  const clearance = input.clearanceHeightM;
-  const slope = input.slopeDeg;
-  const frostM = input.frostDepthCm / 100.0;
-
-  // Environmental loads (ASCE 7-22 simplified)
-  const vMs = input.basicWindSpeedKmh / 3.6;
-  const qz = 0.5 * 1.225 * Math.pow(vMs, 2) * 1.0 * 0.85 / 1000.0; // kN/m²
-  const sk = (input.groundSnowLoadKgM2 * 9.81) / 1000.0; // kN/m²
-
-  // Forces per table and post
-  const tiltRad = (tilt * Math.PI) / 180.0;
-  const lateralWindForceTable = qz * tableArea * Math.sin(tiltRad) * 1.2; // kN
-  const lateralShearPerPost = lateralWindForceTable / posts;
-  const upliftPerPost = (qz * tableArea * 1.15) / posts;
-  const deadLoadPerPost = (tableArea * 22.0 * 9.81 / 1000.0) / posts; // ~0.22 kN/m² self weight
-  const compressionPerPost = ((sk * tableArea * Math.cos(tiltRad)) + (tableArea * 22.0 * 9.81 / 1000.0)) / posts;
-
-  // Multi-criteria scoring
-  const scores: FoundationOptionScore[] = [];
-
-  // 1. Rammed Steel Pile
-  let rammedScore = 85;
-  const rammedPros: string[] = ['Very fast installation (1.5-2.5 MW/week)', 'Lowest CAPEX for cohesive/granular soils', 'Zero concrete curing delay'];
-  const rammedCons: string[] = [];
-  if (input.soilClassification === 'rocky_limestone') {
-    rammedScore -= 50;
-    rammedCons.push('Refusal in shallow rock requires pre-drilling or concrete piers');
-  }
-  if (input.soilClassification === 'loose_sand') {
-    rammedScore -= 10;
-    rammedCons.push('Requires deeper embedment for lateral stability in loose sand');
-  }
-  if (slope > 15) {
-    rammedScore -= 15;
-    rammedCons.push('Difficult rig access on steep slopes');
-  }
-  scores.push({
+// Option definitions shared between engine and UI (single source of truth)
+const FOUNDATION_OPTIONS: FoundationOptionScore[] = [
+  {
     type: 'rammed_steel_pile',
     nameEn: 'Rammed Steel Pile (Driven W-Beam / C-Channel)',
     nameFa: 'پایه کوبشی فولادی (شمع پروفیل گرم‌نورد/C)',
-    suitabilityScore: Math.max(10, Math.min(98, rammedScore)),
+    suitabilityScore: 0, // set dynamically
     rank: 0,
-    pros: rammedPros,
-    cons: rammedCons.length > 0 ? rammedCons : ['Requires soil push/pull load testing on site'],
+    pros: ['Very fast installation (1.5-2.5 MW/week)', 'Lowest CAPEX for cohesive/granular soils', 'Zero concrete curing delay'],
+    cons: ['Requires soil push/pull load testing on site'],
     estimatedCapexUsdPerKw: 14.5,
     installSpeedMwPerWeek: 2.0,
-  });
-
-  // 2. Concrete Pier (Drilled Shaft)
-  let pierScore = 70;
-  const pierPros: string[] = ['Highest lateral and uplift resistance', 'Ideal for rocky/limestone or karst terrain', 'Excellent in high-wind regions (>140 km/h)'];
-  const pierCons: string[] = ['High concrete volume and water supply logistics', '28-day curing delay before mounting racks', 'Higher labor and machinery costs'];
-  if (input.soilClassification === 'rocky_limestone') {
-    pierScore += 25;
-  }
-  if (input.basicWindSpeedKmh > 140) {
-    pierScore += 10;
-  }
-  if (input.soilClassification === 'loose_sand') {
-    pierCons.push('Risk of borehole collapse; requires temporary steel casing');
-  }
-  scores.push({
+  },
+  {
     type: 'concrete_pier',
     nameEn: 'Drilled Concrete Pier (Cast-in-Place Shaft)',
     nameFa: 'شمع بتنی درجا (حفاری و بتن‌ریزی)',
-    suitabilityScore: Math.max(10, Math.min(95, pierScore)),
+    suitabilityScore: 0,
     rank: 0,
-    pros: pierPros,
-    cons: pierCons,
+    pros: ['Highest lateral and uplift resistance', 'Ideal for rocky/limestone or karst terrain', 'Excellent in high-wind regions (>140 km/h)'],
+    cons: ['High concrete volume and water supply logistics', '28-day curing delay before mounting racks', 'Higher labor and machinery costs'],
     estimatedCapexUsdPerKw: 24.0,
     installSpeedMwPerWeek: 0.6,
-  });
-
-  // 3. Ground Screw (Helical Anchor)
-  let screwScore = 75;
-  const screwPros: string[] = ['Excellent tensile uplift resistance', 'Suitable for undulating terrain and slopes up to 25°', 'Immediate loading capacity'];
-  const screwCons: string[] = ['Higher material unit cost than driven piles', 'Risk of blade damage in cobbles/boulders (>100mm)'];
-  if (slope > 8) {
-    screwScore += 15;
-    screwPros.push('Adapts easily to uneven grades and natural topography');
-  }
-  if (input.soilClassification === 'medium_clay' || input.soilClassification === 'loose_sand') {
-    screwScore += 5;
-  }
-  if (input.soilClassification === 'rocky_limestone') {
-    screwScore -= 40;
-    screwCons.push('Cannot penetrate solid rock without costly core-drilling');
-  }
-  scores.push({
+  },
+  {
     type: 'ground_screw',
     nameEn: 'Helical Ground Screw Anchor',
     nameFa: 'شمع پیچشی فولادی (Ground Screw)',
-    suitabilityScore: Math.max(10, Math.min(94, screwScore)),
+    suitabilityScore: 0,
     rank: 0,
-    pros: screwPros,
-    cons: screwCons,
+    pros: ['Excellent tensile uplift resistance', 'Suitable for undulating terrain and slopes up to 25°', 'Immediate loading capacity'],
+    cons: ['Higher material unit cost than driven piles', 'Risk of blade damage in cobbles/boulders (>100mm)'],
     estimatedCapexUsdPerKw: 19.5,
     installSpeedMwPerWeek: 1.2,
-  });
-
-  // 4. Ballasted Concrete Block
-  let blockScore = 40;
-  const blockPros: string[] = ['Zero soil penetration / zero ground disturbance', 'Suitable for brownfields, capped landfills, and rooftops'];
-  const blockCons: string[] = ['Extremely high concrete tonnage', 'Prone to differential settlement on soft soils', 'Susceptible to sliding under high wind'];
-  if (input.soilBearingCapacityKpa < 100) {
-    blockScore -= 20;
-    blockCons.push('Exceeds allowable bearing capacity of soft soils without engineered sub-base');
-  }
-  if (slope > 5) {
-    blockScore -= 25;
-    blockCons.push('Severe downhill sliding hazard on sloped terrain');
-  }
-  scores.push({
+  },
+  {
     type: 'rooftop_ballasted_block',
     nameEn: 'Surface Ballasted Concrete Block',
     nameFa: 'بلوک وزنی بتنی سطحی',
-    suitabilityScore: Math.max(5, Math.min(80, blockScore)),
+    suitabilityScore: 0,
     rank: 0,
-    pros: blockPros,
-    cons: blockCons,
+    pros: ['Zero soil penetration / zero ground disturbance', 'Suitable for brownfields, capped landfills, and rooftops'],
+    cons: ['Extremely high concrete tonnage', 'Prone to differential settlement on soft soils', 'Susceptible to sliding under high wind'],
     estimatedCapexUsdPerKw: 28.0,
     installSpeedMwPerWeek: 0.4,
+  },
+];
+
+export function recommendFoundation(input: StructuralRecommendationInput): FoundationRecommendationResult {
+  // Delegates to the shared geotech module (single source of truth — same code path
+  // used by coreSuiteVerification test suite and StructuralFoundationTab UI, so
+  // test embedment depth === UI embedment depth for every site).
+  const shared: FoundationRecommendationOutput = recommendSharedFoundation(input as FoundationRecommendationInput);
+
+  // Ranked options from the shared scorer, enriched with UI-only fields
+  // (CAPEX, installation speed). Score and rank come from scoreFoundationOptions only.
+  const scored = scoreFoundationOptions(input as FoundationRecommendationInput).sort((a, b) => b.score - a.score);
+  const optionMeta = new Map<FoundationType, FoundationOptionScore>(FOUNDATION_OPTIONS.map((o) => [o.type, o]));
+  const allRankedOptions: FoundationOptionScore[] = scored.map((s, idx) => {
+    const meta = optionMeta.get(s.type)!;
+    return {
+      ...meta,
+      suitabilityScore: s.score,
+      rank: idx + 1,
+      pros: s.pros,
+      cons: s.cons,
+    };
   });
 
-  // Sort by suitability score descending
-  scores.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
-  scores.forEach((item, idx) => {
-    item.rank = idx + 1;
-  });
+  const primary = scored[0].type;
 
-  const primary = scores[0].type;
-
-  // Broms Lateral Sizing for Steel Piles
-  const bromsResult = calculateBromsPileSizing(
-    lateralShearPerPost,
-    clearance,
-    frostM,
-    input.soilClassification,
-    input.soilBearingCapacityKpa,
-    input.soilInternalFrictionAngleDeg,
-    input.soilCohesionKpa,
-    input.soilDensityKnM3
-  );
+  // Frost constraint + pile sizing from shared module (no local Broms duplicate)
+  const frostM = input.frostDepthCm / 100.0;
+  const bromsResult: BromsPileSizingResult = {
+    pileSection: shared.pileSection as 'W6x9' | 'W6x12' | 'C150x50x2.5',
+    embedmentDepthM: shared.pileDepthM,
+    minDepthForFrostM: Number((frostM + 1.0).toFixed(2)),
+    lateralCapacityKn: shared.factorOfSafetyLateral > 0 ? shared.factorOfSafetyLateral * shared.lateralShearPerPostKn : 0,
+    appliedLateralShearKn: shared.lateralShearPerPostKn,
+    bendingMomentKnM: shared.lateralShearPerPostKn * (0.9 + 0.3 * shared.pileDepthM),
+    allowableMomentKnM: shared.pileSection === 'W6x12' ? 41.4 : shared.pileSection === 'C150x50x2.5' ? 12.1 : 31.4,
+    fosLateral: shared.factorOfSafetyLateral,
+    fosMoment: shared.factorOfSafetyMoment,
+    isFosSafe: shared.factorOfSafetyLateral >= 1.5 && shared.factorOfSafetyMoment >= 1.5,
+    notes: shared.rationale,
+  };
 
   // Sensitivity to +20% wind gust
+  const tiltRad = (input.arrayTiltDeg * Math.PI) / 180.0;
   const sensWindKmh = Math.round(input.basicWindSpeedKmh * 1.2);
   const sensVms = sensWindKmh / 3.6;
   const sensQz = 0.5 * 1.225 * Math.pow(sensVms, 2) * 1.0 * 0.85 / 1000.0;
-  const sensLateralShear = (sensQz * tableArea * Math.sin(tiltRad) * 1.2) / posts;
+  const sensLateralShear = (sensQz * input.tableAreaM2 * Math.sin(tiltRad) * 1.2) / input.postsPerTable;
   const sensFos = Number((bromsResult.lateralCapacityKn / Math.max(0.1, sensLateralShear)).toFixed(2));
+
+  const upliftPerPost = (shared.windPressureQzKnM2 * input.tableAreaM2 * 1.15) / input.postsPerTable;
 
   const disclaimer =
     'Disclaimer: Automated structural recommendations and Broms sizing are preliminary engineering estimates adhering to ASCE 7-22 / Eurocode 7 standards. A licensed Professional Engineer (PE) must perform site-specific geotechnical investigations (SPT/CPT boreholes) and pull-out/lateral load test verification prior to construction.';
@@ -247,12 +193,12 @@ export function recommendFoundation(input: StructuralRecommendationInput): Found
     input,
     primaryRecommendation: primary,
     recommendedPileSizing: bromsResult,
-    allRankedOptions: scores,
-    windPressureQzKnM2: Number(qz.toFixed(3)),
-    groundSnowPressureSkKnM2: Number(sk.toFixed(3)),
-    lateralShearPerPostKn: Number(lateralShearPerPost.toFixed(2)),
-    upliftPerPostKn: Number(upliftPerPost.toFixed(2)),
-    compressionPerPostKn: Number(compressionPerPost.toFixed(2)),
+    allRankedOptions,
+    windPressureQzKnM2: shared.windPressureQzKnM2,
+    groundSnowPressureSkKnM2: shared.snowPressureSkKnM2,
+    lateralShearPerPostKn: shared.lateralShearPerPostKn,
+    upliftPerPostKn: upliftPerPost,
+    compressionPerPostKn: shared.compressionPerPostKn,
     sensitivityPlus20Wind: {
       windSpeedKmh: sensWindKmh,
       lateralShearPerPostKn: Number(sensLateralShear.toFixed(2)),
@@ -265,104 +211,6 @@ export function recommendFoundation(input: StructuralRecommendationInput): Found
 
   result.reportMarkdown = generateFoundationEngineeringReport(result);
   return result;
-}
-
-/**
- * Broms (1964) Lateral Bearing Capacity Method for Driven Piles
- */
-function calculateBromsPileSizing(
-  lateralShearKn: number,
-  clearanceHeightM: number,
-  frostDepthM: number,
-  soilClass: SoilType,
-  qaKpa: number,
-  phiDeg: number,
-  cohesionKpa: number,
-  densityKnM3: number
-): BromsPileSizingResult {
-  const minDepthForFrost = Number((frostDepthM + 1.0).toFixed(2));
-  const pileWidthD = 0.15; // W6 section flange width ~ 150mm (0.15 m)
-
-  let requiredDepthM = minDepthForFrost;
-  let ultimateLateralCapacityKn = 0;
-  const leverArmM = clearanceHeightM;
-
-  if (soilClass === 'medium_clay') {
-    // Cohesive Soil: Broms short pile in clay: Hu_ult = 9 * cu * D * (L - 1.5*D) / (1 + (1.5*D + 0.5*f)/(e + L))
-    const cu = Math.max(25, cohesionKpa);
-    // Iteratively find depth L providing FoS >= 1.75
-    let testL = minDepthForFrost;
-    while (testL <= 4.0) {
-      const activeLength = Math.max(0.1, testL - 1.5 * pileWidthD);
-      const cap = (9.0 * cu * pileWidthD * activeLength) / (2.0 + leverArmM / testL);
-      if (cap >= lateralShearKn * 1.75 && testL >= minDepthForFrost) {
-        requiredDepthM = Number(testL.toFixed(2));
-        ultimateLateralCapacityKn = Number(cap.toFixed(1));
-        break;
-      }
-      testL += 0.1;
-    }
-    if (ultimateLateralCapacityKn === 0) {
-      requiredDepthM = 2.5;
-      ultimateLateralCapacityKn = Number(((9.0 * cu * pileWidthD * (2.5 - 1.5 * pileWidthD)) / 2.5).toFixed(1));
-    }
-  } else {
-    // Cohesionless Soil (Sand/Gravel): Broms short pile: Hu_ult = 0.5 * gamma * D * L^3 * Kp / (e + L)
-    const phiRad = (phiDeg * Math.PI) / 180.0;
-    const kp = Math.pow(Math.tan(Math.PI / 4 + phiRad / 2), 2);
-    const gamma = densityKnM3 > 0 ? densityKnM3 : 18.0;
-
-    let testL = minDepthForFrost;
-    while (testL <= 4.0) {
-      const cap = (0.5 * gamma * pileWidthD * Math.pow(testL, 3) * kp) / (leverArmM + testL);
-      if (cap >= lateralShearKn * 1.8 && testL >= minDepthForFrost) {
-        requiredDepthM = Number(testL.toFixed(2));
-        ultimateLateralCapacityKn = Number(cap.toFixed(1));
-        break;
-      }
-      testL += 0.1;
-    }
-    if (ultimateLateralCapacityKn === 0) {
-      requiredDepthM = 2.2;
-      ultimateLateralCapacityKn = Number(((0.5 * gamma * pileWidthD * Math.pow(2.2, 3) * kp) / (leverArmM + 2.2)).toFixed(1));
-    }
-  }
-
-  // Bending moment check
-  const bendingMomentKnM = Number((lateralShearKn * (leverArmM + 0.3 * requiredDepthM)).toFixed(2));
-
-  // Profile selection
-  // W6x9: Zx = 5.56 in³ = 91.1 cm³, Fy = 345 MPa -> M_allow = 31.4 kNm
-  // W6x12: Zx = 7.30 in³ = 120 cm³, Fy = 345 MPa -> M_allow = 41.4 kNm
-  // C150x50x2.5: Zx = 35 cm³, Fy = 345 MPa -> M_allow = 12.1 kNm
-  let pileSection: 'W6x9' | 'W6x12' | 'C150x50x2.5' = 'W6x9';
-  let allowableMomentKnM = 31.4;
-
-  if (bendingMomentKnM < 8.0 && lateralShearKn < 6.0) {
-    pileSection = 'C150x50x2.5';
-    allowableMomentKnM = 12.1;
-  } else if (bendingMomentKnM > 25.0 || lateralShearKn > 15.0) {
-    pileSection = 'W6x12';
-    allowableMomentKnM = 41.4;
-  }
-
-  const fosLateral = Number((ultimateLateralCapacityKn / Math.max(0.1, lateralShearKn)).toFixed(2));
-  const fosMoment = Number((allowableMomentKnM / Math.max(0.1, bendingMomentKnM)).toFixed(2));
-  const isSafe = fosLateral >= 1.5 && fosMoment >= 1.5 && requiredDepthM >= minDepthForFrost;
-
-  return {
-    pileSection,
-    embedmentDepthM: requiredDepthM,
-    minDepthForFrostM: minDepthForFrost,
-    lateralCapacityKn: ultimateLateralCapacityKn,
-    appliedLateralShearKn: Number(lateralShearKn.toFixed(2)),
-    bendingMomentKnM,
-    allowableMomentKnM,
-    fosLateral,
-    fosMoment,
-    isFosSafe: isSafe,
-    notes: `Selected ${pileSection} satisfies Broms lateral equilibrium with FoS=${fosLateral} and frost heave embedment constraint (L=${requiredDepthM}m >= ${minDepthForFrost}m).`,
-  };
 }
 
 /**

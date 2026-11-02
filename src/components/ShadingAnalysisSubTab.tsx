@@ -102,8 +102,8 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
       <div className="studio-card border border-sky-800/40">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg md:text-xl font-bold text-sky-400 flex items-center gap-2">
-              <Sun className="w-5 h-5 text-amber-400" />
+            <h2 className="text-lg md:text-xl font-bold text-industrial-accent flex items-center gap-2">
+              <Sun className="w-5 h-5 text-industrial-warning" />
               {isEn
                 ? '3D Geometric Shading & Sun Path Analysis (IEC 62548)'
                 : 'تحلیل پیشرفته هندسه سایه‌اندازی سه‌بعدی و مسیر خورشید (IEC 62548)'}
@@ -118,7 +118,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
             <span
               className={`text-xs px-2.5 py-1 rounded-md font-semibold border ${
                 shadingResult.isWinterNoonFreeOfShading
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  ? 'bg-industrial-success/10 text-industrial-success border-industrial-success/30'
                   : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
               }`}
             >
@@ -130,7 +130,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 ? 'Winter Noon Shading Detected'
                 : 'هشدار سایه‌اندازی در ظهر زمستان'}
             </span>
-            <span className="text-xs px-2.5 py-1 rounded-md font-semibold bg-sky-500/10 text-sky-300 border border-sky-500/30 font-mono">
+            <span className="text-xs px-2.5 py-1 rounded-md font-semibold bg-industrial-accent/10 text-sky-300 border border-industrial-accent/30 font-mono">
               GCR: {shadingResult.gcrPct}%
             </span>
           </div>
@@ -141,15 +141,15 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Col: Interactive Inputs */}
         <div className="studio-card space-y-4">
-          <h3 className="text-sm font-bold text-slate-200 border-b border-slate-700 pb-2 flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-sky-400" />
+          <h3 className="text-sm font-bold text-slate-200 border-b border-industrial-border pb-2 flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-industrial-accent" />
             {isEn ? 'Array Spacing & Geometry' : 'پارامترهای هندسی آرایه و فاصله ردیف‌ها'}
           </h3>
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1 flex justify-between">
               <span>{isEn ? 'Row Pitch Distance (m):' : 'فاصله محور تا محور ردیف‌ها (Pitch):'}</span>
-              <span className="text-sky-400 font-mono font-bold">{pitchDistanceM} m</span>
+              <span className="text-industrial-accent font-mono font-bold">{pitchDistanceM} m</span>
             </label>
             <input
               type="range"
@@ -162,7 +162,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
             />
             <div className="flex justify-between text-[10px] text-slate-500 mt-0.5">
               <span>4.0 m</span>
-              <span className="text-amber-400 font-mono">
+              <span className="text-industrial-warning font-mono">
                 {isEn ? 'Min Recommended:' : 'حداقل پیشنهادی:'} {shadingResult.recommendedMinPitchM} m
               </span>
               <span>15.0 m</span>
@@ -180,7 +180,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 max="50"
                 value={arrayTiltDeg}
                 onChange={(e) => setArrayTiltDeg(parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-white"
               />
             </div>
             <div>
@@ -194,7 +194,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 max="8.0"
                 value={tableSlopedWidthM}
                 onChange={(e) => setTableSlopedWidthM(parseFloat(e.target.value) || 2)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-white"
               />
             </div>
           </div>
@@ -211,7 +211,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 max="2.5"
                 value={groundClearanceM}
                 onChange={(e) => setGroundClearanceM(parseFloat(e.target.value) || 0.5)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-white"
               />
             </div>
             <div>
@@ -225,26 +225,26 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 max="60"
                 value={arrayAzimuthDeg}
                 onChange={(e) => setArrayAzimuthDeg(parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-white"
               />
             </div>
           </div>
 
           {/* Obstacle Sizing */}
-          <div className="pt-2 border-t border-slate-800">
+          <div className="pt-2 border-t border-industrial-border">
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hasObstacle}
                   onChange={(e) => setHasObstacle(e.target.checked)}
-                  className="rounded border-slate-700 text-sky-500 focus:ring-0"
+                  className="rounded border-industrial-border text-industrial-accent focus:ring-0"
                 />
                 <span>{isEn ? 'Simulate Nearby Obstacle / Parapet' : 'شبیه‌سازی مانع مجاور (دیوار، درخت، پست)'}</span>
               </label>
             </div>
             {hasObstacle && (
-              <div className="grid grid-cols-3 gap-2 bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/60">
+              <div className="grid grid-cols-3 gap-2 bg-slate-800/60 p-2.5 rounded-lg border border-industrial-border/60">
                 <div>
                   <span className="text-[10px] text-slate-400 block">{isEn ? 'Height (m)' : 'ارتفاع (m)'}</span>
                   <input
@@ -252,7 +252,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                     step="0.5"
                     value={obstacleHeightM}
                     onChange={(e) => setObstacleHeightM(parseFloat(e.target.value) || 1)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs text-white"
+                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-white"
                   />
                 </div>
                 <div>
@@ -262,7 +262,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                     step="0.5"
                     value={obstacleDistanceM}
                     onChange={(e) => setObstacleDistanceM(parseFloat(e.target.value) || 1)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs text-white"
+                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-white"
                   />
                 </div>
                 <div>
@@ -272,7 +272,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                     step="5"
                     value={obstacleAzimuthDeg}
                     onChange={(e) => setObstacleAzimuthDeg(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs text-white"
+                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-white"
                   />
                 </div>
               </div>
@@ -282,9 +282,9 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
 
         {/* Center & Right Col: Visual 2D Cross-Section SVG & Sun Simulation */}
         <div className="studio-card lg:col-span-2 space-y-4">
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-700 pb-2">
+          <div className="flex flex-wrap items-center justify-between border-b border-industrial-border pb-2">
             <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <Eye className="w-4 h-4 text-sky-400" />
+              <Eye className="w-4 h-4 text-industrial-accent" />
               {isEn ? 'Geometric Shadow Ray Cross-Section' : 'برش مقطع هندسی زاویه تابش خورشید و سایه بین‌ردیفی'}
             </h3>
             <div className="flex items-center gap-1.5">
@@ -316,13 +316,13 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
           </div>
 
           {/* Time of Day Slider */}
-          <div className="bg-slate-800/60 p-3 rounded-lg border border-slate-700/60">
+          <div className="bg-slate-800/60 p-3 rounded-lg border border-industrial-border/60">
             <div className="flex items-center justify-between text-xs mb-1.5">
               <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <Clock className="w-3.5 h-3.5 text-industrial-warning" />
                 {isEn ? 'Solar Hour of Day:' : 'ساعت خورشیدی روز:'}
               </span>
-              <span className="text-amber-400 font-mono font-bold text-sm">
+              <span className="text-industrial-warning font-mono font-bold text-sm">
                 {activeHour.toString().padStart(2, '0')}:00
               </span>
               <span className="text-slate-400 text-[11px] font-mono">
@@ -351,7 +351,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
           </div>
 
           {/* SVG Diagram */}
-          <div className="relative bg-slate-950/80 border border-slate-800 rounded-lg p-2 overflow-hidden flex items-center justify-center">
+          <div className="relative bg-industrial-bg/80 border border-industrial-border rounded-lg p-2 overflow-hidden flex items-center justify-center">
             <svg viewBox="0 0 700 240" className="w-full h-52 select-none">
               {/* Sky gradient background */}
               <defs>
@@ -380,7 +380,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
 
               {/* Sun Indicator */}
               <g transform="translate(130, 40)">
-                <circle cx="0" cy="0" r="16" fill="#fbbf24" filter="drop-shadow(0 0 12px #f59e0b)" />
+                <circle cx="0" cy="0" r="16" fill="#fbbf24" filter="drop-(0 0 12px #f59e0b)" />
                 <line x1="-24" y1="0" x2="24" y2="0" stroke="#fbbf24" strokeWidth="2" strokeDasharray="3 3" />
                 <line x1="0" y1="-24" x2="0" y2="24" stroke="#fbbf24" strokeWidth="2" strokeDasharray="3 3" />
                 <text x="24" y="5" fill="#fef08a" fontSize="11" fontFamily="monospace">
@@ -479,21 +479,21 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
 
           {/* Hour Status Details */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+            <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
               <span className="text-slate-400 block text-[11px]">
                 {isEn ? 'Linear Shadow Coverage' : 'درصد پوشش سایه خطی:'}
               </span>
-              <strong className="text-base font-mono text-sky-400">
+              <strong className="text-base font-mono text-industrial-accent">
                 {currentHourPoint.linearShadingFactorPct}%
               </strong>
             </div>
-            <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+            <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
               <span className="text-slate-400 block text-[11px]">
                 {isEn ? 'Bypass Diode Trigger' : 'تحریک دیودهای بای‌پاس:'}
               </span>
               <strong
                 className={`text-xs font-semibold ${
-                  currentHourPoint.isBypassDiodeTriggered ? 'text-rose-400' : 'text-emerald-400'
+                  currentHourPoint.isBypassDiodeTriggered ? 'text-rose-400' : 'text-industrial-success'
                 }`}
               >
                 {currentHourPoint.isBypassDiodeTriggered
@@ -505,15 +505,15 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                   : 'غیرفعال (تولید کامل)'}
               </strong>
             </div>
-            <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+            <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
               <span className="text-slate-400 block text-[11px]">
                 {isEn ? 'Electrical Shading Loss' : 'تلفات توان الکتریکی:'}
               </span>
-              <strong className="text-base font-mono text-amber-400">
+              <strong className="text-base font-mono text-industrial-warning">
                 {currentHourPoint.netCombinedShadingLossPct}%
               </strong>
             </div>
-            <div className="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+            <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
               <span className="text-slate-400 block text-[11px]">
                 {isEn ? 'Ground Shadow Length' : 'طول سایه روی زمین:'}
               </span>
@@ -529,10 +529,10 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
       <div className="studio-card">
         <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-sky-400" />
+            <Calendar className="w-4 h-4 text-industrial-accent" />
             {isEn ? '12-Month Shading & Derating Matrix (PVsyst Methodology)' : 'ماتریس ۱۲ ماهه تلفات سایه‌اندازی (متدولوژی PVsyst)'}
           </span>
-          <span className="text-xs text-sky-400 font-mono">
+          <span className="text-xs text-industrial-accent font-mono">
             {isEn ? 'Annual Beam Loss:' : 'افت سالانه پرتو مستقیم:'}{' '}
             <strong>{shadingResult.annualGeometricBeamLossPct}%</strong> |{' '}
             {isEn ? 'Effective Derate Factor:' : 'ضریب اصلاح سالانه:'}{' '}
@@ -544,9 +544,9 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
           <table className="w-full text-xs text-center border-collapse">
             <thead>
               <tr className="bg-slate-800/80 text-slate-300">
-                <th className="p-2 border border-slate-700">{isEn ? 'Month' : 'ماه'}</th>
+                <th className="p-2 border border-industrial-border">{isEn ? 'Month' : 'ماه'}</th>
                 {shadingResult.monthlyMatrix.map((m) => (
-                  <th key={m.monthIndex} className="p-2 border border-slate-700 font-medium">
+                  <th key={m.monthIndex} className="p-2 border border-industrial-border font-medium">
                     {isEn ? m.monthNameEn.substring(0, 3) : m.monthNameFa.split(' ')[0]}
                   </th>
                 ))}
@@ -554,17 +554,17 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
             </thead>
             <tbody>
               <tr>
-                <td className="p-2 border border-slate-700 font-semibold bg-slate-800/40 text-slate-300 text-right">
+                <td className="p-2 border border-industrial-border font-semibold bg-slate-800/40 text-slate-300 text-right">
                   {isEn ? 'Beam Shading Loss (%)' : 'تلفات هندسی پرتو (%)'}
                 </td>
                 {shadingResult.monthlyMatrix.map((m) => (
                   <td
                     key={m.monthIndex}
-                    className={`p-2 border border-slate-700 font-mono ${
+                    className={`p-2 border border-industrial-border font-mono ${
                       m.averageBeamLossPct > 5
                         ? 'bg-rose-500/20 text-rose-300 font-bold'
                         : m.averageBeamLossPct > 2
-                        ? 'bg-amber-500/10 text-amber-300'
+                        ? 'bg-industrial-warning/10 text-industrial-warning'
                         : 'text-slate-400'
                     }`}
                   >
@@ -573,18 +573,18 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 ))}
               </tr>
               <tr>
-                <td className="p-2 border border-slate-700 font-semibold bg-slate-800/40 text-slate-300 text-right">
+                <td className="p-2 border border-industrial-border font-semibold bg-slate-800/40 text-slate-300 text-right">
                   {isEn ? 'Electrical Mismatch (%)' : 'تلفات الکتریکی نهایی (%)'}
                 </td>
                 {shadingResult.monthlyMatrix.map((m) => (
                   <td
                     key={m.monthIndex}
-                    className={`p-2 border border-slate-700 font-mono ${
+                    className={`p-2 border border-industrial-border font-mono ${
                       m.averageElectricalLossPct > 10
                         ? 'bg-rose-500/30 text-rose-400 font-bold'
                         : m.averageElectricalLossPct > 4
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'text-emerald-400'
+                        ? 'bg-industrial-warning/20 text-industrial-warning'
+                        : 'text-industrial-success'
                     }`}
                   >
                     {m.averageElectricalLossPct}%
@@ -597,10 +597,10 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
 
         {/* Warnings & Engineering Recommendations */}
         {shadingResult.warningMessagesFa.length > 0 && (
-          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs space-y-1">
+          <div className="mt-4 p-3 bg-industrial-warning/10 border border-industrial-warning/30 rounded-lg text-xs space-y-1">
             {(isEn ? shadingResult.warningMessagesEn : shadingResult.warningMessagesFa).map((msg, idx) => (
-              <p key={idx} className="text-amber-300 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-400" />
+              <p key={idx} className="text-industrial-warning flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-industrial-warning" />
                 <span>{msg}</span>
               </p>
             ))}

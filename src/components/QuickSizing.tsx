@@ -86,8 +86,8 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
     <div className="space-y-6">
       {/* Title Card */}
       <div className="studio-card">
-        <h1 className="text-2xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-          <Sun className="w-6 h-6 text-amber-400" />
+        <h1 className="text-2xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+          <Sun className="w-6 h-6 text-industrial-warning" />
           SolarPV Studio — Quick PV Sizing
         </h1>
         <p className="text-slate-400 text-sm">
@@ -97,8 +97,8 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
 
       {/* Inputs Form */}
       <div className="studio-card">
-        <h2 className="text-xl font-semibold text-sky-400 mb-4 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-sky-400" />
+        <h2 className="text-xl font-semibold text-industrial-accent mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-industrial-accent" />
           Project Location & Energy Requirements
         </h2>
 
@@ -237,7 +237,7 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
           <div className="result-box mt-6">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-bold text-sky-400">
+                <h3 className="text-lg font-bold text-industrial-accent">
                   Sizing Results for "{result.projectName}"
                 </h3>
                 <span className="text-xs text-slate-400 font-mono">
@@ -249,15 +249,15 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
                   onClick={() => onOpenReport(result)}
                   className="studio-btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
                 >
-                  <FileText className="w-3.5 h-3.5 text-sky-400" />
+                  <FileText className="w-3.5 h-3.5 text-industrial-accent" />
                   View EPC Proposal
                 </button>
               )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-200 text-sm">
-              <div className="flex items-center gap-3 p-3 bg-slate-900/60 rounded border border-slate-700/60">
-                <Sun className="w-5 h-5 text-amber-400 shrink-0" />
+              <div className="flex items-center gap-3 p-3 bg-industrial-surface/60 rounded border border-industrial-border/60">
+                <Sun className="w-5 h-5 text-industrial-warning shrink-0" />
                 <div>
                   <div className="text-xs text-slate-400">System Capacity</div>
                   <div className="font-bold text-white text-base">
@@ -266,8 +266,8 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-slate-900/60 rounded border border-slate-700/60">
-                <Cpu className="w-5 h-5 text-sky-400 shrink-0" />
+              <div className="flex items-center gap-3 p-3 bg-industrial-surface/60 rounded border border-industrial-border/60">
+                <Cpu className="w-5 h-5 text-industrial-accent shrink-0" />
                 <div>
                   <div className="text-xs text-slate-400">Solar Array Configuration</div>
                   <div className="font-bold text-white text-base">
@@ -276,8 +276,8 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-slate-900/60 rounded border border-slate-700/60">
-                <Zap className="w-5 h-5 text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-3 p-3 bg-industrial-surface/60 rounded border border-industrial-border/60">
+                <Zap className="w-5 h-5 text-industrial-success shrink-0" />
                 <div>
                   <div className="text-xs text-slate-400">String Inverters</div>
                   <div className="font-bold text-white text-base">
@@ -286,7 +286,7 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-slate-900/60 rounded border border-slate-700/60">
+              <div className="flex items-center gap-3 p-3 bg-industrial-surface/60 rounded border border-industrial-border/60">
                 <BatteryIcon className="w-5 h-5 text-indigo-400 shrink-0" />
                 <div>
                   <div className="text-xs text-slate-400">Battery Storage Bank</div>
@@ -296,7 +296,7 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-slate-900/60 rounded border border-slate-700/60">
+              <div className="flex items-center gap-3 p-3 bg-industrial-surface/60 rounded border border-industrial-border/60">
                 <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0" />
                 <div>
                   <div className="text-xs text-slate-400">Estimated Annual Generation</div>
@@ -306,7 +306,7 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-slate-900/60 rounded border border-slate-700/60">
+              <div className="flex items-center gap-3 p-3 bg-industrial-surface/60 rounded border border-industrial-border/60">
                 <DollarSign className="w-5 h-5 text-green-400 shrink-0" />
                 <div>
                   <div className="text-xs text-slate-400">Levelized Cost of Energy (LCOE)</div>

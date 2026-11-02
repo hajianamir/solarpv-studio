@@ -280,7 +280,7 @@ console.log('+--------------------+------------------------+--------------------
 // 6. Rigorous Core Subsystem Unit Tests & Extreme Tail Bounds (PR-2a-3)
 // -----------------------------------------------------------------------------
 console.log('--- [6/7] Core Unit Tests (PRNG, Cross-Val, Soiling, Snow, IAM & Waterfall) ---');
-const unitRes = runCoreUnitTests();
+const unitRes = await runCoreUnitTests();
 console.log(`Unit Tests Run: ${unitRes.results.length} | Passed: ${unitRes.passed} | Failed: ${unitRes.failed}`);
 for (const u of unitRes.results) {
   console.log(`  • [${u.suite.padEnd(12)}] ${u.name.padEnd(46)} -> [${u.status}] | ${u.details}`);

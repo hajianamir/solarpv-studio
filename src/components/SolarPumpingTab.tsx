@@ -46,8 +46,8 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-lg sm:text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-              <Droplet className="w-5 h-5 text-cyan-400 shrink-0" />
+            <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+              <Droplet className="w-5 h-5 text-industrial-accent shrink-0" />
               {isFa
                 ? 'ایستگاه پمپاژ خورشیدی کشاورزی و چاه‌های عمیق (Optional Solar Pumping)'
                 : 'Agricultural Solar Water Pumping & Deep Wells (Optional Feature)'}
@@ -59,7 +59,7 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
             </p>
           </div>
 
-          <label className="flex items-center gap-2.5 p-2 px-3 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer text-xs font-bold text-cyan-300 shrink-0 self-start sm:self-auto">
+          <label className="flex items-center gap-2.5 p-2 px-3 rounded-lg bg-industrial-bg border border-industrial-border cursor-pointer text-xs font-bold text-industrial-accent shrink-0 self-start sm:self-auto">
             <input
               type="checkbox"
               checked={isEnabled}
@@ -74,7 +74,7 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
       </div>
 
       {!isEnabled && (
-        <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-xl">
+        <div className="p-8 text-center bg-industrial-surface border border-industrial-border rounded-xl">
           <Droplet className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <h3 className="text-sm font-bold text-slate-300 mb-1">
             {isFa ? 'سیستم پمپاژ خورشیدی آب غیرفعال است' : 'Solar Water Pumping Module is Disabled'}
@@ -187,11 +187,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
 
           {/* Hydraulic Sizing KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+            <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
               <div className="text-xs text-slate-400">
                 {isFa ? 'هد دینامیکی کل (TDH)' : 'Total Dynamic Head (TDH)'}
               </div>
-              <div className="text-xl font-bold font-mono text-cyan-400 mt-1">
+              <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
                 {pumpResult.totalDynamicHeadTdhM} <span className="text-xs font-normal text-slate-300">m</span>
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
@@ -201,11 +201,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
             </div>
 
-            <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+            <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
               <div className="text-xs text-slate-400">
                 {isFa ? 'دبی خروجی پمپ (Flow Rate)' : 'Pump Flow Rate (Q)'}
               </div>
-              <div className="text-xl font-bold font-mono text-sky-400 mt-1">
+              <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
                 {pumpResult.flowRateM3PerHour} <span className="text-xs font-normal text-slate-300">m³/h</span>
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
@@ -215,11 +215,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
             </div>
 
-            <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+            <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
               <div className="text-xs text-slate-400">
                 {isFa ? 'قدرت الکتروموتور شناور' : 'Motor Power Rating'}
               </div>
-              <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
+              <div className="text-xl font-bold font-mono text-industrial-success mt-1">
                 {pumpResult.recommendedMotorPowerHp} <span className="text-xs font-normal text-slate-300">HP</span>
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
@@ -227,11 +227,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
             </div>
 
-            <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-lg">
+            <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
               <div className="text-xs text-slate-400">
                 {isFa ? 'ظرفیت آرایه خورشیدی (PV)' : 'Recommended PV Capacity'}
               </div>
-              <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+              <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
                 {pumpResult.recommendedPvArrayKwp} <span className="text-xs font-normal text-slate-300">kWp</span>
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
@@ -242,23 +242,23 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
 
           {/* 12-Month Water Delivery Volume Chart */}
           <div className="studio-card">
-            <h3 className="font-bold text-sky-400 text-sm mb-3 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-cyan-400 shrink-0" />
+            <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-industrial-accent shrink-0" />
               {isFa
                 ? 'برآورد حجم آبدهی ماهانه چاه کشاورزی (۱۲ ماه سال - متر مکعب در ماه)'
                 : '12-Month Estimated Agricultural Water Delivery Profile (m³/month)'}
             </h3>
 
-            <div className="overflow-x-auto bg-slate-950 p-4 rounded-lg border border-slate-800 -mx-3 sm:mx-0">
+            <div className="overflow-x-auto bg-industrial-bg p-4 rounded-lg border border-industrial-border -mx-3 sm:mx-0">
               <div className="flex items-end justify-between gap-2 h-44 min-w-[550px] pt-4">
                 {pumpResult.monthlyWaterDeliveryM3.map((vol, idx) => {
                   const heightPct = Math.round((vol / maxMonthlyWater) * 100);
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                      <span className="font-mono text-[10px] text-cyan-300 font-bold">{vol.toLocaleString()}</span>
+                      <span className="font-mono text-[10px] text-industrial-accent font-bold">{vol.toLocaleString()}</span>
                       <div
                         style={{ height: `${heightPct}%` }}
-                        className="w-full max-w-[36px] bg-cyan-600 rounded-t-md transition-all hover:opacity-80"
+                        className="w-full max-w-[36px] bg-industrial-accent rounded-t-md transition-all hover:opacity-80"
                       />
                       <span className="text-[10.5px] text-slate-400 whitespace-nowrap mt-1">
                         {isFa ? monthNamesFa[idx] : monthNamesEn[idx]}
@@ -269,7 +269,7 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 text-xs text-slate-300 bg-slate-900/60 p-3 rounded-lg border border-slate-700/60">
+            <div className="mt-3 space-y-1 text-xs text-slate-300 bg-industrial-surface/60 p-3 rounded-lg border border-industrial-border/60">
               {(isFa ? pumpResult.notesFa : pumpResult.notesFa.map((_, i) => [
                 'Hydraulic TDH calculated based on static lift + friction losses in polyethylene piping.',
                 'Direct solar drive operates via MPPT variable frequency drive (VFD) without chemical storage batteries.',
@@ -277,7 +277,7 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
                 'Water storage in ground reservoirs during high-irradiance midday hours acts as hydraulic battery storage.'
               ][i] || '')).map((note, i) => (
                 <div key={i} className="flex items-start gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-industrial-accent shrink-0 mt-0.5" />
                   <span>{note}</span>
                 </div>
               ))}

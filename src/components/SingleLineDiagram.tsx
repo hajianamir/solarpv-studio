@@ -127,8 +127,8 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
       <div className="studio-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-400" />
+            <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-industrial-warning" />
               {isEn
                 ? 'Engineering Single-Line Diagram (SLD / IEC 61082)'
                 : 'نقشه تک‌خطی مهندسی خورشیدی (Single Line Diagram - SLD)'}
@@ -144,7 +144,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
           <div className="flex items-center gap-2 text-xs">
             <button
               onClick={() => setZoomLevel((prev) => Math.max(0.6, prev - 0.1))}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-industrial-border"
               title={isEn ? 'Zoom Out' : 'کوچک‌نمایی'}
             >
               <ZoomOut className="w-4 h-4" />
@@ -152,7 +152,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
             <span className="font-mono text-slate-300 px-1">{Math.round(zoomLevel * 100)}%</span>
             <button
               onClick={() => setZoomLevel((prev) => Math.min(1.6, prev + 0.1))}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-industrial-border"
               title={isEn ? 'Zoom In' : 'بزرگ‌نمایی'}
             >
               <ZoomIn className="w-4 h-4" />
@@ -163,7 +163,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
 
       {/* Interactive SVG Diagram Canvas with Horizontal Touch Scroll */}
       <div className="studio-card">
-        <div className="overflow-x-auto bg-slate-950 p-4 rounded-lg border border-slate-800 flex justify-center">
+        <div className="overflow-x-auto bg-industrial-bg p-4 rounded-lg border border-industrial-border flex justify-center">
           <div
             style={{
               transform: `scale(${zoomLevel})`,
@@ -431,13 +431,13 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
 
       {/* Selected Component Information Panel */}
       {selectedElement && elementDetails[selectedElement] && (
-        <div className="p-4 bg-slate-900/90 border border-sky-500/40 rounded-lg">
-          <div className="flex items-center justify-between border-b border-slate-700/80 pb-2 mb-3">
-            <h4 className="font-bold text-sky-400 text-sm flex items-center gap-2">
-              <Info className="w-4 h-4 text-sky-400" />
+        <div className="p-4 bg-industrial-surface/90 border border-sky-500/40 rounded-lg">
+          <div className="flex items-center justify-between border-b border-industrial-border/80 pb-2 mb-3">
+            <h4 className="font-bold text-industrial-accent text-sm flex items-center gap-2">
+              <Info className="w-4 h-4 text-industrial-accent" />
               {elementDetails[selectedElement].title}
             </h4>
-            <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-mono">
+            <span className="text-[10px] bg-slate-800 text-slate-300 border border-industrial-border px-2 py-0.5 rounded font-mono">
               {isEn ? 'Standard:' : 'استاندارد:'} {elementDetails[selectedElement].standard}
             </span>
           </div>

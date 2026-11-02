@@ -1,0 +1,50 @@
+================================================================================
+ PR-2a-6 REPAIR — Mode-aware financial engine (Ambiguity C)
+================================================================================
+
+
+--- Utility Powerplant (1 MW AC) ---
+  LCOE: 0.0573 USD/kWh | Cost of Energy Served: 0.053768 USD/kWh
+  CAPEX: 412,850 USD | Substation: 40250 USD | Grid: 27600 USD | HV Conn: 45000 USD
+  Diesel fuel: 0.00 USD/yr | Diesel OPEX: 0 USD/yr | Battery repl Y12: 0 USD
+  PPA tariff: 2800 Toman/kWh | Land lease: 120.00 USD/yr | Grid operator fee: 60.00 USD/yr
+  Feed-in revenue: 46,667 USD/yr
+
+--- On-Grid with backup (1 MW AC) ---
+  LCOE: 0.0994 USD/kWh | Cost of Energy Served: 0.087096 USD/kWh
+  CAPEX: 670,250 USD | Substation: 40250 USD | Grid: 10000 USD | HV Conn: 0 USD
+  Diesel fuel: 0.00 USD/yr | Diesel OPEX: 0 USD/yr | Battery repl Y12: 224000 USD
+  PPA tariff: 2800 Toman/kWh | Land lease: 0.00 USD/yr | Grid operator fee: 0.00 USD/yr
+  Feed-in revenue: 63,333 USD/yr
+
+--- Off-Grid standalone (1 MW AC + 2 MWh BESS) ---
+  LCOE: 0.1000 USD/kWh | Cost of Energy Served: 0.087705 USD/kWh
+  CAPEX: 665,000 USD | Substation: 0 USD | Grid: 0 USD | HV Conn: 0 USD
+  Diesel fuel: 136.11 USD/yr | Diesel OPEX: 1800 USD/yr | Battery repl Y12: 224000 USD
+  PPA tariff: 2800 Toman/kWh | Land lease: 0.00 USD/yr | Grid operator fee: 0.00 USD/yr
+  Feed-in revenue: 0 (disabled) USD/yr
+
+================================================================================
+ LCOE COMPARISON TABLE — 1 MW Plant in 3 Modes (Ambiguity C)
+================================================================================
+
+| Mode       | LCOE ($/kWh) | Cost Served | Substation | Grid | HV Conn | Feed-In | Diesel Fuel | Diesel OPEX | Battery |
+|------------|--------------|-------------|------------|------|---------|---------|-------------|-------------|---------|
+| Utility Powerplant (1 MW AC) |       0.0573 |      0.0538 |      40250 |  27600 |   45000 |   46667 |           0 |           0 |       0 |
+| On-Grid with backup (1 MW AC) |       0.0994 |      0.0871 |      40250 |  10000 |       0 |   63333 |           0 |           0 |  224000 |
+| Off-Grid standalone (1 MW AC + 2 MWh BESS) |       0.1000 |      0.0877 |          0 |      0 |       0 |       0 |         136 |        1800 |  224000 |
+
+================================================================================
+ ASSERTIONS
+================================================================================
+
+  [PASS] 3 modes produce 3 distinct LCOE values: 0.0573 | 0.0994 | 0.1000 USD/kWh
+  [PASS] Off-Grid substation CAPEX = 0 (got 0)
+  [PASS] Off-Grid grid interconnection CAPEX = 0 (got 0)
+  [PASS] Off-Grid feed-in revenue = 0 (got 0)
+  [PASS] Off-Grid includes Year-12 battery replacement cost (> 0)
+  [PASS] Off-Grid includes diesel fuel cost (> 0)
+  [PASS] Off-Grid includes diesel OPEX (> 0)
+  [PASS] Off-Grid CAPEX reflects battery + diesel instead of grid assets
+
+ALL FINANCIAL MODE ASSERTIONS PASSED

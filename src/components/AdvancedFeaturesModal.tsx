@@ -69,8 +69,8 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
 
   const pillarIcons: Record<string, React.ReactNode> = {
     'Phase 2a': <Thermometer className="w-4 h-4 text-orange-400" />,
-    'Phase 2b': <Recycle className="w-4 h-4 text-emerald-400" />,
-    'Phase 3a': <Zap className="w-4 h-4 text-amber-400" />,
+    'Phase 2b': <Recycle className="w-4 h-4 text-industrial-success" />,
+    'Phase 3a': <Zap className="w-4 h-4 text-industrial-warning" />,
     'Phase 3b': <Hammer className="w-4 h-4 text-indigo-400" />,
   };
 
@@ -87,10 +87,10 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60">
-      <div className="relative w-full max-w-4xl max-h-[92vh] bg-slate-900 border border-slate-700/80 rounded-lg flex flex-col overflow-hidden text-slate-100">
+      <div className="relative w-full max-w-4xl max-h-[92vh] bg-industrial-surface border border-industrial-border/80 rounded-lg flex flex-col overflow-hidden text-slate-100">
         
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-industrial-bg border-b border-industrial-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-md bg-indigo-600 text-white">
               <Sliders className="w-5 h-5" />
@@ -113,7 +113,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+            <span className="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-industrial-border">
               {activeCount} / {Object.keys(FEATURE_FLAG_METADATA).length} {lang === 'fa' ? 'فعال' : 'Active'}
             </span>
             <button
@@ -127,7 +127,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 px-6 bg-slate-950/60 border-b border-slate-800/80 text-xs font-bold">
+        <div className="flex items-center gap-1 px-6 bg-industrial-bg/60 border-b border-industrial-border/80 text-xs font-bold">
           <button
             onClick={() => setActiveTab('flags')}
             className={`py-3 px-4 border-b-2 flex items-center gap-2 transition ${
@@ -143,7 +143,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
             onClick={() => setActiveTab('impact')}
             className={`py-3 px-4 border-b-2 flex items-center gap-2 transition ${
               activeTab === 'impact'
-                ? 'border-sky-400 text-sky-300 bg-sky-500/10'
+                ? 'border-sky-400 text-sky-300 bg-industrial-accent/10'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -157,7 +157,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
             }}
             className={`py-3 px-4 border-b-2 flex items-center gap-2 transition ${
               activeTab === 'validation'
-                ? 'border-emerald-400 text-emerald-300 bg-emerald-500/10'
+                ? 'border-industrial-success text-industrial-success bg-industrial-success/10'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -171,7 +171,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
             }}
             className={`py-3 px-4 border-b-2 flex items-center gap-2 transition ${
               activeTab === 'lhs_stats'
-                ? 'border-amber-400 text-amber-300 bg-amber-500/10'
+                ? 'border-industrial-warning text-industrial-warning bg-industrial-warning/10'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -196,7 +196,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
             onClick={() => setActiveTab('registry')}
             className={`py-3 px-4 border-b-2 flex items-center gap-2 transition ${
               activeTab === 'registry'
-                ? 'border-sky-400 text-sky-300 bg-sky-500/10'
+                ? 'border-sky-400 text-sky-300 bg-industrial-accent/10'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -211,9 +211,9 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           {/* TAB 1: FEATURE FLAGS */}
           {activeTab === 'flags' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between p-3.5 bg-slate-950/70 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 bg-industrial-bg/70 border border-industrial-border rounded-xl">
                 <div className="text-xs text-slate-300 flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                  <ShieldAlert className="w-4 h-4 text-industrial-warning shrink-0" />
                   <span>
                     {lang === 'fa'
                       ? 'تمامی قابلیت‌های پیشرفته بر پایه سازگاری با عقب هستند. فعال‌سازی آنها دقت محاسبات را به سطح مهندسی تفصیلی ارتقا می‌دهد.'
@@ -235,7 +235,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                   </button>
                   <button
                     onClick={resetFlags}
-                    className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 hover:text-white transition flex items-center gap-1.5"
+                    className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-industrial-border hover:bg-slate-700 hover:text-white transition flex items-center gap-1.5"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>{lang === 'fa' ? 'بازنشانی پیش‌فرض' : 'Reset'}</span>
@@ -246,8 +246,8 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
               {/* Grouped Pillars */}
               <div className="space-y-5">
                 {Object.entries(groupedFlags).map(([pillar, items]) => (
-                  <div key={pillar} className="bg-slate-950/50 border border-slate-800/80 rounded-xl overflow-hidden">
-                    <div className="px-4 py-2.5 bg-slate-800/50 border-b border-slate-800 flex items-center justify-between">
+                  <div key={pillar} className="bg-industrial-bg/50 border border-industrial-border/80 rounded-xl overflow-hidden">
+                    <div className="px-4 py-2.5 bg-slate-800/50 border-b border-industrial-border flex items-center justify-between">
                       <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
                         {pillarIcons[pillar] || <Layers className="w-4 h-4 text-slate-400" />}
                         <span>{pillar}</span>
@@ -263,14 +263,14 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                         return (
                           <div
                             key={key}
-                            className="p-3.5 flex items-start justify-between gap-4 hover:bg-slate-900/60 transition"
+                            className="p-3.5 flex items-start justify-between gap-4 hover:bg-industrial-surface/60 transition"
                           >
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-white">
                                   {lang === 'fa' ? meta.titleFa : meta.titleEn}
                                 </span>
-                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-industrial-border">
                                   {meta.standards.join(', ')}
                                 </span>
                               </div>
@@ -304,9 +304,9 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           {/* TAB: DATA PROPAGATION & IMPACT DASHBOARD (RFC 3.0 / PR-2a-6) */}
           {activeTab === 'impact' && (
             <div className="space-y-4">
-              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl">
-                <h3 className="text-sm font-bold text-sky-400 flex items-center gap-2 mb-1">
-                  <Activity className="w-4 h-4 text-emerald-400" />
+              <div className="p-4 bg-industrial-bg/80 border border-industrial-border rounded-xl">
+                <h3 className="text-sm font-bold text-industrial-accent flex items-center gap-2 mb-1">
+                  <Activity className="w-4 h-4 text-industrial-success" />
                   <span>{lang === 'fa' ? 'داشبورد جامع انتشار داده‌ها و اثرات فنی متقابل (Cross-Tab Telemetry Propagation)' : 'Cross-Tab Telemetry Propagation & Engineering Impact Dashboard'}</span>
                 </h3>
                 <p className="text-xs text-slate-400">
@@ -318,13 +318,13 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 1. Climate -> Inverter */}
-                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+                <div className="p-4 bg-industrial-bg/70 border border-industrial-border rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-white flex items-center gap-2">
-                      <Thermometer className="w-4 h-4 text-amber-400" />
+                      <Thermometer className="w-4 h-4 text-industrial-warning" />
                       <span>{lang === 'fa' ? '۱. داده‌های اقلیم ⟵ تب اینورتر (Inverter Sizing)' : '1. Climate Provider ⟵ Inverter Sizing Tab'}</span>
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-industrial-success/20 text-industrial-success border border-industrial-success/30">
                       Applied
                     </span>
                   </div>
@@ -333,7 +333,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                       ? 'انتشار خودکار دمای بیشینه محیط (افت ۱.۵٪ به‌ازای هر درجه بالای ۴۵°C) و ارتفاع از سطح دریا (افت ۱.۰٪ به‌ازای هر ۱۰۰ متر بالای ۲۰۰۰ متر بر اساس IEC 62109-1).'
                       : 'Automatic derating for ambient T_max > 45°C (1.5%/°C) and altitude > 2000m (1.0%/100m per IEC 62109-1).'}
                   </p>
-                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                  <div className="pt-2 border-t border-industrial-border flex justify-end">
                     <button
                       onClick={() => {
                         onJumpTab?.('array');
@@ -348,13 +348,13 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 </div>
 
                 {/* 2. Soil, Wind, Snow -> Structural */}
-                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+                <div className="p-4 bg-industrial-bg/70 border border-industrial-border rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-white flex items-center gap-2">
                       <Hammer className="w-4 h-4 text-purple-400" />
                       <span>{lang === 'fa' ? '۲. خاک، باد و برف ⟵ تب سازه و فونداسیون' : '2. Soil & Hazards ⟵ Structural Foundation Tab'}</span>
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-industrial-success/20 text-industrial-success border border-industrial-success/30">
                       Applied
                     </span>
                   </div>
@@ -363,7 +363,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                       ? 'انتشار فشار دینامیکی باد (qz)، بار برف زمین (Sk)، عمق یخبندان و سایزینگ شمع کوبشی فولادی به روش برومز (FoS >= 1.5).'
                       : 'Propagation of wind pressure qz, ground snow Sk, frost depth, and Broms lateral steel pile sizing (FoS >= 1.5).'}
                   </p>
-                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                  <div className="pt-2 border-t border-industrial-border flex justify-end">
                     <button
                       onClick={() => {
                         onJumpTab?.('structural');
@@ -378,13 +378,13 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 </div>
 
                 {/* 3. Derating & Foundation -> Financial */}
-                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+                <div className="p-4 bg-industrial-bg/70 border border-industrial-border rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-white flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-emerald-400" />
+                      <Zap className="w-4 h-4 text-industrial-success" />
                       <span>{lang === 'fa' ? '۳. افت تولید و CAPEX ⟵ تب مالی و LCOE' : '3. Derated Yield & CAPEX ⟵ Financial Tab'}</span>
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-industrial-success/20 text-industrial-success border border-industrial-success/30">
                       Applied
                     </span>
                   </div>
@@ -393,7 +393,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                       ? 'تفکیک بهای تمام‌شده تراز شده انرژی (LCOE) به اقلام: بهای پایه، اثر افت اقلیمی و ارتفاعی اینورتر، و اثر نوع فونداسیون سازه.'
                       : 'Itemized LCOE decomposition into base plant LCOE, climate derating impact, and foundation typology CAPEX.'}
                   </p>
-                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                  <div className="pt-2 border-t border-industrial-border flex justify-end">
                     <button
                       onClick={() => {
                         onJumpTab?.('financial');
@@ -408,13 +408,13 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 </div>
 
                 {/* 4. GIS & Map -> Climate Tab */}
-                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+                <div className="p-4 bg-industrial-bg/70 border border-industrial-border rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-white flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-sky-400" />
+                      <Layers className="w-4 h-4 text-industrial-accent" />
                       <span>{lang === 'fa' ? '۴. نقشه چندلایه آزاد و Overpass ⟵ تب اقلیم' : '4. Free GIS & Overpass Footprints ⟵ Climate Map Tab'}</span>
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-industrial-success/20 text-industrial-success border border-industrial-success/30">
                       Applied
                     </span>
                   </div>
@@ -423,7 +423,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                       ? 'سوئیچر ۴ لایه Leaflet (تصاویر ماهواره‌ای Esri، توپوگرافی OpenTopoMap و OSM) + شناسایی ابعاد سقف با Overpass بدون نیاز به کلید Google Maps.'
                       : '4-layer Leaflet switcher (Esri Satellite, OpenTopoMap, OSM) + Overpass API rooftop footprint detection with zero Google API fees.'}
                   </p>
-                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                  <div className="pt-2 border-t border-industrial-border flex justify-end">
                     <button
                       onClick={() => {
                         onJumpTab?.('climate');
@@ -443,10 +443,10 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           {/* TAB 2: SYSTEM CROSS-VALIDATION */}
           {activeTab === 'validation' && (
             <div className="space-y-5">
-              <div className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-industrial-bg border border-industrial-border rounded-xl">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-4 h-4 text-industrial-success" />
                     <span>{lang === 'fa' ? 'گواهی تطابق و اعتبارسنجی مقایسه‌ای' : 'Benchmark Cross-Validation Certificate'}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -458,7 +458,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 <button
                   onClick={handleRunValidation}
                   disabled={isRunningValidation}
-                  className="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 disabled:opacity-50 transition"
+                  className="px-4 py-2 rounded-md bg-industrial-success hover:bg-industrial-success text-white font-bold text-xs flex items-center gap-2 disabled:opacity-50 transition"
                 >
                   <Play className={`w-3.5 h-3.5 ${isRunningValidation ? 'animate-spin' : ''}`} />
                   <span>{lang === 'fa' ? 'اجرای آزمون‌های اعتبارسنجی' : 'Re-Run Suite'}</span>
@@ -469,26 +469,26 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 <div className="space-y-4">
                   {/* Summary Bar */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'وضعیت نهایی' : 'Overall Status'}</div>
-                      <div className="text-sm font-black text-emerald-400 mt-1 flex items-center justify-center gap-1.5">
+                      <div className="text-sm font-black text-industrial-success mt-1 flex items-center justify-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4" />
                         <span>{validationReport.overallStatus}</span>
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'تست‌های موفق' : 'Passed Tests'}</div>
                       <div className="text-sm font-mono font-bold text-white mt-1">
                         {validationReport.testsPassed} / {validationReport.testsRun}
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'بیشترین انحراف' : 'Max Error'}</div>
-                      <div className="text-sm font-mono font-bold text-sky-400 mt-1">
+                      <div className="text-sm font-mono font-bold text-industrial-accent mt-1">
                         {validationReport.maxDiscrepancyPercent.toFixed(2)}%
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'کد ردگیری' : 'Trace ID'}</div>
                       <div className="text-[10px] font-mono text-slate-300 mt-1 truncate">
                         {validationReport.traceId.slice(0, 13)}...
@@ -497,9 +497,9 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                   </div>
 
                   {/* Detailed Table */}
-                  <div className="overflow-x-auto border border-slate-800 rounded-xl">
+                  <div className="overflow-x-auto border border-industrial-border rounded-xl">
                     <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-slate-950 text-slate-400 text-[11px] font-mono">
+                      <thead className="bg-industrial-bg text-slate-400 text-[11px] font-mono">
                         <tr>
                           <th className="p-3">{lang === 'fa' ? 'آزمون و مرجع' : 'Metric & Standard'}</th>
                           <th className="p-3 text-right">{lang === 'fa' ? 'مقدار طلایی' : 'Nominal'}</th>
@@ -509,7 +509,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                           <th className="p-3 text-center">{lang === 'fa' ? 'نتیجه' : 'Status'}</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800 bg-slate-900/60 font-mono text-[11px]">
+                      <tbody className="divide-y divide-slate-800 bg-industrial-surface/60 font-mono text-[11px]">
                         {validationReport.metrics.map(m => (
                           <tr key={m.testId} className="hover:bg-slate-800/40">
                             <td className="p-3 font-sans">
@@ -517,14 +517,14 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                               <div className="text-[10px] text-slate-400 font-mono">{m.sourceStandard}</div>
                             </td>
                             <td className="p-3 text-right text-slate-300">{m.nominalValue} {m.unit}</td>
-                            <td className="p-3 text-right text-emerald-400 font-bold">{m.calculatedValue} {m.unit}</td>
+                            <td className="p-3 text-right text-industrial-success font-bold">{m.calculatedValue} {m.unit}</td>
                             <td className="p-3 text-right font-bold text-sky-300">{m.relativeErrorPercent.toFixed(2)}%</td>
                             <td className="p-3 text-center text-slate-400">&plusmn;{m.tolerancePercent}%</td>
                             <td className="p-3 text-center">
                               <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                 m.status === 'PASS'
-                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                  ? 'bg-industrial-success/20 text-industrial-success border border-industrial-success/30'
+                                  : 'bg-industrial-error/20 text-industrial-error border border-red-500/30'
                               }`}>
                                 {m.status}
                               </span>
@@ -536,7 +536,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                   </div>
 
                   {/* Notes */}
-                  <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1">
+                  <div className="p-3.5 bg-industrial-bg/80 border border-industrial-border rounded-xl space-y-1">
                     <div className="text-xs font-bold text-slate-300">{lang === 'fa' ? 'نکات فنی تطابق استانداردی:' : 'Standard Compliance Notes:'}</div>
                     <ul className="text-[11px] text-slate-400 list-disc list-inside space-y-0.5">
                       {validationReport.complianceNotes.map((note, idx) => (
@@ -552,10 +552,10 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           {/* TAB: LHS VS CMC STATISTICAL PROOF */}
           {activeTab === 'lhs_stats' && (
             <div className="space-y-5">
-              <div className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-industrial-bg border border-industrial-border rounded-xl">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-amber-400" />
+                    <Activity className="w-4 h-4 text-industrial-warning" />
                     <span>{lang === 'fa' ? 'اثبات دقت و شتاب ابرمکعب لاتین (LHS) در برابر CMC' : 'LHS vs CMC Statistical Rigor Benchmark'}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -566,7 +566,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 </div>
                 <button
                   onClick={handleRunLhsBenchmark}
-                  className="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-2 transition"
+                  className="px-4 py-2 rounded-md bg-industrial-warning hover:bg-industrial-warning text-slate-950 font-bold text-xs flex items-center gap-2 transition"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>{lang === 'fa' ? 'اجرای بنچمارک آماری' : 'Run Benchmark'}</span>
@@ -577,26 +577,26 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 <div className="space-y-4">
                   {/* Summary Metric Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'شتاب محاسباتی' : 'Compute Speedup'}</div>
-                      <div className="text-base font-black text-amber-400 mt-1 font-mono">{lhsBenchmark.speedupFactor}x</div>
+                      <div className="text-base font-black text-industrial-warning mt-1 font-mono">{lhsBenchmark.speedupFactor}x</div>
                       <div className="text-[10px] text-slate-500">{lhsBenchmark.lhsExecutionTimeMs}ms vs {lhsBenchmark.cmcExecutionTimeMs}ms</div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'انحراف میانگین (Mean)' : 'Mean Error'}</div>
-                      <div className="text-base font-mono font-bold text-emerald-400 mt-1">
+                      <div className="text-base font-mono font-bold text-industrial-success mt-1">
                         {lhsBenchmark.metrics.find(m => m.statistic === 'mean')?.relativeErrorPercent}%
                       </div>
                       <div className="text-[10px] text-slate-500">&lt; 1.0% limit</div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'انحراف صدک ۹۰ (P90)' : 'P90 Error'}</div>
-                      <div className="text-base font-mono font-bold text-sky-400 mt-1">
+                      <div className="text-base font-mono font-bold text-industrial-accent mt-1">
                         {lhsBenchmark.metrics.find(m => m.statistic === 'p90')?.relativeErrorPercent}%
                       </div>
                       <div className="text-[10px] text-slate-500">&lt; 3.5% limit</div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'کاهش حجم ارزیابی' : 'Workload Reduction'}</div>
                       <div className="text-base font-mono font-bold text-purple-400 mt-1">99.0%</div>
                       <div className="text-[10px] text-slate-500">100 vs 10,000 samples</div>
@@ -604,9 +604,9 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                   </div>
 
                   {/* Detailed Moments Table */}
-                  <div className="overflow-x-auto border border-slate-800 rounded-xl">
+                  <div className="overflow-x-auto border border-industrial-border rounded-xl">
                     <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-slate-950 text-slate-400 text-[11px] font-mono">
+                      <thead className="bg-industrial-bg text-slate-400 text-[11px] font-mono">
                         <tr>
                           <th className="p-3">{lang === 'fa' ? 'آماره هدف' : 'Target Statistic'}</th>
                           <th className="p-3 text-right">CMC (10,000 draws)</th>
@@ -616,16 +616,16 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                           <th className="p-3 text-center">{lang === 'fa' ? 'وضعیت' : 'Status'}</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800 bg-slate-900/60 font-mono text-[11px]">
+                      <tbody className="divide-y divide-slate-800 bg-industrial-surface/60 font-mono text-[11px]">
                         {lhsBenchmark.metrics.map(m => (
                           <tr key={m.statistic} className="hover:bg-slate-800/40">
                             <td className="p-3 font-sans font-bold text-slate-200 uppercase">{m.statistic}</td>
                             <td className="p-3 text-right text-slate-300">{m.cmc10kValue} m/s</td>
-                            <td className="p-3 text-right text-amber-400 font-bold">{m.lhs100Value} m/s</td>
+                            <td className="p-3 text-right text-industrial-warning font-bold">{m.lhs100Value} m/s</td>
                             <td className="p-3 text-right font-bold text-sky-300">{m.relativeErrorPercent.toFixed(2)}%</td>
                             <td className="p-3 text-center text-slate-400">&le; {m.acceptableTolerancePercent}%</td>
                             <td className="p-3 text-center">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-industrial-success/20 text-industrial-success border border-industrial-success/30">
                                 {m.status}
                               </span>
                             </td>
@@ -635,8 +635,8 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                     </table>
                   </div>
 
-                  <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-300 space-y-1">
-                    <div className="font-bold text-amber-300">{lang === 'fa' ? 'نتیجه‌گیری آماری:' : 'Statistical Conclusion:'}</div>
+                  <div className="p-3.5 bg-industrial-bg/80 border border-industrial-border rounded-xl text-xs text-slate-300 space-y-1">
+                    <div className="font-bold text-industrial-warning">{lang === 'fa' ? 'نتیجه‌گیری آماری:' : 'Statistical Conclusion:'}</div>
                     <p className="text-[11px] text-slate-400 leading-relaxed">{lhsBenchmark.conclusionNote}</p>
                   </div>
                 </div>
@@ -647,7 +647,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           {/* TAB: V2 MIGRATION TEST SUITE */}
           {activeTab === 'migration' && (
             <div className="space-y-5">
-              <div className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-industrial-bg border border-industrial-border rounded-xl">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <Layers className="w-4 h-4 text-purple-400" />
@@ -671,27 +671,27 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
               {migrationSummary && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'کل آزمون‌ها' : 'Vectors Tested'}</div>
                       <div className="text-base font-bold text-white mt-1">{migrationSummary.totalVectorsTested}</div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'مهاجرت معتبر (Valid)' : 'Valid (Lossless)'}</div>
-                      <div className="text-base font-bold text-emerald-400 mt-1">{migrationSummary.validMigrations}</div>
+                      <div className="text-base font-bold text-industrial-success mt-1">{migrationSummary.validMigrations}</div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'بازیابی با هشدار' : 'Recovered (Warnings)'}</div>
-                      <div className="text-base font-bold text-amber-400 mt-1">{migrationSummary.recoveredWithWarnings}</div>
+                      <div className="text-base font-bold text-industrial-warning mt-1">{migrationSummary.recoveredWithWarnings}</div>
                     </div>
-                    <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-center">
+                    <div className="p-3 bg-industrial-bg/70 border border-industrial-border rounded-xl text-center">
                       <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'مسدودشده (Blocked)' : 'Blocked (Inconsistent)'}</div>
-                      <div className="text-base font-bold text-red-400 mt-1">{migrationSummary.blockedInconsistent}</div>
+                      <div className="text-base font-bold text-industrial-error mt-1">{migrationSummary.blockedInconsistent}</div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     {migrationSummary.results.map(r => (
-                      <div key={r.caseId} className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between gap-4">
+                      <div key={r.caseId} className="p-3.5 bg-industrial-bg/80 border border-industrial-border rounded-xl flex items-center justify-between gap-4">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-white">{r.name}</span>
@@ -704,10 +704,10 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
 
                         <span className={`px-2.5 py-1 rounded text-[10px] font-bold shrink-0 font-mono ${
                           r.status === 'VALID'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            ? 'bg-industrial-success/20 text-industrial-success border border-industrial-success/30'
                             : r.status === 'RECOVERED_WITH_WARNINGS'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            ? 'bg-industrial-warning/20 text-industrial-warning border border-industrial-warning/30'
+                            : 'bg-industrial-error/20 text-industrial-error border border-red-500/30'
                         }`}>
                           {r.status}
                         </span>
@@ -722,9 +722,9 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           {/* TAB 3: PHYSICAL MODEL REGISTRY */}
           {activeTab === 'registry' && (
             <div className="space-y-4">
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl">
+              <div className="p-4 bg-industrial-bg border border-industrial-border rounded-xl">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-sky-400" />
+                  <Cpu className="w-4 h-4 text-industrial-accent" />
                   <span>{lang === 'fa' ? 'رجیستری مدل‌های فیزیکی نسخه‌بندی‌شده' : 'Physical Model Versioning & SemVer Registry'}</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
@@ -736,10 +736,10 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {Object.entries(PHYSICS_MODEL_REGISTRY).map(([id, item]: [string, ModelSemverEntry]) => (
-                  <div key={id} className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-2">
+                  <div key={id} className="p-4 bg-industrial-bg/70 border border-industrial-border rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white">{item.name}</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-industrial-accent/30">
                         v{item.version}
                       </span>
                     </div>
@@ -751,7 +751,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                       <span className="text-slate-500 font-bold">{lang === 'fa' ? 'استانداردها: ' : 'Standards: '}</span>
                       {item.governingStandards.join(', ')}
                     </div>
-                    <div className="text-[10px] font-mono text-emerald-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                    <div className="text-[10px] font-mono text-industrial-success bg-industrial-surface px-2 py-1 rounded border border-industrial-border">
                       {item.validityBoundaries[0]}
                     </div>
                   </div>
@@ -763,7 +763,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs">
+        <div className="px-6 py-3.5 bg-industrial-bg border-t border-industrial-border flex items-center justify-between text-xs">
           <div className="text-slate-400">
             {lang === 'fa'
               ? 'تغییرات به صورت خودکار در مرورگر ذخیره و در پروژه‌های V3 جاسازی می‌شوند.'

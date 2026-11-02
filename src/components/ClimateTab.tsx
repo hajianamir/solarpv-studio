@@ -25,8 +25,8 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
       <div className="studio-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-sky-400 mb-1 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-amber-400" />
+            <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-industrial-warning" />
               {isEn
                 ? 'Site Location, Satellite Map & Pure API Solar Resource'
                 : 'مکان‌یابی، نقشه ماهواره‌ای و تحلیل تشعشع (Site Location & Solar Resource)'}
@@ -38,8 +38,8 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-mono text-sky-400">
-            <Globe className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center gap-2 bg-industrial-surface/90 px-3 py-1.5 rounded-lg border border-industrial-border text-xs font-mono text-industrial-accent">
+            <Globe className="w-4 h-4 text-industrial-success" />
             <span>{isEn ? 'API Gateway: NASA POWER / PVGIS Active' : 'درگاه داده: NASA POWER و PVGIS فعال'}</span>
           </div>
         </div>
@@ -50,13 +50,13 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
 
       {/* Selected City Details Card */}
       <div className="studio-card">
-        <div className="flex items-center justify-between border-b border-slate-700/80 pb-3 mb-4">
+        <div className="flex items-center justify-between border-b border-industrial-border/80 pb-3 mb-4">
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Sun className="w-5 h-5 text-amber-400" />
+              <Sun className="w-5 h-5 text-industrial-warning" />
               {isEn ? 'Climate & Solar Metrics:' : 'اطلاعات اقلیمی:'} {isEn ? selectedCity.nameEn : selectedCity.nameFa}
             </h2>
-            <p className="text-xs text-sky-400 mt-0.5">
+            <p className="text-xs text-industrial-accent mt-0.5">
               {isEn ? selectedCity.descriptionEn : selectedCity.descriptionFa}
             </p>
           </div>
@@ -78,11 +78,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
         {/* Display Grid */}
         {!isEditing ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Peak Sun Hours (PSH)' : 'میانگین ساعات آفتابی اوج (PSH)'}
               </span>
-              <span className="text-xl font-bold font-mono text-amber-400">
+              <span className="text-xl font-bold font-mono text-industrial-warning">
                 {selectedCity.peakSunHours}
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -90,11 +90,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </span>
             </div>
 
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Min Design Temp (T_min)' : 'حداقل دمای طراحی (T_min)'}
               </span>
-              <span className="text-xl font-bold font-mono text-cyan-400">
+              <span className="text-xl font-bold font-mono text-industrial-accent">
                 {selectedCity.tempMinC}°C
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -102,11 +102,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </span>
             </div>
 
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Max Design Temp (T_max)' : 'حداکثر دمای طراحی (T_max)'}
               </span>
-              <span className="text-xl font-bold font-mono text-red-400">
+              <span className="text-xl font-bold font-mono text-industrial-error">
                 {selectedCity.tempMaxC}°C
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -114,7 +114,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </span>
             </div>
 
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Coordinates & Elevation' : 'مختصات جغرافیایی و ارتفاع'}
               </span>
@@ -126,11 +126,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </span>
             </div>
 
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Optimal Annual Tilt' : 'شیب بهینه سالانه (Annual Tilt)'}
               </span>
-              <span className="text-xl font-bold font-mono text-sky-400">
+              <span className="text-xl font-bold font-mono text-industrial-accent">
                 {selectedCity.optimalTiltAnnualDeg}°
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -138,23 +138,23 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </span>
             </div>
 
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Winter / Summer Tilt' : 'شیب زمستانه / تابستانه'}
               </span>
               <span className="font-mono text-slate-200 block text-xs">
-                {isEn ? 'Winter: ' : 'زمستان: '}<strong className="text-sky-300">{selectedCity.optimalTiltWinterDeg}°</strong> | {isEn ? 'Summer: ' : 'تابستان: '}<strong className="text-amber-300">{selectedCity.optimalTiltSummerDeg}°</strong>
+                {isEn ? 'Winter: ' : 'زمستان: '}<strong className="text-sky-300">{selectedCity.optimalTiltWinterDeg}°</strong> | {isEn ? 'Summer: ' : 'تابستان: '}<strong className="text-industrial-warning">{selectedCity.optimalTiltSummerDeg}°</strong>
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
                 {isEn ? 'For seasonal adjustable racking' : 'برای سازه‌های با شیب قابل تنظیم فصلی'}
               </span>
             </div>
 
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Soiling Loss Factor' : 'افت گرد و غبار (Soiling Loss)'}
               </span>
-              <span className="text-xl font-bold font-mono text-amber-300">
+              <span className="text-xl font-bold font-mono text-industrial-warning">
                 {selectedCity.soilingLossPct}%
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -162,11 +162,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </span>
             </div>
 
-            <div className="p-3 bg-slate-900/80 border border-slate-700 rounded-lg">
+            <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Ground Albedo Factor' : 'ضریب آلبیدو زمین (Albedo)'}
               </span>
-              <span className="text-xl font-bold font-mono text-emerald-400">
+              <span className="text-xl font-bold font-mono text-industrial-success">
                 {selectedCity.albedo}
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -283,7 +283,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-industrial-border">
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
