@@ -37,7 +37,7 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
               key={sc.id}
               className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
                 isOptimized
-                  ? 'bg-slate-900/90 border-sky-400 shadow-lg ring-1 ring-sky-400/50'
+                  ? 'bg-slate-900/90 border-sky-400 ring-1 ring-sky-400/50'
                   : isIndustrial
                   ? 'bg-slate-900/80 border-purple-500/70'
                   : 'bg-slate-900/80 border-slate-700'
@@ -49,7 +49,7 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
                     {isFa ? `سناریوی ${idx + 1}` : `Scenario ${idx + 1}`}
                   </span>
                   {isOptimized && (
-                    <span className="text-[10px] bg-sky-950 text-sky-400 border border-sky-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <span className="text-[10px] bg-sky-950 text-sky-400 border border-sky-700 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
                       <Award className="w-3 h-3" /> {isFa ? 'گزینه پیشنهادی' : 'Recommended'}
                     </span>
                   )}

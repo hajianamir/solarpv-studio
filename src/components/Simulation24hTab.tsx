@@ -277,7 +277,7 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
         </div>
 
         {enableDieselGenerator ? (
-          <div className="space-y-4 animate-fadeIn">
+          <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">
                 {isEn

@@ -530,7 +530,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 {cableRuns
                   .filter((r) => !r.isCompliant)
                   .map((r, i) => (
-                    <div key={i} className="p-3 bg-red-950/40 border border-red-800/80 rounded-lg text-xs text-red-200 flex items-start gap-2.5 shadow-md">
+                    <div key={i} className="p-3 bg-red-950/40 border border-red-800/80 rounded-lg text-xs text-red-200 flex items-start gap-2.5">
                       <Wrench className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                       <div>
                         <strong className="text-white block font-bold mb-1">

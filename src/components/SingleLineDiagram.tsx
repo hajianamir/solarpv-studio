@@ -431,7 +431,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
 
       {/* Selected Component Information Panel */}
       {selectedElement && elementDetails[selectedElement] && (
-        <div className="p-4 bg-slate-900/90 border border-sky-500/40 rounded-lg animate-fadeIn">
+        <div className="p-4 bg-slate-900/90 border border-sky-500/40 rounded-lg">
           <div className="flex items-center justify-between border-b border-slate-700/80 pb-2 mb-3">
             <h4 className="font-bold text-sky-400 text-sm flex items-center gap-2">
               <Info className="w-4 h-4 text-sky-400" />
@@ -445,7 +445,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-300">
             {elementDetails[selectedElement].specs.map((spec, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-md bg-sky-400 shrink-0"></span>
                 <span>{spec}</span>
               </div>
             ))}

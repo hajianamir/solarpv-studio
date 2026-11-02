@@ -39,7 +39,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
           </div>
 
           <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-mono text-sky-400">
-            <Globe className="w-4 h-4 text-emerald-400 animate-spin-slow" />
+            <Globe className="w-4 h-4 text-emerald-400" />
             <span>{isEn ? 'API Gateway: NASA POWER / PVGIS Active' : 'درگاه داده: NASA POWER و PVGIS فعال'}</span>
           </div>
         </div>

@@ -25,11 +25,16 @@ export interface StructuralRecommendationInput {
   frostDepthCm: number;
   basicWindSpeedKmh: number;
   groundSnowLoadKgM2: number;
-  slopeDeg?: number;
-  tableAreaM2?: number;
-  arrayTiltDeg?: number;
-  postsPerTable?: number;
-  clearanceHeightM?: number;
+  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  slopeDeg: number;
+  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  tableAreaM2: number;
+  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  arrayTiltDeg: number;
+  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  postsPerTable: number;
+  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  clearanceHeightM: number;
 }
 
 export interface FoundationOptionScore {
@@ -79,12 +84,14 @@ export interface FoundationRecommendationResult {
 }
 
 export function recommendFoundation(input: StructuralRecommendationInput): FoundationRecommendationResult {
-  const tableArea = input.tableAreaM2 ?? 52.0; // standard 28-module 2P table
-  const tilt = input.arrayTiltDeg ?? 25.0;
-  const posts = input.postsPerTable ?? 4;
-  const clearance = input.clearanceHeightM ?? 1.2;
-  const slope = input.slopeDeg ?? 2.0;
-  const frostM = (input.frostDepthCm ?? 30.0) / 100.0;
+  // Ambiguity A: every input comes from the caller (live climate/structural data or
+  // explicit user entry). No hard-coded defaults or fallbacks exist in this engine.
+  const tableArea = input.tableAreaM2;
+  const tilt = input.arrayTiltDeg;
+  const posts = input.postsPerTable;
+  const clearance = input.clearanceHeightM;
+  const slope = input.slopeDeg;
+  const frostM = input.frostDepthCm / 100.0;
 
   // Environmental loads (ASCE 7-22 simplified)
   const vMs = input.basicWindSpeedKmh / 3.6;

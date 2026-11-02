@@ -68,8 +68,10 @@ export function calculateSingleDiodeCurve(
   const vmpEstimated = (stcVmp * seriesModulesCount) * (1.0 + (tempCoeffVocPct / 100.0) * deltaT);
   const impEstimated = stcImp * gRatio * (1.0 + (tempCoeffIscPct / 100.0) * deltaT);
 
-  const rs = Math.max(0.01, ((voc - vmpEstimated) / impEstimated) * 0.15);
-  const rsh = Math.max(50.0, (voc / (isc - impEstimated)) * 10.0);
+  // Series resistance estimated from the STC knee slope (engineering initial guess,
+  // Villalva et al. / De Soto single-diode parameter extraction).
+  const rs = Math.max(0.01, ((voc - vmpEstimated) / impEstimated) * 0.26);
+  const rsh = Math.max(50.0, (voc / Math.max(1e-6, isc - impEstimated)) * 10.0);
 
   // Photocurrent
   const iph = isc * (1.0 + rs / rsh);

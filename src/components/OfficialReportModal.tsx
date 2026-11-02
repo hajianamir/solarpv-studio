@@ -372,7 +372,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
             <button
               onClick={handlePrint}
-              className="studio-btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 shadow-sm"
+              className="studio-btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
               title={isEn ? 'Print or Save as PDF' : 'چاپ مستقیم یا خروجی PDF'}
             >
               <Printer className="w-3.5 h-3.5" />
@@ -562,7 +562,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div>DOC: {docId}</div>
                 <div>VER: {docVersion}</div>
               </div>
-              <div className="inline-block px-3 py-1 bg-sky-500/10 border border-sky-500/30 rounded-full text-sky-400 print:text-sky-800 text-[11px] font-bold tracking-wider uppercase">
+              <div className="inline-block px-3 py-1 bg-sky-500/10 border border-sky-500/30 rounded-md text-sky-400 print:text-sky-800 text-[11px] font-bold tracking-wider uppercase">
                 {isEn ? 'EPC ENGINEERING TECHNICAL DOSSIER' : 'مستند فنی و مهندسی پروژه نیروگاه خورشیدی'}
               </div>
               <div className="text-right text-[11px] text-slate-400 font-mono">

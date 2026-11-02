@@ -357,7 +357,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
         {/* 3D WebGL Canvas Container with Responsive Height */}
         <div
           ref={mountRef}
-          className="w-full h-[280px] sm:h-[380px] md:h-[450px] rounded-lg overflow-hidden border border-slate-700 bg-slate-950 relative shadow-inner cursor-grab active:cursor-grabbing touch-none"
+          className="w-full h-[280px] sm:h-[380px] md:h-[450px] rounded-lg overflow-hidden border border-slate-700 bg-slate-950 relative cursor-grab active:cursor-grabbing touch-none"
         />
 
         {/* Bottom Action Bar */}

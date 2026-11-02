@@ -20,6 +20,11 @@ export interface UserFinancialPricing {
   dieselGenSetCapexUsd?: number;
   dieselAnnualFuelLiters?: number;
   dieselFuelPriceTomanPerLiter?: number;
+  hvConnectionUsdPerKva: number;
+  ppaTariffTomanPerKwh: number;
+  landLeaseUsdPerKwpYear: number;
+  gridOperatorFeeUsdPerKwpYear: number;
+  dieselAnnualServiceOpexUsd: number;
 }
 
 export const DEFAULT_FINANCIAL_PRICING: UserFinancialPricing = {
@@ -39,6 +44,11 @@ export const DEFAULT_FINANCIAL_PRICING: UserFinancialPricing = {
   dieselGenSetCapexUsd: 0,
   dieselAnnualFuelLiters: 0,
   dieselFuelPriceTomanPerLiter: 3500,
+  hvConnectionUsdPerKva: 45,
+  ppaTariffTomanPerKwh: 2800,
+  landLeaseUsdPerKwpYear: 0.12,
+  gridOperatorFeeUsdPerKwpYear: 0.06,
+  dieselAnnualServiceOpexUsd: 1800,
 };
 
 export interface FinancialCapexBreakdown {
@@ -57,6 +67,8 @@ export interface FinancialCapexBreakdown {
   substationMvToman: number;
   gridInterconnectionUsd: number;
   gridInterconnectionToman: number;
+  hvConnectionUsd: number;
+  hvConnectionToman: number;
   dieselGenSetUsd: number;
   dieselGenSetToman: number;
   engineeringAndInstallationUsd: number;
@@ -90,6 +102,16 @@ export interface FinancialAnalysisResult {
   discountedPaybackPeriodYears: number;
   lcoeUsdPerKwh: number;
   lcoeTomanPerKwh: number;
+  // Diesel backup economics (off-grid / hybrid)
+  dieselFuelCostUsd: number;        // annual diesel fuel cost, USD
+  dieselOpexUsd: number;            // annual diesel service & maintenance, USD
+  batteryReplacementCostUsd: number;// year-12 battery replacement reserve, USD
+  // Cost of energy actually served (annualized cost / annual energy)
+  costOfEnergyServedUsdPerKwh: number;
+  // Power-plant tariff & fixed annual charges
+  ppaTariffTomanPerKwh: number;     // effective PPA tariff applied this run
+  landLeaseAnnualUsd: number;       // annual ground lease, USD
+  gridOperatorFeeAnnualUsd: number; // annual grid operator fee, USD
   npvUsd: number;
   npvToman: number;
   irrPct: number;
@@ -126,6 +148,7 @@ export function performFinancialAnalysis(
 
   let substationUsd = 0;
   let gridInterconnectionUsd = 0;
+  let hvConnectionUsd = 0;
   let batteryReplacementYear12Usd = 0;
 
   switch (systemMode) {
@@ -149,6 +172,7 @@ export function performFinancialAnalysis(
       // Utility Power Plant: Full step-up substation, HV switchyard, Bay RMU, and grid interconnection
       substationUsd = plantMva * p.substationUsdPerMva;
       gridInterconnectionUsd = plantMva * 24000; // Transmission line bay, SCADA gateway, SATBA metering
+      hvConnectionUsd = inverterCapacityKw * p.hvConnectionUsdPerKva; // HV connection / transmission interconnection fee
       batteryReplacementYear12Usd = 0;
       break;
   }
@@ -161,6 +185,7 @@ export function performFinancialAnalysis(
     cablesBopUsd +
     substationUsd +
     gridInterconnectionUsd +
+    hvConnectionUsd +
     epcLaborUsd +
     dieselUsd;
 
@@ -182,6 +207,8 @@ export function performFinancialAnalysis(
     substationMvToman: Math.round(substationUsd * p.usdToTomanRate),
     gridInterconnectionUsd: Math.round(gridInterconnectionUsd),
     gridInterconnectionToman: Math.round(gridInterconnectionUsd * p.usdToTomanRate),
+    hvConnectionUsd: Math.round(hvConnectionUsd),
+    hvConnectionToman: Math.round(hvConnectionUsd * p.usdToTomanRate),
     dieselGenSetUsd: Math.round(dieselUsd),
     dieselGenSetToman: Math.round(dieselUsd * p.usdToTomanRate),
     engineeringAndInstallationUsd: Math.round(epcLaborUsd),
@@ -199,6 +226,18 @@ export function performFinancialAnalysis(
   const annualDieselFuelCostToman = (systemMode === 'offgrid' || p.includeDieselGenSet)
     ? (p.dieselAnnualFuelLiters || 3500) * (p.dieselFuelPriceTomanPerLiter || 3500)
     : 0;
+
+  // Power-plant fixed annual charges (land lease + grid operator fee) and
+  // diesel backup service OPEX (off-grid / hybrid only). Applied every year
+  // of the pro-forma; not escalated (fixed contract charges).
+  const landLeaseAnnualUsd = systemMode === 'powerplant' ? totalPvCapacityKwp * p.landLeaseUsdPerKwpYear : 0;
+  const gridOperatorFeeAnnualUsd = systemMode === 'powerplant' ? totalPvCapacityKwp * p.gridOperatorFeeUsdPerKwpYear : 0;
+  const dieselOpexUsd = (systemMode === 'offgrid' || p.includeDieselGenSet) ? p.dieselAnnualServiceOpexUsd : 0;
+  const dieselFuelCostUsd = (systemMode === 'offgrid' || p.includeDieselGenSet)
+    ? (p.dieselAnnualFuelLiters || 3500) * (p.dieselFuelPriceTomanPerLiter || 3500) / p.usdToTomanRate
+    : 0;
+  const batteryReplacementCostUsd = batteryReplacementYear12Usd;
+  const fixedAnnualChargesUsd = landLeaseAnnualUsd + gridOperatorFeeAnnualUsd + dieselOpexUsd;
 
   // 3. Mode-Aware Year 1 Revenue / Energy Savings
   let year1RevenueToman = 0;
@@ -218,7 +257,7 @@ export function performFinancialAnalysis(
     case 'powerplant':
     default:
       // Powerplant: Guaranteed Power Purchase Agreement (PPA) feed-in tariff with indexation
-      year1RevenueToman = annualYieldKwh * p.gridTariffTomanPerKwh;
+      year1RevenueToman = annualYieldKwh * p.ppaTariffTomanPerKwh;
       break;
   }
   const year1RevenueUsd = year1RevenueToman / p.usdToTomanRate;
@@ -239,7 +278,7 @@ export function performFinancialAnalysis(
     const degradedGen = annualYieldKwh * Math.pow(1 - degradationRate, yr - 1);
     const tariffEscalated = (year1RevenueToman / Math.max(1, annualYieldKwh)) * Math.pow(1 + p.tariffEscalationPct / 100.0, yr - 1);
     const revenue = degradedGen * tariffEscalated;
-    const opex = baseAnnualOpexToman * Math.pow(1.08, yr - 1); // 8% opex inflation
+    const opex = baseAnnualOpexToman * Math.pow(1.08, yr - 1) + fixedAnnualChargesUsd * p.usdToTomanRate; // 8% opex inflation + fixed annual charges
     const fuel = annualDieselFuelCostToman * Math.pow(1.08, yr - 1);
     const batteryReplacementToman = (yr === 12 && batteryReplacementYear12Usd > 0)
       ? batteryReplacementYear12Usd * p.usdToTomanRate * Math.pow(1.05, 11)
@@ -305,6 +344,23 @@ export function performFinancialAnalysis(
   const lcoeTomanPerKwh = Number((sumDiscountedCosts / Math.max(1, sumDiscountedEnergyKwh)).toFixed(0));
   const lcoeUsdPerKwh = Number((lcoeTomanPerKwh / p.usdToTomanRate).toFixed(4));
 
+  // Cost of energy actually served = annualized lifetime cost / year-1 energy.
+  // Includes annualized CAPEX (capital recovery factor), OPEX, diesel fuel &
+  // service OPEX, land lease and grid operator fees. Distinct from LCOE which
+  // discounts costs & energy over the lifetime.
+  const crf = lifetimeYears > 0
+    ? (r * Math.pow(1 + r, lifetimeYears)) / (Math.pow(1 + r, lifetimeYears) - 1)
+    : 0;
+  const annualizedCapexUsd = totalCapexUsd * crf;
+  const annualCostOfEnergyServedUsd =
+    annualizedCapexUsd +
+    baseAnnualOpexUsd +
+    dieselFuelCostUsd +
+    dieselOpexUsd +
+    landLeaseAnnualUsd +
+    gridOperatorFeeAnnualUsd;
+  const costOfEnergyServedUsdPerKwh = annualCostOfEnergyServedUsd / Math.max(1, annualYieldKwh);
+
   // 7. Lifetime CO2 Emission Avoidance
   const annualCo2ReductionTons = (annualYieldKwh * 0.00062);
   const lifetime25yCo2ReductionTons = annualCo2ReductionTons * lifetimeYears * 0.94;
@@ -321,6 +377,13 @@ export function performFinancialAnalysis(
     discountedPaybackPeriodYears: Number(discountedPayback.toFixed(1)),
     lcoeUsdPerKwh,
     lcoeTomanPerKwh,
+    dieselFuelCostUsd: Number(dieselFuelCostUsd.toFixed(4)),
+    dieselOpexUsd,
+    batteryReplacementCostUsd: Math.round(batteryReplacementCostUsd),
+    costOfEnergyServedUsdPerKwh: Number(costOfEnergyServedUsdPerKwh.toFixed(6)),
+    ppaTariffTomanPerKwh: p.ppaTariffTomanPerKwh,
+    landLeaseAnnualUsd: Number(landLeaseAnnualUsd.toFixed(2)),
+    gridOperatorFeeAnnualUsd: Number(gridOperatorFeeAnnualUsd.toFixed(2)),
     npvUsd: Math.round(discountedNpvSum / p.usdToTomanRate),
     npvToman: Math.round(discountedNpvSum),
     irrPct: calculatedIrrPct,

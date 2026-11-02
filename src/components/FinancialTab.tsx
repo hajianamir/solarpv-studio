@@ -285,7 +285,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         const foundationCapexImpactUsd = foundationType === 'concrete_pier' ? 0.0028 : foundationType === 'ground_screw' ? 0.0016 : 0.0;
 
         return (
-          <div className="studio-card border border-sky-600/40 bg-gradient-to-br from-slate-900 to-slate-950 p-4">
+          <div className="studio-card border border-sky-600/40 p-4">
             <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
               <h3 className="text-sm font-bold text-sky-400 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />

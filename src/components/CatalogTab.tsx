@@ -192,7 +192,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="studio-btn-primary text-xs py-2 px-3.5 flex items-center gap-2 rounded-lg font-bold shadow-lg shrink-0 self-start sm:self-auto"
+            className="studio-btn-primary text-xs py-2 px-3.5 flex items-center gap-2 rounded-lg font-bold shrink-0 self-start sm:self-auto"
           >
             <Plus className="w-4 h-4" />
             {isFa ? 'افزودن تجهیز دلخواه جدید به کاتالوگ' : 'Add Custom Equipment to Catalog'}
