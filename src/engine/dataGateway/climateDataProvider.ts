@@ -185,6 +185,32 @@ export class ClimateDataProvider {
   }
 
   /**
+   * Nominatim Reverse Geocoding (OpenStreetMap) — resolves coordinates to a
+   * human-readable city/place name (e.g. "München, Bavaria, Germany").
+   * Falls back to generic "Coordinates Site" when the API is unreachable.
+   */
+  public async reverseGeocodeNominatim(lat: number, lng: number): Promise<string> {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}&zoom=10&accept-language=fa+en`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+
+    try {
+      const resp = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!resp.ok) {
+        throw new Error(`Nominatim HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      const name = data?.address?.city || data?.address?.town || data?.address?.village || data?.display_name;
+      if (name) return String(name);
+      throw new Error('Nominatim returned no place name');
+    } catch {
+      clearTimeout(timeout);
+      return `Coordinates Site (${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(2)}°${lng >= 0 ? 'E' : 'W'})`;
+    }
+  }
+
+  /**
    * Free Building Footprint Detection using Overpass API (OpenStreetMap)
    * Alternative to Google Places API / Google Solar Rooftop API
    */

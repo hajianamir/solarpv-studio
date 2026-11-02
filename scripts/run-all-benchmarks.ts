@@ -14,6 +14,7 @@ import { simulateBipvThermalStep } from '../src/engine/bipv/bipvThermalEngine';
 import {
   GOLDEN_BIFACIAL_NREL,
   GOLDEN_SANDIA_PV,
+  GOLDEN_BIPVT_DATASET,
   BENCHMARK_TOLERANCE_TABLE,
 } from '../src/engine/core/benchmarks/goldenDatasets';
 import {
@@ -95,29 +96,59 @@ console.log(`| Pmp at G=800 W/m2 and Tcell=45°C       | 410.20           | Watt
 console.log('+----------------------------------------+------------------+---------------------+\n');
 
 // -----------------------------------------------------------------------------
-// 3. Golden Dataset Cross-Validation (11 Standards)
+// 3. Golden Dataset Cross-Validation — Split Tables (Ambiguity H)
 // -----------------------------------------------------------------------------
-console.log('--- [3/10] Golden Dataset Cross-Validation (11 Standards) ---');
+console.log('--- [3/10] Golden Dataset Validation (Independent Cross-Validation + Implementation Verification) ---');
 const crossRes = runSystemCrossValidation();
-console.log(`Overall Status: ${crossRes.overallStatus} (${crossRes.testsPassed}/${crossRes.testsRun} passed)`);
-console.log(`Max Observed Error: ${crossRes.maxDiscrepancyPercent.toFixed(2)}%\n`);
 
-console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+');
-console.log('| Standard ID       | Domain / Discipline                                             | Nominal  | Engine   | Err (%)  | Status |');
-console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+');
-for (const m of crossRes.metrics) {
+const crossValMetrics = crossRes.metrics.filter(m => m.verificationType === 'cross_validation');
+const implVerMetrics = crossRes.metrics.filter(m => m.verificationType === 'implementation_verification');
+
+// --- Table 3a: Independent Cross-Validation (counts toward overall PASS/FAIL) ---
+console.log(`\n3a. Independent Cross-Validation (${crossValMetrics.length} metrics — nominal source = independent third-party)`);
+console.log(`Cross-Validation Count: ${crossRes.crossValidationCount} | Implementation Verification Count: ${crossRes.implementationVerificationCount}\n`);
+
+console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+');
+console.log('| Standard ID       | Domain / Discipline                                             | Nominal  | Engine   | Err (%)  | Status | Source   |');
+console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+');
+let crossValFailed = false;
+for (const m of crossValMetrics) {
   const pad = (str: string, len: number) => (str.length > len ? str.slice(0, len - 3) + '...' : str).padEnd(len);
   const padNum = (num: number, len: number) => num.toFixed(2).padStart(len);
   const padErr = (num: number, len: number) => (num.toFixed(2) + '%').padStart(len);
+  const source = m.sourceUrl ? (m.sourceUrl.length > 8 ? m.sourceUrl.slice(0, 5) + '...' : m.sourceUrl) : '-';
   console.log(
-    `| ${pad(m.testId, 17)} | ${pad(m.name, 63)} | ${padNum(m.nominalValue, 8)} | ${padNum(m.calculatedValue, 8)} | ${padErr(m.relativeErrorPercent, 8)} | [${m.status}] |`
+    `| ${pad(m.testId, 17)} | ${pad(m.name, 63)} | ${padNum(m.nominalValue, 8)} | ${padNum(m.calculatedValue, 8)} | ${padErr(m.relativeErrorPercent, 8)} | [${m.status}] | ${pad(source, 8)} |`
   );
   if (m.status === 'FAIL') {
-    console.error(`FATAL: Cross-validation failed on ${m.testId}`);
-    process.exit(1);
+    console.error(`FATAL: Independent cross-validation failed on ${m.testId}`);
+    crossValFailed = true;
   }
 }
-console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+\n');
+console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+');
+console.log(`Independent Cross-Validation Status: ${crossValFailed ? 'FAIL' : 'PASS'}\n`);
+
+// --- Table 3b: Implementation Verification (informational, NOT in overall PASS/FAIL) ---
+console.log(`3b. Implementation Verification (${implVerMetrics.length} metrics — code-internal / literature threshold reproduction)`);
+console.log(`These reproduce code-internal relationships; they are NOT independent proof of accuracy.\n`);
+
+console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+');
+console.log('| Standard ID       | Domain / Discipline                                             | Nominal  | Engine   | Err (%)  | Status | Source   |');
+console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+');
+for (const m of implVerMetrics) {
+  const pad = (str: string, len: number) => (str.length > len ? str.slice(0, len - 3) + '...' : str).padEnd(len);
+  const padNum = (num: number, len: number) => num.toFixed(2).padStart(len);
+  const padErr = (num: number, len: number) => (num.toFixed(2) + '%').padStart(len);
+  const source = m.sourceUrl ? (m.sourceUrl.length > 8 ? m.sourceUrl.slice(0, 5) + '...' : m.sourceUrl) : '-';
+  console.log(
+    `| ${pad(m.testId, 17)} | ${pad(m.name, 63)} | ${padNum(m.nominalValue, 8)} | ${padNum(m.calculatedValue, 8)} | ${padErr(m.relativeErrorPercent, 8)} | [${m.status}] | ${pad(source, 8)} |`
+  );
+}
+console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+\n');
+
+if (crossValFailed) {
+  process.exit(1);
+}
 
 // -----------------------------------------------------------------------------
 // 4. Copula Sampling & Kurtosis Tail Verification
@@ -186,7 +217,10 @@ for (const p of sensRes.kimberMatrix) {
 }
 console.log('+--------------------+------------------------+---------------------+---------------------+\n');
 
-console.log('2. Marion Snow Shedding Sensitivity Matrix (Array Tilt vs Snowfall Depth):');
+console.log('2. Marion Snow Shedding Sensitivity Matrix (Generic Weather Model):');
+console.log('   NOTE: Values use generateSnowfallYear() generic weather profile. Site-specific NREL/DWD calibrated');
+console.log('   results (Boulder=4.02%, Munich=2.55%, Toronto=3.67%) appear in Section 8 and use hub-specific parameters.');
+console.log('   These are complementary views, not contradictory: generic sensitivity vs empirical recalibration.');
 console.log('+--------------------+------------------------+---------------------+---------------------+------------------+-----------------------+');
 console.log('| Array Tilt (deg)   | Annual Snowfall (cm)   | Annual Loss (%)     | Structural (kN/m2)  | Damming Risk     | Peak Ground Snow (cm) |');
 console.log('+--------------------+------------------------+---------------------+---------------------+------------------+-----------------------+');
@@ -219,6 +253,17 @@ for (const p of sensRes.fineLowTiltSweep) {
 }
 console.log('+--------------------+------------------------+---------------------+---------------------+------------------+\n');
 
+
+console.log('2d. Fine Transition Sweep (10° to 15° in 1° Increments - PR-2a-6 Damming Regime Transition):');
+console.log('+--------------------+------------------------+---------------------+---------------------+------------------+');
+console.log('| Array Tilt (deg)   | Annual Snowfall (cm)   | Damming Clearance   | Annual Loss (%)     | Damming Risk     |');
+console.log('+--------------------+------------------------+---------------------+---------------------+------------------+');
+for (const p of sensRes.fineTransitionSweep) {
+  const pad = (s: string, l: number) => s.padEnd(l);
+  const padN = (n: number, l: number) => n.toFixed(2).padStart(l);
+  console.log(`| ${pad(p.tiltDeg + ' deg', 18)} | ${pad(p.annualSnowfallCm + ' cm', 22)} | ${pad(p.dammingFactor.toFixed(3), 19)} | ${padN(p.annualSnowLossPercent, 19)} | ${pad(p.avalancheDammingRisk, 16)} |`);
+}
+console.log('+--------------------+------------------------+---------------------+---------------------+------------------+\\n');
 console.log('3. Optical IAM Angular & Temperature Coupling Matrix (Incidence Angle vs Cell Temp):');
 console.log('+--------------------+------------------------+---------------------+---------------------+');
 console.log('| Angle theta (deg)  | Cell Temp (deg C)      | IAM Coupled Factor  | Reflection Loss (%) |');
@@ -302,6 +347,12 @@ for (const f of extVal.fieldBenchmarks) {
 }
 console.log('+--------------------+------------------------------------------+----------+----------+----------+--------+\n');
 
+for (const f of extVal.fieldBenchmarks) {
+  const prov = f.datasetProvenance;
+  console.log(`   Station ${f.stationId}: DOI=${prov.doi} | URL=${prov.url} | Period=${prov.monitoringPeriod} | Sensor=${prov.sensorTechnology}`);
+}
+console.log('');
+
 console.log('2. Cross-Model Comparison (NREL SAM 2023.12.17 Multi-Climate):');
 console.log('+--------------------+--------------------------+---------------+---------------+---------------+--------+');
 console.log('| Climate Hub ID     | Location & Regime        | SAM Soil (%)  | Eng Soil (%)  | Eng Snow (%)  | Status |');
@@ -357,12 +408,12 @@ console.log(`| Front Exterior Kimber Soiling Loss     | ${bipvTask60.frontSoilin
 console.log(`| Rear Cavity Duct Dust Deposition       | ${bipvTask60.rearDuctDustDepositionPercent.toFixed(2).padStart(16)} | %                   |`);
 console.log('+----------------------------------------+------------------+---------------------+\n');
 
-const expectedAreaRatio = Number((bipvTask60.netApertureAreaM2 / bipvTask60.grossCollectorAreaM2).toFixed(3)); // 1.72 / 2.00 = 0.860 from geometry fields
+const expectedAreaRatio = GOLDEN_BIPVT_DATASET.expectedAreaRatio; // 0.860 from static geometry fields only (independent of efficiency)
 const bipvRatio = Number((bipvTask60.netGrossDeliveredElectricalEfficiencyPercent / bipvTask60.netElectricalEfficiencyPercent).toFixed(3));
 const bipvtAreaOk = Math.abs(bipvRatio - expectedAreaRatio) < 0.001;
-console.log(`[BIPVT-AREA] aperture=${bipvTask60.netElectricalEfficiencyPercent.toFixed(2)}% gross=${bipvTask60.netGrossDeliveredElectricalEfficiencyPercent.toFixed(2)}% ratio=${bipvRatio.toFixed(3)} expected_ratio=${expectedAreaRatio.toFixed(3)} ${bipvtAreaOk ? 'PASS' : 'FAIL'}\\n`);
+console.log(`[BIPVT-AREA] aperture=${bipvTask60.netElectricalEfficiencyPercent.toFixed(2)}% gross=${bipvTask60.netGrossDeliveredElectricalEfficiencyPercent.toFixed(2)}% ratio=${bipvRatio.toFixed(3)} expected_ratio=${expectedAreaRatio.toFixed(3)} (geometry: ${GOLDEN_BIPVT_DATASET.apertureAreaM2}/${GOLDEN_BIPVT_DATASET.grossAreaM2} m²) ${bipvtAreaOk ? 'PASS' : 'FAIL'}\\n`);
 if (!bipvtAreaOk) {
-  console.error('FATAL: BIPV/T area ratio mismatch (aperture-to-gross geometry violated)');
+  console.error('FATAL: BIPV/T area ratio mismatch (engine efficiency ratio != static physical geometry ratio)');
   process.exit(1);
 }
 

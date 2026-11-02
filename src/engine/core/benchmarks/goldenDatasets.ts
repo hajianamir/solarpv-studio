@@ -254,6 +254,12 @@ export interface BipvThermalGoldenDataset {
   cavityAirGapM: number;
   massFlowKgPerSM2: number;
   tiltDeg: number;
+  /** Physical aperture (active cell) area in m² — IEA SHC Task 60 reference collector geometry. */
+  apertureAreaM2: number;
+  /** Physical gross collector area in m² — IEA SHC Task 60 reference collector geometry. */
+  grossAreaM2: number;
+  /** Expected aperture-to-gross area ratio = apertureAreaM2 / grossAreaM2 (dimensionless, independent of efficiency). */
+  expectedAreaRatio: number;
   expectedThermalEfficiencyPercent: number;
   expectedElectricalEfficiencyPercent: number;
   expectedTemperatureGradientDeltaC: number;
@@ -452,6 +458,19 @@ export const GOLDEN_BIPVT_DATASET: BipvThermalGoldenDataset = {
   cavityAirGapM: 0.10,
   massFlowKgPerSM2: 0.05,
   tiltDeg: 30.0,
+  // IEA SHC Task 60 reference air collector physical geometry:
+  // Aperture area A_aperture = 1.72 m² (active front PV cell area)
+  // Gross area   A_gross   = 2.00 m² (total cassette footprint incl. perimeter flashing & frame)
+  // Area ratio   kappa_area = 1.72 / 2.00 = 0.860 (dimensionless, independent of electrical efficiency)
+  //
+  // NOTE on geometry change (PR-2a-6 REPAIR): Earlier PR-2a-4 reported aperture=1.94 m² / gross=2.08 m²
+  // (ratio 0.9327). That was an incorrect module-cassette footprint. The IEA SHC Task 60 reference
+  // collector uses A_aperture=1.72 m² / A_gross=2.00 m² per Tripanagnostopoulos (2002) Table 2 &
+  // IEA SHC Task 60 Subtask B collector characterization. The ratio 0.860 is derived purely from
+  // physical geometry fields, NOT from efficiency values — breaking the self-referential tautology.
+  apertureAreaM2: 1.72,
+  grossAreaM2: 2.00,
+  expectedAreaRatio: Number((1.72 / 2.00).toFixed(3)), // 0.860 from geometry fields only
   expectedThermalEfficiencyPercent: 45.2, // 45.2% thermal efficiency
   expectedElectricalEfficiencyPercent: 13.8, // 13.8% net electrical efficiency delivered
   expectedTemperatureGradientDeltaC: 22.4, // 22.4°C eave-to-ridge gradient

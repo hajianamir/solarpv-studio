@@ -43,16 +43,17 @@ export class ExternalDataGateway {
   public async getComprehensiveSiteData(lat: number, lng: number): Promise<ComprehensiveSiteData> {
     const traceId = `TRC-GW-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const [climateResource, soilProperties, structuralHazard] = await Promise.all([
+    const [climateResource, soilProperties, structuralHazard, nominatimName] = await Promise.all([
       this.climateProvider.fetchClimateResource(lat, lng),
       this.soilProvider.fetchSoilProperties(lat, lng),
       this.structuralProvider.fetchStructuralHazard(lat, lng),
+      this.climateProvider.reverseGeocodeNominatim(lat, lng),
     ]);
 
     const climateCity: ClimateCity = {
       id: `gateway_${lat.toFixed(3)}_${lng.toFixed(3)}`,
-      nameFa: `سایت موقعیت (${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(2)}°${lng >= 0 ? 'E' : 'W'})`,
-      nameEn: `Site (${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(2)}°${lng >= 0 ? 'E' : 'W'})`,
+      nameFa: nominatimName,
+      nameEn: nominatimName,
       provinceFa: climateResource.metadata.geographicRegion,
       provinceEn: climateResource.metadata.geographicRegion,
       latitude: lat,
