@@ -138,9 +138,14 @@ export function generateNrelHubSnowWeather(
  * Runs the Marion snow engine against the 3 canonical NREL/DWD empirical test hubs.
  */
 export function runMarionSnowRecalibrationSuite(): MarionRecalibrationReport {
+  // TEST FIXTURE ONLY — NOT USED IN PRODUCTION (Ambiguity E).
+  // These HUB-SNOW-* IDs are empirical reference datasets for Marion snow
+  // recalibration (NREL / DWD / Andrews & Pearce). They are NOT climate hubs
+  // and NOT used for live climate data routing. Climate hubs (internationalHubs.ts)
+  // were deleted per ADR-005; all live climate data comes from NASA POWER / PVGIS / NSRDB.
   const hubs = [
     {
-      hubId: 'HUB-SNOW-BOULDER',
+      hubId: 'HUB-SNOW-BOULDER', // TEST FIXTURE — NREL Boulder reference case (40° tilt, 300cm snow)
       locationName: 'Boulder, Colorado',
       country: 'USA',
       annualSnowfallCm: 300,
@@ -157,7 +162,7 @@ export function runMarionSnowRecalibrationSuite(): MarionRecalibrationReport {
       citation: 'Marion, B., et al. (2013) IEEE JPV Vol 3, No 1, pp. 236-242',
     },
     {
-      hubId: 'HUB-SNOW-MUNICH',
+      hubId: 'HUB-SNOW-MUNICH', // TEST FIXTURE — DWD Munich reference case (30° tilt, 150cm snow)
       locationName: 'Munich, Bavaria',
       country: 'Germany',
       annualSnowfallCm: 150,
@@ -174,7 +179,7 @@ export function runMarionSnowRecalibrationSuite(): MarionRecalibrationReport {
       citation: 'DWD (Deutscher Wetterdienst) & IEA-PVPS Task 13 Munich Trial',
     },
     {
-      hubId: 'HUB-SNOW-TORONTO',
+      hubId: 'HUB-SNOW-TORONTO', // TEST FIXTURE — Andrews & Pearce Toronto reference case (35° tilt, 200cm snow)
       locationName: 'Toronto, Ontario',
       country: 'Canada',
       annualSnowfallCm: 200,
