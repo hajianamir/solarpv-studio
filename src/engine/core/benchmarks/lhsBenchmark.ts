@@ -30,6 +30,17 @@ export interface LhsStatisticalBenchmarkResult {
 }
 
 /**
+ * Determines PASS/WARN/FAIL status from relative error and tolerance.
+ * Exported for unit test coverage of WARN and FAIL branches.
+ */
+export function compareStatus(
+  relErr: number,
+  tolerance: number
+): 'PASS' | 'WARN' | 'FAIL' {
+  return relErr <= tolerance ? 'PASS' : relErr <= tolerance * 1.5 ? 'WARN' : 'FAIL';
+}
+
+/**
  * Runs a rigorous statistical test comparing 10,000 Crude Monte Carlo draws
  * against 100 Latin Hypercube Samples on a Gumbel Type I extreme gust distribution.
  */
@@ -97,7 +108,7 @@ export function runLhsVsCmcBenchmark(seed = 42): LhsStatisticalBenchmarkResult {
   ): StatisticalMetricComparison => {
     const absDiff = Math.abs(lhs - cmc);
     const relErr = (absDiff / Math.abs(cmc)) * 100;
-    const status = relErr <= tolerance ? 'PASS' : relErr <= tolerance * 1.5 ? 'WARN' : 'FAIL';
+    const status = compareStatus(relErr, tolerance);
     return {
       statistic,
       cmc10kValue: Number(cmc.toFixed(3)),
@@ -117,7 +128,7 @@ export function runLhsVsCmcBenchmark(seed = 42): LhsStatisticalBenchmarkResult {
     compare('p90', cmcStats.p90, lhsStats.p90, 3.5),         // P90 error < 3.5%
   ];
 
-  const speedupFactor = cmcExecutionTimeMs > 0 ? Number((cmcExecutionTimeMs / Math.max(0.01, lhsExecutionTimeMs)).toFixed(1)) : 85.0;
+  const speedupFactor = Number((cmcExecutionTimeMs / Math.max(0.01, lhsExecutionTimeMs)).toFixed(1));
 
   const conclusionNote =
     'Verified: 100-sample LHS matches 10,000-sample CMC within 0.8% for Mean/P50 and within 2.5% for P10/P90. For extreme tails (P99+), analytical Gumbel tail extrapolation is adopted.';

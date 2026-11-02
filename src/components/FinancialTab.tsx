@@ -339,6 +339,16 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </div>
 
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
+                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'ثبت نگهداری شوری (O&M):' : 'Corrosion Maintenance OPEX:'}</span>
+                <span className="font-mono font-bold text-industrial-warning text-base">
+                  +{corrosion ? corrosion.maintenanceOpexAdderPct : 0}%
+                </span>
+                <span className="text-[9px] text-industrial-warning/80 block mt-0.5">
+                  {corrosion ? `${corrosion.categoryLabel} · ${corrosion.traceId}` : '—'}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
                 <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'اثر CAPEX فونداسیون سازه:' : 'Foundation Typology Impact:'}</span>
                 <span className="font-mono font-bold text-purple-400 text-base">
                   {foundationCapexImpactUsd > 0 ? `+$${foundationCapexImpactUsd.toFixed(4)}` : '$0.0000'}

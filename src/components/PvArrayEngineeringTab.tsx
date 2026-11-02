@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Sun, Cpu, AlertTriangle, CheckCircle2, Layers, Zap, Eye, Search, Filter } from 'lucide-react';
 import { PvArrayDesignResult, ModuleSpecs, InverterSpecs } from '../engine/pvEngineAdvanced';
 import { InverterClusteringResult } from '../engine/inverterClustering';
 import { CATALOG_MODULES, CATALOG_INVERTERS, CatalogInverter } from '../engine/equipmentCatalogData';
 import { ClimateCity } from '../engine/climaticData';
 import { ShadingAnalysisSubTab } from './ShadingAnalysisSubTab';
+import { assessSaltCorrosion, SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
 
 interface PvArrayEngineeringTabProps {
   selectedModule: ModuleSpecs;
@@ -68,6 +69,17 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
   const [moduleSearch, setModuleSearch] = useState('');
   const [inverterSearch, setInverterSearch] = useState('');
   const [inverterCategory, setInverterCategory] = useState<'all' | 'string' | 'turnkey' | 'hybrid'>('all');
+  const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
+
+  // Salt corrosion / ISO 9223 inverter derating (resolved via OSM Nominatim shoreline distance)
+  useEffect(() => {
+    let mounted = true;
+    if (!city) { setCorrosion(null); return; }
+    assessSaltCorrosion({ latitude: city.latitude, longitude: city.longitude, resolveDistance: true })
+      .then((res) => { if (mounted) setCorrosion(res); })
+      .catch(() => { if (mounted) setCorrosion(null); });
+    return () => { mounted = false; };
+  }, [city?.latitude, city?.longitude]);
 
   // Filtered Modules
   const filteredModules = useMemo(() => {
@@ -327,6 +339,9 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 <div>{isEn ? 'MPPT Channels:' : 'تعداد MPPT:'} <span className="font-mono font-bold">{selectedInverter.mpptChannelsCount} {isEn ? 'Ch' : 'کانال'}</span></div>
                 <div>{isEn ? 'Phases:' : 'سیستم فاز:'} <span>{selectedInverter.isThreePhase ? (isEn ? 'Three-Phase 400/800V' : 'سه فاز') : (isEn ? 'Single-Phase 230V' : 'تکفاز')}</span></div>
                 <div>{isEn ? 'Efficiency:' : 'راندمان:'} <span className="font-mono text-industrial-success">{selectedInverter.efficiencyMaxPct}%</span></div>
+                {corrosion && (
+                  <div>{isEn ? 'Salt Corrosion Derate:' : 'تأثیر شوری:'} <span className={`font-mono font-bold text-xs ${corrosion.inverterDeratePct > 0 ? 'text-industrial-error' : 'text-industrial-success'}`}>-{corrosion.inverterDeratePct}% → MTBF ×${(1 - corrosion.inverterDeratePct / 100).toFixed(2)}</span></div>
+                )}
               </div>
             </div>
           </div>

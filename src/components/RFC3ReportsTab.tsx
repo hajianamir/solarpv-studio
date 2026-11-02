@@ -319,6 +319,34 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                   ? 'Independent external validation benchmarks, Latin Hypercube sampling proofs, SemVer model registry, and 3-state migration audits.'
                   : 'اعتبارسنجی بنچمارک‌های مستقل جهانی (NREL SAM، Sandia، DNV، IEA-PVPS)، اثبات آماری نمونه‌برداری ابرمکعب لاتین و رجیستری مدل‌های فیزیکی.'}
               </p>
+
+              {/* Project Context Banner */}
+              <div className="mt-3 p-2.5 rounded-lg border border-industrial-border bg-industrial-surface/60">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Layers className="w-3 h-3 text-industrial-accent" />
+                  <span className="text-xs font-bold text-industrial-accent uppercase tracking-wider">
+                    {isEn ? 'Project Context' : 'بستر پروژه'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+                  <div className="bg-industrial-bg p-1.5 rounded border border-industrial-border/50">
+                    <span className="block text-slate-500 text-[9px]">{isEn ? 'Project' : 'پروژه'}</span>
+                    <span className="block font-mono text-xs text-slate-200">SolarPV Studio v3.0</span>
+                  </div>
+                  <div className="bg-industrial-bg p-1.5 rounded border border-industrial-border/50">
+                    <span className="block text-slate-500 text-[9px]">{isEn ? 'Coordinates' : 'مختصات'}</span>
+                    <span className="block font-mono text-xs text-slate-200">35.6892°N, 51.3890°E</span>
+                  </div>
+                  <div className="bg-industrial-bg p-1.5 rounded border border-industrial-border/50">
+                    <span className="block text-slate-500 text-[9px]">{isEn ? 'Providers' : 'ارائه‌دهندگان'}</span>
+                    <span className="block font-mono text-xs text-slate-200">NASA POWER / PVGIS / OSM</span>
+                  </div>
+                  <div className="bg-industrial-bg p-1.5 rounded border border-industrial-border/50">
+                    <span className="block text-slate-500 text-[9px]">{isEn ? 'Trace IDs' : 'کدهای ردیابی'}</span>
+                    <span className="block font-mono text-xs text-slate-200">TRC-GW / TRC-FND / TRC-COR</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
