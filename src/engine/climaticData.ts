@@ -2,6 +2,8 @@
 // SolarPV Studio v3.0 - ADR-005: Removal of Climate Hubs & Pure API-Driven Architecture
 // Conforming to NASA POWER v2.0, PVGIS (SARAH-2/ERA5), NSRDB, INBC Part 6, ASCE 7-22, Eurocode 1 & 7
 
+import { ExternalDataGateway } from './dataGateway/externalDataGateway';
+
 export type SoilClassification =
   | 'dense_sand_gravel'
   | 'medium_clay'
@@ -90,10 +92,18 @@ export function getEffectiveClimateCity(
  * Evaluates comprehensive climatic and geotechnical parameters for ANY geographic coordinates
  * worldwide (-90 <= lat <= +90, -180 <= lng <= +180).
  *
- * In accordance with ADR-005, hardcoded static city arrays have been completely abolished.
- * Solar irradiance (PSH), temperature extremes, optimal tilt, ground snow load, wind speed,
- * and geotechnical parameters are derived through continuous geospatial physical modeling
- * calibrated against NASA POWER v2.0, PVGIS SARAH-2, and NSRDB regional data.
+ * In accordance with ADR-005, hardcoded static city arrays have been completely abolished
+ * (IRANIAN_CLIMATE_CITIES, INDUSTRIAL_PARKS, INTERNATIONAL_CLIMATE_HUBS, ALL_CLIMATE_CITIES
+ * are permanently removed). There are no climate hubs remaining — every coordinate on Earth
+ * resolves distinct, dynamically computed engineering parameters.
+ *
+ * This is the SYNCHRONOUS deterministic geospatial model used for instant UI feedback and as
+ * the circuit-breaker fallback when global APIs (NASA POWER / PVGIS / NSRDB) are unreachable.
+ * All outputs carry confidence: 'analytical_estimate' and full provenance metadata.
+ *
+ * For production-grade measured data, use the async `fetchClimateData(lat, lng)` which resolves
+ * real HTTP responses from NASA POWER v2.0 (Americas), PVGIS 5.3 SARAH-2 (EMEA/Asia), or
+ * NSRDB with per-call trace_id logging.
  */
 export function getClimateData(lat: number, lng: number): ClimateCity {
   // 1. Strict coordinate bounds validation
@@ -286,4 +296,38 @@ export function getDefaultClimateCity(): ClimateCity {
     nameFa: 'تهران (سایت پیش‌فرض مهندسی)',
     nameEn: 'Tehran (Default Engineering Site)',
   };
+}
+
+/**
+ * Resolves real measured climate & geotechnical telemetry for ANY coordinates via the
+ * global API gateway (NASA POWER v2.0 → PVGIS 5.3 SARAH-2 → NSRDB routing by region,
+ * plus ISRIC SoilGrids and ASCE 7/Eurocode structural hazards).
+ *
+ * Every call carries a unique `trace_id` (in returned `ClimateCity.id`) that is logged for
+ * auditability. This is the production data path mandated by ADR-005: no hard-coded hubs,
+ * no interpolation between static points — every coordinate hits the live API.
+ *
+ * Falls back to the deterministic geospatial model (`getClimateData`) when the circuit breaker
+ * is open (offline / rate-limited / air-gapped); the fallback keeps `confidence: 'analytical_estimate'`
+ * so estimated data is never mistaken for measured API data.
+ */
+export async function fetchClimateData(lat: number, lng: number): Promise<ClimateCity> {
+  if (
+    typeof lat !== 'number' ||
+    typeof lng !== 'number' ||
+    isNaN(lat) ||
+    isNaN(lng) ||
+    lat < -90.0 ||
+    lat > 90.0 ||
+    lng < -180.0 ||
+    lng > 180.0
+  ) {
+    throw new Error(
+      `Invalid geographic coordinates: latitude ${lat} (must be in range [-90, +90]) and longitude ${lng} (must be in range [-180, +180]).`
+    );
+  }
+
+  const gateway = ExternalDataGateway.getInstance();
+  const { climateCity } = await gateway.getComprehensiveSiteData(lat, lng);
+  return climateCity;
 }

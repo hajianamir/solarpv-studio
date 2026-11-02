@@ -94,7 +94,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
               onClick={() => setFramework(item.id as IranianRegulationFramework)}
               className={`p-3 rounded-lg border cursor-pointer transition-all ${
                 framework === item.id
-                  ? 'bg-sky-950/70 border-sky-400 shadow-md ring-1 ring-sky-400'
+                  ? 'bg-sky-950/70 border-sky-400 ring-1 ring-sky-400'
                   : 'bg-slate-900 border-slate-700 hover:border-slate-500'
               }`}
             >

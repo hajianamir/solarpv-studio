@@ -258,7 +258,7 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
                       <span className="font-mono text-[10px] text-cyan-300 font-bold">{vol.toLocaleString()}</span>
                       <div
                         style={{ height: `${heightPct}%` }}
-                        className="w-full max-w-[36px] bg-gradient-to-t from-cyan-600 to-sky-400 rounded-t-md transition-all hover:opacity-80"
+                        className="w-full max-w-[36px] bg-cyan-600 rounded-t-md transition-all hover:opacity-80"
                       />
                       <span className="text-[10.5px] text-slate-400 whitespace-nowrap mt-1">
                         {isFa ? monthNamesFa[idx] : monthNamesEn[idx]}

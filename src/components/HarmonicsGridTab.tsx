@@ -290,7 +290,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
                 <span className="text-slate-300 font-semibold">اعوجاج هارمونیکی جریان (THD_i):</span>
                 <span className="font-mono font-bold text-amber-400 text-sm">{harmonicsResult.thdCurrentPct}%</span>
               </div>
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-slate-800 h-2 rounded-md overflow-hidden">
                 <div
                   className={`h-full ${harmonicsResult.thdCurrentPct <= harmonicsResult.thdCurrentLimitPct ? 'bg-emerald-500' : 'bg-red-500'}`}
                   style={{ width: `${Math.min(100, (harmonicsResult.thdCurrentPct / harmonicsResult.thdCurrentLimitPct) * 100)}%` }}
@@ -307,7 +307,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
                 <span className="text-slate-300 font-semibold">اعوجاج هارمونیکی ولتاژ در نقطه PCC (THD_v):</span>
                 <span className="font-mono font-bold text-sky-400 text-sm">{harmonicsResult.thdVoltagePct}%</span>
               </div>
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-slate-800 h-2 rounded-md overflow-hidden">
                 <div
                   className={`h-full ${harmonicsResult.thdVoltagePct <= harmonicsResult.thdVoltageLimitPct ? 'bg-emerald-500' : 'bg-red-500'}`}
                   style={{ width: `${Math.min(100, (harmonicsResult.thdVoltagePct / harmonicsResult.thdVoltageLimitPct) * 100)}%` }}

@@ -724,7 +724,7 @@ export const App: React.FC = () => {
     >
       {/* Toast Notification */}
       {saveToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 border border-emerald-400 animate-bounce">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-emerald-400">
           <CheckCircle2 className="w-4 h-4" />
           <span>{saveToast}</span>
         </div>
@@ -734,21 +734,21 @@ export const App: React.FC = () => {
       {isMobileMenuOpen && (
         <div
           onClick={() => setIsMobileMenuOpen(false)}
-          className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-black/60 z-30 lg:hidden transition-opacity"
         />
       )}
 
       {/* FIXED OPERATIONAL SIDEBAR — DOCKED ON THE RIGHT SIDE, RESPONSIVE SLIDE-OVER ON MOBILE */}
       <aside
-        className={`w-72 bg-slate-900 right-0 border-l border-slate-800 flex flex-col fixed inset-y-0 z-40 shadow-2xl overflow-hidden transition-transform duration-300 lg:translate-x-0 ${
+        className={`w-[280px] bg-slate-900 right-0 border-l border-[#1F2937] flex flex-col fixed inset-y-0 z-40 overflow-hidden transition-transform duration-150 lg:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-sky-600 text-slate-950 font-bold shadow-lg">
-              <Sun className="w-5 h-5 animate-spin-slow" />
+            <div className="p-2 rounded-md bg-blue-500 text-slate-950 font-bold">
+              <Sun className="w-5 h-5" />
             </div>
             <div>
               <h1 className="text-sm font-extrabold text-white tracking-wide">SolarPV Studio</h1>
@@ -760,7 +760,7 @@ export const App: React.FC = () => {
             {/* Language Switcher */}
             <button
               onClick={() => setLang(lang === 'fa' ? 'en' : 'fa')}
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 hover:border-sky-500 transition shadow-sm font-bold"
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 hover:border-sky-500 transition font-bold"
               title={t.language}
             >
               <Globe className="w-3.5 h-3.5 text-sky-400" />
@@ -839,7 +839,7 @@ export const App: React.FC = () => {
                       }}
                       className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-all text-xs text-right ${
                         isActive
-                          ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white font-bold shadow-md'
+                          ? 'bg-sky-600 text-white font-bold'
                           : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
@@ -878,7 +878,7 @@ export const App: React.FC = () => {
 
           <button
             onClick={() => setShowReportModal(true)}
-            className="w-full py-2 px-3 studio-btn-primary flex items-center justify-center gap-2 text-xs font-bold rounded-lg shadow-lg"
+            className="w-full py-2 px-3 studio-btn-primary flex items-center justify-center gap-2 text-xs font-bold rounded-lg"
           >
             <FileText className="w-4 h-4 text-amber-300" />
             <span>{t.generateReport}</span>
@@ -887,9 +887,9 @@ export const App: React.FC = () => {
       </aside>
 
       {/* MAIN CONTENT WORKSPACE OFFSET BY FIXED RIGHT SIDEBAR (RESPONSIVE) */}
-      <div className="flex-1 flex flex-col lg:mr-72 mr-0 min-h-screen">
+      <div className="flex-1 flex flex-col lg:mr-[280px] mr-0 min-h-screen">
         {/* Top Header Bar */}
-        <header className="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-20 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -925,22 +925,6 @@ export const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
-            <button
-              onClick={() => setActiveTab('rfc3_reports')}
-              className={`py-1.5 px-2.5 sm:px-3 rounded border flex items-center gap-1.5 text-xs font-bold transition shadow-sm ${
-                activeTab === 'rfc3_reports'
-                  ? 'bg-blue-600 border-blue-400 text-white shadow'
-                  : 'bg-[#121826] hover:bg-slate-800 border-[#1F2937] text-blue-400'
-              }`}
-              title={lang === 'fa' ? 'گزارشات و اعتبارسنجی RFC 3.0' : 'RFC 3.0 Engineering & Reports'}
-            >
-              <FileCheck className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden sm:inline">RFC 3.0 Reports</span>
-              <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono border border-blue-500/30">
-                11/11 PASS
-              </span>
-            </button>
-
             <button
               onClick={handleSaveProject}
               className="studio-btn text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1.5 font-bold"
@@ -993,7 +977,7 @@ export const App: React.FC = () => {
                     onClick={() => setSystemMode('powerplant')}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition ${
                       systemMode === 'powerplant'
-                        ? 'border-amber-500 bg-amber-950/20 shadow-lg'
+                        ? 'border-amber-500 bg-amber-950/20'
                         : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
                     }`}
                   >
@@ -1016,7 +1000,7 @@ export const App: React.FC = () => {
                     onClick={() => setSystemMode('ongrid')}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition ${
                       systemMode === 'ongrid'
-                        ? 'border-sky-500 bg-sky-950/20 shadow-lg'
+                        ? 'border-sky-500 bg-sky-950/20'
                         : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
                     }`}
                   >
@@ -1039,7 +1023,7 @@ export const App: React.FC = () => {
                     onClick={() => setSystemMode('offgrid')}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition ${
                       systemMode === 'offgrid'
-                        ? 'border-emerald-500 bg-emerald-950/20 shadow-lg'
+                        ? 'border-emerald-500 bg-emerald-950/20'
                         : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
                     }`}
                   >
@@ -1468,7 +1452,7 @@ export const App: React.FC = () => {
         <footer className="h-6 bg-[#0A0E1A] border-t border-[#1F2937] px-4 flex items-center justify-between text-[11px] font-mono text-slate-400 select-none shrink-0 z-20">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-md bg-emerald-400" />
               <span>SYS: {systemMode.toUpperCase()}</span>
             </span>
             <span className="text-slate-600">|</span>

@@ -301,16 +301,17 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             </div>
           </div>
 
-          {/* Explicit Data Confidence Badge */}
-          {currentCity.confidence === 'analytical_estimate' ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>{isEn ? 'Estimated Model (not measured data)' : 'مدل تخمینی منطقه‌ای (داده غیراندازه‌گیری‌شده)'}</span>
-            </div>
-          ) : (
+          {/* Explicit Data Confidence Badge — climate hubs are deleted (ADR-005), so only
+               analytical_estimate (deterministic model) or measured (live API) remain. */}
+          {currentCity.confidence === 'measured' ? (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
               <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>{isEn ? 'Calibrated Reference Hub' : 'هاب مرجع کالیبره‌شده'}</span>
+              <span>{isEn ? 'Measured (live global API)' : 'اندازه‌گیری‌شده (API اقلیمی زنده)'}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>{isEn ? 'Estimated Model (deterministic geospatial model)' : 'مدل تخمینی مهندسی (مدل جغروفازای محاسبه‌شده)'}</span>
             </div>
           )}
         </div>
@@ -383,12 +384,12 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       </div>
 
       {/* Main Map Container with Embedded Floating Search Window */}
-      <div className="relative rounded-lg overflow-hidden border border-slate-700 shadow-xl h-[360px] sm:h-[460px] md:h-[520px]">
+      <div className="relative rounded-lg overflow-hidden border border-slate-700 h-[360px] sm:h-[460px] md:h-[520px]">
         {/* Leaflet Map Canvas */}
         <div ref={mapContainerRef} className="w-full h-full z-10" />
 
         {/* FLOATING SEARCH & COORDINATES WINDOW (پنجره تعبیه شده جستجوی مکان و مختصات) */}
-        <div className="absolute top-3 left-3 z-20 max-w-sm w-[92%] sm:w-80 bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-700/90 shadow-2xl overflow-hidden transition-all duration-200">
+        <div className="absolute top-3 left-3 z-20 max-w-sm w-[92%] sm:w-80 bg-slate-900/95 rounded-xl border border-slate-700/90 overflow-hidden transition-all duration-150">
           {/* Header Bar */}
           <div className="flex items-center justify-between p-2.5 bg-slate-800/90 border-b border-slate-700/80">
             <div className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
@@ -524,8 +525,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         </div>
 
         {/* Map Overlay Instructions */}
-        <div className="absolute bottom-3 right-3 z-20 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/80 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
-          <Crosshair className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+        <div className="absolute bottom-3 right-3 z-20 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-700/80 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none">
+          <Crosshair className="w-3.5 h-3.5 text-sky-400" />
           <span>
             {isEn
               ? 'Click anywhere on the map or drag the solar pin to calculate site resource.'

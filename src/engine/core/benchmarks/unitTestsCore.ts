@@ -860,6 +860,11 @@ export function runCoreUnitTests(): { passed: number; failed: number; results: U
     frostDepthCm: 90,
     basicWindSpeedKmh: 145,
     groundSnowLoadKgM2: 180,
+    tableAreaM2: 52.0,
+    arrayTiltDeg: 40,
+    postsPerTable: 4,
+    clearanceHeightM: 1.3,
+    slopeDeg: 5.0,
   });
 
   // Scenario 2: Phoenix (extreme heat, loose sand, shallow frost)
@@ -875,6 +880,11 @@ export function runCoreUnitTests(): { passed: number; failed: number; results: U
     frostDepthCm: 10,
     basicWindSpeedKmh: 115,
     groundSnowLoadKgM2: 0,
+    tableAreaM2: 52.0,
+    arrayTiltDeg: 20,
+    postsPerTable: 4,
+    clearanceHeightM: 0.9,
+    slopeDeg: 2.0,
   });
 
   // Scenario 3: Munich (temperate, moderate snow 120 kg/m2, frost depth 80cm)
@@ -890,6 +900,11 @@ export function runCoreUnitTests(): { passed: number; failed: number; results: U
     frostDepthCm: 80,
     basicWindSpeedKmh: 135,
     groundSnowLoadKgM2: 120,
+    tableAreaM2: 52.0,
+    arrayTiltDeg: 35,
+    postsPerTable: 4,
+    clearanceHeightM: 1.1,
+    slopeDeg: 3.0,
   });
 
   // Scenario 4: Singapore (tropical equatorial, soft soil, zero snow)
@@ -905,6 +920,11 @@ export function runCoreUnitTests(): { passed: number; failed: number; results: U
     frostDepthCm: 0,
     basicWindSpeedKmh: 90,
     groundSnowLoadKgM2: 0,
+    tableAreaM2: 52.0,
+    arrayTiltDeg: 10,
+    postsPerTable: 4,
+    clearanceHeightM: 0.8,
+    slopeDeg: 1.0,
   });
 
   // Scenario 5: Tehran (semi-arid, dense sand/gravel, rocky limestone)
@@ -920,6 +940,11 @@ export function runCoreUnitTests(): { passed: number; failed: number; results: U
     frostDepthCm: 40,
     basicWindSpeedKmh: 130,
     groundSnowLoadKgM2: 100,
+    tableAreaM2: 52.0,
+    arrayTiltDeg: 31,
+    postsPerTable: 4,
+    clearanceHeightM: 1.0,
+    slopeDeg: 4.0,
   });
 
   const allRecommendationsValid =

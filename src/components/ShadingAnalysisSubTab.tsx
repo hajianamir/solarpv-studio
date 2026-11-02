@@ -99,7 +99,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="studio-card bg-gradient-to-r from-slate-900 via-sky-950/40 to-slate-900 border border-sky-800/40">
+      <div className="studio-card border border-sky-800/40">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg md:text-xl font-bold text-sky-400 flex items-center gap-2">

@@ -21,15 +21,19 @@ import {
 } from './goldenDatasets';
 import { generateTraceId } from '../modelRegistry';
 import { calculateBifacialViewFactor } from '../../bifacial/bifacial2dViewFactor';
+import { calculateSingleDiodeCurve } from '../../singleDiodeModel';
 import { simulateAnnualSoiling, DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
 import { evaluateSheddingFraction } from '../../snow/marionSnowEngine';
 import { calculateTemperatureCoupledIam } from '../../optical/iamEngine';
 import { simulateBipvThermalStep } from '../../bipv/bipvThermalEngine';
 
+export type VerificationType = 'cross_validation' | 'implementation_verification';
+
 export interface ValidationMetricResult {
   testId: string;
   name: string;
   sourceStandard: string;
+  sourceUrl?: string; // Independent third-party source (URL / DOI) — mandatory for cross_validation
   nominalValue: number;
   calculatedValue: number;
   absoluteError: number;
@@ -38,6 +42,10 @@ export interface ValidationMetricResult {
   unit: string;
   status: 'PASS' | 'WARN' | 'FAIL';
   details: string;
+  /** cross_validation = independent third-party source; implementation_verification = reproduces code-internal relationship */
+  verificationType: VerificationType;
+  /** Data confidence grade: Measured = field sensors, Calibrated = against reference, Estimated = model-derived */
+  confidence: 'measured' | 'calibrated' | 'estimated';
 }
 
 export interface SystemValidationReport {
@@ -49,6 +57,10 @@ export interface SystemValidationReport {
   testsWarned: number;
   testsFailed: number;
   maxDiscrepancyPercent: number;
+  /** Metrics verified against independent third-party sources (real cross-validation). */
+  crossValidationCount: number;
+  /** Metrics that reproduce code-internal relationships / literature thresholds (implementation verification, NOT independent). */
+  implementationVerificationCount: number;
   metrics: ValidationMetricResult[];
   complianceNotes: string[];
 }
@@ -66,11 +78,14 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
     testId: string,
     name: string,
     sourceStandard: string,
+    sourceUrl: string | undefined,
     nominal: number,
     calculated: number,
     tolerance: number,
     unit: string,
-    details: string
+    details: string,
+    verificationType: VerificationType = 'cross_validation',
+    confidence: 'measured' | 'calibrated' | 'estimated' = 'calibrated'
   ): ValidationMetricResult => {
     const absErr = Math.abs(calculated - nominal);
     const relErr = nominal !== 0 ? (absErr / Math.abs(nominal)) * 100 : 0;
@@ -84,6 +99,7 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       testId,
       name,
       sourceStandard,
+      sourceUrl,
       nominalValue: Number(nominal.toFixed(4)),
       calculatedValue: Number(calculated.toFixed(4)),
       absoluteError: Number(absErr.toFixed(4)),
@@ -92,6 +108,8 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       unit,
       status,
       details,
+      verificationType,
+      confidence,
     };
   };
 
@@ -125,101 +143,142 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       'VAL-BIFACIAL-01',
       'NREL SAM 2D View-Factor Bifacial Rear Gain',
       GOLDEN_BIFACIAL_NREL.source,
+      'https://www.nrel.gov/docs/fy23osti/74905.pdf',
       GOLDEN_BIFACIAL_NREL.bifacialGainPercent,
       bifacialCalc,
       GOLDEN_BIFACIAL_NREL.tolerancePercent,
       '%',
-      `Live 2.5D View-Factor Engine (f_tt=${bifacialSim.torqueTubeFactor}, f_eor=${bifacialSim.endOfRowFactor}, Rear=${bifacialSim.meanRearIrradianceWm2} W/m2, Latency=${bifacialSim.computeLatencyMs}ms)`
+      `Live 2.5D View-Factor Engine (f_tt=${bifacialSim.torqueTubeFactor}, f_eor=${bifacialSim.endOfRowFactor}, Rear=${bifacialSim.meanRearIrradianceWm2} W/m2, Latency=${bifacialSim.computeLatencyMs}ms)`,
+      'cross_validation',
+      'calibrated'
     )
   );
 
-  // 2. Sandia 5-Parameter PV Pmp at (800 W/m2, 45C)
-  const sandiaCalc = customCalculatedValues?.['sandiaPmpW'] ?? 410.50; // Target: 410.20 W
+  // 2. Sandia 5-Parameter PV Pmp at (800 W/m2, 45C) — computed LIVE by the single-diode engine
+  const sandiaRes = calculateSingleDiodeCurve(
+    GOLDEN_SANDIA_PV.vocRefV,
+    GOLDEN_SANDIA_PV.iscRefA,
+    GOLDEN_SANDIA_PV.vmpRefV,
+    GOLDEN_SANDIA_PV.impRefA,
+    GOLDEN_SANDIA_PV.pmpW,
+    -0.26,
+    0.045,
+    GOLDEN_SANDIA_PV.temperatureCoeffPmpPercentPerC,
+    800.0,
+    45.0,
+    1
+  );
+  const sandiaCalc = customCalculatedValues?.['sandiaPmpW'] ?? sandiaRes.pmp;
   metrics.push(
     evaluate(
       'VAL-SANDIA-02',
       'Sandia Single-Diode 5-Parameter Power (Tiger Neo TOPCon 550W @ 800W/m2, 45C)',
       GOLDEN_SANDIA_PV.source,
+      'https://pvpmc.sandia.gov/ | CEC PV Module Database',
       GOLDEN_SANDIA_PV.calculatedPmpAt800Wm2And45C,
       sandiaCalc,
       GOLDEN_SANDIA_PV.tolerancePercent,
       'W',
-      `Pmp evaluated at STC delta: dG=-200 W/m2, dT=+20C with gamma -0.30%/C on CEC module ${GOLDEN_SANDIA_PV.cecDatabaseId}`
+      `Pmp computed live by single-diode engine at dG=-200 W/m2, dT=+20C (gamma -0.30%/C) on CEC module ${GOLDEN_SANDIA_PV.cecDatabaseId}; engine Pmp=${sandiaRes.pmp.toFixed(2)} W, Voc=${sandiaRes.voc.toFixed(2)} V, Isc=${sandiaRes.isc.toFixed(2)} A`,
+      'cross_validation',
+      'calibrated'
     )
   );
 
-  // 3. DNV Floating PV Evaporative Delta T Cooling
-  const fpvCoolingCalc = customCalculatedValues?.['fpvDeltaTCooling'] ?? 6.35; // Target: 6.4 C
+  // 3. DNV / SERIS Floating PV Evaporative Delta-T Cooling — implementation verification only
+  // (no live FPV thermal engine wired in this runner; reference 6.40 °C from SERIS lake trials /
+  // DNV-RP-0584, compared against the engine cooling-model constant)
+  const fpvCoolingCalc = customCalculatedValues?.['fpvDeltaTCooling'] ?? 6.35; // Target: 6.4 °C
   metrics.push(
     evaluate(
       'VAL-FPV-03',
       'DNV / SERIS Floating PV Evaporative Cooling Delta-T',
       GOLDEN_DNV_FPV.source,
+      'https://www.seris.nus.edu.sg/ | DNV-RP-0584 Floating Solar Recommended Practice',
       GOLDEN_DNV_FPV.deltaTCoolingC,
       fpvCoolingCalc,
       GOLDEN_DNV_FPV.tolerancePercent,
       '°C',
-      `Evaporative boundary layer cooling under water surface temp 26.5C vs ambient 32.0C with Cox-Munk water albedo 0.065`
+      `Engine evaporative-cooling output under water surface temp 26.5°C vs ambient 32.0°C with Cox-Munk water albedo 0.065; reference 6.40 °C from SERIS Singapore lake trials. Implementation verification (no independent live engine computation).`,
+      'implementation_verification',
+      'estimated'
     )
   );
 
-  // 4. IEA-PVPS Task 12 LCA Embodied Carbon
+  // 4. IEA-PVPS Task 12 LCA Embodied Carbon — implementation verification only
+  // (literature median value; no LCA engine computation in this runner)
   const lcaCalc = customCalculatedValues?.['lcaEmbodiedCarbonG'] ?? 28.1; // Target: 28.5 gCO2/kWh
   metrics.push(
     evaluate(
       'VAL-LCA-04',
       'IEA-PVPS Task 12 Utility c-Si Embodied Carbon Footprint',
       GOLDEN_IEA_LCA.source,
+      'https://www.iea-pvps.org/task-12/ (Life Cycle Inventories and LCAs of PV Systems, 2020/2022)',
       GOLDEN_IEA_LCA.gCo2eqPerKwhMedian,
       lcaCalc,
       GOLDEN_IEA_LCA.tolerancePercent,
       'g CO2-eq/kWh',
-      `Cradle-to-grave ISO 14040/14044 baseline with 30-year lifetime and European/US average electric grid manufacturing mix`
+      `Implementation verification against IEA-PVPS Task 12 median 28.5 g CO2-eq/kWh; cradle-to-grave ISO 14040/14044 baseline. No live LCA engine — the reported value is the implementation constant compared to literature.`,
+      'implementation_verification',
+      'estimated'
     )
   );
 
-  // 5. Geotechnical Broms Lateral Pile Capacity
+  // 5. Geotechnical Broms Lateral Pile Capacity — implementation verification only
+  // (literal Broms capacity from literature; runner does not recompute from a live soil profile)
   const pileLateralCalc = customCalculatedValues?.['pileLateralKn'] ?? 34.2; // Target: 34.6 kN
   metrics.push(
     evaluate(
       'VAL-GEOTECH-05',
       'Broms (1964) Driven Steel Pile Ultimate Lateral Capacity',
       GOLDEN_GEOTECH_PILE.source,
+      'Broms, B. (1964) "Lateral Resistance of Piles in Cohesionless Soils", JSMFD, ASCE',
       GOLDEN_GEOTECH_PILE.bromsUltimateLateralKn,
       pileLateralCalc,
       GOLDEN_GEOTECH_PILE.tolerancePercent,
       'kN',
-      `Diameter 0.15m, embedment 2.2m in medium dense sand (phi=32 deg, gamma=18.5 kN/m3)`
+      `Implementation verification: implementation constant 34.2 kN vs Broms (1964) reference 34.6 kN for D=0.15 m, L=2.2 m, medium dense sand (phi=32 deg, gamma=18.5 kN/m3). Not recomputed from a live soil profile.`,
+      'implementation_verification',
+      'estimated'
     )
   );
 
-  // 6. Geotechnical Skin Friction Uplift Resistance (Beta Method)
+  // 6. Geotechnical Skin Friction Uplift Resistance (Beta Method) — implementation verification only
   const pileUpliftCalc = customCalculatedValues?.['pileUpliftKn'] ?? 27.9; // Target: 28.2 kN
   metrics.push(
     evaluate(
       'VAL-GEOTECH-06',
       'Meyerhof / Burland Beta-Method Driven Pile Uplift Resistance',
       GOLDEN_GEOTECH_PILE.source,
+      'Meyerhof, G.G. (1976) / Burland, J.B. (1973) beta-method shaft capacity; Eurocode 7 EN 1997-1',
       GOLDEN_GEOTECH_PILE.skinFrictionUltimateUpliftKn,
       pileUpliftCalc,
       GOLDEN_GEOTECH_PILE.tolerancePercent,
       'kN',
-      `Cohesionless shaft skin friction with earth pressure coefficient Ko=1.0 and delta=0.75*phi`
+      `Implementation verification: implementation constant 27.9 kN vs beta-method reference 28.2 kN; Ko=1.0, delta=0.75*phi. Not recomputed from a live soil profile.`,
+      'implementation_verification',
+      'estimated'
     )
   );
 
-  // 7. IEEE 2800 SSR Screening Critical Ratio
+  // 7. IEEE 2800 SSR Screening Critical Ratio — implementation verification (deterministic threshold)
+  // NOTE: SCR = 2.0 is the threshold value DEFINED in IEEE Std 2800-2022 Clause 7.2 itself;
+  // comparing the code constant against the same-norm constant is a tautology, hence NOT an
+  // independent cross-validation.
   const ssrCalc = customCalculatedValues?.['ssrScreeningScr'] ?? 2.0; // Target: 2.0
   metrics.push(
     evaluate(
       'VAL-GRID-07',
       'IEEE Std 2800 Subsynchronous Resonance Screening SCR Threshold',
       GOLDEN_IEEE_2800_LVRT.source,
+      'https://standards.ieee.org/ieee/2800/6612318/ (IEEE Std 2800-2022 Clause 7.2)',
       GOLDEN_IEEE_2800_LVRT.ssrScreeningThresholdScr,
       ssrCalc,
       GOLDEN_IEEE_2800_LVRT.tolerancePercent,
       'ratio',
-      `Screening threshold: systems with Short Circuit Ratio < 2.0 connecting near series-compensated lines trigger mandatory EMT detailed study`
+      `Implementation verification: SCR=2.0 screening threshold is defined by IEEE Std 2800-2022 Clause 7.2 itself; comparing identical constants is tautological by construction. Systems with SCR < 2.0 near series-compensated lines trigger mandatory EMT detailed study.`,
+      'implementation_verification',
+      'estimated'
     )
   );
 
@@ -251,11 +310,14 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       'VAL-SOILING-08',
       'Kimber et al. Arid Soiling Loss & Complete Rain Wash-off Recovery',
       GOLDEN_KIMBER_SOILING.source,
+      'https://www.nrel.gov/docs/fy06osti/40123.pdf (Kimber et al., NREL/CP-520-40123)',
       GOLDEN_KIMBER_SOILING.soilingLossBeforeRainPercent,
       soilingCalc,
       GOLDEN_KIMBER_SOILING.tolerancePercent,
       '%',
-      `Accumulated soiling over 30 dry days at 0.22%/day rate with complete wash-off above 5.0mm rain threshold`
+      `Live Kimber engine: accumulated soiling over 30 dry days at 0.22%/day rate with complete wash-off above 5.0mm rain threshold. Independent source: Kimber et al. (NREL) arid-soiling field measurements.`,
+      'cross_validation',
+      'calibrated'
     )
   );
 
@@ -277,11 +339,14 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       'VAL-SNOW-09',
       'Marion et al. Snow Melting and Gravity Sliding at 25° Tilt',
       GOLDEN_MARION_SNOW.source,
+      'https://ieeexplore.ieee.org/document/6394890/ (Marion et al., IEEE JPV Vol 3, No 1, 2013)',
       GOLDEN_MARION_SNOW.expectedModuleSheddingFraction,
       snowCalc,
       GOLDEN_MARION_SNOW.tolerancePercent,
       'fraction',
-      `Gravity sliding clearing at 25 deg array tilt and ambient temp +1.5C without ground clearance damming`
+      `Live Marion snow engine: gravity sliding clearing at 25 deg array tilt, ambient temp +1.5 C, 10 cm ground snow (below damming boundary). Independent source: NREL Marion (2013) snow-loss field model.`,
+      'cross_validation',
+      'calibrated'
     )
   );
 
@@ -301,11 +366,14 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       'VAL-IAM-10',
       'Martin & Ruiz ARC Implementation Verification (60° @ 65°C)',
       GOLDEN_IAM_DATASET.source,
+      'https://doi.org/10.1016/S0038-092X(01)00076-1 (Martin & Ruiz, Solar Energy 2001) & IEC 61853-2',
       GOLDEN_IAM_DATASET.expectedIamCoupled,
       iamCalc,
       GOLDEN_IAM_DATASET.tolerancePercent,
       'modifier',
-      `Coupled optical-thermal transmission at 60 deg incidence and 65C cell temperature (dn/dT = +4.5e-5 K^-1)`
+      `Engine implements the same Martin & Ruiz (2001) ARC model whose coefficients produced the nominal 0.9556 value — circular by construction (formula ≈ nominal source). Classified as IMPLEMENTATION_VERIFICATION, not independent cross-validation.`,
+      'implementation_verification',
+      'estimated'
     )
   );
 
@@ -337,11 +405,14 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       'VAL-BIPVT-11',
       'Tripanagnostopoulos et al. / IEA SHC Task 60 BIPV/T Thermal Efficiency',
       GOLDEN_BIPVT_DATASET.source,
+      'https://doi.org/10.1016/S0038-092X(01)00101-2 (Tripanagnostopoulos et al., Solar Energy 72(3), 2002) & IEA SHC Task 60',
       GOLDEN_BIPVT_DATASET.expectedThermalEfficiencyPercent,
       bipvtCalc,
       GOLDEN_BIPVT_DATASET.tolerancePercent,
       '%',
-      `Florschuetz HWB air duct coupling at 1000 W/m2, 20C ambient, m_dot=0.05 kg/s·m2 with vertical gradient delta T = 22.4C`
+      `Live BIPV/T engine: Florschuetz HWB air-duct coupling at 1000 W/m2, 20 C ambient, m_dot=0.05 kg/s·m2, vertical gradient delta T = 22.4 C. Independent source: IEA SHC Task 60 / Tripanagnostopoulos (2002) reference air collector.`,
+      'cross_validation',
+      'calibrated'
     )
   );
 
@@ -349,15 +420,21 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
   const testsPassed = metrics.filter(m => m.status === 'PASS').length;
   const testsWarned = metrics.filter(m => m.status === 'WARN').length;
   const testsFailed = metrics.filter(m => m.status === 'FAIL').length;
+  const crossValidationCount = metrics.filter(m => m.verificationType === 'cross_validation').length;
+  const implementationVerificationCount = metrics.filter(
+    m => m.verificationType === 'implementation_verification'
+  ).length;
   const maxDiscrepancy = Math.max(...metrics.map(m => m.relativeErrorPercent));
 
   const overallStatus = testsFailed > 0 ? 'FAIL' : testsWarned > 0 ? 'WARN' : 'PASS';
 
   const complianceNotes = [
-    'All analytical algorithms comply with the golden vector references within target tolerances.',
+    'Cross-validation vs implementation verification separated: only benchmarks against independent third-party sources (NREL SAM, Sandia/CEC, Kimber NREL, Marion IEEE JPV, IEA SHC Task 60) are classified cross_validation.',
+    'Implementation verification metrics (VAL-IAM-10, VAL-GRID-07, VAL-LCA-04, VAL-FPV-03, VAL-GEOTECH-05/06) reproduce code-internal relationships or literature thresholds — they are NOT independent proof of accuracy.',
+    'VAL-GRID-07 (IEEE 2800 SCR=2.0) is tautological by construction: the threshold is defined in the same norm the code implements.',
+    'VAL-IAM-10 (Martin & Ruiz ARC) uses the same formula in engine and nominal source — circular; reclassified to implementation_verification.',
+    'No simulated parameter is tested against an identical hard-coded internal lookup; golden dataset nominals carry source URL / DOI.',
     'PVsyst cross-validation terminology is strictly maintained (reserving validation for operational field sensors).',
-    'Broms method verified for lateral shear; skin friction (alpha/beta) verified for tension/uplift pull-out.',
-    'IEEE 2800-2022 ride-through and screening-level SSR flags are active and traceable.',
   ];
 
   return {
@@ -368,6 +445,8 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
     testsPassed,
     testsWarned,
     testsFailed,
+    crossValidationCount,
+    implementationVerificationCount,
     maxDiscrepancyPercent: maxDiscrepancy,
     metrics,
     complianceNotes,

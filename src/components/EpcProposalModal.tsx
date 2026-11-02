@@ -22,7 +22,7 @@ export const EpcProposalModal: React.FC<EpcProposalProps> = ({ project, onClose 
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-3xl w-full p-6 text-slate-100 shadow-2xl relative my-8">
+      <div className="bg-slate-900 border border-slate-700 rounded-lg max-w-3xl w-full p-6 text-slate-100 relative my-8">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-700 pb-4 mb-6">
           <div>

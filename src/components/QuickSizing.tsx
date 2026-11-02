@@ -234,7 +234,7 @@ export const QuickSizing: React.FC<QuickSizingProps> = ({ onOpenReport }) => {
 
         {/* Result Box */}
         {result && (
-          <div className="result-box mt-6 animate-fadeIn">
+          <div className="result-box mt-6">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-lg font-bold text-sky-400">

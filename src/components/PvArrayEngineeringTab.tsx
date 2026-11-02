@@ -113,7 +113,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
           onClick={() => setActiveSubTab('sizing')}
           className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-colors ${
             activeSubTab === 'sizing'
-              ? 'bg-sky-600 text-white shadow-md'
+              ? 'bg-sky-600 text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
@@ -124,7 +124,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
           onClick={() => setActiveSubTab('shading')}
           className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-colors ${
             activeSubTab === 'shading'
-              ? 'bg-sky-600 text-white shadow-md'
+              ? 'bg-sky-600 text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
@@ -425,7 +425,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 <Zap className="w-4 h-4 text-emerald-400" />
                 {isEn ? 'Auto-Stepping & Inverter Paralleling Architecture' : 'سیستم تطبیق خودکار و کلاسترینگ اینورترها (Auto-Stepping & Paralleling)'}
               </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-sky-300 border border-slate-700">
+              <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-800 text-sky-300 border border-slate-700">
                 {isEn ? 'Class:' : 'کلاس:'} {isEn ? inverterClustering.engineeringClass.titleEn : inverterClustering.engineeringClass.titleFa}
               </span>
             </div>

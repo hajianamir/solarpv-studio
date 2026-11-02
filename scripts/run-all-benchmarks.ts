@@ -357,8 +357,14 @@ console.log(`| Front Exterior Kimber Soiling Loss     | ${bipvTask60.frontSoilin
 console.log(`| Rear Cavity Duct Dust Deposition       | ${bipvTask60.rearDuctDustDepositionPercent.toFixed(2).padStart(16)} | %                   |`);
 console.log('+----------------------------------------+------------------+---------------------+\n');
 
+const expectedAreaRatio = Number((bipvTask60.netApertureAreaM2 / bipvTask60.grossCollectorAreaM2).toFixed(3)); // 1.72 / 2.00 = 0.860 from geometry fields
 const bipvRatio = Number((bipvTask60.netGrossDeliveredElectricalEfficiencyPercent / bipvTask60.netElectricalEfficiencyPercent).toFixed(3));
-console.log(`[BIPVT-AREA] aperture=${bipvTask60.netElectricalEfficiencyPercent.toFixed(2)}% gross=${bipvTask60.netGrossDeliveredElectricalEfficiencyPercent.toFixed(2)}% ratio=${bipvRatio.toFixed(3)} expected_ratio=0.860 PASS\n`);
+const bipvtAreaOk = Math.abs(bipvRatio - expectedAreaRatio) < 0.001;
+console.log(`[BIPVT-AREA] aperture=${bipvTask60.netElectricalEfficiencyPercent.toFixed(2)}% gross=${bipvTask60.netGrossDeliveredElectricalEfficiencyPercent.toFixed(2)}% ratio=${bipvRatio.toFixed(3)} expected_ratio=${expectedAreaRatio.toFixed(3)} ${bipvtAreaOk ? 'PASS' : 'FAIL'}\\n`);
+if (!bipvtAreaOk) {
+  console.error('FATAL: BIPV/T area ratio mismatch (aperture-to-gross geometry violated)');
+  process.exit(1);
+}
 
 console.log('================================================================================');
 console.log(' SUMMARY: ALL 11 CROSS-VALIDATIONS, RECALIBRATED HUBS & BIPV/T CONSTRAINTS PASS');

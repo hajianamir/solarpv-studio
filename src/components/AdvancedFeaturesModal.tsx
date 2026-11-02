@@ -86,13 +86,13 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
   }, {});
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-4xl max-h-[92vh] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60">
+      <div className="relative w-full max-w-4xl max-h-[92vh] bg-slate-900 border border-slate-700/80 rounded-lg flex flex-col overflow-hidden text-slate-100">
         
         {/* Header */}
         <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-600 text-white shadow-lg">
+            <div className="p-2 rounded-md bg-indigo-600 text-white">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
@@ -281,12 +281,12 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
 
                             <button
                               onClick={() => setFlag(key, !isActive)}
-                              className={`shrink-0 w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
+                              className={`shrink-0 w-11 h-6 flex items-center rounded-md p-1 cursor-pointer transition-colors duration-200 ${
                                 isActive ? 'bg-indigo-600' : 'bg-slate-700'
                               }`}
                             >
                               <div
-                                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                                className={`bg-white w-4 h-4 rounded-md transform transition-transform duration-200 ${
                                   isActive ? 'translate-x-5' : 'translate-x-0'
                                 }`}
                               />
@@ -458,7 +458,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 <button
                   onClick={handleRunValidation}
                   disabled={isRunningValidation}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg disabled:opacity-50 transition"
+                  className="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 disabled:opacity-50 transition"
                 >
                   <Play className={`w-3.5 h-3.5 ${isRunningValidation ? 'animate-spin' : ''}`} />
                   <span>{lang === 'fa' ? 'اجرای آزمون‌های اعتبارسنجی' : 'Re-Run Suite'}</span>
@@ -566,7 +566,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 </div>
                 <button
                   onClick={handleRunLhsBenchmark}
-                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg transition"
+                  className="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-2 transition"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>{lang === 'fa' ? 'اجرای بنچمارک آماری' : 'Run Benchmark'}</span>
@@ -661,7 +661,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
                 </div>
                 <button
                   onClick={handleRunMigrationSuite}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition"
+                  className="px-4 py-2 rounded-md bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 transition"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>{lang === 'fa' ? 'اجرای آزمون‌های مهاجرت' : 'Run Suite'}</span>
@@ -771,7 +771,7 @@ export const AdvancedFeaturesModal: React.FC<AdvancedFeaturesModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition shadow-lg"
+            className="px-5 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition"
           >
             {lang === 'fa' ? 'بستن و ذخیره تنظیمات' : 'Close & Apply'}
           </button>

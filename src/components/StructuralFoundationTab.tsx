@@ -230,6 +230,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       arrayTiltDeg: tiltDeg,
       postsPerTable: 4,
       clearanceHeightM: groundClearanceM,
+      slopeDeg: 2.0,
     });
   }, [
     city,
@@ -551,7 +552,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       </div>
 
       {/* Automated Foundation Recommendation Engine Card (PR-2a-6) */}
-      <div className="studio-card border border-emerald-500/40 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-4 space-y-4">
+      <div className="studio-card border border-emerald-500/40 p-4 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-3">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400">
@@ -584,7 +585,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </button>
             <button
               onClick={() => setFoundationType(recResult.primaryRecommendation)}
-              className="text-xs px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-emerald-950 transition"
+              className="text-xs px-3.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>{isEn ? '1-Click Apply Recommendation' : 'اعمال فونداسیون پیشنهادی (۱-کلیک)'}</span>
@@ -669,8 +670,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
       {/* 6-Section Engineering Report Modal */}
       {showReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-3xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60">
+          <div className="relative w-full max-w-3xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-lg flex flex-col overflow-hidden text-slate-100">
             <div className="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-sky-400" />
