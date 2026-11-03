@@ -2223,6 +2223,51 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E3-ENG-7] Tracker gain must use a latitude-derived fixed-tilt
+  // baseline. Pre-fix fixedTiltDeg was hardcoded 30 deg; for Singapore
+  // (optimal ~1 deg) this over-credited the tracker (41.75% vs ~26%).
+  // The x1.168 anchor is retained; the tracker's RELATIVE gain is now
+  // computed against a site-appropriate baseline.
+  {
+    const { computeWaterfallLosses, buildClearSkySunPath } = await import('../../waterfallLossEngine');
+    const { simulateTrackerAnnual } = await import('../../tracker/backtrackingEngine');
+
+    const lat = 1.35; // Singapore
+    const cfg = {
+      gcr: 0.33, axisTiltDeg: 0, maxRotationDeg: 60,
+      enableBacktracking: true, albedo: 0.2, latitudeDeg: lat,
+    };
+
+    // Independent reference using the corrected formula
+    const sunPath = buildClearSkySunPath(lat);
+    const fixedTiltDeg = Math.max(5, Math.min(60, Math.abs(lat) * 0.88));
+    const fixedAzimuthDeg = lat >= 0 ? 180 : 0;
+    const refAnn = simulateTrackerAnnual(sunPath, cfg, { fixedTiltDeg, fixedAzimuthDeg });
+    const expectedGain = (1.168 * (1 + refAnn.annualTranspositionGainPct / 100.0) - 1.0) * 100;
+
+    // What the waterfall reports
+    const wf = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0, -2.2, 45, -0.30, cfg);
+    const reportedGain = wf.trackerDetails?.annualTranspositionGainPct ?? NaN;
+
+    // What the OLD hardcoded 30 deg baseline would have produced
+    const oldAnn = simulateTrackerAnnual(sunPath, cfg, { fixedTiltDeg: 30.0, fixedAzimuthDeg: 180.0 });
+    const oldGain = (1.168 * (1 + oldAnn.annualTranspositionGainPct / 100.0) - 1.0) * 100;
+
+    const matchesRef = Math.abs(reportedGain - expectedGain) < 0.1;
+    const differsFromOld = Math.abs(reportedGain - oldGain) > 5.0;
+    const inSanityBand = reportedGain > 15 && reportedGain < 35;
+
+    assert(
+      'E3-ENG-7',
+      'Tracker gain uses latitude-derived fixed-tilt baseline (Singapore differs from hardcoded 30 deg by > 5%)',
+      matchesRef && differsFromOld && inSanityBand,
+      `Singapore (1.35 deg): reported=${reportedGain.toFixed(2)}%, ` +
+      `ref=${expectedGain.toFixed(2)}%, old_30deg=${oldGain.toFixed(2)}%, ` +
+      `|new-old|=${Math.abs(reportedGain - oldGain).toFixed(2)}% ` +
+      `(expect >5% at Singapore)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

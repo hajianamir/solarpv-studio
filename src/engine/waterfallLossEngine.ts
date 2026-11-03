@@ -64,8 +64,20 @@ export function computeWaterfallLosses(
       gcr: 0.33, axisTiltDeg: 0, maxRotationDeg: 60, enableBacktracking: true,
       albedo: 0.20, latitudeDeg: 35.69,
     };
-    const ann = simulateTrackerAnnual(buildClearSkySunPath(cfg.latitudeDeg ?? 35.69), cfg, {
-      fixedTiltDeg: 30.0, fixedAzimuthDeg: 180.0,
+    // ENG-7: derive the fixed-tilt comparison baseline from latitude
+    // (optimal-tilt rule of thumb ~0.88*|lat|, matching ClimaticData).
+    // The x1.168 anchor below is the fixed-tilt-over-GHI gain used by the
+    // non-tracker case; keeping it makes the tracker-over-GHI value
+    // consistent with the rest of the waterfall. The improvement over
+    // the pre-fix code is that ann.annualTranspositionGainPct now
+    // compares the tracker against a site-appropriate fixed baseline,
+    // not a hardcoded 30 deg.
+    const siteLat = cfg.latitudeDeg ?? 35.69;
+    const fixedTiltDeg = Math.max(5, Math.min(60, Math.abs(siteLat) * 0.88));
+    const fixedAzimuthDeg = siteLat >= 0 ? 180 : 0;
+    const ann = simulateTrackerAnnual(buildClearSkySunPath(siteLat), cfg, {
+      fixedTiltDeg,
+      fixedAzimuthDeg,
     });
     // POA_tracker / GHI = (POA_fixed / GHI) * (POA_tracker / POA_fixed)
     transpositionGainPct = (1.168 * (1 + ann.annualTranspositionGainPct / 100.0) - 1.0) * 100.0;
