@@ -12,6 +12,13 @@ Hotfix release on top of v1.0.0.
 - **ENG-3**: corrected non-monotonic inverter clipping loss at DC/AC ratio = 1.3 (continuous and monotone now; small yield shift for arrays with DC/AC > 1.3 - correctness fix, not a regression).
 - **ENG-4**: hot-case string sizing now uses the Pmp temperature coefficient (IEC 62548 §7.2), correcting a 1-module under-sizing in some hot climates.
 
+- **ENG-5**: full Perez 1990 8-bin diffuse model (was 3-bin; dropped zenith-angle terms). Affects only the `/api/v1/solar/poa` endpoint.
+- **ENG-7**: tracker transposition gain now uses a latitude-derived fixed-tilt baseline (was hardcoded 30°). Affects reported tracker gain for sites far from 34°N/S (Singapore: 42% -> 29%; Berlin: 20% -> 23%); Tehran unchanged (~24%). Fixed-tilt baseline (16.8%) unchanged.
+
+### Known limitations (v1.0.1)
+
+- **Sun-path absolute GHI scale**: `buildClearSkySunPath` produces a representative 288-hour path whose `poa_fixed / GHI` ratio is ~1.045, below the ~1.18 physical expectation for a properly-tilted array at mid-latitudes. The `× 1.168` anchor in `computeWaterfallLosses` compensates for this in the waterfall math, but any direct use of `buildClearSkySunPath` without the anchor would under-report POA. Tracked for v1.1.0: replace the representative path with a fuller clear-sky model or recalibrate.
+
 ## Breaking changes
 
 None. Both fixes are pure correctness repairs; no public signature changed except the internal parameter rename in `sizeBatteryBank`.
