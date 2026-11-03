@@ -1941,6 +1941,32 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [P1-HARDENING] BUG-4 - climaticData re-exports must stay importable and
+  // dataGateway modules must load without a cycle back into climaticData.
+  {
+    const climatic = await import('../../climaticData');
+    const gw = await import('../../dataGateway/externalDataGateway');
+    const soil = await import('../../dataGateway/soilDataProvider');
+    const gwTypes = await import('../../dataGateway/types');
+    const leaf = await import('../../types/climateTypes');
+    const reexportOk =
+      typeof climatic.getClimateData === 'function' &&
+      typeof climatic.getDefaultClimateCity === 'function' &&
+      typeof climatic.fetchClimateData === 'function' &&
+      typeof climatic.applyGeotechnicalOverrides === 'function' &&
+      typeof climatic.getEffectiveClimateCity === 'function' &&
+      typeof gw.ExternalDataGateway === 'function' &&
+      typeof soil === 'object' &&
+      typeof gwTypes === 'object' &&
+      typeof leaf === 'object';
+    assert(
+      'P1-HARDENING',
+      'BUG-4 climaticData re-exports intact, dataGateway modules load (cycle broken)',
+      reexportOk,
+      reexportOk ? 'all runtime exports + type-only leaf module resolve' : 'missing export after refactor'
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

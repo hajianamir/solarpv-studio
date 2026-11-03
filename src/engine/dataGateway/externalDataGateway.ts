@@ -7,7 +7,7 @@ import { ClimateDataProvider } from './climateDataProvider';
 import { SoilDataProvider } from './soilDataProvider';
 import { StructuralHazardProvider } from './structuralHazardProvider';
 import { ClimateResourceData, SoilPropertiesData, StructuralHazardData } from './types';
-import { ClimateCity, SoilClassification } from '../climaticData';
+import type { ClimateCity, SoilClassification } from '../types/climateTypes';
 
 export interface ComprehensiveSiteData {
   climateCity: ClimateCity;

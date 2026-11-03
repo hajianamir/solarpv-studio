@@ -9,7 +9,7 @@
  * - Editable defaults for civil foundation sizing (piles, ground screws, concrete piers)
  */
 
-import { SoilClassification } from '../climaticData';
+import type { SoilClassification } from '../types/climateTypes';
 import { SoilPropertiesData } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 
