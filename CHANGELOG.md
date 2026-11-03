@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _(No unreleased changes as of v1.0.0.)_
 
+## [1.0.2] - 2026-11-04
+
+### Fixed
+
+- **STRUCT-1**: unified wind pressure formula between structural and foundation engines (was 13.5% different for the same site; Tehran 130 km/h now 0.598 kN/m² in both via shared `calculateWindPressureQz`).
+- **STRUCT-3**: Broms clay lateral capacity now uses the FHWA-NHI-16-009 §10.4.4 iterative form (was a non-standard `(2 + e/L)` denominator with no reference).
+- **STRUCT-4**: `fosSlidingApplicable` flag added - the friction-based sliding FoS is now marked applicable only for ballasted blocks; the UI no longer shows it for pile/pier types (use the Broms FoS instead).
+
 ## [1.0.1] - 2026-11-03
 
 ### Fixed
@@ -73,6 +81,7 @@ _(No unreleased changes as of v1.0.0.)_
 - Test suite grew from 110 to 117 with regression tests for BUG-3 (NaN SoC), BUG-4 (module-cycle), BUG-6 (cold-Vmp MPPT), BUG-7 (LCOE/NPV/IRR goldens), BUG-9 (catalog unification).
 - Bundled Leaflet CSS via `main.tsx` import; unpkg CDN link removed from `index.html`.
 
-[Unreleased]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hajianamir/solarpv-studio/releases/tag/v1.0.0
