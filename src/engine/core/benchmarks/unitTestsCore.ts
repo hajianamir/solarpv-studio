@@ -50,6 +50,7 @@ import { assessSaltCorrosion, classifyCorrosionCategory } from '../../corrosion/
 import { performFinancialAnalysis } from '../../financialEngine';
 import { designPvArray } from '../../pvEngineAdvanced';
 import { calculateThermalDerate } from '../thermalDerate';
+import { isRealInternetEnabled } from '../../env/runtimeEnv';
 import {
   computeTrackerState,
   simulateTrackerAnnual,
@@ -1164,7 +1165,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   // When REAL_INTERNET=true, real HTTP calls to NASA POWER / PVGIS are mandatory.
   // Analytical fallback is disabled. In sandbox/offline (REAL_INTERNET not set),
   // analytical fallback is permitted and this gate documents that expectation.
-  const realInternetGate = process.env.REAL_INTERNET !== 'true';
+  const realInternetGate = !isRealInternetEnabled();
   assert(
     'BLOCKER-1',
     'REAL_INTERNET gate: analytical fallback allowed when not set',
