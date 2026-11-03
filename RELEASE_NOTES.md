@@ -11,6 +11,8 @@ Structural/foundation audit hotfix on top of v1.0.1.
 - **STRUCT-3**: Broms clay uses FHWA-NHI-16-009 §10.4.4 iterative form.
 - **STRUCT-4**: `fosSlidingApplicable` flag — sliding FoS shown only for ballasted blocks.
 
+- **STRUCT-5/6/7**: Ke elevation factor, unified uplift-per-post across engines (parity ratio 1.016), and wind downforce included in foundation compression (parity 0.994). Small numerical shifts (qz -4.2% at 1190 m; foundation uplift/compression now match structural). No safety verdicts flip.
+
 ### Behavior changes
 
 - Many pile-based designs at high wind are now correctly flagged as uplift-undersized (FoS_uplift < 2.0). This is a real safety margin previously invisible, not a regression. Re-verify foundation depth/pile count.

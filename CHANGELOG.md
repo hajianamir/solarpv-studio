@@ -19,6 +19,10 @@ _(No unreleased changes as of v1.0.0.)_
 
 - **STRUCT-2 (correctness fix)**: wind overturning moment arm now derived from panel geometry (W/2 + h·sinβ) rather than h_mean·cosβ, and the safety suite gained a **pile uplift capacity check** (beta method for cohesionless, alpha for cohesive, per Eurocode 7 / FHWA-NHI-16-009), previously absent. `isStructurallySafe` is now foundation-type-aware: ballasted blocks verify overturning FoS ≥ 1.5, pile/pier/screw verify uplift FoS ≥ 2.0. **Behavior change**: many 28-module tables at 130 km/h wind are now correctly flagged as uplift-undersized (FoS_uplift ≈ 0.1–0.4). Re-verify foundation depth and pile count for existing pile-based designs.
 
+- **STRUCT-5 (low)**: added ASCE 7-22 §26.10.1 Ke elevation factor to wind pressure. qz drops ~4.2% at 1190 m (Tehran) and ~5.7% at 1620 m (Boulder). Sea-level sites unchanged. `calculateWindPressureQz` now accepts an optional `elevationM` argument; both callers pass `input.elevationM ?? 0`.
+- **STRUCT-6 (medium)**: unified `cpUplift` and cos(β) treatment between `structuralEngine` and `foundationRecommendation` (exported `cpUpliftFor`/`cpDownforceFor`). Reported uplift-per-post diverged ~45% between tabs; now within 10% (residual is the dead-load model - v1.1.0). Note: the `fosUplift` result field is a REDEFINITION (previously deadLoad/uplift, meaningless) - it now means pile tension FoS per E5.1.
+- **STRUCT-7 (medium)**: `foundationRecommendation` now includes wind downforce (1.2·qz·cpDownforce·A) in compression-per-post; previously omitted, under-reporting compression by 20-30% at high wind. `upliftPerPostKn` is now exposed in the output.
+
 ## [1.0.1] - 2026-11-03
 
 ### Fixed
