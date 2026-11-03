@@ -7,6 +7,11 @@
  * - Europe, Africa, Middle East & Mediterranean (-30° to +65°, -35° to 70°): PVGIS (SARAH-2 / ERA5)
  * - Global Fallback: NASA POWER Climatology (free, no key, ~2 months latency)
  * - Offline / Air-gapped Fallback: Calibrated Analytical Clear-Sky & Geographic Model
+ *
+ * REAL_INTERNET=true mode:
+ *   When set to 'true', analytical fallback is DISABLED. If the real HTTP API call
+ *   fails, an error is thrown instead of silently degrading to REGIONAL_ANALYTICAL_MODEL.
+ *   This provides hard proof that real provider data (NASA POWER / PVGIS) was obtained.
  */
 
 import { ClimateResourceData, DataProvenanceMetadata } from './types';
@@ -41,28 +46,61 @@ export class ClimateDataProvider {
       };
     }
 
+    const realInternet = process.env.REAL_INTERNET === 'true';
+
     return this.circuitBreaker.execute(
       async () => {
         // Multi-tier Fallback Chain: NASA POWER -> PVGIS -> Analytical
         if (lng > -30 && lng <= 65 && lat >= -35 && lat <= 70) {
           try {
             return await this.fetchPvgisResource(lat, lng);
-          } catch {
-            return await this.fetchNasaPowerResource(lat, lng);
+          } catch (pvgisErr) {
+            try {
+              return await this.fetchNasaPowerResource(lat, lng);
+            } catch (nasaErr) {
+              if (realInternet) {
+                throw new Error(
+                  `REAL_INTERNET=true: Both PVGIS and NASA POWER unreachable for (${lat}, ${lng}). PVGIS: ${pvgisErr.message}; NASA POWER: ${nasaErr.message}. No analytical fallback allowed in REAL_INTERNET mode.`
+                );
+              }
+              // Fall through to analytical fallback
+              throw pvgisErr;
+            }
           }
         } else {
           try {
             return await this.fetchNasaPowerResource(lat, lng);
-          } catch {
-            return await this.fetchPvgisResource(lat, lng);
+          } catch (nasaErr) {
+            try {
+              return await this.fetchPvgisResource(lat, lng);
+            } catch (pvgisErr) {
+              if (realInternet) {
+                throw new Error(
+                  `REAL_INTERNET=true: Both NASA POWER and PVGIS unreachable for (${lat}, ${lng}). NASA POWER: ${nasaErr.message}; PVGIS: ${pvgisErr.message}. No analytical fallback allowed in REAL_INTERNET mode.`
+                );
+              }
+              // Fall through to analytical fallback
+              throw nasaErr;
+            }
           }
         }
       },
       () => {
-        // Calibrated analytical physical model fallback
+        // Calibrated analytical physical model fallback — only used when REAL_INTERNET is not set
+        if (realInternet) {
+          throw new Error(
+            `REAL_INTERNET=true: Circuit breaker open for (${lat}, ${lng}). Analytical fallback disabled in REAL_INTERNET mode.`
+          );
+        }
         return this.computeAnalyticalClimateResource(lat, lng, true);
       }
     ).then((result) => {
+      // HARD CHECK: In REAL_INTERNET mode, reject analytical model results
+      if (realInternet && result.metadata.sourceProvider === 'REGIONAL_ANALYTICAL_MODEL') {
+        throw new Error(
+          `REAL_INTERNET=true: Result for (${lat}, ${lng}) is from REGIONAL_ANALYTICAL_MODEL — real provider data was not obtained.`
+        );
+      }
       this.cache.set(cacheKey, { data: result, timestamp: Date.now() });
       return result;
     });

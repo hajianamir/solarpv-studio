@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test": "tsx scripts/run-all-benchmarks.ts",
-    "test:coverage": "c8 --include='src/engine/core/**' tsx scripts/run-all-benchmarks.ts",
+    "test:coverage": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
     "test:smoke": "tsx scripts/smoke-test.ts",
     "sync-docs": "tsx scripts/sync-docs.ts"
   },

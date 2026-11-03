@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck } from 'lucide-react';
+import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { ClimateCity } from '../engine/climaticData';
 import { SiteLocationMap } from './SiteLocationMap';
 
@@ -40,10 +40,24 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
 
           <div className="flex items-center gap-2 bg-industrial-surface/90 px-3 py-1.5 rounded-lg border border-industrial-border text-xs font-mono text-industrial-accent">
             <Globe className="w-4 h-4 text-industrial-success" />
-            <span>{isEn ? 'API Gateway: NASA POWER / PVGIS Active' : 'درگاه داده: NASA POWER و PVGIS فعال'}</span>
+            <span>{isEn ? 'Provider: ' + (selectedCity.dataSourceEn || 'NASA POWER / PVGIS') : 'داده‌ی: ' + (selectedCity.dataSourceEn || 'ناسا POWER / PVGIS')}</span>
           </div>
         </div>
       </div>
+
+      {/* Analytical Fallback Warning Banner */}
+      {(selectedCity.dataSourceEn?.includes('REGIONAL_ANALYTICAL_MODEL') ||
+        selectedCity.confidence === 'analytical_estimate') && (
+        <div className="p-3 bg-industrial-warning/10 border border-industrial-warning/40 rounded-lg flex items-start gap-3 text-xs">
+          <AlertTriangle className="w-4 h-4 text-industrial-warning shrink-0 mt-0.5" />
+          <div className="text-slate-200 leading-relaxed">
+            <strong className="text-industrial-warning">⚠ {isEn ? 'Estimated climate data' : 'داده اقلیمی تخمینی'}</strong>{' '}
+            {isEn
+              ? 'This location is estimated from a regional analytical model, not measured provider data. Confidence: LOW. Real NASA POWER / PVGIS data requires outbound internet access.'
+              : 'این محل از مدل تحلیلی منطقه‌ای تخمین گرفته شده است، نه داده‌های اندازه‌گیری شده. اطمینان: پایین. داده‌های واقعی ناسا و PVGIS نیاز به دسترسی به اینترنت دارد.'}
+          </div>
+        </div>
+      )}
 
       {/* Interactive Map View */}
       <SiteLocationMap currentCity={selectedCity} onSelectLocation={onCityChange} lang={lang} />

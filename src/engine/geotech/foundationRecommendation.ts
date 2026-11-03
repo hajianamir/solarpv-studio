@@ -77,6 +77,8 @@ export function scoreFoundationOptions(
     slopeDeg,
     basicWindSpeedKmh,
     soilBearingCapacityKpa,
+    groundSnowLoadKgM2,
+    frostDepthCm,
   } = input;
 
   // 1. Rammed Steel Pile
@@ -92,12 +94,17 @@ export function scoreFoundationOptions(
     rammedCons.push('Refusal in shallow rock requires pre-drilling or concrete piers');
   }
   if (soilClassification === 'loose_sand') {
-    rammedScore -= 10;
+    rammedScore -= 15;
     rammedCons.push('Requires deeper embedment for lateral stability in loose sand');
   }
   if (slopeDeg > 15) {
     rammedScore -= 15;
     rammedCons.push('Difficult rig access on steep slopes');
+  }
+  // High snow + deep frost penalizes driven piles (frost heave uplift risk)
+  if (groundSnowLoadKgM2 > 100 && frostDepthCm > 50) {
+    rammedScore -= 20;
+    rammedCons.push('High snow + deep frost increases frost-heave uplift risk on driven piles');
   }
   const rammed = {
     type: 'rammed_steel_pile' as FoundationType,
@@ -122,6 +129,11 @@ export function scoreFoundationOptions(
   ];
   if (soilClassification === 'rocky_limestone') pierScore += 25;
   if (basicWindSpeedKmh > 140) pierScore += 10;
+  // High snow + deep frost strongly favors concrete piers (deep embedment below frost line)
+  if (groundSnowLoadKgM2 > 100 && frostDepthCm > 50) {
+    pierScore += 20;
+    pierPros.push('Deep embedment below frost line resists frost-heave and snow uplift');
+  }
   if (soilClassification === 'loose_sand') {
     pierCons.push('Risk of borehole collapse; requires temporary steel casing');
   }
@@ -151,6 +163,11 @@ export function scoreFoundationOptions(
   }
   if (soilClassification === 'medium_clay' || soilClassification === 'loose_sand') {
     screwScore += 5;
+  }
+  // Zero frost + zero snow (tropical/arid) favors ground screws: fast install, no heave risk
+  if (frostDepthCm === 0 && groundSnowLoadKgM2 === 0) {
+    screwScore += 15;
+    screwPros.push('No frost heave or snow load — ideal for shallow screw installation');
   }
   if (soilClassification === 'rocky_limestone') {
     screwScore -= 40;
