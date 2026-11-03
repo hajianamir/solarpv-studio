@@ -6,6 +6,7 @@ import { CATALOG_MODULES, CATALOG_INVERTERS, CatalogInverter } from '../engine/e
 import { ClimateCity } from '../engine/climaticData';
 import { ShadingAnalysisSubTab } from './ShadingAnalysisSubTab';
 import { assessSaltCorrosion, SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import { TrackerConfig, computeTrackerState } from '../engine/tracker/backtrackingEngine';
 
 interface PvArrayEngineeringTabProps {
   selectedModule: ModuleSpecs;
@@ -18,6 +19,9 @@ interface PvArrayEngineeringTabProps {
   systemMode?: 'powerplant' | 'ongrid' | 'offgrid';
   targetPowerplantCapacityKw?: number;
   annualYieldMwh?: number;
+  trackerConfig?: TrackerConfig | null;
+  onTrackerConfigChange?: (cfg: TrackerConfig | null) => void;
+  cityLatitude?: number;
   lang?: 'fa' | 'en';
 }
 
@@ -64,8 +68,14 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
   systemMode = 'powerplant',
   targetPowerplantCapacityKw = 1000,
   annualYieldMwh,
+  trackerConfig = null,
+  onTrackerConfigChange,
+  cityLatitude = 35.69,
   lang = 'fa',
 }) => {
+  const [gcrInput, setGcrInput] = useState(0.33);
+  const [axisTiltInput, setAxisTiltInput] = useState(0);
+  const [maxRotInput, setMaxRotInput] = useState(60);
   const isEn = lang === 'en';
   const [activeSubTab, setActiveSubTab] = useState<'sizing' | 'shading'>('sizing');
 
@@ -83,7 +93,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
       .then((res) => { if (mounted) setCorrosion(res); })
       .catch(() => { if (mounted) setCorrosion(null); });
     return () => { mounted = false; };
-  }, [city?.latitude, city?.longitude]);
+  }, [city]);
 
   // Filtered Modules
   const filteredModules = useMemo(() => {
@@ -160,6 +170,96 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             {lang === 'fa' ? 'بر اساس ۱۴ مرحله waterfall' : 'From 14-stage waterfall'}
           </div>
         </div>
+      </div>
+
+      {/* PR-2a-7: Single-axis tracker with slope-aware backtracking */}
+      <div className="studio-card">
+        <div className="flex flex-wrap items-center gap-3 text-xs mb-3">
+          <span className="font-semibold text-slate-300">
+            {lang === 'fa' ? 'معماری tracker:' : 'Tracker Architecture:'}
+          </span>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="radio"
+              name="trackerMode"
+              checked={trackerConfig === null}
+              onChange={() => onTrackerConfigChange?.(null)}
+              className="accent-sky-400"
+            />
+            <span>{lang === 'fa' ? 'شیب ثابت (Fixed Tilt)' : 'Fixed Tilt'}</span>
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="radio"
+              name="trackerMode"
+              checked={trackerConfig !== null}
+              onChange={() => onTrackerConfigChange?.({ gcr: gcrInput, axisTiltDeg: axisTiltInput, maxRotationDeg: maxRotInput, enableBacktracking: true, albedo: 0.2, latitudeDeg: cityLatitude })}
+              className="accent-amber-400"
+            />
+            <span className="text-industrial-warning font-bold">
+              {lang === 'fa' ? 'ترکر تک‌محوره با Backtracking' : '1-Axis Tracker (with Backtracking)'}
+            </span>
+          </label>
+        </div>
+        {trackerConfig !== null && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label className="text-slate-400 block mb-1">GCR (0.30-0.45):</label>
+              <input type="number" step="0.01" min="0.1" max="0.9" value={gcrInput}
+                onChange={(e) => { const v = Math.min(0.9, Math.max(0.1, parseFloat(e.target.value) || 0.33)); setGcrInput(v); onTrackerConfigChange?.({ ...trackerConfig, gcr: v }); }}
+                className="studio-input w-full font-mono" />
+            </div>
+            <div>
+              <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'شیب محور (درجه)' : 'Axis tilt (deg)'}:</label>
+              <input type="number" step="1" min="-30" max="30" value={axisTiltInput}
+                onChange={(e) => { const v = Math.min(30, Math.max(-30, parseFloat(e.target.value) || 0)); setAxisTiltInput(v); onTrackerConfigChange?.({ ...trackerConfig, axisTiltDeg: v }); }}
+                className="studio-input w-full font-mono" />
+            </div>
+            <div>
+              <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'حداکثر چرخش (درجه)' : 'Max rotation (deg)'}:</label>
+              <input type="number" step="5" min="15" max="90" value={maxRotInput}
+                onChange={(e) => { const v = Math.min(90, Math.max(15, parseFloat(e.target.value) || 60)); setMaxRotInput(v); onTrackerConfigChange?.({ ...trackerConfig, maxRotationDeg: v }); }}
+                className="studio-input w-full font-mono" />
+            </div>
+          </div>
+        )}
+        {trackerConfig !== null && (() => {
+          // Live sample: winter solstice noon at site latitude
+          let st: ReturnType<typeof computeTrackerState> | null = null;
+          let trackerWarning = false;
+          try {
+            const lat = cityLatitude * (Math.PI / 180);
+            const decl = -23.45 * (Math.PI / 180);
+            const sinElev = Math.sin(lat) * Math.sin(decl) + Math.cos(lat) * Math.cos(decl);
+            const zenithRad = Math.PI / 2 - Math.asin(sinElev);
+            // BUG-10: clamp inputs to physical ranges (GCR, max rotation, axis tilt)
+            const safeConfig: TrackerConfig = {
+              ...trackerConfig,
+              gcr: Math.min(0.9, Math.max(0.1, trackerConfig.gcr)) || 0.33,
+              maxRotationDeg: Math.min(90, Math.max(15, trackerConfig.maxRotationDeg)) || 60,
+              axisTiltDeg: Math.min(30, Math.max(-30, trackerConfig.axisTiltDeg)) || 0,
+            };
+            st = computeTrackerState({ zenithRad, azimuthRad: Math.PI }, safeConfig);
+          } catch {
+            trackerWarning = true;
+          }
+          if (trackerWarning || st === null) {
+            return (
+              <div className="mt-3 text-[11px] font-mono text-amber-400">
+                {lang === 'fa'
+                  ? 'هشدار: محاسبه وضعیت ردیاب با این تنظیمات ممکن نیست — مقادیر GCR، بیشینه چرخش و شیب محور را بررسی کنید.'
+                  : 'Warning: tracker state could not be computed with these inputs — check GCR, max rotation, and axis tilt ranges.'}
+              </div>
+            );
+          }
+          return (
+            <div className="mt-3 text-[11px] font-mono text-industrial-accent">
+              {lang === 'fa'
+                ? `زاویه چرخش نمونه (noon انقلاب زمستانی): ${st.rotationDeg.toFixed(2)}° | true-tracking: ${st.trueTrackingDeg.toFixed(2)}° | AOI: ${st.aoiDeg.toFixed(2)}°`
+                : `Sample rotation (winter-solstice noon): ${st.rotationDeg.toFixed(2)} deg | true-tracking: ${st.trueTrackingDeg.toFixed(2)} deg | AOI: ${st.aoiDeg.toFixed(2)} deg`}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Sub-Tab Navigation Header */}

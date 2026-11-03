@@ -11,6 +11,9 @@ import { z } from 'zod';
 import { AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity } from '../climaticData';
+import type { LoadCategory } from '../loadProfiles';
+import { DEFAULT_FINANCIAL_PRICING } from '../financialEngine';
+import type { UserFinancialPricing } from '../financialEngine';
 
 // ----------------------------------------------------------------------------
 // Zod Schemas for Atomic Engineering Objects
@@ -72,17 +75,110 @@ export const SiteGeotechnicalOverridesSchema = z.object({
   customNotes: z.string().optional(),
 }).default({});
 
+// Phase 1.1 (P1): LOAD_CATEGORY_VALUES must mirror LoadCategory in
+// loadProfiles.ts exactly. Test P1.1.4 in unitTestsCore.ts fails if they drift.
+const LOAD_CATEGORY_VALUES = [
+  'lighting',
+  'refrigeration',
+  'pumping',
+  'hvac',
+  'washing',
+  'it_server',
+  'industrial_motor',
+  'industrial_heating_welding',
+  'mining_datacenter',
+  'entertainment',
+  'other',
+] as const;
+
+// Canonical schema — exactly equivalent to ElectricalLoadItem in
+// loadProfiles.ts. NO .default() on any field: a missing canonical field must
+// fail safeParse and downgrade the project to RECOVERED_WITH_WARNINGS rather
+// than silently defaulting (anti-pattern from the legacy schema).
 export const ElectricalLoadItemSchema = z.object({
-  id: z.string(),
-  nameFa: z.string(),
-  nameEn: z.string().optional(),
-  powerWatts: z.number().positive(),
-  dailyHours: z.number().min(0).max(24),
-  quantity: z.number().int().positive().default(1),
-  surgeMultiplier: z.number().min(1).max(10).default(1.2),
-  priority: z.enum(['critical', 'essential', 'normal', 'deferrable']).default('normal'),
-  daytimeSharePct: z.number().min(0).max(100).default(50),
+  id: z.string().min(1),
+  name: z.string().min(1),
+  category: z.enum(LOAD_CATEGORY_VALUES),
+  ratedWatts: z.number().positive(),
+  surgeMultiplier: z.number().min(1).max(10),
+  quantity: z.number().int().positive(),
+  dayHours: z.number().min(0).max(24),
+  nightHours: z.number().min(0).max(24),
+  isDc: z.boolean(),
 });
+
+/**
+ * Maps legacy v2 load items (powerWatts, dailyHours, nameFa, ...) to the
+ * canonical ElectricalLoadItem shape. Already-canonical items pass through
+ * untouched; mixed items prefer new fields. Category is inferred by keyword
+ * (Persian + English) with safe fallback 'other'.
+ */
+function normalizeLegacyLoad(raw: any): any {
+  if (!raw || typeof raw !== 'object') return raw;
+
+  // Already canonical -> pass through untouched.
+  if (
+    typeof raw.ratedWatts === 'number' &&
+    typeof raw.dayHours === 'number' &&
+    typeof raw.nightHours === 'number' &&
+    typeof raw.category === 'string'
+  ) {
+    return raw;
+  }
+
+  const legacyName: string =
+    typeof raw.name === 'string' ? raw.name
+    : typeof raw.nameFa === 'string' ? raw.nameFa
+    : typeof raw.nameEn === 'string' ? raw.nameEn
+    : 'Legacy Load';
+
+  const legacyRatedWatts: number =
+    typeof raw.ratedWatts === 'number' ? raw.ratedWatts
+    : typeof raw.powerWatts === 'number' ? raw.powerWatts
+    : 0;
+
+  const legacyTotalHours: number =
+    typeof raw.dayHours === 'number' || typeof raw.nightHours === 'number'
+      ? (raw.dayHours ?? 0) + (raw.nightHours ?? 0)
+      : typeof raw.dailyHours === 'number' ? raw.dailyHours
+      : 0;
+
+  const daySharePct =
+    typeof raw.daytimeSharePct === 'number'
+      ? Math.max(0, Math.min(100, raw.daytimeSharePct))
+      : 100;
+  const dayHours = Number(((legacyTotalHours * daySharePct) / 100).toFixed(2));
+  const nightHours = Number((legacyTotalHours - dayHours).toFixed(2));
+
+  const lower = legacyName.toLowerCase();
+  let inferredCategory: LoadCategory = 'other';
+  if (/چیلر|کولر|اسپلیت|تهویه|hvac|split|cooler|chiller/.test(lower)) inferredCategory = 'hvac';
+  else if (/یخچال|فریزر|سردخانه|refrig|freez/.test(lower)) inferredCategory = 'refrigeration';
+  else if (/پمپ|شناور|pump|well/.test(lower)) inferredCategory = 'pumping';
+  else if (/لامپ|روشنایی|پروژکتور|led|light|lamp|flood/.test(lower)) inferredCategory = 'lighting';
+  else if (/موتور|electro.?motor|motor/.test(lower)) inferredCategory = 'industrial_motor';
+  else if (/جوش|کوره|المنت|weld|furnace|heater/.test(lower)) inferredCategory = 'industrial_heating_welding';
+  else if (/سرور|دوربین|شبکه|server|cctv|router|ups/.test(lower)) inferredCategory = 'it_server';
+  else if (/ماشین.?لباس|ظرفشو|washing|dishwash/.test(lower)) inferredCategory = 'washing';
+
+  return {
+    id: typeof raw.id === 'string' && raw.id.length > 0 ? raw.id : `legacy-load-${Date.now()}`,
+    name: legacyName,
+    category: inferredCategory,
+    ratedWatts: legacyRatedWatts,
+    surgeMultiplier:
+      typeof raw.surgeMultiplier === 'number' && raw.surgeMultiplier >= 1
+        ? raw.surgeMultiplier
+        : 1.0,
+    quantity:
+      typeof raw.quantity === 'number' && raw.quantity > 0
+        ? Math.round(raw.quantity)
+        : 1,
+    dayHours: Math.max(0, Math.min(24, dayHours)),
+    nightHours: Math.max(0, Math.min(24, nightHours)),
+    isDc: typeof raw.isDc === 'boolean' ? raw.isDc : false,
+  };
+}
 
 export const ModuleSpecsSchema = z.object({
   manufacturer: z.string(),
@@ -114,29 +210,46 @@ export const InverterSpecsSchema = z.object({
   isThreePhase: z.boolean().default(true),
 });
 
+// Phase 1.2 (P1.2): mirrors UserFinancialPricing in financialEngine.ts
+// EXACTLY — 21 fields, NO .default() anywhere. Safe defaulting for partial or
+// legacy pricing happens in normalizeLegacyPricing() BEFORE this schema runs.
 export const UserFinancialPricingSchema = z.object({
-  moduleUsdPerWp: z.number().positive().default(0.14),
-  inverterUsdPerKw: z.number().positive().default(55),
-  batteryUsdPerKwh: z.number().positive().default(160),
-  bosBalanceOfPlantUsdPerWp: z.number().default(0.12),
-  epcLaborUsdPerWp: z.number().default(0.08),
-  gridInterconnectionUsdPerKw: z.number().default(25),
-  landLeaseUsdPerHectareYear: z.number().default(500),
-  omAnnualUsdPerKwYear: z.number().default(12),
-  discountRatePct: z.number().default(18),
-  analysisYears: z.number().int().default(25),
-  usdToTomanRate: z.number().positive().default(90000),
-  ppaTariffTomanPerKwh: z.number().positive().default(3500),
-  dieselGenSetCapexUsdPerKw: z.number().default(380),
-  includeDieselGenSet: z.boolean().default(false),
-  dieselGenSetCapexUsd: z.number().default(0),
-  dieselAnnualFuelLiters: z.number().default(0),
-  dieselFuelPriceTomanPerLiter: z.number().default(3500),
+  moduleUsdPerWp: z.number().positive(),
+  inverterUsdPerKw: z.number().positive(),
+  batteryUsdPerKwh: z.number().positive(),
+  structureUsdPerWp: z.number().nonnegative(),
+  cablingBopUsdPerWp: z.number().nonnegative(),
+  substationUsdPerMva: z.number().nonnegative(),
+  epcLaborUsdPerKw: z.number().nonnegative(),
+  gridTariffTomanPerKwh: z.number().nonnegative(),
+  usdToTomanRate: z.number().positive(),
+  annualOpexPctOfCapex: z.number().nonnegative(),
+  discountRatePct: z.number().min(0).max(100),
+  tariffEscalationPct: z.number().min(0).max(100),
+  includeDieselGenSet: z.boolean(),
+  dieselGenSetCapexUsd: z.number().nonnegative(),
+  dieselAnnualFuelLiters: z.number().nonnegative(),
+  dieselFuelPriceTomanPerLiter: z.number().nonnegative(),
+  hvConnectionUsdPerKva: z.number().nonnegative(),
+  ppaTariffTomanPerKwh: z.number().nonnegative(),
+  landLeaseUsdPerKwpYear: z.number().nonnegative(),
+  gridOperatorFeeUsdPerKwpYear: z.number().nonnegative(),
+  dieselAnnualServiceOpexUsd: z.number().nonnegative(),
 });
 
 // ----------------------------------------------------------------------------
 // Full Root Project Schema (v3.0.0)
 // ----------------------------------------------------------------------------
+
+// PR-2a-7-FOLLOWUP-2 (BUG-2): tracker config persisted with the project
+export const TrackerConfigSchema = z.object({
+  gcr: z.number().gt(0).lt(1).default(0.33),
+  axisTiltDeg: z.number().min(-90).max(90).default(0),
+  maxRotationDeg: z.number().gt(0).max(90).default(60),
+  enableBacktracking: z.boolean().default(true),
+  albedo: z.number().min(0).max(1).optional(),
+  latitudeDeg: z.number().min(-90).max(90).optional(),
+});
 
 export const ProjectDataV3Schema = z.object({
   version: z.literal('3.0.0').default('3.0.0'),
@@ -162,6 +275,8 @@ export const ProjectDataV3Schema = z.object({
 
   // Feature Flags
   featureFlags: FeatureFlagsSchema.default(DEFAULT_FEATURE_FLAGS),
+
+  trackerConfig: TrackerConfigSchema.nullable().optional(),
 
   // Traceability & Metadata
   traceId: z.string().optional(),
@@ -229,6 +344,52 @@ function checkPhysicalContradictions(raw: Record<string, any>): string[] {
  * 2. RECOVERED_WITH_WARNINGS: Missing fields safely populated, warnings recorded, user confirmation required.
  * 3. BLOCKED_INCONSISTENT: Physically impossible data is blocked to protect bankable integrity.
  */
+/**
+ * Phase 1.2 (P1.2): merges a possibly-partial/legacy userPricing object into a
+ * complete canonical UserFinancialPricing. Strategy: start from
+ * DEFAULT_FINANCIAL_PRICING, overlay explicitly-provided canonical fields, then
+ * convert recognizable legacy fields only when the canonical equivalent was NOT
+ * explicitly provided (canonical wins on collision). Legacy fields with no safe
+ * conversion keep their DEFAULT (never zero/NaN).
+ */
+function normalizeLegacyPricing(raw: any): UserFinancialPricing {
+  const out: UserFinancialPricing = { ...DEFAULT_FINANCIAL_PRICING };
+  if (!raw || typeof raw !== 'object') return out;
+
+  const num = (v: any): v is number => typeof v === 'number' && Number.isFinite(v);
+  const has = (k: string): boolean => num(raw[k]);
+
+  const canonicalKeys: Array<keyof UserFinancialPricing> = [
+    'moduleUsdPerWp', 'inverterUsdPerKw', 'batteryUsdPerKwh',
+    'structureUsdPerWp', 'cablingBopUsdPerWp', 'substationUsdPerMva',
+    'epcLaborUsdPerKw', 'gridTariffTomanPerKwh', 'usdToTomanRate',
+    'annualOpexPctOfCapex', 'discountRatePct', 'tariffEscalationPct',
+    'dieselGenSetCapexUsd', 'dieselAnnualFuelLiters',
+    'dieselFuelPriceTomanPerLiter', 'hvConnectionUsdPerKva',
+    'ppaTariffTomanPerKwh', 'landLeaseUsdPerKwpYear',
+    'gridOperatorFeeUsdPerKwpYear', 'dieselAnnualServiceOpexUsd',
+  ];
+  for (const k of canonicalKeys) {
+    if (num(raw[k])) (out as any)[k] = raw[k] as number;
+  }
+  if (typeof raw.includeDieselGenSet === 'boolean') {
+    out.includeDieselGenSet = raw.includeDieselGenSet;
+  }
+
+  // Legacy conversions (only when canonical field was NOT explicitly provided)
+  if (!has('moduleUsdPerWp') && num(raw.panelCostPerWattUsd)) out.moduleUsdPerWp = raw.panelCostPerWattUsd;
+  if (!has('inverterUsdPerKw') && num(raw.inverterCostPerWattUsd)) out.inverterUsdPerKw = raw.inverterCostPerWattUsd * 1000;
+  if (!has('batteryUsdPerKwh') && num(raw.batteryCostPerKwhUsd)) out.batteryUsdPerKwh = raw.batteryCostPerKwhUsd;
+  if (!has('structureUsdPerWp') && num(raw.structureCostPerWattUsd)) out.structureUsdPerWp = raw.structureCostPerWattUsd;
+  if (!has('cablingBopUsdPerWp') && num(raw.bopCostPerWattUsd)) out.cablingBopUsdPerWp = raw.bopCostPerWattUsd;
+  if (!has('epcLaborUsdPerKw') && num(raw.installationCostPerWattUsd)) out.epcLaborUsdPerKw = raw.installationCostPerWattUsd * 1000;
+  if (!has('gridTariffTomanPerKwh') && num(raw.electricitySellTariffTomanPerKwh)) out.gridTariffTomanPerKwh = raw.electricitySellTariffTomanPerKwh;
+  if (!has('tariffEscalationPct') && num(raw.annualInflationPct)) out.tariffEscalationPct = raw.annualInflationPct;
+  if (!has('annualOpexPctOfCapex') && num(raw.omCostPctOfCapexAnnual)) out.annualOpexPctOfCapex = raw.omCostPctOfCapexAnnual;
+
+  return out;
+}
+
 export function migrateProjectToV3(rawInput: unknown): MigrationResult {
   const warnings: string[] = [];
   const traceId = generateTraceId('MIGR');
@@ -305,12 +466,13 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
 
     city: raw.city || getFallbackCity(),
     siteOverrides: raw.siteOverrides || {},
-    loads: Array.isArray(raw.loads) ? raw.loads : [],
+    loads: (Array.isArray(raw.loads) ? raw.loads : []).map(normalizeLegacyLoad), // P1: legacy v2 loads normalized before validation
     selectedModule: raw.selectedModule || getFallbackModule(),
     selectedInverter: raw.selectedInverter || getFallbackInverter(),
-    userPricing: raw.userPricing || getFallbackPricing(),
+    userPricing: normalizeLegacyPricing(raw.userPricing), // P1.2: defaults applied here, never in schema
 
     featureFlags,
+    trackerConfig: raw.trackerConfig !== undefined ? raw.trackerConfig : null, // BUG-2: persist (null = fixed tilt)
     traceId: raw.traceId || traceId,
   };
 
@@ -340,6 +502,9 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     if (candidate.systemMode) recovered.systemMode = candidate.systemMode;
     if (candidate.targetPowerplantCapacityKw) recovered.targetPowerplantCapacityKw = candidate.targetPowerplantCapacityKw;
     recovered.featureFlags = candidate.featureFlags;
+    // P1.2: preserve normalized pricing even when validation fails on a
+    // NON-pricing field — otherwise user pricing is silently reset.
+    if (candidate.userPricing) recovered.userPricing = candidate.userPricing as any;
 
     return {
       success: true,
@@ -396,27 +561,6 @@ function getFallbackInverter() {
   };
 }
 
-function getFallbackPricing() {
-  return {
-    moduleUsdPerWp: 0.14,
-    inverterUsdPerKw: 55,
-    batteryUsdPerKwh: 160,
-    bosBalanceOfPlantUsdPerWp: 0.12,
-    epcLaborUsdPerWp: 0.08,
-    gridInterconnectionUsdPerKw: 25,
-    landLeaseUsdPerHectareYear: 500,
-    omAnnualUsdPerKwYear: 12,
-    discountRatePct: 18,
-    analysisYears: 25,
-    usdToTomanRate: 90000,
-    ppaTariffTomanPerKwh: 3500,
-    dieselGenSetCapexUsdPerKw: 380,
-    includeDieselGenSet: false,
-    dieselGenSetCapexUsd: 0,
-    dieselAnnualFuelLiters: 0,
-    dieselFuelPriceTomanPerLiter: 3500,
-  };
-}
 
 export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
   return {
@@ -438,7 +582,7 @@ export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
     loads: [],
     selectedModule: getFallbackModule(),
     selectedInverter: getFallbackInverter(),
-    userPricing: getFallbackPricing(),
+    userPricing: { ...DEFAULT_FINANCIAL_PRICING } as ProjectDataV3['userPricing'] & import('../financialEngine').UserFinancialPricing as any,
 
     featureFlags: { ...DEFAULT_FEATURE_FLAGS },
     traceId: traceId || generateTraceId('PROJ'),

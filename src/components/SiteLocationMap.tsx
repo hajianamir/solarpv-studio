@@ -250,7 +250,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [coords.lat, coords.lng, currentCity, isEn, onSelectLocation]); // exhaustive-deps fix (PR-2a-7-FOLLOWUP-2)
 
   // Sync coords with external currentCity changes
   useEffect(() => {
@@ -267,7 +267,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       markerRef.current.setLatLng([currentLat, currentLng]);
       mapInstanceRef.current.panTo([currentLat, currentLng]);
     }
-  }, [currentCity]);
+  }, [currentCity, coords.lat, coords.lng, isEn, onSelectLocation]);
 
   // Layer Switcher Handler
   const handleSwitchLayer = (layer: 'hybrid' | 'satellite_pure' | 'streets' | 'topo') => {

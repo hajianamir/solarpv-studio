@@ -16,6 +16,7 @@
 
 import { ClimateResourceData, DataProvenanceMetadata } from './types';
 import { CircuitBreaker } from './circuitBreaker';
+import { isRealInternetEnabled } from '../env/runtimeEnv';
 
 export class ClimateDataProvider {
   private cache: Map<string, { data: ClimateResourceData; timestamp: number }> = new Map();
@@ -46,7 +47,7 @@ export class ClimateDataProvider {
       };
     }
 
-    const realInternet = process.env.REAL_INTERNET === 'true';
+    const realInternet = isRealInternetEnabled();
 
     return this.circuitBreaker.execute(
       async () => {

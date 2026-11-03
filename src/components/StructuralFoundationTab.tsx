@@ -147,7 +147,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       setFrostDepthCm(city.frostDepthCm ?? 30);
       setSeismicZoneA(city.seismicZoneCoefficientA ?? 0.30);
     }
-  }, [city.id]);
+  }, [city, siteOverrides]);
 
   const handleUpdateParam = (updated: Partial<SiteGeotechnicalOverrides>) => {
     const newOverrides: SiteGeotechnicalOverrides = {

@@ -47,6 +47,7 @@ export function simulate24hEnergyBalance(
   const steps: HourlyEnergyStep[] = [];
   let currentBatteryWh = batteryCapacityTotalKwh * 0.90 * 1000.0; // Start at 90% SoC
   const maxBatteryWh = batteryCapacityTotalKwh * 1000.0;
+  const hasBattery = maxBatteryWh > 1e-6; // BUG-3: guard zero-capacity BESS (powerplant mode)
   const minAllowedBatteryWh = (batteryCapacityTotalKwh - batteryUsableKwh) * 1000.0;
 
   // Approximate bell curve irradiance fractions for 24 hours
@@ -113,9 +114,13 @@ export function simulate24hEnergyBalance(
       }
     }
 
-    const socPct = Math.round((currentBatteryWh / maxBatteryWh) * 100);
-    if (socPct < minSoc) minSoc = socPct;
-    if (socPct > maxSoc) maxSoc = socPct;
+    const socPct = hasBattery
+      ? Math.round((currentBatteryWh / maxBatteryWh) * 100)
+      : 100;
+    if (hasBattery) {
+      if (socPct < minSoc) minSoc = socPct;
+      if (socPct > maxSoc) maxSoc = socPct;
+    }
 
     totalGen += solarKwh;
     totalLoad += loadKwh;
@@ -141,8 +146,8 @@ export function simulate24hEnergyBalance(
     totalConsumption24hKwh: Math.round(totalLoad * 10) / 10,
     totalSurplus24hKwh: Math.round(totalSurplus * 10) / 10,
     totalDeficit24hKwh: Math.round(totalDeficit * 10) / 10,
-    minBatterySocPct: minSoc,
-    maxBatterySocPct: maxSoc,
+    minBatterySocPct: hasBattery ? minSoc : 100,
+    maxBatterySocPct: hasBattery ? maxSoc : 100,
     isSelfSufficient: totalDeficit < 0.1,
   };
 }

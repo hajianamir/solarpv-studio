@@ -1,6 +1,11 @@
 // Comprehensive 14-Stage PVsyst-Grade Waterfall Loss Tree & 8760h Performance Ratio (PR) Engine
 
 import { calculateThermalDerate } from './core/thermalDerate';
+import {
+  TrackerConfig,
+  simulateTrackerAnnual,
+  SunPathPoint,
+} from './tracker/backtrackingEngine';
 
 export interface LossStage {
   id: string;
@@ -18,6 +23,12 @@ export interface WaterfallLossReport {
   installedCapacityKwp: number;
   rawGhiEnergyKwh: number;
   effectivePoaEnergyKwh: number;
+  trackerDetails?: {
+    annualTranspositionGainPct: number;
+    annualShadingLossPct: number;
+    backtrackingActivationPct: number;
+    maxAbsRotationDeg: number;
+  };
   stages: LossStage[];
   netAnnualEnergyExportMwh: number;
   specificAnnualYieldKwhPerKwp: number;
@@ -34,14 +45,38 @@ export function computeWaterfallLosses(
   snowLossPct: number = 0.0,
   iamLossPct: number = -2.2,
   noctC: number = 45.0,
-  tempCoeffPmpPct: number = -0.30
+  tempCoeffPmpPct: number = -0.30,
+  trackerConfig?: TrackerConfig   // PR-2a-7: real backtracking physics (10th param, backward-compatible)
 ): WaterfallLossReport {
   // 1. Raw Global Horizontal Irradiance (GHI)
   // GHI annual = PSH * 365 days * 1 kW/m² reference
   const rawGhiEnergyKwh = peakSunHours * 365.0 * installedCapacityKwp;
 
-  // 2. Transposition to Plane of Array (POA) - Tilt or 1-Axis Tracker gain
-  const transpositionGainPct = hasTracker ? 26.5 : 16.8; // +16.8% for optimal fixed tilt, +26.5% for single-axis tracker
+  // 2. Transposition to Plane of Array (POA) - fixed tilt or real 1-axis tracker
+  //    PR-2a-7: when trackerConfig is provided (or hasTracker=true), the gain and
+  //    near-shading come from the slope-aware backtracking engine — NOT hardcoded.
+  let transpositionGainPct = 16.8; // +16.8% for optimal fixed tilt (baseline, unchanged)
+  let nearShadingPctDefault = -2.4; // fixed-tilt row-to-row shading (baseline, unchanged)
+  let trackerDetails: WaterfallLossReport['trackerDetails'];
+  const trackerActive = trackerConfig !== undefined || hasTracker;
+  if (trackerActive) {
+    const cfg: TrackerConfig = trackerConfig ?? {
+      gcr: 0.33, axisTiltDeg: 0, maxRotationDeg: 60, enableBacktracking: true,
+      albedo: 0.20, latitudeDeg: 35.69,
+    };
+    const ann = simulateTrackerAnnual(buildClearSkySunPath(cfg.latitudeDeg ?? 35.69), cfg, {
+      fixedTiltDeg: 30.0, fixedAzimuthDeg: 180.0,
+    });
+    // POA_tracker / GHI = (POA_fixed / GHI) * (POA_tracker / POA_fixed)
+    transpositionGainPct = (1.168 * (1 + ann.annualTranspositionGainPct / 100.0) - 1.0) * 100.0;
+    nearShadingPctDefault = -ann.annualShadingLossFraction * 100.0;
+    trackerDetails = {
+      annualTranspositionGainPct: transpositionGainPct,
+      annualShadingLossPct: ann.annualShadingLossFraction * 100.0,
+      backtrackingActivationPct: ann.backtrackingActivationPct,
+      maxAbsRotationDeg: ann.maxAbsRotationDeg,
+    };
+  }
   const effectivePoaEnergyKwh = rawGhiEnergyKwh * (1.0 + transpositionGainPct / 100.0);
 
   let currentEnergy = effectivePoaEnergyKwh;
@@ -73,7 +108,7 @@ export function computeWaterfallLosses(
   };
 
   // 1. Near Shading Loss (Row-on-row & ground horizon shading)
-  const nearShadingPct = hasTracker ? -1.2 : -2.4;
+  const nearShadingPct = nearShadingPctDefault;
   addStage(
     'near_shading',
     'تلفات سایه‌اندازی نزدیک بین ردیف‌ها',
@@ -236,9 +271,41 @@ export function computeWaterfallLosses(
     installedCapacityKwp,
     rawGhiEnergyKwh: Math.round(rawGhiEnergyKwh),
     effectivePoaEnergyKwh: Math.round(effectivePoaEnergyKwh),
+    trackerDetails,
     stages,
     netAnnualEnergyExportMwh,
     specificAnnualYieldKwhPerKwp,
     performanceRatioPct,
   };
+}
+
+// ---------------------------------------------------------------------------
+// PR-2a-7: deterministic clear-sky representative sun path (12 days x 24 h)
+// Used only as an internal fallback when the caller does not supply annual
+// tracker statistics. Pure math — no Date(), no randomness.
+// ---------------------------------------------------------------------------
+export function buildClearSkySunPath(latitudeDeg: number): SunPathPoint[] {
+  const path: SunPathPoint[] = [];
+  let hour = 0;
+  for (let day = 0; day < 12; day++) {
+    const n = day * 30 + 15; // representative day-of-year
+    const decl = 23.45 * Math.sin(((360 * (284 + n)) / 365) * (Math.PI / 180));
+    for (let h = 0; h < 24; h++) {
+      const ha = 15 * (h - 12);
+      const latR = latitudeDeg * (Math.PI / 180);
+      const decR = decl * (Math.PI / 180);
+      const haR = ha * (Math.PI / 180);
+      const sinElev = Math.sin(latR) * Math.sin(decR) + Math.cos(latR) * Math.cos(decR) * Math.cos(haR);
+      const elev = Math.asin(Math.max(-1, Math.min(1, sinElev)));
+      const zenith = Math.PI / 2 - elev;
+      const cosAz = (Math.sin(decR) - sinElev * Math.sin(latR)) / (Math.cos(elev) * Math.cos(latR) + 1e-12);
+      let azimuth = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+      if (ha > 0) azimuth = 2 * Math.PI - azimuth;
+      const ghi = elev > 0 ? 1000 * Math.pow(Math.sin(elev), 1.15) : 0;
+      const dni = elev > 0 ? ghi * 0.75 : 0;
+      const dhi = ghi - dni * Math.cos(zenith) > 0 ? ghi - dni * Math.cos(zenith) : 0;
+      path.push({ hourOfYear: hour++, zenithRad: zenith, azimuthRad: azimuth, ghi, dni, dhi });
+    }
+  }
+  return path;
 }
