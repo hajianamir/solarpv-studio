@@ -249,7 +249,7 @@ export const App: React.FC = () => {
   // Redirect invalid active tabs when switching system mode
   useEffect(() => {
     if (systemMode === 'powerplant') {
-      if (activeTab === 'loads' || activeTab === 'bess' || activeTab === 'scenarios') {
+      if (activeTab === 'loads' || activeTab === 'bess' || activeTab === 'scenarios' || activeTab === 'sim24h') {
         setActiveTab('system_mode');
       }
     } else {
@@ -704,7 +704,6 @@ export const App: React.FC = () => {
         {
           categoryTitle: t.catSimulation,
           tabs: [
-            { id: 'sim24h' as ActiveModuleTab, title: t.tabSimulation24h, icon: <Workflow className="w-4 h-4 text-cyan-400" /> },
             { id: 'financial' as ActiveModuleTab, title: t.tabFinancial, icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
             { id: 'cad_layout' as ActiveModuleTab, title: t.tabCadLayout, icon: <Grid className="w-4 h-4 text-blue-400" /> },
             { id: '3d_viewer' as ActiveModuleTab, title: t.tab3dViewer, icon: <Eye className="w-4 h-4 text-orange-400" /> },
@@ -1417,7 +1416,7 @@ export const App: React.FC = () => {
           )}
 
           {/* 24-HOUR BALANCE SIMULATION */}
-          {activeTab === 'sim24h' && (
+          {activeTab === 'sim24h' && systemMode !== 'powerplant' && (
             <Simulation24hTab
               simulationResult={simulationResult}
               generatorSizing={generatorSizing}

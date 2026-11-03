@@ -1917,6 +1917,30 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [P0-HARDENING] BUG-3 - zero-BESS (powerplant mode) must not produce NaN SoC
+  {
+    const sim = await import('../../simulation24hEngine');
+    const zeroBess = sim.simulate24hEnergyBalance(
+      1000,   // totalPvCapacityKwp
+      5.5,    // peakSunHours
+      3000,   // daytimeKwh
+      1000,   // nighttimeKwh
+      0,      // batteryUsableKwh = 0 (no BESS)
+      0       // batteryCapacityTotalKwh = 0 (no BESS)
+    );
+    const noNaN =
+      Number.isFinite(zeroBess.minBatterySocPct) &&
+      Number.isFinite(zeroBess.maxBatterySocPct) &&
+      zeroBess.minBatterySocPct === 100 &&
+      zeroBess.maxBatterySocPct === 100;
+    assert(
+      'P0-HARDENING',
+      'BUG-3 zero-BESS 24h simulation: SoC=100, no NaN (powerplant mode)',
+      noNaN,
+      `minSoC=${zeroBess.minBatterySocPct} maxSoC=${zeroBess.maxBatterySocPct}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
