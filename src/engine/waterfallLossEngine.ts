@@ -7,7 +7,8 @@ export interface LossStage {
   nameFa: string;
   nameEn: string;
   nominalEnergyKwh: number;
-  percentageLoss: number; // Negative for loss, positive for gain (e.g. transposition)
+  percentageLoss: number; // Negative for loss, positive for gain (e.g. transposition) — rounded to 1 decimal for display
+  percentageLossRaw: number; // PR-2a-7-P0-FOLLOWUP: raw unrounded value for audit/tests
   stageOutputKwh: number;
   descriptionFa: string;
   descriptionEn: string;
@@ -52,7 +53,8 @@ export function computeWaterfallLosses(
     nameEn: string,
     pct: number,
     descFa: string,
-    descEn: string
+    descEn: string,
+    rawPct?: number
   ) => {
     const energyDelta = (currentEnergy * pct) / 100.0;
     const nominal = currentEnergy;
@@ -63,6 +65,7 @@ export function computeWaterfallLosses(
       nameEn,
       nominalEnergyKwh: Math.round(nominal),
       percentageLoss: pct,
+      percentageLossRaw: rawPct !== undefined ? rawPct : pct,
       stageOutputKwh: Math.round(currentEnergy),
       descriptionFa: descFa,
       descriptionEn: descEn,
@@ -130,7 +133,8 @@ export function computeWaterfallLosses(
     'Cell Operating Temperature Loss (Pmp coeff)',
     Math.round(thermalLossPct * 10) / 10,
     'کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC',
-    'Thermal degradation of silicon cells operating above standard STC 25°C rating.'
+    'Thermal degradation of silicon cells operating above standard STC 25°C rating.',
+    thermalLossPct // raw unrounded value for audit/tests
   );
 
   // 5. Module Quality & Binning Tolerance

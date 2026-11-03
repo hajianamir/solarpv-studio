@@ -332,6 +332,30 @@ export const App: React.FC = () => {
   const loadAnalysis = useMemo(() => analyzeLoadProfile(loads), [loads]);
 
   // 2. Compute Target Energy Demand Based on System Mode
+  // ============================================================================
+  // PR-2a-7-P0-FOLLOWUP (ISSUE-2): TWO-STEP SIZING PATTERN
+  // ============================================================================
+  // The user enters `targetPowerplantCapacityKw` as AC nameplate (kW AC).
+  // But `computeWaterfallLosses` expects an installed DC capacity (kWp).
+  // The sizing follows a two-step pattern:
+  //
+  // Step 1 (this block): Feed the target AC nameplate as if it were DC, run the
+  //   14-stage waterfall, and divide by 365 to get the daily net energy target.
+  //   This gives a *conservative* baseline because real overpaneling will make
+  //   the final DC array larger than the target.
+  //
+  // Step 2 (below in `arrayDesign`): designPvArray() sizes a DC array to produce
+  //   that daily target using a simplified 6-factor derating. This typically
+  //   yields an array ~10% larger than the target nameplate (DC/AC ~ 1.10-1.25).
+  //
+  // Step 3 (in `waterfallReport` below): Re-run the 14-stage waterfall against
+  //   the *designed* DC array (not the target) to get the FINAL annual yield.
+  //   FinancialTab uses this final value.
+  //
+  // NOTE: The user's "1000 kW AC target" will result in ~1,100 kWp DC designed.
+  // This overpaneling is intentional (maximizes AC export), and the UI displays
+  // both values in PvArrayEngineeringTab (see ISSUE-2b).
+  // ============================================================================
   const effectiveDailyKwhDemand = useMemo(() => {
     if (systemMode === 'powerplant') {
       // PR-2a-7-P0 (P0-1): daily energy target derived from the unified 14-stage
@@ -1310,6 +1334,8 @@ export const App: React.FC = () => {
               inverterClustering={inverterClustering}
               city={city}
               systemMode={systemMode}
+              targetPowerplantCapacityKw={targetPowerplantCapacityKw}
+              annualYieldMwh={waterfallReport.netAnnualEnergyExportMwh}
               lang={lang}
             />
           )}

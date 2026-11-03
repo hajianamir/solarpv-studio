@@ -1216,13 +1216,14 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const arr = designPvArray(5000, 5.85, p0Module, p0Inverter, p0Deratings(46), 35.69);
     const wfThermal = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30)
       .stages.find((st) => st.id === 'thermal')!;
+    const wfThermalRaw = Math.abs(wfThermal.percentageLossRaw);
     assert(
       'PR-CONSISTENCY',
       '[THERMAL-CONSISTENCY] unified thermal derate = 15.68% in all three consumers',
       Math.abs(th.deratePct - 15.675) < 0.01 &&
         Math.abs(arr.powerTempDeratePct - th.deratePct) < 0.001 &&
-        Math.abs(Math.abs(wfThermal.percentageLoss) - th.deratePct) < 0.06,
-      `thermalDerate.ts=${th.deratePct.toFixed(3)}% pvEngine=${arr.powerTempDeratePct.toFixed(3)}% waterfall=${wfThermal.percentageLoss}% (cellTemp=${th.cellTempHotC.toFixed(2)}C)`
+        Math.abs(wfThermalRaw - th.deratePct) < 0.001,
+      `thermalDerate.ts=${th.deratePct.toFixed(3)}% pvEngine=${arr.powerTempDeratePct.toFixed(3)}% waterfall(raw)=${wfThermalRaw.toFixed(3)}% waterfall(display)=${wfThermal.percentageLoss}% (cellTemp=${th.cellTempHotC.toFixed(2)}C)`
     );
   }
 
@@ -1288,8 +1289,53 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     assert(
       'PR-CONSISTENCY',
       '[LCOE-INTEGRITY] LCOE matches (capex+disc.costs)/disc.energy, no invented constants',
-      Math.abs(recomputedToman - fin.lcoeTomanPerKwh) <= 20,
+      Math.abs(recomputedToman - fin.lcoeTomanPerKwh) <= 1,
       `engine=${fin.lcoeTomanPerKwh} Toman/kWh recomputed=${recomputedToman.toFixed(1)} Toman/kWh ($${fin.lcoeUsdPerKwh}/kWh)`
+    );
+  }
+
+
+  // ==========================================================================
+  // PR-2a-7-P0-FOLLOWUP: Bankability Regression Gates
+  // ==========================================================================
+  // These tests verify that the P0 fixes remain intact. If they fail, a P0
+  // regression has occurred and the merge must be blocked.
+  {
+    // [P0-REGRESSION] Tehran project: LCOE stable across 3 deterministic runs
+    const proj = { kwp: 1000, psh: 5.85, tMax: 46, soiling: 5.5, noct: 45, coeff: -0.30 };
+    const wf1 = computeWaterfallLosses(proj.kwp, proj.psh, proj.tMax, proj.soiling, 1.25, false, 0, -2.2, proj.noct, proj.coeff);
+    const wf2 = computeWaterfallLosses(proj.kwp, proj.psh, proj.tMax, proj.soiling, 1.25, false, 0, -2.2, proj.noct, proj.coeff);
+    const wf3 = computeWaterfallLosses(proj.kwp, proj.psh, proj.tMax, proj.soiling, 1.25, false, 0, -2.2, proj.noct, proj.coeff);
+    const fin1 = performFinancialAnalysis(1000, 0, 1000, wf1.netAnnualEnergyExportMwh * 1000);
+    const fin2 = performFinancialAnalysis(1000, 0, 1000, wf2.netAnnualEnergyExportMwh * 1000);
+    const fin3 = performFinancialAnalysis(1000, 0, 1000, wf3.netAnnualEnergyExportMwh * 1000);
+    assert(
+      'P0-REGRESSION',
+      'Tehran LCOE stable across 3 deterministic runs',
+      fin1.lcoeUsdPerKwh === fin2.lcoeUsdPerKwh && fin2.lcoeUsdPerKwh === fin3.lcoeUsdPerKwh,
+      `Run1=$${fin1.lcoeUsdPerKwh} Run2=$${fin2.lcoeUsdPerKwh} Run3=$${fin3.lcoeUsdPerKwh}`
+    );
+  }
+  {
+    // [P0-REGRESSION] Thermal derate must differ by climate
+    const munichDerate = calculateThermalDerate({ module: { noctC: 45, tempCoeffPmpPct: -0.30 }, ambientTempMaxC: 30 });
+    const phoenixDerate = calculateThermalDerate({ module: { noctC: 45, tempCoeffPmpPct: -0.30 }, ambientTempMaxC: 48 });
+    assert(
+      'P0-REGRESSION',
+      'Thermal derate differs by climate (Phoenix hotter than Munich)',
+      phoenixDerate.deratePct > munichDerate.deratePct + 3.0,
+      `Munich(30C)=${munichDerate.deratePct.toFixed(2)}% Phoenix(48C)=${phoenixDerate.deratePct.toFixed(2)}%`
+    );
+  }
+  {
+    // [P0-REGRESSION] Winter sun altitude changes with latitude
+    const tehran = designPvArray(5000, 5.85, p0Module, p0Inverter, p0Deratings(46), 35.69);
+    const munich = designPvArray(5000, 5.85, p0Module, p0Inverter, p0Deratings(46), 48.13);
+    assert(
+      'P0-REGRESSION',
+      'Winter sun altitude differs by latitude (Munich < Tehran)',
+      munich.winterSunAltitudeDeg < tehran.winterSunAltitudeDeg - 10.0,
+      `Tehran(35.69N)=${tehran.winterSunAltitudeDeg.toFixed(2)}deg Munich(48.13N)=${munich.winterSunAltitudeDeg.toFixed(2)}deg`
     );
   }
 

@@ -202,6 +202,11 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
                     <span className={stage.percentageLoss >= 0 ? 'text-industrial-success' : 'text-industrial-error'}>
                       {stage.percentageLoss > 0 ? `+${stage.percentageLoss}%` : `${stage.percentageLoss}%`}
                     </span>
+                    <div className="text-[10px] text-slate-500 font-normal">
+                      {isFa
+                        ? `مقدار دقیق: ${stage.percentageLossRaw?.toFixed(3)}% (نمایش گرد شده)`
+                        : `Exact: ${stage.percentageLossRaw?.toFixed(3)}% (display rounded)`}
+                    </div>
                   </td>
                   <td className="p-2.5 font-mono font-bold text-white">
                     {Math.round(stage.stageOutputKwh / 1000).toLocaleString()} MWh
