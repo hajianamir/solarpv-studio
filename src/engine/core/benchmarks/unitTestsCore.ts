@@ -2696,6 +2696,37 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [F2-R7] Cross-validation pruned from 11 to 6 metrics (5 independent, 1 implementation verification)
+  {
+    const report = runSystemCrossValidation();
+    const ok =
+      report.testsRun === 6 &&
+      report.metrics.length === 6 &&
+      report.crossValidationCount === 5 &&
+      report.implementationVerificationCount === 1 &&
+      report.testsPassed === 6 &&
+      report.testsFailed === 0;
+    assert(
+      'F2-R7',
+      'Cross-validation pruned from 11 to 6 metrics (5 independent, 1 implementation verification)',
+      ok,
+      `testsRun=${report.testsRun}, crossValidationCount=${report.crossValidationCount}, implementationVerificationCount=${report.implementationVerificationCount}`
+    );
+  }
+
+  // [F2-R16] Tautological / hard-coded metrics removed
+  {
+    const report = runSystemCrossValidation();
+    const prunedIds = ['VAL-FPV-03', 'VAL-LCA-04', 'VAL-GEOTECH-05', 'VAL-GEOTECH-06', 'VAL-GRID-07'];
+    const present = report.metrics.filter(m => prunedIds.includes(m.testId)).map(m => m.testId);
+    assert(
+      'F2-R16',
+      'Tautological / hard-coded metrics (VAL-FPV-03, VAL-LCA-04, VAL-GEOTECH-05/06, VAL-GRID-07) removed',
+      present.length === 0,
+      present.length === 0 ? 'all 5 tautological metrics removed' : `found: ${present.join(', ')}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

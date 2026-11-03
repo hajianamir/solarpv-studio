@@ -12,12 +12,13 @@ _(No unreleased changes.)_
 ## [1.0.3] - YYYY-MM-DD
 
 ### Added
-- **RFC3 Unit Tests tab**: the full `runCoreUnitTests()` suite (140 tests) is now runnable from RFC3ReportsTab → "Unit Tests" sub-tab, with per-test status and details.
+- **RFC3 Unit Tests tab**: the full `runCoreUnitTests()` suite (144 tests) is now runnable from RFC3ReportsTab → "Unit Tests" sub-tab, with per-test status and details.
 - **Dual-panel Climate API view**: "Parsed" (ClimateCity) and "Raw Provider Response" (ClimateResourceData with metadata) shown side-by-side, proving what the provider actually returned.
 
 ### Changed
 - **Section A Provenance**: now reflects the ACTUAL project city (threaded via prop) rather than hardcoded Tehran. Extracted to `buildProvenanceRows()` for unit-test coverage.
 - **Fetch buttons**: display REAL_INTERNET ON/OFF mode badge so users know whether they are seeing measured or analytical data.
+- **R6**: Bumped physics model versions in `PHYSICS_MODEL_REGISTRY` (`civil_geotechnical_broms` to 3.1.0, `pv_single_diode_core` to 2.5.0, `optical_iam_thermo_coupled` to 3.1.0, `climate_resilience_15min` to 3.1.0) to reflect E1–E7 audit improvements.
 
 ### Fixed
 - **R1**: provenance hardcoded to Tehran regardless of project site.

@@ -418,6 +418,6 @@ if (!bipvtAreaOk) {
 }
 
 console.log('================================================================================');
-console.log(' SUMMARY: ALL 11 CROSS-VALIDATIONS, RECALIBRATED HUBS & BIPV/T CONSTRAINTS PASS');
+console.log(' SUMMARY: ALL 6 BENCHMARKS, RECALIBRATED HUBS & BIPV/T CONSTRAINTS PASS');
 console.log('================================================================================');
 

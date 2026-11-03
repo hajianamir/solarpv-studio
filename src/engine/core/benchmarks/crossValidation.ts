@@ -10,10 +10,6 @@
 import {
   GOLDEN_BIFACIAL_NREL,
   GOLDEN_SANDIA_PV,
-  GOLDEN_DNV_FPV,
-  GOLDEN_IEA_LCA,
-  GOLDEN_IEEE_2800_LVRT,
-  GOLDEN_GEOTECH_PILE,
   GOLDEN_KIMBER_SOILING,
   GOLDEN_MARION_SNOW,
   GOLDEN_IAM_DATASET,
@@ -185,103 +181,6 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
     )
   );
 
-  // 3. DNV / SERIS Floating PV Evaporative Delta-T Cooling — implementation verification only
-  // (no live FPV thermal engine wired in this runner; reference 6.40 °C from SERIS lake trials /
-  // DNV-RP-0584, compared against the engine cooling-model constant)
-  const fpvCoolingCalc = customCalculatedValues?.['fpvDeltaTCooling'] ?? 6.35; // Target: 6.4 °C
-  metrics.push(
-    evaluate(
-      'VAL-FPV-03',
-      'DNV / SERIS Floating PV Evaporative Cooling Delta-T',
-      GOLDEN_DNV_FPV.source,
-      'https://www.seris.nus.edu.sg/ | DNV-RP-0584 Floating Solar Recommended Practice',
-      GOLDEN_DNV_FPV.deltaTCoolingC,
-      fpvCoolingCalc,
-      GOLDEN_DNV_FPV.tolerancePercent,
-      '°C',
-      `Engine evaporative-cooling output under water surface temp 26.5°C vs ambient 32.0°C with Cox-Munk water albedo 0.065; reference 6.40 °C from SERIS Singapore lake trials. Implementation verification (no independent live engine computation).`,
-      'implementation_verification',
-      'estimated'
-    )
-  );
-
-  // 4. IEA-PVPS Task 12 LCA Embodied Carbon — implementation verification only
-  // (literature median value; no LCA engine computation in this runner)
-  const lcaCalc = customCalculatedValues?.['lcaEmbodiedCarbonG'] ?? 28.1; // Target: 28.5 gCO2/kWh
-  metrics.push(
-    evaluate(
-      'VAL-LCA-04',
-      'IEA-PVPS Task 12 Utility c-Si Embodied Carbon Footprint',
-      GOLDEN_IEA_LCA.source,
-      'https://www.iea-pvps.org/task-12/ (Life Cycle Inventories and LCAs of PV Systems, 2020/2022)',
-      GOLDEN_IEA_LCA.gCo2eqPerKwhMedian,
-      lcaCalc,
-      GOLDEN_IEA_LCA.tolerancePercent,
-      'g CO2-eq/kWh',
-      `Implementation verification against IEA-PVPS Task 12 median 28.5 g CO2-eq/kWh; cradle-to-grave ISO 14040/14044 baseline. No live LCA engine — the reported value is the implementation constant compared to literature.`,
-      'implementation_verification',
-      'estimated'
-    )
-  );
-
-  // 5. Geotechnical Broms Lateral Pile Capacity — implementation verification only
-  // (literal Broms capacity from literature; runner does not recompute from a live soil profile)
-  const pileLateralCalc = customCalculatedValues?.['pileLateralKn'] ?? 34.2; // Target: 34.6 kN
-  metrics.push(
-    evaluate(
-      'VAL-GEOTECH-05',
-      'Broms (1964) Driven Steel Pile Ultimate Lateral Capacity',
-      GOLDEN_GEOTECH_PILE.source,
-      'Broms, B. (1964) "Lateral Resistance of Piles in Cohesionless Soils", JSMFD, ASCE',
-      GOLDEN_GEOTECH_PILE.bromsUltimateLateralKn,
-      pileLateralCalc,
-      GOLDEN_GEOTECH_PILE.tolerancePercent,
-      'kN',
-      `Implementation verification: implementation constant 34.2 kN vs Broms (1964) reference 34.6 kN for D=0.15 m, L=2.2 m, medium dense sand (phi=32 deg, gamma=18.5 kN/m3). Not recomputed from a live soil profile.`,
-      'implementation_verification',
-      'estimated'
-    )
-  );
-
-  // 6. Geotechnical Skin Friction Uplift Resistance (Beta Method) — implementation verification only
-  const pileUpliftCalc = customCalculatedValues?.['pileUpliftKn'] ?? 27.9; // Target: 28.2 kN
-  metrics.push(
-    evaluate(
-      'VAL-GEOTECH-06',
-      'Meyerhof / Burland Beta-Method Driven Pile Uplift Resistance',
-      GOLDEN_GEOTECH_PILE.source,
-      'Meyerhof, G.G. (1976) / Burland, J.B. (1973) beta-method shaft capacity; Eurocode 7 EN 1997-1',
-      GOLDEN_GEOTECH_PILE.skinFrictionUltimateUpliftKn,
-      pileUpliftCalc,
-      GOLDEN_GEOTECH_PILE.tolerancePercent,
-      'kN',
-      `Implementation verification: implementation constant 27.9 kN vs beta-method reference 28.2 kN; Ko=1.0, delta=0.75*phi. Not recomputed from a live soil profile.`,
-      'implementation_verification',
-      'estimated'
-    )
-  );
-
-  // 7. IEEE 2800 SSR Screening Critical Ratio — implementation verification (deterministic threshold)
-  // NOTE: SCR = 2.0 is the threshold value DEFINED in IEEE Std 2800-2022 Clause 7.2 itself;
-  // comparing the code constant against the same-norm constant is a tautology, hence NOT an
-  // independent cross-validation.
-  const ssrCalc = customCalculatedValues?.['ssrScreeningScr'] ?? 2.0; // Target: 2.0
-  metrics.push(
-    evaluate(
-      'VAL-GRID-07',
-      'IEEE Std 2800 Subsynchronous Resonance Screening SCR Threshold',
-      GOLDEN_IEEE_2800_LVRT.source,
-      'https://standards.ieee.org/ieee/2800/6612318/ (IEEE Std 2800-2022 Clause 7.2)',
-      GOLDEN_IEEE_2800_LVRT.ssrScreeningThresholdScr,
-      ssrCalc,
-      GOLDEN_IEEE_2800_LVRT.tolerancePercent,
-      'ratio',
-      `Implementation verification: SCR=2.0 screening threshold is defined by IEEE Std 2800-2022 Clause 7.2 itself; comparing identical constants is tautological by construction. Systems with SCR < 2.0 near series-compensated lines trigger mandatory EMT detailed study.`,
-      'implementation_verification',
-      'estimated'
-    )
-  );
-
   // 8. Kimber Soiling Loss & Complete Rain Wash-off Recovery (PR-2a-2 Live Engine Execution)
   let soilingCalc = customCalculatedValues?.['soilingLossPercent'];
   if (soilingCalc === undefined) {
@@ -430,9 +329,8 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
 
   const complianceNotes = [
     'Cross-validation vs implementation verification separated: only benchmarks against independent third-party sources (NREL SAM, Sandia/CEC, Kimber NREL, Marion IEEE JPV, IEA SHC Task 60) are classified cross_validation.',
-    'Implementation verification metrics (VAL-IAM-10, VAL-GRID-07, VAL-LCA-04, VAL-FPV-03, VAL-GEOTECH-05/06) reproduce code-internal relationships or literature thresholds — they are NOT independent proof of accuracy.',
-    'VAL-GRID-07 (IEEE 2800 SCR=2.0) is tautological by construction: the threshold is defined in the same norm the code implements.',
-    'VAL-IAM-10 (Martin & Ruiz ARC) uses the same formula in engine and nominal source — circular; reclassified to implementation_verification.',
+    'VAL-IAM-10 (Martin & Ruiz ARC) uses the same formula in engine and nominal source — circular; classified as implementation_verification.',
+    'Five tautological / hard-coded implementation metrics (VAL-FPV-03, VAL-LCA-04, VAL-GEOTECH-05, VAL-GEOTECH-06, VAL-GRID-07) were pruned per RFC 3.0 audit requirements R7 and R16.',
     'No simulated parameter is tested against an identical hard-coded internal lookup; golden dataset nominals carry source URL / DOI.',
     'PVsyst cross-validation terminology is strictly maintained (reserving validation for operational field sensors).',
   ];

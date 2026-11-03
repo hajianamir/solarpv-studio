@@ -9,7 +9,10 @@ RFC3 reports/compliance correctness audit. No physics engine changes.
 - **R1**: Section A Provenance now reflects the actual project city coordinates rather than hardcoded Tehran.
 - **R2**: Dual-panel Climate API view showing both parsed `ClimateCity` and raw `ClimateResourceData` provider response with metadata trace ID.
 - **R3**: Removed dead `AdvancedFeaturesModal.tsx` (all features accessible via RFC3ReportsTab).
-- **R4**: In-browser Core Unit Tests runner tab surfacing the 140-test suite with detailed pass/fail breakdown.
+- **R4**: In-browser Core Unit Tests runner tab surfacing the 144-test suite with detailed pass/fail breakdown.
+- **R5**: Removed phantom feature flags and dead toggles in favor of Continuous Compliance Mode.
+- **R6**: Bumped model registry versions for 4 updated engines (civil geotech 3.1.0, single diode 2.5.0, IAM 3.1.0, climate resilience 3.1.0).
+- **R7 / R16**: Pruned 5 tautological/hardcoded metrics from Section B of crossValidation.ts (11 -> 6 metrics).
 - **R9 / R10 / R14**: Real internet mode badge on Climate tab, confidence fallback handling, and live API error handling.
 
 ---

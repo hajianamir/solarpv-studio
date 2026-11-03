@@ -420,7 +420,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 {isEn ? 'Total Benchmarks Tested' : 'تعداد کل بنچمارک‌ها'}
               </span>
               <span className="text-2xl font-bold font-mono text-white">
-                {validationReport?.testsRun ?? 11}
+                {validationReport?.testsRun ?? 6}
               </span>
               <span className="text-[10px] text-slate-500 block mt-0.5">NREL, DNV, IEEE, ASCE, IEA</span>
             </div>
@@ -442,7 +442,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 {isEn ? 'Implementation Verification' : 'بازتولید پیاده‌سازی'}
               </span>
               <span className="text-2xl font-bold font-mono text-industrial-warning">
-                {validationReport?.implementationVerificationCount ?? 6}
+                {validationReport?.implementationVerificationCount ?? 1}
               </span>
               <span className="text-[10px] text-amber-500/80 block mt-0.5">
                 {isEn ? 'code-internal / literature thresholds' : 'رابطهای داخلی یا آستانه‌های مرجع'}
