@@ -13,6 +13,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": false,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": true,
     "noImplicitAny": true,
     "alwaysStrict": true,
     "noImplicitThis": true,

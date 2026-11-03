@@ -206,7 +206,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Frost Depth (cm)', effectiveCity.frostDepthCm],
       ['Seismic Base Acceleration A (g)', effectiveCity.seismicZoneCoefficientA],
       ['Data Provenance', isEn ? effectiveCity.dataSourceEn : effectiveCity.dataSourceFa],
-      ['Retrieval Date', effectiveCity.dataRetrievalDate],
+      ['Retrieval Date', effectiveCity.dataRetrievalDate ?? ''],
     ];
 
     const electricalSheet = [
