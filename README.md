@@ -24,6 +24,10 @@ platform.
 
 ```bash
 npm ci
+
+> This project uses **npm** as the package manager. `package-lock.json`
+> is the source of truth. Do not run `bun install`, `pnpm install`, or
+> `yarn` — they will generate lockfiles that drift from CI.
 npm run dev      # starts Express + Vite middleware on http://localhost:3000
 ```
 
