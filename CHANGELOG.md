@@ -17,6 +17,8 @@ _(No unreleased changes as of v1.0.0.)_
 - **STRUCT-3**: Broms clay lateral capacity now uses the FHWA-NHI-16-009 §10.4.4 iterative form (was a non-standard `(2 + e/L)` denominator with no reference).
 - **STRUCT-4**: `fosSlidingApplicable` flag added - the friction-based sliding FoS is now marked applicable only for ballasted blocks; the UI no longer shows it for pile/pier types (use the Broms FoS instead).
 
+- **STRUCT-2 (correctness fix)**: wind overturning moment arm now derived from panel geometry (W/2 + h·sinβ) rather than h_mean·cosβ, and the safety suite gained a **pile uplift capacity check** (beta method for cohesionless, alpha for cohesive, per Eurocode 7 / FHWA-NHI-16-009), previously absent. `isStructurallySafe` is now foundation-type-aware: ballasted blocks verify overturning FoS ≥ 1.5, pile/pier/screw verify uplift FoS ≥ 2.0. **Behavior change**: many 28-module tables at 130 km/h wind are now correctly flagged as uplift-undersized (FoS_uplift ≈ 0.1–0.4). Re-verify foundation depth and pile count for existing pile-based designs.
+
 ## [1.0.1] - 2026-11-03
 
 ### Fixed

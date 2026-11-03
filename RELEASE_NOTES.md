@@ -1,3 +1,22 @@
+# SolarPV Studio v1.0.2
+
+**Release date:** 2026-11-04
+
+Structural/foundation audit hotfix on top of v1.0.1.
+
+## Highlights
+
+- **STRUCT-1**: unified ASCE 7-22 wind pressure across structural and foundation engines (shared `calculateWindPressureQz`; was 13.5% divergent).
+- **STRUCT-2**: derived overturning moment arm + new pile uplift capacity check (beta/alpha method); `isStructurallySafe` is foundation-type-aware.
+- **STRUCT-3**: Broms clay uses FHWA-NHI-16-009 §10.4.4 iterative form.
+- **STRUCT-4**: `fosSlidingApplicable` flag — sliding FoS shown only for ballasted blocks.
+
+### Behavior changes
+
+- Many pile-based designs at high wind are now correctly flagged as uplift-undersized (FoS_uplift < 2.0). This is a real safety margin previously invisible, not a regression. Re-verify foundation depth/pile count.
+
+---
+
 # SolarPV Studio v1.0.1
 
 **Release date:** 2026-11-03
