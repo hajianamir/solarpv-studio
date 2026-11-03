@@ -874,7 +874,21 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               structResult.isStructurallySafe ? 'text-industrial-success' : 'text-rose-400'
             }`}
           >
-            {structResult.fosOverturning}
+            {foundationType === 'rooftop_ballasted_block' ? (
+              <>
+                {structResult.fosOverturning}
+              </>
+            ) : (
+              <>
+                {structResult.fosUplift}
+              </>
+            )}
+          </div>
+          <div className="text-[10px] text-slate-400 mt-1">
+            {foundationType === 'rooftop_ballasted_block'
+              ? (isEn ? 'Required ≥ 1.5 (self-weight overturning)' : 'حداقل ۱.۵ (واژگونی وزن خود)')
+              : (isEn ? 'Uplift FoS (piles) — required ≥ 2.0 (Eurocode 7), T_ult = ' + structResult.upliftCapacityPerPostKn.toFixed(1) + ' kN/post'
+                     : 'FoS کشش شمع — حداقل ۲.۰ (یوروکد ۷)')}
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
             {isEn ? 'Sliding Safety Factor (ballasted only):' : 'ضریب لغزش (فقط بالاست):'}{' '}

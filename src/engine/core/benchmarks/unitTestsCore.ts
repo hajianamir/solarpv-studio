@@ -2340,6 +2340,76 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E5.1-STRUCT-1] Wind overturning moment arm derived from panel
+  // geometry: arm = W_sloped/2 + h_gc*sin(beta) (Tehran: 2.769 m).
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const r = calculateStructuralAndFoundations({
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 31, groundClearanceM: 0.9,
+      basicWindSpeedKmh: 130, groundSnowLoadKgM2: 100,
+      foundationType: 'rammed_steel_pile', soilType: 'dense_sand_gravel',
+    });
+
+    assert(
+      'E5.1-STRUCT-1',
+      'Wind overturning moment uses derived arm (W/2 + h*sin(beta))',
+      r.windOverturningMomentKnM > 180 && r.windOverturningMomentKnM < 230,
+      `M=${r.windOverturningMomentKnM} kN.m (expect 180-230; old was 133)`
+    );
+  }
+
+  // [E5.1-STRUCT-2] fosUplift must reflect pile tension capacity; the
+  // 28-module table at 130 km/h is genuinely uplift-undersized.
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const pile = calculateStructuralAndFoundations({
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 31, groundClearanceM: 0.9,
+      basicWindSpeedKmh: 130, groundSnowLoadKgM2: 100,
+      foundationType: 'rammed_steel_pile', soilType: 'dense_sand_gravel',
+    });
+
+    assert(
+      'E5.1-STRUCT-2',
+      'fosUplift reflects pile tension capacity (flags under-designed foundation)',
+      pile.fosUplift > 0 && pile.fosUplift < 2.0,
+      `fosUplift=${pile.fosUplift}, T_ult=${pile.upliftCapacityPerPostKn.toFixed(1)} kN/pile ` +
+      `- correctly flags under-designed foundation`
+    );
+  }
+
+  // [E5.1-STRUCT-3] Safety verdict is foundation-type-aware.
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const common = {
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 20, groundClearanceM: 0.9,
+      basicWindSpeedKmh: 90, groundSnowLoadKgM2: 0,
+      soilType: 'dense_sand_gravel' as const,
+    };
+
+    const ballast = calculateStructuralAndFoundations({ ...common, foundationType: 'rooftop_ballasted_block' });
+    const pile = calculateStructuralAndFoundations({ ...common, foundationType: 'rammed_steel_pile' });
+
+    const ballastUsesOverturning = ballast.safetyReasonEn.toLowerCase().includes('overturning');
+    const pileUsesUplift = pile.safetyReasonEn.toLowerCase().includes('uplift');
+
+    assert(
+      'E5.1-STRUCT-3',
+      'Safety verdict is foundation-type-aware (ballasted->overturning, pile->uplift)',
+      ballastUsesOverturning && pileUsesUplift,
+      `ballast reason="${ballast.safetyReasonEn.slice(0, 60)}", ` +
+      `pile reason="${pile.safetyReasonEn.slice(0, 60)}"`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
