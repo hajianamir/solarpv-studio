@@ -524,7 +524,9 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
 // ----------------------------------------------------------------------------
 
 function getFallbackCity() {
-  return getDefaultClimateCity();
+  // dataRetrievalDate is optional on ClimateCity but required by
+  // ClimateCitySchema's output type — pin the schema default explicitly.
+  return { ...getDefaultClimateCity(), dataRetrievalDate: '2026-01-01' };
 }
 
 function getFallbackModule() {
