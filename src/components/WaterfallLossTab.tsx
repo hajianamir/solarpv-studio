@@ -8,6 +8,8 @@ interface WaterfallLossTabProps {
   ambientTempMaxC: number;
   soilingLossPct: number;
   dcAcRatio: number;
+  noctC?: number;
+  tempCoeffPmpPct?: number;
   lang?: 'fa' | 'en';
 }
 
@@ -17,6 +19,8 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   ambientTempMaxC,
   soilingLossPct,
   dcAcRatio,
+  noctC = 45.0,
+  tempCoeffPmpPct = -0.30,
   lang = 'fa',
 }) => {
   const [hasTracker, setHasTracker] = useState(false);
@@ -28,7 +32,11 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
     ambientTempMaxC,
     soilingLossPct,
     dcAcRatio,
-    hasTracker
+    hasTracker,
+    0.0,
+    -2.2,
+    noctC,
+    tempCoeffPmpPct
   );
 
   return (

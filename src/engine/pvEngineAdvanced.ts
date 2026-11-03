@@ -1,5 +1,7 @@
 // Advanced PV Array Engineering, String Sizing & Deratings (IEC 62548 / NEC 690.7)
 
+import { calculateThermalDerate } from './core/thermalDerate';
+
 export interface ModuleSpecs {
   modelName: string;
   manufacturer: string;
@@ -58,6 +60,7 @@ export interface PvArrayDesignResult {
   netArrayAreaM2: number;
   interRowSpacingM: number;
   grossRequiredLandAreaM2: number;
+  winterSunAltitudeDeg: number;
   warnings: string[];
 }
 
@@ -66,17 +69,21 @@ export function designPvArray(
   peakSunHours: number,
   module: ModuleSpecs,
   inverter: InverterSpecs,
-  deratings: SiteDeratings
+  deratings: SiteDeratings,
+  latitudeDeg: number
 ): PvArrayDesignResult {
   const warnings: string[] = [];
 
-  // 1. Calculate cell temperature in hot design conditions (Sandia / NOCT model)
-  // G_poa ≈ 1000 W/m² at peak noon
-  const cellTempHotC = deratings.ambientTempMaxC + (module.noctC - 20.0) * (1000.0 / 800.0);
-  
+  // 1. Cell temperature in hot design conditions — unified thermal model (PR-2a-7-P0)
+  // G_poa ≈ 1000 W/m² at peak noon; single source of truth: thermalDerate.ts
+  const thermal = calculateThermalDerate({
+    module: { noctC: module.noctC, tempCoeffPmpPct: module.tempCoeffPmpPct },
+    ambientTempMaxC: deratings.ambientTempMaxC,
+  });
+  const cellTempHotC = thermal.cellTempHotC;
+
   // 2. Power loss due to temperature
-  const deltaTempPmp = Math.max(0, cellTempHotC - 25.0);
-  const powerTempDeratePct = Math.abs(module.tempCoeffPmpPct) * deltaTempPmp;
+  const powerTempDeratePct = thermal.deratePct;
 
   // 3. Overall combined system derating factor
   const derateTemp = 1.0 - (powerTempDeratePct / 100.0);
@@ -100,7 +107,12 @@ export function designPvArray(
   const singleModuleVocMaxCold = module.vocVolts * (1.0 + vocTempCoeffDec * (deratings.ambientTempMinC - 25.0));
 
   // Hot condition Vmp_min:
-  const singleModuleVmpMinHot = module.vmpVolts * (1.0 + vocTempCoeffDec * (deratings.ambientTempMaxC + 30.0 - 25.0));
+  // IEC 62548 §7.2: the Vmp temperature coefficient shall be the Pmp coefficient
+  // (tempCoeffPmpPct), evaluated at the CELL temperature (cellTempHotC, computed
+  // above via the unified NOCT model) — not at ambient temperature.
+  // Do NOT "fix" this back to vocTempCoeffDec / ambient-based temperature.
+  const vmpTempCoeffDec = module.tempCoeffPmpPct / 100.0;
+  const singleModuleVmpMinHot = module.vmpVolts * (1.0 + vmpTempCoeffDec * (cellTempHotC - 25.0));
 
   // Max series modules limited by Inverter Max Vdc
   const maxModulesAllowed = Math.floor(inverter.vdcMaxVolts / singleModuleVocMaxCold);
@@ -152,8 +164,14 @@ export function designPvArray(
   const panelHeightProjectedM = module.lengthM * Math.sin(tiltRad);
   const panelGroundDepthM = module.lengthM * Math.cos(tiltRad);
 
-  // Winter sun altitude approximation around ~30° for Iran central plateau
-  const sunElevationRad = (30.0 * Math.PI) / 180.0;
+  // Winter-solstice noon solar altitude from site latitude (PR-2a-7-P0):
+  // alpha = 90° - |latitude| - |declination(-23.45°)|, floored at 5° to avoid
+  // infinite row spacing at extreme latitudes.
+  const winterSolsticeDeclinationDeg = -23.45;
+  const solarAltitudeWinterDeg =
+    90.0 - Math.abs(latitudeDeg) - Math.abs(winterSolsticeDeclinationDeg);
+  const winterSunAltitudeDeg = Math.max(5.0, solarAltitudeWinterDeg);
+  const sunElevationRad = (winterSunAltitudeDeg * Math.PI) / 180.0;
   const shadowLengthM = panelHeightProjectedM / Math.tan(sunElevationRad);
   const interRowSpacingM = panelGroundDepthM + shadowLengthM;
 
@@ -176,6 +194,7 @@ export function designPvArray(
     netArrayAreaM2,
     interRowSpacingM,
     grossRequiredLandAreaM2,
+    winterSunAltitudeDeg,
     warnings,
   };
 }

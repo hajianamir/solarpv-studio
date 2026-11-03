@@ -45,6 +45,8 @@ import { Language, translations } from './i18n';
 import { getDefaultClimateCity, ClimateCity, SiteGeotechnicalOverrides } from './engine/climaticData';
 import { LOAD_PRESETS, ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
 import { designPvArray, ModuleSpecs, InverterSpecs } from './engine/pvEngineAdvanced';
+import { computeWaterfallLosses } from './engine/waterfallLossEngine';
+import { calculateThermalDerate } from './engine/core/thermalDerate';
 import { sizeBatteryBank, BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
 import { evaluateInverterClustering } from './engine/inverterClustering';
 import {
@@ -332,14 +334,30 @@ export const App: React.FC = () => {
   // 2. Compute Target Energy Demand Based on System Mode
   const effectiveDailyKwhDemand = useMemo(() => {
     if (systemMode === 'powerplant') {
-      return (targetPowerplantCapacityKw || 1000) * city.peakSunHours * 0.82; // Commercial Generation target
+      // PR-2a-7-P0 (P0-1): daily energy target derived from the unified 14-stage
+      // waterfall loss model — the old hardcoded PR constant was removed.
+      // Basis: netAnnualEnergyExportMwh / 365 days for the target capacity.
+      const targetKw = targetPowerplantCapacityKw || 1000;
+      const wf = computeWaterfallLosses(
+        targetKw,
+        city.peakSunHours,
+        city.tempMaxC,
+        city.soilingLossPct,
+        1.25,
+        false,
+        0.0,
+        -2.2,
+        selectedModule.noctC,
+        selectedModule.tempCoeffPmpPct
+      );
+      return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
     } else if (systemMode === 'ongrid') {
       const averagePowerKw = (loadAnalysis.totalDailyEnergyKwh || 20) / 24.0;
       return Math.max(1, averagePowerKw * (outageHours || 6));
     } else {
       return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
     }
-  }, [systemMode, targetPowerplantCapacityKw, city.peakSunHours, loadAnalysis.totalDailyEnergyKwh, outageHours]);
+  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule]);
 
   // 3. Advanced PV Array Engineering Sizing
   const arrayDesign = useMemo(() => {
@@ -358,7 +376,8 @@ export const App: React.FC = () => {
         systemAvailabilityPct: 99.0,
         groundAlbedo: city.albedo,
         arrayTiltDeg: city.optimalTiltAnnualDeg,
-      }
+      },
+      city.latitude
     );
   }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter]);
 
@@ -487,14 +506,40 @@ export const App: React.FC = () => {
     );
   }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, outageHours]);
 
-  // 10. Financial Analysis with User Unit Pricing & Optional Genset CAPEX
-  const thermalDeratePct = Math.max(0, (city.tempMaxC - 45) * 1.5);
-  const altitudeDeratePct = Math.max(0, ((city.elevationM - 2000) / 100) * 1.0);
-  const climaticDerateFactor = (1 - thermalDeratePct / 100) * (1 - altitudeDeratePct / 100);
-  const estimatedAnnualYieldMwh = (arrayDesign.totalPvCapacityKwp * city.peakSunHours * 365 * 0.82 * climaticDerateFactor) / 1000;
+  // 10. Annual energy yield — SINGLE source: unified 14-stage waterfall loss model
+  // (PR-2a-7-P0, P0-1). The old parallel hardcoded-PR path is
+  // deleted. FinancialTab and WaterfallLossTab both consume this same report,
+  // so they display the identical annual energy (< 0.1% difference).
+  const waterfallReport = useMemo(() => {
+    return computeWaterfallLosses(
+      arrayDesign.totalPvCapacityKwp,
+      city.peakSunHours,
+      city.tempMaxC,
+      city.soilingLossPct,
+      arrayDesign.totalPvCapacityKwp / Math.max(0.1, inverterClustering.totalInverterCapacityKw),
+      false,
+      0.0,
+      -2.2,
+      selectedModule.noctC,
+      selectedModule.tempCoeffPmpPct
+    );
+  }, [arrayDesign, city, inverterClustering, selectedModule]);
 
+  const annualYieldKwh = waterfallReport.netAnnualEnergyExportMwh * 1000.0;
+
+  // Unified thermal derate for display (PR-2a-7-P0, P0-3) — same value used
+  // inside pvEngineAdvanced and waterfallLossEngine.
+  const thermalDisplay = useMemo(
+    () =>
+      calculateThermalDerate({
+        module: { noctC: selectedModule.noctC, tempCoeffPmpPct: selectedModule.tempCoeffPmpPct },
+        ambientTempMaxC: city.tempMaxC,
+      }),
+    [selectedModule, city]
+  );
+
+  // 11. Financial Analysis with User Unit Pricing & Optional Genset CAPEX
   const financialResult = useMemo(() => {
-    const annualYieldKwh = estimatedAnnualYieldMwh * 1000.0;
     return performFinancialAnalysis(
       arrayDesign.totalPvCapacityKwp,
       batterySizing.grossCapacityKwh,
@@ -509,7 +554,7 @@ export const App: React.FC = () => {
       25,
       systemMode
     );
-  }, [arrayDesign, batterySizing, inverterClustering, estimatedAnnualYieldMwh, userPricing, enableDieselGenerator, generatorSizing, systemMode]);
+  }, [arrayDesign, batterySizing, inverterClustering, annualYieldKwh, userPricing, enableDieselGenerator, generatorSizing, systemMode]);
 
   // 11. Scenario Analysis (only for Battery modes)
   const scenarios = useMemo(() => {
@@ -1359,6 +1404,8 @@ export const App: React.FC = () => {
                 arrayDesign.totalPvCapacityKwp /
                 Math.max(0.1, inverterClustering.totalInverterCapacityKw)
               }
+              noctC={selectedModule.noctC}
+              tempCoeffPmpPct={selectedModule.tempCoeffPmpPct}
               lang={lang}
             />
           )}

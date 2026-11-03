@@ -45,6 +45,8 @@ import { recommendFoundation } from '../../structureRecommendationEngine';
 import { recommendSharedFoundation } from '../../geotech/foundationRecommendation';
 import { assessSaltCorrosion, classifyCorrosionCategory } from '../../corrosion/saltCorrosionEngine';
 import { performFinancialAnalysis } from '../../financialEngine';
+import { designPvArray } from '../../pvEngineAdvanced';
+import { calculateThermalDerate } from '../thermalDerate';
 
 export interface UnitTestResult {
   suite: string;
@@ -1184,6 +1186,112 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     compareStatus(2.0, 1.0) === 'FAIL', 'relErr 2.0% > 1.5 × tol 1.5% → FAIL');
   assert('LHS Benchmark', 'compareStatus PASS Branch (relErr <= tol)',
     compareStatus(0.5, 1.0) === 'PASS', 'relErr 0.5% <= tol 1.0% → PASS');
+
+
+  // ==========================================================================
+  // PR-2a-7-P0: Bankability Consistency Gates
+  // ==========================================================================
+  const p0Module = {
+    manufacturer: 'Jinko Solar', modelName: 'JKM550N', pmpWatts: 550.0,
+    vocVolts: 49.5, vmpVolts: 41.28, iscAmps: 13.9, impAmps: 13.3,
+    tempCoeffVocPct: -0.28, tempCoeffPmpPct: -0.30, noctC: 45.0,
+    lengthM: 2.278, widthM: 1.134,
+  };
+  const p0Inverter = {
+    manufacturer: 'Huawei', modelName: 'SUN2000-100KTL', pnomAcKw: 100,
+    vdcMaxVolts: 1500, vmpptMinVolts: 600, vmpptMaxVolts: 1500,
+    iscMaxAmpsPerMppt: 30, imppMaxAmpsPerMppt: 26, mpptChannelsCount: 10,
+    efficiencyMaxPct: 98.8, isThreePhase: true,
+  };
+  const p0Deratings = (tempMax: number) => ({
+    ambientTempMinC: -5.0, ambientTempMaxC: tempMax, soilingLossPct: 5.5,
+    dcCableLossPct: 1.5, mismatchAndLidLossPct: 2.0, inverterClippingLossPct: 1.0,
+    systemAvailabilityPct: 99.0, groundAlbedo: 0.20, arrayTiltDeg: 30.0,
+  });
+
+  // [THERMAL-CONSISTENCY] Tehran: cellTemp = 46 + (45-20)*1.25 = 77.25 C,
+  // deratePct = 0.30 * (77.25-25) = 15.675% in ALL consumers.
+  {
+    const th = calculateThermalDerate({ module: { noctC: 45, tempCoeffPmpPct: -0.30 }, ambientTempMaxC: 46 });
+    const arr = designPvArray(5000, 5.85, p0Module, p0Inverter, p0Deratings(46), 35.69);
+    const wfThermal = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30)
+      .stages.find((st) => st.id === 'thermal')!;
+    assert(
+      'PR-CONSISTENCY',
+      '[THERMAL-CONSISTENCY] unified thermal derate = 15.68% in all three consumers',
+      Math.abs(th.deratePct - 15.675) < 0.01 &&
+        Math.abs(arr.powerTempDeratePct - th.deratePct) < 0.001 &&
+        Math.abs(Math.abs(wfThermal.percentageLoss) - th.deratePct) < 0.06,
+      `thermalDerate.ts=${th.deratePct.toFixed(3)}% pvEngine=${arr.powerTempDeratePct.toFixed(3)}% waterfall=${wfThermal.percentageLoss}% (cellTemp=${th.cellTempHotC.toFixed(2)}C)`
+    );
+  }
+
+  // [ANGLE-GEOMETRY] winter-solstice noon altitude from latitude (5 reference sites)
+  {
+    const sites: Array<[string, number, number]> = [
+      ['Tehran', 35.69, 30.86],
+      ['Munich', 48.13, 18.42],
+      ['Berlin', 52.52, 14.03],
+      ['Phoenix', 33.45, 33.10],
+      ['Singapore', 1.35, 65.20],
+    ];
+    let allOk = true;
+    const detail: string[] = [];
+    for (const [name, lat, expected] of sites) {
+      const arr = designPvArray(5000, 5.85, p0Module, p0Inverter, p0Deratings(46), lat);
+      const ok = Math.abs(arr.winterSunAltitudeDeg - expected) < 0.01;
+      allOk = allOk && ok;
+      detail.push(`${name}: ${arr.winterSunAltitudeDeg.toFixed(2)}deg (exp ${expected}deg)`);
+    }
+    assert('PR-CONSISTENCY', '[ANGLE-GEOMETRY] winter sun altitude per latitude (5 sites)', allOk, detail.join(' | '));
+  }
+
+  // [VMP-HOT] Vmp at cell temperature with Pmp coefficient (IEC 62548 7.2)
+  {
+    const arr = designPvArray(5000, 5.85, p0Module, p0Inverter, p0Deratings(46), 35.69);
+    const perModuleVmpHot = arr.stringVmpMinHotVolts / arr.modulesPerString;
+    const expected = 41.28 * (1 - 0.003 * (77.25 - 25)); // 34.8095 V
+    assert(
+      'PR-CONSISTENCY',
+      '[VMP-HOT] singleModuleVmpMinHot uses cellTemp + Pmp coeff = 34.81V',
+      Math.abs(perModuleVmpHot - expected) < 0.01,
+      `actual=${perModuleVmpHot.toFixed(4)}V expected=${expected.toFixed(4)}V cellTemp=${arr.cellTempHotC.toFixed(2)}C`
+    );
+  }
+
+  // [PR-CONSISTENCY] waterfall annual energy === financial annual energy (<0.1%)
+  {
+    const wf = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30);
+    const X = wf.netAnnualEnergyExportMwh * 1000;
+    const fin = performFinancialAnalysis(1000, 0, 1000, X, undefined, 25, 'powerplant');
+    const Y = fin.annualEnergyYieldKwh;
+    assert(
+      'PR-CONSISTENCY',
+      '[PR-CONSISTENCY] waterfall netAnnualEnergy*1000 === financial annualEnergyYieldKwh',
+      Math.abs(X - Y) / Math.max(1, Y) < 0.001,
+      `waterfall=${X} kWh financial=${Y} kWh relDiff=${(Math.abs(X - Y) / Math.max(1, Y)).toExponential(2)} LCOE=$${fin.lcoeUsdPerKwh}/kWh`
+    );
+  }
+
+  // [LCOE-INTEGRITY] LCOE derived only from (capex + sum disc. costs) / sum disc. energy
+  {
+    const wf = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30);
+    const fin = performFinancialAnalysis(1000, 0, 1000, wf.netAnnualEnergyExportMwh * 1000, undefined, 25, 'powerplant');
+    const r = 0.18; // DEFAULT_FINANCIAL_PRICING.discountRatePct
+    let costs = fin.capexBreakdown.totalCapexToman;
+    let energy = 0;
+    for (const cf of fin.cashFlow25Years) {
+      costs += (cf.opexToman + cf.fuelCostToman + cf.batteryReplacementToman) / Math.pow(1 + r, cf.year);
+      energy += cf.generationKwh / Math.pow(1 + r, cf.year);
+    }
+    const recomputedToman = costs / Math.max(1, energy);
+    assert(
+      'PR-CONSISTENCY',
+      '[LCOE-INTEGRITY] LCOE matches (capex+disc.costs)/disc.energy, no invented constants',
+      Math.abs(recomputedToman - fin.lcoeTomanPerKwh) <= 20,
+      `engine=${fin.lcoeTomanPerKwh} Toman/kWh recomputed=${recomputedToman.toFixed(1)} Toman/kWh ($${fin.lcoeUsdPerKwh}/kWh)`
+    );
+  }
 
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;

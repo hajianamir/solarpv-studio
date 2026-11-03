@@ -1,5 +1,7 @@
 // Comprehensive 14-Stage PVsyst-Grade Waterfall Loss Tree & 8760h Performance Ratio (PR) Engine
 
+import { calculateThermalDerate } from './core/thermalDerate';
+
 export interface LossStage {
   id: string;
   nameFa: string;
@@ -29,7 +31,9 @@ export function computeWaterfallLosses(
   dcAcRatio: number = 1.25,
   hasTracker: boolean = false,
   snowLossPct: number = 0.0,
-  iamLossPct: number = -2.2
+  iamLossPct: number = -2.2,
+  noctC: number = 45.0,
+  tempCoeffPmpPct: number = -0.30
 ): WaterfallLossReport {
   // 1. Raw Global Horizontal Irradiance (GHI)
   // GHI annual = PSH * 365 days * 1 kW/m² reference
@@ -113,7 +117,13 @@ export function computeWaterfallLosses(
   );
 
   // 4. PV Cell Temperature Thermal Loss (U-value model based on ambient design temperature)
-  const thermalLossPct = -1.0 * (Math.max(4.0, (ambientTempMaxC - 20.0) * 0.32 + 2.5));
+  // Unified NOCT thermal model (PR-2a-7-P0) - same source of truth as
+  // pvEngineAdvanced and the App display (src/engine/core/thermalDerate.ts).
+  const thermalDerate = calculateThermalDerate({
+    module: { noctC, tempCoeffPmpPct },
+    ambientTempMaxC,
+  });
+  const thermalLossPct = -1.0 * thermalDerate.deratePct;
   addStage(
     'thermal',
     'تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)',
