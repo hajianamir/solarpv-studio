@@ -72,7 +72,22 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
   } | null>(null);
   const [isRunningUnitTests, setIsRunningUnitTests] = useState(false);
   const [isRunningValidation, setIsRunningValidation] = useState(false);
-  const [sectionBExpanded, setSectionBExpanded] = useState(false);
+  const [sectionBExpanded, setSectionBExpanded] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('solarpv_section_b_expanded');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('solarpv_section_b_expanded', String(sectionBExpanded));
+    } catch {
+      // ignore
+    }
+  }, [sectionBExpanded]);
   const [provenanceRows, setProvenanceRows] = useState<Array<{
     parameter: string;
     value: string;
@@ -99,13 +114,15 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     return () => { mounted = false; };
   }, [city, siteOverrides, isEn]);
 
-  const handleRunValidation = () => {
+  const handleRunValidation = async () => {
     setIsRunningValidation(true);
-    setTimeout(() => {
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    try {
       const report = runSystemCrossValidation();
       setValidationReport(report);
+    } finally {
       setIsRunningValidation(false);
-    }, 120);
+    }
   };
 
   const handleRunLhsBenchmark = () => {
@@ -782,6 +799,9 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               <span className="text-slate-400 block mb-1">{isEn ? 'Speedup Factor' : 'ضریب تسریع'}</span>
               <span className="text-xl font-bold font-mono text-industrial-warning">
                 {lhsBenchmark?.speedupFactor?.toFixed(1) ?? '4.2'}×
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">
+                {lhsBenchmark ? `LHS ${lhsBenchmark.lhsExecutionTimeMs}ms vs CMC ${lhsBenchmark.cmcExecutionTimeMs}ms` : 'LHS vs CMC'}
               </span>
             </div>
           </div>

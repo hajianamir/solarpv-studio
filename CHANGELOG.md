@@ -9,10 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _(No unreleased changes.)_
 
-## [1.0.3] - YYYY-MM-DD
+## [1.0.3] - 2026-11-04
 
 ### Added
-- **RFC3 Unit Tests tab**: the full `runCoreUnitTests()` suite (144 tests) is now runnable from RFC3ReportsTab → "Unit Tests" sub-tab, with per-test status and details.
+- **RFC3 Unit Tests tab**: the full `runCoreUnitTests()` suite (146 tests) is now runnable from RFC3ReportsTab → "Unit Tests" sub-tab, with per-test status and details.
+- **LHS Timing Label**: sub-tab 4 displays explicit LHS vs CMC execution timing breakdown alongside the speedup factor (R12).
 - **Dual-panel Climate API view**: "Parsed" (ClimateCity) and "Raw Provider Response" (ClimateResourceData with metadata) shown side-by-side, proving what the provider actually returned.
 
 ### Changed
@@ -23,9 +24,13 @@ _(No unreleased changes.)_
 ### Fixed
 - **R1**: provenance hardcoded to Tehran regardless of project site.
 - **R2**: "raw provider response" panel was rendering the parsed `ClimateCity`, not the gateway's `ClimateResourceData`.
+- **R8**: Section B now defaults to expanded and persists user toggle state in `localStorage` (`solarpv_section_b_expanded`).
 - **R9**: missing "analytical fallback" indicator on Climate API tab.
 - **R10**: empty confidence badge when `ClimateCity.confidence` was `undefined`.
+- **R11**: validation re-run benchmark yields to browser macro-task queue so spinner renders during execution.
+- **R13**: salt corrosion engine allows explicit `distanceToSeaKm` user overrides when `resolveDistance` is active.
 - **R14**: dead `catch` in `handleFetchClimateApi` — now live after R2 bypass (surfaces explicit error state with fallback data).
+- **R15**: `ClimateCity.dataRetrievalDate` accurately populated from `climateResource.metadata.retrievalTimestamp`.
 
 ### Removed
 - **R3**: `AdvancedFeaturesModal.tsx` (dead code — `isOpen` never set true; all functionality available in RFC3ReportsTab).

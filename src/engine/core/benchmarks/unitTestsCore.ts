@@ -2734,6 +2734,58 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [F3-R13] Salt corrosion resolveDistance and explicit distance override behavior
+  {
+    const { assessSaltCorrosion } = await import('../../corrosion/saltCorrosionEngine');
+    const withOverride = await assessSaltCorrosion({
+      latitude: 35.6892,
+      longitude: 51.389,
+      distanceToSeaKm: 15.0,
+      resolveDistance: true,
+    });
+    const withAuto = await assessSaltCorrosion({
+      latitude: 35.6892,
+      longitude: 51.389,
+      resolveDistance: true,
+    });
+    let errorThrown = false;
+    try {
+      await assessSaltCorrosion({
+        latitude: 35.6892,
+        longitude: 51.389,
+        resolveDistance: false,
+      });
+    } catch {
+      errorThrown = true;
+    }
+    const ok =
+      withOverride.distanceToSeaKm === 15.0 &&
+      withOverride.source === 'user_entry' &&
+      withAuto.distanceToSeaKm === 50.0 &&
+      errorThrown;
+    assert(
+      'F3-R13',
+      'assessSaltCorrosion respects explicit distanceToSeaKm override and handles resolveDistance',
+      ok,
+      `override=${withOverride.distanceToSeaKm}km (${withOverride.source}), auto=${withAuto.distanceToSeaKm}km, throwsWithoutDist=${errorThrown}`
+    );
+  }
+
+  // [F3-R15] Climate city dataRetrievalDate matches gateway resource metadata timestamp
+  {
+    const { ExternalDataGateway } = await import('../../dataGateway/externalDataGateway');
+    const gw = ExternalDataGateway.getInstance();
+    const site = await gw.getComprehensiveSiteData(35.6892, 51.389);
+    const expectedDate = site.climateResource.metadata.retrievalTimestamp.slice(0, 10);
+    const ok = site.climateCity.dataRetrievalDate === expectedDate;
+    assert(
+      'F3-R15',
+      'ClimateCity.dataRetrievalDate derives from climateResource metadata retrievalTimestamp',
+      ok,
+      `cityRetrievalDate=${site.climateCity.dataRetrievalDate}, metadataDate=${expectedDate}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
