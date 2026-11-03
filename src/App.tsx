@@ -424,7 +424,8 @@ export const App: React.FC = () => {
     return evaluateInverterClustering(
       contWatts,
       peakWatts,
-      selectedInverter.pnomAcKw
+      selectedInverter.pnomAcKw,
+      selectedInverter.vmpptMaxVolts   // BUG-5: MPPT ceiling drives inverter DC bus display
     );
   }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter]);
 

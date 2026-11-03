@@ -588,11 +588,21 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs mb-4">
               <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-                <span className="text-slate-400 block mb-0.5">{isEn ? 'Nominal Busbar DC Voltage' : 'ولتاژ نامی باسبار DC (Auto-Stepped)'}</span>
+                <span className="text-slate-400 block mb-0.5">{isEn ? 'Inverter DC Bus Nominal Voltage' : 'ولتاژ نامی باس اینورتر (DC)'}</span>
                 <span className="text-xl font-bold font-mono text-purple-400">
-                  {inverterClustering.recommendedDcVoltageVdc} V DC
+                  {inverterClustering.inverterDcBusNominalV} V DC
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  {isEn ? 'Operating midpoint of inverter MPPT window' : 'نقطه میانی پنجره MPPT اینورتر'}
+                </span>
+              </div>
+
+              <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
+                <span className="text-slate-400 block mb-0.5">{isEn ? 'Battery DC Bus Voltage (BESS)' : 'ولتاژ باس باتری (BESS)'}</span>
+                <span className="text-xl font-bold font-mono text-purple-400">
+                  {inverterClustering.batteryDcBusNominalV} V DC
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
                   {isEn ? 'Optimized for string voltage and safety' : inverterClustering.autoSteppingReasonFa}
