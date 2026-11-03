@@ -2283,6 +2283,40 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E5-STRUCT-3] Broms clay must use the FHWA-NHI-16-009 iterative form,
+  // not the non-standard (2 + e/L) denominator.
+  {
+    const { recommendSharedFoundation } = await import('../../geotech/foundationRecommendation');
+
+    const r = recommendSharedFoundation({
+      siteName: 'FHWA reference', latitude: 35, longitude: 51,
+      soilClassification: 'medium_clay', soilBearingCapacityKpa: 160,
+      soilInternalFrictionAngleDeg: 22, soilCohesionKpa: 50,
+      soilDensityKnM3: 17.5, frostDepthCm: 30,
+      basicWindSpeedKmh: 120, groundSnowLoadKgM2: 20,
+      tableAreaM2: 52, arrayTiltDeg: 30, postsPerTable: 4, clearanceHeightM: 1.0,
+      slopeDeg: 0,
+    });
+
+    // Hu = fosLateral * applied shear. Verify it matches the FHWA-NHI-16-009
+    // identity Hu = 9*su*D*f, f = 2*(L - 1.5*D - e) with su=50 kPa, D=0.15 m,
+    // e=clearanceHeightM=1.0 m, L=pileDepthM. (The prompt's 150-300 band was
+    // calibrated for a standalone L=2.5 m reference case; this input has low
+    // wind so the solver stops at the minimum FoS-satisfying depth.)
+    const cap = r.factorOfSafetyLateral * r.lateralShearPerPostKn;
+    const cu = 50, D = 0.15, e = 1.0, L = r.pileDepthM;
+    const f = Math.max(0.1, 2.0 * (L - 1.5 * D - e));
+    const expectedHu = 9.0 * cu * D * f;
+
+    assert(
+      'E5-STRUCT-3',
+      'Broms clay uses FHWA-NHI-16-009 iterative form Hu = 9*su*D*f',
+      Math.abs(cap - expectedHu) / expectedHu < 0.05 && cap > 0,
+      `Hu=${cap.toFixed(1)} kN, expected=${expectedHu.toFixed(1)} kN ` +
+      `(L=${L} m, f=${f.toFixed(2)} m)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

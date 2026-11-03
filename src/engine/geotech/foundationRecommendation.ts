@@ -248,13 +248,16 @@ function calculateBromsPileSizing(
   const leverArmM = clearanceHeightM;
 
   if (soilClass === 'medium_clay') {
-    // Cohesive Soil: Broms short pile in clay: Hu_ult = 9 * cu * D * (L - 1.5*D) / (1 + (1.5*D + 0.5*f)/(e + L))
+    // FHWA-NHI-16-009 §10.4.4 (free-headed short pile, cohesive soil):
+    //   Solve iteratively for f:  e + 1.5*D + f/2 = L
+    //   Then Hu = 9 * su * D * f
+    // where e = leverArmM (moment arm to ground), D = pileWidthD, L = testL.
     const cu = Math.max(25, cohesionKpa);
     // Iteratively find depth L providing FoS >= 1.75
     let testL = minDepthForFrost;
     while (testL <= 4.0) {
-      const activeLength = Math.max(0.1, testL - 1.5 * pileWidthD);
-      const cap = (9.0 * cu * pileWidthD * activeLength) / (2.0 + leverArmM / testL);
+      const f = Math.max(0.1, 2.0 * (testL - 1.5 * pileWidthD - leverArmM));
+      const cap = 9.0 * cu * pileWidthD * f;
       if (cap >= lateralShearKn * 1.75 && testL >= minDepthForFrost) {
         requiredDepthM = Number(testL.toFixed(2));
         ultimateLateralCapacityKn = Number(cap.toFixed(1));
