@@ -2198,6 +2198,31 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E3-ENG-5] Full Perez 1990 8-bin model must produce the correct
+  // clear-sky diffuse POA. The collapsed 3-bin model landed in a single
+  // "else" branch for all eps > 1.23, under-counting diffuse by ~14% for
+  // bin-8 clear-sky. Reference: Duffie & Beckman Table 2.5.1 hand calc
+  // for these inputs yields ~1003 W/m².
+  {
+    const { calculatePoaIrradiance } = await import('../../solarPvEngine');
+
+    // Very clear sky: zenith 30, tilt 30 facing south (aligned).
+    // DNI=900, DHI=80, GHI = 900*cos30 + 80 ~ 859.4. eps ~ 10.79 -> bin 8.
+    const clearSky = calculatePoaIrradiance({
+      ghi: 859, dni: 900, dhi: 80,
+      tiltDeg: 30, azimuthDeg: 180,
+      sunZenithDeg: 30, sunAzimuthDeg: 180,
+    });
+
+    assert(
+      'E3-ENG-5',
+      'Perez 8-bin model gives correct clear-sky diffuse POA (bin 8)',
+      clearSky > 995 && clearSky < 1010,
+      `clearSky POA = ${clearSky.toFixed(2)} W/m² (expect 995-1010; ` +
+      `pre-fix 3-bin "else" branch under-counted to ~990)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

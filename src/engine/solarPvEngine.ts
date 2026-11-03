@@ -428,18 +428,29 @@ export function calculatePoaIrradiance(req: PoaIrradianceRequest): number {
       ? 1.0
       : ((dhi + dni) / dhi + 1.041 * Math.pow(zenithRad, 3)) / (1.0 + 1.041 * Math.pow(zenithRad, 3));
 
-  let f1 = 0;
-  let f2 = 0;
-  if (clearness < 1.065) {
-    f1 = -0.008 + 0.588 * brightness;
-    f2 = -0.062 + 0.072 * brightness;
-  } else if (clearness < 1.23) {
-    f1 = 0.115 + 0.683 * brightness;
-    f2 = -0.060 + 0.040 * brightness;
-  } else {
-    f1 = 0.332 + 0.487 * brightness;
-    f2 = -0.062 - 0.023 * brightness;
+  // Perez 1990 8-bin diffuse model (Duffie & Beckman 4th ed., Table 2.5.1).
+  // Each bin is (f11, f12, f13, f21, f22, f23) evaluated as:
+  //   f1 = f11 + f12*brightness + f13*zenithRad
+  //   f2 = f21 + f22*brightness + f23*zenithRad
+  interface PerezBin {
+    epsLo: number; epsHi: number;
+    f11: number; f12: number; f13: number;
+    f21: number; f22: number; f23: number;
   }
+  const PEREZ_1990_BINS: ReadonlyArray<PerezBin> = [
+    { epsLo: 1.000, epsHi: 1.065, f11: -0.008, f12:  0.588, f13: -0.062, f21: -0.060, f22:  0.072, f23: -0.022 },
+    { epsLo: 1.065, epsHi: 1.230, f11:  0.130, f12:  0.683, f13: -0.151, f21: -0.019, f22:  0.066, f23: -0.029 },
+    { epsLo: 1.230, epsHi: 1.500, f11:  0.330, f12:  0.487, f13: -0.221, f21:  0.055, f22: -0.064, f23: -0.026 },
+    { epsLo: 1.500, epsHi: 1.950, f11:  0.568, f12:  0.187, f13: -0.295, f21:  0.109, f22: -0.152, f23: -0.014 },
+    { epsLo: 1.950, epsHi: 2.800, f11:  0.873, f12: -0.392, f13: -0.362, f21:  0.226, f22: -0.462, f23:  0.001 },
+    { epsLo: 2.800, epsHi: 4.500, f11:  1.132, f12: -1.237, f13: -0.412, f21:  0.288, f22: -0.823, f23:  0.056 },
+    { epsLo: 4.500, epsHi: 6.200, f11:  1.060, f12: -1.600, f13: -0.359, f21:  0.264, f22: -1.127, f23:  0.131 },
+    { epsLo: 6.200, epsHi: Infinity, f11: 0.678, f12: -0.327, f13: -0.250, f21: 0.156, f22: -1.377, f23: 0.251 },
+  ];
+  const bin = PEREZ_1990_BINS.find(b => clearness >= b.epsLo && clearness < b.epsHi)
+    ?? PEREZ_1990_BINS[PEREZ_1990_BINS.length - 1];
+  let f1 = bin.f11 + bin.f12 * brightness + bin.f13 * zenithRad;
+  let f2 = bin.f21 + bin.f22 * brightness + bin.f23 * zenithRad;
 
   const f1Clamp = Math.max(0.0, f1);
   const diffusePoa =
