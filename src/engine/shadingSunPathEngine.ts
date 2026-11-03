@@ -93,7 +93,6 @@ export function calculateSolarPosition(
   const latRad = (latitudeDeg * Math.PI) / 180.0;
   
   // Solar Declination delta (Spencer / Cooper equation)
-  const b = (2.0 * Math.PI * (dayOfYear - 81)) / 364.0;
   const declinationRad = (23.45 * Math.PI / 180.0) * Math.sin((2.0 * Math.PI * (284 + dayOfYear)) / 365.0);
   
   // Hour Angle omega (15 deg per hour from solar noon at 12:00)

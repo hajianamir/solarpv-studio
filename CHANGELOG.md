@@ -22,6 +22,9 @@ _(No unreleased changes as of v1.0.0.)_
 - **ENG-5 (low)**: `calculatePoaIrradiance` was a collapsed 3-bin approximation of the Perez 1990 model that also dropped the zenith-angle terms (`f13·θ_z`, `f23·θ_z`). Replaced with the full 8-bin coefficient table (Duffie & Beckman 4th ed., Table 2.5.1). Clear-sky diffuse POA now matches hand calculation to ~1 W/m² (previously under-counted by ~13 W/m² at very high clearness). Affects only the `POST /api/v1/solar/poa` endpoint; no internal physics path consumes this function.
 - **ENG-7 (low)**: tracker transposition gain in `computeWaterfallLosses` used a hardcoded fixed-tilt comparison baseline of 30° regardless of latitude, over-crediting the tracker at sites where the true optimal tilt is far from 30°. Baseline is now latitude-derived (`|latitude| × 0.88`). User-visible: reported tracker gain drops from ~42% to ~29% at Singapore (1.35°N) and shifts at Berlin (52.52°N); Tehran (35.69°N) is near-invariant (~24%). The ×1.168 fixed-tilt-over-GHI anchor and the non-tracker 16.8% baseline are unchanged. The underlying sun-path's absolute `poa_fixed/GHI` ratio is still low (~1.045 vs the ~1.18 physical expectation) - separate issue deferred to v1.1.0.
 
+- **ENG-6 (low)**: LCOE denominator floored at 1 kWh, inflating LCOE by up to 1000x for pathological inputs producing finite-but-sub-unit discounted energy. Floor raised to 0.001 kWh. No observable change for realistic plants (discounted energy is in the millions of kWh); the guard only affects degenerate inputs.
+- **ENG-8 (none)**: removed dead `const b = (2π·(dayOfYear − 81)) / 364` in `shadingSunPathEngine.ts` - a Cooper-equation intermediate left behind when the declination formula was switched to Spencer. No behavioral change.
+
 ## [1.0.0] - 2026-11-03
 
 ### Changed

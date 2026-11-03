@@ -1,5 +1,5 @@
 
-> solarpv-studio@1.0.0 test
+> solarpv-studio@1.0.1 test
 > tsx scripts/run-all-benchmarks.ts
 
 ================================================================================
@@ -8,7 +8,7 @@
 
 --- [1/4] Latin Hypercube Sampling (LHS) vs Crude Monte Carlo (CMC) Benchmark ---
 Distribution Tested: Gumbel Type I Extreme Gust (mu=28 m/s, beta=4.5 m/s)
-Execution Time: LHS (N=100) = 0.19 ms | CMC (N=10,000) = 1.79 ms | Speedup = 9.4x
+Execution Time: LHS (N=100) = 0.2 ms | CMC (N=10,000) = 2.33 ms | Speedup = 11.7x
 
 +----------+--------------+--------------+-------------------+--------------------+--------+
 | Metric   | CMC (10,000) | LHS (100)    | Rel. Error (%)    | Tolerance (eps)    | Status |
@@ -192,7 +192,7 @@ These reproduce code-internal relationships; they are NOT independent proof of a
 +--------------------+------------------------+---------------------+---------------------+
 
 --- [6/7] Core Unit Tests (PRNG, Cross-Val, Soiling, Snow, IAM & Waterfall) ---
-Unit Tests Run: 117 | Passed: 117 | Failed: 0
+Unit Tests Run: 123 | Passed: 123 | Failed: 0
   • [PRNG        ] Seed Repeatability                             -> [PASS] | PRNG identical seeds match deterministically; different seeds diverge.
   • [PRNG        ] Seed Reset Method                              -> [PASS] | prng.seed(9999) correctly reset state deterministically.
   • [PRNG        ] Uniform Range Sampling Both Branches           -> [PASS] | prng.nextRange(-15, 45) in range; guard triggers on out-of-range (50) and passes in-range (20).
@@ -204,7 +204,7 @@ Unit Tests Run: 117 | Passed: 117 | Failed: 0
   • [Validation  ] Nominal Cross-Validation PASS Branch           -> [PASS] | Clean run returned overall PASS
   • [Validation  ] Cross-Validation WARN Branch Coverage          -> [PASS] | Custom value 417.58W triggered WARN status as expected (relErr=1.8% vs tol=1.5%)
   • [Validation  ] Cross-Validation FAIL Branch Coverage          -> [PASS] | Custom value 450.0W triggered FAIL status and escalated overallStatus to FAIL (testsFailed=1)
-  • [Registry    ] Calculation Trace Generation & Fallback        -> [PASS] | Trace TRACE-mw0zit5g-2dabc69e-313b-4948-a4cb-030f54ba1a07 created with registered models and omitted unregistered IDs safely.
+  • [Registry    ] Calculation Trace Generation & Fallback        -> [PASS] | Trace TRACE-mw15vbgh-7f173c36-1461-4591-ab52-924e1ca526d0 created with registered models and omitted unregistered IDs safely.
   • [Registry    ] Model SemVer Compliance                        -> [PASS] | All registered models adhere to SemVer; validator flags non-conforming versions.
   • [Registry    ] SemVer Loop Both Branches                      -> [PASS] | Semver-style registry loop flags non-conforming version without early break.
   • [Migration   ] Empty Payload Safe Recovery                    -> [PASS] | Empty input recovered safely with 3 warning(s) instead of throwing an unhandled exception.
@@ -258,13 +258,13 @@ Unit Tests Run: 117 | Passed: 117 | Failed: 0
   • [BIPVT       ] Aperture-to-Gross Analytic Equality            -> [PASS] | Analytic consistency verified: netAperture (14.77%) * areaRatio (0.86) = netGross (12.7%); Aperture Area = 1.72 m2, Gross Area = 2 m2.
   • [Marion      ] Fine Low-Tilt Monotonicity (5-10 deg)          -> [PASS] | Low-tilt snow loss monotonically decreases from 2.76% (5°) to 2.71% (10°) due to gravity slide force and toe damming alleviation.
   • [DataGateway ] Circuit Breaker Tripping on Consecutive Failures -> [PASS] | Circuit breaker successfully transitioned to OPEN after 2 consecutive failures.
-  • [DataGateway ] Multi-Provider Traceability & Geotechnical Linking -> [PASS] | DataGateway generated trace IDs: TRC-GW-20261103-0F648E6B, TRC-SOIL-20261103-D1EEFB1C; correctly mapped Eurocodes for Munich.
+  • [DataGateway ] Multi-Provider Traceability & Geotechnical Linking -> [PASS] | DataGateway generated trace IDs: TRC-GW-20261103-0D7D1639, TRC-SOIL-20261103-FF1FB9B8; correctly mapped Eurocodes for Munich.
   • [Marion      ] Fine Transition Monotonicity (10-15 deg)       -> [PASS] | Transition 10°-15° snow loss monotonically decreases from 2.71% (10°) to 2.67% (15°) confirming absence of cliff artifacts.
   • [FoundationEngine] Multi-Scenario 5-Climate Foundation Recommendations -> [PASS] | Validated 5 global project locations: Boulder (L=1.9m >= 1.90m frost requirement), Munich (L=1.8m), Phoenix (ground_screw), Singapore (ground_screw), Tehran (rammed_steel_pile).
   • [FoundationEngine] P2-2 Shared Module Depth Equality (test_depth === ui_depth, 5 sites) -> [PASS] | Boulder L=1.9m (shared 1.9m), Phoenix L=1.5m (shared 1.5m), Munich L=1.8m (shared 1.8m), Singapore L=1m (shared 1m), Tehran L=1.8m (shared 1.8m)
   • [FoundationEngine] P2-2 Foundation Type Consistency (test_type === ui_type, 5 sites) -> [PASS] | Boulder test=concrete_pier ui=concrete_pier, Phoenix test=ground_screw ui=ground_screw, Munich test=concrete_pier ui=concrete_pier, Singapore test=ground_screw ui=ground_screw, Tehran test=rammed_steel_pile ui=rammed_steel_pile
   • [FoundationEngine] P2-2 Foundation Type Diversity (>= 3 distinct types across 5 sites) -> [PASS] | Distinct types: concrete_pier, ground_screw, rammed_steel_pile (Boulder=concrete_pier, Phoenix=ground_screw, Munich=concrete_pier, Singapore=ground_screw, Tehran=rammed_steel_pile)
-  • [SaltCorrosionEngine] P2-4 ISO 9223 Salt Corrosion Classification (Bushehr = C5) -> [PASS] | Bushehr (28.92, 50.83, 0 km) = C5 (expect C5); Tehran inland (60 km) = C1; bands: 5 km = C3, 0.5 km = C5, 100 km = C1; traceId = TRC-COR-MW0ZITG0
+  • [SaltCorrosionEngine] P2-4 ISO 9223 Salt Corrosion Classification (Bushehr = C5) -> [PASS] | Bushehr (28.92, 50.83, 0 km) = C5 (expect C5); Tehran inland (60 km) = C1; bands: 5 km = C3, 0.5 km = C5, 100 km = C1; traceId = TRC-COR-MW15VBUE
   • [CrossTabPropagation] Tehran vs Munich vs Ahvaz End-to-End Parameter Propagation -> [PASS] | Cross-tab parameter propagation verified: Ahvaz thermal derate = 10.5% (0% in Tehran); Munich snow load = 1.177 kN/m² (> Tehran 0.490 kN/m²); Ahvaz LCOE increases from $0.0495/kWh to $0.0553/kWh with 10.5% extreme heat inverter derating.
   • [BLOCKER-1   ] REAL_INTERNET gate: analytical fallback allowed when not set -> [PASS] | REAL_INTERNET not set — analytical fallback permitted; real HTTP proof requires networked machine
   • [Monotonicity] Fine Tilt Sweep Inversion Branch               -> [PASS] | Loss increase between 11° and 12° correctly flagged as inversion
@@ -284,11 +284,11 @@ Unit Tests Run: 117 | Passed: 117 | Failed: 0
   • [TRACKER-PVLIB-ANNUAL] [TRACKER-PVLIB-ANNUAL] 5 sites compared, max error 0.000% -> [PASS] | Tehran: TS=2914.3 pvlib=2914.308 (0.000%) | Munich: TS=2501.4 pvlib=2501.418 (0.000%) | Berlin: TS=2338.7 pvlib=2338.738 (0.000%) | Phoenix: TS=2979.6 pvlib=2979.598 (0.000%) | Singapore: TS=3454.0 pvlib=3453.956 (0.000%)
   • [TRACKER-PHYSICS] [TRACKER-PHYSICS] 6 sanity checks              -> [PASS] | highSun bt-free, lowSun backtracked (80.0->21.7), zenith=0 -> 0, night ok, GCR effect ok, no-backtrack=true-tracking ok
   • [TRACKER-SLOPE] [TRACKER-SLOPE] 4 slope scenarios              -> [PASS] | morning 9am: flat=37.49 +5deg=34.30 -5deg=40.57; noon delta smaller than morning delta
-  • [TRACKER-WATERFALL] [TRACKER-WATERFALL] integration verified (both paths) -> [PASS] | fixed gain=16.8% tracker gain=24.1% yieldGain=8.9% nearShading=0.000% btDiffers=true
+  • [TRACKER-WATERFALL] [TRACKER-WATERFALL] integration verified (both paths) -> [PASS] | fixed gain=16.8% tracker gain=24.4% yieldGain=9.1% nearShading=0.000% btDiffers=true
   • [TRACKER-DETERMINISM] [TRACKER-DETERMINISM] 3 runs identical         -> [PASS] | annualPoa=92.865878 kWh/m2 identical x3, noNaN=true
-  • [TRACKER-UI-CONSISTENCY] [TRACKER-UI-CONSISTENCY] UI binds to trackerDetails (no hardcoded 26.5), engine=UI value -> [PASS] | engine trackerDetails gain=+24.1% (UI shows "+24.1%" in both strip and stage-1 row); near_shading raw=0.000% = -annualShadingLossPct; '26.5' absent from WaterfallLossTab.tsx
+  • [TRACKER-UI-CONSISTENCY] [TRACKER-UI-CONSISTENCY] UI binds to trackerDetails (no hardcoded 26.5), engine=UI value -> [PASS] | engine trackerDetails gain=+24.4% (UI shows "+24.4%" in both strip and stage-1 row); near_shading raw=0.000% = -annualShadingLossPct; '26.5' absent from WaterfallLossTab.tsx
   • [TRACKER-SHADING] [TRACKER-SHADING] winter-noon no-bt <= 0.10; winter-9am > 0; summer-noon ~0; bt noon = 0 -> [PASS] | winterNoon(noBt)=0.000 (omega=0.00deg) | winter9am(noBt)=0.253 | summerNoon(noBt)=0.000 | summerNoon(bt)=0.000
-  • [REACT-DEPS-TRACKER] [REACT-DEPS-TRACKER] toggling tracker changes designed kWp (>5%) — dep not stale -> [PASS] | fixed=1087.9 kWp vs tracker=1176.5 kWp (diff=8.1%)
+  • [REACT-DEPS-TRACKER] [REACT-DEPS-TRACKER] toggling tracker changes designed kWp (>5%) — dep not stale -> [PASS] | fixed=1087.9 kWp vs tracker=1189.1 kWp (diff=9.3%)
   • [TRACKER-PERSISTENCE] [TRACKER-PERSISTENCE] round-trip preserves trackerConfig values -> [PASS] | status=VALID loaded={"gcr":0.35,"axisTiltDeg":5,"maxRotationDeg":55,"enableBacktracking":true,"albedo":0.22}
   • [TRACKER-PERSISTENCE] [TRACKER-PERSISTENCE] legacy project without trackerConfig migrates safely (undefined->null) -> [PASS] | status=VALID trackerConfig=null
   • [Migration-RoundTrip] P1.1.1 Canonical loads round-trip without field drift (MIGR-00) -> [PASS] | 2/2 loads preserved exactly
@@ -310,16 +310,22 @@ Unit Tests Run: 117 | Passed: 117 | Failed: 0
   • [P2-FIN-GOLDEN-2] NPV of [-1000, 300, 400, 500, 300] @ 10% ≈ 183.867 -> [PASS] | computed=183.867 expected=183.867 tolerance=0.05
   • [P2-FIN-GOLDEN-3] IRR of [-1000, 300, 400, 500, 300] ≈ 0.18028 (verified via NPV bisection) -> [PASS] | computed=0.180282 expected≈0.18028 tolerance=1e-4
   • [P2-CATALOG-UNIFIED] DEFAULT_MODULES / INVERTERS / BATTERIES derived from equipment catalog (IDs + count) -> [PASS] | modules=25/25 inverters=33/33 batteries=24/24 firstModuleId=mod-jinko-585
+  • [E1-ENG-1    ] Solar azimuth is east of south in the morning, west of south in the afternoon -> [PASS] | morning=93.85 (expect 90-180), afternoon=264.04 (expect 180-270), symmetry error=2.11 (expect < 3.0)
+  • [E1-ENG-2    ] Battery autonomy sizing uses full daily load (20 kWh/day x 2d -> ~49.5 kWh gross) -> [PASS] | helper: offgrid=20 (expect 20), ongrid6h=5 (expect 5), powerplant=0 (expect 0); sizeBatteryBank(20, 2, lifepo4) gross=52.8 kWh (expect 45-55)
+  • [E2-ENG-3    ] Inverter clipping loss is monotone and continuous in DC/AC ratio -> [PASS] | clip loss: 1.25=-0.2%, 1.30=-0.2%, 1.31=-0.3%, 1.35=-0.5%, 1.40=-0.8% (expect flat at -0.2 below 1.3, strictly more negative above)
+  • [E2-ENG-4    ] Hot-case Vmp uses Pmp temp coefficient when supplied (steeper coeff -> more min modules) -> [PASS] | withoutPmp.minModules=7 (expect 7), withPmp.minModules=8 (expect 8) - the pre-fix code returned 7 for both (ignored betaPmpPerC in hot case)
+  • [E3-ENG-5    ] Perez 8-bin model gives correct clear-sky diffuse POA (bin 8) -> [PASS] | clearSky POA = 1003.24 W/m² (expect 995-1010; pre-fix 3-bin "else" branch under-counted to ~990)
+  • [E3-ENG-7    ] Tracker gain uses latitude-derived fixed-tilt baseline (Singapore differs from hardcoded 30 deg by > 5%) -> [PASS] | Singapore (1.35 deg): reported=29.46%, ref=29.46%, old_30deg=41.75%, |new-old|=12.30% (expect >5% at Singapore)
 Core Unit Tests: PASSED
 
 --- [7/7] Migration Safety Suite (3-State Architecture) ---
 Vectors Tested: 6 | Valid: 1 | Recovered with Warnings: 4 | Blocked: 1
-  • [MIGR-00-CLEAN-V3] Pristine Native v3.0.0 Utility Powerplant Project -> State: [VALID                  ] | Notes: Lossless silent migration from v3.0.0. Trace: MIGR-mw0
-  • [MIGR-01-POWERPLANT-1MW] 1MW Utility Solar Powerplant with MV Turnkey & 20kV Bays -> State: [RECOVERED_WITH_WARNINGS] | Notes: 3 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mw0
-  • [MIGR-02-ONGRID-100KW] 100kW Commercial Rooftop with 6h Outage Storage -> State: [RECOVERED_WITH_WARNINGS] | Notes: 3 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mw0
-  • [MIGR-03-OFFGRID-20KW] 20kW Off-Grid Telecom Repeater with 3 Days Autonomy -> State: [RECOVERED_WITH_WARNINGS] | Notes: 3 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mw0
-  • [MIGR-04-LEGACY-V1] Legacy Unversioned V1 File (Missing Geotech & Version Keys) -> State: [RECOVERED_WITH_WARNINGS] | Notes: 8 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mw0
-  • [MIGR-05-CORRUPTED-INCONSISTENT] Malformed Physically Inconsistent Payload (Capacity = -50 kW) -> State: [BLOCKED_INCONSISTENT   ] | Notes: BLOCKED to protect bankable integrity: Physical contradiction: targetPowerplantCapacityKw is non-positive (-50 kW). Trace: MIGR-mw0
+  • [MIGR-00-CLEAN-V3] Pristine Native v3.0.0 Utility Powerplant Project -> State: [VALID                  ] | Notes: Lossless silent migration from v3.0.0. Trace: MIGR-mw1
+  • [MIGR-01-POWERPLANT-1MW] 1MW Utility Solar Powerplant with MV Turnkey & 20kV Bays -> State: [RECOVERED_WITH_WARNINGS] | Notes: 3 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mw1
+  • [MIGR-02-ONGRID-100KW] 100kW Commercial Rooftop with 6h Outage Storage -> State: [RECOVERED_WITH_WARNINGS] | Notes: 3 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mw1
+  • [MIGR-03-OFFGRID-20KW] 20kW Off-Grid Telecom Repeater with 3 Days Autonomy -> State: [RECOVERED_WITH_WARNINGS] | Notes: 3 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mw1
+  • [MIGR-04-LEGACY-V1] Legacy Unversioned V1 File (Missing Geotech & Version Keys) -> State: [RECOVERED_WITH_WARNINGS] | Notes: 8 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mw1
+  • [MIGR-05-CORRUPTED-INCONSISTENT] Malformed Physically Inconsistent Payload (Capacity = -50 kW) -> State: [BLOCKED_INCONSISTENT   ] | Notes: BLOCKED to protect bankable integrity: Physical contradiction: targetPowerplantCapacityKw is non-positive (-50 kW). Trace: MIGR-mw1
 --- [8/10] Marion Snow Shedding Empirical Recalibration (NREL / DWD) ---
 Recalibration Status: [PASS] | Reference Hubs Tested: 3
 
