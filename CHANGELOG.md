@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _(No unreleased changes as of v1.0.0.)_
 
+## [1.0.1] - 2026-11-03
+
+### Fixed
+
+- **ENG-1 (critical)**: solar position azimuth returned 180° inverted in both the morning and afternoon branches. Tehran summer 09:00 returned 265.9° (should be 94.9°); afternoon returned the mirror. Affects the `POST /api/v1/solar/position` endpoint and any future internal caller.
+- **ENG-2 (high)**: off-grid battery autonomy sizing used the nighttime-only load instead of the full 24-hour load, undersizing the BESS by ~2×. A 20 kWh/day site with 2 days autonomy now correctly sizes to ~52.8 kWh gross (was ~24.8 kWh). On-grid outage sizing had a related bug (`outageHours / 24` instead of `outageHours / 12`). Both fixed via the new `computeAutonomyEnergyRequirement` helper.
+
 ## [1.0.0] - 2026-11-03
 
 ### Changed
@@ -57,5 +64,6 @@ _(No unreleased changes as of v1.0.0.)_
 - Test suite grew from 110 to 117 with regression tests for BUG-3 (NaN SoC), BUG-4 (module-cycle), BUG-6 (cold-Vmp MPPT), BUG-7 (LCOE/NPV/IRR goldens), BUG-9 (catalog unification).
 - Bundled Leaflet CSS via `main.tsx` import; unpkg CDN link removed from `index.html`.
 
-[Unreleased]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hajianamir/solarpv-studio/releases/tag/v1.0.0

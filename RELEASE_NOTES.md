@@ -1,3 +1,24 @@
+# SolarPV Studio v1.0.1
+
+**Release date:** 2026-11-03
+
+Hotfix release on top of v1.0.0.
+
+## Highlights
+
+- **ENG-1 (critical)**: solar azimuth in `calculateSolarPosition` was 180° inverted between morning and afternoon (Tehran summer 09:00 returned 265.9° instead of 94.9°). Fixed; affects `POST /api/v1/solar/position`.
+- **ENG-2 (high)**: off-grid battery autonomy sizing used nighttime-only load, undersizing the BESS ~2× (20 kWh/day × 2 days now correctly sizes to ~52.8 kWh gross, was ~24.8 kWh). On-grid outage scaling fixed (`outageHours/24` → `outageHours/12`).
+
+## Breaking changes
+
+None. Both fixes are pure correctness repairs; no public signature changed except the internal parameter rename in `sizeBatteryBank`.
+
+## Verification
+
+- `npm run lint` → EXIT=0 · `npm test` → 119/119 · `npm run build` → success · `npm run test:smoke` → 5/5
+
+---
+
 # SolarPV Studio v1.0.0
 
 **Release date:** 2026-11-03
