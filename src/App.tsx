@@ -99,7 +99,6 @@ import { SolarPumpingTab } from './components/SolarPumpingTab';
 import { IranianRegulationsTab } from './components/IranianRegulationsTab';
 import { StructuralFoundationTab } from './components/StructuralFoundationTab';
 import { HarmonicsGridTab } from './components/HarmonicsGridTab';
-import { AdvancedFeaturesModal } from './components/AdvancedFeaturesModal';
 import { RFC3ReportsTab } from './components/RFC3ReportsTab';
 import { useFeatureFlags } from './engine/core/FeatureFlagContext';
 import { migrateProjectToV3 } from './engine/core/projectMigration';
@@ -141,7 +140,6 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveModuleTab>('climate');
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
-  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // RFC 3.0 Advanced Feature Flags
@@ -1590,13 +1588,6 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* ADVANCED ENGINEERING & COMPLIANCE MODAL */}
-      <AdvancedFeaturesModal
-        isOpen={showAdvancedModal}
-        onClose={() => setShowAdvancedModal(false)}
-        onJumpTab={(tab) => setActiveTab(tab)}
-        lang={lang}
-      />
     </div>
   );
 };
