@@ -48,7 +48,7 @@ import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pv
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
 import { type TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
-import { sizeBatteryBank, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
+import { sizeBatteryBank, computeAutonomyEnergyRequirement, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
 import { evaluateInverterClustering } from './engine/inverterClustering';
 import {
   calculateAdvancedCableRun,
@@ -432,12 +432,12 @@ export const App: React.FC = () => {
 
   // 5. Battery Storage Sizing
   const batterySizing = useMemo(() => {
-    const energyRequirementKwh =
-      systemMode === 'powerplant'
-        ? 0
-        : systemMode === 'ongrid'
-        ? (loadAnalysis.nighttimeEnergyWh / 1000.0) * ((outageHours || 6) / 24.0)
-        : loadAnalysis.nighttimeEnergyWh / 1000.0;
+    const energyRequirementKwh = computeAutonomyEnergyRequirement(
+      systemMode,
+      loadAnalysis.totalDailyEnergyKwh,
+      loadAnalysis.nighttimeEnergyWh / 1000.0,
+      outageHours || 6,
+    );
 
     return sizeBatteryBank(
       energyRequirementKwh,

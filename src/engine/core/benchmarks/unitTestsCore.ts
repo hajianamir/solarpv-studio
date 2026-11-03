@@ -2106,6 +2106,35 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E1-ENG-2] Off-grid BESS must be sized to the FULL daily load x
+  // autonomy, not the night-only fraction. Regression guard for the
+  // 2x-undersizing bug. Expected gross for 20 kWh/day, 2-day autonomy,
+  // LiFePO4 (85% DoD, 95% round-trip): ~49.5 kWh.
+  {
+    const { sizeBatteryBank, computeAutonomyEnergyRequirement } =
+      await import('../../batteryEngine');
+
+    const offgridDaily = computeAutonomyEnergyRequirement('offgrid', 20.0, 10.0, 6);
+    const ongridOutage6h = computeAutonomyEnergyRequirement('ongrid', 20.0, 10.0, 6);
+    const powerplantDaily = computeAutonomyEnergyRequirement('powerplant', 20.0, 10.0, 6);
+
+    const bat = sizeBatteryBank(20.0, 2.0, 'lifepo4', 48, 5000, 3000, 15.0);
+
+    assert(
+      'E1-ENG-2',
+      'Battery autonomy sizing uses full daily load (20 kWh/day x 2d -> ~49.5 kWh gross)',
+      offgridDaily === 20.0 &&
+        Math.abs(ongridOutage6h - 5.0) < 0.01 &&
+        powerplantDaily === 0 &&
+        bat.grossCapacityKwh >= 45 &&
+        bat.grossCapacityKwh <= 55,
+      `helper: offgrid=${offgridDaily} (expect 20), ` +
+      `ongrid6h=${ongridOutage6h} (expect 5), ` +
+      `powerplant=${powerplantDaily} (expect 0); ` +
+      `sizeBatteryBank(20, 2, lifepo4) gross=${bat.grossCapacityKwh} kWh (expect 45-55)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
