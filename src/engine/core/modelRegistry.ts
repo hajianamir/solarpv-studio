@@ -36,8 +36,8 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
   climate_resilience_15min: {
     modelId: 'climate_resilience_15min',
     name: 'Probabilistic Climate Resilience & 15-Min Dispatch',
-    version: '3.0.0',
-    lastModified: '2026-10-28',
+    version: '3.1.0',
+    lastModified: '2026-11-04',
     governingStandards: ['ASTM E1036', 'IEC 62109', 'IEEE 1547'],
     referenceLiterature: 'Gumbel distribution for 50-year extreme gusts; Weibull for operational wind; Skartveit-Olseth clear-sky disaggregation; Kimber et al. (NREL) soiling model',
     analyticalAssumptions: [
@@ -91,8 +91,8 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
   civil_geotechnical_broms: {
     modelId: 'civil_geotechnical_broms',
     name: 'Civil, Broms Lateral Pile, Skin Friction Uplift & Bishop Slope Engine',
-    version: '3.0.0',
-    lastModified: '2026-10-28',
+    version: '3.1.0',
+    lastModified: '2026-11-04',
     governingStandards: ['ASCE 7-22', 'Eurocode 7 (EN 1997)', 'Eurocode 1 (EN 1991-1-4)'],
     referenceLiterature: 'Broms (1964) for lateral resistance; Tomlinson & Woodward for alpha/beta skin friction uplift; Bishop (1955) Modified Method of Slices for slope stability',
     analyticalAssumptions: [
@@ -100,6 +100,7 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
       'Uplift resistance calculated independently using alpha-method (cohesive) and beta-method (cohesionless)',
       'Combined loading assessed via P-M interaction ratio (axial + flexural utilization)',
       'Slope stability evaluated via Bishop cylindrical slip surfaces with 20 slices',
+      'E5.1 (v3.1.0): Broms clay lateral capacity replaced with FHWA-NHI-16-009 §10.4.4 iterative form; moment arm derived from W/2 + h·sinβ.',
     ],
     validityBoundaries: [
       'Pile embedded length: 1.0m - 5.5m',
@@ -110,8 +111,8 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
   pv_single_diode_core: {
     modelId: 'pv_single_diode_core',
     name: '5-Parameter Single-Diode Equivalent Circuit Solver',
-    version: '2.4.0',
-    lastModified: '2026-10-28',
+    version: '2.5.0',
+    lastModified: '2026-11-04',
     governingStandards: ['IEC 60904-1', 'IEC 60891'],
     referenceLiterature: 'De Soto et al. (2006); Sandia National Laboratories Photovoltaic Array Performance Model (SAPM)',
     analyticalAssumptions: [
@@ -126,8 +127,8 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
   optical_iam_thermo_coupled: {
     modelId: 'optical_iam_thermo_coupled',
     name: 'Temperature-Coupled Incidence Angle Modifier (IAM) & Fresnel ARC Engine',
-    version: '3.0.0',
-    lastModified: '2026-10-30',
+    version: '3.1.0',
+    lastModified: '2026-11-04',
     governingStandards: ['IEC 61853-2', 'ASHRAE Standard 93'],
     referenceLiterature: 'Martin & Ruiz (2001) for ARC solar glass; Brandemuehl & Beckman (1980) for diffuse integration; Ghosh (1995) for thermo-optic dn/dT coefficients',
     analyticalAssumptions: [

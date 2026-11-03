@@ -2672,6 +2672,30 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [F2-R6] Registry versions bumped to reflect E1-E7
+  {
+    const { PHYSICS_MODEL_REGISTRY } = await import('../modelRegistry');
+    const semver = /^\d+\.\d+\.\d+$/;
+    const expected: Record<string, string> = {
+      civil_geotechnical_broms: '3.1.0',
+      pv_single_diode_core: '2.5.0',
+      optical_iam_thermo_coupled: '3.1.0',
+      climate_resilience_15min: '3.1.0',
+      multiphysics_bipv_fpv: '3.0.0',
+    };
+    const mismatches: string[] = [];
+    for (const [id, exp] of Object.entries(expected)) {
+      const v = PHYSICS_MODEL_REGISTRY[id]?.version;
+      if (v !== exp || !semver.test(v ?? '')) mismatches.push(`${id}: expected ${exp}, got ${v}`);
+    }
+    assert(
+      'F2-R6',
+      'PHYSICS_MODEL_REGISTRY versions bumped to reflect E1–E7 changes',
+      mismatches.length === 0,
+      mismatches.length === 0 ? 'all versions match' : mismatches.join(' | ')
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
