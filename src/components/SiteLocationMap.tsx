@@ -17,7 +17,7 @@ import {
   Compass,
   AlertTriangle,
 } from 'lucide-react';
-import { type ClimateCity, getClimateData } from '../engine/climaticData';
+import { type ClimateCity, getClimateData, fetchClimateData } from '../engine/climaticData';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 
 interface SiteLocationMapProps {
@@ -228,6 +228,15 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         setEstimatedPsh(locationData.peakSunHours);
         onSelectLocation(locationData);
         updatePopup(lat, lng, locationData);
+
+        fetchClimateData(lat, lng)
+          .then((gwData) => {
+            onSelectLocation(gwData);
+            updatePopup(lat, lng, gwData);
+          })
+          .catch(() => {
+            // Instant geospatial data remains active
+          });
       });
 
       // Handle marker drag end
@@ -240,6 +249,15 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         setEstimatedPsh(locationData.peakSunHours);
         onSelectLocation(locationData);
         updatePopup(pos.lat, pos.lng, locationData);
+
+        fetchClimateData(pos.lat, pos.lng)
+          .then((gwData) => {
+            onSelectLocation(gwData);
+            updatePopup(pos.lat, pos.lng, gwData);
+          })
+          .catch(() => {
+            // Instant geospatial data remains active
+          });
       });
 
       mapInstanceRef.current = map;
@@ -317,6 +335,16 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     }
     setEstimatedPsh(locationData.peakSunHours);
     onSelectLocation(locationData);
+
+    fetchClimateData(targetLat, targetLng)
+      .then((gwData) => {
+        if (labelName) {
+          gwData.nameFa = labelName;
+          gwData.nameEn = labelName;
+        }
+        onSelectLocation(gwData);
+      })
+      .catch(() => {});
   };
 
   // Browser geolocation — jump map to user's measured location

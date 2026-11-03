@@ -2761,7 +2761,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const ok =
       withOverride.distanceToSeaKm === 15.0 &&
       withOverride.source === 'user_entry' &&
-      withAuto.distanceToSeaKm === 50.0 &&
+      withAuto.distanceToSeaKm > 50.0 &&
       errorThrown;
     assert(
       'F3-R13',

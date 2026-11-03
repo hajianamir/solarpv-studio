@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Layers,
   Wind,
   ShieldAlert,
+  ShieldCheck,
   CheckCircle2,
   AlertTriangle,
   Compass,
@@ -18,6 +19,8 @@ import {
   CloudRain,
   MapPin,
   FileText,
+  Droplets,
+  Waves,
 } from 'lucide-react';
 import {
   calculateStructuralAndFoundations,
@@ -25,12 +28,17 @@ import {
   type SoilType,
   type StructuralAnalysisResult,
 } from '../engine/structuralEngine';
-import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/climaticData';
+import { type ClimateCity, type SiteGeotechnicalOverrides, type SiteDrainageCondition } from '../engine/climaticData';
 import {
   recommendFoundation,
   type FoundationRecommendationResult,
 } from '../engine/structureRecommendationEngine';
-import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import {
+  assessSaltCorrosion,
+  type SaltCorrosionOutput,
+  type Iso9223Category,
+  CATEGORY_META,
+} from '../engine/corrosion/saltCorrosionEngine';
 
 interface StructuralFoundationTabProps {
   totalModulesCount?: number;
@@ -92,15 +100,6 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
 
-  // Salt corrosion / ISO 9223 categorization (resolved via OSM Nominatim shoreline distance)
-  useEffect(() => {
-    let mounted = true;
-    assessSaltCorrosion({ latitude: city.latitude, longitude: city.longitude, resolveDistance: true })
-      .then((res) => { if (mounted) setCorrosion(res); })
-      .catch(() => { if (mounted) setCorrosion(null); });
-    return () => { mounted = false; };
-  }, [city.latitude, city.longitude]);
-
   // Geotechnical and climate parameters (initialized from city / overrides)
   const [basicWindSpeedKmh, setBasicWindSpeedKmh] = useState<number>(
     siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 120
@@ -132,10 +131,33 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   const [seismicZoneA, setSeismicZoneA] = useState<number>(
     siteOverrides?.seismicZoneCoefficientA ?? city.seismicZoneCoefficientA ?? 0.30
   );
+  const [distanceToSeaKm, setDistanceToSeaKm] = useState<number | undefined>(
+    siteOverrides?.distanceToCoastKm ?? city.distanceToCoastKm
+  );
+  const [drainageCondition, setDrainageCondition] = useState<SiteDrainageCondition>(
+    siteOverrides?.drainageCondition ?? city.drainageCondition ?? 'well_drained'
+  );
+  const [groundwaterDepthM, setGroundwaterDepthM] = useState<number>(
+    siteOverrides?.groundwaterDepthM ?? city.groundwaterDepthM ?? 5.0
+  );
+  const [manualCorrosionCategory, setManualCorrosionCategory] = useState<Iso9223Category | 'auto'>('auto');
 
-  // Sync when city changes
+  // Location tracking ref to detect map selection / city changes
+  const lastLocationRef = useRef<{ id: string; lat: number; lng: number }>({
+    id: city.id,
+    lat: city.latitude,
+    lng: city.longitude,
+  });
+
+  // Sync when city or map location changes
   useEffect(() => {
-    if (!siteOverrides) {
+    const isNewLocation =
+      lastLocationRef.current.id !== city.id ||
+      Math.abs(lastLocationRef.current.lat - city.latitude) > 0.0001 ||
+      Math.abs(lastLocationRef.current.lng - city.longitude) > 0.0001;
+
+    if (isNewLocation) {
+      lastLocationRef.current = { id: city.id, lat: city.latitude, lng: city.longitude };
       setBasicWindSpeedKmh(city.basicWindSpeedKmh ?? 120);
       setGroundSnowLoadKgM2(city.groundSnowLoadKgM2 ?? 50);
       setAnnualRainfallMm(city.annualRainfallMm ?? 200);
@@ -146,8 +168,86 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       setSoilDensityKnM3(city.soilDensityKnM3 ?? 18.0);
       setFrostDepthCm(city.frostDepthCm ?? 30);
       setSeismicZoneA(city.seismicZoneCoefficientA ?? 0.30);
+      setDistanceToSeaKm(city.distanceToCoastKm);
+      setDrainageCondition(city.drainageCondition ?? 'well_drained');
+      setGroundwaterDepthM(city.groundwaterDepthM ?? 5.0);
+      setManualCorrosionCategory('auto');
+      onUpdateSiteOverrides?.({});
+    } else if (siteOverrides && Object.keys(siteOverrides).length > 0) {
+      if (siteOverrides.basicWindSpeedKmh !== undefined) setBasicWindSpeedKmh(siteOverrides.basicWindSpeedKmh);
+      if (siteOverrides.groundSnowLoadKgM2 !== undefined) setGroundSnowLoadKgM2(siteOverrides.groundSnowLoadKgM2);
+      if (siteOverrides.annualRainfallMm !== undefined) setAnnualRainfallMm(siteOverrides.annualRainfallMm);
+      if (siteOverrides.soilType !== undefined) setSoilType(siteOverrides.soilType as SoilType);
+      if (siteOverrides.soilBearingCapacityKpa !== undefined) setSoilBearingCapacityKpa(siteOverrides.soilBearingCapacityKpa);
+      if (siteOverrides.soilInternalFrictionAngleDeg !== undefined) setSoilFrictionAngleDeg(siteOverrides.soilInternalFrictionAngleDeg);
+      if (siteOverrides.soilCohesionKpa !== undefined) setSoilCohesionKpa(siteOverrides.soilCohesionKpa);
+      if (siteOverrides.soilDensityKnM3 !== undefined) setSoilDensityKnM3(siteOverrides.soilDensityKnM3);
+      if (siteOverrides.frostDepthCm !== undefined) setFrostDepthCm(siteOverrides.frostDepthCm);
+      if (siteOverrides.seismicZoneCoefficientA !== undefined) setSeismicZoneA(siteOverrides.seismicZoneCoefficientA);
+      if (siteOverrides.distanceToCoastKm !== undefined) setDistanceToSeaKm(siteOverrides.distanceToCoastKm);
+      if (siteOverrides.drainageCondition !== undefined) setDrainageCondition(siteOverrides.drainageCondition);
+      if (siteOverrides.groundwaterDepthM !== undefined) setGroundwaterDepthM(siteOverrides.groundwaterDepthM);
     }
-  }, [city, siteOverrides]);
+  }, [city, siteOverrides, onUpdateSiteOverrides]);
+
+  // Salt corrosion / ISO 9223 & Drainage categorization
+  useEffect(() => {
+    let mounted = true;
+    const effectiveDistance = distanceToSeaKm ?? siteOverrides?.distanceToCoastKm ?? city.distanceToCoastKm;
+
+    assessSaltCorrosion({
+      latitude: city.latitude,
+      longitude: city.longitude,
+      distanceToSeaKm: effectiveDistance,
+      resolveDistance: true,
+      drainageCondition,
+      groundwaterDepthM,
+      soilClassification: soilType,
+      annualRainfallMm,
+    })
+      .then((res) => {
+        if (mounted) {
+          if (manualCorrosionCategory !== 'auto') {
+            const meta = CATEGORY_META[manualCorrosionCategory];
+            setCorrosion({
+              ...res,
+              iso9223Category: manualCorrosionCategory,
+              categoryLabel: meta.label,
+              categoryLabelFa: meta.labelFa,
+              corrosionRisk: meta.risk,
+              corrosionRiskFa: meta.riskFa,
+              moduleDeratePct: meta.module,
+              inverterDeratePct: meta.inverter,
+              structureDeratePct: meta.structure,
+              maintenanceOpexAdderPct: meta.maintenance,
+              durabilityNote: meta.note,
+              durabilityNoteFa: meta.noteFa,
+              coatingRecommendation: meta.coating,
+            });
+          } else {
+            setCorrosion(res);
+          }
+        }
+      })
+      .catch(() => {
+        if (mounted) setCorrosion(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    city.latitude,
+    city.longitude,
+    city.distanceToCoastKm,
+    distanceToSeaKm,
+    siteOverrides?.distanceToCoastKm,
+    manualCorrosionCategory,
+    drainageCondition,
+    groundwaterDepthM,
+    soilType,
+    annualRainfallMm,
+  ]);
 
   const handleUpdateParam = (updated: Partial<SiteGeotechnicalOverrides>) => {
     const newOverrides: SiteGeotechnicalOverrides = {
@@ -161,6 +261,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       soilDensityKnM3,
       frostDepthCm,
       seismicZoneCoefficientA: seismicZoneA,
+      distanceToCoastKm: distanceToSeaKm,
+      drainageCondition,
+      groundwaterDepthM,
       ...updated,
     };
     if (onUpdateSiteOverrides) {
@@ -179,6 +282,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     setSoilDensityKnM3(city.soilDensityKnM3 ?? 18.0);
     setFrostDepthCm(city.frostDepthCm ?? 30);
     setSeismicZoneA(city.seismicZoneCoefficientA ?? 0.30);
+    setDistanceToSeaKm(city.distanceToCoastKm);
+    setDrainageCondition(city.drainageCondition ?? 'well_drained');
+    setGroundwaterDepthM(city.groundwaterDepthM ?? 5.0);
+    setManualCorrosionCategory('auto');
     if (onUpdateSiteOverrides) {
       onUpdateSiteOverrides({});
     }
@@ -562,54 +669,286 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         </div>
       </div>
 
-      {/* Salt Corrosion / ISO 9223 Coastal Salinity Card (P2-4 / ADR-006) */}
-      <div className="studio-card border border-industrial-border p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-industrial-border/80 gap-2">
+      {/* Salt Corrosion & Site Drainage Card (ISO 9223 / ASTM G57) */}
+      <div className="studio-card border border-industrial-border p-4 space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-industrial-border/80 gap-2">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-industrial-accent/10 border border-industrial-accent/30 rounded text-industrial-accent">
-              <ShieldAlert className="w-4 h-4" />
+              <ShieldAlert className="w-4 h-4 text-industrial-warning" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">
-                {isEn ? 'Salt Corrosion &amp; Salinity Exposure (ISO 9223)' : 'خورده شوری و زهکش دریایی (ISO 9223)'}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">
+                  {isEn
+                    ? 'Atmospheric Corrosion, Coastal Salinity & Site Drainage Analysis'
+                    : 'تحلیل خوردگی اتمسفری، شوری ساحلی و شرایط زهکشی ساختگاه'}
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-900/40 text-sky-300 border border-sky-500/40">
+                  ISO 9223:2012 & ASTM G57
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {isEn
+                  ? 'Geodesic shoreline proximity, ISO 9223 corrosivity band, HDG galvanizing specs, and subterranean drainage hydrology.'
+                  : 'محاسبه فاصله ژئودزیک تا خط ساحلی دریا، رده‌بندی خوردگی ISO 9223، مشخصات پوشش گالوانیزه گرم و هیدرولوژی زهکشی ساختگاه.'}
+              </p>
             </div>
           </div>
         </div>
+
+        {/* 4 Interactive Controls (Distance, ISO Category override, Drainage, Groundwater) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs bg-industrial-surface/50 p-3 rounded-lg border border-industrial-border/60">
+          {/* Distance to Sea */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] text-slate-300 font-semibold flex items-center gap-1">
+                <Waves className="w-3.5 h-3.5 text-sky-400" />
+                <span>{isEn ? 'Distance to Coastline:' : 'فاصله تا ساحل دریا:'}</span>
+              </label>
+              <span className="text-[9px] text-slate-400 font-mono">
+                {corrosion?.source === 'user_entry' ? (isEn ? 'Manual' : 'دستی') : (isEn ? 'Auto Geodesic' : 'محاسبه مکانی')}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                max="2500"
+                value={distanceToSeaKm !== undefined ? distanceToSeaKm : (corrosion?.distanceToSeaKm ?? 50)}
+                onChange={(e) => {
+                  const val = Math.max(0, parseFloat(e.target.value) || 0);
+                  setDistanceToSeaKm(val);
+                  handleUpdateParam({ distanceToCoastKm: val });
+                }}
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-sky-300 font-mono font-bold"
+              />
+              <span className="text-slate-400 text-[10px]">km</span>
+            </div>
+            <div className="flex gap-1 mt-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setDistanceToSeaKm(0.0);
+                  handleUpdateParam({ distanceToCoastKm: 0.0 });
+                }}
+                className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+              >
+                {isEn ? 'Coast (0km)' : 'ساحل (۰km)'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDistanceToSeaKm(2.5);
+                  handleUpdateParam({ distanceToCoastKm: 2.5 });
+                }}
+                className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+              >
+                {isEn ? 'Near (2.5km)' : 'نزدیک (۲.۵km)'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDistanceToSeaKm(25.0);
+                  handleUpdateParam({ distanceToCoastKm: 25.0 });
+                }}
+                className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+              >
+                {isEn ? 'Coastal (25km)' : 'حاشیه (۲۵km)'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDistanceToSeaKm(100.0);
+                  handleUpdateParam({ distanceToCoastKm: 100.0 });
+                }}
+                className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+              >
+                {isEn ? 'Inland (100km)' : 'خشکی (۱۰۰km)'}
+              </button>
+            </div>
+          </div>
+
+          {/* ISO 9223 Corrosivity Category */}
+          <div>
+            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+              <ShieldAlert className="w-3.5 h-3.5 text-industrial-warning" />
+              <span>{isEn ? 'ISO 9223 Category Mode:' : 'رده خوردگی ISO 9223:'}</span>
+            </label>
+            <select
+              value={manualCorrosionCategory}
+              onChange={(e) => setManualCorrosionCategory(e.target.value as Iso9223Category | 'auto')}
+              className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white"
+            >
+              <option value="auto">{isEn ? 'Auto (from distance to sea)' : 'محاسبه خودکار از فاصله ساحلی'}</option>
+              <option value="C1">{isEn ? 'C1 - Very Low (Inland desert)' : 'C1 - بسیار کم (خشک / بیابانی)'}</option>
+              <option value="C2">{isEn ? 'C2 - Low (Inland rural/urban)' : 'C2 - کم (روستایی / کم‌رطوبت)'}</option>
+              <option value="C3">{isEn ? 'C3 - Moderate (Urban/coastal fringe)' : 'C3 - متوسط (شهری / نفوذ رطوبت)'}</option>
+              <option value="C4">{isEn ? 'C4 - High (Coastal marine air)' : 'C4 - بالا (حاشیه سواحل و صنایع)'}</option>
+              <option value="C5">{isEn ? 'C5 - Very High (Marine splash/gulf)' : 'C5 - بسیار بالا (ساحل خلیج فارس/عمان)'}</option>
+            </select>
+            <span className="text-[9px] text-slate-500 block mt-1">
+              {isEn ? 'Override if local salinity / salt lake warrants' : 'امکان تعیین دستی برای مجاورت دریاچه نمک یا صنایع'}
+            </span>
+          </div>
+
+          {/* Site Surface Drainage */}
+          <div>
+            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+              <CloudRain className="w-3.5 h-3.5 text-industrial-primary" />
+              <span>{isEn ? 'Site Surface Drainage:' : 'وضعیت زهکشی سطحی و رواناب:'}</span>
+            </label>
+            <select
+              value={drainageCondition}
+              onChange={(e) => {
+                const val = e.target.value as SiteDrainageCondition;
+                setDrainageCondition(val);
+                handleUpdateParam({ drainageCondition: val });
+              }}
+              className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white"
+            >
+              <option value="well_drained">{isEn ? 'Well-Drained (Natural Runoff)' : 'زهکشی عالی و رواناب طبیعی (بدون مانداب)'}</option>
+              <option value="moderate">{isEn ? 'Moderate (Typical Flat Runoff)' : 'زهکشی متوسط (رواناب فصلی ملایم)'}</option>
+              <option value="poor_flood_prone">{isEn ? 'Poor / Flood Prone (Ditching needed)' : 'زهکشی ضعیف / مستعد آب‌گرفتگی'}</option>
+            </select>
+            <span className="text-[9px] text-slate-500 block mt-1">
+              {isEn ? 'Affects stormwater swales & clearance' : 'تعیین لزوم احداث کانال‌های زهکشی سطحی'}
+            </span>
+          </div>
+
+          {/* Groundwater Table Depth */}
+          <div>
+            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+              <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{isEn ? 'Groundwater Table Depth (GWL):' : 'تراز عمق آب زیرزمینی (GWL):'}</span>
+            </label>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                step="0.5"
+                min="0.3"
+                max="30"
+                value={groundwaterDepthM}
+                onChange={(e) => {
+                  const val = Math.max(0.3, parseFloat(e.target.value) || 1.0);
+                  setGroundwaterDepthM(val);
+                  handleUpdateParam({ groundwaterDepthM: val });
+                }}
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-cyan-300 font-mono font-bold"
+              />
+              <span className="text-slate-400 text-[10px]">m</span>
+            </div>
+            <span className="text-[9px] text-slate-500 block mt-1">
+              {groundwaterDepthM <= 2.0
+                ? (isEn ? '⚠ Shallow water table (<2m) — buoyancy risk' : '⚠ تراز آب بالا (<۲ متر) — خطر شناوری شمع')
+                : (isEn ? 'Deep water table — safe for driven piles' : 'تراز آب عمیق — ایمن برای کوبش شمع')}
+            </span>
+          </div>
+        </div>
+
+        {/* Telemetry & Engineering Impact Grid */}
         {corrosion ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'ISO 9223 Category:' : 'دسته زهکش ISO 9223:'}</span>
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'ISO 9223 Category:' : 'رده خوردگی ISO 9223:'}</span>
                 <span className={`font-mono font-bold text-sm ${corrosion.iso9223Category === 'C5' ? 'text-industrial-error' : corrosion.iso9223Category === 'C4' ? 'text-industrial-warning' : 'text-industrial-success'}`}>
-                  {corrosion.categoryLabel}
+                  {isEn ? corrosion.categoryLabel : corrosion.categoryLabelFa}
                 </span>
-                <span className="text-[9px] text-slate-500 block mt-0.5">{corrosion.corrosionRisk}</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? corrosion.corrosionRisk : corrosion.corrosionRiskFa}</span>
               </div>
+
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'Distance to Sea:' : 'فاصله تا دریای:'}</span>
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Distance to Coastline:' : 'فاصله تا ساحل دریا:'}</span>
                 <span className="font-mono font-bold text-sm text-sky-300">{corrosion.distanceToSeaKm} km</span>
-                <span className="text-[9px] text-slate-500 block mt-0.5">{isEn ? corrosion.source : 'منبع: ' + (corrosion.source === 'osm_nominatim' ? 'OpenStreetMap' : 'ورودی کاربر')}</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5">
+                  {corrosion.source === 'user_entry' ? (isEn ? 'Manual User Entry' : 'ورودی دستی کاربر') : (isEn ? 'Geodesic Model' : 'مدل ژئودزیک مکانی')}
+                </span>
               </div>
+
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'Module Derating:' : 'افزایش ماژول:'}</span>
-                <span className="font-mono font-bold text-sm text-industrial-warning">-{corrosion.moduleDeratePct}%</span>
-                <span className="text-[9px] text-slate-500 block mt-0.5">{isEn ? 'Inverter:' : 'اینورتر:'} -{corrosion.inverterDeratePct}%</span>
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Salinity Deratings:' : 'افت راندمان ناشی از شوری:'}</span>
+                <span className="font-mono font-bold text-sm text-industrial-warning">
+                  {isEn ? 'Module:' : 'ماژول:'} -{corrosion.moduleDeratePct}%
+                </span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">
+                  {isEn ? 'Inverter:' : 'اینورتر:'} -{corrosion.inverterDeratePct}% | {isEn ? 'Structure:' : 'سازه:'} -{corrosion.structureDeratePct}%
+                </span>
               </div>
+
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'Maintenance OPEX Adder:' : 'افزودن OPEX نگهداری:'}</span>
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Maintenance OPEX Adder:' : 'افزایش هزینه سالانه نگهداری:'}</span>
                 <span className="font-mono font-bold text-sm text-slate-200">+{corrosion.maintenanceOpexAdderPct}%</span>
                 <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">{corrosion.traceId}</span>
               </div>
             </div>
-            <div className="p-2.5 bg-industrial-bg border border-industrial-border rounded-lg text-xs">
-              <span className="text-slate-400 block text-[10px]">{isEn ? 'Durability Guidance:' : 'راهنمای دوام:'}</span>
-              <span className={isEn ? 'text-slate-200' : 'text-slate-200'}>{corrosion.durabilityNote}</span>
-              <span className="text-slate-400 block text-[10px] mt-1">{corrosion.durabilityNoteFa}</span>
+
+            {/* Protective Coating & Drainage Guidance Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              {/* Box 1: Protective Coating Specs */}
+              <div className="p-3 bg-industrial-bg border border-industrial-border rounded-lg space-y-1.5">
+                <div className="flex items-center gap-2 pb-1 border-b border-industrial-border/60">
+                  <ShieldCheck className="w-4 h-4 text-industrial-success" />
+                  <strong className="text-slate-200 text-xs">
+                    {isEn ? 'Protective Coating & Fasteners Specification:' : 'مشخصات پوشش حفاظتی سازه و اتصالات:'}
+                  </strong>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">{isEn ? 'HDG Galvanizing Thickness:' : 'حداقل ضخامت گالوانیزه گرم:'}</span>
+                    <strong className="text-industrial-accent font-mono">≥ {corrosion.coatingRecommendation.hdgThicknessMicrons} µm</strong>
+                    <span className="text-[9px] text-slate-500 block font-mono">{corrosion.coatingRecommendation.hdgStandard}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">{isEn ? 'Fasteners & Bolts Grade:' : 'متریال پیچ و مهره‌ها:'}</span>
+                    <strong className="text-slate-200">{isEn ? corrosion.coatingRecommendation.fastenersGradeEn : corrosion.coatingRecommendation.fastenersGradeFa}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">{isEn ? 'Coating System:' : 'سیستم پوشش سطح:'}</span>
+                    <span className="text-slate-300">{isEn ? corrosion.coatingRecommendation.coatingSystemEn : corrosion.coatingRecommendation.coatingSystemFa}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">{isEn ? 'Enclosure / Inspection:' : 'درجه حفاظت تابلو / بازرسی:'}</span>
+                    <span className="text-slate-300 font-mono">{corrosion.coatingRecommendation.enclosureRating}</span>
+                    <span className="text-[9px] text-slate-500 block">{isEn ? `Every ${corrosion.coatingRecommendation.inspectionIntervalMonths} months` : `هر ${corrosion.coatingRecommendation.inspectionIntervalMonths} ماه`}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Box 2: Drainage & Groundwater Hydrology */}
+              <div className="p-3 bg-industrial-bg border border-industrial-border rounded-lg space-y-1.5">
+                <div className="flex items-center gap-2 pb-1 border-b border-industrial-border/60">
+                  <Droplets className="w-4 h-4 text-cyan-400" />
+                  <strong className="text-slate-200 text-xs">
+                    {isEn ? 'Site Drainage & Groundwater Hydrology:' : 'هیدرولوژی زهکشی و ارزیابی آب زیرزمینی:'}
+                  </strong>
+                </div>
+                <div className="text-[11px] space-y-1 pt-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">{isEn ? 'Drainage Classification:' : 'رده زهکشی ساختگاه:'}</span>
+                    <span className="text-slate-200 font-medium">{isEn ? corrosion.drainageAssessment.drainageConditionLabelEn : corrosion.drainageAssessment.drainageConditionLabelFa}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">{isEn ? 'Groundwater Table (GWL):' : 'تراز عمق آب زیرزمینی:'}</span>
+                    <span className={`font-mono font-bold ${corrosion.drainageAssessment.waterTableRisk === 'high' ? 'text-rose-400' : corrosion.drainageAssessment.waterTableRisk === 'moderate' ? 'text-industrial-warning' : 'text-industrial-success'}`}>
+                      {corrosion.drainageAssessment.groundwaterDepthM.toFixed(1)} m ({isEn ? corrosion.drainageAssessment.waterTableRiskLabelEn : corrosion.drainageAssessment.waterTableRiskLabelFa})
+                    </span>
+                  </div>
+                  <div className="border-t border-industrial-border/60 pt-1.5 mt-1.5 text-[10px] text-slate-300 space-y-1">
+                    {(isEn ? corrosion.drainageAssessment.engineeringRecommendationsEn : corrosion.drainageAssessment.engineeringRecommendationsFa).map((rec, idx) => (
+                      <p key={idx} className="flex items-start gap-1">
+                        <span className="text-industrial-accent">▪</span>
+                        <span>{rec}</span>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </>
         ) : (
-          <div className="p-2.5 text-slate-500 text-xs italic">{isEn ? 'Resolving shoreline distance...' : 'در حال حل فاصله ساحلی...'}</div>
+          <div className="p-2.5 text-slate-500 text-xs italic">{isEn ? 'Evaluating coastal salinity and drainage parameters...' : 'در حال محاسبه فاصله ساحلی، رده خوردگی و زهکشی ساختگاه...'}</div>
         )}
       </div>
 

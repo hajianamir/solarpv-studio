@@ -8,6 +8,7 @@ import { SoilDataProvider } from './soilDataProvider';
 import { StructuralHazardProvider } from './structuralHazardProvider';
 import { type ClimateResourceData, type SoilPropertiesData, type StructuralHazardData } from './types';
 import type { ClimateCity, SoilClassification } from '../types/climateTypes';
+import { estimateGeodesicDistanceToCoastKm } from '../corrosion/coastlineModel';
 
 export interface ComprehensiveSiteData {
   climateCity: ClimateCity;
@@ -82,6 +83,19 @@ export class ExternalDataGateway {
       dataSourceFa: `درگاه یکپارچه جهانی (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
       dataSourceEn: `Unified External Gateway (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
       dataRetrievalDate: (climateResource.metadata.retrievalTimestamp || new Date().toISOString()).slice(0, 10),
+      distanceToCoastKm: estimateGeodesicDistanceToCoastKm(lat, lng),
+      drainageCondition:
+        climateResource.annualPrecipitationMm > 600 || soilProperties.soilClassification === 'medium_clay'
+          ? 'poor_flood_prone'
+          : climateResource.annualPrecipitationMm > 350
+          ? 'moderate'
+          : 'well_drained',
+      groundwaterDepthM:
+        estimateGeodesicDistanceToCoastKm(lat, lng) <= 2.0
+          ? 1.5
+          : estimateGeodesicDistanceToCoastKm(lat, lng) <= 10.0
+          ? 3.0
+          : 6.0,
     };
 
     return {
