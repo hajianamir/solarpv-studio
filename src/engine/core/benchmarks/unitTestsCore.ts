@@ -2046,6 +2046,33 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [P2-CATALOG-UNIFIED] The engine-side DEFAULT_* must be derived from the
+  // canonical equipment catalog, not from a separate hardcoded list (BUG-9).
+  {
+    const { DEFAULT_MODULES, DEFAULT_INVERTERS, DEFAULT_BATTERIES } =
+      await import('../../solarPvEngine');
+    const { CATALOG_MODULES, CATALOG_INVERTERS, CATALOG_BATTERIES } =
+      await import('../../equipmentCatalogData');
+
+    const moduleIdsMatch =
+      DEFAULT_MODULES.length > 0 &&
+      DEFAULT_MODULES[0].id === CATALOG_MODULES[0].id &&
+      DEFAULT_MODULES.length === CATALOG_MODULES.length;
+    const inverterIdsMatch =
+      DEFAULT_INVERTERS.length > 0 &&
+      DEFAULT_INVERTERS[0].id === CATALOG_INVERTERS[0].id;
+    const batteryIdsMatch =
+      DEFAULT_BATTERIES.length > 0 &&
+      DEFAULT_BATTERIES[0].id === CATALOG_BATTERIES[0].id;
+
+    assert(
+      'P2-CATALOG-UNIFIED',
+      'DEFAULT_MODULES / INVERTERS / BATTERIES derived from equipment catalog (IDs + count)',
+      moduleIdsMatch && inverterIdsMatch && batteryIdsMatch,
+      `modules=${DEFAULT_MODULES.length}/${CATALOG_MODULES.length} inverters=${DEFAULT_INVERTERS.length}/${CATALOG_INVERTERS.length} batteries=${DEFAULT_BATTERIES.length}/${CATALOG_BATTERIES.length} firstModuleId=${DEFAULT_MODULES[0]?.id ?? 'EMPTY'}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
