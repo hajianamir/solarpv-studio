@@ -2507,6 +2507,62 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E7-STRUCT-1] Southern-hemisphere shading + NH non-regression.
+  {
+    const { analyze3dShadingAndSunPath } = await import('../../shadingSunPathEngine');
+
+    const common = {
+      arrayTiltDeg: 30, pitchDistanceM: 8,
+      tableSlopedWidthM: 4.6, groundClearanceM: 0.9, modulesPerTable: 28,
+    };
+
+    const sydney = analyze3dShadingAndSunPath({
+      ...common, latitude: -33.87, longitude: 151.21, arrayAzimuthDeg: 0,
+    });
+    const tehran = analyze3dShadingAndSunPath({
+      ...common, latitude: 35.69, longitude: 51.39, arrayAzimuthDeg: 180,
+    });
+
+    // Pre-E7 Sydney produced 3.56 m (physically invalid: less than the
+    // 4.6 m sloped collector width). Post-fix must be > 5 m.
+    // Tehran reference 7.83 m is the measured pre-fix NH value.
+    const tehranRef = 7.83;
+
+    assert(
+      'E7-STRUCT-1',
+      'Southern hemisphere min pitch physically valid (Sydney > 5 m, < 20 m), Tehran invariant',
+      sydney.recommendedMinPitchM > 5 && sydney.recommendedMinPitchM < 20 &&
+      Math.abs(tehran.recommendedMinPitchM - tehranRef) < 0.5,
+      `Sydney=${sydney.recommendedMinPitchM.toFixed(2)}m (expect 5-20; pre-E7 3.56), ` +
+      `Tehran=${tehran.recommendedMinPitchM.toFixed(2)}m (expect ~${tehranRef}, NH unchanged)`
+    );
+  }
+
+  // [E7-STRUCT-2] Snow formula unchanged by Ce*Ct*Is documentation.
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const r = calculateStructuralAndFoundations({
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 25, groundClearanceM: 0.9,
+      basicWindSpeedKmh: 120, groundSnowLoadKgM2: 100,
+      foundationType: 'rammed_steel_pile', soilType: 'dense_sand_gravel',
+    });
+
+    // Ce*Ct*Is = 1.0 and Cs = 1.0 (beta <= 30) => snowLoadTableKn must equal
+    // pg * A * cos(beta) * g / 1000. Documentation must not change numerics.
+    const expected = (100 * 9.81 / 1000) * Math.cos(25 * Math.PI / 180) * r.tableAreaM2;
+
+    assert(
+      'E7-STRUCT-2',
+      'Snow load formula unchanged by Ce*Ct*Is documentation (pf = pg*Cs*cos(beta))',
+      Math.abs(r.snowLoadTableKn - expected) / expected < 0.01,
+      `actual=${r.snowLoadTableKn.toFixed(3)} kN, expected=${expected.toFixed(3)} kN - ` +
+      `Ce*Ct*Is=1.0 and Cs=1.0 documented (no numerical change)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

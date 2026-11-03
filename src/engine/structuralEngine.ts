@@ -251,6 +251,30 @@ export function calculateStructuralAndFoundations(
   // 3. Snow Load Calculation
   // S = S_0 * C_s * C_e * C_t * I_s
   // C_s slope reduction for tilt > 30 deg
+  // ============================================================================
+  // Snow load - ASCE 7-22 §7.4.1 + §7.4.5 (Solar Panel Arrays)
+  // ============================================================================
+  // Current implementation: pf = pg * Cs * cos(beta)
+  //   pg       = ground snow load (site input, kg/m²)
+  //   Cs       = slope factor (1.0 for beta <= 30 deg, linear reduction above)
+  //   cos(beta) = vertical-to-sloped-area projection
+  //
+  // Assumptions (conservative, documented for bankability review):
+  //   Ce = 1.0 - fully exposed, no wind or thermal sheltering
+  //   Ct = 1.0 - cold unheated panel (not the 1.2 heated-roof value)
+  //   Is = 1.0 - Risk Category I (typical utility/residential PV)
+  //   Ce·Ct·Is = 1.0
+  //
+  // KNOWN LIMITATION (v1.1.0): ASCE 7-22 §7.4.1 gives roof snow
+  // pf = 0.7 * Ce·Ct·Is * pg * Cs. This engine intentionally omits the 0.7
+  // factor for GROUND-MOUNT tables (the panel is not a roof - no roof-level
+  // wind/thermal reduction applies, so pg*Cs is physically correct). For
+  // ROOFTOP BALLASTED systems the 0.7 factor SHOULD apply; including it would
+  // reduce roof-ballast structural loading by 30%. v1.1.0 will differentiate
+  // by foundationType:
+  //   ground-mount: pf = pg * Cs
+  //   rooftop:      pf = 0.7 * pg * Cs
+  // ============================================================================
   const cs = arrayTiltDeg > 30 ? Math.max(0, 1 - (arrayTiltDeg - 30) / 40) : 1.0;
   const snowLoadTableKg = groundSnowLoadKgM2 * cs * tableAreaM2 * Math.cos(tiltRad);
   const snowLoadTableKn = (snowLoadTableKg * 9.81) / 1000.0;

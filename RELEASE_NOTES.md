@@ -12,6 +12,8 @@ Structural/foundation audit hotfix on top of v1.0.1.
 - **STRUCT-4**: `fosSlidingApplicable` flag — sliding FoS shown only for ballasted blocks.
 
 - **STRUCT-5/6/7**: Ke elevation factor, unified uplift-per-post across engines (parity ratio 1.016), and wind downforce included in foundation compression (parity 0.994). Small numerical shifts (qz -4.2% at 1190 m; foundation uplift/compression now match structural). No safety verdicts flip.
+- **STRUCT-8**: southern-hemisphere shading fix — Sydney-type sites now get physically valid min-pitch values (3.56 m → 7.57 m); northern sites unchanged.
+- **STRUCT-9**: snow-load `Ce·Ct·Is = 1.0` assumptions documented; the missing 0.7 roof factor is flagged for v1.1.0 differentiation between ground-mount and rooftop systems.
 
 ### Behavior changes
 

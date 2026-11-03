@@ -23,6 +23,9 @@ _(No unreleased changes as of v1.0.0.)_
 - **STRUCT-6 (medium)**: unified `cpUplift` and cos(β) treatment between `structuralEngine` and `foundationRecommendation` (exported `cpUpliftFor`/`cpDownforceFor`). Reported uplift-per-post diverged ~45% between tabs; now within 10% (residual is the dead-load model - v1.1.0). Note: the `fosUplift` result field is a REDEFINITION (previously deadLoad/uplift, meaningless) - it now means pile tension FoS per E5.1.
 - **STRUCT-7 (medium)**: `foundationRecommendation` now includes wind downforce (1.2·qz·cpDownforce·A) in compression-per-post; previously omitted, under-reporting compression by 20-30% at high wind. `upliftPerPostKn` is now exposed in the output.
 
+- **STRUCT-8 (low)**: `shadingSunPathEngine` winter-solstice altitude formula was `90 − latitude − 23.45` (Northern-hemisphere only), giving nonsensical `recommendedMinPitchM` for southern sites (Sydney 3.56 m — less than the 4.6 m collector width). Changed to `90 − |latitude| − 23.45` and made the winter-solstice profile hemisphere-aware (day 172 / Jun 21 label for southern latitudes). Northern sites bit-identical. Sydney: min pitch 3.56 m → 7.57 m (physically valid).
+- **STRUCT-9 (documentation)**: snow-load `Ce·Ct·Is` assumptions are now documented in code. Current implementation uses `pf = pg·Cs·cos(β)` with `Ce = Ct = Is = 1.0`, omitting the 0.7 roof factor from ASCE 7-22 §7.4.1. This is conservative and physically correct for ground-mount panels (no roof-level wind/thermal reduction applies). For rooftop ballasted systems the 0.7 factor SHOULD apply; differentiated in v1.1.0. **No numerical change** in this release.
+
 ## [1.0.1] - 2026-11-03
 
 ### Fixed

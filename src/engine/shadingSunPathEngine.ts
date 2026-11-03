@@ -159,7 +159,13 @@ export function analyze3dShadingAndSunPath(input: ShadingGeometryInput): Shading
   );
 
   // Winter solstice solar noon altitude: alpha_noon = 90 - lat - 23.45
-  const winterSolsticeNoonAltitude = Math.max(5.0, 90.0 - latitude - 23.45);
+  // Winter solstice is the worst-case shadow angle regardless of
+  // hemisphere. Solar declination at winter solstice is -23.45 deg in the
+  // Northern hemisphere (Dec 21) and +23.45 deg seen from the Southern
+  // hemisphere (Jun 21). Using |latitude| makes the formula
+  // hemisphere-agnostic: min noon altitude = 90 - |lat| - 23.45.
+  const absLatitude = Math.abs(latitude);
+  const winterSolsticeNoonAltitude = Math.max(5.0, 90.0 - absLatitude - 23.45);
   const winterNoonAltRad = (winterSolsticeNoonAltitude * Math.PI) / 180.0;
   const recommendedMinPitchM = Number(
     (horizontalTableWidthM + verticalHeightRiseM / Math.tan(winterNoonAltRad)).toFixed(2)
@@ -264,9 +270,20 @@ export function analyze3dShadingAndSunPath(input: ShadingGeometryInput): Shading
     };
   };
 
-  const winterSolsticeProfile = calculateDayProfile(355, 'انقلاب زمستانی (۲۱ دسامبر)', 'Winter Solstice (Dec 21)');
+  // Hemisphere-aware solstice days: NH winter solstice = Dec 21 (day 355),
+  // SH winter = Jun 21 (day 172). Equinoxes are the same calendar days in
+  // both hemispheres.
+  const isNorthern = latitude >= 0;
+  const winterDay = isNorthern ? 355 : 172;
+  const summerDay = isNorthern ? 172 : 355;
+  const winterLabelFa = isNorthern ? 'انقلاب زمستانی (۲۱ دسامبر)' : 'انقلاب زمستانی (۲۱ ژوئن)';
+  const winterLabelEn = isNorthern ? 'Winter Solstice (Dec 21)' : 'Winter Solstice (Jun 21)';
+  const summerLabelFa = isNorthern ? 'انقلاب تابستانی (۲۱ ژوئن)' : 'انقلاب تابستانی (۲۱ دسامبر)';
+  const summerLabelEn = isNorthern ? 'Summer Solstice (Jun 21)' : 'Summer Solstice (Dec 21)';
+
+  const winterSolsticeProfile = calculateDayProfile(winterDay, winterLabelFa, winterLabelEn);
   const equinoxProfile = calculateDayProfile(80, 'اعتدال بهاری (۲۱ مارس)', 'Spring Equinox (Mar 21)');
-  const summerSolsticeProfile = calculateDayProfile(172, 'انقلاب تابستانی (۲۱ ژوئن)', 'Summer Solstice (Jun 21)');
+  const summerSolsticeProfile = calculateDayProfile(summerDay, summerLabelFa, summerLabelEn);
 
   // 12-Month Matrix (representative day 15th of each month)
   const monthDays = [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];

@@ -1,5 +1,5 @@
 
-> solarpv-studio@1.0.1 test
+> solarpv-studio@1.0.2 test
 > tsx scripts/run-all-benchmarks.ts
 
 ================================================================================
@@ -8,7 +8,7 @@
 
 --- [1/4] Latin Hypercube Sampling (LHS) vs Crude Monte Carlo (CMC) Benchmark ---
 Distribution Tested: Gumbel Type I Extreme Gust (mu=28 m/s, beta=4.5 m/s)
-Execution Time: LHS (N=100) = 0.2 ms | CMC (N=10,000) = 2.33 ms | Speedup = 11.7x
+Execution Time: LHS (N=100) = 0.23 ms | CMC (N=10,000) = 2.22 ms | Speedup = 9.7x
 
 +----------+--------------+--------------+-------------------+--------------------+--------+
 | Metric   | CMC (10,000) | LHS (100)    | Rel. Error (%)    | Tolerance (eps)    | Status |
@@ -192,7 +192,7 @@ These reproduce code-internal relationships; they are NOT independent proof of a
 +--------------------+------------------------+---------------------+---------------------+
 
 --- [6/7] Core Unit Tests (PRNG, Cross-Val, Soiling, Snow, IAM & Waterfall) ---
-Unit Tests Run: 123 | Passed: 123 | Failed: 0
+Unit Tests Run: 134 | Passed: 134 | Failed: 0
   • [PRNG        ] Seed Repeatability                             -> [PASS] | PRNG identical seeds match deterministically; different seeds diverge.
   • [PRNG        ] Seed Reset Method                              -> [PASS] | prng.seed(9999) correctly reset state deterministically.
   • [PRNG        ] Uniform Range Sampling Both Branches           -> [PASS] | prng.nextRange(-15, 45) in range; guard triggers on out-of-range (50) and passes in-range (20).
@@ -204,7 +204,7 @@ Unit Tests Run: 123 | Passed: 123 | Failed: 0
   • [Validation  ] Nominal Cross-Validation PASS Branch           -> [PASS] | Clean run returned overall PASS
   • [Validation  ] Cross-Validation WARN Branch Coverage          -> [PASS] | Custom value 417.58W triggered WARN status as expected (relErr=1.8% vs tol=1.5%)
   • [Validation  ] Cross-Validation FAIL Branch Coverage          -> [PASS] | Custom value 450.0W triggered FAIL status and escalated overallStatus to FAIL (testsFailed=1)
-  • [Registry    ] Calculation Trace Generation & Fallback        -> [PASS] | Trace TRACE-mw15vbgh-7f173c36-1461-4591-ab52-924e1ca526d0 created with registered models and omitted unregistered IDs safely.
+  • [Registry    ] Calculation Trace Generation & Fallback        -> [PASS] | Trace TRACE-mw17blav-d93cc18b-f3bc-4b50-9c5c-e8164ce2c56c created with registered models and omitted unregistered IDs safely.
   • [Registry    ] Model SemVer Compliance                        -> [PASS] | All registered models adhere to SemVer; validator flags non-conforming versions.
   • [Registry    ] SemVer Loop Both Branches                      -> [PASS] | Semver-style registry loop flags non-conforming version without early break.
   • [Migration   ] Empty Payload Safe Recovery                    -> [PASS] | Empty input recovered safely with 3 warning(s) instead of throwing an unhandled exception.
@@ -258,13 +258,13 @@ Unit Tests Run: 123 | Passed: 123 | Failed: 0
   • [BIPVT       ] Aperture-to-Gross Analytic Equality            -> [PASS] | Analytic consistency verified: netAperture (14.77%) * areaRatio (0.86) = netGross (12.7%); Aperture Area = 1.72 m2, Gross Area = 2 m2.
   • [Marion      ] Fine Low-Tilt Monotonicity (5-10 deg)          -> [PASS] | Low-tilt snow loss monotonically decreases from 2.76% (5°) to 2.71% (10°) due to gravity slide force and toe damming alleviation.
   • [DataGateway ] Circuit Breaker Tripping on Consecutive Failures -> [PASS] | Circuit breaker successfully transitioned to OPEN after 2 consecutive failures.
-  • [DataGateway ] Multi-Provider Traceability & Geotechnical Linking -> [PASS] | DataGateway generated trace IDs: TRC-GW-20261103-0D7D1639, TRC-SOIL-20261103-FF1FB9B8; correctly mapped Eurocodes for Munich.
+  • [DataGateway ] Multi-Provider Traceability & Geotechnical Linking -> [PASS] | DataGateway generated trace IDs: TRC-GW-20261103-D7AC0A8F, TRC-SOIL-20261103-5665602C; correctly mapped Eurocodes for Munich.
   • [Marion      ] Fine Transition Monotonicity (10-15 deg)       -> [PASS] | Transition 10°-15° snow loss monotonically decreases from 2.71% (10°) to 2.67% (15°) confirming absence of cliff artifacts.
   • [FoundationEngine] Multi-Scenario 5-Climate Foundation Recommendations -> [PASS] | Validated 5 global project locations: Boulder (L=1.9m >= 1.90m frost requirement), Munich (L=1.8m), Phoenix (ground_screw), Singapore (ground_screw), Tehran (rammed_steel_pile).
-  • [FoundationEngine] P2-2 Shared Module Depth Equality (test_depth === ui_depth, 5 sites) -> [PASS] | Boulder L=1.9m (shared 1.9m), Phoenix L=1.5m (shared 1.5m), Munich L=1.8m (shared 1.8m), Singapore L=1m (shared 1m), Tehran L=1.8m (shared 1.8m)
+  • [FoundationEngine] P2-2 Shared Module Depth Equality (test_depth === ui_depth, 5 sites) -> [PASS] | Boulder L=1.9m (shared 1.9m), Phoenix L=1.5m (shared 1.5m), Munich L=1.8m (shared 1.8m), Singapore L=1m (shared 1m), Tehran L=1.7m (shared 1.7m)
   • [FoundationEngine] P2-2 Foundation Type Consistency (test_type === ui_type, 5 sites) -> [PASS] | Boulder test=concrete_pier ui=concrete_pier, Phoenix test=ground_screw ui=ground_screw, Munich test=concrete_pier ui=concrete_pier, Singapore test=ground_screw ui=ground_screw, Tehran test=rammed_steel_pile ui=rammed_steel_pile
   • [FoundationEngine] P2-2 Foundation Type Diversity (>= 3 distinct types across 5 sites) -> [PASS] | Distinct types: concrete_pier, ground_screw, rammed_steel_pile (Boulder=concrete_pier, Phoenix=ground_screw, Munich=concrete_pier, Singapore=ground_screw, Tehran=rammed_steel_pile)
-  • [SaltCorrosionEngine] P2-4 ISO 9223 Salt Corrosion Classification (Bushehr = C5) -> [PASS] | Bushehr (28.92, 50.83, 0 km) = C5 (expect C5); Tehran inland (60 km) = C1; bands: 5 km = C3, 0.5 km = C5, 100 km = C1; traceId = TRC-COR-MW15VBUE
+  • [SaltCorrosionEngine] P2-4 ISO 9223 Salt Corrosion Classification (Bushehr = C5) -> [PASS] | Bushehr (28.92, 50.83, 0 km) = C5 (expect C5); Tehran inland (60 km) = C1; bands: 5 km = C3, 0.5 km = C5, 100 km = C1; traceId = TRC-COR-MW17BLNV
   • [CrossTabPropagation] Tehran vs Munich vs Ahvaz End-to-End Parameter Propagation -> [PASS] | Cross-tab parameter propagation verified: Ahvaz thermal derate = 10.5% (0% in Tehran); Munich snow load = 1.177 kN/m² (> Tehran 0.490 kN/m²); Ahvaz LCOE increases from $0.0495/kWh to $0.0553/kWh with 10.5% extreme heat inverter derating.
   • [BLOCKER-1   ] REAL_INTERNET gate: analytical fallback allowed when not set -> [PASS] | REAL_INTERNET not set — analytical fallback permitted; real HTTP proof requires networked machine
   • [Monotonicity] Fine Tilt Sweep Inversion Branch               -> [PASS] | Loss increase between 11° and 12° correctly flagged as inversion
@@ -316,6 +316,17 @@ Unit Tests Run: 123 | Passed: 123 | Failed: 0
   • [E2-ENG-4    ] Hot-case Vmp uses Pmp temp coefficient when supplied (steeper coeff -> more min modules) -> [PASS] | withoutPmp.minModules=7 (expect 7), withPmp.minModules=8 (expect 8) - the pre-fix code returned 7 for both (ignored betaPmpPerC in hot case)
   • [E3-ENG-5    ] Perez 8-bin model gives correct clear-sky diffuse POA (bin 8) -> [PASS] | clearSky POA = 1003.24 W/m² (expect 995-1010; pre-fix 3-bin "else" branch under-counted to ~990)
   • [E3-ENG-7    ] Tracker gain uses latitude-derived fixed-tilt baseline (Singapore differs from hardcoded 30 deg by > 5%) -> [PASS] | Singapore (1.35 deg): reported=29.46%, ref=29.46%, old_30deg=41.75%, |new-old|=12.30% (expect >5% at Singapore)
+  • [E5-STRUCT-1 ] ASCE wind pressure qz is identical across engines (single source) -> [PASS] | qz=0.5979 kN/m2 (expect 0.598), v=36.11 m/s
+  • [E5-STRUCT-3 ] Broms clay uses FHWA-NHI-16-009 iterative form Hu = 9*su*D*f -> [PASS] | Hu=10.1 kN, expected=10.1 kN (L=1.3 m, f=0.15 m)
+  • [E5-STRUCT-4 ] fosSlidingApplicable is true only for ballasted block foundation -> [PASS] | pile=false, ballast=true
+  • [E5.1-STRUCT-1] Wind overturning moment uses derived arm (W/2 + h*sin(beta)) -> [PASS] | M=205.8 kN.m (expect 180-230; old was 133)
+  • [E5.1-STRUCT-2] fosUplift reflects pile tension capacity (flags under-designed foundation) -> [PASS] | fosUplift=0.14, T_ult=4.8 kN/pile - correctly flags under-designed foundation
+  • [E5.1-STRUCT-3] Safety verdict is foundation-type-aware (ballasted->overturning, pile->uplift) -> [PASS] | ballast reason="Overturning FoS = 0.46 < 1.5. Increase ballast mass.", pile reason="Pile uplift capacity INSUFFICIENT (FoS_uplift = 0.37 < 2.0, "
+  • [E6-STRUCT-1 ] Ke elevation factor: qz drops 4.2% at 1190 m, 5.7% at 1620 m -> [PASS] | Tehran ratio=0.9578 (expect 0.958), Boulder ratio=0.9430 (expect 0.943), sea ke=1
+  • [E6-STRUCT-2 ] Uplift-per-post parity between engines (within 10%) -> [PASS] | struct=34.10, found=34.66, ratio=1.016 (expect 0.90-1.10; pre-E6 was ~0.45)
+  • [E6-STRUCT-3 ] Compression-per-post parity (wind downforce included in both) -> [PASS] | struct=36.70, found=36.47, ratio=0.994 (expect 0.90-1.10; pre-E6 foundation omitted wind)
+  • [E7-STRUCT-1 ] Southern hemisphere min pitch physically valid (Sydney > 5 m, < 20 m), Tehran invariant -> [PASS] | Sydney=7.57m (expect 5-20; pre-E7 3.56), Tehran=7.83m (expect ~7.83, NH unchanged)
+  • [E7-STRUCT-2 ] Snow load formula unchanged by Ce*Ct*Is documentation (pf = pg*Cs*cos(beta)) -> [PASS] | actual=66.200 kN, expected=66.148 kN - Ce*Ct*Is=1.0 and Cs=1.0 documented (no numerical change)
 Core Unit Tests: PASSED
 
 --- [7/7] Migration Safety Suite (3-State Architecture) ---
