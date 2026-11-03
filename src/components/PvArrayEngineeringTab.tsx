@@ -206,30 +206,52 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             <div>
               <label className="text-slate-400 block mb-1">GCR (0.30-0.45):</label>
               <input type="number" step="0.01" min="0.1" max="0.9" value={gcrInput}
-                onChange={(e) => { const v = parseFloat(e.target.value) || 0.33; setGcrInput(v); onTrackerConfigChange?.({ ...trackerConfig, gcr: v }); }}
+                onChange={(e) => { const v = Math.min(0.9, Math.max(0.1, parseFloat(e.target.value) || 0.33)); setGcrInput(v); onTrackerConfigChange?.({ ...trackerConfig, gcr: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
             <div>
               <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'شیب محور (درجه)' : 'Axis tilt (deg)'}:</label>
               <input type="number" step="1" min="-30" max="30" value={axisTiltInput}
-                onChange={(e) => { const v = parseFloat(e.target.value) || 0; setAxisTiltInput(v); onTrackerConfigChange?.({ ...trackerConfig, axisTiltDeg: v }); }}
+                onChange={(e) => { const v = Math.min(30, Math.max(-30, parseFloat(e.target.value) || 0)); setAxisTiltInput(v); onTrackerConfigChange?.({ ...trackerConfig, axisTiltDeg: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
             <div>
               <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'حداکثر چرخش (درجه)' : 'Max rotation (deg)'}:</label>
               <input type="number" step="5" min="15" max="90" value={maxRotInput}
-                onChange={(e) => { const v = parseFloat(e.target.value) || 60; setMaxRotInput(v); onTrackerConfigChange?.({ ...trackerConfig, maxRotationDeg: v }); }}
+                onChange={(e) => { const v = Math.min(90, Math.max(15, parseFloat(e.target.value) || 60)); setMaxRotInput(v); onTrackerConfigChange?.({ ...trackerConfig, maxRotationDeg: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
           </div>
         )}
         {trackerConfig !== null && (() => {
           // Live sample: winter solstice noon at site latitude
-          const lat = cityLatitude * (Math.PI / 180);
-          const decl = -23.45 * (Math.PI / 180);
-          const sinElev = Math.sin(lat) * Math.sin(decl) + Math.cos(lat) * Math.cos(decl);
-          const zenithRad = Math.PI / 2 - Math.asin(sinElev);
-          const st = computeTrackerState({ zenithRad, azimuthRad: Math.PI }, trackerConfig);
+          let st: ReturnType<typeof computeTrackerState> | null = null;
+          let trackerWarning = false;
+          try {
+            const lat = cityLatitude * (Math.PI / 180);
+            const decl = -23.45 * (Math.PI / 180);
+            const sinElev = Math.sin(lat) * Math.sin(decl) + Math.cos(lat) * Math.cos(decl);
+            const zenithRad = Math.PI / 2 - Math.asin(sinElev);
+            // BUG-10: clamp inputs to physical ranges (GCR, max rotation, axis tilt)
+            const safeConfig: TrackerConfig = {
+              ...trackerConfig,
+              gcr: Math.min(0.9, Math.max(0.1, trackerConfig.gcr)) || 0.33,
+              maxRotationDeg: Math.min(90, Math.max(15, trackerConfig.maxRotationDeg)) || 60,
+              axisTiltDeg: Math.min(30, Math.max(-30, trackerConfig.axisTiltDeg)) || 0,
+            };
+            st = computeTrackerState({ zenithRad, azimuthRad: Math.PI }, safeConfig);
+          } catch {
+            trackerWarning = true;
+          }
+          if (trackerWarning || st === null) {
+            return (
+              <div className="mt-3 text-[11px] font-mono text-amber-400">
+                {lang === 'fa'
+                  ? 'هشدار: محاسبه وضعیت ردیاب با این تنظیمات ممکن نیست — مقادیر GCR، بیشینه چرخش و شیب محور را بررسی کنید.'
+                  : 'Warning: tracker state could not be computed with these inputs — check GCR, max rotation, and axis tilt ranges.'}
+              </div>
+            );
+          }
           return (
             <div className="mt-3 text-[11px] font-mono text-industrial-accent">
               {lang === 'fa'
