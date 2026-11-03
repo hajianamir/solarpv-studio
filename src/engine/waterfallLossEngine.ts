@@ -223,7 +223,11 @@ export function computeWaterfallLosses(
   );
 
   // 10. Inverter Clipping Loss (DC/AC Over-paneling)
-  const clippingPct = dcAcRatio > 1.3 ? -1.0 * (dcAcRatio - 1.3) * 6.5 : -0.2;
+  // Continuous, monotone clipping loss: -0.2% baseline at ILR <= 1.3,
+  // then grows with slope 6.5%/unit ILR above 1.3. The -0.2% baseline is
+  // preserved across the 1.3 threshold to eliminate the pre-fix
+  // discontinuity.
+  const clippingPct = -0.2 - 6.5 * Math.max(0, dcAcRatio - 1.3);
   addStage(
     'clipping',
     'تلفات برش توان اینورتر (Clipping Over-paneling)',

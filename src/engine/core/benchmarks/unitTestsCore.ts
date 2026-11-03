@@ -2135,6 +2135,38 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E2-ENG-3] Inverter clipping loss must be monotone in DC/AC ratio.
+  // Pre-fix, the formula jumped from -0.2% to -0.065% as ILR crossed 1.3
+  // (loss decreased with increasing ILR - physically impossible).
+  {
+    const { computeWaterfallLosses } = await import('../../waterfallLossEngine');
+
+    const clip = (ilr: number): number => {
+      const wf = computeWaterfallLosses(1000, 5.85, 46, 5.5, ilr, false, 0.0, -2.2, 45, -0.30);
+      const stage = wf.stages.find(s => s.id === 'clipping');
+      return stage ? stage.percentageLoss : Number.NaN;
+    };
+
+    const c125 = clip(1.25);
+    const c130 = clip(1.30);
+    const c131 = clip(1.31);
+    const c135 = clip(1.35);
+    const c140 = clip(1.40);
+
+    const flatBelow = c125 === -0.2 && c130 === -0.2;
+    const monotoneAbove = c131 < c130 && c135 < c131 && c140 < c135;
+    const noCliff = Math.abs(c131 - c130) <= 0.15 && c131 < c130;
+
+    assert(
+      'E2-ENG-3',
+      'Inverter clipping loss is monotone and continuous in DC/AC ratio',
+      flatBelow && monotoneAbove && noCliff,
+      `clip loss: 1.25=${c125}%, 1.30=${c130}%, 1.31=${c131}%, ` +
+      `1.35=${c135}%, 1.40=${c140}% ` +
+      `(expect flat at -0.2 below 1.3, strictly more negative above)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
