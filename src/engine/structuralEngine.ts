@@ -36,6 +36,34 @@ export interface StructuralParametersInput {
   seismicZoneCoefficientA?: number;
 }
 
+/**
+ * ASCE 7-22 Eq. 26.10-1 velocity pressure q_z (Pa).
+ * SINGLE source of truth for wind pressure across structuralEngine and
+ * foundationRecommendation. Do NOT duplicate the formula elsewhere.
+ */
+export interface WindPressureResult {
+  qzN_M2: number;
+  qzKnM2: number;
+  vMs: number;
+  kz: number;
+  kzt: number;
+  kd: number;
+}
+
+export function calculateWindPressureQz(basicWindSpeedKmh: number): WindPressureResult {
+  const vMs = Math.max(0, basicWindSpeedKmh) / 3.6;
+  const kz = 0.88;  // Exposure C, h<5m - same as current structuralEngine
+  const kzt = 1.0;
+  const kd = 0.85;
+  const qzN_M2 = 0.613 * kz * kzt * kd * Math.pow(vMs, 2);
+  return {
+    qzN_M2,
+    qzKnM2: qzN_M2 / 1000,
+    vMs,
+    kz, kzt, kd,
+  };
+}
+
 export interface StructuralAnalysisResult {
   tableAreaM2: number;
   totalArrayAreaM2: number;
@@ -107,7 +135,8 @@ export function calculateStructuralAndFoundations(
   } = input;
 
   const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
-  const windSpeedMs = basicWindSpeedKmh / 3.6;
+  const windPressure = calculateWindPressureQz(basicWindSpeedKmh);
+  const windSpeedMs = windPressure.vMs;
 
   // Standard 2P (2 Portrait) table configuration
   // Table width = 2 modules in portrait, Table length = (modulesPerTable / 2) * moduleWidth
@@ -129,12 +158,8 @@ export function calculateStructuralAndFoundations(
   const deadLoadTableKn = (deadLoadTableKg * 9.81) / 1000.0;
 
   // 2. Wind Load Calculation (ASCE 7 & Iranian Code Part 6)
-  // q_z = 0.613 * K_z * K_zt * K_d * V^2 (N/m²)
-  // Exposure Category C (open flat terrain / solar farm): K_z ~ 0.85 at h < 5m
-  const kz = 0.88;
-  const kzt = 1.0; // flat topography
-  const kd = 0.85; // wind directionality factor
-  const velocityWindPressureQzN_M2 = 0.613 * kz * kzt * kd * Math.pow(windSpeedMs, 2);
+  // q_z from the shared calculateWindPressureQz helper (single source).
+  const velocityWindPressureQzN_M2 = windPressure.qzN_M2;
 
   // Aerodynamic coefficients for sloped ground-mount tables
   // C_p,net uplift (wind from rear under array) ~ 1.35 + 0.01 * tilt

@@ -2268,6 +2268,21 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E5-STRUCT-1] ASCE wind pressure qz must be identical across engines
+  // (single source: calculateWindPressureQz).
+  {
+    const { calculateWindPressureQz } = await import('../../structuralEngine');
+
+    const wp = calculateWindPressureQz(130);
+
+    assert(
+      'E5-STRUCT-1',
+      'ASCE wind pressure qz is identical across engines (single source)',
+      Math.abs(wp.qzKnM2 - 0.598) < 0.005 && Math.abs(wp.vMs - 36.111) < 0.01,
+      `qz=${wp.qzKnM2.toFixed(4)} kN/m2 (expect 0.598), v=${wp.vMs.toFixed(2)} m/s`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

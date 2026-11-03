@@ -16,7 +16,7 @@
  * No hard-coded defaults — every input is required.
  */
 
-import { type FoundationType, type SoilType } from '../structuralEngine';
+import { calculateWindPressureQz, type FoundationType, type SoilType } from '../structuralEngine';
 
 export interface FoundationRecommendationInput {
   siteName?: string;
@@ -352,8 +352,8 @@ export function recommendSharedFoundation(
   } = input;
 
   // Environmental loads (ASCE 7-22 simplified)
-  const vMs = basicWindSpeedKmh / 3.6;
-  const qz = 0.5 * 1.225 * Math.pow(vMs, 2) * 1.0 * 0.85 / 1000.0; // kN/m²
+  // qz from the shared helper - identical to structuralEngine (E5 unification).
+  const qz = calculateWindPressureQz(basicWindSpeedKmh).qzKnM2; // kN/m²
   const sk = (groundSnowLoadKgM2 * 9.81) / 1000.0; // kN/m²
 
   // Forces per table and post
