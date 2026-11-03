@@ -348,7 +348,8 @@ export function calculateLcoe(
   opexAnnual: number,
   energyAnnual: number,
   discountRate: number,
-  lifetimeYears: number
+  lifetimeYears: number,
+  degradationPct: number = 0   // NEW (BUG-7) — annual module degradation, %/year
 ): number {
   if (energyAnnual <= 0 || lifetimeYears <= 0) {
     return 0.0;
@@ -360,8 +361,9 @@ export function calculateLcoe(
   }
 
   let totalEnergyPv = 0;
+  const dFrac = degradationPct / 100.0;
   for (let t = 1; t <= lifetimeYears; t++) {
-    totalEnergyPv += energyAnnual / Math.pow(1.0 + discountRate, t);
+    totalEnergyPv += (energyAnnual * Math.pow(1.0 - dFrac, t - 1)) / Math.pow(1.0 + discountRate, t);
   }
 
   if (totalEnergyPv === 0) return 0.0;

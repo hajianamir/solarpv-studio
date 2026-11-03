@@ -1991,6 +1991,61 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [P2-FIN-GOLDEN-1] LCOE internal consistency (independent recomputation).
+  {
+    const { calculateLcoe } = await import('../../solarPvEngine');
+    const capex = 250_000;
+    const opex = 3_500;
+    const e0 = 320_000;
+    const r = 0.06;
+    const N = 25;
+    const degradationPct = 0.5;
+    const engineLcoe = calculateLcoe(capex, opex, e0, r, N, degradationPct);
+    let pvCosts = capex;
+    let pvEnergy = 0;
+    for (let t = 1; t <= N; t++) {
+      pvCosts += opex / Math.pow(1 + r, t);
+      pvEnergy += (e0 * Math.pow(1 - degradationPct / 100, t - 1)) / Math.pow(1 + r, t);
+    }
+    const independentLcoe = pvCosts / pvEnergy;
+    const relDiff = Math.abs(engineLcoe - independentLcoe) / independentLcoe;
+    assert(
+      'P2-FIN-GOLDEN-1',
+      'LCOE matches independent discounted-cost / discounted-energy recomputation',
+      relDiff < 0.005,
+      `engine=${engineLcoe.toFixed(6)} independent=${independentLcoe.toFixed(6)} relDiff=${(relDiff * 100).toFixed(3)}%`
+    );
+  }
+
+  // [P2-FIN-GOLDEN-2] NPV known-value: [-1000, 300, 400, 500, 300] @ 10% ≈ 183.867
+  {
+    const { calculateNpv } = await import('../../solarPvEngine');
+    const cf = [-1000, 300, 400, 500, 300];
+    const npv = calculateNpv(0.10, cf);
+    assert(
+      'P2-FIN-GOLDEN-2',
+      'NPV of [-1000, 300, 400, 500, 300] @ 10% ≈ 183.867',
+      Math.abs(npv - 183.867) < 0.05,
+      `computed=${npv.toFixed(3)} expected=183.867 tolerance=0.05`
+    );
+  }
+
+  // [P2-FIN-GOLDEN-3] IRR known-value: same cashflows, IRR ≈ 0.18028.
+  // NOTE: the phase plan quoted 0.16710, but bisection on NPV(r)=0 gives
+  // 0.180282 (NPV @ 0.16710 = +26.9, not 0) — the engine is correct and the
+  // documented golden was wrong; golden corrected to the verified value.
+  {
+    const { calculateIrr } = await import('../../solarPvEngine');
+    const cf = [-1000, 300, 400, 500, 300];
+    const irr = calculateIrr(cf);
+    assert(
+      'P2-FIN-GOLDEN-3',
+      'IRR of [-1000, 300, 400, 500, 300] ≈ 0.18028 (verified via NPV bisection)',
+      Math.abs(irr - 0.18028) < 1e-4,
+      `computed=${irr.toFixed(6)} expected≈0.18028 tolerance=1e-4`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
