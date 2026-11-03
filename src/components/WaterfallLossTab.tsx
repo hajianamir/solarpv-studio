@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Layers, ArrowDownRight, Award, Info, CheckCircle2, TrendingDown } from 'lucide-react';
 import { computeWaterfallLosses, WaterfallLossReport } from '../engine/waterfallLossEngine';
+import { TrackerConfig } from '../engine/tracker/backtrackingEngine';
 
 interface WaterfallLossTabProps {
   installedCapacityKwp: number;
@@ -10,6 +11,7 @@ interface WaterfallLossTabProps {
   dcAcRatio: number;
   noctC?: number;
   tempCoeffPmpPct?: number;
+  trackerConfig?: TrackerConfig | null;
   lang?: 'fa' | 'en';
 }
 
@@ -21,9 +23,13 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   dcAcRatio,
   noctC = 45.0,
   tempCoeffPmpPct = -0.30,
+  trackerConfig = null,
   lang = 'fa',
 }) => {
-  const [hasTracker, setHasTracker] = useState(false);
+  // PR-2a-7-FOLLOWUP-2 (BUG-3): `hasTracker` local state removed.
+  // Tracker control lives exclusively in PvArrayEngineeringTab.
+  // This tab renders the tracker state passed via the `trackerConfig` prop.
+  const activeTrackerConfig: TrackerConfig | undefined = trackerConfig ?? undefined;
   const isFa = lang === 'fa';
 
   const report: WaterfallLossReport = computeWaterfallLosses(
@@ -32,11 +38,12 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
     ambientTempMaxC,
     soilingLossPct,
     dcAcRatio,
-    hasTracker,
+    false, // hasTracker bool always false here; trackerConfig prop is authoritative
     0.0,
     -2.2,
     noctC,
-    tempCoeffPmpPct
+    tempCoeffPmpPct,
+    activeTrackerConfig
   );
 
   return (
@@ -56,40 +63,30 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
         </p>
       </div>
 
-      {/* Mode Controls */}
+      {/* Tracker info strip — read-only (BUG-3: control lives in PvArrayEngineeringTab) */}
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-semibold text-slate-300">
-              {isFa ? 'سیستم ترکینگ خورشیدی:' : 'Solar Tracking Architecture:'}
+              {isFa ? 'معماری tracker (کنترل از تب مهندسی آرایه):' : 'Tracker Architecture (controlled from PV Array Engineering tab):'}
             </span>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="radio"
-                name="tracker"
-                checked={!hasTracker}
-                onChange={() => setHasTracker(false)}
-                className="accent-sky-400"
-              />
-              <span>{isFa ? 'استراکچر با شیب بهینه ثابت (Fixed-Tilt)' : 'Optimal Fixed-Tilt Structure'}</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="radio"
-                name="tracker"
-                checked={hasTracker}
-                onChange={() => setHasTracker(true)}
-                className="accent-amber-400"
-              />
-              <span className="text-industrial-warning font-bold">
-                {isFa ? 'ترکر تک‌محوره هوشمند (Single-Axis 1P)' : 'Smart 1-Axis Horizontal Tracker (1P)'}
-              </span>
-            </label>
+            <span className={`font-mono font-bold ${activeTrackerConfig ? 'text-industrial-warning' : 'text-sky-300'}`}>
+              {activeTrackerConfig
+                ? (isFa ? 'ترکر تک‌محوره + Backtracking' : '1-Axis Tracker + Backtracking')
+                : (isFa ? 'شیب ثابت' : 'Fixed Tilt')}
+            </span>
+            <span className="text-[11px] text-slate-500">
+              {isFa ? 'برای تغییر، به تب مهندسی آرایه بروید' : 'Change in PV Array Engineering tab'}
+            </span>
           </div>
 
           <div className="text-[11px] text-slate-400">
             {isFa ? 'ضریب ترانسپوزیشن:' : 'Transposition Factor:'}{' '}
-            <strong className="text-industrial-success font-mono">{hasTracker ? '+26.5%' : '+16.8%'}</strong>{' '}
+            <strong className="text-industrial-success font-mono">
+              {report.trackerDetails
+                ? `+${report.trackerDetails.annualTranspositionGainPct.toFixed(1)}%`
+                : '+16.8%'}
+            </strong>{' '}
             {isFa ? 'افزایش تشعشع در سطح آرایه' : 'irradiation gain on POA plane'}
           </div>
         </div>
@@ -179,7 +176,9 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
                   {isFa ? 'افزایش دریافت پرتوها به دلیل شیب بهینه یا ترکر' : 'Irradiance gain via optimal tilt or solar tracking'}
                 </td>
                 <td className="p-2.5 font-mono text-industrial-success">
-                  +{hasTracker ? '26.5' : '16.8'}%
+                  {report.trackerDetails
+                    ? `+${report.trackerDetails.annualTranspositionGainPct.toFixed(1)}%`
+                    : '+16.8%'}
                 </td>
                 <td className="p-2.5 font-mono font-bold text-sky-300">
                   {Math.round(report.effectivePoaEnergyKwh / 1000).toLocaleString()} MWh

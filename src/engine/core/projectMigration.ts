@@ -12,6 +12,8 @@ import { AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity } from '../climaticData';
 import type { LoadCategory } from '../loadProfiles';
+import { DEFAULT_FINANCIAL_PRICING } from '../financialEngine';
+import type { UserFinancialPricing } from '../financialEngine';
 
 // ----------------------------------------------------------------------------
 // Zod Schemas for Atomic Engineering Objects
@@ -208,24 +210,31 @@ export const InverterSpecsSchema = z.object({
   isThreePhase: z.boolean().default(true),
 });
 
+// Phase 1.2 (P1.2): mirrors UserFinancialPricing in financialEngine.ts
+// EXACTLY — 21 fields, NO .default() anywhere. Safe defaulting for partial or
+// legacy pricing happens in normalizeLegacyPricing() BEFORE this schema runs.
 export const UserFinancialPricingSchema = z.object({
-  moduleUsdPerWp: z.number().positive().default(0.14),
-  inverterUsdPerKw: z.number().positive().default(55),
-  batteryUsdPerKwh: z.number().positive().default(160),
-  bosBalanceOfPlantUsdPerWp: z.number().default(0.12),
-  epcLaborUsdPerWp: z.number().default(0.08),
-  gridInterconnectionUsdPerKw: z.number().default(25),
-  landLeaseUsdPerHectareYear: z.number().default(500),
-  omAnnualUsdPerKwYear: z.number().default(12),
-  discountRatePct: z.number().default(18),
-  analysisYears: z.number().int().default(25),
-  usdToTomanRate: z.number().positive().default(90000),
-  ppaTariffTomanPerKwh: z.number().positive().default(3500),
-  dieselGenSetCapexUsdPerKw: z.number().default(380),
-  includeDieselGenSet: z.boolean().default(false),
-  dieselGenSetCapexUsd: z.number().default(0),
-  dieselAnnualFuelLiters: z.number().default(0),
-  dieselFuelPriceTomanPerLiter: z.number().default(3500),
+  moduleUsdPerWp: z.number().positive(),
+  inverterUsdPerKw: z.number().positive(),
+  batteryUsdPerKwh: z.number().positive(),
+  structureUsdPerWp: z.number().nonnegative(),
+  cablingBopUsdPerWp: z.number().nonnegative(),
+  substationUsdPerMva: z.number().nonnegative(),
+  epcLaborUsdPerKw: z.number().nonnegative(),
+  gridTariffTomanPerKwh: z.number().nonnegative(),
+  usdToTomanRate: z.number().positive(),
+  annualOpexPctOfCapex: z.number().nonnegative(),
+  discountRatePct: z.number().min(0).max(100),
+  tariffEscalationPct: z.number().min(0).max(100),
+  includeDieselGenSet: z.boolean(),
+  dieselGenSetCapexUsd: z.number().nonnegative(),
+  dieselAnnualFuelLiters: z.number().nonnegative(),
+  dieselFuelPriceTomanPerLiter: z.number().nonnegative(),
+  hvConnectionUsdPerKva: z.number().nonnegative(),
+  ppaTariffTomanPerKwh: z.number().nonnegative(),
+  landLeaseUsdPerKwpYear: z.number().nonnegative(),
+  gridOperatorFeeUsdPerKwpYear: z.number().nonnegative(),
+  dieselAnnualServiceOpexUsd: z.number().nonnegative(),
 });
 
 // ----------------------------------------------------------------------------
@@ -335,6 +344,52 @@ function checkPhysicalContradictions(raw: Record<string, any>): string[] {
  * 2. RECOVERED_WITH_WARNINGS: Missing fields safely populated, warnings recorded, user confirmation required.
  * 3. BLOCKED_INCONSISTENT: Physically impossible data is blocked to protect bankable integrity.
  */
+/**
+ * Phase 1.2 (P1.2): merges a possibly-partial/legacy userPricing object into a
+ * complete canonical UserFinancialPricing. Strategy: start from
+ * DEFAULT_FINANCIAL_PRICING, overlay explicitly-provided canonical fields, then
+ * convert recognizable legacy fields only when the canonical equivalent was NOT
+ * explicitly provided (canonical wins on collision). Legacy fields with no safe
+ * conversion keep their DEFAULT (never zero/NaN).
+ */
+function normalizeLegacyPricing(raw: any): UserFinancialPricing {
+  const out: UserFinancialPricing = { ...DEFAULT_FINANCIAL_PRICING };
+  if (!raw || typeof raw !== 'object') return out;
+
+  const num = (v: any): v is number => typeof v === 'number' && Number.isFinite(v);
+  const has = (k: string): boolean => num(raw[k]);
+
+  const canonicalKeys: Array<keyof UserFinancialPricing> = [
+    'moduleUsdPerWp', 'inverterUsdPerKw', 'batteryUsdPerKwh',
+    'structureUsdPerWp', 'cablingBopUsdPerWp', 'substationUsdPerMva',
+    'epcLaborUsdPerKw', 'gridTariffTomanPerKwh', 'usdToTomanRate',
+    'annualOpexPctOfCapex', 'discountRatePct', 'tariffEscalationPct',
+    'dieselGenSetCapexUsd', 'dieselAnnualFuelLiters',
+    'dieselFuelPriceTomanPerLiter', 'hvConnectionUsdPerKva',
+    'ppaTariffTomanPerKwh', 'landLeaseUsdPerKwpYear',
+    'gridOperatorFeeUsdPerKwpYear', 'dieselAnnualServiceOpexUsd',
+  ];
+  for (const k of canonicalKeys) {
+    if (num(raw[k])) (out as any)[k] = raw[k] as number;
+  }
+  if (typeof raw.includeDieselGenSet === 'boolean') {
+    out.includeDieselGenSet = raw.includeDieselGenSet;
+  }
+
+  // Legacy conversions (only when canonical field was NOT explicitly provided)
+  if (!has('moduleUsdPerWp') && num(raw.panelCostPerWattUsd)) out.moduleUsdPerWp = raw.panelCostPerWattUsd;
+  if (!has('inverterUsdPerKw') && num(raw.inverterCostPerWattUsd)) out.inverterUsdPerKw = raw.inverterCostPerWattUsd * 1000;
+  if (!has('batteryUsdPerKwh') && num(raw.batteryCostPerKwhUsd)) out.batteryUsdPerKwh = raw.batteryCostPerKwhUsd;
+  if (!has('structureUsdPerWp') && num(raw.structureCostPerWattUsd)) out.structureUsdPerWp = raw.structureCostPerWattUsd;
+  if (!has('cablingBopUsdPerWp') && num(raw.bopCostPerWattUsd)) out.cablingBopUsdPerWp = raw.bopCostPerWattUsd;
+  if (!has('epcLaborUsdPerKw') && num(raw.installationCostPerWattUsd)) out.epcLaborUsdPerKw = raw.installationCostPerWattUsd * 1000;
+  if (!has('gridTariffTomanPerKwh') && num(raw.electricitySellTariffTomanPerKwh)) out.gridTariffTomanPerKwh = raw.electricitySellTariffTomanPerKwh;
+  if (!has('tariffEscalationPct') && num(raw.annualInflationPct)) out.tariffEscalationPct = raw.annualInflationPct;
+  if (!has('annualOpexPctOfCapex') && num(raw.omCostPctOfCapexAnnual)) out.annualOpexPctOfCapex = raw.omCostPctOfCapexAnnual;
+
+  return out;
+}
+
 export function migrateProjectToV3(rawInput: unknown): MigrationResult {
   const warnings: string[] = [];
   const traceId = generateTraceId('MIGR');
@@ -414,7 +469,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     loads: (Array.isArray(raw.loads) ? raw.loads : []).map(normalizeLegacyLoad), // P1: legacy v2 loads normalized before validation
     selectedModule: raw.selectedModule || getFallbackModule(),
     selectedInverter: raw.selectedInverter || getFallbackInverter(),
-    userPricing: raw.userPricing || getFallbackPricing(),
+    userPricing: normalizeLegacyPricing(raw.userPricing), // P1.2: defaults applied here, never in schema
 
     featureFlags,
     trackerConfig: raw.trackerConfig !== undefined ? raw.trackerConfig : null, // BUG-2: persist (null = fixed tilt)
@@ -447,6 +502,9 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     if (candidate.systemMode) recovered.systemMode = candidate.systemMode;
     if (candidate.targetPowerplantCapacityKw) recovered.targetPowerplantCapacityKw = candidate.targetPowerplantCapacityKw;
     recovered.featureFlags = candidate.featureFlags;
+    // P1.2: preserve normalized pricing even when validation fails on a
+    // NON-pricing field — otherwise user pricing is silently reset.
+    if (candidate.userPricing) recovered.userPricing = candidate.userPricing as any;
 
     return {
       success: true,
@@ -503,27 +561,6 @@ function getFallbackInverter() {
   };
 }
 
-function getFallbackPricing() {
-  return {
-    moduleUsdPerWp: 0.14,
-    inverterUsdPerKw: 55,
-    batteryUsdPerKwh: 160,
-    bosBalanceOfPlantUsdPerWp: 0.12,
-    epcLaborUsdPerWp: 0.08,
-    gridInterconnectionUsdPerKw: 25,
-    landLeaseUsdPerHectareYear: 500,
-    omAnnualUsdPerKwYear: 12,
-    discountRatePct: 18,
-    analysisYears: 25,
-    usdToTomanRate: 90000,
-    ppaTariffTomanPerKwh: 3500,
-    dieselGenSetCapexUsdPerKw: 380,
-    includeDieselGenSet: false,
-    dieselGenSetCapexUsd: 0,
-    dieselAnnualFuelLiters: 0,
-    dieselFuelPriceTomanPerLiter: 3500,
-  };
-}
 
 export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
   return {
@@ -545,7 +582,7 @@ export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
     loads: [],
     selectedModule: getFallbackModule(),
     selectedInverter: getFallbackInverter(),
-    userPricing: getFallbackPricing(),
+    userPricing: { ...DEFAULT_FINANCIAL_PRICING } as ProjectDataV3['userPricing'] & import('../financialEngine').UserFinancialPricing as any,
 
     featureFlags: { ...DEFAULT_FEATURE_FLAGS },
     traceId: traceId || generateTraceId('PROJ'),

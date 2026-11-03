@@ -80,6 +80,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
     if (!validationReport) {
       handleRunValidation();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once validation runner
   }, []);
 
   // Section A: project data provenance — captured once at mount with real trace_ids
@@ -207,6 +208,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isEn is a stable derived flag
   }, []);
 
   const handleRunValidation = () => {

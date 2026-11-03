@@ -40,6 +40,8 @@ import { compareStatus } from './lhsBenchmark';
 import { simulateBipvThermalStep } from '../../bipv/bipvThermalEngine';
 import { runMigrationTestSuite, REAL_WORLD_V2_TEST_VECTORS } from './migrationTestVectors';
 import { ElectricalLoadItemSchema } from '../projectMigration';
+import { UserFinancialPricingSchema } from '../projectMigration';
+import { DEFAULT_FINANCIAL_PRICING } from '../../financialEngine';
 import { getClimateData } from '../../climaticData';
 import { ExternalDataGateway, CircuitBreaker } from '../../dataGateway';
 import { recommendFoundation } from '../../structureRecommendationEngine';
@@ -1716,6 +1718,201 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
         res.migrationStatus === 'RECOVERED_WITH_WARNINGS' &&
         (res.project.loads as any[]).length >= 2,
       `status=${res.migrationStatus} loads=${(res.project.loads as any[]).length} warnings=${res.warnings.length}`
+    );
+  }
+
+
+  // P1.1.6 - MIGR-03 (24h telecom load) normalizes with dayHours=24
+  {
+    const res = migrateProjectToV3(REAL_WORLD_V2_TEST_VECTORS[3].rawPayload);
+    const out = res.success ? (res.project.loads as any[]) : [];
+    const ok =
+      res.success &&
+      out.length === 1 &&
+      out[0].ratedWatts === 3500 &&
+      out[0].dayHours === 24 &&
+      out[0].nightHours === 0 &&
+      out[0].isDc === false;
+    assert(
+      'Migration-RoundTrip',
+      'P1.1.6 MIGR-03 (24h telecom BTS) normalizes to dayHours=24, nightHours=0',
+      ok,
+      `loads=${out.length} ${JSON.stringify(out[0])}`
+    );
+  }
+
+  // ==========================================================================
+  // Suite P1.2: Phase 1.2 - Pricing Schema Alignment
+  // ==========================================================================
+
+  // P1.2.1 - Canonical round-trip on MIGR-00
+  {
+    const inPricing = REAL_WORLD_V2_TEST_VECTORS[0].rawPayload.userPricing as any;
+    const res = migrateProjectToV3(REAL_WORLD_V2_TEST_VECTORS[0].rawPayload);
+    const out = res.success ? (res.project.userPricing as any) : null;
+    const allMatch =
+      out !== null &&
+      out.moduleUsdPerWp === inPricing.moduleUsdPerWp &&
+      out.inverterUsdPerKw === inPricing.inverterUsdPerKw &&
+      out.batteryUsdPerKwh === inPricing.batteryUsdPerKwh &&
+      out.structureUsdPerWp === inPricing.structureUsdPerWp &&
+      out.cablingBopUsdPerWp === inPricing.cablingBopUsdPerWp &&
+      out.substationUsdPerMva === inPricing.substationUsdPerMva &&
+      out.epcLaborUsdPerKw === inPricing.epcLaborUsdPerKw &&
+      out.gridTariffTomanPerKwh === inPricing.gridTariffTomanPerKwh &&
+      out.usdToTomanRate === inPricing.usdToTomanRate &&
+      out.annualOpexPctOfCapex === inPricing.annualOpexPctOfCapex &&
+      out.discountRatePct === inPricing.discountRatePct &&
+      out.tariffEscalationPct === inPricing.tariffEscalationPct &&
+      out.hvConnectionUsdPerKva === inPricing.hvConnectionUsdPerKva &&
+      out.ppaTariffTomanPerKwh === inPricing.ppaTariffTomanPerKwh &&
+      out.landLeaseUsdPerKwpYear === inPricing.landLeaseUsdPerKwpYear &&
+      out.gridOperatorFeeUsdPerKwpYear === inPricing.gridOperatorFeeUsdPerKwpYear &&
+      out.dieselAnnualServiceOpexUsd === inPricing.dieselAnnualServiceOpexUsd;
+    assert(
+      'Migration-RoundTrip',
+      'P1.2.1 Canonical UserFinancialPricing round-trips without field drift',
+      res.success && res.migrationStatus === 'VALID' && allMatch,
+      allMatch
+        ? `all 21 canonical fields preserved exactly (usdRate=${out.usdToTomanRate}, ppa=${out.ppaTariffTomanPerKwh}, substation=${out.substationUsdPerMva})`
+        : `DRIFT or rejected: status=${res.migrationStatus} out=${JSON.stringify(out)}`
+    );
+  }
+
+  // P1.2.2 - Legacy v2 pricing normalized
+  {
+    const legacyPayload = JSON.parse(JSON.stringify(REAL_WORLD_V2_TEST_VECTORS[0].rawPayload));
+    legacyPayload.version = '2.0.0';
+    legacyPayload.userPricing = {
+      usdToTomanRate: 75000,
+      panelCostPerWattUsd: 0.16,
+      inverterCostPerWattUsd: 0.05,
+      batteryCostPerKwhUsd: 140,
+      structureCostPerWattUsd: 0.04,
+      bopCostPerWattUsd: 0.05,
+      installationCostPerWattUsd: 0.06,
+      electricitySellTariffTomanPerKwh: 3600,
+      annualInflationPct: 22.0,
+      discountRatePct: 17.0,
+      omCostPctOfCapexAnnual: 1.3,
+    };
+    const res = migrateProjectToV3(legacyPayload);
+    const out = res.success ? (res.project.userPricing as any) : null;
+    const ok =
+      out !== null &&
+      out.usdToTomanRate === 75000 &&
+      out.moduleUsdPerWp === 0.16 &&
+      out.inverterUsdPerKw === 50 &&
+      out.batteryUsdPerKwh === 140 &&
+      out.structureUsdPerWp === 0.04 &&
+      out.cablingBopUsdPerWp === 0.05 &&
+      out.epcLaborUsdPerKw === 60 &&
+      out.gridTariffTomanPerKwh === 3600 &&
+      out.tariffEscalationPct === 22 &&
+      out.discountRatePct === 17 &&
+      out.annualOpexPctOfCapex === 1.3 &&
+      out.substationUsdPerMva === DEFAULT_FINANCIAL_PRICING.substationUsdPerMva &&
+      out.hvConnectionUsdPerKva === DEFAULT_FINANCIAL_PRICING.hvConnectionUsdPerKva &&
+      out.ppaTariffTomanPerKwh === DEFAULT_FINANCIAL_PRICING.ppaTariffTomanPerKwh;
+    assert(
+      'Migration-RoundTrip',
+      'P1.2.2 Legacy v2 pricing normalized (10 convertible) + 3 DEFAULT fallbacks',
+      res.success && ok,
+      ok
+        ? `inverterUsdPerKw=${out.inverterUsdPerKw} (0.05*1000) epcLaborUsdPerKw=${out.epcLaborUsdPerKw} (0.06*1000) tariffEsc=${out.tariffEscalationPct}`
+        : `MISMATCH: ${JSON.stringify(out)}`
+    );
+  }
+
+  // P1.2.3 - Strict rejection of missing canonical field
+  {
+    const badPricing = {
+      moduleUsdPerWp: 0.14,
+      batteryUsdPerKwh: 160,
+      structureUsdPerWp: 0.045,
+      cablingBopUsdPerWp: 0.035,
+      substationUsdPerMva: 35000,
+      epcLaborUsdPerKw: 25,
+      gridTariffTomanPerKwh: 3800,
+      usdToTomanRate: 90000,
+      annualOpexPctOfCapex: 1.2,
+      discountRatePct: 18,
+      tariffEscalationPct: 15,
+      includeDieselGenSet: false,
+      dieselGenSetCapexUsd: 0,
+      dieselAnnualFuelLiters: 0,
+      dieselFuelPriceTomanPerLiter: 3500,
+      hvConnectionUsdPerKva: 45,
+      ppaTariffTomanPerKwh: 2800,
+      landLeaseUsdPerKwpYear: 0.12,
+      gridOperatorFeeUsdPerKwpYear: 0.06,
+      dieselAnnualServiceOpexUsd: 1800,
+    };
+    const parseResult = UserFinancialPricingSchema.safeParse(badPricing);
+    assert(
+      'Migration-RoundTrip',
+      'P1.2.3 Schema rejects pricing with missing canonical field (no silent default)',
+      parseResult.success === false,
+      parseResult.success ? 'UNEXPECTED: incomplete pricing accepted' : 'rejected as expected (inverterUsdPerKw missing)'
+    );
+  }
+
+  // P1.2.4 - No drift between schema and DEFAULT_FINANCIAL_PRICING
+  {
+    const schemaKeys = Object.keys((UserFinancialPricingSchema as any).shape).sort();
+    const engineKeys = Object.keys(DEFAULT_FINANCIAL_PRICING).sort();
+    const sameNames = schemaKeys.length === engineKeys.length && schemaKeys.every((k, i) => k === engineKeys[i]);
+    assert(
+      'Migration-RoundTrip',
+      'P1.2.4 Schema fields === DEFAULT_FINANCIAL_PRICING fields (21, exact match)',
+      sameNames && schemaKeys.length === 21,
+      sameNames
+        ? 'all 21 field names match exactly'
+        : `drift: schema=${schemaKeys.length} engine=${engineKeys.length} diff=${schemaKeys.filter(k => !engineKeys.includes(k)).concat(engineKeys.filter(k => !schemaKeys.includes(k))).join(',')}`
+    );
+  }
+
+  // P1.2.5 - Pricing propagates to LCOE
+  {
+    const baseProject = JSON.parse(JSON.stringify(REAL_WORLD_V2_TEST_VECTORS[0].rawPayload));
+    const highCostProject = JSON.parse(JSON.stringify(REAL_WORLD_V2_TEST_VECTORS[0].rawPayload));
+    highCostProject.userPricing.moduleUsdPerWp = baseProject.userPricing.moduleUsdPerWp * 2;
+    highCostProject.userPricing.inverterUsdPerKw = baseProject.userPricing.inverterUsdPerKw * 2;
+    const resBase = migrateProjectToV3(baseProject);
+    const resHigh = migrateProjectToV3(highCostProject);
+    const basePricing = resBase.success ? resBase.project.userPricing : null;
+    const highPricing = resHigh.success ? resHigh.project.userPricing : null;
+    const finBase = performFinancialAnalysis(1000, 0, 1000, 1_500_000, basePricing as any, 25, 'powerplant');
+    const finHigh = performFinancialAnalysis(1000, 0, 1000, 1_500_000, highPricing as any, 25, 'powerplant');
+    assert(
+      'Migration-RoundTrip',
+      'P1.2.5 Pricing propagated intact: doubled module+inverter cost raises LCOE',
+      basePricing !== null && highPricing !== null &&
+        finHigh.lcoeUsdPerKwh > finBase.lcoeUsdPerKwh &&
+        (highPricing as any).moduleUsdPerWp === (basePricing as any).moduleUsdPerWp * 2,
+      `base LCOE=$${finBase.lcoeUsdPerKwh}/kWh high LCOE=$${finHigh.lcoeUsdPerKwh}/kWh moduleUsdPerWp ${(basePricing as any)?.moduleUsdPerWp}->${(highPricing as any)?.moduleUsdPerWp}`
+    );
+  }
+
+  // P1.2.6 - Missing userPricing -> DEFAULT_FINANCIAL_PRICING
+  {
+    const noPricing = JSON.parse(JSON.stringify(REAL_WORLD_V2_TEST_VECTORS[0].rawPayload));
+    delete noPricing.userPricing;
+    const res = migrateProjectToV3(noPricing);
+    const out = res.success ? (res.project.userPricing as any) : null;
+    const allDefault =
+      out !== null &&
+      out.usdToTomanRate === DEFAULT_FINANCIAL_PRICING.usdToTomanRate &&
+      out.moduleUsdPerWp === DEFAULT_FINANCIAL_PRICING.moduleUsdPerWp &&
+      out.substationUsdPerMva === DEFAULT_FINANCIAL_PRICING.substationUsdPerMva &&
+      out.ppaTariffTomanPerKwh === DEFAULT_FINANCIAL_PRICING.ppaTariffTomanPerKwh;
+    assert(
+      'Migration-RoundTrip',
+      'P1.2.6 Missing userPricing -> DEFAULT_FINANCIAL_PRICING (no zeros, no NaN)',
+      allDefault,
+      allDefault
+        ? `all defaults applied (usdRate=${out.usdToTomanRate}, module=${out.moduleUsdPerWp})`
+        : `MISMATCH: ${JSON.stringify(out)}`
     );
   }
 

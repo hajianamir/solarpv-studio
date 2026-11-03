@@ -46,6 +46,7 @@ import { getDefaultClimateCity, ClimateCity, SiteGeotechnicalOverrides } from '.
 import { LOAD_PRESETS, ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
 import { designPvArray, ModuleSpecs, InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
+import { TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
 import { sizeBatteryBank, BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
 import { evaluateInverterClustering } from './engine/inverterClustering';
@@ -195,6 +196,8 @@ export const App: React.FC = () => {
   const [outageHours, setOutageHours] = useState<number>(6); // For ongrid mode blackout calculation
   const [targetPowerplantCapacityKw, setTargetPowerplantCapacityKw] = useState<number>(1000); // 1MW default
   const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
+  // PR-2a-7: single-axis tracker config (null = fixed tilt)
+  const [trackerConfig, setTrackerConfig] = useState<TrackerConfig | null>(null);
   
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
@@ -297,6 +300,7 @@ export const App: React.FC = () => {
       targetPowerplantCapacityKw,
       enableDieselGenerator,
       userPricing,
+      trackerConfig, // BUG-2: persist tracker config (null = fixed tilt)
       featureFlags: flags,
     };
     try {
@@ -372,7 +376,8 @@ export const App: React.FC = () => {
         0.0,
         -2.2,
         selectedModule.noctC,
-        selectedModule.tempCoeffPmpPct
+        selectedModule.tempCoeffPmpPct,
+        trackerConfig ?? undefined
       );
       return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
     } else if (systemMode === 'ongrid') {
@@ -381,7 +386,7 @@ export const App: React.FC = () => {
     } else {
       return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
     }
-  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule]);
+  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
   // 3. Advanced PV Array Engineering Sizing
   const arrayDesign = useMemo(() => {
@@ -545,9 +550,10 @@ export const App: React.FC = () => {
       0.0,
       -2.2,
       selectedModule.noctC,
-      selectedModule.tempCoeffPmpPct
+      selectedModule.tempCoeffPmpPct,
+      trackerConfig ?? undefined
     );
-  }, [arrayDesign, city, inverterClustering, selectedModule]);
+  }, [arrayDesign, city, inverterClustering, selectedModule, trackerConfig]);
 
   const annualYieldKwh = waterfallReport.netAnnualEnergyExportMwh * 1000.0;
 
@@ -626,6 +632,8 @@ export const App: React.FC = () => {
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
       if (clean.outageHours !== undefined) setOutageHours(clean.outageHours);
       if (clean.featureFlags) setAllFlags(clean.featureFlags);
+      // BUG-2: restore tracker config; legacy projects without the field -> null (fixed tilt)
+      setTrackerConfig(clean.trackerConfig !== undefined ? clean.trackerConfig : null);
 
       // State 2: RECOVERED WITH WARNINGS
       if (migrationResult.migrationStatus === 'RECOVERED_WITH_WARNINGS') {
@@ -1336,6 +1344,9 @@ export const App: React.FC = () => {
               systemMode={systemMode}
               targetPowerplantCapacityKw={targetPowerplantCapacityKw}
               annualYieldMwh={waterfallReport.netAnnualEnergyExportMwh}
+              trackerConfig={trackerConfig}
+              onTrackerConfigChange={setTrackerConfig}
+              cityLatitude={city.latitude}
               lang={lang}
             />
           )}
@@ -1432,6 +1443,7 @@ export const App: React.FC = () => {
               }
               noctC={selectedModule.noctC}
               tempCoeffPmpPct={selectedModule.tempCoeffPmpPct}
+              trackerConfig={trackerConfig}
               lang={lang}
             />
           )}

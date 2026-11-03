@@ -47,7 +47,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
       .then((res) => { if (mounted) setCorrosion(res); })
       .catch(() => { if (mounted) setCorrosion(null); });
     return () => { mounted = false; };
-  }, [city?.latitude, city?.longitude]);
+  }, [city]);
 
   const updateField = (field: keyof UserFinancialPricing, val: any) => {
     onPricingChange({
