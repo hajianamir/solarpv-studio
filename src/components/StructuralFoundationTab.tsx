@@ -876,6 +876,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           >
             {structResult.fosOverturning}
           </div>
+          <div className="text-[10px] text-slate-400 mt-1">
+            {isEn ? 'Sliding Safety Factor (ballasted only):' : 'ضریب لغزش (فقط بالاست):'}{' '}
+            {structResult.fosSlidingApplicable
+              ? <span className="font-mono text-industrial-success">{structResult.fosSliding}</span>
+              : <span className="font-mono text-slate-500" title="Applicable only for ballasted blocks; see Broms FoS in foundation report">—</span>}
+          </div>
           <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
             {structResult.isStructurallySafe ? (
               <span className="text-industrial-success flex items-center gap-1">

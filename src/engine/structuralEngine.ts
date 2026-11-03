@@ -111,6 +111,14 @@ export interface StructuralAnalysisResult {
   // Safety Verification
   fosOverturning: number;
   fosSliding: number;
+  /**
+   * True when `fosSliding` is a physically meaningful safety factor
+   * (friction-governed base, i.e. `rooftop_ballasted_block`).
+   * False for `rammed_steel_pile`, `concrete_pier`, `ground_screw` - these
+   * rely on soil lateral resistance, not base friction. For those types,
+   * use the Broms FoS from the foundation recommendation.
+   */
+  fosSlidingApplicable: boolean;
   fosUplift: number;
   isStructurallySafe: boolean;
   engineeringRemarksFa: string;
@@ -268,7 +276,11 @@ export function calculateStructuralAndFoundations(
   // 6. Factors of Safety (FoS)
   const stabilizingMoment = (deadLoadTableKn * (tableSlopedWidthM / 2.0)) * Math.cos(tiltRad);
   const fosOverturning = Number((stabilizingMoment / Math.max(0.1, windOverturningMomentKnM)).toFixed(2));
+  // fosSliding uses mu=0.45 base friction - meaningful ONLY for ballasted
+  // blocks. For pile/pier types this value is present but must NOT be
+  // displayed; use the Broms FoS from the foundation report.
   const fosSliding = Number((((deadLoadTableKn * 0.45) / Math.max(0.1, lateralShearPerPostKn * postsPerTable))).toFixed(2));
+  const fosSlidingApplicable = foundationType === 'rooftop_ballasted_block';
   const fosUplift = Number(((deadLoadTableKn / Math.max(0.1, windUpliftForceKn))).toFixed(2));
 
   const isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isBearingCapacitySafe;
@@ -320,6 +332,7 @@ export function calculateStructuralAndFoundations(
     sandGravelTon,
     fosOverturning,
     fosSliding,
+    fosSlidingApplicable,
     fosUplift,
     isStructurallySafe,
     engineeringRemarksFa,

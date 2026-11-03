@@ -2317,6 +2317,29 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E5-STRUCT-4] fosSlidingApplicable must be true only for ballasted blocks.
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const common = {
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 31, groundClearanceM: 0.9,
+      basicWindSpeedKmh: 130, groundSnowLoadKgM2: 100,
+      soilType: 'dense_sand_gravel' as const,
+    };
+
+    const pile = calculateStructuralAndFoundations({ ...common, foundationType: 'rammed_steel_pile' });
+    const ballast = calculateStructuralAndFoundations({ ...common, foundationType: 'rooftop_ballasted_block' });
+
+    assert(
+      'E5-STRUCT-4',
+      'fosSlidingApplicable is true only for ballasted block foundation',
+      pile.fosSlidingApplicable === false && ballast.fosSlidingApplicable === true,
+      `pile=${pile.fosSlidingApplicable}, ballast=${ballast.fosSlidingApplicable}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
