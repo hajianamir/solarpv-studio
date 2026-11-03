@@ -1,7 +1,11 @@
+[![v1.0.0](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/hajianamir/solarpv-studio/releases/tag/v1.0.0)
+
 # SolarPV Studio
 
 Cross-platform web Solar PV design, simulation, and financial engineering
 platform.
+
+> **Current release:** v1.0.0 · **Test baseline:** 117/117 · **TypeScript:** `strict: true` · **Post-strict audit:** [READY](docs/evidence/post-strict-audit.md)
 
 ## Actual Stack (this repository)
 
