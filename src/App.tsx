@@ -100,7 +100,6 @@ import { IranianRegulationsTab } from './components/IranianRegulationsTab';
 import { StructuralFoundationTab } from './components/StructuralFoundationTab';
 import { HarmonicsGridTab } from './components/HarmonicsGridTab';
 import { RFC3ReportsTab } from './components/RFC3ReportsTab';
-import { useFeatureFlags } from './engine/core/FeatureFlagContext';
 import { migrateProjectToV3 } from './engine/core/projectMigration';
 import { generateTraceId } from './engine/core/modelRegistry';
 
@@ -142,8 +141,6 @@ export const App: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // RFC 3.0 Advanced Feature Flags
-  const { flags, setAllFlags, activeCount } = useFeatureFlags();
 
   // Inverter Technology & MV Bay Architecture (for Powerplant mode)
   const [inverterTech, setInverterTech] = useState<InverterTechnology>('string_inverter');
@@ -260,6 +257,10 @@ export const App: React.FC = () => {
 
   // Load saved project on initial mount if available
   useEffect(() => {
+    // R5 (v1.0.3): Feature flags were removed. Clean up stale storage
+    // from users who had previously enabled flags.
+    try { localStorage.removeItem('solarpv_advanced_feature_flags_v3'); } catch { /* private mode */ }
+
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
@@ -300,7 +301,6 @@ export const App: React.FC = () => {
       enableDieselGenerator,
       userPricing,
       trackerConfig, // BUG-2: persist tracker config (null = fixed tilt)
-      featureFlags: flags,
     };
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projectData));
@@ -631,7 +631,6 @@ export const App: React.FC = () => {
       if (clean.selectedChemistry) setSelectedChemistry(clean.selectedChemistry as BatteryChemistry);
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
       if (clean.outageHours !== undefined) setOutageHours(clean.outageHours);
-      if (clean.featureFlags) setAllFlags(clean.featureFlags);
       // BUG-2: restore tracker config; legacy projects without the field -> null (fixed tilt)
       setTrackerConfig(clean.trackerConfig !== undefined ? clean.trackerConfig : null);
 

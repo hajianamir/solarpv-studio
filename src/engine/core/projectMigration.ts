@@ -8,7 +8,15 @@
 // ============================================================================
 
 import { z } from 'zod';
-import { type AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
+// R5 (v1.0.3): Legacy feature flags retained in schema for migration compatibility
+export const DEFAULT_FEATURE_FLAGS = Object.freeze({
+  enableMultiphysicsCoupling: false,
+  enableClimateResilience15Min: false,
+  enableLcaLifecycleSustainability: false,
+  enableNextGenGridHydrogen: false,
+  enableAdvancedGeotechnicalCivil: false,
+});
+export type AdvancedFeatureFlags = typeof DEFAULT_FEATURE_FLAGS;
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity } from '../climaticData';
 import type { LoadCategory } from '../loadProfiles';

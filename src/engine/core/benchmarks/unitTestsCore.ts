@@ -2659,6 +2659,19 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [F2-R5] Feature flags files are removed (option A: no phantom gating)
+  {
+    const fs = await import('fs');
+    const files = ['src/engine/core/featureFlags.ts', 'src/engine/core/FeatureFlagContext.tsx'];
+    const noneExist = files.every(f => !fs.existsSync(f));
+    assert(
+      'F2-R5',
+      'Feature flags files are removed (option A: no phantom gating)',
+      noneExist,
+      `featureFlags.ts exists=${fs.existsSync(files[0])}, FeatureFlagContext.tsx exists=${fs.existsSync(files[1])}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

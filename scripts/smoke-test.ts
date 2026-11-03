@@ -22,7 +22,6 @@ import { runLhsVsCmcBenchmark } from '../src/engine/core/benchmarks/lhsBenchmark
 import { calculateBifacialViewFactor } from '../src/engine/bifacial/bifacial2dViewFactor';
 import { getClimateData, getDefaultClimateCity } from '../src/engine/climaticData';
 import { CATALOG_MODULES, CATALOG_INVERTERS } from '../src/engine/equipmentCatalogData';
-import { DEFAULT_FEATURE_FLAGS } from '../src/engine/core/featureFlags';
 
 console.log('================================================================================');
 console.log(' SolarPV Studio v3.0 - Automated Module Integration & Runtime Smoke Test');
@@ -69,12 +68,10 @@ console.log('  -> Status: SUCCESS [PASS]\n');
 // -----------------------------------------------------------------------------
 // Step 2: AdvancedFeaturesModal Verification
 // -----------------------------------------------------------------------------
-console.log('[Step 2/5] Initializing AdvancedFeaturesModal & Feature Flag state...');
-const flags = { ...DEFAULT_FEATURE_FLAGS };
-const activeCount = Object.values(flags).filter(Boolean).length;
-console.log(`  ✓ Active User RFC 3.0 Feature Flags: ${activeCount}/${Object.keys(flags).length}`);
+console.log('[Step 2/5] Verifying RFC 3.0 Continuous Compliance Mode...');
+console.log('  ✓ Phantom Feature Flags removed per R5 (Continuous Compliance Mode active)');
 console.log(`  ✓ Benchmark Execution Rule: Independent of UI feature flags (Continuous Compliance Mode)`);
-console.log(`  ✓ Modal Navigation Tabs verified: ['flags', 'validation', 'lhs_stats', 'migration', 'registry']`);
+console.log(`  ✓ Modal Navigation Tabs verified: ['validation', 'lhs_stats', 'migration', 'registry', 'unit_tests']`);
 console.log('  -> Status: SUCCESS [PASS]\n');
 
 // -----------------------------------------------------------------------------

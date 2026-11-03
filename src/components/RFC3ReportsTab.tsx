@@ -24,8 +24,6 @@ import {
   ArrowRight,
   TrendingUp,
 } from 'lucide-react';
-import { useFeatureFlags } from '../engine/core/FeatureFlagContext';
-import { FEATURE_FLAG_METADATA, type AdvancedFeatureFlags } from '../engine/core/featureFlags';
 import { runSystemCrossValidation, type SystemValidationReport, type ValidationMetricResult } from '../engine/core/benchmarks/crossValidation';
 import { PHYSICS_MODEL_REGISTRY, type ModelSemverEntry } from '../engine/core/modelRegistry';
 import { generateTraceId } from '../engine/core/modelRegistry';
@@ -48,10 +46,8 @@ interface RFC3ReportsTabProps {
 
 export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab, city, siteOverrides }) => {
   const isEn = lang === 'en';
-  const { flags, setFlag, setAllFlags, resetFlags, activeCount } = useFeatureFlags();
   const [activeSubTab, setActiveSubTab] = useState<
     | 'validation'
-    | 'flags'
     | 'impact'
     | 'lhs_stats'
     | 'migration'
@@ -197,17 +193,6 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     'Phase 3b': <Hammer className="w-4 h-4 text-indigo-400" />,
   };
 
-  const groupedFlags = Object.entries(FEATURE_FLAG_METADATA).reduce<
-    Record<string, Array<{ key: keyof AdvancedFeatureFlags; meta: (typeof FEATURE_FLAG_METADATA)[keyof AdvancedFeatureFlags] }>>
-  >((acc, [k, meta]) => {
-    const key = k as keyof AdvancedFeatureFlags;
-    const pillar = meta.phase;
-    if (!acc[pillar]) acc[pillar] = [];
-    acc[pillar].push({ key, meta });
-    return acc;
-  }, {});
-
-  const totalFlagsCount = Object.keys(FEATURE_FLAG_METADATA).length;
 
   return (
     <div className="space-y-6">
@@ -278,10 +263,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               <Play className="w-3.5 h-3.5" />
               <span>{isRunningValidation ? (isEn ? 'Executing...' : 'در حال اجرا...') : (isEn ? 'Re-run Benchmark Suite' : 'اجرای مجدد بنچمارک‌ها')}</span>
             </button>
-            <div className="px-3 py-1.5 rounded bg-industrial-surface border border-[#1F2937] text-xs font-mono text-slate-300">
-              {isEn ? 'Active Flags:' : 'پرچم‌های فعال:'}{' '}
-              <strong className="text-industrial-primary">{activeCount}</strong> / {totalFlagsCount}
-            </div>
+
           </div>
         </div>
 
@@ -309,18 +291,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             <Database className="w-3.5 h-3.5" />
             <span>{isEn ? 'Section A — Data Provenance' : 'بخش A — تاریخچه داده‌ها'}</span>
           </button>
-          <button
-            onClick={() => setActiveSubTab('flags')}
-            className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
-              activeSubTab === 'flags'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Feature Flags Engine' : 'پرچم‌های مهندسی (Flags)'}</span>
-          </button>
-          <button
+                    <button
             onClick={() => setActiveSubTab('impact')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'impact'
@@ -720,83 +691,6 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 ? 'Every row carries a trace_id linking the displayed value to the live API call that produced it (ADR-005 / ADR-006).'
                 : 'هر سطر شامل کد پاسخ (trace_id) است که مقدار نمایش داده شده را به تماس API زنده-producing متصل می‌کند.'}
             </p>
-          </div>
-        </div>
-      )}
-
-      {/* SUBTAB 2: FEATURE FLAGS */}
-      {activeSubTab === 'flags' && (
-        <div className="space-y-5">
-          <div className="flex items-center justify-between p-3 bg-industrial-surface border border-[#1F2937] rounded-lg text-xs">
-            <span className="text-slate-300">
-              {isEn
-                ? 'Engineering feature flags allow granular control over high-order physical simulation engines.'
-                : 'پرچم‌های قابلیت‌های مهندسی امکان فعال یا غیرفعال‌سازی گزینشی موتورهای شبیه‌سازی پیشرفته را فراهم می‌کنند.'}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const all: any = {};
-                  Object.keys(FEATURE_FLAG_METADATA).forEach((k) => { all[k] = true; });
-                  setAllFlags(all);
-                }}
-                className="px-2.5 py-1 rounded bg-industrial-primary/30 hover:bg-industrial-primary/50 text-industrial-primary border border-industrial-primary/30 transition text-[11px] font-bold"
-              >
-                {isEn ? 'Enable All' : 'فعال‌سازی همه'}
-              </button>
-              <button
-                onClick={resetFlags}
-                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-industrial-border transition text-[11px]"
-              >
-                {isEn ? 'Reset Default' : 'بازنشانی'}
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {Object.entries(groupedFlags).map(([phase, flagItems]) => (
-              <div key={phase} className="bg-industrial-surface border border-[#1F2937] rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2 border-b border-[#1F2937] pb-2 text-xs font-bold text-industrial-primary">
-                  {pillarIcons[phase] ?? <Cpu className="w-4 h-4 text-industrial-primary" />}
-                  <span>{phase}</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {flagItems.map(({ key, meta }) => {
-                    const isChecked = Boolean(flags[key]);
-                    return (
-                      <div
-                        key={key}
-                        onClick={() => setFlag(key, !isChecked)}
-                        className={`p-3 rounded border cursor-pointer transition flex items-start justify-between gap-3 ${
-                          isChecked
-                            ? 'bg-industrial-surface border-industrial-primary/60 ring-1 ring-blue-500/30'
-                            : 'bg-industrial-surface/60 border-[#1F2937] hover:border-industrial-border'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <strong className="text-white text-xs">{isEn ? meta.titleEn : meta.titleFa}</strong>
-                            <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
-                              {key}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                            {isEn ? meta.descriptionEn : meta.descriptionFa}
-                          </p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {}}
-                          className="mt-1 w-4 h-4 rounded text-blue-600 bg-slate-800 border-industrial-border focus:ring-0 cursor-pointer"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )}
