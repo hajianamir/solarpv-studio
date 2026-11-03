@@ -35,14 +35,17 @@ import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 import { fetchClimateData, getClimateData } from '../engine/climaticData';
 import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
 import { type SoilType } from '../engine/structuralEngine';
-import { assessSaltCorrosion } from '../engine/corrosion/saltCorrosionEngine';
+import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/types/climateTypes';
+import { buildProvenanceRows } from '../engine/provenance/provenanceBuilder';
 
 interface RFC3ReportsTabProps {
   lang: 'fa' | 'en';
   onJumpTab?: (tab: any) => void;
+  city: ClimateCity;
+  siteOverrides?: SiteGeotechnicalOverrides;
 }
 
-export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab }) => {
+export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab, city, siteOverrides }) => {
   const isEn = lang === 'en';
   const { flags, setFlag, setAllFlags, resetFlags, activeCount } = useFeatureFlags();
   const [activeSubTab, setActiveSubTab] = useState<
@@ -83,133 +86,14 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once validation runner
   }, []);
 
-  // Section A: project data provenance — captured once at mount with real trace_ids
+  // Section A: project data provenance — captured once at mount / city update
   useEffect(() => {
     let mounted = true;
-    const buildProvenance = async () => {
-      const now = new Date().toISOString();
-      // Live climate via gateway (NASA POWER / PVGIS routing); deterministic fallback offline
-      let city: any;
-      let climateTrace = `TRC-GW-${Date.now().toString(36).toUpperCase()}`;
-      try {
-        city = await fetchClimateData(35.6892, 51.3890);
-        climateTrace = city.id;
-      } catch {
-        city = getClimateData(35.6892, 51.3890);
-      }
-      // Foundation via shared geotech module (single source of truth with engine/UI)
-      const structInput: StructuralRecommendationInput = {
-        siteName: 'Tehran, Iran (RFC 3.0 Project Context)',
-        latitude: 35.6892,
-        longitude: 51.3890,
-        soilClassification: 'dense_sand_gravel' as SoilType,
-        soilBearingCapacityKpa: 250,
-        soilInternalFrictionAngleDeg: 34,
-        soilCohesionKpa: 15,
-        soilDensityKnM3: 18.5,
-        frostDepthCm: 40,
-        basicWindSpeedKmh: 130,
-        groundSnowLoadKgM2: 100,
-        tableAreaM2: 52.0,
-        arrayTiltDeg: 31,
-        postsPerTable: 4,
-        clearanceHeightM: 1.0,
-        slopeDeg: 4.0,
-      };
-      const rec = recommendFoundation(structInput);
-      const structTrace = `TRC-FND-${Date.now().toString(36).toUpperCase()}`;
-      // Salt corrosion / ISO 9223 via OSM Nominatim shoreline distance
-      let corrosionTrace = `TRC-COR-${Date.now().toString(36).toUpperCase()}`;
-      let corrosionCat = 'C1';
-      let corrosionDist = 60;
-      try {
-        const cor = await assessSaltCorrosion({
-          latitude: 35.6892,
-          longitude: 51.3890,
-          distanceToSeaKm: 60.0,
-          resolveDistance: true,
-        });
-        corrosionTrace = cor.traceId;
-        corrosionCat = cor.iso9223Category;
-        corrosionDist = cor.distanceToSeaKm;
-      } catch {
-        /* offline — analytical default below */
-      }
-
-      if (!mounted) return;
-      setProvenanceRows([
-        {
-          parameter: isEn ? 'Project Site' : 'محل پروژه',
-          value: 'Tehran, Iran · 35.6892°N, 51.3890°E',
-          provider: 'OpenStreetMap Nominatim (reverse geocode)',
-          traceId: climateTrace,
-          timestamp: now,
-          confidence: 'measured',
-        },
-        {
-          parameter: isEn ? 'Peak Sun Hours (PSH)' : 'ساعات آفتابی اوج (PSH)',
-          value: `${city.peakSunHours} kWh/m²/day`,
-          provider: 'NASA POWER / PVGIS via Data Gateway (ADR-005)',
-          traceId: climateTrace,
-          timestamp: now,
-          confidence: city.confidence ?? 'analytical_estimate',
-        },
-        {
-          parameter: isEn ? 'Basic Wind Speed' : 'سرعت باد پایه',
-          value: `${structInput.basicWindSpeedKmh} km/h`,
-          provider: 'INBC Part 6 / BHRC (Iranian Building Code)',
-          traceId: '—',
-          timestamp: now,
-          confidence: 'regulatory',
-        },
-        {
-          parameter: isEn ? 'Ground Snow Load' : 'بار برف زمین',
-          value: `${structInput.groundSnowLoadKgM2} kg/m²`,
-          provider: 'INBC Part 6 / BHRC (Iranian Building Code)',
-          traceId: '—',
-          timestamp: now,
-          confidence: 'regulatory',
-        },
-        {
-          parameter: isEn ? 'Soil Classification' : 'طبقه‌بندی خاک',
-          value: structInput.soilClassification.replace('_', ' ').toUpperCase(),
-          provider: 'BHRC Geotechnical Map',
-          traceId: '—',
-          timestamp: now,
-          confidence: 'analytical',
-        },
-        {
-          parameter: isEn ? 'Foundation Embedment Depth' : 'عمق کوبش فونداسیون',
-          value: `${rec.recommendedPileSizing.embedmentDepthM} m`,
-          provider: 'Broms (1964) · ASCE 7-22 / Eurocode 7 / INBC Part 6',
-          traceId: structTrace,
-          timestamp: now,
-          confidence: 'analytical',
-        },
-        {
-          parameter: isEn ? 'ISO 9223 Corrosion Category' : 'دسته زهکش شوری ISO 9223',
-          value: `${corrosionCat} · ${corrosionDist} km to sea`,
-          provider: 'ISO 9223 + OSM Nominatim shoreline distance (ADR-006)',
-          traceId: corrosionTrace,
-          timestamp: now,
-          confidence: 'analytical',
-        },
-        {
-          parameter: isEn ? 'Financial Tariff Model' : 'مدل تعرفه مالی',
-          value: isEn ? 'On-grid (feed-in enabled)' : 'متصل به شبکه (فید-ان فعال)',
-          provider: 'Internal Financial Engine (3-mode LCOE)',
-          traceId: `TRC-FIN-${Date.now().toString(36).toUpperCase()}`,
-          timestamp: now,
-          confidence: 'analytical',
-        },
-      ]);
-    };
-    buildProvenance();
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- isEn is a stable derived flag
-  }, []);
+    buildProvenanceRows(city, siteOverrides, isEn)
+      .then((rows) => { if (mounted) setProvenanceRows(rows); })
+      .catch(() => { if (mounted) setProvenanceRows([]); });
+    return () => { mounted = false; };
+  }, [city, siteOverrides, isEn]);
 
   const handleRunValidation = () => {
     setIsRunningValidation(true);
@@ -250,19 +134,19 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
     setIsRunningStructure(true);
     setTimeout(() => {
       const input: StructuralRecommendationInput = {
-        siteName: 'RFC 3.0 Integration Check',
-        latitude: 35.6892,
-        longitude: 51.3890,
-        soilClassification: 'dense_sand_gravel' as SoilType,
-        soilBearingCapacityKpa: 220,
-        soilInternalFrictionAngleDeg: 32,
-        soilCohesionKpa: 15,
-        soilDensityKnM3: 18.0,
-        frostDepthCm: 20,
-        basicWindSpeedKmh: 130,
-        groundSnowLoadKgM2: 0,
+        siteName: `${isEn ? city.nameEn : city.nameFa} (RFC 3.0 Integration Check)`,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        soilClassification: (siteOverrides?.soilType ?? city.soilType ?? 'dense_sand_gravel') as SoilType,
+        soilBearingCapacityKpa: siteOverrides?.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? 220,
+        soilInternalFrictionAngleDeg: siteOverrides?.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? 32,
+        soilCohesionKpa: siteOverrides?.soilCohesionKpa ?? city.soilCohesionKpa ?? 15,
+        soilDensityKnM3: siteOverrides?.soilDensityKnM3 ?? city.soilDensityKnM3 ?? 18.0,
+        frostDepthCm: siteOverrides?.frostDepthCm ?? city.frostDepthCm ?? 20,
+        basicWindSpeedKmh: siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 130,
+        groundSnowLoadKgM2: siteOverrides?.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 0,
         tableAreaM2: 52.0,
-        arrayTiltDeg: 31,
+        arrayTiltDeg: city.optimalTiltAnnualDeg || 31,
         postsPerTable: 4,
         clearanceHeightM: 1.2,
         slopeDeg: 2.0,
@@ -337,7 +221,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                   </div>
                   <div className="bg-industrial-bg p-1.5 rounded border border-industrial-border/50">
                     <span className="block text-slate-500 text-[9px]">{isEn ? 'Coordinates' : 'مختصات'}</span>
-                    <span className="block font-mono text-xs text-slate-200">35.6892°N, 51.3890°E</span>
+                    <span className="block font-mono text-xs text-slate-200">{city.latitude >= 0 ? `${city.latitude.toFixed(4)}°N` : `${Math.abs(city.latitude).toFixed(4)}°S`}, {city.longitude >= 0 ? `${city.longitude.toFixed(4)}°E` : `${Math.abs(city.longitude).toFixed(4)}°W`}</span>
                   </div>
                   <div className="bg-industrial-bg p-1.5 rounded border border-industrial-border/50">
                     <span className="block text-slate-500 text-[9px]">{isEn ? 'Providers' : 'ارائه‌دهندگان'}</span>
@@ -738,6 +622,16 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                 {isEn ? 'Section A — This Project\'s Data Provenance' : 'بخش A — تاریخچه داده‌های پروژه'}
               </span>
             </h2>
+            <div className="p-3 bg-industrial-bg border-b border-industrial-border">
+              <div className="text-xs font-mono text-industrial-accent">
+                {isEn ? 'Project Site: ' : 'سایت پروژه: '}
+                <strong>{isEn ? city.nameEn : city.nameFa}</strong>
+                {' · '}
+                <span className="text-slate-400">
+                  {city.latitude.toFixed(4)}°, {city.longitude.toFixed(4)}°
+                </span>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-[10px]">
                 <thead className="bg-industrial-surface/80 text-slate-400 font-mono">
@@ -1071,12 +965,12 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
             </h2>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handleFetchClimateApi(35.6892, 51.3890)}
+                onClick={() => handleFetchClimateApi(city.latitude, city.longitude)}
                 disabled={isFetchingClimate}
                 className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5"
               >
                 {isFetchingClimate ? <Play className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
-                <span>{isEn ? 'Fetch Tehran (35.6892, 51.3890)' : 'دریافت تهران از API'}</span>
+                <span>{isEn ? `Fetch ${city.nameEn} (${city.latitude.toFixed(2)}, ${city.longitude.toFixed(2)})` : `دریافت ${city.nameFa} از API`}</span>
               </button>
               <button
                 onClick={() => handleFetchClimateApi(48.1351, 11.5820)}

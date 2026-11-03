@@ -1528,7 +1528,12 @@ export const App: React.FC = () => {
 
           {/* RFC 3.0 COMPREHENSIVE REPORTS TAB */}
           {activeTab === 'rfc3_reports' && (
-            <RFC3ReportsTab lang={lang} onJumpTab={(t) => setActiveTab(t)} />
+            <RFC3ReportsTab
+              lang={lang}
+              onJumpTab={(t) => setActiveTab(t)}
+              city={city}
+              siteOverrides={siteOverrides}
+            />
           )}
         </main>
 

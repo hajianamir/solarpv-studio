@@ -2563,6 +2563,22 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [F1-R1] Provenance uses actual project city (Sydney), not hardcoded Tehran.
+  {
+    const { buildProvenanceRows } = await import('../../provenance/provenanceBuilder');
+    const { getClimateData } = await import('../../climaticData');
+    const sydney = getClimateData(-33.87, 151.21);
+    const rows = await buildProvenanceRows(sydney, undefined, true);
+    const hasSydneyLat = rows.some(r => r.value.includes('-33.87') || r.value.includes('33.87'));
+    const hasTehranLat = rows.some(r => r.value.includes('35.6892'));
+    assert(
+      'F1-R1',
+      'Provenance rows reflect the actual project city (Sydney), not hardcoded Tehran',
+      hasSydneyLat && !hasTehranLat && rows.length >= 5,
+      `Sydney provenance: ${rows.length} rows, SydneyLat=${hasSydneyLat}, TehranLat=${hasTehranLat}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
