@@ -1967,6 +1967,30 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [P2-REG-HARDENING] MPPT max must use coldest-day Vmp, not STC Vmp (BUG-6).
+  // A 41.28 V / -0.30 %/°C module at -10 °C runs at ~45.62 V.
+  // Against an 800 V MPPT ceiling, max modules must be 17, not 19.
+  {
+    const { calculateStringSizing } = await import('../../solarPvEngine');
+    const res = calculateStringSizing({
+      panelVoc: 50.80,
+      panelVmp: 41.28,
+      tempMinC: -10,
+      tempMaxC: 60,
+      betaVocPerC: -0.0025,
+      betaPmpPerC: -0.0030,
+      inverterVdcMax: 1500,
+      inverterMpptMin: 200,
+      inverterMpptMax: 800,
+    });
+    assert(
+      'P2-HARDENING',
+      'MPPT max uses coldest-day Vmp (17 modules), not STC Vmp (19)',
+      res.maxModules === 17,
+      `maxModules=${res.maxModules} (expected 17; the pre-fix value of 19 would confirm the bug)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

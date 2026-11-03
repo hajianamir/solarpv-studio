@@ -88,6 +88,8 @@ export interface StringSizingRequest {
   tempMinC: number;
   tempMaxC: number;
   betaVocPerC: number;
+  betaPmpPerC?: number;   // NEW (BUG-6) — temperature coefficient of Pmp, fraction/°C, negative
+                          //       e.g. -0.0030 means -0.30 %/°C
   inverterVdcMax: number;
   inverterMpptMin: number;
   inverterMpptMax: number;
@@ -289,6 +291,7 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
     tempMinC,
     tempMaxC,
     betaVocPerC,
+    betaPmpPerC,
     inverterVdcMax,
     inverterMpptMin,
     inverterMpptMax,
@@ -299,7 +302,13 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
   const vmpMinTemp = panelVmp * (1.0 + betaVocPerC * (tempMaxC - 25.0));
 
   const maxModulesVmax = Math.floor(inverterVdcMax / vocMaxTemp);
-  const maxModulesMppt = Math.floor(inverterMpptMax / panelVmp);
+  // Per IEC 62548 §7.2 the MPPT upper-bound is governed by the HIGHEST Vmp,
+  // which occurs at the coldest design temperature. Use the Pmp temperature
+  // coefficient when supplied; otherwise fall back to the Voc coefficient
+  // (documented conservative approximation).
+  const vmpColdCoeff = betaPmpPerC ?? betaVocPerC;
+  const singleModuleVmpMaxCold = panelVmp * (1.0 + vmpColdCoeff * (tempMinC - 25.0));
+  const maxModulesMppt = Math.floor(inverterMpptMax / singleModuleVmpMaxCold);
   const maxModules = Math.min(maxModulesVmax, maxModulesMppt);
 
   const minModules = Math.ceil(inverterMpptMin / vmpMinTemp);

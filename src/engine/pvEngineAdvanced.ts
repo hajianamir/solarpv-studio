@@ -117,7 +117,10 @@ export function designPvArray(
   // Max series modules limited by Inverter Max Vdc
   const maxModulesAllowed = Math.floor(inverter.vdcMaxVolts / singleModuleVocMaxCold);
   // Max series modules limited by MPPT Max
-  const maxModulesMppt = Math.floor(inverter.vmpptMaxVolts / module.vmpVolts);
+  // IEC 62548 §7.2: MPPT upper-bound from coldest-day Vmp (Pmp coefficient).
+  const singleModuleVmpMaxCold =
+    module.vmpVolts * (1.0 + (module.tempCoeffPmpPct / 100.0) * (deratings.ambientTempMinC - 25.0));
+  const maxModulesMppt = Math.floor(inverter.vmpptMaxVolts / singleModuleVmpMaxCold);
   const upperLimit = Math.min(maxModulesAllowed, maxModulesMppt);
 
   // Min series modules limited by MPPT Min
