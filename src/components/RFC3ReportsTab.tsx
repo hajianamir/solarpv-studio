@@ -60,6 +60,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     | 'climate_data'
     | 'structure_recommendation'
     | 'provenance'
+    | 'unit_tests'
   >('validation');
   const [validationReport, setValidationReport] = useState<SystemValidationReport | null>(null);
   const [climateApiData, setClimateApiData] = useState<{ city: any; raw: any; traceId: string } | null>(null);
@@ -68,6 +69,12 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
   const [isRunningStructure, setIsRunningStructure] = useState(false);
   const [lhsBenchmark, setLhsBenchmark] = useState<LhsStatisticalBenchmarkResult | null>(null);
   const [migrationSummary, setMigrationSummary] = useState<MigrationTestSummary | null>(null);
+  const [unitTestReport, setUnitTestReport] = useState<{
+    passed: number;
+    failed: number;
+    results: Array<{ suite: string; name: string; status: 'PASS' | 'FAIL'; details: string }>;
+  } | null>(null);
+  const [isRunningUnitTests, setIsRunningUnitTests] = useState(false);
   const [isRunningValidation, setIsRunningValidation] = useState(false);
   const [sectionBExpanded, setSectionBExpanded] = useState(false);
   const [provenanceRows, setProvenanceRows] = useState<Array<{
@@ -108,6 +115,22 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
   const handleRunLhsBenchmark = () => {
     const res = runLhsVsCmcBenchmark();
     setLhsBenchmark(res);
+  };
+
+  const handleRunUnitTests = async () => {
+    setIsRunningUnitTests(true);
+    // Yield to the browser so the "Running..." spinner renders
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    try {
+      const { runCoreUnitTests } = await import('../engine/core/benchmarks/unitTestsCore');
+      const report = await runCoreUnitTests();
+      setUnitTestReport(report);
+    } catch (err) {
+      console.error('Unit test run failed:', err);
+      setUnitTestReport({ passed: 0, failed: 1, results: [{ suite: 'runner', name: 'runCoreUnitTests()', status: 'FAIL', details: String(err) }] });
+    } finally {
+      setIsRunningUnitTests(false);
+    }
   };
 
   const handleRunMigrationSuite = () => {
@@ -381,6 +404,18 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
           >
             <Hammer className="w-3.5 h-3.5" />
             <span>{isEn ? 'Structure Recommendation' : 'توصیه سازه و فونداسیون'}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('unit_tests')}
+            className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
+              activeSubTab === 'unit_tests'
+                ? 'bg-industrial-primary text-white font-bold '
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{isEn ? 'Unit Tests (140)' : 'تست‌های واحد (۱۴۰)'}</span>
           </button>
         </div>
       </div>
@@ -1134,6 +1169,85 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               {isEn ? 'Run the integration test to see per-coordinate foundation outputs with trace_id.' : 'برای مشاهده خروجی‌های فونداسیون بر اساس مختصات با کد پاسخ، تست را اجرا کنید.'}
             </div>
           )}
+        </div>
+      )}
+
+      {/* SUBTAB: UNIT TESTS */}
+      {activeSubTab === 'unit_tests' && (
+        <div className="space-y-4">
+          <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-bold text-white">
+                  {isEn ? 'Core Unit Tests (runCoreUnitTests)' : 'تست‌های واحد هسته'}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {isEn
+                    ? 'Runs the full unit-test suite in-browser. Reports per-test status. Takes ~2s.'
+                    : 'مجموعه کامل تست‌های واحد را در مرورگر اجرا می‌کند.'}
+                </p>
+              </div>
+              <button
+                onClick={handleRunUnitTests}
+                disabled={isRunningUnitTests}
+                className="px-3 py-1.5 rounded bg-industrial-primary text-white text-xs font-bold disabled:opacity-50"
+              >
+                {isRunningUnitTests ? (isEn ? 'Running…' : 'در حال اجرا…') : (isEn ? 'Run Tests' : 'اجرای تست‌ها')}
+              </button>
+            </div>
+
+            {unitTestReport && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-xs">
+                  <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
+                    <div className="text-slate-400">{isEn ? 'Total' : 'کل'}</div>
+                    <div className="font-mono text-lg text-white">{unitTestReport.passed + unitTestReport.failed}</div>
+                  </div>
+                  <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
+                    <div className="text-slate-400">{isEn ? 'Passed' : 'موفق'}</div>
+                    <div className="font-mono text-lg text-industrial-success">{unitTestReport.passed}</div>
+                  </div>
+                  <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
+                    <div className="text-slate-400">{isEn ? 'Failed' : 'ناموفق'}</div>
+                    <div className="font-mono text-lg text-rose-400">{unitTestReport.failed}</div>
+                  </div>
+                  <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
+                    <div className="text-slate-400">{isEn ? 'Status' : 'وضعیت'}</div>
+                    <div className={`font-bold ${unitTestReport.failed === 0 ? 'text-industrial-success' : 'text-rose-400'}`}>
+                      {unitTestReport.failed === 0 ? 'PASS' : 'FAIL'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto border border-[#1F2937] rounded">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-industrial-bg text-slate-400 sticky top-0">
+                      <tr>
+                        <th className="p-2">{isEn ? 'Suite' : 'مجموعه'}</th>
+                        <th className="p-2">{isEn ? 'Name' : 'نام'}</th>
+                        <th className="p-2 text-center">{isEn ? 'Status' : 'وضعیت'}</th>
+                        <th className="p-2">{isEn ? 'Details' : 'جزئیات'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1F2937] font-mono">
+                      {unitTestReport.results.map((r, i) => (
+                        <tr key={i} className="hover:bg-slate-800/40">
+                          <td className="p-2 text-industrial-accent">{r.suite}</td>
+                          <td className="p-2 text-slate-200">{r.name}</td>
+                          <td className="p-2 text-center">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${r.status === 'PASS' ? 'bg-emerald-500/20 text-industrial-success' : 'bg-rose-500/20 text-rose-400'}`}>
+                              {r.status}
+                            </span>
+                          </td>
+                          <td className="p-2 text-slate-400 text-[10px]">{r.details.slice(0, 120)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

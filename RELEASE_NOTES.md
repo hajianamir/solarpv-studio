@@ -1,3 +1,19 @@
+# SolarPV Studio v1.0.3
+
+**Release date:** In development (audit in progress)
+
+RFC3 reports/compliance correctness audit. No physics engine changes.
+
+## Highlights
+
+- **R1**: Section A Provenance now reflects the actual project city coordinates rather than hardcoded Tehran.
+- **R2**: Dual-panel Climate API view showing both parsed `ClimateCity` and raw `ClimateResourceData` provider response with metadata trace ID.
+- **R3**: Removed dead `AdvancedFeaturesModal.tsx` (all features accessible via RFC3ReportsTab).
+- **R4**: In-browser Core Unit Tests runner tab surfacing the 140-test suite with detailed pass/fail breakdown.
+- **R9 / R10 / R14**: Real internet mode badge on Climate tab, confidence fallback handling, and live API error handling.
+
+---
+
 # SolarPV Studio v1.0.2
 
 **Release date:** 2026-11-04

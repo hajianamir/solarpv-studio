@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_(No unreleased changes as of v1.0.0.)_
+_(No unreleased changes.)_
+
+## [1.0.3] - YYYY-MM-DD
+
+### Added
+- **RFC3 Unit Tests tab**: the full `runCoreUnitTests()` suite (140 tests) is now runnable from RFC3ReportsTab → "Unit Tests" sub-tab, with per-test status and details.
+- **Dual-panel Climate API view**: "Parsed" (ClimateCity) and "Raw Provider Response" (ClimateResourceData with metadata) shown side-by-side, proving what the provider actually returned.
+
+### Changed
+- **Section A Provenance**: now reflects the ACTUAL project city (threaded via prop) rather than hardcoded Tehran. Extracted to `buildProvenanceRows()` for unit-test coverage.
+- **Fetch buttons**: display REAL_INTERNET ON/OFF mode badge so users know whether they are seeing measured or analytical data.
+
+### Fixed
+- **R1**: provenance hardcoded to Tehran regardless of project site.
+- **R2**: "raw provider response" panel was rendering the parsed `ClimateCity`, not the gateway's `ClimateResourceData`.
+- **R9**: missing "analytical fallback" indicator on Climate API tab.
+- **R10**: empty confidence badge when `ClimateCity.confidence` was `undefined`.
+- **R14**: dead `catch` in `handleFetchClimateApi` — now live after R2 bypass (surfaces explicit error state with fallback data).
+
+### Removed
+- **R3**: `AdvancedFeaturesModal.tsx` (dead code — `isOpen` never set true; all functionality available in RFC3ReportsTab).
 
 ## [1.0.2] - 2026-11-04
 
@@ -90,7 +110,8 @@ _(No unreleased changes as of v1.0.0.)_
 - Test suite grew from 110 to 117 with regression tests for BUG-3 (NaN SoC), BUG-4 (module-cycle), BUG-6 (cold-Vmp MPPT), BUG-7 (LCOE/NPV/IRR goldens), BUG-9 (catalog unification).
 - Bundled Leaflet CSS via `main.tsx` import; unpkg CDN link removed from `index.html`.
 
-[Unreleased]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hajianamir/solarpv-studio/releases/tag/v1.0.0

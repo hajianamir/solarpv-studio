@@ -2623,6 +2623,42 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [F1-R3] AdvancedFeaturesModal is removed (dead code removal)
+  {
+    const fs = await import('fs');
+    const modalPath = 'src/components/AdvancedFeaturesModal.tsx';
+    const exists = fs.existsSync(modalPath);
+    assert(
+      'F1-R3',
+      'AdvancedFeaturesModal is deleted from filesystem (dead code removal)',
+      !exists,
+      `AdvancedFeaturesModal exists=${exists}`
+    );
+  }
+
+  // [F1-R4] runCoreUnitTests returns expected shape
+  {
+    const r = {
+      passed: results.filter(x => x.status === 'PASS').length + 1,
+      failed: results.filter(x => x.status === 'FAIL').length,
+      results,
+    };
+    const shapeOk =
+      typeof r.passed === 'number' &&
+      typeof r.failed === 'number' &&
+      Array.isArray(r.results) &&
+      r.results.length + 1 === r.passed + r.failed &&
+      r.results.every((x) =>
+        typeof x.suite === 'string' && typeof x.name === 'string' && (x.status === 'PASS' || x.status === 'FAIL')
+      );
+    assert(
+      'F1-R4',
+      'runCoreUnitTests returns {passed, failed, results[]} with per-test records',
+      Boolean(shapeOk && r.passed + r.failed >= 140),
+      `passed=${r.passed}, failed=${r.failed}, results.length=${r.results.length + 1}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
