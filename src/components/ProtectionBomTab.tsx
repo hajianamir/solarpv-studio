@@ -14,15 +14,15 @@ import {
   Sliders,
 } from 'lucide-react';
 import {
-  CableRunConfig,
-  CableRunResult,
+  type CableRunConfig,
+  type CableRunResult,
   calculateAdvancedCableRun,
   calculateEarthingSystem,
   calculateLightningProtection,
-  ConductorMaterial,
-  InsulationType,
-  UpstreamGroundingSystem,
-  ProtectionBomItem,
+  type ConductorMaterial,
+  type InsulationType,
+  type UpstreamGroundingSystem,
+  type ProtectionBomItem,
 } from '../engine/protectionBomEngine';
 
 interface ProtectionBomTabProps {

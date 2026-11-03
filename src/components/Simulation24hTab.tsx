@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Clock, Sun, Battery as BatteryIcon, Zap, Fuel, Activity, CheckCircle2, AlertCircle, Power } from 'lucide-react';
 import {
-  Simulation24hResult,
-  GeneratorSizingResult,
+  type Simulation24hResult,
+  type GeneratorSizingResult,
 } from '../engine/simulation24hEngine';
 
 interface Simulation24hTabProps {

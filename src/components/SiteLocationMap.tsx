@@ -17,7 +17,7 @@ import {
   Compass,
   AlertTriangle,
 } from 'lucide-react';
-import { ClimateCity, getClimateData } from '../engine/climaticData';
+import { type ClimateCity, getClimateData } from '../engine/climaticData';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 
 interface SiteLocationMapProps {
@@ -126,6 +126,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   // Initialize Leaflet Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
+    if (mapInstanceRef.current) return; // StrictMode idempotency guard
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
@@ -249,6 +250,11 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+      hybridLayerGroupRef.current = null;
+      satellitePureLayerRef.current = null;
+      streetLayerRef.current = null;
+      topoLayerRef.current = null;
+      markerRef.current = null;
     };
   }, [coords.lat, coords.lng, currentCity, isEn, onSelectLocation]); // exhaustive-deps fix (PR-2a-7-FOLLOWUP-2)
 

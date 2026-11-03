@@ -1,6 +1,6 @@
 import React from 'react';
 import { GitCompare, CheckCircle2, XCircle, Award, Shield, AlertTriangle } from 'lucide-react';
-import { ScenarioDetails } from '../engine/scenarioEngine';
+import { type ScenarioDetails } from '../engine/scenarioEngine';
 
 interface ScenarioComparisonTabProps {
   scenarios: ScenarioDetails[];

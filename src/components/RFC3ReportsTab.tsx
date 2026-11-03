@@ -24,30 +24,30 @@ import {
   ArrowRight,
   TrendingUp,
 } from 'lucide-react';
-import { useFeatureFlags } from '../engine/core/FeatureFlagContext';
-import { FEATURE_FLAG_METADATA, AdvancedFeatureFlags } from '../engine/core/featureFlags';
-import { runSystemCrossValidation, SystemValidationReport, ValidationMetricResult } from '../engine/core/benchmarks/crossValidation';
-import { PHYSICS_MODEL_REGISTRY, ModelSemverEntry } from '../engine/core/modelRegistry';
+import { runSystemCrossValidation, type SystemValidationReport, type ValidationMetricResult } from '../engine/core/benchmarks/crossValidation';
+import { PHYSICS_MODEL_REGISTRY, type ModelSemverEntry } from '../engine/core/modelRegistry';
 import { generateTraceId } from '../engine/core/modelRegistry';
-import { runLhsVsCmcBenchmark, LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
-import { runMigrationTestSuite, MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
+import { runLhsVsCmcBenchmark, type LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
+import { runMigrationTestSuite, type MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
-import { fetchClimateData, getClimateData } from '../engine/climaticData';
+import { getClimateData } from '../engine/climaticData';
+import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
 import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
-import { SoilType } from '../engine/structuralEngine';
-import { assessSaltCorrosion } from '../engine/corrosion/saltCorrosionEngine';
+import { type SoilType } from '../engine/structuralEngine';
+import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/types/climateTypes';
+import { buildProvenanceRows } from '../engine/provenance/provenanceBuilder';
 
 interface RFC3ReportsTabProps {
   lang: 'fa' | 'en';
   onJumpTab?: (tab: any) => void;
+  city: ClimateCity;
+  siteOverrides?: SiteGeotechnicalOverrides;
 }
 
-export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab }) => {
+export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab, city, siteOverrides }) => {
   const isEn = lang === 'en';
-  const { flags, setFlag, setAllFlags, resetFlags, activeCount } = useFeatureFlags();
   const [activeSubTab, setActiveSubTab] = useState<
     | 'validation'
-    | 'flags'
     | 'impact'
     | 'lhs_stats'
     | 'migration'
@@ -56,6 +56,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
     | 'climate_data'
     | 'structure_recommendation'
     | 'provenance'
+    | 'unit_tests'
   >('validation');
   const [validationReport, setValidationReport] = useState<SystemValidationReport | null>(null);
   const [climateApiData, setClimateApiData] = useState<{ city: any; raw: any; traceId: string } | null>(null);
@@ -64,8 +65,29 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
   const [isRunningStructure, setIsRunningStructure] = useState(false);
   const [lhsBenchmark, setLhsBenchmark] = useState<LhsStatisticalBenchmarkResult | null>(null);
   const [migrationSummary, setMigrationSummary] = useState<MigrationTestSummary | null>(null);
+  const [unitTestReport, setUnitTestReport] = useState<{
+    passed: number;
+    failed: number;
+    results: Array<{ suite: string; name: string; status: 'PASS' | 'FAIL'; details: string }>;
+  } | null>(null);
+  const [isRunningUnitTests, setIsRunningUnitTests] = useState(false);
   const [isRunningValidation, setIsRunningValidation] = useState(false);
-  const [sectionBExpanded, setSectionBExpanded] = useState(false);
+  const [sectionBExpanded, setSectionBExpanded] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('solarpv_section_b_expanded');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('solarpv_section_b_expanded', String(sectionBExpanded));
+    } catch {
+      // ignore
+    }
+  }, [sectionBExpanded]);
   const [provenanceRows, setProvenanceRows] = useState<Array<{
     parameter: string;
     value: string;
@@ -83,146 +105,45 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once validation runner
   }, []);
 
-  // Section A: project data provenance — captured once at mount with real trace_ids
+  // Section A: project data provenance — captured once at mount / city update
   useEffect(() => {
     let mounted = true;
-    const buildProvenance = async () => {
-      const now = new Date().toISOString();
-      // Live climate via gateway (NASA POWER / PVGIS routing); deterministic fallback offline
-      let city: any;
-      let climateTrace = `TRC-GW-${Date.now().toString(36).toUpperCase()}`;
-      try {
-        city = await fetchClimateData(35.6892, 51.3890);
-        climateTrace = city.id;
-      } catch {
-        city = getClimateData(35.6892, 51.3890);
-      }
-      // Foundation via shared geotech module (single source of truth with engine/UI)
-      const structInput: StructuralRecommendationInput = {
-        siteName: 'Tehran, Iran (RFC 3.0 Project Context)',
-        latitude: 35.6892,
-        longitude: 51.3890,
-        soilClassification: 'dense_sand_gravel' as SoilType,
-        soilBearingCapacityKpa: 250,
-        soilInternalFrictionAngleDeg: 34,
-        soilCohesionKpa: 15,
-        soilDensityKnM3: 18.5,
-        frostDepthCm: 40,
-        basicWindSpeedKmh: 130,
-        groundSnowLoadKgM2: 100,
-        tableAreaM2: 52.0,
-        arrayTiltDeg: 31,
-        postsPerTable: 4,
-        clearanceHeightM: 1.0,
-        slopeDeg: 4.0,
-      };
-      const rec = recommendFoundation(structInput);
-      const structTrace = `TRC-FND-${Date.now().toString(36).toUpperCase()}`;
-      // Salt corrosion / ISO 9223 via OSM Nominatim shoreline distance
-      let corrosionTrace = `TRC-COR-${Date.now().toString(36).toUpperCase()}`;
-      let corrosionCat = 'C1';
-      let corrosionDist = 60;
-      try {
-        const cor = await assessSaltCorrosion({
-          latitude: 35.6892,
-          longitude: 51.3890,
-          distanceToSeaKm: 60.0,
-          resolveDistance: true,
-        });
-        corrosionTrace = cor.traceId;
-        corrosionCat = cor.iso9223Category;
-        corrosionDist = cor.distanceToSeaKm;
-      } catch {
-        /* offline — analytical default below */
-      }
+    buildProvenanceRows(city, siteOverrides, isEn)
+      .then((rows) => { if (mounted) setProvenanceRows(rows); })
+      .catch(() => { if (mounted) setProvenanceRows([]); });
+    return () => { mounted = false; };
+  }, [city, siteOverrides, isEn]);
 
-      if (!mounted) return;
-      setProvenanceRows([
-        {
-          parameter: isEn ? 'Project Site' : 'محل پروژه',
-          value: 'Tehran, Iran · 35.6892°N, 51.3890°E',
-          provider: 'OpenStreetMap Nominatim (reverse geocode)',
-          traceId: climateTrace,
-          timestamp: now,
-          confidence: 'measured',
-        },
-        {
-          parameter: isEn ? 'Peak Sun Hours (PSH)' : 'ساعات آفتابی اوج (PSH)',
-          value: `${city.peakSunHours} kWh/m²/day`,
-          provider: 'NASA POWER / PVGIS via Data Gateway (ADR-005)',
-          traceId: climateTrace,
-          timestamp: now,
-          confidence: city.confidence ?? 'analytical_estimate',
-        },
-        {
-          parameter: isEn ? 'Basic Wind Speed' : 'سرعت باد پایه',
-          value: `${structInput.basicWindSpeedKmh} km/h`,
-          provider: 'INBC Part 6 / BHRC (Iranian Building Code)',
-          traceId: '—',
-          timestamp: now,
-          confidence: 'regulatory',
-        },
-        {
-          parameter: isEn ? 'Ground Snow Load' : 'بار برف زمین',
-          value: `${structInput.groundSnowLoadKgM2} kg/m²`,
-          provider: 'INBC Part 6 / BHRC (Iranian Building Code)',
-          traceId: '—',
-          timestamp: now,
-          confidence: 'regulatory',
-        },
-        {
-          parameter: isEn ? 'Soil Classification' : 'طبقه‌بندی خاک',
-          value: structInput.soilClassification.replace('_', ' ').toUpperCase(),
-          provider: 'BHRC Geotechnical Map',
-          traceId: '—',
-          timestamp: now,
-          confidence: 'analytical',
-        },
-        {
-          parameter: isEn ? 'Foundation Embedment Depth' : 'عمق کوبش فونداسیون',
-          value: `${rec.recommendedPileSizing.embedmentDepthM} m`,
-          provider: 'Broms (1964) · ASCE 7-22 / Eurocode 7 / INBC Part 6',
-          traceId: structTrace,
-          timestamp: now,
-          confidence: 'analytical',
-        },
-        {
-          parameter: isEn ? 'ISO 9223 Corrosion Category' : 'دسته زهکش شوری ISO 9223',
-          value: `${corrosionCat} · ${corrosionDist} km to sea`,
-          provider: 'ISO 9223 + OSM Nominatim shoreline distance (ADR-006)',
-          traceId: corrosionTrace,
-          timestamp: now,
-          confidence: 'analytical',
-        },
-        {
-          parameter: isEn ? 'Financial Tariff Model' : 'مدل تعرفه مالی',
-          value: isEn ? 'On-grid (feed-in enabled)' : 'متصل به شبکه (فید-ان فعال)',
-          provider: 'Internal Financial Engine (3-mode LCOE)',
-          traceId: `TRC-FIN-${Date.now().toString(36).toUpperCase()}`,
-          timestamp: now,
-          confidence: 'analytical',
-        },
-      ]);
-    };
-    buildProvenance();
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- isEn is a stable derived flag
-  }, []);
-
-  const handleRunValidation = () => {
+  const handleRunValidation = async () => {
     setIsRunningValidation(true);
-    setTimeout(() => {
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    try {
       const report = runSystemCrossValidation();
       setValidationReport(report);
+    } finally {
       setIsRunningValidation(false);
-    }, 120);
+    }
   };
 
   const handleRunLhsBenchmark = () => {
     const res = runLhsVsCmcBenchmark();
     setLhsBenchmark(res);
+  };
+
+  const handleRunUnitTests = async () => {
+    setIsRunningUnitTests(true);
+    // Yield to the browser so the "Running..." spinner renders
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    try {
+      const { runCoreUnitTests } = await import('../engine/core/benchmarks/unitTestsCore');
+      const report = await runCoreUnitTests();
+      setUnitTestReport(report);
+    } catch (err) {
+      console.error('Unit test run failed:', err);
+      setUnitTestReport({ passed: 0, failed: 1, results: [{ suite: 'runner', name: 'runCoreUnitTests()', status: 'FAIL', details: String(err) }] });
+    } finally {
+      setIsRunningUnitTests(false);
+    }
   };
 
   const handleRunMigrationSuite = () => {
@@ -234,12 +155,21 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
   const handleFetchClimateApi = async (lat: number, lng: number) => {
     setIsFetchingClimate(true);
     try {
-      const city = await fetchClimateData(lat, lng);
-      setClimateApiData({ city, raw: city, traceId: city.id });
+      const gateway = ExternalDataGateway.getInstance();
+      const siteData = await gateway.getComprehensiveSiteData(lat, lng);
+      setClimateApiData({
+        city: siteData.climateCity,
+        raw: siteData.climateResource,      // real ClimateResourceData with metadata
+        traceId: siteData.traceId,
+      });
     } catch (err) {
-      console.warn('Climate API fetch failed, using deterministic model:', err);
-      const city = getClimateData(lat, lng);
-      setClimateApiData({ city, raw: city, traceId: city.id + '-ANALYTICAL_FALLBACK' });
+      console.warn('Climate API fetch failed:', err);
+      const fallback = getClimateData(lat, lng);
+      setClimateApiData({
+        city: { ...fallback, confidence: 'analytical_estimate' },
+        raw: { error: err instanceof Error ? err.message : String(err), fallback: true, latitude: lat, longitude: lng },
+        traceId: `${fallback.id}-ERROR_FALLBACK`,
+      });
     } finally {
       setIsFetchingClimate(false);
     }
@@ -250,19 +180,19 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
     setIsRunningStructure(true);
     setTimeout(() => {
       const input: StructuralRecommendationInput = {
-        siteName: 'RFC 3.0 Integration Check',
-        latitude: 35.6892,
-        longitude: 51.3890,
-        soilClassification: 'dense_sand_gravel' as SoilType,
-        soilBearingCapacityKpa: 220,
-        soilInternalFrictionAngleDeg: 32,
-        soilCohesionKpa: 15,
-        soilDensityKnM3: 18.0,
-        frostDepthCm: 20,
-        basicWindSpeedKmh: 130,
-        groundSnowLoadKgM2: 0,
+        siteName: `${isEn ? city.nameEn : city.nameFa} (RFC 3.0 Integration Check)`,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        soilClassification: (siteOverrides?.soilType ?? city.soilType ?? 'dense_sand_gravel') as SoilType,
+        soilBearingCapacityKpa: siteOverrides?.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? 220,
+        soilInternalFrictionAngleDeg: siteOverrides?.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? 32,
+        soilCohesionKpa: siteOverrides?.soilCohesionKpa ?? city.soilCohesionKpa ?? 15,
+        soilDensityKnM3: siteOverrides?.soilDensityKnM3 ?? city.soilDensityKnM3 ?? 18.0,
+        frostDepthCm: siteOverrides?.frostDepthCm ?? city.frostDepthCm ?? 20,
+        basicWindSpeedKmh: siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 130,
+        groundSnowLoadKgM2: siteOverrides?.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 0,
         tableAreaM2: 52.0,
-        arrayTiltDeg: 31,
+        arrayTiltDeg: city.optimalTiltAnnualDeg || 31,
         postsPerTable: 4,
         clearanceHeightM: 1.2,
         slopeDeg: 2.0,
@@ -280,17 +210,6 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
     'Phase 3b': <Hammer className="w-4 h-4 text-indigo-400" />,
   };
 
-  const groupedFlags = Object.entries(FEATURE_FLAG_METADATA).reduce<
-    Record<string, Array<{ key: keyof AdvancedFeatureFlags; meta: (typeof FEATURE_FLAG_METADATA)[keyof AdvancedFeatureFlags] }>>
-  >((acc, [k, meta]) => {
-    const key = k as keyof AdvancedFeatureFlags;
-    const pillar = meta.phase;
-    if (!acc[pillar]) acc[pillar] = [];
-    acc[pillar].push({ key, meta });
-    return acc;
-  }, {});
-
-  const totalFlagsCount = Object.keys(FEATURE_FLAG_METADATA).length;
 
   return (
     <div className="space-y-6">
@@ -337,7 +256,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                   </div>
                   <div className="bg-industrial-bg p-1.5 rounded border border-industrial-border/50">
                     <span className="block text-slate-500 text-[9px]">{isEn ? 'Coordinates' : 'مختصات'}</span>
-                    <span className="block font-mono text-xs text-slate-200">35.6892°N, 51.3890°E</span>
+                    <span className="block font-mono text-xs text-slate-200">{city.latitude >= 0 ? `${city.latitude.toFixed(4)}°N` : `${Math.abs(city.latitude).toFixed(4)}°S`}, {city.longitude >= 0 ? `${city.longitude.toFixed(4)}°E` : `${Math.abs(city.longitude).toFixed(4)}°W`}</span>
                   </div>
                   <div className="bg-industrial-bg p-1.5 rounded border border-industrial-border/50">
                     <span className="block text-slate-500 text-[9px]">{isEn ? 'Providers' : 'ارائه‌دهندگان'}</span>
@@ -361,10 +280,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
               <Play className="w-3.5 h-3.5" />
               <span>{isRunningValidation ? (isEn ? 'Executing...' : 'در حال اجرا...') : (isEn ? 'Re-run Benchmark Suite' : 'اجرای مجدد بنچمارک‌ها')}</span>
             </button>
-            <div className="px-3 py-1.5 rounded bg-industrial-surface border border-[#1F2937] text-xs font-mono text-slate-300">
-              {isEn ? 'Active Flags:' : 'پرچم‌های فعال:'}{' '}
-              <strong className="text-industrial-primary">{activeCount}</strong> / {totalFlagsCount}
-            </div>
+
           </div>
         </div>
 
@@ -392,18 +308,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
             <Database className="w-3.5 h-3.5" />
             <span>{isEn ? 'Section A — Data Provenance' : 'بخش A — تاریخچه داده‌ها'}</span>
           </button>
-          <button
-            onClick={() => setActiveSubTab('flags')}
-            className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
-              activeSubTab === 'flags'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Feature Flags Engine' : 'پرچم‌های مهندسی (Flags)'}</span>
-          </button>
-          <button
+                    <button
             onClick={() => setActiveSubTab('impact')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'impact'
@@ -488,6 +393,18 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
             <Hammer className="w-3.5 h-3.5" />
             <span>{isEn ? 'Structure Recommendation' : 'توصیه سازه و فونداسیون'}</span>
           </button>
+
+          <button
+            onClick={() => setActiveSubTab('unit_tests')}
+            className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
+              activeSubTab === 'unit_tests'
+                ? 'bg-industrial-primary text-white font-bold '
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{isEn ? 'Unit Tests (140)' : 'تست‌های واحد (۱۴۰)'}</span>
+          </button>
         </div>
       </div>
 
@@ -520,7 +437,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                 {isEn ? 'Total Benchmarks Tested' : 'تعداد کل بنچمارک‌ها'}
               </span>
               <span className="text-2xl font-bold font-mono text-white">
-                {validationReport?.testsRun ?? 11}
+                {validationReport?.testsRun ?? 6}
               </span>
               <span className="text-[10px] text-slate-500 block mt-0.5">NREL, DNV, IEEE, ASCE, IEA</span>
             </div>
@@ -542,7 +459,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                 {isEn ? 'Implementation Verification' : 'بازتولید پیاده‌سازی'}
               </span>
               <span className="text-2xl font-bold font-mono text-industrial-warning">
-                {validationReport?.implementationVerificationCount ?? 6}
+                {validationReport?.implementationVerificationCount ?? 1}
               </span>
               <span className="text-[10px] text-amber-500/80 block mt-0.5">
                 {isEn ? 'code-internal / literature thresholds' : 'رابطهای داخلی یا آستانه‌های مرجع'}
@@ -738,6 +655,16 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                 {isEn ? 'Section A — This Project\'s Data Provenance' : 'بخش A — تاریخچه داده‌های پروژه'}
               </span>
             </h2>
+            <div className="p-3 bg-industrial-bg border-b border-industrial-border">
+              <div className="text-xs font-mono text-industrial-accent">
+                {isEn ? 'Project Site: ' : 'سایت پروژه: '}
+                <strong>{isEn ? city.nameEn : city.nameFa}</strong>
+                {' · '}
+                <span className="text-slate-400">
+                  {city.latitude.toFixed(4)}°, {city.longitude.toFixed(4)}°
+                </span>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-[10px]">
                 <thead className="bg-industrial-surface/80 text-slate-400 font-mono">
@@ -781,83 +708,6 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                 ? 'Every row carries a trace_id linking the displayed value to the live API call that produced it (ADR-005 / ADR-006).'
                 : 'هر سطر شامل کد پاسخ (trace_id) است که مقدار نمایش داده شده را به تماس API زنده-producing متصل می‌کند.'}
             </p>
-          </div>
-        </div>
-      )}
-
-      {/* SUBTAB 2: FEATURE FLAGS */}
-      {activeSubTab === 'flags' && (
-        <div className="space-y-5">
-          <div className="flex items-center justify-between p-3 bg-industrial-surface border border-[#1F2937] rounded-lg text-xs">
-            <span className="text-slate-300">
-              {isEn
-                ? 'Engineering feature flags allow granular control over high-order physical simulation engines.'
-                : 'پرچم‌های قابلیت‌های مهندسی امکان فعال یا غیرفعال‌سازی گزینشی موتورهای شبیه‌سازی پیشرفته را فراهم می‌کنند.'}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const all: any = {};
-                  Object.keys(FEATURE_FLAG_METADATA).forEach((k) => { all[k] = true; });
-                  setAllFlags(all);
-                }}
-                className="px-2.5 py-1 rounded bg-industrial-primary/30 hover:bg-industrial-primary/50 text-industrial-primary border border-industrial-primary/30 transition text-[11px] font-bold"
-              >
-                {isEn ? 'Enable All' : 'فعال‌سازی همه'}
-              </button>
-              <button
-                onClick={resetFlags}
-                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-industrial-border transition text-[11px]"
-              >
-                {isEn ? 'Reset Default' : 'بازنشانی'}
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {Object.entries(groupedFlags).map(([phase, flagItems]) => (
-              <div key={phase} className="bg-industrial-surface border border-[#1F2937] rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2 border-b border-[#1F2937] pb-2 text-xs font-bold text-industrial-primary">
-                  {pillarIcons[phase] ?? <Cpu className="w-4 h-4 text-industrial-primary" />}
-                  <span>{phase}</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {flagItems.map(({ key, meta }) => {
-                    const isChecked = Boolean(flags[key]);
-                    return (
-                      <div
-                        key={key}
-                        onClick={() => setFlag(key, !isChecked)}
-                        className={`p-3 rounded border cursor-pointer transition flex items-start justify-between gap-3 ${
-                          isChecked
-                            ? 'bg-industrial-surface border-industrial-primary/60 ring-1 ring-blue-500/30'
-                            : 'bg-industrial-surface/60 border-[#1F2937] hover:border-industrial-border'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <strong className="text-white text-xs">{isEn ? meta.titleEn : meta.titleFa}</strong>
-                            <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
-                              {key}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                            {isEn ? meta.descriptionEn : meta.descriptionFa}
-                          </p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {}}
-                          className="mt-1 w-4 h-4 rounded text-blue-600 bg-slate-800 border-industrial-border focus:ring-0 cursor-pointer"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )}
@@ -949,6 +799,9 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
               <span className="text-slate-400 block mb-1">{isEn ? 'Speedup Factor' : 'ضریب تسریع'}</span>
               <span className="text-xl font-bold font-mono text-industrial-warning">
                 {lhsBenchmark?.speedupFactor?.toFixed(1) ?? '4.2'}×
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">
+                {lhsBenchmark ? `LHS ${lhsBenchmark.lhsExecutionTimeMs}ms vs CMC ${lhsBenchmark.cmcExecutionTimeMs}ms` : 'LHS vs CMC'}
               </span>
             </div>
           </div>
@@ -1063,20 +916,27 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
       {activeSubTab === 'climate_data' && (
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4 text-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Globe className="w-4 h-4 text-industrial-accent" />
-              <span>
-                {isEn ? 'Live Global Climate API (NASA POWER / PVGIS / NSRDB)' : 'داده‌های زنده از API اقلیمی جهانی'}
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Globe className="w-4 h-4 text-industrial-accent" />
+                <span>
+                  {isEn ? 'Live Global Climate API (NASA POWER / PVGIS / NSRDB)' : 'داده‌های زنده از API اقلیمی جهانی'}
+                </span>
+              </h2>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${isRealInternetEnabled() ? 'bg-emerald-500/20 text-industrial-success border border-emerald-500/30' : 'bg-amber-500/20 text-industrial-warning border border-amber-500/30'}`}>
+                {isRealInternetEnabled()
+                  ? (isEn ? 'REAL_INTERNET: ON (measured data)' : 'REAL_INTERNET: روشن')
+                  : (isEn ? 'REAL_INTERNET: OFF (analytical fallback)' : 'REAL_INTERNET: خاموش (fallback تحلیلی)')}
               </span>
-            </h2>
+            </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handleFetchClimateApi(35.6892, 51.3890)}
+                onClick={() => handleFetchClimateApi(city.latitude, city.longitude)}
                 disabled={isFetchingClimate}
                 className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5"
               >
                 {isFetchingClimate ? <Play className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
-                <span>{isEn ? 'Fetch Tehran (35.6892, 51.3890)' : 'دریافت تهران از API'}</span>
+                <span>{isEn ? `Fetch ${city.nameEn} (${city.latitude.toFixed(2)}, ${city.longitude.toFixed(2)})` : `دریافت ${city.nameFa} از API`}</span>
               </button>
               <button
                 onClick={() => handleFetchClimateApi(48.1351, 11.5820)}
@@ -1105,11 +965,26 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
                 </div>
                 <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
                   <span className="text-slate-400 block mb-1">{isEn ? 'Confidence' : 'اعتماد'} </span>
-                  <span className="font-bold text-industrial-success">{climateApiData.city.confidence}</span>
+                  <span className="font-bold text-industrial-success">{climateApiData.city.confidence ?? 'analytical_estimate'}</span>
                 </div>
               </div>
-              <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded overflow-x-auto">
-                <pre className="text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(climateApiData.raw, null, 2)}</pre>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div className="p-3 bg-industrial-surface border border-industrial-border rounded overflow-x-auto">
+                  <div className="text-xs font-bold text-industrial-accent mb-1">
+                    {isEn ? 'Parsed (ClimateCity)' : 'تفسیرشده (ClimateCity)'}
+                  </div>
+                  <pre className="text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                    {JSON.stringify(climateApiData.city, null, 2)}
+                  </pre>
+                </div>
+                <div className="p-3 bg-industrial-surface border border-industrial-border rounded overflow-x-auto">
+                  <div className="text-xs font-bold text-industrial-warning mb-1">
+                    {isEn ? 'Raw Provider Response (ClimateResourceData)' : 'پاسخ خام ارائه‌دهنده'}
+                  </div>
+                  <pre className="text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                    {JSON.stringify(climateApiData.raw, null, 2)}
+                  </pre>
+                </div>
               </div>
               <p className="text-[10px] text-slate-500">
                 {isEn ? 'Every coordinate resolves through the live API gateway (NASA POWER → PVGIS → NSRDB routing). No hard-coded hubs, no interpolation — raw JSON above includes trace_id and source provider.' : 'هر مختصات از طریق درگاه API زنده حل می‌گردد (روتینگ NASA POWER → PVGIS → NSRDB). هیچ هاب هاردکد و تخمین روی هاب نیست — JSON خام بالا شامل trace_id و منبع است.'}
@@ -1208,6 +1083,85 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab 
               {isEn ? 'Run the integration test to see per-coordinate foundation outputs with trace_id.' : 'برای مشاهده خروجی‌های فونداسیون بر اساس مختصات با کد پاسخ، تست را اجرا کنید.'}
             </div>
           )}
+        </div>
+      )}
+
+      {/* SUBTAB: UNIT TESTS */}
+      {activeSubTab === 'unit_tests' && (
+        <div className="space-y-4">
+          <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-bold text-white">
+                  {isEn ? 'Core Unit Tests (runCoreUnitTests)' : 'تست‌های واحد هسته'}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {isEn
+                    ? 'Runs the full unit-test suite in-browser. Reports per-test status. Takes ~2s.'
+                    : 'مجموعه کامل تست‌های واحد را در مرورگر اجرا می‌کند.'}
+                </p>
+              </div>
+              <button
+                onClick={handleRunUnitTests}
+                disabled={isRunningUnitTests}
+                className="px-3 py-1.5 rounded bg-industrial-primary text-white text-xs font-bold disabled:opacity-50"
+              >
+                {isRunningUnitTests ? (isEn ? 'Running…' : 'در حال اجرا…') : (isEn ? 'Run Tests' : 'اجرای تست‌ها')}
+              </button>
+            </div>
+
+            {unitTestReport && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-xs">
+                  <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
+                    <div className="text-slate-400">{isEn ? 'Total' : 'کل'}</div>
+                    <div className="font-mono text-lg text-white">{unitTestReport.passed + unitTestReport.failed}</div>
+                  </div>
+                  <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
+                    <div className="text-slate-400">{isEn ? 'Passed' : 'موفق'}</div>
+                    <div className="font-mono text-lg text-industrial-success">{unitTestReport.passed}</div>
+                  </div>
+                  <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
+                    <div className="text-slate-400">{isEn ? 'Failed' : 'ناموفق'}</div>
+                    <div className="font-mono text-lg text-rose-400">{unitTestReport.failed}</div>
+                  </div>
+                  <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
+                    <div className="text-slate-400">{isEn ? 'Status' : 'وضعیت'}</div>
+                    <div className={`font-bold ${unitTestReport.failed === 0 ? 'text-industrial-success' : 'text-rose-400'}`}>
+                      {unitTestReport.failed === 0 ? 'PASS' : 'FAIL'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto border border-[#1F2937] rounded">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-industrial-bg text-slate-400 sticky top-0">
+                      <tr>
+                        <th className="p-2">{isEn ? 'Suite' : 'مجموعه'}</th>
+                        <th className="p-2">{isEn ? 'Name' : 'نام'}</th>
+                        <th className="p-2 text-center">{isEn ? 'Status' : 'وضعیت'}</th>
+                        <th className="p-2">{isEn ? 'Details' : 'جزئیات'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1F2937] font-mono">
+                      {unitTestReport.results.map((r, i) => (
+                        <tr key={i} className="hover:bg-slate-800/40">
+                          <td className="p-2 text-industrial-accent">{r.suite}</td>
+                          <td className="p-2 text-slate-200">{r.name}</td>
+                          <td className="p-2 text-center">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${r.status === 'PASS' ? 'bg-emerald-500/20 text-industrial-success' : 'bg-rose-500/20 text-rose-400'}`}>
+                              {r.status}
+                            </span>
+                          </td>
+                          <td className="p-2 text-slate-400 text-[10px]">{r.details.slice(0, 120)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

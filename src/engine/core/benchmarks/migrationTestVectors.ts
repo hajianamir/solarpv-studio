@@ -10,7 +10,7 @@
  * 3. BLOCKED_INCONSISTENT (physically impossible inputs blocked)
  */
 
-import { migrateProjectToV3, MigrationResult, MigrationSafetyStatus } from '../projectMigration';
+import { migrateProjectToV3, type MigrationResult, type MigrationSafetyStatus } from '../projectMigration';
 
 export interface MigrationTestCase {
   caseId: string;

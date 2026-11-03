@@ -16,7 +16,7 @@
  * No hard-coded defaults — every input is required.
  */
 
-import { FoundationType, SoilType } from '../structuralEngine';
+import { calculateWindPressureQz, cpUpliftFor, cpDownforceFor, type FoundationType, type SoilType } from '../structuralEngine';
 
 export interface FoundationRecommendationInput {
   siteName?: string;
@@ -35,6 +35,11 @@ export interface FoundationRecommendationInput {
   postsPerTable: number;
   clearanceHeightM: number;
   slopeDeg: number;
+  elevationM?: number;
+  /** Sloped collector width (m) - the module dimension along the tilt
+   *  direction. Default 4.6 (standard 2P14 table). Used for the moment
+   *  arm and post-spacing computation. */
+  tableSlopedWidthM?: number;
 }
 
 export interface FoundationRecommendationOutput {
@@ -52,6 +57,7 @@ export interface FoundationRecommendationOutput {
   windPressureQzKnM2: number;
   snowPressureSkKnM2: number;
   lateralShearPerPostKn: number;
+  upliftPerPostKn: number;
   compressionPerPostKn: number;
   traceId: string;
 }
@@ -248,13 +254,16 @@ function calculateBromsPileSizing(
   const leverArmM = clearanceHeightM;
 
   if (soilClass === 'medium_clay') {
-    // Cohesive Soil: Broms short pile in clay: Hu_ult = 9 * cu * D * (L - 1.5*D) / (1 + (1.5*D + 0.5*f)/(e + L))
+    // FHWA-NHI-16-009 §10.4.4 (free-headed short pile, cohesive soil):
+    //   Solve iteratively for f:  e + 1.5*D + f/2 = L
+    //   Then Hu = 9 * su * D * f
+    // where e = leverArmM (moment arm to ground), D = pileWidthD, L = testL.
     const cu = Math.max(25, cohesionKpa);
     // Iteratively find depth L providing FoS >= 1.75
     let testL = minDepthForFrost;
     while (testL <= 4.0) {
-      const activeLength = Math.max(0.1, testL - 1.5 * pileWidthD);
-      const cap = (9.0 * cu * pileWidthD * activeLength) / (2.0 + leverArmM / testL);
+      const f = Math.max(0.1, 2.0 * (testL - 1.5 * pileWidthD - leverArmM));
+      const cap = 9.0 * cu * pileWidthD * f;
       if (cap >= lateralShearKn * 1.75 && testL >= minDepthForFrost) {
         requiredDepthM = Number(testL.toFixed(2));
         ultimateLateralCapacityKn = Number(cap.toFixed(1));
@@ -352,21 +361,36 @@ export function recommendSharedFoundation(
   } = input;
 
   // Environmental loads (ASCE 7-22 simplified)
-  const vMs = basicWindSpeedKmh / 3.6;
-  const qz = 0.5 * 1.225 * Math.pow(vMs, 2) * 1.0 * 0.85 / 1000.0; // kN/m²
+  // qz from the shared helper - identical to structuralEngine (E5 unification).
+  const qz = calculateWindPressureQz(basicWindSpeedKmh, input.elevationM ?? 0).qzKnM2; // kN/m²
   const sk = (groundSnowLoadKgM2 * 9.81) / 1000.0; // kN/m²
 
   // Forces per table and post
   const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
   const lateralWindForceTable = qz * tableAreaM2 * Math.sin(tiltRad) * 1.2; // kN
   const lateralShearPerPost = lateralWindForceTable / postsPerTable;
-  const upliftPerPost = (qz * tableAreaM2 * 1.15) / postsPerTable;
-  const deadLoadPerPost =
-    (tableAreaM2 * 22.0 * 9.81 / 1000.0) / postsPerTable;
+  // Match structuralEngine's uplift-per-post formula: average vertical
+  // component (cos beta) + moment-induced reaction. Eliminates the 45%
+  // divergence between the two engines' reported uplift.
+  const slopedWidthM = input.tableSlopedWidthM ?? 4.6;
+  const cpUp = cpUpliftFor(arrayTiltDeg);
+  const windNormalForceKn = qz * tableAreaM2 * cpUp;
+  const verticalUpliftKn = windNormalForceKn * Math.cos(tiltRad);
+  const deadLoadKn = (tableAreaM2 * 22.0 * 9.81) / 1000.0;
+  const deadLoadPerPost = deadLoadKn / postsPerTable;
+  const momentArmM = (slopedWidthM / 2.0) + (clearanceHeightM * Math.sin(tiltRad));
+  const overturningMomentKnM = windNormalForceKn * momentArmM;
+  const upliftPerPost = Math.max(0,
+    (verticalUpliftKn - 0.9 * deadLoadKn) / postsPerTable +
+    (overturningMomentKnM / (slopedWidthM * postsPerTable / 2))
+  );
+  // Match structuralEngine's compression: dead + 1.2*wind_downforce + snow.
+  // The wind downforce term was previously omitted here, under-reporting
+  // compression by ~20-30% at high wind.
+  const cpDown = cpDownforceFor(arrayTiltDeg);
+  const windDownforceKn = qz * cpDown * tableAreaM2;
   const compressionPerPost =
-    (sk * tableAreaM2 * Math.cos(tiltRad) +
-      tableAreaM2 * 22.0 * 9.81 / 1000.0) /
-    postsPerTable;
+    (deadLoadKn + 1.2 * windDownforceKn + sk * tableAreaM2 * Math.cos(tiltRad)) / postsPerTable;
 
   // Multi-criteria foundation scoring (shared scorer — same code path used by engine/UI)
   const scores = scoreFoundationOptions(input).sort((a, b) => b.score - a.score);
@@ -423,7 +447,8 @@ export function recommendSharedFoundation(
     windPressureQzKnM2: qz,
     snowPressureSkKnM2: sk,
     lateralShearPerPostKn: lateralShearPerPost,
-    compressionPerPostKn: compressionPerPost,
+    upliftPerPostKn: Number(upliftPerPost.toFixed(2)),
+    compressionPerPostKn: Number(compressionPerPost.toFixed(2)),
     traceId,
   };
 }

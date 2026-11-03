@@ -130,8 +130,37 @@ const FALLBACK_BATTERY_PROFILE: BatteryChemistryProfile = {
   typicalLifespanYears: 12,
 };
 
+
+/**
+ * Computes the daily energy (kWh) the battery must supply for the given
+ * system mode, per IEEE 1562 (Standalone PV) and IEC 62548.
+ *
+ * - powerplant: 0 (no battery)
+ * - ongrid:     nightKwh scaled by the fraction of the night affected by
+ *               the outage. Nominal night is 12 hours; an outage longer
+ *               than 12 hours is capped at the full night energy (solar
+ *               covers the day).
+ * - offgrid:    total 24-hour daily load (the BESS is the only source
+ *               during autonomy, day and night).
+ */
+export function computeAutonomyEnergyRequirement(
+  systemMode: 'powerplant' | 'ongrid' | 'offgrid',
+  totalDailyKwh: number,
+  nighttimeKwh: number,
+  outageHours: number,
+  nominalNightHours: number = 12,
+): number {
+  if (systemMode === 'powerplant') return 0;
+  if (systemMode === 'ongrid') {
+    const safeNight = Math.max(1, nominalNightHours);
+    const fraction = Math.min(1, Math.max(0, outageHours) / safeNight);
+    return nighttimeKwh * fraction;
+  }
+  return Math.max(0, totalDailyKwh);
+}
+
 export function sizeBatteryBank(
-  nighttimeDailyKwh: number = 0,
+  dailyEnergyForAutonomyKwh: number = 0,
   autonomyDays: number = 1.0,
   chemistryType: BatteryChemistry = 'lifepo4',
   systemVoltageVdc: number = 48,
@@ -169,7 +198,7 @@ export function sizeBatteryBank(
   const warnings: string[] = [];
 
   // If zero energy requirement (e.g. utility powerplant or 0 autonomy)
-  if (nighttimeDailyKwh <= 0 || autonomyDays <= 0) {
+  if (dailyEnergyForAutonomyKwh <= 0 || autonomyDays <= 0) {
     return {
       chemistry: profile,
       systemVoltageVdc: vdc,
@@ -200,7 +229,7 @@ export function sizeBatteryBank(
   const roundTripFraction = (profile.roundTripEfficiencyPct || 90) / 100.0;
 
   // Total usable energy required during autonomy window
-  const requiredUsableKwh = nighttimeDailyKwh * Math.max(0.2, autonomyDays);
+  const requiredUsableKwh = dailyEnergyForAutonomyKwh * Math.max(0.2, autonomyDays);
 
   // Gross capacity required
   const grossCapacityKwh = requiredUsableKwh / (dodFraction * roundTripFraction * tempCorrectionFactor);

@@ -2,13 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { FeatureFlagProvider } from './engine/core/FeatureFlagContext';
+import 'leaflet/dist/leaflet.css';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <FeatureFlagProvider>
+    <ErrorBoundary>
       <App />
-    </FeatureFlagProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
-

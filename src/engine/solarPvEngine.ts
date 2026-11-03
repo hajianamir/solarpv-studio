@@ -13,36 +13,10 @@ export interface Triangle {
   v2: Vec3;
 }
 
-export interface PvModule {
-  id: string;
-  manufacturer: string;
-  modelName: string;
-  pmpWatts: number;
-  vmpVolts: number;
-  impAmps: number;
-  vocVolts: number;
-  iscAmps: number;
-  betaVocPerC: number;
-}
-
-export interface Inverter {
-  id: string;
-  manufacturer: string;
-  modelName: string;
-  pnomAcKw: number;
-  vdcMaxVolts: number;
-  vmpptMinVolts: number;
-  vmpptMaxVolts: number;
-}
-
-export interface Battery {
-  id: string;
-  manufacturer: string;
-  modelName: string;
-  capacityKwh: number;
-  nominalVoltageVolts: number;
-  depthOfDischargeMax: number;
-}
+// Equipment shapes moved to the leaf module types/equipmentTypes.ts (BUG-9)
+// and re-exported here for backward compatibility.
+export type { PvModule, Inverter, Battery } from './types/equipmentTypes';
+import type { PvModule, Inverter, Battery } from './types/equipmentTypes';
 
 export interface Project {
   id: string;
@@ -88,6 +62,8 @@ export interface StringSizingRequest {
   tempMinC: number;
   tempMaxC: number;
   betaVocPerC: number;
+  betaPmpPerC?: number;   // NEW (BUG-6) — temperature coefficient of Pmp, fraction/°C, negative
+                          //       e.g. -0.0030 means -0.30 %/°C
   inverterVdcMax: number;
   inverterMpptMin: number;
   inverterMpptMax: number;
@@ -171,98 +147,19 @@ export interface ShadingAnalyzeResponse {
 // ----------------------------------------------------
 // DEFAULT SEED CATALOG
 // ----------------------------------------------------
-export const DEFAULT_MODULES: PvModule[] = [
-  {
-    id: "11111111-1111-1111-1111-111111111111",
-    manufacturer: "Jinko Solar",
-    modelName: "Tiger Neo 575W",
-    pmpWatts: 575.0,
-    vmpVolts: 42.22,
-    impAmps: 13.62,
-    vocVolts: 50.88,
-    iscAmps: 14.37,
-    betaVocPerC: -0.0028,
-  },
-  {
-    id: "11111111-1111-1111-1111-111111111112",
-    manufacturer: "LONGi Solar",
-    modelName: "Hi-MO 6 Explorer 580W",
-    pmpWatts: 580.0,
-    vmpVolts: 43.15,
-    impAmps: 13.44,
-    vocVolts: 51.55,
-    iscAmps: 14.28,
-    betaVocPerC: -0.0026,
-  },
-  {
-    id: "11111111-1111-1111-1111-111111111113",
-    manufacturer: "Trina Solar",
-    modelName: "Vertex S+ 440W",
-    pmpWatts: 440.0,
-    vmpVolts: 32.8,
-    impAmps: 13.41,
-    vocVolts: 39.4,
-    iscAmps: 14.22,
-    betaVocPerC: -0.0025,
-  }
-];
+// DEPRECATED: kept for backward compatibility with server.ts and any
+// external callers. Values are derived synchronously from the canonical
+// equipment catalog via catalogAdapters.ts. Do not add new entries here —
+// extend equipmentCatalogData.ts instead.
+import {
+  ENGINE_DEFAULT_MODULES as ADAPTED_MODULES,
+  ENGINE_DEFAULT_INVERTERS as ADAPTED_INVERTERS,
+  ENGINE_DEFAULT_BATTERIES as ADAPTED_BATTERIES,
+} from './catalogAdapters';
 
-export const DEFAULT_INVERTERS: Inverter[] = [
-  {
-    id: "22222222-2222-2222-2222-222222222222",
-    manufacturer: "SMA",
-    modelName: "Sunny Tripower 10.0",
-    pnomAcKw: 10.0,
-    vdcMaxVolts: 1000.0,
-    vmpptMinVolts: 200.0,
-    vmpptMaxVolts: 800.0,
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222223",
-    manufacturer: "Fronius",
-    modelName: "Symo GEN24 10.0 Plus",
-    pnomAcKw: 10.0,
-    vdcMaxVolts: 1000.0,
-    vmpptMinVolts: 220.0,
-    vmpptMaxVolts: 800.0,
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222224",
-    manufacturer: "Huawei",
-    modelName: "SUN2000-12KTL-M2",
-    pnomAcKw: 12.0,
-    vdcMaxVolts: 1080.0,
-    vmpptMinVolts: 200.0,
-    vmpptMaxVolts: 950.0,
-  }
-];
-
-export const DEFAULT_BATTERIES: Battery[] = [
-  {
-    id: "33333333-3333-3333-3333-333333333333",
-    manufacturer: "BYD",
-    modelName: "Battery-Box Premium HVS 10.2",
-    capacityKwh: 10.2,
-    nominalVoltageVolts: 400.0,
-    depthOfDischargeMax: 0.8,
-  },
-  {
-    id: "33333333-3333-3333-3333-333333333334",
-    manufacturer: "Tesla",
-    modelName: "Powerwall 2",
-    capacityKwh: 13.5,
-    nominalVoltageVolts: 230.0,
-    depthOfDischargeMax: 0.9,
-  },
-  {
-    id: "33333333-3333-3333-3333-333333333335",
-    manufacturer: "Huawei",
-    modelName: "LUNA2000-10-S0",
-    capacityKwh: 10.0,
-    nominalVoltageVolts: 360.0,
-    depthOfDischargeMax: 0.9,
-  }
-];
+export const DEFAULT_MODULES: PvModule[] = ADAPTED_MODULES;
+export const DEFAULT_INVERTERS: Inverter[] = ADAPTED_INVERTERS;
+export const DEFAULT_BATTERIES: Battery[] = ADAPTED_BATTERIES;
 
 // In-Memory Database store
 export class InMemorySolarDatabase {
@@ -273,9 +170,13 @@ export class InMemorySolarDatabase {
   public outbox: Array<any> = [];
 
   constructor() {
-    DEFAULT_MODULES.forEach(m => this.pvModules.set(m.id, m));
-    DEFAULT_INVERTERS.forEach(i => this.inverters.set(i.id, i));
-    DEFAULT_BATTERIES.forEach(b => this.batteries.set(b.id, b));
+    // Seed from the canonical equipment catalog via adapters (BUG-9).
+    const seedModules = DEFAULT_MODULES.length > 0 ? DEFAULT_MODULES : [];
+    const seedInverters = DEFAULT_INVERTERS.length > 0 ? DEFAULT_INVERTERS : [];
+    const seedBatteries = DEFAULT_BATTERIES.length > 0 ? DEFAULT_BATTERIES : [];
+    seedModules.forEach((m) => this.pvModules.set(m.id, m));
+    seedInverters.forEach((i) => this.inverters.set(i.id, i));
+    seedBatteries.forEach((b) => this.batteries.set(b.id, b));
   }
 }
 
@@ -289,6 +190,7 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
     tempMinC,
     tempMaxC,
     betaVocPerC,
+    betaPmpPerC,
     inverterVdcMax,
     inverterMpptMin,
     inverterMpptMax,
@@ -296,10 +198,20 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
 
   const warnings: string[] = [];
   const vocMaxTemp = panelVoc * (1.0 + betaVocPerC * (tempMinC - 25.0));
-  const vmpMinTemp = panelVmp * (1.0 + betaVocPerC * (tempMaxC - 25.0));
+  // IEC 62548 §7.2: hot-case MPPT floor uses the Pmp temperature
+  // coefficient (typically steeper than Voc). Fall back to Voc when
+  // betaPmpPerC is absent (conservative approximation).
+  const vmpHotCoeff = (req.betaPmpPerC ?? betaVocPerC);
+  const vmpMinTemp = panelVmp * (1.0 + vmpHotCoeff * (tempMaxC - 25.0));
 
   const maxModulesVmax = Math.floor(inverterVdcMax / vocMaxTemp);
-  const maxModulesMppt = Math.floor(inverterMpptMax / panelVmp);
+  // Per IEC 62548 §7.2 the MPPT upper-bound is governed by the HIGHEST Vmp,
+  // which occurs at the coldest design temperature. Use the Pmp temperature
+  // coefficient when supplied; otherwise fall back to the Voc coefficient
+  // (documented conservative approximation).
+  const vmpColdCoeff = betaPmpPerC ?? betaVocPerC;
+  const singleModuleVmpMaxCold = panelVmp * (1.0 + vmpColdCoeff * (tempMinC - 25.0));
+  const maxModulesMppt = Math.floor(inverterMpptMax / singleModuleVmpMaxCold);
   const maxModules = Math.min(maxModulesVmax, maxModulesMppt);
 
   const minModules = Math.ceil(inverterMpptMin / vmpMinTemp);
@@ -339,7 +251,8 @@ export function calculateLcoe(
   opexAnnual: number,
   energyAnnual: number,
   discountRate: number,
-  lifetimeYears: number
+  lifetimeYears: number,
+  degradationPct: number = 0   // NEW (BUG-7) — annual module degradation, %/year
 ): number {
   if (energyAnnual <= 0 || lifetimeYears <= 0) {
     return 0.0;
@@ -351,8 +264,9 @@ export function calculateLcoe(
   }
 
   let totalEnergyPv = 0;
+  const dFrac = degradationPct / 100.0;
   for (let t = 1; t <= lifetimeYears; t++) {
-    totalEnergyPv += energyAnnual / Math.pow(1.0 + discountRate, t);
+    totalEnergyPv += (energyAnnual * Math.pow(1.0 - dFrac, t - 1)) / Math.pow(1.0 + discountRate, t);
   }
 
   if (totalEnergyPv === 0) return 0.0;
@@ -472,9 +386,11 @@ export function calculateSolarPosition(
     const val = (Math.sin(latRad) * cosZenith - Math.sin(declRad)) / (Math.cos(latRad) * sinZenith);
     const clampedVal = Math.min(1.0, Math.max(-1.0, val));
     if (haRad > 0.0) {
-      azimuthRad = Math.PI * 2.0 - Math.acos(clampedVal);
-    } else {
+      // Afternoon: sun is west of solar noon meridian.
       azimuthRad = Math.acos(clampedVal);
+    } else {
+      // Morning: sun is east of solar noon meridian.
+      azimuthRad = Math.PI * 2.0 - Math.acos(clampedVal);
     }
   }
   const azimuthDeg = (toDeg(azimuthRad) + 180.0) % 360.0;
@@ -512,18 +428,29 @@ export function calculatePoaIrradiance(req: PoaIrradianceRequest): number {
       ? 1.0
       : ((dhi + dni) / dhi + 1.041 * Math.pow(zenithRad, 3)) / (1.0 + 1.041 * Math.pow(zenithRad, 3));
 
-  let f1 = 0;
-  let f2 = 0;
-  if (clearness < 1.065) {
-    f1 = -0.008 + 0.588 * brightness;
-    f2 = -0.062 + 0.072 * brightness;
-  } else if (clearness < 1.23) {
-    f1 = 0.115 + 0.683 * brightness;
-    f2 = -0.060 + 0.040 * brightness;
-  } else {
-    f1 = 0.332 + 0.487 * brightness;
-    f2 = -0.062 - 0.023 * brightness;
+  // Perez 1990 8-bin diffuse model (Duffie & Beckman 4th ed., Table 2.5.1).
+  // Each bin is (f11, f12, f13, f21, f22, f23) evaluated as:
+  //   f1 = f11 + f12*brightness + f13*zenithRad
+  //   f2 = f21 + f22*brightness + f23*zenithRad
+  interface PerezBin {
+    epsLo: number; epsHi: number;
+    f11: number; f12: number; f13: number;
+    f21: number; f22: number; f23: number;
   }
+  const PEREZ_1990_BINS: ReadonlyArray<PerezBin> = [
+    { epsLo: 1.000, epsHi: 1.065, f11: -0.008, f12:  0.588, f13: -0.062, f21: -0.060, f22:  0.072, f23: -0.022 },
+    { epsLo: 1.065, epsHi: 1.230, f11:  0.130, f12:  0.683, f13: -0.151, f21: -0.019, f22:  0.066, f23: -0.029 },
+    { epsLo: 1.230, epsHi: 1.500, f11:  0.330, f12:  0.487, f13: -0.221, f21:  0.055, f22: -0.064, f23: -0.026 },
+    { epsLo: 1.500, epsHi: 1.950, f11:  0.568, f12:  0.187, f13: -0.295, f21:  0.109, f22: -0.152, f23: -0.014 },
+    { epsLo: 1.950, epsHi: 2.800, f11:  0.873, f12: -0.392, f13: -0.362, f21:  0.226, f22: -0.462, f23:  0.001 },
+    { epsLo: 2.800, epsHi: 4.500, f11:  1.132, f12: -1.237, f13: -0.412, f21:  0.288, f22: -0.823, f23:  0.056 },
+    { epsLo: 4.500, epsHi: 6.200, f11:  1.060, f12: -1.600, f13: -0.359, f21:  0.264, f22: -1.127, f23:  0.131 },
+    { epsLo: 6.200, epsHi: Infinity, f11: 0.678, f12: -0.327, f13: -0.250, f21: 0.156, f22: -1.377, f23: 0.251 },
+  ];
+  const bin = PEREZ_1990_BINS.find(b => clearness >= b.epsLo && clearness < b.epsHi)
+    ?? PEREZ_1990_BINS[PEREZ_1990_BINS.length - 1];
+  let f1 = bin.f11 + bin.f12 * brightness + bin.f13 * zenithRad;
+  let f2 = bin.f21 + bin.f22 * brightness + bin.f23 * zenithRad;
 
   const f1Clamp = Math.max(0.0, f1);
   const diffusePoa =

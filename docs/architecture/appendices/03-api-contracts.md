@@ -7,6 +7,18 @@ author: "Principal Software Architect & Senior Solar Energy Engineer"
 date: "2023-10-19"
 ---
 
+> **⚠ ARCHIVE — NOT THE CURRENT IMPLEMENTATION ⚠**
+>
+> This document describes the **future roadmap** of SolarPV Studio
+> (.NET 8 MAUI + Blazor Hybrid + Rust + PostgreSQL + gRPC). **None of
+> this roadmap is implemented in the current repository**, which is a
+> React 18 + Vite + Express application. See `README.md` for the actual
+> stack.
+>
+> Kept for historical reference and future-phase planning.
+>
+> ---
+>
 # Appendix 03: API Contracts (OpenAPI 3.1 & gRPC Protocols)
 
 ## 1. RESTful OpenAPI 3.1 Specifications

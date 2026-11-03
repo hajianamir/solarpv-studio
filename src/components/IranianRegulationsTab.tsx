@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Scale, TrendingUp, DollarSign, ShieldAlert, Award, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
 import {
   runIranianRegulationFinancialModel,
-  IranianRegulationFramework,
-  IranianFinancialModelResult,
+  type IranianRegulationFramework,
+  type IranianFinancialModelResult,
 } from '../engine/iranianRegulationsFinancial';
 
 interface IranianRegulationsTabProps {

@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Grid, Layers, MapPin, ZoomIn, ZoomOut, Check, Maximize2, Shield, Compass } from 'lucide-react';
 import {
   generatePowerplantLayout,
-  PowerplantCadParameters,
-  RackingStructureType,
-  PowerplantCadLayoutResult,
+  type PowerplantCadParameters,
+  type RackingStructureType,
+  type PowerplantCadLayoutResult,
 } from '../engine/powerplantCadLayout';
 
 interface PowerplantCadLayoutTabProps {

@@ -3,7 +3,7 @@
  * SolarPV Studio v3.0 - Global Multi-Region Data Integration Architecture
  */
 
-import { SoilClassification } from '../climaticData';
+import type { SoilClassification } from '../types/climateTypes';
 
 export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 

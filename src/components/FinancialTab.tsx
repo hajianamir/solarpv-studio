@@ -12,12 +12,12 @@ import {
   Table,
 } from 'lucide-react';
 import {
-  FinancialAnalysisResult,
-  UserFinancialPricing,
+  type FinancialAnalysisResult,
+  type UserFinancialPricing,
 } from '../engine/financialEngine';
-import { ClimateCity } from '../engine/climaticData';
-import { FoundationType } from '../engine/structuralEngine';
-import { assessSaltCorrosion, SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import { type ClimateCity } from '../engine/climaticData';
+import { type FoundationType } from '../engine/structuralEngine';
+import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
 
 interface FinancialTabProps {
   financial: FinancialAnalysisResult;
@@ -49,10 +49,45 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     return () => { mounted = false; };
   }, [city]);
 
+  // Per-field sanitisation that closes BUG-8 at the source:
+  //   - Reject NaN / Infinity / negatives by falling back to the previous value.
+  //   - Enforce field-specific minimums that prevent division-by-zero
+  //     downstream (discountRatePct = 0 produces crf = 0/0 = NaN inside
+  //     performFinancialAnalysis).
+  const FIELD_MINIMUMS: Partial<Record<keyof UserFinancialPricing, number>> = {
+    discountRatePct: 0.01,
+    usdToTomanRate: 1,
+    moduleUsdPerWp: 0.0001,
+    inverterUsdPerKw: 0.01,
+    batteryUsdPerKwh: 0.01,
+    structureUsdPerWp: 0.0001,
+    cablingBopUsdPerWp: 0.0001,
+    substationUsdPerMva: 0.01,
+    epcLaborUsdPerKw: 0.01,
+    gridTariffTomanPerKwh: 0.01,
+    ppaTariffTomanPerKwh: 0.01,
+  };
+
+  const sanitizeNumericField = (
+    field: keyof UserFinancialPricing,
+    raw: string | number,
+  ): number => {
+    const parsed = typeof raw === 'number' ? raw : parseFloat(raw);
+    const previous = pricing[field];
+    const fallback = typeof previous === 'number' ? previous : 0;
+    if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+    const min = FIELD_MINIMUMS[field];
+    return min !== undefined ? Math.max(min, parsed) : parsed;
+  };
+
   const updateField = (field: keyof UserFinancialPricing, val: any) => {
+    // Route through sanitizeNumericField for every numeric field.
+    const currentVal = pricing[field];
+    const isNumeric = typeof currentVal === 'number';
+    const next = isNumeric ? sanitizeNumericField(field, val) : val;
     onPricingChange({
       ...pricing,
-      [field]: val,
+      [field]: next,
     });
   };
 

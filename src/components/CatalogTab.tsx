@@ -7,9 +7,9 @@ import {
   saveCustomModule,
   saveCustomInverter,
   saveCustomBattery,
-  CatalogPvModule,
-  CatalogInverter,
-  CatalogBattery,
+  type CatalogPvModule,
+  type CatalogInverter,
+  type CatalogBattery,
 } from '../engine/equipmentCatalogData';
 
 interface CatalogTabProps {

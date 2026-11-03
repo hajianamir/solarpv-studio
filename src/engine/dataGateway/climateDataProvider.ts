@@ -14,7 +14,7 @@
  *   This provides hard proof that real provider data (NASA POWER / PVGIS) was obtained.
  */
 
-import { ClimateResourceData, DataProvenanceMetadata } from './types';
+import { type ClimateResourceData, type DataProvenanceMetadata } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 import { isRealInternetEnabled } from '../env/runtimeEnv';
 
@@ -61,7 +61,7 @@ export class ClimateDataProvider {
             } catch (nasaErr) {
               if (realInternet) {
                 throw new Error(
-                  `REAL_INTERNET=true: Both PVGIS and NASA POWER unreachable for (${lat}, ${lng}). PVGIS: ${pvgisErr.message}; NASA POWER: ${nasaErr.message}. No analytical fallback allowed in REAL_INTERNET mode.`
+                  `REAL_INTERNET=true: Both PVGIS and NASA POWER unreachable for (${lat}, ${lng}). PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}; NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}. No analytical fallback allowed in REAL_INTERNET mode.`
                 );
               }
               // Fall through to analytical fallback
@@ -77,7 +77,7 @@ export class ClimateDataProvider {
             } catch (pvgisErr) {
               if (realInternet) {
                 throw new Error(
-                  `REAL_INTERNET=true: Both NASA POWER and PVGIS unreachable for (${lat}, ${lng}). NASA POWER: ${nasaErr.message}; PVGIS: ${pvgisErr.message}. No analytical fallback allowed in REAL_INTERNET mode.`
+                  `REAL_INTERNET=true: Both NASA POWER and PVGIS unreachable for (${lat}, ${lng}). NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}; PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}. No analytical fallback allowed in REAL_INTERNET mode.`
                 );
               }
               // Fall through to analytical fallback

@@ -3,7 +3,7 @@
  * SolarPV Studio v3.0 - Data Gateway
  */
 
-import { CircuitBreakerState } from './types';
+import { type CircuitBreakerState } from './types';
 
 export interface CircuitBreakerConfig {
   failureThreshold: number;   // Number of consecutive failures before opening circuit

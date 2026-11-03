@@ -7,8 +7,8 @@
  * disproving overfitting or circular golden-dataset dependency.
  */
 
-import { simulateAnnualSoiling, DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
-import { simulateAnnualSnowShedding, HourlySnowWeatherStep, calculateSnowStructuralLoad } from '../../snow/marionSnowEngine';
+import { simulateAnnualSoiling, type DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
+import { simulateAnnualSnowShedding, type HourlySnowWeatherStep, calculateSnowStructuralLoad } from '../../snow/marionSnowEngine';
 import { calculateTemperatureCoupledIam } from '../../optical/iamEngine';
 
 export interface KimberSensitivityPoint {

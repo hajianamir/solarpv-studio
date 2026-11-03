@@ -341,7 +341,13 @@ export function performFinancialAnalysis(
     sumDiscountedCosts += yrCost / Math.pow(1 + r, yr);
     sumDiscountedEnergyKwh += cashFlow25Years[yr - 1].generationKwh / Math.pow(1 + r, yr);
   }
-  const lcoeTomanPerKwh = Number((sumDiscountedCosts / Math.max(1, sumDiscountedEnergyKwh)).toFixed(0));
+  // ENG-6: the previous floor of 1 kWh inflated LCOE by up to 1000x when a
+  // pathological input produced finite-but-sub-unit discounted energy
+  // (e.g., 0.5 kWh -> 2x inflation; 0.05 kWh -> 20x). The 0.001 kWh floor
+  // preserves the actual calculation for the 0.001-1 range and only caps
+  // truly degenerate inputs (0 energy still yields a large but finite
+  // number, not an exception).
+  const lcoeTomanPerKwh = Number((sumDiscountedCosts / Math.max(0.001, sumDiscountedEnergyKwh)).toFixed(0));
   const lcoeUsdPerKwh = Number((lcoeTomanPerKwh / p.usdToTomanRate).toFixed(4));
 
   // Cost of energy actually served = annualized lifetime cost / year-1 energy.

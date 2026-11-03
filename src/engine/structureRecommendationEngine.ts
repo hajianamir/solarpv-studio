@@ -11,12 +11,12 @@
  * - Compliance with ASCE 7-22, Eurocode 7 (EN 1997-1), and IBC 2024
  */
 
-import { FoundationType, SoilType } from './structuralEngine';
+import { type FoundationType, type SoilType } from './structuralEngine';
 import {
   recommendSharedFoundation,
   scoreFoundationOptions,
-  FoundationRecommendationInput,
-  FoundationRecommendationOutput,
+  type FoundationRecommendationInput,
+  type FoundationRecommendationOutput,
 } from './geotech/foundationRecommendation';
 
 export interface StructuralRecommendationInput {

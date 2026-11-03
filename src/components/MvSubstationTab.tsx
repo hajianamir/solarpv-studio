@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Zap, Shield, Anchor, Activity, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
-import { designMvSubstation, MvSubstationResult } from '../engine/mvSubstationEngine';
+import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 
 interface MvSubstationTabProps {
   plantCapacityAcMw: number;

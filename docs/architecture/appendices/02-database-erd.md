@@ -7,6 +7,18 @@ author: "Principal Software Architect & Senior Solar Energy Engineer"
 date: "2023-10-19"
 ---
 
+> **⚠ ARCHIVE — NOT THE CURRENT IMPLEMENTATION ⚠**
+>
+> This document describes the **future roadmap** of SolarPV Studio
+> (.NET 8 MAUI + Blazor Hybrid + Rust + PostgreSQL + gRPC). **None of
+> this roadmap is implemented in the current repository**, which is a
+> React 18 + Vite + Express application. See `README.md` for the actual
+> stack.
+>
+> Kept for historical reference and future-phase planning.
+>
+> ---
+>
 # Appendix 02: Database ERD, Data Dictionary & Offline Sync Schemas
 
 ## 1. Database Architecture Overview

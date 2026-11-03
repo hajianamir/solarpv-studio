@@ -263,7 +263,7 @@ for (const p of sensRes.fineTransitionSweep) {
   const padN = (n: number, l: number) => n.toFixed(2).padStart(l);
   console.log(`| ${pad(p.tiltDeg + ' deg', 18)} | ${pad(p.annualSnowfallCm + ' cm', 22)} | ${pad(p.dammingFactor.toFixed(3), 19)} | ${padN(p.annualSnowLossPercent, 19)} | ${pad(p.avalancheDammingRisk, 16)} |`);
 }
-console.log('+--------------------+------------------------+---------------------+---------------------+------------------+\\n');
+console.log('+--------------------+------------------------+---------------------+---------------------+------------------+');
 console.log('3. Optical IAM Angular & Temperature Coupling Matrix (Incidence Angle vs Cell Temp):');
 console.log('+--------------------+------------------------+---------------------+---------------------+');
 console.log('| Angle theta (deg)  | Cell Temp (deg C)      | IAM Coupled Factor  | Reflection Loss (%) |');
@@ -411,13 +411,13 @@ console.log('+----------------------------------------+------------------+------
 const expectedAreaRatio = GOLDEN_BIPVT_DATASET.expectedAreaRatio; // 0.860 from static geometry fields only (independent of efficiency)
 const bipvRatio = Number((bipvTask60.netGrossDeliveredElectricalEfficiencyPercent / bipvTask60.netElectricalEfficiencyPercent).toFixed(3));
 const bipvtAreaOk = Math.abs(bipvRatio - expectedAreaRatio) < 0.001;
-console.log(`[BIPVT-AREA] aperture=${bipvTask60.netElectricalEfficiencyPercent.toFixed(2)}% gross=${bipvTask60.netGrossDeliveredElectricalEfficiencyPercent.toFixed(2)}% ratio=${bipvRatio.toFixed(3)} expected_ratio=${expectedAreaRatio.toFixed(3)} (geometry: ${GOLDEN_BIPVT_DATASET.apertureAreaM2}/${GOLDEN_BIPVT_DATASET.grossAreaM2} m²) ${bipvtAreaOk ? 'PASS' : 'FAIL'}\\n`);
+console.log(`[BIPVT-AREA] aperture=${bipvTask60.netElectricalEfficiencyPercent.toFixed(2)}% gross=${bipvTask60.netGrossDeliveredElectricalEfficiencyPercent.toFixed(2)}% ratio=${bipvRatio.toFixed(3)} expected_ratio=${expectedAreaRatio.toFixed(3)} (geometry: ${GOLDEN_BIPVT_DATASET.apertureAreaM2}/${GOLDEN_BIPVT_DATASET.grossAreaM2} m²) ${bipvtAreaOk ? 'PASS' : 'FAIL'}`);
 if (!bipvtAreaOk) {
   console.error('FATAL: BIPV/T area ratio mismatch (engine efficiency ratio != static physical geometry ratio)');
   process.exit(1);
 }
 
 console.log('================================================================================');
-console.log(' SUMMARY: ALL 11 CROSS-VALIDATIONS, RECALIBRATED HUBS & BIPV/T CONSTRAINTS PASS');
+console.log(' SUMMARY: ALL 6 BENCHMARKS, RECALIBRATED HUBS & BIPV/T CONSTRAINTS PASS');
 console.log('================================================================================');
 

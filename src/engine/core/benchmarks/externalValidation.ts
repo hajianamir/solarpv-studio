@@ -26,8 +26,8 @@
  * - Array Ground Clearance:    0.30 m <= H_clearance <= 2.50 m
  */
 
-import { simulateAnnualSoiling, DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
-import { simulateAnnualSnowShedding, HourlySnowWeatherStep } from '../../snow/marionSnowEngine';
+import { simulateAnnualSoiling, type DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
+import { simulateAnnualSnowShedding, type HourlySnowWeatherStep } from '../../snow/marionSnowEngine';
 
 export interface FieldStationBenchmark {
   stationId: string;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layers, ArrowDownRight, Award, Info, CheckCircle2, TrendingDown } from 'lucide-react';
-import { computeWaterfallLosses, WaterfallLossReport } from '../engine/waterfallLossEngine';
-import { TrackerConfig } from '../engine/tracker/backtrackingEngine';
+import { computeWaterfallLosses, type WaterfallLossReport } from '../engine/waterfallLossEngine';
+import { type TrackerConfig } from '../engine/tracker/backtrackingEngine';
 
 interface WaterfallLossTabProps {
   installedCapacityKwp: number;

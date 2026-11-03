@@ -8,7 +8,7 @@
  * - Dlubal GeoZone GraphQL schema mapping & regional wind/snow zoning
  */
 
-import { StructuralHazardData } from './types';
+import { type StructuralHazardData } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 
 export class StructuralHazardProvider {

@@ -40,26 +40,27 @@ import {
 } from 'lucide-react';
 
 // i18n
-import { Language, translations } from './i18n';
+import { type Language, translations } from './i18n';
 
-import { getDefaultClimateCity, ClimateCity, SiteGeotechnicalOverrides } from './engine/climaticData';
-import { LOAD_PRESETS, ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
-import { designPvArray, ModuleSpecs, InverterSpecs } from './engine/pvEngineAdvanced';
+import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
+import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
+import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
-import { TrackerConfig } from './engine/tracker/backtrackingEngine';
+import { type TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
-import { sizeBatteryBank, BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
+import { sizeBatteryBank, computeAutonomyEnergyRequirement, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
 import { evaluateInverterClustering } from './engine/inverterClustering';
 import {
   calculateAdvancedCableRun,
   calculateEarthingSystem,
   calculateLightningProtection,
-  CompleteProtectionSystemResult,
+  type CompleteProtectionSystemResult,
+  type ProtectionBomItem,
 } from './engine/protectionBomEngine';
 import { simulate24hEnergyBalance, sizeDieselGenerator } from './engine/simulation24hEngine';
 import {
   performFinancialAnalysis,
-  UserFinancialPricing,
+  type UserFinancialPricing,
   DEFAULT_FINANCIAL_PRICING,
 } from './engine/financialEngine';
 import { generateScenarios } from './engine/scenarioEngine';
@@ -71,8 +72,8 @@ import {
 } from './engine/equipmentCatalogData';
 import {
   designPowerplantBays,
-  InverterTechnology,
-  PowerplantBayArchitectureResult,
+  type InverterTechnology,
+  type PowerplantBayArchitectureResult,
 } from './engine/powerplantBayEngine';
 
 // Components - Core Suite
@@ -98,9 +99,7 @@ import { SolarPumpingTab } from './components/SolarPumpingTab';
 import { IranianRegulationsTab } from './components/IranianRegulationsTab';
 import { StructuralFoundationTab } from './components/StructuralFoundationTab';
 import { HarmonicsGridTab } from './components/HarmonicsGridTab';
-import { AdvancedFeaturesModal } from './components/AdvancedFeaturesModal';
 import { RFC3ReportsTab } from './components/RFC3ReportsTab';
-import { useFeatureFlags } from './engine/core/FeatureFlagContext';
 import { migrateProjectToV3 } from './engine/core/projectMigration';
 import { generateTraceId } from './engine/core/modelRegistry';
 
@@ -140,11 +139,8 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveModuleTab>('climate');
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
-  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // RFC 3.0 Advanced Feature Flags
-  const { flags, setAllFlags, activeCount } = useFeatureFlags();
 
   // Inverter Technology & MV Bay Architecture (for Powerplant mode)
   const [inverterTech, setInverterTech] = useState<InverterTechnology>('string_inverter');
@@ -261,6 +257,10 @@ export const App: React.FC = () => {
 
   // Load saved project on initial mount if available
   useEffect(() => {
+    // R5 (v1.0.3): Feature flags were removed. Clean up stale storage
+    // from users who had previously enabled flags.
+    try { localStorage.removeItem('solarpv_advanced_feature_flags_v3'); } catch { /* private mode */ }
+
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
@@ -301,7 +301,6 @@ export const App: React.FC = () => {
       enableDieselGenerator,
       userPricing,
       trackerConfig, // BUG-2: persist tracker config (null = fixed tilt)
-      featureFlags: flags,
     };
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projectData));
@@ -424,18 +423,19 @@ export const App: React.FC = () => {
     return evaluateInverterClustering(
       contWatts,
       peakWatts,
-      selectedInverter.pnomAcKw
+      selectedInverter.pnomAcKw,
+      selectedInverter.vmpptMaxVolts   // BUG-5: MPPT ceiling drives inverter DC bus display
     );
   }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter]);
 
   // 5. Battery Storage Sizing
   const batterySizing = useMemo(() => {
-    const energyRequirementKwh =
-      systemMode === 'powerplant'
-        ? 0
-        : systemMode === 'ongrid'
-        ? (loadAnalysis.nighttimeEnergyWh / 1000.0) * ((outageHours || 6) / 24.0)
-        : loadAnalysis.nighttimeEnergyWh / 1000.0;
+    const energyRequirementKwh = computeAutonomyEnergyRequirement(
+      systemMode,
+      loadAnalysis.totalDailyEnergyKwh,
+      loadAnalysis.nighttimeEnergyWh / 1000.0,
+      outageHours || 6,
+    );
 
     return sizeBatteryBank(
       energyRequirementKwh,
@@ -501,7 +501,7 @@ export const App: React.FC = () => {
       cableRuns: [dcStringRun],
       earthing,
       lightning,
-      protectionBom: [],
+      protectionBom: [] as ProtectionBomItem[],
     };
   }, [arrayDesign, selectedModule, inverterClustering, systemMode, targetPowerplantCapacityKw]);
 
@@ -631,7 +631,6 @@ export const App: React.FC = () => {
       if (clean.selectedChemistry) setSelectedChemistry(clean.selectedChemistry as BatteryChemistry);
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
       if (clean.outageHours !== undefined) setOutageHours(clean.outageHours);
-      if (clean.featureFlags) setAllFlags(clean.featureFlags);
       // BUG-2: restore tracker config; legacy projects without the field -> null (fixed tilt)
       setTrackerConfig(clean.trackerConfig !== undefined ? clean.trackerConfig : null);
 
@@ -1528,7 +1527,12 @@ export const App: React.FC = () => {
 
           {/* RFC 3.0 COMPREHENSIVE REPORTS TAB */}
           {activeTab === 'rfc3_reports' && (
-            <RFC3ReportsTab lang={lang} onJumpTab={(t) => setActiveTab(t)} />
+            <RFC3ReportsTab
+              lang={lang}
+              onJumpTab={(t) => setActiveTab(t)}
+              city={city}
+              siteOverrides={siteOverrides}
+            />
           )}
         </main>
 
@@ -1588,13 +1592,6 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* ADVANCED ENGINEERING & COMPLIANCE MODAL */}
-      <AdvancedFeaturesModal
-        isOpen={showAdvancedModal}
-        onClose={() => setShowAdvancedModal(false)}
-        onJumpTab={(tab) => setActiveTab(tab)}
-        lang={lang}
-      />
     </div>
   );
 };

@@ -58,6 +58,10 @@ export const INVERTER_CLASSES: Record<InverterEngineeringClass, InverterClassDef
 export interface InverterClusteringResult {
   engineeringClass: InverterClassDefinition;
   recommendedDcVoltageVdc: number;
+  /** BESS battery bus voltage — the value previously called "DC bus". */
+  batteryDcBusNominalV: number;
+  /** Inverter input DC bus nominal operating voltage (from MPPT ceiling). */
+  inverterDcBusNominalV: number;
   autoSteppingReasonFa: string;
   acPhaseType: 'single_phase_230v' | 'three_phase_400v';
   parallelUnitsCount: number;
@@ -73,8 +77,22 @@ export interface InverterClusteringResult {
 export function evaluateInverterClustering(
   continuousWatts: number,
   peakSurgeWatts: number,
-  preferredUnitKw: number = 5.0
+  preferredUnitKw: number = 5.0,
+  inverterVmpptMaxV?: number   // NEW (BUG-5): MPPT ceiling of the selected inverter
 ): InverterClusteringResult {
+  // Inverter DC bus nominal = 80 % of the MPPT ceiling (operating midpoint).
+  // Fall back to class-inferred values when the caller does not supply VmpptMax.
+  let inverterDcBusNominalV: number;
+  if (typeof inverterVmpptMaxV === 'number' && inverterVmpptMaxV > 0) {
+    inverterDcBusNominalV = Math.round(inverterVmpptMaxV * 0.8);
+  } else if (preferredUnitKw <= 10) {
+    inverterDcBusNominalV = 400;   // residential hybrid inverter DC bus
+  } else if (preferredUnitKw <= 100) {
+    inverterDcBusNominalV = 800;   // C&I three-phase string inverter
+  } else {
+    inverterDcBusNominalV = 1100;  // utility 1500 V-class string inverter
+  }
+
   const continuousKw = continuousWatts / 1000.0;
   const peakKw = peakSurgeWatts / 1000.0;
 
@@ -141,6 +159,8 @@ export function evaluateInverterClustering(
   return {
     engineeringClass,
     recommendedDcVoltageVdc,
+    batteryDcBusNominalV: recommendedDcVoltageVdc,
+    inverterDcBusNominalV,
     autoSteppingReasonFa,
     acPhaseType: engineeringClass.recommendedAcPhase,
     parallelUnitsCount,

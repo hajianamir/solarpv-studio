@@ -6,8 +6,8 @@
 import { ClimateDataProvider } from './climateDataProvider';
 import { SoilDataProvider } from './soilDataProvider';
 import { StructuralHazardProvider } from './structuralHazardProvider';
-import { ClimateResourceData, SoilPropertiesData, StructuralHazardData } from './types';
-import { ClimateCity, SoilClassification } from '../climaticData';
+import { type ClimateResourceData, type SoilPropertiesData, type StructuralHazardData } from './types';
+import type { ClimateCity, SoilClassification } from '../types/climateTypes';
 
 export interface ComprehensiveSiteData {
   climateCity: ClimateCity;
@@ -81,7 +81,7 @@ export class ExternalDataGateway {
       seismicZoneCoefficientA: structuralHazard.seismicAccelerationA,
       dataSourceFa: `درگاه یکپارچه جهانی (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
       dataSourceEn: `Unified External Gateway (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
-      dataRetrievalDate: new Date().toISOString().slice(0, 10),
+      dataRetrievalDate: (climateResource.metadata.retrievalTimestamp || new Date().toISOString()).slice(0, 10),
     };
 
     return {

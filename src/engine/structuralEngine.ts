@@ -13,6 +13,36 @@ export type SoilType =
   | 'loose_sand'        // ماسه سست
   | 'rocky_limestone';  // بستر سنگ آهکی یا کوهستانی
 
+/**
+ * Estimate ultimate uplift (tension) capacity per driven pile.
+ *  - Cohesionless: beta method (Burland 1973 / Meyerhof 1976):
+ *      T_ult = beta * sigma'_v,avg * perimeter * L
+ *      beta = 0.3 (loose) / 0.4 (medium) / 0.5 (dense)
+ *  - Cohesive (undrained, alpha method, FHWA-NHI-16-009 §10.2):
+ *      T_ult = alpha * su * perimeter * L
+ *      alpha = 0.5 for su < 50 kPa, 0.35 for su >= 50 kPa
+ */
+function estimatePileUpliftCapacityKn(
+  soilType: SoilType,
+  embedmentM: number,
+  diameterM: number,
+  cohesionKpa: number,
+  densityKnM3: number,
+): number {
+  const perimeterM = Math.PI * diameterM;
+  if (soilType === 'medium_clay') {
+    const su = Math.max(25, cohesionKpa);
+    const alpha = su < 50 ? 0.5 : 0.35;
+    return alpha * su * perimeterM * embedmentM;
+  }
+  const beta =
+    soilType === 'dense_sand_gravel' ? 0.5
+    : soilType === 'loose_sand' ? 0.3
+    : 0.4;
+  const sigmaVAvg = Math.max(5, (densityKnM3 * embedmentM) / 2);
+  return beta * sigmaVAvg * perimeterM * embedmentM;
+}
+
 export interface StructuralParametersInput {
   totalModulesCount: number;
   moduleLengthM: number;       // e.g. 2.278 m
@@ -34,6 +64,58 @@ export interface StructuralParametersInput {
   annualRainfallMm?: number;
   frostDepthCm?: number;
   seismicZoneCoefficientA?: number;
+  /** Optional override for pile skin-friction uplift capacity per post (kN).
+   *  When absent, the engine estimates via the beta/alpha method below. */
+  pileUpliftCapacityPerPostKn?: number;
+  elevationM?: number;
+}
+
+/**
+ * ASCE 7-22 Eq. 26.10-1 velocity pressure q_z (Pa).
+ * SINGLE source of truth for wind pressure across structuralEngine and
+ * foundationRecommendation. Do NOT duplicate the formula elsewhere.
+ */
+export interface WindPressureResult {
+  qzN_M2: number;
+  qzKnM2: number;
+  vMs: number;
+  kz: number;
+  kzt: number;
+  kd: number;
+  ke: number;
+}
+
+/** Net uplift pressure coefficient for a tilted ground-mount table,
+ *  ASCE 7-22 §27.3-4 / SEAOC PV2-2017 §4.3. */
+export function cpUpliftFor(tiltDeg: number): number {
+  return 1.30 + 0.012 * tiltDeg;
+}
+
+/** Net downward pressure coefficient (wind on front of panel). */
+export function cpDownforceFor(tiltDeg: number): number {
+  return 0.95 + 0.01 * tiltDeg;
+}
+
+export function calculateWindPressureQz(
+  basicWindSpeedKmh: number,
+  elevationM: number = 0,
+): WindPressureResult {
+  const vMs = Math.max(0, basicWindSpeedKmh) / 3.6;
+  const kz = 0.88;  // Exposure C, h<5m - same as current structuralEngine
+  const kzt = 1.0;
+  const kd = 0.85;
+  // ASCE 7-22 §26.10.1 elevation factor. ke = 1.0 at sea level; drops
+  // ~0.362% per 100 m. Only applied when elevationM > 0.
+  const ke = elevationM > 0
+    ? Math.exp(-0.0000362 * elevationM)
+    : 1.0;
+  const qzN_M2 = 0.613 * kz * kzt * kd * ke * Math.pow(vMs, 2);
+  return {
+    qzN_M2,
+    qzKnM2: qzN_M2 / 1000,
+    vMs,
+    kz, kzt, kd, ke,
+  };
 }
 
 export interface StructuralAnalysisResult {
@@ -83,8 +165,23 @@ export interface StructuralAnalysisResult {
   // Safety Verification
   fosOverturning: number;
   fosSliding: number;
+  /**
+   * True when `fosSliding` is a physically meaningful safety factor
+   * (friction-governed base, i.e. `rooftop_ballasted_block`).
+   * False for `rammed_steel_pile`, `concrete_pier`, `ground_screw` - these
+   * rely on soil lateral resistance, not base friction. For those types,
+   * use the Broms FoS from the foundation recommendation.
+   */
+  fosSlidingApplicable: boolean;
+  /** Per-post uplift safety factor (T_ult / F_uplift_per_post).
+   *  Only meaningful for pile / pier / screw foundations. */
   fosUplift: number;
+  /** Uplift capacity used (kN per post) - surfaced for transparency. */
+  upliftCapacityPerPostKn: number;
   isStructurallySafe: boolean;
+  /** Human-readable reason the design is or isn't safe, per foundation type. */
+  safetyReasonEn: string;
+  safetyReasonFa: string;
   engineeringRemarksFa: string;
   engineeringRemarksEn: string;
 }
@@ -107,7 +204,8 @@ export function calculateStructuralAndFoundations(
   } = input;
 
   const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
-  const windSpeedMs = basicWindSpeedKmh / 3.6;
+  const windPressure = calculateWindPressureQz(basicWindSpeedKmh, input.elevationM ?? 0);
+  const windSpeedMs = windPressure.vMs;
 
   // Standard 2P (2 Portrait) table configuration
   // Table width = 2 modules in portrait, Table length = (modulesPerTable / 2) * moduleWidth
@@ -129,27 +227,54 @@ export function calculateStructuralAndFoundations(
   const deadLoadTableKn = (deadLoadTableKg * 9.81) / 1000.0;
 
   // 2. Wind Load Calculation (ASCE 7 & Iranian Code Part 6)
-  // q_z = 0.613 * K_z * K_zt * K_d * V^2 (N/m²)
-  // Exposure Category C (open flat terrain / solar farm): K_z ~ 0.85 at h < 5m
-  const kz = 0.88;
-  const kzt = 1.0; // flat topography
-  const kd = 0.85; // wind directionality factor
-  const velocityWindPressureQzN_M2 = 0.613 * kz * kzt * kd * Math.pow(windSpeedMs, 2);
+  // q_z from the shared calculateWindPressureQz helper (single source).
+  const velocityWindPressureQzN_M2 = windPressure.qzN_M2;
 
   // Aerodynamic coefficients for sloped ground-mount tables
   // C_p,net uplift (wind from rear under array) ~ 1.35 + 0.01 * tilt
-  const cpUplift = 1.30 + 0.012 * arrayTiltDeg;
+  const cpUplift = cpUpliftFor(arrayTiltDeg);
   // C_p,net downforce (wind blowing directly against front face) ~ 1.05 + 0.01 * tilt
-  const cpDownforce = 0.95 + 0.01 * arrayTiltDeg;
+  const cpDownforce = cpDownforceFor(arrayTiltDeg);
 
   // Forces in kN
   const windUpliftForceKn = (velocityWindPressureQzN_M2 * cpUplift * tableAreaM2) / 1000.0;
   const windDownforceKn = (velocityWindPressureQzN_M2 * cpDownforce * tableAreaM2) / 1000.0;
-  const windOverturningMomentKnM = windUpliftForceKn * tableMeanHeightM * Math.cos(tiltRad);
+  // Overturning moment about the down-slope (south) post base.
+  // 2D cross-section, down-slope post at origin: panel CG at
+  // (W_sloped*cos(beta)/2, h_gc + W_sloped*sin(beta)/2); normal wind force
+  // F = qz*Cp*A with components (F*sin(beta), F*cos(beta)).
+  // Moment = x*F_y - y*F_x = F*(W_sloped/2 + h_gc*sin(beta)).
+  const overturningMomentArmM =
+    (tableSlopedWidthM / 2.0) + (groundClearanceM * Math.sin(tiltRad));
+  const windOverturningMomentKnM = windUpliftForceKn * overturningMomentArmM;
 
   // 3. Snow Load Calculation
   // S = S_0 * C_s * C_e * C_t * I_s
   // C_s slope reduction for tilt > 30 deg
+  // ============================================================================
+  // Snow load - ASCE 7-22 §7.4.1 + §7.4.5 (Solar Panel Arrays)
+  // ============================================================================
+  // Current implementation: pf = pg * Cs * cos(beta)
+  //   pg       = ground snow load (site input, kg/m²)
+  //   Cs       = slope factor (1.0 for beta <= 30 deg, linear reduction above)
+  //   cos(beta) = vertical-to-sloped-area projection
+  //
+  // Assumptions (conservative, documented for bankability review):
+  //   Ce = 1.0 - fully exposed, no wind or thermal sheltering
+  //   Ct = 1.0 - cold unheated panel (not the 1.2 heated-roof value)
+  //   Is = 1.0 - Risk Category I (typical utility/residential PV)
+  //   Ce·Ct·Is = 1.0
+  //
+  // KNOWN LIMITATION (v1.1.0): ASCE 7-22 §7.4.1 gives roof snow
+  // pf = 0.7 * Ce·Ct·Is * pg * Cs. This engine intentionally omits the 0.7
+  // factor for GROUND-MOUNT tables (the panel is not a roof - no roof-level
+  // wind/thermal reduction applies, so pg*Cs is physically correct). For
+  // ROOFTOP BALLASTED systems the 0.7 factor SHOULD apply; including it would
+  // reduce roof-ballast structural loading by 30%. v1.1.0 will differentiate
+  // by foundationType:
+  //   ground-mount: pf = pg * Cs
+  //   rooftop:      pf = 0.7 * pg * Cs
+  // ============================================================================
   const cs = arrayTiltDeg > 30 ? Math.max(0, 1 - (arrayTiltDeg - 30) / 40) : 1.0;
   const snowLoadTableKg = groundSnowLoadKgM2 * cs * tableAreaM2 * Math.cos(tiltRad);
   const snowLoadTableKn = (snowLoadTableKg * 9.81) / 1000.0;
@@ -160,9 +285,14 @@ export function calculateStructuralAndFoundations(
   const totalPostsCount = totalTablesCount * postsPerTable;
 
   // Net tension (uplift) per post = (Wind Uplift - 0.9 * Dead Load) / posts + Moment effect
+  // Vertical component of the normal wind force is F_normal * cos(beta).
+  // The moment term (M / post-spacing) already represents the vertical
+  // reaction induced by the moment, so cos(beta) is NOT applied to it.
+  const verticalUpliftForceKn = windUpliftForceKn * Math.cos(tiltRad);
+
   const netUpliftPerPost = Math.max(
     0,
-    (windUpliftForceKn - 0.9 * deadLoadTableKn) / postsPerTable + (windOverturningMomentKnM / (tableSlopedWidthM * postsPerTable / 2))
+    (verticalUpliftForceKn - 0.9 * deadLoadTableKn) / postsPerTable + (windOverturningMomentKnM / (tableSlopedWidthM * postsPerTable / 2))
   );
   const upliftPerPostKn = Number(netUpliftPerPost.toFixed(1));
 
@@ -243,10 +373,65 @@ export function calculateStructuralAndFoundations(
   // 6. Factors of Safety (FoS)
   const stabilizingMoment = (deadLoadTableKn * (tableSlopedWidthM / 2.0)) * Math.cos(tiltRad);
   const fosOverturning = Number((stabilizingMoment / Math.max(0.1, windOverturningMomentKnM)).toFixed(2));
+  // fosSliding uses mu=0.45 base friction - meaningful ONLY for ballasted
+  // blocks. For pile/pier types this value is present but must NOT be
+  // displayed; use the Broms FoS from the foundation report.
   const fosSliding = Number((((deadLoadTableKn * 0.45) / Math.max(0.1, lateralShearPerPostKn * postsPerTable))).toFixed(2));
-  const fosUplift = Number(((deadLoadTableKn / Math.max(0.1, windUpliftForceKn))).toFixed(2));
+  const fosSlidingApplicable = foundationType === 'rooftop_ballasted_block';
+  // Pile uplift (tension) capacity per post, after recommendedDepthM is final.
+  const upliftCapacityPerPostKn =
+    input.pileUpliftCapacityPerPostKn
+    ?? estimatePileUpliftCapacityKn(
+         soilType, recommendedDepthM, 0.15,
+         input.soilCohesionKpa ?? 10, input.soilDensityKnM3 ?? 18.0,
+       );
 
-  const isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isBearingCapacitySafe;
+  const fosUplift = Number(
+    (upliftCapacityPerPostKn / Math.max(0.01, upliftPerPostKn)).toFixed(2)
+  );
+
+  // Safety verdict depends on the governing failure mode per foundation type:
+  //  - ballasted block: self-weight resists overturning and sliding
+  //  - pile / screw: uplift tension governs (Eurocode 7: FoS_uplift >= 2.0)
+  //  - concrete pier: both uplift and self-weight overturning required
+  let isStructurallySafe: boolean;
+  let safetyReasonEn: string;
+  let safetyReasonFa: string;
+  switch (foundationType) {
+    case 'rooftop_ballasted_block':
+      isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isBearingCapacitySafe;
+      safetyReasonEn = isStructurallySafe
+        ? `Overturning FoS = ${fosOverturning} >= 1.5 and sliding FoS = ${fosSliding} >= 1.4 (self-weight ballast governs).`
+        : `Overturning FoS = ${fosOverturning} < 1.5. Increase ballast mass.`;
+      safetyReasonFa = isStructurallySafe
+        ? `ضریب واژگونی ${fosOverturning} >= ۱.۵ و ضریب لغزش ${fosSliding} >= ۱.۴ (وزن بالاست).`
+        : `ضریب واژگونی ${fosOverturning} < ۱.۵. وزن بالاست را افزایش دهید.`;
+      break;
+    case 'rammed_steel_pile':
+    case 'ground_screw':
+      isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe;
+      safetyReasonEn = isStructurallySafe
+        ? `Pile uplift capacity OK (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Broms lateral FoS >= 1.5 verified in foundation report.`
+        : `Pile uplift capacity INSUFFICIENT (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase embedment or add ballast.`;
+      safetyReasonFa = isStructurallySafe
+        ? `ظرفیت کشش شمع کافی است (FoS_uplift = ${fosUplift} >= ۲.۰).`
+        : `ظرفیت کشش شمع کافی نیست (FoS_uplift = ${fosUplift} < ۲.۰). عمق کوبش را افزایش دهید.`;
+      break;
+    case 'concrete_pier':
+      isStructurallySafe =
+        fosUplift >= 2.0 && fosOverturning >= 1.5 && isBearingCapacitySafe;
+      safetyReasonEn = isStructurallySafe
+        ? `Pier uplift FoS = ${fosUplift} >= 2.0 and overturning FoS = ${fosOverturning} >= 1.5.`
+        : `Pier insufficient: FoS_uplift = ${fosUplift}, FoS_overturning = ${fosOverturning}. Increase pier depth or diameter.`;
+      safetyReasonFa = isStructurallySafe
+        ? `FoS کشش ${fosUplift} و واژگونی ${fosOverturning} کافی است.`
+        : `پایه بتنی کافی نیست: FoS_uplift=${fosUplift}, FoS_overturning=${fosOverturning}.`;
+      break;
+    default:
+      isStructurallySafe = false;
+      safetyReasonEn = 'Unknown foundation type.';
+      safetyReasonFa = 'نوع فونداسیون ناشناخته.';
+  }
 
   let engineeringRemarksFa = 'پایداری سازه و فونداسیون طبق آیین‌نامه مبحث ۶ مقررات ملی ساختمان و ASCE 7-22 تأیید است.';
   let engineeringRemarksEn = 'Structural stability and foundation sizing compliant with INBC Part 6 & ASCE 7-22.';
@@ -295,8 +480,12 @@ export function calculateStructuralAndFoundations(
     sandGravelTon,
     fosOverturning,
     fosSliding,
+    fosSlidingApplicable,
     fosUplift,
+    upliftCapacityPerPostKn: Number(upliftCapacityPerPostKn.toFixed(2)),
     isStructurallySafe,
+    safetyReasonEn,
+    safetyReasonFa,
     engineeringRemarksFa,
     engineeringRemarksEn,
   };

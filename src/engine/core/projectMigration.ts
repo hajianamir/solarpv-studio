@@ -8,7 +8,15 @@
 // ============================================================================
 
 import { z } from 'zod';
-import { AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
+// R5 (v1.0.3): Legacy feature flags retained in schema for migration compatibility
+export const DEFAULT_FEATURE_FLAGS = Object.freeze({
+  enableMultiphysicsCoupling: false,
+  enableClimateResilience15Min: false,
+  enableLcaLifecycleSustainability: false,
+  enableNextGenGridHydrogen: false,
+  enableAdvancedGeotechnicalCivil: false,
+});
+export type AdvancedFeatureFlags = typeof DEFAULT_FEATURE_FLAGS;
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity } from '../climaticData';
 import type { LoadCategory } from '../loadProfiles';
@@ -524,7 +532,9 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
 // ----------------------------------------------------------------------------
 
 function getFallbackCity() {
-  return getDefaultClimateCity();
+  // dataRetrievalDate is optional on ClimateCity but required by
+  // ClimateCitySchema's output type — pin the schema default explicitly.
+  return { ...getDefaultClimateCity(), dataRetrievalDate: '2026-01-01' };
 }
 
 function getFallbackModule() {
