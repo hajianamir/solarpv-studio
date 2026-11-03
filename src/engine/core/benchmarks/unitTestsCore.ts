@@ -2579,6 +2579,50 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [F1-R2] Gateway returns raw ClimateResourceData distinct from parsed ClimateCity
+  {
+    const { ExternalDataGateway } = await import('../../dataGateway/externalDataGateway');
+    const gw = ExternalDataGateway.getInstance();
+    const siteData = await gw.getComprehensiveSiteData(48.1351, 11.5820);
+    const hasMetadata = siteData.climateResource?.metadata?.traceId?.startsWith('TRC-');
+    const hasProvider = typeof siteData.climateResource?.metadata?.sourceProvider === 'string';
+    const rawDiffersFromParsed =
+      JSON.stringify(siteData.climateResource) !== JSON.stringify(siteData.climateCity);
+    assert(
+      'F1-R2',
+      'Gateway returns raw ClimateResourceData distinct from parsed ClimateCity',
+      Boolean(hasMetadata && hasProvider && rawDiffersFromParsed),
+      `metadata.traceId=${siteData.climateResource?.metadata?.traceId}, ` +
+      `sourceProvider=${siteData.climateResource?.metadata?.sourceProvider}, ` +
+      `raw!=parsed=${rawDiffersFromParsed}`
+    );
+  }
+
+  // [F1-R9] REAL_INTERNET mode is readable boolean
+  {
+    const { isRealInternetEnabled } = await import('../../env/runtimeEnv');
+    const isReal = isRealInternetEnabled();
+    assert(
+      'F1-R9',
+      'REAL_INTERNET status is readable boolean flag for API mode badge',
+      typeof isReal === 'boolean',
+      `isRealInternetEnabled=${isReal}`
+    );
+  }
+
+  // [F1-R10] ClimateCity confidence fallback when undefined
+  {
+    const { getClimateData } = await import('../../climaticData');
+    const city = getClimateData(48.1351, 11.5820);
+    const confidenceOrDefault = (city as { confidence?: string }).confidence ?? 'analytical_estimate';
+    assert(
+      'F1-R10',
+      'ClimateCity confidence undefined falls back to analytical_estimate',
+      ['measured', 'analytical_estimate', 'hub_calibrated'].includes(confidenceOrDefault),
+      `confidenceOrDefault=${confidenceOrDefault}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

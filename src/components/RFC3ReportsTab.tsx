@@ -32,7 +32,8 @@ import { generateTraceId } from '../engine/core/modelRegistry';
 import { runLhsVsCmcBenchmark, type LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
 import { runMigrationTestSuite, type MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
-import { fetchClimateData, getClimateData } from '../engine/climaticData';
+import { getClimateData } from '../engine/climaticData';
+import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
 import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
 import { type SoilType } from '../engine/structuralEngine';
 import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/types/climateTypes';
@@ -118,12 +119,21 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
   const handleFetchClimateApi = async (lat: number, lng: number) => {
     setIsFetchingClimate(true);
     try {
-      const city = await fetchClimateData(lat, lng);
-      setClimateApiData({ city, raw: city, traceId: city.id });
+      const gateway = ExternalDataGateway.getInstance();
+      const siteData = await gateway.getComprehensiveSiteData(lat, lng);
+      setClimateApiData({
+        city: siteData.climateCity,
+        raw: siteData.climateResource,      // real ClimateResourceData with metadata
+        traceId: siteData.traceId,
+      });
     } catch (err) {
-      console.warn('Climate API fetch failed, using deterministic model:', err);
-      const city = getClimateData(lat, lng);
-      setClimateApiData({ city, raw: city, traceId: city.id + '-ANALYTICAL_FALLBACK' });
+      console.warn('Climate API fetch failed:', err);
+      const fallback = getClimateData(lat, lng);
+      setClimateApiData({
+        city: { ...fallback, confidence: 'analytical_estimate' },
+        raw: { error: err instanceof Error ? err.message : String(err), fallback: true, latitude: lat, longitude: lng },
+        traceId: `${fallback.id}-ERROR_FALLBACK`,
+      });
     } finally {
       setIsFetchingClimate(false);
     }
@@ -957,12 +967,19 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       {activeSubTab === 'climate_data' && (
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4 text-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Globe className="w-4 h-4 text-industrial-accent" />
-              <span>
-                {isEn ? 'Live Global Climate API (NASA POWER / PVGIS / NSRDB)' : 'داده‌های زنده از API اقلیمی جهانی'}
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Globe className="w-4 h-4 text-industrial-accent" />
+                <span>
+                  {isEn ? 'Live Global Climate API (NASA POWER / PVGIS / NSRDB)' : 'داده‌های زنده از API اقلیمی جهانی'}
+                </span>
+              </h2>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${isRealInternetEnabled() ? 'bg-emerald-500/20 text-industrial-success border border-emerald-500/30' : 'bg-amber-500/20 text-industrial-warning border border-amber-500/30'}`}>
+                {isRealInternetEnabled()
+                  ? (isEn ? 'REAL_INTERNET: ON (measured data)' : 'REAL_INTERNET: روشن')
+                  : (isEn ? 'REAL_INTERNET: OFF (analytical fallback)' : 'REAL_INTERNET: خاموش (fallback تحلیلی)')}
               </span>
-            </h2>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleFetchClimateApi(city.latitude, city.longitude)}
@@ -999,11 +1016,26 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 </div>
                 <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
                   <span className="text-slate-400 block mb-1">{isEn ? 'Confidence' : 'اعتماد'} </span>
-                  <span className="font-bold text-industrial-success">{climateApiData.city.confidence}</span>
+                  <span className="font-bold text-industrial-success">{climateApiData.city.confidence ?? 'analytical_estimate'}</span>
                 </div>
               </div>
-              <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded overflow-x-auto">
-                <pre className="text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(climateApiData.raw, null, 2)}</pre>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div className="p-3 bg-industrial-surface border border-industrial-border rounded overflow-x-auto">
+                  <div className="text-xs font-bold text-industrial-accent mb-1">
+                    {isEn ? 'Parsed (ClimateCity)' : 'تفسیرشده (ClimateCity)'}
+                  </div>
+                  <pre className="text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                    {JSON.stringify(climateApiData.city, null, 2)}
+                  </pre>
+                </div>
+                <div className="p-3 bg-industrial-surface border border-industrial-border rounded overflow-x-auto">
+                  <div className="text-xs font-bold text-industrial-warning mb-1">
+                    {isEn ? 'Raw Provider Response (ClimateResourceData)' : 'پاسخ خام ارائه‌دهنده'}
+                  </div>
+                  <pre className="text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                    {JSON.stringify(climateApiData.raw, null, 2)}
+                  </pre>
+                </div>
               </div>
               <p className="text-[10px] text-slate-500">
                 {isEn ? 'Every coordinate resolves through the live API gateway (NASA POWER → PVGIS → NSRDB routing). No hard-coded hubs, no interpolation — raw JSON above includes trace_id and source provider.' : 'هر مختصات از طریق درگاه API زنده حل می‌گردد (روتینگ NASA POWER → PVGIS → NSRDB). هیچ هاب هاردکد و تخمین روی هاب نیست — JSON خام بالا شامل trace_id و منبع است.'}
