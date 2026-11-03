@@ -198,7 +198,11 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
 
   const warnings: string[] = [];
   const vocMaxTemp = panelVoc * (1.0 + betaVocPerC * (tempMinC - 25.0));
-  const vmpMinTemp = panelVmp * (1.0 + betaVocPerC * (tempMaxC - 25.0));
+  // IEC 62548 §7.2: hot-case MPPT floor uses the Pmp temperature
+  // coefficient (typically steeper than Voc). Fall back to Voc when
+  // betaPmpPerC is absent (conservative approximation).
+  const vmpHotCoeff = (req.betaPmpPerC ?? betaVocPerC);
+  const vmpMinTemp = panelVmp * (1.0 + vmpHotCoeff * (tempMaxC - 25.0));
 
   const maxModulesVmax = Math.floor(inverterVdcMax / vocMaxTemp);
   // Per IEC 62548 §7.2 the MPPT upper-bound is governed by the HIGHEST Vmp,

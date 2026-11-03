@@ -2167,6 +2167,37 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E2-ENG-4] Hot-case string sizing must use betaPmpPerC (IEC 62548 §7.2).
+  // without Pmp: vmpMinTemp = 40*(1-0.0025*45) = 35.5 -> ceil(245/35.5) = 7
+  // with Pmp:    vmpMinTemp = 40*(1-0.0030*45) = 34.6 -> ceil(245/34.6) = 8
+  // Pre-fix both returned 7 (hot case ignored betaPmpPerC).
+  {
+    const { calculateStringSizing } = await import('../../solarPvEngine');
+
+    const baseParams = {
+      panelVoc: 49.5,
+      panelVmp: 40.0,
+      tempMinC: -10,
+      tempMaxC: 70,
+      betaVocPerC: -0.0025,
+      inverterVdcMax: 1500,
+      inverterMpptMin: 245,
+      inverterMpptMax: 800,
+    };
+
+    const withoutPmp = calculateStringSizing({ ...baseParams });
+    const withPmp = calculateStringSizing({ ...baseParams, betaPmpPerC: -0.0030 });
+
+    assert(
+      'E2-ENG-4',
+      'Hot-case Vmp uses Pmp temp coefficient when supplied (steeper coeff -> more min modules)',
+      withoutPmp.minModules === 7 && withPmp.minModules === 8,
+      `withoutPmp.minModules=${withoutPmp.minModules} (expect 7), ` +
+      `withPmp.minModules=${withPmp.minModules} (expect 8) ` +
+      `- the pre-fix code returned 7 for both (ignored betaPmpPerC in hot case)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
