@@ -2410,6 +2410,103 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E6-STRUCT-1] ASCE 7-22 §26.10.1 Ke elevation factor in qz.
+  {
+    const { calculateWindPressureQz } = await import('../../structuralEngine');
+
+    const sea = calculateWindPressureQz(130, 0);
+    const tehran = calculateWindPressureQz(130, 1190);
+    const boulder = calculateWindPressureQz(130, 1620);
+
+    const ratioTehran = tehran.qzKnM2 / sea.qzKnM2;
+    const ratioBoulder = boulder.qzKnM2 / sea.qzKnM2;
+
+    assert(
+      'E6-STRUCT-1',
+      'Ke elevation factor: qz drops 4.2% at 1190 m, 5.7% at 1620 m',
+      Math.abs(ratioTehran - 0.958) < 0.005 &&
+      Math.abs(ratioBoulder - 0.943) < 0.005 &&
+      sea.ke === 1.0,
+      `Tehran ratio=${ratioTehran.toFixed(4)} (expect 0.958), ` +
+      `Boulder ratio=${ratioBoulder.toFixed(4)} (expect 0.943), ` +
+      `sea ke=${sea.ke}`
+    );
+  }
+
+  // [E6-STRUCT-2] Uplift-per-post parity between engines (within 10%).
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+    const { recommendSharedFoundation } = await import('../../geotech/foundationRecommendation');
+
+    const commonInput = {
+      arrayTiltDeg: 31, basicWindSpeedKmh: 130, groundSnowLoadKgM2: 0,
+      elevationM: 0,
+    };
+
+    const se = calculateStructuralAndFoundations({
+      ...commonInput, totalModulesCount: 140, moduleLengthM: 2.278,
+      moduleWidthM: 1.134, moduleWeightKg: 28.5, tablesCount: 5,
+      modulesPerTable: 28, groundClearanceM: 0.9,
+      foundationType: 'rammed_steel_pile', soilType: 'dense_sand_gravel',
+    });
+
+    const fr = recommendSharedFoundation({
+      ...commonInput, siteName: 'x', latitude: 35, longitude: 51,
+      soilClassification: 'dense_sand_gravel',
+      soilBearingCapacityKpa: 250, soilInternalFrictionAngleDeg: 32,
+      soilCohesionKpa: 10, soilDensityKnM3: 18.5, frostDepthCm: 30,
+      tableAreaM2: 74.4, tableSlopedWidthM: 4.606, postsPerTable: 4,
+      clearanceHeightM: 0.9, slopeDeg: 0,
+    });
+
+    const ratio = fr.upliftPerPostKn / se.upliftPerPostKn;
+
+    assert(
+      'E6-STRUCT-2',
+      'Uplift-per-post parity between engines (within 10%)',
+      ratio > 0.90 && ratio < 1.10,
+      `struct=${se.upliftPerPostKn.toFixed(2)}, found=${fr.upliftPerPostKn.toFixed(2)}, ` +
+      `ratio=${ratio.toFixed(3)} (expect 0.90-1.10; pre-E6 was ~0.45)`
+    );
+  }
+
+  // [E6-STRUCT-3] Compression-per-post parity (wind included in both).
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+    const { recommendSharedFoundation } = await import('../../geotech/foundationRecommendation');
+
+    const commonInput = {
+      arrayTiltDeg: 31, basicWindSpeedKmh: 130, groundSnowLoadKgM2: 100,
+      elevationM: 0,
+    };
+
+    const se = calculateStructuralAndFoundations({
+      ...commonInput, totalModulesCount: 140, moduleLengthM: 2.278,
+      moduleWidthM: 1.134, moduleWeightKg: 28.5, tablesCount: 5,
+      modulesPerTable: 28, groundClearanceM: 0.9,
+      foundationType: 'rammed_steel_pile', soilType: 'dense_sand_gravel',
+    });
+
+    const fr = recommendSharedFoundation({
+      ...commonInput, siteName: 'x', latitude: 35, longitude: 51,
+      soilClassification: 'dense_sand_gravel',
+      soilBearingCapacityKpa: 250, soilInternalFrictionAngleDeg: 32,
+      soilCohesionKpa: 10, soilDensityKnM3: 18.5, frostDepthCm: 30,
+      tableAreaM2: 74.4, tableSlopedWidthM: 4.606, postsPerTable: 4,
+      clearanceHeightM: 0.9, slopeDeg: 0,
+    });
+
+    const ratio = fr.compressionPerPostKn / se.compressionPerPostKn;
+
+    assert(
+      'E6-STRUCT-3',
+      'Compression-per-post parity (wind downforce included in both)',
+      ratio > 0.90 && ratio < 1.10,
+      `struct=${se.compressionPerPostKn.toFixed(2)}, found=${fr.compressionPerPostKn.toFixed(2)}, ` +
+      `ratio=${ratio.toFixed(3)} (expect 0.90-1.10; pre-E6 foundation omitted wind)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

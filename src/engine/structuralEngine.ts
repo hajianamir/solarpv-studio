@@ -67,6 +67,7 @@ export interface StructuralParametersInput {
   /** Optional override for pile skin-friction uplift capacity per post (kN).
    *  When absent, the engine estimates via the beta/alpha method below. */
   pileUpliftCapacityPerPostKn?: number;
+  elevationM?: number;
 }
 
 /**
@@ -81,19 +82,39 @@ export interface WindPressureResult {
   kz: number;
   kzt: number;
   kd: number;
+  ke: number;
 }
 
-export function calculateWindPressureQz(basicWindSpeedKmh: number): WindPressureResult {
+/** Net uplift pressure coefficient for a tilted ground-mount table,
+ *  ASCE 7-22 §27.3-4 / SEAOC PV2-2017 §4.3. */
+export function cpUpliftFor(tiltDeg: number): number {
+  return 1.30 + 0.012 * tiltDeg;
+}
+
+/** Net downward pressure coefficient (wind on front of panel). */
+export function cpDownforceFor(tiltDeg: number): number {
+  return 0.95 + 0.01 * tiltDeg;
+}
+
+export function calculateWindPressureQz(
+  basicWindSpeedKmh: number,
+  elevationM: number = 0,
+): WindPressureResult {
   const vMs = Math.max(0, basicWindSpeedKmh) / 3.6;
   const kz = 0.88;  // Exposure C, h<5m - same as current structuralEngine
   const kzt = 1.0;
   const kd = 0.85;
-  const qzN_M2 = 0.613 * kz * kzt * kd * Math.pow(vMs, 2);
+  // ASCE 7-22 §26.10.1 elevation factor. ke = 1.0 at sea level; drops
+  // ~0.362% per 100 m. Only applied when elevationM > 0.
+  const ke = elevationM > 0
+    ? Math.exp(-0.0000362 * elevationM)
+    : 1.0;
+  const qzN_M2 = 0.613 * kz * kzt * kd * ke * Math.pow(vMs, 2);
   return {
     qzN_M2,
     qzKnM2: qzN_M2 / 1000,
     vMs,
-    kz, kzt, kd,
+    kz, kzt, kd, ke,
   };
 }
 
@@ -183,7 +204,7 @@ export function calculateStructuralAndFoundations(
   } = input;
 
   const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
-  const windPressure = calculateWindPressureQz(basicWindSpeedKmh);
+  const windPressure = calculateWindPressureQz(basicWindSpeedKmh, input.elevationM ?? 0);
   const windSpeedMs = windPressure.vMs;
 
   // Standard 2P (2 Portrait) table configuration
@@ -211,9 +232,9 @@ export function calculateStructuralAndFoundations(
 
   // Aerodynamic coefficients for sloped ground-mount tables
   // C_p,net uplift (wind from rear under array) ~ 1.35 + 0.01 * tilt
-  const cpUplift = 1.30 + 0.012 * arrayTiltDeg;
+  const cpUplift = cpUpliftFor(arrayTiltDeg);
   // C_p,net downforce (wind blowing directly against front face) ~ 1.05 + 0.01 * tilt
-  const cpDownforce = 0.95 + 0.01 * arrayTiltDeg;
+  const cpDownforce = cpDownforceFor(arrayTiltDeg);
 
   // Forces in kN
   const windUpliftForceKn = (velocityWindPressureQzN_M2 * cpUplift * tableAreaM2) / 1000.0;
@@ -240,9 +261,14 @@ export function calculateStructuralAndFoundations(
   const totalPostsCount = totalTablesCount * postsPerTable;
 
   // Net tension (uplift) per post = (Wind Uplift - 0.9 * Dead Load) / posts + Moment effect
+  // Vertical component of the normal wind force is F_normal * cos(beta).
+  // The moment term (M / post-spacing) already represents the vertical
+  // reaction induced by the moment, so cos(beta) is NOT applied to it.
+  const verticalUpliftForceKn = windUpliftForceKn * Math.cos(tiltRad);
+
   const netUpliftPerPost = Math.max(
     0,
-    (windUpliftForceKn - 0.9 * deadLoadTableKn) / postsPerTable + (windOverturningMomentKnM / (tableSlopedWidthM * postsPerTable / 2))
+    (verticalUpliftForceKn - 0.9 * deadLoadTableKn) / postsPerTable + (windOverturningMomentKnM / (tableSlopedWidthM * postsPerTable / 2))
   );
   const upliftPerPostKn = Number(netUpliftPerPost.toFixed(1));
 
