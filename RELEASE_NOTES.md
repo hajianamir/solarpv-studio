@@ -9,6 +9,9 @@ Hotfix release on top of v1.0.0.
 - **ENG-1 (critical)**: solar azimuth in `calculateSolarPosition` was 180° inverted between morning and afternoon (Tehran summer 09:00 returned 265.9° instead of 94.9°). Fixed; affects `POST /api/v1/solar/position`.
 - **ENG-2 (high)**: off-grid battery autonomy sizing used nighttime-only load, undersizing the BESS ~2× (20 kWh/day × 2 days now correctly sizes to ~52.8 kWh gross, was ~24.8 kWh). On-grid outage scaling fixed (`outageHours/24` → `outageHours/12`).
 
+- **ENG-3**: corrected non-monotonic inverter clipping loss at DC/AC ratio = 1.3 (continuous and monotone now; small yield shift for arrays with DC/AC > 1.3 - correctness fix, not a regression).
+- **ENG-4**: hot-case string sizing now uses the Pmp temperature coefficient (IEC 62548 §7.2), correcting a 1-module under-sizing in some hot climates.
+
 ## Breaking changes
 
 None. Both fixes are pure correctness repairs; no public signature changed except the internal parameter rename in `sizeBatteryBank`.

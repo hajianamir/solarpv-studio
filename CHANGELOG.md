@@ -16,6 +16,9 @@ _(No unreleased changes as of v1.0.0.)_
 - **ENG-1 (critical)**: solar position azimuth returned 180° inverted in both the morning and afternoon branches. Tehran summer 09:00 returned 265.9° (should be 94.9°); afternoon returned the mirror. Affects the `POST /api/v1/solar/position` endpoint and any future internal caller.
 - **ENG-2 (high)**: off-grid battery autonomy sizing used the nighttime-only load instead of the full 24-hour load, undersizing the BESS by ~2×. A 20 kWh/day site with 2 days autonomy now correctly sizes to ~52.8 kWh gross (was ~24.8 kWh). On-grid outage sizing had a related bug (`outageHours / 24` instead of `outageHours / 12`). Both fixed via the new `computeAutonomyEnergyRequirement` helper.
 
+- **ENG-3 (medium)**: inverter clipping loss was non-monotonic at DC/AC ratio = 1.3 (jumped from -0.2% to -0.065% as ILR crossed 1.3, then increased again - physically impossible since higher ILR must yield more clipping). Formula is now continuous and monotone. Note: annual yield for arrays with DC/AC > 1.3 shifts by a small amount (+0.2% additional loss at ILR = 1.4) - this is the correct behavior (the pre-fix formula under-counted clipping in the 1.3-1.5 ILR band).
+- **ENG-4 (low)**: hot-case string sizing used the Voc temperature coefficient instead of the Pmp coefficient (IEC 62548 §7.2). Undersized the minimum-modules count by 1 in some hot climates. Fixed by using `betaPmpPerC` when supplied, falling back to `betaVocPerC` for backward compatibility. Some configs that previously emitted no MPPT-floor warning will now correctly warn that the string is too short for the hot-case MPPT minimum.
+
 ## [1.0.0] - 2026-11-03
 
 ### Changed
