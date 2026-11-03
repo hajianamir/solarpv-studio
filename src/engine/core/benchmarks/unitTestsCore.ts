@@ -2073,6 +2073,39 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E1-ENG-1] Solar azimuth must be east of south in the morning and
+  // west of south in the afternoon. Regression guard for the branch
+  // inversion bug that returned 265.9° at 9 AM Tehran summer solstice.
+  {
+    const { calculateSolarPosition } = await import('../../solarPvEngine');
+
+    // Tehran (35.6892, 51.389), June 21 2024. Local time IRST = UTC+3:30.
+    // 09:00 local = 05:30 UTC; 15:00 local = 11:30 UTC.
+    const morningTs = Date.UTC(2024, 5, 21, 5, 30, 0) / 1000;
+    const afternoonTs = Date.UTC(2024, 5, 21, 11, 30, 0) / 1000;
+
+    const morning = calculateSolarPosition(35.6892, 51.389, morningTs);
+    const afternoon = calculateSolarPosition(35.6892, 51.389, afternoonTs);
+
+    // Primary invariant: morning sun east of south (90-180), afternoon
+    // sun west of south (180-270). If branches are inverted, morning
+    // returns ~266 and afternoon returns ~94 - both outside these bands.
+    const morningEast = morning.azimuthDeg > 90 && morning.azimuthDeg < 180;
+    const afternoonWest = afternoon.azimuthDeg > 180 && afternoon.azimuthDeg < 270;
+
+    // Secondary sanity: symmetric about 180 within 3 degrees.
+    const symmetry = Math.abs((180 - morning.azimuthDeg) - (afternoon.azimuthDeg - 180));
+
+    assert(
+      'E1-ENG-1',
+      'Solar azimuth is east of south in the morning, west of south in the afternoon',
+      morningEast && afternoonWest && symmetry < 3.0,
+      `morning=${morning.azimuthDeg.toFixed(2)} (expect 90-180), ` +
+      `afternoon=${afternoon.azimuthDeg.toFixed(2)} (expect 180-270), ` +
+      `symmetry error=${symmetry.toFixed(2)} (expect < 3.0)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

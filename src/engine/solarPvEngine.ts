@@ -382,9 +382,11 @@ export function calculateSolarPosition(
     const val = (Math.sin(latRad) * cosZenith - Math.sin(declRad)) / (Math.cos(latRad) * sinZenith);
     const clampedVal = Math.min(1.0, Math.max(-1.0, val));
     if (haRad > 0.0) {
-      azimuthRad = Math.PI * 2.0 - Math.acos(clampedVal);
-    } else {
+      // Afternoon: sun is west of solar noon meridian.
       azimuthRad = Math.acos(clampedVal);
+    } else {
+      // Morning: sun is east of solar noon meridian.
+      azimuthRad = Math.PI * 2.0 - Math.acos(clampedVal);
     }
   }
   const azimuthDeg = (toDeg(azimuthRad) + 180.0) % 360.0;
