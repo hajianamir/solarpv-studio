@@ -10,7 +10,7 @@
  */
 
 import type { SoilClassification } from '../types/climateTypes';
-import { SoilPropertiesData } from './types';
+import { type SoilPropertiesData } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 
 export class SoilDataProvider {

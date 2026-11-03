@@ -40,26 +40,26 @@ import {
 } from 'lucide-react';
 
 // i18n
-import { Language, translations } from './i18n';
+import { type Language, translations } from './i18n';
 
-import { getDefaultClimateCity, ClimateCity, SiteGeotechnicalOverrides } from './engine/climaticData';
-import { LOAD_PRESETS, ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
-import { designPvArray, ModuleSpecs, InverterSpecs } from './engine/pvEngineAdvanced';
+import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
+import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
+import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
-import { TrackerConfig } from './engine/tracker/backtrackingEngine';
+import { type TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
-import { sizeBatteryBank, BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
+import { sizeBatteryBank, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
 import { evaluateInverterClustering } from './engine/inverterClustering';
 import {
   calculateAdvancedCableRun,
   calculateEarthingSystem,
   calculateLightningProtection,
-  CompleteProtectionSystemResult,
+  type CompleteProtectionSystemResult,
 } from './engine/protectionBomEngine';
 import { simulate24hEnergyBalance, sizeDieselGenerator } from './engine/simulation24hEngine';
 import {
   performFinancialAnalysis,
-  UserFinancialPricing,
+  type UserFinancialPricing,
   DEFAULT_FINANCIAL_PRICING,
 } from './engine/financialEngine';
 import { generateScenarios } from './engine/scenarioEngine';
@@ -71,8 +71,8 @@ import {
 } from './engine/equipmentCatalogData';
 import {
   designPowerplantBays,
-  InverterTechnology,
-  PowerplantBayArchitectureResult,
+  type InverterTechnology,
+  type PowerplantBayArchitectureResult,
 } from './engine/powerplantBayEngine';
 
 // Components - Core Suite

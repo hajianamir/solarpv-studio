@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Activity, Sun, Thermometer, Layers, AlertCircle, RefreshCw } from 'lucide-react';
-import { calculateSingleDiodeCurve, IvCurveResult } from '../engine/singleDiodeModel';
+import { calculateSingleDiodeCurve, type IvCurveResult } from '../engine/singleDiodeModel';
 
 interface IvCurveTracerTabProps {
   lang?: 'fa' | 'en';

@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sun, Cpu, AlertTriangle, CheckCircle2, Layers, Zap, Eye, Search, Filter } from 'lucide-react';
-import { PvArrayDesignResult, ModuleSpecs, InverterSpecs } from '../engine/pvEngineAdvanced';
-import { InverterClusteringResult } from '../engine/inverterClustering';
-import { CATALOG_MODULES, CATALOG_INVERTERS, CatalogInverter } from '../engine/equipmentCatalogData';
-import { ClimateCity } from '../engine/climaticData';
+import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
+import { type InverterClusteringResult } from '../engine/inverterClustering';
+import { CATALOG_MODULES, CATALOG_INVERTERS, type CatalogInverter } from '../engine/equipmentCatalogData';
+import { type ClimateCity } from '../engine/climaticData';
 import { ShadingAnalysisSubTab } from './ShadingAnalysisSubTab';
-import { assessSaltCorrosion, SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
-import { TrackerConfig, computeTrackerState } from '../engine/tracker/backtrackingEngine';
+import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import { type TrackerConfig, computeTrackerState } from '../engine/tracker/backtrackingEngine';
 
 interface PvArrayEngineeringTabProps {
   selectedModule: ModuleSpecs;

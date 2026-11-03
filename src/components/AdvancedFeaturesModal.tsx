@@ -20,11 +20,11 @@ import {
   Activity,
 } from 'lucide-react';
 import { useFeatureFlags } from '../engine/core/FeatureFlagContext';
-import { FEATURE_FLAG_METADATA, AdvancedFeatureFlags } from '../engine/core/featureFlags';
-import { runSystemCrossValidation, SystemValidationReport } from '../engine/core/benchmarks/crossValidation';
-import { PHYSICS_MODEL_REGISTRY, ModelSemverEntry } from '../engine/core/modelRegistry';
-import { runLhsVsCmcBenchmark, LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
-import { runMigrationTestSuite, MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
+import { FEATURE_FLAG_METADATA, type AdvancedFeatureFlags } from '../engine/core/featureFlags';
+import { runSystemCrossValidation, type SystemValidationReport } from '../engine/core/benchmarks/crossValidation';
+import { PHYSICS_MODEL_REGISTRY, type ModelSemverEntry } from '../engine/core/modelRegistry';
+import { runLhsVsCmcBenchmark, type LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
+import { runMigrationTestSuite, type MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
 
 interface AdvancedFeaturesModalProps {
   isOpen: boolean;

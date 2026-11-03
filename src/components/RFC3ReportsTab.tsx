@@ -25,16 +25,16 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useFeatureFlags } from '../engine/core/FeatureFlagContext';
-import { FEATURE_FLAG_METADATA, AdvancedFeatureFlags } from '../engine/core/featureFlags';
-import { runSystemCrossValidation, SystemValidationReport, ValidationMetricResult } from '../engine/core/benchmarks/crossValidation';
-import { PHYSICS_MODEL_REGISTRY, ModelSemverEntry } from '../engine/core/modelRegistry';
+import { FEATURE_FLAG_METADATA, type AdvancedFeatureFlags } from '../engine/core/featureFlags';
+import { runSystemCrossValidation, type SystemValidationReport, type ValidationMetricResult } from '../engine/core/benchmarks/crossValidation';
+import { PHYSICS_MODEL_REGISTRY, type ModelSemverEntry } from '../engine/core/modelRegistry';
 import { generateTraceId } from '../engine/core/modelRegistry';
-import { runLhsVsCmcBenchmark, LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
-import { runMigrationTestSuite, MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
+import { runLhsVsCmcBenchmark, type LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
+import { runMigrationTestSuite, type MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 import { fetchClimateData, getClimateData } from '../engine/climaticData';
 import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
-import { SoilType } from '../engine/structuralEngine';
+import { type SoilType } from '../engine/structuralEngine';
 import { assessSaltCorrosion } from '../engine/corrosion/saltCorrosionEngine';
 
 interface RFC3ReportsTabProps {

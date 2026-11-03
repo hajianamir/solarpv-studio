@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
+import { type AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
 
 const STORAGE_KEY = 'solarpv_advanced_feature_flags_v3';
 

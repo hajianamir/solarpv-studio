@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Zap, Clock, ShieldAlert, Sparkles, Check, RotateCcw } from 'lucide-react';
 import {
-  ElectricalLoadItem,
-  LoadCategory,
+  type ElectricalLoadItem,
+  type LoadCategory,
   LOAD_CATEGORY_LABELS,
   LOAD_PRESETS,
   STANDARD_APPLIANCE_LIBRARY,
   analyzeLoadProfile,
-  LoadAnalysisResult,
+  type LoadAnalysisResult,
 } from '../engine/loadProfiles';
 
 interface LoadProfilingTabProps {

@@ -16,7 +16,7 @@
  */
 
 import {
-  HourlySnowWeatherStep,
+  type HourlySnowWeatherStep,
   simulateAnnualSnowShedding,
 } from './marionSnowEngine';
 

@@ -30,8 +30,8 @@
  */
 
 import {
-  TemperatureCoupledIamConfig,
-  TemperatureCoupledIamResult,
+  type TemperatureCoupledIamConfig,
+  type TemperatureCoupledIamResult,
   DEFAULT_IAM_CONFIG,
 } from '../core/advancedInterfaces';
 

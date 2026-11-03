@@ -15,13 +15,13 @@ import { migrateProjectToV3 } from '../projectMigration';
 import {
   evaluateRainCleaningFraction,
   simulateAnnualSoiling,
-  DailyWeatherSoilingStep,
+  type DailyWeatherSoilingStep,
 } from '../../soiling/kimberSoilingEngine';
 import {
   evaluateSheddingFraction,
   calculateSnowStep,
   simulateAnnualSnowShedding,
-  HourlySnowWeatherStep,
+  type HourlySnowWeatherStep,
 } from '../../snow/marionSnowEngine';
 import { computeWaterfallLosses } from '../../waterfallLossEngine';
 import { DEFAULT_SOILING_CONFIG, DEFAULT_SNOW_SHEDDING_CONFIG } from '../advancedInterfaces';
@@ -54,7 +54,7 @@ import { isRealInternetEnabled } from '../../env/runtimeEnv';
 import {
   computeTrackerState,
   simulateTrackerAnnual,
-  TrackerConfig,
+  type TrackerConfig,
 } from '../../tracker/backtrackingEngine';
 import {
   TRACKER_POINT_FIXTURES,

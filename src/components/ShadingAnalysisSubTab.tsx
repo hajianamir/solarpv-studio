@@ -17,11 +17,11 @@ import {
 } from 'lucide-react';
 import {
   analyze3dShadingAndSunPath,
-  ShadingGeometryInput,
-  ShadingAnalysisResult,
+  type ShadingGeometryInput,
+  type ShadingAnalysisResult,
   calculateSolarPosition,
 } from '../engine/shadingSunPathEngine';
-import { ClimateCity } from '../engine/climaticData';
+import { type ClimateCity } from '../engine/climaticData';
 
 interface ShadingAnalysisSubTabProps {
   city: ClimateCity;

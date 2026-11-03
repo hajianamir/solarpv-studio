@@ -5,9 +5,9 @@
  */
 
 import {
-  CatalogPvModule,
-  CatalogInverter,
-  CatalogBattery,
+  type CatalogPvModule,
+  type CatalogInverter,
+  type CatalogBattery,
   CATALOG_MODULES,
   CATALOG_INVERTERS,
   CATALOG_BATTERIES,

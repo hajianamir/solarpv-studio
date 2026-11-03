@@ -47,7 +47,7 @@
  */
 
 import { calculateTemperatureCoupledIam } from '../optical/iamEngine';
-import { simulateAnnualSoiling, DailyWeatherSoilingStep } from '../soiling/kimberSoilingEngine';
+import { simulateAnnualSoiling, type DailyWeatherSoilingStep } from '../soiling/kimberSoilingEngine';
 
 export type BipvVentilationMode = 'unventilated_insulated' | 'natural_buoyancy' | 'forced_convection';
 

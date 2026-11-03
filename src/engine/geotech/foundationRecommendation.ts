@@ -16,7 +16,7 @@
  * No hard-coded defaults — every input is required.
  */
 
-import { FoundationType, SoilType } from '../structuralEngine';
+import { type FoundationType, type SoilType } from '../structuralEngine';
 
 export interface FoundationRecommendationInput {
   siteName?: string;

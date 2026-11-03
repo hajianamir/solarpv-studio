@@ -21,16 +21,16 @@ import {
 } from 'lucide-react';
 import {
   calculateStructuralAndFoundations,
-  FoundationType,
-  SoilType,
-  StructuralAnalysisResult,
+  type FoundationType,
+  type SoilType,
+  type StructuralAnalysisResult,
 } from '../engine/structuralEngine';
-import { ClimateCity, SiteGeotechnicalOverrides } from '../engine/climaticData';
+import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/climaticData';
 import {
   recommendFoundation,
-  FoundationRecommendationResult,
+  type FoundationRecommendationResult,
 } from '../engine/structureRecommendationEngine';
-import { assessSaltCorrosion, SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
 
 interface StructuralFoundationTabProps {
   totalModulesCount?: number;

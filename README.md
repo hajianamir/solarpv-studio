@@ -31,6 +31,7 @@ npm run dev      # starts Express + Vite middleware on http://localhost:3000
 
 ```bash
 npm run lint         # tsc --noEmit (zero errors required)
+  # Type-imports are enforced via verbatimModuleSyntax: true in tsconfig.json
 npm run build        # vite build (production bundle)
 npm test             # core subsystem + benchmark tests
 npm run test:coverage

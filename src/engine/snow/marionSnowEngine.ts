@@ -18,9 +18,9 @@
  */
 
 import {
-  SnowSheddingConfig,
-  SnowSheddingStepResult,
-  SnowSheddingSummaryResult,
+  type SnowSheddingConfig,
+  type SnowSheddingStepResult,
+  type SnowSheddingSummaryResult,
   DEFAULT_SNOW_SHEDDING_CONFIG,
 } from '../core/advancedInterfaces';
 

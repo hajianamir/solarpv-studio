@@ -2,9 +2,9 @@
 
 import { calculateThermalDerate } from './core/thermalDerate';
 import {
-  TrackerConfig,
+  type TrackerConfig,
   simulateTrackerAnnual,
-  SunPathPoint,
+  type SunPathPoint,
 } from './tracker/backtrackingEngine';
 
 export interface LossStage {

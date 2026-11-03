@@ -32,14 +32,14 @@ import {
   HardHat,
   FileCode,
 } from 'lucide-react';
-import { ClimateCity, SiteGeotechnicalOverrides, getEffectiveClimateCity } from '../engine/climaticData';
-import { LoadAnalysisResult } from '../engine/loadProfiles';
-import { PvArrayDesignResult, ModuleSpecs, InverterSpecs } from '../engine/pvEngineAdvanced';
-import { BatteryBankSizingResult } from '../engine/batteryEngine';
-import { CompleteProtectionSystemResult } from '../engine/protectionBomEngine';
-import { Simulation24hResult, GeneratorSizingResult } from '../engine/simulation24hEngine';
-import { FinancialAnalysisResult } from '../engine/financialEngine';
-import { PowerplantBayArchitectureResult } from '../engine/powerplantBayEngine';
+import { type ClimateCity, type SiteGeotechnicalOverrides, getEffectiveClimateCity } from '../engine/climaticData';
+import { type LoadAnalysisResult } from '../engine/loadProfiles';
+import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
+import { type BatteryBankSizingResult } from '../engine/batteryEngine';
+import { type CompleteProtectionSystemResult } from '../engine/protectionBomEngine';
+import { type Simulation24hResult, type GeneratorSizingResult } from '../engine/simulation24hEngine';
+import { type FinancialAnalysisResult } from '../engine/financialEngine';
+import { type PowerplantBayArchitectureResult } from '../engine/powerplantBayEngine';
 import { exportToWordDocument, exportToExcelWorkbook } from '../engine/reportingEngine';
 
 interface OfficialReportModalProps {

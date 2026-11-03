@@ -15,9 +15,9 @@ import {
   Sliders,
 } from 'lucide-react';
 import {
-  BatteryChemistry,
+  type BatteryChemistry,
   BATTERY_CHEMISTRIES,
-  BatteryBankSizingResult,
+  type BatteryBankSizingResult,
 } from '../engine/batteryEngine';
 
 interface BessTabProps {

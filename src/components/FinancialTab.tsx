@@ -12,12 +12,12 @@ import {
   Table,
 } from 'lucide-react';
 import {
-  FinancialAnalysisResult,
-  UserFinancialPricing,
+  type FinancialAnalysisResult,
+  type UserFinancialPricing,
 } from '../engine/financialEngine';
-import { ClimateCity } from '../engine/climaticData';
-import { FoundationType } from '../engine/structuralEngine';
-import { assessSaltCorrosion, SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import { type ClimateCity } from '../engine/climaticData';
+import { type FoundationType } from '../engine/structuralEngine';
+import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
 
 interface FinancialTabProps {
   financial: FinancialAnalysisResult;

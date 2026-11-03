@@ -14,7 +14,7 @@
  *   This provides hard proof that real provider data (NASA POWER / PVGIS) was obtained.
  */
 
-import { ClimateResourceData, DataProvenanceMetadata } from './types';
+import { type ClimateResourceData, type DataProvenanceMetadata } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 import { isRealInternetEnabled } from '../env/runtimeEnv';
 

@@ -8,7 +8,7 @@
 // ============================================================================
 
 import { z } from 'zod';
-import { AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
+import { type AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity } from '../climaticData';
 import type { LoadCategory } from '../loadProfiles';

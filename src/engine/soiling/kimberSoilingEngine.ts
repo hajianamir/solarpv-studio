@@ -16,9 +16,9 @@
  */
 
 import {
-  SoilingConfig,
-  SoilingDailyStepResult,
-  SoilingSimulationResult,
+  type SoilingConfig,
+  type SoilingDailyStepResult,
+  type SoilingSimulationResult,
   DEFAULT_SOILING_CONFIG,
 } from '../core/advancedInterfaces';
 

@@ -22,7 +22,7 @@ import {
 import { generateTraceId } from '../modelRegistry';
 import { calculateBifacialViewFactor } from '../../bifacial/bifacial2dViewFactor';
 import { calculateSingleDiodeCurve } from '../../singleDiodeModel';
-import { simulateAnnualSoiling, DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
+import { simulateAnnualSoiling, type DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
 import { evaluateSheddingFraction } from '../../snow/marionSnowEngine';
 import { calculateTemperatureCoupledIam } from '../../optical/iamEngine';
 import { simulateBipvThermalStep } from '../../bipv/bipvThermalEngine';

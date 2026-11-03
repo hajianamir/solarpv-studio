@@ -15,8 +15,8 @@ import {
 import {
   analyzePowerplantHarmonics,
   analyzeUpstreamGridConditions,
-  HarmonicsAnalysisResult,
-  UpstreamGridAnalysisResult,
+  type HarmonicsAnalysisResult,
+  type UpstreamGridAnalysisResult,
 } from '../engine/harmonicsEngine';
 
 interface HarmonicsGridTabProps {

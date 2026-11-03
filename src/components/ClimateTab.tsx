@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle } from 'lucide-react';
-import { ClimateCity } from '../engine/climaticData';
+import { type ClimateCity } from '../engine/climaticData';
 import { SiteLocationMap } from './SiteLocationMap';
 
 interface ClimateTabProps {

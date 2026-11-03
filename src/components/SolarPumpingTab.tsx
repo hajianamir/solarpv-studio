@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Droplet, Sun, Zap, Gauge, Compass, Activity, CheckCircle2 } from 'lucide-react';
-import { calculateSolarPump, SolarPumpInput, SolarPumpResult } from '../engine/solarPumpEngine';
+import { calculateSolarPump, type SolarPumpInput, type SolarPumpResult } from '../engine/solarPumpEngine';
 
 interface SolarPumpingTabProps {
   peakSunHours: number;

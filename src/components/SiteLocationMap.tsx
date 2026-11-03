@@ -17,7 +17,7 @@ import {
   Compass,
   AlertTriangle,
 } from 'lucide-react';
-import { ClimateCity, getClimateData } from '../engine/climaticData';
+import { type ClimateCity, getClimateData } from '../engine/climaticData';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 
 interface SiteLocationMapProps {
