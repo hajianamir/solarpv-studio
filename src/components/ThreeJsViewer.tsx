@@ -22,6 +22,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
 
   useEffect(() => {
     if (!mountRef.current) return;
+    if (sceneRef.current) return; // StrictMode idempotency guard
     const container = mountRef.current;
     let width = container.clientWidth || 600;
     let height = container.clientHeight || 360;
@@ -230,8 +231,14 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
       dom.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
-      if (container.contains(dom)) {
-        container.removeChild(dom);
+      sceneRef.current = null;
+      sunMeshRef.current = null;
+      arrayGroupRef.current = null;
+      dirLightRef.current = null;
+      try {
+        if (container.contains(dom)) container.removeChild(dom);
+      } catch {
+        /* container already detached */
       }
       renderer.dispose();
     };
