@@ -55,6 +55,7 @@ import {
   calculateEarthingSystem,
   calculateLightningProtection,
   type CompleteProtectionSystemResult,
+  type ProtectionBomItem,
 } from './engine/protectionBomEngine';
 import { simulate24hEnergyBalance, sizeDieselGenerator } from './engine/simulation24hEngine';
 import {
@@ -502,7 +503,7 @@ export const App: React.FC = () => {
       cableRuns: [dcStringRun],
       earthing,
       lightning,
-      protectionBom: [],
+      protectionBom: [] as ProtectionBomItem[],
     };
   }, [arrayDesign, selectedModule, inverterClustering, systemMode, targetPowerplantCapacityKw]);
 
