@@ -289,12 +289,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
       {/* Itemized LCOE & Cross-Tab Technical Impact Breakdown (PR-2a-6) */}
       {(() => {
-        const thermalDerate = city ? Math.max(0, (city.tempMaxC - 45) * 1.5) : 0;
-        const altitudeDerate = city ? Math.max(0, ((city.elevationM - 2000) / 100) * 1.0) : 0;
+        // PR-2a-7-P0 (P0-5): the fake "base LCOE" decomposition (division by an
+        // invented derate-multiplier constant) is REMOVED. LCOE is derived
+        // only from (totalCapex + Σ discounted OPEX/fuel/battery) / Σ discounted
+        // energy inside financialEngine.ts. Only real, engine-sourced impacts
+        // (ISO 9223 salinity derating, foundation typology) are shown below.
         const salinityDeratePct = corrosion ? corrosion.moduleDeratePct + corrosion.inverterDeratePct : 0;
-        const totalDeratePct = thermalDerate + altitudeDerate + salinityDeratePct;
-        const baseLcoe = Number((financial.lcoeUsdPerKwh / (1 + totalDeratePct * 0.012)).toFixed(4));
-        const deratingImpactUsd = Number((financial.lcoeUsdPerKwh - baseLcoe).toFixed(4));
         const foundationCapexImpactUsd = foundationType === 'concrete_pier' ? 0.0028 : foundationType === 'ground_screw' ? 0.0016 : 0.0;
 
         return (
@@ -312,24 +312,6 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
-                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'بهای تراز پایه (Base LCOE):' : 'Nominal Base LCOE:'}</span>
-                <span className="font-mono font-bold text-white text-base">${baseLcoe.toFixed(4)}</span>
-                <span className="text-[9px] text-slate-500 block mt-0.5">
-                  {lang === 'fa' ? 'شرایط بدون افت حرارتی/ارتفاعی' : 'STC clear-sky reference'}
-                </span>
-              </div>
-
-              <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
-                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'اثر افت اقلیم و ارتفاع اینورتر:' : 'Climate & Inverter Derating:'}</span>
-                <span className="font-mono font-bold text-industrial-warning text-base">
-                  +{deratingImpactUsd > 0 ? `$${deratingImpactUsd.toFixed(4)}` : '$0.0000'}
-                </span>
-                <span className="text-[9px] text-industrial-warning/80 block mt-0.5">
-                  {city ? `${city.tempMaxC}°C / ${city.elevationM}m (${totalDeratePct.toFixed(1)}% derate)` : 'Standard climate'}
-                </span>
-              </div>
-
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
                 <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'تأثیر زهکش شوری (ISO 9223):' : 'Salinity Corrosion Derating (ISO 9223):'}</span>
                 <span className="font-mono font-bold text-industrial-warning text-base">-{salinityDeratePct.toFixed(1)}%</span>

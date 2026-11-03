@@ -1,11 +1,14 @@
 // Comprehensive 14-Stage PVsyst-Grade Waterfall Loss Tree & 8760h Performance Ratio (PR) Engine
 
+import { calculateThermalDerate } from './core/thermalDerate';
+
 export interface LossStage {
   id: string;
   nameFa: string;
   nameEn: string;
   nominalEnergyKwh: number;
-  percentageLoss: number; // Negative for loss, positive for gain (e.g. transposition)
+  percentageLoss: number; // Negative for loss, positive for gain (e.g. transposition) — rounded to 1 decimal for display
+  percentageLossRaw: number; // PR-2a-7-P0-FOLLOWUP: raw unrounded value for audit/tests
   stageOutputKwh: number;
   descriptionFa: string;
   descriptionEn: string;
@@ -29,7 +32,9 @@ export function computeWaterfallLosses(
   dcAcRatio: number = 1.25,
   hasTracker: boolean = false,
   snowLossPct: number = 0.0,
-  iamLossPct: number = -2.2
+  iamLossPct: number = -2.2,
+  noctC: number = 45.0,
+  tempCoeffPmpPct: number = -0.30
 ): WaterfallLossReport {
   // 1. Raw Global Horizontal Irradiance (GHI)
   // GHI annual = PSH * 365 days * 1 kW/m² reference
@@ -48,7 +53,8 @@ export function computeWaterfallLosses(
     nameEn: string,
     pct: number,
     descFa: string,
-    descEn: string
+    descEn: string,
+    rawPct?: number
   ) => {
     const energyDelta = (currentEnergy * pct) / 100.0;
     const nominal = currentEnergy;
@@ -59,6 +65,7 @@ export function computeWaterfallLosses(
       nameEn,
       nominalEnergyKwh: Math.round(nominal),
       percentageLoss: pct,
+      percentageLossRaw: rawPct !== undefined ? rawPct : pct,
       stageOutputKwh: Math.round(currentEnergy),
       descriptionFa: descFa,
       descriptionEn: descEn,
@@ -113,14 +120,21 @@ export function computeWaterfallLosses(
   );
 
   // 4. PV Cell Temperature Thermal Loss (U-value model based on ambient design temperature)
-  const thermalLossPct = -1.0 * (Math.max(4.0, (ambientTempMaxC - 20.0) * 0.32 + 2.5));
+  // Unified NOCT thermal model (PR-2a-7-P0) - same source of truth as
+  // pvEngineAdvanced and the App display (src/engine/core/thermalDerate.ts).
+  const thermalDerate = calculateThermalDerate({
+    module: { noctC, tempCoeffPmpPct },
+    ambientTempMaxC,
+  });
+  const thermalLossPct = -1.0 * thermalDerate.deratePct;
   addStage(
     'thermal',
     'تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)',
     'Cell Operating Temperature Loss (Pmp coeff)',
     Math.round(thermalLossPct * 10) / 10,
     'کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC',
-    'Thermal degradation of silicon cells operating above standard STC 25°C rating.'
+    'Thermal degradation of silicon cells operating above standard STC 25°C rating.',
+    thermalLossPct // raw unrounded value for audit/tests
   );
 
   // 5. Module Quality & Binning Tolerance

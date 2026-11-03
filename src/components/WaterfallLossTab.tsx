@@ -8,6 +8,8 @@ interface WaterfallLossTabProps {
   ambientTempMaxC: number;
   soilingLossPct: number;
   dcAcRatio: number;
+  noctC?: number;
+  tempCoeffPmpPct?: number;
   lang?: 'fa' | 'en';
 }
 
@@ -17,6 +19,8 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   ambientTempMaxC,
   soilingLossPct,
   dcAcRatio,
+  noctC = 45.0,
+  tempCoeffPmpPct = -0.30,
   lang = 'fa',
 }) => {
   const [hasTracker, setHasTracker] = useState(false);
@@ -28,7 +32,11 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
     ambientTempMaxC,
     soilingLossPct,
     dcAcRatio,
-    hasTracker
+    hasTracker,
+    0.0,
+    -2.2,
+    noctC,
+    tempCoeffPmpPct
   );
 
   return (
@@ -194,6 +202,11 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
                     <span className={stage.percentageLoss >= 0 ? 'text-industrial-success' : 'text-industrial-error'}>
                       {stage.percentageLoss > 0 ? `+${stage.percentageLoss}%` : `${stage.percentageLoss}%`}
                     </span>
+                    <div className="text-[10px] text-slate-500 font-normal">
+                      {isFa
+                        ? `مقدار دقیق: ${stage.percentageLossRaw?.toFixed(3)}% (نمایش گرد شده)`
+                        : `Exact: ${stage.percentageLossRaw?.toFixed(3)}% (display rounded)`}
+                    </div>
                   </td>
                   <td className="p-2.5 font-mono font-bold text-white">
                     {Math.round(stage.stageOutputKwh / 1000).toLocaleString()} MWh

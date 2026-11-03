@@ -16,6 +16,8 @@ interface PvArrayEngineeringTabProps {
   inverterClustering: InverterClusteringResult;
   city?: ClimateCity;
   systemMode?: 'powerplant' | 'ongrid' | 'offgrid';
+  targetPowerplantCapacityKw?: number;
+  annualYieldMwh?: number;
   lang?: 'fa' | 'en';
 }
 
@@ -60,6 +62,8 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
     dataRetrievalDate: '2024-06-15',
   },
   systemMode = 'powerplant',
+  targetPowerplantCapacityKw = 1000,
+  annualYieldMwh,
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
@@ -119,6 +123,45 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* PR-2a-7-P0-FOLLOWUP (ISSUE-2b): Target vs Designed vs Expected — two-step sizing visibility */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+          <div className="text-xs text-slate-400">
+            {lang === 'fa' ? 'ظرفیت هدف (AC اسمی)' : 'Target Capacity (AC nameplate)'}
+          </div>
+          <div className="text-xl font-bold font-mono text-white mt-1">
+            {targetPowerplantCapacityKw} <span className="text-xs">kW AC</span>
+          </div>
+          <div className="text-[10px] text-slate-500 mt-0.5">
+            {lang === 'fa' ? 'ورودی کاربر' : 'User input'}
+          </div>
+        </div>
+
+        <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+          <div className="text-xs text-slate-400">
+            {lang === 'fa' ? 'ظرفیت طراحی‌شده (DC)' : 'Designed Array (DC)'}
+          </div>
+          <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
+            {arrayDesign.totalPvCapacityKwp.toFixed(1)} <span className="text-xs">kWp DC</span>
+          </div>
+          <div className="text-[10px] text-slate-500 mt-0.5">
+            DC/AC = {(arrayDesign.totalPvCapacityKwp / Math.max(0.1, targetPowerplantCapacityKw)).toFixed(2)}
+          </div>
+        </div>
+
+        <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+          <div className="text-xs text-slate-400">
+            {lang === 'fa' ? 'تولید سالانه پیش‌بینی‌شده' : 'Expected Annual Yield'}
+          </div>
+          <div className="text-xl font-bold font-mono text-industrial-success mt-1">
+            {(annualYieldMwh ?? 0).toLocaleString()} <span className="text-xs">MWh/yr</span>
+          </div>
+          <div className="text-[10px] text-slate-500 mt-0.5">
+            {lang === 'fa' ? 'بر اساس ۱۴ مرحله waterfall' : 'From 14-stage waterfall'}
+          </div>
+        </div>
+      </div>
+
       {/* Sub-Tab Navigation Header */}
       <div className="flex border-b border-industrial-border pb-2 gap-2">
         <button
