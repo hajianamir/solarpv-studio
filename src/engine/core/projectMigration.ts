@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { AdvancedFeatureFlags, DEFAULT_FEATURE_FLAGS } from './featureFlags';
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity } from '../climaticData';
+import type { LoadCategory } from '../loadProfiles';
 
 // ----------------------------------------------------------------------------
 // Zod Schemas for Atomic Engineering Objects
@@ -72,17 +73,110 @@ export const SiteGeotechnicalOverridesSchema = z.object({
   customNotes: z.string().optional(),
 }).default({});
 
+// Phase 1.1 (P1): LOAD_CATEGORY_VALUES must mirror LoadCategory in
+// loadProfiles.ts exactly. Test P1.1.4 in unitTestsCore.ts fails if they drift.
+const LOAD_CATEGORY_VALUES = [
+  'lighting',
+  'refrigeration',
+  'pumping',
+  'hvac',
+  'washing',
+  'it_server',
+  'industrial_motor',
+  'industrial_heating_welding',
+  'mining_datacenter',
+  'entertainment',
+  'other',
+] as const;
+
+// Canonical schema — exactly equivalent to ElectricalLoadItem in
+// loadProfiles.ts. NO .default() on any field: a missing canonical field must
+// fail safeParse and downgrade the project to RECOVERED_WITH_WARNINGS rather
+// than silently defaulting (anti-pattern from the legacy schema).
 export const ElectricalLoadItemSchema = z.object({
-  id: z.string(),
-  nameFa: z.string(),
-  nameEn: z.string().optional(),
-  powerWatts: z.number().positive(),
-  dailyHours: z.number().min(0).max(24),
-  quantity: z.number().int().positive().default(1),
-  surgeMultiplier: z.number().min(1).max(10).default(1.2),
-  priority: z.enum(['critical', 'essential', 'normal', 'deferrable']).default('normal'),
-  daytimeSharePct: z.number().min(0).max(100).default(50),
+  id: z.string().min(1),
+  name: z.string().min(1),
+  category: z.enum(LOAD_CATEGORY_VALUES),
+  ratedWatts: z.number().positive(),
+  surgeMultiplier: z.number().min(1).max(10),
+  quantity: z.number().int().positive(),
+  dayHours: z.number().min(0).max(24),
+  nightHours: z.number().min(0).max(24),
+  isDc: z.boolean(),
 });
+
+/**
+ * Maps legacy v2 load items (powerWatts, dailyHours, nameFa, ...) to the
+ * canonical ElectricalLoadItem shape. Already-canonical items pass through
+ * untouched; mixed items prefer new fields. Category is inferred by keyword
+ * (Persian + English) with safe fallback 'other'.
+ */
+function normalizeLegacyLoad(raw: any): any {
+  if (!raw || typeof raw !== 'object') return raw;
+
+  // Already canonical -> pass through untouched.
+  if (
+    typeof raw.ratedWatts === 'number' &&
+    typeof raw.dayHours === 'number' &&
+    typeof raw.nightHours === 'number' &&
+    typeof raw.category === 'string'
+  ) {
+    return raw;
+  }
+
+  const legacyName: string =
+    typeof raw.name === 'string' ? raw.name
+    : typeof raw.nameFa === 'string' ? raw.nameFa
+    : typeof raw.nameEn === 'string' ? raw.nameEn
+    : 'Legacy Load';
+
+  const legacyRatedWatts: number =
+    typeof raw.ratedWatts === 'number' ? raw.ratedWatts
+    : typeof raw.powerWatts === 'number' ? raw.powerWatts
+    : 0;
+
+  const legacyTotalHours: number =
+    typeof raw.dayHours === 'number' || typeof raw.nightHours === 'number'
+      ? (raw.dayHours ?? 0) + (raw.nightHours ?? 0)
+      : typeof raw.dailyHours === 'number' ? raw.dailyHours
+      : 0;
+
+  const daySharePct =
+    typeof raw.daytimeSharePct === 'number'
+      ? Math.max(0, Math.min(100, raw.daytimeSharePct))
+      : 100;
+  const dayHours = Number(((legacyTotalHours * daySharePct) / 100).toFixed(2));
+  const nightHours = Number((legacyTotalHours - dayHours).toFixed(2));
+
+  const lower = legacyName.toLowerCase();
+  let inferredCategory: LoadCategory = 'other';
+  if (/چیلر|کولر|اسپلیت|تهویه|hvac|split|cooler|chiller/.test(lower)) inferredCategory = 'hvac';
+  else if (/یخچال|فریزر|سردخانه|refrig|freez/.test(lower)) inferredCategory = 'refrigeration';
+  else if (/پمپ|شناور|pump|well/.test(lower)) inferredCategory = 'pumping';
+  else if (/لامپ|روشنایی|پروژکتور|led|light|lamp|flood/.test(lower)) inferredCategory = 'lighting';
+  else if (/موتور|electro.?motor|motor/.test(lower)) inferredCategory = 'industrial_motor';
+  else if (/جوش|کوره|المنت|weld|furnace|heater/.test(lower)) inferredCategory = 'industrial_heating_welding';
+  else if (/سرور|دوربین|شبکه|server|cctv|router|ups/.test(lower)) inferredCategory = 'it_server';
+  else if (/ماشین.?لباس|ظرفشو|washing|dishwash/.test(lower)) inferredCategory = 'washing';
+
+  return {
+    id: typeof raw.id === 'string' && raw.id.length > 0 ? raw.id : `legacy-load-${Date.now()}`,
+    name: legacyName,
+    category: inferredCategory,
+    ratedWatts: legacyRatedWatts,
+    surgeMultiplier:
+      typeof raw.surgeMultiplier === 'number' && raw.surgeMultiplier >= 1
+        ? raw.surgeMultiplier
+        : 1.0,
+    quantity:
+      typeof raw.quantity === 'number' && raw.quantity > 0
+        ? Math.round(raw.quantity)
+        : 1,
+    dayHours: Math.max(0, Math.min(24, dayHours)),
+    nightHours: Math.max(0, Math.min(24, nightHours)),
+    isDc: typeof raw.isDc === 'boolean' ? raw.isDc : false,
+  };
+}
 
 export const ModuleSpecsSchema = z.object({
   manufacturer: z.string(),
@@ -138,6 +232,16 @@ export const UserFinancialPricingSchema = z.object({
 // Full Root Project Schema (v3.0.0)
 // ----------------------------------------------------------------------------
 
+// PR-2a-7-FOLLOWUP-2 (BUG-2): tracker config persisted with the project
+export const TrackerConfigSchema = z.object({
+  gcr: z.number().gt(0).lt(1).default(0.33),
+  axisTiltDeg: z.number().min(-90).max(90).default(0),
+  maxRotationDeg: z.number().gt(0).max(90).default(60),
+  enableBacktracking: z.boolean().default(true),
+  albedo: z.number().min(0).max(1).optional(),
+  latitudeDeg: z.number().min(-90).max(90).optional(),
+});
+
 export const ProjectDataV3Schema = z.object({
   version: z.literal('3.0.0').default('3.0.0'),
   savedAt: z.string(),
@@ -162,6 +266,8 @@ export const ProjectDataV3Schema = z.object({
 
   // Feature Flags
   featureFlags: FeatureFlagsSchema.default(DEFAULT_FEATURE_FLAGS),
+
+  trackerConfig: TrackerConfigSchema.nullable().optional(),
 
   // Traceability & Metadata
   traceId: z.string().optional(),
@@ -305,12 +411,13 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
 
     city: raw.city || getFallbackCity(),
     siteOverrides: raw.siteOverrides || {},
-    loads: Array.isArray(raw.loads) ? raw.loads : [],
+    loads: (Array.isArray(raw.loads) ? raw.loads : []).map(normalizeLegacyLoad), // P1: legacy v2 loads normalized before validation
     selectedModule: raw.selectedModule || getFallbackModule(),
     selectedInverter: raw.selectedInverter || getFallbackInverter(),
     userPricing: raw.userPricing || getFallbackPricing(),
 
     featureFlags,
+    trackerConfig: raw.trackerConfig !== undefined ? raw.trackerConfig : null, // BUG-2: persist (null = fixed tilt)
     traceId: raw.traceId || traceId,
   };
 

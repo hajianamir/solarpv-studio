@@ -38,7 +38,8 @@ import { runMarionSnowRecalibrationSuite } from '../../snow/marionSnowRecalibrat
 import { runExternalEmpiricalValidationSuite } from './externalValidation';
 import { compareStatus } from './lhsBenchmark';
 import { simulateBipvThermalStep } from '../../bipv/bipvThermalEngine';
-import { runMigrationTestSuite } from './migrationTestVectors';
+import { runMigrationTestSuite, REAL_WORLD_V2_TEST_VECTORS } from './migrationTestVectors';
+import { ElectricalLoadItemSchema } from '../projectMigration';
 import { getClimateData } from '../../climaticData';
 import { ExternalDataGateway, CircuitBreaker } from '../../dataGateway';
 import { recommendFoundation } from '../../structureRecommendationEngine';
@@ -47,6 +48,15 @@ import { assessSaltCorrosion, classifyCorrosionCategory } from '../../corrosion/
 import { performFinancialAnalysis } from '../../financialEngine';
 import { designPvArray } from '../../pvEngineAdvanced';
 import { calculateThermalDerate } from '../thermalDerate';
+import {
+  computeTrackerState,
+  simulateTrackerAnnual,
+  TrackerConfig,
+} from '../../tracker/backtrackingEngine';
+import {
+  TRACKER_POINT_FIXTURES,
+  TRACKER_ANNUAL_FIXTURES,
+} from './trackerFixtures';
 
 export interface UnitTestResult {
   suite: string;
@@ -1336,6 +1346,376 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Winter sun altitude differs by latitude (Munich < Tehran)',
       munich.winterSunAltitudeDeg < tehran.winterSunAltitudeDeg - 10.0,
       `Tehran(35.69N)=${tehran.winterSunAltitudeDeg.toFixed(2)}deg Munich(48.13N)=${munich.winterSunAltitudeDeg.toFixed(2)}deg`
+    );
+  }
+
+
+  // ==========================================================================
+  // PR-2a-7: Single-Axis Tracker with Slope-Aware Backtracking
+  // Cross-validated against pvlib 0.16.1 (see trackerFixtures.ts)
+  // ==========================================================================
+  {
+    // [TRACKER-PVLIB] point fixtures: rotation < 0.5 deg, POA rel err < 0.5%
+    let maxRotErr = 0; let maxPoaErr = 0; let n = 0; let nNight = 0;
+    for (const fx of TRACKER_POINT_FIXTURES) {
+      const cfg: TrackerConfig = {
+        gcr: fx.gcr, axisTiltDeg: fx.axisTiltDeg, maxRotationDeg: fx.maxAngleDeg,
+        enableBacktracking: true, albedo: 0.20,
+      };
+      const zen = fx.zenithDeg, az = fx.azimuthDeg;
+      const ghi = zen > 90 ? 0 : 900 * Math.cos(zen * Math.PI / 180) + 120;
+      const st = computeTrackerState(
+        { zenithRad: zen * Math.PI / 180, azimuthRad: az * Math.PI / 180 },
+        cfg, { ghi, dni: 900, dhi: 120 }
+      );
+      if (fx.expectedRotationDeg === null) { nNight++; continue; }
+      const rotErr = Math.abs(st.rotationDeg - fx.expectedRotationDeg);
+      const poaErr = fx.expectedPoaWm2 > 0 ? Math.abs(st.poaWm2 - fx.expectedPoaWm2) / fx.expectedPoaWm2 : 0;
+      maxRotErr = Math.max(maxRotErr, rotErr);
+      maxPoaErr = Math.max(maxPoaErr, poaErr);
+      n++;
+    }
+    assert(
+      'TRACKER-PVLIB',
+      `[TRACKER-PVLIB] ${n} fixtures compared (60 base + 16 slope, ${nNight} night), max rot err ${maxRotErr.toFixed(4)}deg, max POA err ${(maxPoaErr*100).toFixed(3)}%`,
+      n === 76 && maxRotErr < 0.5 && maxPoaErr < 0.005,
+      `pvlib ${TRACKER_POINT_FIXTURES[0].pvlibVersion} via ${TRACKER_POINT_FIXTURES[0].referenceScript}`
+    );
+    // slope fixtures separately reported
+    const slopeFx = TRACKER_POINT_FIXTURES.filter(f => f.axisTiltDeg !== 0);
+    let maxSlopeErr = 0;
+    for (const fx of slopeFx) {
+      const st = computeTrackerState(
+        { zenithRad: fx.zenithDeg * Math.PI / 180, azimuthRad: fx.azimuthDeg * Math.PI / 180 },
+        { gcr: fx.gcr, axisTiltDeg: fx.axisTiltDeg, maxRotationDeg: fx.maxAngleDeg, enableBacktracking: true },
+        { ghi: 900 * Math.cos(fx.zenithDeg * Math.PI / 180) + 120, dni: 900, dhi: 120 }
+      );
+      if (fx.expectedRotationDeg !== null) maxSlopeErr = Math.max(maxSlopeErr, Math.abs(st.rotationDeg - fx.expectedRotationDeg));
+    }
+    assert(
+      'TRACKER-SLOPE',
+      `[TRACKER-SLOPE] ${slopeFx.length} axis_tilt=+/-5deg fixtures, max err ${maxSlopeErr.toFixed(4)}deg`,
+      slopeFx.length === 16 && maxSlopeErr < 0.5,
+      'pvlib axis_tilt slope-aware backtracking cross-check'
+    );
+  }
+  {
+    // [TRACKER-PVLIB-ANNUAL] annual cross-validation, 5 sites, tol 0.3%.
+    // NOTE (ISSUE-2): this compares against pvlib annual fixtures, NOT NREL SAM.
+    // SAM cross-validation is planned for PR-2a-7-SAM-VALIDATION (follow-up).
+    // Renamed from the old mislabeled suite name to avoid overstating independence.
+    // ISSUE-4: the fixture sunPath is 288 points (12 representative days x 24 h);
+    // the pvlib reference annual value already includes the x365/12 scale, and the
+    // TS side applies the identical scale below — method (b) "288 x scale".
+    let maxErr = 0; const details: string[] = [];
+    for (const fx of TRACKER_ANNUAL_FIXTURES) {
+      const sunPath = fx.sunPath.map((p, i) => ({
+        hourOfYear: i,
+        zenithRad: p[0] * Math.PI / 180,
+        azimuthRad: p[1] * Math.PI / 180,
+        ghi: p[2], dni: p[3], dhi: p[4],
+      }));
+      const cfg: TrackerConfig = { gcr: fx.gcr, axisTiltDeg: fx.axisTiltDeg, maxRotationDeg: fx.maxAngleDeg, enableBacktracking: true, albedo: 0.2 };
+      const res = simulateTrackerAnnual(sunPath, cfg, {
+        fixedTiltDeg: Math.abs(fx.latitude), fixedAzimuthDeg: fx.latitude >= 0 ? 180 : 0,
+      });
+      const tsAnnual = res.annualPoaKwhPerM2 * (365.0 / 12.0); // representative-day scale, same as fixture
+      const err = Math.abs(tsAnnual - fx.annualTrackerPoaKwhPerM2) / fx.annualTrackerPoaKwhPerM2;
+      maxErr = Math.max(maxErr, err);
+      details.push(`${fx.site}: TS=${tsAnnual.toFixed(1)} pvlib=${fx.annualTrackerPoaKwhPerM2} (${(err*100).toFixed(3)}%)`);
+    }
+    assert(
+      'TRACKER-PVLIB-ANNUAL',
+      `[TRACKER-PVLIB-ANNUAL] 5 sites compared, max error ${(maxErr*100).toFixed(3)}%`,
+      maxErr < 0.003,
+      details.join(' | ')
+    );
+  }
+  {
+    // [TRACKER-PHYSICS] sanity checks
+    const cfg: TrackerConfig = { gcr: 0.33, axisTiltDeg: 0, maxRotationDeg: 60, enableBacktracking: true };
+    const d = Math.PI / 180;
+    const highSun = computeTrackerState({ zenithRad: 10 * d, azimuthRad: 180 * d }, cfg);
+    const lowSun = computeTrackerState({ zenithRad: 80 * d, azimuthRad: 90 * d }, cfg);
+    const overhead = computeTrackerState({ zenithRad: 0, azimuthRad: 180 * d }, cfg);
+    const night = computeTrackerState({ zenithRad: 100 * d, azimuthRad: 180 * d }, cfg);
+    const noBt = computeTrackerState({ zenithRad: 50 * d, azimuthRad: 90 * d }, { ...cfg, enableBacktracking: false });
+    const gcrWide = computeTrackerState({ zenithRad: 80 * d, azimuthRad: 90 * d }, { ...cfg, gcr: 0.5 });
+    const gcrTight = computeTrackerState({ zenithRad: 80 * d, azimuthRad: 90 * d }, { ...cfg, gcr: 0.3 });
+    assert('TRACKER-PHYSICS', '[TRACKER-PHYSICS] 6 sanity checks',
+      Math.abs(highSun.rotationDeg - highSun.trueTrackingDeg) < 1e-6 &&
+      Math.abs(lowSun.rotationDeg) < Math.abs(lowSun.trueTrackingDeg) &&
+      Math.abs(overhead.rotationDeg) < 1e-9 &&
+      (night.isDay === false && night.poaWm2 === 0) &&
+      Math.abs(gcrWide.rotationDeg) < Math.abs(gcrTight.rotationDeg) &&
+      Math.abs(noBt.rotationDeg - noBt.trueTrackingDeg) < 1e-9,
+      `highSun bt-free, lowSun backtracked (${lowSun.trueTrackingDeg.toFixed(1)}->${lowSun.rotationDeg.toFixed(1)}), zenith=0 -> 0, night ok, GCR effect ok, no-backtrack=true-tracking ok`);
+  }
+  {
+    // [TRACKER-SLOPE] physics behavior (fixtures above prove pvlib match)
+    const d = Math.PI / 180;
+    const cfg = (t: number): TrackerConfig => ({ gcr: 0.33, axisTiltDeg: t, maxRotationDeg: 60, enableBacktracking: true });
+    const morning = { zenithRad: 75 * d, azimuthRad: 100 * d };
+    const noon = { zenithRad: 30 * d, azimuthRad: 180 * d };
+    const flat = computeTrackerState(morning, cfg(0));
+    const east5 = computeTrackerState(morning, cfg(5));
+    const west5 = computeTrackerState(morning, cfg(-5));
+    const flatNoon = computeTrackerState(noon, cfg(0));
+    const east5Noon = computeTrackerState(noon, cfg(5));
+    assert('TRACKER-SLOPE', '[TRACKER-SLOPE] 4 slope scenarios',
+      Math.abs(east5.rotationDeg - flat.rotationDeg) > 0.5 &&
+      Math.abs(west5.rotationDeg - flat.rotationDeg) > 0.5 &&
+      Math.abs(east5Noon.rotationDeg - flatNoon.rotationDeg) < Math.abs(east5.rotationDeg - flat.rotationDeg),
+      `morning 9am: flat=${flat.rotationDeg.toFixed(2)} +5deg=${east5.rotationDeg.toFixed(2)} -5deg=${west5.rotationDeg.toFixed(2)}; noon delta smaller than morning delta`);
+  }
+  {
+    // [TRACKER-WATERFALL] integration, both paths
+    const base = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30);
+    const baseTrackerBool = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, true, 0.0, -2.2, 45, -0.30);
+    const cfgT: TrackerConfig = { gcr: 0.33, axisTiltDeg: 0, maxRotationDeg: 60, enableBacktracking: true, albedo: 0.2, latitudeDeg: 35.69 };
+    const cfgNoBt: TrackerConfig = { ...cfgT, enableBacktracking: false };
+    const withTracker = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30, cfgT);
+    const withTrackerNoBt = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30, cfgNoBt);
+    const gainFixed = base.effectivePoaEnergyKwh / base.rawGhiEnergyKwh;
+    const gainTracker = withTracker.effectivePoaEnergyKwh / withTracker.rawGhiEnergyKwh;
+    const yieldGainPct = ((withTracker.netAnnualEnergyExportMwh - base.netAnnualEnergyExportMwh) / base.netAnnualEnergyExportMwh) * 100;
+    const nearShadeStage = withTracker.stages.find((st) => st.id === 'near_shading')!;
+    assert('TRACKER-WATERFALL', '[TRACKER-WATERFALL] integration verified (both paths)',
+      Math.abs(gainFixed - 1.168) < 1e-9 && // hasTracker=false unchanged
+      Math.abs(gainTracker - 1.265) > 1e-6 && // NOT the old hardcoded 26.5%
+      Math.abs(nearShadeStage.percentageLossRaw) <= 1.2 &&
+      yieldGainPct > 5 && yieldGainPct < 25 &&
+      Math.abs(withTracker.netAnnualEnergyExportMwh - withTrackerNoBt.netAnnualEnergyExportMwh) > 1e-6 &&
+      baseTrackerBool.trackerDetails !== undefined,
+      `fixed gain=${(gainFixed*100-100).toFixed(1)}% tracker gain=${(gainTracker*100-100).toFixed(1)}% yieldGain=${yieldGainPct.toFixed(1)}% nearShading=${nearShadeStage.percentageLossRaw.toFixed(3)}% btDiffers=true`);
+  }
+  {
+    // [TRACKER-DETERMINISM] 3 identical runs, no NaN
+    const cfg: TrackerConfig = { gcr: 0.33, axisTiltDeg: 5, maxRotationDeg: 60, enableBacktracking: true, latitudeDeg: 35.69 };
+    const fx = TRACKER_ANNUAL_FIXTURES[0];
+    const sunPath = fx.sunPath.map((p, i) => ({ hourOfYear: i, zenithRad: p[0] * Math.PI / 180, azimuthRad: p[1] * Math.PI / 180, ghi: p[2], dni: p[3], dhi: p[4] }));
+    const r1 = simulateTrackerAnnual(sunPath, cfg);
+    const r2 = simulateTrackerAnnual(sunPath, cfg);
+    const r3 = simulateTrackerAnnual(sunPath, cfg);
+    const noNaN = [...r1.hourlyStates].every((st) => !Number.isNaN(st.rotationDeg) && !Number.isNaN(st.poaWm2));
+    assert('TRACKER-DETERMINISM', '[TRACKER-DETERMINISM] 3 runs identical',
+      r1.annualPoaKwhPerM2 === r2.annualPoaKwhPerM2 && r2.annualPoaKwhPerM2 === r3.annualPoaKwhPerM2 && noNaN,
+      `annualPoa=${r1.annualPoaKwhPerM2.toFixed(6)} kWh/m2 identical x3, noNaN=${noNaN}`);
+  }
+
+
+  // ==========================================================================
+  // PR-2a-7-FOLLOWUP: UI consistency + shading sanity
+  // ==========================================================================
+  {
+    // [TRACKER-UI-CONSISTENCY] engine trackerDetails is the single source the UI binds to
+    const cfgT: TrackerConfig = { gcr: 0.33, axisTiltDeg: 0, maxRotationDeg: 60, enableBacktracking: true, albedo: 0.2, latitudeDeg: 35.69 };
+    const rep = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30, cfgT);
+    const gain = rep.trackerDetails!.annualTranspositionGainPct;
+    const nearShade = rep.stages.find((st) => st.id === 'near_shading')!;
+    // UI source must not contain the old hardcoded tracker gain anymore
+    const fs = await import('fs');
+    const uiSrc = fs.readFileSync('src/components/WaterfallLossTab.tsx', 'utf8');
+    assert(
+      'TRACKER-UI-CONSISTENCY',
+      '[TRACKER-UI-CONSISTENCY] UI binds to trackerDetails (no hardcoded 26.5), engine=UI value',
+      !uiSrc.includes('26.5') &&
+        Math.abs(gain - 24.1) < 1.0 &&
+        Math.abs(nearShade.percentageLossRaw - (-rep.trackerDetails!.annualShadingLossPct)) < 1e-9,
+      `engine trackerDetails gain=+${gain.toFixed(1)}% (UI shows "+${gain.toFixed(1)}%" in both strip and stage-1 row); near_shading raw=${nearShade.percentageLossRaw.toFixed(3)}% = -annualShadingLossPct; '26.5' absent from WaterfallLossTab.tsx`
+    );
+  }
+  {
+    // [TRACKER-SHADING] ISSUE-3 acceptance numbers (Tehran)
+    const d = Math.PI / 180;
+    const cfgNoBt: TrackerConfig = { gcr: 0.33, axisTiltDeg: 0, maxRotationDeg: 60, enableBacktracking: false };
+    const cfgBt: TrackerConfig = { ...cfgNoBt, enableBacktracking: true };
+    // Tehran winter solstice: noon zenith = 90 - (35.69 - 23.45) = 77.76? No:
+    // elev_noon = 90 - |lat - decl| = 90 - |35.69 - (-23.45)| = 30.86 -> zenith = 59.14
+    const winterNoon = computeTrackerState({ zenithRad: 59.14 * d, azimuthRad: 180 * d }, cfgNoBt);
+    // winter 9am: hour angle -45 deg
+    const lat = 35.69 * d, decW = -23.45 * d, ha = -45 * d;
+    const sinE = Math.sin(lat) * Math.sin(decW) + Math.cos(lat) * Math.cos(decW) * Math.cos(ha);
+    const zenW9 = (Math.PI / 2 - Math.asin(sinE)) * 180 / Math.PI;
+    const cosAz = (Math.sin(decW) - Math.sin(Math.asin(sinE)) * Math.sin(lat)) / (Math.cos(Math.asin(sinE)) * Math.cos(lat));
+    const azW9 = Math.acos(Math.max(-1, Math.min(1, cosAz))) * 180 / Math.PI; // morning: az < 180
+    const winter9 = computeTrackerState({ zenithRad: zenW9 * d, azimuthRad: azW9 * d }, cfgNoBt);
+    // summer solstice noon: elev = 90 - |35.69 - 23.45| = 77.76 -> zenith = 12.24
+    const summerNoonNoBt = computeTrackerState({ zenithRad: 12.24 * d, azimuthRad: 180 * d }, cfgNoBt);
+    const summerNoonBt = computeTrackerState({ zenithRad: 12.24 * d, azimuthRad: 180 * d }, cfgBt);
+    assert(
+      'TRACKER-SHADING',
+      '[TRACKER-SHADING] winter-noon no-bt <= 0.10; winter-9am > 0; summer-noon ~0; bt noon = 0',
+      winterNoon.shadingFraction <= 0.10 &&
+        winter9.shadingFraction > 0 &&
+        summerNoonNoBt.shadingFraction <= 0.10 &&
+        summerNoonBt.shadingFraction === 0,
+      `winterNoon(noBt)=${winterNoon.shadingFraction.toFixed(3)} (omega=${winterNoon.trueTrackingDeg.toFixed(2)}deg) | winter9am(noBt)=${winter9.shadingFraction.toFixed(3)} | summerNoon(noBt)=${summerNoonNoBt.shadingFraction.toFixed(3)} | summerNoon(bt)=${summerNoonBt.shadingFraction.toFixed(3)}`
+    );
+  }
+
+
+  // ==========================================================================
+  // PR-2a-7-FOLLOWUP-2: React deps + tracker persistence
+  // ==========================================================================
+  {
+    // [REACT-DEPS-TRACKER] BUG-1: toggling tracker must change designed kWp
+    // Pure-function chain: effectiveDailyKwhDemand -> designPvArray
+    const cfgT: TrackerConfig = { gcr: 0.33, axisTiltDeg: 0, maxRotationDeg: 60, enableBacktracking: true, albedo: 0.2, latitudeDeg: 35.69 };
+    const demandFixed = (() => {
+      const wf = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30, undefined);
+      return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0;
+    })();
+    const demandTracker = (() => {
+      const wf = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30, cfgT);
+      return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0;
+    })();
+    const arrFixed = designPvArray(demandFixed, 5.85, p0Module, p0Inverter, p0Deratings(46), 35.69);
+    const arrTracker = designPvArray(demandTracker, 5.85, p0Module, p0Inverter, p0Deratings(46), 35.69);
+    const diffPct = Math.abs(arrTracker.totalPvCapacityKwp - arrFixed.totalPvCapacityKwp) / arrFixed.totalPvCapacityKwp * 100;
+    assert(
+      'REACT-DEPS-TRACKER',
+      '[REACT-DEPS-TRACKER] toggling tracker changes designed kWp (>5%) — dep not stale',
+      diffPct > 5,
+      `fixed=${arrFixed.totalPvCapacityKwp.toFixed(1)} kWp vs tracker=${arrTracker.totalPvCapacityKwp.toFixed(1)} kWp (diff=${diffPct.toFixed(1)}%)`
+    );
+  }
+  {
+    // [TRACKER-PERSISTENCE] BUG-2: save/load round-trip preserves trackerConfig values
+    const base = JSON.parse(JSON.stringify(REAL_WORLD_V2_TEST_VECTORS[0].rawPayload));
+    base.trackerConfig = { gcr: 0.35, axisTiltDeg: 5, maxRotationDeg: 55, enableBacktracking: true, albedo: 0.22 };
+    const res = migrateProjectToV3(base);
+    const loaded = (res.project as any).trackerConfig;
+    assert(
+      'TRACKER-PERSISTENCE',
+      '[TRACKER-PERSISTENCE] round-trip preserves trackerConfig values',
+      res.migrationStatus === 'VALID' &&
+        loaded && loaded.gcr === 0.35 && loaded.axisTiltDeg === 5 &&
+        loaded.maxRotationDeg === 55 && loaded.enableBacktracking === true && loaded.albedo === 0.22,
+      `status=${res.migrationStatus} loaded=${JSON.stringify(loaded)}`
+    );
+    // legacy project without trackerConfig -> undefined (caller maps to null), no crash
+    const legacy = JSON.parse(JSON.stringify(REAL_WORLD_V2_TEST_VECTORS[0].rawPayload));
+    delete legacy.trackerConfig;
+    const resLegacy = migrateProjectToV3(legacy);
+    const loadedLegacy = (resLegacy.project as any).trackerConfig;
+    assert(
+      'TRACKER-PERSISTENCE',
+      '[TRACKER-PERSISTENCE] legacy project without trackerConfig migrates safely (undefined->null)',
+      resLegacy.migrationStatus !== 'BLOCKED_INCONSISTENT' && (loadedLegacy === undefined || loadedLegacy === null),
+      `status=${resLegacy.migrationStatus} trackerConfig=${loadedLegacy}`
+    );
+  }
+
+
+  // ==========================================================================
+  // Suite P1: Phase 1.1 - Load Schema Alignment
+  // Contract: canonical ElectricalLoadItem in == identical out; legacy v2
+  // loads are normalized with safe defaults, never silently dropped/NaN.
+  // ==========================================================================
+
+  // P1.1.1 - Canonical round-trip on MIGR-00
+  {
+    const canonicalLoads = REAL_WORLD_V2_TEST_VECTORS[0].rawPayload.loads as any[];
+    const res = migrateProjectToV3(REAL_WORLD_V2_TEST_VECTORS[0].rawPayload);
+    const outLoads = res.success ? (res.project.loads as any[]) : [];
+    const shapeOk =
+      outLoads.length === canonicalLoads.length &&
+      outLoads.every((o: any) => {
+        const expected = canonicalLoads.find((e) => e.id === o.id);
+        return (
+          expected !== undefined &&
+          o.ratedWatts === expected.ratedWatts &&
+          o.surgeMultiplier === expected.surgeMultiplier &&
+          o.quantity === expected.quantity &&
+          o.dayHours === expected.dayHours &&
+          o.nightHours === expected.nightHours &&
+          o.category === expected.category &&
+          o.isDc === expected.isDc &&
+          o.name === expected.name
+        );
+      });
+    assert(
+      'Migration-RoundTrip',
+      'P1.1.1 Canonical loads round-trip without field drift (MIGR-00)',
+      res.success && res.migrationStatus === 'VALID' && shapeOk,
+      shapeOk
+        ? `${outLoads.length}/${canonicalLoads.length} loads preserved exactly`
+        : `MISMATCH: in=${canonicalLoads.length} out=${outLoads.length} status=${res.migrationStatus}`
+    );
+  }
+
+  // P1.1.2 - Legacy v2 loads normalized (MIGR-02 has 2 legacy loads)
+  {
+    const res2 = migrateProjectToV3(REAL_WORLD_V2_TEST_VECTORS[2].rawPayload);
+    const out = res2.success ? (res2.project.loads as any[]) : [];
+    const bothOk =
+      out.length === 2 &&
+      out.some((l) => l.ratedWatts === 25000 && l.category === 'lighting') &&
+      out.some((l) => l.ratedWatts === 45000 && l.category === 'hvac') &&
+      out.every((l) => l.isDc === false) &&
+      out.every((l) => l.surgeMultiplier >= 1) &&
+      out.every((l) => l.quantity === 1) &&
+      out.every((l) => l.dayHours > 0 && l.nightHours === 0);
+    assert(
+      'Migration-RoundTrip',
+      'P1.1.2 Legacy v2 loads (powerWatts->ratedWatts, dailyHours->dayHours) normalized',
+      res2.success && bothOk,
+      out.length > 0
+        ? out.map((l) => `{${String(l.name).slice(0, 20)}} W=${l.ratedWatts} cat=${l.category} h=${l.dayHours}/${l.nightHours}`).join(' | ')
+        : `loads lost (${out.length} items)`
+    );
+  }
+
+  // P1.1.3 - Schema rejects malformed canonical loads (no silent defaults)
+  {
+    const badLoad = {
+      id: 'bad-1',
+      name: 'Incomplete load',
+      category: 'hvac',
+      surgeMultiplier: 2.0,
+      quantity: 1,
+      dayHours: 5,
+      nightHours: 0,
+      isDc: false,
+    };
+    const parseResult = ElectricalLoadItemSchema.safeParse(badLoad);
+    assert(
+      'Migration-RoundTrip',
+      'P1.1.3 Schema rejects loads with missing canonical fields (no silent defaults)',
+      parseResult.success === false,
+      parseResult.success ? 'UNEXPECTED: bad load accepted' : 'rejected as expected (ratedWatts missing)'
+    );
+  }
+
+  // P1.1.4 - LOAD_CATEGORY_VALUES stays in sync with LoadCategory (11 values)
+  {
+    const expected = [
+      'lighting', 'refrigeration', 'pumping', 'hvac', 'washing',
+      'it_server', 'industrial_motor', 'industrial_heating_welding',
+      'mining_datacenter', 'entertainment', 'other',
+    ];
+    const categoryField = (ElectricalLoadItemSchema as any).shape.category;
+    const allValid = expected.every((v) => categoryField.safeParse(v).success);
+    const rejectsBogus = !categoryField.safeParse('bogus_category').success;
+    assert(
+      'Migration-RoundTrip',
+      'P1.1.4 LOAD_CATEGORY_VALUES sync with LoadCategory (11 values, rejects bogus)',
+      allValid && rejectsBogus && expected.length === 11,
+      allValid && rejectsBogus ? 'all 11 categories valid, bogus rejected' : 'category enum drift detected'
+    );
+  }
+
+  // P1.1.5 - MIGR-02 remains RECOVERED_WITH_WARNINGS AND carries loads
+  {
+    const res = migrateProjectToV3(REAL_WORLD_V2_TEST_VECTORS[2].rawPayload);
+    assert(
+      'Migration-RoundTrip',
+      'P1.1.5 MIGR-02 still RECOVERED_WITH_WARNINGS + loads preserved (>=2)',
+      res.success &&
+        res.migrationStatus === 'RECOVERED_WITH_WARNINGS' &&
+        (res.project.loads as any[]).length >= 2,
+      `status=${res.migrationStatus} loads=${(res.project.loads as any[]).length} warnings=${res.warnings.length}`
     );
   }
 
