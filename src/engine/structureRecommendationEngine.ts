@@ -135,6 +135,37 @@ const FOUNDATION_OPTIONS: FoundationOptionScore[] = [
     estimatedCapexUsdPerKw: 28.0,
     installSpeedMwPerWeek: 0.4,
   },
+  {
+    type: 'pre_drilled_grouted_pile',
+    nameEn: 'Pre-Drilled Rock-Socket Grouted Micro-Pile (Drill & Grout)',
+    nameFa: 'شمع در گمانه پیش‌حفاری با تزریق گروت پرمقاومت (راهکار حذف پس‌زدگی سنگ بستر)',
+    suitabilityScore: 0,
+    rank: 0,
+    pros: [
+      'Overcomes pile refusal in shallow rock and caliche',
+      'Cuts required embedment depth by 50–60% (0.7m–1.0m vs 1.8–2.2m driven pile)',
+      'High grout-to-rock bond shear capacity (tau_bond >= 1.5 MPa)',
+      'Minimal concrete volume compared to large drilled shafts',
+    ],
+    cons: ['Requires DTH rock-drill rig and high-strength non-shrink grout pump'],
+    estimatedCapexUsdPerKw: 21.0,
+    installSpeedMwPerWeek: 1.4,
+  },
+  {
+    type: 'surface_ballasted_block',
+    nameEn: 'Ground-Mounted Precast Ballast Block (Zero Penetration)',
+    nameFa: 'بلوک بتنی پیش‌ساخته سطحی زمینی (بدون نفوذ در خاک)',
+    suitabilityScore: 0,
+    rank: 0,
+    pros: [
+      'Zero underground penetration (0.0m driving or drilling depth)',
+      '100% immune to pile refusal, boulder obstruction, or buried utilities',
+      'Ideal for hard bedrock where drilling is uneconomical, capped landfills, or brownfields',
+    ],
+    cons: ['Heavy concrete ballast tonnage and transport logistics'],
+    estimatedCapexUsdPerKw: 26.5,
+    installSpeedMwPerWeek: 0.8,
+  },
 ];
 
 export function recommendFoundation(input: StructuralRecommendationInput): FoundationRecommendationResult {

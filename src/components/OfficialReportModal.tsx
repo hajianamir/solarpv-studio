@@ -53,7 +53,7 @@ import { type Simulation24hResult, type GeneratorSizingResult } from '../engine/
 import { type FinancialAnalysisResult } from '../engine/financialEngine';
 import { type PowerplantBayArchitectureResult } from '../engine/powerplantBayEngine';
 import { exportToWordDocument, exportToExcelWorkbook } from '../engine/reportingEngine';
-import { calculateStructuralAndFoundations, cpUpliftFor, type StructuralAnalysisResult } from '../engine/structuralEngine';
+import { calculateStructuralAndFoundations, cpUpliftFor, type StructuralAnalysisResult, type FoundationType } from '../engine/structuralEngine';
 
 interface OfficialReportModalProps {
   projectName: string;
@@ -70,6 +70,7 @@ interface OfficialReportModalProps {
   financial: FinancialAnalysisResult;
   bayArchitecture?: PowerplantBayArchitectureResult;
   siteOverrides?: SiteGeotechnicalOverrides;
+  foundationType?: FoundationType;
   onClose: () => void;
   onImportProject?: (projectData: any) => void;
   lang?: 'fa' | 'en';
@@ -100,6 +101,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   financial,
   bayArchitecture,
   siteOverrides,
+  foundationType: customFoundationType,
   onClose,
   onImportProject,
   lang: defaultLang = 'fa',
@@ -124,7 +126,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       groundClearanceM: 0.9,
       basicWindSpeedKmh: effectiveCity.basicWindSpeedKmh || 120,
       groundSnowLoadKgM2: effectiveCity.groundSnowLoadKgM2 || 50,
-      foundationType: (siteOverrides?.soilType === 'rocky_limestone' ? 'concrete_pier' : 'rammed_steel_pile'),
+      foundationType: (customFoundationType ?? (siteOverrides?.foundationType as FoundationType) ?? (siteOverrides?.soilType === 'rocky_limestone' ? 'pre_drilled_grouted_pile' : 'rammed_steel_pile')),
       soilType: (siteOverrides?.soilType ?? effectiveCity.soilType ?? 'dense_sand_gravel') as any,
       soilBearingCapacityKpa: siteOverrides?.soilBearingCapacityKpa ?? effectiveCity.soilBearingCapacityKpa ?? 220,
       soilInternalFrictionAngleDeg: siteOverrides?.soilInternalFrictionAngleDeg ?? effectiveCity.soilInternalFrictionAngleDeg ?? 32,
@@ -135,7 +137,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       seismicZoneCoefficientA: siteOverrides?.seismicZoneCoefficientA ?? effectiveCity.seismicZoneCoefficientA ?? 0.30,
       elevationM: effectiveCity.elevationM || 0,
     });
-  }, [arrayDesign, module, effectiveCity, siteOverrides]);
+  }, [arrayDesign, module, effectiveCity, siteOverrides, customFoundationType]);
 
   // Derived Energy Simulation Metrics
   const annualGrossMwh = Number(((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1));

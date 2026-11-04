@@ -330,7 +330,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         // energy inside financialEngine.ts. Only real, engine-sourced impacts
         // (ISO 9223 salinity derating, foundation typology) are shown below.
         const salinityDeratePct = corrosion ? corrosion.moduleDeratePct + corrosion.inverterDeratePct : 0;
-        const foundationCapexImpactUsd = foundationType === 'concrete_pier' ? 0.0028 : foundationType === 'ground_screw' ? 0.0016 : 0.0;
+        const foundationCapexImpactUsd =
+          foundationType === 'concrete_pier' ? 0.0028
+          : foundationType === 'ground_screw' ? 0.0016
+          : foundationType === 'pre_drilled_grouted_pile' ? 0.0019
+          : foundationType === 'surface_ballasted_block' ? 0.0022
+          : 0.0;
 
         return (
           <div className="studio-card border border-sky-600/40 p-4">

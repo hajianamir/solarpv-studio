@@ -2645,6 +2645,87 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E8-STRUCT-1] Pre-Drilled Rock-Socket Grouted Micro-Pile (Refusal Mitigation)
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const grouted = calculateStructuralAndFoundations({
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 25, groundClearanceM: 0.9,
+      basicWindSpeedKmh: 130, groundSnowLoadKgM2: 50,
+      foundationType: 'pre_drilled_grouted_pile', soilType: 'rocky_limestone',
+    });
+
+    // Rock socket embedment depth is compact (0.75-1.05m), achieving high uplift via tau_bond >= 1500 kPa
+    const depthReduced = grouted.recommendedDepthM <= 1.10 && grouted.recommendedDepthM >= 0.70;
+    const highPullout = grouted.upliftCapacityPerPostKn >= 400; // pi * 0.12 * 0.75 * 1500 = 424 kN
+    const safeFos = grouted.fosUplift >= 2.0 && grouted.isStructurallySafe;
+    const groutVolumePresent = grouted.concreteVolumeTotalM3 > 0 && grouted.cementBagsCount > 0;
+    const reasonValid = grouted.safetyReasonEn.toLowerCase().includes('rock-socket') || grouted.safetyReasonEn.toLowerCase().includes('grout');
+
+    assert(
+      'E8-STRUCT-1',
+      'Pre-drilled rock-socket grouted pile cuts depth (L<=1.1m) and mobilizes high bond pullout',
+      depthReduced && highPullout && safeFos && groutVolumePresent && reasonValid,
+      `depth=${grouted.recommendedDepthM}m, T_ult=${grouted.upliftCapacityPerPostKn} kN, FoS_uplift=${grouted.fosUplift}, groutVol=${grouted.concreteVolumeTotalM3}m3`
+    );
+  }
+
+  // [E8-STRUCT-2] Ground Surface Ballasted Block (Zero-Penetration Solution)
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const surfaceBallast = calculateStructuralAndFoundations({
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 20, groundClearanceM: 0.8,
+      basicWindSpeedKmh: 110, groundSnowLoadKgM2: 30,
+      foundationType: 'surface_ballasted_block', soilType: 'rocky_limestone',
+    });
+
+    // Zero ground penetration (depth = 0.20m pad thickness)
+    const zeroPenetration = surfaceBallast.recommendedDepthM === 0.20;
+    const slidingApplicable = surfaceBallast.fosSlidingApplicable === true;
+    const slidingSafe = surfaceBallast.fosSliding >= 1.40;
+    const overturningSafe = surfaceBallast.fosOverturning >= 1.50;
+    const concreteVolumeSized = surfaceBallast.concreteVolumeTotalM3 > 5.0; // sized for tables
+    const reasonValid = surfaceBallast.safetyReasonEn.toLowerCase().includes('surface') || surfaceBallast.safetyReasonEn.toLowerCase().includes('overturning');
+
+    assert(
+      'E8-STRUCT-2',
+      'Ground surface ballasted block provides zero penetration with verified sliding/overturning FoS',
+      zeroPenetration && slidingApplicable && slidingSafe && overturningSafe && concreteVolumeSized && reasonValid,
+      `depth=${surfaceBallast.recommendedDepthM}m, fosSliding=${surfaceBallast.fosSliding}, fosOT=${surfaceBallast.fosOverturning}, vol=${surfaceBallast.concreteVolumeTotalM3}m3`
+    );
+  }
+
+  // [E8-STRUCT-3] Refusal mitigation options scored in rocky limestone terrain
+  {
+    const { scoreFoundationOptions } = await import('../../geotech/foundationRecommendation');
+
+    const rockyScores = scoreFoundationOptions({
+      siteName: 'Rocky Site', latitude: 35.5, longitude: 51.5,
+      soilClassification: 'rocky_limestone',
+      soilBearingCapacityKpa: 450, soilInternalFrictionAngleDeg: 38,
+      soilCohesionKpa: 50, soilDensityKnM3: 22.0, frostDepthCm: 30,
+      basicWindSpeedKmh: 130, groundSnowLoadKgM2: 50,
+      tableAreaM2: 52, arrayTiltDeg: 25, postsPerTable: 4, clearanceHeightM: 0.9, slopeDeg: 2,
+    });
+
+    const rammedScore = rockyScores.find(x => x.type === 'rammed_steel_pile')?.score ?? 0;
+    const groutedScore = rockyScores.find(x => x.type === 'pre_drilled_grouted_pile')?.score ?? 0;
+    const surfaceScore = rockyScores.find(x => x.type === 'surface_ballasted_block')?.score ?? 0;
+
+    // In rocky limestone, pre-drilled grouted pile strongly outperforms direct ramming
+    assert(
+      'E8-STRUCT-3',
+      'Refusal mitigation: pre-drilled grouted pile outscores direct ramming in rocky terrain',
+      groutedScore > rammedScore && groutedScore >= 90 && surfaceScore >= 40,
+      `groutedScore=${groutedScore}, rammedScore=${rammedScore}, surfaceScore=${surfaceScore}`
+    );
+  }
+
   // [F1-R1] Provenance uses actual project city (Sydney), not hardcoded Tehran.
   {
     const { buildProvenanceRows } = await import('../../provenance/provenanceBuilder');

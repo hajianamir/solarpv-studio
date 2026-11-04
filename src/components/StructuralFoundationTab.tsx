@@ -102,7 +102,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   const [tiltDeg, setTiltDeg] = useState<number>(arrayTiltDeg || 28);
   const [modulesPerTable, setModulesPerTable] = useState<number>(28);
   const [groundClearanceM, setGroundClearanceM] = useState<number>(0.9);
-  const [foundationType, setFoundationType] = useState<FoundationType>('rammed_steel_pile');
+  const [foundationType, setFoundationType] = useState<FoundationType>(
+    (siteOverrides?.foundationType as FoundationType) || 'rammed_steel_pile'
+  );
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
 
@@ -202,6 +204,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       if (siteOverrides.distanceToCoastKm !== undefined) setDistanceToSeaKm(siteOverrides.distanceToCoastKm);
       if (siteOverrides.drainageCondition !== undefined) setDrainageCondition(siteOverrides.drainageCondition);
       if (siteOverrides.groundwaterDepthM !== undefined) setGroundwaterDepthM(siteOverrides.groundwaterDepthM);
+      if (siteOverrides.foundationType !== undefined) setFoundationType(siteOverrides.foundationType as FoundationType);
     }
   }, [city, siteOverrides, onUpdateSiteOverrides]);
 
@@ -1117,6 +1120,282 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         </div>
       )}
 
+      {/* SHALLOW BEDROCK & PILE REFUSAL MITIGATION ENGINEERING PANEL */}
+      <div className="studio-card border border-amber-500/50 bg-gradient-to-b from-[#141C2E] to-[#0E1422] p-4 space-y-4 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-amber-500/30 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-amber-200">
+                  {isEn
+                    ? 'Difficult Soil & Shallow Bedrock Mitigation: High Embedment Alternatives'
+                    : 'راهکارهای مهندسی خاک‌های دشوار: جایگزین‌های عمق کوبش زیاد و پس‌زدگی در سنگ بستر'}
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  FHWA-NHI-05-039 · Eurocode 7 · ASCE 7-22
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300/80 mt-0.5">
+                {isEn
+                  ? 'In shallow bedrock, cemented caliche, or boulder terrain, direct ramming (>1.8m) hits pile refusal or causes profile buckling. Evaluate and apply rock-socket micropiles or ground surface ballast.'
+                  : 'در سایت‌های دارای سنگ بستر کم‌عمق، لایه‌های کالیچی سخت یا قلوه‌سنگ، کوبش عمیق شمع‌ها (>۱.۸m) با امتناع کوبش (Refusal) و لهیدگی مقطع مواجه می‌شود. دو راهکار استاندارد زیر عمق نفوذ را به شدت کاهش داده یا صفر می‌کنند:'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            <span className="text-[10px] font-mono text-amber-300 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20">
+              {isEn ? 'Refusal Mitigation Matrix' : 'ماتریس مهار امتناع کوبش'}
+            </span>
+          </div>
+        </div>
+
+        {/* 3-Way Comparative Strategy Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          {/* Option 1: Direct Driven Pile */}
+          <div
+            className={`p-3.5 rounded-lg border transition flex flex-col justify-between ${
+              foundationType === 'rammed_steel_pile'
+                ? 'bg-sky-950/40 border-sky-500/70 ring-1 ring-sky-500'
+                : 'bg-slate-900/60 border-industrial-border hover:border-slate-600'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                  {isEn ? 'Standard Method' : 'روش کوبشی متداول'}
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {isEn ? 'Depth: ~1.85m' : 'عمق: ~۱.۸۵ متر'}
+                </span>
+              </div>
+              <strong className="text-white block text-xs mb-1.5">
+                {isEn ? 'Direct Rammed Steel C-Pile' : 'شمع کوبشی مستقیم در خاک'}
+              </strong>
+              <p className="text-[11px] text-slate-400 mb-2.5 leading-relaxed">
+                {isEn
+                  ? 'Fast and economical in soft/medium soils, but prone to penetrative refusal at 0.6–0.9m in rock or caliche, risking pile damage and insufficient uplift resistance.'
+                  : 'در خاک‌های رسی و ماسه‌ای سریع و اقتصادی است؛ اما در سنگ بستر یا کالیچ در عمق ۰.۶ الی ۰.۹ متر دچار امتناع کوبش و لهیدگی سر شمع می‌شود.'}
+              </p>
+              <div className="space-y-1 text-[10px] text-slate-300 border-t border-industrial-border/60 pt-2 mb-3">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Refusal Risk:' : 'ریسک پس‌زدگی سنگ:'}</span>
+                  <span className="text-rose-400 font-bold">{isEn ? 'HIGH (in rock/caliche)' : 'بسیار بالا (در سنگ/کالیچ)'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Uplift Mechanism:' : 'مکانیزم مهار کشش:'}</span>
+                  <span className="text-slate-200">{isEn ? 'Soil skin friction' : 'اصطکاک جدار خاک'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Embedment Req:' : 'عمق الزامی کوبش:'}</span>
+                  <span className="text-industrial-warning font-mono">1.60 – 2.20 m</span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFoundationType('rammed_steel_pile');
+                setIsManualDepth(false);
+                setCustomEmbedmentDepthM(null);
+                onUpdateSiteOverrides?.({ ...siteOverrides, foundationType: 'rammed_steel_pile' });
+              }}
+              className={`w-full py-1.5 px-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                foundationType === 'rammed_steel_pile'
+                  ? 'bg-sky-600 text-white shadow-sm'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700'
+              }`}
+            >
+              {foundationType === 'rammed_steel_pile' ? <CheckCircle2 className="w-3.5 h-3.5" /> : null}
+              <span>{isEn ? (foundationType === 'rammed_steel_pile' ? 'Active Selection' : 'Select Direct Ramming') : (foundationType === 'rammed_steel_pile' ? 'روش فعال' : 'انتخاب کوبش مستقیم')}</span>
+            </button>
+          </div>
+
+          {/* Option 2: Pre-Drilled Rock-Socket Grouted Pile */}
+          <div
+            className={`p-3.5 rounded-lg border transition flex flex-col justify-between ${
+              foundationType === 'pre_drilled_grouted_pile'
+                ? 'bg-emerald-950/40 border-emerald-500/70 ring-1 ring-emerald-500'
+                : 'bg-slate-900/60 border-industrial-border hover:border-slate-600'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                  {isEn ? '★ Depth Reduced 55%' : '★ کاهش ۵۵٪ عمق کوبش'}
+                </span>
+                <span className="text-[10px] font-mono text-emerald-300 font-bold">
+                  {isEn ? 'Depth: 0.75–0.95m' : 'عمق: ۰.۷۵ الی ۰.۹۵ متر'}
+                </span>
+              </div>
+              <strong className="text-white block text-xs mb-1.5">
+                {isEn ? 'Pre-Drilled Rock-Socket Grouted Pile' : 'شمع در گمانه پیش‌حفاری با تزریق گروت پرمقاومت'}
+              </strong>
+              <p className="text-[11px] text-slate-300 mb-2.5 leading-relaxed">
+                {isEn
+                  ? 'Down-The-Hole (DTH) pneumatic rock drill creates a 120mm socket only 0.85m deep. Encasing the post in 35MPa non-shrink grout mobilizes huge rock bond shear (τ_bond ≥ 1.5 MPa), completely bypassing pile refusal.'
+                  : 'حفاری گمانه ۱۲۰mm به عمق تنها ۰.۸۵ متر در سنگ بستر + تزریق گروت ۳۵ مگاپاسکال. چسبندگی عالی گروت به سنگ (τ_bond ≥ ۱.۵ MPa) امتناع کوبش را کاملاً رفع کرده و عمق را ۵۵٪ کاهش می‌دهد.'}
+              </p>
+              <div className="space-y-1 text-[10px] text-slate-300 border-t border-industrial-border/60 pt-2 mb-3">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Refusal Risk:' : 'ریسک پس‌زدگی سنگ:'}</span>
+                  <span className="text-emerald-400 font-bold">{isEn ? 'ZERO (pre-drilled socket)' : 'صفر (حفاری مکانیکی)'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Uplift Mechanism:' : 'مکانیزم مهار کشش:'}</span>
+                  <span className="text-emerald-300">{isEn ? 'Grout-Rock Bond (τ ≥ 1.5 MPa)' : 'چسبندگی برشی گروت-سنگ'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Grout Volume / Post:' : 'مصرف گروت هر پایه:'}</span>
+                  <span className="text-emerald-400 font-mono">~9.6 Liters (0.0096 m³)</span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFoundationType('pre_drilled_grouted_pile');
+                setIsManualDepth(false);
+                setCustomEmbedmentDepthM(null);
+                onUpdateSiteOverrides?.({ ...siteOverrides, foundationType: 'pre_drilled_grouted_pile' });
+              }}
+              className={`w-full py-1.5 px-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                foundationType === 'pre_drilled_grouted_pile'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-200 border border-emerald-500/50'
+              }`}
+            >
+              {foundationType === 'pre_drilled_grouted_pile' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5 text-emerald-300" />}
+              <span>{isEn ? (foundationType === 'pre_drilled_grouted_pile' ? 'Active Selection' : '1-Click Apply Grouted Socket') : (foundationType === 'pre_drilled_grouted_pile' ? 'روش فعال' : 'اعمال راهکار شمع پیش‌حفاری (۱-کلیک)')}</span>
+            </button>
+          </div>
+
+          {/* Option 3: Ground Surface Precast Ballast Blocks */}
+          <div
+            className={`p-3.5 rounded-lg border transition flex flex-col justify-between ${
+              foundationType === 'surface_ballasted_block'
+                ? 'bg-purple-950/40 border-purple-500/70 ring-1 ring-purple-500'
+                : 'bg-slate-900/60 border-industrial-border hover:border-slate-600'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold">
+                  {isEn ? '0.0m Penetration' : 'بدون نفوذ (عمق ۰.۰ متر)'}
+                </span>
+                <span className="text-[10px] font-mono text-purple-300 font-bold">
+                  {isEn ? 'Surface Mount' : 'نصب سطحی زمینی'}
+                </span>
+              </div>
+              <strong className="text-white block text-xs mb-1.5">
+                {isEn ? 'Ground Surface Precast Ballast Blocks' : 'بلوک‌های بتنی مسلح سطحی زمینی'}
+              </strong>
+              <p className="text-[11px] text-slate-300 mb-2.5 leading-relaxed">
+                {isEn
+                  ? 'Zero penetration into the ground. Heavy precast reinforced concrete blocks rest on compacted crushed stone pads (μ ≥ 0.50). Ideal when drilling is prohibited, or for capped landfills and underground utilities.'
+                  : 'بدون هیچ‌گونه نفوذ یا حفاری در زمین. بلوک‌های بتنی مسلح روی پد سنگ‌شکسته کوبیده (μ ≥ ۰.۵۰) قرار می‌گیرند. ایده‌آل برای اراضی سنگی بدون امکان حفاری، مدفن‌ها یا حریم کابل/لوله.'}
+              </p>
+              <div className="space-y-1 text-[10px] text-slate-300 border-t border-industrial-border/60 pt-2 mb-3">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Refusal Risk:' : 'ریسک پس‌زدگی سنگ:'}</span>
+                  <span className="text-emerald-400 font-bold">{isEn ? 'ZERO (no penetration)' : 'صفر مطلق (سطحی)'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Uplift Mechanism:' : 'مکانیزم مهار کشش:'}</span>
+                  <span className="text-purple-300">{isEn ? 'Gravity Self-Weight + Pad Friction' : 'وزن بتن + اصطکاک بستر'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isEn ? 'Base Friction Pad:' : 'ضریب اصطکاک پد:'}</span>
+                  <span className="text-purple-400 font-mono">μ = 0.50 (Crushed stone)</span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFoundationType('surface_ballasted_block');
+                setIsManualDepth(false);
+                setCustomEmbedmentDepthM(null);
+                onUpdateSiteOverrides?.({ ...siteOverrides, foundationType: 'surface_ballasted_block' });
+              }}
+              className={`w-full py-1.5 px-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                foundationType === 'surface_ballasted_block'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                  : 'bg-purple-950/60 hover:bg-purple-900/80 text-purple-200 border border-purple-500/50'
+              }`}
+            >
+              {foundationType === 'surface_ballasted_block' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5 text-purple-300" />}
+              <span>{isEn ? (foundationType === 'surface_ballasted_block' ? 'Active Selection' : '1-Click Apply Surface Ballast') : (foundationType === 'surface_ballasted_block' ? 'روش فعال' : 'اعمال بلوک سطحی (۱-کلیک)')}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Detailed Technical Callout for the Active Difficult-Soil Typology */}
+        {foundationType === 'pre_drilled_grouted_pile' && (
+          <div className="p-3 bg-emerald-950/30 border border-emerald-500/40 rounded-lg text-xs space-y-2">
+            <div className="flex items-center gap-2 text-emerald-300 font-bold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>{isEn ? 'Active Mitigation Details: Pre-Drilled Rock-Socket Grouted Micro-Pile' : 'مشخصات فنی و محاسباتی راهکار شمع در گمانه پیش‌حفاری با تزریق گروت:'}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-300">
+              <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Rock Socket Depth:' : 'عمق گمانه در سنگ بستر:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">{structResult.recommendedDepthM} m</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'vs 1.9m for driven pile' : '۵۵٪ کاهش نسبت به شمع کوبشی'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Borehole Diameter:' : 'قطر گمانه حفاری:'}</span>
+                <span className="font-mono text-sky-300 font-bold text-sm">120 mm (DTH)</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Pneumatic down-hole hammer' : 'چکش بادی درون چاهی'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Grout Bond Strength:' : 'تنش چسبندگی گروت-سنگ:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">τ_bond ≥ 1.50 MPa</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'FHWA-NHI-05-039 / EC7' : 'استاندارد میکروپایل FHWA'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Total Grout Volume:' : 'حجم کل تزریق گروت ۳۵MPa:'}</span>
+                <span className="font-mono text-purple-300 font-bold text-sm">{structResult.concreteVolumeTotalM3} m³</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">~{structResult.cementBagsCount} {isEn ? 'bags (50kg)' : 'کیسه ۵۰kg گروت'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {foundationType === 'surface_ballasted_block' && (
+          <div className="p-3 bg-purple-950/30 border border-purple-500/40 rounded-lg text-xs space-y-2">
+            <div className="flex items-center gap-2 text-purple-300 font-bold">
+              <CheckCircle2 className="w-4 h-4 text-purple-400" />
+              <span>{isEn ? 'Active Mitigation Details: Ground Surface Precast Ballast Blocks' : 'مشخصات فنی و محاسباتی راهکار بلوک بتنی مسلح سطحی زمینی:'}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-300">
+              <div className="p-2 bg-slate-900/70 rounded border border-purple-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Ground Penetration:' : 'عمق نفوذ در خاک:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">0.00 m</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? '100% surface mounting' : '۱۰۰٪ نصب سطحی بدون حفاری'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/70 rounded border border-purple-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Ballast Weight / Table:' : 'وزن بالاست هر میز:'}</span>
+                <span className="font-mono text-purple-300 font-bold text-sm">{Math.round((structResult.concreteVolumeTotalM3 / Math.max(1, structResult.totalTablesCount)) * 2400)} kg</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{Math.round((structResult.concreteVolumeTotalM3 / Math.max(1, structResult.totalPostsCount)) * 2400)} kg/{isEn ? 'post' : 'پایه'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/70 rounded border border-purple-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Sliding Safety Factor:' : 'ضریب اطمینان لغزش (FoS):'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">{structResult.fosSliding}</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">μ = 0.50 (FoS ≥ 1.40)</span>
+              </div>
+              <div className="p-2 bg-slate-900/70 rounded border border-purple-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Overturning FoS:' : 'ضریب اطمینان واژگونی:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">{structResult.fosOverturning}</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Required ≥ 1.50' : 'حداقل مجاز ≥ ۱.۵۰'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Structure & Foundation Configuration Controls */}
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-industrial-border/80 gap-2 mb-3">
@@ -1156,11 +1435,21 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </label>
             <select
               value={foundationType}
-              onChange={(e) => setFoundationType(e.target.value as FoundationType)}
+              onChange={(e) => {
+                const val = e.target.value as FoundationType;
+                setFoundationType(val);
+                onUpdateSiteOverrides?.({ ...siteOverrides, foundationType: val });
+              }}
               className="studio-input text-xs"
             >
               <option value="rammed_steel_pile">
-                {isEn ? 'Rammed Steel C-Piles (Utility MW scale)' : 'پایه‌های کوبشی فولادی C شکل (نیروگاه مگاواتی)'}
+                {isEn ? 'Rammed Steel C-Piles (Direct Soil Driving)' : 'پایه‌های کوبشی فولادی C شکل (کوبش مستقیم در خاک)'}
+              </option>
+              <option value="pre_drilled_grouted_pile">
+                {isEn ? 'Pre-Drilled Grouted Micro-Piles (Refusal & Shallow Bedrock)' : 'شمع در گمانه پیش‌حفاری با گروت (راهکار حذف پس‌زدگی سنگ بستر)'}
+              </option>
+              <option value="surface_ballasted_block">
+                {isEn ? 'Ground Surface Ballast Blocks (Zero Penetration)' : 'بلوک‌های بتنی مسلح سطحی زمینی (بدون نفوذ در خاک)'}
               </option>
               <option value="concrete_pier">
                 {isEn ? 'Cast-in-Place Concrete Piers (Hard/Rocky)' : 'فونداسیون استوانه‌ای بتن درجا (خاک سنگی/سخت)'}
@@ -1358,8 +1647,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
-            {foundationType === 'rooftop_ballasted_block'
+            {foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block'
               ? (isEn ? 'Overturning Safety Factor (FoS)' : 'ضریب اطمینان واژگونی (FoS)')
+              : foundationType === 'pre_drilled_grouted_pile'
+              ? (isEn ? 'Rock-Socket Grout Bond FoS' : 'ضریب اطمینان چسبندگی گروت در سنگ')
               : (isEn ? 'Pile Tension Uplift FoS' : 'ضریب اطمینان کشش شمع (FoS)')}
           </div>
           <div
@@ -1367,7 +1658,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               structResult.isStructurallySafe ? 'text-industrial-success' : 'text-rose-400'
             }`}
           >
-            {foundationType === 'rooftop_ballasted_block' ? (
+            {foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block' ? (
               <>
                 {structResult.fosOverturning}
               </>
@@ -1378,13 +1669,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             )}
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            {foundationType === 'rooftop_ballasted_block'
+            {foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block'
               ? (isEn ? 'Required ≥ 1.5 (self-weight overturning)' : 'حداقل ۱.۵ (واژگونی وزن خود)')
+              : foundationType === 'pre_drilled_grouted_pile'
+              ? (isEn ? `Eurocode 7 ≥ 2.0 (τ_bond ≥ 1.5 MPa, T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`
+                     : `یوروکد ۷ حداقل ۲.۰ (چسبندگی ۱.۵MPa، ظرفیت ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)
               : (isEn ? `Eurocode 7 ≥ 2.0 (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post)`
                      : `یوروکد ۷ حداقل ۲.۰ (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)}
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            {foundationType === 'rooftop_ballasted_block' ? (
+            {foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block' ? (
               <span>
                 {isEn ? 'Sliding FoS:' : 'ضریب لغزش:'}{' '}
                 <span className="font-mono text-industrial-success">{structResult.fosSliding}</span> (≥ 1.4)
@@ -1579,6 +1873,18 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 {structResult.bromsPileSection} (FoS = {structResult.fosLateral})
               </span>
             </div>
+            {foundationType === 'pre_drilled_grouted_pile' && (
+              <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
+                <span className="text-slate-400">{isEn ? 'Rock-Socket Grout Bond Strength:' : 'تنش چسبندگی پیوند سنگ-گروت (τ_bond):'}</span>
+                <span className="font-mono text-emerald-300 font-bold">1500 kPa (1.50 MPa)</span>
+              </div>
+            )}
+            {foundationType === 'surface_ballasted_block' && (
+              <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
+                <span className="text-slate-400">{isEn ? 'Bedding Pad Friction Coefficient (μ):' : 'ضریب اصطکاک پد سنگ‌شکسته (μ):'}</span>
+                <span className="font-mono text-purple-300 font-bold">0.50 (Crushed stone)</span>
+              </div>
+            )}
             <div className="flex justify-between items-center py-1.5">
               <span className="text-slate-400">{isEn ? 'Ultimate Skin-Friction Uplift (T_ult):' : 'ظرفیت کشش نهایی جدار خاک (T_ult):'}</span>
               <span className="font-mono text-industrial-success">
@@ -1597,7 +1903,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           <div className="space-y-2.5 text-xs text-slate-300">
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
-              <span className="text-slate-400">{isEn ? 'Total Foundation Concrete:' : 'حجم کل بتن‌ریزی فونداسیون:'}</span>
+              <span className="text-slate-400">
+                {foundationType === 'pre_drilled_grouted_pile'
+                  ? (isEn ? 'Total 35MPa Grout Volume:' : 'حجم کل تزریق گروت پرمقاومت ۳۵MPa:')
+                  : foundationType === 'surface_ballasted_block'
+                  ? (isEn ? 'Precast Surface Concrete Volume:' : 'حجم کل بتن مسلح بلوک‌های سطحی:')
+                  : (isEn ? 'Total Foundation Concrete:' : 'حجم کل بتن‌ریزی فونداسیون:')
+                }
+              </span>
               <span className="font-mono font-bold text-industrial-success text-sm">
                 {structResult.concreteVolumeTotalM3} m³ {structResult.concreteVolumeTotalM3 === 0 && (isEn ? '(Zero for Rammed Steel Piles)' : '(صفر در روش پایه‌های کوبشی)')}
               </span>
@@ -1605,17 +1918,32 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             {structResult.concreteVolumeTotalM3 > 0 && (
               <>
                 <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
-                  <span className="text-slate-400">{isEn ? 'C25 Cement Bags Required:' : 'تعداد کیسه سیمان مورد نیاز (C25):'}</span>
+                  <span className="text-slate-400">
+                    {foundationType === 'pre_drilled_grouted_pile'
+                      ? (isEn ? 'Non-Shrink Grout Bags Required (50kg):' : 'تعداد کیسه گروت بدون انقباض (۵۰kg):')
+                      : (isEn ? 'C25 Cement Bags Required:' : 'تعداد کیسه سیمان مورد نیاز (C25):')
+                    }
+                  </span>
                   <span className="font-mono text-sky-300">
                     ~{structResult.cementBagsCount} {isEn ? 'bags (50kg)' : 'کیسه ۵۰ کیلویی'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
-                  <span className="text-slate-400">{isEn ? 'Sand & Washed Gravel:' : 'شن و ماسه شسته:'}</span>
+                  <span className="text-slate-400">
+                    {foundationType === 'pre_drilled_grouted_pile'
+                      ? (isEn ? 'Graded Silica Sand for Grout:' : 'ماسه سیلیسی دانه‌بندی شده:')
+                      : (isEn ? 'Sand & Washed Gravel:' : 'شن و ماسه شسته:')
+                    }
+                  </span>
                   <span className="font-mono text-slate-200">{structResult.sandGravelTon} {isEn ? 'tons' : 'تن'}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
-                  <span className="text-slate-400">{isEn ? 'Total Steel Rebar Cages:' : 'وزن کل آرماتور و میلگرد مسلح:'}</span>
+                  <span className="text-slate-400">
+                    {foundationType === 'pre_drilled_grouted_pile'
+                      ? (isEn ? 'Centralizers & Anchor Hardware:' : 'اسپیسر، سنترالایزر و متعلقات مهار:')
+                      : (isEn ? 'Total Steel Rebar Cages:' : 'وزن کل آرماتور و میلگرد مسلح:')
+                    }
+                  </span>
                   <span className="font-mono text-industrial-warning">{structResult.steelRebarWeightTotalKg} kg</span>
                 </div>
               </>

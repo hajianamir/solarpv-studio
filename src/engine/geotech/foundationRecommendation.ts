@@ -227,7 +227,61 @@ export function scoreFoundationOptions(
     cons: blockCons,
   };
 
-  return [rammed, pier, screw, block];
+  // 5. Pre-Drilled Rock-Socket Grouted Micro-Pile (Refusal Mitigation)
+  let groutedScore = 68;
+  const groutedPros: string[] = [
+    'Overcomes pile refusal in shallow rock, caliche, and boulder-strewn ground',
+    'Cuts required embedment depth by 50–60% (0.7m–1.0m vs 1.8–2.2m driven pile)',
+    'High tensile pullout capacity via rock-grout bond shear (tau_bond >= 1.5 MPa)',
+  ];
+  const groutedCons: string[] = [];
+  if (soilClassification === 'rocky_limestone') {
+    groutedScore += 24;
+    groutedPros.push('Industry standard solution for shallow bedrock / refusal ground');
+  } else if (soilClassification === 'dense_sand_gravel') {
+    groutedScore += 4;
+  } else if (soilClassification === 'loose_sand') {
+    groutedScore -= 20;
+    groutedCons.push('Borehole caving risk in loose sand; requires casing');
+  }
+  const grouted = {
+    type: 'pre_drilled_grouted_pile' as FoundationType,
+    nameEn: 'Pre-Drilled Rock-Socket Grouted Micro-Pile',
+    nameFa: 'شمع در گمانه پیش‌حفاری با تزریق گروت پرمقاومت (راهکار حذف پس‌زدگی سنگ بستر)',
+    score: Math.max(10, Math.min(94, groutedScore)),
+    pros: groutedPros,
+    cons: groutedCons.length > 0 ? groutedCons : ['Requires DTH rock-drill rig and grout pump'],
+  };
+
+  // 6. Surface Ballasted Block (Ground Mount - Zero Penetration)
+  let surfaceBlockScore = 42;
+  const surfaceBlockPros: string[] = [
+    'Zero ground penetration (0.0m driving or drilling depth)',
+    '100% immune to pile refusal, boulder obstruction, or buried utilities',
+    'Ideal for hard bedrock where drilling is uneconomical, capped landfills, or brownfields',
+  ];
+  const surfaceBlockCons: string[] = [
+    'Heavy concrete ballast tonnage and transport logistics',
+    'Requires leveled, compacted gravel bedding pad (mu >= 0.50)',
+  ];
+  if (slopeDeg > 5) {
+    surfaceBlockScore -= 25;
+    surfaceBlockCons.push('Downhill sliding hazard on sloped ground (>5°)');
+  }
+  if (soilBearingCapacityKpa < 120) {
+    surfaceBlockScore -= 15;
+    surfaceBlockCons.push('Differential settlement on soft uncompacted soils');
+  }
+  const surfaceBlock = {
+    type: 'surface_ballasted_block' as FoundationType,
+    nameEn: 'Ground-Mounted Surface Precast Ballast Block',
+    nameFa: 'بلوک بتنی مسلح پیش‌ساخته سطحی زمینی (بدون نفوذ در خاک)',
+    score: Math.max(5, Math.min(78, surfaceBlockScore)),
+    pros: surfaceBlockPros,
+    cons: surfaceBlockCons,
+  };
+
+  return [rammed, pier, screw, block, grouted, surfaceBlock];
 }
 
 /**
@@ -325,6 +379,12 @@ export function recommendSharedFoundation(
       break;
     case 'rooftop_ballasted_block':
       rationale = `Ballasted block selected: zero penetration for ${soilBearingCapacityKpa} kPa bearing capacity soil, slope ${slopeDeg}°.`;
+      break;
+    case 'pre_drilled_grouted_pile':
+      rationale = `Pre-drilled rock-socket grouted micro-pile selected: optimal mitigation for shallow rock/refusal, mobilizing tau_bond >= 1.5 MPa at reduced embedment depth (${Math.max(0.75, frostM + 0.15).toFixed(2)}m) vs driven pile.`;
+      break;
+    case 'surface_ballasted_block':
+      rationale = `Surface precast ballasted block selected: zero-penetration solution for refusal ground or underground obstacle avoidance with mu >= 0.50 gravel pad sliding resistance.`;
       break;
   }
 
