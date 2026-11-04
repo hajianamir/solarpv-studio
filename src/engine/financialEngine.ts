@@ -25,6 +25,9 @@ export interface UserFinancialPricing {
   landLeaseUsdPerKwpYear: number;
   gridOperatorFeeUsdPerKwpYear: number;
   dieselAnnualServiceOpexUsd: number;
+  annualDegradationRate?: number;         // Dynamic degradation from environmental aging
+  inverterReplacementYear?: number | null;// Replacement year for outdoor inverters in harsh climates
+  inverterReplacementCostRatio?: number;  // Cost ratio (learning curve reduction, default 0.60)
 }
 
 export const DEFAULT_FINANCIAL_PRICING: UserFinancialPricing = {
@@ -85,6 +88,7 @@ export interface YearCashFlowItem {
   opexToman: number;
   fuelCostToman: number;
   batteryReplacementToman: number;
+  inverterReplacementToman?: number;
   netCashFlowToman: number;
   cumulativeCashFlowToman: number;
   discountedCashFlowToman: number;
@@ -276,7 +280,9 @@ export function performFinancialAnalysis(
   let foundDiscounted = false;
 
   const r = p.discountRatePct / 100.0;
-  const degradationRate = 0.005; // 0.5% module degradation per year
+  const degradationRate = p.annualDegradationRate !== undefined && p.annualDegradationRate > 0
+    ? p.annualDegradationRate
+    : 0.005; // 0.5% default module degradation per year
 
   for (let yr = 1; yr <= lifetimeYears; yr++) {
     const degradedGen = annualYieldKwh * Math.pow(1 - degradationRate, yr - 1);
@@ -287,8 +293,11 @@ export function performFinancialAnalysis(
     const batteryReplacementToman = (yr === 12 && batteryReplacementYear12Usd > 0)
       ? batteryReplacementYear12Usd * p.usdToTomanRate * Math.pow(1.05, 11)
       : 0;
+    const inverterReplacementToman = (p.inverterReplacementYear && yr === p.inverterReplacementYear && invertersUsd > 0)
+      ? invertersUsd * (p.inverterReplacementCostRatio ?? 0.60) * p.usdToTomanRate * Math.pow(1.05, yr - 1)
+      : 0;
 
-    const netCashFlow = revenue - (opex + fuel + batteryReplacementToman);
+    const netCashFlow = revenue - (opex + fuel + batteryReplacementToman + inverterReplacementToman);
 
     cumulativeCashFlow += netCashFlow;
     const discountedCashFlow = netCashFlow / Math.pow(1 + r, yr);
@@ -311,6 +320,7 @@ export function performFinancialAnalysis(
       opexToman: Math.round(opex),
       fuelCostToman: Math.round(fuel),
       batteryReplacementToman: Math.round(batteryReplacementToman),
+      inverterReplacementToman: Math.round(inverterReplacementToman),
       netCashFlowToman: Math.round(netCashFlow),
       cumulativeCashFlowToman: Math.round(cumulativeCashFlow),
       discountedCashFlowToman: Math.round(discountedCashFlow),

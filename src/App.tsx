@@ -578,6 +578,10 @@ export const App: React.FC = () => {
 
   // 7. Complete Protection System (Cables, Earthing & Lightning)
   const protectionSystem: CompleteProtectionSystemResult = useMemo(() => {
+    const isUtil = systemMode === 'powerplant';
+    const capacityKw = isUtil ? targetPowerplantCapacityKw : inverterClustering.totalInverterCapacityKw;
+    const amb = city.tempMaxC;
+
     const dcStringRun = calculateAdvancedCableRun({
       id: 'dc-str',
       sectionNameFa: 'کابل DC استرینگ خورشیدی',
@@ -589,28 +593,59 @@ export const App: React.FC = () => {
       insulationType: 'xlpe',
       allowableDropPct: 1.5,
       isDc: true,
+      ambientTempC: amb,
     });
 
-    const isUtil = systemMode === 'powerplant';
+    const dcMainRun = calculateAdvancedCableRun({
+      id: 'dc-main',
+      sectionNameFa: 'کابل باسبار اصلی DC آرایه به اینورتر/پست',
+      sectionNameEn: 'Main DC Feeder Busbar to Inverter Skid',
+      oneWayLengthM: isUtil ? 80 : 15,
+      designCurrentAmps: selectedModule.iscAmps * arrayDesign.parallelStringsCount * 1.25,
+      nominalVoltageVolts: arrayDesign.stringVocMaxColdVolts * 0.85,
+      conductorMaterial: isUtil ? 'aluminum' : 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.5,
+      isDc: true,
+      ambientTempC: amb,
+    });
+
+    const acOutputRun = calculateAdvancedCableRun({
+      id: 'ac-out',
+      sectionNameFa: 'کابل AC خروجی اینورتر به ترانسفورماتور یا تابلوی اصلی',
+      sectionNameEn: 'Inverter AC Output to Transformer / Main Board',
+      oneWayLengthM: isUtil ? 120 : 25,
+      designCurrentAmps: selectedInverter.isThreePhase
+        ? (capacityKw * 1000.0) / (Math.sqrt(3) * (isUtil ? 800 : 400) * 0.95)
+        : (capacityKw * 1000.0) / (230.0 * 0.95),
+      nominalVoltageVolts: selectedInverter.isThreePhase ? (isUtil ? 800 : 400) : 230,
+      conductorMaterial: isUtil ? 'aluminum' : 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.0,
+      isDc: false,
+      isThreePhase: selectedInverter.isThreePhase,
+      ambientTempC: amb,
+    });
+
     const earthing = calculateEarthingSystem(
-      systemMode === 'powerplant' ? targetPowerplantCapacityKw : inverterClustering.totalInverterCapacityKw,
+      capacityKw,
       100,
       'solidly_grounded',
       isUtil
     );
 
     const lightning = calculateLightningProtection(
-      systemMode === 'powerplant' ? targetPowerplantCapacityKw : inverterClustering.totalInverterCapacityKw,
+      capacityKw,
       isUtil
     );
 
     return {
-      cableRuns: [dcStringRun],
+      cableRuns: [dcStringRun, dcMainRun, acOutputRun],
       earthing,
       lightning,
       protectionBom: [] as ProtectionBomItem[],
     };
-  }, [arrayDesign, selectedModule, inverterClustering, systemMode, targetPowerplantCapacityKw]);
+  }, [arrayDesign, selectedModule, selectedInverter, inverterClustering, systemMode, targetPowerplantCapacityKw, city]);
 
   // 8. 24-Hour Balance Simulation
   const simulationResult = useMemo(() => {
@@ -2068,6 +2103,7 @@ export const App: React.FC = () => {
               trackerConfig={trackerConfig}
               onTrackerConfigChange={setTrackerConfig}
               cityLatitude={city.latitude}
+              installationEnvironment={siteOverrides?.installationEnvironment || 'ground_mount'}
               lang={lang}
             />
           )}
@@ -2102,6 +2138,8 @@ export const App: React.FC = () => {
           {activeTab === 'mv_substation' && systemMode === 'powerplant' && (
             <MvSubstationTab
               plantCapacityAcMw={(targetPowerplantCapacityKw || 1000) / 1000.0}
+              ambientTempC={city.tempMaxC}
+              elevationM={city.elevationM}
               lang={lang}
             />
           )}
@@ -2121,6 +2159,8 @@ export const App: React.FC = () => {
               inverterDcContinuousCurrentAmps={inverterClustering.inverterDcContinuousCurrentAmps}
               systemDcVoltage={inverterClustering.recommendedDcVoltageVdc || 48}
               isThreePhase={selectedInverter.isThreePhase}
+              ambientTempC={city.tempMaxC}
+              installationEnvironment={siteOverrides?.installationEnvironment || 'ground_mount'}
               lang={lang}
             />
           )}

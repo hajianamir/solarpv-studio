@@ -2878,6 +2878,128 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E8-ENV-1] Environmental temperature, dust, and equipment lifespan differentiated by environment
+  {
+    const { calculateEnvironmentalAging } = await import('../../environmentalAgingEngine');
+
+    // 1. Ground mount (open environment: calculated for BOTH inverter and PV)
+    const groundRes = calculateEnvironmentalAging({
+      installationEnvironment: 'ground_mount',
+      ambientTempMaxC: 44,
+      elevationM: 1200,
+      moduleNoctC: 45,
+      moduleTempCoeffPmpPct: -0.30,
+      inverterPnomAcKw: 330,
+    });
+
+    // 2. Industrial shed (inverter indoors/sheltered: environmental temperature/dust calculated ONLY for PV)
+    const shedRes = calculateEnvironmentalAging({
+      installationEnvironment: 'industrial_shed',
+      ambientTempMaxC: 44,
+      elevationM: 1200,
+      moduleNoctC: 45,
+      moduleTempCoeffPmpPct: -0.30,
+      inverterPnomAcKw: 330,
+    });
+
+    const groundOk =
+      !groundRes.inverterImpact.isInstalledIndoors &&
+      groundRes.inverterImpact.thermalDeratePct > 0 &&
+      groundRes.inverterImpact.expectedInverterLifespanYears <= 11 &&
+      groundRes.inverterImpact.recommendedReplacementYear !== null &&
+      groundRes.pvImpact.mountingThermalOffsetDeltaTC === 0.0 &&
+      groundRes.pvImpact.annualDegradationPct === 0.45;
+
+    const shedOk =
+      shedRes.inverterImpact.isInstalledIndoors &&
+      shedRes.inverterImpact.thermalDeratePct === 0.0 &&
+      shedRes.inverterImpact.expectedInverterLifespanYears >= 15 &&
+      shedRes.inverterImpact.recommendedReplacementYear === null &&
+      shedRes.pvImpact.mountingThermalOffsetDeltaTC === 14.0 &&
+      shedRes.pvImpact.annualDegradationPct === 0.70;
+
+    assert(
+      'E8-ENV-1',
+      'Environmental temperature, dust & equipment aging: ground mount (both) vs shed/roof (PV only)',
+      groundOk && shedOk,
+      `ground: invIndoors=${groundRes.inverterImpact.isInstalledIndoors}, invLife=${groundRes.inverterImpact.expectedInverterLifespanYears}y, invDerate=${groundRes.inverterImpact.thermalDeratePct}%; shed: invIndoors=${shedRes.inverterImpact.isInstalledIndoors}, invLife=${shedRes.inverterImpact.expectedInverterLifespanYears}y, pvOffset=+${shedRes.pvImpact.mountingThermalOffsetDeltaTC}C, pvDeg=${shedRes.pvImpact.annualDegradationPct}%/y`
+    );
+  }
+
+  // [E8-ELEC-1] Cable triple-constraint sizing (Voltage Drop + Thermal Ampacity + Short-Circuit Withstand)
+  {
+    const { calculateAdvancedCableRun } = await import('../../protectionBomEngine');
+
+    const acRun = calculateAdvancedCableRun({
+      id: 'ac-test',
+      sectionNameFa: 'کابل AC خروجی اینورتر سه فاز',
+      sectionNameEn: '3-Phase Inverter AC Output',
+      oneWayLengthM: 100,
+      designCurrentAmps: 180,
+      nominalVoltageVolts: 400,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.5,
+      isDc: false,
+      isThreePhase: true,
+      ambientTempC: 45,
+    });
+
+    const cableOk =
+      acRun.isCompliant &&
+      acRun.isAmpacityCompliant &&
+      acRun.isShortCircuitCompliant &&
+      acRun.totalThermalAmpacityAmps >= 180 &&
+      acRun.temperatureDeratingFactorKt < 1.0 &&
+      acRun.actualVoltageDropPct <= 1.5 &&
+      acRun.powerLossWatts > 0;
+
+    assert(
+      'E8-ELEC-1',
+      'Cable multi-constraint sizing: voltage drop, thermal ampacity with deratings & Joule power loss',
+      cableOk,
+      `size=${acRun.cableDesignationEn}, Iz=${acRun.totalThermalAmpacityAmps}A (Ib=180A), kt=${acRun.temperatureDeratingFactorKt}, dV=${acRun.actualVoltageDropPct}%, Ploss=${acRun.powerLossWatts}W`
+    );
+  }
+
+  // [E8-ELEC-2] MV Substation IEC 60076 deratings, IEEE 80 touch/step safety & IEC 62305 lightning
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+    const { calculateLightningProtection, calculateEarthingSystem } = await import('../../protectionBomEngine');
+
+    const sub = designMvSubstation({
+      plantCapacityAcMva: 5.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      ambientTempC: 45,
+      elevationM: 1500,
+      upstreamGridShortCircuitMva: 500,
+    });
+
+    const lps = calculateLightningProtection(5000, true);
+    const earthing = calculateEarthingSystem(5000, 80, 'solidly_grounded', true);
+
+    const subOk =
+      sub.transformer.ratedPowerMva >= 5.0 &&
+      sub.transformer.temperatureDeratingPct > 0 &&
+      sub.transformer.altitudeDeratingPct > 0 &&
+      sub.shortCircuit.initialSymmetricalIscKa > 0 &&
+      sub.earthing.isTouchSafe &&
+      sub.earthing.isStepSafe &&
+      sub.auxiliaryTransformer.ratedKva > 0 &&
+      lps.separationDistanceCm > 0 &&
+      earthing.isResistanceCompliant;
+
+    assert(
+      'E8-ELEC-2',
+      'Substation deratings (IEC 60076), IEEE 80 touch/step safety & IEC 62305 separation distance',
+      subOk,
+      `trafo=${sub.transformer.ratedPowerMva}MVA (eff=${sub.transformer.effectiveCapacityUnderSiteConditionsMva}MVA, tempDerate=-${sub.transformer.temperatureDeratingPct}%, altDerate=-${sub.transformer.altitudeDeratingPct}%), Isc=${sub.shortCircuit.initialSymmetricalIscKa}kA, touchSafe=${sub.earthing.isTouchSafe}, sepDist=${lps.separationDistanceCm}cm`
+    );
+  }
+
   // [F1-R1] Provenance uses actual project city (Sydney), not hardcoded Tehran.
   {
     const { buildProvenanceRows } = await import('../../provenance/provenanceBuilder');

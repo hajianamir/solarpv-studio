@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
-import { Zap, Shield, Anchor, Activity, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
+import { Zap, Shield, Anchor, Activity, CheckCircle2, AlertTriangle, Layers, Thermometer, Compass, Radio } from 'lucide-react';
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 
 interface MvSubstationTabProps {
   plantCapacityAcMw: number;
+  ambientTempC?: number;
+  elevationM?: number;
   lang?: 'fa' | 'en';
 }
 
-export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityAcMw, lang = 'fa' }) => {
+export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
+  plantCapacityAcMw,
+  ambientTempC = 42,
+  elevationM = 1200,
+  lang = 'fa',
+}) => {
   const isFa = lang === 'fa';
   const [gridVoltageKv, setGridVoltageKv] = useState<number>(20);
-  const [inverterVoltageV, setInverterVoltageV] = useState<number>(400);
+  const [inverterVoltageV, setInverterVoltageV] = useState<number>(800);
+  const [siteAmbientTemp, setSiteAmbientTemp] = useState<number>(ambientTempC);
+  const [siteElevation, setSiteElevation] = useState<number>(elevationM);
   const [soilResistivityOhmM, setSoilResistivityOhmM] = useState<number>(80);
   const [clearingTimeSec, setClearingTimeSec] = useState<number>(0.5);
+  const [gridMva, setGridMva] = useState<number>(500);
 
   const subResult: MvSubstationResult = designMvSubstation({
     plantCapacityAcMva: plantCapacityAcMw,
@@ -20,6 +30,9 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
     gridConnectionVoltageKv: gridVoltageKv,
     soilResistivityOhmM,
     clearingTimeSec,
+    ambientTempC: siteAmbientTemp,
+    elevationM: siteElevation,
+    upstreamGridShortCircuitMva: gridMva,
   });
 
   return (
@@ -34,13 +47,17 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
         </h1>
         <p className="text-slate-400 text-xs">
           {isFa
-            ? 'محاسبات اتصال کوتاه طبق IEC 60909، سایزینگ ترانسفورماتور افزاینده ۲۰ و ۳۳ کیلوولت، تابلوی RMU و مش ارتینگ پست طبق IEEE 80'
-            : 'IEC 60909 short-circuit analysis, 20/33kV step-up transformer sizing, SF6 RMU switchgear, and IEEE 80 substation ground grid.'}
+            ? 'محاسبات اتصال کوتاه طبق IEC 60909 با احتساب شبکه بالادست، سایزینگ ترانسفورماتور با ضرایب افت دمایی و ارتفاعی (IEC 60076)، تابلوی RMU، کابل MV، برق‌گیر و مش ارتینگ طبق IEEE 80'
+            : 'IEC 60909 short-circuit analysis with upstream grid, transformer sizing with temperature/altitude deratings (IEC 60076), RMU switchgear, MV cables, and IEEE 80 earth grid.'}
         </p>
       </div>
 
-      {/* Grid Controls */}
+      {/* Grid & Environmental Controls */}
       <div className="studio-card">
+        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <Layers className="w-4 h-4 text-industrial-warning" />
+          {isFa ? 'پارامترهای شبکه، دما، ارتفاع و خاک محوطه پست' : 'Grid, Environmental, Altitude & Soil Parameters'}
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
@@ -63,13 +80,44 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
             </label>
             <select
               value={inverterVoltageV}
-              onChange={(e) => setInverterVoltageV(parseInt(e.target.value) || 400)}
+              onChange={(e) => setInverterVoltageV(parseInt(e.target.value) || 800)}
               className="studio-input text-xs"
             >
-              <option value="400">{isFa ? '۴۰۰ ولت سه فاز استاندارد' : '400 V 3-Phase Standard'}</option>
-              <option value="690">{isFa ? '۶۹۰ ولت سه فاز صنعتی' : '690 V Industrial 3-Phase'}</option>
-              <option value="800">{isFa ? '۸۰۰ ولت اینورترهای استرینگ جدید' : '800 V Modern Utility String Inverters'}</option>
+              <option value="800">{isFa ? '۸۰۰ ولت (اینورترهای استرینگ جدید)' : '800 V Modern Utility Inverters'}</option>
+              <option value="690">{isFa ? '۶۹۰ ولت (اینورترهای مرکزی/صنعتی)' : '690 V Central Inverters'}</option>
+              <option value="400">{isFa ? '۴۰۰ ولت (سه فاز استاندارد LV)' : '400 V Standard 3-Phase LV'}</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+              <span>{isFa ? 'دمای حداکثر محیط (°C):' : 'Max Ambient Temp (°C):'}</span>
+              <span className="font-mono text-industrial-warning font-bold">{siteAmbientTemp}°C</span>
+            </label>
+            <input
+              type="number"
+              min="25"
+              max="55"
+              value={siteAmbientTemp}
+              onChange={(e) => setSiteAmbientTemp(Number(e.target.value) || 40)}
+              className="studio-input font-mono text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+              <span>{isFa ? 'ارتفاع از سطح دریا (متر):' : 'Site Elevation (m):'}</span>
+              <span className="font-mono text-sky-300 font-bold">{siteElevation}m</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="3500"
+              step="50"
+              value={siteElevation}
+              onChange={(e) => setSiteElevation(Number(e.target.value) || 1000)}
+              className="studio-input font-mono text-xs"
+            />
           </div>
 
           <div>
@@ -81,7 +129,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
               step="10"
               value={soilResistivityOhmM}
               onChange={(e) => setSoilResistivityOhmM(parseFloat(e.target.value) || 50)}
-              className="studio-input font-mono"
+              className="studio-input font-mono text-xs"
             />
           </div>
 
@@ -94,8 +142,33 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
               step="0.1"
               value={clearingTimeSec}
               onChange={(e) => setClearingTimeSec(parseFloat(e.target.value) || 0.5)}
-              className="studio-input font-mono"
+              className="studio-input font-mono text-xs"
             />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">
+              {isFa ? 'سطح اتصال کوتاه شبکه بالادست (MVA):' : 'Upstream Grid Fault Level (MVA):'}
+            </label>
+            <select
+              value={gridMva}
+              onChange={(e) => setGridMva(parseInt(e.target.value) || 500)}
+              className="studio-input text-xs font-mono"
+            >
+              <option value="350">350 MVA (شبکه‌های ضعیف توزیع)</option>
+              <option value="500">500 MVA (استاندارد شبکه توزیع ایران)</option>
+              <option value="750">750 MVA (شبکه فوق توزیع منطقه‌ای)</option>
+              <option value="1000">1000 MVA (پست‌های ۶۳/۲۰ کیلوولت قوی)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">
+              {isFa ? 'توان نامی نیروگاه در نقطه تزریق:' : 'Plant Active AC Capacity:'}
+            </label>
+            <div className="p-2 bg-industrial-surface rounded border border-industrial-border text-industrial-accent font-mono font-bold">
+              {plantCapacityAcMw} MW
+            </div>
           </div>
         </div>
       </div>
@@ -104,13 +177,13 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
-            {isFa ? 'ظرفیت ترانسفورماتور افزاینده' : 'Step-up Transformer Rating'}
+            {isFa ? 'ظرفیت نامی ترانسفورماتور قدرت' : 'Step-up Transformer Rating'}
           </div>
           <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
             {subResult.transformer.ratedPowerMva} <span className="text-xs font-normal text-slate-300">MVA</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            uk = {subResult.transformer.impedanceVoltageUkPct}%
+            {isFa ? 'ظرفیت مؤثر در محل پروژه:' : 'Effective Capacity:'} {subResult.transformer.effectiveCapacityUnderSiteConditionsMva} MVA
           </div>
         </div>
 
@@ -122,7 +195,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
             {subResult.shortCircuit.initialSymmetricalIscKa} <span className="text-xs font-normal text-slate-300">kA</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? 'پیک دینامیکی:' : 'Dynamic peak:'} {subResult.shortCircuit.peakDynamicIpKa} kA
+            {isFa ? 'پیک دینامیکی:' : 'Dynamic peak:'} {subResult.shortCircuit.peakDynamicIpKa} kA (IEC 60909)
           </div>
         </div>
 
@@ -157,30 +230,41 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Transformer Specs */}
         <div className="studio-card">
-          <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-industrial-warning shrink-0" />
-            {isFa ? 'مشخصات فنی ترانسفورماتور قدرت (Power Transformer)' : 'Step-Up Power Transformer Specifications'}
+          <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-industrial-warning shrink-0" />
+              {isFa ? 'مشخصات فنی ترانسفورماتور و ضرایب کاهش توان (IEC 60076)' : 'Power Transformer & Deratings (IEC 60076)'}
+            </span>
+            <span className="text-[10px] text-industrial-warning font-mono">
+              Dyn11 / uk={subResult.transformer.impedanceVoltageUkPct}%
+            </span>
           </h3>
           <div className="space-y-2 text-xs text-slate-300">
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
-              <span className="text-slate-400">{isFa ? 'تیپ ترانسفورماتور:' : 'Cooling Type:'}</span>
+              <span className="text-slate-400">{isFa ? 'نوع خنک‌کاری:' : 'Cooling Type:'}</span>
               <strong className="text-white">{subResult.transformer.coolingType}</strong>
-            </div>
-            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
-              <span className="text-slate-400">{isFa ? 'گروه برداری (Vector Group):' : 'Vector Group:'}</span>
-              <strong className="text-sky-300 font-mono">{subResult.transformer.vectorGroup}</strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'نسبت تبدیل ولتاژ:' : 'Voltage Ratio:'}</span>
               <strong className="text-white font-mono">{inverterVoltageV}V / {gridVoltageKv}kV</strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
-              <span className="text-slate-400">{isFa ? 'تلفات بی‌باری (هسته P0):' : 'No-Load Core Losses (P0):'}</span>
-              <strong className="text-industrial-warning font-mono">{subResult.transformer.noLoadLossesKw} kW</strong>
+              <span className="text-slate-400">{isFa ? 'افت حرارتی محیطی (>40°C):' : 'Ambient Temp Derating (>40°C):'}</span>
+              <strong className="text-industrial-warning font-mono">-{subResult.transformer.temperatureDeratingPct}%</strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
-              <span className="text-slate-400">{isFa ? 'تلفات بارداری (سیم‌پیچ Pk):' : 'Load Copper Losses (Pk):'}</span>
-              <strong className="text-industrial-warning font-mono">{subResult.transformer.loadLossesKw} kW</strong>
+              <span className="text-slate-400">{isFa ? 'افت ارتفاعی (>1000m):' : 'Altitude Derating (>1000m):'}</span>
+              <strong className="text-sky-300 font-mono">-{subResult.transformer.altitudeDeratingPct}%</strong>
+            </div>
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
+              <span className="text-slate-400">{isFa ? 'رزرو هارمونیک جریان (K-factor):' : 'Harmonic Heating Allowance:'}</span>
+              <strong className="text-purple-300 font-mono">+{subResult.transformer.harmonicDeratingPct}%</strong>
+            </div>
+            <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
+              <span className="text-slate-400">{isFa ? 'تلفات بی‌باری و بارداری (P0+Pk):' : 'Total Losses (P0+Pk):'}</span>
+              <strong className="text-industrial-warning font-mono">
+                {subResult.transformer.noLoadLossesKw} kW + {subResult.transformer.loadLossesKw} kW
+              </strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'راندمان در بار کامل:' : 'Full-Load Efficiency:'}</span>
@@ -191,9 +275,14 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
 
         {/* IEEE 80 Earthing Grid */}
         <div className="studio-card">
-          <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
-            <Anchor className="w-4 h-4 text-teal-400 shrink-0" />
-            {isFa ? 'طراحی مش ارتینگ پست بر اساس استاندارد IEEE 80' : 'Substation Grounding Grid Design (IEEE 80)'}
+          <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Anchor className="w-4 h-4 text-teal-400 shrink-0" />
+              {isFa ? 'طراحی مش ارتینگ و ولتاژهای گام/لمس (IEEE 80)' : 'Substation Grounding Grid Design (IEEE 80)'}
+            </span>
+            <span className="text-[10px] text-industrial-success font-mono font-bold">
+              Rg = {subResult.earthing.calculatedGridResistanceOhms} Ω
+            </span>
           </h3>
           <div className="space-y-2 text-xs text-slate-300">
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
@@ -201,12 +290,22 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
               <strong className="text-teal-300 font-mono text-sm">{subResult.earthing.groundGridConductorMm2} mm² Cu</strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
-              <span className="text-slate-400">{isFa ? 'حد ولتاژ تماس مجاز (Touch):' : 'Tolerable Touch Voltage:'}</span>
-              <strong className="text-white font-mono">{subResult.earthing.touchVoltageLimitVolts} V</strong>
+              <span className="text-slate-400">{isFa ? 'ولتاژ تماس مش (Em) / حد مجاز:' : 'Mesh Touch Voltage (Em) / Tol:'}</span>
+              <div className="text-right">
+                <strong className={`font-mono ${subResult.earthing.isTouchSafe ? 'text-industrial-success' : 'text-industrial-error'}`}>
+                  {subResult.earthing.actualMeshVoltageVolts} V
+                </strong>
+                <span className="text-[10px] text-slate-400 font-mono ml-1">/ {subResult.earthing.touchVoltageLimitVolts} V</span>
+              </div>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
-              <span className="text-slate-400">{isFa ? 'حد ولتاژ گام مجاز (Step):' : 'Tolerable Step Voltage:'}</span>
-              <strong className="text-white font-mono">{subResult.earthing.stepVoltageLimitVolts} V</strong>
+              <span className="text-slate-400">{isFa ? 'ولتاژ گام محوطه (Es) / حد مجاز:' : 'Step Voltage (Es) / Tol:'}</span>
+              <div className="text-right">
+                <strong className={`font-mono ${subResult.earthing.isStepSafe ? 'text-industrial-success' : 'text-industrial-error'}`}>
+                  {subResult.earthing.actualStepVoltageVolts} V
+                </strong>
+                <span className="text-[10px] text-slate-400 font-mono ml-1">/ {subResult.earthing.stepVoltageLimitVolts} V</span>
+              </div>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'مقاومت الکتریکی کل مش زمین:' : 'Grid Resistance (Rg):'}</span>
@@ -218,6 +317,69 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
               <span className="text-slate-400">{isFa ? 'کنترل توان راکتیو Q(U):' : 'Reactive Power Support Q(U):'}</span>
               <strong className="text-sky-300 font-mono">{subResult.reactivePowerCapacityMvar} Mvar ({subResult.powerFactorRange})</strong>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Auxiliary Transformer, MV Cables & Surge Arresters */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="studio-card">
+          <h4 className="text-xs font-bold text-sky-300 mb-2 flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5" />
+            {isFa ? 'ترانسفورماتور مصارف داخلی (Station Aux)' : 'Station Auxiliary Transformer'}
+          </h4>
+          <div className="space-y-1.5 text-xs text-slate-300">
+            <div className="flex justify-between">
+              <span className="text-slate-400">{isFa ? 'ظرفیت نامی:' : 'Rating:'}</span>
+              <strong className="font-mono text-white">{subResult.auxiliaryTransformer.ratedKva} kVA</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">{isFa ? 'نسبت ولتاژ:' : 'Ratio:'}</span>
+              <strong className="font-mono text-sky-300">{subResult.auxiliaryTransformer.voltageRatio}</strong>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+              {isFa ? subResult.auxiliaryTransformer.purposeFa : subResult.auxiliaryTransformer.purposeEn}
+            </p>
+          </div>
+        </div>
+
+        <div className="studio-card">
+          <h4 className="text-xs font-bold text-industrial-warning mb-2 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5" />
+            {isFa ? 'کابل فشار متوسط کلکتور (MV Cable)' : 'MV Collector Power Cable'}
+          </h4>
+          <div className="space-y-1.5 text-xs text-slate-300">
+            <div className="flex justify-between">
+              <span className="text-slate-400">{isFa ? 'مقطع هادی:' : 'Conductor:'}</span>
+              <strong className="font-mono text-white">{subResult.mvCollectorCable.crossSectionMm2} mm² Al</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">{isFa ? 'جریان نامی فاز:' : 'Nominal Current:'}</span>
+              <strong className="font-mono text-industrial-warning">{subResult.mvCollectorCable.nominalCurrentAmps} A</strong>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1 leading-relaxed font-mono">
+              {isFa ? subResult.mvCollectorCable.cableDesignationFa : subResult.mvCollectorCable.cableDesignationEn}
+            </p>
+          </div>
+        </div>
+
+        <div className="studio-card">
+          <h4 className="text-xs font-bold text-purple-300 mb-2 flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5" />
+            {isFa ? 'برقگیر فشار متوسط (Surge Arrester)' : 'MV Surge Arrester (IEC 60099)'}
+          </h4>
+          <div className="space-y-1.5 text-xs text-slate-300">
+            <div className="flex justify-between">
+              <span className="text-slate-400">{isFa ? 'ولتاژ نامی (Ur):' : 'Rated Ur:'}</span>
+              <strong className="font-mono text-purple-300">{subResult.surgeArrester.ratedVoltageUrKv} kV</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">{isFa ? 'ولتاژ کار دائم (MCOV):' : 'MCOV (Uc):'}</span>
+              <strong className="font-mono text-white">{subResult.surgeArrester.continuousOperatingVoltageMcovKv} kV</strong>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+              {subResult.surgeArrester.energyClass}
+            </p>
           </div>
         </div>
       </div>
@@ -248,3 +410,5 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({ plantCapacityA
     </div>
   );
 };
+
+export default MvSubstationTab;
