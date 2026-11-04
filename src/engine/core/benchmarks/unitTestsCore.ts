@@ -3217,13 +3217,27 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       buriedRun.groupingDeratingFactorKg === 0.70 &&
       trayRun.totalThermalAmpacityAmps > buriedRun.totalThermalAmpacityAmps;
 
-    const capacitanceOk = scHeavyRun.totalCapacitanceUf > 0 && scHeavyRun.chargingCurrentAmps > 0;
+    const dcRun = calculateAdvancedCableRun({
+      id: 'dc-test',
+      sectionNameFa: 'استرینگ DC',
+      sectionNameEn: 'DC String',
+      oneWayLengthM: 100,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 1000,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.5,
+      isDc: true,
+      isThreePhase: false,
+    });
+    const dcCapacitanceOk = dcRun.totalCapacitanceUf > 0 && dcRun.chargingCurrentAmps === 0;
+    const acCapacitanceOk = scHeavyRun.totalCapacitanceUf > 0 && scHeavyRun.chargingCurrentAmps > 0;
 
     assert(
       'E9-CABLE-SC-1',
       'Cable sizing enforces adiabatic short-circuit withstand without 0.5 discount and applies installationMethod kg',
-      scConstraintEnforced && installMethodOk && capacitanceOk,
-      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, Cap=${scHeavyRun.totalCapacitanceUf}uF`
+      scConstraintEnforced && installMethodOk && dcCapacitanceOk && acCapacitanceOk,
+      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, DC Cap=${dcRun.totalCapacitanceUf}uF(Ich=${dcRun.chargingCurrentAmps}A), AC Cap=${scHeavyRun.totalCapacitanceUf}uF(Ich=${scHeavyRun.chargingCurrentAmps}A)`
     );
   }
 
@@ -3261,6 +3275,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const breakerSufficiencyOk =
       normalSub.shortCircuit.isBreakerSufficient === true &&
       normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.initialSymmetricalIscKa &&
+      normalSub.shortCircuit.ratedPeakMakingCapacityKa >= normalSub.shortCircuit.peakDynamicIpKa &&
+      normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.thermalEquivalentIthKa &&
       extremeSub.shortCircuit.isBreakerSufficient === false;
 
     assert(
@@ -3275,21 +3291,31 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   {
     const { calculateLightningProtection, calculateEarthingSystem } = await import('../../protectionBomEngine');
 
-    // Test with high thunderstorm activity and small area/tolerable to require Class I (E > 98%)
-    const lpsClass1 = calculateLightningProtection(200, false, 250);
-    const isClass1Or2 = lpsClass1.lpsClass === 'Class I' || lpsClass1.lpsClass === 'Class II';
+    // 1. Strict Class I verification: Large utility plant with high thunderstorm activity requires Class I (E > 98%)
+    const lpsClass1 = calculateLightningProtection(5000, true, 30);
+    const isStrictlyClass1 = lpsClass1.lpsClass === 'Class I' && lpsClass1.requiredEfficiencyPct > 98.0;
 
-    const earthing = calculateEarthingSystem(5000, 80, 'solidly_grounded', true);
-    const earthingIntegrityOk =
-      typeof earthing.isEarthingSafe === 'boolean' &&
-      earthing.isEarthingSafe === (earthing.isResistanceCompliant && earthing.isTouchVoltageSafe && earthing.isStepVoltageSafe) &&
-      earthing.isPreliminaryEstimate === true;
+    // 2. Earthing safety integration on solid ground
+    const earthingSolid = calculateEarthingSystem(5000, 80, 'solidly_grounded', true);
+    const earthingSolidOk =
+      typeof earthingSolid.isEarthingSafe === 'boolean' &&
+      earthingSolid.isEarthingSafe === (earthingSolid.isResistanceCompliant && earthingSolid.isTouchVoltageSafe && earthingSolid.isStepVoltageSafe) &&
+      earthingSolid.isTouchVoltageSafe === (earthingSolid.actualMeshVoltageVolts <= earthingSolid.maxTouchVoltageVolts) &&
+      earthingSolid.isPreliminaryEstimate === true;
+
+    // 3. High-priority safety boundary regression: Impedance grounded system where actualMesh (222V) > maxTouch (120V)
+    // Must strictly evaluate isTouchVoltageSafe = false and isEarthingSafe = false
+    const earthingImpedance = calculateEarthingSystem(100, 40, 'impedance_grounded', false);
+    const earthingSafetyBoundaryOk =
+      earthingImpedance.actualMeshVoltageVolts > earthingImpedance.maxTouchVoltageVolts &&
+      earthingImpedance.isTouchVoltageSafe === false &&
+      earthingImpedance.isEarthingSafe === false;
 
     assert(
       'E9-LPS-CLASS1-1',
-      'Lightning LPS condition evaluates Class I without prior shadow masking and earthing integrates safety',
-      isClass1Or2 && earthingIntegrityOk,
-      `LPS Class=${lpsClass1.lpsClass} (reqEff=${lpsClass1.requiredEfficiencyPct}%), earthingSafe=${earthing.isEarthingSafe}, prelim=${earthing.isPreliminaryEstimate}`
+      'Lightning LPS condition strictly evaluates Class I (E>98%) and earthing bounds touch safety to maxTouch limit',
+      isStrictlyClass1 && earthingSolidOk && earthingSafetyBoundaryOk,
+      `LPS Class=${lpsClass1.lpsClass} (reqEff=${lpsClass1.requiredEfficiencyPct}%), solidSafe=${earthingSolid.isEarthingSafe}, impedanceMesh=${earthingImpedance.actualMeshVoltageVolts}V vs limit=${earthingImpedance.maxTouchVoltageVolts}V (touchSafe=${earthingImpedance.isTouchVoltageSafe})`
     );
   }
 

@@ -350,12 +350,12 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     : config.nominalVoltageVolts * config.designCurrentAmps;
   const powerLossPct = Number(((powerLossWatts / Math.max(1, totalTransferredPowerWatts)) * 100.0).toFixed(2));
 
-  // 8. Line Capacitance & AC Charging Current (IEC 60287 / IEC 60502)
-  const lineCapacitanceUfPerKm = config.isDc
-    ? 0.0
-    : Number((0.20 + 0.035 * Math.log(Math.max(1.5, perRunSection))).toFixed(3));
+  // 8. Line Capacitance & AC Charging Current (IEC 60287 / IEC 60502 typical screening estimate)
+  // Physical electrostatic capacitance exists on both DC and AC cables based on dielectric insulation and geometry:
+  const lineCapacitanceUfPerKm = Number((0.20 + 0.035 * Math.log(Math.max(1.5, perRunSection))).toFixed(3));
   const totalCapacitanceUf = Number(((lineCapacitanceUfPerKm * config.oneWayLengthM * parallelRuns) / 1000.0).toFixed(4));
   const vPhase = config.isThreePhase ? config.nominalVoltageVolts / Math.sqrt(3) : config.nominalVoltageVolts;
+  // Steady-state 50Hz reactive charging current applies only to AC circuits (zero for pure DC):
   const chargingCurrentAmps = config.isDc
     ? 0.0
     : Number((2.0 * Math.PI * 50.0 * (totalCapacitanceUf * 1e-6) * vPhase).toFixed(4));
@@ -497,19 +497,20 @@ export function calculateEarthingSystem(
   const actualMeshVoltageVolts = Math.round((rho * ifaultKa * 1000.0 * km * ki) / (totalLength * 1.5));
   const actualStepVoltageVolts = Math.round((rho * ifaultKa * 1000.0 * 0.35 * ki) / (totalLength * 1.2));
 
-  const isTouchVoltageSafe = actualMeshVoltageVolts <= tolerableTouch;
-  const isStepVoltageSafe = actualStepVoltageVolts <= tolerableStep;
-
-  // Maximum touch & step voltage limits according to standard regulatory thresholds
+  // Maximum touch & step voltage limits according to standard regulatory thresholds (IEEE 80 / IEC 60364-4-41)
   let maxTouch = tolerableTouch;
   let maxStep = tolerableStep;
   if (upstreamSystem === 'impedance_grounded') {
-    maxTouch = 120.0;
-    maxStep = 400.0;
+    maxTouch = Math.min(tolerableTouch, 120.0);
+    maxStep = Math.min(tolerableStep, 400.0);
   } else if (upstreamSystem === 'isolated_it') {
-    maxTouch = 50.0;
-    maxStep = 200.0;
+    maxTouch = Math.min(tolerableTouch, 50.0);
+    maxStep = Math.min(tolerableStep, 200.0);
   }
+
+  // Safety compliance flags must verify actual potential against governing limit (maxTouch / maxStep)
+  const isTouchVoltageSafe = actualMeshVoltageVolts <= maxTouch;
+  const isStepVoltageSafe = actualStepVoltageVolts <= maxStep;
 
   const earthingExecutionStepsFa = [
     '۱. حفر رینگ ارت پیرامونی: حفر کانال به عمق حداقل ۸۰ سانتی‌متر دور تا دور محوطه آرایه‌ها و پست برق.',

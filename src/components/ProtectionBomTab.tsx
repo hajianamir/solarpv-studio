@@ -625,11 +625,14 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                       </td>
                       <td className="p-2.5 font-mono text-xs">
                         {run.config.isDc ? (
-                          <span className="text-slate-500">0.0 A (DC)</span>
+                          <>
+                            <span className="text-slate-400 font-bold">0.0 A (DC)</span>
+                            <span className="block text-[9px] text-slate-500">{run.totalCapacitanceUf} µF (est)</span>
+                          </>
                         ) : (
                           <>
                             <span className="text-sky-300 font-bold">{run.chargingCurrentAmps} A</span>
-                            <span className="block text-[9px] text-slate-400">{run.totalCapacitanceUf} µF</span>
+                            <span className="block text-[9px] text-slate-400">{run.totalCapacitanceUf} µF (est)</span>
                           </>
                         )}
                       </td>
@@ -824,10 +827,10 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
                 <div className="flex justify-between text-slate-300 font-mono">
                   <span>{lang === 'fa' ? 'ولتاژ تماس محاسبه‌شده:' : 'Actual Em:'} <strong>{earthingResult.actualMeshVoltageVolts} V</strong></span>
-                  <span>{lang === 'fa' ? 'حد مجاز قابل‌تحمل:' : 'Tolerable limit:'} <strong>{earthingResult.tolerableTouchVoltageVolts} V</strong></span>
+                  <span>{lang === 'fa' ? 'حد مجاز حاکم:' : 'Governing limit:'} <strong>{earthingResult.maxTouchVoltageVolts} V</strong></span>
                 </div>
                 <span className="text-[10px] text-slate-400 block mt-1">
-                  {lang === 'fa' ? 'وزن بدن ۵۰kg با لایه سنگ‌ریزه ۱۰cm در زمان خطای ۰.۲ ثانیه طبق IEEE 80' : 'Based on 50kg body weight with 10cm crushed rock layer'}
+                  {lang === 'fa' ? 'وزن بدن ۵۰kg با لایه سنگ‌ریزه ۱۰cm در زمان خطای ۰.۲ ثانیه طبق IEEE 80 / IEC 60364-4-41' : 'IEEE 80 / IEC 60364-4-41 touch potential limit'}
                 </span>
               </div>
 
@@ -844,7 +847,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
                 <div className="flex justify-between text-slate-300 font-mono">
                   <span>{lang === 'fa' ? 'ولتاژ گام محاسبه‌شده:' : 'Actual Es:'} <strong>{earthingResult.actualStepVoltageVolts} V</strong></span>
-                  <span>{lang === 'fa' ? 'حد مجاز قابل‌تحمل:' : 'Tolerable limit:'} <strong>{earthingResult.tolerableStepVoltageVolts} V</strong></span>
+                  <span>{lang === 'fa' ? 'حد مجاز حاکم:' : 'Governing limit:'} <strong>{earthingResult.maxStepVoltageVolts} V</strong></span>
                 </div>
                 <span className="text-[10px] text-slate-400 block mt-1">
                   {lang === 'fa' ? 'تضمین عدم برق‌گرفتگی اپراتور در حین راه‌رفتن در محوطه نیروگاه هنگام وقوع فالت زمین' : 'Guarantees operator safety against step potential during ground faults'}

@@ -396,7 +396,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           {isFa ? 'تجهیزات تابلویی و رله‌های حفاظتی فشار متوسط (MV Switchgear)' : 'Medium-Voltage Switchgear & Protection Relays'}
         </h3>
         <p className="text-xs text-slate-300 bg-industrial-surface/60 p-3 rounded-lg border border-industrial-border/60 mb-3">
-          {isFa ? subResult.switchgearDescriptionFa : 'Gas-Insulated Ring Main Unit (GIS RMU) with integrated vacuum circuit breaker (VCB), motorized disconnectors, numerical multifunctional protection relay (50/51/51N/27/59/81), surge arresters (Class 2), and SCADA telecontrol gateway.'}
+          {isFa ? subResult.switchgearDescriptionFa : subResult.switchgearDescriptionEn}
         </p>
 
         <div className="space-y-1 text-xs text-slate-300">
