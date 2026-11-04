@@ -70,5 +70,6 @@ export interface SiteGeotechnicalOverrides {
   distanceToCoastKm?: number;
   drainageCondition?: SiteDrainageCondition;
   groundwaterDepthM?: number;
+  foundationType?: string;
   customNotes?: string;
 }

@@ -8,10 +8,12 @@ import {
 } from './geotech/bromsMethod';
 
 export type FoundationType =
-  | 'rammed_steel_pile'      // پایه‌های کوبشی فولادی C شکل (نیروگاه‌های مقیاس مگاواتی)
-  | 'concrete_pier'          // پایه‌های بتنی درجا (خاک‌های سنگی و سخت)
-  | 'ground_screw'           // شمع‌های پیچشی فولادی
-  | 'rooftop_ballasted_block'; // بلوک‌های بتنی وزنی پشت‌بام بدون نفوذ در ایزوگام
+  | 'rammed_steel_pile'          // پایه‌های کوبشی فولادی C شکل (نیروگاه‌های مقیاس مگاواتی - کوبش مستقیم در خاک)
+  | 'pre_drilled_grouted_pile'   // شمع در گمانه پیش‌حفاری با تزریق گروت پرمقاومت (راهکار کاهش عمق در سنگ بستر و خاک سخت)
+  | 'surface_ballasted_block'    // بلوک‌های بتنی مسلح سطحی زمینی (بدون نفوذ در خاک - ویژه زمین‌های سنگی/مانع‌دار)
+  | 'concrete_pier'              // پایه‌های بتنی درجا (خاک‌های سنگی و سخت)
+  | 'ground_screw'               // شمع‌های پیچشی فولادی
+  | 'rooftop_ballasted_block';   // بلوک‌های بتنی وزنی پشت‌بام بدون نفوذ در ایزوگام
 
 export type SoilType =
   | 'dense_sand_gravel' // شن و ماسه متراکم (اصطکاک بالا)
@@ -20,7 +22,9 @@ export type SoilType =
   | 'rocky_limestone';  // بستر سنگ آهکی یا کوهستانی
 
 /**
- * Estimate ultimate uplift (tension) capacity per driven pile.
+ * Estimate ultimate uplift (tension) capacity per driven pile or rock socket.
+ *  - Pre-drilled rock socket micro-pile: grout-to-rock interface bond (FHWA-NHI-05-039 / Eurocode 7):
+ *      T_ult = pi * D_hole * L * tau_bond
  *  - Cohesionless: beta method (Burland 1973 / Meyerhof 1976):
  *      T_ult = beta * sigma'_v,avg * perimeter * L
  *      beta = 0.3 (loose) / 0.4 (medium) / 0.5 (dense)
@@ -34,7 +38,29 @@ function estimatePileUpliftCapacityKn(
   diameterM: number,
   cohesionKpa: number,
   densityKnM3: number,
+  foundationType?: FoundationType,
 ): number {
+  if (foundationType === 'pre_drilled_grouted_pile') {
+    // Rock-socket grout bond pullout capacity per FHWA-NHI-05-039 / Eurocode 7 (EN 1997-1)
+    // tau_bond (grout to rock/hardpan interface):
+    //   rocky_limestone: 1500 kPa (1.5 MPa)
+    //   dense_sand_gravel / caliche: 550 kPa
+    //   medium_clay: 300 kPa
+    //   loose_sand: 200 kPa
+    const tauBondKpa =
+      soilType === 'rocky_limestone' ? 1500
+      : soilType === 'dense_sand_gravel' ? 550
+      : soilType === 'medium_clay' ? 300
+      : 200;
+    const holeDiaM = Math.max(0.12, diameterM); // 120 mm standard DTH rock borehole
+    const bondAreaM2 = Math.PI * holeDiaM * embedmentM;
+    return Number((bondAreaM2 * tauBondKpa).toFixed(1));
+  }
+  if (foundationType === 'surface_ballasted_block') {
+    // Ballast block uplift resistance is governed by self-weight gravity,
+    // returned here as base reference capacity
+    return 18.0;
+  }
   const perimeterM = Math.PI * diameterM;
   if (soilType === 'medium_clay') {
     const su = Math.max(25, cohesionKpa);
@@ -370,6 +396,7 @@ export function calculateStructuralAndFoundations(
   let foundationDimensionsDescEn = 'C120x50x20x3.5mm galvanized steel profile, 1.6m embedment depth';
   let concreteVolumeTotalM3 = 0;
   let steelRebarWeightTotalKg = 0;
+  let ballastKgPerTable = 0;
 
   if (foundationType === 'rammed_steel_pile') {
     recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
@@ -381,6 +408,40 @@ export function calculateStructuralAndFoundations(
     foundationDimensionsDescEn = `${bromsResult.pileSection} steel post, direct ramming depth: ${recommendedDepthM} m (concrete-free)`;
     concreteVolumeTotalM3 = 0;
     steelRebarWeightTotalKg = 0;
+  } else if (foundationType === 'pre_drilled_grouted_pile') {
+    // Pre-drilled rock-socket grouted micro-pile: eliminates deep pile refusal in shallow rock,
+    // caliche or cemented gravel by drilling a compact 120mm hole into rock and grouting
+    // with 35MPa non-shrink cementitious grout. Cuts depth by 50-60%!
+    const baseRockSocketM = Math.max(0.70, Number((siteFrostDepthM + 0.15).toFixed(2)));
+    recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
+      ? Number(input.customEmbedmentDepthM.toFixed(2))
+      : Number(Math.min(1.05, Math.max(0.75, baseRockSocketM)).toFixed(2));
+    const drillDiaM = 0.12; // 120mm DTH drill diameter
+    const volPerHoleM3 = Math.PI * Math.pow(drillDiaM / 2.0, 2) * recommendedDepthM;
+    concreteVolumeTotalM3 = Number((volPerHoleM3 * totalPostsCount).toFixed(2));
+    steelRebarWeightTotalKg = Number((totalPostsCount * 4.0).toFixed(0)); // steel post acts as core + centralizer spacers
+    foundationNameFa = 'شمع در گمانه پیش‌حفاری با تزریق گروت پرمقاومت (Pre-Drilled Grouted Rock Socket)';
+    foundationNameEn = 'Pre-Drilled Rock-Socket Grouted Micro-Pile (Drill & Grout)';
+    foundationDimensionsDesc = `گمانه پیش‌حفاری ۱۲۰mm به عمق ${recommendedDepthM} متر در سنگ بستر/کالیچ + پروفیل گالوانیزه و تزریق گروت ۳۵MPa (کاهش عمق کوبش تا ۵۵٪)`;
+    foundationDimensionsDescEn = `Pre-drilled 120mm borehole, ${recommendedDepthM}m rock embedment with 35MPa non-shrink grout encasement`;
+  } else if (foundationType === 'surface_ballasted_block') {
+    // Ground-mounted surface precast concrete ballast block (Zero ground penetration / refusal mitigation)
+    recommendedDepthM = 0.20; // 20cm surface pad depth
+    const reqBallastUpliftKg = Math.max(350, ((windUpliftForceKn * 1000) / 9.81) * 1.5 - deadLoadTableKg);
+    const reqBallastSlidingKg = Math.max(300, ((lateralShearPerPostKn * postsPerTable * 1000 * 1.5) / (9.81 * 0.50)) - deadLoadTableKg);
+    const armCos = Math.max(0.1, (tableSlopedWidthM / 2.0) * Math.cos(tiltRad));
+    const reqBallastOverturningKg = Math.max(350, ((windOverturningMomentKnM * 1.5 * 1000) / (9.81 * armCos)) - deadLoadTableKg);
+    const baseBallastKg = Math.round(Math.max(reqBallastUpliftKg, reqBallastSlidingKg, reqBallastOverturningKg));
+    ballastKgPerTable = input.customBallastWeightKgPerTable !== undefined && input.customBallastWeightKgPerTable > 0
+      ? input.customBallastWeightKgPerTable
+      : baseBallastKg;
+    const volPerTableM3 = ballastKgPerTable / 2400.0;
+    concreteVolumeTotalM3 = Number((volPerTableM3 * totalTablesCount).toFixed(1));
+    steelRebarWeightTotalKg = Number((concreteVolumeTotalM3 * 25.0).toFixed(0)); // 25 kg/m3 light rebar cage
+    foundationNameFa = 'بلوک‌های بتنی مسلح پیش‌ساخته سطحی زمینی (Ground Surface Ballast Blocks)';
+    foundationNameEn = 'Ground-Mounted Precast Reinforced Concrete Ballast Blocks (Zero Penetration)';
+    foundationDimensionsDesc = `بلوک‌های بتنی مسلح سطحی با وزن ${Math.round(ballastKgPerTable)} کیلوگرم در هر میز (${Math.round(ballastKgPerTable / postsPerTable)} kg/پایه)، بدون نفوذ در زمین`;
+    foundationDimensionsDescEn = `Surface precast concrete ballast blocks (${Math.round(ballastKgPerTable)} kg/table, ${Math.round(ballastKgPerTable / postsPerTable)} kg/post), zero penetration`;
   } else if (foundationType === 'concrete_pier') {
     recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
       ? Number(input.customEmbedmentDepthM.toFixed(2))
@@ -406,7 +467,7 @@ export function calculateStructuralAndFoundations(
   } else {
     // Rooftop ballasted block
     recommendedDepthM = 0.25; // block thickness
-    const ballastKgPerTable = input.customBallastWeightKgPerTable !== undefined && input.customBallastWeightKgPerTable > 0
+    ballastKgPerTable = input.customBallastWeightKgPerTable !== undefined && input.customBallastWeightKgPerTable > 0
       ? input.customBallastWeightKgPerTable
       : Math.max(400, (windUpliftForceKn * 1000) / 9.81 * 1.5 - deadLoadTableKg);
     const volPerTableM3 = ballastKgPerTable / 2400.0; // concrete density 2400 kg/m³
@@ -418,25 +479,36 @@ export function calculateStructuralAndFoundations(
   }
 
   // Cement and sand breakdown
-  const cementBagsCount = Math.round(concreteVolumeTotalM3 * 7.0); // 7 bags per m³ of C25 concrete
-  const sandGravelTon = Number((concreteVolumeTotalM3 * 1.85).toFixed(1));
+  const cementBagsCount = foundationType === 'pre_drilled_grouted_pile'
+    ? Math.round(concreteVolumeTotalM3 * 9.0) // high-strength non-shrink grout (450 kg/m3 cement)
+    : Math.round(concreteVolumeTotalM3 * 7.0); // 7 bags per m³ of C25 concrete
+  const sandGravelTon = foundationType === 'pre_drilled_grouted_pile'
+    ? Number((concreteVolumeTotalM3 * 1.35).toFixed(1)) // silica sand for grout
+    : Number((concreteVolumeTotalM3 * 1.85).toFixed(1));
   const structuralSteelRackingWeightKg = Number((rackingWeightPerTable * totalTablesCount).toFixed(0));
 
   // Geotechnical Checks
-  const footingFootprintM2 = foundationType === 'concrete_pier' ? (Math.PI * 0.2 * 0.2) : foundationType === 'rooftop_ballasted_block' ? 0.8 : 0.15;
+  const footingFootprintM2 =
+    foundationType === 'concrete_pier' ? (Math.PI * 0.2 * 0.2)
+    : foundationType === 'rooftop_ballasted_block' ? 0.8
+    : foundationType === 'surface_ballasted_block' ? 0.35
+    : 0.15;
   const appliedPostBearingPressureKpa = Number((compressionPerPostKn / footingFootprintM2).toFixed(1));
   const isBearingCapacitySafe = appliedPostBearingPressureKpa <= allowableSoilBearingKpa;
 
   const isFrostDepthRespected = (recommendedDepthM * 100) >= siteFrostDepthCm;
 
   // 6. Factors of Safety (FoS)
-  const stabilizingMoment = (deadLoadTableKn * (tableSlopedWidthM / 2.0)) * Math.cos(tiltRad);
+  const isBallasted = foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block';
+  const effectiveNormalLoadKn = foundationType === 'surface_ballasted_block'
+    ? deadLoadTableKn + ((ballastKgPerTable * 9.81) / 1000.0)
+    : deadLoadTableKn;
+  const stabilizingMoment = (effectiveNormalLoadKn * (tableSlopedWidthM / 2.0)) * Math.cos(tiltRad);
   const fosOverturning = Number((stabilizingMoment / Math.max(0.1, windOverturningMomentKnM)).toFixed(2));
-  // fosSliding uses mu=0.45 base friction - meaningful ONLY for ballasted
-  // blocks. For pile/pier types this value is present but must NOT be
-  // displayed; use the Broms FoS from the foundation report.
-  const fosSliding = Number((((deadLoadTableKn * 0.45) / Math.max(0.1, lateralShearPerPostKn * postsPerTable))).toFixed(2));
-  const fosSlidingApplicable = foundationType === 'rooftop_ballasted_block';
+  // fosSliding uses base friction - meaningful ONLY for ballasted blocks
+  const frictionMu = foundationType === 'surface_ballasted_block' ? 0.50 : 0.45;
+  const fosSliding = Number((((effectiveNormalLoadKn * frictionMu) / Math.max(0.1, lateralShearPerPostKn * postsPerTable))).toFixed(2));
+  const fosSlidingApplicable = isBallasted;
 
   // Pile uplift (tension) capacity per post, after recommendedDepthM is final.
   const upliftCapacityPerPostKn =
@@ -444,6 +516,7 @@ export function calculateStructuralAndFoundations(
     ?? estimatePileUpliftCapacityKn(
          soilType, recommendedDepthM, 0.15,
          input.soilCohesionKpa ?? 10, input.soilDensityKnM3 ?? 18.0,
+         foundationType,
        );
 
   const fosUplift = Number(
@@ -478,7 +551,7 @@ export function calculateStructuralAndFoundations(
   );
 
   let targetPostsPerTable = postsPerTable;
-  if (fosUplift < 2.0 && foundationType !== 'rooftop_ballasted_block') {
+  if (fosUplift < 2.0 && !isBallasted) {
     targetPostsPerTable = postsPerTable <= 2 ? 4 : postsPerTable <= 4 ? 6 : 8;
   }
 
@@ -491,7 +564,7 @@ export function calculateStructuralAndFoundations(
   let governingFos = fosUplift;
   let requiredFos = 2.0;
 
-  if (foundationType === 'rooftop_ballasted_block') {
+  if (isBallasted) {
     if (fosOverturning < 1.5) {
       governingFailureMode = 'overturning_moment';
       governingFos = fosOverturning;
@@ -522,17 +595,17 @@ export function calculateStructuralAndFoundations(
   }
 
   const isCritical =
-    (foundationType === 'rooftop_ballasted_block' && (fosOverturning < 1.2 || fosSliding < 1.1 || !isBearingCapacitySafe)) ||
-    (foundationType !== 'rooftop_ballasted_block' && (fosUplift < 1.2 || fosLateral < 1.1 || !isBearingCapacitySafe));
+    (isBallasted && (fosOverturning < 1.2 || fosSliding < 1.1 || !isBearingCapacitySafe)) ||
+    (!isBallasted && (fosUplift < 1.2 || fosLateral < 1.1 || !isBearingCapacitySafe));
 
   const isWarning =
-    (foundationType === 'rooftop_ballasted_block' && (fosOverturning < 1.5 || fosSliding < 1.4 || !isBearingCapacitySafe)) ||
-    (foundationType !== 'rooftop_ballasted_block' && (fosUplift < 2.0 || fosLateral < 1.5 || !isBearingCapacitySafe));
+    (isBallasted && (fosOverturning < 1.5 || fosSliding < 1.4 || !isBearingCapacitySafe)) ||
+    (!isBallasted && (fosUplift < 2.0 || fosLateral < 1.5 || !isBearingCapacitySafe));
 
   const actionsEn: string[] = [];
   const actionsFa: string[] = [];
 
-  if (foundationType === 'rooftop_ballasted_block') {
+  if (isBallasted) {
     if (fosOverturning < 1.5) {
       actionsEn.push(`Increase concrete ballast block mass to at least ${targetBallastKgPerTable} kg per table to achieve overturning FoS ≥ 1.5.`);
       actionsFa.push(`وزن بلوک‌های بتنی بالاست را به حداقل ${targetBallastKgPerTable} کیلوگرم بر هر استراکچر افزایش دهید تا ضریب اطمینان واژگونی به بالای ۱.۵ برسد.`);
@@ -545,6 +618,9 @@ export function calculateStructuralAndFoundations(
     if (fosUplift < 2.0) {
       actionsEn.push(`Increase pile embedment depth from ${recommendedDepthM}m to ${targetEmbedmentDepthM}m to increase soil skin friction capacity (T_ult) and achieve FoS_uplift ≥ 2.0 (Eurocode 7).`);
       actionsFa.push(`عمق کوبش شمع را از ${recommendedDepthM} متر به ${targetEmbedmentDepthM} متر افزایش دهید تا ظرفیت کششی جدار خاک ارتقا یافته و FoS کشش طبق یوروکد ۷ به بالای ۲.۰ برسد.`);
+
+      actionsEn.push('If ground refusal occurs in shallow rock or hard caliche, switch to Pre-Drilled Grouted Pile (0.85m depth) or Surface Ballasted Block.');
+      actionsFa.push('در صورت بروز پس‌زدگی کوبش در سنگ یا کالیچ، از راهکار شمع در گمانه پیش‌حفاری با تزریق گروت (عمق ۰.۸۵m) یا بلوک‌های بتنی سطحی استفاده فرمایید.');
 
       actionsEn.push(`Increase posts per table from ${postsPerTable} to ${targetPostsPerTable} posts to reduce uplift tension demand per post.`);
       actionsFa.push(`تعداد پایه‌ها در هر میز را از ${postsPerTable} به ${targetPostsPerTable} پایه افزایش دهید تا بار کشش باد بین پایه‌های بیشتری توزیع شود.`);
@@ -583,7 +659,7 @@ export function calculateStructuralAndFoundations(
 
   // Safety verdict depends on the governing failure mode per foundation type:
   //  - ballasted block: self-weight resists overturning and sliding
-  //  - pile / screw: uplift tension governs (Eurocode 7: FoS_uplift >= 2.0)
+  //  - pile / screw / rock-grouted: uplift tension governs (Eurocode 7: FoS_uplift >= 2.0)
   //  - concrete pier: both uplift and self-weight overturning required
   let isStructurallySafe: boolean;
   let safetyReasonEn: string;
@@ -597,6 +673,24 @@ export function calculateStructuralAndFoundations(
       safetyReasonFa = isStructurallySafe
         ? `ضریب واژگونی ${fosOverturning} >= ۱.۵ و ضریب لغزش ${fosSliding} >= ۱.۴ (وزن بالاست).`
         : `ضریب واژگونی ${fosOverturning} < ۱.۵. وزن بالاست را افزایش دهید.`;
+      break;
+    case 'surface_ballasted_block':
+      isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isBearingCapacitySafe;
+      safetyReasonEn = isStructurallySafe
+        ? `Surface precast ballast block verified (Overturning FoS = ${fosOverturning} >= 1.5, sliding FoS = ${fosSliding} >= 1.4). Zero ground penetration required for refusal/rocky ground.`
+        : `Surface ballast insufficient against wind action (Overturning FoS = ${fosOverturning}, Sliding FoS = ${fosSliding}). Increase ballast block mass.`;
+      safetyReasonFa = isStructurallySafe
+        ? `بلوک بتنی پیش‌ساخته سطحی تأیید است (FoS واژگونی = ${fosOverturning} >= ۱.۵، FoS لغزش = ${fosSliding} >= ۱.۴). بدون نیاز به کوبش در خاک‌های سخت/سنگی.`
+        : `وزن بلوک سطحی در برابر باد ناکافی است. جرم بلوک بتنی را افزایش دهید.`;
+      break;
+    case 'pre_drilled_grouted_pile':
+      isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe;
+      safetyReasonEn = isStructurallySafe
+        ? `Rock-socket grout bond capacity verified (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). High pullout resistance at reduced depth (${recommendedDepthM}m) eliminates driving refusal.`
+        : `Rock-socket grout bond capacity insufficient (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase borehole depth.`;
+      safetyReasonFa = isStructurallySafe
+        ? `ظرفیت چسبندگی گروت به سنگ بستر تأیید است (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). کاهش عمق به ${recommendedDepthM} متر مانع پس‌زدگی می‌شود.`
+        : `ظرفیت کششی گروت در سنگ ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه یا قطر حفاری را افزایش دهید.`;
       break;
     case 'rammed_steel_pile':
     case 'ground_screw':
