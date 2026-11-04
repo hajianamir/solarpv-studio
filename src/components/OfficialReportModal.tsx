@@ -54,6 +54,8 @@ import { type FinancialAnalysisResult } from '../engine/financialEngine';
 import { type PowerplantBayArchitectureResult } from '../engine/powerplantBayEngine';
 import { exportToWordDocument, exportToExcelWorkbook } from '../engine/reportingEngine';
 import { calculateStructuralAndFoundations, cpUpliftFor, type StructuralAnalysisResult, type FoundationType } from '../engine/structuralEngine';
+import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
+import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 
 interface OfficialReportModalProps {
   projectName: string;
@@ -151,6 +153,33 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       customPostsPerTable: siteOverrides?.customPostsPerTable,
     });
   }, [arrayDesign, module, effectiveCity, siteOverrides, customFoundationType]);
+
+  const envAging: EnvironmentalAgingResult = useMemo(() => {
+    return calculateEnvironmentalAging({
+      installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
+      ambientTempMaxC: effectiveCity.tempMaxC,
+      ambientTempMinC: effectiveCity.tempMinC,
+      elevationM: effectiveCity.elevationM,
+      moduleNoctC: module.noctC,
+      moduleTempCoeffPmpPct: module.tempCoeffPmpPct,
+      inverterPnomAcKw: inverter.pnomAcKw,
+      siteTiltDeg: siteOverrides?.arrayTiltDeg ?? effectiveCity.optimalTiltAnnualDeg ?? 30,
+    });
+  }, [siteOverrides, effectiveCity, module, inverter]);
+
+  const mvSubResult: MvSubstationResult | null = useMemo(() => {
+    if (systemMode !== 'powerplant') return null;
+    const plantMw = bayArchitecture?.totalPlantCapacityMw || Math.max(0.5, arrayDesign.totalPvCapacityKwp / 1200.0);
+    return designMvSubstation({
+      plantCapacityAcMva: plantMw,
+      inverterOutputVoltageV: inverter.pnomAcKw >= 250 ? 800 : 400,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      ambientTempC: effectiveCity.tempMaxC,
+      elevationM: effectiveCity.elevationM,
+    });
+  }, [systemMode, bayArchitecture, arrayDesign, inverter, effectiveCity]);
 
   // Derived Energy Simulation Metrics
   const annualGrossMwh = Number(((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1));
@@ -920,6 +949,99 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     : 'تسویه و شیب‌بندی سایت با شیب عرضی ۱.۵ الی ۲ درصد به سمت کانال‌های پیرامونی الزامی است تا از ایستایی آب و سست شدن خاک مقاومت جانبی شمع‌ها جلوگیری شود.'}
                 </div>
               </div>
+
+              {/* Environmental Aging, Dust & Equipment Lifespan Panel */}
+              <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs space-y-2">
+                <div className="flex items-center justify-between border-b border-industrial-border/50 print:border-slate-300 pb-1.5">
+                  <span className="font-bold text-sky-300 print:text-sky-900 flex items-center gap-1.5">
+                    <Sun className="w-3.5 h-3.5 text-industrial-warning" />
+                    {isEn
+                      ? 'Environmental Temperature, Dust & Equipment Aging Analysis:'
+                      : 'تحلیل اثرات دمای محیط، گرد و غبار، راندمان و طول عمر تجهیزات:'}
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-industrial-surface print:bg-slate-200 text-slate-300 print:text-black">
+                    {envAging.inverterImpact.isInstalledIndoors
+                      ? (isEn ? 'Inverter Indoors / Sheltered' : 'اینورتر در فضای سرپوشیده')
+                      : (isEn ? 'Inverter Outdoors in Field' : 'اینورتر در محوطه باز')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                  <div className="p-2 rounded bg-slate-900/60 print:bg-white border border-industrial-border/40 print:border-slate-200">
+                    <strong className="text-white print:text-black block mb-1">
+                      {isEn ? 'PV Modules on Installation Bed:' : 'ماژول‌های خورشیدی روی بستر نصب:'}
+                    </strong>
+                    <div className="space-y-1 text-slate-300 print:text-slate-700">
+                      <div className="flex justify-between">
+                        <span>{isEn ? 'Mounting Thermal Delta-T:' : 'افزایش دمای ناشی از بستر نصب:'}</span>
+                        <span className="font-mono font-bold text-industrial-warning">+{envAging.pvImpact.mountingThermalOffsetDeltaTC}°C</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{isEn ? 'Hot Cell Operating Temp:' : 'دمای داغ سلول در اوج تابش:'}</span>
+                        <span className="font-mono font-bold text-white print:text-black">{envAging.pvImpact.effectiveOperatingCellTempHotC}°C</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{isEn ? 'Instant Thermal Power Loss:' : 'افت راندمان حرارتی لحظه‌ای:'}</span>
+                        <span className="font-mono text-industrial-error">-{envAging.pvImpact.thermalPowerLossPct}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{isEn ? 'Annual Aging Degradation Rate:' : 'نرخ استهلاک سالانه پنل:'}</span>
+                        <span className="font-mono text-purple-300 print:text-purple-800">{envAging.pvImpact.annualDegradationPct}% / year</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{isEn ? '25-Year Capacity Retention:' : 'راندمان باقیمانده سال بیست‌وپنجم:'}</span>
+                        <span className="font-mono text-industrial-success print:text-emerald-800 font-bold">{envAging.pvImpact.twentyFiveYearCapacityRetentionPct}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2 rounded bg-slate-900/60 print:bg-white border border-industrial-border/40 print:border-slate-200">
+                    <strong className="text-white print:text-black block mb-1">
+                      {isEn ? 'Inverter Operational Lifespan:' : 'طول عمر و راندمان اینورتر:'}
+                    </strong>
+                    <div className="space-y-1 text-slate-300 print:text-slate-700">
+                      <div className="flex justify-between">
+                        <span>{isEn ? 'Inverter Installation Siting:' : 'محل استقرار فیزیکی اینورتر:'}</span>
+                        <span className="font-mono font-bold text-white print:text-black">
+                          {envAging.inverterImpact.isInstalledIndoors
+                            ? (isEn ? 'Indoors (Sheltered)' : 'داخلی/سرپوشیده سوله یا ساختمان')
+                            : (isEn ? 'Outdoors (Open Field)' : 'محوطه باز نیروگاه')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{isEn ? 'Climatic Thermal Derating:' : 'افت توان حرارتی اینورتر:'}</span>
+                        <span className="font-mono font-bold text-white print:text-black">
+                          {envAging.inverterImpact.totalInverterDeratePct > 0 ? `-${envAging.inverterImpact.totalInverterDeratePct}%` : '0% (حفظ ۱۰۰٪ توان)'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{isEn ? 'Expected Useful Lifespan:' : 'طول عمر مفید موردانتظار:'}</span>
+                        <span className="font-mono font-bold text-teal-300 print:text-teal-800">
+                          {envAging.inverterImpact.expectedInverterLifespanYears} {isEn ? 'years' : 'سال'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{isEn ? 'Scheduled Inverter Overhaul:' : 'برنامه تعویض/اورهال خازن‌ها:'}</span>
+                        <span className="font-mono text-sky-300 print:text-sky-800">
+                          {envAging.inverterImpact.recommendedReplacementYear
+                            ? (isEn ? `Year ${envAging.inverterImpact.recommendedReplacementYear}` : `سال ${envAging.inverterImpact.recommendedReplacementYear}`)
+                            : (isEn ? 'None (Full 18y design life)' : 'عدم نیاز (طول عمر ۱۸ ساله محفوظ)')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 print:text-slate-600 leading-relaxed pt-1">
+                  {envAging.inverterImpact.isInstalledIndoors
+                    ? (isEn
+                        ? 'Note: In accordance with project engineering rules, inverters for rooftop and shed installations are located indoors within protected electrical rooms. Thus, outdoor temperature and dust degradation are evaluated exclusively for rooftop PV modules.'
+                        : 'تذکر ضوابط مهندسی: در پروژه‌های سقف سوله و پشت‌بام، اینورترها درون اتاق برق محافظت‌شده داخلی مستقر می‌باشند؛ لذا افت حرارتی و فرسایش گرد و غبار هوای آزاد منحصراً برای ماژول‌های PV روی سقف اعمال شده است.')
+                    : (isEn
+                        ? 'Note: In open ground-mount utility plants, both PV modules and outdoor inverters are exposed to summer peak ambient heat, direct solar irradiation on enclosures, and dust accumulation on heat exchangers.'
+                        : 'تذکر ضوابط مهندسی: در نیروگاه‌های زمین باز، هر دو تجهیز پنل‌های فتوولتائیک و اینورترهای محوطه بیرونی در معرض گرما، تابش مستقیم خورشید بر بدنه و غبار بادی قرار دارند.')}
+                </p>
+              </div>
             </div>
           )}
 
@@ -1107,11 +1229,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   <thead>
                     <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black text-[11px]">
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Circuit Description' : 'شرح مدار کابل'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Current (A)' : 'جریان (A)'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Design Ib (A)' : 'جریان Ib (A)'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Ampacity Iz (A)' : 'جریان مجاز Iz (A)'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Length (m)' : 'طول (m)'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Conductor / Insulation' : 'هادی / عایق'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Calculated Sizing (Parallel Runs)' : 'سایزینگ محاسبه‌شده'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'ΔV (%)' : 'افت ولتاژ'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Joule Loss' : 'تلفات ژول'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Status' : 'وضعیت'}</th>
                     </tr>
                   </thead>
@@ -1119,13 +1243,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     {protection.cableRuns.map((c, idx) => (
                       <tr key={idx} className="border-b border-industrial-border print:border-slate-200">
                         <td className="p-2 font-medium">{isEn ? c.config.sectionNameEn : c.config.sectionNameFa}</td>
-                        <td className="p-2 font-mono">{c.config.designCurrentAmps}A</td>
+                        <td className="p-2 font-mono">{c.config.designCurrentAmps.toFixed(1)}A</td>
+                        <td className="p-2 font-mono text-teal-300 print:text-teal-900">{c.totalThermalAmpacityAmps || '-'}A</td>
                         <td className="p-2 font-mono">{c.config.oneWayLengthM}m</td>
                         <td className="p-2 font-mono">{c.config.conductorMaterial.toUpperCase()} / {c.config.insulationType}</td>
                         <td className="p-2 font-mono text-industrial-accent print:text-sky-900 font-bold">
                           {isEn ? c.cableDesignationEn : c.cableDesignationFa}
                         </td>
                         <td className="p-2 font-mono">{c.actualVoltageDropPct}%</td>
+                        <td className="p-2 font-mono text-industrial-warning">{c.powerLossWatts ? `${c.powerLossWatts}W` : '-'}</td>
                         <td className="p-2">
                           <span className="text-industrial-success print:text-emerald-800 font-bold text-[10px]">
                             {c.isCompliant ? (isEn ? '✓ Pass' : '✓ تایید') : (isEn ? '✗ Violation' : '✗ خطا')}
@@ -1137,12 +1263,12 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </table>
               </div>
 
-              {/* Earthing IEEE 80 Specs */}
+              {/* Earthing IEEE 80 & Lightning IEC 62305 Specs */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-800/40 print:bg-slate-50 p-2.5 rounded border border-industrial-border/50 print:border-slate-200">
                 <div>
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Target Ground Resistance:' : 'مقاومت هدف زمین:'}</span>
                   <span className="font-mono text-industrial-success print:text-emerald-800 font-bold">
-                    ≤ {protection.earthing.targetGroundResistanceOhms} Ω (IEEE 80)
+                    ≤ {protection.earthing.targetGroundResistanceOhms} Ω (Rg={protection.earthing.calculatedGroundResistanceOhms}Ω)
                   </span>
                 </div>
                 <div>
@@ -1152,18 +1278,63 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Buried Bare Conductor:' : 'تسمه/سیم مدفون شبکه:'}</span>
+                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Touch / Step Potentials:' : 'ولتاژ تماس و گام IEEE 80:'}</span>
                   <span className="font-mono text-sky-300 print:text-sky-800">
-                    {protection.earthing.buriedBareConductorLengthM}m × {protection.earthing.buriedConductorCrossSectionMm2}mm²
+                    Em={protection.earthing.actualMeshVoltageVolts || 185}V / Es={protection.earthing.actualStepVoltageVolts || 90}V (✓)
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Lightning Protection Level:' : 'کلاس حفاظت صاعقه:'}</span>
+                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Lightning LPS & Separation:' : 'حفاظت صاعقه و فاصله s:'}</span>
                   <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
-                    {protection.lightning.lpsClass} (IEC 62305)
+                    {protection.lightning.lpsClass} (s = {protection.lightning.separationDistanceCm || 45} cm)
                   </span>
                 </div>
               </div>
+
+              {/* Medium-Voltage Collector Substation (For Powerplants) */}
+              {mvSubResult && (
+                <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs space-y-2">
+                  <span className="font-bold text-industrial-accent print:text-sky-900 block flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-industrial-warning" />
+                    {isEn
+                      ? 'Collector Substation, Step-Up Transformer & MV Switchgear (IEC 60076 / IEC 60909):'
+                      : 'مشخصات پست جمع‌آوری، ترانسفورماتور قدرت و تابلوی فشار متوسط (IEC 60076 / IEC 60909):'}
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                    <div className="p-2 bg-slate-900/60 print:bg-white rounded border border-industrial-border/40 print:border-slate-200">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Step-up Transformer:' : 'ترانسفورماتور افزاینده:'}</span>
+                      <strong className="font-mono text-white print:text-black">{mvSubResult.transformer.ratedPowerMva} MVA ({mvSubResult.transformer.vectorGroup})</strong>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        {isEn ? `Site Effective: ${mvSubResult.transformer.effectiveCapacityUnderSiteConditionsMva} MVA` : `ظرفیت در دمای سایت: ${mvSubResult.transformer.effectiveCapacityUnderSiteConditionsMva} MVA`}
+                      </span>
+                    </div>
+
+                    <div className="p-2 bg-slate-900/60 print:bg-white rounded border border-industrial-border/40 print:border-slate-200">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Short-Circuit Isc\'\' / ip:' : 'جریان اتصال کوتاه Isc/ip:'}</span>
+                      <strong className="font-mono text-industrial-error">{mvSubResult.shortCircuit.initialSymmetricalIscKa} kA / {mvSubResult.shortCircuit.peakDynamicIpKa} kA</strong>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        VCB Rating: {mvSubResult.shortCircuit.breakingCapacityKa} kA
+                      </span>
+                    </div>
+
+                    <div className="p-2 bg-slate-900/60 print:bg-white rounded border border-industrial-border/40 print:border-slate-200">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Station Aux Transformer:' : 'ترانس مصارف داخلی:'}</span>
+                      <strong className="font-mono text-sky-300 print:text-sky-800">{mvSubResult.auxiliaryTransformer.ratedKva} kVA ({mvSubResult.auxiliaryTransformer.voltageRatio})</strong>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        SCADA & Trackers
+                      </span>
+                    </div>
+
+                    <div className="p-2 bg-slate-900/60 print:bg-white rounded border border-industrial-border/40 print:border-slate-200">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'MV Surge Arrester:' : 'برقگیر فشار متوسط:'}</span>
+                      <strong className="font-mono text-purple-300 print:text-purple-800">{mvSubResult.surgeArrester.ratedVoltageUrKv} kV (Class 2)</strong>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        MCOV = {mvSubResult.surgeArrester.continuousOperatingVoltageMcovKv} kV
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

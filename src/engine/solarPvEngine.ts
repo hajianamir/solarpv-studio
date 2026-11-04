@@ -17,6 +17,7 @@ export interface Triangle {
 // and re-exported here for backward compatibility.
 export type { PvModule, Inverter, Battery } from './types/equipmentTypes';
 import type { PvModule, Inverter, Battery } from './types/equipmentTypes';
+import { getClimateData } from './climaticData';
 
 export interface Project {
   id: string;
@@ -279,7 +280,15 @@ export function calculateNpv(rate: number, cashflows: number[]): number {
 }
 
 export function calculateIrr(cashflows: number[]): number {
-  if (!cashflows || cashflows.length === 0) return 0.0;
+  if (!cashflows || cashflows.length < 2) return 0.0;
+
+  const hasPos = cashflows.some(c => c > 0);
+  const hasNeg = cashflows.some(c => c < 0);
+  if (!hasPos || !hasNeg) return 0.0;
+
+  // If undiscounted sum is non-positive, capital is never recovered -> no real positive rate of return
+  const undiscountedSum = cashflows.reduce((a, b) => a + b, 0);
+  if (undiscountedSum <= 0) return 0.0;
 
   let rate = 0.10;
   const maxIterations = 100;
@@ -299,15 +308,23 @@ export function calculateIrr(cashflows: number[]): number {
     if (Math.abs(df) < 1e-12) break;
 
     const nextRate = rate - f / df;
-    if (Math.abs(nextRate - rate) < tolerance) {
+    if (Math.abs(nextRate - rate) < tolerance && nextRate > -0.99 && nextRate < 10.0) {
       return nextRate;
     }
     rate = nextRate;
   }
 
   // Bisection fallback
-  let low = -0.99;
-  let high = 2.0;
+  let low = -0.90;
+  let high = 5.0;
+  const fLow = calculateNpv(low, cashflows);
+  const fHigh = calculateNpv(high, cashflows);
+
+  // Intermediate Value Theorem: signs must differ for root existence
+  if (fLow * fHigh > 0) {
+    return 0.0;
+  }
+
   for (let i = 0; i < 100; i++) {
     const mid = (low + high) / 2.0;
     const fMid = calculateNpv(mid, cashflows);
@@ -552,7 +569,13 @@ export function performQuickSizing(
   const inverter = (req.inverterId ? db.inverters.get(req.inverterId) : undefined) || DEFAULT_INVERTERS[0];
   const battery = (req.batteryId ? db.batteries.get(req.batteryId) : undefined) || DEFAULT_BATTERIES[0];
 
-  const peakSunHours = Math.max(3.5, 6.0 - Math.abs(req.latitude) * 0.05);
+  let peakSunHours: number;
+  try {
+    const climate = getClimateData(req.latitude, req.longitude ?? 51.389);
+    peakSunHours = climate.peakSunHours;
+  } catch {
+    peakSunHours = Math.max(3.5, 6.0 - Math.abs(req.latitude) * 0.05);
+  }
   const requiredArrayKwp = req.dailyKwh / (peakSunHours * 0.75);
 
   const panelCount = Math.ceil((requiredArrayKwp * 1000.0) / module.pmpWatts);

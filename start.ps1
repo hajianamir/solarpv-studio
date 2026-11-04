@@ -2,7 +2,7 @@
 # SolarPV Studio v1.0.3 — Desktop Launcher (PowerShell)
 # ==============================================================================
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
- = "Continue"
+$ErrorActionPreference = "Continue"
 Set-Location -Path $PSScriptRoot
 
 Write-Host "================================================================================" -ForegroundColor Cyan

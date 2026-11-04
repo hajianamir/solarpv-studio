@@ -25,6 +25,11 @@ export interface UserFinancialPricing {
   landLeaseUsdPerKwpYear: number;
   gridOperatorFeeUsdPerKwpYear: number;
   dieselAnnualServiceOpexUsd: number;
+  annualDegradationRate?: number;         // Dynamic degradation from environmental aging
+  inverterReplacementYear?: number | null;// Replacement year for outdoor inverters in harsh climates
+  inverterReplacementCostRatio?: number;  // Cost ratio (learning curve reduction, default 0.60)
+  batteryChemistry?: string;              // e.g. 'lifepo4', 'gel_deep_cycle', 'agm_flooded'
+  batteryLifespanYears?: number;          // Chemistry-dependent battery calendar life (AGM ~3y, Gel ~4y, LFP ~12y)
 }
 
 export const DEFAULT_FINANCIAL_PRICING: UserFinancialPricing = {
@@ -85,6 +90,7 @@ export interface YearCashFlowItem {
   opexToman: number;
   fuelCostToman: number;
   batteryReplacementToman: number;
+  inverterReplacementToman?: number;
   netCashFlowToman: number;
   cumulativeCashFlowToman: number;
   discountedCashFlowToman: number;
@@ -115,6 +121,7 @@ export interface FinancialAnalysisResult {
   npvUsd: number;
   npvToman: number;
   irrPct: number;
+  isIrrDefined: boolean;
   annualCo2ReductionTons: number;
   lifetime25yCo2ReductionTons: number;
   cashFlow25Years: YearCashFlowItem[];
@@ -276,7 +283,21 @@ export function performFinancialAnalysis(
   let foundDiscounted = false;
 
   const r = p.discountRatePct / 100.0;
-  const degradationRate = 0.005; // 0.5% module degradation per year
+  const degradationRate = p.annualDegradationRate !== undefined && p.annualDegradationRate > 0
+    ? p.annualDegradationRate
+    : 0.005; // 0.5% default module degradation per year
+
+  // Chemistry-dependent battery replacement calendar life (AGM ~3y, Gel ~4y, NCM ~8y, LFP ~12y)
+  const batteryLifespanYears: number = (() => {
+    if (p.batteryLifespanYears && p.batteryLifespanYears > 0) {
+      return p.batteryLifespanYears;
+    }
+    const chem = (p.batteryChemistry || '').toLowerCase();
+    if (chem.includes('agm') || chem.includes('lead') || chem.includes('vrla')) return 3;
+    if (chem.includes('gel')) return 4;
+    if (chem.includes('ncm') || chem.includes('ternary')) return 8;
+    return 12; // LiFePO4 / default calendar life
+  })();
 
   for (let yr = 1; yr <= lifetimeYears; yr++) {
     const degradedGen = annualYieldKwh * Math.pow(1 - degradationRate, yr - 1);
@@ -284,11 +305,18 @@ export function performFinancialAnalysis(
     const revenue = degradedGen * tariffEscalated;
     const opex = baseAnnualOpexToman * Math.pow(1.08, yr - 1) + fixedAnnualChargesUsd * p.usdToTomanRate; // 8% opex inflation + fixed annual charges
     const fuel = annualDieselFuelCostToman * Math.pow(1.08, yr - 1);
-    const batteryReplacementToman = (yr === 12 && batteryReplacementYear12Usd > 0)
-      ? batteryReplacementYear12Usd * p.usdToTomanRate * Math.pow(1.05, 11)
+    const isBatteryReplacementYr =
+      batteriesUsd > 0 &&
+      yr < lifetimeYears &&
+      yr % batteryLifespanYears === 0;
+    const batteryReplacementToman = isBatteryReplacementYr
+      ? (batteriesUsd * 0.70) * p.usdToTomanRate * Math.pow(1.05, yr - 1)
+      : 0;
+    const inverterReplacementToman = (p.inverterReplacementYear && yr === p.inverterReplacementYear && invertersUsd > 0)
+      ? invertersUsd * (p.inverterReplacementCostRatio ?? 0.60) * p.usdToTomanRate * Math.pow(1.05, yr - 1)
       : 0;
 
-    const netCashFlow = revenue - (opex + fuel + batteryReplacementToman);
+    const netCashFlow = revenue - (opex + fuel + batteryReplacementToman + inverterReplacementToman);
 
     cumulativeCashFlow += netCashFlow;
     const discountedCashFlow = netCashFlow / Math.pow(1 + r, yr);
@@ -311,28 +339,52 @@ export function performFinancialAnalysis(
       opexToman: Math.round(opex),
       fuelCostToman: Math.round(fuel),
       batteryReplacementToman: Math.round(batteryReplacementToman),
+      inverterReplacementToman: Math.round(inverterReplacementToman),
       netCashFlowToman: Math.round(netCashFlow),
       cumulativeCashFlowToman: Math.round(cumulativeCashFlow),
       discountedCashFlowToman: Math.round(discountedCashFlow),
     });
   }
 
-  // 5. Internal Rate of Return (IRR) Binary Search
-  let lowIrr = -0.5;
-  let highIrr = 1.0;
-  for (let iter = 0; iter < 40; iter++) {
-    const midIrr = (lowIrr + highIrr) / 2.0;
-    let npvAtMid = -totalCapexToman;
-    for (let yr = 1; yr <= lifetimeYears; yr++) {
-      npvAtMid += cashFlow25Years[yr - 1].netCashFlowToman / Math.pow(1 + midIrr, yr);
-    }
-    if (npvAtMid > 0) {
-      lowIrr = midIrr;
-    } else {
-      highIrr = midIrr;
+  // 5. Internal Rate of Return (IRR) Binary Search with Bolzano Existence Check
+  const cashFlows: number[] = [-totalCapexToman, ...cashFlow25Years.map(c => c.netCashFlowToman)];
+  const hasPositive = cashFlows.some(cf => cf > 0);
+  const hasNegative = cashFlows.some(cf => cf < 0);
+  const undiscountedSum = cashFlows.reduce((sum, val) => sum + val, 0);
+
+  let calculatedIrrPct = 0;
+  let isIrrDefined = false;
+
+  if (hasPositive && hasNegative && undiscountedSum > 0 && totalCapexToman > 0) {
+    let lowIrr = -0.5;
+    let highIrr = 3.0;
+
+    const npvAt = (rate: number): number => {
+      let npv = -totalCapexToman;
+      for (let yr = 1; yr <= lifetimeYears; yr++) {
+        npv += cashFlow25Years[yr - 1].netCashFlowToman / Math.pow(1 + rate, yr);
+      }
+      return npv;
+    };
+
+    const npvLow = npvAt(lowIrr);
+    const npvHigh = npvAt(highIrr);
+
+    // Bolzano's Intermediate Value Theorem: root exists in [low, high] only if signs differ
+    if (npvLow * npvHigh <= 0) {
+      for (let iter = 0; iter < 50; iter++) {
+        const midIrr = (lowIrr + highIrr) / 2.0;
+        const npvAtMid = npvAt(midIrr);
+        if (npvAtMid > 0) {
+          lowIrr = midIrr;
+        } else {
+          highIrr = midIrr;
+        }
+      }
+      calculatedIrrPct = Number(((lowIrr + highIrr) / 2.0 * 100.0).toFixed(1));
+      isIrrDefined = true;
     }
   }
-  const calculatedIrrPct = Number(((lowIrr + highIrr) / 2.0 * 100.0).toFixed(1));
 
   // 6. Levelized Cost of Energy (LCOE) Calculation
   let sumDiscountedCosts = totalCapexToman;
@@ -397,6 +449,7 @@ export function performFinancialAnalysis(
     npvUsd: Math.round(discountedNpvSum / p.usdToTomanRate),
     npvToman: Math.round(discountedNpvSum),
     irrPct: calculatedIrrPct,
+    isIrrDefined,
     annualCo2ReductionTons: Math.round(annualCo2ReductionTons),
     lifetime25yCo2ReductionTons: Math.round(lifetime25yCo2ReductionTons),
     cashFlow25Years,

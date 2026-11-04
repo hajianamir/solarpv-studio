@@ -7,6 +7,8 @@ import { type ClimateCity } from '../engine/climaticData';
 import { ShadingAnalysisSubTab } from './ShadingAnalysisSubTab';
 import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
 import { type TrackerConfig, computeTrackerState } from '../engine/tracker/backtrackingEngine';
+import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
+import type { InstallationEnvironment } from '../engine/types/climateTypes';
 
 interface PvArrayEngineeringTabProps {
   selectedModule: ModuleSpecs;
@@ -22,6 +24,7 @@ interface PvArrayEngineeringTabProps {
   trackerConfig?: TrackerConfig | null;
   onTrackerConfigChange?: (cfg: TrackerConfig | null) => void;
   cityLatitude?: number;
+  installationEnvironment?: InstallationEnvironment;
   lang?: 'fa' | 'en';
 }
 
@@ -71,6 +74,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
   trackerConfig = null,
   onTrackerConfigChange,
   cityLatitude = 35.69,
+  installationEnvironment = 'ground_mount',
   lang = 'fa',
 }) => {
   const [gcrInput, setGcrInput] = useState(0.33);
@@ -655,62 +659,211 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               </div>
             </div>
 
-            {/* Climatic & Altitude Inverter Derating (IEC 62109-1 / PR-2a-6) */}
+            {/* Environmental Temperature, Dust & Equipment Aging Panel */}
             {(() => {
-              const thermalDerate = Math.max(0, (city.tempMaxC - 45) * 1.5);
-              const altitudeDerate = Math.max(0, ((city.elevationM - 2000) / 100) * 1.0);
-              const combinedFactor = (1 - thermalDerate / 100) * (1 - altitudeDerate / 100);
-              const totalDeratePct = Number(((1 - combinedFactor) * 100).toFixed(1));
+              const envAging: EnvironmentalAgingResult = calculateEnvironmentalAging({
+                installationEnvironment,
+                ambientTempMaxC: city.tempMaxC,
+                ambientTempMinC: city.tempMinC,
+                elevationM: city.elevationM,
+                moduleNoctC: selectedModule.noctC,
+                moduleTempCoeffPmpPct: selectedModule.tempCoeffPmpPct,
+                inverterPnomAcKw: selectedInverter.pnomAcKw,
+                siteTiltDeg: city.optimalTiltAnnualDeg || 30,
+              });
+
+              const isIndoors = envAging.inverterImpact.isInstalledIndoors;
+              const totalDeratePct = envAging.inverterImpact.totalInverterDeratePct;
+              const combinedFactor = (100.0 - totalDeratePct) / 100.0;
               const deratedUnitKw = Number((selectedInverter.pnomAcKw * combinedFactor).toFixed(1));
               const totalEffectiveKw = Number((inverterClustering.totalInverterCapacityKw * combinedFactor).toFixed(1));
 
               return (
-                <div className="mt-3 p-3 bg-industrial-bg/80 border border-industrial-border/70 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-sky-300 flex items-center gap-1.5">
-                      <Sun className="w-3.5 h-3.5 text-industrial-warning" />
-                      {isEn
-                        ? 'Climatic & Elevation Inverter Derating (IEC 62109-1)'
-                        : 'افت حرارتی و ارتفاعی اینورتر بر مبنای استاندارد IEC 62109-1'}
-                    </span>
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                      totalDeratePct > 0 ? 'bg-industrial-warning/20 text-industrial-warning border border-industrial-warning/40' : 'bg-industrial-success/20 text-industrial-success border border-emerald-500/40'
-                    }`}>
-                      {totalDeratePct > 0 ? `-${totalDeratePct}% Derating Applied` : '0% Full Nominal Power'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Max Ambient Temp:' : 'دمای حداکثر محیط:'}</span>
-                      <span className="font-mono font-bold text-slate-200">{city.tempMaxC}°C</span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        {city.tempMaxC > 45 ? `>${45}°C: -${thermalDerate.toFixed(1)}%` : 'No thermal derating (<=45°C)'}
+                <div className="mt-4 space-y-4">
+                  {/* Environmental Header & Inverter Protection Status */}
+                  <div className="p-3 bg-industrial-bg/90 border border-industrial-border rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                      <span className="text-xs font-bold text-sky-300 flex items-center gap-1.5">
+                        <Sun className="w-4 h-4 text-industrial-warning" />
+                        {isEn
+                          ? 'Environmental Conditions, Dust & Equipment Aging (IEC 62109-1 / IEC 61853)'
+                          : 'بررسی اثرات دمای محیط، گرد و غبار، راندمان و طول عمر تجهیزات'}
+                      </span>
+                      <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded font-bold border ${
+                        isIndoors
+                          ? 'bg-emerald-950/70 text-emerald-300 border-emerald-600/50'
+                          : totalDeratePct > 0
+                          ? 'bg-industrial-warning/20 text-industrial-warning border-industrial-warning/40'
+                          : 'bg-industrial-success/20 text-industrial-success border-emerald-500/40'
+                      }`}>
+                        {isIndoors
+                          ? (isEn ? '✓ Inverter Indoors / Sheltered (0% Derate)' : '✓ اینورتر در فضای سرپوشیده سوله/پشت‌بام (بدون افت، حفظ طول عمر)')
+                          : totalDeratePct > 0
+                          ? `-${totalDeratePct}% Outdoor Inverter Derating`
+                          : '0% Nominal Outdoor Operation'}
                       </span>
                     </div>
 
-                    <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Site Elevation:' : 'ارتفاع از سطح دریا:'}</span>
-                      <span className="font-mono font-bold text-slate-200">{city.elevationM} m</span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        {city.elevationM > 2000 ? `>2000m: -${altitudeDerate.toFixed(1)}% (1%/100m)` : 'Sea level to 2000m (0% derate)'}
-                      </span>
+                    {/* Operational Environment Summary Notice */}
+                    <div className="text-xs p-2.5 rounded bg-industrial-surface/70 border border-industrial-border/60 mb-3 text-slate-300 leading-relaxed">
+                      {isIndoors ? (
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>
+                            {isEn
+                              ? 'Rule applied: For rooftop and industrial shed installations, inverters are placed in sheltered indoor electrical rooms; environmental temperature and dust degradation are calculated strictly for the rooftop PV modules.'
+                              : 'بر مبنای ضابطه مهندسی: در پروژه‌های سقف سوله و پشت‌بام، اینورترها در اتاق تأسیسات/برق سرپوشیده مستقر هستند و اثرات دمای هوای آزاد و گردوغبار محیطی صرفاً بر روی پنل‌های PV سقف محاسبه می‌گردد.'}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-industrial-warning shrink-0 mt-0.5" />
+                          <span>
+                            {isEn
+                              ? 'Rule applied: In open-field ground mount, both PV modules and outdoor inverters are exposed to ambient summer heat, solar enclosure radiation (+5°C), and sand/dust fouling.'
+                              : 'در نیروگاه زمینی باز: کلیه تجهیزات شامل ماژول‌های PV و اینورترهای محوطه باز مستقر در مزرعه، مستقیماً تحت تأثیر دمای محیط، تابش خورشید بر بدنه و غبار قرار دارند.'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Derated Unit AC Rating:' : 'توان موثر هر دستگاه:'}</span>
-                      <span className="font-mono font-bold text-industrial-warning">{deratedUnitKw} kW</span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        Nominal: {selectedInverter.pnomAcKw} kW
-                      </span>
+                    {/* Comparative KPI Cards: PV Modules vs Inverters */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mb-3">
+                      {/* PV Module Column */}
+                      <div className="p-3 bg-industrial-surface/80 rounded-lg border border-industrial-border space-y-2">
+                        <div className="flex items-center justify-between border-b border-industrial-border/60 pb-1.5">
+                          <strong className="text-sky-300 flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-sky-400" />
+                            {isEn ? 'PV Modules (On Roof / Field)' : 'ماژول‌های خورشیدی PV (روی سقف / زمین)'}
+                          </strong>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            ΔT_mount = +{envAging.pvImpact.mountingThermalOffsetDeltaTC}°C
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                          <div>
+                            <span className="text-slate-400 block">{isEn ? 'Max Cell Temp:' : 'دمای داغ سلول:'}</span>
+                            <span className="font-mono font-bold text-industrial-warning text-sm">
+                              {envAging.pvImpact.effectiveOperatingCellTempHotC}°C
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">{isEn ? 'Thermal Power Loss:' : 'افت راندمان حرارتی:'}</span>
+                            <span className="font-mono font-bold text-industrial-error text-sm">
+                              -{envAging.pvImpact.thermalPowerLossPct}%
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">{isEn ? 'Annual Degradation:' : 'نرخ استهلاک سالانه:'}</span>
+                            <span className="font-mono font-bold text-purple-300">
+                              {envAging.pvImpact.annualDegradationPct}% / year
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">{isEn ? '25-Year Retention:' : 'راندمان سال ۲۵:'}</span>
+                            <span className="font-mono font-bold text-industrial-success">
+                              {envAging.pvImpact.twentyFiveYearCapacityRetentionPct}%
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-tight pt-1 border-t border-industrial-border/40">
+                          {isEn ? envAging.pvImpact.environmentalRiskSummaryEn : envAging.pvImpact.environmentalRiskSummaryFa}
+                        </p>
+                      </div>
+
+                      {/* Inverter Column */}
+                      <div className="p-3 bg-industrial-surface/80 rounded-lg border border-industrial-border space-y-2">
+                        <div className="flex items-center justify-between border-b border-industrial-border/60 pb-1.5">
+                          <strong className="text-industrial-warning flex items-center gap-1.5">
+                            <Cpu className="w-3.5 h-3.5 text-industrial-warning" />
+                            {isEn ? 'Inverters (Indoors vs Outdoors)' : 'اینورترها (محیط داخلی یا فضای باز)'}
+                          </strong>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-industrial-bg text-slate-300">
+                            {isIndoors ? (isEn ? 'Indoors' : 'سرپوشیده') : (isEn ? 'Outdoors' : 'فضای باز')}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                          <div>
+                            <span className="text-slate-400 block">{isEn ? 'Effective Inverter Amb:' : 'دمای مؤثر محیط اینورتر:'}</span>
+                            <span className="font-mono font-bold text-white text-sm">
+                              {envAging.inverterImpact.effectiveAmbientTempC}°C
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">{isEn ? 'Thermal Derating:' : 'افت حرارتی توان:'}</span>
+                            <span className={`font-mono font-bold text-sm ${totalDeratePct > 0 ? 'text-industrial-error' : 'text-industrial-success'}`}>
+                              {totalDeratePct > 0 ? `-${totalDeratePct}%` : '0% (None)'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">{isEn ? 'Expected Lifespan:' : 'طول عمر مفید موردانتظار:'}</span>
+                            <span className="font-mono font-bold text-teal-300">
+                              {envAging.inverterImpact.expectedInverterLifespanYears} {isEn ? 'years' : 'سال'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">{isEn ? 'Overhaul / Replacement:' : 'زمان تعویض خازن/اورهال:'}</span>
+                            <span className="font-mono font-bold text-sky-300">
+                              {envAging.inverterImpact.recommendedReplacementYear
+                                ? (isEn ? `Year ${envAging.inverterImpact.recommendedReplacementYear}` : `سال ${envAging.inverterImpact.recommendedReplacementYear}`)
+                                : (isEn ? 'Not needed' : 'نیازی نیست')}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-tight pt-1 border-t border-industrial-border/40">
+                          {isEn ? envAging.inverterImpact.inverterStatusSummaryEn : envAging.inverterImpact.inverterStatusSummaryFa}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Effective Plant AC Output:' : 'خروجی خالص موثر کل:'}</span>
-                      <span className="font-mono font-bold text-industrial-success">{totalEffectiveKw} kW</span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        {inverterClustering.parallelUnitsCount} units in parallel
+                    {/* Capacity Summary Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
+                      <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
+                        <span className="text-slate-400 block text-[10px]">{isEn ? 'Max Ambient Temp:' : 'دمای حداکثر محیط:'}</span>
+                        <span className="font-mono font-bold text-slate-200">{city.tempMaxC}°C</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">
+                          {city.elevationM}m elevation
+                        </span>
+                      </div>
+
+                      <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
+                        <span className="text-slate-400 block text-[10px]">{isEn ? 'Annual Dust/Soiling:' : 'تلفات سالانه گرد و غبار:'}</span>
+                        <span className="font-mono font-bold text-industrial-warning">-{envAging.pvImpact.soilingLossAnnualPct}%</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">
+                          {isEn ? `Wash-off: ${envAging.pvImpact.soilingWashOffEfficiencyPct}%` : `شست‌وشوی طبیعی: ${envAging.pvImpact.soilingWashOffEfficiencyPct}٪`}
+                        </span>
+                      </div>
+
+                      <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
+                        <span className="text-slate-400 block text-[10px]">{isEn ? 'Derated Unit AC Rating:' : 'توان موثر هر دستگاه:'}</span>
+                        <span className="font-mono font-bold text-industrial-warning">{deratedUnitKw} kW</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">
+                          Nominal: {selectedInverter.pnomAcKw} kW
+                        </span>
+                      </div>
+
+                      <div className="p-2 bg-industrial-surface/60 rounded border border-industrial-border">
+                        <span className="text-slate-400 block text-[10px]">{isEn ? 'Effective Plant AC Output:' : 'خروجی خالص موثر کل:'}</span>
+                        <span className="font-mono font-bold text-industrial-success">{totalEffectiveKw} kW</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">
+                          {inverterClustering.parallelUnitsCount} units in parallel
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Mitigation Recommendations */}
+                    <div className="mt-3 p-2.5 rounded bg-slate-900/60 border border-industrial-border/60 text-xs">
+                      <span className="font-bold text-industrial-accent block mb-1">
+                        {isEn ? 'Engineering Mitigation Recommendations:' : 'توصیه‌های مهندسی جهت کاهش اثرات حرارت و گرد و غبار:'}
                       </span>
+                      <ul className="space-y-1 text-[11px] text-slate-300">
+                        {(isEn ? envAging.mitigationRecommendationsEn : envAging.mitigationRecommendationsFa).map((rec, rIdx) => (
+                          <li key={rIdx} className="flex items-start gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-industrial-success shrink-0 mt-0.5" />
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 </div>

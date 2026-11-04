@@ -106,6 +106,10 @@ export interface StructuralParametersInput {
   annualRainfallMm?: number;
   frostDepthCm?: number;
   seismicZoneCoefficientA?: number;
+  exposureCategory?: ExposureCategory;
+  structureHeightM?: number;
+  topographicFactorKzt?: number;
+  windDirectionalityKd?: number;
   /** Optional override for pile skin-friction uplift capacity per post (kN).
    *  When absent, the engine estimates via the beta/alpha method below. */
   pileUpliftCapacityPerPostKn?: number;
@@ -133,25 +137,79 @@ export interface WindPressureResult {
   ke: number;
 }
 
-/** Net uplift pressure coefficient for a tilted ground-mount table,
- *  ASCE 7-22 §27.3-4 / SEAOC PV2-2017 §4.3. */
-export function cpUpliftFor(tiltDeg: number): number {
+export type ExposureCategory = 'B' | 'C' | 'D';
+
+/**
+ * Calculates ASCE 7-22 Table 26.10-1 velocity pressure exposure coefficient Kz
+ * as a function of exposure category (B, C, D) and structure height z (m).
+ */
+export function calculateKz(
+  exposure: ExposureCategory = 'C',
+  heightM?: number
+): number {
+  if (heightM === undefined && exposure === 'C') {
+    return 0.88; // Default baseline for low ground-mount PV (ASCE 7-22 nominal)
+  }
+  const z = Math.max(0.5, heightM ?? 3.0);
+  let alpha: number;
+  let zg: number;
+  let zmin: number;
+
+  switch (exposure) {
+    case 'B':
+      alpha = 7.0;
+      zg = 365.76;
+      zmin = 9.14;
+      break;
+    case 'D':
+      alpha = 11.5;
+      zg = 213.36;
+      zmin = 2.13;
+      break;
+    case 'C':
+    default:
+      alpha = 9.5;
+      zg = 274.32;
+      zmin = 4.57;
+      break;
+  }
+
+  const effectiveZ = Math.max(z, zmin);
+  return Number((2.01 * Math.pow(effectiveZ / zg, 2.0 / alpha)).toFixed(3));
+}
+
+/** Net uplift pressure coefficient for a tilted PV table:
+ *  - Ground-mount: ASCE 7-22 §29.4.3 / SEAOC PV2-2017 §4.3
+ *  - Rooftop: ASCE 7-22 §29.4.4 / Ch 30 (edge vortices & roof separation GC_rn) */
+export function cpUpliftFor(tiltDeg: number, isRooftop: boolean = false): number {
+  if (isRooftop) {
+    return 1.45 + 0.015 * tiltDeg;
+  }
   return 1.30 + 0.012 * tiltDeg;
 }
 
 /** Net downward pressure coefficient (wind on front of panel). */
-export function cpDownforceFor(tiltDeg: number): number {
+export function cpDownforceFor(tiltDeg: number, isRooftop: boolean = false): number {
+  if (isRooftop) {
+    return 1.10 + 0.012 * tiltDeg;
+  }
   return 0.95 + 0.01 * tiltDeg;
 }
 
 export function calculateWindPressureQz(
   basicWindSpeedKmh: number,
   elevationM: number = 0,
+  exposureCategory: ExposureCategory = 'C',
+  structureHeightM?: number,
+  topographicFactorKzt: number = 1.0,
+  windDirectionalityKd: number = 0.85
 ): WindPressureResult {
   const vMs = Math.max(0, basicWindSpeedKmh) / 3.6;
-  const kz = 0.88;  // Exposure C, h<5m - same as current structuralEngine
-  const kzt = 1.0;
-  const kd = 0.85;
+  const kz = (structureHeightM === undefined && exposureCategory === 'C')
+    ? 0.88
+    : calculateKz(exposureCategory, structureHeightM);
+  const kzt = Math.max(0.5, topographicFactorKzt);
+  const kd = Math.max(0.5, windDirectionalityKd);
   // ASCE 7-22 §26.10.1 elevation factor. ke = 1.0 at sea level; drops
   // ~0.362% per 100 m. Only applied when elevationM > 0.
   const ke = elevationM > 0
@@ -276,9 +334,12 @@ export function calculateStructuralAndFoundations(
     soilType,
   } = input;
 
+  const isRooftop =
+    foundationType === 'rooftop_ballasted_block' ||
+    foundationType === 'rooftop_anchor_bolted' ||
+    foundationType === 'shed_roof_clamp_rail';
+
   const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
-  const windPressure = calculateWindPressureQz(basicWindSpeedKmh, input.elevationM ?? 0);
-  const windSpeedMs = windPressure.vMs;
 
   // Standard 2P (2 Portrait) table configuration
   // Table width = 2 modules in portrait, Table length = (modulesPerTable / 2) * moduleWidth
@@ -289,8 +350,18 @@ export function calculateStructuralAndFoundations(
   const totalTablesCount = Math.ceil(totalModulesCount / modulesPerTable);
   const totalArrayAreaM2 = tableAreaM2 * totalTablesCount;
 
-  // Mean height of the table above ground
+  // Mean height of the table above ground / roof
   const tableMeanHeightM = groundClearanceM + (tableSlopedWidthM * Math.sin(tiltRad)) / 2.0;
+
+  const windPressure = calculateWindPressureQz(
+    basicWindSpeedKmh,
+    input.elevationM ?? 0,
+    input.exposureCategory ?? 'C',
+    input.structureHeightM,
+    input.topographicFactorKzt ?? 1.0,
+    input.windDirectionalityKd ?? 0.85
+  );
+  const windSpeedMs = windPressure.vMs;
 
   // 1. Dead Load Calculation
   // Module weight + Aluminum purlins/clamps + Steel torque-tube/brackets (~18 kg/m² for racking)
@@ -303,11 +374,9 @@ export function calculateStructuralAndFoundations(
   // q_z from the shared calculateWindPressureQz helper (single source).
   const velocityWindPressureQzN_M2 = windPressure.qzN_M2;
 
-  // Aerodynamic coefficients for sloped ground-mount tables
-  // C_p,net uplift (wind from rear under array) ~ 1.35 + 0.01 * tilt
-  const cpUplift = cpUpliftFor(arrayTiltDeg);
-  // C_p,net downforce (wind blowing directly against front face) ~ 1.05 + 0.01 * tilt
-  const cpDownforce = cpDownforceFor(arrayTiltDeg);
+  // Aerodynamic coefficients per ASCE 7-22 §29.4.3 (ground-mount) & §29.4.4 / Ch 30 (rooftop)
+  const cpUplift = cpUpliftFor(arrayTiltDeg, isRooftop);
+  const cpDownforce = cpDownforceFor(arrayTiltDeg, isRooftop);
 
   // Forces in kN
   const windUpliftForceKn = (velocityWindPressureQzN_M2 * cpUplift * tableAreaM2) / 1000.0;
@@ -322,34 +391,18 @@ export function calculateStructuralAndFoundations(
   const windOverturningMomentKnM = windUpliftForceKn * overturningMomentArmM;
 
   // 3. Snow Load Calculation
-  // S = S_0 * C_s * C_e * C_t * I_s
-  // C_s slope reduction for tilt > 30 deg
   // ============================================================================
   // Snow load - ASCE 7-22 §7.4.1 + §7.4.5 (Solar Panel Arrays)
   // ============================================================================
-  // Current implementation: pf = pg * Cs * cos(beta)
-  //   pg       = ground snow load (site input, kg/m²)
-  //   Cs       = slope factor (1.0 for beta <= 30 deg, linear reduction above)
+  // pf = pg * Cs * cos(beta) for ground-mount
+  // pf = 0.70 * pg * Cs * cos(beta) for rooftop/shed PV per ASCE 7-22 §7.4.1
+  //   pg        = ground snow load (site input, kg/m²)
+  //   Cs        = slope factor (1.0 for beta <= 30 deg, linear reduction above)
   //   cos(beta) = vertical-to-sloped-area projection
-  //
-  // Assumptions (conservative, documented for bankability review):
-  //   Ce = 1.0 - fully exposed, no wind or thermal sheltering
-  //   Ct = 1.0 - cold unheated panel (not the 1.2 heated-roof value)
-  //   Is = 1.0 - Risk Category I (typical utility/residential PV)
-  //   Ce·Ct·Is = 1.0
-  //
-  // KNOWN LIMITATION (v1.1.0): ASCE 7-22 §7.4.1 gives roof snow
-  // pf = 0.7 * Ce·Ct·Is * pg * Cs. This engine intentionally omits the 0.7
-  // factor for GROUND-MOUNT tables (the panel is not a roof - no roof-level
-  // wind/thermal reduction applies, so pg*Cs is physically correct). For
-  // ROOFTOP BALLASTED systems the 0.7 factor SHOULD apply; including it would
-  // reduce roof-ballast structural loading by 30%. v1.1.0 will differentiate
-  // by foundationType:
-  //   ground-mount: pf = pg * Cs
-  //   rooftop:      pf = 0.7 * pg * Cs
   // ============================================================================
   const cs = arrayTiltDeg > 30 ? Math.max(0, 1 - (arrayTiltDeg - 30) / 40) : 1.0;
-  const snowLoadTableKg = groundSnowLoadKgM2 * cs * tableAreaM2 * Math.cos(tiltRad);
+  const roofSnowFactor = isRooftop ? 0.70 : 1.0;
+  const snowLoadTableKg = groundSnowLoadKgM2 * roofSnowFactor * cs * tableAreaM2 * Math.cos(tiltRad);
   const snowLoadTableKn = (snowLoadTableKg * 9.81) / 1000.0;
 
   // 4. Foundation Sizing per Table
