@@ -110,13 +110,14 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
   // Dynamic Structural & Geotechnical Foundation Calculation
   const structCalc: StructuralAnalysisResult = useMemo(() => {
-    const modulesPerTable = arrayDesign.modulesPerTable || 28;
+    const modulesPerTable = 28;
     const tablesCount = Math.ceil(arrayDesign.totalModulesCount / modulesPerTable);
+    const moduleWeightKg = (module as { weightKg?: number }).weightKg || 28.5;
     return calculateStructuralAndFoundations({
       totalModulesCount: arrayDesign.totalModulesCount,
       moduleLengthM: module.lengthM || 2.278,
       moduleWidthM: module.widthM || 1.134,
-      moduleWeightKg: module.weightKg || 28.5,
+      moduleWeightKg,
       tablesCount,
       modulesPerTable,
       arrayTiltDeg: effectiveCity.optimalTiltAnnualDeg || 28,
@@ -139,7 +140,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   // Derived Energy Simulation Metrics
   const annualGrossMwh = Number(((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1));
   const specificYieldKwhKwp = Math.round((annualGrossMwh * 1000) / Math.max(1, arrayDesign.totalPvCapacityKwp));
-  const performanceRatioPct = Number((financial.performanceRatioPct || 80.5).toFixed(1));
+  const performanceRatioPct = Number(((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1));
   const p50Mwh = annualGrossMwh;
   const p75Mwh = Number((annualGrossMwh * 0.945).toFixed(1));
   const p90Mwh = Number((annualGrossMwh * 0.898).toFixed(1));
