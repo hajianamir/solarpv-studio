@@ -19,7 +19,6 @@ import {
   analyze3dShadingAndSunPath,
   type ShadingGeometryInput,
   type ShadingAnalysisResult,
-  calculateSolarPosition,
 } from '../engine/shadingSunPathEngine';
 import { type ClimateCity } from '../engine/climaticData';
 

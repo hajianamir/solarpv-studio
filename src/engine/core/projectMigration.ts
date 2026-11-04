@@ -35,6 +35,43 @@ export const FeatureFlagsSchema = z.object({
   enableAdvancedGeotechnicalCivil: z.boolean().default(false),
 });
 
+export const BATTERY_CHEMISTRY_VALUES = [
+  'lifepo4',
+  'gel_deep_cycle',
+  'agm_flooded',
+  'ternary_ncm',
+  'nmc',
+  'lead_acid',
+  'lto',
+  'sodium_ion',
+  'LiFePO4',
+] as const;
+
+export function normalizeBatteryChemistry(raw: unknown): z.infer<typeof ProjectDataV3Schema>['selectedChemistry'] {
+  if (!raw || typeof raw !== 'string') return 'lifepo4';
+  const val = raw.toLowerCase().trim();
+  if (val === 'lifepo4' || val === 'lfp') return 'lifepo4';
+  if (val === 'gel_deep_cycle' || val === 'gel' || val === 'lead_acid_gel') return 'gel_deep_cycle';
+  if (val === 'agm_flooded' || val === 'agm' || val === 'lead_acid_agm') return 'agm_flooded';
+  if (val === 'ternary_ncm' || val === 'ncm' || val === 'nmc') return 'ternary_ncm';
+  if (val === 'lead_acid') return 'gel_deep_cycle';
+  if (val === 'lto') return 'lto';
+  if (val === 'sodium_ion') return 'sodium_ion';
+  return 'lifepo4';
+}
+
+export function normalizeFeatureFlags(raw: unknown): z.infer<typeof FeatureFlagsSchema> {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_FEATURE_FLAGS };
+  const r = raw as Record<string, unknown>;
+  return {
+    enableMultiphysicsCoupling: Boolean(r.enableMultiphysicsCoupling ?? r.enableMultiphysics ?? false),
+    enableClimateResilience15Min: Boolean(r.enableClimateResilience15Min ?? r.enableClimateResilience ?? false),
+    enableLcaLifecycleSustainability: Boolean(r.enableLcaLifecycleSustainability ?? r.enableLcaSustainability ?? false),
+    enableNextGenGridHydrogen: Boolean(r.enableNextGenGridHydrogen ?? r.enableHydrogenAndGrid ?? false),
+    enableAdvancedGeotechnicalCivil: Boolean(r.enableAdvancedGeotechnicalCivil ?? r.enableCivilGeotech ?? false),
+  };
+}
+
 export const ClimateCitySchema = z.object({
   id: z.string(),
   nameFa: z.string(),
@@ -67,6 +104,10 @@ export const ClimateCitySchema = z.object({
   dataSourceFa: z.string().optional().default('سازمان هواشناسی کشور'),
   dataSourceEn: z.string().optional().default('Iran Meteorological Organization (IRIMO)'),
   dataRetrievalDate: z.string().optional().default('2026-01-01'),
+  confidence: z.enum(['measured', 'analytical_estimate', 'hub_calibrated']).optional(),
+  distanceToCoastKm: z.number().nonnegative().optional(),
+  drainageCondition: z.enum(['well_drained', 'moderate', 'poor_flood_prone']).optional(),
+  groundwaterDepthM: z.number().nonnegative().optional(),
 });
 
 export const SiteGeotechnicalOverridesSchema = z.object({
@@ -80,6 +121,9 @@ export const SiteGeotechnicalOverridesSchema = z.object({
   soilDensityKnM3: z.number().optional(),
   frostDepthCm: z.number().optional(),
   seismicZoneCoefficientA: z.number().optional(),
+  distanceToCoastKm: z.number().nonnegative().optional(),
+  drainageCondition: z.enum(['well_drained', 'moderate', 'poor_flood_prone']).optional(),
+  groundwaterDepthM: z.number().nonnegative().optional(),
   customNotes: z.string().optional(),
 }).default({});
 
@@ -261,7 +305,7 @@ export const TrackerConfigSchema = z.object({
 
 export const ProjectDataV3Schema = z.object({
   version: z.literal('3.0.0').default('3.0.0'),
-  savedAt: z.string(),
+  savedAt: z.string().min(1),
   projectName: z.string().min(1),
   systemMode: z.enum(['powerplant', 'ongrid', 'offgrid']).default('powerplant'),
   inverterTech: z.enum(['string_inverter', 'mv_turnkey']).default('string_inverter'),
@@ -271,7 +315,7 @@ export const ProjectDataV3Schema = z.object({
   enableDieselGenerator: z.boolean().default(false),
   autonomyDays: z.number().min(0).max(10).default(1.5),
   outageHours: z.number().min(0).max(24).default(6),
-  selectedChemistry: z.enum(['lifepo4', 'nmc', 'lead_acid', 'lto', 'sodium_ion']).default('lifepo4'),
+  selectedChemistry: z.enum(BATTERY_CHEMISTRY_VALUES).default('lifepo4'),
 
   // Sub-objects
   city: ClimateCitySchema,
@@ -343,6 +387,24 @@ function checkPhysicalContradictions(raw: Record<string, any>): string[] {
     blockers.push(`Data corruption: Electrical loads specified as non-array type [${typeof raw.loads}] in ${raw.systemMode} mode`);
   }
 
+  // 6. Non-positive power or quantity in electrical loads
+  if (Array.isArray(raw.loads)) {
+    for (const load of raw.loads) {
+      if (load && typeof load === 'object') {
+        const power = Number(load.ratedWatts ?? load.powerWatts);
+        if (!isNaN(power) && power <= 0) {
+          blockers.push(`Physical contradiction: Load '${load.name || load.id || 'unnamed'}' has non-positive power (${power} W)`);
+          break;
+        }
+        const qty = Number(load.quantity);
+        if (!isNaN(qty) && qty <= 0) {
+          blockers.push(`Physical contradiction: Load '${load.name || load.id || 'unnamed'}' has non-positive quantity (${qty})`);
+          break;
+        }
+      }
+    }
+  }
+
   return blockers;
 }
 
@@ -400,7 +462,10 @@ function normalizeLegacyPricing(raw: any): UserFinancialPricing {
 
 export function migrateProjectToV3(rawInput: unknown): MigrationResult {
   const warnings: string[] = [];
-  const traceId = generateTraceId('MIGR');
+  const existingTrace = rawInput && typeof rawInput === 'object' && typeof (rawInput as any).traceId === 'string'
+    ? (rawInput as any).traceId
+    : null;
+  const traceId = existingTrace || generateTraceId('MIGR');
 
   if (!rawInput || typeof rawInput !== 'object') {
     return {
@@ -442,10 +507,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
   }
 
   // Ensure feature flags object exists
-  const featureFlags: AdvancedFeatureFlags = {
-    ...DEFAULT_FEATURE_FLAGS,
-    ...(raw.featureFlags || {}),
-  };
+  const featureFlags = normalizeFeatureFlags(raw.featureFlags);
 
   // Check if non-critical sub-objects were missing
   if (!raw.siteOverrides) {
@@ -470,7 +532,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     enableDieselGenerator: Boolean(raw.enableDieselGenerator),
     autonomyDays: Number(raw.autonomyDays) || 1.5,
     outageHours: Number(raw.outageHours) || 6,
-    selectedChemistry: raw.selectedChemistry || 'lifepo4',
+    selectedChemistry: normalizeBatteryChemistry(raw.selectedChemistry),
 
     city: raw.city || getFallbackCity(),
     siteOverrides: raw.siteOverrides || {},

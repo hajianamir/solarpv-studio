@@ -85,7 +85,7 @@ export interface ShadingAnalysisResult {
 // ----------------------------------------------------
 // Solar Position Calculation (NREL SPA Approximation)
 // ----------------------------------------------------
-export function calculateSolarPosition(
+export function calculateSunPathPosition(
   latitudeDeg: number,
   dayOfYear: number,
   hour: number // Local solar time 0-24
@@ -129,6 +129,9 @@ export function calculateSolarPosition(
     isDaylight: true,
   };
 }
+
+/** Backward-compatible alias for solar position calculations */
+export const calculateSolarPosition = calculateSunPathPosition;
 
 // ----------------------------------------------------
 // Comprehensive 3D Shading Calculator
@@ -177,7 +180,7 @@ export function analyze3dShadingAndSunPath(input: ShadingGeometryInput): Shading
     let daylightCount = 0;
 
     for (let h = 6; h <= 18; h++) {
-      const sun = calculateSolarPosition(latitude, dayOfYear, h);
+      const sun = calculateSunPathPosition(latitude, dayOfYear, h);
       if (!sun.isDaylight || sun.altitudeDeg < 2.0) {
         hourlyPoints.push({
           hour: h,

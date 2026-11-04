@@ -8,7 +8,7 @@
 
 --- [1/4] Latin Hypercube Sampling (LHS) vs Crude Monte Carlo (CMC) Benchmark ---
 Distribution Tested: Gumbel Type I Extreme Gust (mu=28 m/s, beta=4.5 m/s)
-Execution Time: LHS (N=100) = 0.18 ms | CMC (N=10,000) = 2.44 ms | Speedup = 13.6x
+Execution Time: LHS (N=100) = 0.23 ms | CMC (N=10,000) = 3.02 ms | Speedup = 13.1x
 
 +----------+--------------+--------------+-------------------+--------------------+--------+
 | Metric   | CMC (10,000) | LHS (100)    | Rel. Error (%)    | Tolerance (eps)    | Status |
@@ -187,7 +187,7 @@ These reproduce code-internal relationships; they are NOT independent proof of a
 +--------------------+------------------------+---------------------+---------------------+
 
 --- [6/7] Core Unit Tests (PRNG, Cross-Val, Soiling, Snow, IAM & Waterfall) ---
-Unit Tests Run: 146 | Passed: 146 | Failed: 0
+Unit Tests Run: 150 | Passed: 150 | Failed: 0
   • [PRNG        ] Seed Repeatability                             -> [PASS] | PRNG identical seeds match deterministically; different seeds diverge.
   • [PRNG        ] Seed Reset Method                              -> [PASS] | prng.seed(9999) correctly reset state deterministically.
   • [PRNG        ] Uniform Range Sampling Both Branches           -> [PASS] | prng.nextRange(-15, 45) in range; guard triggers on out-of-range (50) and passes in-range (20).
@@ -199,7 +199,7 @@ Unit Tests Run: 146 | Passed: 146 | Failed: 0
   • [Validation  ] Nominal Cross-Validation PASS Branch           -> [PASS] | Clean run returned overall PASS
   • [Validation  ] Cross-Validation WARN Branch Coverage          -> [PASS] | Custom value 417.58W triggered WARN status as expected (relErr=1.8% vs tol=1.5%)
   • [Validation  ] Cross-Validation FAIL Branch Coverage          -> [PASS] | Custom value 450.0W triggered FAIL status and escalated overallStatus to FAIL (testsFailed=1)
-  • [Registry    ] Calculation Trace Generation & Fallback        -> [PASS] | Trace TRACE-mw1bn82a-60138d9a-657d-47cb-bcc6-bc2898f8e573 created with registered models and omitted unregistered IDs safely.
+  • [Registry    ] Calculation Trace Generation & Fallback        -> [PASS] | Trace TRACE-mw1mwp1l-a83a68ea-76c6-49b9-986e-0677c2672f89 created with registered models and omitted unregistered IDs safely.
   • [Registry    ] Model SemVer Compliance                        -> [PASS] | All registered models adhere to SemVer; validator flags non-conforming versions.
   • [Registry    ] SemVer Loop Both Branches                      -> [PASS] | Semver-style registry loop flags non-conforming version without early break.
   • [Migration   ] Empty Payload Safe Recovery                    -> [PASS] | Empty input recovered safely with 3 warning(s) instead of throwing an unhandled exception.
@@ -253,13 +253,13 @@ Unit Tests Run: 146 | Passed: 146 | Failed: 0
   • [BIPVT       ] Aperture-to-Gross Analytic Equality            -> [PASS] | Analytic consistency verified: netAperture (14.77%) * areaRatio (0.86) = netGross (12.7%); Aperture Area = 1.72 m2, Gross Area = 2 m2.
   • [Marion      ] Fine Low-Tilt Monotonicity (5-10 deg)          -> [PASS] | Low-tilt snow loss monotonically decreases from 2.76% (5°) to 2.71% (10°) due to gravity slide force and toe damming alleviation.
   • [DataGateway ] Circuit Breaker Tripping on Consecutive Failures -> [PASS] | Circuit breaker successfully transitioned to OPEN after 2 consecutive failures.
-  • [DataGateway ] Multi-Provider Traceability & Geotechnical Linking -> [PASS] | DataGateway generated trace IDs: TRC-GW-20261103-1801EFCB, TRC-SOIL-20261103-9A72143B; correctly mapped Eurocodes for Munich.
+  • [DataGateway ] Multi-Provider Traceability & Geotechnical Linking -> [PASS] | DataGateway generated trace IDs: TRC-GW-20261104-B09DFC1C, TRC-SOIL-20261104-B8DCAE72; correctly mapped Eurocodes for Munich.
   • [Marion      ] Fine Transition Monotonicity (10-15 deg)       -> [PASS] | Transition 10°-15° snow loss monotonically decreases from 2.71% (10°) to 2.67% (15°) confirming absence of cliff artifacts.
   • [FoundationEngine] Multi-Scenario 5-Climate Foundation Recommendations -> [PASS] | Validated 5 global project locations: Boulder (L=1.9m >= 1.90m frost requirement), Munich (L=1.8m), Phoenix (ground_screw), Singapore (ground_screw), Tehran (rammed_steel_pile).
   • [FoundationEngine] P2-2 Shared Module Depth Equality (test_depth === ui_depth, 5 sites) -> [PASS] | Boulder L=1.9m (shared 1.9m), Phoenix L=1.5m (shared 1.5m), Munich L=1.8m (shared 1.8m), Singapore L=1m (shared 1m), Tehran L=1.7m (shared 1.7m)
   • [FoundationEngine] P2-2 Foundation Type Consistency (test_type === ui_type, 5 sites) -> [PASS] | Boulder test=concrete_pier ui=concrete_pier, Phoenix test=ground_screw ui=ground_screw, Munich test=concrete_pier ui=concrete_pier, Singapore test=ground_screw ui=ground_screw, Tehran test=rammed_steel_pile ui=rammed_steel_pile
   • [FoundationEngine] P2-2 Foundation Type Diversity (>= 3 distinct types across 5 sites) -> [PASS] | Distinct types: concrete_pier, ground_screw, rammed_steel_pile (Boulder=concrete_pier, Phoenix=ground_screw, Munich=concrete_pier, Singapore=ground_screw, Tehran=rammed_steel_pile)
-  • [SaltCorrosionEngine] P2-4 ISO 9223 Salt Corrosion Classification (Bushehr = C5) -> [PASS] | Bushehr (28.92, 50.83, 0 km) = C5 (expect C5); Tehran inland (60 km) = C1; bands: 5 km = C3, 0.5 km = C5, 100 km = C1; traceId = TRC-COR-MW1BN8GF
+  • [SaltCorrosionEngine] P2-4 ISO 9223 Salt Corrosion Classification (Bushehr = C5) -> [PASS] | Bushehr (28.92, 50.83, 0 km) = C5 (expect C5); Tehran inland (60 km) = C1; bands: 5 km = C3, 0.5 km = C5, 100 km = C1; traceId = TRC-COR-MW1MWPFL
   • [CrossTabPropagation] Tehran vs Munich vs Ahvaz End-to-End Parameter Propagation -> [PASS] | Cross-tab parameter propagation verified: Ahvaz thermal derate = 10.5% (0% in Tehran); Munich snow load = 1.177 kN/m² (> Tehran 0.490 kN/m²); Ahvaz LCOE increases from $0.0495/kWh to $0.0553/kWh with 10.5% extreme heat inverter derating.
   • [BLOCKER-1   ] REAL_INTERNET gate: analytical fallback allowed when not set -> [PASS] | REAL_INTERNET not set — analytical fallback permitted; real HTTP proof requires networked machine
   • [Monotonicity] Fine Tilt Sweep Inversion Branch               -> [PASS] | Loss increase between 11° and 12° correctly flagged as inversion
@@ -298,6 +298,10 @@ Unit Tests Run: 146 | Passed: 146 | Failed: 0
   • [Migration-RoundTrip] P1.2.4 Schema fields === DEFAULT_FINANCIAL_PRICING fields (21, exact match) -> [PASS] | all 21 field names match exactly
   • [Migration-RoundTrip] P1.2.5 Pricing propagated intact: doubled module+inverter cost raises LCOE -> [PASS] | base LCOE=$0.0723/kWh high LCOE=$0.1035/kWh moduleUsdPerWp 0.18->0.36
   • [Migration-RoundTrip] P1.2.6 Missing userPricing -> DEFAULT_FINANCIAL_PRICING (no zeros, no NaN) -> [PASS] | all defaults applied (usdRate=90000, module=0.14)
+  • [Financial-Hardening] [CORR-DIESEL-ZERO] Explicit includeDieselGenSet: false yields $0 diesel CAPEX and $0 fuel OPEX -> [PASS] | dieselUsd=0 fuelUsd=0 opexUsd=0
+  • [Migration-Hardening] [CORR-CHEMISTRY-MIGR] gel_deep_cycle battery chemistry preserved without forced lifepo4 fallback -> [PASS] | selectedChemistry=gel_deep_cycle status=VALID
+  • [Migration-Hardening] [CORR-GEOTECH-PERSIST] Geotechnical distance, drainage, and GWL persist across schema round-trip -> [PASS] | coastDist=0.5 drainage=poor_flood_prone gwl=1.2
+  • [Migration-Hardening] [CORR-LOAD-NEGATIVE-BLOCK] Non-positive load ratedWatts triggers BLOCKED_INCONSISTENT status -> [PASS] | status=BLOCKED_INCONSISTENT reasons=Physical contradiction: Load 'Bad Motor' has non-positive power (-500 W)
   • [P0-HARDENING] BUG-3 zero-BESS 24h simulation: SoC=100, no NaN (powerplant mode) -> [PASS] | minSoC=100 maxSoC=100
   • [P1-HARDENING] BUG-4 climaticData re-exports intact, dataGateway modules load (cycle broken) -> [PASS] | all runtime exports + type-only leaf module resolve
   • [P2-HARDENING] MPPT max uses coldest-day Vmp (17 modules), not STC Vmp (19) -> [PASS] | maxModules=17 (expected 17; the pre-fix value of 19 would confirm the bug)
@@ -323,17 +327,17 @@ Unit Tests Run: 146 | Passed: 146 | Failed: 0
   • [E7-STRUCT-1 ] Southern hemisphere min pitch physically valid (Sydney > 5 m, < 20 m), Tehran invariant -> [PASS] | Sydney=7.57m (expect 5-20; pre-E7 3.56), Tehran=7.83m (expect ~7.83, NH unchanged)
   • [E7-STRUCT-2 ] Snow load formula unchanged by Ce*Ct*Is documentation (pf = pg*Cs*cos(beta)) -> [PASS] | actual=66.200 kN, expected=66.148 kN - Ce*Ct*Is=1.0 and Cs=1.0 documented (no numerical change)
   • [F1-R1       ] Provenance rows reflect the actual project city (Sydney), not hardcoded Tehran -> [PASS] | Sydney provenance: 8 rows, SydneyLat=true, TehranLat=false
-  • [F1-R2       ] Gateway returns raw ClimateResourceData distinct from parsed ClimateCity -> [PASS] | metadata.traceId=TRC-GW-20261103-8BBABFEF, sourceProvider=REGIONAL_ANALYTICAL_MODEL, raw!=parsed=true
+  • [F1-R2       ] Gateway returns raw ClimateResourceData distinct from parsed ClimateCity -> [PASS] | metadata.traceId=TRC-GW-20261104-8B8908C3, sourceProvider=REGIONAL_ANALYTICAL_MODEL, raw!=parsed=true
   • [F1-R9       ] REAL_INTERNET status is readable boolean flag for API mode badge -> [PASS] | isRealInternetEnabled=false
   • [F1-R10      ] ClimateCity confidence undefined falls back to analytical_estimate -> [PASS] | confidenceOrDefault=analytical_estimate
   • [F1-R3       ] AdvancedFeaturesModal is deleted from filesystem (dead code removal) -> [PASS] | AdvancedFeaturesModal exists=false
-  • [F1-R4       ] runCoreUnitTests returns {passed, failed, results[]} with per-test records -> [PASS] | passed=140, failed=0, results.length=140
+  • [F1-R4       ] runCoreUnitTests returns {passed, failed, results[]} with per-test records -> [PASS] | passed=144, failed=0, results.length=144
   • [F2-R5       ] Feature flags files are removed (option A: no phantom gating) -> [PASS] | featureFlags.ts & FeatureFlagContext.tsx removed
   • [F2-R6       ] PHYSICS_MODEL_REGISTRY versions bumped to reflect E1–E7 changes -> [PASS] | all versions match
   • [F2-R7       ] Cross-validation pruned from 11 to 6 metrics (5 independent, 1 implementation verification) -> [PASS] | testsRun=6, crossValidationCount=5, implementationVerificationCount=1
   • [F2-R16      ] Tautological / hard-coded metrics (VAL-FPV-03, VAL-LCA-04, VAL-GEOTECH-05/06, VAL-GRID-07) removed -> [PASS] | all 5 tautological metrics removed
   • [F3-R13      ] assessSaltCorrosion respects explicit distanceToSeaKm override and handles resolveDistance -> [PASS] | override=15km (user_entry), auto=106.9km, throwsWithoutDist=true
-  • [F3-R15      ] ClimateCity.dataRetrievalDate derives from climateResource metadata retrievalTimestamp -> [PASS] | cityRetrievalDate=2026-11-03, metadataDate=2026-11-03
+  • [F3-R15      ] ClimateCity.dataRetrievalDate derives from climateResource metadata retrievalTimestamp -> [PASS] | cityRetrievalDate=2026-11-04, metadataDate=2026-11-04
 Core Unit Tests: PASSED
 
 --- [7/7] Migration Safety Suite (3-State Architecture) ---
