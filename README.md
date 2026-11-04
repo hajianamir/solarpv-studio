@@ -24,16 +24,39 @@ platform.
 > PostgreSQL + gRPC roadmap. That roadmap is **not** implemented in this
 > repository. See the archive banner in each appendix for details.
 
-## Quickstart
+## Quickstart & PC Execution (راهنمای اجرای کامل روی رایانه شخصی)
 
+### روش ۱: اجرای تک‌کلیک روی ویندوز (Windows PC)
+کافیست بر روی فایل **`start.bat`** دوبار کلیک کنید. اسکریپت به صورت خودکار:
+۱. پیش‌نیاز Node.js را بررسی می‌کند.
+۲. وابستگی‌ها و تنظیمات `.env` را در صورت نبود پیکربندی می‌کند.
+۳. سرور را اجرا کرده و مرورگر پیش‌فرض سیستم را در آدرس `http://localhost:3000` باز می‌کند.
+
+### روش ۲: اجرای تک‌کلیک روی لینوکس و مک (Linux / macOS PC)
+در ترمینال دایرکتوری پروژه دستور زیر را وارد نمایید:
 ```bash
-npm ci
-
-> This project uses **npm** as the package manager. `package-lock.json`
-> is the source of truth. Do not run `bun install`, `pnpm install`, or
-> `yarn` — they will generate lockfiles that drift from CI.
-npm run dev      # starts Express + Vite middleware on http://localhost:3000
+./start.sh
 ```
+
+### روش ۳: اجرا از طریق ترمینال و npm (Cross-Platform)
+```bash
+# نصب وابستگی‌ها
+npm install
+
+# اجرای رانر دسکتاپ به همراه باز شدن خودکار مرورگر
+npm run pc
+
+# یا اجرای حالت بهینه‌شده تولید (Production Mode)
+npm run pc:prod
+```
+
+### روش ۴: اجرا با Docker Desktop (کانتینر ایزوله)
+```bash
+docker compose up --build
+```
+سپس در مرورگر به آدرس [http://localhost:3000](http://localhost:3000) مراجعه فرمایید.
+
+---
 
 ## Verification gates
 

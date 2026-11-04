@@ -4,6 +4,10 @@
   "version": "1.0.3",
   "type": "module",
   "scripts": {
+    "start": "tsx server.ts",
+    "start:prod": "npm run build && NODE_ENV=production tsx server.ts",
+    "pc": "tsx scripts/run-pc.ts",
+    "pc:prod": "npm run build && NODE_ENV=production tsx scripts/run-pc.ts",
     "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
