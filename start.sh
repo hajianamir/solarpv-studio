@@ -34,7 +34,7 @@ if [ ! -f ".env" ] && [ -f ".env.example" ]; then
 fi
 
 # 4. Check dependencies
-if [ ! -d "node_modules" ]; then
+if [ ! -d "node_modules/express" ] || [ ! -d "node_modules/.bin" ]; then
     echo "[INFO] در حال نصب خودکار وابستگی‌های پروژه (npm install)..."
     npm install
     echo ""
