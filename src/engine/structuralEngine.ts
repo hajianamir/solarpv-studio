@@ -1,6 +1,12 @@
 // Structural Mounting & Civil Foundation Engineering Engine
 // Conforming to ASCE 7-22, Iranian National Building Code Part 6 (مبحث ۶ مقررات ملی ساختمان), and ACI 318
 
+import {
+  calculateBromsPileSizing,
+  calculateRequiredEmbedmentForUplift,
+  type BromsPileSizingResult,
+} from './geotech/bromsMethod';
+
 export type FoundationType =
   | 'rammed_steel_pile'      // پایه‌های کوبشی فولادی C شکل (نیروگاه‌های مقیاس مگاواتی)
   | 'concrete_pier'          // پایه‌های بتنی درجا (خاک‌های سنگی و سخت)
@@ -68,6 +74,12 @@ export interface StructuralParametersInput {
    *  When absent, the engine estimates via the beta/alpha method below. */
   pileUpliftCapacityPerPostKn?: number;
   elevationM?: number;
+  /** Optional custom embedment depth override (meters). When absent, sized via Broms (1964) lateral capacity. */
+  customEmbedmentDepthM?: number;
+  /** Optional custom posts per table count (e.g. 2, 4, 6, 8 posts). */
+  customPostsPerTable?: number;
+  /** Optional custom concrete ballast mass override (kg) for rooftop ballasted systems. */
+  customBallastWeightKgPerTable?: number;
 }
 
 /**
@@ -116,6 +128,19 @@ export function calculateWindPressureQz(
     vMs,
     kz, kzt, kd, ke,
   };
+}
+
+export interface StructuralRemedialGuidance {
+  isCritical: boolean;
+  isWarning: boolean;
+  governingFailureMode: 'uplift_tension' | 'overturning_moment' | 'sliding' | 'bearing_capacity' | 'none';
+  governingFos: number;
+  requiredFos: number;
+  targetEmbedmentDepthM: number;
+  targetPostsPerTable: number;
+  targetBallastKgPerTable: number;
+  actionsEn: string[];
+  actionsFa: string[];
 }
 
 export interface StructuralAnalysisResult {
@@ -178,12 +203,24 @@ export interface StructuralAnalysisResult {
   fosUplift: number;
   /** Uplift capacity used (kN per post) - surfaced for transparency. */
   upliftCapacityPerPostKn: number;
+  /** Broms lateral soil resistance factor of safety (H_ult / H_applied). */
+  fosLateral: number;
+  /** Soil bearing capacity factor of safety (q_allow / q_applied). */
+  fosBearing: number;
+  /** Overturning FoS including pile tensile anchoring resistance. */
+  fosOverturningAnchored: number;
+  /** Broms selected structural pile profile (e.g. W6x9, W6x12, C150x50x2.5). */
+  bromsPileSection: string;
+  /** Minimum embedment depth required to protect against frost heave (frostDepth + 1.0m). */
+  minDepthForFrostM: number;
   isStructurallySafe: boolean;
   /** Human-readable reason the design is or isn't safe, per foundation type. */
   safetyReasonEn: string;
   safetyReasonFa: string;
   engineeringRemarksFa: string;
   engineeringRemarksEn: string;
+  /** Clear actionable guidance for the user when FoS is warning or critical. */
+  remedialGuidance: StructuralRemedialGuidance;
 }
 
 export function calculateStructuralAndFoundations(
@@ -281,7 +318,7 @@ export function calculateStructuralAndFoundations(
 
   // 4. Foundation Sizing per Table
   // Typically 4 posts per table (for 2P14 = 28 modules) or 6 posts for larger tables
-  const postsPerTable = modulesPerTable > 20 ? 4 : 2;
+  const postsPerTable = input.customPostsPerTable ?? (modulesPerTable > 20 ? 4 : 2);
   const totalPostsCount = totalTablesCount * postsPerTable;
 
   // Net tension (uplift) per post = (Wind Uplift - 0.9 * Dead Load) / posts + Moment effect
@@ -306,7 +343,26 @@ export function calculateStructuralAndFoundations(
     ((velocityWindPressureQzN_M2 * tableAreaM2 * Math.sin(tiltRad)) / (postsPerTable * 1000.0)).toFixed(1)
   );
 
-  // 5. Foundation Geometry & Soil Mechanics
+  // 5. Foundation Geometry & Soil Mechanics (Broms 1964 Lateral Equilibrium)
+  const allowableSoilBearingKpa = input.soilBearingCapacityKpa || (soilType === 'dense_sand_gravel' ? 250 : soilType === 'medium_clay' ? 180 : soilType === 'loose_sand' ? 140 : 350);
+  const siteFrostDepthCm = input.frostDepthCm ?? 30;
+  const siteFrostDepthM = siteFrostDepthCm / 100.0;
+  const soilFrictionAngleDeg = input.soilInternalFrictionAngleDeg ?? (soilType === 'dense_sand_gravel' ? 34 : soilType === 'loose_sand' ? 28 : soilType === 'rocky_limestone' ? 38 : 24);
+  const soilCohesionKpa = input.soilCohesionKpa ?? (soilType === 'medium_clay' ? 35 : 10);
+  const soilDensityKnM3 = input.soilDensityKnM3 ?? 18.0;
+
+  // Broms lateral pile capacity single-source calculation
+  const bromsResult = calculateBromsPileSizing(
+    lateralShearPerPostKn,
+    groundClearanceM,
+    siteFrostDepthM,
+    soilType,
+    allowableSoilBearingKpa,
+    soilFrictionAngleDeg,
+    soilCohesionKpa,
+    soilDensityKnM3
+  );
+
   let recommendedDepthM = 1.6;
   let foundationNameFa = 'پایه کوبشی فولادی C شکل (Rammed Steel C-Pile)';
   let foundationNameEn = 'Rammed Galvanized Steel C-Pile (Direct Driving)';
@@ -315,19 +371,20 @@ export function calculateStructuralAndFoundations(
   let concreteVolumeTotalM3 = 0;
   let steelRebarWeightTotalKg = 0;
 
-  // Soil bearing capacity factor
-  const soilFactor = soilType === 'dense_sand_gravel' ? 1.0 : soilType === 'medium_clay' ? 1.2 : soilType === 'loose_sand' ? 1.45 : 0.8;
-
   if (foundationType === 'rammed_steel_pile') {
-    recommendedDepthM = Number((1.5 * soilFactor).toFixed(1));
+    recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
+      ? Number(input.customEmbedmentDepthM.toFixed(2))
+      : bromsResult.embedmentDepthM;
     foundationNameFa = 'پایه کوبشی فولادی C شکل گالوانیزه گرم';
     foundationNameEn = 'Hot-Dip Galvanized Rammed Steel C-Pile';
-    foundationDimensionsDesc = `پروفیل فولادی C120×50×25×3.5mm، عمق کوبش در خاک: ${recommendedDepthM} متر (بدون بتن‌ریزی)`;
-    foundationDimensionsDescEn = `C120x50x25x3.5mm steel post, direct ramming depth: ${recommendedDepthM} m (concrete-free)`;
+    foundationDimensionsDesc = `پروفیل فولادی ${bromsResult.pileSection} (یا C120×50×25×3.5mm)، عمق کوبش در خاک: ${recommendedDepthM} متر (بدون بتن‌ریزی)`;
+    foundationDimensionsDescEn = `${bromsResult.pileSection} steel post, direct ramming depth: ${recommendedDepthM} m (concrete-free)`;
     concreteVolumeTotalM3 = 0;
     steelRebarWeightTotalKg = 0;
   } else if (foundationType === 'concrete_pier') {
-    recommendedDepthM = Number((1.2 * soilFactor).toFixed(1));
+    recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
+      ? Number(input.customEmbedmentDepthM.toFixed(2))
+      : Number(Math.max(siteFrostDepthM + 0.3, bromsResult.embedmentDepthM * 0.85).toFixed(2));
     const pierDiameterM = 0.40;
     const volPerPierM3 = Math.PI * Math.pow(pierDiameterM / 2.0, 2) * recommendedDepthM;
     concreteVolumeTotalM3 = Number((volPerPierM3 * totalPostsCount).toFixed(1));
@@ -337,7 +394,9 @@ export function calculateStructuralAndFoundations(
     foundationDimensionsDesc = `پایه بتنی مسلح قطر ۴۰ سانتی‌متر، عمق: ${recommendedDepthM} متر با انکربولت‌های M20 گالوانیزه`;
     foundationDimensionsDescEn = `Reinforced concrete cylinder dia 40cm, depth: ${recommendedDepthM} m with M20 HDG anchor bolts`;
   } else if (foundationType === 'ground_screw') {
-    recommendedDepthM = Number((1.6 * soilFactor).toFixed(1));
+    recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
+      ? Number(input.customEmbedmentDepthM.toFixed(2))
+      : Number(Math.max(siteFrostDepthM + 0.5, bromsResult.embedmentDepthM * 0.95).toFixed(2));
     foundationNameFa = 'شمع‌های پیچشی فولادی (Ground Screws)';
     foundationNameEn = 'Galvanized Continuous Ground Screw';
     foundationDimensionsDesc = `شمع پیچشی گالوانیزه قطر ۷۶mm، طول رزوه ۱۲۰۰mm، عمق نفوذ: ${recommendedDepthM} متر`;
@@ -347,7 +406,9 @@ export function calculateStructuralAndFoundations(
   } else {
     // Rooftop ballasted block
     recommendedDepthM = 0.25; // block thickness
-    const ballastKgPerTable = Math.max(400, (windUpliftForceKn * 1000) / 9.81 * 1.5 - deadLoadTableKg);
+    const ballastKgPerTable = input.customBallastWeightKgPerTable !== undefined && input.customBallastWeightKgPerTable > 0
+      ? input.customBallastWeightKgPerTable
+      : Math.max(400, (windUpliftForceKn * 1000) / 9.81 * 1.5 - deadLoadTableKg);
     const volPerTableM3 = ballastKgPerTable / 2400.0; // concrete density 2400 kg/m³
     concreteVolumeTotalM3 = Number((volPerTableM3 * totalTablesCount).toFixed(1));
     foundationNameFa = 'بلوک‌های بتنی وزنی پیش‌ساخته پشت‌بام (Ballasted Rooftop Blocks)';
@@ -362,12 +423,10 @@ export function calculateStructuralAndFoundations(
   const structuralSteelRackingWeightKg = Number((rackingWeightPerTable * totalTablesCount).toFixed(0));
 
   // Geotechnical Checks
-  const allowableSoilBearingKpa = input.soilBearingCapacityKpa || (soilType === 'dense_sand_gravel' ? 250 : soilType === 'medium_clay' ? 180 : soilType === 'loose_sand' ? 140 : 350);
   const footingFootprintM2 = foundationType === 'concrete_pier' ? (Math.PI * 0.2 * 0.2) : foundationType === 'rooftop_ballasted_block' ? 0.8 : 0.15;
   const appliedPostBearingPressureKpa = Number((compressionPerPostKn / footingFootprintM2).toFixed(1));
   const isBearingCapacitySafe = appliedPostBearingPressureKpa <= allowableSoilBearingKpa;
 
-  const siteFrostDepthCm = input.frostDepthCm ?? 30;
   const isFrostDepthRespected = (recommendedDepthM * 100) >= siteFrostDepthCm;
 
   // 6. Factors of Safety (FoS)
@@ -378,6 +437,7 @@ export function calculateStructuralAndFoundations(
   // displayed; use the Broms FoS from the foundation report.
   const fosSliding = Number((((deadLoadTableKn * 0.45) / Math.max(0.1, lateralShearPerPostKn * postsPerTable))).toFixed(2));
   const fosSlidingApplicable = foundationType === 'rooftop_ballasted_block';
+
   // Pile uplift (tension) capacity per post, after recommendedDepthM is final.
   const upliftCapacityPerPostKn =
     input.pileUpliftCapacityPerPostKn
@@ -389,6 +449,137 @@ export function calculateStructuralAndFoundations(
   const fosUplift = Number(
     (upliftCapacityPerPostKn / Math.max(0.01, upliftPerPostKn)).toFixed(2)
   );
+
+  // Overturning resisting moment including rear pile tension pullout capacity:
+  const rearPostsCount = Math.max(1, Math.floor(postsPerTable / 2));
+  const postSpacingM = tableSlopedWidthM * Math.cos(tiltRad);
+  const anchorResistingMomentKnM = rearPostsCount * upliftCapacityPerPostKn * postSpacingM;
+  const fosOverturningAnchored = Number(
+    ((stabilizingMoment + anchorResistingMomentKnM) / Math.max(0.1, windOverturningMomentKnM)).toFixed(2)
+  );
+
+  const fosBearing = Number((allowableSoilBearingKpa / Math.max(0.1, appliedPostBearingPressureKpa)).toFixed(2));
+  const fosLateral = bromsResult.fosLateral;
+
+  // 7. Remedial Guidance and Optimization Targets
+  const targetDepthForUplift = calculateRequiredEmbedmentForUplift(
+    upliftPerPostKn,
+    soilType,
+    0.15,
+    soilCohesionKpa,
+    soilDensityKnM3,
+    siteFrostDepthM,
+    2.0
+  );
+  const targetEmbedmentDepthM = Math.max(
+    targetDepthForUplift,
+    bromsResult.embedmentDepthM,
+    Number((siteFrostDepthM + 1.0).toFixed(2))
+  );
+
+  let targetPostsPerTable = postsPerTable;
+  if (fosUplift < 2.0 && foundationType !== 'rooftop_ballasted_block') {
+    targetPostsPerTable = postsPerTable <= 2 ? 4 : postsPerTable <= 4 ? 6 : 8;
+  }
+
+  const targetBallastKgPerTable = Math.max(
+    600,
+    Math.round(((windUpliftForceKn * 1000) / 9.81) * 1.5 - deadLoadTableKg)
+  );
+
+  let governingFailureMode: StructuralRemedialGuidance['governingFailureMode'] = 'none';
+  let governingFos = fosUplift;
+  let requiredFos = 2.0;
+
+  if (foundationType === 'rooftop_ballasted_block') {
+    if (fosOverturning < 1.5) {
+      governingFailureMode = 'overturning_moment';
+      governingFos = fosOverturning;
+      requiredFos = 1.5;
+    } else if (fosSliding < 1.4) {
+      governingFailureMode = 'sliding';
+      governingFos = fosSliding;
+      requiredFos = 1.4;
+    } else if (!isBearingCapacitySafe) {
+      governingFailureMode = 'bearing_capacity';
+      governingFos = fosBearing;
+      requiredFos = 1.0;
+    }
+  } else {
+    if (fosUplift < 2.0) {
+      governingFailureMode = 'uplift_tension';
+      governingFos = fosUplift;
+      requiredFos = 2.0;
+    } else if (fosLateral < 1.5) {
+      governingFailureMode = 'sliding';
+      governingFos = fosLateral;
+      requiredFos = 1.5;
+    } else if (!isBearingCapacitySafe) {
+      governingFailureMode = 'bearing_capacity';
+      governingFos = fosBearing;
+      requiredFos = 1.0;
+    }
+  }
+
+  const isCritical =
+    (foundationType === 'rooftop_ballasted_block' && (fosOverturning < 1.2 || fosSliding < 1.1 || !isBearingCapacitySafe)) ||
+    (foundationType !== 'rooftop_ballasted_block' && (fosUplift < 1.2 || fosLateral < 1.1 || !isBearingCapacitySafe));
+
+  const isWarning =
+    (foundationType === 'rooftop_ballasted_block' && (fosOverturning < 1.5 || fosSliding < 1.4 || !isBearingCapacitySafe)) ||
+    (foundationType !== 'rooftop_ballasted_block' && (fosUplift < 2.0 || fosLateral < 1.5 || !isBearingCapacitySafe));
+
+  const actionsEn: string[] = [];
+  const actionsFa: string[] = [];
+
+  if (foundationType === 'rooftop_ballasted_block') {
+    if (fosOverturning < 1.5) {
+      actionsEn.push(`Increase concrete ballast block mass to at least ${targetBallastKgPerTable} kg per table to achieve overturning FoS ≥ 1.5.`);
+      actionsFa.push(`وزن بلوک‌های بتنی بالاست را به حداقل ${targetBallastKgPerTable} کیلوگرم بر هر استراکچر افزایش دهید تا ضریب اطمینان واژگونی به بالای ۱.۵ برسد.`);
+    }
+    if (fosSliding < 1.4) {
+      actionsEn.push('Add high-friction EPDM/rubber separation pads (μ ≥ 0.6) under ballast blocks to satisfy sliding FoS ≥ 1.4.');
+      actionsFa.push('زیر بلوک‌های بتنی از پدهای لاستیکی EPDM با ضریب اصطکاک بالا (حداقل ۰.۶) استفاده کنید تا ضریب اطمینان لغزش به بالای ۱.۴ برسد.');
+    }
+  } else {
+    if (fosUplift < 2.0) {
+      actionsEn.push(`Increase pile embedment depth from ${recommendedDepthM}m to ${targetEmbedmentDepthM}m to increase soil skin friction capacity (T_ult) and achieve FoS_uplift ≥ 2.0 (Eurocode 7).`);
+      actionsFa.push(`عمق کوبش شمع را از ${recommendedDepthM} متر به ${targetEmbedmentDepthM} متر افزایش دهید تا ظرفیت کششی جدار خاک ارتقا یافته و FoS کشش طبق یوروکد ۷ به بالای ۲.۰ برسد.`);
+
+      actionsEn.push(`Increase posts per table from ${postsPerTable} to ${targetPostsPerTable} posts to reduce uplift tension demand per post.`);
+      actionsFa.push(`تعداد پایه‌ها در هر میز را از ${postsPerTable} به ${targetPostsPerTable} پایه افزایش دهید تا بار کشش باد بین پایه‌های بیشتری توزیع شود.`);
+    }
+    if (fosLateral < 1.5) {
+      actionsEn.push(`Increase pile embedment depth to ${bromsResult.embedmentDepthM}m or upgrade pile section to W6x12 / C150 to satisfy Broms lateral equilibrium.`);
+      actionsFa.push(`عمق کوبش پایه را به حداقل ${bromsResult.embedmentDepthM} متر افزایش دهید یا مقطع شمع را تقویت نمایید تا تعادل جانبی برمز برقرار شود.`);
+    }
+    if (groundClearanceM > 0.8) {
+      actionsEn.push(`Lower ground clearance height from ${groundClearanceM}m to 0.7m–0.8m to shorten the overturning moment arm.`);
+      actionsFa.push(`ارتفاع آزاد زیر پنل‌ها را از ${groundClearanceM} متر به ۰.۷ تا ۰.۸ متر کاهش دهید تا بازوی لنگر واژگونی کوتاه‌تر شود.`);
+    }
+    if (arrayTiltDeg > 25) {
+      actionsEn.push(`Optimize array tilt angle from ${arrayTiltDeg}° toward 22°–25° to lower aerodynamic wind uplift drag coefficients.`);
+      actionsFa.push(`زاویه شیب آرایه را به ۲۲ تا ۲۵ درجه تنظیم نمایید تا ضرایب مکش آیرودینامیکی باد کاهش یابد.`);
+    }
+  }
+
+  if (!isBearingCapacitySafe) {
+    actionsEn.push(`Bearing pressure (${appliedPostBearingPressureKpa} kPa) exceeds allowable soil capacity (${allowableSoilBearingKpa} kPa). Enlarge foundation base / footing footprint.`);
+    actionsFa.push(`تنش وارده به خاک (${appliedPostBearingPressureKpa} kPa) از ظرفیت مجاز (${allowableSoilBearingKpa} kPa) بیشتر است. مساحت پی یا کلاهک شمع را گسترش دهید.`);
+  }
+
+  const remedialGuidance: StructuralRemedialGuidance = {
+    isCritical,
+    isWarning,
+    governingFailureMode,
+    governingFos,
+    requiredFos,
+    targetEmbedmentDepthM,
+    targetPostsPerTable,
+    targetBallastKgPerTable,
+    actionsEn,
+    actionsFa,
+  };
 
   // Safety verdict depends on the governing failure mode per foundation type:
   //  - ballasted block: self-weight resists overturning and sliding
@@ -488,5 +679,11 @@ export function calculateStructuralAndFoundations(
     safetyReasonFa,
     engineeringRemarksFa,
     engineeringRemarksEn,
+    fosLateral,
+    fosBearing,
+    fosOverturningAnchored,
+    bromsPileSection: bromsResult.pileSection,
+    minDepthForFrostM: bromsResult.minDepthForFrostM,
+    remedialGuidance,
   };
 }
