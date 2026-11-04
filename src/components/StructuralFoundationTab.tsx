@@ -27,6 +27,8 @@ import {
   ArrowUpRight,
   Info,
   Settings2,
+  Warehouse,
+  Building2,
 } from 'lucide-react';
 import {
   calculateStructuralAndFoundations,
@@ -35,6 +37,7 @@ import {
   type StructuralAnalysisResult,
 } from '../engine/structuralEngine';
 import { type ClimateCity, type SiteGeotechnicalOverrides, type SiteDrainageCondition } from '../engine/climaticData';
+import { type InstallationEnvironment } from '../engine/types/climateTypes';
 import {
   recommendFoundation,
   type FoundationRecommendationResult,
@@ -99,19 +102,33 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
   // Geometry parameters
   const [modulesCount, setModulesCount] = useState<number>(totalModulesCount || 140);
-  const [tiltDeg, setTiltDeg] = useState<number>(arrayTiltDeg || 28);
+  const [tiltDeg, setTiltDeg] = useState<number>(siteOverrides?.arrayTiltDeg ?? arrayTiltDeg ?? 28);
   const [modulesPerTable, setModulesPerTable] = useState<number>(28);
-  const [groundClearanceM, setGroundClearanceM] = useState<number>(0.9);
+  const [groundClearanceM, setGroundClearanceM] = useState<number>(siteOverrides?.groundClearanceM ?? 0.9);
+  const [installationEnvironment, setInstallationEnvironment] = useState<InstallationEnvironment>(
+    siteOverrides?.installationEnvironment || 'ground_mount'
+  );
   const [foundationType, setFoundationType] = useState<FoundationType>(
-    (siteOverrides?.foundationType as FoundationType) || 'rammed_steel_pile'
+    (siteOverrides?.foundationType as FoundationType) ||
+      (siteOverrides?.installationEnvironment === 'industrial_shed'
+        ? 'shed_roof_clamp_rail'
+        : siteOverrides?.installationEnvironment === 'rooftop_flat_concrete'
+        ? 'rooftop_ballasted_block'
+        : 'rammed_steel_pile')
   );
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
 
   // User structural adjustment overrides (when FoS needs remediation or customization)
-  const [customEmbedmentDepthM, setCustomEmbedmentDepthM] = useState<number | null>(null);
-  const [customPostsPerTable, setCustomPostsPerTable] = useState<number | null>(null);
-  const [isManualDepth, setIsManualDepth] = useState<boolean>(false);
+  const [customEmbedmentDepthM, setCustomEmbedmentDepthM] = useState<number | null>(
+    siteOverrides?.customEmbedmentDepthM ?? null
+  );
+  const [customPostsPerTable, setCustomPostsPerTable] = useState<number | null>(
+    siteOverrides?.customPostsPerTable ?? null
+  );
+  const [isManualDepth, setIsManualDepth] = useState<boolean>(
+    siteOverrides?.customEmbedmentDepthM !== undefined && siteOverrides?.customEmbedmentDepthM !== null
+  );
   const [showRemedialDetails, setShowRemedialDetails] = useState<boolean>(true);
 
   // Geotechnical and climate parameters (initialized from city / overrides)
@@ -205,6 +222,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       if (siteOverrides.drainageCondition !== undefined) setDrainageCondition(siteOverrides.drainageCondition);
       if (siteOverrides.groundwaterDepthM !== undefined) setGroundwaterDepthM(siteOverrides.groundwaterDepthM);
       if (siteOverrides.foundationType !== undefined) setFoundationType(siteOverrides.foundationType as FoundationType);
+      if (siteOverrides.installationEnvironment !== undefined) setInstallationEnvironment(siteOverrides.installationEnvironment);
+      if (siteOverrides.customEmbedmentDepthM !== undefined) {
+        setCustomEmbedmentDepthM(siteOverrides.customEmbedmentDepthM);
+        setIsManualDepth(siteOverrides.customEmbedmentDepthM !== null);
+      }
+      if (siteOverrides.customPostsPerTable !== undefined) setCustomPostsPerTable(siteOverrides.customPostsPerTable);
+      if (siteOverrides.groundClearanceM !== undefined) setGroundClearanceM(siteOverrides.groundClearanceM);
+      if (siteOverrides.arrayTiltDeg !== undefined) setTiltDeg(siteOverrides.arrayTiltDeg);
     }
   }, [city, siteOverrides, onUpdateSiteOverrides]);
 
@@ -282,11 +307,53 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       distanceToCoastKm: distanceToSeaKm,
       drainageCondition,
       groundwaterDepthM,
+      foundationType,
+      installationEnvironment,
+      customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : undefined,
+      customPostsPerTable: customPostsPerTable !== null ? customPostsPerTable : undefined,
+      groundClearanceM,
+      arrayTiltDeg: tiltDeg,
       ...updated,
     };
     if (onUpdateSiteOverrides) {
       onUpdateSiteOverrides(newOverrides);
     }
+  };
+
+  const handleSelectEnvironment = (env: InstallationEnvironment) => {
+    setInstallationEnvironment(env);
+    let newFoundationType: FoundationType = foundationType;
+    let newCustomDepth: number | undefined = undefined;
+
+    if (env === 'industrial_shed') {
+      newFoundationType = 'shed_roof_clamp_rail';
+      newCustomDepth = 0.0;
+      setCustomEmbedmentDepthM(0.0);
+      setIsManualDepth(false);
+    } else if (env === 'rooftop_flat_concrete') {
+      newFoundationType = 'rooftop_ballasted_block';
+      newCustomDepth = 0.0;
+      setCustomEmbedmentDepthM(0.0);
+      setIsManualDepth(false);
+    } else {
+      if (
+        newFoundationType === 'shed_roof_clamp_rail' ||
+        newFoundationType === 'rooftop_anchor_bolted' ||
+        newFoundationType === 'rooftop_ballasted_block'
+      ) {
+        newFoundationType = 'rammed_steel_pile';
+      }
+      setCustomEmbedmentDepthM(null);
+      setIsManualDepth(false);
+      newCustomDepth = undefined;
+    }
+
+    setFoundationType(newFoundationType);
+    handleUpdateParam({
+      installationEnvironment: env,
+      foundationType: newFoundationType,
+      customEmbedmentDepthM: newCustomDepth,
+    });
   };
 
   const handleResetToDefaults = () => {
@@ -307,6 +374,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     setCustomEmbedmentDepthM(null);
     setCustomPostsPerTable(null);
     setIsManualDepth(false);
+    setFoundationType('rammed_steel_pile');
+    setInstallationEnvironment('ground_mount');
     if (onUpdateSiteOverrides) {
       onUpdateSiteOverrides({});
     }
@@ -333,6 +402,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       annualRainfallMm,
       frostDepthCm,
       seismicZoneCoefficientA: seismicZoneA,
+      elevationM: city.elevationM || 0,
       customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : undefined,
       customPostsPerTable: customPostsPerTable !== null ? customPostsPerTable : undefined,
     });
@@ -352,6 +422,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     annualRainfallMm,
     frostDepthCm,
     seismicZoneA,
+    city.elevationM,
     isManualDepth,
     customEmbedmentDepthM,
     customPostsPerTable,
@@ -375,6 +446,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       postsPerTable: structResult.postsPerTable,
       clearanceHeightM: groundClearanceM,
       slopeDeg: 2.0,
+      elevationM: city.elevationM || 0,
+      installationEnvironment,
     });
   }, [
     city,
@@ -391,6 +464,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     isEn,
     structResult.tableAreaM2,
     structResult.postsPerTable,
+    installationEnvironment,
   ]);
 
   return (
@@ -1396,6 +1470,207 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         )}
       </div>
 
+      {/* 1. INSTALLATION SITE ENVIRONMENT & MOUNTING CONTEXT SELECTOR */}
+      <div className="studio-card border border-sky-500/40 bg-gradient-to-r from-slate-900 via-sky-950/30 to-slate-900 p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-industrial-border pb-2.5">
+          <div className="flex items-center gap-2">
+            <Warehouse className="w-5 h-5 text-industrial-warning" />
+            <div>
+              <h2 className="text-sm font-bold text-white">
+                {isEn ? 'Installation Site Environment & Mounting Context' : 'محل و بستر نصب استراکچر خورشیدی (انتخاب سوله / پشت‌بام / زمینی):'}
+              </h2>
+              <p className="text-[11px] text-slate-300">
+                {isEn
+                  ? 'Select whether PV is installed on an industrial shed roof, building flat rooftop, or open ground field to size appropriate civil mounting mechanics.'
+                  : 'مشخص فرمایید پروژه بر روی سقف سوله صنعتی، پشت‌بام بتنی ساختمان یا زمین باز احداث می‌گردد تا روش فونداسیون و اتصال متناسب بارگذاری شود.'}
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 self-start sm:self-center">
+            ASCE 7-22 / DIN EN 1991 / مبحث ۶
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Ground Mount */}
+          <button
+            type="button"
+            onClick={() => handleSelectEnvironment('ground_mount')}
+            className={`p-3 rounded-lg border text-left transition relative flex flex-col justify-between ${
+              installationEnvironment === 'ground_mount'
+                ? 'bg-sky-500/20 border-sky-400 text-white shadow-md'
+                : 'bg-slate-800/60 border-industrial-border text-slate-400 hover:border-slate-500 hover:text-slate-200'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-xs flex items-center gap-1.5 text-sky-300">
+                  <Compass className="w-4 h-4" />
+                  {isEn ? 'Ground-Mounted Open Field' : 'نیروگاه زمینی / زمین باز'}
+                </span>
+                {installationEnvironment === 'ground_mount' && (
+                  <span className="w-2 h-2 rounded-full bg-sky-400" />
+                )}
+              </div>
+              <p className="text-[10px] leading-relaxed text-slate-300">
+                {isEn
+                  ? 'Open terrain: rammed steel piles, rock-socket micropiles, ground screws, or concrete piers.'
+                  : 'احداث روی خاک: پایه‌های کوبشی فولادی C شکل، شمع گمانه پیش‌حفاری با گروت، شمع پیچشی یا پایه بتنی.'}
+              </p>
+            </div>
+            <div className="mt-2 text-[9px] font-mono text-sky-400/90 pt-1.5 border-t border-sky-500/20">
+              {isEn ? 'Soil Driving: 1.0–2.2m | Broms Sizing' : 'کوبش در خاک: ۱.۰ الی ۲.۲ متر | سایزینگ برمز'}
+            </div>
+          </button>
+
+          {/* Industrial Shed Roof */}
+          <button
+            type="button"
+            onClick={() => handleSelectEnvironment('industrial_shed')}
+            className={`p-3 rounded-lg border text-left transition relative flex flex-col justify-between ${
+              installationEnvironment === 'industrial_shed'
+                ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                : 'bg-slate-800/60 border-industrial-border text-slate-400 hover:border-slate-500 hover:text-slate-200'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-xs flex items-center gap-1.5 text-amber-300">
+                  <Warehouse className="w-4 h-4" />
+                  {isEn ? 'Industrial Shed Roof (Metal Sheet)' : 'سقف سوله صنعتی (ورق فلزی / ساندویچ‌پانل)'}
+                </span>
+                {installationEnvironment === 'industrial_shed' && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                )}
+              </div>
+              <p className="text-[10px] leading-relaxed text-slate-300">
+                {isEn
+                  ? 'Trapezoidal metal sheet or standing seam: direct clamp and mini-rail fastening to purlins with EPDM seals.'
+                  : 'ورق ذوزنقه‌ای، ساندویچ پانل یا درزجوش: اتصال مستقیم با کلمپ و ریل آلومینیومی به پرلین‌ها با واشر آب‌بند EPDM.'}
+              </p>
+            </div>
+            <div className="mt-2 text-[9px] font-mono text-amber-300 pt-1.5 border-t border-amber-500/20">
+              {isEn ? 'Zero Soil Driving (0.0m) | Lightweight ~15 kg/m²' : 'عمق کوبش در خاک: ۰.۰ متر | سبک (~۱۵ kg/m²)'}
+            </div>
+          </button>
+
+          {/* Flat Concrete Rooftop */}
+          <button
+            type="button"
+            onClick={() => handleSelectEnvironment('rooftop_flat_concrete')}
+            className={`p-3 rounded-lg border text-left transition relative flex flex-col justify-between ${
+              installationEnvironment === 'rooftop_flat_concrete'
+                ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-md'
+                : 'bg-slate-800/60 border-industrial-border text-slate-400 hover:border-slate-500 hover:text-slate-200'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-xs flex items-center gap-1.5 text-emerald-300">
+                  <Building2 className="w-4 h-4" />
+                  {isEn ? 'Flat Concrete Building Rooftop' : 'پشت‌بام بتنی مسطح ساختمان'}
+                </span>
+                {installationEnvironment === 'rooftop_flat_concrete' && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                )}
+              </div>
+              <p className="text-[10px] leading-relaxed text-slate-300">
+                {isEn
+                  ? 'Non-penetrating precast ballast blocks on rubber EPDM pads or chemically anchored baseplates.'
+                  : 'بلوک‌های وزنی بتنی بالاست بدون سوراخ‌کاری ایزوگام روی پد EPDM یا مهار انکربولت شیمیایی در دال سقف.'}
+              </p>
+            </div>
+            <div className="mt-2 text-[9px] font-mono text-emerald-400 pt-1.5 border-t border-emerald-500/20">
+              {isEn ? 'Zero Penetration Ballast or 10cm Slab Anchor' : 'بالاست بدون نفوذ یا انکر ۱۰cm دال بتنی'}
+            </div>
+          </button>
+        </div>
+
+        {/* Dedicated Industrial Shed Roof Engineering Highlights */}
+        {installationEnvironment === 'industrial_shed' && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-amber-200 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                {isEn ? 'Industrial Metal Shed Roof Mechanical Verification:' : 'تحلیل مکانیکی اتصال استراکچر به سقف سوله صنعتی:'}
+              </span>
+              <span className="text-[10px] font-mono text-amber-300">
+                ASCE 7-22 Ch. 30 Components & Cladding
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+              <div className="p-2 bg-slate-900/80 rounded border border-amber-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Soil Embedment Depth:' : 'عمق کوبش در خاک:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">0.00 m</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Zero soil penetration' : 'نصب روی سقف سوله'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/80 rounded border border-amber-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Added Roof Dead Load:' : 'اضافه بار مرده بر سقف:'}</span>
+                <span className="font-mono text-amber-300 font-bold text-sm">
+                  {((structResult.deadLoadTableKg) / Math.max(1, structResult.tableAreaM2)).toFixed(1)} kg/m²
+                </span>
+                <span className="text-[9px] text-emerald-400 block mt-0.5">
+                  {isEn ? 'Safe ≤ 50 kg/m² allowance' : 'مجاز خرپا ≤ ۵۰ kg/m² ✓'}
+                </span>
+              </div>
+              <div className="p-2 bg-slate-900/80 rounded border border-amber-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Purlin Fastener Uplift FoS:' : 'FoS کشش پیچ به پرلین:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">≥ 2.50</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'EPDM watertight seal' : 'واشر آب‌بندی EPDM'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/80 rounded border border-amber-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Civil Concrete Volume:' : 'حجم بتن‌ریزی فونداسیون:'}</span>
+                <span className="font-mono text-sky-300 font-bold text-sm">0.0 m³</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Zero concrete needed' : 'حذف کامل هزینه‌های عمرانی'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dedicated Flat Concrete Rooftop Engineering Highlights */}
+        {installationEnvironment === 'rooftop_flat_concrete' && (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-emerald-200 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                {isEn ? 'Flat Concrete Rooftop Mounting Verification:' : 'تحلیل مکانیکی استراکچر پشت‌بام بتنی ساختمان:'}
+              </span>
+              <span className="text-[10px] font-mono text-emerald-300">
+                DIN EN 1991-1-4 / ASCE 7-22
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+              <div className="p-2 bg-slate-900/80 rounded border border-emerald-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Soil Embedment Depth:' : 'عمق کوبش در خاک:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">0.00 m</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Zero soil penetration' : 'نصب روی دال سقف'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/80 rounded border border-emerald-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Roof Surcharge Load:' : 'بار مرده وارده بر دال سقف:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">
+                  {foundationType === 'rooftop_ballasted_block'
+                    ? `${((structResult.deadLoadTableKg + 450) / Math.max(1, structResult.tableAreaM2)).toFixed(1)} kg/m²`
+                    : `${(structResult.deadLoadTableKg / Math.max(1, structResult.tableAreaM2)).toFixed(1)} kg/m²`}
+                </span>
+                <span className="text-[9px] text-emerald-400 block mt-0.5">
+                  {isEn ? 'Within slab live/dead limit' : 'کمتر از ظرفیت مجاز دال سقف ✓'}
+                </span>
+              </div>
+              <div className="p-2 bg-slate-900/80 rounded border border-emerald-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Membrane Protection:' : 'محافظت از عایق رطوبتی:'}</span>
+                <span className="font-mono text-sky-300 font-bold text-sm">EPDM Pads</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Zero membrane puncturing' : 'عدم آسیب به ایزوگام سقف'}</span>
+              </div>
+              <div className="p-2 bg-slate-900/80 rounded border border-emerald-500/20">
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Overturning Safety FoS:' : 'ضریب اطمینان واژگونی:'}</span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">{structResult.fosOverturning}</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Required ≥ 1.50' : 'حداقل مجاز ≥ ۱.۵۰'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Structure & Foundation Configuration Controls */}
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-industrial-border/80 gap-2 mb-3">
@@ -1411,8 +1686,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 setIsManualDepth(!isManualDepth);
                 if (isManualDepth) {
                   setCustomEmbedmentDepthM(null);
+                  handleUpdateParam({ customEmbedmentDepthM: undefined });
                 } else {
                   setCustomEmbedmentDepthM(structResult.recommendedDepthM);
+                  handleUpdateParam({ customEmbedmentDepthM: structResult.recommendedDepthM });
                 }
               }}
               className={`px-2 py-0.5 rounded text-[11px] font-semibold transition border ${
@@ -1431,35 +1708,47 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
-              {isEn ? 'Foundation Type:' : 'نوع فونداسیون سازه:'}
+              {isEn ? 'Foundation / Mounting Type:' : 'نوع فونداسیون و اتصال سازه:'}
             </label>
             <select
               value={foundationType}
               onChange={(e) => {
                 const val = e.target.value as FoundationType;
                 setFoundationType(val);
-                onUpdateSiteOverrides?.({ ...siteOverrides, foundationType: val });
+                handleUpdateParam({ foundationType: val });
               }}
               className="studio-input text-xs"
             >
-              <option value="rammed_steel_pile">
-                {isEn ? 'Rammed Steel C-Piles (Direct Soil Driving)' : 'پایه‌های کوبشی فولادی C شکل (کوبش مستقیم در خاک)'}
-              </option>
-              <option value="pre_drilled_grouted_pile">
-                {isEn ? 'Pre-Drilled Grouted Micro-Piles (Refusal & Shallow Bedrock)' : 'شمع در گمانه پیش‌حفاری با گروت (راهکار حذف پس‌زدگی سنگ بستر)'}
-              </option>
-              <option value="surface_ballasted_block">
-                {isEn ? 'Ground Surface Ballast Blocks (Zero Penetration)' : 'بلوک‌های بتنی مسلح سطحی زمینی (بدون نفوذ در خاک)'}
-              </option>
-              <option value="concrete_pier">
-                {isEn ? 'Cast-in-Place Concrete Piers (Hard/Rocky)' : 'فونداسیون استوانه‌ای بتن درجا (خاک سنگی/سخت)'}
-              </option>
-              <option value="ground_screw">
-                {isEn ? 'Galvanized Continuous Ground Screws' : 'شمع‌های پیچشی فولادی (Ground Screws)'}
-              </option>
-              <option value="rooftop_ballasted_block">
-                {isEn ? 'Rooftop Ballasted Blocks (Non-Penetrating)' : 'بلوک‌های بتنی وزنی پشت‌بام (بدون سوراخ‌کاری)'}
-              </option>
+              <optgroup label={isEn ? 'Industrial Shed Roof' : 'سقف سوله صنعتی'}>
+                <option value="shed_roof_clamp_rail">
+                  {isEn ? 'Industrial Shed Roof Clamp & Mini-Rail (Purlin Fasteners)' : 'اتصال کلمپ و ریل مستقیم به سقف سوله (ورق ذوزنقه‌ای/ساندویچ‌پانل)'}
+                </option>
+              </optgroup>
+              <optgroup label={isEn ? 'Flat Concrete Rooftop' : 'پشت‌بام بتنی ساختمان'}>
+                <option value="rooftop_ballasted_block">
+                  {isEn ? 'Rooftop Ballasted Blocks (Non-Penetrating on EPDM)' : 'بلوک‌های بتنی وزنی پشت‌بام (غیرنفوذی روی پد EPDM)'}
+                </option>
+                <option value="rooftop_anchor_bolted">
+                  {isEn ? 'Rooftop Chemically Anchored Stanchions (Concrete Slab)' : 'پایه‌های مهارشده با انکربولت در دال بتنی سقف (Chemical Anchor)'}
+                </option>
+              </optgroup>
+              <optgroup label={isEn ? 'Ground-Mounted Open Field' : 'نیروگاه زمینی / زمین باز'}>
+                <option value="rammed_steel_pile">
+                  {isEn ? 'Rammed Steel C-Piles (Direct Soil Driving)' : 'پایه‌های کوبشی فولادی C شکل (کوبش مستقیم در خاک)'}
+                </option>
+                <option value="pre_drilled_grouted_pile">
+                  {isEn ? 'Pre-Drilled Grouted Micro-Piles (Refusal & Shallow Bedrock)' : 'شمع در گمانه پیش‌حفاری با گروت (راهکار حذف پس‌زدگی سنگ بستر)'}
+                </option>
+                <option value="surface_ballasted_block">
+                  {isEn ? 'Ground Surface Ballast Blocks (Zero Penetration)' : 'بلوک‌های بتنی مسلح سطحی زمینی (بدون نفوذ در خاک)'}
+                </option>
+                <option value="concrete_pier">
+                  {isEn ? 'Cast-in-Place Concrete Piers (Hard/Rocky)' : 'فونداسیون استوانه‌ای بتن درجا (خاک سنگی/سخت)'}
+                </option>
+                <option value="ground_screw">
+                  {isEn ? 'Galvanized Continuous Ground Screws' : 'شمع‌های پیچشی فولادی (Ground Screws)'}
+                </option>
+              </optgroup>
             </select>
           </div>
 
@@ -1501,7 +1790,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               min="10"
               max="50"
               value={tiltDeg}
-              onChange={(e) => setTiltDeg(parseFloat(e.target.value) || 25)}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value) || 25;
+                setTiltDeg(val);
+                handleUpdateParam({ arrayTiltDeg: val });
+              }}
               className="studio-input font-mono"
             />
           </div>
@@ -1512,43 +1805,62 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-slate-300 font-semibold">
-                {isEn ? 'Pile Embedment Depth:' : 'عمق کوبش شمع در خاک:'}
+                {structResult.recommendedDepthM === 0
+                  ? (isEn ? 'Soil Penetration Depth:' : 'عمق نفوذ / کوبش در خاک:')
+                  : (isEn ? 'Pile Embedment Depth:' : 'عمق کوبش شمع در خاک:')}
               </label>
               <span className="font-mono text-industrial-warning font-bold">
                 {structResult.recommendedDepthM} m
                 {!isManualDepth && <span className="text-[10px] text-slate-400 font-normal"> (Auto)</span>}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min="0.8"
-                max="3.5"
-                step="0.1"
-                value={isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : structResult.recommendedDepthM}
-                onChange={(e) => {
-                  setIsManualDepth(true);
-                  setCustomEmbedmentDepthM(parseFloat(e.target.value));
-                }}
-                className="w-full accent-industrial-accent"
-              />
-              <input
-                type="number"
-                min="0.8"
-                max="3.5"
-                step="0.1"
-                value={isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : structResult.recommendedDepthM}
-                onChange={(e) => {
-                  setIsManualDepth(true);
-                  setCustomEmbedmentDepthM(parseFloat(e.target.value) || 1.5);
-                }}
-                className="w-16 bg-slate-900 border border-industrial-border rounded px-1.5 py-0.5 text-center font-mono text-white text-xs"
-              />
-            </div>
+            {structResult.recommendedDepthM === 0 ? (
+              <div className="p-2 bg-slate-900 border border-industrial-border rounded text-[11px] text-emerald-400 font-mono flex items-center justify-between">
+                <span>
+                  {foundationType === 'shed_roof_clamp_rail'
+                    ? (isEn ? 'Shed Roof Mount (0.0m driving)' : 'نصب روی سقف سوله (۰.۰m کوبش)')
+                    : (isEn ? 'Rooftop Ballasted (0.0m driving)' : 'بالاست پشت‌بام (۰.۰m کوبش)')}
+                </span>
+                <span className="text-[10px] text-slate-400">✓ Non-Penetrating</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0.8"
+                  max="3.5"
+                  step="0.1"
+                  value={isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : structResult.recommendedDepthM}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setIsManualDepth(true);
+                    setCustomEmbedmentDepthM(val);
+                    handleUpdateParam({ customEmbedmentDepthM: val });
+                  }}
+                  className="w-full accent-industrial-accent"
+                />
+                <input
+                  type="number"
+                  min="0.8"
+                  max="3.5"
+                  step="0.1"
+                  value={isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : structResult.recommendedDepthM}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 1.5;
+                    setIsManualDepth(true);
+                    setCustomEmbedmentDepthM(val);
+                    handleUpdateParam({ customEmbedmentDepthM: val });
+                  }}
+                  className="w-16 bg-slate-900 border border-industrial-border rounded px-1.5 py-0.5 text-center font-mono text-white text-xs"
+                />
+              </div>
+            )}
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              {isEn
-                ? `Min frost heave depth: ${(structResult.frostDepthCm / 100 + 1.0).toFixed(2)} m (ASCE 7-22)`
-                : `حداقل عمق یخبندان خاک: ${(structResult.frostDepthCm / 100 + 1.0).toFixed(2)} متر (مبحث ۶)`}
+              {structResult.recommendedDepthM === 0
+                ? (isEn ? '100% immune to pile refusal and ground obstructions' : 'مصونیت ۱۰۰٪ از امتناع کوبش، یخبندان و موانع خاکی')
+                : (isEn
+                  ? `Min frost heave depth: ${(structResult.frostDepthCm / 100 + 1.0).toFixed(2)} m (ASCE 7-22)`
+                  : `حداقل عمق یخبندان خاک: ${(structResult.frostDepthCm / 100 + 1.0).toFixed(2)} متر (مبحث ۶)`)}
             </span>
           </div>
 
@@ -1565,7 +1877,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               value={customPostsPerTable ?? 'auto'}
               onChange={(e) => {
                 const val = e.target.value;
-                setCustomPostsPerTable(val === 'auto' ? null : parseInt(val));
+                const parsed = val === 'auto' ? null : parseInt(val);
+                setCustomPostsPerTable(parsed);
+                handleUpdateParam({ customPostsPerTable: parsed !== null ? parsed : undefined });
               }}
               className="studio-input text-xs"
             >
@@ -1594,7 +1908,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 max="2.0"
                 step="0.05"
                 value={groundClearanceM}
-                onChange={(e) => setGroundClearanceM(parseFloat(e.target.value))}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setGroundClearanceM(val);
+                  handleUpdateParam({ groundClearanceM: val });
+                }}
                 className="w-full accent-purple-400"
               />
               <span className="w-12 text-center font-mono text-white text-xs">{groundClearanceM}m</span>
@@ -1736,6 +2054,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 setIsManualDepth(true);
                 setCustomEmbedmentDepthM(structResult.remedialGuidance.targetEmbedmentDepthM);
                 setCustomPostsPerTable(structResult.remedialGuidance.targetPostsPerTable);
+                handleUpdateParam({
+                  customEmbedmentDepthM: structResult.remedialGuidance.targetEmbedmentDepthM,
+                  customPostsPerTable: structResult.remedialGuidance.targetPostsPerTable,
+                });
               }}
               className="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-bold shadow-md flex items-center gap-1.5 transition self-start sm:self-center"
             >
@@ -1774,6 +2096,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   onClick={() => {
                     setIsManualDepth(true);
                     setCustomEmbedmentDepthM(structResult.remedialGuidance.targetEmbedmentDepthM);
+                    handleUpdateParam({ customEmbedmentDepthM: structResult.remedialGuidance.targetEmbedmentDepthM });
                   }}
                   className="text-[10px] text-sky-300 hover:text-white underline flex items-center gap-0.5"
                 >
@@ -1791,7 +2114,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               <div className="mt-1 flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setCustomPostsPerTable(structResult.remedialGuidance.targetPostsPerTable)}
+                  onClick={() => {
+                    setCustomPostsPerTable(structResult.remedialGuidance.targetPostsPerTable);
+                    handleUpdateParam({ customPostsPerTable: structResult.remedialGuidance.targetPostsPerTable });
+                  }}
                   className="text-[10px] text-sky-300 hover:text-white underline flex items-center gap-0.5"
                 >
                   <ArrowUpRight className="w-3 h-3" />

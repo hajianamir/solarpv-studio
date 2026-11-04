@@ -51,6 +51,7 @@ export interface FoundationRecommendationInput {
    *  direction. Default 4.6 (standard 2P14 table). Used for the moment
    *  arm and post-spacing computation. */
   tableSlopedWidthM?: number;
+  installationEnvironment?: 'ground_mount' | 'industrial_shed' | 'rooftop_flat_concrete';
 }
 
 export interface FoundationRecommendationOutput {
@@ -281,7 +282,66 @@ export function scoreFoundationOptions(
     cons: surfaceBlockCons,
   };
 
-  return [rammed, pier, screw, block, grouted, surfaceBlock];
+  // 7. Industrial Shed Roof Clamp & Rail (Shed Mount)
+  const isShed = input.installationEnvironment === 'industrial_shed';
+  const isRooftop = input.installationEnvironment === 'rooftop_flat_concrete';
+
+  let shedClampScore = isShed ? 96 : 12;
+  const shedClamp = {
+    type: 'shed_roof_clamp_rail' as FoundationType,
+    nameEn: 'Industrial Shed Roof Clamp & Rail Mount',
+    nameFa: 'اتصال کلمپ و ریل مستقیم به سقف سوله (ورق ذوزنقه‌ای / ساندویچ پانل / Standing Seam)',
+    score: shedClampScore,
+    pros: [
+      'Zero ground penetration and zero concrete (0.0m driving depth)',
+      'Ultra-lightweight aluminum mounting (~3.5 kg/m²) adding negligible dead load to shed trusses',
+      'EPDM watertight gaskets with purlin self-tapping fasteners prevent any roof leakage',
+    ],
+    cons: ['Requires verification of shed purlin gauge and structural rafter load allowance'],
+  };
+
+  // 8. Rooftop Chemically Anchored Stanchion (Concrete Slab Mount)
+  let rooftopAnchorScore = isRooftop ? 90 : 12;
+  const rooftopAnchor = {
+    type: 'rooftop_anchor_bolted' as FoundationType,
+    nameEn: 'Rooftop Chemically Anchored Stanchion on Concrete Slab',
+    nameFa: 'پایه‌های مهارشده با انکربولت در دال بتنی سقف ساختمان',
+    score: rooftopAnchorScore,
+    pros: [
+      'High structural rigidity and wind uplift resistance via chemical anchors in concrete slab',
+      'Zero ground penetration (0.0m driving into soil; 10cm anchor embedment in roof slab)',
+      'Dual-layer bituminous / polyurethane waterproofing seals roof membrane',
+    ],
+    cons: ['Requires drilling into structural concrete slab and specialized waterproofing flashing'],
+  };
+
+  if (isShed) {
+    rammedScore = 10;
+    pierScore = 5;
+    screwScore = 5;
+    surfaceBlockScore = 5;
+    groutedScore = 5;
+    block.score = 20;
+    rammed.score = 10;
+    pier.score = 5;
+    screw.score = 5;
+    surfaceBlock.score = 5;
+    grouted.score = 5;
+  } else if (isRooftop) {
+    rammedScore = 5;
+    pierScore = 5;
+    screwScore = 5;
+    surfaceBlockScore = 15;
+    groutedScore = 5;
+    block.score = 94; // rooftop_ballasted_block gets top score for flat roof
+    rammed.score = 5;
+    pier.score = 5;
+    screw.score = 5;
+    surfaceBlock.score = 15;
+    grouted.score = 5;
+  }
+
+  return [rammed, pier, screw, block, grouted, surfaceBlock, shedClamp, rooftopAnchor];
 }
 
 /**
@@ -386,7 +446,20 @@ export function recommendSharedFoundation(
     case 'surface_ballasted_block':
       rationale = `Surface precast ballasted block selected: zero-penetration solution for refusal ground or underground obstacle avoidance with mu >= 0.50 gravel pad sliding resistance.`;
       break;
+    case 'shed_roof_clamp_rail':
+      rationale = `Industrial shed clamp & rail mounting selected: zero ground driving (0.0m depth), lightweight aluminum framing (~3.5 kg/m²) attached to shed purlins with EPDM watertight seals.`;
+      break;
+    case 'rooftop_anchor_bolted':
+      rationale = `Rooftop chemically anchored stanchions selected: secure anchoring in concrete slab (10cm depth) with waterproof flashing, zero soil penetration.`;
+      break;
   }
+
+  const effectivePileDepthM =
+    primary === 'shed_roof_clamp_rail' || primary === 'rooftop_ballasted_block' || primary === 'surface_ballasted_block'
+      ? 0.0
+      : primary === 'rooftop_anchor_bolted'
+      ? 0.10
+      : bromsResult.embedmentDepthM;
 
   return {
     siteName: siteName ?? `Site (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
@@ -394,7 +467,7 @@ export function recommendSharedFoundation(
     longitude,
     foundationType: primary,
     foundationName: scores[0].nameEn,
-    pileDepthM: bromsResult.embedmentDepthM,
+    pileDepthM: effectivePileDepthM,
     pileSection: bromsResult.pileSection,
     factorOfSafetyLateral: bromsResult.fosLateral,
     factorOfSafetyMoment: bromsResult.fosMoment,

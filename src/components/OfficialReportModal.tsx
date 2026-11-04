@@ -115,6 +115,17 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     const modulesPerTable = 28;
     const tablesCount = Math.ceil(arrayDesign.totalModulesCount / modulesPerTable);
     const moduleWeightKg = (module as { weightKg?: number }).weightKg || 28.5;
+    const resolvedFoundationType =
+      customFoundationType ??
+      (siteOverrides?.foundationType as FoundationType) ??
+      (siteOverrides?.installationEnvironment === 'industrial_shed'
+        ? 'shed_roof_clamp_rail'
+        : siteOverrides?.installationEnvironment === 'rooftop_flat_concrete'
+        ? 'rooftop_ballasted_block'
+        : siteOverrides?.soilType === 'rocky_limestone'
+        ? 'pre_drilled_grouted_pile'
+        : 'rammed_steel_pile');
+
     return calculateStructuralAndFoundations({
       totalModulesCount: arrayDesign.totalModulesCount,
       moduleLengthM: module.lengthM || 2.278,
@@ -122,11 +133,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       moduleWeightKg,
       tablesCount,
       modulesPerTable,
-      arrayTiltDeg: effectiveCity.optimalTiltAnnualDeg || 28,
-      groundClearanceM: 0.9,
-      basicWindSpeedKmh: effectiveCity.basicWindSpeedKmh || 120,
-      groundSnowLoadKgM2: effectiveCity.groundSnowLoadKgM2 || 50,
-      foundationType: (customFoundationType ?? (siteOverrides?.foundationType as FoundationType) ?? (siteOverrides?.soilType === 'rocky_limestone' ? 'pre_drilled_grouted_pile' : 'rammed_steel_pile')),
+      arrayTiltDeg: siteOverrides?.arrayTiltDeg ?? effectiveCity.optimalTiltAnnualDeg ?? 28,
+      groundClearanceM: siteOverrides?.groundClearanceM ?? 0.9,
+      basicWindSpeedKmh: siteOverrides?.basicWindSpeedKmh ?? effectiveCity.basicWindSpeedKmh ?? 120,
+      groundSnowLoadKgM2: siteOverrides?.groundSnowLoadKgM2 ?? effectiveCity.groundSnowLoadKgM2 ?? 50,
+      foundationType: resolvedFoundationType,
       soilType: (siteOverrides?.soilType ?? effectiveCity.soilType ?? 'dense_sand_gravel') as any,
       soilBearingCapacityKpa: siteOverrides?.soilBearingCapacityKpa ?? effectiveCity.soilBearingCapacityKpa ?? 220,
       soilInternalFrictionAngleDeg: siteOverrides?.soilInternalFrictionAngleDeg ?? effectiveCity.soilInternalFrictionAngleDeg ?? 32,
@@ -136,6 +147,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       frostDepthCm: siteOverrides?.frostDepthCm ?? effectiveCity.frostDepthCm ?? 30,
       seismicZoneCoefficientA: siteOverrides?.seismicZoneCoefficientA ?? effectiveCity.seismicZoneCoefficientA ?? 0.30,
       elevationM: effectiveCity.elevationM || 0,
+      customEmbedmentDepthM: siteOverrides?.customEmbedmentDepthM,
+      customPostsPerTable: siteOverrides?.customPostsPerTable,
     });
   }, [arrayDesign, module, effectiveCity, siteOverrides, customFoundationType]);
 
@@ -1191,7 +1204,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     {structCalc.recommendedDepthM} m
                   </span>
                   <span className="text-[10px] text-industrial-success block mt-0.5">
-                    {isEn ? `Frost Depth: ${structCalc.frostDepthCm}cm ✓ (L >= ${structCalc.minDepthForFrostM}m)` : `کنترل یخبندان: ${structCalc.frostDepthCm}cm ✓`}
+                    {structCalc.recommendedDepthM === 0
+                      ? (isEn ? 'Rooftop/Shed Mount — Zero Soil Driving ✓' : 'نصب روی سقف — بدون کوبش در خاک ✓')
+                      : (isEn ? `Frost Depth: ${structCalc.frostDepthCm}cm ✓ (L >= ${structCalc.minDepthForFrostM}m)` : `کنترل یخبندان: ${structCalc.frostDepthCm}cm ✓`)}
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">

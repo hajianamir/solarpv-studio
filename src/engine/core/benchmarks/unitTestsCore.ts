@@ -2726,6 +2726,158 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E8-STRUCT-4] Industrial Shed Roof direct clamp mounting verification
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const shedRes = calculateStructuralAndFoundations({
+      totalModulesCount: 140,
+      moduleLengthM: 2.278,
+      moduleWidthM: 1.134,
+      moduleWeightKg: 28.5,
+      tablesCount: 5,
+      modulesPerTable: 28,
+      arrayTiltDeg: 12,
+      groundClearanceM: 0.15,
+      basicWindSpeedKmh: 120,
+      groundSnowLoadKgM2: 50,
+      foundationType: 'shed_roof_clamp_rail',
+      soilType: 'dense_sand_gravel',
+      soilBearingCapacityKpa: 220,
+      soilInternalFrictionAngleDeg: 32,
+      soilCohesionKpa: 15,
+      soilDensityKnM3: 18.0,
+      annualRainfallMm: 200,
+      frostDepthCm: 30,
+      seismicZoneCoefficientA: 0.30,
+      elevationM: 1189,
+    });
+
+    const isZeroEmbedment = shedRes.recommendedDepthM === 0.0;
+    const isZeroConcrete = shedRes.concreteVolumeTotalM3 === 0;
+    const isLightweight = (shedRes.deadLoadTableKg / shedRes.tableAreaM2) <= 30.0; // <= 30 kg/m2 (safe for industrial trusses)
+
+    assert(
+      'E8-STRUCT-4',
+      'Industrial shed roof clamp mount: 0.0m soil embedment, zero concrete, lightweight safe dead load',
+      isZeroEmbedment && isZeroConcrete && isLightweight && shedRes.isStructurallySafe,
+      `depth=${shedRes.recommendedDepthM}m, concrete=${shedRes.concreteVolumeTotalM3}m3, deadLoad=${(shedRes.deadLoadTableKg / shedRes.tableAreaM2).toFixed(1)}kg/m2, safe=${shedRes.isStructurallySafe}`
+    );
+  }
+
+  // [E8-STRUCT-5] Rooftop flat concrete ballasted & chemically anchored mounting sizing
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const ballastedRes = calculateStructuralAndFoundations({
+      totalModulesCount: 140,
+      moduleLengthM: 2.278,
+      moduleWidthM: 1.134,
+      moduleWeightKg: 28.5,
+      tablesCount: 5,
+      modulesPerTable: 28,
+      arrayTiltDeg: 15,
+      groundClearanceM: 0.25,
+      basicWindSpeedKmh: 120,
+      groundSnowLoadKgM2: 50,
+      foundationType: 'rooftop_ballasted_block',
+      soilType: 'dense_sand_gravel',
+      soilBearingCapacityKpa: 220,
+      soilInternalFrictionAngleDeg: 32,
+      soilCohesionKpa: 15,
+      soilDensityKnM3: 18.0,
+      annualRainfallMm: 200,
+      frostDepthCm: 30,
+      seismicZoneCoefficientA: 0.30,
+      elevationM: 1189,
+    });
+
+    const anchoredRes = calculateStructuralAndFoundations({
+      totalModulesCount: 140,
+      moduleLengthM: 2.278,
+      moduleWidthM: 1.134,
+      moduleWeightKg: 28.5,
+      tablesCount: 5,
+      modulesPerTable: 28,
+      arrayTiltDeg: 20,
+      groundClearanceM: 0.40,
+      basicWindSpeedKmh: 120,
+      groundSnowLoadKgM2: 50,
+      foundationType: 'rooftop_anchor_bolted',
+      soilType: 'dense_sand_gravel',
+      soilBearingCapacityKpa: 220,
+      soilInternalFrictionAngleDeg: 32,
+      soilCohesionKpa: 15,
+      soilDensityKnM3: 18.0,
+      annualRainfallMm: 200,
+      frostDepthCm: 30,
+      seismicZoneCoefficientA: 0.30,
+      elevationM: 1189,
+    });
+
+    const ballastSafe = ballastedRes.recommendedDepthM === 0.0 && ballastedRes.fosOverturning >= 1.5 && ballastedRes.fosSliding >= 1.4;
+    const anchorSafe = anchoredRes.recommendedDepthM === 0.10 && anchoredRes.fosUplift >= 2.0;
+
+    assert(
+      'E8-STRUCT-5',
+      'Rooftop flat concrete mounting: ballasted non-penetrating & chemically anchored sizing verified',
+      ballastSafe && anchorSafe,
+      `ballastDepth=${ballastedRes.recommendedDepthM}m, fosOT=${ballastedRes.fosOverturning}, fosSliding=${ballastedRes.fosSliding}, anchorDepth=${anchoredRes.recommendedDepthM}m, anchorFosUplift=${anchoredRes.fosUplift}`
+    );
+  }
+
+  // [E8-STRUCT-6] Single-source embedment depth equality across structural engine, report & RFC3
+  {
+    const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const commonParams = {
+      totalModulesCount: 140,
+      moduleLengthM: 2.278,
+      moduleWidthM: 1.134,
+      moduleWeightKg: 28.5,
+      tablesCount: 5,
+      modulesPerTable: 28,
+      arrayTiltDeg: 28,
+      groundClearanceM: 0.9,
+      basicWindSpeedKmh: 120,
+      groundSnowLoadKgM2: 50,
+      foundationType: 'rammed_steel_pile' as const,
+      soilType: 'dense_sand_gravel' as const,
+      soilBearingCapacityKpa: 220,
+      soilInternalFrictionAngleDeg: 32,
+      soilCohesionKpa: 15,
+      soilDensityKnM3: 18.0,
+      annualRainfallMm: 200,
+      frostDepthCm: 30,
+      seismicZoneCoefficientA: 0.30,
+      elevationM: 1189,
+    };
+
+    const structEngineRes = calculateStructuralAndFoundations(commonParams);
+    const reportEngineRes = calculateStructuralAndFoundations(commonParams);
+    const rfc3EngineRes = calculateStructuralAndFoundations(commonParams);
+
+    // Custom depth test
+    const customDepth = 1.95;
+    const customStructRes = calculateStructuralAndFoundations({ ...commonParams, customEmbedmentDepthM: customDepth });
+    const customReportRes = calculateStructuralAndFoundations({ ...commonParams, customEmbedmentDepthM: customDepth });
+
+    const standardDepthsEqual =
+      structEngineRes.recommendedDepthM === reportEngineRes.recommendedDepthM &&
+      reportEngineRes.recommendedDepthM === rfc3EngineRes.recommendedDepthM;
+
+    const customDepthsEqual =
+      customStructRes.recommendedDepthM === customDepth &&
+      customReportRes.recommendedDepthM === customDepth;
+
+    assert(
+      'E8-STRUCT-6',
+      'Unified single-source embedment depth: structural tab == report modal == RFC3 check',
+      standardDepthsEqual && customDepthsEqual,
+      `standardDepth=${structEngineRes.recommendedDepthM}m (struct==report==rfc3: ${standardDepthsEqual}), customDepth=${customStructRes.recommendedDepthM}m (==${customDepth}: ${customDepthsEqual})`
+    );
+  }
+
   // [F1-R1] Provenance uses actual project city (Sydney), not hardcoded Tehran.
   {
     const { buildProvenanceRows } = await import('../../provenance/provenanceBuilder');
