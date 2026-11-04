@@ -21,6 +21,12 @@ import {
   FileText,
   Droplets,
   Waves,
+  Sliders,
+  Wrench,
+  Sparkles,
+  ArrowUpRight,
+  Info,
+  Settings2,
 } from 'lucide-react';
 import {
   calculateStructuralAndFoundations,
@@ -100,6 +106,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
 
+  // User structural adjustment overrides (when FoS needs remediation or customization)
+  const [customEmbedmentDepthM, setCustomEmbedmentDepthM] = useState<number | null>(null);
+  const [customPostsPerTable, setCustomPostsPerTable] = useState<number | null>(null);
+  const [isManualDepth, setIsManualDepth] = useState<boolean>(false);
+  const [showRemedialDetails, setShowRemedialDetails] = useState<boolean>(true);
+
   // Geotechnical and climate parameters (initialized from city / overrides)
   const [basicWindSpeedKmh, setBasicWindSpeedKmh] = useState<number>(
     siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 120
@@ -172,6 +184,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       setDrainageCondition(city.drainageCondition ?? 'well_drained');
       setGroundwaterDepthM(city.groundwaterDepthM ?? 5.0);
       setManualCorrosionCategory('auto');
+      setCustomEmbedmentDepthM(null);
+      setCustomPostsPerTable(null);
+      setIsManualDepth(false);
       onUpdateSiteOverrides?.({});
     } else if (siteOverrides && Object.keys(siteOverrides).length > 0) {
       if (siteOverrides.basicWindSpeedKmh !== undefined) setBasicWindSpeedKmh(siteOverrides.basicWindSpeedKmh);
@@ -286,6 +301,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     setDrainageCondition(city.drainageCondition ?? 'well_drained');
     setGroundwaterDepthM(city.groundwaterDepthM ?? 5.0);
     setManualCorrosionCategory('auto');
+    setCustomEmbedmentDepthM(null);
+    setCustomPostsPerTable(null);
+    setIsManualDepth(false);
     if (onUpdateSiteOverrides) {
       onUpdateSiteOverrides({});
     }
@@ -312,6 +330,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       annualRainfallMm,
       frostDepthCm,
       seismicZoneCoefficientA: seismicZoneA,
+      customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : undefined,
+      customPostsPerTable: customPostsPerTable !== null ? customPostsPerTable : undefined,
     });
   }, [
     modulesCount,
@@ -329,6 +349,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     annualRainfallMm,
     frostDepthCm,
     seismicZoneA,
+    isManualDepth,
+    customEmbedmentDepthM,
+    customPostsPerTable,
   ]);
 
   const recResult: FoundationRecommendationResult = useMemo(() => {
@@ -344,9 +367,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       frostDepthCm,
       basicWindSpeedKmh,
       groundSnowLoadKgM2,
-      tableAreaM2: 52.0,
+      tableAreaM2: structResult.tableAreaM2,
       arrayTiltDeg: tiltDeg,
-      postsPerTable: 4,
+      postsPerTable: structResult.postsPerTable,
       clearanceHeightM: groundClearanceM,
       slopeDeg: 2.0,
     });
@@ -363,6 +386,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     tiltDeg,
     groundClearanceM,
     isEn,
+    structResult.tableAreaM2,
+    structResult.postsPerTable,
   ]);
 
   return (
@@ -1094,10 +1119,35 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
       {/* Structure & Foundation Configuration Controls */}
       <div className="studio-card">
-        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-          <Hammer className="w-4 h-4 text-industrial-accent" />
-          {isEn ? 'Mounting Table & Foundation Configuration:' : 'پیکربندی میز سازه و نوع فونداسیون:'}
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-industrial-border/80 gap-2 mb-3">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <Hammer className="w-4 h-4 text-industrial-accent" />
+            <span>{isEn ? 'Mounting Table & Foundation Configuration:' : 'پیکربندی میز سازه و نوع فونداسیون:'}</span>
+          </h3>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-slate-400">{isEn ? 'Embedment Mode:' : 'حالت عمق کوبش:'}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setIsManualDepth(!isManualDepth);
+                if (isManualDepth) {
+                  setCustomEmbedmentDepthM(null);
+                } else {
+                  setCustomEmbedmentDepthM(structResult.recommendedDepthM);
+                }
+              }}
+              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition border ${
+                isManualDepth
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                  : 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+              }`}
+            >
+              {isManualDepth
+                ? (isEn ? 'Manual Override Active' : 'تنظیم دستی کاربر')
+                : (isEn ? 'Auto Broms Analysis' : 'محاسبه خودکار برمز')}
+            </button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
           <div>
@@ -1167,6 +1217,104 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             />
           </div>
         </div>
+
+        {/* Advanced Interactive Tuning (Depth, Posts per Table, Ground Clearance) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-industrial-border/60 text-xs">
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-slate-300 font-semibold">
+                {isEn ? 'Pile Embedment Depth:' : 'عمق کوبش شمع در خاک:'}
+              </label>
+              <span className="font-mono text-industrial-warning font-bold">
+                {structResult.recommendedDepthM} m
+                {!isManualDepth && <span className="text-[10px] text-slate-400 font-normal"> (Auto)</span>}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min="0.8"
+                max="3.5"
+                step="0.1"
+                value={isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : structResult.recommendedDepthM}
+                onChange={(e) => {
+                  setIsManualDepth(true);
+                  setCustomEmbedmentDepthM(parseFloat(e.target.value));
+                }}
+                className="w-full accent-industrial-accent"
+              />
+              <input
+                type="number"
+                min="0.8"
+                max="3.5"
+                step="0.1"
+                value={isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : structResult.recommendedDepthM}
+                onChange={(e) => {
+                  setIsManualDepth(true);
+                  setCustomEmbedmentDepthM(parseFloat(e.target.value) || 1.5);
+                }}
+                className="w-16 bg-slate-900 border border-industrial-border rounded px-1.5 py-0.5 text-center font-mono text-white text-xs"
+              />
+            </div>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              {isEn
+                ? `Min frost heave depth: ${(structResult.frostDepthCm / 100 + 1.0).toFixed(2)} m (ASCE 7-22)`
+                : `حداقل عمق یخبندان خاک: ${(structResult.frostDepthCm / 100 + 1.0).toFixed(2)} متر (مبحث ۶)`}
+            </span>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-slate-300 font-semibold">
+                {isEn ? 'Posts per Table:' : 'تعداد پایه‌ها در هر میز:'}
+              </label>
+              <span className="font-mono text-sky-300 font-bold">
+                {structResult.postsPerTable} {isEn ? 'posts' : 'پایه'}
+              </span>
+            </div>
+            <select
+              value={customPostsPerTable ?? 'auto'}
+              onChange={(e) => {
+                const val = e.target.value;
+                setCustomPostsPerTable(val === 'auto' ? null : parseInt(val));
+              }}
+              className="studio-input text-xs"
+            >
+              <option value="auto">{isEn ? 'Auto (Size-Based)' : 'خودکار (بر اساس ابعاد میز)'}</option>
+              <option value="2">{isEn ? '2 Posts per Table (Lightweight)' : '۲ پایه در هر میز'}</option>
+              <option value="4">{isEn ? '4 Posts per Table (Standard 2P14)' : '۴ پایه در هر میز (استاندارد ۲ ردیفه)'}</option>
+              <option value="6">{isEn ? '6 Posts per Table (High-Wind Heavy Duty)' : '۶ پایه در هر میز (باد شدید و ایمن)'}</option>
+              <option value="8">{isEn ? '8 Posts per Table (Severe Exposure)' : '۸ پایه در هر میز (سایت‌های بحرانی)'}</option>
+            </select>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              {isEn ? 'Increases posts to divide wind uplift per pile' : 'افزایش پایه، نیروی مکش هر شمع را تا ۵۰٪ کاهش می‌دهد'}
+            </span>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-slate-300 font-semibold">
+                {isEn ? 'Ground Clearance Height:' : 'ارتفاع آزاد زیر پنل (Clearance):'}
+              </label>
+              <span className="font-mono text-purple-300 font-bold">{groundClearanceM} m</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.05"
+                value={groundClearanceM}
+                onChange={(e) => setGroundClearanceM(parseFloat(e.target.value))}
+                className="w-full accent-purple-400"
+              />
+              <span className="w-12 text-center font-mono text-white text-xs">{groundClearanceM}m</span>
+            </div>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              {isEn ? 'Lower clearance reduces overturning moment arm' : 'کاهش ارتفاع آزاد بازوی لنگر واژگونی را کوتاه می‌کند'}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Structural Force Badges & Geotechnical Safety Checks */}
@@ -1177,7 +1325,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             {structResult.velocityWindPressureQzN_M2} <span className="text-xs font-normal">N/m²</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            {isEn ? 'Design wind pressure per INBC 6' : 'فشار طراحی باد طبق مبحث ۶'}
+            {isEn ? 'Design wind pressure per INBC 6 / ASCE 7' : 'فشار طراحی باد طبق مبحث ۶ و ASCE 7'}
           </div>
         </div>
 
@@ -1187,7 +1335,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             {structResult.windUpliftForceKn} <span className="text-xs font-normal">kN</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            {isEn ? 'Governing foundation tension load' : 'بحرانی‌ترین بار برای فونداسیون'}
+            {isEn
+              ? `Uplift demand: ${structResult.upliftPerPostKn} kN/post`
+              : `کشش باد روی هر پایه: ${structResult.upliftPerPostKn} kN`}
           </div>
         </div>
 
@@ -1207,7 +1357,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
-          <div className="text-xs text-slate-400">{isEn ? 'Overturning Safety Factor (FoS)' : 'ضریب اطمینان واژگونی (FoS)'}</div>
+          <div className="text-xs text-slate-400">
+            {foundationType === 'rooftop_ballasted_block'
+              ? (isEn ? 'Overturning Safety Factor (FoS)' : 'ضریب اطمینان واژگونی (FoS)')
+              : (isEn ? 'Pile Tension Uplift FoS' : 'ضریب اطمینان کشش شمع (FoS)')}
+          </div>
           <div
             className={`text-xl font-bold font-mono mt-1 ${
               structResult.isStructurallySafe ? 'text-industrial-success' : 'text-rose-400'
@@ -1226,28 +1380,151 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <div className="text-[10px] text-slate-400 mt-1">
             {foundationType === 'rooftop_ballasted_block'
               ? (isEn ? 'Required ≥ 1.5 (self-weight overturning)' : 'حداقل ۱.۵ (واژگونی وزن خود)')
-              : (isEn ? 'Uplift FoS (piles) — required ≥ 2.0 (Eurocode 7), T_ult = ' + structResult.upliftCapacityPerPostKn.toFixed(1) + ' kN/post'
-                     : 'FoS کشش شمع — حداقل ۲.۰ (یوروکد ۷)')}
+              : (isEn ? `Eurocode 7 ≥ 2.0 (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post)`
+                     : `یوروکد ۷ حداقل ۲.۰ (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)}
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            {isEn ? 'Sliding Safety Factor (ballasted only):' : 'ضریب لغزش (فقط بالاست):'}{' '}
-            {structResult.fosSlidingApplicable
-              ? <span className="font-mono text-industrial-success">{structResult.fosSliding}</span>
-              : <span className="font-mono text-slate-500" title="Applicable only for ballasted blocks; see Broms FoS in foundation report">—</span>}
+            {foundationType === 'rooftop_ballasted_block' ? (
+              <span>
+                {isEn ? 'Sliding FoS:' : 'ضریب لغزش:'}{' '}
+                <span className="font-mono text-industrial-success">{structResult.fosSliding}</span> (≥ 1.4)
+              </span>
+            ) : (
+              <span>
+                {isEn ? 'Broms Lateral FoS:' : 'ضریب جانبی برمز:'}{' '}
+                <span className={`font-mono ${structResult.fosLateral >= 1.5 ? 'text-industrial-success' : 'text-amber-400'}`}>
+                  {structResult.fosLateral}
+                </span> (≥ 1.5)
+              </span>
+            )}
           </div>
           <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
             {structResult.isStructurallySafe ? (
               <span className="text-industrial-success flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Stable (FoS ≥ 1.5)' : 'مجاز (حداقل ۱.۵)'}
+                <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Stable (Design Compliant)' : 'مجاز و ایمن (مطابق استاندارد)'}
               </span>
             ) : (
-              <span className="text-rose-400 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> {isEn ? 'Unstable' : 'ناپایدار'}
+              <span className="text-rose-400 flex items-center gap-1 font-semibold">
+                <AlertTriangle className="w-3 h-3" /> {isEn ? 'Unstable (Remediation Needed)' : 'ناپایدار (نیازمند اصلاح)'}
               </span>
             )}
           </div>
         </div>
       </div>
+
+      {/* ACTIONABLE FOS OPTIMIZATION & REMEDIAL ENGINEERING GUIDANCE */}
+      {structResult.remedialGuidance.isWarning && (
+        <div className="studio-card border-2 border-amber-500/50 bg-amber-950/20 shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-amber-500/30 gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-amber-500/20 border border-amber-500/40 rounded-lg text-amber-400">
+                <ShieldAlert className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-amber-200 flex items-center gap-2">
+                  <span>{isEn ? 'Actionable FoS Optimization & Remedial Engineering Guidance' : 'راهکارهای مهندسی اصلاح و ارتقای ضریب اطمینان (FoS):'}</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/30 text-rose-300 border border-rose-500/50">
+                    {isEn ? 'ACTION REQUIRED' : 'نیازمند اقدام اصلاحی'}
+                  </span>
+                </h3>
+                <p className="text-[11px] text-amber-200/80 mt-0.5">
+                  {isEn
+                    ? 'The current structural or geotechnical safety factor is below regulatory code thresholds. Adjust the parameters below or apply the one-click auto-stabilize.'
+                    : 'ضریب اطمینان سازه یا فونداسیون از حدود مجاز آیین‌نامه کمتر است. پارامترهای زیر را تنظیم نمایید یا از کلید اصلاح خودکار استفاده فرمایید.'}
+                </p>
+              </div>
+            </div>
+
+            {/* One-Click Auto-Stabilize Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsManualDepth(true);
+                setCustomEmbedmentDepthM(structResult.remedialGuidance.targetEmbedmentDepthM);
+                setCustomPostsPerTable(structResult.remedialGuidance.targetPostsPerTable);
+              }}
+              className="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-bold shadow-md flex items-center gap-1.5 transition self-start sm:self-center"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-200" />
+              <span>{isEn ? 'One-Click Auto-Stabilize' : 'اعمال تنظیمات بهینه خودکار'}</span>
+            </button>
+          </div>
+
+          {/* Diagnostic Failure Mode & Target Requirements */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 my-3 text-xs">
+            <div className="p-2.5 bg-slate-900/80 border border-industrial-border rounded">
+              <span className="text-slate-400 block text-[10px]">{isEn ? 'Governing Constraint:' : 'محدودیت بحرانی حاکم:'}</span>
+              <strong className="text-rose-300 font-mono text-sm block mt-0.5">
+                {structResult.remedialGuidance.governingFailureMode === 'uplift_tension'
+                  ? (isEn ? 'Pile Uplift Tension Pullout' : 'کشش و برآمدگی شمع (Tension Pullout)')
+                  : structResult.remedialGuidance.governingFailureMode === 'overturning_moment'
+                  ? (isEn ? 'Overturning Moment' : 'لنگر واژگونی استراکچر')
+                  : structResult.remedialGuidance.governingFailureMode === 'sliding'
+                  ? (isEn ? 'Lateral Sliding / Shear' : 'لغزش و برش جانبی خاک')
+                  : (isEn ? 'Soil Bearing Capacity' : 'تنش باربری مجاز خاک')}
+              </strong>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Current FoS:' : 'ضریب فعلی:'} <span className="text-rose-400 font-bold">{structResult.remedialGuidance.governingFos}</span> (
+                {isEn ? 'Required ≥' : 'حداقل مجاز:'} {structResult.remedialGuidance.requiredFos})
+              </span>
+            </div>
+
+            <div className="p-2.5 bg-slate-900/80 border border-industrial-border rounded">
+              <span className="text-slate-400 block text-[10px]">{isEn ? 'Target Embedment Depth:' : 'عمق کوبش هدف برای پایداری:'}</span>
+              <strong className="text-emerald-400 font-mono text-sm block mt-0.5">
+                {structResult.remedialGuidance.targetEmbedmentDepthM} m
+              </strong>
+              <div className="mt-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsManualDepth(true);
+                    setCustomEmbedmentDepthM(structResult.remedialGuidance.targetEmbedmentDepthM);
+                  }}
+                  className="text-[10px] text-sky-300 hover:text-white underline flex items-center gap-0.5"
+                >
+                  <ArrowUpRight className="w-3 h-3" />
+                  {isEn ? `Apply ${structResult.remedialGuidance.targetEmbedmentDepthM}m` : `تنظیم روی ${structResult.remedialGuidance.targetEmbedmentDepthM} متر`}
+                </button>
+              </div>
+            </div>
+
+            <div className="p-2.5 bg-slate-900/80 border border-industrial-border rounded">
+              <span className="text-slate-400 block text-[10px]">{isEn ? 'Target Posts per Table:' : 'تعداد پایه پیشنهادی در هر میز:'}</span>
+              <strong className="text-sky-300 font-mono text-sm block mt-0.5">
+                {structResult.remedialGuidance.targetPostsPerTable} {isEn ? 'posts' : 'پایه'}
+              </strong>
+              <div className="mt-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomPostsPerTable(structResult.remedialGuidance.targetPostsPerTable)}
+                  className="text-[10px] text-sky-300 hover:text-white underline flex items-center gap-0.5"
+                >
+                  <ArrowUpRight className="w-3 h-3" />
+                  {isEn ? `Apply ${structResult.remedialGuidance.targetPostsPerTable} posts` : `تنظیم روی ${structResult.remedialGuidance.targetPostsPerTable} پایه`}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Remedial Engineering Recommendations Checklist */}
+          <div className="space-y-1.5 pt-2 border-t border-amber-500/20 text-xs">
+            <span className="text-amber-300 font-bold block mb-1">
+              {isEn ? 'Recommended Engineering Corrective Actions:' : 'دستورالعمل‌ها و راهکارهای اصلاحی مهندسی:'}
+            </span>
+            <ul className="space-y-1 text-slate-300 text-[11px]">
+              {(isEn ? structResult.remedialGuidance.actionsEn : structResult.remedialGuidance.actionsFa).map((act, idx) => (
+                <li key={idx} className="flex items-start gap-2 bg-slate-900/50 p-2 rounded border border-industrial-border/60">
+                  <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                    {idx + 1}
+                  </span>
+                  <span>{act}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Structural Engineering & Civil BOM Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1292,9 +1569,21 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               <span className="text-slate-400">{isEn ? 'Compression Load per Post:' : 'نیروی فشاری روی هر پایه (Compression):'}</span>
               <span className="font-mono text-slate-200">{structResult.compressionPerPostKn} kN</span>
             </div>
-            <div className="flex justify-between items-center py-1.5">
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Lateral Shear Load per Post:' : 'نیروی برشی جانبی هر پایه (Lateral Shear):'}</span>
               <span className="font-mono text-slate-200">{structResult.lateralShearPerPostKn} kN</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
+              <span className="text-slate-400">{isEn ? 'Broms Pile Section & Lateral FoS:' : 'مقطع فولادی برمز و ضریب جانبی:'}</span>
+              <span className="font-mono text-industrial-accent">
+                {structResult.bromsPileSection} (FoS = {structResult.fosLateral})
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-slate-400">{isEn ? 'Ultimate Skin-Friction Uplift (T_ult):' : 'ظرفیت کشش نهایی جدار خاک (T_ult):'}</span>
+              <span className="font-mono text-industrial-success">
+                {structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post (FoS = {structResult.fosUplift})
+              </span>
             </div>
           </div>
         </div>
