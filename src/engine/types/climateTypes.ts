@@ -16,6 +16,11 @@ export type SoilClassification =
 
 export type SiteDrainageCondition = 'well_drained' | 'moderate' | 'poor_flood_prone';
 
+export type InstallationEnvironment =
+  | 'ground_mount'             // نیروگاه زمینی / زمین باز
+  | 'industrial_shed'          // سقف سوله صنعتی (ورق ذوزنقه‌ای / ساندویچ پانل / Standing Seam)
+  | 'rooftop_flat_concrete';   // پشت‌بام بتنی مسطح ساختمان
+
 export interface ClimateCity {
   id: string;
   nameFa: string;
@@ -71,5 +76,10 @@ export interface SiteGeotechnicalOverrides {
   drainageCondition?: SiteDrainageCondition;
   groundwaterDepthM?: number;
   foundationType?: string;
+  installationEnvironment?: InstallationEnvironment;
+  customEmbedmentDepthM?: number;
+  customPostsPerTable?: number;
+  groundClearanceM?: number;
+  arrayTiltDeg?: number;
   customNotes?: string;
 }

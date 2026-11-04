@@ -33,7 +33,7 @@ import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 import { getClimateData } from '../engine/climaticData';
 import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
 import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
-import { type SoilType } from '../engine/structuralEngine';
+import { calculateStructuralAndFoundations, type FoundationType, type SoilType } from '../engine/structuralEngine';
 import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/types/climateTypes';
 import { buildProvenanceRows } from '../engine/provenance/provenanceBuilder';
 
@@ -175,30 +175,100 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     }
   };
 
-  // Ambiguity A: structure recommendation with trace_id for 5-coordinate integration checks
+  // Single-source foundation recommendation and pile sizing (Requirement 2: unified calculation)
   const handleRunStructureRecommendation = () => {
     setIsRunningStructure(true);
     setTimeout(() => {
-      const input: StructuralRecommendationInput = {
+      const resolvedFoundationType =
+        (siteOverrides?.foundationType as FoundationType) ??
+        (siteOverrides?.installationEnvironment === 'industrial_shed'
+          ? 'shed_roof_clamp_rail'
+          : siteOverrides?.installationEnvironment === 'rooftop_flat_concrete'
+          ? 'rooftop_ballasted_block'
+          : siteOverrides?.soilType === 'rocky_limestone'
+          ? 'pre_drilled_grouted_pile'
+          : 'rammed_steel_pile');
+
+      const frostDepthCm = siteOverrides?.frostDepthCm ?? city.frostDepthCm ?? 30;
+      const basicWindSpeedKmh = siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 120;
+      const groundSnowLoadKgM2 = siteOverrides?.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 50;
+      const arrayTiltDeg = siteOverrides?.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28;
+      const groundClearanceM = siteOverrides?.groundClearanceM ?? 0.9;
+      const soilType = (siteOverrides?.soilType ?? city.soilType ?? 'dense_sand_gravel') as SoilType;
+      const soilBearingCapacityKpa = siteOverrides?.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? 220;
+      const soilInternalFrictionAngleDeg = siteOverrides?.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? 32;
+      const soilCohesionKpa = siteOverrides?.soilCohesionKpa ?? city.soilCohesionKpa ?? 15;
+      const soilDensityKnM3 = siteOverrides?.soilDensityKnM3 ?? city.soilDensityKnM3 ?? 18.0;
+      const postsPerTable = siteOverrides?.customPostsPerTable ?? 4;
+      const elevationM = city.elevationM || 0;
+
+      // Master calculation from structuralEngine (identical to StructuralFoundationTab and OfficialReportModal)
+      const structCalc = calculateStructuralAndFoundations({
+        totalModulesCount: 140,
+        moduleLengthM: 2.278,
+        moduleWidthM: 1.134,
+        moduleWeightKg: 28.5,
+        tablesCount: 5,
+        modulesPerTable: 28,
+        arrayTiltDeg,
+        groundClearanceM,
+        basicWindSpeedKmh,
+        groundSnowLoadKgM2,
+        foundationType: resolvedFoundationType,
+        soilType,
+        soilBearingCapacityKpa,
+        soilInternalFrictionAngleDeg,
+        soilCohesionKpa,
+        soilDensityKnM3,
+        annualRainfallMm: siteOverrides?.annualRainfallMm ?? city.annualRainfallMm ?? 200,
+        frostDepthCm,
+        seismicZoneCoefficientA: siteOverrides?.seismicZoneCoefficientA ?? city.seismicZoneCoefficientA ?? 0.30,
+        elevationM,
+        customEmbedmentDepthM: siteOverrides?.customEmbedmentDepthM,
+        customPostsPerTable: siteOverrides?.customPostsPerTable,
+      });
+
+      // Also get multi-criteria ranking
+      const recInput: StructuralRecommendationInput = {
         siteName: `${isEn ? city.nameEn : city.nameFa} (RFC 3.0 Integration Check)`,
         latitude: city.latitude,
         longitude: city.longitude,
-        soilClassification: (siteOverrides?.soilType ?? city.soilType ?? 'dense_sand_gravel') as SoilType,
-        soilBearingCapacityKpa: siteOverrides?.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? 220,
-        soilInternalFrictionAngleDeg: siteOverrides?.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? 32,
-        soilCohesionKpa: siteOverrides?.soilCohesionKpa ?? city.soilCohesionKpa ?? 15,
-        soilDensityKnM3: siteOverrides?.soilDensityKnM3 ?? city.soilDensityKnM3 ?? 18.0,
-        frostDepthCm: siteOverrides?.frostDepthCm ?? city.frostDepthCm ?? 20,
-        basicWindSpeedKmh: siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 130,
-        groundSnowLoadKgM2: siteOverrides?.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 0,
-        tableAreaM2: 52.0,
-        arrayTiltDeg: city.optimalTiltAnnualDeg || 31,
-        postsPerTable: 4,
-        clearanceHeightM: 1.2,
+        soilClassification: soilType,
+        soilBearingCapacityKpa,
+        soilInternalFrictionAngleDeg,
+        soilCohesionKpa,
+        soilDensityKnM3,
+        frostDepthCm,
+        basicWindSpeedKmh,
+        groundSnowLoadKgM2,
+        tableAreaM2: structCalc.tableAreaM2,
+        arrayTiltDeg,
+        postsPerTable,
+        clearanceHeightM: groundClearanceM,
         slopeDeg: 2.0,
+        elevationM,
+        installationEnvironment: siteOverrides?.installationEnvironment,
       };
-      const res = recommendFoundation(input);
-      setStructureResult({ ...res, traceId: generateTraceId('TRC-STR') });
+      const recOutput = recommendFoundation(recInput);
+
+      setStructureResult({
+        ...recOutput,
+        primaryRecommendation: structCalc.foundationNameEn,
+        recommendedPileSizing: {
+          pileSection: structCalc.bromsPileSection as any,
+          embedmentDepthM: structCalc.recommendedDepthM,
+          minDepthForFrostM: structCalc.minDepthForFrostM,
+          lateralCapacityKn: Number((structCalc.fosLateral * structCalc.lateralShearPerPostKn).toFixed(1)),
+          appliedLateralShearKn: structCalc.lateralShearPerPostKn,
+          bendingMomentKnM: Number((structCalc.lateralShearPerPostKn * (groundClearanceM + 0.3 * structCalc.recommendedDepthM)).toFixed(2)),
+          allowableMomentKnM: structCalc.bromsPileSection === 'W6x12' ? 41.4 : structCalc.bromsPileSection === 'C150x50x2.5' ? 12.1 : 31.4,
+          fosLateral: structCalc.fosLateral,
+          fosMoment: structCalc.fosOverturningAnchored,
+          isFosSafe: structCalc.isStructurallySafe,
+          notes: structCalc.safetyReasonEn,
+        },
+        traceId: generateTraceId('TRC-STR'),
+      });
       setIsRunningStructure(false);
     }, 120);
   };

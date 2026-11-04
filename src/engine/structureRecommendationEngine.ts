@@ -41,6 +41,8 @@ export interface StructuralRecommendationInput {
   postsPerTable: number;
   /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
   clearanceHeightM: number;
+  elevationM?: number;
+  installationEnvironment?: 'ground_mount' | 'industrial_shed' | 'rooftop_flat_concrete';
 }
 
 export interface FoundationOptionScore {
@@ -165,6 +167,37 @@ const FOUNDATION_OPTIONS: FoundationOptionScore[] = [
     cons: ['Heavy concrete ballast tonnage and transport logistics'],
     estimatedCapexUsdPerKw: 26.5,
     installSpeedMwPerWeek: 0.8,
+  },
+  {
+    type: 'shed_roof_clamp_rail',
+    nameEn: 'Industrial Shed Roof Metal Clamp & Rail Mount',
+    nameFa: 'اتصال کلمپ و ریل مستقیم به سقف سوله (ورق ذوزنقه‌ای / ساندویچ‌پانل / درزجوش)',
+    suitabilityScore: 0,
+    rank: 0,
+    pros: [
+      'Zero ground penetration and zero concrete (0.0m driving depth)',
+      'Ultra-lightweight aluminum mounting (~3.5 kg/m²) adding negligible dead load to shed trusses',
+      'Fast installation with EPDM watertight gaskets and purlin self-tapping screws',
+      'Cost-effective: eliminates piling rigs, civil trenching, and concrete curing delays',
+    ],
+    cons: ['Requires verification of shed purlin gauge and rafter load capacity'],
+    estimatedCapexUsdPerKw: 11.5,
+    installSpeedMwPerWeek: 2.8,
+  },
+  {
+    type: 'rooftop_anchor_bolted',
+    nameEn: 'Rooftop Chemically Anchored Stanchion on Concrete Slab',
+    nameFa: 'پایه‌های مهارشده با انکربولت در دال بتنی سقف (Chemical Anchor Stanchion)',
+    suitabilityScore: 0,
+    rank: 0,
+    pros: [
+      'High structural rigidity and wind uplift resistance via chemical anchors in concrete slab',
+      'Zero ground penetration (0.0m driving into soil; 10cm anchor embedment in roof slab)',
+      'Dual-layer bituminous / polyurethane waterproofing seals roof membrane',
+    ],
+    cons: ['Requires drilling into structural concrete slab and specialized waterproofing flashing'],
+    estimatedCapexUsdPerKw: 17.0,
+    installSpeedMwPerWeek: 1.5,
   },
 ];
 

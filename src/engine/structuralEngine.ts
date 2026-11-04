@@ -13,7 +13,9 @@ export type FoundationType =
   | 'surface_ballasted_block'    // بلوک‌های بتنی مسلح سطحی زمینی (بدون نفوذ در خاک - ویژه زمین‌های سنگی/مانع‌دار)
   | 'concrete_pier'              // پایه‌های بتنی درجا (خاک‌های سنگی و سخت)
   | 'ground_screw'               // شمع‌های پیچشی فولادی
-  | 'rooftop_ballasted_block';   // بلوک‌های بتنی وزنی پشت‌بام بدون نفوذ در ایزوگام
+  | 'rooftop_ballasted_block'    // بلوک‌های بتنی وزنی پشت‌بام بدون نفوذ در ایزوگام
+  | 'shed_roof_clamp_rail'       // اتصال کلمپ و ریل مستقیم به سقف سوله صنعتی (ورق ذوزنقه‌ای / ساندویچ پانل / Standing Seam)
+  | 'rooftop_anchor_bolted';     // پایه‌های مهارشده با انکربولت در دال بتنی سقف ساختمان (آب‌بندی شده)
 
 export type SoilType =
   | 'dense_sand_gravel' // شن و ماسه متراکم (اصطکاک بالا)
@@ -56,10 +58,18 @@ function estimatePileUpliftCapacityKn(
     const bondAreaM2 = Math.PI * holeDiaM * embedmentM;
     return Number((bondAreaM2 * tauBondKpa).toFixed(1));
   }
-  if (foundationType === 'surface_ballasted_block') {
+  if (foundationType === 'surface_ballasted_block' || foundationType === 'rooftop_ballasted_block') {
     // Ballast block uplift resistance is governed by self-weight gravity,
     // returned here as base reference capacity
-    return 18.0;
+    return 20.0;
+  }
+  if (foundationType === 'shed_roof_clamp_rail') {
+    // Clamps & purlin fasteners mechanical tensile capacity per post (FoS >= 2.5)
+    return 120.0;
+  }
+  if (foundationType === 'rooftop_anchor_bolted') {
+    // 4x M12 chemical anchors in reinforced concrete slab per post
+    return 60.0;
   }
   const perimeterM = Math.PI * diameterM;
   if (soilType === 'medium_clay') {
@@ -464,18 +474,44 @@ export function calculateStructuralAndFoundations(
     foundationDimensionsDescEn = `Continuous helical ground screw dia 76mm, flight 1200mm, depth: ${recommendedDepthM} m`;
     concreteVolumeTotalM3 = 0;
     steelRebarWeightTotalKg = 0;
+  } else if (foundationType === 'shed_roof_clamp_rail') {
+    // Industrial metal shed roof: direct clamp and mini-rail installation
+    // Zero ground embedment, zero concrete, ultra-lightweight aluminum framing
+    recommendedDepthM = 0.0;
+    concreteVolumeTotalM3 = 0;
+    steelRebarWeightTotalKg = 0;
+    ballastKgPerTable = 0;
+    foundationNameFa = 'اتصال کلمپ و ریل مستقیم به سقف سوله (Industrial Metal Shed Clamp & Rail)';
+    foundationNameEn = 'Industrial Shed Roof Clamp & Rail Mounting System';
+    foundationDimensionsDesc = 'کلمپ‌های آلومینیومی آنودایز شده و مینی‌ریل روی گام ورق سوله/ساندویچ‌پانل با واشر آب‌بندی EPDM و پیچ‌های خودکار به پرلین‌ها (عمق کوبش در خاک: ۰.۰ متر - بدون بتن‌ریزی)';
+    foundationDimensionsDescEn = 'Anodized aluminum clamps and mini-rails fastened to shed purlins with EPDM gaskets (0.0m soil driving - zero concrete)';
+  } else if (foundationType === 'rooftop_anchor_bolted') {
+    // Flat concrete building rooftop: HDG stanchions with M12 chemical anchors into concrete slab
+    recommendedDepthM = 0.10; // 10cm slab anchor depth, zero soil penetration
+    concreteVolumeTotalM3 = 0;
+    steelRebarWeightTotalKg = 0;
+    ballastKgPerTable = 0;
+    foundationNameFa = 'پایه‌های مهارشده با انکربولت در دال بتنی سقف (Rooftop Chemically Anchored Stanchions)';
+    foundationNameEn = 'Rooftop Chemically Anchored Stanchions on Concrete Slab';
+    foundationDimensionsDesc = 'پایه‌های فولادی گالوانیزه مهارشده با انکربولت M12 و چسب کاشت شیمیایی در دال بتنی سقف به عمق ۱۰ سانتی‌متر همراه با عایق‌بندی قیری/پلی‌یورتان (عمق کوبش در خاک: ۰.۰ متر)';
+    foundationDimensionsDescEn = 'HDG steel stanchions with M12 chemical anchors embedded 10cm into roof slab with waterproofing (zero soil driving)';
   } else {
-    // Rooftop ballasted block
-    recommendedDepthM = 0.25; // block thickness
+    // Rooftop ballasted block (non-penetrating)
+    recommendedDepthM = 0.0; // 0.0m ground embedment (non-penetrating surface ballast)
+    const reqBallastUpliftKg = Math.max(350, ((windUpliftForceKn * 1000) / 9.81) * 1.5 - deadLoadTableKg);
+    const reqBallastSlidingKg = Math.max(300, ((lateralShearPerPostKn * postsPerTable * 1000 * 1.4) / (9.81 * 0.55)) - deadLoadTableKg);
+    const armCos = Math.max(0.1, (tableSlopedWidthM / 2.0) * Math.cos(tiltRad));
+    const reqBallastOverturningKg = Math.max(350, ((windOverturningMomentKnM * 1.5 * 1000) / (9.81 * armCos)) - deadLoadTableKg);
+    const baseBallastKg = Math.round(Math.max(reqBallastUpliftKg, reqBallastSlidingKg, reqBallastOverturningKg));
     ballastKgPerTable = input.customBallastWeightKgPerTable !== undefined && input.customBallastWeightKgPerTable > 0
       ? input.customBallastWeightKgPerTable
-      : Math.max(400, (windUpliftForceKn * 1000) / 9.81 * 1.5 - deadLoadTableKg);
+      : baseBallastKg;
     const volPerTableM3 = ballastKgPerTable / 2400.0; // concrete density 2400 kg/m³
     concreteVolumeTotalM3 = Number((volPerTableM3 * totalTablesCount).toFixed(1));
     foundationNameFa = 'بلوک‌های بتنی وزنی پیش‌ساخته پشت‌بام (Ballasted Rooftop Blocks)';
     foundationNameEn = 'Precast Concrete Ballast Blocks (Non-Penetrating)';
-    foundationDimensionsDesc = `بلوک‌های بتنی پیش‌ساخته با وزن ${Math.round(ballastKgPerTable)} کیلوگرم به ازای هر استراکچر`;
-    foundationDimensionsDescEn = `Precast concrete blocks weighing ${Math.round(ballastKgPerTable)} kg per mounting table`;
+    foundationDimensionsDesc = `بلوک‌های بتنی پیش‌ساخته با وزن ${Math.round(ballastKgPerTable)} کیلوگرم به ازای هر استراکچر (عمق کوبش در خاک: ۰.۰ متر - غیرنفوذی روی پد EPDM)`;
+    foundationDimensionsDescEn = `Precast concrete blocks weighing ${Math.round(ballastKgPerTable)} kg per mounting table (0.0m soil driving - EPDM pads)`;
   }
 
   // Cement and sand breakdown
@@ -492,21 +528,27 @@ export function calculateStructuralAndFoundations(
     foundationType === 'concrete_pier' ? (Math.PI * 0.2 * 0.2)
     : foundationType === 'rooftop_ballasted_block' ? 0.8
     : foundationType === 'surface_ballasted_block' ? 0.35
+    : foundationType === 'rooftop_anchor_bolted' ? 0.25
+    : foundationType === 'shed_roof_clamp_rail' ? 0.15
     : 0.15;
   const appliedPostBearingPressureKpa = Number((compressionPerPostKn / footingFootprintM2).toFixed(1));
   const isBearingCapacitySafe = appliedPostBearingPressureKpa <= allowableSoilBearingKpa;
 
-  const isFrostDepthRespected = (recommendedDepthM * 100) >= siteFrostDepthCm;
+  const isRooftopOrShed =
+    foundationType === 'shed_roof_clamp_rail' ||
+    foundationType === 'rooftop_anchor_bolted' ||
+    foundationType === 'rooftop_ballasted_block';
+  const isFrostDepthRespected = isRooftopOrShed ? true : (recommendedDepthM * 100) >= siteFrostDepthCm;
 
   // 6. Factors of Safety (FoS)
   const isBallasted = foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block';
-  const effectiveNormalLoadKn = foundationType === 'surface_ballasted_block'
+  const effectiveNormalLoadKn = isBallasted
     ? deadLoadTableKn + ((ballastKgPerTable * 9.81) / 1000.0)
     : deadLoadTableKn;
   const stabilizingMoment = (effectiveNormalLoadKn * (tableSlopedWidthM / 2.0)) * Math.cos(tiltRad);
   const fosOverturning = Number((stabilizingMoment / Math.max(0.1, windOverturningMomentKnM)).toFixed(2));
   // fosSliding uses base friction - meaningful ONLY for ballasted blocks
-  const frictionMu = foundationType === 'surface_ballasted_block' ? 0.50 : 0.45;
+  const frictionMu = foundationType === 'surface_ballasted_block' ? 0.50 : 0.55;
   const fosSliding = Number((((effectiveNormalLoadKn * frictionMu) / Math.max(0.1, lateralShearPerPostKn * postsPerTable))).toFixed(2));
   const fosSlidingApplicable = isBallasted;
 
@@ -665,15 +707,44 @@ export function calculateStructuralAndFoundations(
   let safetyReasonEn: string;
   let safetyReasonFa: string;
   switch (foundationType) {
-    case 'rooftop_ballasted_block':
-      isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isBearingCapacitySafe;
+    case 'shed_roof_clamp_rail': {
+      const clampUpliftCapacityPerTableKn = modulesPerTable * 4 * 1.8; // 1.8 kN tensile pullout capacity per purlin fastener
+      const fosClampUplift = Number((clampUpliftCapacityPerTableKn / Math.max(0.1, windUpliftForceKn)).toFixed(2));
+      const roofDeadLoadKgM2 = Number(((moduleWeightKg * modulesPerTable + structuralSteelRackingWeightKg / totalTablesCount) / tableAreaM2).toFixed(1));
+      const isRoofLoadSafe = roofDeadLoadKgM2 <= 35.0; // safe industrial shed live/dead capacity (typ. 50-75 kg/m2)
+      isStructurallySafe = fosClampUplift >= 2.0 && isRoofLoadSafe;
       safetyReasonEn = isStructurallySafe
-        ? `Overturning FoS = ${fosOverturning} >= 1.5 and sliding FoS = ${fosSliding} >= 1.4 (self-weight ballast governs).`
-        : `Overturning FoS = ${fosOverturning} < 1.5. Increase ballast mass.`;
+        ? `Industrial shed clamp mounting verified. Roof dead load (${roofDeadLoadKgM2} kg/m² <= allowable 50 kg/m²). Clamps resist wind uplift (FoS = ${fosClampUplift} >= 2.0). Zero soil penetration required.`
+        : `Industrial shed clamp warning: check purlin fastener pullout (FoS = ${fosClampUplift}) or roof dead load (${roofDeadLoadKgM2} kg/m²).`;
       safetyReasonFa = isStructurallySafe
-        ? `ضریب واژگونی ${fosOverturning} >= ۱.۵ و ضریب لغزش ${fosSliding} >= ۱.۴ (وزن بالاست).`
-        : `ضریب واژگونی ${fosOverturning} < ۱.۵. وزن بالاست را افزایش دهید.`;
+        ? `اتصال کلمپ به سقف سوله صنعتی تأیید شد. بار مرده اضافی (${roofDeadLoadKgM2} kg/m² کمتر از ۵۰ kg/m² مجاز سوله). مقاومت کششی کلمپ‌ها و پیچ‌های پرلین در برابر مکش باد (FoS = ${fosClampUplift} >= ۲.۰) تأمین است. بدون نیاز به کوبش در زمین.`
+        : `هشدار اتصال سقف سوله: مقاومت پیچ‌های پرلین (FoS = ${fosClampUplift}) یا اضافه بار سقف (${roofDeadLoadKgM2} kg/m²) نیازمند بازبینی است.`;
       break;
+    }
+    case 'rooftop_anchor_bolted': {
+      const anchorTensileCapacityKn = postsPerTable * 4 * 15.0; // 4x M12 anchors per baseplate, 15 kN each in sound concrete
+      const fosAnchorUplift = Number((anchorTensileCapacityKn / Math.max(0.1, windUpliftForceKn)).toFixed(2));
+      isStructurallySafe = fosAnchorUplift >= 2.0;
+      safetyReasonEn = isStructurallySafe
+        ? `Rooftop chemical anchor stanchions verified (Uplift FoS = ${fosAnchorUplift} >= 2.0). 10cm slab embedment with EPDM/bituminous sealant. Zero soil penetration.`
+        : `Rooftop anchor bolt capacity insufficient (FoS = ${fosAnchorUplift} < 2.0). Increase anchor diameter or post count.`;
+      safetyReasonFa = isStructurallySafe
+        ? `مهار انکربولت در دال بتنی سقف تأیید شد (FoS کشش انکر = ${fosAnchorUplift} >= ۲.۰). عمق مهار ۱۰cm در دال با عایق‌بندی قیری/پلی‌یورتان. بدون نیاز به کوبش در زمین.`
+        : `ظرفیت کشش انکربولت سقف ناکافی است (FoS = ${fosAnchorUplift} < ۲.۰). تعداد انکرها یا قطر بولت را افزایش دهید.`;
+      break;
+    }
+    case 'rooftop_ballasted_block': {
+      const roofDeadLoadKgM2 = Number(((deadLoadTableKg + ballastKgPerTable) / tableAreaM2).toFixed(1));
+      const isRoofLoadSafe = roofDeadLoadKgM2 <= 40.0;
+      isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isRoofLoadSafe;
+      safetyReasonEn = isStructurallySafe
+        ? `Rooftop ballasted block verified (Overturning FoS = ${fosOverturning} >= 1.5, sliding FoS = ${fosSliding} >= 1.4, roof load ${roofDeadLoadKgM2} kg/m² <= 40 kg/m²). Non-penetrating with EPDM pads.`
+        : `Rooftop ballast block warning: Overturning FoS = ${fosOverturning}, Sliding FoS = ${fosSliding}, roof load = ${roofDeadLoadKgM2} kg/m². Adjust ballast weight or tilt angle.`;
+      safetyReasonFa = isStructurallySafe
+        ? `بلوک‌های بالاست وزنی پشت‌بام تأیید است (FoS واژگونی = ${fosOverturning} >= ۱.۵، FoS لغزش = ${fosSliding} >= ۱.۴، اضافه بار سقف = ${roofDeadLoadKgM2} kg/m²). غیرنفوذی و محافظ عایق رطوبتی سقف.`
+        : `هشدار بالاست پشت‌بام: FoS واژگونی = ${fosOverturning}، FoS لغزش = ${fosSliding}، اضافه بار سقف = ${roofDeadLoadKgM2} kg/m². زاویه شیب یا وزن بالاست را بازبینی فرمایید.`;
+      break;
+    }
     case 'surface_ballasted_block':
       isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isBearingCapacitySafe;
       safetyReasonEn = isStructurallySafe

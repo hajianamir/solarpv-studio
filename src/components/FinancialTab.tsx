@@ -335,6 +335,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           : foundationType === 'ground_screw' ? 0.0016
           : foundationType === 'pre_drilled_grouted_pile' ? 0.0019
           : foundationType === 'surface_ballasted_block' ? 0.0022
+          : foundationType === 'shed_roof_clamp_rail' ? -0.0030
+          : foundationType === 'rooftop_anchor_bolted' ? 0.0010
           : 0.0;
 
         return (
