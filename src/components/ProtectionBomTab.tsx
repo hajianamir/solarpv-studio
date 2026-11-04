@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Shield,
+  ShieldAlert,
   Zap,
   CheckCircle2,
   AlertTriangle,
@@ -24,6 +25,7 @@ import {
   calculateLightningProtection,
   type ConductorMaterial,
   type InsulationType,
+  type InstallationMethod,
   type UpstreamGroundingSystem,
   type ProtectionBomItem,
 } from '../engine/protectionBomEngine';
@@ -58,6 +60,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
 }) => {
   // Cable Run User Inputs
   const [ambientTemp, setAmbientTemp] = useState<number>(ambientTempC);
+  const [installationMethod, setInstallationMethod] = useState<InstallationMethod>('cable_tray');
   const [dcStringLengthM, setDcStringLengthM] = useState<number>(35);
   const [dcStringMaterial, setDcStringMaterial] = useState<ConductorMaterial>('copper');
   const [dcStringInsulation, setDcStringInsulation] = useState<InsulationType>('xlpe');
@@ -96,6 +99,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         allowableDropPct: 1.5,
         isDc: true,
         ambientTempC: ambientTemp,
+        installationMethod,
       },
       {
         id: 'dc-main',
@@ -109,6 +113,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         allowableDropPct: 1.5,
         isDc: true,
         ambientTempC: ambientTemp,
+        installationMethod,
       },
       {
         id: 'ac-output',
@@ -125,6 +130,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         isDc: false,
         isThreePhase,
         ambientTempC: ambientTemp,
+        installationMethod,
       },
     ];
 
@@ -141,6 +147,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         allowableDropPct: 0.8,
         isDc: true,
         ambientTempC: Math.min(35, ambientTemp), // Battery rooms are temperature controlled
+        installationMethod,
       });
     }
 
@@ -166,6 +173,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
     inverterDcContinuousCurrentAmps,
     systemDcVoltage,
     ambientTemp,
+    installationMethod,
   ]);
 
   // 2. Earthing Analysis (IEEE 80 Sverak + Touch/Step verification)
@@ -375,18 +383,34 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 <Sliders className="w-4 h-4 text-industrial-warning" />
                 {lang === 'fa' ? 'تنظیمات کابل‌کشی و دمای محیطی' : 'Cable Distance, Material & Environmental Settings'}
               </h3>
-              <div className="flex items-center gap-2 text-xs bg-industrial-surface px-3 py-1.5 rounded-lg border border-industrial-border">
-                <Thermometer className="w-3.5 h-3.5 text-industrial-warning" />
-                <span className="text-slate-400">{lang === 'fa' ? 'دمای طراحی کابل‌ها:' : 'Design Ambient Temp:'}</span>
-                <input
-                  type="number"
-                  min="25"
-                  max="55"
-                  value={ambientTemp}
-                  onChange={(e) => setAmbientTemp(Number(e.target.value) || 40)}
-                  className="w-14 studio-input text-xs py-0.5 px-1 font-mono text-center"
-                />
-                <span className="text-slate-300 font-mono">°C</span>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex items-center gap-1.5 text-xs bg-industrial-surface px-2.5 py-1 rounded-lg border border-industrial-border">
+                  <Sliders className="w-3.5 h-3.5 text-industrial-accent" />
+                  <span className="text-slate-400">{lang === 'fa' ? 'روش نصب:' : 'Method:'}</span>
+                  <select
+                    value={installationMethod}
+                    onChange={(e) => setInstallationMethod(e.target.value as InstallationMethod)}
+                    className="studio-input text-xs py-0.5 px-1.5 bg-industrial-bg"
+                  >
+                    <option value="cable_tray">{lang === 'fa' ? 'سینی کابل (kg=0.82)' : 'Tray (0.82)'}</option>
+                    <option value="in_conduit">{lang === 'fa' ? 'داخل داکت/لوله (kg=0.75)' : 'Conduit (0.75)'}</option>
+                    <option value="direct_buried">{lang === 'fa' ? 'دفنی خاک (kg=0.70)' : 'Buried (0.70)'}</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs bg-industrial-surface px-3 py-1 rounded-lg border border-industrial-border">
+                  <Thermometer className="w-3.5 h-3.5 text-industrial-warning" />
+                  <span className="text-slate-400">{lang === 'fa' ? 'دمای طراحی:' : 'Design Temp:'}</span>
+                  <input
+                    type="number"
+                    min="25"
+                    max="55"
+                    value={ambientTemp}
+                    onChange={(e) => setAmbientTemp(Number(e.target.value) || 40)}
+                    className="w-14 studio-input text-xs py-0.5 px-1 font-mono text-center"
+                  />
+                  <span className="text-slate-300 font-mono">°C</span>
+                </div>
               </div>
             </div>
 
@@ -549,6 +573,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     <th className="p-2.5">{lang === 'fa' ? 'جریان مجاز (Iz)' : 'De-rated Ampacity'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'کابل و رشته‌های موازی' : 'Selected Parallel Spec'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'افت ولتاژ' : 'Voltage Drop'}</th>
+                    <th className="p-2.5">{lang === 'fa' ? 'اتصال کوتاه (IEC 60364)' : 'SC Withstand'}</th>
+                    <th className="p-2.5">{lang === 'fa' ? 'خازن و جریان شارژ' : 'Charging / Cap'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'تلفات ژول' : 'Joule Loss'}</th>
                     <th className="p-2.5 text-center">{lang === 'fa' ? 'وضعیت' : 'Status'}</th>
                   </tr>
@@ -564,7 +590,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         {run.config.designCurrentAmps.toFixed(1)} A
                       </td>
                       <td className="p-2.5 font-mono">
-                        <span className={run.isAmpacityCompliant ? 'text-teal-300' : 'text-industrial-error'}>
+                        <span className={run.isAmpacityCompliant ? 'text-teal-300' : 'text-industrial-error font-bold'}>
                           {run.totalThermalAmpacityAmps} A
                         </span>
                         <span className="block text-[9px] text-slate-400">
@@ -588,6 +614,24 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         <span className="block text-[9px] text-slate-400">
                           {lang === 'fa' ? `مجاز: ≤${run.config.allowableDropPct}٪` : `Max: ${run.config.allowableDropPct}%`}
                         </span>
+                      </td>
+                      <td className="p-2.5 font-mono text-xs">
+                        <span className={run.isShortCircuitCompliant ? 'text-teal-300 font-bold' : 'text-industrial-error font-bold'}>
+                          {run.totalEffectiveCrossSectionMm2} mm²
+                        </span>
+                        <span className="block text-[9px] text-slate-400">
+                          {lang === 'fa' ? `نیاز: ${run.shortCircuitWithstandMinMm2} mm²` : `Min: ${run.shortCircuitWithstandMinMm2} mm²`}
+                        </span>
+                      </td>
+                      <td className="p-2.5 font-mono text-xs">
+                        {run.config.isDc ? (
+                          <span className="text-slate-500">0.0 A (DC)</span>
+                        ) : (
+                          <>
+                            <span className="text-sky-300 font-bold">{run.chargingCurrentAmps} A</span>
+                            <span className="block text-[9px] text-slate-400">{run.totalCapacitanceUf} µF</span>
+                          </>
+                        )}
                       </td>
                       <td className="p-2.5 font-mono">
                         <span className="text-industrial-warning">{run.powerLossWatts} W</span>
@@ -709,6 +753,35 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
             </div>
 
+            {/* Integrated Earthing Compliance Notice */}
+            <div className={`p-3 rounded-lg border text-xs mb-4 flex items-center justify-between ${
+              earthingResult.isEarthingSafe
+                ? 'bg-emerald-950/40 border-emerald-800 text-emerald-200'
+                : 'bg-red-950/40 border-red-800 text-red-200'
+            }`}>
+              <div className="flex items-center gap-2.5">
+                {earthingResult.isEarthingSafe ? (
+                  <CheckCircle2 className="w-5 h-5 text-industrial-success shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-industrial-error shrink-0" />
+                )}
+                <div>
+                  <strong className="block font-bold">
+                    {lang === 'fa'
+                      ? earthingResult.isEarthingSafe
+                        ? 'انطباق جامع سیستم ارتینگ (مقاومت الکتریکی، ولتاژ گام و ولتاژ لمس)'
+                        : 'عدم انطباق جامع سیستم ارتینگ (خطر پتانسیل گام/لمس یا مقاومت بیش از حد)'
+                      : earthingResult.isEarthingSafe
+                      ? 'Comprehensive Earthing Compliance (Resistance, Step & Touch Potentials)'
+                      : 'Earthing Non-Compliance (Hazardous Step/Touch Potential or Excessive Resistance)'}
+                  </strong>
+                  <span className="text-[11px] text-slate-300 block mt-0.5">
+                    {lang === 'fa' ? earthingResult.disclaimerFa : earthingResult.disclaimerEn}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-4">
               <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
@@ -810,6 +883,19 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 ? 'حفاظت در برابر برخورد مستقیم و اضافه ولتاژ صاعقه (IEC 62305 / IEC 62548)'
                 : 'Direct Strike & Surge Lightning Protection (IEC 62305)'}
             </h3>
+
+            {/* Lightning Disclaimer Notice */}
+            <div className="p-3 bg-sky-950/40 border border-sky-800/80 rounded-lg text-xs text-sky-200 mb-4 flex items-start gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-white block font-bold mb-0.5">
+                  {lang === 'fa' ? 'طبیعت ارزیابی صاعقه (Preliminary Screening):' : 'Preliminary Risk Screening:'}
+                </strong>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  {lang === 'fa' ? lightningResult.notesFa[0] : lightningResult.notesEn[0]}
+                </p>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-4">
               <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">

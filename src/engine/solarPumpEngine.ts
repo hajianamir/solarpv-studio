@@ -33,18 +33,38 @@ export interface SolarPumpResult {
 }
 
 export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
-  const {
-    wellDepthM,
-    tankHeightM,
-    pipeLengthM,
-    pipeDiameterMm,
-    dailyWaterRequirementM3,
-    irrigationType,
-    peakSunHours,
-  } = input;
+  const wellDepthM = Math.max(0, input.wellDepthM || 0);
+  const tankHeightM = Math.max(0, input.tankHeightM || 0);
+  const pipeLengthM = Math.max(0, input.pipeLengthM || 0);
+  const pipeDiameterMm = Math.max(15, input.pipeDiameterMm || 63);
+  const dailyWaterRequirementM3 = Math.max(0, input.dailyWaterRequirementM3 || 0);
+  const peakSunHours = Math.max(1.0, input.peakSunHours || 5.0);
+  const irrigationType = input.irrigationType || 'flooding_storage';
 
   // 1. Static Head: well depth to ground + ground to tank surface
   const staticHeadM = wellDepthM + tankHeightM;
+
+  if (dailyWaterRequirementM3 === 0) {
+    return {
+      staticHeadM,
+      frictionHeadM: 0,
+      pressureHeadM: 0,
+      totalDynamicHeadTdhM: staticHeadM,
+      flowRateM3PerHour: 0,
+      flowRateLitersPerSecond: 0,
+      hydraulicPowerWatts: 0,
+      pumpEfficiencyPct: 52,
+      recommendedMotorPowerKw: 0,
+      recommendedMotorPowerHp: 0,
+      recommendedVfdDriveKw: 0,
+      recommendedPvArrayKwp: 0,
+      arrayToPumpRatio: 1.35,
+      monthlyWaterDeliveryM3: new Array(12).fill(0),
+      worstMonthDailyWaterM3: 0,
+      waterDeliveryCostPerM3Toman: 0,
+      notesFa: ['تقاضای آب ورودی صفر است؛ توان پمپ و آرایه خورشیدی برابر با صفر محاسبه گردید.'],
+    };
+  }
 
   // 2. Effective pumping hours per day (typically PSH * 0.90 for high efficiency band)
   const pumpingHours = Math.max(3.5, peakSunHours * 0.95);
@@ -55,7 +75,7 @@ export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
   // 3. Pipe friction head loss (Hazen-Williams formula for polyethylene pipe C=140)
   // h_f = 10.67 * L * Q^1.852 / (C^1.852 * D^4.87)
   // For zero pipe length or zero flow rate, friction is physically zero (no artificial floor).
-  const dMeters = Math.max(0.02, pipeDiameterMm / 1000.0);
+  const dMeters = Math.max(0.015, pipeDiameterMm / 1000.0);
   const frictionFactor = 10.67 * Math.max(0, pipeLengthM) * Math.pow(flowRateM3PerSec, 1.852);
   const denom = Math.pow(140.0, 1.852) * Math.pow(dMeters, 4.87);
   const frictionHeadM = (pipeLengthM <= 0 || dailyWaterRequirementM3 <= 0)

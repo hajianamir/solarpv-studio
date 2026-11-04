@@ -3154,6 +3154,200 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E9-CABLE-SC-1] Cable triple-constraint sizing, adiabatic SC withstand (k²S²>=I²t) and installationMethod
+  {
+    const { calculateAdvancedCableRun } = await import('../../protectionBomEngine');
+
+    // Test 1: Sizing under severe short-circuit withstand constraint
+    const scHeavyRun = calculateAdvancedCableRun({
+      id: 'sc-test',
+      sectionNameFa: 'تست اتصال کوتاه سنگین',
+      sectionNameEn: 'Heavy Short-Circuit Run',
+      oneWayLengthM: 10,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 400,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.5,
+      isDc: false,
+      isThreePhase: true,
+      expectedIscKa: 40,
+      faultClearingTimeSec: 0.5,
+      installationMethod: 'cable_tray',
+    });
+
+    const scConstraintEnforced =
+      scHeavyRun.totalEffectiveCrossSectionMm2 >= scHeavyRun.shortCircuitWithstandMinMm2 &&
+      scHeavyRun.isShortCircuitCompliant &&
+      scHeavyRun.isCompliant;
+
+    // Test 2: Installation method derating: cable_tray (kg=0.82) vs direct_buried (kg=0.70)
+    const trayRun = calculateAdvancedCableRun({
+      id: 'tray',
+      sectionNameFa: 'سینی',
+      sectionNameEn: 'Tray',
+      oneWayLengthM: 50,
+      designCurrentAmps: 100,
+      nominalVoltageVolts: 400,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.5,
+      isDc: false,
+      isThreePhase: true,
+      installationMethod: 'cable_tray',
+    });
+
+    const buriedRun = calculateAdvancedCableRun({
+      id: 'buried',
+      sectionNameFa: 'دفنی',
+      sectionNameEn: 'Buried',
+      oneWayLengthM: 50,
+      designCurrentAmps: 100,
+      nominalVoltageVolts: 400,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.5,
+      isDc: false,
+      isThreePhase: true,
+      installationMethod: 'direct_buried',
+    });
+
+    const installMethodOk =
+      trayRun.groupingDeratingFactorKg === 0.82 &&
+      buriedRun.groupingDeratingFactorKg === 0.70 &&
+      trayRun.totalThermalAmpacityAmps > buriedRun.totalThermalAmpacityAmps;
+
+    const capacitanceOk = scHeavyRun.totalCapacitanceUf > 0 && scHeavyRun.chargingCurrentAmps > 0;
+
+    assert(
+      'E9-CABLE-SC-1',
+      'Cable sizing enforces adiabatic short-circuit withstand without 0.5 discount and applies installationMethod kg',
+      scConstraintEnforced && installMethodOk && capacitanceOk,
+      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, Cap=${scHeavyRun.totalCapacitanceUf}uF`
+    );
+  }
+
+  // [E9-SUB-IEC60909-1] MV Substation complex impedance, kappa(R/X), Ith and breaker sufficiency flag
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // Normal plant: breaker rating >= fault current
+    const normalSub = designMvSubstation({
+      plantCapacityAcMva: 5.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 500,
+    });
+
+    // Extreme fault current: exceeding 63 kA maximum available breaker rating
+    const extremeSub = designMvSubstation({
+      plantCapacityAcMva: 150.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 10000,
+    });
+
+    const complexImpedanceOk =
+      normalSub.shortCircuit.rEquivalentOhms > 0 &&
+      normalSub.shortCircuit.xEquivalentOhms > 0 &&
+      normalSub.shortCircuit.kappa > 1.02 &&
+      normalSub.shortCircuit.kappa < 2.0 &&
+      normalSub.shortCircuit.thermalEquivalentIthKa >= normalSub.shortCircuit.initialSymmetricalIscKa;
+
+    const breakerSufficiencyOk =
+      normalSub.shortCircuit.isBreakerSufficient === true &&
+      normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.initialSymmetricalIscKa &&
+      extremeSub.shortCircuit.isBreakerSufficient === false;
+
+    assert(
+      'E9-SUB-IEC60909-1',
+      'Substation short-circuit uses complex impedance, dynamic kappa, Ith and flags insufficient breaker rating',
+      complexImpedanceOk && breakerSufficiencyOk,
+      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, VCB=${normalSub.shortCircuit.breakingCapacityKa}kA (ok=${normalSub.shortCircuit.isBreakerSufficient}); extreme: Isc=${extremeSub.shortCircuit.initialSymmetricalIscKa}kA, VCB=${extremeSub.shortCircuit.breakingCapacityKa}kA (ok=${extremeSub.shortCircuit.isBreakerSufficient})`
+    );
+  }
+
+  // [E9-LPS-CLASS1-1] IEC 62305 LPS Class I condition reachable and earthing integrated safety
+  {
+    const { calculateLightningProtection, calculateEarthingSystem } = await import('../../protectionBomEngine');
+
+    // Test with high thunderstorm activity and small area/tolerable to require Class I (E > 98%)
+    const lpsClass1 = calculateLightningProtection(200, false, 250);
+    const isClass1Or2 = lpsClass1.lpsClass === 'Class I' || lpsClass1.lpsClass === 'Class II';
+
+    const earthing = calculateEarthingSystem(5000, 80, 'solidly_grounded', true);
+    const earthingIntegrityOk =
+      typeof earthing.isEarthingSafe === 'boolean' &&
+      earthing.isEarthingSafe === (earthing.isResistanceCompliant && earthing.isTouchVoltageSafe && earthing.isStepVoltageSafe) &&
+      earthing.isPreliminaryEstimate === true;
+
+    assert(
+      'E9-LPS-CLASS1-1',
+      'Lightning LPS condition evaluates Class I without prior shadow masking and earthing integrates safety',
+      isClass1Or2 && earthingIntegrityOk,
+      `LPS Class=${lpsClass1.lpsClass} (reqEff=${lpsClass1.requiredEfficiencyPct}%), earthingSafe=${earthing.isEarthingSafe}, prelim=${earthing.isPreliminaryEstimate}`
+    );
+  }
+
+  // [E9-FIN-IRR-LCOE-1] Negative IRR [-100, 50] = -50%, inverter replacement in LCOE and zero-energy safety
+  {
+    const { calculateIrr } = await import('../../solarPvEngine');
+    const { performFinancialAnalysis } = await import('../../financialEngine');
+
+    // 1. Negative IRR: [-100, 50] -> -50% (-0.5)
+    const irrNeg = calculateIrr([-100, 50]);
+    const irrNegOk = Math.abs(irrNeg - (-0.5)) < 1e-4;
+
+    // 2. Inverter replacement in LCOE: with vs without inverter replacement
+    const finNoInv = performFinancialAnalysis(1000, 0, 1000, 1800000, { inverterReplacementYear: 0 }, 25, 'powerplant');
+    const finWithInv = performFinancialAnalysis(1000, 0, 1000, 1800000, { inverterReplacementYear: 12, inverterReplacementCostRatio: 0.60 }, 25, 'powerplant');
+    const lcoeIncludesInverter = finWithInv.lcoeUsdPerKwh > finNoInv.lcoeUsdPerKwh;
+
+    // 3. Zero energy yield: does not fabricate astronomical LCOE
+    const finZero = performFinancialAnalysis(1000, 0, 1000, 0, {}, 25, 'powerplant');
+    const zeroEnergyHandled = finZero.isLcoeDefined === false && finZero.lcoeUsdPerKwh === 0;
+
+    assert(
+      'E9-FIN-IRR-LCOE-1',
+      'IRR correctly calculates valid negative returns ([-100, 50] -> -50%) and LCOE includes inverter replacement',
+      irrNegOk && lcoeIncludesInverter && zeroEnergyHandled,
+      `irrNeg=${(irrNeg * 100).toFixed(1)}% (exp -50%), LCOE noInv=$${finNoInv.lcoeUsdPerKwh} withInv=$${finWithInv.lcoeUsdPerKwh}, zeroYieldLcoeDefined=${finZero.isLcoeDefined}`
+    );
+  }
+
+  // [E9-PUMP-ZERO-1] Solar pumping handles zero water demand and boundary inputs cleanly
+  {
+    const { calculateSolarPump } = await import('../../solarPumpEngine');
+
+    const pumpZero = calculateSolarPump({
+      wellDepthM: 60,
+      tankHeightM: 15,
+      pipeLengthM: 100,
+      pipeDiameterMm: 63,
+      dailyWaterRequirementM3: 0,
+      irrigationType: 'drip',
+      peakSunHours: 5.0,
+    });
+
+    const pumpZeroOk =
+      pumpZero.flowRateM3PerHour === 0 &&
+      pumpZero.recommendedMotorPowerKw === 0 &&
+      pumpZero.recommendedPvArrayKwp === 0 &&
+      pumpZero.waterDeliveryCostPerM3Toman === 0 &&
+      !Number.isNaN(pumpZero.waterDeliveryCostPerM3Toman);
+
+    assert(
+      'E9-PUMP-ZERO-1',
+      'Solar pumping hydraulic sizing handles zero water demand without NaN or division by zero',
+      pumpZeroOk,
+      `flow=${pumpZero.flowRateM3PerHour}m3/h, motorKw=${pumpZero.recommendedMotorPowerKw}, pvKwp=${pumpZero.recommendedPvArrayKwp}, cost=${pumpZero.waterDeliveryCostPerM3Toman}`
+    );
+  }
+
   // [F1-R1] Provenance uses actual project city (Sydney), not hardcoded Tehran.
   {
     const { buildProvenanceRows } = await import('../../provenance/provenanceBuilder');

@@ -38,9 +38,14 @@ export interface ShortCircuitCalculation {
   initialSymmetricalIscKa: number; // I_sc'' (kA)
   peakDynamicIpKa: number;         // i_p (kA)
   breakingCapacityKa: number;      // Minimum required circuit breaker breaking rating
-  thermalEquivalentIthKa: number;
+  thermalEquivalentIthKa: number;  // I_th (kA)
   upstreamGridMva: number;
   totalImpedanceOhms: number;
+  rEquivalentOhms: number;
+  xEquivalentOhms: number;
+  rOverXRatio: number;
+  kappa: number;
+  isBreakerSufficient: boolean;
 }
 
 export interface Ieee80EarthingResult {
@@ -146,23 +151,61 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     effectiveCapacityUnderSiteConditionsMva: effectiveCapacity,
   };
 
-  // 2. Short Circuit Analysis per IEC 60909
-  // Total impedance Z_k = Z_grid + Z_trafo
+  // 2. Short Circuit Analysis per IEC 60909 (Complex Impedance Z = R + jX)
+  // Voltage factor c per IEC 60909-0 Table 1: c = 1.10 for MV/HV systems
   const cFactor = 1.10;
-  const zGridOhms = (cFactor * Math.pow(gridConnectionVoltageKv, 2)) / upstreamGridShortCircuitMva;
-  const zTransOhms = (ukPct / 100.0) * (Math.pow(gridConnectionVoltageKv, 2) / ratedMva);
-  const zTotalOhms = zGridOhms + zTransOhms;
+  const unKv = gridConnectionVoltageKv;
 
-  const initialSymmetricalIscKa = (cFactor * gridConnectionVoltageKv) / (Math.sqrt(3) * zTotalOhms);
+  // Upstream grid impedance (R_grid + j X_grid):
+  // Z_grid = (c * Un^2) / S_sc_Q
+  // Standard IEC 60909-0 ratio for MV upstream distribution grid: R_Q / X_Q ≈ 0.10
+  const zGridMagnitudeOhms = (cFactor * Math.pow(unKv, 2)) / upstreamGridShortCircuitMva;
+  const xGridOhms = zGridMagnitudeOhms / Math.sqrt(1.0 + Math.pow(0.10, 2));
+  const rGridOhms = 0.10 * xGridOhms;
 
-  // Peak dynamic current: i_p = kappa * sqrt(2) * I_sc'' (kappa ≈ 1.8 for MV networks)
-  const kappa = 1.8;
+  // Transformer impedance (R_T + j X_T) referred to MV side:
+  // Z_T = (uk% / 100) * (Un^2 / S_rT)
+  // R_T = (P_k * 10^-3 * Un^2) / (S_rT^2)
+  const zTransMagnitudeOhms = (ukPct / 100.0) * (Math.pow(unKv, 2) / ratedMva);
+  const rTransOhms = (loadLossesKw * 1e-3 * Math.pow(unKv, 2)) / Math.pow(ratedMva, 2);
+  const xTransOhms = Math.sqrt(Math.max(0, Math.pow(zTransMagnitudeOhms, 2) - Math.pow(rTransOhms, 2)));
+
+  // Total equivalent complex impedance at MV fault point:
+  const rTotalOhms = rGridOhms + rTransOhms;
+  const xTotalOhms = xGridOhms + xTransOhms;
+  const zTotalOhms = Math.sqrt(Math.pow(rTotalOhms, 2) + Math.pow(xTotalOhms, 2));
+
+  // Initial symmetrical short-circuit current (kA):
+  const initialSymmetricalIscKa = (cFactor * unKv) / (Math.sqrt(3) * zTotalOhms);
+
+  // Peak factor kappa per IEC 60909-0 Section 4.3.1.2:
+  // kappa = 1.02 + 0.98 * exp(-3 * R/X)
+  const rOverXRatio = xTotalOhms > 0 ? rTotalOhms / xTotalOhms : 0.10;
+  const kappa = Number((1.02 + 0.98 * Math.exp(-3.0 * rOverXRatio)).toFixed(3));
   const peakDynamicIpKa = kappa * Math.SQRT2 * initialSymmetricalIscKa;
 
-  // Selected standard breaking capacity (e.g. 16kA, 20kA, 25kA, 31.5kA)
-  const standardBreakingRatings = [16.0, 20.0, 25.0, 31.5, 40.0];
-  const breakingCapacityKa = standardBreakingRatings.find((b) => b >= initialSymmetricalIscKa) || 25.0;
-  const thermalEquivalentIthKa = initialSymmetricalIscKa;
+  // Thermal equivalent short-circuit current Ith per IEC 60909-0:
+  // Ith = I_sc'' * sqrt(m + n)
+  // For far-from-generator faults (typical for PV grid interconnection), n = 1.0.
+  // Factor m accounts for DC aperiodic decay over fault clearing time:
+  const fNom = 50.0;
+  const tk = Math.max(0.05, clearingTimeSec);
+  let mFactor = 0.05;
+  if (kappa > 1.02 && kappa < 2.0) {
+    const lnKappaMinus1 = Math.log(kappa - 1.0);
+    const exponent = 2.0 * fNom * tk * lnKappaMinus1;
+    if (exponent < -0.01) {
+      mFactor = Math.max(0.0, (1.0 / exponent) * (Math.exp(exponent) - 1.0));
+    }
+  }
+  const nFactor = 1.0;
+  const thermalEquivalentIthKa = initialSymmetricalIscKa * Math.sqrt(mFactor + nFactor);
+
+  // Selected standard breaking capacity (IEC 62271-100: 16, 20, 25, 31.5, 40, 50, 63 kA):
+  const standardBreakingRatings = [16.0, 20.0, 25.0, 31.5, 40.0, 50.0, 63.0];
+  const matchedRating = standardBreakingRatings.find((b) => b >= initialSymmetricalIscKa);
+  const isBreakerSufficient = matchedRating !== undefined;
+  const breakingCapacityKa = matchedRating ?? standardBreakingRatings[standardBreakingRatings.length - 1];
 
   const shortCircuit: ShortCircuitCalculation = {
     initialSymmetricalIscKa: Math.round(initialSymmetricalIscKa * 10) / 10,
@@ -171,6 +214,11 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     thermalEquivalentIthKa: Math.round(thermalEquivalentIthKa * 10) / 10,
     upstreamGridMva: upstreamGridShortCircuitMva,
     totalImpedanceOhms: Number(zTotalOhms.toFixed(3)),
+    rEquivalentOhms: Number(rTotalOhms.toFixed(4)),
+    xEquivalentOhms: Number(xTotalOhms.toFixed(4)),
+    rOverXRatio: Number(rOverXRatio.toFixed(3)),
+    kappa,
+    isBreakerSufficient,
   };
 
   // 3. IEEE 80 Earthing Grid Calculations
@@ -241,11 +289,16 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const reactivePowerCapacityMvar = Math.round(plantCapacityAcMva * 0.4843 * 100) / 100;
   const powerFactorRange = '±0.90 (Capacitive / Inductive Q(U) Control)';
 
-  const switchgearDescriptionFa = `تابلوی کمپکت گازی SF6 فشار متوسط (RMU) رده ولتاژی ${gridConnectionVoltageKv} کیلوولت با بریکر خلاء (VCB) ۶۳۰ آمپر، قدرت قطع ${breakingCapacityKa} کیلوآمپر، مجهز به رله‌های حفاظتی میکروپروسسوری اضافه جریان و خطای زمین (ANSI 50/51/50N/51N) و سکسیونر زمین موتوری.`;
+  const switchgearDescriptionFa = isBreakerSufficient
+    ? `تابلوی کمپکت گازی SF6 فشار متوسط (RMU) رده ولتاژی ${gridConnectionVoltageKv} کیلوولت با بریکر خلاء (VCB) ۶۳۰ آمپر، قدرت قطع ${breakingCapacityKa} کیلوآمپر، مجهز به رله‌های حفاظتی میکروپروسسوری اضافه جریان و خطای زمین (ANSI 50/51/50N/51N) و سکسیونر زمین موتوری.`
+    : `هشدار بحرانی عدم کفایت کلید: جریان اتصال کوتاه اولیه (${shortCircuit.initialSymmetricalIscKa} kA) از بالاترین قدرت قطع بریکرهای MV (${breakingCapacityKa} kA) فراتر است. بریکر انتخاب‌شده قادر به قطع این جریان نیست و نصب راکتور محدودکننده جریان (CLR) یا بازنگری در طراحی باسبار الزامی است.`;
 
   const notesFa = [
     `ترانسفورماتور افزاینده ${ratedMva} MVA (ظرفیت مؤثر ${effectiveCapacity} MVA با لحاظ افت دمایی ${tempDeratePct}٪ و ارتفاعی ${altDeratePct}٪) با گروه برداری Dyn11 و امپدانس اتصالی ${ukPct}٪ جهت اتصال مطمئن به شبکه ${gridConnectionVoltageKv}kV.`,
-    `جریان اتصال کوتاه متقارن اولیه ${shortCircuit.initialSymmetricalIscKa} kA و پیک دینامیکی ${shortCircuit.peakDynamicIpKa} kA مطابق با IEC 60909 (با احتساب امپدانس شبکه بالادست ${upstreamGridShortCircuitMva} MVA).`,
+    `جریان اتصال کوتاه متقارن اولیه ${shortCircuit.initialSymmetricalIscKa} kA، جریان پیک ضربه‌ای ${shortCircuit.peakDynamicIpKa} kA (ضریب کاپا ${shortCircuit.kappa}) و معادل حرارتی Ith=${shortCircuit.thermalEquivalentIthKa} kA بر اساس امپدانس مختلط R+jX طبق IEC 60909.`,
+    ...(isBreakerSufficient
+      ? [`قدرت قطع بریکر انتخابی (${breakingCapacityKa} kA) بزرگ‌تر از جریان اتصال کوتاه اولیه بوده و منطبق بر IEC 62271-100 است.`]
+      : [`هشدار بحرانی: هیچ بریکر استاندارد MV با قدرت قطع کافی برای جریان خطای ${shortCircuit.initialSymmetricalIscKa} kA یافت نشد (حداکثر رده موجود: ${breakingCapacityKa} kA).`]),
     `طراحی مش ارتینگ پست بر اساس IEEE 80 با هادی مسی ${earthing.groundGridConductorMm2} mm² و مقاومت کل زمین ${earthing.calculatedGridResistanceOhms} اهم (تأمین ولتاژ گام و لمس مجاز).`,
     `تعبیه ترانسفورماتور مصارف داخلی ${auxiliaryTransformer.ratedKva} kVA جهت تغذیه بدون وقفه SCADA، سیستم‌های حفاظتی و درایوهای ترکر.`,
     `پشتیبانی کامل از تزریق توان راکتیو تا سقف ±${reactivePowerCapacityMvar} Mvar جهت تثبیت ولتاژ خطوط انتقال طبق کد شبکه ایران (Grid Code).`,

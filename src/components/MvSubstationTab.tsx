@@ -203,11 +203,17 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           <div className="text-xs text-slate-400">
             {isFa ? 'قدرت قطع بریکر خلاء (VCB)' : 'VCB Breaking Capacity'}
           </div>
-          <div className="text-xl font-bold font-mono text-industrial-success mt-1">
+          <div className={`text-xl font-bold font-mono mt-1 ${
+            subResult.shortCircuit.isBreakerSufficient ? 'text-industrial-success' : 'text-industrial-error'
+          }`}>
             {subResult.shortCircuit.breakingCapacityKa} <span className="text-xs font-normal text-slate-300">kA</span>
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? 'تابلوی کمپکت گاز SF6' : 'SF6 Gas Insulated Switchgear'}
+          <div className={`text-[10px] mt-0.5 ${
+            subResult.shortCircuit.isBreakerSufficient ? 'text-slate-400' : 'text-red-400 font-bold'
+          }`}>
+            {subResult.shortCircuit.isBreakerSufficient
+              ? (isFa ? 'تابلوی کمپکت گاز SF6' : 'SF6 Gas Insulated Switchgear')
+              : (isFa ? '✗ قدرت قطع ناکافی (جریان خطا بیش از حد)' : '✗ Insufficient breaking capacity')}
           </div>
         </div>
 

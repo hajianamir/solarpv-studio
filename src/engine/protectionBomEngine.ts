@@ -51,6 +51,10 @@ export interface CableRunResult {
   powerLossPct: number;
   isAmpacityCompliant: boolean;
   isShortCircuitCompliant: boolean;
+  // Cable electrical parameters (IEC 60287 / IEC 60502)
+  lineCapacitanceUfPerKm: number;
+  totalCapacitanceUf: number;
+  chargingCurrentAmps: number;
   troubleshootingGuideFa?: string;
   troubleshootingGuideEn?: string;
 }
@@ -78,6 +82,10 @@ export interface EarthingAnalysisResult {
   isTouchVoltageSafe: boolean;
   isStepVoltageSafe: boolean;
   isResistanceCompliant: boolean;
+  isEarthingSafe: boolean; // Integrated compliance: resistance AND touch AND step
+  isPreliminaryEstimate: boolean;
+  disclaimerFa: string;
+  disclaimerEn: string;
   bentoniteEnhancedResistanceOhms?: number;
   bentoniteApplied?: boolean;
   earthingExecutionStepsFa: string[];
@@ -96,6 +104,9 @@ export interface LightningProtectionResult {
   acSpdSpec: string;
   mvArresterSpec: string;
   lightningRiskLevelFa: string;
+  isPreliminaryAssessment: boolean;
+  notesFa: string[];
+  notesEn: string[];
   // IEC 62305 Risk & Separation Distance
   collectionAreaM2: number;
   annualExpectedStrikesNd: number;
@@ -198,8 +209,9 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     Math.min(1.0, Math.max(0.60, Math.sqrt((maxOperatingTemp - ambientTempC) / (maxOperatingTemp - 30.0)))).toFixed(3)
   );
 
-  // Grouping factor kg: multi-circuit tray/trench derating (typical 0.82)
-  const kg = 0.82;
+  // Grouping factor kg: installation method and multi-circuit derating (IEC 60364-5-52 Table B.52.17)
+  const installMethod = config.installationMethod ?? 'cable_tray';
+  const kg = installMethod === 'direct_buried' ? 0.70 : installMethod === 'in_conduit' ? 0.75 : 0.82;
 
   // 2. Short-Circuit Thermal Withstand Requirement (IEC 60364-5-54)
   // S_sc = (I_sc * sqrt(t)) / k
@@ -232,43 +244,68 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     calculatedTheoreticalMm2 = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * allowableDropVolts);
   }
 
-  // 4. Combined Sizing: Candidate cross section must also satisfy thermal ampacity (I_z >= I_b)
+  // 4. Combined Sizing: Candidate cross section must satisfy ALL THREE constraints simultaneously:
+  // (a) Voltage drop: total section >= calculatedTheoreticalMm2
+  // (b) Thermal ampacity: total derated ampacity >= designCurrentAmps
+  // (c) Short-circuit thermal withstand: total section >= shortCircuitWithstandMinMm2 (IEC 60364-5-54)
   let parallelRuns = 1;
   let perRunSection = STANDARD_CABLE_SECTIONS_MM2[0];
 
-  // Helper function to check if candidate section & runs satisfy ampacity
   const checkAmpacity = (section: number, runs: number): boolean => {
     const baseAmp = getBaseAmpacity(section, config.conductorMaterial, config.insulationType);
     const deratedAmp = baseAmp * kt * kg;
     return deratedAmp * runs >= config.designCurrentAmps;
   };
 
-  // Find minimum standard size that satisfies BOTH voltage drop and thermal ampacity
+  const checkShortCircuit = (section: number, runs: number): boolean => {
+    return (section * runs) >= shortCircuitWithstandMinMm2;
+  };
+
+  const minRequiredTotalMm2 = Math.max(calculatedTheoreticalMm2, shortCircuitWithstandMinMm2);
+
+  // Find minimum standard size that satisfies voltage drop, ampacity, and short-circuit
   for (const candidate of STANDARD_CABLE_SECTIONS_MM2) {
-    if (candidate >= calculatedTheoreticalMm2 && checkAmpacity(candidate, 1)) {
+    if (
+      candidate >= calculatedTheoreticalMm2 &&
+      checkShortCircuit(candidate, 1) &&
+      checkAmpacity(candidate, 1)
+    ) {
       perRunSection = candidate;
       parallelRuns = 1;
       break;
     }
   }
 
-  // If requires larger than MAX_PRACTICAL_SINGLE_CABLE_MM2 or single cable ampacity insufficient
-  if (calculatedTheoreticalMm2 > MAX_PRACTICAL_SINGLE_CABLE_MM2 || !checkAmpacity(perRunSection, parallelRuns)) {
+  // If requires larger than MAX_PRACTICAL_SINGLE_CABLE_MM2 or single cable insufficient
+  if (
+    minRequiredTotalMm2 > MAX_PRACTICAL_SINGLE_CABLE_MM2 ||
+    !checkAmpacity(perRunSection, parallelRuns) ||
+    !checkShortCircuit(perRunSection, parallelRuns)
+  ) {
+    let foundMultiRun = false;
     for (let runs = 2; runs <= 6; runs++) {
       const sectionNeededPerRun = calculatedTheoreticalMm2 / runs;
       const matched = STANDARD_CABLE_SECTIONS_MM2.find(
-        (s) => s >= sectionNeededPerRun && s <= MAX_PRACTICAL_SINGLE_CABLE_MM2 && checkAmpacity(s, runs)
+        (s) =>
+          s >= sectionNeededPerRun &&
+          s <= MAX_PRACTICAL_SINGLE_CABLE_MM2 &&
+          checkAmpacity(s, runs) &&
+          checkShortCircuit(s, runs)
       );
       if (matched) {
         parallelRuns = runs;
         perRunSection = matched;
+        foundMultiRun = true;
         break;
       }
     }
 
-    // Fallback if very large
-    if (parallelRuns === 1) {
-      parallelRuns = Math.ceil(calculatedTheoreticalMm2 / MAX_PRACTICAL_SINGLE_CABLE_MM2);
+    // Fallback if very large (or tight short-circuit / ampacity constraints)
+    if (!foundMultiRun) {
+      parallelRuns = Math.max(
+        parallelRuns,
+        Math.ceil(minRequiredTotalMm2 / MAX_PRACTICAL_SINGLE_CABLE_MM2)
+      );
       perRunSection = MAX_PRACTICAL_SINGLE_CABLE_MM2;
     }
   }
@@ -301,7 +338,8 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const singleDeratedAmp = Number((singleBaseAmp * kt * kg).toFixed(1));
   const totalDeratedAmp = Number((singleDeratedAmp * parallelRuns).toFixed(1));
   const isAmpacityCompliant = totalDeratedAmp >= config.designCurrentAmps;
-  const isShortCircuitCompliant = totalEffectiveCrossSection >= shortCircuitWithstandMinMm2 * 0.5; // Shared across runs
+  // Rigorous IEC 60364-5-54 k²S² >= I²t without arbitrary discount factors:
+  const isShortCircuitCompliant = totalEffectiveCrossSection >= shortCircuitWithstandMinMm2;
 
   // 7. Joule Thermal Power Loss (P_loss = m * I² * R)
   const lineResistanceOhms = config.oneWayLengthM / (effectiveGamma * totalEffectiveCrossSection);
@@ -312,7 +350,18 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     : config.nominalVoltageVolts * config.designCurrentAmps;
   const powerLossPct = Number(((powerLossWatts / Math.max(1, totalTransferredPowerWatts)) * 100.0).toFixed(2));
 
-  const isCompliant = isDropCompliant && isAmpacityCompliant;
+  // 8. Line Capacitance & AC Charging Current (IEC 60287 / IEC 60502)
+  const lineCapacitanceUfPerKm = config.isDc
+    ? 0.0
+    : Number((0.20 + 0.035 * Math.log(Math.max(1.5, perRunSection))).toFixed(3));
+  const totalCapacitanceUf = Number(((lineCapacitanceUfPerKm * config.oneWayLengthM * parallelRuns) / 1000.0).toFixed(4));
+  const vPhase = config.isThreePhase ? config.nominalVoltageVolts / Math.sqrt(3) : config.nominalVoltageVolts;
+  const chargingCurrentAmps = config.isDc
+    ? 0.0
+    : Number((2.0 * Math.PI * 50.0 * (totalCapacitanceUf * 1e-6) * vPhase).toFixed(4));
+
+  // Full compliance requires voltage drop, thermal ampacity, AND short-circuit withstand:
+  const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant;
 
   const matFa = config.conductorMaterial === 'copper' ? 'مسی (Cu)' : 'آلومینیومی (Al)';
   const matEn = config.conductorMaterial === 'copper' ? 'Cu' : 'Al';
@@ -333,16 +382,24 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   let troubleshootingGuideEn: string | undefined;
 
   if (!isCompliant) {
-    troubleshootingGuideFa = `نحوه رفع خطا: ${
-      !isDropCompliant
-        ? `افت ولتاژ (${actualDropPct}٪) بیش از حد مجاز (${config.allowableDropPct}٪) است.`
-        : `جریان مجاز پیوسته (${totalDeratedAmp}A با ضریب حرارتی kt=${kt}) کمتر از جریان طراحی (${config.designCurrentAmps}A) است.`
-    } راهکار: ۱) افزایش تعداد کابل موازی به ${parallelRuns + 1} رشته، یا ۲) تغییر جنس کابل به مس با هدایت الکتریکی بالاتر، یا ۳) کوتاه نمودن طول مسیر کابل‌کشی.`;
-    troubleshootingGuideEn = `Troubleshooting Guide: ${
-      !isDropCompliant
-        ? `Voltage drop (${actualDropPct}%) exceeds threshold (${config.allowableDropPct}%).`
-        : `De-rated ampacity (${totalDeratedAmp}A with kt=${kt}) is below design current (${config.designCurrentAmps}A).`
-    } Resolution: 1) Increase parallel runs to ${parallelRuns + 1}, 2) Switch conductor to Copper, or 3) Shorten cable run length.`;
+    const errorReasonsFa: string[] = [];
+    const errorReasonsEn: string[] = [];
+
+    if (!isDropCompliant) {
+      errorReasonsFa.push(`افت ولتاژ (${actualDropPct}٪) بیش از حد مجاز (${config.allowableDropPct}٪) است.`);
+      errorReasonsEn.push(`Voltage drop (${actualDropPct}%) exceeds threshold (${config.allowableDropPct}%).`);
+    }
+    if (!isAmpacityCompliant) {
+      errorReasonsFa.push(`جریان مجاز پیوسته (${totalDeratedAmp}A با ضریب حرارتی kt=${kt} و روش نصب kg=${kg}) کمتر از جریان طراحی (${config.designCurrentAmps}A) است.`);
+      errorReasonsEn.push(`De-rated ampacity (${totalDeratedAmp}A with kt=${kt}, kg=${kg}) is below design current (${config.designCurrentAmps}A).`);
+    }
+    if (!isShortCircuitCompliant) {
+      errorReasonsFa.push(`سطح مقطع کل (${totalEffectiveCrossSection}mm²) کمتر از حداقل تحمل اتصال کوتاه آدیاباتیک (${shortCircuitWithstandMinMm2}mm² برای Isc=${config.expectedIscKa ?? 10}kA در زمان ${faultDurationSec}s) است.`);
+      errorReasonsEn.push(`Cross-section (${totalEffectiveCrossSection}mm²) is below short-circuit withstand minimum (${shortCircuitWithstandMinMm2}mm² for ${config.expectedIscKa ?? 10}kA at ${faultDurationSec}s).`);
+    }
+
+    troubleshootingGuideFa = `نحوه رفع خطا: ${errorReasonsFa.join(' ')} راهکار: ۱) افزایش تعداد کابل موازی به ${parallelRuns + 1} رشته، ۲) افزایش سایز کابل به سطح مقطع بالاتر، یا ۳) تغییر جنس کابل به مس با هدایت الکتریکی بالاتر.`;
+    troubleshootingGuideEn = `Troubleshooting Guide: ${errorReasonsEn.join(' ')} Resolution: 1) Increase parallel runs to ${parallelRuns + 1}, 2) Select larger cross-section, or 3) Switch conductor to Copper.`;
   }
 
   return {
@@ -366,6 +423,9 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     powerLossPct,
     isAmpacityCompliant,
     isShortCircuitCompliant,
+    lineCapacitanceUfPerKm,
+    totalCapacitanceUf,
+    chargingCurrentAmps,
     troubleshootingGuideFa,
     troubleshootingGuideEn,
   };
@@ -497,6 +557,12 @@ export function calculateEarthingSystem(
     isTouchVoltageSafe,
     isStepVoltageSafe,
     isResistanceCompliant: effectiveRg <= targetResistance,
+    isEarthingSafe: effectiveRg <= targetResistance && isTouchVoltageSafe && isStepVoltageSafe,
+    isPreliminaryEstimate: true,
+    disclaimerFa:
+      'توجه: محاسبات ولتاژ تماس و گام بر پایه فرضیات لایه سطحی سنگ‌ریزه و توزیع تخمینی جریان خطا ارائه شده است. انطباق نهایی و اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر و طراحی تفصیلی شبکه مش در نرم‌افزارهای تخصصی است.',
+    disclaimerEn:
+      'Notice: Touch and step voltage verifications are preliminary screening estimates based on assumed crushed rock layer and default split factor. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing and site-specific grid modeling.',
     bentoniteEnhancedResistanceOhms: bentoniteEnhancedResistance,
     bentoniteApplied: applyBentoniteEnhancement,
     earthingExecutionStepsFa,
@@ -533,26 +599,35 @@ export function calculateLightningProtection(
   const requiredEfficiency = Math.max(0, 1.0 - tolerableStrikesNc / Math.max(0.0001, annualExpectedStrikesNd));
   const requiredEfficiencyPct = Number((requiredEfficiency * 100.0).toFixed(1));
 
-  // Determine LPS Class from required efficiency:
+  // Determine LPS Class from required efficiency per IEC 62305-1 Table 5 / IEC 62305-2:
+  // Class I: E > 0.98 (r = 20m)
+  // Class II: 0.95 < E <= 0.98 or baseline for utility-scale power plant (r = 30m)
+  // Class III: 0.80 < E <= 0.95 (r = 45m)
+  // Class IV: E <= 0.80 (r = 60m)
   let lpsClass: 'Class I' | 'Class II' | 'Class III' | 'Class IV' = 'Class III';
   let rollingSphereRadiusM = 45.0;
   let protectionAngleDeg = 35;
   let kiSeparation = 0.04;
 
-  if (requiredEfficiency > 0.95 || isUtilityPowerplant) {
-    lpsClass = 'Class II';
-    rollingSphereRadiusM = 30.0;
-    protectionAngleDeg = 45;
-    kiSeparation = 0.06;
-  } else if (requiredEfficiency > 0.98) {
+  if (requiredEfficiency > 0.98) {
     lpsClass = 'Class I';
     rollingSphereRadiusM = 20.0;
     protectionAngleDeg = 55;
     kiSeparation = 0.08;
-  } else {
+  } else if (requiredEfficiency > 0.95 || isUtilityPowerplant) {
+    lpsClass = 'Class II';
+    rollingSphereRadiusM = 30.0;
+    protectionAngleDeg = 45;
+    kiSeparation = 0.06;
+  } else if (requiredEfficiency > 0.80) {
     lpsClass = 'Class III';
     rollingSphereRadiusM = 45.0;
     protectionAngleDeg = 35;
+    kiSeparation = 0.04;
+  } else {
+    lpsClass = 'Class IV';
+    rollingSphereRadiusM = 60.0;
+    protectionAngleDeg = 25;
     kiSeparation = 0.04;
   }
 
@@ -595,6 +670,13 @@ export function calculateLightningProtection(
     lightningRiskLevelFa: isUtilityPowerplant
       ? `بالا - نیازمند کلاس ${lpsClass} (نرخ برخورد سالانه: ${annualExpectedStrikesNd} برخورد/سال)`
       : `متوسط - کلاس ${lpsClass} (نرخ برخورد: ${annualExpectedStrikesNd} برخورد/سال)`,
+    isPreliminaryAssessment: true,
+    notesFa: [
+      'ارزیابی اولیه ریسک صاعقه بر مبنای مساحت معادل و شاخص کرانیک منطقه؛ طراحی تفصیلی نهایی نیازمند ارزیابی جامع ریسک R1-R4 طبق IEC 62305-2 است.',
+    ],
+    notesEn: [
+      'Preliminary lightning risk assessment based on collection area and regional keraunic days; full EPC engineering requires formal IEC 62305-2 R1-R4 risk assessment.',
+    ],
     collectionAreaM2,
     annualExpectedStrikesNd,
     tolerableStrikesNc,
