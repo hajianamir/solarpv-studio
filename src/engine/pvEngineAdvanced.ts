@@ -12,6 +12,8 @@ export interface ModuleSpecs {
   impAmps: number;
   tempCoeffVocPct: number;  // e.g. -0.28 %/°C
   tempCoeffPmpPct: number;  // e.g. -0.32 %/°C
+  tempCoeffIscPct?: number; // e.g. +0.045 %/°C (IEC 60891 semiconductor current coefficient)
+  tempCoeffVmpPct?: number; // e.g. -0.36 %/°C (or derived gamma_Pmp - alpha_Isc)
   noctC: number;            // e.g. 45 °C
   lengthM: number;          // e.g. 2.278 m
   widthM: number;           // e.g. 1.134 m
@@ -53,6 +55,9 @@ export interface PvArrayDesignResult {
   maxModulesPerStringAllowed: number;
   stringVocMaxColdVolts: number;
   stringVmpMinHotVolts: number;
+  maxMpptOperatingCurrentAmps: number;
+  maxMpptShortCircuitCurrentAmps: number;
+  isMpptCurrentCompliant: boolean;
   dcAcRatio: number;
   effectiveDeratingFactor: number;
   cellTempHotC: number;
@@ -107,19 +112,26 @@ export function designPvArray(
   const singleModuleVocMaxCold = module.vocVolts * (1.0 + vocTempCoeffDec * (deratings.ambientTempMinC - 25.0));
 
   // Hot condition Vmp_min:
-  // IEC 62548 §7.2: the Vmp temperature coefficient shall be the Pmp coefficient
-  // (tempCoeffPmpPct), evaluated at the CELL temperature (cellTempHotC, computed
-  // above via the unified NOCT model) — not at ambient temperature.
-  // Do NOT "fix" this back to vocTempCoeffDec / ambient-based temperature.
-  const vmpTempCoeffDec = module.tempCoeffPmpPct / 100.0;
+  // IEC 60891 & IEC 62548 semiconductor physics:
+  // gamma_Pmp ≈ gamma_Vmp + alpha_Isc => gamma_Vmp = gamma_Pmp - alpha_Isc
+  // Evaluated at cell temperature (cellTempHotC via unified NOCT model).
+  // When tempCoeffVmpPct is explicitly specified, use it.
+  // When tempCoeffIscPct is provided, decouple via (gamma_Pmp - alpha_Isc).
+  // Otherwise, default to tempCoeffPmpPct for benchmark baseline compatibility.
+  const vmpTempCoeffPct = module.tempCoeffVmpPct ?? (
+    module.tempCoeffIscPct !== undefined
+      ? module.tempCoeffPmpPct - module.tempCoeffIscPct
+      : module.tempCoeffPmpPct
+  );
+  const vmpTempCoeffDec = vmpTempCoeffPct / 100.0;
   const singleModuleVmpMinHot = module.vmpVolts * (1.0 + vmpTempCoeffDec * (cellTempHotC - 25.0));
 
   // Max series modules limited by Inverter Max Vdc
   const maxModulesAllowed = Math.floor(inverter.vdcMaxVolts / singleModuleVocMaxCold);
   // Max series modules limited by MPPT Max
-  // IEC 62548 §7.2: MPPT upper-bound from coldest-day Vmp (Pmp coefficient).
+  // IEC 62548 §7.2: MPPT upper-bound from coldest-day Vmp.
   const singleModuleVmpMaxCold =
-    module.vmpVolts * (1.0 + (module.tempCoeffPmpPct / 100.0) * (deratings.ambientTempMinC - 25.0));
+    module.vmpVolts * (1.0 + vmpTempCoeffDec * (deratings.ambientTempMinC - 25.0));
   const maxModulesMppt = Math.floor(inverter.vmpptMaxVolts / singleModuleVmpMaxCold);
   const upperLimit = Math.min(maxModulesAllowed, maxModulesMppt);
 
@@ -149,6 +161,27 @@ export function designPvArray(
 
   if (stringVocMaxColdVolts > inverter.vdcMaxVolts) {
     warnings.push(`ولتاژ مدار باز در سردترین روز (${stringVocMaxColdVolts.toFixed(1)}V) از ولتاژ نامی اینورتر (${inverter.vdcMaxVolts}V) بیشتر است! خطر آسیب به اینورتر.`);
+  }
+
+  // 7. MPPT Current & Short-Circuit Constraints (IEC 62548 §7.3.3 & NEC 690.8)
+  const stringsPerMppt = Math.ceil(parallelStrings / Math.max(1, inverter.mpptChannelsCount));
+  const maxMpptOperatingCurrentAmps = Number((stringsPerMppt * module.impAmps).toFixed(2));
+  // 1.25 safety factor for cloud-enhancement / bifacial surge over STC
+  const maxMpptShortCircuitCurrentAmps = Number((stringsPerMppt * module.iscAmps * 1.25).toFixed(2));
+
+  let isMpptCurrentCompliant = true;
+  if (inverter.imppMaxAmpsPerMppt > 0 && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
+    isMpptCurrentCompliant = false;
+    warnings.push(
+      `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping).`
+    );
+  }
+
+  if (inverter.iscMaxAmpsPerMppt > 0 && maxMpptShortCircuitCurrentAmps > inverter.iscMaxAmpsPerMppt) {
+    isMpptCurrentCompliant = false;
+    warnings.push(
+      `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر.`
+    );
   }
 
   const dcAcRatio = totalPvCapacityKwp / inverter.pnomAcKw;
@@ -190,6 +223,9 @@ export function designPvArray(
     maxModulesPerStringAllowed: upperLimit,
     stringVocMaxColdVolts,
     stringVmpMinHotVolts,
+    maxMpptOperatingCurrentAmps,
+    maxMpptShortCircuitCurrentAmps,
+    isMpptCurrentCompliant,
     dcAcRatio,
     effectiveDeratingFactor,
     cellTempHotC,

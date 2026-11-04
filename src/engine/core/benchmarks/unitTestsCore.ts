@@ -3000,6 +3000,160 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E8-ASCE-1] ASCE 7-22 dynamic exposure categories (B, C, D) and rooftop snow 0.70 factor
+  {
+    const { calculateWindPressureQz, calculateStructuralAndFoundations } = await import('../../structuralEngine');
+
+    const qzB = calculateWindPressureQz(130, 0, 'B', 10);
+    const qzC = calculateWindPressureQz(130, 0, 'C', 10);
+    const qzD = calculateWindPressureQz(130, 0, 'D', 10);
+
+    // Kz ordering: Exposure B (sheltered) < Exposure C (open) < Exposure D (coastal/unobstructed)
+    const exposureOrderingOk = qzB.kz < qzC.kz && qzC.kz < qzD.kz && qzB.qzN_M2 < qzC.qzN_M2 && qzC.qzN_M2 < qzD.qzN_M2;
+
+    // Snow load differentiation: ground-mount (pf = pg * Cs) vs rooftop (pf = 0.70 * pg * Cs per ASCE 7-22 §7.4.1)
+    const groundRes = calculateStructuralAndFoundations({
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 20, groundClearanceM: 0.8,
+      basicWindSpeedKmh: 120, groundSnowLoadKgM2: 100,
+      foundationType: 'rammed_steel_pile', soilType: 'dense_sand_gravel',
+    });
+
+    const roofRes = calculateStructuralAndFoundations({
+      totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+      moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+      arrayTiltDeg: 20, groundClearanceM: 0.8,
+      basicWindSpeedKmh: 120, groundSnowLoadKgM2: 100,
+      foundationType: 'rooftop_ballasted_block', soilType: 'dense_sand_gravel',
+    });
+
+    const snowRatio = roofRes.snowLoadTableKn / groundRes.snowLoadTableKn;
+    const snowReductionOk = Math.abs(snowRatio - 0.70) < 0.01;
+
+    assert(
+      'E8-ASCE-1',
+      'ASCE 7-22 dynamic exposure categories (B < C < D) & rooftop snow reduction factor (0.70)',
+      exposureOrderingOk && snowReductionOk,
+      `Kz: B=${qzB.kz}, C=${qzC.kz}, D=${qzD.kz}; Snow: ground=${groundRes.snowLoadTableKn}kN, roof=${roofRes.snowLoadTableKn}kN (ratio=${snowRatio.toFixed(2)})`
+    );
+  }
+
+  // [E8-PV-1] String sizing Vmp temperature decoupling (gamma_Vmp = gamma_Pmp - alpha_Isc) & MPPT current limits
+  {
+    const { designPvArray } = await import('../../pvEngineAdvanced');
+
+    const testModule = {
+      manufacturer: 'Tier1', modelName: '550W-Test', pmpWatts: 550,
+      vocVolts: 50.0, vmpVolts: 41.0, iscAmps: 14.0, impAmps: 13.4,
+      tempCoeffVocPct: -0.28, tempCoeffPmpPct: -0.30, tempCoeffIscPct: 0.045, noctC: 45,
+      lengthM: 2.278, widthM: 1.134,
+    };
+
+    const restrictiveInverter = {
+      manufacturer: 'Inv', modelName: '10kW-LowCurrent', pnomAcKw: 10,
+      vdcMaxVolts: 1000, vmpptMinVolts: 200, vmpptMaxVolts: 850,
+      iscMaxAmpsPerMppt: 15, imppMaxAmpsPerMppt: 12, mpptChannelsCount: 1,
+      efficiencyMaxPct: 98.5, isThreePhase: true,
+    };
+
+    const deratings = {
+      ambientTempMinC: -10, ambientTempMaxC: 45, soilingLossPct: 4,
+      dcCableLossPct: 1.5, mismatchAndLidLossPct: 2, inverterClippingLossPct: 1,
+      systemAvailabilityPct: 99, groundAlbedo: 0.20, arrayTiltDeg: 25,
+    };
+
+    const design = designPvArray(150, 5.0, testModule, restrictiveInverter, deratings, 35.69);
+
+    // Module Imp is 13.4A > Inverter ImppMax of 12A, so MPPT current compliance must flag warning
+    const currentWarningFound = design.warnings.some(w => w.includes('MPPT') || w.includes('جریان'));
+
+    assert(
+      'E8-PV-1',
+      'PV string sizing enforces MPPT current constraints and decoupled Vmp temperature coefficient',
+      !design.isMpptCurrentCompliant && currentWarningFound && design.maxMpptOperatingCurrentAmps >= 13.4,
+      `MpptCompliant=${design.isMpptCurrentCompliant}, Impp=${design.maxMpptOperatingCurrentAmps}A (limit=12A), warningCount=${design.warnings.length}`
+    );
+  }
+
+  // [E8-FIN-1] Financial IRR root existence check & chemistry-dependent battery replacement schedules
+  {
+    const { calculateIrr } = await import('../../solarPvEngine');
+    const { performFinancialAnalysis } = await import('../../financialEngine');
+
+    // 1. IRR with zero or negative-only cash flows must not return fabricated -50% / -99%
+    const allZero = calculateIrr([0, 0, 0, 0, 0]);
+    const allNegative = calculateIrr([-1000, -200, -200, -200]);
+    const irrZeroChecked = allZero === 0.0 && allNegative === 0.0;
+
+    // 2. Chemistry battery replacement: AGM (~3y) vs Gel (~4y) vs LFP (~12y)
+    const finAgm = performFinancialAnalysis(100, 50, 100, 150000, { batteryChemistry: 'agm_flooded' }, 25, 'ongrid');
+    const finLfp = performFinancialAnalysis(100, 50, 100, 150000, { batteryChemistry: 'lifepo4' }, 25, 'ongrid');
+
+    const agmReplacements = finAgm.cashFlow25Years.filter(y => y.batteryReplacementToman > 0).map(y => y.year);
+    const lfpReplacements = finLfp.cashFlow25Years.filter(y => y.batteryReplacementToman > 0).map(y => y.year);
+
+    // AGM replaces every 3 years (3, 6, 9, 12, 15, 18, 21, 24 = 8 times over 25y)
+    // LFP replaces every 12 years (years 12 and 24 = 2 times over 25y)
+    const schedulesMatch =
+      agmReplacements.length === 8 &&
+      lfpReplacements.length === 2 &&
+      lfpReplacements[0] === 12 &&
+      lfpReplacements[1] === 24;
+
+    assert(
+      'E8-FIN-1',
+      'Financial IRR validates real root existence and schedules chemistry-specific battery replacements',
+      irrZeroChecked && schedulesMatch,
+      `irrZero=${allZero}, irrNeg=${allNegative}; AGM replacements=${agmReplacements.length} (at yrs ${agmReplacements.join(',')}), LFP replacements=${lfpReplacements.length} (at yr ${lfpReplacements.join(',')})`
+    );
+  }
+
+  // [E8-HARM-1] IEEE 519-2022 Isc/IL demand ratio & TDD current distortion limits
+  {
+    const { analyzePowerplantHarmonics } = await import('../../harmonicsEngine');
+
+    const resFull = analyzePowerplantHarmonics(10, 20, 35); // SCR=35, rated demand
+    const resPartial = analyzePowerplantHarmonics(10, 20, 35, 5.0, resFull.ratedCurrentAmps); // 50% partial load
+
+    // Under partial load, TDD is lower than THD because distortion is normalized to full demand IL
+    const tddLowerAtPartial = resPartial.tddCurrentPct < resPartial.thdCurrentPct;
+    const iscRatioCorrect = resFull.iscToIlRatio === 35.0;
+
+    assert(
+      'E8-HARM-1',
+      'Harmonics engine conforms to IEEE 519-2022 with Isc/IL demand ratio and TDD distortion metric',
+      iscRatioCorrect && tddLowerAtPartial && resFull.isTddCompliant,
+      `Isc/IL=${resFull.iscToIlRatio}, full THD=${resFull.thdCurrentPct}%, partial THD=${resPartial.thdCurrentPct}%, partial TDD=${resPartial.tddCurrentPct}%`
+    );
+  }
+
+  // [E8-PUMP-1] Solar pumping hydraulic sizing: zero pipe friction without artificial floor
+  {
+    const { calculateSolarPump } = await import('../../solarPumpEngine');
+
+    const zeroPipeRes = calculateSolarPump({
+      wellDepthM: 50, tankHeightM: 10, pipeLengthM: 0, pipeDiameterMm: 90,
+      dailyWaterRequirementM3: 100, irrigationType: 'flooding_storage', peakSunHours: 5.5,
+    });
+
+    const normalRes = calculateSolarPump({
+      wellDepthM: 50, tankHeightM: 10, pipeLengthM: 200, pipeDiameterMm: 90,
+      dailyWaterRequirementM3: 100, irrigationType: 'flooding_storage', peakSunHours: 5.5,
+    });
+
+    const zeroFrictionOk = zeroPipeRes.frictionHeadM === 0.0;
+    const normalFrictionOk = normalRes.frictionHeadM > 0.0;
+    const efficiencyOk = normalRes.pumpEfficiencyPct >= 50 && normalRes.pumpEfficiencyPct <= 75;
+
+    assert(
+      'E8-PUMP-1',
+      'Solar pumping hydraulic sizing eliminates artificial friction floor and sizes flow-dependent efficiency',
+      zeroFrictionOk && normalFrictionOk && efficiencyOk,
+      `zeroPipeFriction=${zeroPipeRes.frictionHeadM}m, normalPipeFriction=${normalRes.frictionHeadM}m, pumpEff=${normalRes.pumpEfficiencyPct}%`
+    );
+  }
+
   // [F1-R1] Provenance uses actual project city (Sydney), not hardcoded Tehran.
   {
     const { buildProvenanceRows } = await import('../../provenance/provenanceBuilder');

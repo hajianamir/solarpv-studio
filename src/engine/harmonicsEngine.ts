@@ -14,11 +14,16 @@ export interface HarmonicOrder {
 export interface HarmonicsAnalysisResult {
   fundamentalFreqHz: number;
   ratedCurrentAmps: number;
+  maxDemandCurrentAmps: number;
+  iscToIlRatio: number;
+  tddCurrentPct: number;
+  tddCurrentLimitPct: number;
   thdCurrentPct: number;
   thdCurrentLimitPct: number;
   thdVoltagePct: number;
   thdVoltageLimitPct: number;
   isThdCompliant: boolean;
+  isTddCompliant: boolean;
   individualHarmonics: HarmonicOrder[];
   recommendedFilterType: 'none' | 'lcl_trap' | 'active_harmonic_filter';
   recommendedAhfCurrentAmps: number;
@@ -62,10 +67,24 @@ export interface UpstreamGridAnalysisResult {
 export function analyzePowerplantHarmonics(
   plantCapacityMw: number,
   gridVoltageKv: number,
-  shortCircuitRatio: number
+  shortCircuitRatio: number,
+  operatingPowerMw?: number,
+  maxDemandCurrentAmps?: number
 ): HarmonicsAnalysisResult {
-  // Fundamental current at grid voltage
+  // Fundamental rated current at grid voltage
   const ratedCurrentAmps = (plantCapacityMw * 1000) / (Math.sqrt(3) * gridVoltageKv);
+  // Maximum demand load current (fundamental frequency), defaults to plant rated current
+  const demandCurrentAmps = maxDemandCurrentAmps && maxDemandCurrentAmps > 0
+    ? maxDemandCurrentAmps
+    : ratedCurrentAmps;
+
+  // Operating current at actual generation level (e.g. partial load)
+  const actualPowerMw = operatingPowerMw && operatingPowerMw > 0 ? operatingPowerMw : plantCapacityMw;
+  const fundamentalOperatingCurrentAmps = (actualPowerMw * 1000) / (Math.sqrt(3) * gridVoltageKv);
+
+  // Isc / IL ratio per IEEE 519-2022:
+  // SCR = S_sc / P_plant => I_sc / I_L = SCR * (ratedCurrentAmps / demandCurrentAmps)
+  const iscToIlRatio = Number((shortCircuitRatio * (ratedCurrentAmps / demandCurrentAmps)).toFixed(1));
 
   // Standard multi-level modern central/string inverter harmonic spectrum (typical PWM with LCL filter)
   const baseHarmonics = [
@@ -82,18 +101,21 @@ export function analyzePowerplantHarmonics(
     { order: 25, pct: 0.25 },
   ];
 
-  // IEEE 519 Current Limits based on Isc / IL (SCR)
+  // IEEE 519-2022 Table 2 Current Limits based on Isc / IL ratio:
   let tddLimit = 5.0;
   let individualLimit = 4.0;
-  if (shortCircuitRatio >= 100) {
+  if (iscToIlRatio >= 1000) {
+    tddLimit = 20.0;
+    individualLimit = 15.0;
+  } else if (iscToIlRatio >= 100) {
     tddLimit = 15.0;
-    individualLimit = 10.0;
-  } else if (shortCircuitRatio >= 50) {
+    individualLimit = 12.0;
+  } else if (iscToIlRatio >= 50) {
     tddLimit = 12.0;
-    individualLimit = 7.0;
-  } else if (shortCircuitRatio >= 20) {
+    individualLimit = 10.0;
+  } else if (iscToIlRatio >= 20) {
     tddLimit = 8.0;
-    individualLimit = 5.0;
+    individualLimit = 7.0;
   } else {
     tddLimit = 5.0;
     individualLimit = 4.0;
@@ -103,14 +125,24 @@ export function analyzePowerplantHarmonics(
   let sumVoltageSq = 0;
 
   const individualHarmonics: HarmonicOrder[] = baseHarmonics.map((h) => {
-    const currentAmps = (h.pct / 100.0) * ratedCurrentAmps;
-    sumCurrentSq += Math.pow(h.pct, 2);
+    // Current harmonic relative to operating fundamental current
+    const currentAmps = (h.pct / 100.0) * fundamentalOperatingCurrentAmps;
+    sumCurrentSq += Math.pow(currentAmps, 2);
 
     // Approximate harmonic voltage distortion at PCC = (h * I_h / I_sc) * 100
     const voltPct = (h.pct * h.order) / Math.max(10, shortCircuitRatio * 1.8);
     sumVoltageSq += Math.pow(voltPct, 2);
 
-    const limit = h.order < 11 ? individualLimit : h.order < 17 ? individualLimit * 0.75 : individualLimit * 0.5;
+    // Harmonic limits step down with harmonic order per IEEE 519-2022:
+    const limit =
+      h.order < 11 ? individualLimit
+      : h.order < 17 ? individualLimit * 0.50
+      : h.order < 23 ? individualLimit * 0.375
+      : h.order < 35 ? individualLimit * 0.15
+      : individualLimit * 0.075;
+
+    // Harmonic demand distortion relative to IL:
+    const harmonicDemandPct = (currentAmps / demandCurrentAmps) * 100.0;
 
     return {
       order: h.order,
@@ -118,16 +150,25 @@ export function analyzePowerplantHarmonics(
       currentPct: h.pct,
       currentAmps: Number(currentAmps.toFixed(2)),
       voltagePct: Number(voltPct.toFixed(3)),
-      ieeeLimitPct: limit,
-      compliant: h.pct <= limit,
+      ieeeLimitPct: Number(limit.toFixed(2)),
+      compliant: harmonicDemandPct <= limit,
     };
   });
 
-  const thdCurrentPct = Number(Math.sqrt(sumCurrentSq).toFixed(2));
+  const totalHarmonicCurrentRms = Math.sqrt(sumCurrentSq);
+  // THD_I = (I_harmonic_rms / I_fundamental) * 100%
+  const thdCurrentPct = Number(
+    ((totalHarmonicCurrentRms / Math.max(0.1, fundamentalOperatingCurrentAmps)) * 100.0).toFixed(2)
+  );
+  // TDD = (I_harmonic_rms / I_L) * 100% (Total Demand Distortion per IEEE 519)
+  const tddCurrentPct = Number(
+    ((totalHarmonicCurrentRms / Math.max(0.1, demandCurrentAmps)) * 100.0).toFixed(2)
+  );
   const thdVoltagePct = Number(Math.sqrt(sumVoltageSq).toFixed(2));
 
   const thdVoltageLimitPct = gridVoltageKv <= 69 ? 5.0 : 2.5;
-  const isThdCompliant = thdCurrentPct <= tddLimit && thdVoltagePct <= thdVoltageLimitPct;
+  const isTddCompliant = tddCurrentPct <= tddLimit;
+  const isThdCompliant = isTddCompliant && thdVoltagePct <= thdVoltageLimitPct;
 
   let recommendedFilterType: 'none' | 'lcl_trap' | 'active_harmonic_filter' = 'none';
   let recommendedAhfCurrentAmps = 0;
@@ -135,22 +176,24 @@ export function analyzePowerplantHarmonics(
   if (!isThdCompliant) {
     recommendedFilterType = 'active_harmonic_filter';
     // Size AHF for harmonic current RMS
-    const harmonicRmsAmps = Math.sqrt(
-      individualHarmonics.reduce((sum, item) => sum + Math.pow(item.currentAmps, 2), 0)
-    );
-    recommendedAhfCurrentAmps = Math.ceil(harmonicRmsAmps * 1.25);
-  } else if (thdCurrentPct > 3.0) {
+    recommendedAhfCurrentAmps = Math.ceil(totalHarmonicCurrentRms * 1.25);
+  } else if (tddCurrentPct > 3.0) {
     recommendedFilterType = 'lcl_trap';
   }
 
   return {
     fundamentalFreqHz: 50,
     ratedCurrentAmps: Number(ratedCurrentAmps.toFixed(1)),
+    maxDemandCurrentAmps: Number(demandCurrentAmps.toFixed(1)),
+    iscToIlRatio,
+    tddCurrentPct,
+    tddCurrentLimitPct: tddLimit,
     thdCurrentPct,
     thdCurrentLimitPct: tddLimit,
     thdVoltagePct,
     thdVoltageLimitPct,
     isThdCompliant,
+    isTddCompliant,
     individualHarmonics,
     recommendedFilterType,
     recommendedAhfCurrentAmps,

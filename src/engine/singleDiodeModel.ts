@@ -1,5 +1,6 @@
-// 5-Parameter Single-Diode Model for PV Cells, Modules & Strings
+// 5-Parameter Single-Diode Model for PV Cells, Modules & Strings (De Soto / SAM Formulation)
 // Solves: I = I_ph - I_0 * [exp((V + I*R_s)/(n*V_t)) - 1] - (V + I*R_s)/R_sh
+// Incorporates bandgap energy temperature dependence Eg(T) and irradiance-scaled Rsh(G)
 
 export interface DiodeParameters {
   iph: number;       // Photocurrent (A)
@@ -27,10 +28,13 @@ export interface IvCurveResult {
   efficiencyPct: number;
   irradianceWm2: number;
   cellTempC: number;
+  extractedParameters?: DiodeParameters;
 }
 
 const BOLTZMANN = 1.380649e-23; // J/K
 const ELECTRON_CHARGE = 1.60217663e-19; // C
+const EG_REF_EV = 1.121; // Bandgap energy for Silicon at 25°C (eV)
+const D_EG_DT = 0.0002677; // Bandgap temperature coefficient (eV/K)
 
 export function calculateSingleDiodeCurve(
   stcVoc: number,
@@ -43,17 +47,50 @@ export function calculateSingleDiodeCurve(
   tempCoeffPmpPct: number = -0.30, // %/°C
   irradianceWm2: number = 1000.0,
   cellTempC: number = 25.0,
-  seriesModulesCount: number = 1
+  seriesModulesCount: number = 1,
+  customParams?: Partial<DiodeParameters>
 ): IvCurveResult {
   const gRatio = Math.max(0.01, irradianceWm2 / 1000.0);
   const deltaT = cellTempC - 25.0;
-
-  // Thermal voltage per cell and series stack
-  const cellsInSeries = Math.round(stcVoc / 0.68) * seriesModulesCount;
   const tempK = cellTempC + 273.15;
+  const tRefK = 298.15;
+
+  // Cells in series stack
+  const cellsInSeries = Math.round(stcVoc / 0.68) * seriesModulesCount;
+
+  // Ideality factor n
+  const n = customParams?.n ?? 1.05;
+
+  // Thermal voltage at reference temperature and actual cell temperature
+  const aRef = (n * cellsInSeries * BOLTZMANN * tRefK) / ELECTRON_CHARGE;
+  const aActual = aRef * (tempK / tRefK);
   const vt = (cellsInSeries * BOLTZMANN * tempK) / ELECTRON_CHARGE;
 
-  // Temperature and irradiance scaled metrics
+  // Reference Series and Shunt resistance (De Soto parameter extraction)
+  const rsRef = customParams?.rs ?? Math.max(0.01, ((stcVoc - stcVmp) / stcImp) * 0.235);
+  const rshRef = customParams?.rsh ?? Math.max(50.0, (stcVoc / Math.max(1e-6, stcIsc - stcImp)) * 10.0);
+
+  // De Soto Irradiance-scaled shunt resistance: Rsh(G) = Rsh,ref * (G_ref / G)
+  const rsh = rshRef / gRatio;
+  const rs = rsRef;
+
+  // Temperature-dependent bandgap energy: Eg(T) = Eg,ref * [1 - dEg/dT * (T - Tref)]
+  const egRef = EG_REF_EV;
+  const egActual = egRef * (1.0 - D_EG_DT * deltaT);
+
+  // Reference photocurrent & saturation current
+  const iphRef = customParams?.iph ?? (stcIsc * (1.0 + rs / rshRef));
+  const i0Ref = customParams?.i0 ?? ((iphRef - stcVoc / rshRef) / Math.max(1e-12, Math.exp(stcVoc / aRef) - 1.0));
+
+  // De Soto Scaled photocurrent: Iph(G, T) = (G / Gref) * [Iph,ref + alpha_Isc * (T - Tref)]
+  const iph = gRatio * (iphRef + (tempCoeffIscPct / 100.0) * stcIsc * deltaT);
+
+  // De Soto Scaled saturation current with bandgap temperature dependence
+  const i0 = i0Ref * Math.pow(tempK / tRefK, 3.0) * Math.exp(
+    (ELECTRON_CHARGE / BOLTZMANN) * (egRef / tRefK - egActual / tempK)
+  );
+
+  // Scaled open-circuit and short-circuit estimates for curve bounds
   const isc = stcIsc * gRatio * (1.0 + (tempCoeffIscPct / 100.0) * deltaT);
   const voc = Math.max(
     0.1,
@@ -61,25 +98,7 @@ export function calculateSingleDiodeCurve(
       (1.0 + 0.05 * Math.log(gRatio))
   );
 
-  // Ideality factor n
-  const n = 1.15;
-
-  // Series and Shunt resistance approximation
-  const vmpEstimated = (stcVmp * seriesModulesCount) * (1.0 + (tempCoeffVocPct / 100.0) * deltaT);
-  const impEstimated = stcImp * gRatio * (1.0 + (tempCoeffIscPct / 100.0) * deltaT);
-
-  // Series resistance estimated from the STC knee slope (engineering initial guess,
-  // Villalva et al. / De Soto single-diode parameter extraction).
-  const rs = Math.max(0.01, ((voc - vmpEstimated) / impEstimated) * 0.26);
-  const rsh = Math.max(50.0, (voc / Math.max(1e-6, isc - impEstimated)) * 10.0);
-
-  // Photocurrent
-  const iph = isc * (1.0 + rs / rsh);
-
-  // Saturation current
-  const i0 = (iph - voc / rsh) / Math.max(1e-12, Math.exp(voc / (n * vt)) - 1.0);
-
-  // Trace 100 points along the I-V curve using Newton-Raphson
+  // Trace 80 points along the I-V curve using Newton-Raphson
   const points: IvPoint[] = [];
   const numSteps = 80;
   let maxP = 0;
@@ -88,17 +107,18 @@ export function calculateSingleDiodeCurve(
 
   for (let step = 0; step <= numSteps; step++) {
     const v = (voc * step) / numSteps;
-    let i = isc * (1.0 - Math.pow(step / numSteps, 3.5)); // Good initial guess
+    let i = iph * (1.0 - Math.pow(step / numSteps, 3.5)); // Initial guess
 
-    // Newton-Raphson iteration for transcendental diode equation
-    for (let iter = 0; iter < 15; iter++) {
-      const expTerm = Math.exp(Math.min(60.0, (v + i * rs) / (n * vt)));
+    // Newton-Raphson iteration for transcendental diode equation:
+    // f(I) = I_ph - I_0 * [exp((V + I*Rs) / a) - 1] - (V + I*Rs)/Rsh - I = 0
+    for (let iter = 0; iter < 20; iter++) {
+      const expTerm = Math.exp(Math.min(60.0, (v + i * rs) / aActual));
       const f = iph - i0 * (expTerm - 1.0) - (v + i * rs) / rsh - i;
-      const df = -i0 * expTerm * (rs / (n * vt)) - rs / rsh - 1.0;
+      const df = -i0 * expTerm * (rs / aActual) - rs / rsh - 1.0;
 
       const deltaI = f / df;
       i -= deltaI;
-      if (Math.abs(deltaI) < 1e-5) break;
+      if (Math.abs(deltaI) < 1e-6) break;
     }
 
     const currentClamped = Math.max(0.0, i);
@@ -118,7 +138,7 @@ export function calculateSingleDiodeCurve(
   }
 
   const fillFactor = maxP > 0 ? maxP / (voc * isc) : 0;
-  const nominalArea = 2.5 * seriesModulesCount; // approx 2.5 m2 per 580W panel
+  const nominalArea = 2.5 * seriesModulesCount; // approx 2.5 m² per 580W panel
   const incidentSolarPower = irradianceWm2 * nominalArea;
   const efficiencyPct = incidentSolarPower > 0 ? (maxP / incidentSolarPower) * 100.0 : 0;
 
@@ -133,5 +153,13 @@ export function calculateSingleDiodeCurve(
     efficiencyPct: Math.round(efficiencyPct * 10) / 10,
     irradianceWm2,
     cellTempC,
+    extractedParameters: {
+      iph,
+      i0,
+      rs,
+      rsh,
+      n,
+      vt,
+    },
   };
 }

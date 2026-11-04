@@ -8,6 +8,8 @@ export interface SolarPumpInput {
   dailyWaterRequirementM3: number;// Required water volume per day (m³/day)
   irrigationType: 'drip' | 'sprinkler' | 'flooding_storage';
   peakSunHours: number;           // Site PSH
+  pumpEfficiencyOverride?: number;// Custom submersible pump efficiency (0.40 - 0.80)
+  guaranteeYearRoundWater?: boolean; // Size PV array against worst-month winter irradiance
 }
 
 export interface SolarPumpResult {
@@ -18,12 +20,14 @@ export interface SolarPumpResult {
   flowRateM3PerHour: number;
   flowRateLitersPerSecond: number;
   hydraulicPowerWatts: number;
+  pumpEfficiencyPct: number;
   recommendedMotorPowerKw: number;
   recommendedMotorPowerHp: number;
   recommendedVfdDriveKw: number;
   recommendedPvArrayKwp: number;
   arrayToPumpRatio: number;
   monthlyWaterDeliveryM3: number[];
+  worstMonthDailyWaterM3: number;
   waterDeliveryCostPerM3Toman: number;
   notesFa: string[];
 }
@@ -50,10 +54,13 @@ export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
 
   // 3. Pipe friction head loss (Hazen-Williams formula for polyethylene pipe C=140)
   // h_f = 10.67 * L * Q^1.852 / (C^1.852 * D^4.87)
+  // For zero pipe length or zero flow rate, friction is physically zero (no artificial floor).
   const dMeters = Math.max(0.02, pipeDiameterMm / 1000.0);
-  const frictionFactor = 10.67 * pipeLengthM * Math.pow(flowRateM3PerSec, 1.852);
+  const frictionFactor = 10.67 * Math.max(0, pipeLengthM) * Math.pow(flowRateM3PerSec, 1.852);
   const denom = Math.pow(140.0, 1.852) * Math.pow(dMeters, 4.87);
-  const frictionHeadM = Math.max(0.5, Math.round((frictionFactor / denom) * 10) / 10);
+  const frictionHeadM = (pipeLengthM <= 0 || dailyWaterRequirementM3 <= 0)
+    ? 0.0
+    : Math.max(0.0, Math.round((frictionFactor / denom) * 10) / 10);
 
   // 4. Pressure Head needed at irrigation nozzle
   let pressureHeadM = 0;
@@ -72,8 +79,18 @@ export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
   // rho = 1000 kg/m³, g = 9.81 m/s²
   const theoreticalHydraulicWatts = (1000.0 * 9.81 * flowRateM3PerHour * totalDynamicHeadTdhM) / 3600.0;
 
-  // 7. Submersible Pump Mechanical Efficiency (typically 55% to 65%)
-  const pumpEfficiency = 0.58;
+  // 7. Submersible Pump Mechanical Efficiency based on duty flow rate
+  // Smaller flow rates (Q < 10 m³/h) operate at ~52% efficiency
+  // Medium agricultural pumps (10 <= Q <= 40 m³/h) achieve ~58-62%
+  // High-flow irrigation stations (Q > 40 m³/h) reach ~65-70%
+  const pumpEfficiency = (() => {
+    if (input.pumpEfficiencyOverride && input.pumpEfficiencyOverride > 0) {
+      return Math.min(0.85, Math.max(0.35, input.pumpEfficiencyOverride));
+    }
+    if (flowRateM3PerHour < 10) return 0.52;
+    if (flowRateM3PerHour <= 40) return 0.58;
+    return 0.65;
+  })();
   const motorShaftWatts = theoreticalHydraulicWatts / pumpEfficiency;
 
   // Recommended Motor Rating (in kW and HP)
@@ -87,12 +104,17 @@ export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
   const recommendedVfdDriveKw = Math.round((recommendedMotorPowerKw * 1.25) * 10) / 10;
 
   // 9. Solar PV Array Sizing
-  // Ratio typically 1.30 to 1.35 to ensure pump starts early in morning (from ~8:00 AM)
-  const arrayToPumpRatio = 1.35;
+  // Ratio typically 1.35 to ensure pump starts early in morning (~8:00 AM).
+  // If year-round water delivery is guaranteed, array sizes against worst-month winter irradiance.
+  const monthlyPshFactors = [1.0, 1.1, 1.2, 1.25, 1.2, 1.1, 1.0, 0.9, 0.85, 0.8, 0.75, 0.85];
+  const worstMonthFactor = Math.min(...monthlyPshFactors); // 0.75
+  const worstMonthDailyWaterM3 = Math.round(dailyWaterRequirementM3 * worstMonthFactor);
+  const arrayToPumpRatio = input.guaranteeYearRoundWater
+    ? Number((1.35 / worstMonthFactor).toFixed(2))
+    : 1.35;
   const recommendedPvArrayKwp = Math.round((recommendedMotorPowerKw * arrayToPumpRatio) * 10) / 10;
 
   // 10. Monthly water delivery simulation (12 months from Farvardin to Esfand)
-  const monthlyPshFactors = [1.0, 1.1, 1.2, 1.25, 1.2, 1.1, 1.0, 0.9, 0.85, 0.8, 0.75, 0.85];
   const monthlyWaterDeliveryM3 = monthlyPshFactors.map(factor =>
     Math.round(dailyWaterRequirementM3 * 30 * factor)
   );
@@ -103,8 +125,8 @@ export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
 
   const notesFa = [
     `هد دینامیکی کل (TDH): شامل ${staticHeadM} متر هد استاتیک، ${frictionHeadM} متر افت اصطکاک لوله و ${pressureHeadM} متر فشار پشت نازل.`,
-    `پمپ شناور ${recommendedMotorPowerHp} اسب بخار با درایو خورشیدی VFD به توان ${recommendedVfdDriveKw} کیلووات بدون نیاز به باتری (سیستم خورشیدی مستقیم Direct-Drive).`,
-    `آرایه خورشیدی ${recommendedPvArrayKwp} کیلووات با ضریب بیش‌پوشانی ${arrayToPumpRatio} جهت کارکرد مطمئن از ساعت ۸ صبح تا ۵ بعدازظهر.`,
+    `پمپ شناور ${recommendedMotorPowerHp} اسب بخار با راندمان مکانیکی ${(pumpEfficiency * 100).toFixed(0)}% و درایو VFD به توان ${recommendedVfdDriveKw} کیلووات (Direct-Drive).`,
+    `آرایه خورشیدی ${recommendedPvArrayKwp} کیلووات با ضریب بیش‌پوشانی ${arrayToPumpRatio} (حداقل آبدهی بدترین ماه: ${worstMonthDailyWaterM3} متر مکعب در روز).`,
   ];
 
   return {
@@ -115,12 +137,14 @@ export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
     flowRateM3PerHour: Math.round(flowRateM3PerHour * 10) / 10,
     flowRateLitersPerSecond: Math.round(flowRateLitersPerSecond * 10) / 10,
     hydraulicPowerWatts: Math.round(theoreticalHydraulicWatts),
+    pumpEfficiencyPct: Math.round(pumpEfficiency * 100),
     recommendedMotorPowerKw,
     recommendedMotorPowerHp,
     recommendedVfdDriveKw,
     recommendedPvArrayKwp,
     arrayToPumpRatio,
     monthlyWaterDeliveryM3,
+    worstMonthDailyWaterM3,
     waterDeliveryCostPerM3Toman,
     notesFa,
   };

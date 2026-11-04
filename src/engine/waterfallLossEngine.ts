@@ -1,6 +1,7 @@
 // Comprehensive 14-Stage PVsyst-Grade Waterfall Loss Tree & 8760h Performance Ratio (PR) Engine
 
 import { calculateThermalDerate } from './core/thermalDerate';
+import type { InstallationEnvironment } from './types/climateTypes';
 import {
   type TrackerConfig,
   simulateTrackerAnnual,
@@ -35,6 +36,22 @@ export interface WaterfallLossReport {
   performanceRatioPct: number;
 }
 
+export function calculateFixedTiltTranspositionGain(
+  tiltDeg?: number,
+  latitudeDeg?: number
+): number {
+  if (tiltDeg === undefined) return 16.8; // Baseline optimal tilt default
+  if (tiltDeg <= 0) return 0.0;
+  const absLat = Math.abs(latitudeDeg ?? 35.69);
+  const optTilt = Math.max(8, Math.min(60, absLat * 0.88));
+  const maxGain = 12.0 + Math.min(6.0, absLat * 0.15);
+  const tiltRatio = Math.min(1.0, tiltDeg / optTilt);
+  const factor = Math.sin((Math.PI / 2.0) * tiltRatio);
+  const angleDelta = Math.max(0, tiltDeg - optTilt);
+  const excessDrop = Math.cos((angleDelta * Math.PI) / 180.0);
+  return Number((maxGain * factor * excessDrop).toFixed(1));
+}
+
 export function computeWaterfallLosses(
   installedCapacityKwp: number,
   peakSunHours: number,
@@ -46,7 +63,11 @@ export function computeWaterfallLosses(
   iamLossPct: number = -2.2,
   noctC: number = 45.0,
   tempCoeffPmpPct: number = -0.30,
-  trackerConfig?: TrackerConfig   // PR-2a-7: real backtracking physics (10th param, backward-compatible)
+  trackerConfig?: TrackerConfig,   // PR-2a-7: real backtracking physics (10th param, backward-compatible)
+  installationEnv?: InstallationEnvironment,
+  fixedTiltDeg?: number,
+  latitudeDeg?: number,
+  shadingLossOverridePct?: number
 ): WaterfallLossReport {
   // 1. Raw Global Horizontal Irradiance (GHI)
   // GHI annual = PSH * 365 days * 1 kW/m² reference
@@ -55,8 +76,8 @@ export function computeWaterfallLosses(
   // 2. Transposition to Plane of Array (POA) - fixed tilt or real 1-axis tracker
   //    PR-2a-7: when trackerConfig is provided (or hasTracker=true), the gain and
   //    near-shading come from the slope-aware backtracking engine — NOT hardcoded.
-  let transpositionGainPct = 16.8; // +16.8% for optimal fixed tilt (baseline, unchanged)
-  let nearShadingPctDefault = -2.4; // fixed-tilt row-to-row shading (baseline, unchanged)
+  let transpositionGainPct = calculateFixedTiltTranspositionGain(fixedTiltDeg, latitudeDeg);
+  let nearShadingPctDefault = shadingLossOverridePct !== undefined ? -Math.abs(shadingLossOverridePct) : -2.4;
   let trackerDetails: WaterfallLossReport['trackerDetails'];
   const trackerActive = trackerConfig !== undefined || hasTracker;
   if (trackerActive) {
