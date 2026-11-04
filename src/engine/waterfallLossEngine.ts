@@ -193,6 +193,7 @@ export function computeWaterfallLosses(
   const thermalDerate = calculateThermalDerate({
     module: { noctC, tempCoeffPmpPct },
     ambientTempMaxC,
+    installationEnvironment: installationEnv,
   });
   const thermalLossPct = -1.0 * thermalDerate.deratePct;
   addStage(

@@ -284,12 +284,57 @@ export function calculateIrr(cashflows: number[]): number {
 
   const hasPos = cashflows.some(c => c > 0);
   const hasNeg = cashflows.some(c => c < 0);
+  // If there are no positive or no negative cash flows, no rate of return exists in (-1, +inf)
   if (!hasPos || !hasNeg) return 0.0;
 
-  // If undiscounted sum is non-positive, capital is never recovered -> no real positive rate of return
-  const undiscountedSum = cashflows.reduce((a, b) => a + b, 0);
-  if (undiscountedSum <= 0) return 0.0;
+  // Count sign changes (Descartes' rule of signs)
+  let signChanges = 0;
+  let prevNonZero = 0;
+  for (const cf of cashflows) {
+    if (cf !== 0) {
+      if (prevNonZero !== 0 && ((cf > 0 && prevNonZero < 0) || (cf < 0 && prevNonZero > 0))) {
+        signChanges++;
+      }
+      prevNonZero = cf;
+    }
+  }
 
+  const undiscountedSum = cashflows.reduce((a, b) => a + b, 0);
+
+  // If conventional cash flow: single sign change with initial negative investment (C0 < 0)
+  // By Norstrom's theorem, NPV(r) is strictly decreasing on (-1, inf), and exactly one unique root exists!
+  // If sum > 0 => root > 0 (positive IRR)
+  // If sum == 0 => root == 0
+  // If sum < 0 => root in (-1, 0) (valid negative IRR, e.g. [-100, 50] -> -50%)
+  if (signChanges === 1 && cashflows[0] < 0) {
+    let low = -0.9999;
+    let high = 0.0;
+    if (undiscountedSum > 0) {
+      low = 0.0;
+      high = 1.0;
+      while (calculateNpv(high, cashflows) > 0 && high < 1000.0) {
+        high *= 2.0;
+      }
+      if (calculateNpv(high, cashflows) > 0) return 0.0;
+    } else if (undiscountedSum === 0) {
+      return 0.0;
+    }
+
+    // Bracketed bisection method (guaranteed convergence to 1e-8 for monotonic NPV)
+    for (let i = 0; i < 80; i++) {
+      const mid = (low + high) / 2.0;
+      const fMid = calculateNpv(mid, cashflows);
+      if (fMid > 0.0) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+    return (low + high) / 2.0;
+  }
+
+  // Non-conventional cash flows (multiple sign changes or non-standard initial flow):
+  // Attempt Newton-Raphson first with rate = 0.10
   let rate = 0.10;
   const maxIterations = 100;
   const tolerance = 1e-7;
@@ -314,30 +359,28 @@ export function calculateIrr(cashflows: number[]): number {
     rate = nextRate;
   }
 
-  // Bisection fallback
-  let low = -0.90;
-  let high = 5.0;
-  const fLow = calculateNpv(low, cashflows);
-  const fHigh = calculateNpv(high, cashflows);
-
-  // Intermediate Value Theorem: signs must differ for root existence
-  if (fLow * fHigh > 0) {
-    return 0.0;
-  }
-
-  for (let i = 0; i < 100; i++) {
-    const mid = (low + high) / 2.0;
-    const fMid = calculateNpv(mid, cashflows);
-    if (Math.abs(fMid) < tolerance) {
-      return mid;
-    }
-    if (fMid > 0.0) {
-      low = mid;
-    } else {
-      high = mid;
+  // Bisection sweep across sub-intervals in [-0.99, 5.0]
+  const intervals = [-0.99, -0.5, 0.0, 0.2, 0.5, 1.0, 2.0, 5.0];
+  for (let i = 0; i < intervals.length - 1; i++) {
+    let low = intervals[i];
+    let high = intervals[i + 1];
+    const fLow = calculateNpv(low, cashflows);
+    const fHigh = calculateNpv(high, cashflows);
+    if (fLow * fHigh <= 0) {
+      for (let iter = 0; iter < 60; iter++) {
+        const mid = (low + high) / 2.0;
+        const fMid = calculateNpv(mid, cashflows);
+        if (fLow * fMid <= 0) {
+          high = mid;
+        } else {
+          low = mid;
+        }
+      }
+      return (low + high) / 2.0;
     }
   }
-  return (low + high) / 2.0;
+
+  return 0.0;
 }
 
 // ----------------------------------------------------

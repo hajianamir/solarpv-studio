@@ -483,7 +483,8 @@ export const App: React.FC = () => {
         -2.2,
         selectedModule.noctC,
         selectedModule.tempCoeffPmpPct,
-        trackerConfig ?? undefined
+        trackerConfig ?? undefined,
+        siteOverrides?.installationEnvironment || 'ground_mount'
       );
       return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
     } else if (systemMode === 'ongrid') {
@@ -492,7 +493,7 @@ export const App: React.FC = () => {
     } else {
       return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
     }
-  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
+  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
   // 3. Advanced PV Array Engineering Sizing
   const arrayDesign = useMemo(() => {
@@ -511,10 +512,11 @@ export const App: React.FC = () => {
         systemAvailabilityPct: 99.0,
         groundAlbedo: city.albedo,
         arrayTiltDeg: city.optimalTiltAnnualDeg,
+        installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
       },
       city.latitude
     );
-  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter]);
+  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment]);
 
   // 4. Inverter Clustering Evaluation
   const inverterClustering = useMemo(() => {
@@ -693,9 +695,12 @@ export const App: React.FC = () => {
       -2.2,
       selectedModule.noctC,
       selectedModule.tempCoeffPmpPct,
-      trackerConfig ?? undefined
+      trackerConfig ?? undefined,
+      siteOverrides?.installationEnvironment || 'ground_mount',
+      city.optimalTiltAnnualDeg,
+      city.latitude
     );
-  }, [arrayDesign, city, inverterClustering, selectedModule, trackerConfig]);
+  }, [arrayDesign, city, inverterClustering, selectedModule, trackerConfig, siteOverrides?.installationEnvironment]);
 
   const annualYieldKwh = waterfallReport.netAnnualEnergyExportMwh * 1000.0;
 
@@ -706,8 +711,9 @@ export const App: React.FC = () => {
       calculateThermalDerate({
         module: { noctC: selectedModule.noctC, tempCoeffPmpPct: selectedModule.tempCoeffPmpPct },
         ambientTempMaxC: city.tempMaxC,
+        installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
       }),
-    [selectedModule, city]
+    [selectedModule, city, siteOverrides?.installationEnvironment]
   );
 
   // 11. Financial Analysis with User Unit Pricing & Optional Genset CAPEX

@@ -304,7 +304,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'نرخ بازده داخلی (IRR)' : 'Internal Rate of Return (IRR)'}</div>
           <div className="text-xl font-bold font-mono text-purple-400 mt-1">
-            {financial.irrPct}%
+            {financial.isIrrDefined
+              ? `${financial.irrPct}%`
+              : (lang === 'fa' ? 'تعریف‌نشده (بدون ریشه)' : 'N/A (No Real Root)')}
           </div>
           <div className="text-xs font-mono text-industrial-success mt-0.5">
             NPV: {(financial.npvToman / 1_000_000_000).toFixed(2)} میلیارد تومان
@@ -314,10 +316,14 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'بهای تمام‌شده انرژی (LCOE)' : 'Levelized Cost of Energy (LCOE)'}</div>
           <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
-            ${financial.lcoeUsdPerKwh.toFixed(4)}
+            {financial.isLcoeDefined
+              ? `$${financial.lcoeUsdPerKwh.toFixed(4)}`
+              : (lang === 'fa' ? 'نامعتبر (تولید صفر)' : 'N/A (Zero Energy)')}
           </div>
           <div className="text-xs font-mono text-slate-300 mt-0.5">
-            {financial.lcoeTomanPerKwh.toLocaleString()} تومان / kWh
+            {financial.isLcoeDefined
+              ? `${financial.lcoeTomanPerKwh.toLocaleString()} تومان / kWh`
+              : '—'}
           </div>
         </div>
       </div>

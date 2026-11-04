@@ -196,38 +196,48 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
   const {
     projectName = "Solar Project",
     projectId = "N/A",
-    systemCapacityKwp = 0,
-    panelCount = 0,
-    panelType = "575W N-Type High Efficiency Modules",
-    inverterCount = 0,
-    inverterType = "10kW String Inverters (Three-Phase)",
-    batteryCount = 0,
-    batteryType = "10.2kWh LiFePO4 Energy Storage Bank",
-    annualYieldKwh = 0,
-    lcoeUsdPerKwh = 0,
+    systemCapacityKwp,
+    panelCount,
+    panelType,
+    inverterCount,
+    inverterType,
+    batteryCount,
+    batteryType,
+    annualYieldKwh,
+    lcoeUsdPerKwh,
   } = req.body;
 
+  if (
+    (systemCapacityKwp !== undefined && (typeof systemCapacityKwp !== 'number' || systemCapacityKwp < 0)) ||
+    (panelCount !== undefined && (typeof panelCount !== 'number' || panelCount < 0)) ||
+    (annualYieldKwh !== undefined && (typeof annualYieldKwh !== 'number' || annualYieldKwh < 0))
+  ) {
+    return res.status(400).json({ error: "Invalid engineering metrics: capacity, count, or yield cannot be negative." });
+  }
+
   res.json({
-    title: "Official EPC Solar PV Design Proposal",
-    projectName,
-    projectId,
+    title: "Preliminary EPC Solar PV Design Proposal",
+    disclaimer: "This report provides preliminary engineering screening and feasibility metrics subject to formal geotechnical site surveys and grid interconnection studies.",
+    projectName: String(projectName).trim() || "Solar Project",
+    projectId: String(projectId),
     generatedAt: new Date().toISOString(),
     metrics: {
-      systemCapacityKwp,
-      panelCount,
-      panelType,
-      inverterCount,
-      inverterType,
-      batteryCount,
-      batteryType,
-      annualYieldKwh,
-      lcoeUsdPerKwh,
+      systemCapacityKwp: systemCapacityKwp ?? 0,
+      panelCount: panelCount ?? 0,
+      panelType: panelType || "575W N-Type High Efficiency Modules",
+      inverterCount: inverterCount ?? 0,
+      inverterType: inverterType || "10kW String Inverters (Three-Phase)",
+      batteryCount: batteryCount ?? 0,
+      batteryType: batteryType || "10.2kWh LiFePO4 Energy Storage Bank",
+      annualYieldKwh: annualYieldKwh ?? 0,
+      lcoeUsdPerKwh: lcoeUsdPerKwh ?? 0,
     },
     standards: [
       "IEC 62548:2024 (Photovoltaic array design requirements)",
       "IEC 60364-5-52 (DC cable cross-section & voltage drop)",
       "IEEE 1547-2018 (Distributed energy interconnection)",
       "IEC 61643-32 (Surge protection devices for PV systems)",
+      "IEEE 80-2013 (Guide for Safety in AC Substation Grounding)",
     ]
   });
 });

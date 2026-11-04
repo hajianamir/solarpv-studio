@@ -108,6 +108,8 @@ export interface FinancialAnalysisResult {
   discountedPaybackPeriodYears: number;
   lcoeUsdPerKwh: number;
   lcoeTomanPerKwh: number;
+  isLcoeDefined: boolean;
+  batteryReplacementNotesFa?: string;
   // Diesel backup economics (off-grid / hybrid)
   dieselFuelCostUsd: number;        // annual diesel fuel cost, USD
   dieselOpexUsd: number;            // annual diesel service & maintenance, USD
@@ -355,10 +357,7 @@ export function performFinancialAnalysis(
   let calculatedIrrPct = 0;
   let isIrrDefined = false;
 
-  if (hasPositive && hasNegative && undiscountedSum > 0 && totalCapexToman > 0) {
-    let lowIrr = -0.5;
-    let highIrr = 3.0;
-
+  if (hasPositive && hasNegative && totalCapexToman > 0) {
     const npvAt = (rate: number): number => {
       let npv = -totalCapexToman;
       for (let yr = 1; yr <= lifetimeYears; yr++) {
@@ -367,22 +366,37 @@ export function performFinancialAnalysis(
       return npv;
     };
 
-    const npvLow = npvAt(lowIrr);
-    const npvHigh = npvAt(highIrr);
-
-    // Bolzano's Intermediate Value Theorem: root exists in [low, high] only if signs differ
-    if (npvLow * npvHigh <= 0) {
-      for (let iter = 0; iter < 50; iter++) {
-        const midIrr = (lowIrr + highIrr) / 2.0;
-        const npvAtMid = npvAt(midIrr);
-        if (npvAtMid > 0) {
-          lowIrr = midIrr;
-        } else {
-          highIrr = midIrr;
-        }
+    let lowIrr = -0.999;
+    let highIrr = 0.0;
+    if (undiscountedSum > 0) {
+      lowIrr = 0.0;
+      highIrr = 2.0;
+      while (npvAt(highIrr) > 0 && highIrr < 100.0) {
+        highIrr *= 2.0;
       }
-      calculatedIrrPct = Number(((lowIrr + highIrr) / 2.0 * 100.0).toFixed(1));
+    } else if (undiscountedSum === 0) {
+      calculatedIrrPct = 0.0;
       isIrrDefined = true;
+    }
+
+    if (!isIrrDefined) {
+      const npvLow = npvAt(lowIrr);
+      const npvHigh = npvAt(highIrr);
+
+      // Bolzano's Intermediate Value Theorem: root exists in [low, high] only if signs differ
+      if (npvLow * npvHigh <= 0) {
+        for (let iter = 0; iter < 60; iter++) {
+          const midIrr = (lowIrr + highIrr) / 2.0;
+          const npvAtMid = npvAt(midIrr);
+          if (npvAtMid > 0) {
+            lowIrr = midIrr;
+          } else {
+            highIrr = midIrr;
+          }
+        }
+        calculatedIrrPct = Number(((lowIrr + highIrr) / 2.0 * 100.0).toFixed(1));
+        isIrrDefined = true;
+      }
     }
   }
 
@@ -393,18 +407,20 @@ export function performFinancialAnalysis(
     const yrCost =
       cashFlow25Years[yr - 1].opexToman +
       cashFlow25Years[yr - 1].fuelCostToman +
-      cashFlow25Years[yr - 1].batteryReplacementToman;
+      cashFlow25Years[yr - 1].batteryReplacementToman +
+      (cashFlow25Years[yr - 1].inverterReplacementToman ?? 0);
     sumDiscountedCosts += yrCost / Math.pow(1 + r, yr);
     sumDiscountedEnergyKwh += cashFlow25Years[yr - 1].generationKwh / Math.pow(1 + r, yr);
   }
-  // ENG-6: the previous floor of 1 kWh inflated LCOE by up to 1000x when a
-  // pathological input produced finite-but-sub-unit discounted energy
-  // (e.g., 0.5 kWh -> 2x inflation; 0.05 kWh -> 20x). The 0.001 kWh floor
-  // preserves the actual calculation for the 0.001-1 range and only caps
-  // truly degenerate inputs (0 energy still yields a large but finite
-  // number, not an exception).
-  const lcoeTomanPerKwh = Number((sumDiscountedCosts / Math.max(0.001, sumDiscountedEnergyKwh)).toFixed(0));
-  const lcoeUsdPerKwh = Number((lcoeTomanPerKwh / p.usdToTomanRate).toFixed(4));
+
+  // Real physical validation: if generation is zero/invalid, LCOE is strictly undefined
+  const isLcoeDefined = sumDiscountedEnergyKwh > 0 && annualYieldKwh > 0;
+  const lcoeTomanPerKwh = isLcoeDefined
+    ? Number((sumDiscountedCosts / sumDiscountedEnergyKwh).toFixed(0))
+    : 0;
+  const lcoeUsdPerKwh = isLcoeDefined
+    ? Number((lcoeTomanPerKwh / p.usdToTomanRate).toFixed(4))
+    : 0.0;
 
   // Cost of energy actually served = annualized lifetime cost / year-1 energy.
   // Includes annualized CAPEX (capital recovery factor), OPEX, diesel fuel &
@@ -427,6 +443,8 @@ export function performFinancialAnalysis(
   const annualCo2ReductionTons = (annualYieldKwh * 0.00062);
   const lifetime25yCo2ReductionTons = annualCo2ReductionTons * lifetimeYears * 0.94;
 
+  const batteryReplacementNotesFa = `زمان‌بندی تعویض باتری‌ها بر اساس فرض تقویمی ساده (${batteryLifespanYears} سال برای شیمی ${p.batteryChemistry ?? 'lifepo4'}) لحاظ شده است. پیش‌بینی دقیق عمر مفید نیازمند مدل‌سازی حرارتی، تعداد سیکل‌های روزانه و عمق دشارژ (DoD) است.`;
+
   return {
     systemMode,
     capexBreakdown,
@@ -439,6 +457,8 @@ export function performFinancialAnalysis(
     discountedPaybackPeriodYears: Number(discountedPayback.toFixed(1)),
     lcoeUsdPerKwh,
     lcoeTomanPerKwh,
+    isLcoeDefined,
+    batteryReplacementNotesFa,
     dieselFuelCostUsd: Number(dieselFuelCostUsd.toFixed(4)),
     dieselOpexUsd,
     batteryReplacementCostUsd: Math.round(batteryReplacementCostUsd),

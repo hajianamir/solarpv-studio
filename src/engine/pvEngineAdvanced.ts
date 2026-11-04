@@ -1,6 +1,7 @@
 // Advanced PV Array Engineering, String Sizing & Deratings (IEC 62548 / NEC 690.7)
 
 import { calculateThermalDerate } from './core/thermalDerate';
+import type { InstallationEnvironment } from './types/climateTypes';
 
 export interface ModuleSpecs {
   modelName: string;
@@ -44,6 +45,7 @@ export interface SiteDeratings {
   systemAvailabilityPct: number;// e.g. 99.0%
   groundAlbedo: number;         // e.g. 0.20
   arrayTiltDeg: number;         // e.g. 30°
+  installationEnvironment?: InstallationEnvironment;
 }
 
 export interface PvArrayDesignResult {
@@ -84,6 +86,7 @@ export function designPvArray(
   const thermal = calculateThermalDerate({
     module: { noctC: module.noctC, tempCoeffPmpPct: module.tempCoeffPmpPct },
     ambientTempMaxC: deratings.ambientTempMaxC,
+    installationEnvironment: deratings.installationEnvironment,
   });
   const cellTempHotC = thermal.cellTempHotC;
 
