@@ -144,7 +144,11 @@ export function performFinancialAnalysis(
   const structuresUsd = pvWatts * p.structureUsdPerWp;
   const cablesBopUsd = pvWatts * p.cablingBopUsdPerWp;
   const epcLaborUsd = inverterCapacityKw * p.epcLaborUsdPerKw;
-  const dieselUsd = (systemMode === 'offgrid' || p.includeDieselGenSet) ? (p.dieselGenSetCapexUsd || 12000) : 0;
+  const isDieselActive = p.includeDieselGenSet !== undefined
+    ? Boolean(p.includeDieselGenSet)
+    : systemMode === 'offgrid';
+
+  const dieselUsd = isDieselActive ? (p.dieselGenSetCapexUsd !== undefined ? p.dieselGenSetCapexUsd : 12000) : 0;
 
   let substationUsd = 0;
   let gridInterconnectionUsd = 0;
@@ -222,9 +226,9 @@ export function performFinancialAnalysis(
   const baseAnnualOpexToman = totalCapexToman * (p.annualOpexPctOfCapex / 100.0);
   const baseAnnualOpexUsd = totalCapexUsd * (p.annualOpexPctOfCapex / 100.0);
 
-  // In Off-Grid, include generator fuel consumption for backup
-  const annualDieselFuelCostToman = (systemMode === 'offgrid' || p.includeDieselGenSet)
-    ? (p.dieselAnnualFuelLiters || 3500) * (p.dieselFuelPriceTomanPerLiter || 3500)
+  // In Off-Grid or Hybrid with active generator, include generator fuel consumption for backup
+  const annualDieselFuelCostToman = isDieselActive
+    ? ((p.dieselAnnualFuelLiters && p.dieselAnnualFuelLiters > 0 ? p.dieselAnnualFuelLiters : 3500) * (p.dieselFuelPriceTomanPerLiter || 3500))
     : 0;
 
   // Power-plant fixed annual charges (land lease + grid operator fee) and
@@ -232,9 +236,9 @@ export function performFinancialAnalysis(
   // of the pro-forma; not escalated (fixed contract charges).
   const landLeaseAnnualUsd = systemMode === 'powerplant' ? totalPvCapacityKwp * p.landLeaseUsdPerKwpYear : 0;
   const gridOperatorFeeAnnualUsd = systemMode === 'powerplant' ? totalPvCapacityKwp * p.gridOperatorFeeUsdPerKwpYear : 0;
-  const dieselOpexUsd = (systemMode === 'offgrid' || p.includeDieselGenSet) ? p.dieselAnnualServiceOpexUsd : 0;
-  const dieselFuelCostUsd = (systemMode === 'offgrid' || p.includeDieselGenSet)
-    ? (p.dieselAnnualFuelLiters || 3500) * (p.dieselFuelPriceTomanPerLiter || 3500) / p.usdToTomanRate
+  const dieselOpexUsd = isDieselActive ? (p.dieselAnnualServiceOpexUsd ?? 1500) : 0;
+  const dieselFuelCostUsd = isDieselActive
+    ? ((p.dieselAnnualFuelLiters && p.dieselAnnualFuelLiters > 0 ? p.dieselAnnualFuelLiters : 3500) * (p.dieselFuelPriceTomanPerLiter || 3500)) / p.usdToTomanRate
     : 0;
   const batteryReplacementCostUsd = batteryReplacementYear12Usd;
   const fixedAnnualChargesUsd = landLeaseAnnualUsd + gridOperatorFeeAnnualUsd + dieselOpexUsd;

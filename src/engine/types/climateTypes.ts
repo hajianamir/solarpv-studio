@@ -14,6 +14,8 @@ export type SoilClassification =
   | 'loose_sand'
   | 'rocky_limestone';
 
+export type SiteDrainageCondition = 'well_drained' | 'moderate' | 'poor_flood_prone';
+
 export interface ClimateCity {
   id: string;
   nameFa: string;
@@ -49,6 +51,9 @@ export interface ClimateCity {
   dataSourceEn: string;              // Official source provenance in English
   dataRetrievalDate?: string;         // Date retrieved
   confidence?: 'measured' | 'hub_calibrated' | 'analytical_estimate'; // Data confidence grade
+  distanceToCoastKm?: number;        // Geodesic distance to nearest sea/coast (km)
+  drainageCondition?: SiteDrainageCondition; // Site hydrology drainage classification
+  groundwaterDepthM?: number;        // Depth to groundwater table GWL (m)
 }
 
 export interface SiteGeotechnicalOverrides {
@@ -62,5 +67,8 @@ export interface SiteGeotechnicalOverrides {
   soilDensityKnM3?: number;
   frostDepthCm?: number;
   seismicZoneCoefficientA?: number;
+  distanceToCoastKm?: number;
+  drainageCondition?: SiteDrainageCondition;
+  groundwaterDepthM?: number;
   customNotes?: string;
 }

@@ -11,6 +11,7 @@
     "test": "tsx scripts/run-all-benchmarks.ts",
     "test:coverage": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
     "test:smoke": "tsx scripts/smoke-test.ts",
+    "verify-hubs": "tsx scripts/grep-verify-hubs.ts",
     "sync-docs": "tsx scripts/sync-docs.ts",
     "lint:eslint": "eslint src/"
   },

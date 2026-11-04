@@ -3,17 +3,20 @@
 // Conforming to NASA POWER v2.0, PVGIS (SARAH-2/ERA5), NSRDB, INBC Part 6, ASCE 7-22, Eurocode 1 & 7
 
 import { ExternalDataGateway } from './dataGateway/externalDataGateway';
+import { estimateGeodesicDistanceToCoastKm } from './corrosion/saltCorrosionEngine';
 
 import type {
   ClimateCity,
   SoilClassification,
   SiteGeotechnicalOverrides,
+  SiteDrainageCondition,
 } from './types/climateTypes';
 
 export type {
   ClimateCity,
   SoilClassification,
   SiteGeotechnicalOverrides,
+  SiteDrainageCondition,
 };
 
 
@@ -34,6 +37,9 @@ export function applyGeotechnicalOverrides(
     soilDensityKnM3: overrides.soilDensityKnM3 ?? baseCity.soilDensityKnM3,
     frostDepthCm: overrides.frostDepthCm ?? baseCity.frostDepthCm,
     seismicZoneCoefficientA: overrides.seismicZoneCoefficientA ?? baseCity.seismicZoneCoefficientA,
+    distanceToCoastKm: overrides.distanceToCoastKm ?? baseCity.distanceToCoastKm,
+    drainageCondition: overrides.drainageCondition ?? baseCity.drainageCondition,
+    groundwaterDepthM: overrides.groundwaterDepthM ?? baseCity.groundwaterDepthM,
   };
 }
 
@@ -239,6 +245,19 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
     dataSourceEn: 'Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)',
     dataRetrievalDate: '2024-10-15',
     confidence: 'analytical_estimate',
+    distanceToCoastKm: estimateGeodesicDistanceToCoastKm(lat, lng),
+    drainageCondition:
+      (absLat > 45 ? 750 : isMENA ? 180 : 450) > 600 || soilType === 'medium_clay'
+        ? 'poor_flood_prone'
+        : (absLat > 45 ? 750 : isMENA ? 180 : 450) > 350
+        ? 'moderate'
+        : 'well_drained',
+    groundwaterDepthM:
+      estimateGeodesicDistanceToCoastKm(lat, lng) <= 2.0
+        ? 1.5
+        : estimateGeodesicDistanceToCoastKm(lat, lng) <= 10.0
+        ? 3.0
+        : 6.0,
   };
 }
 

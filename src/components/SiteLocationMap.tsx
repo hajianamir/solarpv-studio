@@ -17,7 +17,7 @@ import {
   Compass,
   AlertTriangle,
 } from 'lucide-react';
-import { type ClimateCity, getClimateData } from '../engine/climaticData';
+import { type ClimateCity, getClimateData, fetchClimateData } from '../engine/climaticData';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 
 interface SiteLocationMapProps {
@@ -36,8 +36,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
 
-  const initialLat = currentCity.latitude || (currentCity as any).latitudeDeg || 35.6892;
-  const initialLng = currentCity.longitude || (currentCity as any).longitudeDeg || 51.3890;
+  const initialLat = typeof currentCity.latitude === 'number' ? currentCity.latitude : 35.6892;
+  const initialLng = typeof currentCity.longitude === 'number' ? currentCity.longitude : 51.3890;
 
   // Layer state: 'hybrid' (satellite + labels/roads), 'satellite_pure', 'streets', 'topo' (topography & contours)
   const [activeLayer, setActiveLayer] = useState<'hybrid' | 'satellite_pure' | 'streets' | 'topo'>('hybrid');
@@ -228,6 +228,15 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         setEstimatedPsh(locationData.peakSunHours);
         onSelectLocation(locationData);
         updatePopup(lat, lng, locationData);
+
+        fetchClimateData(lat, lng)
+          .then((gwData) => {
+            onSelectLocation(gwData);
+            updatePopup(lat, lng, gwData);
+          })
+          .catch(() => {
+            // Instant geospatial data remains active
+          });
       });
 
       // Handle marker drag end
@@ -240,6 +249,15 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         setEstimatedPsh(locationData.peakSunHours);
         onSelectLocation(locationData);
         updatePopup(pos.lat, pos.lng, locationData);
+
+        fetchClimateData(pos.lat, pos.lng)
+          .then((gwData) => {
+            onSelectLocation(gwData);
+            updatePopup(pos.lat, pos.lng, gwData);
+          })
+          .catch(() => {
+            // Instant geospatial data remains active
+          });
       });
 
       mapInstanceRef.current = map;
@@ -260,8 +278,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
   // Sync coords with external currentCity changes
   useEffect(() => {
-    const currentLat = currentCity.latitude || (currentCity as any).latitudeDeg || 35.6892;
-    const currentLng = currentCity.longitude || (currentCity as any).longitudeDeg || 51.3890;
+    const currentLat = typeof currentCity.latitude === 'number' ? currentCity.latitude : 35.6892;
+    const currentLng = typeof currentCity.longitude === 'number' ? currentCity.longitude : 51.3890;
     if (
       mapInstanceRef.current &&
       markerRef.current &&
@@ -317,6 +335,16 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     }
     setEstimatedPsh(locationData.peakSunHours);
     onSelectLocation(locationData);
+
+    fetchClimateData(targetLat, targetLng)
+      .then((gwData) => {
+        if (labelName) {
+          gwData.nameFa = labelName;
+          gwData.nameEn = labelName;
+        }
+        onSelectLocation(gwData);
+      })
+      .catch(() => {});
   };
 
   // Browser geolocation — jump map to user's measured location

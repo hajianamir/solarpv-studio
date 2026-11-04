@@ -692,6 +692,7 @@ export const App: React.FC = () => {
           tabs: [
             { id: 'mv_substation' as ActiveModuleTab, title: t.tabMvSubstation, icon: <Building2 className="w-4 h-4 text-purple-400" /> },
             { id: 'cables_bom' as ActiveModuleTab, title: t.tabCablesBom, icon: <Shield className="w-4 h-4 text-emerald-400" /> },
+            { id: 'sld' as ActiveModuleTab, title: lang === 'fa' ? 'دیاگرام تک‌خطی (SLD)' : 'Single Line Diagram (SLD)', icon: <Workflow className="w-4 h-4 text-amber-400" /> },
           ],
         },
         {
@@ -757,6 +758,7 @@ export const App: React.FC = () => {
           tabs: [
             { id: 'harmonics_grid' as ActiveModuleTab, title: t.tabUpstreamGrid, icon: <Activity className="w-4 h-4 text-indigo-400" /> },
             { id: 'cables_bom' as ActiveModuleTab, title: t.tabCablesBom, icon: <Shield className="w-4 h-4 text-emerald-400" /> },
+            { id: 'sld' as ActiveModuleTab, title: lang === 'fa' ? 'دیاگرام تک‌خطی (SLD)' : 'Single Line Diagram (SLD)', icon: <Workflow className="w-4 h-4 text-amber-400" /> },
           ],
         },
         {

@@ -128,11 +128,11 @@ export const REAL_WORLD_V2_TEST_VECTORS: MigrationTestCase[] = [
       autonomyDays: 1.5,
       outageHours: 6,
       featureFlags: {
-        enableMultiphysics: true,
-        enableClimateResilience: true,
-        enableLcaSustainability: true,
-        enableHydrogenAndGrid: true,
-        enableCivilGeotech: true,
+        enableMultiphysicsCoupling: true,
+        enableClimateResilience15Min: true,
+        enableLcaLifecycleSustainability: true,
+        enableNextGenGridHydrogen: true,
+        enableAdvancedGeotechnicalCivil: true,
       },
       siteOverrides: {},
       userPricing: {

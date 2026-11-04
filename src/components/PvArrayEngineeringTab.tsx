@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Sun, Cpu, AlertTriangle, CheckCircle2, Layers, Zap, Eye, Search, Filter } from 'lucide-react';
+import { Sun, Cpu, AlertTriangle, CheckCircle2, Layers, Zap, Eye, Search } from 'lucide-react';
 import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
 import { type InverterClusteringResult } from '../engine/inverterClustering';
 import { CATALOG_MODULES, CATALOG_INVERTERS, type CatalogInverter } from '../engine/equipmentCatalogData';

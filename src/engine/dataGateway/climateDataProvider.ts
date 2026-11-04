@@ -64,8 +64,10 @@ export class ClimateDataProvider {
                   `REAL_INTERNET=true: Both PVGIS and NASA POWER unreachable for (${lat}, ${lng}). PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}; NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}. No analytical fallback allowed in REAL_INTERNET mode.`
                 );
               }
-              // Fall through to analytical fallback
-              throw pvgisErr;
+              // Fall through to analytical fallback with diagnostic trace
+              throw new Error(
+                `Both PVGIS and NASA POWER unreachable for (${lat}, ${lng}). PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}; NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}`
+              );
             }
           }
         } else {
@@ -80,8 +82,10 @@ export class ClimateDataProvider {
                   `REAL_INTERNET=true: Both NASA POWER and PVGIS unreachable for (${lat}, ${lng}). NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}; PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}. No analytical fallback allowed in REAL_INTERNET mode.`
                 );
               }
-              // Fall through to analytical fallback
-              throw nasaErr;
+              // Fall through to analytical fallback with diagnostic trace
+              throw new Error(
+                `Both NASA POWER and PVGIS unreachable for (${lat}, ${lng}). NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}; PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}`
+              );
             }
           }
         }
