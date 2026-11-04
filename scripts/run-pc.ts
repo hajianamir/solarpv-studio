@@ -181,7 +181,7 @@ function openBrowser(url: string): void {
   let command = '';
 
   if (platform === 'win32') {
-    command = `start "" "${url}"`;
+    command = `start "" "${url}" 2>nul || powershell -NoProfile -Command "Start-Process '${url}'"`;
   } else if (platform === 'darwin') {
     command = `open "${url}"`;
   } else {
@@ -221,7 +221,8 @@ async function main() {
   };
 
   // Run server using tsx
-  const tsxBin = path.join(ROOT_DIR, 'node_modules', '.bin', process.platform === 'win32' ? 'tsx.cmd' : 'tsx');
+  const isWindows = process.platform === 'win32';
+  const tsxBin = path.join(ROOT_DIR, 'node_modules', '.bin', isWindows ? 'tsx.cmd' : 'tsx');
   const serverScript = path.join(ROOT_DIR, 'server.ts');
 
   let serverProcess: ChildProcess;
@@ -231,16 +232,21 @@ async function main() {
       cwd: ROOT_DIR,
       env: childEnv,
       stdio: 'inherit',
+      shell: isWindows,
     });
   } else {
     // Fallback to npx tsx
-    serverProcess = spawn('npx', ['tsx', serverScript], {
+    serverProcess = spawn(isWindows ? 'npx.cmd' : 'npx', ['tsx', serverScript], {
       cwd: ROOT_DIR,
       env: childEnv,
       stdio: 'inherit',
-      shell: true,
+      shell: isWindows,
     });
   }
+
+  serverProcess.on('error', (err) => {
+    console.error(`${c.red}خطا در راه‌اندازی فرآیند سرور:${c.reset}`, err);
+  });
 
   // Handle termination signals
   const cleanup = () => {
