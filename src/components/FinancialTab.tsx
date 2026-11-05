@@ -26,6 +26,7 @@ import {
   runFinancialUncertaintyPropagation,
   type FinancialUqResult,
 } from '../engine/core/uncertaintyPropagation';
+import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 
 interface FinancialTabProps {
   financial: FinancialAnalysisResult;
@@ -37,6 +38,8 @@ interface FinancialTabProps {
   isBifacial?: boolean;
   bifacialityFactor?: number;
   groundCoverRatio?: number;
+  bifacialGainPct?: number;
+  shadingProvenance?: AppliedShading3dRecord | null;
 }
 
 export const FinancialTab: React.FC<FinancialTabProps> = ({
@@ -49,6 +52,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   isBifacial = false,
   bifacialityFactor = 0.80,
   groundCoverRatio = 0.38,
+  bifacialGainPct,
+  shadingProvenance,
 }) => {
   const [showCashflowTable, setShowCashflowTable] = useState(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
@@ -669,8 +674,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
                 {isBifacial
                   ? (lang === 'fa'
-                    ? `ماژول دوطرفه (Bifacial BF=${bifacialityFactor.toFixed(2)}, GCR=${groundCoverRatio.toFixed(2)}) - حساسیت آلبدو فعال`
-                    : `Bifacial Array (BF=${bifacialityFactor.toFixed(2)}, GCR=${groundCoverRatio.toFixed(2)}) - Albedo Sensitivity Active`)
+                    ? `ماژول دوطرفه (Bifacial BF=${bifacialityFactor.toFixed(2)}, GCR=${groundCoverRatio.toFixed(2)}, آلبدو ۰.۲۲) — بهره تابش پشت +${(bifacialGainPct ?? 3.0).toFixed(1)}٪ (تقریب درجه اول)`
+                    : `Bifacial Array (BF=${bifacialityFactor.toFixed(2)}, GCR=${groundCoverRatio.toFixed(2)}, albedo 0.22) — Rear gain +${(bifacialGainPct ?? 3.0).toFixed(1)}% (first-order proxy)`)
                   : (lang === 'fa'
                     ? 'ماژول یک‌طرفه (Monofacial) - اثر آلبدو محدود به بازتاب افقی'
                     : 'Monofacial Array - Low Albedo Sensitivity')}

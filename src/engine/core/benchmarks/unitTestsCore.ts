@@ -4462,6 +4462,300 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // ==========================================================================
+  // E14: Bifacial Rear Gain Proxy & Waterfall Engine Integration
+  // ==========================================================================
+  {
+    const { computeBifacialRearGain, rearGainFraction, rearGainPercent } = await import('../../bifacialGain');
+
+    // 1. Math verification: bf=0.80, gcr=0.38, albedo=0.25 -> 0.80 * 0.38 * 0.25 * 0.45 = 0.0342 (3.42%)
+    const normalGain = computeBifacialRearGain({
+      isBifacial: true,
+      bifacialityFactor: 0.80,
+      groundCoverRatio: 0.38,
+      albedo: 0.25,
+    });
+    const expectedNormal = 0.80 * 0.38 * 0.25 * 0.45;
+    const mathOk = Math.abs(normalGain - expectedNormal) < 1e-6;
+
+    // 2. Monofacial check -> strictly 0
+    const monoGain = computeBifacialRearGain({
+      isBifacial: false,
+      bifacialityFactor: 0.80,
+      groundCoverRatio: 0.38,
+      albedo: 0.25,
+    });
+    const monoOk = monoGain === 0;
+
+    // 3. Clamping check: high albedo / GCR clamped at 15% (0.15)
+    const clampedGain = computeBifacialRearGain({
+      isBifacial: true,
+      bifacialityFactor: 1.0,
+      groundCoverRatio: 0.90,
+      albedo: 0.90, // snow: 1.0 * 0.9 * 0.9 * 0.45 = 0.3645 -> clamped to 0.15
+    });
+    const clampOk = clampedGain === 0.15;
+
+    // 4. rearGainFraction & rearGainPercent consistency
+    const fractionOk = Math.abs(rearGainFraction({ isBifacial: true, bifacialityFactor: 0.80, groundCoverRatio: 0.38, albedo: 0.25 }) - expectedNormal) < 1e-6;
+    const percentOk = Math.abs(rearGainPercent({ isBifacial: true, bifacialityFactor: 0.80, groundCoverRatio: 0.38, albedo: 0.25 }) - (expectedNormal * 100)) < 1e-4;
+
+    // 5. Waterfall integration: 16th parameter bifacialGainPct
+    const wfMono = computeWaterfallLosses(1000, 5.2, 40.0, 4.5, 1.25, false, 0.0, -2.2, 45.0, -0.30, undefined, 'ground_mount', 30.0, 35.7, 5.98, 0.0);
+    const wfBifacial = computeWaterfallLosses(1000, 5.2, 40.0, 4.5, 1.25, false, 0.0, -2.2, 45.0, -0.30, undefined, 'ground_mount', 30.0, 35.7, 5.98, 3.42);
+
+    const biStage = wfBifacial.stages.find(s => s.id === 'bifacial_gain');
+    const monoStage = wfMono.stages.find(s => s.id === 'bifacial_gain');
+
+    const biStageOk = biStage !== undefined && biStage.percentageLoss === 3.42 && biStage.stageOutputKwh > biStage.nominalEnergyKwh;
+    const monoStageOk = monoStage === undefined; // when 0%, omitted from stages, maintains 14 stages
+    const energyGainOk = wfBifacial.netAnnualEnergyExportMwh > wfMono.netAnnualEnergyExportMwh;
+
+    assert(
+      'E14-BIFACIAL-REAR-GAIN-AND-WATERFALL',
+      'Bifacial rear gain proxy adheres to clamped physics [0, 15%] and integrates as positive stage in waterfall energy chain',
+      mathOk && monoOk && clampOk && fractionOk && percentOk && biStageOk && monoStageOk && energyGainOk,
+      `gain=${(normalGain * 100).toFixed(2)}% (exp ${(expectedNormal * 100).toFixed(2)}%), clamped=${clampedGain}, biStage=${biStage?.percentageLoss}%, biMwh=${wfBifacial.netAnnualEnergyExportMwh.toFixed(1)} > monoMwh=${wfMono.netAnnualEnergyExportMwh.toFixed(1)}`
+    );
+  }
+
+  // ==========================================================================
+  // E15: 3D Shading Input Lifecycle State Machine
+  // ==========================================================================
+  {
+    const {
+      shadingLifecycleReducer,
+      createInitialShadingLifecycleState,
+    } = await import('../../shadingLifecycle');
+
+    // 1. Initial state
+    const s0 = createInitialShadingLifecycleState();
+    const initOk = s0.appliedShading === null && s0.isStale === false;
+
+    // 2. Apply action
+    const nowIso = '2026-11-05T12:00:00.000Z';
+    const s1 = shadingLifecycleReducer(s0, {
+      type: 'APPLY',
+      lossPct: 7.25,
+      capacityKwp: 1000,
+      appliedAtIso: nowIso,
+      cityId: 'tehran',
+    });
+    const applyOk = s1.appliedShading !== null &&
+      s1.appliedShading.lossPct === 7.25 &&
+      s1.appliedShading.appliedAtIso === nowIso &&
+      s1.appliedShading.capacityKwp === 1000 &&
+      s1.appliedCityId === 'tehran';
+
+    // 3. Revert action
+    const s2 = shadingLifecycleReducer(s1, { type: 'REVERT' });
+    const revertOk = s2.appliedShading === null;
+
+    // 4. Project change resets applied shading
+    const s3Applied = shadingLifecycleReducer(s0, {
+      type: 'APPLY',
+      lossPct: 5.5,
+      capacityKwp: 1000,
+      appliedAtIso: nowIso,
+      cityId: 'tehran',
+    });
+    const s4SyncSameCity = shadingLifecycleReducer(s3Applied, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+    });
+    const syncSameOk = s4SyncSameCity.appliedShading !== null;
+
+    const s5SyncDiffCity = shadingLifecycleReducer(s3Applied, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'isfahan',
+    });
+    const syncDiffOk = s5SyncDiffCity.appliedShading === null;
+
+    assert(
+      'E15-SHADING-LIFECYCLE-MANAGEMENT',
+      '3D shading lifecycle reducer correctly manages apply, revert, provenance records, and cross-project reset',
+      initOk && applyOk && revertOk && syncSameOk && syncDiffOk,
+      `initOk=${initOk}, appliedLoss=${s1.appliedShading?.lossPct}%, revertApplied=${s2.appliedShading}, syncSame=${syncSameOk}, syncDiff=${syncDiffOk}`
+    );
+  }
+
+  // ==========================================================================
+  // E16: MV Substation Inverter Fault Busbar Inclusion Toggle & Assumptions
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // Case A: Default (includeConverterContributionAtBusbar = true)
+    const subWithBusbar = designMvSubstation({
+      plantCapacityAcMw: 10,
+      gridConnectionVoltageKv: 20,
+      inverterOutputVoltageV: 800,
+      soilResistivityOhmM: 100,
+      clearingTimeSec: 0.5,
+      includeConverterContributionAtBusbar: true,
+      inverterFaultContributionFactor: 1.15,
+    });
+
+    // Case B: Disconnected / toggled off (includeConverterContributionAtBusbar = false)
+    const subWithoutBusbar = designMvSubstation({
+      plantCapacityAcMw: 10,
+      gridConnectionVoltageKv: 20,
+      inverterOutputVoltageV: 800,
+      soilResistivityOhmM: 100,
+      clearingTimeSec: 0.5,
+      includeConverterContributionAtBusbar: false,
+      inverterFaultContributionFactor: 1.15,
+    });
+
+    const scA = subWithBusbar.shortCircuit;
+    const scB = subWithoutBusbar.shortCircuit;
+
+    // Expected inverter contribution: 1.15 * 10 / (sqrt(3) * 20) = 0.3320 kA
+    const expInvKa = (1.15 * 10.0) / (Math.sqrt(3) * 20.0);
+    const invKaOk = Math.abs(scA.inverterFaultContributionKa - expInvKa) < 0.005;
+
+    // In Case A, busbar total includes converter contribution
+    const busbarWithOk = Math.abs(scA.busbarIscKa - (scA.busbarGridIscKa + scA.inverterFaultContributionKa)) < 0.01;
+
+    // In Case B, busbar total equals grid contribution only
+    const busbarWithoutOk = Math.abs(scB.busbarIscKa - scB.busbarGridIscKa) < 0.01;
+
+    // Feeder terminal in both cases includes converter contribution
+    const feederAOk = Math.abs(scA.feederTerminalIscKa - (scA.feederTerminalGridIscKa + scA.inverterFaultContributionKa)) < 0.01;
+    const feederBOk = Math.abs(scB.feederTerminalIscKa - (scB.feederTerminalGridIscKa + scB.inverterFaultContributionKa)) < 0.01;
+
+    // Assumptions array verification: must contain bilingual screening notice and IEC 60909-0 Clause 6.7 citation
+    const assumptionsExist = Array.isArray(scA.assumptionsEn) && scA.assumptionsEn.length >= 4 &&
+      Array.isArray(scA.assumptionsFa) && scA.assumptionsFa.length >= 4;
+    const hasIecCitation = scA.assumptionsEn.some(a => a.includes('IEC 60909-0 Clause 6.7'));
+    const hasBilingual = scA.assumptionsEn.length === scA.assumptionsFa.length;
+
+    assert(
+      'E16-MV-SUBSTATION-BUSBAR-TOGGLE-AND-ASSUMPTIONS',
+      'MV Substation accurately toggles converter fault contribution at busbar, preserves feeder fault current, and exposes bilingual screening assumptions',
+      invKaOk && busbarWithOk && busbarWithoutOk && feederAOk && feederBOk && assumptionsExist && hasIecCitation && hasBilingual,
+      `Isc_inv=${scA.inverterFaultContributionKa}kA, BusbarWith=${scA.busbarIscKa}kA, BusbarWithout=${scB.busbarIscKa}kA, Feeder=${scA.feederTerminalIscKa}kA, assumptionsCount=${scA.assumptionsEn.length}`
+    );
+  }
+
+  // ==========================================================================
+  // E17: Data-Driven Bifacial Module Catalog Resolution
+  // ==========================================================================
+  {
+    const { CATALOG_MODULES, resolveBifacialParams } = await import('../../equipmentCatalogData');
+
+    // 1. Explicit property resolution
+    const mod0 = CATALOG_MODULES[0]; // Jinko Tiger Neo JKM585N-72HL4-BDV (bifacial: true, factor: 0.80)
+    const resMod0 = resolveBifacialParams(mod0);
+    const mod0Ok = resMod0.isBifacial === true && resMod0.bifacialityFactor === 0.80;
+
+    // 2. Monofacial module resolution
+    const monoMod = CATALOG_MODULES.find(m => m.id === 'mod-longi-550')!; // Hi-MO 5 monofacial
+    const resMono = resolveBifacialParams(monoMod);
+    const monoOk = resMono.isBifacial === false && resMono.bifacialityFactor === 0.0;
+
+    // 3. Fallback resolution on custom object without explicit bifacial field:
+    // If name contains 'bifacial' or 'dual-glass' -> true with default 0.80
+    const customBifacial = resolveBifacialParams({
+      name: 'Custom TOPCon Dual-Glass Bifacial 600W',
+    });
+    const customBifacialOk = customBifacial.isBifacial === true && customBifacial.bifacialityFactor === 0.80;
+
+    // If custom name is monofacial -> false and 0.0 (no default 0.80 fallback!)
+    const customMono = resolveBifacialParams({
+      name: 'Standard Monofacial Poly 330W',
+    });
+    const customMonoOk = customMono.isBifacial === false && customMono.bifacialityFactor === 0.0;
+
+    // 4. Catalog sanity check: all catalog items with bifacial === true have bifacialityFactor in [0.65, 0.90]
+    const bifacialCatalogItems = CATALOG_MODULES.filter(m => m.bifacial === true);
+    const catalogFactorsOk = bifacialCatalogItems.length >= 5 &&
+      bifacialCatalogItems.every(m => (m.bifacialityFactor ?? 0) >= 0.65 && (m.bifacialityFactor ?? 0) <= 0.90);
+
+    assert(
+      'E17-DATA-DRIVEN-BIFACIAL-MODULE-RESOLUTION',
+      'resolveBifacialParams faithfully detects bifacial vs monofacial modules without erroneous 0.80 fallback on monofacial items',
+      mod0Ok && monoOk && customBifacialOk && customMonoOk && catalogFactorsOk,
+      `mod0(bi=${resMod0.isBifacial}, bf=${resMod0.bifacialityFactor}), mono(bi=${resMono.isBifacial}, bf=${resMono.bifacialityFactor}), customMono(bi=${customMono.isBifacial}, bf=${customMono.bifacialityFactor}), biCount=${bifacialCatalogItems.length}`
+    );
+  }
+
+  // ==========================================================================
+  // E18: Waterfall Args Contract Builder & Baseline Fixture Regression
+  // ==========================================================================
+  {
+    const { buildWaterfallArgs, WATERFALL_ARG_COUNT } = await import('../../waterfallArgs');
+
+    // 1. Arity check
+    const arityOk = WATERFALL_ARG_COUNT === 16;
+
+    // 2. Contract builder generates exactly 16 positional arguments matching computeWaterfallLosses
+    const fixtureInput = {
+      dcCapacityKw: 1100,
+      peakSunHours: 5.2,
+      ambientTempC: 40.0,
+      soilingLossPct: 4.5,
+      dcAcRatio: 1.25,
+      isSingleAxisTracker: false,
+      nearShadingLossPct: 0.0,
+      iamLossPct: -2.2,
+      moduleNoctC: 45.0,
+      tempCoeffPmpPct: -0.30,
+      trackerConfig: undefined,
+      installationEnvironment: 'ground_mount' as const,
+      tiltDeg: 25.0,
+      latitudeDeg: 35.7,
+      shadingLoss3dPct: 5.98,
+      bifacialGainPct: 0.0, // Monofacial baseline fixture from 2b56244
+    };
+
+    const builtArgs = buildWaterfallArgs(fixtureInput);
+    const argsLengthOk = builtArgs.length === 16;
+
+    // Verify arg positions
+    const posOk =
+      builtArgs[0] === 1100 &&
+      builtArgs[1] === 5.2 &&
+      builtArgs[2] === 40.0 &&
+      builtArgs[3] === 4.5 &&
+      builtArgs[4] === 1.25 &&
+      builtArgs[5] === false &&
+      builtArgs[6] === 0.0 &&
+      builtArgs[7] === -2.2 &&
+      builtArgs[8] === 45.0 &&
+      builtArgs[9] === -0.30 &&
+      builtArgs[10] === undefined &&
+      builtArgs[11] === 'ground_mount' &&
+      builtArgs[12] === 25.0 &&
+      builtArgs[13] === 35.7 &&
+      builtArgs[14] === 5.98 &&
+      builtArgs[15] === 0.0;
+
+    // 3. Execution equivalence
+    const reportFromBuilder = computeWaterfallLosses(...builtArgs);
+    const reportDirect = computeWaterfallLosses(
+      1100, 5.2, 40.0, 4.5, 1.25, false, 0.0, -2.2, 45.0, -0.30, undefined, 'ground_mount', 25.0, 35.7, 5.98, 0.0
+    );
+
+    const execMatch = Math.abs(reportFromBuilder.netAnnualEnergyExportMwh - reportDirect.netAnnualEnergyExportMwh) < 1e-6;
+
+    // 4. Baseline regression check against commit 2b56244:
+    // Monofacial, no-tracker, 1100 kWp, PSH 5.2, 40C, soiling 4.5%, shading 5.98%
+    // PR = ~69.2%, Net Annual Export = ~1682.9 MWh
+    const netMwh = reportFromBuilder.netAnnualEnergyExportMwh;
+    const prPct = reportFromBuilder.performanceRatioPct;
+
+    const prOk = Math.abs(prPct - 69.2) <= 0.1;
+    const mwhOk = Math.abs(netMwh - 1682.9) / 1682.9 <= 0.001; // < 0.1% drift
+
+    assert(
+      'E18-WATERFALL-ARGS-BUILDER-AND-REGRESSION',
+      'buildWaterfallArgs enforces 16-parameter arity contract and matches 2b56244 baseline fixture within 0.1%',
+      arityOk && argsLengthOk && posOk && execMatch && prOk && mwhOk,
+      `arity=${WATERFALL_ARG_COUNT}, builtArgsLen=${builtArgs.length}, PR=${prPct.toFixed(1)}% (exp 69.2%), NetExport=${netMwh.toFixed(1)} MWh (exp 1682.9 MWh)`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

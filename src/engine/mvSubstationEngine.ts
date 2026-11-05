@@ -26,6 +26,7 @@ export interface MvSubstationInput {
   shortCircuitCalculationMode?: 'max_fault_current' | 'min_fault_current'; // IEC 60909 c_max vs c_min
   customCVoltageFactor?: number; // Optional user override for c factor
   faultLocation?: 'mv_busbar' | 'feeder_terminal'; // Fault point: substation MV busbar (excl. cable) vs feeder terminal (incl. cable)
+  includeConverterContributionAtBusbar?: boolean; // Whether inverter fault current is added at busbar (default true)
   inverterFaultContributionFactor?: number; // Converter current limit k_inv per IEC 60909-0 Clause 6.7 / IEEE 1547 (default 1.15)
   faultCurrentLowThresholdKa?: number; // Screening threshold, default 0.5 kA
   faultCurrentHighThresholdKa?: number;// Screening threshold, default 30.0 kA
@@ -93,9 +94,16 @@ export interface ShortCircuitCalculation {
   cFactorSource: string;
   busbarGridIscKa: number;
   busbarIscKa: number;
+  busbarGridOnlyIscKa: number;
+  busbarWithConverterIscKa: number;
+  includeConverterContributionAtBusbar: boolean;
   feederTerminalGridIscKa: number;
   inverterFaultContributionKa: number;
   feederTerminalIscKa: number;
+  governingIscKa: number;
+  governingFaultLocation: 'mv_busbar' | 'feeder_terminal';
+  assumptionsFa: string[];
+  assumptionsEn: string[];
   faultCurrentOutOfRangeWarning?: string;
   screeningMethodologyNoticeFa: string;
   screeningMethodologyNoticeEn: string;
@@ -445,7 +453,10 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const inverterFaultContributionKa = Number((kInv * nominalPlantMvCurrentKa).toFixed(3));
 
   // Total initial symmetrical short-circuit currents incorporating inverter fault current per IEC 60909-0 Clause 6.7:
-  const busbarIscKa = Number((busbarGridIscKa + inverterFaultContributionKa).toFixed(3));
+  const includeConverterAtBusbar = input.includeConverterContributionAtBusbar ?? true;
+  const busbarGridOnlyIscKa = busbarGridIscKa;
+  const busbarWithConverterIscKa = Number((busbarGridIscKa + inverterFaultContributionKa).toFixed(3));
+  const busbarIscKa = includeConverterAtBusbar ? busbarWithConverterIscKa : busbarGridOnlyIscKa;
   const feederTerminalIscKa = Number((feederTerminalGridIscKa + inverterFaultContributionKa).toFixed(3));
 
   // Governing impedance and initial symmetrical fault current for selected fault location:
@@ -601,9 +612,34 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     cFactorSource,
     busbarGridIscKa,
     busbarIscKa,
+    busbarGridOnlyIscKa,
+    busbarWithConverterIscKa,
+    includeConverterContributionAtBusbar: includeConverterAtBusbar,
     feederTerminalGridIscKa,
     inverterFaultContributionKa,
     feederTerminalIscKa,
+    governingIscKa: initialSymmetricalIscKa,
+    governingFaultLocation: faultLocation,
+    assumptionsFa: [
+      `ضریب اضافه جریان اینورتر k_inv = ${kInv.toFixed(2)} یک فرض غربالگری مهندسی منطبق با رفتار دینامیکی اینورترهای متصل به شبکه است (استاندارد IEC 60909-0 بند ۶.۷ چارچوب محاسبه را ارائه می‌دهد، اما مقدار دقیق به کنترلر و دیتاشیت تایپ‌تست سازنده بستگی دارد).`,
+      'جریان‌های خطای شبکه بالادست و اینورترها به صورت جمع حسابی دامنه‌ها (حالت حدی محافظه‌کارانه بر اساس IEC 60909-0 بند ۶.۷) ترکیب شده‌اند.',
+      includeConverterAtBusbar
+        ? 'جریان خطای باسبار شامل پس‌تغذیه اینورترها بدون احتساب تضعیف امپدانس ترانسفورماتور/کابل‌های رابط است (حد بالای محافظه‌کارانه غربالگری).'
+        : 'جریان خطای باسبار بر مبنای سهم شبکه بالادست بدون احتساب تزریق محلی اینورترها محاسبه شده است.',
+      'محاسبات شامل سهم موتورها، میرایی مقاومت قوس الکتریکی و مولفه‌های توالی صفر ارتینگ نمی‌باشد.',
+      `ظرفیت اتصال کوتاه شبکه برق بالادست (${upstreamGridShortCircuitMva} MVA) و نسبت R_Q/X_Q (${gridRx.toFixed(2)}) فرضیات اولیه غربالگری هستند.`,
+      `جریان خطای مبنا جهت انتخاب کلید قدرت: ${initialSymmetricalIscKa.toFixed(3)} کیلوآمپر در ${faultLocation === 'feeder_terminal' ? 'انتهای فیدر خروجی' : 'باسبار پست فشار متوسط'}.`,
+    ],
+    assumptionsEn: [
+      `Inverter current contribution limit factor k_inv = ${kInv.toFixed(2)} is an engineering screening assumption for typical grid-following inverter controls. IEC 60909-0 Clause 6.7 provides the calculation framework; the exact dynamic fault limit must be verified against certified manufacturer type-test datasheets.`,
+      'Upstream utility grid and inverter fault currents are combined as arithmetic scalar magnitudes (I_sc = I_sc,grid + I_sc,inv), representing a conservative upper-bound screening envelope per IEC 60909-0 Clause 6.7.',
+      includeConverterAtBusbar
+        ? 'Substation MV busbar fault current includes unattenuated inverter backfeed, assuming negligible transformer/collector impedance between inverters and MV busbar (upper-bound screening).'
+        : 'Substation MV busbar fault current is evaluated on a grid-only basis excluding local inverter backfeed contribution.',
+      'Screening calculation excludes dynamic motor backfeed, arc resistance damping, and zero-sequence earthing fault currents.',
+      `Upstream grid short-circuit capacity (${upstreamGridShortCircuitMva} MVA) and R_Q/X_Q ratio (${gridRx.toFixed(2)}) are user-specified preliminary screening parameters.`,
+      `Governing fault current for breaker duty selection: ${initialSymmetricalIscKa.toFixed(3)} kA at ${faultLocation === 'feeder_terminal' ? 'feeder terminal' : 'substation MV busbar'}.`,
+    ],
     faultCurrentOutOfRangeWarning,
     screeningMethodologyNoticeFa:
       'محاسبات اتصال کوتاه بر اساس مدل غربالگری مهندسی IEC 60909-0:2016 شامل امپدانس شبکه بالادست، ترانسفورماتور (با ضریب تصحیح KT) و کابل‌های موازی کلکتور MV است. مقاومت کابل برای بیشینه اتصال کوتاه در دمای ۲۰ درجه سانتی‌گراد و برای کمینه در ۹۰ درجه محاسبه شده است. طراحی نهایی مستلزم مطالعات هماهنگی حفاظتی در ETAP یا DIgSILENT است.',

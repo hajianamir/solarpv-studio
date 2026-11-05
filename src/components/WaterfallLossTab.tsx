@@ -1,6 +1,8 @@
 import React from 'react';
-import { Layers, ArrowDownRight, Award, Info, CheckCircle2, TrendingDown } from 'lucide-react';
+import { Layers, ArrowDownRight, Award, Info, CheckCircle2, TrendingDown, Sparkles } from 'lucide-react';
 import { computeWaterfallLosses, type WaterfallLossReport } from '../engine/waterfallLossEngine';
+import { buildWaterfallArgs } from '../engine/waterfallArgs';
+import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 import { type TrackerConfig } from '../engine/tracker/backtrackingEngine';
 
 interface WaterfallLossTabProps {
@@ -13,6 +15,9 @@ interface WaterfallLossTabProps {
   noctC?: number;
   tempCoeffPmpPct?: number;
   trackerConfig?: TrackerConfig | null;
+  bifacialGainPct?: number;
+  shadingProvenance?: AppliedShading3dRecord | null;
+  onClearShading?: () => void;
   lang?: 'fa' | 'en';
 }
 
@@ -26,6 +31,9 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   noctC = 45.0,
   tempCoeffPmpPct = -0.30,
   trackerConfig = null,
+  bifacialGainPct,
+  shadingProvenance,
+  onClearShading,
   lang = 'fa',
 }) => {
   // PR-2a-7-FOLLOWUP-2 (BUG-3): `hasTracker` local state removed.
@@ -35,17 +43,19 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   const isFa = lang === 'fa';
 
   const report: WaterfallLossReport = externalReport ?? computeWaterfallLosses(
-    installedCapacityKwp,
-    peakSunHours,
-    ambientTempMaxC,
-    soilingLossPct,
-    dcAcRatio,
-    Boolean(activeTrackerConfig),
-    0.0,
-    -2.2,
-    noctC,
-    tempCoeffPmpPct,
-    activeTrackerConfig
+    ...buildWaterfallArgs({
+      installedCapacityKwp,
+      peakSunHours,
+      ambientTempMaxC,
+      soilingLossPct,
+      dcAcRatio,
+      hasTracker: Boolean(activeTrackerConfig),
+      snowLossPct: 0.0,
+      iamLossPct: -2.2,
+      noctC,
+      tempCoeffPmpPct,
+      trackerConfig: activeTrackerConfig,
+    })
   );
 
   return (
@@ -188,19 +198,35 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
               </tr>
 
               {report.stages.map((stage, idx) => (
-                <tr key={stage.id} className="hover:bg-slate-850/60">
+                <tr
+                  key={stage.id}
+                  className={
+                    stage.id === 'bifacial_gain'
+                      ? 'bg-emerald-950/20 hover:bg-emerald-950/30 border-l-2 border-emerald-400'
+                      : 'hover:bg-slate-850/60'
+                  }
+                >
                   <td className="p-2.5 font-mono text-slate-400">{idx + 2}</td>
                   <td className="p-2.5 font-medium text-white">
-                    {isFa ? stage.nameFa : stage.nameEn}
-                    <div className="text-[10px] text-slate-400 font-normal">
-                      {isFa ? stage.nameEn : stage.nameFa}
+                    <div className="flex items-center gap-1.5">
+                      {stage.id === 'bifacial_gain' && (
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      )}
+                      <div>
+                        <span className={stage.id === 'bifacial_gain' ? 'text-emerald-300 font-bold' : ''}>
+                          {isFa ? stage.nameFa : stage.nameEn}
+                        </span>
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          {isFa ? stage.nameEn : stage.nameFa}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="p-2.5 text-slate-300">
                     {isFa ? stage.descriptionFa : stage.descriptionEn || stage.nameEn}
                   </td>
                   <td className="p-2.5 font-mono font-bold">
-                    <span className={stage.percentageLoss >= 0 ? 'text-industrial-success' : 'text-industrial-error'}>
+                    <span className={stage.percentageLoss >= 0 ? 'text-industrial-success font-extrabold' : 'text-industrial-error'}>
                       {stage.percentageLoss > 0 ? `+${stage.percentageLoss}%` : `${stage.percentageLoss}%`}
                     </span>
                     <div className="text-[10px] text-slate-500 font-normal">

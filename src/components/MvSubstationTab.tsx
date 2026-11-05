@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, Shield, Anchor, Activity, CheckCircle2, AlertTriangle, Layers, Thermometer, Compass, Radio } from 'lucide-react';
+import { Zap, Shield, Anchor, Activity, CheckCircle2, AlertTriangle, Layers, Thermometer, Compass, Radio, Info } from 'lucide-react';
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 
 interface MvSubstationTabProps {
@@ -28,6 +28,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
   const [cableSectionMm2, setCableSectionMm2] = useState<number>(120);
   const [parallelRuns, setParallelRuns] = useState<number>(1);
   const [faultLocation, setFaultLocation] = useState<'mv_busbar' | 'feeder_terminal'>('mv_busbar');
+  const [includeConverterAtBusbar, setIncludeConverterAtBusbar] = useState<boolean>(true);
 
   const subResult: MvSubstationResult = designMvSubstation({
     plantCapacityAcMva: plantCapacityAcMw,
@@ -43,6 +44,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
     mvCableCrossSectionMm2: cableSectionMm2,
     parallelCableRunsCount: parallelRuns,
     faultLocation,
+    includeConverterContributionAtBusbar: includeConverterAtBusbar,
   });
 
   return (
@@ -570,13 +572,48 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </table>
         </div>
 
+        {/* Inverter Contribution at Busbar Toggle */}
+        <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+            <input
+              type="checkbox"
+              checked={includeConverterAtBusbar}
+              onChange={(e) => setIncludeConverterAtBusbar(e.target.checked)}
+              className="rounded border-industrial-border bg-slate-900 text-sky-500 focus:ring-0"
+            />
+            <span className="font-medium">
+              {isFa
+                ? 'احتساب سهم اتصال کوتاه اینورترها در باسبار پست (حالت حدی محافظه‌کارانه)'
+                : 'Include Inverter Fault Current at Substation MV Busbar (Upper-Bound Screening)'}
+            </span>
+          </label>
+          <div className="text-[11px] text-slate-400 font-mono">
+            {isFa ? 'مبنای توان اکتیو:' : 'Active Power Basis:'} {plantCapacityAcMw} MW / (√3 × {gridVoltageKv} kV) → Inv = {subResult.shortCircuit.inverterFaultContributionKa} kA
+          </div>
+        </div>
+
         {/* Screening notice box */}
-        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-200 flex items-start gap-2">
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-200 flex items-start gap-2 mb-3">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div className="leading-relaxed">
             <span className="font-bold">{isFa ? 'اطلاعیه غربالگری مهندسی: ' : 'Engineering Screening Notice: '}</span>
             {isFa ? subResult.shortCircuit.screeningMethodologyNoticeFa : subResult.shortCircuit.screeningMethodologyNoticeEn}
           </div>
+        </div>
+
+        {/* Explicit Modeling Assumptions List */}
+        <div className="p-3 bg-slate-900/60 border border-industrial-border/60 rounded-lg text-xs text-slate-300">
+          <div className="font-bold text-sky-300 mb-2 flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-sky-400" />
+            {isFa ? 'فرضیات فنی مدل اتصال کوتاه اینورتر و شبکه (IEC 60909-0 Assumptions):' : 'Explicit Inverter & Grid Short-Circuit Modeling Assumptions:'}
+          </div>
+          <ul className="space-y-1 text-[11px] text-slate-300 list-disc list-inside">
+            {(isFa ? subResult.shortCircuit.assumptionsFa : subResult.shortCircuit.assumptionsEn).map((assumption, idx) => (
+              <li key={idx} className="leading-relaxed text-slate-300">
+                {assumption}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 

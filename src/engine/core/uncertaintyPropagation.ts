@@ -283,6 +283,7 @@ import {
   type UserFinancialPricing,
   type FinancialSystemMode,
 } from '../financialEngine';
+import { rearGainFraction } from '../bifacialGain';
 
 /**
  * Rational approximation for Inverse Standard Normal Cumulative Distribution Function \Phi^{-1}(p).
@@ -449,8 +450,16 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
     const isBifacial = input.isBifacial ?? false;
     const bifaciality = input.bifacialityFactor ?? 0.80;
     const gcr = input.groundCoverRatio ?? 0.38;
-    const albedoSensitivityCoeff = isBifacial ? bifaciality * gcr * 0.45 : 0.02;
-    const albedoRearGainFactor = 1.0 + (sampledAlbedo - 0.22) * albedoSensitivityCoeff;
+    // Shared first-order bifacial helper (deduplicated against base waterfall energy model):
+    const baseGainFrac = isBifacial
+      ? rearGainFraction({ bifacialityFactor: bifaciality, groundCoverRatio: gcr, albedo: 0.22 })
+      : 0.0;
+    const sampledGainFrac = isBifacial
+      ? rearGainFraction({ bifacialityFactor: bifaciality, groundCoverRatio: gcr, albedo: sampledAlbedo })
+      : 0.0;
+    const albedoRearGainFactor = isBifacial
+      ? 1.0 + (sampledGainFrac - baseGainFrac)
+      : 1.0 + (sampledAlbedo - 0.22) * 0.02;
     const trialYieldKwh = Math.max(0, baseAnnualYieldKwh * ghiFactor * soilingDerateRatio * albedoRearGainFactor);
 
     // 4. Sampled Pricing object

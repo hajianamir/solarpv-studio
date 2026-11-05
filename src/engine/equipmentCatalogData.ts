@@ -17,17 +17,22 @@ export interface CatalogPvModule {
   widthMm: number;
   weightKg: number;
   warrantyYears: number;
+  bifacial?: boolean; // Explicit data-driven bifacial designator
   bifacialityFactor?: number; // e.g. 0.80 for TOPCon / PERC bifacial, 0.85 for HJT
 }
 
-/** Determines if a module is bifacial based on explicit factor, model designation or cell type */
-export function isBifacialModule(mod: {
+/** Determines if a module is bifacial based on explicit flag, factor, model designation or cell type */
+export function isBifacialModule(mod?: {
   modelName?: string;
+  name?: string;
   cellType?: string;
+  bifacial?: boolean;
   bifacialityFactor?: number;
-}): boolean {
+} | null): boolean {
+  if (!mod) return false;
+  if (mod.bifacial === true) return true;
   if (mod.bifacialityFactor !== undefined && mod.bifacialityFactor > 0) return true;
-  const name = (mod.modelName ?? '').toLowerCase();
+  const name = `${mod.modelName ?? ''} ${mod.name ?? ''}`.toLowerCase();
   const cell = (mod.cellType ?? '').toLowerCase();
   return (
     name.includes('bifacial') ||
@@ -43,6 +48,41 @@ export function isBifacialModule(mod: {
     name.includes('mah72db') ||
     cell.includes('bifacial')
   );
+}
+
+export interface ResolvedBifacialParams {
+  isBifacial: boolean;
+  bifacialityFactor: number;
+  groundCoverRatioDefault: number;
+}
+
+/**
+ * Centralized, data-driven derivation of bifacial simulation parameters.
+ * Used identically across App, PvArrayEngineeringTab, FinancialTab, and Waterfall engines.
+ */
+export function resolveBifacialParams(mod?: {
+  modelName?: string;
+  name?: string;
+  cellType?: string;
+  bifacial?: boolean;
+  bifacialityFactor?: number;
+} | null): ResolvedBifacialParams {
+  if (!mod) {
+    return { isBifacial: false, bifacialityFactor: 0.0, groundCoverRatioDefault: 0.38 };
+  }
+  const isBi = isBifacialModule(mod);
+  if (!isBi) {
+    return { isBifacial: false, bifacialityFactor: 0.0, groundCoverRatioDefault: 0.38 };
+  }
+  const factor =
+    mod.bifacialityFactor !== undefined && mod.bifacialityFactor > 0
+      ? mod.bifacialityFactor
+      : 0.80; // standard default for bifacial modules with unstated factor
+  return {
+    isBifacial: true,
+    bifacialityFactor: factor,
+    groundCoverRatioDefault: 0.38,
+  };
 }
 
 export interface CatalogInverter {
@@ -84,49 +124,49 @@ export interface CatalogBattery {
 
 export const CATALOG_MODULES: CatalogPvModule[] = [
   // --- Jinko Solar ---
-  { id: 'mod-jinko-585', manufacturer: 'Jinko Solar', modelName: 'Tiger Neo 72HL4-BDV 585W Bifacial', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.25, vmpVolts: 42.68, iscAmps: 14.42, impAmps: 13.71, efficiencyPct: 22.65, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 31.0, warrantyYears: 30, bifacialityFactor: 0.80 },
+  { id: 'mod-jinko-585', manufacturer: 'Jinko Solar', modelName: 'Tiger Neo 72HL4-BDV 585W Bifacial', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.25, vmpVolts: 42.68, iscAmps: 14.42, impAmps: 13.71, efficiencyPct: 22.65, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 31.0, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
   { id: 'mod-jinko-580', manufacturer: 'Jinko Solar', modelName: 'Tiger Neo 72HL4-(V) 580W', cellType: 'N-Type TOPCon', pmpWatts: 580, vocVolts: 51.20, vmpVolts: 42.65, iscAmps: 14.37, impAmps: 13.60, efficiencyPct: 22.45, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 28.0, warrantyYears: 25 },
-  { id: 'mod-jinko-620', manufacturer: 'Jinko Solar', modelName: 'Tiger Neo 78HL4-BDV 620W Utility', cellType: 'N-Type TOPCon', pmpWatts: 620, vocVolts: 55.48, vmpVolts: 46.20, iscAmps: 14.18, impAmps: 13.42, efficiencyPct: 22.18, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2465, widthMm: 1134, weightKg: 34.0, warrantyYears: 30, bifacialityFactor: 0.80 },
-  { id: 'mod-jinko-700', manufacturer: 'Jinko Solar', modelName: 'Tiger Neo 66HL5M-BDV 700W (210mm)', cellType: 'N-Type TOPCon', pmpWatts: 700, vocVolts: 47.95, vmpVolts: 39.85, iscAmps: 18.52, impAmps: 17.57, efficiencyPct: 22.53, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2384, widthMm: 1303, weightKg: 38.5, warrantyYears: 30, bifacialityFactor: 0.80 },
+  { id: 'mod-jinko-620', manufacturer: 'Jinko Solar', modelName: 'Tiger Neo 78HL4-BDV 620W Utility', cellType: 'N-Type TOPCon', pmpWatts: 620, vocVolts: 55.48, vmpVolts: 46.20, iscAmps: 14.18, impAmps: 13.42, efficiencyPct: 22.18, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2465, widthMm: 1134, weightKg: 34.0, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
+  { id: 'mod-jinko-700', manufacturer: 'Jinko Solar', modelName: 'Tiger Neo 66HL5M-BDV 700W (210mm)', cellType: 'N-Type TOPCon', pmpWatts: 700, vocVolts: 47.95, vmpVolts: 39.85, iscAmps: 18.52, impAmps: 17.57, efficiencyPct: 22.53, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2384, widthMm: 1303, weightKg: 38.5, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
   { id: 'mod-jinko-440', manufacturer: 'Jinko Solar', modelName: 'Tiger Neo 54HL4R-B 440W All-Black', cellType: 'N-Type TOPCon', pmpWatts: 440, vocVolts: 39.38, vmpVolts: 32.81, iscAmps: 13.86, impAmps: 13.41, efficiencyPct: 22.02, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 1762, widthMm: 1134, weightKg: 21.0, warrantyYears: 25 },
 
   // --- LONGi Solar ---
   { id: 'mod-longi-585', manufacturer: 'LONGi Solar', modelName: 'Hi-MO 6 Explorer LR5-72HTH 585W', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.65, vmpVolts: 43.25, iscAmps: 14.33, impAmps: 13.53, efficiencyPct: 22.60, tempCoeffVocPct: -0.26, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 27.5, warrantyYears: 25 },
-  { id: 'mod-longi-610', manufacturer: 'LONGi Solar', modelName: 'Hi-MO 7 LR7-72HGD 610W Dual Glass', cellType: 'N-Type TOPCon', pmpWatts: 610, vocVolts: 52.55, vmpVolts: 44.10, iscAmps: 14.70, impAmps: 13.83, efficiencyPct: 23.00, tempCoeffVocPct: -0.24, tempCoeffPmpPct: -0.28, lengthMm: 2382, widthMm: 1134, weightKg: 33.5, warrantyYears: 30, bifacialityFactor: 0.80 },
-  { id: 'mod-longi-660', manufacturer: 'LONGi Solar', modelName: 'Hi-MO 9 LR8-72HTD 660W HPBC 2.0', cellType: 'ABC Back-Contact', pmpWatts: 660, vocVolts: 53.80, vmpVolts: 45.30, iscAmps: 15.42, impAmps: 14.57, efficiencyPct: 24.40, tempCoeffVocPct: -0.23, tempCoeffPmpPct: -0.26, lengthMm: 2382, widthMm: 1134, weightKg: 33.5, warrantyYears: 30, bifacialityFactor: 0.70 },
+  { id: 'mod-longi-610', manufacturer: 'LONGi Solar', modelName: 'Hi-MO 7 LR7-72HGD 610W Dual Glass', cellType: 'N-Type TOPCon', pmpWatts: 610, vocVolts: 52.55, vmpVolts: 44.10, iscAmps: 14.70, impAmps: 13.83, efficiencyPct: 23.00, tempCoeffVocPct: -0.24, tempCoeffPmpPct: -0.28, lengthMm: 2382, widthMm: 1134, weightKg: 33.5, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
+  { id: 'mod-longi-660', manufacturer: 'LONGi Solar', modelName: 'Hi-MO 9 LR8-72HTD 660W HPBC 2.0', cellType: 'ABC Back-Contact', pmpWatts: 660, vocVolts: 53.80, vmpVolts: 45.30, iscAmps: 15.42, impAmps: 14.57, efficiencyPct: 24.40, tempCoeffVocPct: -0.23, tempCoeffPmpPct: -0.26, lengthMm: 2382, widthMm: 1134, weightKg: 33.5, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.70 },
   { id: 'mod-longi-550', manufacturer: 'LONGi Solar', modelName: 'Hi-MO 5 LR5-72HPH 550W', cellType: 'P-Type PERC', pmpWatts: 550, vocVolts: 49.80, vmpVolts: 41.95, iscAmps: 13.98, impAmps: 13.12, efficiencyPct: 21.30, tempCoeffVocPct: -0.28, tempCoeffPmpPct: -0.34, lengthMm: 2256, widthMm: 1133, weightKg: 27.2, warrantyYears: 25 },
 
   // --- Trina Solar ---
-  { id: 'mod-trina-605', manufacturer: 'Trina Solar', modelName: 'Vertex N NEG19RC.20 605W', cellType: 'N-Type TOPCon', pmpWatts: 605, vocVolts: 48.20, vmpVolts: 40.10, iscAmps: 15.96, impAmps: 15.09, efficiencyPct: 22.40, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2384, widthMm: 1134, weightKg: 33.7, warrantyYears: 30, bifacialityFactor: 0.80 },
-  { id: 'mod-trina-700', manufacturer: 'Trina Solar', modelName: 'Vertex N NEG21C.20 700W Utility', cellType: 'N-Type TOPCon', pmpWatts: 700, vocVolts: 47.90, vmpVolts: 39.80, iscAmps: 18.57, impAmps: 17.59, efficiencyPct: 22.50, tempCoeffVocPct: -0.24, tempCoeffPmpPct: -0.29, lengthMm: 2384, widthMm: 1303, weightKg: 38.3, warrantyYears: 30, bifacialityFactor: 0.80 },
+  { id: 'mod-trina-605', manufacturer: 'Trina Solar', modelName: 'Vertex N NEG19RC.20 605W', cellType: 'N-Type TOPCon', pmpWatts: 605, vocVolts: 48.20, vmpVolts: 40.10, iscAmps: 15.96, impAmps: 15.09, efficiencyPct: 22.40, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2384, widthMm: 1134, weightKg: 33.7, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
+  { id: 'mod-trina-700', manufacturer: 'Trina Solar', modelName: 'Vertex N NEG21C.20 700W Utility', cellType: 'N-Type TOPCon', pmpWatts: 700, vocVolts: 47.90, vmpVolts: 39.80, iscAmps: 18.57, impAmps: 17.59, efficiencyPct: 22.50, tempCoeffVocPct: -0.24, tempCoeffPmpPct: -0.29, lengthMm: 2384, widthMm: 1303, weightKg: 38.3, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
   { id: 'mod-trina-445', manufacturer: 'Trina Solar', modelName: 'Vertex S+ TSM-NEG9R.28 445W', cellType: 'N-Type TOPCon', pmpWatts: 445, vocVolts: 52.20, vmpVolts: 44.00, iscAmps: 10.74, impAmps: 10.11, efficiencyPct: 22.30, tempCoeffVocPct: -0.24, tempCoeffPmpPct: -0.29, lengthMm: 1762, widthMm: 1134, weightKg: 21.0, warrantyYears: 25 },
 
   // --- Canadian Solar ---
   { id: 'mod-canadian-585', manufacturer: 'Canadian Solar', modelName: 'TOPHiKu6 CS6W-585T 585W', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.20, vmpVolts: 43.00, iscAmps: 14.35, impAmps: 13.61, efficiencyPct: 22.60, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 27.6, warrantyYears: 25 },
-  { id: 'mod-canadian-670', manufacturer: 'Canadian Solar', modelName: 'BiHiKu7 CS7N-670MB-AG 670W', cellType: 'P-Type PERC', pmpWatts: 670, vocVolts: 45.60, vmpVolts: 38.30, iscAmps: 18.60, impAmps: 17.50, efficiencyPct: 21.60, tempCoeffVocPct: -0.26, tempCoeffPmpPct: -0.34, lengthMm: 2384, widthMm: 1303, weightKg: 38.0, warrantyYears: 30, bifacialityFactor: 0.70 },
-  { id: 'mod-canadian-700', manufacturer: 'Canadian Solar', modelName: 'TOPHiKu7 CS7L-700TB-AG 700W', cellType: 'N-Type TOPCon', pmpWatts: 700, vocVolts: 48.10, vmpVolts: 40.00, iscAmps: 18.58, impAmps: 17.50, efficiencyPct: 22.50, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2384, widthMm: 1303, weightKg: 38.5, warrantyYears: 30, bifacialityFactor: 0.80 },
+  { id: 'mod-canadian-670', manufacturer: 'Canadian Solar', modelName: 'BiHiKu7 CS7N-670MB-AG 670W', cellType: 'P-Type PERC', pmpWatts: 670, vocVolts: 45.60, vmpVolts: 38.30, iscAmps: 18.60, impAmps: 17.50, efficiencyPct: 21.60, tempCoeffVocPct: -0.26, tempCoeffPmpPct: -0.34, lengthMm: 2384, widthMm: 1303, weightKg: 38.0, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.70 },
+  { id: 'mod-canadian-700', manufacturer: 'Canadian Solar', modelName: 'TOPHiKu7 CS7L-700TB-AG 700W', cellType: 'N-Type TOPCon', pmpWatts: 700, vocVolts: 48.10, vmpVolts: 40.00, iscAmps: 18.58, impAmps: 17.50, efficiencyPct: 22.50, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2384, widthMm: 1303, weightKg: 38.5, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
 
   // --- JA Solar ---
-  { id: 'mod-ja-585', manufacturer: 'JA Solar', modelName: 'DeepBlue 4.0 Pro JAM72D40 585W', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.60, vmpVolts: 43.25, iscAmps: 14.38, impAmps: 13.53, efficiencyPct: 22.60, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, lengthMm: 2278, widthMm: 1134, weightKg: 31.8, warrantyYears: 30, bifacialityFactor: 0.80 },
-  { id: 'mod-ja-630', manufacturer: 'JA Solar', modelName: 'DeepBlue 4.0 Pro JAM78D40 630W Utility', cellType: 'N-Type TOPCon', pmpWatts: 630, vocVolts: 55.80, vmpVolts: 46.50, iscAmps: 14.30, impAmps: 13.55, efficiencyPct: 22.50, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, lengthMm: 2465, widthMm: 1134, weightKg: 35.0, warrantyYears: 30, bifacialityFactor: 0.80 },
+  { id: 'mod-ja-585', manufacturer: 'JA Solar', modelName: 'DeepBlue 4.0 Pro JAM72D40 585W', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.60, vmpVolts: 43.25, iscAmps: 14.38, impAmps: 13.53, efficiencyPct: 22.60, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, lengthMm: 2278, widthMm: 1134, weightKg: 31.8, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
+  { id: 'mod-ja-630', manufacturer: 'JA Solar', modelName: 'DeepBlue 4.0 Pro JAM78D40 630W Utility', cellType: 'N-Type TOPCon', pmpWatts: 630, vocVolts: 55.80, vmpVolts: 46.50, iscAmps: 14.30, impAmps: 13.55, efficiencyPct: 22.50, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, lengthMm: 2465, widthMm: 1134, weightKg: 35.0, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
 
   // --- Astronergy (CHINT) ---
-  { id: 'mod-astronergy-585', manufacturer: 'Astronergy (CHINT)', modelName: 'ASTRO N5 CHSM72N(DG)/F-BH 585W', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.35, vmpVolts: 42.80, iscAmps: 14.40, impAmps: 13.67, efficiencyPct: 22.65, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 32.1, warrantyYears: 30, bifacialityFactor: 0.80 },
+  { id: 'mod-astronergy-585', manufacturer: 'Astronergy (CHINT)', modelName: 'ASTRO N5 CHSM72N(DG)/F-BH 585W', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.35, vmpVolts: 42.80, iscAmps: 14.40, impAmps: 13.67, efficiencyPct: 22.65, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 32.1, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
 
   // --- Tongwei (TW Solar) ---
-  { id: 'mod-tongwei-585', manufacturer: 'Tongwei Solar', modelName: 'TWMND-72HD 585W TOPCon Bifacial', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.30, vmpVolts: 42.75, iscAmps: 14.41, impAmps: 13.69, efficiencyPct: 22.65, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, lengthMm: 2278, widthMm: 1134, weightKg: 31.5, warrantyYears: 30, bifacialityFactor: 0.80 },
+  { id: 'mod-tongwei-585', manufacturer: 'Tongwei Solar', modelName: 'TWMND-72HD 585W TOPCon Bifacial', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.30, vmpVolts: 42.75, iscAmps: 14.41, impAmps: 13.69, efficiencyPct: 22.65, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, lengthMm: 2278, widthMm: 1134, weightKg: 31.5, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.80 },
 
   // --- Risen Energy ---
-  { id: 'mod-risen-700', manufacturer: 'Risen Energy', modelName: 'Hyper-ion RSM132-8-700BHDG HJT 700W', cellType: 'HJT Bifacial', pmpWatts: 700, vocVolts: 49.30, vmpVolts: 41.50, iscAmps: 17.75, impAmps: 16.87, efficiencyPct: 22.50, tempCoeffVocPct: -0.22, tempCoeffPmpPct: -0.24, lengthMm: 2384, widthMm: 1303, weightKg: 39.0, warrantyYears: 30, bifacialityFactor: 0.85 },
+  { id: 'mod-risen-700', manufacturer: 'Risen Energy', modelName: 'Hyper-ion RSM132-8-700BHDG HJT 700W', cellType: 'HJT Bifacial', pmpWatts: 700, vocVolts: 49.30, vmpVolts: 41.50, iscAmps: 17.75, impAmps: 16.87, efficiencyPct: 22.50, tempCoeffVocPct: -0.22, tempCoeffPmpPct: -0.24, lengthMm: 2384, widthMm: 1303, weightKg: 39.0, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.85 },
 
   // --- AIKO Solar (Ultra-High Efficiency ABC) ---
-  { id: 'mod-aiko-620', manufacturer: 'AIKO Solar', modelName: 'Neostar 2P AIKO-A620-MAH72Db (ABC)', cellType: 'ABC Back-Contact', pmpWatts: 620, vocVolts: 53.40, vmpVolts: 44.80, iscAmps: 14.52, impAmps: 13.84, efficiencyPct: 24.00, tempCoeffVocPct: -0.22, tempCoeffPmpPct: -0.26, lengthMm: 2278, widthMm: 1134, weightKg: 32.5, warrantyYears: 30, bifacialityFactor: 0.70 },
+  { id: 'mod-aiko-620', manufacturer: 'AIKO Solar', modelName: 'Neostar 2P AIKO-A620-MAH72Db (ABC)', cellType: 'ABC Back-Contact', pmpWatts: 620, vocVolts: 53.40, vmpVolts: 44.80, iscAmps: 14.52, impAmps: 13.84, efficiencyPct: 24.00, tempCoeffVocPct: -0.22, tempCoeffPmpPct: -0.26, lengthMm: 2278, widthMm: 1134, weightKg: 32.5, warrantyYears: 30, bifacial: true, bifacialityFactor: 0.70 },
 
   // --- Iranian Domestic Manufacturers ---
-  { id: 'mod-iran-pakman-585', manufacturer: 'پاکمن انرژی (Pakman Energy)', modelName: 'PKM-TOP-585W N-Type Bifacial TOPCon', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.20, vmpVolts: 42.60, iscAmps: 14.38, impAmps: 13.73, efficiencyPct: 22.60, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 31.0, warrantyYears: 25, bifacialityFactor: 0.80 },
+  { id: 'mod-iran-pakman-585', manufacturer: 'پاکمن انرژی (Pakman Energy)', modelName: 'PKM-TOP-585W N-Type Bifacial TOPCon', cellType: 'N-Type TOPCon', pmpWatts: 585, vocVolts: 51.20, vmpVolts: 42.60, iscAmps: 14.38, impAmps: 13.73, efficiencyPct: 22.60, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 31.0, warrantyYears: 25, bifacial: true, bifacialityFactor: 0.80 },
   { id: 'mod-iran-saba-550', manufacturer: 'صبا سولار (Saba Solar)', modelName: 'SBS-M144-550 Mono Half-Cut', cellType: 'P-Type PERC', pmpWatts: 550, vocVolts: 49.70, vmpVolts: 41.80, iscAmps: 13.92, impAmps: 13.16, efficiencyPct: 21.20, tempCoeffVocPct: -0.28, tempCoeffPmpPct: -0.35, lengthMm: 2279, widthMm: 1134, weightKg: 28.5, warrantyYears: 15 },
   { id: 'mod-iran-taban-550', manufacturer: 'تابان انرژی (Taban Energy)', modelName: 'TBN-M144-550W Half-Cell Mono', cellType: 'P-Type PERC', pmpWatts: 550, vocVolts: 49.80, vmpVolts: 41.90, iscAmps: 13.95, impAmps: 13.13, efficiencyPct: 21.30, tempCoeffVocPct: -0.28, tempCoeffPmpPct: -0.35, lengthMm: 2278, widthMm: 1134, weightKg: 28.0, warrantyYears: 15 },
-  { id: 'mod-iran-aria-580', manufacturer: 'آریا سولار (Aria Solar)', modelName: 'AR-TOP-580W Bifacial Dual Glass', cellType: 'N-Type TOPCon', pmpWatts: 580, vocVolts: 51.10, vmpVolts: 42.50, iscAmps: 14.30, impAmps: 13.65, efficiencyPct: 22.45, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 30.5, warrantyYears: 20, bifacialityFactor: 0.80 },
+  { id: 'mod-iran-aria-580', manufacturer: 'آریا سولار (Aria Solar)', modelName: 'AR-TOP-580W Bifacial Dual Glass', cellType: 'N-Type TOPCon', pmpWatts: 580, vocVolts: 51.10, vmpVolts: 42.50, iscAmps: 14.30, impAmps: 13.65, efficiencyPct: 22.45, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.29, lengthMm: 2278, widthMm: 1134, weightKg: 30.5, warrantyYears: 20, bifacial: true, bifacialityFactor: 0.80 },
 ];
 
 export const CATALOG_INVERTERS: CatalogInverter[] = [

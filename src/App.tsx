@@ -27,6 +27,7 @@ import {
   Settings,
   Hammer,
   AlertTriangle,
+  RotateCcw,
   Save,
   FolderOpen,
   Download,
@@ -58,6 +59,9 @@ import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides
 import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
+import { buildWaterfallArgs } from './engine/waterfallArgs';
+import { rearGainPercent } from './engine/bifacialGain';
+import { type AppliedShading3dRecord } from './engine/shadingLifecycle';
 import { type TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
 import { sizeBatteryBank, computeAutonomyEnergyRequirement, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
@@ -82,6 +86,7 @@ import {
   getFullModulesCatalog,
   getFullInvertersCatalog,
   isBifacialModule,
+  resolveBifacialParams,
 } from './engine/equipmentCatalogData';
 import {
   designPowerplantBays,
@@ -181,7 +186,7 @@ export const App: React.FC = () => {
     noctC: 45.0,
     lengthM: CATALOG_MODULES[0].lengthMm / 1000.0,
     widthM: CATALOG_MODULES[0].widthMm / 1000.0,
-    bifacialityFactor: CATALOG_MODULES[0].bifacialityFactor ?? 0.80,
+    bifacialityFactor: CATALOG_MODULES[0].bifacialityFactor,
   });
 
   // Default utility inverter
@@ -208,7 +213,9 @@ export const App: React.FC = () => {
   const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
   // PR-2a-7: single-axis tracker config (null = fixed tilt)
   const [trackerConfig, setTrackerConfig] = useState<TrackerConfig | null>(null);
-  const [shadingLoss3dPct, setShadingLoss3dPct] = useState<number | null>(null);
+  // 3D Shading input lifecycle record (Apply / Revert / Provenance)
+  const [appliedShadingRecord, setAppliedShadingRecord] = useState<AppliedShading3dRecord | null>(null);
+  const shadingLoss3dPct = appliedShadingRecord?.lossPct ?? null;
   
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
@@ -286,6 +293,11 @@ export const App: React.FC = () => {
       }
     }
   }, [systemMode, activeTab]);
+
+  // Reset applied 3D shading on project location change to prevent cross-project pollution
+  useEffect(() => {
+    setAppliedShadingRecord(null);
+  }, [city.id]);
 
   // Load saved project on initial mount if available
   useEffect(() => {
@@ -469,9 +481,16 @@ export const App: React.FC = () => {
   // This overpaneling is intentional (maximizes AC export), and the UI displays
   // both values in PvArrayEngineeringTab (see ISSUE-2b).
   // ============================================================================
-  const isBifacial = isBifacialModule(selectedModule);
-  const bifacialityFactor = selectedModule.bifacialityFactor ?? (isBifacial ? 0.80 : 0.0);
+  const bifacialParams = resolveBifacialParams(selectedModule);
+  const isBifacial = bifacialParams.isBifacial;
+  const bifacialityFactor = bifacialParams.bifacialityFactor;
   const groundCoverRatio = 0.38;
+  const bifacialGainPct = rearGainPercent({
+    isBifacial,
+    bifacialityFactor,
+    groundCoverRatio,
+    albedo: city.albedo ?? 0.20,
+  });
 
   const effectiveDailyKwhDemand = useMemo(() => {
     if (systemMode === 'powerplant') {
@@ -479,23 +498,25 @@ export const App: React.FC = () => {
       // waterfall loss model — the old hardcoded PR constant was removed.
       // Basis: netAnnualEnergyExportMwh / 365 days for the target capacity.
       const targetKw = targetPowerplantCapacityKw || 1000;
-      const wf = computeWaterfallLosses(
-        targetKw,
-        city.peakSunHours,
-        city.tempMaxC,
-        city.soilingLossPct,
-        1.25,
-        Boolean(trackerConfig),
-        0.0,
-        -2.2,
-        selectedModule.noctC,
-        selectedModule.tempCoeffPmpPct,
-        trackerConfig ?? undefined,
-        siteOverrides?.installationEnvironment || 'ground_mount',
-        city.optimalTiltAnnualDeg,
-        city.latitude,
-        shadingLoss3dPct !== null ? shadingLoss3dPct : undefined
-      );
+      const args = buildWaterfallArgs({
+        dcCapacityKw: targetKw,
+        peakSunHours: city.peakSunHours,
+        ambientTempC: city.tempMaxC,
+        soilingLossPct: city.soilingLossPct,
+        dcAcRatio: 1.25,
+        isSingleAxisTracker: Boolean(trackerConfig),
+        nearShadingLossPct: 0.0,
+        iamLossPct: -2.2,
+        moduleNoctC: selectedModule.noctC,
+        tempCoeffPmpPct: selectedModule.tempCoeffPmpPct,
+        trackerConfig: trackerConfig ?? undefined,
+        installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
+        tiltDeg: city.optimalTiltAnnualDeg,
+        latitudeDeg: city.latitude,
+        shadingLoss3dPct: shadingLoss3dPct !== null ? shadingLoss3dPct : undefined,
+        bifacialGainPct,
+      });
+      const wf = computeWaterfallLosses(...args);
       return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
     } else if (systemMode === 'ongrid') {
       const averagePowerKw = (loadAnalysis.totalDailyEnergyKwh || 20) / 24.0;
@@ -503,7 +524,7 @@ export const App: React.FC = () => {
     } else {
       return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
     }
-  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment, shadingLoss3dPct]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
+  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment, shadingLoss3dPct, bifacialGainPct]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
   // 3. Advanced PV Array Engineering Sizing
   const arrayDesign = useMemo(() => {
@@ -689,28 +710,30 @@ export const App: React.FC = () => {
     );
   }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, outageHours]);
 
-  // 10. Annual energy yield — SINGLE source: unified 14-stage waterfall loss model
+  // 10. Annual energy yield — SINGLE source: unified 14/15-stage waterfall loss model
   // (PR-2a-7-P0, P0-1). The old parallel hardcoded-PR path is
   // deleted. FinancialTab and WaterfallLossTab both consume this same report,
   // so they display the identical annual energy (< 0.1% difference).
   const waterfallReport = useMemo(() => {
-    return computeWaterfallLosses(
-      arrayDesign.totalPvCapacityKwp,
-      city.peakSunHours,
-      city.tempMaxC,
-      city.soilingLossPct,
-      arrayDesign.totalPvCapacityKwp / Math.max(0.1, inverterClustering.totalInverterCapacityKw),
-      Boolean(trackerConfig),
-      0.0,
-      -2.2,
-      selectedModule.noctC,
-      selectedModule.tempCoeffPmpPct,
-      trackerConfig ?? undefined,
-      siteOverrides?.installationEnvironment || 'ground_mount',
-      city.optimalTiltAnnualDeg,
-      city.latitude,
-      shadingLoss3dPct !== null ? shadingLoss3dPct : undefined
-    );
+    const args = buildWaterfallArgs({
+      dcCapacityKw: arrayDesign.totalPvCapacityKwp,
+      peakSunHours: city.peakSunHours,
+      ambientTempC: city.tempMaxC,
+      soilingLossPct: city.soilingLossPct,
+      dcAcRatio: arrayDesign.totalPvCapacityKwp / Math.max(0.1, inverterClustering.totalInverterCapacityKw),
+      isSingleAxisTracker: Boolean(trackerConfig),
+      nearShadingLossPct: 0.0,
+      iamLossPct: -2.2,
+      moduleNoctC: selectedModule.noctC,
+      tempCoeffPmpPct: selectedModule.tempCoeffPmpPct,
+      trackerConfig: trackerConfig ?? undefined,
+      installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
+      tiltDeg: city.optimalTiltAnnualDeg,
+      latitudeDeg: city.latitude,
+      shadingLoss3dPct: shadingLoss3dPct !== null ? shadingLoss3dPct : undefined,
+      bifacialGainPct,
+    });
+    return computeWaterfallLosses(...args);
   }, [
     arrayDesign,
     city,
@@ -719,6 +742,7 @@ export const App: React.FC = () => {
     trackerConfig,
     siteOverrides?.installationEnvironment,
     shadingLoss3dPct,
+    bifacialGainPct,
   ]);
 
   const annualYieldKwh = waterfallReport.netAnnualEnergyExportMwh * 1000.0;
@@ -2237,6 +2261,9 @@ export const App: React.FC = () => {
               noctC={selectedModule.noctC}
               tempCoeffPmpPct={selectedModule.tempCoeffPmpPct}
               trackerConfig={trackerConfig}
+              bifacialGainPct={bifacialGainPct}
+              shadingProvenance={appliedShadingRecord}
+              onClearShading={() => setAppliedShadingRecord(null)}
               lang={lang}
             />
           )}
@@ -2255,6 +2282,8 @@ export const App: React.FC = () => {
               isBifacial={isBifacial}
               bifacialityFactor={bifacialityFactor}
               groundCoverRatio={groundCoverRatio}
+              bifacialGainPct={bifacialGainPct}
+              shadingProvenance={appliedShadingRecord}
             />
           )}
 
@@ -2306,7 +2335,14 @@ export const App: React.FC = () => {
               }
               plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
-              onShadingLossChange={setShadingLoss3dPct}
+              onShadingLossChange={(loss) => {
+                if (loss === null) {
+                  setAppliedShadingRecord(null);
+                }
+              }}
+              appliedShading={appliedShadingRecord}
+              onApplyShading={(record) => setAppliedShadingRecord(record)}
+              onRevertShading={() => setAppliedShadingRecord(null)}
             />
           )}
 

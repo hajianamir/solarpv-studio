@@ -12,6 +12,7 @@
 
 import { calculateSunPathPosition, type SunPosition } from './shadingSunPathEngine';
 import { computeWaterfallLosses, type WaterfallLossReport } from './waterfallLossEngine';
+import { buildWaterfallArgs } from './waterfallArgs';
 
 // ============================================================================
 // 1. WGS84 <-> Local ENU Metric Coordinates Transform
@@ -764,21 +765,21 @@ export function simulateAnnual3dShading(
   // Reconcile into the canonical waterfall loss tree
   const totalPlantKwp = scene.pvTables.reduce((s, t) => s + t.ratedPowerWp / 1000.0, 0) || 100.0;
   const waterfallReport = computeWaterfallLosses(
-    totalPlantKwp,
-    peakSunHours,
-    ambientTempMaxC,
-    4.5,
-    1.25,
-    false,
-    0.0,
-    -2.2,
-    45.0,
-    -0.30,
-    undefined,
-    undefined,
-    scene.roofPlanes[0]?.tiltDeg ?? 25.0,
-    lat,
-    aggregateShadingLossPct
+    ...buildWaterfallArgs({
+      installedCapacityKwp: totalPlantKwp,
+      peakSunHours,
+      ambientTempMaxC,
+      soilingLossPct: 4.5,
+      dcAcRatio: 1.25,
+      hasTracker: false,
+      snowLossPct: 0.0,
+      iamLossPct: -2.2,
+      noctC: 45.0,
+      tempCoeffPmpPct: -0.30,
+      fixedTiltDeg: scene.roofPlanes[0]?.tiltDeg ?? 25.0,
+      latitudeDeg: lat,
+      shadingLossOverridePct: aggregateShadingLossPct,
+    })
   );
 
   return {

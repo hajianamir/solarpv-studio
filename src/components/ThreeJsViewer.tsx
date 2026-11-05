@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Eye, Sun, Box, Play, RefreshCw, Layers, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Eye, Sun, Box, Play, RefreshCw, Layers, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, AlertTriangle, RotateCcw } from 'lucide-react';
 import {
   simulateAnnual3dShading,
   DEFAULT_ROOFTOP_SCENE,
@@ -8,6 +8,7 @@ import {
   type Scene3DState,
 } from '../engine/roof3dShadingEngine';
 import { type ClimateCity } from '../engine/climaticData';
+import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 
 interface ThreeJsViewerProps {
   lang?: 'fa' | 'en';
@@ -15,6 +16,9 @@ interface ThreeJsViewerProps {
   plantCapacityKw?: number;
   plantCapacityType?: 'ac_target' | 'dc_nameplate';
   annualYieldKwh?: number;
+  appliedShading?: AppliedShading3dRecord | null;
+  onApplyShading?: (record: AppliedShading3dRecord) => void;
+  onRevertShading?: () => void;
   onShadingLossChange?: (shadingLossPct: number) => void;
 }
 
@@ -24,6 +28,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   plantCapacityKw,
   plantCapacityType = 'dc_nameplate',
   annualYieldKwh,
+  appliedShading = null,
+  onApplyShading,
+  onRevertShading,
   onShadingLossChange,
 }) => {
   const isEn = lang === 'en';
@@ -318,7 +325,6 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         };
         const result = simulateAnnual3dShading(updatedScene, 5.2, 40.0, { simulationMode });
         setAnnualResult(result);
-        onShadingLossChange?.(result.annualCombinedShadingLossPct);
         setLoading(false);
       }, 100);
     } catch {
@@ -552,8 +558,58 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                 })()}
                 <div className="text-[10px] text-slate-400 mt-2">
                   {isEn
-                    ? 'Note: The 3D viewport evaluates a representative 55.2 kWp array section with local obstructions. Its geometric shading deficit is dynamically fed into the 14-stage waterfall model and financial cashflows.'
-                    : 'توجه: نمای سه‌بعدی یک بلوک نمونه ۵۵.۲ کیلوواتی با موانع مجاور را تحلیل می‌کند. درصد کسری سایه محاسبه‌شده مستقیماً به درخت تلفات واترفال و محاسبات مالی پروژه تزریق می‌گردد.'}
+                    ? 'Note: The 3D viewport evaluates a representative 55.2 kWp array section with local obstructions. Its geometric shading deficit can be applied to the 14-stage waterfall model and financial cashflows or reverted to default.'
+                    : 'توجه: نمای سه‌بعدی یک بلوک نمونه ۵۵.۲ کیلوواتی با موانع مجاور را تحلیل می‌کند. درصد کسری سایه محاسبه‌شده را می‌توانید به درخت تلفات و محاسبات مالی پروژه اعمال یا به مقدار پیش‌فرض بازگردانید.'}
+                </div>
+
+                {/* Apply / Revert Actions */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2.5 border-t border-industrial-border/60">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-slate-400">
+                      {isEn ? 'Project Coupling State:' : 'وضعیت اتصال به مدل پروژه:'}
+                    </span>
+                    {appliedShading ? (
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-bold border border-emerald-500/30">
+                        {isEn ? `Applied (-${appliedShading.lossPct}%)` : `اعمال‌شده (-${appliedShading.lossPct}٪)`}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[11px] border border-slate-700">
+                        {isEn ? 'Preview Only (Default -2.4% Active)' : 'پیش‌نمایش (پیش‌فرض -۲.۴٪ فعال)'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {appliedShading ? (
+                      <button
+                        onClick={onRevertShading}
+                        className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        {isEn ? 'Revert to Default (-2.4%)' : 'بازگشت به پیش‌فرض (-۲.۴٪)'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (annualResult) {
+                            onApplyShading?.({
+                              lossPct: annualResult.annualCombinedShadingLossPct,
+                              source: 'representative_demo_block',
+                              appliedAtIso: new Date().toISOString(),
+                              capacityKwp: 55.2,
+                            });
+                            onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
+                          }
+                        }}
+                        disabled={!annualResult}
+                        className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {isEn
+                          ? `Apply -${annualResult.annualCombinedShadingLossPct}% to Project`
+                          : `اعمال کسری -${annualResult.annualCombinedShadingLossPct}٪ به پروژه`}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
