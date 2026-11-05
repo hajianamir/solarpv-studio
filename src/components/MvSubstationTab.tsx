@@ -556,10 +556,13 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
                 <td className="p-2.5 text-industrial-warning">{subResult.shortCircuit.xEquivalentOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-industrial-error font-extrabold">{subResult.shortCircuit.totalImpedanceOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 font-sans text-white">
-                  <div>Isc″(Busbar) = {subResult.shortCircuit.busbarIscKa} kA</div>
-                  <div className="text-[10px] text-slate-300 font-normal">
+                  <div>
+                    Isc″(Busbar) = {subResult.shortCircuit.busbarIscKa} kA
+                    <span className="text-[10px] text-slate-400 font-normal"> (Grid: {subResult.shortCircuit.busbarGridIscKa} + Inv: {subResult.shortCircuit.inverterFaultContributionKa} kA)</span>
+                  </div>
+                  <div className="text-[11px] text-slate-200 mt-1">
                     Isc″(Feeder) = {subResult.shortCircuit.feederTerminalIscKa} kA
-                    <span className="text-slate-400"> (Grid: {subResult.shortCircuit.feederTerminalGridIscKa} + Inv: {subResult.shortCircuit.inverterFaultContributionKa} kA)</span>
+                    <span className="text-[10px] text-slate-400 font-normal"> (Grid: {subResult.shortCircuit.feederTerminalGridIscKa} + Inv: {subResult.shortCircuit.inverterFaultContributionKa} kA)</span>
                   </div>
                 </td>
               </tr>

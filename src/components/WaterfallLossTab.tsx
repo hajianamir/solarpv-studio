@@ -4,11 +4,12 @@ import { computeWaterfallLosses, type WaterfallLossReport } from '../engine/wate
 import { type TrackerConfig } from '../engine/tracker/backtrackingEngine';
 
 interface WaterfallLossTabProps {
-  installedCapacityKwp: number;
-  peakSunHours: number;
-  ambientTempMaxC: number;
-  soilingLossPct: number;
-  dcAcRatio: number;
+  report?: WaterfallLossReport;
+  installedCapacityKwp?: number;
+  peakSunHours?: number;
+  ambientTempMaxC?: number;
+  soilingLossPct?: number;
+  dcAcRatio?: number;
   noctC?: number;
   tempCoeffPmpPct?: number;
   trackerConfig?: TrackerConfig | null;
@@ -16,11 +17,12 @@ interface WaterfallLossTabProps {
 }
 
 export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
-  installedCapacityKwp,
-  peakSunHours,
-  ambientTempMaxC,
-  soilingLossPct,
-  dcAcRatio,
+  report: externalReport,
+  installedCapacityKwp = 1000,
+  peakSunHours = 5.0,
+  ambientTempMaxC = 35.0,
+  soilingLossPct = 4.5,
+  dcAcRatio = 1.25,
   noctC = 45.0,
   tempCoeffPmpPct = -0.30,
   trackerConfig = null,
@@ -32,13 +34,13 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   const activeTrackerConfig: TrackerConfig | undefined = trackerConfig ?? undefined;
   const isFa = lang === 'fa';
 
-  const report: WaterfallLossReport = computeWaterfallLosses(
+  const report: WaterfallLossReport = externalReport ?? computeWaterfallLosses(
     installedCapacityKwp,
     peakSunHours,
     ambientTempMaxC,
     soilingLossPct,
     dcAcRatio,
-    false, // hasTracker bool always false here; trackerConfig prop is authoritative
+    Boolean(activeTrackerConfig),
     0.0,
     -2.2,
     noctC,

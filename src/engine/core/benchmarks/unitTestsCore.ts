@@ -4189,10 +4189,11 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const ktXOk = Math.abs(subMax.shortCircuit.transformerImpedance.xOhms - Number((xBase * expectedKt).toFixed(5))) < 1e-4;
 
     // 5. Inverter short-circuit contribution per IEC 60909-0 Clause 6.7:
-    // S_plant = 10 / 0.9 = 11.11 MVA -> I_nom_MV = 11.11 / (sqrt(3) * 20) = 0.3207 kA.
-    // I_sc_inv = 1.15 * 0.3207 = 0.369 kA.
+    // Active AC power basis: P_ac = 10 MW -> I_nom_MV = 10 / (sqrt(3) * 20) = 0.2887 kA.
+    // I_sc_inv = 1.15 * 0.2887 = 0.332 kA.
     const invIsc = subMax.shortCircuit.inverterFaultContributionKa;
-    const invContributionOk = Math.abs(invIsc - 0.369) < 0.01;
+    const expectedInvIsc = (1.15 * 10.0) / (Math.sqrt(3) * 20.0);
+    const invContributionOk = Math.abs(invIsc - expectedInvIsc) < 0.01;
     const feederSumOk =
       Math.abs(
         subMax.shortCircuit.feederTerminalIscKa -
@@ -4338,6 +4339,126 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Financial UQ samples ground albedo and soiling via LHS with bifacial sensitivity coupling, Pearson variance attribution, and bankability notices',
       hasAlbedoTornado && hasSoilingTornado && bifacialSpreadOk && decompositionOk && noticesOk,
       `Albedo in tornado=${hasAlbedoTornado}, Soiling in tornado=${hasSoilingTornado}, BiStdDev=${uqBifacial.annualGenerationMwh.stdDev} >= MonoStdDev=${uqMonofacial.annualGenerationMwh.stdDev}, Aleatory=${uqBifacial.uncertaintyDecomposition?.aleatoryVariancePct}%, Epistemic=${uqBifacial.uncertaintyDecomposition?.epistemicVariancePct}%, NoticesFa=${Boolean(uqBifacial.screeningAndBankabilityNoticeFa)}`
+    );
+  }
+
+  // ==========================================================================
+  // E11: Waterfall Loss Engine Parameter Order, Snow Neutrality & Shading Isolation
+  // ==========================================================================
+  {
+    const { computeWaterfallLosses } = await import('../../waterfallLossEngine');
+
+    // Call computeWaterfallLosses with strict parameter order:
+    // (capKwp, PSH, tempMaxC, soiling, dcAc, Boolean(trackerConfig), 0.0, -2.2, noct, tempCoeff, trackerConfig, env, tilt, lat, shadingLoss3dPct)
+    const report = computeWaterfallLosses(
+      1000, // capKwp
+      5.2,  // PSH
+      38.0, // tempMaxC
+      4.5,  // soiling
+      1.25, // dcAc
+      false, // hasTracker (must be false when no tracker, not poisoned by isBifacial)
+      0.0,  // snowLossPct (must remain 0.0 in snow-free zones, not poisoned by bifacial gain)
+      -2.2, // iamLossPct (must remain -2.2, not overwritten by shading)
+      45.0, // noct
+      -0.30,// tempCoeff
+      undefined, // trackerConfig
+      'ground_mount', // env
+      30.0, // tilt
+      35.7, // lat
+      5.98  // shadingLoss3dPct (must land in near_shading stage)
+    );
+
+    const nearShadingStage = report.stages.find(s => s.id === 'near_shading');
+    const iamStage = report.stages.find(s => s.id === 'iam');
+    const snowStage = report.stages.find(s => s.id === 'snow');
+
+    const nearShadingOk = nearShadingStage?.percentageLoss === -5.98;
+    const iamOk = iamStage?.percentageLoss === -2.2;
+    const snowOk = snowStage?.percentageLoss === 0.0;
+    const trackerOff = report.trackerDetails === undefined;
+
+    assert(
+      'E11-WATERFALL-PARAM-MAPPING-AND-SHADING-ISOLATION',
+      'Waterfall loss model strictly maps 3D shading to near_shading without polluting IAM (-2.2%), snow (0.0%), or tracker physics',
+      nearShadingOk && iamOk && snowOk && trackerOff,
+      `nearShading=${nearShadingStage?.percentageLoss}% (exp -5.98%), iam=${iamStage?.percentageLoss}% (exp -2.2%), snow=${snowStage?.percentageLoss}% (exp 0.0%), trackerDetails=${report.trackerDetails !== undefined}`
+    );
+  }
+
+  // ==========================================================================
+  // E12: Bifacial Module Catalog Designation & Identification Helper
+  // ==========================================================================
+  {
+    const { CATALOG_MODULES, isBifacialModule } = await import('../../equipmentCatalogData');
+
+    const jinkoBdv = CATALOG_MODULES.find(m => m.id === 'mod-jinko-585')!;
+    const longiDualGlass = CATALOG_MODULES.find(m => m.id === 'mod-longi-610')!;
+    const trinaNeg = CATALOG_MODULES.find(m => m.id === 'mod-trina-605')!;
+    const canadianBihiku = CATALOG_MODULES.find(m => m.id === 'mod-canadian-670')!;
+    const risenBhdg = CATALOG_MODULES.find(m => m.id === 'mod-risen-700')!;
+    const monofacialLongi = CATALOG_MODULES.find(m => m.id === 'mod-longi-550')!;
+    const monofacialJinko = CATALOG_MODULES.find(m => m.id === 'mod-jinko-440')!;
+
+    const bifacialDetected =
+      isBifacialModule(jinkoBdv) &&
+      isBifacialModule(longiDualGlass) &&
+      isBifacialModule(trinaNeg) &&
+      isBifacialModule(canadianBihiku) &&
+      isBifacialModule(risenBhdg);
+
+    const monofacialCorrect =
+      !isBifacialModule(monofacialLongi) &&
+      !isBifacialModule(monofacialJinko);
+
+    const factorsPopulated =
+      (jinkoBdv.bifacialityFactor ?? 0) >= 0.70 &&
+      (risenBhdg.bifacialityFactor ?? 0) >= 0.80;
+
+    assert(
+      'E12-BIFACIAL-MODULE-DETECTION-AND-CATALOG',
+      'isBifacialModule correctly identifies dual-glass/bifacial series and rejects monofacial, with catalog bifaciality factors populated',
+      bifacialDetected && monofacialCorrect && factorsPopulated,
+      `bifacialDetected=${bifacialDetected}, monofacialCorrect=${monofacialCorrect}, factorsPopulated=${factorsPopulated}`
+    );
+  }
+
+  // ==========================================================================
+  // E13: MV Substation Inverter Fault Contribution at Busbar and Feeder Terminal
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    const subResult = designMvSubstation({
+      plantCapacityAcMw: 10,
+      powerFactor: 0.98,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 100,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 500,
+      mvCableLengthM: 1500,
+      mvCableCrossSectionMm2: 120,
+      parallelCableRunsCount: 1,
+      inverterFaultContributionFactor: 1.10,
+    });
+
+    const sc = subResult.shortCircuit;
+
+    // Inverter contribution = 1.10 * 10 / (sqrt(3) * 20) = 0.3175 kA
+    const expectedInvContributionKa = (1.10 * 10) / (Math.sqrt(3) * 20.0);
+    const invContributionOk = Math.abs(sc.inverterFaultContributionKa - expectedInvContributionKa) < 0.01;
+
+    // Busbar total fault current includes inverter fault contribution
+    const busbarTotalOk = Math.abs(sc.busbarIscKa - (sc.busbarGridIscKa + sc.inverterFaultContributionKa)) < 0.01;
+
+    // Feeder terminal total fault current includes inverter fault contribution
+    const feederTotalOk = Math.abs(sc.feederTerminalIscKa - (sc.feederTerminalGridIscKa + sc.inverterFaultContributionKa)) < 0.01;
+
+    assert(
+      'E13-SUBSTATION-INVERTER-FAULT-CONTRIBUTION',
+      'MV Substation architecture accounts for inverter fault contribution at both busbar and feeder terminal per IEC 60909-0 Clause 6.7',
+      invContributionOk && busbarTotalOk && feederTotalOk,
+      `Isc_inv=${sc.inverterFaultContributionKa} kA (exp ${expectedInvContributionKa.toFixed(4)}), BusbarTotal=${sc.busbarIscKa} kA (Grid=${sc.busbarGridIscKa}), FeederTotal=${sc.feederTerminalIscKa} kA (Grid=${sc.feederTerminalGridIscKa})`
     );
   }
 

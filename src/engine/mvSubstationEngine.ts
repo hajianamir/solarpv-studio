@@ -91,6 +91,7 @@ export interface ShortCircuitCalculation {
   kappa: number;
   cFactor: number;
   cFactorSource: string;
+  busbarGridIscKa: number;
   busbarIscKa: number;
   feederTerminalGridIscKa: number;
   inverterFaultContributionKa: number;
@@ -417,30 +418,34 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const zCableOhms = Math.hypot(rCableOhms, xCableOhms);
 
   // 4. Substation Busbar vs Feeder Terminal Fault Topology & Inverter Contribution:
-  // - 'mv_busbar': Fault at substation MV busbar (upstream grid + transformer only)
+  // - 'mv_busbar': Fault at substation MV busbar (upstream grid + transformer, plus inverter backfeed)
   // - 'feeder_terminal': Downstream fault at collection feeder end (includes parallel cables + inverter current)
-  // Per IEC 60909-0 Clause 6.7 / IEEE 1547: Static power converter-connected PV generating units contribute
-  // a fast current-limited short-circuit current governed by k_inv * I_nom (typically 1.10 - 1.25, default 1.15).
+  // Per IEC 60909-0 Clause 6.7 and IEEE 1547: Static power converter-connected PV generating units contribute
+  // a dynamic current-limited short-circuit current governed by k_inv * I_nom (typically 1.10 - 1.25, default 1.15).
+  // The nominal current is based on plant active AC power (MW) at nominal voltage: I_n = P_ac / (sqrt(3) * U_n).
   const faultLocation: 'mv_busbar' | 'feeder_terminal' =
     input.faultLocation ?? (cableLengthM > 0 ? 'feeder_terminal' : 'mv_busbar');
 
   const rBusbarOhms = rGridOhms + rTransOhms;
   const xBusbarOhms = xGridOhms + xTransOhms;
   const zBusbarOhms = Math.hypot(rBusbarOhms, xBusbarOhms);
-  const busbarIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zBusbarOhms)).toFixed(3));
+  const busbarGridIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zBusbarOhms)).toFixed(3));
 
   const rFeederOhms = rBusbarOhms + rCableOhms;
   const xFeederOhms = xBusbarOhms + xCableOhms;
   const zFeederOhms = Math.hypot(rFeederOhms, xFeederOhms);
   const feederTerminalGridIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zFeederOhms)).toFixed(3));
 
-  // Converter fault contribution from PV inverters (kA) referred to MV voltage:
-  const nominalPlantMvCurrentKa = plantCapacityAcMva / (Math.sqrt(3) * unKv);
+  // Converter fault contribution from PV inverters (kA) at MV voltage (active AC power basis):
+  const plantCapacityAcMw = input.plantCapacityAcMw !== undefined && input.plantCapacityAcMw > 0
+    ? input.plantCapacityAcMw
+    : plantCapacityAcMva * pf;
+  const nominalPlantMvCurrentKa = plantCapacityAcMw / (Math.sqrt(3) * unKv);
   const kInv = Math.max(1.0, Math.min(2.0, input.inverterFaultContributionFactor ?? 1.15));
   const inverterFaultContributionKa = Number((kInv * nominalPlantMvCurrentKa).toFixed(3));
 
-  // Total initial symmetrical short-circuit current at feeder terminal:
-  // Sum of upstream grid contribution through cable and local inverter current injection per IEC 60909-0 Clause 6.7:
+  // Total initial symmetrical short-circuit currents incorporating inverter fault current per IEC 60909-0 Clause 6.7:
+  const busbarIscKa = Number((busbarGridIscKa + inverterFaultContributionKa).toFixed(3));
   const feederTerminalIscKa = Number((feederTerminalGridIscKa + inverterFaultContributionKa).toFixed(3));
 
   // Governing impedance and initial symmetrical fault current for selected fault location:
@@ -594,6 +599,7 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     kappa,
     cFactor,
     cFactorSource,
+    busbarGridIscKa,
     busbarIscKa,
     feederTerminalGridIscKa,
     inverterFaultContributionKa,

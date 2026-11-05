@@ -13,6 +13,7 @@ interface ThreeJsViewerProps {
   lang?: 'fa' | 'en';
   city?: ClimateCity;
   plantCapacityKw?: number;
+  plantCapacityType?: 'ac_target' | 'dc_nameplate';
   annualYieldKwh?: number;
   onShadingLossChange?: (shadingLossPct: number) => void;
 }
@@ -21,6 +22,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   lang = 'fa',
   city,
   plantCapacityKw,
+  plantCapacityType = 'dc_nameplate',
   annualYieldKwh,
   onShadingLossChange,
 }) => {
@@ -511,27 +513,43 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                     {isEn ? 'Active Project Yield Coupling & Scaled Impact' : 'اتصال مستقیم به تولید سالانه پروژه فعال'}
                   </span>
                   <span className="font-mono text-slate-300 font-semibold text-[11px]">
-                    {isEn ? 'Full Plant DC Capacity:' : 'ظرفیت نامی کامل نیروگاه:'} <span className="text-amber-300">{plantCapacityKw.toLocaleString()} kWp</span>
+                    {plantCapacityType === 'ac_target'
+                      ? (isEn ? 'Target AC Capacity:' : 'ظرفیت هدف AC نیروگاه:')
+                      : (isEn ? 'Installed DC Nameplate:' : 'ظرفیت نامی DC نصب‌شده:')}{' '}
+                    <span className="text-amber-300">
+                      {plantCapacityKw.toLocaleString()}{' '}
+                      {plantCapacityType === 'ac_target' ? 'kW AC' : 'kWp'}
+                    </span>
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2.5 text-xs font-mono">
-                  <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
-                    <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Plant Unshaded Baseline:' : 'تولید پایه بدون سایه نیروگاه:'}</div>
-                    <div className="text-slate-200 font-bold mt-0.5">{annualYieldKwh.toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span></div>
-                  </div>
-                  <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
-                    <div className="text-[10px] text-slate-400 font-sans">{isEn ? '3D Near-Shading Deficit:' : 'کسری سایه‌اندازی سه‌بعدی:'}</div>
-                    <div className="text-red-400 font-bold mt-0.5">
-                      -{Math.round(annualYieldKwh * (annualResult.annualCombinedShadingLossPct / 100.0)).toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr (-{annualResult.annualCombinedShadingLossPct}%)</span>
+                {(() => {
+                  const lossFraction = Math.min(0.95, Math.max(0, annualResult.annualCombinedShadingLossPct / 100.0));
+                  const unshadedBaselineKwh = lossFraction < 0.95 && lossFraction > 0
+                    ? Math.round(annualYieldKwh / (1.0 - lossFraction))
+                    : Math.round(annualYieldKwh);
+                  const shadingDeficitKwh = Math.max(0, unshadedBaselineKwh - Math.round(annualYieldKwh));
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2.5 text-xs font-mono">
+                      <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Plant Unshaded Baseline (Est.):' : 'تولید مبنای بدون سایه نیروگاه:'}</div>
+                        <div className="text-slate-200 font-bold mt-0.5">{unshadedBaselineKwh.toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span></div>
+                      </div>
+                      <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? '3D Near-Shading Deficit:' : 'کسری سایه‌اندازی سه‌بعدی:'}</div>
+                        <div className="text-red-400 font-bold mt-0.5">
+                          -{shadingDeficitKwh.toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr (-{annualResult.annualCombinedShadingLossPct}%)</span>
+                        </div>
+                      </div>
+                      <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Net Export (Waterfall-Coupled):' : 'تولید خالص نهایی نیروگاه (متصل به واترفال):'}</div>
+                        <div className="text-emerald-400 font-bold mt-0.5">
+                          {Math.round(annualYieldKwh).toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
-                    <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Net Export after 3D Shading:' : 'تولید خالص با اعمال سایه ۳D:'}</div>
-                    <div className="text-emerald-400 font-bold mt-0.5">
-                      {(annualYieldKwh - Math.round(annualYieldKwh * (annualResult.annualCombinedShadingLossPct / 100.0))).toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
                 <div className="text-[10px] text-slate-400 mt-2">
                   {isEn
                     ? 'Note: The 3D viewport evaluates a representative 55.2 kWp array section with local obstructions. Its geometric shading deficit is dynamically fed into the 14-stage waterfall model and financial cashflows.'

@@ -81,6 +81,7 @@ import {
   CATALOG_INVERTERS,
   getFullModulesCatalog,
   getFullInvertersCatalog,
+  isBifacialModule,
 } from './engine/equipmentCatalogData';
 import {
   designPowerplantBays,
@@ -180,6 +181,7 @@ export const App: React.FC = () => {
     noctC: 45.0,
     lengthM: CATALOG_MODULES[0].lengthMm / 1000.0,
     widthM: CATALOG_MODULES[0].widthMm / 1000.0,
+    bifacialityFactor: CATALOG_MODULES[0].bifacialityFactor ?? 0.80,
   });
 
   // Default utility inverter
@@ -467,11 +469,7 @@ export const App: React.FC = () => {
   // This overpaneling is intentional (maximizes AC export), and the UI displays
   // both values in PvArrayEngineeringTab (see ISSUE-2b).
   // ============================================================================
-  const isBifacial = Boolean(
-    selectedModule.bifacialityFactor ||
-    selectedModule.modelName.toLowerCase().includes('bifacial') ||
-    (selectedModule as unknown as { cellType?: string }).cellType?.includes('Bifacial')
-  );
+  const isBifacial = isBifacialModule(selectedModule);
   const bifacialityFactor = selectedModule.bifacialityFactor ?? (isBifacial ? 0.80 : 0.0);
   const groundCoverRatio = 0.38;
 
@@ -487,13 +485,16 @@ export const App: React.FC = () => {
         city.tempMaxC,
         city.soilingLossPct,
         1.25,
-        false,
+        Boolean(trackerConfig),
         0.0,
         -2.2,
         selectedModule.noctC,
         selectedModule.tempCoeffPmpPct,
         trackerConfig ?? undefined,
-        siteOverrides?.installationEnvironment || 'ground_mount'
+        siteOverrides?.installationEnvironment || 'ground_mount',
+        city.optimalTiltAnnualDeg,
+        city.latitude,
+        shadingLoss3dPct !== null ? shadingLoss3dPct : undefined
       );
       return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
     } else if (systemMode === 'ongrid') {
@@ -502,7 +503,7 @@ export const App: React.FC = () => {
     } else {
       return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
     }
-  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
+  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment, shadingLoss3dPct]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
   // 3. Advanced PV Array Engineering Sizing
   const arrayDesign = useMemo(() => {
@@ -699,15 +700,16 @@ export const App: React.FC = () => {
       city.tempMaxC,
       city.soilingLossPct,
       arrayDesign.totalPvCapacityKwp / Math.max(0.1, inverterClustering.totalInverterCapacityKw),
-      isBifacial,
-      isBifacial ? 8.5 : 0.0,
-      shadingLoss3dPct !== null ? -shadingLoss3dPct : -2.2,
+      Boolean(trackerConfig),
+      0.0,
+      -2.2,
       selectedModule.noctC,
       selectedModule.tempCoeffPmpPct,
       trackerConfig ?? undefined,
       siteOverrides?.installationEnvironment || 'ground_mount',
       city.optimalTiltAnnualDeg,
-      city.latitude
+      city.latitude,
+      shadingLoss3dPct !== null ? shadingLoss3dPct : undefined
     );
   }, [
     arrayDesign,
@@ -716,7 +718,6 @@ export const App: React.FC = () => {
     selectedModule,
     trackerConfig,
     siteOverrides?.installationEnvironment,
-    isBifacial,
     shadingLoss3dPct,
   ]);
 
@@ -2224,6 +2225,7 @@ export const App: React.FC = () => {
           {/* WATERFALL LOSS TAB */}
           {activeTab === 'waterfall_loss' && (
             <WaterfallLossTab
+              report={waterfallReport}
               installedCapacityKwp={arrayDesign.totalPvCapacityKwp}
               peakSunHours={city.peakSunHours}
               ambientTempMaxC={city.tempMaxC}
@@ -2302,6 +2304,7 @@ export const App: React.FC = () => {
                   ? (targetPowerplantCapacityKw || 1000)
                   : arrayDesign.totalPvCapacityKwp
               }
+              plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
               onShadingLossChange={setShadingLoss3dPct}
             />
