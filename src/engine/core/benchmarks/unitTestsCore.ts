@@ -4109,8 +4109,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   {
     const { designMvSubstation } = await import('../../mvSubstationEngine');
 
-    // Run substation with explicit 1500m XLPE 120mm2 MV cable
-    const subWithCable = designMvSubstation({
+    // 1. Max fault current: Cable R at 20°C per IEC 60909-0 §6.4.2 (lowest R, highest Isc'')
+    // Hand calculation: L = 1500m, A = 120mm², rho_20 = 0.01786 => R = 0.01786 * 1500 / 120 = 0.22325 Ω
+    const subMax = designMvSubstation({
       plantCapacityAcMw: 10.0,
       powerFactor: 0.9,
       inverterOutputVoltageV: 800,
@@ -4121,20 +4122,17 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       gridRxRatio: 0.1,
       mvCableLengthM: 1500.0,
       mvCableCrossSectionMm2: 120,
+      shortCircuitCalculationMode: 'max_fault_current',
+      parallelCableRunsCount: 1,
     });
 
-    const cableR = subWithCable.shortCircuit.cableImpedance.rOhms;
-    const cableX = subWithCable.shortCircuit.cableImpedance.xOhms;
-    const cableZ = subWithCable.shortCircuit.cableImpedance.zOhms;
-    const totalZ = subWithCable.shortCircuit.totalImpedanceOhms;
+    const cableR20 = subMax.shortCircuit.cableImpedance.rOhms;
+    const cableX = subMax.shortCircuit.cableImpedance.xOhms;
+    const cableR20Ok = Math.abs(cableR20 - 0.22325) < 0.002;
 
-    // Cable resistance: L=1.5km, 120mm2 Cu/XLPE at 90C => R ~= 1.5 * 0.196 = 0.294 ohm
-    const cableROk = cableR > 0.25 && cableR < 0.35;
-    // Cable reactance: L=1.5km, X ~= 1.5 * 0.115 = 0.1725 ohm
-    const cableXOk = cableX > 0.15 && cableX < 0.20;
-    const cableZOk = Math.abs(cableZ - Math.hypot(cableR, cableX)) < 1e-4;
-    // Total impedance must be strictly greater than without cable
-    const subNoCable = designMvSubstation({
+    // 2. Min fault current: Cable R at 90°C per IEC 60909-0 §6.4.3
+    // Hand calculation: rho_90 = 0.02277 => R = 0.02277 * 1500 / 120 = 0.28463 Ω (~27.5% higher)
+    const subMin = designMvSubstation({
       plantCapacityAcMw: 10.0,
       powerFactor: 0.9,
       inverterOutputVoltageV: 800,
@@ -4143,18 +4141,43 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       clearingTimeSec: 0.5,
       upstreamGridShortCircuitMva: 1000.0,
       gridRxRatio: 0.1,
-      mvCableLengthM: 0,
+      mvCableLengthM: 1500.0,
+      mvCableCrossSectionMm2: 120,
+      shortCircuitCalculationMode: 'min_fault_current',
+      parallelCableRunsCount: 1,
     });
-    const impedanceNetworkOk = totalZ > subNoCable.shortCircuit.totalImpedanceOhms;
-    const noticesOk =
-      subWithCable.shortCircuit.screeningMethodologyNoticeFa.length > 20 &&
-      subWithCable.shortCircuit.screeningMethodologyNoticeEn.length > 20;
+    const cableR90 = subMin.shortCircuit.cableImpedance.rOhms;
+    const tempScalingOk = cableR90 > cableR20 && Math.abs(cableR90 - 0.28463) < 0.002;
+
+    // 3. Parallel runs: 2 parallel runs cuts cable impedance in half
+    const subParallel2 = designMvSubstation({
+      plantCapacityAcMw: 10.0,
+      powerFactor: 0.9,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20.0,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 1000.0,
+      gridRxRatio: 0.1,
+      mvCableLengthM: 1500.0,
+      mvCableCrossSectionMm2: 120,
+      shortCircuitCalculationMode: 'max_fault_current',
+      parallelCableRunsCount: 2,
+    });
+    const parallelOk = Math.abs(subParallel2.shortCircuit.cableImpedance.rOhms - cableR20 / 2) < 0.001;
+
+    // 4. Transformer KT factor per IEC 60909-0 §6.3.3.1
+    const ktFactor = subMax.shortCircuit.transformerImpedance.ktFactor;
+    const ktOk = ktFactor >= 0.99 && ktFactor <= 1.05;
+
+    // 5. Topology: Busbar fault current exceeds feeder terminal fault current
+    const topologyOk = subMax.shortCircuit.busbarIscKa > subMax.shortCircuit.feederTerminalIscKa;
 
     assert(
       'E10-MV-CABLE-IMPEDANCE-DECOMPOSITION',
-      'MV cable impedance decomposes into R+jX for 90C XLPE and adds to upstream grid and transformer impedance',
-      cableROk && cableXOk && cableZOk && impedanceNetworkOk && noticesOk,
-      `Cable R=${cableR}Ω, X=${cableX}Ω, Z=${cableZ}Ω; Total Z=${totalZ}Ω vs NoCable=${subNoCable.shortCircuit.totalImpedanceOhms}Ω`
+      'MV cable impedance decomposes into R+jX with 20C max / 90C min temp calibration, KT factor, and parallel runs',
+      cableR20Ok && tempScalingOk && parallelOk && ktOk && topologyOk,
+      `Cable R20=${cableR20}Ω (exp 0.223Ω), R90=${cableR90}Ω (exp 0.285Ω), 2xPar=${subParallel2.shortCircuit.cableImpedance.rOhms}Ω, KT=${ktFactor}, BusbarIsc=${subMax.shortCircuit.busbarIscKa}kA > FeederIsc=${subMax.shortCircuit.feederTerminalIscKa}kA`
     );
   }
 
@@ -4211,13 +4234,14 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       res8760.totalEvaluatedDaylightHours > 4000 &&
       res3Day.totalEvaluatedDaylightHours > 4000 &&
       res8760.annualCombinedShadingLossPct >= 0 &&
-      res8760.annualElectricalMismatchLossPct >= 0;
+      res8760.annualElectricalMismatchLossPct >= 0 &&
+      res8760.screeningNoticeEn.length > 20;
 
     assert(
       'E10-3D-FACET-RAYTRACING-MODES',
       '3D planar facet extraction, ray-polygon intersection, and hourly 8760 vs 3-day simulation modes execute correctly',
       cuboidFacetsOk && cylFacetsOk && rayIntersectionOk && modesOk,
-      `Cuboid facets=${cuboidFacets.length}, Cyl facets=${cylFacets.length}, occluded=${isOccluded}, free=${!isFree}, 8760h steps=${res8760.rawRayCastingStepsCount}, 3day steps=${res3Day.rawRayCastingStepsCount}`
+      `Cuboid facets=${cuboidFacets.length}, Cyl facets=${cylFacets.length}, occluded=${isOccluded}, free=${!isFree}, 8760h steps=${res8760.rawRayCastingStepsCount}, 3day steps=${res3Day.rawRayCastingStepsCount}, beamLoss=${res8760.annualGeometricBeamLossPct}%, diodeMismatch=${res8760.annualElectricalMismatchLossPct}%`
     );
   }
 
@@ -4228,7 +4252,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const { runFinancialUncertaintyPropagation } = await import('../uncertaintyPropagation');
     const { DEFAULT_FINANCIAL_PRICING } = await import('../../financialEngine');
 
-    const uqRes = runFinancialUncertaintyPropagation({
+    // Test monofacial vs bifacial albedo sensitivity
+    const uqBifacial = runFinancialUncertaintyPropagation({
       plantCapacityKwp: 5000,
       batteryCapacityKwh: 0,
       inverterCapacityKw: 5000,
@@ -4237,25 +4262,28 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       systemMode: 'powerplant',
       sampleSize: 80,
       seed: 12345,
+      isBifacial: true,
+      bifacialityFactor: 0.80,
+      groundCoverRatio: 0.38,
     });
 
-    const hasAlbedoTornado = uqRes.tornadoSensitivityRanking.some(t => t.variableId === 'albedo');
-    const hasSoilingTornado = uqRes.tornadoSensitivityRanking.some(t => t.variableId === 'soiling_loss');
+    const hasAlbedoTornado = uqBifacial.tornadoSensitivityRanking.some(t => t.variableId === 'albedo');
+    const hasSoilingTornado = uqBifacial.tornadoSensitivityRanking.some(t => t.variableId === 'soiling_loss');
     const decompositionOk =
       Math.abs(
-        (uqRes.uncertaintyDecomposition?.aleatoryVariancePct ?? 0) +
-        (uqRes.uncertaintyDecomposition?.epistemicVariancePct ?? 0) -
+        (uqBifacial.uncertaintyDecomposition?.aleatoryVariancePct ?? 0) +
+        (uqBifacial.uncertaintyDecomposition?.epistemicVariancePct ?? 0) -
         100.0
       ) <= 0.2;
     const noticesOk =
-      Boolean(uqRes.screeningAndBankabilityNoticeFa) &&
-      Boolean(uqRes.screeningAndBankabilityNoticeEn);
+      Boolean(uqBifacial.screeningAndBankabilityNoticeFa) &&
+      Boolean(uqBifacial.screeningAndBankabilityNoticeEn);
 
     assert(
       'E10-UQ-ALBEDO-AND-BANKABILITY',
       'Financial UQ samples ground albedo and soiling via LHS with bilingual bankability notices and exact variance decomposition',
       hasAlbedoTornado && hasSoilingTornado && decompositionOk && noticesOk,
-      `Albedo in tornado=${hasAlbedoTornado}, Soiling in tornado=${hasSoilingTornado}, Aleatory=${uqRes.uncertaintyDecomposition?.aleatoryVariancePct}%, Epistemic=${uqRes.uncertaintyDecomposition?.epistemicVariancePct}%, NoticesFa=${Boolean(uqRes.screeningAndBankabilityNoticeFa)}`
+      `Albedo in tornado=${hasAlbedoTornado}, Soiling in tornado=${hasSoilingTornado}, Aleatory=${uqBifacial.uncertaintyDecomposition?.aleatoryVariancePct}%, Epistemic=${uqBifacial.uncertaintyDecomposition?.epistemicVariancePct}%, NoticesFa=${Boolean(uqBifacial.screeningAndBankabilityNoticeFa)}`
     );
   }
 

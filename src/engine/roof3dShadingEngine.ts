@@ -284,6 +284,8 @@ export interface AnnualShading3dResult {
   tableHeatmap: TableHeatmapCell[];
   isReconciled: boolean;
   waterfallLossReport: WaterfallLossReport;
+  screeningNoticeFa: string;
+  screeningNoticeEn: string;
 }
 
 /**
@@ -502,71 +504,106 @@ export function testRayFacetIntersection(
 }
 
 /**
- * Computes 3D geometric mesh ray-traced shading across the 3 bypass diode substrings of a PV table.
+ * Computes 3D geometric mesh ray-traced shading across a multi-point grid (4 lateral x 3 sloped = 12 vertices)
+ * representing the 3 bypass diode substrings of a PV table.
  */
 function computeTableShadingGeometricMesh(
   table: PvTable3D,
   allObstacleFacets: PlanarFacet3D[],
   sun: SunPosition
-): { beamCoveragePct: number; isDiodeTriggered: boolean; electricalMismatchFactor: number } {
+): {
+  beamCoveragePct: number;
+  isDiodeTriggered: boolean;
+  electricalMismatchFactor: number;
+  directBeamLossFraction: number;
+  diodeMismatchLossFraction: number;
+} {
   if (!sun.isDaylight || sun.altitudeDeg < 3.0) {
-    return { beamCoveragePct: 0, isDiodeTriggered: false, electricalMismatchFactor: 1.0 };
+    return {
+      beamCoveragePct: 0,
+      isDiodeTriggered: false,
+      electricalMismatchFactor: 1.0,
+      directBeamLossFraction: 0,
+      diodeMismatchLossFraction: 0,
+    };
   }
 
   const altRad = (sun.altitudeDeg * Math.PI) / 180.0;
   const azRad = (sun.azimuthDeg * Math.PI) / 180.0;
 
   // In ENU: +X = East, +Y = North, +Z = Up.
-  // Solar azimuth gamma_s: 0 = South, negative = East, positive = West.
   // Ray FROM table TO sun:
   const dirX = -Math.sin(azRad) * Math.cos(altRad);
   const dirY = -Math.cos(azRad) * Math.cos(altRad);
   const dirZ = Math.sin(altRad);
   const rayDir = { x: dirX, y: dirY, z: dirZ };
 
-  // Sample 3 substring zones corresponding to the 3 bypass diodes of the PV module
   const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
   const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
   const halfLen = table.slopedLengthM / 2;
+  const halfWidth = table.widthM / 2;
 
-  // Offsets along slope for substring 1, 2, 3
-  const substringOffsets = [-halfLen * 0.60, 0, halfLen * 0.60];
+  // Lateral unit vector (perpendicular to table azimuth in horizontal plane):
+  const latUx = Math.cos(tableAzRad);
+  const latUy = -Math.sin(tableAzRad);
+
+  // Longitudinal unit vector along slope (up-slope direction):
+  const slopeUx = -Math.cos(tiltRad) * Math.sin(tableAzRad);
+  const slopeUy = -Math.cos(tiltRad) * Math.cos(tableAzRad);
+  const slopeUz = Math.sin(tiltRad);
+
+  // 4 lateral sampling points across table width (-0.75, -0.25, 0.25, 0.75 of halfWidth)
+  const lateralFractions = [-0.75, -0.25, 0.25, 0.75];
+  // 3 longitudinal substring zones (-0.60, 0, 0.60 of halfLen) for the 3 bypass diodes
+  const substringFractions = [-0.60, 0, 0.60];
+
+  let totalMeshPoints = 0;
+  let shadedMeshPoints = 0;
   let shadedSubstringsCount = 0;
 
-  for (const s of substringOffsets) {
-    // Vector along slope
-    const dx = -s * Math.cos(tiltRad) * Math.sin(tableAzRad);
-    const dy = -s * Math.cos(tiltRad) * Math.cos(tableAzRad);
-    const dz = s * Math.sin(tiltRad);
+  for (const sFrac of substringFractions) {
+    const sOffset = sFrac * halfLen;
+    let isSubstringShaded = false;
 
-    const subOrigin = {
-      x: table.positionEnu.x + dx,
-      y: table.positionEnu.y + dy,
-      z: table.positionEnu.z + dz + 0.1, // slightly above roof plane
-    };
+    for (const lFrac of lateralFractions) {
+      const lOffset = lFrac * halfWidth;
+      totalMeshPoints++;
 
-    // Test intersection against all obstacle facets
-    let isSubshaded = false;
-    for (const facet of allObstacleFacets) {
-      if (testRayFacetIntersection(subOrigin, rayDir, facet)) {
-        isSubshaded = true;
-        break;
+      const ptOrigin = {
+        x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx,
+        y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy,
+        z: table.positionEnu.z + sOffset * slopeUz + 0.1, // slightly above roof plane
+      };
+
+      let isPointShaded = false;
+      for (const facet of allObstacleFacets) {
+        if (testRayFacetIntersection(ptOrigin, rayDir, facet)) {
+          isPointShaded = true;
+          break;
+        }
+      }
+
+      if (isPointShaded) {
+        shadedMeshPoints++;
+        isSubstringShaded = true;
       }
     }
 
-    if (isSubshaded) {
+    if (isSubstringShaded) {
       shadedSubstringsCount++;
     }
   }
 
-  const beamCoveragePct = Number(((shadedSubstringsCount / 3.0) * 100.0).toFixed(1));
+  // Direct geometric beam loss fraction = fraction of area occluded
+  const directBeamLossFraction = totalMeshPoints > 0 ? shadedMeshPoints / totalMeshPoints : 0;
+  const beamCoveragePct = Number((directBeamLossFraction * 100.0).toFixed(1));
   const isDiodeTriggered = shadedSubstringsCount > 0;
 
   // 3-Bypass-Diode electrical curve:
-  // 0 shaded: 1.0
-  // 1 shaded: 0.667 (1 substring bypassed, 2 carry full current)
-  // 2 shaded: 0.333
-  // 3 shaded: 0.05 (diffuse sky floor)
+  // 0 shaded: 1.0 (no bypass)
+  // 1 substring shaded: 2/3 active = 0.667
+  // 2 substrings shaded: 1/3 active = 0.333
+  // 3 substrings shaded: 0.05 (diffuse floor)
   let electricalMismatchFactor = 1.0;
   if (shadedSubstringsCount === 1) {
     electricalMismatchFactor = 0.667;
@@ -576,10 +613,17 @@ function computeTableShadingGeometricMesh(
     electricalMismatchFactor = 0.05;
   }
 
+  // Total electrical loss fraction = 1 - electricalMismatchFactor
+  const totalCombinedLossFraction = Math.max(directBeamLossFraction, 1.0 - electricalMismatchFactor);
+  // Additional diode mismatch loss is the electrical drop exceeding geometric beam occlusion
+  const diodeMismatchLossFraction = Math.max(0, totalCombinedLossFraction - directBeamLossFraction);
+
   return {
     beamCoveragePct,
     isDiodeTriggered,
     electricalMismatchFactor,
+    directBeamLossFraction,
+    diodeMismatchLossFraction,
   };
 }
 
@@ -613,6 +657,8 @@ export function simulateAnnual3dShading(
       beamCoverageSum: number;
       daylightHours: number;
       diodeHours: number;
+      directBeamLossWh: number;
+      diodeMismatchLossWh: number;
     }
   > = new Map();
 
@@ -623,6 +669,8 @@ export function simulateAnnual3dShading(
       beamCoverageSum: 0,
       daylightHours: 0,
       diodeHours: 0,
+      directBeamLossWh: 0,
+      diodeMismatchLossWh: 0,
     });
   }
 
@@ -651,21 +699,28 @@ export function simulateAnnual3dShading(
         const unshadedWh = (ghiProxyWh * (table.ratedPowerWp / 1000.0) * weight) / 1000.0;
         stats.unshadedKwh += unshadedWh;
 
-        const { beamCoveragePct, isDiodeTriggered, electricalMismatchFactor } =
-          computeTableShadingGeometricMesh(table, allObstacleFacets, sun);
+        const meshRes = computeTableShadingGeometricMesh(table, allObstacleFacets, sun);
 
-        stats.beamCoverageSum += beamCoveragePct * weight;
-        if (isDiodeTriggered) {
+        stats.beamCoverageSum += meshRes.beamCoveragePct * weight;
+        if (meshRes.isDiodeTriggered) {
           stats.diodeHours += weight;
         }
 
-        stats.shadedKwh += unshadedWh * electricalMismatchFactor;
+        const stepDirectBeamWh = unshadedWh * meshRes.directBeamLossFraction;
+        const stepDiodeMismatchWh = unshadedWh * meshRes.diodeMismatchLossFraction;
+
+        stats.directBeamLossWh += stepDirectBeamWh;
+        stats.diodeMismatchLossWh += stepDiodeMismatchWh;
+
+        stats.shadedKwh += unshadedWh * meshRes.electricalMismatchFactor;
       }
     }
   }
 
   let totalUnshaded = 0;
   let totalShaded = 0;
+  let totalDirectBeamLossKwh = 0;
+  let totalDiodeMismatchLossKwh = 0;
   const tableHeatmap: TableHeatmapCell[] = [];
 
   for (const table of scene.pvTables) {
@@ -677,6 +732,8 @@ export function simulateAnnual3dShading(
 
     totalUnshaded += unshadedKwh;
     totalShaded += shadedKwh;
+    totalDirectBeamLossKwh += stats.directBeamLossWh / 1000.0;
+    totalDiodeMismatchLossKwh += stats.diodeMismatchLossWh / 1000.0;
 
     tableHeatmap.push({
       tableId: table.id,
@@ -696,6 +753,10 @@ export function simulateAnnual3dShading(
   const isReconciled = totalUnshaded > 0 && reconciliationDeltaKwh <= 1.0;
 
   const aggregateShadingLossPct = totalUnshaded > 0 ? Number(((totalLost / totalUnshaded) * 100.0).toFixed(2)) : 0.0;
+  const annualGeometricBeamLossPct =
+    totalUnshaded > 0 ? Number(((totalDirectBeamLossKwh / totalUnshaded) * 100.0).toFixed(2)) : 0.0;
+  const annualElectricalMismatchLossPct =
+    totalUnshaded > 0 ? Number(((totalDiodeMismatchLossKwh / totalUnshaded) * 100.0).toFixed(2)) : 0.0;
 
   // Reconcile into the canonical waterfall loss tree
   const totalPlantKwp = scene.pvTables.reduce((s, t) => s + t.ratedPowerWp / 1000.0, 0) || 100.0;
@@ -722,8 +783,8 @@ export function simulateAnnual3dShading(
     simulationModeUsed,
     rawRayCastingStepsCount,
     totalEvaluatedDaylightHours,
-    annualGeometricBeamLossPct: Number((aggregateShadingLossPct * 0.70).toFixed(2)),
-    annualElectricalMismatchLossPct: Number((aggregateShadingLossPct * 0.30).toFixed(2)),
+    annualGeometricBeamLossPct,
+    annualElectricalMismatchLossPct,
     annualCombinedShadingLossPct: aggregateShadingLossPct,
     totalUnshadedAnnualKwh: totalUnshaded,
     totalShadedAnnualKwh: totalShaded,
@@ -732,6 +793,10 @@ export function simulateAnnual3dShading(
     tableHeatmap,
     isReconciled,
     waterfallLossReport: waterfallReport,
+    screeningNoticeFa:
+      'شاخص‌های سایه‌اندازی هندسی بر پایه تقریب تابش افقی آسمان صاف و شبکه چندنقطه‌ای ساب‌استرینگ محاسبه شده‌اند. این مقادیر شاخص غربالگری سایه هستند و مدل کامل جابجایی پرز، تلفات دمایی و برش اینورتر را در بر نمی‌گیرند.',
+    screeningNoticeEn:
+      'Geometric shading indices evaluated using clear-sky horizontal proxy irradiance with multi-point substring mesh sampling. These represent relative optical screening indices and do not incorporate Perez diffuse transposition, cell temperature deratings, or inverter clipping.',
   };
 }
 

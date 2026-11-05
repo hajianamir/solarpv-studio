@@ -26,6 +26,8 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
   const [gridRxRatio, setGridRxRatio] = useState<number>(0.10);
   const [cableLengthM, setCableLengthM] = useState<number>(250);
   const [cableSectionMm2, setCableSectionMm2] = useState<number>(120);
+  const [parallelRuns, setParallelRuns] = useState<number>(1);
+  const [faultLocation, setFaultLocation] = useState<'mv_busbar' | 'feeder_terminal'>('mv_busbar');
 
   const subResult: MvSubstationResult = designMvSubstation({
     plantCapacityAcMva: plantCapacityAcMw,
@@ -39,6 +41,8 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
     gridRxRatio,
     mvCableLengthM: cableLengthM,
     mvCableCrossSectionMm2: cableSectionMm2,
+    parallelCableRunsCount: parallelRuns,
+    faultLocation,
   });
 
   return (
@@ -220,6 +224,37 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
               <option value="150">150 mm² Cu XLPE</option>
               <option value="185">185 mm² Cu XLPE</option>
               <option value="240">240 mm² Cu XLPE</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">
+              {isFa ? 'تعداد فیدرهای موازی کلکتور:' : 'Parallel Feeder Runs:'}
+            </label>
+            <select
+              value={parallelRuns}
+              onChange={(e) => setParallelRuns(parseInt(e.target.value) || 1)}
+              className="studio-input text-xs font-mono"
+            >
+              <option value="1">1 {isFa ? 'فیدر مجزا' : 'single run'}</option>
+              <option value="2">2 {isFa ? 'فیدر موازی' : 'parallel runs'}</option>
+              <option value="3">3 {isFa ? 'فیدر موازی' : 'parallel runs'}</option>
+              <option value="4">4 {isFa ? 'فیدر موازی' : 'parallel runs'}</option>
+              <option value="6">6 {isFa ? 'فیدر موازی' : 'parallel runs'}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">
+              {isFa ? 'نقطه محاسبه اتصال کوتاه:' : 'Short-Circuit Fault Point:'}
+            </label>
+            <select
+              value={faultLocation}
+              onChange={(e) => setFaultLocation(e.target.value as 'mv_busbar' | 'feeder_terminal')}
+              className="studio-input text-xs font-mono"
+            >
+              <option value="mv_busbar">{isFa ? 'باس‌بار MV پست (Z_Q + Z_T)' : 'MV Substation Busbar (Z_Q + Z_T)'}</option>
+              <option value="feeder_terminal">{isFa ? 'ترمینال انتهای فیدر (Z_Q + Z_T + Z_C)' : 'Feeder Terminal (Z_Q + Z_T + Z_C)'}</option>
             </select>
           </div>
 
@@ -498,7 +533,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
                 <td className="p-2.5 text-slate-200">{subResult.shortCircuit.transformerImpedance.xOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-sky-300 font-bold">{subResult.shortCircuit.transformerImpedance.zOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 font-sans text-slate-400">
-                  uk = {subResult.transformer.impedanceVoltageUkPct}%, Pk = {subResult.transformer.loadLossesKw} kW
+                  uk = {subResult.transformer.impedanceVoltageUkPct}%, KT = {subResult.shortCircuit.transformerImpedance.ktFactor} (IEC 60909-0 §6.3.3.1)
                 </td>
               </tr>
               <tr>
@@ -507,16 +542,21 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
                 <td className="p-2.5 text-slate-200">{subResult.shortCircuit.cableImpedance.xOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-sky-300 font-bold">{subResult.shortCircuit.cableImpedance.zOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 font-sans text-slate-400">
-                  {subResult.shortCircuit.cableImpedance.lengthM}m × {subResult.shortCircuit.cableImpedance.crossSectionMm2} mm² Cu (90°C XLPE)
+                  {subResult.shortCircuit.cableImpedance.lengthM}m × {subResult.shortCircuit.cableImpedance.crossSectionMm2} mm² ({subResult.shortCircuit.cableImpedance.parallelRunsCount}× parallel, {subResult.shortCircuit.cableImpedance.conductorTempC}°C)
                 </td>
               </tr>
               <tr className="bg-industrial-surface font-bold border-t border-industrial-border">
-                <td className="p-2.5 font-sans text-industrial-accent">{isFa ? 'مجموع حلقه اتصال کوتاه (Total Loop)' : 'Total SC Loop'}</td>
+                <td className="p-2.5 font-sans text-industrial-accent">
+                  {isFa ? 'امپدانس کل نقطه خطای انتخابی' : 'Governing Fault Impedance'}
+                  <div className="text-[10px] font-normal text-slate-400">
+                    {isFa ? subResult.shortCircuit.faultLocationDescriptionFa : subResult.shortCircuit.faultLocationDescriptionEn}
+                  </div>
+                </td>
                 <td className="p-2.5 text-industrial-warning">{subResult.shortCircuit.rEquivalentOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-industrial-warning">{subResult.shortCircuit.xEquivalentOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-industrial-error font-extrabold">{subResult.shortCircuit.totalImpedanceOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 font-sans text-white">
-                  R/X = {subResult.shortCircuit.rOverXRatio.toFixed(3)}, κ = {subResult.shortCircuit.kappa}
+                  Isc″(Busbar) = {subResult.shortCircuit.busbarIscKa} kA | Isc″(Feeder) = {subResult.shortCircuit.feederTerminalIscKa} kA
                 </td>
               </tr>
             </tbody>

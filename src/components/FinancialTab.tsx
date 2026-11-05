@@ -49,22 +49,42 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   const [uqResult, setUqResult] = useState<FinancialUqResult | null>(null);
   const [uqSampleSize, setUqSampleSize] = useState<number>(100);
   const [isUqRunning, setIsUqRunning] = useState<boolean>(false);
+  const [uqErrorMessage, setUqErrorMessage] = useState<string | null>(null);
+
+  const isReadyForUq = (financial.systemKwp ?? 0) > 0 && (financial.annualEnergyYieldKwh ?? 0) > 0;
 
   const handleRunUqSimulation = () => {
+    setUqErrorMessage(null);
+    if (!isReadyForUq) {
+      setUqErrorMessage(
+        lang === 'fa'
+          ? 'ظرفیت سامانه یا انرژی تولیدی سالانه در مدل مالی تعیین نشده است. لطفاً ابتدا ظرفیت پنل‌ها و تولید سالانه را تنظیم نمایید.'
+          : 'System capacity or annual energy yield is missing or non-positive. Please configure system sizing before running financial UQ.'
+      );
+      return;
+    }
+
     setIsUqRunning(true);
     setTimeout(() => {
       try {
         const res = runFinancialUncertaintyPropagation({
-          plantCapacityKwp: financial.systemKwp || 1000,
+          plantCapacityKwp: financial.systemKwp,
           batteryCapacityKwh: financial.batteryKwh || 0,
-          inverterCapacityKw: financial.inverterKw || 1000,
-          baseAnnualYieldKwh: financial.annualEnergyYieldKwh || 1_800_000,
+          inverterCapacityKw: financial.inverterKw || financial.systemKwp,
+          baseAnnualYieldKwh: financial.annualEnergyYieldKwh,
           basePricing: pricing,
           systemMode: financial.systemMode || 'powerplant',
           sampleSize: uqSampleSize,
           seed: 42,
         });
         setUqResult(res);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setUqErrorMessage(
+          lang === 'fa'
+            ? `خطا در اجرای شبیه‌سازی عدم قطعیت مالی: ${msg}`
+            : `Error executing financial UQ simulation: ${msg}`
+        );
       } finally {
         setIsUqRunning(false);
       }
@@ -651,8 +671,10 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
             <button
               onClick={handleRunUqSimulation}
-              disabled={isUqRunning}
-              className="studio-btn-primary text-xs py-1.5 px-3 flex items-center gap-2 rounded-lg font-bold"
+              disabled={isUqRunning || !isReadyForUq}
+              className={`studio-btn-primary text-xs py-1.5 px-3 flex items-center gap-2 rounded-lg font-bold ${
+                !isReadyForUq ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               {isUqRunning ? (
                 <>
@@ -668,6 +690,24 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             </button>
           </div>
         </div>
+
+        {uqErrorMessage && (
+          <div className="mt-3 p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-200 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{uqErrorMessage}</span>
+          </div>
+        )}
+
+        {!isReadyForUq && (
+          <div className="mt-3 p-2.5 bg-slate-800/60 border border-slate-700 rounded-lg text-xs text-slate-400 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-industrial-warning shrink-0" />
+            <span>
+              {lang === 'fa'
+                ? 'توجه: برای اجرای تحلیل عدم قطعیت، ابتدا باید ظرفیت سامانه (kWp) و انرژی سالانه محاسبه شده باشد.'
+                : 'Notice: System capacity (kWp) and annual yield must be computed before running UQ sensitivity analysis.'}
+            </span>
+          </div>
+        )}
 
         {uqResult && (
           <div className="mt-4 space-y-4 animate-fadeIn">

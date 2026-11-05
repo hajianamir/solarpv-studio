@@ -17,12 +17,15 @@ export interface MvSubstationInput {
   ambientTempC?: number;        // Site maximum ambient temp (e.g. 45°C)
   elevationM?: number;          // Site elevation (e.g. 1400m)
   upstreamGridShortCircuitMva?: number; // Upstream utility short-circuit capacity (e.g. 500 MVA)
-  gridRxRatio?: number;         // Upstream grid R_Q / X_Q ratio per IEC 60909-0 Clause 6.3.2 (default 0.10)
+  gridRxRatio?: number;         // Upstream grid R_Q / X_Q ratio (site-specific screening input, typical 0.05-0.20, default 0.10)
   mvCableLengthM?: number;      // Plant MV collection feeder cable length (m)
   mvCableCrossSectionMm2?: number; // MV cable conductor cross-section (mm² Cu, e.g. 120)
+  parallelCableRunsCount?: number; // Number of parallel collection feeder runs (default 1)
+  cableConductorTempC?: number; // Conductor temp for R calculation: 20°C for max fault current per IEC 60909-0 §6.4.2, 90°C for min fault
   mvCableReactanceOhmPerKm?: number; // Specific cable reactance (Ohm/km, default 0.115 per IEC 60909 Table 3)
   shortCircuitCalculationMode?: 'max_fault_current' | 'min_fault_current'; // IEC 60909 c_max vs c_min
   customCVoltageFactor?: number; // Optional user override for c factor
+  faultLocation?: 'mv_busbar' | 'feeder_terminal'; // Fault point: substation MV busbar (excl. cable) vs feeder terminal (incl. cable)
   faultCurrentLowThresholdKa?: number; // Screening threshold, default 0.5 kA
   faultCurrentHighThresholdKa?: number;// Screening threshold, default 30.0 kA
 }
@@ -45,6 +48,9 @@ export interface TransformerSpecification {
 }
 
 export interface ShortCircuitCalculation {
+  faultLocation: 'mv_busbar' | 'feeder_terminal';
+  faultLocationDescriptionFa: string;
+  faultLocationDescriptionEn: string;
   initialSymmetricalIscKa: number; // I_sc'' (kA)
   peakDynamicIpKa: number;         // i_p (kA)
   breakingCapacityKa: number;      // Minimum required circuit breaker breaking rating
@@ -62,6 +68,9 @@ export interface ShortCircuitCalculation {
     rOhms: number;
     xOhms: number;
     zOhms: number;
+    ktFactor: number;
+    rUncorrectedOhms: number;
+    xUncorrectedOhms: number;
   };
   cableImpedance: {
     rOhms: number;
@@ -69,6 +78,10 @@ export interface ShortCircuitCalculation {
     zOhms: number;
     lengthM: number;
     crossSectionMm2: number;
+    parallelRunsCount: number;
+    conductorTempC: number;
+    singleRunROhms: number;
+    singleRunXOhms: number;
   };
   totalImpedanceOhms: number;
   rEquivalentOhms: number;
@@ -77,6 +90,8 @@ export interface ShortCircuitCalculation {
   kappa: number;
   cFactor: number;
   cFactorSource: string;
+  busbarIscKa: number;
+  feederTerminalIscKa: number;
   faultCurrentOutOfRangeWarning?: string;
   screeningMethodologyNoticeFa: string;
   screeningMethodologyNoticeEn: string;
@@ -345,47 +360,82 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   }
 
   const unKv = gridConnectionVoltageKv;
+  const isMinFault = input.shortCircuitCalculationMode === 'min_fault_current';
 
   // 1. Upstream grid impedance (R_grid + j X_grid):
   // Z_grid = (c * Un^2) / S_sc_Q
-  // Configurable R_Q / X_Q ratio per IEC 60909-0 Clause 6.3.2 (default 0.10 for MV distribution)
+  // Configurable R_Q / X_Q ratio (site-specific screening input, typical 0.05-0.20, default 0.10)
   const gridRx = Math.max(0.01, Math.min(1.0, input.gridRxRatio ?? 0.10));
   const zGridMagnitudeOhms = (cFactor * Math.pow(unKv, 2)) / upstreamGridShortCircuitMva;
   const xGridOhms = zGridMagnitudeOhms / Math.sqrt(1.0 + Math.pow(gridRx, 2));
   const rGridOhms = gridRx * xGridOhms;
 
   // 2. Transformer impedance (R_T + j X_T) referred to MV side:
-  // Z_T = (uk% / 100) * (Un^2 / S_rT)
-  // R_T = (P_k * 10^-3 * Un^2) / (S_rT^2)
-  const zTransMagnitudeOhms = (ukPct / 100.0) * (Math.pow(unKv, 2) / ratedMva);
-  const rTransOhms = (loadLossesKw * 1e-3 * Math.pow(unKv, 2)) / Math.pow(ratedMva, 2);
-  const xTransOhms = Math.sqrt(Math.max(0, Math.pow(zTransMagnitudeOhms, 2) - Math.pow(rTransOhms, 2)));
+  // Z_T,base = (uk% / 100) * (Un^2 / S_rT)
+  // R_T,base = (P_k * 10^-3 * Un^2) / (S_rT^2)
+  const zTransBaseOhms = (ukPct / 100.0) * (Math.pow(unKv, 2) / ratedMva);
+  const rTransBaseOhms = (loadLossesKw * 1e-3 * Math.pow(unKv, 2)) / Math.pow(ratedMva, 2);
+  const xTransBaseOhms = Math.sqrt(Math.max(0, Math.pow(zTransBaseOhms, 2) - Math.pow(rTransBaseOhms, 2)));
+
+  // Transformer impedance correction factor K_T per IEC 60909-0:2016 Clause 6.3.3.1:
+  // K_T = 0.95 * [c_max / (1 + 0.6 * x_T)]
+  // where x_T = X_T / Z_rT ≈ u_k / 100
+  const zNominalTrafoOhms = Math.pow(unKv, 2) / ratedMva;
+  const xTPerUnit = zNominalTrafoOhms > 0 ? xTransBaseOhms / zNominalTrafoOhms : ukPct / 100.0;
+  const cMaxForKt = 1.10;
+  const ktFactor = Number((0.95 * (cMaxForKt / (1.0 + 0.6 * xTPerUnit))).toFixed(4));
+  const rTransOhms = rTransBaseOhms * ktFactor;
+  const xTransOhms = xTransBaseOhms * ktFactor;
+  const zTransMagnitudeOhms = Math.hypot(rTransOhms, xTransOhms);
 
   // 3. Plant MV Collection Feeder Cable Impedance (R_cable + j X_cable):
-  // R_cable = rho_20 * [1 + alpha_20 * (T_conductor - 20)] * L / A
-  // with Cu rho_20 = 0.01786 Ohm*mm^2/m, alpha_20 = 0.00393 /°C, at 90°C XLPE operating temperature:
-  // rho_90 = 0.01786 * [1 + 0.00393 * 70] = 0.02277 Ohm*mm^2/m
-  // X_cable = X'_cable * L / 1000 with 0.115 Ohm/km for 3-core screened MV XLPE (IEC 60909 Table 3)
+  // Conductor temperature calibration per IEC 60909-0 Clause 6.4.2 & 6.4.3:
+  // - Max fault current (c_max / breaker sizing): conductor at 20°C (lowest R, highest I_sc'')
+  // - Min fault current (c_min / relay sensitivity): conductor at max operating temp (90°C XLPE)
   const cableLengthM = Math.max(0, input.mvCableLengthM ?? 0);
   const cableSectionMm2 = Math.max(25, input.mvCableCrossSectionMm2 ?? 120);
+  const parallelRuns = Math.max(1, Math.min(12, input.parallelCableRunsCount ?? 1));
   const cableReactancePerKm = Math.max(0.05, input.mvCableReactanceOhmPerKm ?? 0.115);
 
+  const conductorTempC = input.cableConductorTempC ?? (isMinFault ? 90.0 : 20.0);
+  const rhoCu = 0.01786 * (1.0 + 0.00393 * (conductorTempC - 20.0)); // Ohm * mm² / m
+
+  let singleRunROhms = 0;
+  let singleRunXOhms = 0;
   let rCableOhms = 0;
   let xCableOhms = 0;
-  if (cableLengthM > 0) {
-    const rho90Cu = 0.02277; // Ohm * mm² / m
-    rCableOhms = (rho90Cu * cableLengthM) / cableSectionMm2;
-    xCableOhms = (cableReactancePerKm * cableLengthM) / 1000.0;
-  }
-  const zCableOhms = Math.sqrt(Math.pow(rCableOhms, 2) + Math.pow(xCableOhms, 2));
 
-  // Total equivalent complex impedance at MV fault point:
-  const rTotalOhms = rGridOhms + rTransOhms + rCableOhms;
-  const xTotalOhms = xGridOhms + xTransOhms + xCableOhms;
-  const zTotalOhms = Math.sqrt(Math.pow(rTotalOhms, 2) + Math.pow(xTotalOhms, 2));
+  if (cableLengthM > 0) {
+    singleRunROhms = (rhoCu * cableLengthM) / cableSectionMm2;
+    singleRunXOhms = (cableReactancePerKm * cableLengthM) / 1000.0;
+    rCableOhms = singleRunROhms / parallelRuns;
+    xCableOhms = singleRunXOhms / parallelRuns;
+  }
+  const zCableOhms = Math.hypot(rCableOhms, xCableOhms);
+
+  // 4. Substation Busbar vs Feeder Terminal Fault Topology:
+  // - 'mv_busbar': Fault at substation MV busbar (upstream grid + transformer only)
+  // - 'feeder_terminal': Downstream fault at collection feeder end (includes parallel cables)
+  const faultLocation: 'mv_busbar' | 'feeder_terminal' =
+    input.faultLocation ?? (cableLengthM > 0 ? 'feeder_terminal' : 'mv_busbar');
+
+  const rBusbarOhms = rGridOhms + rTransOhms;
+  const xBusbarOhms = xGridOhms + xTransOhms;
+  const zBusbarOhms = Math.hypot(rBusbarOhms, xBusbarOhms);
+  const busbarIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zBusbarOhms)).toFixed(3));
+
+  const rFeederOhms = rBusbarOhms + rCableOhms;
+  const xFeederOhms = xBusbarOhms + xCableOhms;
+  const zFeederOhms = Math.hypot(rFeederOhms, xFeederOhms);
+  const feederTerminalIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zFeederOhms)).toFixed(3));
+
+  // Governing impedance for selected fault location:
+  const rTotalOhms = faultLocation === 'feeder_terminal' ? rFeederOhms : rBusbarOhms;
+  const xTotalOhms = faultLocation === 'feeder_terminal' ? xFeederOhms : xBusbarOhms;
+  const zTotalOhms = faultLocation === 'feeder_terminal' ? zFeederOhms : zBusbarOhms;
 
   // Initial symmetrical short-circuit current (kA):
-  const initialSymmetricalIscKa = (cFactor * unKv) / (Math.sqrt(3) * zTotalOhms);
+  const initialSymmetricalIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zTotalOhms)).toFixed(3));
 
   // Peak factor kappa per IEC 60909-0 Section 4.3.1.2:
   // kappa = 1.02 + 0.98 * exp(-3 * R/X)
@@ -483,6 +533,15 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   }
 
   const shortCircuit: ShortCircuitCalculation = {
+    faultLocation,
+    faultLocationDescriptionFa:
+      faultLocation === 'mv_busbar'
+        ? 'باس‌بار فشار متوسط پست اصلی (شامل شبکه بالادست و ترانسفورماتور بدون کابل کلکتور)'
+        : 'ترمینال انتهای فیدر کلکتور / ایستگاه اینورتر (شامل کابل‌های موازی کلکتور MV)',
+    faultLocationDescriptionEn:
+      faultLocation === 'mv_busbar'
+        ? 'Substation MV Busbar (Upstream Grid + Transformer, excluding collector cable)'
+        : 'Collector Feeder Inverter Terminal (Includes parallel MV collection cables)',
     initialSymmetricalIscKa: Math.round(initialSymmetricalIscKa * 10) / 10,
     peakDynamicIpKa: Math.round(peakDynamicIpKa * 10) / 10,
     breakingCapacityKa,
@@ -500,6 +559,9 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
       rOhms: Number(rTransOhms.toFixed(5)),
       xOhms: Number(xTransOhms.toFixed(5)),
       zOhms: Number(zTransMagnitudeOhms.toFixed(5)),
+      ktFactor,
+      rUncorrectedOhms: Number(rTransBaseOhms.toFixed(5)),
+      xUncorrectedOhms: Number(xTransBaseOhms.toFixed(5)),
     },
     cableImpedance: {
       rOhms: Number(rCableOhms.toFixed(5)),
@@ -507,6 +569,10 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
       zOhms: Number(zCableOhms.toFixed(5)),
       lengthM: cableLengthM,
       crossSectionMm2: cableSectionMm2,
+      parallelRunsCount: parallelRuns,
+      conductorTempC,
+      singleRunROhms: Number(singleRunROhms.toFixed(5)),
+      singleRunXOhms: Number(singleRunXOhms.toFixed(5)),
     },
     totalImpedanceOhms: Number(zTotalOhms.toFixed(4)),
     rEquivalentOhms: Number(rTotalOhms.toFixed(4)),
@@ -515,9 +581,13 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     kappa,
     cFactor,
     cFactorSource,
+    busbarIscKa,
+    feederTerminalIscKa,
     faultCurrentOutOfRangeWarning,
-    screeningMethodologyNoticeFa: 'محاسبات اتصال کوتاه بر اساس مدل غربالگری مهندسی IEC 60909-0:2016 شامل امپدانس شبکه بالادست، ترانسفورماتور و کابل جمع‌آورنده MV می‌باشد. جهت انطباق کامل با کد شبکه، مطالعات تفصیلی اتصال به شبکه الزامی است.',
-    screeningMethodologyNoticeEn: 'Short-circuit analysis based on IEC 60909-0:2016 engineering screening model incorporating upstream grid, step-up transformer, and MV collection cable impedances. Detailed dynamic grid studies required for final grid code compliance.',
+    screeningMethodologyNoticeFa:
+      'محاسبات اتصال کوتاه بر اساس مدل غربالگری مهندسی IEC 60909-0:2016 شامل امپدانس شبکه بالادست، ترانسفورماتور (با ضریب تصحیح KT) و کابل‌های موازی کلکتور MV است. مقاومت کابل برای بیشینه اتصال کوتاه در دمای ۲۰ درجه سانتی‌گراد و برای کمینه در ۹۰ درجه محاسبه شده است. طراحی نهایی مستلزم مطالعات هماهنگی حفاظتی در ETAP یا DIgSILENT است.',
+    screeningMethodologyNoticeEn:
+      'Short-circuit analysis based on IEC 60909-0:2016 engineering screening incorporating upstream grid, transformer (with KT correction factor), and parallel MV collection cables. Conductor resistance evaluated at 20°C for conservative maximum fault current (breaker sizing) and 90°C for minimum fault current (relay sensitivity). Final design requires transient network studies in ETAP or DIgSILENT PowerFactory.',
     isBreakerSufficient,
     selectedBreakerModel,
     selectedBreakerManufacturer,

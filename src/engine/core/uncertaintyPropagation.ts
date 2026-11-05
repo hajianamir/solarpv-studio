@@ -115,9 +115,10 @@ export const DEFAULT_UQ_STOCHASTIC_VARIABLES: StochasticInputVariable[] = [
     variableId: 'albedo',
     name: 'Ground Surface Albedo',
     nominalValue: 0.22,
-    distributionType: 'uniform',
-    minBound: 0.18,
-    maxBound: 0.26,
+    distributionType: 'normal',
+    uncertaintyPercent: 15.9, // stdDev = 0.035 / 0.22 ≈ 15.9%, clamped [0.12, 0.40]
+    minBound: 0.12,
+    maxBound: 0.40,
   },
   {
     variableId: 'soiling_loss',
@@ -138,7 +139,6 @@ export const DEFAULT_UQ_STOCHASTIC_VARIABLES: StochasticInputVariable[] = [
 export const DEFAULT_COPULA_CONFIG: MultivariateCopulaConfig = {
   family: 'gaussian_copula',
   pairwiseCorrelations: [
-    { var1: 'ghi_annual', var2: 'albedo', correlationValue: 0.15, metricType: 'spearman_rho' },
     { var1: 'ghi_annual', var2: 'soiling_loss', correlationValue: -0.25, metricType: 'spearman_rho' }, // Clear skies correlate with drier dust periods
   ],
 };
@@ -330,6 +330,9 @@ export interface FinancialUqRunInput {
   seed?: number;
   copulaFamily?: CopulaFamily;
   spearmanRhoGhiSoiling?: number;
+  isBifacial?: boolean;
+  bifacialityFactor?: number;
+  groundCoverRatio?: number;
 }
 
 /**
@@ -441,9 +444,13 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
     const discountRatePct = Math.max(2.0, basePricing.discountRatePct + (uDiscount[i] - 0.5) * 4.0);
     discountDeviations.push(discountRatePct - basePricing.discountRatePct);
 
-    // 3. Compute sampled annual generation incorporating GHI, soiling derate, and ground albedo rear gain:
+    // 3. Compute sampled annual generation incorporating GHI, soiling derate, and ground albedo:
     const soilingDerateRatio = (1.0 - soilingPct / 100.0) / (1.0 - 0.045);
-    const albedoRearGainFactor = 1.0 + (sampledAlbedo - 0.22) * 0.15;
+    const isBifacial = input.isBifacial ?? false;
+    const bifaciality = input.bifacialityFactor ?? 0.80;
+    const gcr = input.groundCoverRatio ?? 0.38;
+    const albedoSensitivityCoeff = isBifacial ? bifaciality * gcr * 0.45 : 0.02;
+    const albedoRearGainFactor = 1.0 + (sampledAlbedo - 0.22) * albedoSensitivityCoeff;
     const trialYieldKwh = Math.max(0, baseAnnualYieldKwh * ghiFactor * soilingDerateRatio * albedoRearGainFactor);
 
     // 4. Sampled Pricing object
@@ -608,10 +615,13 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
       epistemicVariancePct: epistemicPct,
       aleatoryVariables: ['ghi_annual', 'soiling_loss', 'albedo'],
       epistemicVariables: ['tariff', 'capex_variance', 'opex_variance', 'discount_rate'],
-      methodologyNote: 'First-order variance decomposition via Standardized Rank Regression (SRC² / ANOVA index per Saltelli et al. 2008)',
+      methodologyNote:
+        'First-order Standardized Rank Regression variance attribution (SRC² index; exploratory linear/rank sensitivity on scaled annual yield, not orthogonal Sobol multiphysics decomposition)',
     },
-    screeningAndBankabilityNoticeFa: 'تحلیل عدم قطعیت و ریسک اعتباری بر پایه شبیه‌سازی آماری لاتین هایپرکیوب (LHS) با نمونه‌برداری ساختاریافته از توزیع‌های گوسی و کوپولا انجام شده است. نتایج صرفاً جهت بررسی حساسیت و غربالگری اقتصادی معتبر است و برای تأمین مالی بانکی مستقل، آنالیز سری زمانی چندساله ماهواره‌ای P50/P90 و گزارش مشاور فنی وام‌دهنده الزامی است.',
-    screeningAndBankabilityNoticeEn: 'Uncertainty propagation and bankability risk assessment based on Latin Hypercube Sampling (LHS) with structured multivariate copula sampling. Results represent preliminary engineering screening; institutional non-recourse project finance requires multi-year satellite time-series analysis (P50/P90) and Lender Technical Advisor (LTA) sign-off.',
+    screeningAndBankabilityNoticeFa:
+      'تحلیل عدم قطعیت و حساسیت مالی بر پایه نمونه‌برداری لاتین هایپرکیوب (LHS) با اعمال ضرایب بر انرژی سالانه پایه انجام شده است. نتایج صرفاً جنبه غربالگری و حساسیت‌سنجی اولیه اقتصادی دارند و معادل تحلیل چندفیزیکی چندساله P50/P90 با داده‌های ساعتی ماهواره‌ای یا گزارش مشاور فنی وام‌دهنده (LTA) نیستند.',
+    screeningAndBankabilityNoticeEn:
+      'Exploratory financial sensitivity based on Latin Hypercube Sampling (LHS) with parametric multipliers on baseline annual yield. Results represent preliminary sensitivity screening and do not substitute for multi-year satellite hourly time-series (P50/P90) or Lender Technical Advisor (LTA) bankability due diligence.',
   };
 }
 

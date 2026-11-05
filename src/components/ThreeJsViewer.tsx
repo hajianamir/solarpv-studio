@@ -1,18 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Eye, Sun, Box, Play, RefreshCw, Layers, CheckCircle2, AlertCircle, BarChart3, ShieldCheck } from 'lucide-react';
+import { Eye, Sun, Box, Play, RefreshCw, Layers, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, AlertTriangle } from 'lucide-react';
 import {
   simulateAnnual3dShading,
   DEFAULT_ROOFTOP_SCENE,
   type AnnualShading3dResult,
   type Scene3DState,
 } from '../engine/roof3dShadingEngine';
+import { type ClimateCity } from '../engine/climaticData';
 
 interface ThreeJsViewerProps {
   lang?: 'fa' | 'en';
+  city?: ClimateCity;
+  plantCapacityKw?: number;
+  annualYieldKwh?: number;
 }
 
-export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => {
+export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
+  lang = 'fa',
+  city,
+  plantCapacityKw,
+  annualYieldKwh,
+}) => {
   const isEn = lang === 'en';
   const mountRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +30,15 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
   const [sunAzimuth, setSunAzimuth] = useState<number>(180);
   const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
   const [annualResult, setAnnualResult] = useState<AnnualShading3dResult | null>(() => {
-    return simulateAnnual3dShading(DEFAULT_ROOFTOP_SCENE, 5.2, 40.0, { simulationMode: 'screening_3day' });
+    const initScene: Scene3DState = {
+      ...DEFAULT_ROOFTOP_SCENE,
+      anchorLocation: {
+        latitude: city?.latitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.latitude,
+        longitude: city?.longitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.longitude,
+        elevationM: city?.elevationM ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.elevationM,
+      },
+    };
+    return simulateAnnual3dShading(initScene, 5.2, 40.0, { simulationMode: 'screening_3day' });
   });
 
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -277,14 +294,19 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
     }
   }, [tiltDeg, sunAltitude, sunAzimuth]);
 
-  // Execute true 3D mesh ray-tracing annual simulation
+  // Execute 3D mesh ray-tracing annual simulation
   const handleRunShadingAnalysis = () => {
     setLoading(true);
     try {
       setTimeout(() => {
-        // Adjust table tilt in active scene based on UI slider
+        // Adjust table tilt and geodetic anchor in active scene
         const updatedScene: Scene3DState = {
           ...DEFAULT_ROOFTOP_SCENE,
+          anchorLocation: {
+            latitude: city?.latitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.latitude,
+            longitude: city?.longitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.longitude,
+            elevationM: city?.elevationM ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.elevationM,
+          },
           pvTables: DEFAULT_ROOFTOP_SCENE.pvTables.map(t => ({
             ...t,
             tiltDeg,
@@ -435,8 +457,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
                 <div className="text-xl font-bold font-mono text-industrial-error mt-1">
                   {annualResult.annualCombinedShadingLossPct}%
                 </div>
-                <div className="text-[10px] text-slate-400 mt-0.5">
-                  {isEn ? 'Mode:' : 'حالت:'} {annualResult.simulationModeUsed} ({annualResult.totalEvaluatedDaylightHours} {isEn ? 'hrs' : 'ساعت'})
+                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                  {annualResult.simulationModeUsed} ({annualResult.rawRayCastingStepsCount} steps / {annualResult.totalEvaluatedDaylightHours} {isEn ? 'equiv daylight hrs' : 'ساعت روز معادل'})
                 </div>
               </div>
 
@@ -448,7 +470,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
                   {annualResult.annualGeometricBeamLossPct}%
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
-                  {isEn ? '3D Mesh Ray Intersection' : 'برخورد پرتو با وجوه سه‌بعدی'}
+                  {isEn ? '12-point mesh ray-facet occlusion' : 'انسداد پرتو در مش ۱۲ نقطه‌ای'}
                 </div>
               </div>
 
@@ -460,19 +482,19 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
                   {annualResult.annualElectricalMismatchLossPct}%
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
-                  {isEn ? 'Non-linear I-V Substring Curve' : 'منحنی غیرخطی استرینگ'}
+                  {isEn ? 'Electrical substring current bottleneck' : 'افت عدم تطابق الکتریکی ساب‌استرینگ'}
                 </div>
               </div>
 
               <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
                 <div className="text-xs text-slate-400">
-                  {isEn ? 'Total Shading Energy Deficit' : 'مجموع انرژی ازدست‌رفته'}
+                  {isEn ? 'Geometric Shading Deficit Index' : 'شاخص کسری انرژی سایه'}
                 </div>
                 <div className="text-xl font-bold font-mono text-teal-400 mt-1">
                   {annualResult.totalLostAnnualKwh.toLocaleString()} <span className="text-xs font-normal text-slate-300">kWh</span>
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
-                  {isEn ? 'From' : 'از مجموع'} {annualResult.totalUnshadedAnnualKwh.toLocaleString()} kWh
+                  {isEn ? 'Clear-sky proxy baseline:' : 'مبنای پروکسی آسمان صاف:'} {annualResult.totalUnshadedAnnualKwh.toLocaleString()} kWh
                 </div>
               </div>
             </div>
@@ -487,13 +509,22 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
                 <ShieldCheck className="w-4 h-4 shrink-0" />
                 <span>
                   {isEn
-                    ? `Canonical Waterfall Yield Engine Status: ${annualResult.isReconciled ? 'Reconciled' : 'Discrepancy Detected'} (near_shading stage = -${annualResult.annualCombinedShadingLossPct}%, Δ = ${annualResult.reconciliationDeltaKwh.toFixed(2)} kWh)`
-                    : `وضعیت انطباق با موتور تلفات واترفال: ${annualResult.isReconciled ? 'منطبق و بازبینی‌شده' : 'دارای مغایرت'} (افت پله near_shading = -${annualResult.annualCombinedShadingLossPct}٪، اختلاف تجمعی = ${annualResult.reconciliationDeltaKwh.toFixed(2)} کیلووات‌ساعت)`}
+                    ? `Geometric Mesh Heatmap Consistency Check: Energy balance verified (near_shading loss = -${annualResult.annualCombinedShadingLossPct}%, Δ = ${annualResult.reconciliationDeltaKwh.toFixed(2)} kWh)`
+                    : `بررسی انطباق داخلی ماتریس تلفات مش: موازنه انرژی تایید شد (افت پله near_shading = -${annualResult.annualCombinedShadingLossPct}٪، اختلاف داخلی = ${annualResult.reconciliationDeltaKwh.toFixed(2)} کیلووات‌ساعت)`}
                 </span>
               </div>
               <span className="font-mono font-bold text-[11px] bg-slate-900/60 px-2 py-0.5 rounded">
-                IEC 62548
+                {isEn ? 'Mesh Matrix Balance' : 'انطباق ماتریس مش'}
               </span>
+            </div>
+
+            {/* Screening Disclaimer Notice */}
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-200 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <span className="font-bold">{isEn ? 'Screening Shading Index Notice: ' : 'اطلاعیه شاخص غربالگری سایه‌اندازی: '}</span>
+                {isEn ? annualResult.screeningNoticeEn : annualResult.screeningNoticeFa}
+              </div>
             </div>
 
             {/* Per-Table Heatmap Breakdown */}

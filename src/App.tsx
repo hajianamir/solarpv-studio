@@ -2272,7 +2272,18 @@ export const App: React.FC = () => {
           {activeTab === 'cad_layout' && <PowerplantCadLayoutTab lang={lang} />}
 
           {/* 3D VIEWER TAB */}
-          {activeTab === '3d_viewer' && <ThreeJsViewer lang={lang} />}
+          {activeTab === '3d_viewer' && (
+            <ThreeJsViewer
+              lang={lang}
+              city={city}
+              plantCapacityKw={
+                systemMode === 'powerplant'
+                  ? (targetPowerplantCapacityKw || 1000)
+                  : arrayDesign.totalPvCapacityKwp
+              }
+              annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+            />
+          )}
 
           {/* SCENARIOS COMPARISON TAB (Only for Battery modes) */}
           {activeTab === 'scenarios' && systemMode !== 'powerplant' && (
