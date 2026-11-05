@@ -350,8 +350,11 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     : config.nominalVoltageVolts * config.designCurrentAmps;
   const powerLossPct = Number(((powerLossWatts / Math.max(1, totalTransferredPowerWatts)) * 100.0).toFixed(2));
 
-  // 8. Line Capacitance & AC Charging Current (IEC 60287 / IEC 60502 typical screening estimate)
-  // Physical electrostatic capacitance exists on both DC and AC cables based on dielectric insulation and geometry:
+  // 8. Line Capacitance & AC Charging Current (Preliminary Screening Estimate)
+  // Simplified empirical screening estimation for typical single-core LV/PV solar cables
+  // based on cross-section curve fit. NOTE: This is a screening estimate only, not a rigorous
+  // calculation from dielectric permittivity, insulation thickness, screen geometry, or spacing
+  // per IEC 60287. Definitive impedance and capacitance data must be taken from manufacturer datasheets.
   const lineCapacitanceUfPerKm = Number((0.20 + 0.035 * Math.log(Math.max(1.5, perRunSection))).toFixed(3));
   const totalCapacitanceUf = Number(((lineCapacitanceUfPerKm * config.oneWayLengthM * parallelRuns) / 1000.0).toFixed(4));
   const vPhase = config.isThreePhase ? config.nominalVoltageVolts / Math.sqrt(3) : config.nominalVoltageVolts;
@@ -561,9 +564,9 @@ export function calculateEarthingSystem(
     isEarthingSafe: effectiveRg <= targetResistance && isTouchVoltageSafe && isStepVoltageSafe,
     isPreliminaryEstimate: true,
     disclaimerFa:
-      'توجه: محاسبات ولتاژ تماس و گام بر پایه فرضیات لایه سطحی سنگ‌ریزه و توزیع تخمینی جریان خطا ارائه شده است. انطباق نهایی و اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر و طراحی تفصیلی شبکه مش در نرم‌افزارهای تخصصی است.',
+      'توجه: محاسبات مقاومت زمین و ولتاژهای تماس و گام صرفاً ارزیابی اولیه غربالگری بر پایه مدل خاک یکنواخت و حدود فرضی پیش‌فرض (مانند سقف ۱۲۰V برای مقاومت زمین یا ۵۰V برای IT) است. این حدود فرضی برای کلیه حوزه‌ها الزام‌آور نبوده و حد واقعی به زمان قطع حفاظت، رطوبت محیط و مقررات محلی وابسته است. طراحی اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر و مدل‌سازی تفصیلی شبکه مش است.',
     disclaimerEn:
-      'Notice: Touch and step voltage verifications are preliminary screening estimates based on assumed crushed rock layer and default split factor. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing and site-specific grid modeling.',
+      'Notice: Ground resistance and touch/step potential verifications are preliminary screening estimates using uniform soil assumptions and indicative default regulatory ceilings (e.g. 120V for impedance-grounded, 50V for IT). Actual limits depend on fault duration, environmental wetness, and local utility interconnection codes. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing and site-specific grid modeling.',
     bentoniteEnhancedResistanceOhms: bentoniteEnhancedResistance,
     bentoniteApplied: applyBentoniteEnhancement,
     earthingExecutionStepsFa,

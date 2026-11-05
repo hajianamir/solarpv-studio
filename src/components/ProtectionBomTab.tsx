@@ -830,7 +830,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   <span>{lang === 'fa' ? 'حد مجاز حاکم:' : 'Governing limit:'} <strong>{earthingResult.maxTouchVoltageVolts} V</strong></span>
                 </div>
                 <span className="text-[10px] text-slate-400 block mt-1">
-                  {lang === 'fa' ? 'وزن بدن ۵۰kg با لایه سنگ‌ریزه ۱۰cm در زمان خطای ۰.۲ ثانیه طبق IEEE 80 / IEC 60364-4-41' : 'IEEE 80 / IEC 60364-4-41 touch potential limit'}
+                  {lang === 'fa' ? 'حد غربالگری ولتاژ تماس (محاسبه IEEE 80 مقید به سقف ایمنی فرضی رژیم زمین)' : 'Touch screening limit (IEEE 80 constrained by indicative grounding regime ceiling)'}
                 </span>
               </div>
 
@@ -850,7 +850,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   <span>{lang === 'fa' ? 'حد مجاز حاکم:' : 'Governing limit:'} <strong>{earthingResult.maxStepVoltageVolts} V</strong></span>
                 </div>
                 <span className="text-[10px] text-slate-400 block mt-1">
-                  {lang === 'fa' ? 'تضمین عدم برق‌گرفتگی اپراتور در حین راه‌رفتن در محوطه نیروگاه هنگام وقوع فالت زمین' : 'Guarantees operator safety against step potential during ground faults'}
+                  {lang === 'fa' ? 'حد غربالگری ولتاژ گام (محاسبه IEEE 80 مقید به سقف ایمنی فرضی رژیم زمین)' : 'Step screening limit (IEEE 80 constrained by indicative grounding regime ceiling)'}
                 </span>
               </div>
             </div>

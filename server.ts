@@ -208,14 +208,14 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
   } = req.body;
 
   if (
-    (systemCapacityKwp !== undefined && (typeof systemCapacityKwp !== 'number' || systemCapacityKwp < 0)) ||
-    (panelCount !== undefined && (typeof panelCount !== 'number' || panelCount < 0)) ||
-    (inverterCount !== undefined && (typeof inverterCount !== 'number' || inverterCount < 0)) ||
-    (batteryCount !== undefined && (typeof batteryCount !== 'number' || batteryCount < 0)) ||
-    (annualYieldKwh !== undefined && (typeof annualYieldKwh !== 'number' || annualYieldKwh < 0)) ||
-    (lcoeUsdPerKwh !== undefined && (typeof lcoeUsdPerKwh !== 'number' || lcoeUsdPerKwh < 0))
+    (systemCapacityKwp !== undefined && (typeof systemCapacityKwp !== 'number' || !Number.isFinite(systemCapacityKwp) || systemCapacityKwp < 0)) ||
+    (panelCount !== undefined && (typeof panelCount !== 'number' || !Number.isInteger(panelCount) || panelCount < 0)) ||
+    (inverterCount !== undefined && (typeof inverterCount !== 'number' || !Number.isInteger(inverterCount) || inverterCount < 0)) ||
+    (batteryCount !== undefined && (typeof batteryCount !== 'number' || !Number.isInteger(batteryCount) || batteryCount < 0)) ||
+    (annualYieldKwh !== undefined && (typeof annualYieldKwh !== 'number' || !Number.isFinite(annualYieldKwh) || annualYieldKwh < 0)) ||
+    (lcoeUsdPerKwh !== undefined && (typeof lcoeUsdPerKwh !== 'number' || !Number.isFinite(lcoeUsdPerKwh) || lcoeUsdPerKwh < 0))
   ) {
-    return res.status(400).json({ error: "Invalid engineering metrics: capacity, count, yield, or cost cannot be negative." });
+    return res.status(400).json({ error: "Invalid engineering metrics: capacity, yield, and cost must be non-negative finite numbers; equipment counts must be non-negative integers." });
   }
 
   res.json({

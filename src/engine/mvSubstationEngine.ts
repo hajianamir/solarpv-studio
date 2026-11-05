@@ -204,10 +204,12 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const thermalEquivalentIthKa = initialSymmetricalIscKa * Math.sqrt(mFactor + nFactor);
 
   // Selected standard breaking capacity (IEC 62271-100: 16, 20, 25, 31.5, 40, 50, 63 kA):
-  // Circuit breaker sizing per IEC 62271-100 requires verifying:
+  // Preliminary screening check against standard IEC 62271-100 normative baseline ratios:
   // 1. Symmetrical breaking capacity: I_sc'' <= I_sc,rated
-  // 2. Peak dynamic making capacity: i_p <= 2.5 * I_sc,rated (for 50Hz per IEC 62271-100 §4.101)
-  // 3. Thermal short-time withstand capacity: I_th <= I_th,rated (1s standard rating)
+  // 2. Peak dynamic making capacity: i_p <= 2.5 * I_sc,rated (standard 50Hz baseline ratio per IEC 62271-100 §4.101)
+  // 3. Thermal short-time withstand capacity: I_th <= I_th,rated (1s standard duration baseline assumption)
+  // NOTE: This confirms theoretical sizing adequacy against standard normative baselines; definitive
+  // equipment qualification requires manufacturer type-test certificates and operating duty sequence.
   const standardBreakingRatings = [16.0, 20.0, 25.0, 31.5, 40.0, 50.0, 63.0];
   const matchedRating = standardBreakingRatings.find(
     (b) => b >= initialSymmetricalIscKa && (2.5 * b) >= peakDynamicIpKa && b >= thermalEquivalentIthKa
@@ -300,18 +302,18 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const powerFactorRange = '±0.90 (Capacitive / Inductive Q(U) Control)';
 
   const switchgearDescriptionFa = isBreakerSufficient
-    ? `تابلوی کمپکت گازی SF6 فشار متوسط (RMU/GIS) رده ولتاژی ${gridConnectionVoltageKv} کیلوولت با بریکر خلاء (VCB) ۶۳۰ آمپر، قدرت قطع ${breakingCapacityKa} kA (قدرت وصل پیک ${ratedPeakMakingCapacityKa} kA و تحمل حرارتی ۱ ثانیه ${breakingCapacityKa} kA طبق IEC 62271-100)، مجهز به رله‌های حفاظتی میکروپروسسوری (ANSI 50/51/50N/51N) و سکسیونر زمین موتوری.`
+    ? `تابلوی کمپکت گازی SF6 فشار متوسط (RMU/GIS) رده ولتاژی ${gridConnectionVoltageKv} کیلوولت با بریکر خلاء (VCB) ۶۳۰ آمپر، قدرت قطع ${breakingCapacityKa} kA (برآورد اولیه انطباق بر پایه نسبت‌های استاندارد IEC 62271-100: قدرت وصل پیک ۲.۵ برابر معادل ${ratedPeakMakingCapacityKa} kA و تحمل حرارتی ۱ ثانیه‌ای ${breakingCapacityKa} kA؛ نیازمند تطبیق با کاتالوگ سازنده)، مجهز به رله‌های حفاظتی میکروپروسسوری (ANSI 50/51/50N/51N) و سکسیونر زمین موتوری.`
     : `هشدار بحرانی عدم کفایت کلید: جریان اتصال کوتاه اولیه (${shortCircuit.initialSymmetricalIscKa} kA یا پیک ${shortCircuit.peakDynamicIpKa} kA) از بالاترین قدرت قطع بریکرهای استاندارد MV (${breakingCapacityKa} kA قطع / ${ratedPeakMakingCapacityKa} kA وصل پیک) فراتر است. بریکر انتخاب‌شده قادر به قطع این جریان نیست و نصب راکتور محدودکننده جریان (CLR) یا بازنگری در طراحی باسبار الزامی است.`;
 
   const switchgearDescriptionEn = isBreakerSufficient
-    ? `Medium-voltage gas-insulated switchgear (GIS/RMU) rated ${gridConnectionVoltageKv}kV with vacuum circuit breaker (VCB): ${breakingCapacityKa} kA symmetrical breaking, ${ratedPeakMakingCapacityKa} kA peak making (2.5 factor per IEC 62271-100), and ${breakingCapacityKa} kA 1s thermal withstand, with numerical protection relay (50/51/50N/51N) and motorized earth switch.`
+    ? `Medium-voltage gas-insulated switchgear (GIS/RMU) rated ${gridConnectionVoltageKv}kV with vacuum circuit breaker (VCB): ${breakingCapacityKa} kA symmetrical breaking (preliminary screening using IEC 62271-100 normative baselines: ${ratedPeakMakingCapacityKa} kA peak making at 2.5x and ${breakingCapacityKa} kA 1s thermal withstand; definitive verification requires manufacturer type-test certificates), with numerical protection relay (50/51/50N/51N) and motorized earth switch.`
     : `CRITICAL BREAKER CAPACITY WARNING: Symmetrical fault current (${shortCircuit.initialSymmetricalIscKa} kA) or peak dynamic current (${shortCircuit.peakDynamicIpKa} kA) exceeds standard medium-voltage breaker rating (${breakingCapacityKa} kA breaking / ${ratedPeakMakingCapacityKa} kA peak making). Sized breaker cannot safely interrupt this fault; current-limiting reactor (CLR) or higher transformer impedance required.`;
 
   const notesFa = [
     `ترانسفورماتور افزاینده ${ratedMva} MVA (ظرفیت مؤثر ${effectiveCapacity} MVA با لحاظ افت دمایی ${tempDeratePct}٪ و ارتفاعی ${altDeratePct}٪) با گروه برداری Dyn11 و امپدانس اتصالی ${ukPct}٪ جهت اتصال مطمئن به شبکه ${gridConnectionVoltageKv}kV.`,
     `جریان اتصال کوتاه متقارن اولیه ${shortCircuit.initialSymmetricalIscKa} kA، جریان پیک ضربه‌ای ${shortCircuit.peakDynamicIpKa} kA (ضریب کاپا ${shortCircuit.kappa}) و معادل حرارتی Ith=${shortCircuit.thermalEquivalentIthKa} kA بر اساس امپدانس مختلط R+jX طبق IEC 60909.`,
     ...(isBreakerSufficient
-      ? [`قدرت قطع بریکر انتخابی (${breakingCapacityKa} kA متقارن، ${ratedPeakMakingCapacityKa} kA وصل پیک) بزرگ‌تر از جریان خطای محاسبه‌شده بوده و منطبق بر الزامات IEC 62271-100 است.`]
+      ? [`ارزیابی غربالگری بریکر (${breakingCapacityKa} kA متقارن، ${ratedPeakMakingCapacityKa} kA وصل پیک بر مبنای نسبت‌های نامی IEC 62271-100) کفایت نظری کلید را نشان می‌دهد؛ انطباق اجرایی قطعی نیازمند انطباق با جدول داده‌های فنی سازنده و سیکل عملکرد است.`]
       : [`هشدار بحرانی: هیچ بریکر استاندارد MV با قدرت قطع کافی برای جریان خطای ${shortCircuit.initialSymmetricalIscKa} kA یافت نشد (حداکثر رده موجود: ${breakingCapacityKa} kA).`]),
     `طراحی مش ارتینگ پست بر اساس IEEE 80 با هادی مسی ${earthing.groundGridConductorMm2} mm² و مقاومت کل زمین ${earthing.calculatedGridResistanceOhms} اهم (تأمین ولتاژ گام و لمس مجاز).`,
     `تعبیه ترانسفورماتور مصارف داخلی ${auxiliaryTransformer.ratedKva} kVA جهت تغذیه بدون وقفه SCADA، سیستم‌های حفاظتی و درایوهای ترکر.`,
