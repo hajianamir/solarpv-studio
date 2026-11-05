@@ -34,6 +34,9 @@ interface FinancialTabProps {
   city?: ClimateCity;
   foundationType?: FoundationType;
   lang?: 'fa' | 'en';
+  isBifacial?: boolean;
+  bifacialityFactor?: number;
+  groundCoverRatio?: number;
 }
 
 export const FinancialTab: React.FC<FinancialTabProps> = ({
@@ -43,6 +46,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   city,
   foundationType = 'rammed_steel_pile',
   lang = 'fa',
+  isBifacial = false,
+  bifacialityFactor = 0.80,
+  groundCoverRatio = 0.38,
 }) => {
   const [showCashflowTable, setShowCashflowTable] = useState(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
@@ -76,6 +82,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           systemMode: financial.systemMode || 'powerplant',
           sampleSize: uqSampleSize,
           seed: 42,
+          isBifacial,
+          bifacialityFactor,
+          groundCoverRatio,
         });
         setUqResult(res);
       } catch (err: unknown) {
@@ -656,6 +665,17 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 ? 'نمونه‌برداری ساختاریافته LHS از عدم قطعیت تابش خورشیدی (GHI)، گردوغبار، آلبدو، هزینه CAPEX/OPEX و نرخ تنزیل'
                 : 'Stratified LHS sampling across GHI irradiance, soiling, albedo, CAPEX, OPEX, and discount rate.'}
             </p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                {isBifacial
+                  ? (lang === 'fa'
+                    ? `ماژول دوطرفه (Bifacial BF=${bifacialityFactor.toFixed(2)}, GCR=${groundCoverRatio.toFixed(2)}) - حساسیت آلبدو فعال`
+                    : `Bifacial Array (BF=${bifacialityFactor.toFixed(2)}, GCR=${groundCoverRatio.toFixed(2)}) - Albedo Sensitivity Active`)
+                  : (lang === 'fa'
+                    ? 'ماژول یک‌طرفه (Monofacial) - اثر آلبدو محدود به بازتاب افقی'
+                    : 'Monofacial Array - Low Albedo Sensitivity')}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

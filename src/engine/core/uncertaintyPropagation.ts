@@ -526,8 +526,8 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
   const lcoeStats = computeStats(lcoeMwhSamples, '$/MWh', true);
   const npvStats = computeStats(npvUsdSamples, 'USD', false);
 
-  // First-Order Variance Decomposition via Standardized Rank Regression (SRC² / ANOVA index per Saltelli et al. 2008)
-  const calcStandardizedRegression = (x: number[], y: number[]): number => {
+  // First-Order Variance Attribution via Linear Pearson Determination Coefficients (r_i² index)
+  const calcPearsonCorrelation = (x: number[], y: number[]): number => {
     const mx = x.reduce((s, v) => s + v, 0) / x.length;
     const my = y.reduce((s, v) => s + v, 0) / y.length;
     let cov = 0;
@@ -544,13 +544,13 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
     return denom > 0 ? Math.abs(cov / denom) : 0;
   };
 
-  const srcGhi = calcStandardizedRegression(ghiDeviations, npvUsdSamples);
-  const srcSoiling = calcStandardizedRegression(soilingDeviations, npvUsdSamples);
-  const srcAlbedo = calcStandardizedRegression(albedoDeviations, npvUsdSamples);
-  const srcCapex = calcStandardizedRegression(capexDeviations, npvUsdSamples);
-  const srcTariff = calcStandardizedRegression(tariffDeviations, npvUsdSamples);
-  const srcOpex = calcStandardizedRegression(opexDeviations, npvUsdSamples);
-  const srcDiscount = calcStandardizedRegression(discountDeviations, npvUsdSamples);
+  const srcGhi = calcPearsonCorrelation(ghiDeviations, npvUsdSamples);
+  const srcSoiling = calcPearsonCorrelation(soilingDeviations, npvUsdSamples);
+  const srcAlbedo = calcPearsonCorrelation(albedoDeviations, npvUsdSamples);
+  const srcCapex = calcPearsonCorrelation(capexDeviations, npvUsdSamples);
+  const srcTariff = calcPearsonCorrelation(tariffDeviations, npvUsdSamples);
+  const srcOpex = calcPearsonCorrelation(opexDeviations, npvUsdSamples);
+  const srcDiscount = calcPearsonCorrelation(discountDeviations, npvUsdSamples);
 
   const sumSrc2 =
     srcGhi ** 2 +
@@ -577,7 +577,7 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
   const totalGroupSum2 = aleatorySum2 + epistemicSum2 || 1;
 
   const aleatoryPct = Number(((aleatorySum2 / totalGroupSum2) * 100.0).toFixed(1));
-  const epistemicPct = Number((100.0 - aleatoryPct).toFixed(1));
+  const epistemicPct = Number(((epistemicSum2 / totalGroupSum2) * 100.0).toFixed(1));
 
   // Risk category based on NPV spread
   let bankableRiskCategory: FinancialUqResult['bankableRiskCategory'] = 'INVESTMENT_GRADE';
@@ -616,7 +616,7 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
       aleatoryVariables: ['ghi_annual', 'soiling_loss', 'albedo'],
       epistemicVariables: ['tariff', 'capex_variance', 'opex_variance', 'discount_rate'],
       methodologyNote:
-        'First-order Standardized Rank Regression variance attribution (SRC² index; exploratory linear/rank sensitivity on scaled annual yield, not orthogonal Sobol multiphysics decomposition)',
+        'First-order variance attribution via normalized Pearson determination coefficients (r_i² index across sampled parametric multipliers on NPV, representing exploratory linear sensitivity rather than orthogonal Sobol or rank-based ANOVA decomposition)',
     },
     screeningAndBankabilityNoticeFa:
       'تحلیل عدم قطعیت و حساسیت مالی بر پایه نمونه‌برداری لاتین هایپرکیوب (LHS) با اعمال ضرایب بر انرژی سالانه پایه انجام شده است. نتایج صرفاً جنبه غربالگری و حساسیت‌سنجی اولیه اقتصادی دارند و معادل تحلیل چندفیزیکی چندساله P50/P90 با داده‌های ساعتی ماهواره‌ای یا گزارش مشاور فنی وام‌دهنده (LTA) نیستند.',

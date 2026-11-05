@@ -657,8 +657,8 @@ export function simulateAnnual3dShading(
       beamCoverageSum: number;
       daylightHours: number;
       diodeHours: number;
-      directBeamLossWh: number;
-      diodeMismatchLossWh: number;
+      directBeamLossKwh: number;
+      diodeMismatchLossKwh: number;
     }
   > = new Map();
 
@@ -669,8 +669,8 @@ export function simulateAnnual3dShading(
       beamCoverageSum: 0,
       daylightHours: 0,
       diodeHours: 0,
-      directBeamLossWh: 0,
-      diodeMismatchLossWh: 0,
+      directBeamLossKwh: 0,
+      diodeMismatchLossKwh: 0,
     });
   }
 
@@ -696,8 +696,8 @@ export function simulateAnnual3dShading(
         const stats = tableData.get(table.id)!;
         stats.daylightHours += weight;
 
-        const unshadedWh = (ghiProxyWh * (table.ratedPowerWp / 1000.0) * weight) / 1000.0;
-        stats.unshadedKwh += unshadedWh;
+        const stepUnshadedKwh = (ghiProxyWh * (table.ratedPowerWp / 1000.0) * weight) / 1000.0;
+        stats.unshadedKwh += stepUnshadedKwh;
 
         const meshRes = computeTableShadingGeometricMesh(table, allObstacleFacets, sun);
 
@@ -706,13 +706,16 @@ export function simulateAnnual3dShading(
           stats.diodeHours += weight;
         }
 
-        const stepDirectBeamWh = unshadedWh * meshRes.directBeamLossFraction;
-        const stepDiodeMismatchWh = unshadedWh * meshRes.diodeMismatchLossFraction;
+        // Direct geometric beam loss (kWh) from occluded cell area
+        const stepDirectBeamKwh = stepUnshadedKwh * meshRes.directBeamLossFraction;
+        // Additional substring mismatch loss (kWh) from bypassed diodes clipping active current
+        const stepDiodeMismatchKwh = stepUnshadedKwh * meshRes.diodeMismatchLossFraction;
 
-        stats.directBeamLossWh += stepDirectBeamWh;
-        stats.diodeMismatchLossWh += stepDiodeMismatchWh;
+        stats.directBeamLossKwh += stepDirectBeamKwh;
+        stats.diodeMismatchLossKwh += stepDiodeMismatchKwh;
 
-        stats.shadedKwh += unshadedWh * meshRes.electricalMismatchFactor;
+        // Shaded generation directly subtracts both geometric beam occlusion and electrical mismatch
+        stats.shadedKwh += stepUnshadedKwh - (stepDirectBeamKwh + stepDiodeMismatchKwh);
       }
     }
   }
@@ -732,8 +735,8 @@ export function simulateAnnual3dShading(
 
     totalUnshaded += unshadedKwh;
     totalShaded += shadedKwh;
-    totalDirectBeamLossKwh += stats.directBeamLossWh / 1000.0;
-    totalDiodeMismatchLossKwh += stats.diodeMismatchLossWh / 1000.0;
+    totalDirectBeamLossKwh += stats.directBeamLossKwh;
+    totalDiodeMismatchLossKwh += stats.diodeMismatchLossKwh;
 
     tableHeatmap.push({
       tableId: table.id,

@@ -4127,7 +4127,6 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     });
 
     const cableR20 = subMax.shortCircuit.cableImpedance.rOhms;
-    const cableX = subMax.shortCircuit.cableImpedance.xOhms;
     const cableR20Ok = Math.abs(cableR20 - 0.22325) < 0.002;
 
     // 2. Min fault current: Cable R at 90°C per IEC 60909-0 §6.4.3
@@ -4166,18 +4165,48 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     });
     const parallelOk = Math.abs(subParallel2.shortCircuit.cableImpedance.rOhms - cableR20 / 2) < 0.001;
 
-    // 4. Transformer KT factor per IEC 60909-0 §6.3.3.1
-    const ktFactor = subMax.shortCircuit.transformerImpedance.ktFactor;
-    const ktOk = ktFactor >= 0.99 && ktFactor <= 1.05;
+    // 4. Exact Transformer KT factor hand calculation per IEC 60909-0 §6.3.3.1:
+    // P=10MW, PF=0.9 -> S_trafo=16MVA. Un=20kV.
+    // Z_trafo_nom = 20^2 / 16 = 25.0 Ω. uk=7%, Pk=136kW.
+    // R_base = 136e-3 * 20^2 / 16^2 = 0.2125 Ω.
+    // Z_base = 0.07 * 25.0 = 1.75 Ω. X_base = sqrt(1.75^2 - 0.2125^2) = 1.73705 Ω.
+    // x_T = 1.73705 / 25.0 = 0.069482. c_max = 1.10.
+    // KT = 0.95 * [1.10 / (1 + 0.6 * 0.069482)] = 1.0032
+    const unKv = 20.0;
+    const sTrafoMva = 16.0;
+    const zTrafoNominal = (unKv * unKv) / sTrafoMva;
+    const ukPct = subMax.transformer.impedanceVoltageUkPct;
+    const pkKw = subMax.transformer.loadLossesKw;
+    const rBase = (pkKw * 1e-3 * unKv * unKv) / (sTrafoMva * sTrafoMva);
+    const zBase = (ukPct / 100.0) * zTrafoNominal;
+    const xBase = Math.sqrt(zBase * zBase - rBase * rBase);
+    const xT = xBase / zTrafoNominal;
+    const cMax = 1.10;
+    const expectedKt = Number((0.95 * (cMax / (1.0 + 0.6 * xT))).toFixed(4));
+    const actualKt = subMax.shortCircuit.transformerImpedance.ktFactor;
+    const ktExactOk = Math.abs(actualKt - expectedKt) < 1e-4;
+    const ktROk = Math.abs(subMax.shortCircuit.transformerImpedance.rOhms - Number((rBase * expectedKt).toFixed(5))) < 1e-4;
+    const ktXOk = Math.abs(subMax.shortCircuit.transformerImpedance.xOhms - Number((xBase * expectedKt).toFixed(5))) < 1e-4;
 
-    // 5. Topology: Busbar fault current exceeds feeder terminal fault current
-    const topologyOk = subMax.shortCircuit.busbarIscKa > subMax.shortCircuit.feederTerminalIscKa;
+    // 5. Inverter short-circuit contribution per IEC 60909-0 Clause 6.7:
+    // S_plant = 10 / 0.9 = 11.11 MVA -> I_nom_MV = 11.11 / (sqrt(3) * 20) = 0.3207 kA.
+    // I_sc_inv = 1.15 * 0.3207 = 0.369 kA.
+    const invIsc = subMax.shortCircuit.inverterFaultContributionKa;
+    const invContributionOk = Math.abs(invIsc - 0.369) < 0.01;
+    const feederSumOk =
+      Math.abs(
+        subMax.shortCircuit.feederTerminalIscKa -
+          (subMax.shortCircuit.feederTerminalGridIscKa + invIsc)
+      ) < 1e-3;
+
+    // 6. Topology: Busbar fault current exceeds feeder grid component
+    const topologyOk = subMax.shortCircuit.busbarIscKa > subMax.shortCircuit.feederTerminalGridIscKa;
 
     assert(
       'E10-MV-CABLE-IMPEDANCE-DECOMPOSITION',
-      'MV cable impedance decomposes into R+jX with 20C max / 90C min temp calibration, KT factor, and parallel runs',
-      cableR20Ok && tempScalingOk && parallelOk && ktOk && topologyOk,
-      `Cable R20=${cableR20}Ω (exp 0.223Ω), R90=${cableR90}Ω (exp 0.285Ω), 2xPar=${subParallel2.shortCircuit.cableImpedance.rOhms}Ω, KT=${ktFactor}, BusbarIsc=${subMax.shortCircuit.busbarIscKa}kA > FeederIsc=${subMax.shortCircuit.feederTerminalIscKa}kA`
+      'MV cable impedance decomposes into R+jX with 20C max / 90C min temp calibration, exact KT factor, and inverter fault contribution',
+      cableR20Ok && tempScalingOk && parallelOk && ktExactOk && ktROk && ktXOk && invContributionOk && feederSumOk && topologyOk,
+      `Cable R20=${cableR20}Ω (exp 0.223Ω), R90=${cableR90}Ω (exp 0.285Ω), 2xPar=${subParallel2.shortCircuit.cableImpedance.rOhms}Ω, KT=${actualKt} (exp ${expectedKt}), InvIsc=${invIsc}kA, BusbarIsc=${subMax.shortCircuit.busbarIscKa}kA > FeederGridIsc=${subMax.shortCircuit.feederTerminalGridIscKa}kA`
     );
   }
 
@@ -4225,6 +4254,15 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const res8760 = simulateAnnual3dShading(DEFAULT_ROOFTOP_SCENE, 5.0, 40.0, { simulationMode: 'hourly_8760' });
     const res3Day = simulateAnnual3dShading(DEFAULT_ROOFTOP_SCENE, 5.0, 40.0, { simulationMode: 'screening_3day' });
 
+    // Both direct geometric beam loss and electrical mismatch loss must be non-zero and sum to combined
+    const beamLossOk = res3Day.annualGeometricBeamLossPct > 0.5;
+    const mismatchLossOk = res3Day.annualElectricalMismatchLossPct > 0.5;
+    const sumMatchesCombined =
+      Math.abs(
+        (res3Day.annualGeometricBeamLossPct + res3Day.annualElectricalMismatchLossPct) -
+          res3Day.annualCombinedShadingLossPct
+      ) < 0.05;
+
     const modesOk =
       res8760.simulationModeUsed === 'hourly_8760' &&
       res3Day.simulationModeUsed === 'screening_3day' &&
@@ -4233,15 +4271,16 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       res3Day.rawRayCastingStepsCount > 1000 &&
       res8760.totalEvaluatedDaylightHours > 4000 &&
       res3Day.totalEvaluatedDaylightHours > 4000 &&
-      res8760.annualCombinedShadingLossPct >= 0 &&
-      res8760.annualElectricalMismatchLossPct >= 0 &&
+      beamLossOk &&
+      mismatchLossOk &&
+      sumMatchesCombined &&
       res8760.screeningNoticeEn.length > 20;
 
     assert(
       'E10-3D-FACET-RAYTRACING-MODES',
-      '3D planar facet extraction, ray-polygon intersection, and hourly 8760 vs 3-day simulation modes execute correctly',
+      '3D planar facet extraction, ray-polygon intersection, and hourly 8760 vs 3-day simulation modes execute correctly with exact beam/mismatch split',
       cuboidFacetsOk && cylFacetsOk && rayIntersectionOk && modesOk,
-      `Cuboid facets=${cuboidFacets.length}, Cyl facets=${cylFacets.length}, occluded=${isOccluded}, free=${!isFree}, 8760h steps=${res8760.rawRayCastingStepsCount}, 3day steps=${res3Day.rawRayCastingStepsCount}, beamLoss=${res8760.annualGeometricBeamLossPct}%, diodeMismatch=${res8760.annualElectricalMismatchLossPct}%`
+      `Cuboid facets=${cuboidFacets.length}, Cyl facets=${cylFacets.length}, occluded=${isOccluded}, free=${!isFree}, 8760h steps=${res8760.rawRayCastingStepsCount}, 3day steps=${res3Day.rawRayCastingStepsCount}, beamLoss=${res3Day.annualGeometricBeamLossPct}%, diodeMismatch=${res3Day.annualElectricalMismatchLossPct}%, combined=${res3Day.annualCombinedShadingLossPct}%`
     );
   }
 
@@ -4252,7 +4291,19 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const { runFinancialUncertaintyPropagation } = await import('../uncertaintyPropagation');
     const { DEFAULT_FINANCIAL_PRICING } = await import('../../financialEngine');
 
-    // Test monofacial vs bifacial albedo sensitivity
+    // Run monofacial vs bifacial albedo sensitivity
+    const uqMonofacial = runFinancialUncertaintyPropagation({
+      plantCapacityKwp: 5000,
+      batteryCapacityKwh: 0,
+      inverterCapacityKw: 5000,
+      baseAnnualYieldKwh: 9_000_000,
+      basePricing: DEFAULT_FINANCIAL_PRICING,
+      systemMode: 'powerplant',
+      sampleSize: 80,
+      seed: 12345,
+      isBifacial: false,
+    });
+
     const uqBifacial = runFinancialUncertaintyPropagation({
       plantCapacityKwp: 5000,
       batteryCapacityKwh: 0,
@@ -4267,6 +4318,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       groundCoverRatio: 0.38,
     });
 
+    const bifacialSpreadOk = uqBifacial.annualGenerationMwh.stdDev >= uqMonofacial.annualGenerationMwh.stdDev;
+
     const hasAlbedoTornado = uqBifacial.tornadoSensitivityRanking.some(t => t.variableId === 'albedo');
     const hasSoilingTornado = uqBifacial.tornadoSensitivityRanking.some(t => t.variableId === 'soiling_loss');
     const decompositionOk =
@@ -4277,13 +4330,14 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       ) <= 0.2;
     const noticesOk =
       Boolean(uqBifacial.screeningAndBankabilityNoticeFa) &&
-      Boolean(uqBifacial.screeningAndBankabilityNoticeEn);
+      Boolean(uqBifacial.screeningAndBankabilityNoticeEn) &&
+      Boolean(uqBifacial.uncertaintyDecomposition?.methodologyNote?.includes('Pearson'));
 
     assert(
       'E10-UQ-ALBEDO-AND-BANKABILITY',
-      'Financial UQ samples ground albedo and soiling via LHS with bilingual bankability notices and exact variance decomposition',
-      hasAlbedoTornado && hasSoilingTornado && decompositionOk && noticesOk,
-      `Albedo in tornado=${hasAlbedoTornado}, Soiling in tornado=${hasSoilingTornado}, Aleatory=${uqBifacial.uncertaintyDecomposition?.aleatoryVariancePct}%, Epistemic=${uqBifacial.uncertaintyDecomposition?.epistemicVariancePct}%, NoticesFa=${Boolean(uqBifacial.screeningAndBankabilityNoticeFa)}`
+      'Financial UQ samples ground albedo and soiling via LHS with bifacial sensitivity coupling, Pearson variance attribution, and bankability notices',
+      hasAlbedoTornado && hasSoilingTornado && bifacialSpreadOk && decompositionOk && noticesOk,
+      `Albedo in tornado=${hasAlbedoTornado}, Soiling in tornado=${hasSoilingTornado}, BiStdDev=${uqBifacial.annualGenerationMwh.stdDev} >= MonoStdDev=${uqMonofacial.annualGenerationMwh.stdDev}, Aleatory=${uqBifacial.uncertaintyDecomposition?.aleatoryVariancePct}%, Epistemic=${uqBifacial.uncertaintyDecomposition?.epistemicVariancePct}%, NoticesFa=${Boolean(uqBifacial.screeningAndBankabilityNoticeFa)}`
     );
   }
 

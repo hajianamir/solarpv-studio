@@ -26,6 +26,7 @@ export interface MvSubstationInput {
   shortCircuitCalculationMode?: 'max_fault_current' | 'min_fault_current'; // IEC 60909 c_max vs c_min
   customCVoltageFactor?: number; // Optional user override for c factor
   faultLocation?: 'mv_busbar' | 'feeder_terminal'; // Fault point: substation MV busbar (excl. cable) vs feeder terminal (incl. cable)
+  inverterFaultContributionFactor?: number; // Converter current limit k_inv per IEC 60909-0 Clause 6.7 / IEEE 1547 (default 1.15)
   faultCurrentLowThresholdKa?: number; // Screening threshold, default 0.5 kA
   faultCurrentHighThresholdKa?: number;// Screening threshold, default 30.0 kA
 }
@@ -91,6 +92,8 @@ export interface ShortCircuitCalculation {
   cFactor: number;
   cFactorSource: string;
   busbarIscKa: number;
+  feederTerminalGridIscKa: number;
+  inverterFaultContributionKa: number;
   feederTerminalIscKa: number;
   faultCurrentOutOfRangeWarning?: string;
   screeningMethodologyNoticeFa: string;
@@ -413,9 +416,11 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   }
   const zCableOhms = Math.hypot(rCableOhms, xCableOhms);
 
-  // 4. Substation Busbar vs Feeder Terminal Fault Topology:
+  // 4. Substation Busbar vs Feeder Terminal Fault Topology & Inverter Contribution:
   // - 'mv_busbar': Fault at substation MV busbar (upstream grid + transformer only)
-  // - 'feeder_terminal': Downstream fault at collection feeder end (includes parallel cables)
+  // - 'feeder_terminal': Downstream fault at collection feeder end (includes parallel cables + inverter current)
+  // Per IEC 60909-0 Clause 6.7 / IEEE 1547: Static power converter-connected PV generating units contribute
+  // a fast current-limited short-circuit current governed by k_inv * I_nom (typically 1.10 - 1.25, default 1.15).
   const faultLocation: 'mv_busbar' | 'feeder_terminal' =
     input.faultLocation ?? (cableLengthM > 0 ? 'feeder_terminal' : 'mv_busbar');
 
@@ -427,15 +432,23 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const rFeederOhms = rBusbarOhms + rCableOhms;
   const xFeederOhms = xBusbarOhms + xCableOhms;
   const zFeederOhms = Math.hypot(rFeederOhms, xFeederOhms);
-  const feederTerminalIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zFeederOhms)).toFixed(3));
+  const feederTerminalGridIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zFeederOhms)).toFixed(3));
 
-  // Governing impedance for selected fault location:
+  // Converter fault contribution from PV inverters (kA) referred to MV voltage:
+  const nominalPlantMvCurrentKa = plantCapacityAcMva / (Math.sqrt(3) * unKv);
+  const kInv = Math.max(1.0, Math.min(2.0, input.inverterFaultContributionFactor ?? 1.15));
+  const inverterFaultContributionKa = Number((kInv * nominalPlantMvCurrentKa).toFixed(3));
+
+  // Total initial symmetrical short-circuit current at feeder terminal:
+  // Sum of upstream grid contribution through cable and local inverter current injection per IEC 60909-0 Clause 6.7:
+  const feederTerminalIscKa = Number((feederTerminalGridIscKa + inverterFaultContributionKa).toFixed(3));
+
+  // Governing impedance and initial symmetrical fault current for selected fault location:
   const rTotalOhms = faultLocation === 'feeder_terminal' ? rFeederOhms : rBusbarOhms;
   const xTotalOhms = faultLocation === 'feeder_terminal' ? xFeederOhms : xBusbarOhms;
   const zTotalOhms = faultLocation === 'feeder_terminal' ? zFeederOhms : zBusbarOhms;
 
-  // Initial symmetrical short-circuit current (kA):
-  const initialSymmetricalIscKa = Number(((cFactor * unKv) / (Math.sqrt(3) * zTotalOhms)).toFixed(3));
+  const initialSymmetricalIscKa = faultLocation === 'feeder_terminal' ? feederTerminalIscKa : busbarIscKa;
 
   // Peak factor kappa per IEC 60909-0 Section 4.3.1.2:
   // kappa = 1.02 + 0.98 * exp(-3 * R/X)
@@ -537,11 +550,11 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     faultLocationDescriptionFa:
       faultLocation === 'mv_busbar'
         ? 'باس‌بار فشار متوسط پست اصلی (شامل شبکه بالادست و ترانسفورماتور بدون کابل کلکتور)'
-        : 'ترمینال انتهای فیدر کلکتور / ایستگاه اینورتر (شامل کابل‌های موازی کلکتور MV)',
+        : 'ترمینال انتهای فیدر کلکتور / ایستگاه اینورتر (شامل کابل‌های کلکتور MV و سهم جریان اتصال کوتاه اینورترها)',
     faultLocationDescriptionEn:
       faultLocation === 'mv_busbar'
         ? 'Substation MV Busbar (Upstream Grid + Transformer, excluding collector cable)'
-        : 'Collector Feeder Inverter Terminal (Includes parallel MV collection cables)',
+        : 'Collector Feeder Inverter Terminal (Includes parallel MV collection cables + inverter fault current)',
     initialSymmetricalIscKa: Math.round(initialSymmetricalIscKa * 10) / 10,
     peakDynamicIpKa: Math.round(peakDynamicIpKa * 10) / 10,
     breakingCapacityKa,
@@ -582,6 +595,8 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     cFactor,
     cFactorSource,
     busbarIscKa,
+    feederTerminalGridIscKa,
+    inverterFaultContributionKa,
     feederTerminalIscKa,
     faultCurrentOutOfRangeWarning,
     screeningMethodologyNoticeFa:

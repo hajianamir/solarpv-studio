@@ -206,6 +206,7 @@ export const App: React.FC = () => {
   const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
   // PR-2a-7: single-axis tracker config (null = fixed tilt)
   const [trackerConfig, setTrackerConfig] = useState<TrackerConfig | null>(null);
+  const [shadingLoss3dPct, setShadingLoss3dPct] = useState<number | null>(null);
   
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
@@ -466,6 +467,14 @@ export const App: React.FC = () => {
   // This overpaneling is intentional (maximizes AC export), and the UI displays
   // both values in PvArrayEngineeringTab (see ISSUE-2b).
   // ============================================================================
+  const isBifacial = Boolean(
+    selectedModule.bifacialityFactor ||
+    selectedModule.modelName.toLowerCase().includes('bifacial') ||
+    (selectedModule as unknown as { cellType?: string }).cellType?.includes('Bifacial')
+  );
+  const bifacialityFactor = selectedModule.bifacialityFactor ?? (isBifacial ? 0.80 : 0.0);
+  const groundCoverRatio = 0.38;
+
   const effectiveDailyKwhDemand = useMemo(() => {
     if (systemMode === 'powerplant') {
       // PR-2a-7-P0 (P0-1): daily energy target derived from the unified 14-stage
@@ -690,9 +699,9 @@ export const App: React.FC = () => {
       city.tempMaxC,
       city.soilingLossPct,
       arrayDesign.totalPvCapacityKwp / Math.max(0.1, inverterClustering.totalInverterCapacityKw),
-      false,
-      0.0,
-      -2.2,
+      isBifacial,
+      isBifacial ? 8.5 : 0.0,
+      shadingLoss3dPct !== null ? -shadingLoss3dPct : -2.2,
       selectedModule.noctC,
       selectedModule.tempCoeffPmpPct,
       trackerConfig ?? undefined,
@@ -700,7 +709,16 @@ export const App: React.FC = () => {
       city.optimalTiltAnnualDeg,
       city.latitude
     );
-  }, [arrayDesign, city, inverterClustering, selectedModule, trackerConfig, siteOverrides?.installationEnvironment]);
+  }, [
+    arrayDesign,
+    city,
+    inverterClustering,
+    selectedModule,
+    trackerConfig,
+    siteOverrides?.installationEnvironment,
+    isBifacial,
+    shadingLoss3dPct,
+  ]);
 
   const annualYieldKwh = waterfallReport.netAnnualEnergyExportMwh * 1000.0;
 
@@ -2232,6 +2250,9 @@ export const App: React.FC = () => {
               onPricingChange={setUserPricing}
               city={city}
               lang={lang}
+              isBifacial={isBifacial}
+              bifacialityFactor={bifacialityFactor}
+              groundCoverRatio={groundCoverRatio}
             />
           )}
 
@@ -2282,6 +2303,7 @@ export const App: React.FC = () => {
                   : arrayDesign.totalPvCapacityKwp
               }
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+              onShadingLossChange={setShadingLoss3dPct}
             />
           )}
 

@@ -14,6 +14,7 @@ interface ThreeJsViewerProps {
   city?: ClimateCity;
   plantCapacityKw?: number;
   annualYieldKwh?: number;
+  onShadingLossChange?: (shadingLossPct: number) => void;
 }
 
 export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
@@ -21,6 +22,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   city,
   plantCapacityKw,
   annualYieldKwh,
+  onShadingLossChange,
 }) => {
   const isEn = lang === 'en';
   const mountRef = useRef<HTMLDivElement>(null);
@@ -314,6 +316,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         };
         const result = simulateAnnual3dShading(updatedScene, 5.2, 40.0, { simulationMode });
         setAnnualResult(result);
+        onShadingLossChange?.(result.annualCombinedShadingLossPct);
         setLoading(false);
       }, 100);
     } catch {
@@ -498,6 +501,44 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Active Project Yield Coupling & Scaled Impact */}
+            {plantCapacityKw && annualYieldKwh && (
+              <div className="p-3 bg-industrial-surface border border-sky-500/30 rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs border-b border-industrial-border pb-2">
+                  <span className="text-industrial-accent font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-industrial-success" />
+                    {isEn ? 'Active Project Yield Coupling & Scaled Impact' : 'اتصال مستقیم به تولید سالانه پروژه فعال'}
+                  </span>
+                  <span className="font-mono text-slate-300 font-semibold text-[11px]">
+                    {isEn ? 'Full Plant DC Capacity:' : 'ظرفیت نامی کامل نیروگاه:'} <span className="text-amber-300">{plantCapacityKw.toLocaleString()} kWp</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2.5 text-xs font-mono">
+                  <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                    <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Plant Unshaded Baseline:' : 'تولید پایه بدون سایه نیروگاه:'}</div>
+                    <div className="text-slate-200 font-bold mt-0.5">{annualYieldKwh.toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span></div>
+                  </div>
+                  <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                    <div className="text-[10px] text-slate-400 font-sans">{isEn ? '3D Near-Shading Deficit:' : 'کسری سایه‌اندازی سه‌بعدی:'}</div>
+                    <div className="text-red-400 font-bold mt-0.5">
+                      -{Math.round(annualYieldKwh * (annualResult.annualCombinedShadingLossPct / 100.0)).toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr (-{annualResult.annualCombinedShadingLossPct}%)</span>
+                    </div>
+                  </div>
+                  <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                    <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Net Export after 3D Shading:' : 'تولید خالص با اعمال سایه ۳D:'}</div>
+                    <div className="text-emerald-400 font-bold mt-0.5">
+                      {(annualYieldKwh - Math.round(annualYieldKwh * (annualResult.annualCombinedShadingLossPct / 100.0))).toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-2">
+                  {isEn
+                    ? 'Note: The 3D viewport evaluates a representative 55.2 kWp array section with local obstructions. Its geometric shading deficit is dynamically fed into the 14-stage waterfall model and financial cashflows.'
+                    : 'توجه: نمای سه‌بعدی یک بلوک نمونه ۵۵.۲ کیلوواتی با موانع مجاور را تحلیل می‌کند. درصد کسری سایه محاسبه‌شده مستقیماً به درخت تلفات واترفال و محاسبات مالی پروژه تزریق می‌گردد.'}
+                </div>
+              </div>
+            )}
 
             {/* Reconciliation Audit Badge */}
             <div className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
