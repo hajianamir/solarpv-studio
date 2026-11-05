@@ -510,7 +510,6 @@ export const App: React.FC = () => {
         soilingLossPct: city.soilingLossPct,
         dcAcRatio: 1.25,
         isSingleAxisTracker: Boolean(trackerConfig),
-        nearShadingLossPct: 0.0,
         iamLossPct: -2.2,
         moduleNoctC: selectedModule.noctC,
         tempCoeffPmpPct: selectedModule.tempCoeffPmpPct,
@@ -741,7 +740,6 @@ export const App: React.FC = () => {
       soilingLossPct: city.soilingLossPct,
       dcAcRatio: arrayDesign.totalPvCapacityKwp / Math.max(0.1, inverterClustering.totalInverterCapacityKw),
       isSingleAxisTracker: Boolean(trackerConfig),
-      nearShadingLossPct: 0.0,
       iamLossPct: -2.2,
       moduleNoctC: selectedModule.noctC,
       tempCoeffPmpPct: selectedModule.tempCoeffPmpPct,
@@ -2368,6 +2366,7 @@ export const App: React.FC = () => {
                   type: 'APPLY',
                   lossPct: record.lossPct,
                   capacityKwp: record.capacityKwp,
+                  projectCapacityKwp: activePlantCapacityKwp,
                   appliedAtIso: record.appliedAtIso,
                   cityId: city.id,
                 })

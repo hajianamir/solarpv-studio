@@ -32,6 +32,7 @@ export type ShadingLifecycleAction =
       type: 'APPLY';
       lossPct: number;
       capacityKwp: number;
+      projectCapacityKwp?: number;
       appliedAtIso?: string;
       cityId?: string;
     }
@@ -56,7 +57,7 @@ export function shadingLifecycleReducer(
           capacityKwp: action.capacityKwp,
         },
         appliedCityId: action.cityId,
-        appliedCapacityKwp: action.capacityKwp,
+        appliedCapacityKwp: action.projectCapacityKwp ?? action.capacityKwp,
         isStale: false,
       };
     }

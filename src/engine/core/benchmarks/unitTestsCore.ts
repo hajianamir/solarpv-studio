@@ -4571,26 +4571,46 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     });
     const syncDiffOk = s5SyncDiffCity.appliedShading === null;
 
-    // 5. Capacity change triggers isStale flag
-    const s6CapacitySame = shadingLifecycleReducer(s3Applied, {
+    // 5. Real-world shape: Representative block capacity (55.2 kWp) vs project capacity baseline (1000 kWp)
+    const sRealApply = shadingLifecycleReducer(s0, {
+      type: 'APPLY',
+      lossPct: 5.98,
+      capacityKwp: 55.2,           // source demo block size (displayed in provenance)
+      projectCapacityKwp: 1000,    // active plant capacity baseline for staleness
+      appliedAtIso: nowIso,
+      cityId: 'tehran',
+    });
+    const blockCapacityStored = sRealApply.appliedShading?.capacityKwp === 55.2;
+
+    // CHECK_SYNC with initial project capacity (1000 kW) -> strictly NOT stale
+    const sSyncNominal = shadingLifecycleReducer(sRealApply, {
       type: 'CHECK_SYNC',
       currentCityId: 'tehran',
       currentCapacityKwp: 1000,
     });
-    const staleFalseOk = s6CapacitySame.isStale === false && s6CapacitySame.appliedShading !== null;
+    const nominalNotStale = sSyncNominal.isStale === false && sSyncNominal.appliedShading !== null;
 
-    const s7CapacityChanged = shadingLifecycleReducer(s3Applied, {
+    // CHECK_SYNC with changed project capacity (1060 kW, >5% drift) -> strictly stale
+    const sSyncDrift = shadingLifecycleReducer(sRealApply, {
       type: 'CHECK_SYNC',
       currentCityId: 'tehran',
-      currentCapacityKwp: 2500, // Significant capacity change
+      currentCapacityKwp: 1060,
     });
-    const staleTrueOk = s7CapacityChanged.isStale === true && s7CapacityChanged.appliedShading !== null;
+    const driftStale = sSyncDrift.isStale === true && sSyncDrift.appliedShading !== null;
+
+    // CHECK_SYNC with demo block size (55.2 kW) -> under old bug this falsely matched; under real shape it is stale against 1000 kW
+    const sSyncOldTrap = shadingLifecycleReducer(sRealApply, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: 55.2,
+    });
+    const oldTrapAvoided = sSyncOldTrap.isStale === true;
 
     assert(
       'E15-SHADING-LIFECYCLE-MANAGEMENT',
-      '3D shading lifecycle reducer correctly manages apply, revert, provenance records, cross-project reset, and capacity staleness',
-      initOk && applyOk && revertOk && syncSameOk && syncDiffOk && staleFalseOk && staleTrueOk,
-      `initOk=${initOk}, appliedLoss=${s1.appliedShading?.lossPct}%, revertApplied=${s2.appliedShading}, syncSame=${syncSameOk}, syncDiff=${syncDiffOk}, staleFalse=${staleFalseOk}, staleTrue=${staleTrueOk}`
+      '3D shading lifecycle reducer correctly manages apply, revert, provenance records, cross-project reset, and project-vs-block capacity staleness',
+      initOk && applyOk && revertOk && syncSameOk && syncDiffOk && blockCapacityStored && nominalNotStale && driftStale && oldTrapAvoided,
+      `initOk=${initOk}, appliedLoss=${s1.appliedShading?.lossPct}%, revertApplied=${s2.appliedShading}, syncSame=${syncSameOk}, syncDiff=${syncDiffOk}, nominalNotStale=${nominalNotStale}, driftStale=${driftStale}, oldTrapAvoided=${oldTrapAvoided}`
     );
   }
 
