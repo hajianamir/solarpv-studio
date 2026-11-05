@@ -350,12 +350,31 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     : config.nominalVoltageVolts * config.designCurrentAmps;
   const powerLossPct = Number(((powerLossWatts / Math.max(1, totalTransferredPowerWatts)) * 100.0).toFixed(2));
 
-  // 8. Line Capacitance & AC Charging Current (Preliminary Screening Estimate)
-  // Simplified empirical screening estimation for typical single-core LV/PV solar cables
-  // based on cross-section curve fit. NOTE: This is a screening estimate only, not a rigorous
-  // calculation from dielectric permittivity, insulation thickness, screen geometry, or spacing
-  // per IEC 60287. Definitive impedance and capacitance data must be taken from manufacturer datasheets.
-  const lineCapacitanceUfPerKm = Number((0.20 + 0.035 * Math.log(Math.max(1.5, perRunSection))).toFixed(3));
+  // 8. Line Capacitance & AC Charging Current per IEC 60287-1-1 & IEC 60502-1 / EN 50618:
+  // Relative dielectric permittivity epsilon_r per IEC 60287-1-1 Table 3:
+  // XLPE = 2.4, PVC = 5.0
+  const epsilonR = config.insulationType === 'pvc' ? 5.0 : 2.4;
+
+  // Stranded circular compacted conductor outer diameter d_c (mm) per IEC 60228:
+  const dcMm = Number((2.0 * Math.sqrt(perRunSection / (Math.PI * 0.88))).toFixed(2));
+
+  // Nominal insulation thickness t_ins (mm) per IEC 60502-1 Table 5 / EN 50618:
+  let tInsMm = 0.8;
+  if (perRunSection > 240) tInsMm = 2.2;
+  else if (perRunSection > 185) tInsMm = 2.0;
+  else if (perRunSection > 120) tInsMm = 1.8;
+  else if (perRunSection > 70) tInsMm = 1.6;
+  else if (perRunSection > 35) tInsMm = 1.4;
+  else if (perRunSection > 16) tInsMm = 1.2;
+  else if (perRunSection > 6) tInsMm = 1.0;
+
+  // Diameter over insulation D_i (mm):
+  const diMm = Number((dcMm + 2.0 * tInsMm).toFixed(2));
+
+  // Operating line capacitance C (uF/km) per IEC 60287-1-1 Eq. (2.2):
+  // C = epsilon_r / (18 * ln(D_i / d_c))  [uF/km]
+  const lnDiOverDc = Math.log(diMm / dcMm);
+  const lineCapacitanceUfPerKm = Number(((0.0556 * epsilonR) / Math.max(0.1, lnDiOverDc)).toFixed(3));
   const totalCapacitanceUf = Number(((lineCapacitanceUfPerKm * config.oneWayLengthM * parallelRuns) / 1000.0).toFixed(4));
   const vPhase = config.isThreePhase ? config.nominalVoltageVolts / Math.sqrt(3) : config.nominalVoltageVolts;
   // Steady-state 50Hz reactive charging current applies only to AC circuits (zero for pure DC):

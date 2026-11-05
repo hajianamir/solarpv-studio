@@ -3230,14 +3230,30 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       isDc: true,
       isThreePhase: false,
     });
+
+    const pvcRun = calculateAdvancedCableRun({
+      id: 'pvc-test',
+      sectionNameFa: 'کابل PVC',
+      sectionNameEn: 'PVC Cable',
+      oneWayLengthM: 100,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 1000,
+      conductorMaterial: 'copper',
+      insulationType: 'pvc',
+      allowableDropPct: 1.5,
+      isDc: true,
+      isThreePhase: false,
+    });
+
     const dcCapacitanceOk = dcRun.totalCapacitanceUf > 0 && dcRun.chargingCurrentAmps === 0;
     const acCapacitanceOk = scHeavyRun.totalCapacitanceUf > 0 && scHeavyRun.chargingCurrentAmps > 0;
+    const permittivityEffectOk = pvcRun.lineCapacitanceUfPerKm > dcRun.lineCapacitanceUfPerKm;
 
     assert(
       'E9-CABLE-SC-1',
       'Cable sizing enforces adiabatic short-circuit withstand without 0.5 discount and applies installationMethod kg',
-      scConstraintEnforced && installMethodOk && dcCapacitanceOk && acCapacitanceOk,
-      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, DC Cap=${dcRun.totalCapacitanceUf}uF(Ich=${dcRun.chargingCurrentAmps}A), AC Cap=${scHeavyRun.totalCapacitanceUf}uF(Ich=${scHeavyRun.chargingCurrentAmps}A)`
+      scConstraintEnforced && installMethodOk && dcCapacitanceOk && acCapacitanceOk && permittivityEffectOk,
+      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, XLPE Cap=${dcRun.lineCapacitanceUfPerKm}uF/km, PVC Cap=${pvcRun.lineCapacitanceUfPerKm}uF/km`
     );
   }
 
@@ -3274,6 +3290,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     const breakerSufficiencyOk =
       normalSub.shortCircuit.isBreakerSufficient === true &&
+      normalSub.shortCircuit.selectedBreakerModel.length > 0 &&
       normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.initialSymmetricalIscKa &&
       normalSub.shortCircuit.ratedPeakMakingCapacityKa >= normalSub.shortCircuit.peakDynamicIpKa &&
       normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.thermalEquivalentIthKa &&
@@ -3283,7 +3300,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'E9-SUB-IEC60909-1',
       'Substation short-circuit uses complex impedance, dynamic kappa, Ith and flags insufficient breaker rating',
       complexImpedanceOk && breakerSufficiencyOk,
-      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, VCB=${normalSub.shortCircuit.breakingCapacityKa}kA (ok=${normalSub.shortCircuit.isBreakerSufficient}); extreme: Isc=${extremeSub.shortCircuit.initialSymmetricalIscKa}kA, VCB=${extremeSub.shortCircuit.breakingCapacityKa}kA (ok=${extremeSub.shortCircuit.isBreakerSufficient})`
+      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, Breaker=${normalSub.shortCircuit.selectedBreakerModel} (${normalSub.shortCircuit.breakingCapacityKa}kA, ok=${normalSub.shortCircuit.isBreakerSufficient}); extreme: Isc=${extremeSub.shortCircuit.initialSymmetricalIscKa}kA, Breaker=${extremeSub.shortCircuit.breakingCapacityKa}kA (ok=${extremeSub.shortCircuit.isBreakerSufficient})`
     );
   }
 

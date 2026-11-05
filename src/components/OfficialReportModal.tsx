@@ -427,6 +427,55 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleExportApiProposal = async () => {
+    try {
+      const invCount = bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1;
+      const batCount = batterySizing ? batterySizing.totalBatteryUnitsCount : 0;
+      const annualKwh = Math.round(simulation.totalGeneration24hKwh * 365);
+      const lcoeVal = financial.isLcoeDefined ? financial.lcoeUsdPerKwh : 0;
+
+      const payload = {
+        projectName,
+        projectId: docId,
+        systemCapacityKwp: Number(arrayDesign.totalPvCapacityKwp.toFixed(2)),
+        panelCount: Math.round(arrayDesign.totalModulesCount),
+        panelType: `${module.manufacturer} ${module.modelName} (${module.pmpWatts}W)`,
+        inverterCount: Math.round(invCount),
+        inverterType: `${inverter.manufacturer} ${inverter.modelName} (${inverter.pnomAcKw}kW)`,
+        batteryCount: Math.round(batCount),
+        batteryType: batterySizing ? `${batterySizing.chemistry.nameEn} (${batterySizing.grossCapacityKwh.toFixed(1)}kWh)` : 'N/A',
+        annualYieldKwh: annualKwh,
+        lcoeUsdPerKwh: lcoeVal,
+      };
+
+      const res = await fetch('/api/v1/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Server rejected proposal metrics');
+      }
+
+      const proposal = await res.json();
+      const blob = new Blob([JSON.stringify(proposal, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${customFileName}_EPC_Proposal.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(isEn ? `API Validation/Export Notice: ${err.message}` : `پیام اعتبارسنجی خروجی گزارش: ${err.message}`);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && onImportProject) {
@@ -538,6 +587,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             >
               <Download className="w-3.5 h-3.5 text-industrial-warning" />
               <span>{isEn ? 'Save Project' : 'ذخیره پروژه'}</span>
+            </button>
+
+            <button
+              onClick={handleExportApiProposal}
+              className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-sky-400 border-sky-500/30"
+              title={isEn ? 'Generate Verified API Proposal (.json)' : 'دریافت پروپوزال رسمی از سرور API'}
+            >
+              <FileCheck className="w-3.5 h-3.5 text-sky-400" />
+              <span>{isEn ? 'API Proposal' : 'پروپوزال API'}</span>
             </button>
 
             <label

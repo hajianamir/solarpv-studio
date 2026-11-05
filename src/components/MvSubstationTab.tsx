@@ -212,7 +212,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
             subResult.shortCircuit.isBreakerSufficient ? 'text-slate-400' : 'text-red-400 font-bold'
           }`}>
             {subResult.shortCircuit.isBreakerSufficient
-              ? (isFa ? 'تابلوی کمپکت گاز SF6' : 'SF6 Gas Insulated Switchgear')
+              ? `${subResult.shortCircuit.selectedBreakerModel} (${subResult.shortCircuit.selectedBreakerManufacturer})`
               : (isFa ? '✗ قدرت قطع ناکافی (جریان خطا بیش از حد)' : '✗ Insufficient breaking capacity')}
           </div>
         </div>
