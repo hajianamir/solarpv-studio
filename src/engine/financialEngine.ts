@@ -141,6 +141,9 @@ export interface FinancialAssumptionsMetadata {
 
 export interface FinancialAnalysisResult {
   systemMode: FinancialSystemMode;
+  systemKwp: number;
+  batteryKwh: number;
+  inverterKw: number;
   capexBreakdown: FinancialCapexBreakdown;
   annualEnergyYieldKwh: number;
   annualOpexUsd: number;
@@ -668,6 +671,9 @@ export function performFinancialAnalysis(
 
   return {
     systemMode,
+    systemKwp: safePvKwp,
+    batteryKwh: safeBatteryKwh,
+    inverterKw: safeInverterKw,
     capexBreakdown,
     annualEnergyYieldKwh: Math.round(safeAnnualYieldKwh),
     annualOpexUsd: Math.round(baseAnnualOpexUsd),

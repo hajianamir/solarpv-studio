@@ -23,6 +23,9 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
   const [soilResistivityOhmM, setSoilResistivityOhmM] = useState<number>(80);
   const [clearingTimeSec, setClearingTimeSec] = useState<number>(0.5);
   const [gridMva, setGridMva] = useState<number>(500);
+  const [gridRxRatio, setGridRxRatio] = useState<number>(0.10);
+  const [cableLengthM, setCableLengthM] = useState<number>(250);
+  const [cableSectionMm2, setCableSectionMm2] = useState<number>(120);
 
   const subResult: MvSubstationResult = designMvSubstation({
     plantCapacityAcMva: plantCapacityAcMw,
@@ -33,6 +36,9 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
     ambientTempC: siteAmbientTemp,
     elevationM: siteElevation,
     upstreamGridShortCircuitMva: gridMva,
+    gridRxRatio,
+    mvCableLengthM: cableLengthM,
+    mvCableCrossSectionMm2: cableSectionMm2,
   });
 
   return (
@@ -155,10 +161,65 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
               onChange={(e) => setGridMva(parseInt(e.target.value) || 500)}
               className="studio-input text-xs font-mono"
             >
+              <option value="250">250 MVA (شبکه‌های بسیار ضعیف)</option>
               <option value="350">350 MVA (شبکه‌های ضعیف توزیع)</option>
-              <option value="500">500 MVA (استاندارد شبکه توزیع ایران)</option>
+              <option value="500">500 MVA (استاندارد شبکه توزیع ۲۰kV)</option>
               <option value="750">750 MVA (شبکه فوق توزیع منطقه‌ای)</option>
               <option value="1000">1000 MVA (پست‌های ۶۳/۲۰ کیلوولت قوی)</option>
+              <option value="1500">1500 MVA (شینه‌های انتقال صلب)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+              <span>{isFa ? 'نسبت R/X شبکه بالادست:' : 'Grid R/X Ratio:'}</span>
+              <span className="font-mono text-sky-400 font-bold">{gridRxRatio.toFixed(2)}</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.02"
+              max="0.50"
+              value={gridRxRatio}
+              onChange={(e) => setGridRxRatio(parseFloat(e.target.value) || 0.10)}
+              className="studio-input font-mono text-xs"
+            />
+            <span className="text-[10px] text-slate-500">
+              {isFa ? 'طبق IEC 60909-0 بند ۶.۳.۲ (پیش‌فرض ۰.۱۰)' : 'IEC 60909-0 Clause 6.3.2 (def: 0.10)'}
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+              <span>{isFa ? 'طول کابل MV جمع‌آورنده (m):' : 'MV Collection Cable Length (m):'}</span>
+              <span className="font-mono text-industrial-warning font-bold">{cableLengthM} m</span>
+            </label>
+            <input
+              type="number"
+              step="50"
+              min="0"
+              max="5000"
+              value={cableLengthM}
+              onChange={(e) => setCableLengthM(Math.max(0, parseInt(e.target.value) || 0))}
+              className="studio-input font-mono text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">
+              {isFa ? 'سطح مقطع کابل MV (mm² Cu):' : 'MV Cable Section (mm² Cu):'}
+            </label>
+            <select
+              value={cableSectionMm2}
+              onChange={(e) => setCableSectionMm2(parseInt(e.target.value) || 120)}
+              className="studio-input text-xs font-mono"
+            >
+              <option value="70">70 mm² Cu XLPE</option>
+              <option value="95">95 mm² Cu XLPE</option>
+              <option value="120">120 mm² Cu XLPE</option>
+              <option value="150">150 mm² Cu XLPE</option>
+              <option value="185">185 mm² Cu XLPE</option>
+              <option value="240">240 mm² Cu XLPE</option>
             </select>
           </div>
 
@@ -394,6 +455,80 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
             <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
               {subResult.surgeArrester.energyClass}
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* IEC 60909 Complex Impedance Decomposition */}
+      <div className="studio-card">
+        <h3 className="font-bold text-industrial-accent text-sm mb-2 flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-sky-400 shrink-0" />
+            {isFa ? 'تفکیک امپدانس مختلط مدار اتصال کوتاه طبق IEC 60909-0:2016' : 'IEC 60909-0:2016 Complex Impedance Network Breakdown'}
+          </span>
+          <span className="text-[10px] text-sky-300 font-mono">
+            {subResult.shortCircuit.cFactorSource}
+          </span>
+        </h3>
+
+        <div className="overflow-x-auto border border-industrial-border rounded-lg mb-3">
+          <table className="w-full text-xs text-right text-slate-300">
+            <thead className="bg-industrial-bg text-slate-400 border-b border-industrial-border text-[11px]">
+              <tr>
+                <th className="p-2.5">{isFa ? 'عنصر شبکه' : 'Network Component'}</th>
+                <th className="p-2.5">{isFa ? 'مقاومت R (Ω)' : 'Resistance R (Ω)'}</th>
+                <th className="p-2.5">{isFa ? 'راکتانس X (Ω)' : 'Reactance X (Ω)'}</th>
+                <th className="p-2.5">{isFa ? 'امپدانس Z (Ω)' : 'Impedance Z (Ω)'}</th>
+                <th className="p-2.5">{isFa ? 'توضیحات و فرضیات' : 'Basis & Assumptions'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800 font-mono text-[11px]">
+              <tr>
+                <td className="p-2.5 font-sans font-bold text-white">{isFa ? 'شبکه بالادست (Utility Grid Q)' : 'Upstream Grid (Q)'}</td>
+                <td className="p-2.5 text-slate-200">{subResult.shortCircuit.gridImpedance.rOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 text-slate-200">{subResult.shortCircuit.gridImpedance.xOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 text-sky-300 font-bold">{subResult.shortCircuit.gridImpedance.zOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 font-sans text-slate-400">
+                  {subResult.shortCircuit.upstreamGridMva} MVA, R/X = {subResult.shortCircuit.gridRxRatio.toFixed(2)}
+                </td>
+              </tr>
+              <tr>
+                <td className="p-2.5 font-sans font-bold text-white">{isFa ? 'ترانسفورماتور افزاینده (Trafo T)' : 'Power Transformer (T)'}</td>
+                <td className="p-2.5 text-slate-200">{subResult.shortCircuit.transformerImpedance.rOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 text-slate-200">{subResult.shortCircuit.transformerImpedance.xOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 text-sky-300 font-bold">{subResult.shortCircuit.transformerImpedance.zOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 font-sans text-slate-400">
+                  uk = {subResult.transformer.impedanceVoltageUkPct}%, Pk = {subResult.transformer.loadLossesKw} kW
+                </td>
+              </tr>
+              <tr>
+                <td className="p-2.5 font-sans font-bold text-white">{isFa ? 'کابل جمع‌آورنده MV (Feeder Cable)' : 'MV Collection Cable (C)'}</td>
+                <td className="p-2.5 text-slate-200">{subResult.shortCircuit.cableImpedance.rOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 text-slate-200">{subResult.shortCircuit.cableImpedance.xOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 text-sky-300 font-bold">{subResult.shortCircuit.cableImpedance.zOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 font-sans text-slate-400">
+                  {subResult.shortCircuit.cableImpedance.lengthM}m × {subResult.shortCircuit.cableImpedance.crossSectionMm2} mm² Cu (90°C XLPE)
+                </td>
+              </tr>
+              <tr className="bg-industrial-surface font-bold border-t border-industrial-border">
+                <td className="p-2.5 font-sans text-industrial-accent">{isFa ? 'مجموع حلقه اتصال کوتاه (Total Loop)' : 'Total SC Loop'}</td>
+                <td className="p-2.5 text-industrial-warning">{subResult.shortCircuit.rEquivalentOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 text-industrial-warning">{subResult.shortCircuit.xEquivalentOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 text-industrial-error font-extrabold">{subResult.shortCircuit.totalImpedanceOhms.toFixed(4)} Ω</td>
+                <td className="p-2.5 font-sans text-white">
+                  R/X = {subResult.shortCircuit.rOverXRatio.toFixed(3)}, κ = {subResult.shortCircuit.kappa}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Screening notice box */}
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-200 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <span className="font-bold">{isFa ? 'اطلاعیه غربالگری مهندسی: ' : 'Engineering Screening Notice: '}</span>
+            {isFa ? subResult.shortCircuit.screeningMethodologyNoticeFa : subResult.shortCircuit.screeningMethodologyNoticeEn}
           </div>
         </div>
       </div>

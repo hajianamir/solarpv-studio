@@ -10,6 +10,10 @@ import {
   Flame,
   CheckCircle2,
   Table,
+  Activity,
+  Play,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   type FinancialAnalysisResult,
@@ -18,6 +22,10 @@ import {
 import { type ClimateCity } from '../engine/climaticData';
 import { type FoundationType } from '../engine/structuralEngine';
 import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import {
+  runFinancialUncertaintyPropagation,
+  type FinancialUqResult,
+} from '../engine/core/uncertaintyPropagation';
 
 interface FinancialTabProps {
   financial: FinancialAnalysisResult;
@@ -38,6 +46,30 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 }) => {
   const [showCashflowTable, setShowCashflowTable] = useState(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
+  const [uqResult, setUqResult] = useState<FinancialUqResult | null>(null);
+  const [uqSampleSize, setUqSampleSize] = useState<number>(100);
+  const [isUqRunning, setIsUqRunning] = useState<boolean>(false);
+
+  const handleRunUqSimulation = () => {
+    setIsUqRunning(true);
+    setTimeout(() => {
+      try {
+        const res = runFinancialUncertaintyPropagation({
+          plantCapacityKwp: financial.systemKwp || 1000,
+          batteryCapacityKwh: financial.batteryKwh || 0,
+          inverterCapacityKw: financial.inverterKw || 1000,
+          baseAnnualYieldKwh: financial.annualEnergyYieldKwh || 1_800_000,
+          basePricing: pricing,
+          systemMode: financial.systemMode || 'powerplant',
+          sampleSize: uqSampleSize,
+          seed: 42,
+        });
+        setUqResult(res);
+      } finally {
+        setIsUqRunning(false);
+      }
+    }, 100);
+  };
 
   // Salt corrosion / ISO 9223 exposure for LCOE derating (resolved via OSM Nominatim shoreline distance)
   useEffect(() => {
@@ -585,6 +617,179 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Uncertainty Quantification (UQ) & Latin Hypercube Sampling Card */}
+      <div className="studio-card">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-sm font-bold text-industrial-accent flex items-center gap-2">
+              <Activity className="w-4 h-4 text-purple-400" />
+              {lang === 'fa'
+                ? 'تحلیل عدم قطعیت آماری، کوپولا و حساسیت تورنادو (Monte Carlo & Latin Hypercube Sampling)'
+                : 'Financial Uncertainty Quantification (LHS & Copula-driven Monte Carlo)'}
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {lang === 'fa'
+                ? 'نمونه‌برداری ساختاریافته LHS از عدم قطعیت تابش خورشیدی (GHI)، گردوغبار، آلبدو، هزینه CAPEX/OPEX و نرخ تنزیل'
+                : 'Stratified LHS sampling across GHI irradiance, soiling, albedo, CAPEX, OPEX, and discount rate.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={uqSampleSize}
+              onChange={(e) => setUqSampleSize(parseInt(e.target.value) || 100)}
+              className="studio-input text-xs font-mono py-1.5"
+            >
+              <option value="50">50 {lang === 'fa' ? 'نمونه (سریع)' : 'trials (fast)'}</option>
+              <option value="100">100 {lang === 'fa' ? 'نمونه (استاندارد)' : 'trials (standard)'}</option>
+              <option value="200">200 {lang === 'fa' ? 'نمونه (دقیق)' : 'trials (high-res)'}</option>
+            </select>
+
+            <button
+              onClick={handleRunUqSimulation}
+              disabled={isUqRunning}
+              className="studio-btn-primary text-xs py-1.5 px-3 flex items-center gap-2 rounded-lg font-bold"
+            >
+              {isUqRunning ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>{lang === 'fa' ? 'درحال اجرای شبیه‌سازی...' : 'Running LHS Trials...'}</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>{lang === 'fa' ? 'اجرای شبیه‌سازی عدم قطعیت' : 'Run LHS UQ Simulation'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {uqResult && (
+          <div className="mt-4 space-y-4 animate-fadeIn">
+            {/* Bankable Category & Quantile Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'رتبه اعتباری و ریسک مالی' : 'Bankability Risk Rating'}</div>
+                <div className="text-base font-bold font-mono text-industrial-success mt-1">
+                  {uqResult.bankableRiskCategory}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {uqResult.sampleCount} {lang === 'fa' ? 'آزمون ساختاریافته LHS' : 'stratified LHS trials'}
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'تولید سالانه (MWh) - P10/P50/P90' : 'Annual Yield (MWh) - P10/P50/P90'}</div>
+                <div className="text-base font-bold font-mono text-sky-400 mt-1">
+                  {uqResult.annualGenerationMwh.p50} <span className="text-xs font-normal text-slate-300">MWh</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                  P10: {uqResult.annualGenerationMwh.p10} | P90: {uqResult.annualGenerationMwh.p90} (±{uqResult.annualGenerationMwh.relativeSpreadPercent}%)
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'بهای تمام‌شده انرژی (LCOE $/MWh)' : 'LCOE ($/MWh) - P10/P50/P90'}</div>
+                <div className="text-base font-bold font-mono text-industrial-warning mt-1">
+                  ${uqResult.lcoeUsdPerMwh.p50} <span className="text-xs font-normal text-slate-300">/MWh</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                  P10: ${uqResult.lcoeUsdPerMwh.p10} | P90: ${uqResult.lcoeUsdPerMwh.p90}
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'ارزش فعلی خالص (NPV USD)' : 'Project NPV (USD) - P10/P50/P90'}</div>
+                <div className="text-base font-bold font-mono text-emerald-400 mt-1">
+                  ${uqResult.npvUsd.p50.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                  P10: ${uqResult.npvUsd.p10.toLocaleString()} | P90: ${uqResult.npvUsd.p90.toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            {/* Aleatory vs Epistemic Uncertainty Breakdown */}
+            {uqResult.uncertaintyDecomposition && (
+              <div className="p-3 bg-slate-900/60 border border-industrial-border rounded-lg text-xs space-y-2">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-sky-400" />
+                    {lang === 'fa' ? 'تفکیک عدم قطعیت فیزیکی (Aleatory) و مدل/اقتصادی (Epistemic):' : 'Aleatory vs Epistemic Uncertainty Decomposition:'}
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    {lang === 'fa' ? 'خطای استاندارد همگرایی: ' : 'Std Error: '}
+                    ${uqResult.convergenceStandardErrorNpvUsd?.toLocaleString()} USD
+                  </span>
+                </div>
+
+                {/* Split Bar */}
+                <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden flex">
+                  <div
+                    style={{ width: `${uqResult.uncertaintyDecomposition.aleatoryVariancePct}%` }}
+                    className="bg-sky-500 h-full"
+                    title={`Aleatory (Physical Climate): ${uqResult.uncertaintyDecomposition.aleatoryVariancePct}%`}
+                  />
+                  <div
+                    style={{ width: `${uqResult.uncertaintyDecomposition.epistemicVariancePct}%` }}
+                    className="bg-amber-500 h-full"
+                    title={`Epistemic (Techno-Economic): ${uqResult.uncertaintyDecomposition.epistemicVariancePct}%`}
+                  />
+                </div>
+
+                <div className="flex justify-between text-[11px] text-slate-400">
+                  <span className="text-sky-300">
+                    ● {lang === 'fa' ? 'عدم قطعیت فیزیکی اقلیم (تابش، غبار، آلبدو):' : 'Aleatory Climate Variance (GHI, soiling, albedo):'}{' '}
+                    <strong>{uqResult.uncertaintyDecomposition.aleatoryVariancePct}%</strong>
+                  </span>
+                  <span className="text-amber-300">
+                    ● {lang === 'fa' ? 'عدم قطعیت اقتصادی و پارامترها (CAPEX, OPEX, تعرفه، تنزیل):' : 'Epistemic Financial Variance (CAPEX, OPEX, tariff, discount):'}{' '}
+                    <strong>{uqResult.uncertaintyDecomposition.epistemicVariancePct}%</strong>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Sensitivity Tornado Ranking */}
+            <div className="studio-card">
+              <h4 className="text-xs font-bold text-slate-300 mb-2">
+                {lang === 'fa'
+                  ? 'رتبه‌بندی حساسیت تورنادو (سهم از واریانس کل NPV طبق رگرسیون رتبه‌ای استاندارد SRC²):'
+                  : 'Tornado Sensitivity Ranking (First-Order Variance Contribution via SRC² per Saltelli et al.):'}
+              </h4>
+              <div className="space-y-2">
+                {uqResult.tornadoSensitivityRanking.map((item) => (
+                  <div key={item.variableId} className="space-y-1">
+                    <div className="flex justify-between text-xs text-slate-300 font-mono">
+                      <span>{item.name}</span>
+                      <span className="text-industrial-accent font-bold">{item.varianceContributionPercent}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div
+                        style={{ width: `${Math.min(100, item.varianceContributionPercent)}%` }}
+                        className={`h-full rounded-full ${
+                          item.sensitivityType === 'aleatory' ? 'bg-sky-500' : 'bg-industrial-warning'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Screening and Bankability Notice */}
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-200 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <span className="font-bold">{lang === 'fa' ? 'اطلاعیه ارزیابی ریسک و تأمین مالی: ' : 'Bankability & Risk Notice: '}</span>
+                {lang === 'fa' ? uqResult.screeningAndBankabilityNoticeFa : uqResult.screeningAndBankabilityNoticeEn}
+              </div>
+            </div>
           </div>
         )}
       </div>

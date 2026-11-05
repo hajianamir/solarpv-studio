@@ -17,6 +17,10 @@ export interface MvSubstationInput {
   ambientTempC?: number;        // Site maximum ambient temp (e.g. 45°C)
   elevationM?: number;          // Site elevation (e.g. 1400m)
   upstreamGridShortCircuitMva?: number; // Upstream utility short-circuit capacity (e.g. 500 MVA)
+  gridRxRatio?: number;         // Upstream grid R_Q / X_Q ratio per IEC 60909-0 Clause 6.3.2 (default 0.10)
+  mvCableLengthM?: number;      // Plant MV collection feeder cable length (m)
+  mvCableCrossSectionMm2?: number; // MV cable conductor cross-section (mm² Cu, e.g. 120)
+  mvCableReactanceOhmPerKm?: number; // Specific cable reactance (Ohm/km, default 0.115 per IEC 60909 Table 3)
   shortCircuitCalculationMode?: 'max_fault_current' | 'min_fault_current'; // IEC 60909 c_max vs c_min
   customCVoltageFactor?: number; // Optional user override for c factor
   faultCurrentLowThresholdKa?: number; // Screening threshold, default 0.5 kA
@@ -47,6 +51,25 @@ export interface ShortCircuitCalculation {
   ratedPeakMakingCapacityKa: number; // Rated peak making capacity (2.5 * breaking capacity per IEC 62271-100)
   thermalEquivalentIthKa: number;  // I_th (kA)
   upstreamGridMva: number;
+  gridRxRatio: number;
+  gridImpedance: {
+    rOhms: number;
+    xOhms: number;
+    zOhms: number;
+    rxRatio: number;
+  };
+  transformerImpedance: {
+    rOhms: number;
+    xOhms: number;
+    zOhms: number;
+  };
+  cableImpedance: {
+    rOhms: number;
+    xOhms: number;
+    zOhms: number;
+    lengthM: number;
+    crossSectionMm2: number;
+  };
   totalImpedanceOhms: number;
   rEquivalentOhms: number;
   xEquivalentOhms: number;
@@ -55,6 +78,8 @@ export interface ShortCircuitCalculation {
   cFactor: number;
   cFactorSource: string;
   faultCurrentOutOfRangeWarning?: string;
+  screeningMethodologyNoticeFa: string;
+  screeningMethodologyNoticeEn: string;
   isBreakerSufficient: boolean;
   selectedBreakerModel: string;
   selectedBreakerManufacturer: string;
@@ -321,23 +346,42 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
 
   const unKv = gridConnectionVoltageKv;
 
-  // Upstream grid impedance (R_grid + j X_grid):
+  // 1. Upstream grid impedance (R_grid + j X_grid):
   // Z_grid = (c * Un^2) / S_sc_Q
-  // Standard IEC 60909-0 ratio for MV upstream distribution grid: R_Q / X_Q ≈ 0.10
+  // Configurable R_Q / X_Q ratio per IEC 60909-0 Clause 6.3.2 (default 0.10 for MV distribution)
+  const gridRx = Math.max(0.01, Math.min(1.0, input.gridRxRatio ?? 0.10));
   const zGridMagnitudeOhms = (cFactor * Math.pow(unKv, 2)) / upstreamGridShortCircuitMva;
-  const xGridOhms = zGridMagnitudeOhms / Math.sqrt(1.0 + Math.pow(0.10, 2));
-  const rGridOhms = 0.10 * xGridOhms;
+  const xGridOhms = zGridMagnitudeOhms / Math.sqrt(1.0 + Math.pow(gridRx, 2));
+  const rGridOhms = gridRx * xGridOhms;
 
-  // Transformer impedance (R_T + j X_T) referred to MV side:
+  // 2. Transformer impedance (R_T + j X_T) referred to MV side:
   // Z_T = (uk% / 100) * (Un^2 / S_rT)
   // R_T = (P_k * 10^-3 * Un^2) / (S_rT^2)
   const zTransMagnitudeOhms = (ukPct / 100.0) * (Math.pow(unKv, 2) / ratedMva);
   const rTransOhms = (loadLossesKw * 1e-3 * Math.pow(unKv, 2)) / Math.pow(ratedMva, 2);
   const xTransOhms = Math.sqrt(Math.max(0, Math.pow(zTransMagnitudeOhms, 2) - Math.pow(rTransOhms, 2)));
 
+  // 3. Plant MV Collection Feeder Cable Impedance (R_cable + j X_cable):
+  // R_cable = rho_20 * [1 + alpha_20 * (T_conductor - 20)] * L / A
+  // with Cu rho_20 = 0.01786 Ohm*mm^2/m, alpha_20 = 0.00393 /°C, at 90°C XLPE operating temperature:
+  // rho_90 = 0.01786 * [1 + 0.00393 * 70] = 0.02277 Ohm*mm^2/m
+  // X_cable = X'_cable * L / 1000 with 0.115 Ohm/km for 3-core screened MV XLPE (IEC 60909 Table 3)
+  const cableLengthM = Math.max(0, input.mvCableLengthM ?? 0);
+  const cableSectionMm2 = Math.max(25, input.mvCableCrossSectionMm2 ?? 120);
+  const cableReactancePerKm = Math.max(0.05, input.mvCableReactanceOhmPerKm ?? 0.115);
+
+  let rCableOhms = 0;
+  let xCableOhms = 0;
+  if (cableLengthM > 0) {
+    const rho90Cu = 0.02277; // Ohm * mm² / m
+    rCableOhms = (rho90Cu * cableLengthM) / cableSectionMm2;
+    xCableOhms = (cableReactancePerKm * cableLengthM) / 1000.0;
+  }
+  const zCableOhms = Math.sqrt(Math.pow(rCableOhms, 2) + Math.pow(xCableOhms, 2));
+
   // Total equivalent complex impedance at MV fault point:
-  const rTotalOhms = rGridOhms + rTransOhms;
-  const xTotalOhms = xGridOhms + xTransOhms;
+  const rTotalOhms = rGridOhms + rTransOhms + rCableOhms;
+  const xTotalOhms = xGridOhms + xTransOhms + xCableOhms;
   const zTotalOhms = Math.sqrt(Math.pow(rTotalOhms, 2) + Math.pow(xTotalOhms, 2));
 
   // Initial symmetrical short-circuit current (kA):
@@ -445,7 +489,26 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     ratedPeakMakingCapacityKa,
     thermalEquivalentIthKa: Math.round(thermalEquivalentIthKa * 10) / 10,
     upstreamGridMva: upstreamGridShortCircuitMva,
-    totalImpedanceOhms: Number(zTotalOhms.toFixed(3)),
+    gridRxRatio: gridRx,
+    gridImpedance: {
+      rOhms: Number(rGridOhms.toFixed(5)),
+      xOhms: Number(xGridOhms.toFixed(5)),
+      zOhms: Number(zGridMagnitudeOhms.toFixed(5)),
+      rxRatio: gridRx,
+    },
+    transformerImpedance: {
+      rOhms: Number(rTransOhms.toFixed(5)),
+      xOhms: Number(xTransOhms.toFixed(5)),
+      zOhms: Number(zTransMagnitudeOhms.toFixed(5)),
+    },
+    cableImpedance: {
+      rOhms: Number(rCableOhms.toFixed(5)),
+      xOhms: Number(xCableOhms.toFixed(5)),
+      zOhms: Number(zCableOhms.toFixed(5)),
+      lengthM: cableLengthM,
+      crossSectionMm2: cableSectionMm2,
+    },
+    totalImpedanceOhms: Number(zTotalOhms.toFixed(4)),
     rEquivalentOhms: Number(rTotalOhms.toFixed(4)),
     xEquivalentOhms: Number(xTotalOhms.toFixed(4)),
     rOverXRatio: Number(rOverXRatio.toFixed(3)),
@@ -453,6 +516,8 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     cFactor,
     cFactorSource,
     faultCurrentOutOfRangeWarning,
+    screeningMethodologyNoticeFa: 'محاسبات اتصال کوتاه بر اساس مدل غربالگری مهندسی IEC 60909-0:2016 شامل امپدانس شبکه بالادست، ترانسفورماتور و کابل جمع‌آورنده MV می‌باشد. جهت انطباق کامل با کد شبکه، مطالعات تفصیلی اتصال به شبکه الزامی است.',
+    screeningMethodologyNoticeEn: 'Short-circuit analysis based on IEC 60909-0:2016 engineering screening model incorporating upstream grid, step-up transformer, and MV collection cable impedances. Detailed dynamic grid studies required for final grid code compliance.',
     isBreakerSufficient,
     selectedBreakerModel,
     selectedBreakerManufacturer,

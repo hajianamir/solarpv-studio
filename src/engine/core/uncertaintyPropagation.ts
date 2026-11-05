@@ -82,6 +82,7 @@ export interface FinancialUqResult {
     variableId: string;
     name: string;
     varianceContributionPercent: number;
+    sensitivityType?: 'aleatory' | 'epistemic';
   }>;
   convergenceStandardErrorNpvUsd?: number;
   trialStatusBreakdown?: {
@@ -94,7 +95,12 @@ export interface FinancialUqResult {
   uncertaintyDecomposition?: {
     aleatoryVariancePct: number;
     epistemicVariancePct: number;
+    aleatoryVariables?: string[];
+    epistemicVariables?: string[];
+    methodologyNote?: string;
   };
+  screeningAndBankabilityNoticeFa?: string;
+  screeningAndBankabilityNoticeEn?: string;
 }
 
 export const DEFAULT_UQ_STOCHASTIC_VARIABLES: StochasticInputVariable[] = [
@@ -378,6 +384,7 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
   const uOpex = generateLhsPermutation();
   const uTariff = generateLhsPermutation();
   const uDiscount = generateLhsPermutation();
+  const uAlbedo = generateLhsPermutation();
 
   const genMwhSamples: number[] = [];
   const lcoeMwhSamples: number[] = [];
@@ -390,9 +397,12 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
 
   // Correlation tracking for Tornado sensitivity
   const ghiDeviations: number[] = [];
+  const soilingDeviations: number[] = [];
+  const albedoDeviations: number[] = [];
   const capexDeviations: number[] = [];
   const opexDeviations: number[] = [];
   const tariffDeviations: number[] = [];
+  const discountDeviations: number[] = [];
 
   for (let i = 0; i < n; i++) {
     // 1. Correlated Marginals from Copula
@@ -404,6 +414,12 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
     // Soiling: Lognormal (mean=4.0%, stdDev=1.0%), strictly clamped [1.0%, 15.0%]
     const zSoiling = inverseStandardNormalCdf(copulaSamples[i].u2);
     const soilingPct = Math.max(1.0, Math.min(15.0, 4.0 * Math.exp(zSoiling * 0.20)));
+    soilingDeviations.push(soilingPct - 4.0);
+
+    // Albedo: Normal (mean=0.22, stdDev=0.035), clamped [0.12, 0.40]
+    const zAlbedo = inverseStandardNormalCdf(uAlbedo[i]);
+    const sampledAlbedo = Math.max(0.12, Math.min(0.40, 0.22 + zAlbedo * 0.035));
+    albedoDeviations.push(sampledAlbedo - 0.22);
 
     // 2. Stratified Marginals
     // CAPEX Multiplier: Normal (mean=1.0, stdDev=0.07), clamped [0.80, 1.25]
@@ -423,10 +439,12 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
 
     // Discount rate: Uniform +/- 2.0%
     const discountRatePct = Math.max(2.0, basePricing.discountRatePct + (uDiscount[i] - 0.5) * 4.0);
+    discountDeviations.push(discountRatePct - basePricing.discountRatePct);
 
-    // 3. Compute sampled annual generation
+    // 3. Compute sampled annual generation incorporating GHI, soiling derate, and ground albedo rear gain:
     const soilingDerateRatio = (1.0 - soilingPct / 100.0) / (1.0 - 0.045);
-    const trialYieldKwh = Math.max(0, baseAnnualYieldKwh * ghiFactor * soilingDerateRatio);
+    const albedoRearGainFactor = 1.0 + (sampledAlbedo - 0.22) * 0.15;
+    const trialYieldKwh = Math.max(0, baseAnnualYieldKwh * ghiFactor * soilingDerateRatio * albedoRearGainFactor);
 
     // 4. Sampled Pricing object
     const trialPricing: UserFinancialPricing = {
@@ -501,8 +519,8 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
   const lcoeStats = computeStats(lcoeMwhSamples, '$/MWh', true);
   const npvStats = computeStats(npvUsdSamples, 'USD', false);
 
-  // Tornado sensitivity: Pearson covariance between inputs and NPV
-  const calcPearsonCorrelation = (x: number[], y: number[]): number => {
+  // First-Order Variance Decomposition via Standardized Rank Regression (SRC² / ANOVA index per Saltelli et al. 2008)
+  const calcStandardizedRegression = (x: number[], y: number[]): number => {
     const mx = x.reduce((s, v) => s + v, 0) / x.length;
     const my = y.reduce((s, v) => s + v, 0) / y.length;
     let cov = 0;
@@ -519,19 +537,40 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
     return denom > 0 ? Math.abs(cov / denom) : 0;
   };
 
-  const rGhi = calcPearsonCorrelation(ghiDeviations, npvUsdSamples);
-  const rCapex = calcPearsonCorrelation(capexDeviations, npvUsdSamples);
-  const rTariff = calcPearsonCorrelation(tariffDeviations, npvUsdSamples);
-  const rOpex = calcPearsonCorrelation(opexDeviations, npvUsdSamples);
+  const srcGhi = calcStandardizedRegression(ghiDeviations, npvUsdSamples);
+  const srcSoiling = calcStandardizedRegression(soilingDeviations, npvUsdSamples);
+  const srcAlbedo = calcStandardizedRegression(albedoDeviations, npvUsdSamples);
+  const srcCapex = calcStandardizedRegression(capexDeviations, npvUsdSamples);
+  const srcTariff = calcStandardizedRegression(tariffDeviations, npvUsdSamples);
+  const srcOpex = calcStandardizedRegression(opexDeviations, npvUsdSamples);
+  const srcDiscount = calcStandardizedRegression(discountDeviations, npvUsdSamples);
 
-  const sumR2 = rGhi ** 2 + rCapex ** 2 + rTariff ** 2 + rOpex ** 2 || 1;
+  const sumSrc2 =
+    srcGhi ** 2 +
+    srcSoiling ** 2 +
+    srcAlbedo ** 2 +
+    srcCapex ** 2 +
+    srcTariff ** 2 +
+    srcOpex ** 2 +
+    srcDiscount ** 2 || 1;
 
   const tornado = [
-    { variableId: 'ghi_annual', name: 'Annual Solar GHI Irradiance', varianceContributionPercent: Number(((rGhi ** 2 / sumR2) * 100.0).toFixed(1)) },
-    { variableId: 'tariff', name: 'Power Tariff / Avoided Cost', varianceContributionPercent: Number(((rTariff ** 2 / sumR2) * 100.0).toFixed(1)) },
-    { variableId: 'capex_variance', name: 'CAPEX Equipment & EPC Pricing', varianceContributionPercent: Number(((rCapex ** 2 / sumR2) * 100.0).toFixed(1)) },
-    { variableId: 'opex_variance', name: 'OPEX & Recurring Maintenance', varianceContributionPercent: Number(((rOpex ** 2 / sumR2) * 100.0).toFixed(1)) },
+    { variableId: 'tariff', name: 'Power Tariff / Avoided Cost', varianceContributionPercent: Number(((srcTariff ** 2 / sumSrc2) * 100.0).toFixed(1)), sensitivityType: 'epistemic' as const },
+    { variableId: 'capex_variance', name: 'CAPEX Equipment & EPC Pricing', varianceContributionPercent: Number(((srcCapex ** 2 / sumSrc2) * 100.0).toFixed(1)), sensitivityType: 'epistemic' as const },
+    { variableId: 'ghi_annual', name: 'Annual Solar GHI Irradiance', varianceContributionPercent: Number(((srcGhi ** 2 / sumSrc2) * 100.0).toFixed(1)), sensitivityType: 'aleatory' as const },
+    { variableId: 'opex_variance', name: 'OPEX & Recurring Maintenance', varianceContributionPercent: Number(((srcOpex ** 2 / sumSrc2) * 100.0).toFixed(1)), sensitivityType: 'epistemic' as const },
+    { variableId: 'soiling_loss', name: 'Soiling Deposition & Washing Deficit', varianceContributionPercent: Number(((srcSoiling ** 2 / sumSrc2) * 100.0).toFixed(1)), sensitivityType: 'aleatory' as const },
+    { variableId: 'discount_rate', name: 'Weighted Average Cost of Capital (Discount Rate)', varianceContributionPercent: Number(((srcDiscount ** 2 / sumSrc2) * 100.0).toFixed(1)), sensitivityType: 'epistemic' as const },
+    { variableId: 'albedo', name: 'Ground Surface Albedo', varianceContributionPercent: Number(((srcAlbedo ** 2 / sumSrc2) * 100.0).toFixed(1)), sensitivityType: 'aleatory' as const },
   ].sort((a, b) => b.varianceContributionPercent - a.varianceContributionPercent);
+
+  // Group Aleatory (Physical Climate) vs Epistemic (Techno-Economic / Modeling) Variance Decomposition
+  const aleatorySum2 = srcGhi ** 2 + srcSoiling ** 2 + srcAlbedo ** 2;
+  const epistemicSum2 = srcCapex ** 2 + srcTariff ** 2 + srcOpex ** 2 + srcDiscount ** 2;
+  const totalGroupSum2 = aleatorySum2 + epistemicSum2 || 1;
+
+  const aleatoryPct = Number(((aleatorySum2 / totalGroupSum2) * 100.0).toFixed(1));
+  const epistemicPct = Number((100.0 - aleatoryPct).toFixed(1));
 
   // Risk category based on NPV spread
   let bankableRiskCategory: FinancialUqResult['bankableRiskCategory'] = 'INVESTMENT_GRADE';
@@ -546,8 +585,6 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
   }
 
   const convergenceStandardErrorNpvUsd = Number((npvStats.stdDev / Math.sqrt(n)).toFixed(2));
-  const aleatoryPct = Number(((rGhi ** 2 / sumR2) * 100.0).toFixed(1));
-  const epistemicPct = Number((100.0 - aleatoryPct).toFixed(1));
 
   return {
     traceId: `UQ-RUN-${Date.now().toString(36).toUpperCase()}`,
@@ -569,7 +606,12 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
     uncertaintyDecomposition: {
       aleatoryVariancePct: aleatoryPct,
       epistemicVariancePct: epistemicPct,
+      aleatoryVariables: ['ghi_annual', 'soiling_loss', 'albedo'],
+      epistemicVariables: ['tariff', 'capex_variance', 'opex_variance', 'discount_rate'],
+      methodologyNote: 'First-order variance decomposition via Standardized Rank Regression (SRC² / ANOVA index per Saltelli et al. 2008)',
     },
+    screeningAndBankabilityNoticeFa: 'تحلیل عدم قطعیت و ریسک اعتباری بر پایه شبیه‌سازی آماری لاتین هایپرکیوب (LHS) با نمونه‌برداری ساختاریافته از توزیع‌های گوسی و کوپولا انجام شده است. نتایج صرفاً جهت بررسی حساسیت و غربالگری اقتصادی معتبر است و برای تأمین مالی بانکی مستقل، آنالیز سری زمانی چندساله ماهواره‌ای P50/P90 و گزارش مشاور فنی وام‌دهنده الزامی است.',
+    screeningAndBankabilityNoticeEn: 'Uncertainty propagation and bankability risk assessment based on Latin Hypercube Sampling (LHS) with structured multivariate copula sampling. Results represent preliminary engineering screening; institutional non-recourse project finance requires multi-year satellite time-series analysis (P50/P90) and Lender Technical Advisor (LTA) sign-off.',
   };
 }
 

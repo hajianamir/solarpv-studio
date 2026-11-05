@@ -4103,6 +4103,162 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // ==========================================================================
+  // [E10-MV-CABLE-IMPEDANCE-DECOMPOSITION] Explicit Collection Cable R+jX & Network Z
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // Run substation with explicit 1500m XLPE 120mm2 MV cable
+    const subWithCable = designMvSubstation({
+      plantCapacityAcMw: 10.0,
+      powerFactor: 0.9,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20.0,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 1000.0,
+      gridRxRatio: 0.1,
+      mvCableLengthM: 1500.0,
+      mvCableCrossSectionMm2: 120,
+    });
+
+    const cableR = subWithCable.shortCircuit.cableImpedance.rOhms;
+    const cableX = subWithCable.shortCircuit.cableImpedance.xOhms;
+    const cableZ = subWithCable.shortCircuit.cableImpedance.zOhms;
+    const totalZ = subWithCable.shortCircuit.totalImpedanceOhms;
+
+    // Cable resistance: L=1.5km, 120mm2 Cu/XLPE at 90C => R ~= 1.5 * 0.196 = 0.294 ohm
+    const cableROk = cableR > 0.25 && cableR < 0.35;
+    // Cable reactance: L=1.5km, X ~= 1.5 * 0.115 = 0.1725 ohm
+    const cableXOk = cableX > 0.15 && cableX < 0.20;
+    const cableZOk = Math.abs(cableZ - Math.hypot(cableR, cableX)) < 1e-4;
+    // Total impedance must be strictly greater than without cable
+    const subNoCable = designMvSubstation({
+      plantCapacityAcMw: 10.0,
+      powerFactor: 0.9,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20.0,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 1000.0,
+      gridRxRatio: 0.1,
+      mvCableLengthM: 0,
+    });
+    const impedanceNetworkOk = totalZ > subNoCable.shortCircuit.totalImpedanceOhms;
+    const noticesOk =
+      subWithCable.shortCircuit.screeningMethodologyNoticeFa.length > 20 &&
+      subWithCable.shortCircuit.screeningMethodologyNoticeEn.length > 20;
+
+    assert(
+      'E10-MV-CABLE-IMPEDANCE-DECOMPOSITION',
+      'MV cable impedance decomposes into R+jX for 90C XLPE and adds to upstream grid and transformer impedance',
+      cableROk && cableXOk && cableZOk && impedanceNetworkOk && noticesOk,
+      `Cable R=${cableR}Ω, X=${cableX}Ω, Z=${cableZ}Ω; Total Z=${totalZ}Ω vs NoCable=${subNoCable.shortCircuit.totalImpedanceOhms}Ω`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-3D-FACET-RAYTRACING-MODES] Planar Obstacle Facets, Ray Intersection & Dual Modes
+  // ==========================================================================
+  {
+    const {
+      buildObstacleFacets,
+      computeSunVectorEnu,
+      testRayFacetIntersection,
+      simulateAnnual3dShading,
+      DEFAULT_ROOFTOP_SCENE,
+    } = await import('../../roof3dShadingEngine');
+
+    // 1. Cuboid facet extraction: 5 exposed planar facets (top + 4 vertical walls)
+    const cuboidFacets = buildObstacleFacets({
+      id: 'c1',
+      name: 'HVAC',
+      geometryType: 'cuboid',
+      positionEnu: { x: 0, y: 0, z: 0 },
+      dimensionsM: { widthM: 4, lengthM: 3, heightM: 2 },
+    });
+    const cuboidFacetsOk = cuboidFacets.length === 5;
+
+    // 2. Cylinder facet extraction: 8 lateral sides + 1 top cap = 9 facets
+    const cylFacets = buildObstacleFacets({
+      id: 'cyl1',
+      name: 'Exhaust Chimney',
+      geometryType: 'cylinder',
+      positionEnu: { x: 10, y: 10, z: 0 },
+      dimensionsM: { radiusM: 1, heightM: 5 },
+    });
+    const cylFacetsOk = cylFacets.length === 9;
+
+    // 3. Ray-facet intersection test: target point behind cuboid towards sun
+    const targetPoint = { x: -5, y: 0, z: 0.5 };
+    const sunRay = computeSunVectorEnu(90, 20); // Due East (vector in +X direction)
+    const isOccluded = testRayFacetIntersection(targetPoint, sunRay, cuboidFacets);
+    const freeTargetPoint = { x: 5, y: 50, z: 2 };
+    const isFree = testRayFacetIntersection(freeTargetPoint, sunRay, cuboidFacets);
+    const rayIntersectionOk = isOccluded && !isFree;
+
+    // 4. Test 8760h vs 3-day simulation modes
+    const res8760 = simulateAnnual3dShading(DEFAULT_ROOFTOP_SCENE, 5.0, 40.0, { simulationMode: 'hourly_8760' });
+    const res3Day = simulateAnnual3dShading(DEFAULT_ROOFTOP_SCENE, 5.0, 40.0, { simulationMode: 'screening_3day' });
+
+    const modesOk =
+      res8760.simulationModeUsed === 'hourly_8760' &&
+      res3Day.simulationModeUsed === 'screening_3day' &&
+      res8760.rawRayCastingStepsCount > 4000 &&
+      res3Day.rawRayCastingStepsCount < 2000 &&
+      res3Day.rawRayCastingStepsCount > 1000 &&
+      res8760.totalEvaluatedDaylightHours > 4000 &&
+      res3Day.totalEvaluatedDaylightHours > 4000 &&
+      res8760.annualCombinedShadingLossPct >= 0 &&
+      res8760.annualElectricalMismatchLossPct >= 0;
+
+    assert(
+      'E10-3D-FACET-RAYTRACING-MODES',
+      '3D planar facet extraction, ray-polygon intersection, and hourly 8760 vs 3-day simulation modes execute correctly',
+      cuboidFacetsOk && cylFacetsOk && rayIntersectionOk && modesOk,
+      `Cuboid facets=${cuboidFacets.length}, Cyl facets=${cylFacets.length}, occluded=${isOccluded}, free=${!isFree}, 8760h steps=${res8760.rawRayCastingStepsCount}, 3day steps=${res3Day.rawRayCastingStepsCount}`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-UQ-ALBEDO-AND-BANKABILITY] LHS Ground Albedo Sensitivity & Bankability Notice
+  // ==========================================================================
+  {
+    const { runFinancialUncertaintyPropagation } = await import('../uncertaintyPropagation');
+    const { DEFAULT_FINANCIAL_PRICING } = await import('../../financialEngine');
+
+    const uqRes = runFinancialUncertaintyPropagation({
+      plantCapacityKwp: 5000,
+      batteryCapacityKwh: 0,
+      inverterCapacityKw: 5000,
+      baseAnnualYieldKwh: 9_000_000,
+      basePricing: DEFAULT_FINANCIAL_PRICING,
+      systemMode: 'powerplant',
+      sampleSize: 80,
+      seed: 12345,
+    });
+
+    const hasAlbedoTornado = uqRes.tornadoSensitivityRanking.some(t => t.variableId === 'albedo');
+    const hasSoilingTornado = uqRes.tornadoSensitivityRanking.some(t => t.variableId === 'soiling_loss');
+    const decompositionOk =
+      Math.abs(
+        (uqRes.uncertaintyDecomposition?.aleatoryVariancePct ?? 0) +
+        (uqRes.uncertaintyDecomposition?.epistemicVariancePct ?? 0) -
+        100.0
+      ) <= 0.2;
+    const noticesOk =
+      Boolean(uqRes.screeningAndBankabilityNoticeFa) &&
+      Boolean(uqRes.screeningAndBankabilityNoticeEn);
+
+    assert(
+      'E10-UQ-ALBEDO-AND-BANKABILITY',
+      'Financial UQ samples ground albedo and soiling via LHS with bilingual bankability notices and exact variance decomposition',
+      hasAlbedoTornado && hasSoilingTornado && decompositionOk && noticesOk,
+      `Albedo in tornado=${hasAlbedoTornado}, Soiling in tornado=${hasSoilingTornado}, Aleatory=${uqRes.uncertaintyDecomposition?.aleatoryVariancePct}%, Epistemic=${uqRes.uncertaintyDecomposition?.epistemicVariancePct}%, NoticesFa=${Boolean(uqRes.screeningAndBankabilityNoticeFa)}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 
