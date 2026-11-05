@@ -574,7 +574,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     <th className="p-2.5">{lang === 'fa' ? 'کابل و رشته‌های موازی' : 'Selected Parallel Spec'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'افت ولتاژ' : 'Voltage Drop'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'اتصال کوتاه (IEC 60364)' : 'SC Withstand'}</th>
-                    <th className="p-2.5">{lang === 'fa' ? 'خازن و جریان شارژ' : 'Charging / Cap'}</th>
+                    <th className="p-2.5" title={lang === 'fa' ? 'جریان شارژ خازنی و ظرفیت خطی بر پایه مدل هم‌محور شیلددار فرضی (IEC 60287-1-1)' : 'Capacitive charging current and line capacitance under idealized coaxial screened model (IEC 60287-1-1)'}>
+                      {lang === 'fa' ? 'جریان شارژ / خازن (مدل هم‌محور)' : 'Charging / Cap (Coax Model)'}
+                    </th>
                     <th className="p-2.5">{lang === 'fa' ? 'تلفات ژول' : 'Joule Loss'}</th>
                     <th className="p-2.5 text-center">{lang === 'fa' ? 'وضعیت' : 'Status'}</th>
                   </tr>
@@ -627,12 +629,16 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         {run.config.isDc ? (
                           <>
                             <span className="text-slate-400 font-bold">0.0 A (DC)</span>
-                            <span className="block text-[9px] text-slate-500">{run.totalCapacitanceUf} µF (est)</span>
+                            <span className="block text-[9px] text-slate-500 font-sans" title={run.capacitanceModelNote}>
+                              {run.totalCapacitanceUf} µF (coax)
+                            </span>
                           </>
                         ) : (
                           <>
                             <span className="text-sky-300 font-bold">{run.chargingCurrentAmps} A</span>
-                            <span className="block text-[9px] text-slate-400">{run.totalCapacitanceUf} µF (est)</span>
+                            <span className="block text-[9px] text-slate-400 font-sans" title={run.capacitanceModelNote}>
+                              {run.totalCapacitanceUf} µF (coax)
+                            </span>
                           </>
                         )}
                       </td>
@@ -685,6 +691,16 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   ))}
               </div>
             )}
+
+            {/* Engineering Note on Coaxial Capacitance Screening */}
+            <div className="text-[10px] text-slate-400 bg-slate-800/30 p-2.5 rounded border border-industrial-border/40 mt-3">
+              <span className="text-industrial-accent font-semibold">
+                {lang === 'fa' ? 'یادداشت مهندسی ظرفیت خازنی:' : 'Capacitance Engineering Note:'}
+              </span>{' '}
+              {lang === 'fa'
+                ? 'مقادیر ظرفیت خازنی و جریان شارژ بر پایه فرضیه هندسه تحلیلی هم‌محور شیلددار (IEC 60287-1-1 فرمول ۲.۲ با ضخامت اسمی عایق رده 0.6/1kV و EN 50618) محاسبه شده است. در کابل‌های استرینگ DC خورشیدی که معمولاً بدون شیلد هستند یا در کابل‌های چندرشته AC، ظرفیت خازنی واقعی وابسته به نحوه آرایش کابل‌ها در سینی/کانال و مشخصات مندرج در دیتاشیت کارخانه سازنده است.'
+                : 'Cable capacitance and charging currents are estimated using an idealized coaxial screened geometry model (IEC 60287-1-1 Eq. 2.2 with generic nominal insulation thickness ladders per IEC 60502-1 / EN 50618). For typical unshielded PV DC string cables or multi-conductor LV circuits, actual in-situ capacitance depends on installation geometry, ground/tray proximity, and certified manufacturer datasheets.'}
+            </div>
           </div>
         </div>
       )}

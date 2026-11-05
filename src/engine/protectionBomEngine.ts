@@ -55,6 +55,7 @@ export interface CableRunResult {
   lineCapacitanceUfPerKm: number;
   totalCapacitanceUf: number;
   chargingCurrentAmps: number;
+  capacitanceModelNote: string;
   troubleshootingGuideFa?: string;
   troubleshootingGuideEn?: string;
 }
@@ -379,6 +380,9 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   // - This represents the rigorous working operating capacitance for screened single-core cables (or armored MV/LV cables).
   // - For standard 6 mm² EN 50618 PV DC string cables (d_c = 2.95 mm, t_ins = 0.8 mm, D_i = 4.55 mm):
   //   XLPE (epsilon_r = 2.4) yields exactly 0.308 uF/km; PVC (epsilon_r = 5.0) yields exactly 0.642 uF/km.
+  // - Engineering limitation note: Standard PV solar cables (EN 50618 / IEC 62930) are typically unshielded;
+  //   actual capacitance depends on conduit/tray laying geometry, earthing proximity, and manufacturer construction datasheets.
+  //   Insulation thickness uses nominal low-voltage cross-section ladders and does not substitute certified factory testing.
   const lnDiOverDc = Math.log(diMm / dcMm);
   const lineCapacitanceUfPerKm = Number(((0.0556 * epsilonR) / Math.max(0.1, lnDiOverDc)).toFixed(3));
   const totalCapacitanceUf = Number(((lineCapacitanceUfPerKm * config.oneWayLengthM * parallelRuns) / 1000.0).toFixed(4));
@@ -387,6 +391,9 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const chargingCurrentAmps = config.isDc
     ? 0.0
     : Number((2.0 * Math.PI * 50.0 * (totalCapacitanceUf * 1e-6) * vPhase).toFixed(4));
+
+  const capacitanceModelNote =
+    'Idealized coaxial screened geometry per IEC 60287-1-1 Eq. 2.2; actual capacitance of unshielded/multicore cables depends on laying geometry and manufacturer datasheets.';
 
   // Full compliance requires voltage drop, thermal ampacity, AND short-circuit withstand:
   const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant;
@@ -454,6 +461,7 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     lineCapacitanceUfPerKm,
     totalCapacitanceUf,
     chargingCurrentAmps,
+    capacitanceModelNote,
     troubleshootingGuideFa,
     troubleshootingGuideEn,
   };
@@ -589,9 +597,9 @@ export function calculateEarthingSystem(
     isEarthingSafe: effectiveRg <= targetResistance && isTouchVoltageSafe && isStepVoltageSafe,
     isPreliminaryEstimate: true,
     disclaimerFa:
-      'توجه: محاسبات مقاومت زمین و ولتاژهای تماس و گام صرفاً ارزیابی اولیه غربالگری بر پایه مدل خاک یکنواخت و حدود فرضی پیش‌فرض (مانند سقف ۱۲۰V برای مقاومت زمین یا ۵۰V برای IT) است. این حدود فرضی برای کلیه حوزه‌ها الزام‌آور نبوده و حد واقعی به زمان قطع حفاظت، رطوبت محیط و مقررات محلی وابسته است. طراحی اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر و مدل‌سازی تفصیلی شبکه مش است.',
+      'توجه: محاسبات مقاومت زمین و ولتاژهای تماس و گام صرفاً ارزیابی اولیه غربالگری بر پایه مدل خاک یکنواخت و حدود فرضی پیش‌فرض (مانند سقف فرضی ولتاژ تماس ۱۲۰ ولت برای سیستم زمین‌شده از طریق امپدانس یا ۵۰ ولت برای IT) است. این حدود فرضی برای کلیه حوزه‌ها الزام‌آور نبوده و حد واقعی به زمان قطع حفاظت، رطوبت محیط و مقررات محلی وابسته است. طراحی اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر و مدل‌سازی تفصیلی شبکه مش است.',
     disclaimerEn:
-      'Notice: Ground resistance and touch/step potential verifications are preliminary screening estimates using uniform soil assumptions and indicative default regulatory ceilings (e.g. 120V for impedance-grounded, 50V for IT). Actual limits depend on fault duration, environmental wetness, and local utility interconnection codes. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing and site-specific grid modeling.',
+      'Notice: Ground resistance and touch/step potential verifications are preliminary screening estimates using uniform soil assumptions and indicative default regulatory ceilings (e.g. 120V touch voltage limit for impedance-grounded systems, 50V for IT). Actual limits depend on fault duration, environmental wetness, and local utility interconnection codes. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing and site-specific grid modeling.',
     bentoniteEnhancedResistanceOhms: bentoniteEnhancedResistance,
     bentoniteApplied: applyBentoniteEnhancement,
     earthingExecutionStepsFa,

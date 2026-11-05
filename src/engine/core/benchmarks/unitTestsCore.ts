@@ -3297,9 +3297,23 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
   // [E9-SUB-IEC60909-1] MV Substation complex impedance, kappa(R/X), Ith and breaker sufficiency flag
   {
-    const { designMvSubstation } = await import('../../mvSubstationEngine');
+    const { designMvSubstation, STANDARD_MV_BREAKERS } = await import('../../mvSubstationEngine');
 
-    // Normal plant: breaker rating >= fault current
+    // 1. Catalog integrity & manufacturer datasheet citations:
+    const catalogIntegrityOk =
+      STANDARD_MV_BREAKERS.length === 8 &&
+      STANDARD_MV_BREAKERS.every((b) =>
+        b.modelDesignation.length > 0 &&
+        b.manufacturer.length > 0 &&
+        b.catalogDocReference.length > 10 &&
+        b.typeTestStandard.includes('IEC 62271-100') &&
+        b.ratedPeakMakingCapacityKa >= 2.5 * b.ratedBreakingCapacityKa &&
+        b.ratedShortTimeWithstandKa >= b.ratedBreakingCapacityKa &&
+        b.ratedShortTimeDurationSec >= 3.0 &&
+        b.operatingSequence === 'O - 0.3s - CO - 15s - CO'
+      );
+
+    // 2. Normal plant: breaker rating >= fault current
     const normalSub = designMvSubstation({
       plantCapacityAcMva: 5.0,
       inverterOutputVoltageV: 800,
@@ -3309,7 +3323,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       upstreamGridShortCircuitMva: 500,
     });
 
-    // Extreme fault current: exceeding 63 kA maximum available breaker rating
+    // 3. Extreme fault current: exceeding 63 kA maximum available breaker rating
     const extremeSub = designMvSubstation({
       plantCapacityAcMva: 150.0,
       inverterOutputVoltageV: 800,
@@ -3319,7 +3333,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       upstreamGridShortCircuitMva: 10000,
     });
 
-    // High continuous current exceeding 2500A with low short-circuit current
+    // 4. High continuous current exceeding 2500A with low short-circuit current
     const overloadCurrentSub = designMvSubstation({
       plantCapacityAcMva: 100.0,
       inverterOutputVoltageV: 800,
@@ -3329,6 +3343,26 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       upstreamGridShortCircuitMva: 10,
     });
 
+    // 5. Voltage class unavailable (e.g. 40kV grid connection with no 40kV breaker in MV catalog)
+    const voltageUnavailableSub = designMvSubstation({
+      plantCapacityAcMva: 5.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 40,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 500,
+    });
+
+    // 6. Thermal withstand energy exceeded (elevated clearing time where Ik^2*tk < Ith^2*t_clearing)
+    const thermalExceededSub = designMvSubstation({
+      plantCapacityAcMva: 60.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 15.0,
+      upstreamGridShortCircuitMva: 25000,
+    });
+
     const complexImpedanceOk =
       normalSub.shortCircuit.rEquivalentOhms > 0 &&
       normalSub.shortCircuit.xEquivalentOhms > 0 &&
@@ -3336,24 +3370,41 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       normalSub.shortCircuit.kappa < 2.0 &&
       normalSub.shortCircuit.thermalEquivalentIthKa >= normalSub.shortCircuit.initialSymmetricalIscKa;
 
-    const breakerSufficiencyOk =
+    const normalBreakerOk =
       normalSub.shortCircuit.isBreakerSufficient === true &&
       normalSub.shortCircuit.selectedBreakerModel.length > 0 &&
+      normalSub.shortCircuit.selectedBreakerCatalogDocRef !== undefined &&
       normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.initialSymmetricalIscKa &&
       normalSub.shortCircuit.ratedPeakMakingCapacityKa >= normalSub.shortCircuit.peakDynamicIpKa &&
-      normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.thermalEquivalentIthKa &&
+      normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.thermalEquivalentIthKa;
+
+    const failurePathsOk =
       extremeSub.shortCircuit.isBreakerSufficient === false &&
       extremeSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
       extremeSub.shortCircuit.breakerDeficiencyReason?.includes('breaking_capacity_exceeded') === true &&
+      extremeSub.switchgearDescriptionEn.includes('CRITICAL BREAKER CAPACITY') &&
       overloadCurrentSub.shortCircuit.isBreakerSufficient === false &&
       overloadCurrentSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
-      overloadCurrentSub.shortCircuit.breakerDeficiencyReason?.includes('continuous_current_exceeded') === true;
+      overloadCurrentSub.shortCircuit.breakerDeficiencyReason?.includes('continuous_current_exceeded') === true &&
+      overloadCurrentSub.switchgearDescriptionEn.includes('CIRCUIT BREAKER CONTINUOUS CURRENT EXCEEDED') &&
+      overloadCurrentSub.switchgearDescriptionEn.includes('split busbar') &&
+      voltageUnavailableSub.shortCircuit.isBreakerSufficient === false &&
+      voltageUnavailableSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
+      voltageUnavailableSub.shortCircuit.breakerDeficiencyReason === 'voltage_class_unavailable' &&
+      voltageUnavailableSub.switchgearDescriptionEn.startsWith('VOLTAGE CLASS UNAVAILABLE WARNING') &&
+      !voltageUnavailableSub.switchgearDescriptionEn.includes('0A') &&
+      voltageUnavailableSub.switchgearDescriptionFa.includes('عدم تطابق رده ولتاژ') &&
+      !voltageUnavailableSub.switchgearDescriptionFa.includes('0A') &&
+      thermalExceededSub.shortCircuit.isBreakerSufficient === false &&
+      thermalExceededSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
+      thermalExceededSub.shortCircuit.breakerDeficiencyReason === 'thermal_withstand_or_duty_margin_exceeded' &&
+      thermalExceededSub.switchgearDescriptionEn.startsWith('THERMAL SHORT-TIME WITHSTAND EXCEEDED');
 
     assert(
       'E9-SUB-IEC60909-1',
       'Substation short-circuit uses complex impedance, dynamic kappa, Ith and flags insufficient breaker rating',
-      complexImpedanceOk && breakerSufficiencyOk,
-      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, Breaker=${normalSub.shortCircuit.selectedBreakerModel} (${normalSub.shortCircuit.breakingCapacityKa}kA, ok=${normalSub.shortCircuit.isBreakerSufficient}); extreme: model=${extremeSub.shortCircuit.selectedBreakerModel}, reason=${extremeSub.shortCircuit.breakerDeficiencyReason}; overloadIr: reason=${overloadCurrentSub.shortCircuit.breakerDeficiencyReason}`
+      catalogIntegrityOk && complexImpedanceOk && normalBreakerOk && failurePathsOk,
+      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, Breaker=${normalSub.shortCircuit.selectedBreakerModel} (${normalSub.shortCircuit.breakingCapacityKa}kA, ok=${normalSub.shortCircuit.isBreakerSufficient}); failure branches: voltOk=${voltageUnavailableSub.shortCircuit.breakerDeficiencyReason}, irOk=${overloadCurrentSub.shortCircuit.breakerDeficiencyReason}, scOk=${extremeSub.shortCircuit.breakerDeficiencyReason}, thermOk=${thermalExceededSub.shortCircuit.breakerDeficiencyReason}`
     );
   }
 

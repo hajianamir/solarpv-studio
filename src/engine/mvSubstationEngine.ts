@@ -49,6 +49,7 @@ export interface ShortCircuitCalculation {
   isBreakerSufficient: boolean;
   selectedBreakerModel: string;
   selectedBreakerManufacturer: string;
+  selectedBreakerCatalogDocRef?: string;
   ratedShortTimeDurationSec: number;
   operatingSequence: string;
   breakerDeficiencyReason?: string;
@@ -64,6 +65,8 @@ export interface MvBreakerCatalogModel {
   ratedShortTimeWithstandKa: number;
   ratedShortTimeDurationSec: number;
   operatingSequence: string;
+  catalogDocReference: string;
+  typeTestStandard: string;
 }
 
 export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
@@ -77,6 +80,8 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 16.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
+    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T (VD4 indoor vacuum circuit-breaker 12...24 kV)',
+    typeTestStandard: 'IEC 62271-100',
   },
   {
     modelDesignation: 'ABB VD4/P 24.12.20',
@@ -88,6 +93,8 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 20.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
+    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T (VD4 indoor vacuum circuit-breaker 12...24 kV)',
+    typeTestStandard: 'IEC 62271-100',
   },
   {
     modelDesignation: 'Schneider HVX 24-25',
@@ -99,6 +106,8 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 25.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
+    catalogDocReference: 'Schneider Electric AMTED302029EN / NRJED111246EN (HVX 24kV Vacuum Circuit Breaker Technical Guide)',
+    typeTestStandard: 'IEC 62271-100',
   },
   {
     modelDesignation: 'Siemens SION 3AE 24kV-31.5kA',
@@ -110,6 +119,8 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 31.5,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
+    catalogDocReference: 'Siemens Catalog HG 11.21 · 2021 (SION 3AE Medium-Voltage Vacuum Circuit-Breakers 7.2kV to 24kV)',
+    typeTestStandard: 'IEC 62271-100',
   },
   {
     modelDesignation: 'ABB VD4/P 24.20.40',
@@ -121,6 +132,8 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 40.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
+    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T (VD4 indoor vacuum circuit-breaker 12...24 kV)',
+    typeTestStandard: 'IEC 62271-100',
   },
   {
     modelDesignation: 'Siemens NXAIR 36kV-31.5kA',
@@ -132,6 +145,8 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 31.5,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
+    catalogDocReference: 'Siemens Catalog HA 25.71 · 2022 (NXAIR Medium-Voltage Air-Insulated Switchgear up to 36kV)',
+    typeTestStandard: 'IEC 62271-100',
   },
   {
     modelDesignation: 'Schneider MCset 24-50',
@@ -143,6 +158,8 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 50.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
+    catalogDocReference: 'Schneider Electric AMTED398031EN (MCset 24kV Air-Insulated Switchgear Technical Guide)',
+    typeTestStandard: 'IEC 62271-100',
   },
   {
     modelDesignation: 'ABB VD4 24.25.63',
@@ -154,6 +171,8 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 63.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
+    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T (VD4 indoor vacuum circuit-breaker 12...24 kV)',
+    typeTestStandard: 'IEC 62271-100',
   },
 ];
 
@@ -388,6 +407,7 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     isBreakerSufficient,
     selectedBreakerModel,
     selectedBreakerManufacturer,
+    selectedBreakerCatalogDocRef: selectedBreaker ? selectedBreaker.catalogDocReference : undefined,
     ratedShortTimeDurationSec,
     operatingSequence,
     breakerDeficiencyReason,
@@ -465,15 +485,24 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   let switchgearDescriptionEn: string;
 
   if (isBreakerSufficient) {
-    switchgearDescriptionFa = `تابلوی کمپکت گازی SF6 فشار متوسط (GIS/RMU) با دژنکتور خلاء مدل ${shortCircuit.selectedBreakerModel} (${shortCircuit.selectedBreakerManufacturer})، رده ولتاژ ${gridConnectionVoltageKv}kV، قدرت قطع نامی ${breakingCapacityKa} kA، قدرت وصل پیک نامی ${ratedPeakMakingCapacityKa} kA و تحمل حرارتی اتصال کوتاه ${breakingCapacityKa} kA به مدت ${shortCircuit.ratedShortTimeDurationSec} ثانیه با سکانس استاندارد ${shortCircuit.operatingSequence} طبق IEC 62271-100، مجهز به رله‌های حفاظتی میکروپروسسوری (ANSI 50/51/50N/51N) و سکسیونر زمین موتوری.`;
-    switchgearDescriptionEn = `Medium-voltage gas-insulated switchgear (GIS/RMU) with vacuum circuit breaker ${shortCircuit.selectedBreakerModel} (${shortCircuit.selectedBreakerManufacturer}), rated ${gridConnectionVoltageKv}kV: ${breakingCapacityKa} kA symmetrical breaking, ${ratedPeakMakingCapacityKa} kA peak making, and ${breakingCapacityKa} kA / ${shortCircuit.ratedShortTimeDurationSec}s thermal withstand (${shortCircuit.operatingSequence}) per IEC 62271-100, with numerical protection relay (50/51/50N/51N) and motorized earth switch.`;
+    switchgearDescriptionFa = `تابلوی کمپکت گازی SF6 فشار متوسط (GIS/RMU) با دژنکتور خلاء مدل ${shortCircuit.selectedBreakerModel} (${shortCircuit.selectedBreakerManufacturer})، رده ولتاژ ${gridConnectionVoltageKv}kV، قدرت قطع نامی ${breakingCapacityKa} kA، قدرت وصل پیک نامی ${ratedPeakMakingCapacityKa} kA و تحمل حرارتی اتصال کوتاه ${breakingCapacityKa} kA به مدت ${shortCircuit.ratedShortTimeDurationSec} ثانیه با سکانس استاندارد ${shortCircuit.operatingSequence} طبق IEC 62271-100 (مرجع کاتالوگ سازنده: ${selectedBreaker?.catalogDocReference})، مجهز به رله‌های حفاظتی میکروپروسسوری (ANSI 50/51/50N/51N) و سکسیونر زمین موتوری.`;
+    switchgearDescriptionEn = `Medium-voltage gas-insulated switchgear (GIS/RMU) with vacuum circuit breaker ${shortCircuit.selectedBreakerModel} (${shortCircuit.selectedBreakerManufacturer}), rated ${gridConnectionVoltageKv}kV: ${breakingCapacityKa} kA symmetrical breaking, ${ratedPeakMakingCapacityKa} kA peak making, and ${breakingCapacityKa} kA / ${shortCircuit.ratedShortTimeDurationSec}s thermal withstand (${shortCircuit.operatingSequence}) per IEC 62271-100 (Manufacturer ref: ${selectedBreaker?.catalogDocReference}), with numerical protection relay (50/51/50N/51N) and motorized earth switch.`;
   } else {
-    if (nominalMvCurrentAmps > maxCatalogIrAmps) {
-      switchgearDescriptionFa = `هشدار عدم کفایت کلید: جریان نامی بار کامل خروجی نیروگاه (${nominalMvCurrentAmps}A) از بالاترین رتبه جریان پیوسته کلیدهای کاتالوگ (${maxCatalogIrAmps}A) بیشتر است. راه‌حل مهندسی: تفکیک باسبار به چند فیدر کلکتور موازی (Split Busbars) یا اتصال به شبکه در سطح ولتاژ بالاتر (مانند ۶۳kV/۱۳۲kV).`;
-      switchgearDescriptionEn = `CIRCUIT BREAKER INADEQUACY WARNING: Plant full-load continuous collector current (${nominalMvCurrentAmps}A) exceeds maximum standard medium-voltage breaker continuous rating (${maxCatalogIrAmps}A). Engineering resolution: implement split busbar architecture with multiple parallel feeder breakers or interconnect at higher transmission voltage (e.g. 63kV/132kV).`;
-    } else {
-      switchgearDescriptionFa = `هشدار بحرانی عدم کفایت کلید: جریان اتصال کوتاه محاسبه‌شده (${shortCircuit.initialSymmetricalIscKa} kA متقارن / ${shortCircuit.peakDynamicIpKa} kA پیک) از حداکثر ظرفیت بریکرهای استاندارد MV کاتالوگ (${maxCatalogBreakingKa} kA قطع / ${maxCatalogMakingKa} kA وصل پیک) فراتر است. راه‌حل مهندسی: نصب راکتور محدودکننده جریان (CLR) یا افزایش امپدانس اتصال‌کوتاه ترانسفورماتور پست.`;
+    if (voltageCompatibleBreakers.length === 0) {
+      switchgearDescriptionFa = `هشدار عدم تطابق رده ولتاژ: ولتاژ اتصال به شبکه (${gridConnectionVoltageKv}kV) از حداکثر ولتاژ نامی کلیدهای استاندارد MV در کاتالوگ مرجع (حداکثر ۳۶kV) فراتر است. راه‌حل مهندسی: استفاده از تجهیزات کلیدخانه فشار قوی انتقال (مانند پست‌های ۶۳kV، ۷۲.۵kV یا ۱۳۲kV) یا بازنگری در سطح ولتاژ ثانویه ترانسفورماتور پست.`;
+      switchgearDescriptionEn = `VOLTAGE CLASS UNAVAILABLE WARNING: Grid connection voltage (${gridConnectionVoltageKv}kV) exceeds maximum rated voltage of standard medium-voltage switchgear breakers in reference catalog (maximum 36kV). Engineering resolution: specify high-voltage transmission class switchgear (e.g. 63kV, 72.5kV, or 132kV GIS/AIS) or reconfigure interconnection substation transformer voltage.`;
+    } else if ((initialSymmetricalIscKa > maxCatalogBreakingKa || peakDynamicIpKa > maxCatalogMakingKa) && nominalMvCurrentAmps > maxCatalogIrAmps) {
+      switchgearDescriptionFa = `هشدار بحرانی عدم کفایت ظرفیت قطع و بار مداوم کلید: جریان اتصال کوتاه محاسبه‌شده (${shortCircuit.initialSymmetricalIscKa} kA متقارن / ${shortCircuit.peakDynamicIpKa} kA پیک) از حداکثر ظرفیت قطع بریکرهای کاتالوگ (${maxCatalogBreakingKa} kA قطع / ${maxCatalogMakingKa} kA وصل) و همچنین جریان نامی بار کامل نیروگاه (${nominalMvCurrentAmps}A) از بالاترین رتبه جریان پیوسته (${maxCatalogIrAmps}A) فراتر است. راه‌حل مهندسی: تفکیک باسبار به چند فیدر کلکتور موازی (Split Busbars) و نصب راکتور محدودکننده جریان (CLR) یا اتصال در سطح ولتاژ بالاتر (مانند ۶۳kV/۱۳۲kV).`;
+      switchgearDescriptionEn = `CRITICAL BREAKER CAPACITY & CURRENT INADEQUACY WARNING: Symmetrical fault current (${shortCircuit.initialSymmetricalIscKa} kA) or dynamic peak (${shortCircuit.peakDynamicIpKa} kA) exceeds maximum standard medium-voltage catalog breaker rating (${maxCatalogBreakingKa} kA breaking / ${maxCatalogMakingKa} kA peak making), and plant full-load continuous collector current (${nominalMvCurrentAmps}A) exceeds maximum continuous rating (${maxCatalogIrAmps}A). Engineering resolution: implement split busbar architecture with multiple parallel feeder breakers and add current-limiting reactors (CLR) or interconnect at higher transmission voltage (e.g. 63kV/132kV).`;
+    } else if (initialSymmetricalIscKa > maxCatalogBreakingKa || peakDynamicIpKa > maxCatalogMakingKa) {
+      switchgearDescriptionFa = `هشدار بحرانی ظرفیت قطع و وصل کلید: جریان اتصال کوتاه محاسبه‌شده (${shortCircuit.initialSymmetricalIscKa} kA متقارن / ${shortCircuit.peakDynamicIpKa} kA پیک) از حداکثر ظرفیت بریکرهای استاندارد MV کاتالوگ (${maxCatalogBreakingKa} kA قطع / ${maxCatalogMakingKa} kA وصل پیک) فراتر است. راه‌حل مهندسی: نصب راکتور محدودکننده جریان (CLR) یا افزایش امپدانس اتصال‌کوتاه ترانسفورماتور پست.`;
       switchgearDescriptionEn = `CRITICAL BREAKER CAPACITY WARNING: Symmetrical fault current (${shortCircuit.initialSymmetricalIscKa} kA) or dynamic peak (${shortCircuit.peakDynamicIpKa} kA) exceeds maximum standard medium-voltage catalog breaker rating (${maxCatalogBreakingKa} kA breaking / ${maxCatalogMakingKa} kA peak making). Sized breaker cannot interrupt this fault; current-limiting reactor (CLR) or higher transformer impedance required.`;
+    } else if (nominalMvCurrentAmps > maxCatalogIrAmps) {
+      switchgearDescriptionFa = `هشدار عدم کفایت جریان مداوم کلید: جریان نامی بار کامل خروجی نیروگاه (${nominalMvCurrentAmps}A) از بالاترین رتبه جریان پیوسته کلیدهای کاتالوگ (${maxCatalogIrAmps}A) بیشتر است. راه‌حل مهندسی: تفکیک باسبار به چند فیدر کلکتور موازی (Split Busbars) یا اتصال به شبکه در سطح ولتاژ بالاتر (مانند ۶۳kV/۱۳۲kV).`;
+      switchgearDescriptionEn = `CIRCUIT BREAKER CONTINUOUS CURRENT EXCEEDED: Plant full-load continuous collector current (${nominalMvCurrentAmps}A) exceeds maximum standard medium-voltage breaker continuous rating (${maxCatalogIrAmps}A). Engineering resolution: implement split busbar architecture with multiple parallel feeder breakers or interconnect at higher transmission voltage (e.g. 63kV/132kV).`;
+    } else {
+      switchgearDescriptionFa = `هشدار عدم کفایت تحمل حرارتی اتصال کوتاه: انرژی حرارتی معادل اتصال کوتاه (Ith=${shortCircuit.thermalEquivalentIthKa} kA در زمان تداوم خطا ${clearingTimeSec}s) از ظرفیت استقامت حرارتی کلیدهای کاتالوگ فراتر است. راه‌حل مهندسی: تسریع زمان رفع خطا توسط رله‌های دیجیتال سریع‌تر، هماهنگی حفاظتی دقیق‌تر، یا انتخاب کلیدخانه با استقامت حرارتی زمان‌بالا.`;
+      switchgearDescriptionEn = `THERMAL SHORT-TIME WITHSTAND EXCEEDED: Thermal equivalent short-circuit current (Ith=${shortCircuit.thermalEquivalentIthKa} kA for clearing duration ${clearingTimeSec}s) exceeds the short-time thermal withstand capacity of standard catalog breakers. Engineering resolution: reduce fault clearing protection duration via high-speed numerical relays or specify switchgear with higher short-time thermal duration.`;
     }
   }
 

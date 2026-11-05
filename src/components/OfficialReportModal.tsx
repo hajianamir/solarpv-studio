@@ -332,13 +332,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     ];
 
     const energySheet = [
-      ['ENERGY YIELD SIMULATION & PERFORMANCE RATIO (IEC 61724-1)', ''],
-      ['Methodology Note', 'Annual yield metrics represent annualized extrapolations of 24h diurnal simulation (scaled across 365 days) for preliminary screening, rather than an 8760h hourly weather-year TMY simulation.'],
+      ['ENERGY YIELD SIMULATION & SENSITIVITY SCENARIOS (INDICATIVE)', ''],
+      ['Methodology Note', 'Annual yield metrics represent annualized extrapolations of 24h diurnal simulation (scaled across 365 days) for preliminary screening, rather than an 8760h hourly weather-year TMY simulation. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles.'],
       ['Metric', 'Value', 'Unit', 'Methodology / Standard'],
       ['Gross DC Annual Generation (24h Extrapolated)', (annualGrossMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h)'],
-      ['Net AC Annual Generation (P50 Indicative)', annualGrossMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Extrapolation (P50 Expectation)'],
-      ['P75 Bankable Generation (Indicative)', p75Mwh.toFixed(1), 'MWh/yr', 'P75 Statistical Exceedance (from Annualized 24h)'],
-      ['P90 Conservative Debt Sizing (Indicative)', p90Mwh.toFixed(1), 'MWh/yr', 'P90 Bankable Exceedance (from Annualized 24h)'],
+      ['Net AC Annual Generation (Baseline Indicative)', annualGrossMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Baseline Profile'],
+      ['Illustrative Downside Scenario (-5.5%)', p75Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.945x Sensitivity Factor (Not Probabilistic Exceedance)'],
+      ['Illustrative Conservative Downside (-10.2%)', p90Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.898x Sensitivity Factor (Not Bankable P90)'],
       ['Specific Yield', specificYieldKwhKwp, 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Annualized 24h)'],
       ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724 Class A Methodology'],
       ['Soiling Derate', '3.5%', '-', 'Kimber Arid Climate Deposition Model'],
@@ -1159,13 +1159,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             </div>
           )}
 
-          {/* Section 4: Energy Simulation, Loss Waterfall & PR */}
+          {/* Section 4: Energy Simulation, Loss Waterfall & Sensitivity Scenarios */}
           {includedSections.energy && (
             <div className="studio-card print:border print:border-slate-300 print:p-4 space-y-4">
               <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-industrial-success" />
-                  {isEn ? '4. Energy Yield Simulation, Loss Waterfall & Performance Ratio (P50/P90)' : '۴. شبیه‌سازی تولید انرژی، نمودار آبشار تلفات و تحلیل عدم قطعیت بانکی (P50/P90)'}
+                  {isEn ? '4. Energy Yield Simulation, Loss Waterfall & Sensitivity Scenarios' : '۴. شبیه‌سازی تولید انرژی، نمودار آبشار تلفات و سناریوهای تحلیل حساسیت'}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">IEC 61724-1 Class A</span>
               </h3>
@@ -1174,7 +1174,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">
-                    {isEn ? 'P50 Annual Generation (24h Extrapolated):' : 'تولید سالانه P50 (برون‌یابی ۲۴ ساعته):'}
+                    {isEn ? 'Annual Generation (24h Baseline):' : 'تولید سالانه مبنا (برون‌یابی ۲۴ ساعته):'}
                   </span>
                   <strong className="text-base font-mono text-industrial-success print:text-emerald-900">
                     {annualGrossMwh.toLocaleString()} MWh
@@ -1185,13 +1185,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">
-                    {isEn ? 'P90 Indicative Debt Sizing:' : 'تولید بانکی P90 (برون‌یابی ۲۴ ساعته):'}
+                    {isEn ? 'Illustrative Downside (-10.2%):' : 'سناریوی کاهشی فرضی (-۱۰.۲٪):'}
                   </span>
                   <strong className="text-base font-mono text-industrial-accent print:text-sky-900">
                     {p90Mwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'Debt Sizing (1.3x DSCR)' : 'مبنای استقراض بانکی و وام'}
+                    {isEn ? 'Fixed 0.898x Sensitivity Factor (Not Bankable P90)' : 'ضریب حساسیت ثابت ۰.۸۹۸ (بدون ادعای P90 بانکی)'}
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
@@ -1219,8 +1219,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   {isEn ? 'Methodology Note:' : 'یادداشت متدولوژی:'}
                 </span>{' '}
                 {isEn
-                  ? 'Annual yield metrics represent annualized extrapolations from the 24-hour diurnal simulation profile (scaled across 365 days). They provide preliminary engineering screening estimates and should be supplemented by an 8760-hour hourly weather-year (TMY/PVSyst) bankable model for final financing.'
-                  : 'ارقام تولید سالانه انرژی نمایانگر برون‌یابی سالانه از پروفایل شبیه‌سازی ۲۴ ساعته شبانه‌روزی (ضرب در ۳۶۵ روز) است که به عنوان غربالگری اولیه مهندسی عمل نموده و برای تأمین مالی نهایی پروژه باید با شبیه‌سازی کامل ۸۷۶۰ ساعته سال اقلیمی (TMY) تدقیق گردد.'}
+                  ? 'Annual yield metrics represent annualized extrapolations from the 24-hour diurnal simulation profile (scaled across 365 days). Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity scaling factors rather than formal probabilistic exceedance percentiles (which require multi-year TMY inter-annual dispersion modeling). They provide preliminary engineering screening estimates and should be supplemented by an 8760-hour hourly weather-year (TMY/PVSyst) bankable model for final financing.'
+                  : 'ارقام تولید سالانه انرژی نمایانگر برون‌یابی سالانه از پروفایل شبیه‌سازی ۲۴ ساعته شبانه‌روزی (ضرب در ۳۶۵ روز) است. سناریوهای کاهشی (-۵.۵٪ و -۱۰.۲٪) صرفاً ضرایب حساسیت فرضی و نمایشی هستند نه صدک‌های آماری قطعی توزیع احتمالاتی سال‌های اقلیمی؛ این مقادیر به عنوان غربالگری اولیه مهندسی عمل نموده و برای تأمین مالی و تعیین ساختار بدهی بانکی باید با شبیه‌سازی کامل ۸۷۶۰ ساعته سال اقلیمی (TMY) تدقیق گردند.'}
               </div>
 
               {/* Loss Waterfall Breakdown Table */}

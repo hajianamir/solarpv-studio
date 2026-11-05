@@ -206,7 +206,13 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           <div className={`text-xl font-bold font-mono mt-1 ${
             subResult.shortCircuit.isBreakerSufficient ? 'text-industrial-success' : 'text-industrial-error'
           }`}>
-            {subResult.shortCircuit.breakingCapacityKa} <span className="text-xs font-normal text-slate-300">kA</span>
+            {subResult.shortCircuit.breakingCapacityKa > 0 ? (
+              <>
+                {subResult.shortCircuit.breakingCapacityKa} <span className="text-xs font-normal text-slate-300">kA</span>
+              </>
+            ) : (
+              <span className="text-base text-slate-400">N/A</span>
+            )}
           </div>
           <div className={`text-[10px] mt-0.5 ${
             subResult.shortCircuit.isBreakerSufficient ? 'text-slate-400' : 'text-red-400 font-bold'
