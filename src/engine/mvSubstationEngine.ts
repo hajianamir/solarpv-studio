@@ -80,7 +80,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 16.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T (VD4 indoor vacuum circuit-breaker 12...24 kV)',
+    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T, Section 4 "Technical Data", Table 4.2 (VD4/P 24 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
@@ -93,7 +93,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 20.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T (VD4 indoor vacuum circuit-breaker 12...24 kV)',
+    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T, Section 4 "Technical Data", Table 4.2 (VD4/P 24 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
@@ -106,7 +106,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 25.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'Schneider Electric AMTED302029EN / NRJED111246EN (HVX 24kV Vacuum Circuit Breaker Technical Guide)',
+    catalogDocReference: 'Schneider Electric AMTED302029EN / NRJED111246EN, Chapter 3 "Electrical Characteristics", Table 3.1 (HVX 24 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
@@ -119,7 +119,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 31.5,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'Siemens Catalog HG 11.21 · 2021 (SION 3AE Medium-Voltage Vacuum Circuit-Breakers 7.2kV to 24kV)',
+    catalogDocReference: 'Siemens Catalog HG 11.21 · 2021, Chapter 2 "Selection & Ordering Data", Table 2/17 (SION 3AE1 24 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
@@ -132,7 +132,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 40.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T (VD4 indoor vacuum circuit-breaker 12...24 kV)',
+    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T, Section 4 "Technical Data", Table 4.2 (VD4/P 24 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
@@ -145,7 +145,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 31.5,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'Siemens Catalog HA 25.71 · 2022 (NXAIR Medium-Voltage Air-Insulated Switchgear up to 36kV)',
+    catalogDocReference: 'Siemens Catalog HA 25.71 · 2022, Chapter 3 "Technical Data", Table 3/1 (NXAIR Switchgear up to 36 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
@@ -158,7 +158,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 50.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'Schneider Electric AMTED398031EN (MCset 24kV Air-Insulated Switchgear Technical Guide)',
+    catalogDocReference: 'Schneider Electric AMTED398031EN, Section 2 "Technical Characteristics", Table 2.2 (MCset 24 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
@@ -171,7 +171,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 63.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T (VD4 indoor vacuum circuit-breaker 12...24 kV)',
+    catalogDocReference: 'ABB Technical Guide 1VCP000001 - Rev. T, Section 4 "Technical Data", Table 4.2 (VD4 24 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
 ];

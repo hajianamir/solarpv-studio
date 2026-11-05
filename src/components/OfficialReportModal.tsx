@@ -722,7 +722,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   { key: 'summary', fa: 'خلاصه پروژه', en: 'Project Summary' },
                   { key: 'climate', fa: 'اقلیم و خاک', en: 'Site & Geotechnical' },
                   { key: 'shading', fa: 'تحلیل سایه‌اندازی', en: 'Shading & Sun Path' },
-                  { key: 'energy', fa: 'شبیه‌سازی انرژی', en: 'Energy Yield (P50/P90)' },
+                  { key: 'energy', fa: 'شبیه‌سازی انرژی و سناریوهای حساسیت', en: 'Energy Yield & Sensitivity' },
                   { key: 'electrical', fa: 'طراحی الکتریکی و کابل', en: 'Electrical & Cables' },
                   { key: 'structural', fa: 'سازه و فونداسیون', en: 'Structure & Foundation' },
                   { key: 'financial', fa: 'تحلیل مالی و بازگشت', en: 'Financial Pro-Forma' },

@@ -3249,8 +3249,11 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const acCapacitanceOk = scHeavyRun.totalCapacitanceUf > 0 && scHeavyRun.chargingCurrentAmps > 0;
     const permittivityEffectOk = pvcRun.lineCapacitanceUfPerKm > dcRun.lineCapacitanceUfPerKm;
 
-    // Exact numerical bounds for 6mm² EN 50618 PV DC string cable (dc=2.95mm, tins=0.8mm, Di=4.55mm):
-    // C = 0.0556 * epsilon_r / ln(4.55/2.95) -> 0.308 uF/km for XLPE (2.4), 0.642 uF/km for PVC (5.0)
+    // Exact numerical bounds for the idealized coaxial screened geometry model (IEC 60287-1-1 Eq. 2.2)
+    // for 6mm² conductor (dc=2.95mm, tins=0.8mm, Di=4.55mm):
+    // C = 0.0556 * epsilon_r / ln(4.55/2.95) -> 0.308 uF/km for XLPE (2.4), 0.642 uF/km for PVC (5.0).
+    // Note: Verifies mathematical formula output under coaxial screened assumptions; does not assert
+    // field-measured or factory datasheet values of unshielded PV cables in arbitrary tray layouts.
     const run6Xlpe = calculateAdvancedCableRun({
       id: 'test-6mm2-xlpe',
       sectionNameFa: 'استرینگ ۶ میلی‌متر مربع XLPE',
@@ -3299,7 +3302,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   {
     const { designMvSubstation, STANDARD_MV_BREAKERS } = await import('../../mvSubstationEngine');
 
-    // 1. Catalog integrity & manufacturer datasheet citations:
+    // 1. Catalog internal schema consistency & document traceability
+    // (Verifies internal schema consistency, standard ratios, and recorded document references of catalog entries;
+    // does not represent independent external third-party type-test verification of manufacturer ratings):
     const catalogIntegrityOk =
       STANDARD_MV_BREAKERS.length === 8 &&
       STANDARD_MV_BREAKERS.every((b) =>
@@ -3402,7 +3407,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     assert(
       'E9-SUB-IEC60909-1',
-      'Substation short-circuit uses complex impedance, dynamic kappa, Ith and flags insufficient breaker rating',
+      'Substation short-circuit uses complex impedance, dynamic kappa, Ith, verifies catalog schema consistency, and flags breaker ratings',
       catalogIntegrityOk && complexImpedanceOk && normalBreakerOk && failurePathsOk,
       `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, Breaker=${normalSub.shortCircuit.selectedBreakerModel} (${normalSub.shortCircuit.breakingCapacityKa}kA, ok=${normalSub.shortCircuit.isBreakerSufficient}); failure branches: voltOk=${voltageUnavailableSub.shortCircuit.breakerDeficiencyReason}, irOk=${overloadCurrentSub.shortCircuit.breakerDeficiencyReason}, scOk=${extremeSub.shortCircuit.breakerDeficiencyReason}, thermOk=${thermalExceededSub.shortCircuit.breakerDeficiencyReason}`
     );
