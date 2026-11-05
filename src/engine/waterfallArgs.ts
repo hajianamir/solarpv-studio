@@ -126,7 +126,7 @@ export function buildWaterfallArgs(i: WaterfallArgsInput): Parameters<typeof com
   const env = (i.installationEnv ?? i.installationEnvironment) ?? undefined;
   const tilt = (i.fixedTiltDeg ?? i.tiltDeg) ?? undefined;
   const lat = i.latitudeDeg ?? undefined;
-  const shadingOverride = i.shadingLossOverridePct ?? i.shadingLoss3dPct;
+  const shadingOverride = i.shadingLossOverridePct ?? i.shadingLoss3dPct ?? i.nearShadingLossPct;
   const bifacialGain = i.bifacialGainPct !== undefined ? i.bifacialGainPct : undefined;
 
   const args: Parameters<typeof computeWaterfallLosses> = [

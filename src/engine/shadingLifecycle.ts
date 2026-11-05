@@ -83,7 +83,20 @@ export function shadingLifecycleReducer(
           isStale: false,
         };
       }
-      return state;
+
+      // Check if project capacity changed by > 5% since 3D shading was applied
+      const capacityChanged = Boolean(
+        action.currentCapacityKwp !== undefined &&
+          state.appliedCapacityKwp !== undefined &&
+          Math.abs(action.currentCapacityKwp - state.appliedCapacityKwp) /
+            Math.max(1, state.appliedCapacityKwp) >
+            0.05
+      );
+
+      return {
+        ...state,
+        isStale: capacityChanged,
+      };
     }
     default:
       return state;

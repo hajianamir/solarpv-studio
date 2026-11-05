@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useReducer } from 'react';
 import {
   Sun,
   Zap,
@@ -61,7 +61,11 @@ import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pv
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
 import { buildWaterfallArgs } from './engine/waterfallArgs';
 import { rearGainPercent } from './engine/bifacialGain';
-import { type AppliedShading3dRecord } from './engine/shadingLifecycle';
+import {
+  shadingLifecycleReducer,
+  createInitialShadingLifecycleState,
+  type AppliedShading3dRecord,
+} from './engine/shadingLifecycle';
 import { type TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
 import { sizeBatteryBank, computeAutonomyEnergyRequirement, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
@@ -213,8 +217,14 @@ export const App: React.FC = () => {
   const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
   // PR-2a-7: single-axis tracker config (null = fixed tilt)
   const [trackerConfig, setTrackerConfig] = useState<TrackerConfig | null>(null);
-  // 3D Shading input lifecycle record (Apply / Revert / Provenance)
-  const [appliedShadingRecord, setAppliedShadingRecord] = useState<AppliedShading3dRecord | null>(null);
+  // 3D Shading input lifecycle managed via pure reducer (Apply / Revert / Provenance / Staleness)
+  const [shadingLifecycle, dispatchShadingLifecycle] = useReducer(
+    shadingLifecycleReducer,
+    undefined,
+    createInitialShadingLifecycleState
+  );
+  const appliedShadingRecord = shadingLifecycle.appliedShading;
+  const isShadingStale = shadingLifecycle.isStale ?? false;
   const shadingLoss3dPct = appliedShadingRecord?.lossPct ?? null;
   
   // Custom User Financial Pricing
@@ -293,11 +303,6 @@ export const App: React.FC = () => {
       }
     }
   }, [systemMode, activeTab]);
-
-  // Reset applied 3D shading on project location change to prevent cross-project pollution
-  useEffect(() => {
-    setAppliedShadingRecord(null);
-  }, [city.id]);
 
   // Load saved project on initial mount if available
   useEffect(() => {
@@ -548,6 +553,20 @@ export const App: React.FC = () => {
       city.latitude
     );
   }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment]);
+
+  // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
+  const activePlantCapacityKwp =
+    systemMode === 'powerplant'
+      ? (targetPowerplantCapacityKw || 1000)
+      : arrayDesign.totalPvCapacityKwp;
+
+  useEffect(() => {
+    dispatchShadingLifecycle({
+      type: 'CHECK_SYNC',
+      currentCityId: city.id,
+      currentCapacityKwp: activePlantCapacityKwp,
+    });
+  }, [city.id, activePlantCapacityKwp]);
 
   // 4. Inverter Clustering Evaluation
   const inverterClustering = useMemo(() => {
@@ -2263,7 +2282,8 @@ export const App: React.FC = () => {
               trackerConfig={trackerConfig}
               bifacialGainPct={bifacialGainPct}
               shadingProvenance={appliedShadingRecord}
-              onClearShading={() => setAppliedShadingRecord(null)}
+              isShadingStale={isShadingStale}
+              onClearShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
               lang={lang}
             />
           )}
@@ -2284,6 +2304,7 @@ export const App: React.FC = () => {
               groundCoverRatio={groundCoverRatio}
               bifacialGainPct={bifacialGainPct}
               shadingProvenance={appliedShadingRecord}
+              isShadingStale={isShadingStale}
             />
           )}
 
@@ -2337,12 +2358,21 @@ export const App: React.FC = () => {
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
               onShadingLossChange={(loss) => {
                 if (loss === null) {
-                  setAppliedShadingRecord(null);
+                  dispatchShadingLifecycle({ type: 'REVERT' });
                 }
               }}
               appliedShading={appliedShadingRecord}
-              onApplyShading={(record) => setAppliedShadingRecord(record)}
-              onRevertShading={() => setAppliedShadingRecord(null)}
+              isShadingStale={isShadingStale}
+              onApplyShading={(record) =>
+                dispatchShadingLifecycle({
+                  type: 'APPLY',
+                  lossPct: record.lossPct,
+                  capacityKwp: record.capacityKwp,
+                  appliedAtIso: record.appliedAtIso,
+                  cityId: city.id,
+                })
+              }
+              onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
             />
           )}
 

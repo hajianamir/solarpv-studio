@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { Eye, Sun, Box, Play, RefreshCw, Layers, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, AlertTriangle, RotateCcw } from 'lucide-react';
 import {
@@ -17,6 +17,7 @@ interface ThreeJsViewerProps {
   plantCapacityType?: 'ac_target' | 'dc_nameplate';
   annualYieldKwh?: number;
   appliedShading?: AppliedShading3dRecord | null;
+  isShadingStale?: boolean;
   onApplyShading?: (record: AppliedShading3dRecord) => void;
   onRevertShading?: () => void;
   onShadingLossChange?: (shadingLossPct: number) => void;
@@ -29,6 +30,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   plantCapacityType = 'dc_nameplate',
   annualYieldKwh,
   appliedShading = null,
+  isShadingStale = false,
   onApplyShading,
   onRevertShading,
   onShadingLossChange,
@@ -40,6 +42,15 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const [sunAltitude, setSunAltitude] = useState<number>(45);
   const [sunAzimuth, setSunAzimuth] = useState<number>(180);
   const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
+
+  // Derive representative block capacity dynamically from scene PV tables
+  const demoSceneCapacityKwp = useMemo(() => {
+    const totalWp = DEFAULT_ROOFTOP_SCENE.pvTables.reduce(
+      (sum, t) => sum + (t.ratedPowerWp || 0),
+      0
+    );
+    return totalWp > 0 ? totalWp / 1000.0 : 55.2;
+  }, []);
   const [annualResult, setAnnualResult] = useState<AnnualShading3dResult | null>(() => {
     const initScene: Scene3DState = {
       ...DEFAULT_ROOFTOP_SCENE,
@@ -558,8 +569,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                 })()}
                 <div className="text-[10px] text-slate-400 mt-2">
                   {isEn
-                    ? 'Note: The 3D viewport evaluates a representative 55.2 kWp array section with local obstructions. Its geometric shading deficit can be applied to the 14-stage waterfall model and financial cashflows or reverted to default.'
-                    : 'توجه: نمای سه‌بعدی یک بلوک نمونه ۵۵.۲ کیلوواتی با موانع مجاور را تحلیل می‌کند. درصد کسری سایه محاسبه‌شده را می‌توانید به درخت تلفات و محاسبات مالی پروژه اعمال یا به مقدار پیش‌فرض بازگردانید.'}
+                    ? `Note: The 3D viewport evaluates a representative ${demoSceneCapacityKwp.toFixed(1)} kWp array section with local obstructions. Its geometric shading deficit can be applied to the 14-stage waterfall model and financial cashflows or reverted to default.`
+                    : `توجه: نمای سه‌بعدی یک بلوک نمونه ${demoSceneCapacityKwp.toFixed(1)} کیلوواتی با موانع مجاور را تحلیل می‌کند. درصد کسری سایه محاسبه‌شده را می‌توانید به درخت تلفات و محاسبات مالی پروژه اعمال یا به مقدار پیش‌فرض بازگردانید.`}
                 </div>
 
                 {/* Apply / Revert Actions */}
@@ -575,6 +586,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                     ) : (
                       <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[11px] border border-slate-700">
                         {isEn ? 'Preview Only (Default -2.4% Active)' : 'پیش‌نمایش (پیش‌فرض -۲.۴٪ فعال)'}
+                      </span>
+                    )}
+                    {appliedShading && isShadingStale && (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[11px] font-bold border border-amber-500/40">
+                        {isEn ? '⚠️ Stale (Capacity changed)' : '⚠️ قدیمی (تغییر ظرفیت پروژه)'}
                       </span>
                     )}
                   </div>
@@ -595,7 +611,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                               lossPct: annualResult.annualCombinedShadingLossPct,
                               source: 'representative_demo_block',
                               appliedAtIso: new Date().toISOString(),
-                              capacityKwp: 55.2,
+                              capacityKwp: demoSceneCapacityKwp,
                             });
                             onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
                           }

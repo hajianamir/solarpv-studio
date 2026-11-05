@@ -40,6 +40,7 @@ interface FinancialTabProps {
   groundCoverRatio?: number;
   bifacialGainPct?: number;
   shadingProvenance?: AppliedShading3dRecord | null;
+  isShadingStale?: boolean;
 }
 
 export const FinancialTab: React.FC<FinancialTabProps> = ({
@@ -54,6 +55,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   groundCoverRatio = 0.38,
   bifacialGainPct,
   shadingProvenance,
+  isShadingStale = false,
 }) => {
   const [showCashflowTable, setShowCashflowTable] = useState(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
@@ -670,7 +672,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 ? 'نمونه‌برداری ساختاریافته LHS از عدم قطعیت تابش خورشیدی (GHI)، گردوغبار، آلبدو، هزینه CAPEX/OPEX و نرخ تنزیل'
                 : 'Stratified LHS sampling across GHI irradiance, soiling, albedo, CAPEX, OPEX, and discount rate.'}
             </p>
-            <div className="flex items-center gap-2 mt-1.5">
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
                 {isBifacial
                   ? (lang === 'fa'
@@ -680,6 +682,18 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                     ? 'ماژول یک‌طرفه (Monofacial) - اثر آلبدو محدود به بازتاب افقی'
                     : 'Monofacial Array - Low Albedo Sensitivity')}
               </span>
+              {shadingProvenance && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                  {lang === 'fa'
+                    ? `سایه سه‌بعدی: -${shadingProvenance.lossPct}٪`
+                    : `3D Shading: -${shadingProvenance.lossPct}%`}
+                  {isShadingStale && (
+                    <span className="text-amber-300 ml-1 font-bold">
+                      {lang === 'fa' ? '(⚠️ تغییر ظرفیت)' : '(⚠️ Stale: Capacity changed)'}
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
           </div>
 

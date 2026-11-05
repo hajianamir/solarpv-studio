@@ -4571,11 +4571,26 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     });
     const syncDiffOk = s5SyncDiffCity.appliedShading === null;
 
+    // 5. Capacity change triggers isStale flag
+    const s6CapacitySame = shadingLifecycleReducer(s3Applied, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: 1000,
+    });
+    const staleFalseOk = s6CapacitySame.isStale === false && s6CapacitySame.appliedShading !== null;
+
+    const s7CapacityChanged = shadingLifecycleReducer(s3Applied, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: 2500, // Significant capacity change
+    });
+    const staleTrueOk = s7CapacityChanged.isStale === true && s7CapacityChanged.appliedShading !== null;
+
     assert(
       'E15-SHADING-LIFECYCLE-MANAGEMENT',
-      '3D shading lifecycle reducer correctly manages apply, revert, provenance records, and cross-project reset',
-      initOk && applyOk && revertOk && syncSameOk && syncDiffOk,
-      `initOk=${initOk}, appliedLoss=${s1.appliedShading?.lossPct}%, revertApplied=${s2.appliedShading}, syncSame=${syncSameOk}, syncDiff=${syncDiffOk}`
+      '3D shading lifecycle reducer correctly manages apply, revert, provenance records, cross-project reset, and capacity staleness',
+      initOk && applyOk && revertOk && syncSameOk && syncDiffOk && staleFalseOk && staleTrueOk,
+      `initOk=${initOk}, appliedLoss=${s1.appliedShading?.lossPct}%, revertApplied=${s2.appliedShading}, syncSame=${syncSameOk}, syncDiff=${syncDiffOk}, staleFalse=${staleFalseOk}, staleTrue=${staleTrueOk}`
     );
   }
 
@@ -4748,11 +4763,42 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const prOk = Math.abs(prPct - 69.2) <= 0.1;
     const mwhOk = Math.abs(netMwh - 1682.9) / 1682.9 <= 0.001; // < 0.1% drift
 
+    // 5. Test that nearShadingLossPct alias is strictly honored when shadingLossOverridePct/shadingLoss3dPct are omitted
+    const nearShadingAliasInput = {
+      installedCapacityKwp: 1100,
+      peakSunHours: 5.2,
+      ambientTempMaxC: 40.0,
+      nearShadingLossPct: 7.42,
+    };
+    const nearShadingAliasArgs = buildWaterfallArgs(nearShadingAliasInput);
+    const nearShadingAliasOk = nearShadingAliasArgs[14] === 7.42;
+
+    // 6. Test all secondary aliases mapping to correct slots
+    const allAliasesInput = {
+      dcCapacityKw: 500,
+      peakSunHours: 5.0,
+      ambientTempC: 32.0,
+      isSingleAxisTracker: true,
+      moduleNoctC: 46.0,
+      installationEnvironment: 'rooftop_flat_concrete' as const,
+      tiltDeg: 18.0,
+      nearShadingLossPct: 3.14,
+    };
+    const allAliasesArgs = buildWaterfallArgs(allAliasesInput);
+    const allAliasesOk =
+      allAliasesArgs[0] === 500 &&
+      allAliasesArgs[2] === 32.0 &&
+      allAliasesArgs[5] === true &&
+      allAliasesArgs[8] === 46.0 &&
+      allAliasesArgs[11] === 'rooftop_flat_concrete' &&
+      allAliasesArgs[12] === 18.0 &&
+      allAliasesArgs[14] === 3.14;
+
     assert(
       'E18-WATERFALL-ARGS-BUILDER-AND-REGRESSION',
-      'buildWaterfallArgs enforces 16-parameter arity contract and matches 2b56244 baseline fixture within 0.1%',
-      arityOk && argsLengthOk && posOk && execMatch && prOk && mwhOk,
-      `arity=${WATERFALL_ARG_COUNT}, builtArgsLen=${builtArgs.length}, PR=${prPct.toFixed(1)}% (exp 69.2%), NetExport=${netMwh.toFixed(1)} MWh (exp 1682.9 MWh)`
+      'buildWaterfallArgs enforces 16-parameter arity contract, honors all declared aliases including nearShadingLossPct, and matches 2b56244 baseline within 0.1%',
+      arityOk && argsLengthOk && posOk && execMatch && prOk && mwhOk && nearShadingAliasOk && allAliasesOk,
+      `arity=${WATERFALL_ARG_COUNT}, builtArgsLen=${builtArgs.length}, PR=${prPct.toFixed(1)}% (exp 69.2%), NetExport=${netMwh.toFixed(1)} MWh (exp 1682.9 MWh), nearShadingAlias=${nearShadingAliasOk}, allAliases=${allAliasesOk}`
     );
   }
 

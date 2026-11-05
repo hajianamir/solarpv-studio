@@ -17,6 +17,7 @@ interface WaterfallLossTabProps {
   trackerConfig?: TrackerConfig | null;
   bifacialGainPct?: number;
   shadingProvenance?: AppliedShading3dRecord | null;
+  isShadingStale?: boolean;
   onClearShading?: () => void;
   lang?: 'fa' | 'en';
 }
@@ -33,6 +34,7 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   trackerConfig = null,
   bifacialGainPct,
   shadingProvenance,
+  isShadingStale = false,
   onClearShading,
   lang = 'fa',
 }) => {
@@ -104,6 +106,37 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
         </div>
       </div>
 
+      {/* 3D Shading Provenance Banner */}
+      {shadingProvenance && (
+        <div className="p-3 bg-industrial-surface border border-sky-500/40 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sky-300">
+              {isFa ? 'سایه‌اندازی سه‌بعدی فعال:' : 'Active 3D Shading Input:'}
+            </span>
+            <span className="font-mono font-bold text-amber-300">
+              -{shadingProvenance.lossPct}%
+            </span>
+            <span className="text-[11px] text-slate-400">
+              ({isFa ? 'اعمال‌شده در' : 'Applied at'}{' '}
+              {new Date(shadingProvenance.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+            </span>
+            {isShadingStale && (
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40">
+                {isFa ? '⚠️ قدیمی: تغییر ظرفیت پروژه' : '⚠️ Stale: Capacity changed'}
+              </span>
+            )}
+          </div>
+          {onClearShading && (
+            <button
+              onClick={onClearShading}
+              className="text-xs text-amber-400 hover:text-amber-300 underline cursor-pointer"
+            >
+              {isFa ? 'بازگشت به مقدار پیش‌فرض (-۲.۴٪)' : 'Revert to default (-2.4%)'}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
@@ -143,6 +176,25 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
           <div className="text-xl font-bold font-mono text-purple-400 mt-1">
             {Math.round(report.effectivePoaEnergyKwh / 1000).toLocaleString()} <span className="text-xs font-normal text-slate-300">MWh</span>
           </div>
+        </div>
+      </div>
+
+      {/* Gain & Loss Sign Convention Legend */}
+      <div className="p-3 bg-industrial-surface border border-industrial-border/70 rounded-lg text-xs flex items-start gap-2.5">
+        <Info className="w-4 h-4 text-sky-400 mt-0.5 shrink-0" />
+        <div className="text-slate-300 leading-relaxed">
+          <span className="font-semibold text-white">
+            {isFa ? 'قرارداد علامت مراحل زنجیره انرژی:' : 'Energy Chain Sign Convention:'}
+          </span>{' '}
+          {isFa ? (
+            <>
+              مراحل مثبت (<span className="text-emerald-400 font-mono font-bold">+</span>) نمایانگر بهره‌های تشعشعی ضربی مانند بهره دوطرفگی پشت پنل (ضرب در ۱ + Gain٪) و مراحل منفی (<span className="text-rose-400 font-mono font-bold">-</span>) نمایانگر ضرایب اتلاف متوالی (ضرب در ۱ - Loss٪) هستند. درصدها جمع حسابی نمی‌شوند، بلکه به صورت ضرب زنجیره‌ای بر خروجی مرحله قبل اعمال می‌گردند.
+            </>
+          ) : (
+            <>
+              Positive (<span className="text-emerald-400 font-mono font-bold">+</span>) stages represent multiplicative irradiance gains such as bifacial rear reflection (× (1 + Gain%)), whereas negative (<span className="text-rose-400 font-mono font-bold">-</span>) stages represent sequential derating losses (× (1 - Loss%)). Percentages are compounded multiplicatively, not summed arithmetically.
+            </>
+          )}
         </div>
       </div>
 

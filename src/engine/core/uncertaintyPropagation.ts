@@ -459,7 +459,7 @@ export function runFinancialUncertaintyPropagation(input: FinancialUqRunInput): 
       : 0.0;
     const albedoRearGainFactor = isBifacial
       ? 1.0 + (sampledGainFrac - baseGainFrac)
-      : 1.0 + (sampledAlbedo - 0.22) * 0.02;
+      : 1.0;
     const trialYieldKwh = Math.max(0, baseAnnualYieldKwh * ghiFactor * soilingDerateRatio * albedoRearGainFactor);
 
     // 4. Sampled Pricing object
