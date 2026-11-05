@@ -4885,11 +4885,20 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const nearShadingStageLossMatches = nearShadingStage !== undefined &&
       Math.abs(Math.abs(nearShadingStage.percentageLoss) - applied3dLossPct) < 0.01;
 
+    // 4. Energy reconciliation: Primary annual energy & specific yield match waterfall model
+    const primaryAnnualEnergyMwh = waterfallReport.netAnnualEnergyExportMwh;
+    const primarySpecificYieldKwhKwp = Math.round(waterfallReport.specificAnnualYieldKwhPerKwp);
+    const energyConsistent = Math.abs(primaryAnnualEnergyMwh - 1682.9) < 0.1 && primarySpecificYieldKwhKwp === 1530;
+
+    // In IEC 61724-1, PR = E_net / E_poa_nom (plane-of-array reference)
+    const impliedPoaPr = Math.round((primaryAnnualEnergyMwh * 1000 / waterfallReport.effectivePoaEnergyKwh) * 1000) / 10;
+    const prReconcilesWithEnergy = Math.abs(impliedPoaPr - waterfallPr) <= 0.1;
+
     assert(
       'E19-REPORT-CONSISTENCY-AND-SHADING-DERATE',
-      'OfficialReportModal shading derate (0.976 default vs 0.9402 for 5.98% applied) matches formula 1 - lossPct/100, and PR strictly resolves to waterfall PR (69.2%) rather than sizing derate (80.5%)',
-      defaultDerateOk && applied3dDerateOk && prConsistentWithWaterfall && prDistinctFromSizingDerate && stagesPopulated && nearShadingStageLossMatches,
-      `defaultDerate=${defaultDerate} (exp 0.976), appliedDerate=${applied3dDerate} (exp 0.9402), waterfallPr=${waterfallPr}% (exp 69.2%), sizingPr=${sizingPrCandidate}%, stages=${waterfallReport.stages.length}, nearShadingLoss=${nearShadingStage?.percentageLoss}%`
+      'OfficialReportModal shading derate matches formula 1 - lossPct/100, PR strictly resolves to waterfall PR (69.2%), and annual energy (1682.9 MWh) & specific yield (1530 kWh/kWp) reconcile by construction',
+      defaultDerateOk && applied3dDerateOk && prConsistentWithWaterfall && prDistinctFromSizingDerate && stagesPopulated && nearShadingStageLossMatches && energyConsistent && prReconcilesWithEnergy,
+      `defaultDerate=${defaultDerate} (exp 0.976), appliedDerate=${applied3dDerate} (exp 0.9402), waterfallPr=${waterfallPr}% (exp 69.2%), primaryMwh=${primaryAnnualEnergyMwh} (exp 1682.9), specificYield=${primarySpecificYieldKwhKwp} (exp 1530), impliedPoaPr=${impliedPoaPr}%, stages=${waterfallReport.stages.length}`
     );
   }
 

@@ -113,7 +113,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   waterfallReport,
   appliedShading,
   isShadingStale = false,
-  bifacialGainPct: _bifacialGainPct,
+  bifacialGainPct,
   onClose,
   onImportProject,
   lang: defaultLang = 'fa',
@@ -191,16 +191,24 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     });
   }, [systemMode, bayArchitecture, arrayDesign, inverter, effectiveCity]);
 
-  // Derived Energy Simulation Metrics
-  const annualGrossMwh = Number(((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1));
-  const specificYieldKwhKwp = Math.round((annualGrossMwh * 1000) / Math.max(1, arrayDesign.totalPvCapacityKwp));
+  // Derived Energy Simulation Metrics:
+  // Single-source primary annual energy and specific yield from unified waterfall loss report,
+  // preserving 24h diurnal simulation as a secondary diagnostic profile.
+  const diurnal24hAnnualMwh = Number(((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1));
+  const primaryAnnualEnergyMwh = waterfallReport
+    ? waterfallReport.netAnnualEnergyExportMwh
+    : diurnal24hAnnualMwh;
+  const primarySpecificYieldKwhKwp = waterfallReport
+    ? Math.round(waterfallReport.specificAnnualYieldKwhPerKwp)
+    : Math.round((diurnal24hAnnualMwh * 1000) / Math.max(1, arrayDesign.totalPvCapacityKwp));
+
   // Sourced from unified waterfall loss report (69.2% on standard fixture), falling back to sizing derate factor only if report omitted
   const performanceRatioPct = waterfallReport
     ? waterfallReport.performanceRatioPct
     : Number(((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1));
-  const p50Mwh = annualGrossMwh;
-  const p75Mwh = Number((annualGrossMwh * 0.945).toFixed(1));
-  const p90Mwh = Number((annualGrossMwh * 0.898).toFixed(1));
+  const p50Mwh = primaryAnnualEnergyMwh;
+  const p75Mwh = Number((primaryAnnualEnergyMwh * 0.945).toFixed(1));
+  const p90Mwh = Number((primaryAnnualEnergyMwh * 0.898).toFixed(1));
 
   // Dynamic Shading Derate & Provenance Metrics
   const effectiveShadingLossPct = appliedShading ? appliedShading.lossPct : 2.4;
@@ -291,7 +299,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Total PV Peak Capacity (kWp)', arrayDesign.totalPvCapacityKwp],
       ['Total Module Count', arrayDesign.totalModulesCount],
       ['Total Inverter Capacity (kW)', inverter.pnomAcKw * (bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1)],
-      ['Annual Generation (MWh, 24h Extrapolated)', ((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1)],
+      ['Net Annual Generation (MWh, Waterfall)', primaryAnnualEnergyMwh.toFixed(1)],
+      ['Specific Annual Yield (kWh/kWp)', primarySpecificYieldKwhKwp],
+      ['Diurnal Diagnostic Generation (MWh, 24h)', diurnal24hAnnualMwh.toFixed(1)],
+      ['Performance Ratio PR (%)', `${performanceRatioPct}%`],
       ['Levelized Cost of Electricity LCOE ($/kWh)', financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? financial.lcoeUsdPerKwh : 'N/A (Zero Yield)'],
       ['Internal Rate of Return IRR (%)', financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A (Undefined)'],
       ['Net Present Value NPV ($)', financial.npvUsd],
@@ -350,18 +361,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
     const energySheet = [
       ['ENERGY YIELD SIMULATION & SENSITIVITY SCENARIOS (INDICATIVE)', ''],
-      ['Methodology Note', 'Annual yield metrics represent annualized extrapolations of 24h diurnal simulation (scaled across 365 days) for preliminary screening, with loss waterfall evaluated via unified 14/15-stage model (IEC 61724-1 PR). Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles.'],
+      ['Methodology Note', 'Primary annual yield metrics represent unified 14/15-stage waterfall loss modeling (IEC 61724-1 PR), supplemented by the 24h diurnal simulation profile as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles.'],
       ['Metric', 'Value', 'Unit', 'Methodology / Standard'],
-      ['Gross DC Annual Generation (24h Extrapolated)', (annualGrossMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h)'],
-      ['Net AC Annual Generation (Baseline Indicative)', annualGrossMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Baseline Profile'],
-      ...(waterfallReport ? [
-        ['Net Annual Energy Export (Waterfall Model)', waterfallReport.netAnnualEnergyExportMwh.toFixed(1), 'MWh/yr', 'Unified Waterfall Loss Model'],
-        ['Specific Yield (Waterfall Model)', Math.round(waterfallReport.specificAnnualYieldKwhPerKwp).toString(), 'kWh/kWp/yr', 'Unified Waterfall Loss Model'],
-      ] : []),
+      ['Net AC Annual Generation (Primary)', primaryAnnualEnergyMwh.toFixed(1), 'MWh/yr', waterfallReport ? 'Unified Waterfall Loss Model' : 'Annualized 24h Baseline Profile'],
+      ['Specific Annual Yield (Primary)', primarySpecificYieldKwhKwp.toString(), 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Primary Model)'],
+      ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724-1 Metric (Waterfall Loss Tree)'],
+      ['Diurnal Diagnostic Net AC Generation', diurnal24hAnnualMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Diurnal Profile (Diagnostic)'],
+      ['Gross DC Annual Generation (24h Extrapolated)', (diurnal24hAnnualMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h Diagnostic)'],
       ['Illustrative Downside Scenario (-5.5%)', p75Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.945x Sensitivity Factor (Not Probabilistic Exceedance)'],
       ['Illustrative Conservative Downside (-10.2%)', p90Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.898x Sensitivity Factor (Not Bankable P90)'],
-      ['Specific Yield', specificYieldKwhKwp.toString(), 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Annualized 24h)'],
-      ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724-1 Metric (Waterfall Loss Tree)'],
       ['Near Shading Loss', `-${effectiveShadingLossPct}%`, '-', appliedShading ? (isShadingStale ? '3D Near-Shading Model (⚠️ Stale: Capacity drifted >5%)' : '3D Near-Shading Model') : 'Standard Empirical Default (-2.4%)'],
       ['Effective Shading Derate', effectiveShadingDerate.toString(), '-', '1 - (Shading Loss / 100)'],
       ...(waterfallReport ? [
@@ -448,6 +456,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       generator,
       financial,
       bayArchitecture,
+      waterfallReport,
     };
 
     const blob = new Blob([JSON.stringify(fullProjectState, null, 2)], {
@@ -467,7 +476,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     try {
       const invCount = bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1;
       const batCount = batterySizing ? batterySizing.totalBatteryUnitsCount : 0;
-      const annualKwh = Math.round(simulation.totalGeneration24hKwh * 365);
+      const annualKwh = Math.round(primaryAnnualEnergyMwh * 1000);
       const lcoeVal = financial.isLcoeDefined ? financial.lcoeUsdPerKwh : null;
 
       const payload = {
@@ -865,13 +874,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">
-                    {isEn ? 'Annual Generation (24h Extrapolated)' : 'تولید سالانه (برون‌یابی ۲۴ ساعته)'}
+                    {isEn ? 'Net Annual Generation (Waterfall)' : 'تولید سالانه خالص (مدل آبشار)'}
                   </span>
                   <strong className="text-base font-mono text-industrial-success print:text-emerald-900">
-                    {annualGrossMwh.toLocaleString()} MWh
+                    {primaryAnnualEnergyMwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'Extrapolated from 24h profile' : 'برون‌یابی‌شده از پروفایل ۲۴ ساعته'} ({specificYieldKwhKwp} kWh/kWp)
+                    {isEn ? 'Specific Yield' : 'تولید ویژه'}: {primarySpecificYieldKwhKwp} kWh/kWp
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
@@ -896,7 +905,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black text-[11px]">
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Standard Code' : 'کد استاندارد'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Scope / Domain' : 'حوزه شمول و دامنه کاربرد'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Design Criterion Verified' : 'معیار طراحی کنترل‌شده'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Engineering Design Criterion' : 'معیار طراحی مهندسی'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Compliance Status' : 'وضعیت انطباق'}</th>
                     </tr>
                   </thead>
@@ -1154,7 +1163,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </span>
               </h3>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 text-xs">
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Row Pitch Distance' : 'فاصله محور ردیف‌ها (Pitch)'}</span>
                   <span className="font-mono font-bold text-industrial-accent print:text-sky-800 text-sm">
@@ -1189,6 +1198,17 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     </span>
                   )}
                 </div>
+                {bifacialGainPct !== undefined && bifacialGainPct > 0 && (
+                  <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded col-span-2 sm:col-span-4 lg:col-span-1">
+                    <span className="text-slate-400 block text-[10px]">{isEn ? 'Bifacial Rear Gain Proxy' : 'بهره فرضی پشت پنل (Bifacial)'}</span>
+                    <span className="font-mono font-bold text-emerald-400 print:text-emerald-800 text-sm">
+                      +{bifacialGainPct.toFixed(1)}%
+                    </span>
+                    <span className="text-[9px] text-slate-400 block font-mono">
+                      {isEn ? 'First-order optical proxy' : 'تخمین اولیه اپتیکی'}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* 3D Shading Provenance & Staleness Banner */}
@@ -1218,8 +1238,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `At latitude ${effectiveCity.latitude.toFixed(2)}°N, the solar altitude at true solar noon on the winter solstice (December 21) drops to ${(90 - effectiveCity.latitude - 23.45).toFixed(1)}°. The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) following IEC 62548 geometric guidance. Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture, which should be verified with detailed 3D/view-factor modeling.`
-                    : `در عرض جغرافیایی ${effectiveCity.latitude.toFixed(2)} درجه شمالی، زاویه ارتفاع خورشید در ظهر انقلاب زمستانی به ${(90 - effectiveCity.latitude - 23.45).toFixed(1)} درجه کاهش می‌یابد. فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر جهت تامین فاصله هندسی نامی در بازه ۴ ساعته غربالگری (۱۰ الی ۱۴ ظهر آفتابی) بر اساس رهنمودهای هندسی IEC 62548 در نظر گرفته شده است. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
+                    ? `At latitude ${effectiveCity.latitude.toFixed(2)}°N, the solar altitude at true solar noon on the winter solstice (December 21) drops to ${(90 - effectiveCity.latitude - 23.45).toFixed(1)}°. The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) following IEC 62548 geometric guidance. Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (screening proxy: +${bifacialGainPct.toFixed(1)}%)` : ''}, which should be verified with detailed 3D/view-factor modeling.`
+                    : `در عرض جغرافیایی ${effectiveCity.latitude.toFixed(2)} درجه شمالی، زاویه ارتفاع خورشید در ظهر انقلاب زمستانی به ${(90 - effectiveCity.latitude - 23.45).toFixed(1)} درجه کاهش می‌یابد. فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر جهت تامین فاصله هندسی نامی در بازه ۴ ساعته غربالگری (۱۰ الی ۱۴ ظهر آفتابی) بر اساس رهنمودهای هندسی IEC 62548 در نظر گرفته شده است. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (تخمین غربالگری: +${bifacialGainPct.toFixed(1)}٪)` : ''} که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
                 </p>
               </div>
             </div>
@@ -1240,13 +1260,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">
-                    {isEn ? 'Annual Generation (24h Baseline):' : 'تولید سالانه مبنا (برون‌یابی ۲۴ ساعته):'}
+                    {isEn ? 'Net Annual Generation (Waterfall):' : 'تولید سالانه خالص (مدل آبشار):'}
                   </span>
                   <strong className="text-base font-mono text-industrial-success print:text-emerald-900">
-                    {annualGrossMwh.toLocaleString()} MWh
+                    {primaryAnnualEnergyMwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'Annualized 24h diurnal estimate' : 'برون‌یابی سالانه شبیه‌سازی ۲۴ ساعته'}
+                    {waterfallReport
+                      ? (isEn ? 'Unified Waterfall Loss Model' : 'مدل یکپارچه آبشار تلفات')
+                      : (isEn ? 'Annualized 24h diurnal estimate' : 'برون‌یابی سالانه شبیه‌سازی ۲۴ ساعته')}
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
@@ -1263,7 +1285,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Specific Yield:' : 'تولید ویژه نامالایز (Specific):'}</span>
                   <strong className="text-base font-mono text-industrial-warning print:text-amber-900">
-                    {specificYieldKwhKwp} kWh/kWp
+                    {primarySpecificYieldKwhKwp} kWh/kWp
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
                     {isEn ? 'Hours at STC Rating' : 'ساعت کارکرد در توان نامی'}
@@ -1285,8 +1307,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   {isEn ? 'Methodology Note:' : 'یادداشت متدولوژی:'}
                 </span>{' '}
                 {isEn
-                  ? 'Annual yield metrics represent annualized extrapolations from the 24-hour diurnal simulation profile (scaled across 365 days). Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity scaling factors rather than formal probabilistic exceedance percentiles (which require multi-year TMY inter-annual dispersion modeling). They provide preliminary engineering screening estimates and should be supplemented by an 8760-hour hourly weather-year (TMY/PVSyst) bankable model for final financing.'
-                  : 'ارقام تولید سالانه انرژی نمایانگر برون‌یابی سالانه از پروفایل شبیه‌سازی ۲۴ ساعته شبانه‌روزی (ضرب در ۳۶۵ روز) است. سناریوهای کاهشی (-۵.۵٪ و -۱۰.۲٪) صرفاً ضرایب حساسیت فرضی و نمایشی هستند نه صدک‌های آماری قطعی توزیع احتمالاتی سال‌های اقلیمی؛ این مقادیر به عنوان غربالگری اولیه مهندسی عمل نموده و برای تأمین مالی و تعیین ساختار بدهی بانکی باید با شبیه‌سازی کامل ۸۷۶۰ ساعته سال اقلیمی (TMY) تدقیق گردند.'}
+                  ? 'Primary annual yield metrics represent unified 14/15-stage waterfall loss modeling (IEC 61724-1 PR), supplemented by the 24-hour diurnal profile as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity scaling factors rather than formal probabilistic exceedance percentiles (which require multi-year TMY inter-annual dispersion modeling). They provide preliminary engineering screening estimates and should be supplemented by an 8760-hour hourly weather-year (TMY/PVSyst) bankable model for final financing.'
+                  : 'ارقام تولید سالانه انرژی بر پایه مدل‌سازی جامع ۱۴/۱۵ مرحله‌ای آبشار تلفات (ضریب عملکرد IEC 61724-1) محاسبه شده و پروفایل ۲۴ ساعته شبانه‌روزی به عنوان غربالگری تشخیصی مکمل عمل می‌کند. سناریوهای کاهشی (-۵.۵٪ و -۱۰.۲٪) صرفاً ضرایب حساسیت فرضی و نمایشی هستند نه صدک‌های آماری قطعی توزیع احتمالاتی سال‌های اقلیمی؛ این مقادیر به عنوان غربالگری اولیه مهندسی عمل نموده و برای تأمین مالی و تعیین ساختار بدهی بانکی باید با شبیه‌سازی کامل ۸۷۶۰ ساعته سال اقلیمی (TMY) تدقیق گردند.'}
               </div>
 
               {/* Loss Waterfall Breakdown Table */}
