@@ -7,7 +7,9 @@
 // - IEC 60099-4 (Surge arresters)
 
 export interface MvSubstationInput {
-  plantCapacityAcMva: number;   // Plant AC capacity in MVA
+  plantCapacityAcMva?: number;   // Plant AC capacity in MVA
+  plantCapacityAcMw?: number;    // Plant active power in MW (S_kVA = P_kW / PF, S_MVA = S_kVA / 1000)
+  powerFactor?: number;          // Explicit operating power factor (default 0.95)
   inverterOutputVoltageV: number;// e.g. 400V, 690V, 800V
   gridConnectionVoltageKv: number;// e.g. 20kV, 33kV, 63kV
   soilResistivityOhmM: number;  // Soil resistivity (e.g. 60 ohm-m moist clay, 250 ohm-m gravel)
@@ -15,6 +17,10 @@ export interface MvSubstationInput {
   ambientTempC?: number;        // Site maximum ambient temp (e.g. 45°C)
   elevationM?: number;          // Site elevation (e.g. 1400m)
   upstreamGridShortCircuitMva?: number; // Upstream utility short-circuit capacity (e.g. 500 MVA)
+  shortCircuitCalculationMode?: 'max_fault_current' | 'min_fault_current'; // IEC 60909 c_max vs c_min
+  customCVoltageFactor?: number; // Optional user override for c factor
+  faultCurrentLowThresholdKa?: number; // Screening threshold, default 0.5 kA
+  faultCurrentHighThresholdKa?: number;// Screening threshold, default 30.0 kA
 }
 
 export interface TransformerSpecification {
@@ -46,6 +52,9 @@ export interface ShortCircuitCalculation {
   xEquivalentOhms: number;
   rOverXRatio: number;
   kappa: number;
+  cFactor: number;
+  cFactorSource: string;
+  faultCurrentOutOfRangeWarning?: string;
   isBreakerSufficient: boolean;
   selectedBreakerModel: string;
   selectedBreakerManufacturer: string;
@@ -228,7 +237,6 @@ export interface MvSubstationResult {
 
 export function designMvSubstation(input: MvSubstationInput): MvSubstationResult {
   const {
-    plantCapacityAcMva,
     inverterOutputVoltageV,
     gridConnectionVoltageKv,
     soilResistivityOhmM,
@@ -237,6 +245,15 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     elevationM = 1200.0,
     upstreamGridShortCircuitMva = 500.0,
   } = input;
+
+  // Derive operating plant MVA from explicit active power P (MW) and power factor PF if provided:
+  // S_kVA = P_kW / PF, S_MVA = S_kVA / 1000
+  const pf = Math.max(0.70, Math.min(1.0, input.powerFactor ?? 0.95));
+  let plantCapacityAcMva = input.plantCapacityAcMva ?? 5.0;
+  if (input.plantCapacityAcMw !== undefined && input.plantCapacityAcMw > 0) {
+    const sKva = (input.plantCapacityAcMw * 1000.0) / pf;
+    plantCapacityAcMva = sKva / 1000.0;
+  }
 
   // 1. Transformer Sizing with IEC 60076 Environmental Deratings:
   // - Ambient Temperature Derating: 1% per °C above 40°C
@@ -280,9 +297,28 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     effectiveCapacityUnderSiteConditionsMva: effectiveCapacity,
   };
 
-  // 2. Short Circuit Analysis per IEC 60909 (Complex Impedance Z = R + jX)
-  // Voltage factor c per IEC 60909-0 Table 1: c = 1.10 for MV/HV systems
-  const cFactor = 1.10;
+  // 2. Short Circuit Analysis per IEC 60909-0:2016 (Complex Impedance Z = R + jX)
+  // Voltage factor c per IEC 60909-0:2016 Table 1:
+  // - LV (Un <= 1kV): c_max = 1.10 (or 1.05 for +6% grids), c_min = 0.95
+  // - MV (1kV < Un <= 35kV): c_max = 1.10, c_min = 1.00
+  // - HV (Un > 35kV): c_max = 1.10, c_min = 1.00
+  let cFactor = 1.10;
+  let cFactorSource = 'IEC 60909-0:2016 Table 1 (c_max = 1.10)';
+
+  if (input.customCVoltageFactor !== undefined && input.customCVoltageFactor > 0) {
+    cFactor = input.customCVoltageFactor;
+    cFactorSource = `User custom c override (${cFactor})`;
+  } else {
+    const isMinFault = input.shortCircuitCalculationMode === 'min_fault_current';
+    if (gridConnectionVoltageKv <= 1.0) {
+      cFactor = isMinFault ? 0.95 : 1.10;
+      cFactorSource = `IEC 60909-0:2016 Table 1 (LV <= 1kV, ${isMinFault ? 'c_min = 0.95' : 'c_max = 1.10'})`;
+    } else {
+      cFactor = isMinFault ? 1.00 : 1.10;
+      cFactorSource = `IEC 60909-0:2016 Table 1 (MV/HV > 1kV, ${isMinFault ? 'c_min = 1.00' : 'c_max = 1.10'})`;
+    }
+  }
+
   const unKv = gridConnectionVoltageKv;
 
   // Upstream grid impedance (R_grid + j X_grid):
@@ -392,6 +428,16 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const ratedShortTimeDurationSec = selectedBreaker ? selectedBreaker.ratedShortTimeDurationSec : 3.0;
   const operatingSequence = selectedBreaker ? selectedBreaker.operatingSequence : 'N/A';
 
+  const lowThresh = input.faultCurrentLowThresholdKa ?? 0.5;
+  const highThresh = input.faultCurrentHighThresholdKa ?? 30.0;
+  let faultCurrentOutOfRangeWarning: string | undefined;
+
+  if (initialSymmetricalIscKa < lowThresh) {
+    faultCurrentOutOfRangeWarning = `SCREENING WARNING: Fault current (${initialSymmetricalIscKa.toFixed(2)} kA) is below standard screening lower threshold (${lowThresh} kA); verify source grid impedance and transformer parameters.`;
+  } else if (initialSymmetricalIscKa > highThresh) {
+    faultCurrentOutOfRangeWarning = `SCREENING WARNING: Fault current (${initialSymmetricalIscKa.toFixed(2)} kA) exceeds standard screening upper threshold (${highThresh} kA); high fault level exceeds typical distribution switchgear limits; current-limiting reactors or transmission voltage connection required.`;
+  }
+
   const shortCircuit: ShortCircuitCalculation = {
     initialSymmetricalIscKa: Math.round(initialSymmetricalIscKa * 10) / 10,
     peakDynamicIpKa: Math.round(peakDynamicIpKa * 10) / 10,
@@ -404,6 +450,9 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     xEquivalentOhms: Number(xTotalOhms.toFixed(4)),
     rOverXRatio: Number(rOverXRatio.toFixed(3)),
     kappa,
+    cFactor,
+    cFactorSource,
+    faultCurrentOutOfRangeWarning,
     isBreakerSufficient,
     selectedBreakerModel,
     selectedBreakerManufacturer,

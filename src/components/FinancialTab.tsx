@@ -66,6 +66,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     epcLaborUsdPerKw: 0.01,
     gridTariffTomanPerKwh: 0.01,
     ppaTariffTomanPerKwh: 0.01,
+    offgridAvoidedCostTomanPerKwh: 0.01,
+    hvConnectionUsdPerKva: 0.01,
+    dieselFuelPriceTomanPerLiter: 100,
   };
 
   const sanitizeNumericField = (
@@ -205,15 +208,41 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
             <label className="text-slate-400 block mb-1">
-              {lang === 'fa' ? 'تعرفه فروش برق (تومان/kWh):' : 'Tariff (Toman/kWh):'}
+              {financial.systemMode === 'powerplant'
+                ? (lang === 'fa' ? 'تعرفه قرارداد PPA (تومان/kWh):' : 'PPA Tariff (Toman/kWh):')
+                : financial.systemMode === 'offgrid'
+                  ? (lang === 'fa' ? 'هزینه اجتناب‌شده دیزل (تومان/kWh):' : 'Avoided Diesel Cost (Toman/kWh):')
+                  : (lang === 'fa' ? 'تعرفه فروش برق خانگی/صنعتی (تومان/kWh):' : 'Retail Tariff (Toman/kWh):')}
             </label>
             <input
               type="number"
               step="500"
-              value={pricing.gridTariffTomanPerKwh}
-              onChange={(e) => updateField('gridTariffTomanPerKwh', parseFloat(e.target.value) || 0)}
+              value={
+                financial.systemMode === 'powerplant'
+                  ? pricing.ppaTariffTomanPerKwh
+                  : financial.systemMode === 'offgrid'
+                    ? (pricing.offgridAvoidedCostTomanPerKwh ?? 21600)
+                    : pricing.gridTariffTomanPerKwh
+              }
+              onChange={(e) => {
+                const val = parseFloat(e.target.value) || 0;
+                if (financial.systemMode === 'powerplant') {
+                  updateField('ppaTariffTomanPerKwh', val);
+                } else if (financial.systemMode === 'offgrid') {
+                  updateField('offgridAvoidedCostTomanPerKwh', val);
+                } else {
+                  updateField('gridTariffTomanPerKwh', val);
+                }
+              }}
               className="studio-input w-full font-mono font-bold text-industrial-success text-xs"
             />
+            <span className="text-[10px] text-slate-500 block mt-0.5">
+              {financial.systemMode === 'powerplant'
+                ? (lang === 'fa' ? 'مدل قرارداد خرید تضمینی ساتبا' : 'SATBA Guaranteed PPA')
+                : financial.systemMode === 'offgrid'
+                  ? (lang === 'fa' ? 'پروکسی هزینه تولید برق با ژنراتور دیزلی' : 'Diesel displacement proxy')
+                  : (lang === 'fa' ? 'تعرفه مصوب شرکت توزیع/برق منطقه‌ای' : 'Utility retail net-metering')}
+            </span>
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
@@ -246,33 +275,50 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </label>
 
           {pricing.includeDieselGenSet && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-              <div>
-                <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'قیمت خرید دیزل ($):' : 'GenSet CAPEX ($):'}</label>
-                <input
-                  type="number"
-                  value={pricing.dieselGenSetCapexUsd || 15000}
-                  onChange={(e) => updateField('dieselGenSetCapexUsd', parseFloat(e.target.value) || 0)}
-                  className="studio-input w-full text-xs font-mono"
-                />
+            <div className="space-y-2 pt-2">
+              <div className="text-[11px] text-amber-300 bg-amber-950/30 p-2 rounded border border-amber-800/40">
+                {lang === 'fa'
+                  ? '⚠ توجه مهندسی (پروکسی تخمینی): محاسبات سوخت دیزل بر اساس ساعات کارکرد سالانه و نرخ مصرف تخمینی است و شبیه‌سازی ساعتی ۸۷۶۰ ساعته دیسپچ را نمایندگی نمی‌کند.'
+                  : '⚠ Engineering Notice (Estimated Proxy): Diesel fuel economics are estimated from annual runtime and consumption parameters; this is an indicative proxy without 8760h hourly dispatch simulation.'}
               </div>
-              <div>
-                <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'مصرف گازوئیل سالانه (لیتر):' : 'Annual Fuel (Liters):'}</label>
-                <input
-                  type="number"
-                  value={pricing.dieselAnnualFuelLiters || 2500}
-                  onChange={(e) => updateField('dieselAnnualFuelLiters', parseFloat(e.target.value) || 0)}
-                  className="studio-input w-full text-xs font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'نرخ هر لیتر گازوئیل (تومان):' : 'Fuel Price (Toman/L):'}</label>
-                <input
-                  type="number"
-                  value={pricing.dieselFuelPriceTomanPerLiter || 3500}
-                  onChange={(e) => updateField('dieselFuelPriceTomanPerLiter', parseFloat(e.target.value) || 0)}
-                  className="studio-input w-full text-xs font-mono"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'قیمت خرید دیزل ($):' : 'GenSet CAPEX ($):'}</label>
+                  <input
+                    type="number"
+                    value={pricing.dieselGenSetCapexUsd || 15000}
+                    onChange={(e) => updateField('dieselGenSetCapexUsd', parseFloat(e.target.value) || 0)}
+                    className="studio-input w-full text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'ساعات کارکرد سالانه (h):' : 'Annual Run Hours (h):'}</label>
+                  <input
+                    type="number"
+                    value={pricing.dieselAnnualRunHours || 250}
+                    onChange={(e) => updateField('dieselAnnualRunHours', parseFloat(e.target.value) || 0)}
+                    className="studio-input w-full text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'مصرف گازوئیل (L/h):' : 'Fuel Rate (L/h):'}</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={pricing.dieselFuelConsumptionLitersPerHour || 14}
+                    onChange={(e) => updateField('dieselFuelConsumptionLitersPerHour', parseFloat(e.target.value) || 0)}
+                    className="studio-input w-full text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'نرخ هر لیتر (تومان):' : 'Fuel Price (Toman/L):'}</label>
+                  <input
+                    type="number"
+                    value={pricing.dieselFuelPriceTomanPerLiter || 3500}
+                    onChange={(e) => updateField('dieselFuelPriceTomanPerLiter', parseFloat(e.target.value) || 0)}
+                    className="studio-input w-full text-xs font-mono"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -294,19 +340,19 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'دوره بازگشت سرمایه ساده' : 'Simple Payback Period'}</div>
           <div className="text-xl font-bold font-mono text-industrial-success mt-1">
-            {financial.simplePaybackPeriodYears} <span className="text-xs font-normal text-slate-300">{lang === 'fa' ? 'سال' : 'Years'}</span>
+            {financial.simplePayback ? financial.simplePayback.formattedYears : `${financial.simplePaybackPeriodYears} سال`}
           </div>
           <div className="text-xs font-mono text-slate-400 mt-0.5">
-            {lang === 'fa' ? 'تنزیل‌شده:' : 'Discounted:'} {financial.discountedPaybackPeriodYears} {lang === 'fa' ? 'سال' : 'yrs'}
+            {lang === 'fa' ? 'تنزیل‌شده:' : 'Discounted:'} {financial.discountedPayback ? financial.discountedPayback.formattedYears : `${financial.discountedPaybackPeriodYears} سال`}
           </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'نرخ بازده داخلی (IRR)' : 'Internal Rate of Return (IRR)'}</div>
           <div className="text-xl font-bold font-mono text-purple-400 mt-1">
-            {financial.isIrrDefined
+            {financial.isIrrDefined && financial.irrPct !== null
               ? `${financial.irrPct}%`
-              : (lang === 'fa' ? 'تعریف‌نشده (بدون ریشه)' : 'N/A (No Real Root)')}
+              : (lang === 'fa' ? `تعریف‌نشده (${financial.irrStatus})` : `N/A (${financial.irrStatus})`)}
           </div>
           <div className="text-xs font-mono text-industrial-success mt-0.5">
             NPV: {(financial.npvToman / 1_000_000_000).toFixed(2)} میلیارد تومان
@@ -316,12 +362,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'بهای تمام‌شده انرژی (LCOE)' : 'Levelized Cost of Energy (LCOE)'}</div>
           <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
-            {financial.isLcoeDefined
+            {financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null
               ? `$${financial.lcoeUsdPerKwh.toFixed(4)}`
               : (lang === 'fa' ? 'نامعتبر (تولید صفر)' : 'N/A (Zero Energy)')}
           </div>
           <div className="text-xs font-mono text-slate-300 mt-0.5">
-            {financial.isLcoeDefined
+            {financial.isLcoeDefined && financial.lcoeTomanPerKwh !== null
               ? `${financial.lcoeTomanPerKwh.toLocaleString()} تومان / kWh`
               : '—'}
           </div>
@@ -390,9 +436,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
                 <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'بهای تمام‌شده تراز شده کل:' : 'Net Levelized LCOE:'}</span>
-                <span className="font-mono font-bold text-industrial-success text-base">${financial.lcoeUsdPerKwh.toFixed(4)}</span>
+                <span className="font-mono font-bold text-industrial-success text-base">{financial.lcoeUsdPerKwh !== null ? `$${financial.lcoeUsdPerKwh.toFixed(4)}` : 'N/A'}</span>
                 <span className="text-[9px] text-slate-300 block mt-0.5">
-                  ~{financial.lcoeTomanPerKwh.toLocaleString()} Toman/kWh
+                  {financial.lcoeTomanPerKwh !== null ? `~${financial.lcoeTomanPerKwh.toLocaleString()} Toman/kWh` : '—'}
                 </span>
               </div>
             </div>
@@ -525,12 +571,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-850 font-mono text-[11px]">
-                {financial.cashFlow25Years.map((row) => (
+                {(financial.cashFlowWithYear0 || financial.cashFlow25Years).map((row) => (
                   <tr key={row.year} className="hover:bg-slate-850/50">
-                    <td className="p-2 text-white font-bold">{row.year}</td>
+                    <td className="p-2 text-white font-bold">{row.year === 0 ? (lang === 'fa' ? 'سال ۰ (CAPEX)' : 'Year 0 (CAPEX)') : row.year}</td>
                     <td className="p-2 text-industrial-accent">{row.generationKwh.toLocaleString()}</td>
                     <td className="p-2 text-industrial-success">{(row.revenueToman / 1_000_000).toFixed(1)} م.ت</td>
-                    <td className="p-2 text-red-300">{(row.opexToman / 1_000_000).toFixed(1)} م.ت</td>
+                    <td className="p-2 text-red-300">{((row.year === 0 ? row.capexToman : row.opexToman) / 1_000_000).toFixed(1)} م.ت</td>
                     <td className="p-2 font-bold text-slate-100">{(row.netCashFlowToman / 1_000_000).toFixed(1)} م.ت</td>
                     <td className={`p-2 font-bold ${row.cumulativeCashFlowToman >= 0 ? 'text-industrial-success' : 'text-industrial-error'}`}>
                       {(row.cumulativeCashFlowToman / 1_000_000).toFixed(1)} م.ت

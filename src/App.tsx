@@ -725,9 +725,15 @@ export const App: React.FC = () => {
       annualYieldKwh,
       {
         ...userPricing,
-        includeDieselGenSet: enableDieselGenerator,
-        dieselGenSetCapexUsd: enableDieselGenerator ? generatorSizing.estimatedCapexUsd : 0,
-        dieselAnnualFuelLiters: enableDieselGenerator ? Math.round(generatorSizing.fuelConsumptionLitersPerHour * 100) : 0,
+        includeDieselGenSet: userPricing.includeDieselGenSet !== undefined
+          ? userPricing.includeDieselGenSet
+          : enableDieselGenerator,
+        dieselGenSetCapexUsd: (userPricing.dieselGenSetCapexUsd !== undefined && userPricing.dieselGenSetCapexUsd > 0)
+          ? userPricing.dieselGenSetCapexUsd
+          : (enableDieselGenerator ? generatorSizing.estimatedCapexUsd : 0),
+        dieselAnnualFuelLiters: (userPricing.dieselAnnualFuelLiters !== undefined && userPricing.dieselAnnualFuelLiters > 0)
+          ? userPricing.dieselAnnualFuelLiters
+          : (enableDieselGenerator ? Math.round(generatorSizing.fuelConsumptionLitersPerHour * 100) : 0),
       },
       25,
       systemMode
@@ -946,7 +952,7 @@ export const App: React.FC = () => {
               title: t.tabFinancial,
               icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
               code: '25Y Cash Flow',
-              badge: `IRR ${financialResult.irrPct}%`,
+              badge: financialResult.isIrrDefined && financialResult.irrPct !== null ? `IRR ${financialResult.irrPct}%` : 'IRR N/A',
             },
             {
               id: 'iran_regulations' as ActiveModuleTab,
@@ -1126,7 +1132,7 @@ export const App: React.FC = () => {
               title: t.tabFinancial,
               icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
               code: '25Y Cash Flow',
-              badge: `IRR ${financialResult.irrPct}%`,
+              badge: financialResult.isIrrDefined && financialResult.irrPct !== null ? `IRR ${financialResult.irrPct}%` : 'IRR N/A',
             },
             {
               id: 'iran_regulations' as ActiveModuleTab,
@@ -1146,7 +1152,7 @@ export const App: React.FC = () => {
         },
       ];
     }
-  }, [systemMode, t, lang, city.peakSunHours, mvVoltageKv, customBaysCount, arrayDesign.totalPvCapacityKwp, arrayDesign.effectiveDeratingFactor, loadAnalysis.totalDailyEnergyKwh, batterySizing.grossCapacityKwh, simulationResult.isSelfSufficient, financialResult.irrPct]);
+  }, [systemMode, t, lang, city.peakSunHours, mvVoltageKv, customBaysCount, arrayDesign.totalPvCapacityKwp, arrayDesign.effectiveDeratingFactor, loadAnalysis.totalDailyEnergyKwh, batterySizing.grossCapacityKwh, simulationResult.isSelfSufficient, financialResult.irrPct, financialResult.isIrrDefined]);
 
   // Flattened list of tabs for Sequential Navigation and Command Palette
   const flattenedTabsList = useMemo(() => {
@@ -1573,12 +1579,12 @@ export const App: React.FC = () => {
 
           <div className="studio-hud-pill hidden lg:inline-flex">
             <span className="text-slate-400">LCOE:</span>
-            <strong className="text-data-accent">${financialResult.lcoeUsdPerKwh}/kWh</strong>
+            <strong className="text-data-accent">{financialResult.isLcoeDefined && financialResult.lcoeUsdPerKwh !== null ? `$${financialResult.lcoeUsdPerKwh}/kWh` : 'N/A'}</strong>
           </div>
 
           <div className="studio-hud-pill hidden xl:inline-flex">
             <span className="text-slate-400">IRR:</span>
-            <strong className="text-emerald-400">{financialResult.irrPct}%</strong>
+            <strong className="text-emerald-400">{financialResult.isIrrDefined && financialResult.irrPct !== null ? `${financialResult.irrPct}%` : 'N/A'}</strong>
           </div>
         </div>
 

@@ -1155,7 +1155,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     ahvazThermalDerate === 10.5 &&
     tehranThermalDerate === 0.0 &&
     tehranSnowSk < munichSnowSk &&
-    finAhvazDerated.lcoeUsdPerKwh > finAhvazBase.lcoeUsdPerKwh,
+    (finAhvazDerated.lcoeUsdPerKwh ?? 0) > (finAhvazBase.lcoeUsdPerKwh ?? 0),
     `Cross-tab parameter propagation verified: Ahvaz thermal derate = ${ahvazThermalDerate}% (0% in Tehran); Munich snow load = ${munichSnowSk} kN/m² (> Tehran ${tehranSnowSk.toFixed(3)} kN/m²); Ahvaz LCOE increases from $${finAhvazBase.lcoeUsdPerKwh}/kWh to $${finAhvazDerated.lcoeUsdPerKwh}/kWh with 10.5% extreme heat inverter derating.`
   );
 
@@ -1302,7 +1302,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     assert(
       'PR-CONSISTENCY',
       '[LCOE-INTEGRITY] LCOE matches (capex+disc.costs)/disc.energy, no invented constants',
-      Math.abs(recomputedToman - fin.lcoeTomanPerKwh) <= 1,
+      Math.abs(recomputedToman - (fin.lcoeTomanPerKwh ?? 0)) <= 1,
       `engine=${fin.lcoeTomanPerKwh} Toman/kWh recomputed=${recomputedToman.toFixed(1)} Toman/kWh ($${fin.lcoeUsdPerKwh}/kWh)`
     );
   }
@@ -1898,7 +1898,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Migration-RoundTrip',
       'P1.2.5 Pricing propagated intact: doubled module+inverter cost raises LCOE',
       basePricing !== null && highPricing !== null &&
-        finHigh.lcoeUsdPerKwh > finBase.lcoeUsdPerKwh &&
+        (finHigh.lcoeUsdPerKwh ?? 0) > (finBase.lcoeUsdPerKwh ?? 0) &&
         (highPricing as any).moduleUsdPerWp === (basePricing as any).moduleUsdPerWp * 2,
       `base LCOE=$${finBase.lcoeUsdPerKwh}/kWh high LCOE=$${finHigh.lcoeUsdPerKwh}/kWh moduleUsdPerWp ${(basePricing as any)?.moduleUsdPerWp}->${(highPricing as any)?.moduleUsdPerWp}`
     );
@@ -3457,11 +3457,11 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     // 2. Inverter replacement in LCOE: with vs without inverter replacement
     const finNoInv = performFinancialAnalysis(1000, 0, 1000, 1800000, { inverterReplacementYear: 0 }, 25, 'powerplant');
     const finWithInv = performFinancialAnalysis(1000, 0, 1000, 1800000, { inverterReplacementYear: 12, inverterReplacementCostRatio: 0.60 }, 25, 'powerplant');
-    const lcoeIncludesInverter = finWithInv.lcoeUsdPerKwh > finNoInv.lcoeUsdPerKwh;
+    const lcoeIncludesInverter = (finWithInv.lcoeUsdPerKwh ?? 0) > (finNoInv.lcoeUsdPerKwh ?? 0);
 
     // 3. Zero energy yield: does not fabricate astronomical LCOE
     const finZero = performFinancialAnalysis(1000, 0, 1000, 0, {}, 25, 'powerplant');
-    const zeroEnergyHandled = finZero.isLcoeDefined === false && finZero.lcoeUsdPerKwh === 0;
+    const zeroEnergyHandled = finZero.isLcoeDefined === false && (finZero.lcoeUsdPerKwh === null || finZero.lcoeUsdPerKwh === 0);
 
     assert(
       'E9-FIN-IRR-LCOE-1',
@@ -3727,6 +3727,379 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'ClimateCity.dataRetrievalDate derives from climateResource metadata retrievalTimestamp',
       ok,
       `cityRetrievalDate=${site.climateCity.dataRetrievalDate}, metadataDate=${expectedDate}`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-BAY-COUNTING] Substation Bay Count Canonical Formula & Robust Sanitization
+  // ==========================================================================
+  {
+    const { calculateSubstationBayCount } = await import('../../powerplantBayEngine');
+
+    // 1. Standard valid vector: N_total = 4 + 1 + 1 + 1 + 1 + 2 + 1 = 11
+    const standardBay = calculateSubstationBayCount({
+      incomingFeedersCount: 4,
+      transformerBaysCount: 1,
+      meteringBaysCount: 1,
+      spareBaysCount: 1,
+      busTieBaysCount: 1,
+      outgoingLineBaysCount: 2,
+      auxiliaryTransformerBaysCount: 1,
+    });
+    const standardOk = standardBay.totalSubstationCubicles === 11 && standardBay.isInputValid;
+
+    // 2. Negative & fractional & NaN inputs handled safely without NaN propagation:
+    const sanitizedBay = calculateSubstationBayCount({
+      incomingFeedersCount: -3, // clamped to 0
+      transformerBaysCount: 1.8, // rounded to 2
+      meteringBaysCount: Number.NaN, // clamped to 0
+      spareBaysCount: 0,
+      busTieBaysCount: 0,
+      outgoingLineBaysCount: 1,
+      auxiliaryTransformerBaysCount: 1,
+    });
+    const sanitizeOk =
+      sanitizedBay.incomingFeedersCount === 0 &&
+      sanitizedBay.transformerBaysCount === 2 &&
+      sanitizedBay.meteringBaysCount === 0 &&
+      sanitizedBay.totalSubstationCubicles === 4 &&
+      sanitizedBay.validationWarnings.length === 3;
+
+    assert(
+      'E10-BAY-COUNTING',
+      'Substation bay counting follows N_total formula with non-negative integer sanitization',
+      standardOk && sanitizeOk,
+      `standard total=${standardBay.totalSubstationCubicles} (expected 11), sanitized total=${sanitizedBay.totalSubstationCubicles} (expected 4, warnings=${sanitizedBay.validationWarnings.length})`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-IEC60909-VECTORS] IEC 60909-0:2016 Voltage Factors & Transformer S/P/PF
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // 1. Explicit active power P (MW) and power factor PF: S_kVA = P_kW / PF
+    // 10 MW at PF = 0.90 -> S = 11.11 MVA -> sized to 16.0 MVA standard rating
+    const subPf = designMvSubstation({
+      plantCapacityAcMw: 10.0,
+      powerFactor: 0.90,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+    });
+    const pfTransformerOk = subPf.transformer.ratedPowerMva === 16.0;
+
+    // 2. Voltage factor c per IEC 60909-0:2016 Table 1:
+    // MV (20kV): c_max = 1.10, c_min = 1.00
+    const subMvMax = designMvSubstation({
+      plantCapacityAcMva: 5.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      shortCircuitCalculationMode: 'max_fault_current',
+    });
+    const subMvMin = designMvSubstation({
+      plantCapacityAcMva: 5.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      shortCircuitCalculationMode: 'min_fault_current',
+    });
+    const mvFactorOk = subMvMax.shortCircuit.cFactor === 1.10 && subMvMin.shortCircuit.cFactor === 1.00;
+
+    // LV (0.8kV): c_max = 1.10, c_min = 0.95
+    const subLvMin = designMvSubstation({
+      plantCapacityAcMva: 1.0,
+      inverterOutputVoltageV: 400,
+      gridConnectionVoltageKv: 0.8,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      shortCircuitCalculationMode: 'min_fault_current',
+    });
+    const lvFactorOk = subLvMin.shortCircuit.cFactor === 0.95;
+
+    assert(
+      'E10-IEC60909-VECTORS',
+      'Transformer sizes from P/PF explicitly and IEC 60909 applies voltage-dependent c factors',
+      pfTransformerOk && mvFactorOk && lvFactorOk,
+      `P=10MW, PF=0.9 -> S_rated=${subPf.transformer.ratedPowerMva}MVA; MV c_max=${subMvMax.shortCircuit.cFactor}, c_min=${subMvMin.shortCircuit.cFactor}; LV c_min=${subLvMin.shortCircuit.cFactor}`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-FAULT-OUT-OF-RANGE] FaultCurrentOutOfRange Screening Warning & Safety
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // 1. Low fault level (< 0.5 kA): very weak grid
+    const lowFaultSub = designMvSubstation({
+      plantCapacityAcMva: 0.5,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 33,
+      soilResistivityOhmM: 100,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 15, // extremely weak source
+    });
+    const lowWarningOk =
+      lowFaultSub.shortCircuit.initialSymmetricalIscKa < 0.5 &&
+      Boolean(lowFaultSub.shortCircuit.faultCurrentOutOfRangeWarning?.includes('below standard screening lower threshold'));
+
+    // 2. High fault level (> threshold): stiff source triggering configurable upper screening warning
+    const highFaultSub = designMvSubstation({
+      plantCapacityAcMva: 50.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 50,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 2500, // stiff utility transmission feed
+      faultCurrentHighThresholdKa: 18.0, // configurable upper screening threshold
+    });
+    const highWarningOk =
+      highFaultSub.shortCircuit.initialSymmetricalIscKa > 18.0 &&
+      Boolean(highFaultSub.shortCircuit.faultCurrentOutOfRangeWarning?.includes('exceeds standard screening upper threshold'));
+
+    // 3. Breaker fallback safety: extreme fault (>40 kA) cannot produce compliant verdict or undersized breaker
+    const extremeFaultSub = designMvSubstation({
+      plantCapacityAcMva: 100.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 50,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 4000,
+    });
+    const extremeBreakerSafetyOk =
+      extremeFaultSub.shortCircuit.isBreakerSufficient === false &&
+      extremeFaultSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED';
+
+    assert(
+      'E10-FAULT-OUT-OF-RANGE',
+      'FaultCurrentOutOfRange screening warnings triggered at bounds and breaker fallback is fail-safe',
+      lowWarningOk && highWarningOk && extremeBreakerSafetyOk,
+      `lowIsc=${lowFaultSub.shortCircuit.initialSymmetricalIscKa}kA (warn=${Boolean(lowFaultSub.shortCircuit.faultCurrentOutOfRangeWarning)}), highIsc=${highFaultSub.shortCircuit.initialSymmetricalIscKa}kA (warn=${Boolean(highFaultSub.shortCircuit.faultCurrentOutOfRangeWarning)}), extremeSufficient=${extremeFaultSub.shortCircuit.isBreakerSufficient}`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-FIN-TARIFF-GENSET-RECONCILE] Mode-Aware Tariffs, Genset, CAPEX & Cashflow Reconcile
+  // ==========================================================================
+  {
+    const { performFinancialAnalysis } = await import('../../financialEngine');
+
+    // 1. Mode-Aware Tariffs affect revenue directly:
+    const ppaBase = performFinancialAnalysis(1000, 0, 1000, 1_800_000, { ppaTariffTomanPerKwh: 2800 }, 25, 'powerplant');
+    const ppaHigh = performFinancialAnalysis(1000, 0, 1000, 1_800_000, { ppaTariffTomanPerKwh: 3500 }, 25, 'powerplant');
+    const ppaTariffOk = ppaHigh.annualRevenueToman > ppaBase.annualRevenueToman;
+
+    const ongridBase = performFinancialAnalysis(100, 0, 100, 180_000, { gridTariffTomanPerKwh: 3800 }, 25, 'ongrid');
+    const ongridHigh = performFinancialAnalysis(100, 0, 100, 180_000, { gridTariffTomanPerKwh: 4500 }, 25, 'ongrid');
+    const ongridTariffOk = ongridHigh.annualRevenueToman > ongridBase.annualRevenueToman;
+
+    const offgridBase = performFinancialAnalysis(50, 100, 50, 90_000, { offgridAvoidedCostTomanPerKwh: 21600 }, 25, 'offgrid');
+    const offgridHigh = performFinancialAnalysis(50, 100, 50, 90_000, { offgridAvoidedCostTomanPerKwh: 26000 }, 25, 'offgrid');
+    const offgridTariffOk = offgridHigh.annualRevenueToman > offgridBase.annualRevenueToman;
+
+    // 2. Diesel generator UI pricing inputs flow end-to-end:
+    const gensetRun = performFinancialAnalysis(50, 100, 50, 90_000, {
+      includeDieselGenSet: true,
+      dieselGenSetCapexUsd: 18000,
+      dieselAnnualRunHours: 300,
+      dieselFuelConsumptionLitersPerHour: 15,
+      dieselFuelPriceTomanPerLiter: 5000,
+      dieselAnnualServiceOpexUsd: 2200,
+    }, 25, 'offgrid');
+    const gensetOk =
+      gensetRun.capexBreakdown.dieselGenSetUsd === 18000 &&
+      gensetRun.dieselEstimatedAnnualFuelLiters === 4500 && // 300h * 15L/h
+      gensetRun.dieselOpexUsd === 2200; // explicit annual service opex input
+
+    // 3. CAPEX Reconciliation: sum of breakdown parts strictly equals total:
+    const b = ppaBase.capexBreakdown;
+    const sumPartsUsd =
+      b.pvModulesUsd + b.invertersUsd + b.batteriesUsd + b.structuresUsd +
+      b.cablesAndProtectionUsd + b.substationMvUsd + b.gridInterconnectionUsd +
+      b.hvConnectionUsd + b.dieselGenSetUsd + b.engineeringAndInstallationUsd + b.contingencyUsd;
+    const capexReconciledOk = sumPartsUsd === b.totalCapexUsd && b.isReconciled;
+
+    // 4. Cashflow Table & Year 0 Reconciliation:
+    const cf0 = ppaBase.year0CashFlow;
+    const year0Ok = cf0.year === 0 && cf0.netCashFlowToman === -b.totalCapexToman;
+
+    // At r = 0, discounted cash flow sum strictly equals cumulative cash flow at Year 25:
+    const rZeroRun = performFinancialAnalysis(1000, 0, 1000, 1_800_000, { discountRatePct: 0.0 }, 25, 'powerplant');
+    const rZeroSumDiscounted = rZeroRun.cashFlow25Years.reduce((s, row) => s + row.discountedCashFlowToman, -rZeroRun.capexBreakdown.totalCapexToman);
+    const rZeroCumulativeEnd = rZeroRun.cashFlow25Years[rZeroRun.cashFlow25Years.length - 1].cumulativeCashFlowToman;
+    const rZeroNpvOk = Math.abs(rZeroSumDiscounted - rZeroCumulativeEnd) <= 2 && Math.abs(rZeroRun.npvToman - rZeroCumulativeEnd) <= 2;
+
+    // 5. Payback & IRR Statuses for edge cases:
+    const zeroGen = performFinancialAnalysis(1000, 0, 1000, 0, {}, 25, 'powerplant');
+    const paybackStatusOk =
+      zeroGen.simplePayback.status === 'ZERO_REVENUE' &&
+      zeroGen.simplePayback.formattedYears.includes('>25 yrs') &&
+      zeroGen.irrStatus === 'NO_SIGN_CHANGE' &&
+      zeroGen.irrPct === null &&
+      zeroGen.isIrrDefined === false &&
+      zeroGen.lcoeUsdPerKwh === null &&
+      zeroGen.isLcoeDefined === false;
+
+    assert(
+      'E10-FIN-TARIFF-GENSET-RECONCILE',
+      'Financial model implements mode-aware tariffs, genset inputs, exact CAPEX reconcile, and typed Payback/IRR statuses',
+      ppaTariffOk && ongridTariffOk && offgridTariffOk && gensetOk && capexReconciledOk && year0Ok && rZeroNpvOk && paybackStatusOk,
+      `genset(capex=${gensetRun.capexBreakdown.dieselGenSetUsd}, liters=${gensetRun.dieselEstimatedAnnualFuelLiters}, opex=${gensetRun.dieselOpexUsd}), year0(cf0=${cf0.netCashFlowToman}, b=${b.totalCapexToman})`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-UQ-PIPELINE] Financial Uncertainty Quantification (UQ) Executable LHS
+  // ==========================================================================
+  {
+    const { runFinancialUncertaintyPropagation } = await import('../uncertaintyPropagation');
+    const { DEFAULT_FINANCIAL_PRICING } = await import('../../financialEngine');
+
+    // Run 1: seed 42
+    const uqRun1 = runFinancialUncertaintyPropagation({
+      plantCapacityKwp: 1000,
+      inverterCapacityKw: 1000,
+      baseAnnualYieldKwh: 1_800_000,
+      basePricing: DEFAULT_FINANCIAL_PRICING,
+      systemMode: 'powerplant',
+      sampleSize: 60,
+      seed: 42,
+    });
+
+    // Run 2: same seed 42 (reproducibility check)
+    const uqRun2 = runFinancialUncertaintyPropagation({
+      plantCapacityKwp: 1000,
+      inverterCapacityKw: 1000,
+      baseAnnualYieldKwh: 1_800_000,
+      basePricing: DEFAULT_FINANCIAL_PRICING,
+      systemMode: 'powerplant',
+      sampleSize: 60,
+      seed: 42,
+    });
+
+    const isReproducible =
+      uqRun1.annualGenerationMwh.p50 === uqRun2.annualGenerationMwh.p50 &&
+      uqRun1.npvUsd.p50 === uqRun2.npvUsd.p50 &&
+      uqRun1.lcoeUsdPerMwh.p50 === uqRun2.lcoeUsdPerMwh.p50;
+
+    const statsOrderOk =
+      uqRun1.annualGenerationMwh.p10 < uqRun1.annualGenerationMwh.p50 &&
+      uqRun1.annualGenerationMwh.p50 < uqRun1.annualGenerationMwh.p90;
+
+    const trialsPreservedOk =
+      (uqRun1.trialStatusBreakdown?.totalTrials ?? 0) === 60 &&
+      (uqRun1.trialStatusBreakdown?.irrDefinedTrials ?? 0) > 0 &&
+      (uqRun1.convergenceStandardErrorNpvUsd ?? 0) > 0 &&
+      uqRun1.tornadoSensitivityRanking.length >= 3;
+
+    assert(
+      'E10-UQ-PIPELINE',
+      'Financial UQ executes true LHS trials through canonical engine with reproducibility and status preservation',
+      isReproducible && statsOrderOk && trialsPreservedOk,
+      `samples=${uqRun1.sampleCount}, Gen P10=${uqRun1.annualGenerationMwh.p10} P50=${uqRun1.annualGenerationMwh.p50} P90=${uqRun1.annualGenerationMwh.p90}, NPV P50=$${uqRun1.npvUsd.p50}, top Tornado=${uqRun1.tornadoSensitivityRanking[0]?.name} (${uqRun1.tornadoSensitivityRanking[0]?.varianceContributionPercent}%)`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-ROOF-SHADING-RECONCILE] Geodetic WGS84 <-> ENU & Reconciled Heatmap Shading
+  // ==========================================================================
+  {
+    const {
+      wgs84ToEnu,
+      enuToWgs84,
+      simulateAnnual3dShading,
+      checkTableSetbackCompliance,
+    } = await import('../../roof3dShadingEngine');
+
+    // 1. Geodetic round-trip accuracy (< 0.001 m error)
+    const anchor = { latitude: 35.6892, longitude: 51.3890, elevationM: 1200 };
+    const originalPt = { latitude: 35.6895, longitude: 51.3894, altitudeM: 1210 };
+    const enu = wgs84ToEnu(originalPt, anchor);
+    const roundTripPt = enuToWgs84(enu, anchor);
+    const geodeticOk =
+      Math.abs(roundTripPt.latitude - originalPt.latitude) < 1e-6 &&
+      Math.abs(roundTripPt.longitude - originalPt.longitude) < 1e-6 &&
+      Math.abs((roundTripPt.altitudeM ?? 1200) - 1210) < 0.05;
+
+    // 2. Setback compliance verification
+    const testRoof = {
+      id: 'roof-1',
+      name: 'Main Factory Roof',
+      polygonWgs84: [],
+      polygonEnu: [
+        { x: -20, y: -15 },
+        { x: 20, y: -15 },
+        { x: 20, y: 15 },
+        { x: -20, y: 15 },
+      ],
+      tiltDeg: 10,
+      azimuthDeg: 0,
+      eavesHeightM: 6.0,
+      setbackClearanceM: 1.0,
+    };
+
+    const compliantTable = {
+      id: 'tbl-1',
+      tableIndex: 1,
+      positionEnu: { x: 0, y: 0, z: 6.0 },
+      widthM: 10,
+      slopedLengthM: 4.0,
+      tiltDeg: 15,
+      azimuthDeg: 0,
+      moduleCount: 20,
+      ratedPowerWp: 11000,
+    };
+
+    const setbackRes = checkTableSetbackCompliance(compliantTable, testRoof);
+    const setbackOk = setbackRes.isCompliant && setbackRes.minimumClearanceM >= 1.0;
+
+    // 3. Shading simulation & Heatmap reconciliation
+    const testScene: import('../../roof3dShadingEngine').Scene3DState = {
+      anchorLocation: anchor,
+      roofPlanes: [testRoof],
+      obstacles: [
+        {
+          id: 'obs-hvac',
+          name: 'HVAC Chiller Unit',
+          geometryType: 'cuboid',
+          positionEnu: { x: 2, y: -3, z: 6.0 },
+          dimensionsM: { widthM: 3.0, lengthM: 3.0, heightM: 3.5 },
+        },
+      ],
+      pvTables: [
+        compliantTable,
+        {
+          id: 'tbl-2',
+          tableIndex: 2,
+          positionEnu: { x: 0, y: 8, z: 6.0 },
+          widthM: 10,
+          slopedLengthM: 4.0,
+          tiltDeg: 15,
+          azimuthDeg: 0,
+          moduleCount: 20,
+          ratedPowerWp: 11000,
+        },
+      ],
+      updatedAt: new Date().toISOString(),
+    };
+
+    const shadingResult = simulateAnnual3dShading(testScene, 5.2, 40.0);
+    const heatmapSumLoss = shadingResult.tableHeatmap.reduce((s, c) => s + c.annualLossKwh, 0);
+    const heatmapReconciled = Math.abs(heatmapSumLoss - shadingResult.totalLostAnnualKwh) <= 1;
+    const obstacleLossExists = shadingResult.annualCombinedShadingLossPct > 0;
+    const waterfallConnected = shadingResult.waterfallLossReport.stages.some(s => s.id === 'near_shading');
+
+    assert(
+      'E10-ROOF-SHADING-RECONCILE',
+      'Roof 3D geodetic ENU transform is millimeter-accurate and shading heatmap reconciles with waterfall engine',
+      geodeticOk && setbackOk && heatmapReconciled && obstacleLossExists && waterfallConnected,
+      `geodetic roundtrip diff=${Math.abs(roundTripPt.latitude - originalPt.latitude)}, setback min=${setbackRes.minimumClearanceM}m, shading loss=${shadingResult.annualCombinedShadingLossPct}%, heatmapLoss=${heatmapSumLoss}kWh vs total=${shadingResult.totalLostAnnualKwh}kWh`
     );
   }
 

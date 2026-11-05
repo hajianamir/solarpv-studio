@@ -275,10 +275,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Total Module Count', arrayDesign.totalModulesCount],
       ['Total Inverter Capacity (kW)', inverter.pnomAcKw * (bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1)],
       ['Annual Generation (MWh, 24h Extrapolated)', ((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1)],
-      ['Levelized Cost of Electricity LCOE ($/kWh)', financial.isLcoeDefined ? financial.lcoeUsdPerKwh : 'N/A (Zero Yield)'],
-      ['Internal Rate of Return IRR (%)', financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A (Undefined)'],
+      ['Levelized Cost of Electricity LCOE ($/kWh)', financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? financial.lcoeUsdPerKwh : 'N/A (Zero Yield)'],
+      ['Internal Rate of Return IRR (%)', financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A (Undefined)'],
       ['Net Present Value NPV ($)', financial.npvUsd],
-      ['Simple Payback (Years)', financial.simplePaybackPeriodYears],
+      ['Simple Payback (Years)', financial.simplePayback ? financial.simplePayback.formattedYears : (financial.simplePaybackPeriodYears ?? 'N/A')],
     ];
 
     const climateSheet = [
@@ -842,10 +842,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Simple Payback / IRR' : 'بازگشت سرمایه / IRR'}</span>
                   <strong className="text-base font-mono text-purple-400 print:text-purple-900">
-                    {financial.simplePaybackPeriodYears} yr / {financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A'}
+                    {financial.simplePayback ? financial.simplePayback.formattedYears : `${financial.simplePaybackPeriodYears} yr`} / {financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'}
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    LCOE: {financial.isLcoeDefined ? `$${financial.lcoeUsdPerKwh} /kWh` : 'N/A (Zero Yield)'}
+                    LCOE: {financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `$${financial.lcoeUsdPerKwh} /kWh` : 'N/A (Zero Yield)'}
                   </span>
                 </div>
               </div>
@@ -914,8 +914,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <p className="leading-relaxed text-[11px] text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `This EPC technical report presents the preliminary engineering screening design for ${projectName} with a nominal peak DC capacity of ${arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp. The system employs high-efficiency TOPCon bifacial modules coupled with industrial multi-MPPT string inverters at an optimized DC/AC ratio of ${arrayDesign.dcAcRatio.toFixed(2)}. Structural and civil foundation sizing follows preliminary screening methodologies per ASCE 7-22 and Eurocode 7 principles, accounting for site-specific wind velocity pressure (${structCalc.velocityWindPressureQzN_M2} N/m²) and frost penetration constraints (${structCalc.recommendedDepthM}m embedment), subject to definitive geotechnical borehole testing. Levelized Cost of Electricity (LCOE) is ${financial.isLcoeDefined ? `estimated at $${financial.lcoeUsdPerKwh}/kWh` : 'not applicable (zero lifetime generation)'} with an internal rate of return (IRR) of ${financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A'}, providing an indicative screening appraisal.`
-                    : `این گزارش فنی، مبانی طراحی و محاسبات اولیه امکان‌سنجی مهندسی نیروگاه خورشیدی ${projectName} را با ظرفیت نامی ${arrayDesign.totalPvCapacityKwp.toFixed(1)} کیلووات‌پیک ارائه می‌دهد. آرایه نیروگاه بر پایه ماژول‌های دوطرفه TOPCon و اینورترهای چند کاناله صنعتی با نسبت توان بهینه ${arrayDesign.dcAcRatio.toFixed(2)} مدل‌سازی گردیده است. محاسبات سازه و فونداسیون بر مبنای ارزیابی اولیه مهندسی با رویکرد مبحث ۶ و ۷ مقررات ملی ساختمان و اصول ASCE 7-22 و یوروکد ۷ تدوین گردیده که در آن فشار سرعتی باد منطقه (${structCalc.velocityWindPressureQzN_M2} نیوتن بر مترمربع) و عمق یخبندان ساختگاه (عمق کوبش ${structCalc.recommendedDepthM} متر) لحاظ شده و انطباق اجرایی آن منوط به نتایج گمانه‌زنی ژئوتکنیک محلی است. بهای تمام‌شده تولید برق ${financial.isLcoeDefined ? `${financial.lcoeUsdPerKwh} دلار بر کیلووات‌ساعت` : 'تعریف‌نشده (تولید صفر)'} و نرخ بازده داخلی ${financial.isIrrDefined ? `${financial.irrPct} درصد` : 'تعریف‌نشده'} برآورد گردیده که ارائه‌دهنده غربالگری اولیه امکان‌سنجی پروژه است.`}
+                    ? `This EPC technical report presents the preliminary engineering screening design for ${projectName} with a nominal peak DC capacity of ${arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp. The system employs high-efficiency TOPCon bifacial modules coupled with industrial multi-MPPT string inverters at an optimized DC/AC ratio of ${arrayDesign.dcAcRatio.toFixed(2)}. Structural and civil foundation sizing follows preliminary screening methodologies per ASCE 7-22 and Eurocode 7 principles, accounting for site-specific wind velocity pressure (${structCalc.velocityWindPressureQzN_M2} N/m²) and frost penetration constraints (${structCalc.recommendedDepthM}m embedment), subject to definitive geotechnical borehole testing. Levelized Cost of Electricity (LCOE) is ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `estimated at $${financial.lcoeUsdPerKwh}/kWh` : 'not applicable (zero lifetime generation)'} with an internal rate of return (IRR) of ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'}, providing an indicative screening appraisal.`
+                    : `این گزارش فنی، مبانی طراحی و محاسبات اولیه امکان‌سنجی مهندسی نیروگاه خورشیدی ${projectName} را با ظرفیت نامی ${arrayDesign.totalPvCapacityKwp.toFixed(1)} کیلووات‌پیک ارائه می‌دهد. آرایه نیروگاه بر پایه ماژول‌های دوطرفه TOPCon و اینورترهای چند کاناله صنعتی با نسبت توان بهینه ${arrayDesign.dcAcRatio.toFixed(2)} مدل‌سازی گردیده است. محاسبات سازه و فونداسیون بر مبنای ارزیابی اولیه مهندسی با رویکرد مبحث ۶ و ۷ مقررات ملی ساختمان و اصول ASCE 7-22 و یوروکد ۷ تدوین گردیده که در آن فشار سرعتی باد منطقه (${structCalc.velocityWindPressureQzN_M2} نیوتن بر مترمربع) و عمق یخبندان ساختگاه (عمق کوبش ${structCalc.recommendedDepthM} متر) لحاظ شده و انطباق اجرایی آن منوط به نتایج گمانه‌زنی ژئوتکنیک محلی است. بهای تمام‌شده تولید برق ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `${financial.lcoeUsdPerKwh} دلار بر کیلووات‌ساعت` : 'تعریف‌نشده (تولید صفر)'} و نرخ بازده داخلی ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct} درصد` : 'تعریف‌نشده'} برآورد گردیده که ارائه‌دهنده غربالگری اولیه امکان‌سنجی پروژه است.`}
                 </p>
                 <div className="pt-2 border-t border-industrial-border/40 text-[11px]">
                   <strong className="text-industrial-warning">{isEn ? 'Key Actionable Recommendations:' : 'توصیه‌های کلیدی اجرایی:'}</strong>
@@ -1555,7 +1555,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   {isEn ? '7. Financial Feasibility, CAPEX Breakdown & 25-Year Cash Flow Pro-Forma' : '۷. تحلیل توجیه‌پذیری اقتصادی، ساختار سرمایه‌گذاری و جریان نقدینگی ۲۵ ساله'}
                 </span>
                 <span className="text-[10px] text-industrial-success print:text-emerald-800 font-mono">
-                  IRR: {financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A'} | NPV: ${financial.npvUsd.toLocaleString()}
+                  IRR: {financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'} | NPV: ${financial.npvUsd.toLocaleString()}
                 </span>
               </h3>
 
@@ -1569,19 +1569,19 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Levelized Cost (LCOE):' : 'بهای تمام‌شده هر کیلووات‌ساعت:'}</span>
                   <span className="font-mono font-bold text-industrial-accent print:text-sky-800 text-sm">
-                    {financial.isLcoeDefined ? `$${financial.lcoeUsdPerKwh} /kWh` : 'N/A (Zero Yield)'}
+                    {financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `$${financial.lcoeUsdPerKwh} /kWh` : 'N/A (Zero Yield)'}
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Internal Rate of Return (IRR):' : 'نرخ بازده داخلی (IRR):'}</span>
                   <span className="font-mono font-bold text-industrial-success print:text-emerald-800 text-sm">
-                    {financial.isIrrDefined ? `${financial.irrPct}%` : (isEn ? 'N/A (Undefined)' : 'تعریف‌نشده')}
+                    {financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : (isEn ? 'N/A (Undefined)' : 'تعریف‌نشده')}
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Payback Period:' : 'دوره بازگشت سرمایه:'}</span>
                   <span className="font-mono font-bold text-purple-400 print:text-purple-800 text-sm">
-                    {financial.simplePaybackPeriodYears} {isEn ? 'Years' : 'سال'}
+                    {financial.simplePayback ? financial.simplePayback.formattedYears : `${financial.simplePaybackPeriodYears} سال`}
                   </span>
                 </div>
               </div>
