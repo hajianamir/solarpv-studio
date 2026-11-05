@@ -136,7 +136,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     typeTestStandard: 'IEC 62271-100',
   },
   {
-    modelDesignation: 'Siemens NXAIR 36kV-31.5kA',
+    modelDesignation: 'Siemens SION 3AH3 (NXAIR 36kV-31.5kA)',
     manufacturer: 'Siemens',
     ratedVoltageKv: 36,
     ratedNormalCurrentAmps: 1250,
@@ -145,11 +145,11 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 31.5,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'Siemens Catalog HA 25.71 · 2022, Chapter 3 "Technical Data", Table 3/1 (NXAIR Switchgear up to 36 kV)',
+    catalogDocReference: 'Siemens Catalog HA 25.71 · 2022, Chapter 3 "Technical Data", Table 3/1 (NXAIR Switchgear with SION 3AH3 VCB up to 36 kV)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
-    modelDesignation: 'Schneider MCset 24-50',
+    modelDesignation: 'Schneider Evolis 24-50 (MCset 24kV)',
     manufacturer: 'Schneider Electric',
     ratedVoltageKv: 24,
     ratedNormalCurrentAmps: 2500,
@@ -158,7 +158,7 @@ export const STANDARD_MV_BREAKERS: MvBreakerCatalogModel[] = [
     ratedShortTimeWithstandKa: 50.0,
     ratedShortTimeDurationSec: 3.0,
     operatingSequence: 'O - 0.3s - CO - 15s - CO',
-    catalogDocReference: 'Schneider Electric AMTED398031EN, Section 2 "Technical Characteristics", Table 2.2 (MCset 24 kV)',
+    catalogDocReference: 'Schneider Electric AMTED398031EN, Section 2 "Technical Characteristics", Table 2.2 (MCset 24 kV with Evolis VCB)',
     typeTestStandard: 'IEC 62271-100',
   },
   {
@@ -336,7 +336,7 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   // Filter catalog for breakers compatible with the grid connection voltage:
   const voltageCompatibleBreakers = STANDARD_MV_BREAKERS.filter((b) => b.ratedVoltageKv >= gridConnectionVoltageKv);
 
-  // Multi-criteria selection from certified manufacturer breaker catalog (IEC 62271-100):
+  // Multi-criteria screening selection from reference MV breaker catalog based on published IEC 62271-100 ratings (indicative engineering screening, not independent type-test verification):
   // 1. Rated voltage Ur >= gridConnectionVoltageKv
   // 2. Rated continuous current Ir >= nominalMvCurrentAmps
   // 3. Rated short-circuit breaking capacity Isc >= initialSymmetricalIscKa
