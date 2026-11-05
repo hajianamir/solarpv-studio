@@ -3249,11 +3249,49 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const acCapacitanceOk = scHeavyRun.totalCapacitanceUf > 0 && scHeavyRun.chargingCurrentAmps > 0;
     const permittivityEffectOk = pvcRun.lineCapacitanceUfPerKm > dcRun.lineCapacitanceUfPerKm;
 
+    // Exact numerical bounds for 6mm² EN 50618 PV DC string cable (dc=2.95mm, tins=0.8mm, Di=4.55mm):
+    // C = 0.0556 * epsilon_r / ln(4.55/2.95) -> 0.308 uF/km for XLPE (2.4), 0.642 uF/km for PVC (5.0)
+    const run6Xlpe = calculateAdvancedCableRun({
+      id: 'test-6mm2-xlpe',
+      sectionNameFa: 'استرینگ ۶ میلی‌متر مربع XLPE',
+      sectionNameEn: 'String 6mm2 XLPE',
+      oneWayLengthM: 75,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 1000,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.0,
+      isDc: true,
+      isThreePhase: false,
+      expectedIscKa: 0.1,
+    });
+
+    const run6Pvc = calculateAdvancedCableRun({
+      id: 'test-6mm2-pvc',
+      sectionNameFa: 'استرینگ ۶ میلی‌متر مربع PVC',
+      sectionNameEn: 'String 6mm2 PVC',
+      oneWayLengthM: 75,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 1000,
+      conductorMaterial: 'copper',
+      insulationType: 'pvc',
+      allowableDropPct: 1.0,
+      isDc: true,
+      isThreePhase: false,
+      expectedIscKa: 0.1,
+    });
+
+    const exactNumericalBoundsOk =
+      run6Xlpe.totalEffectiveCrossSectionMm2 === 6 &&
+      run6Pvc.totalEffectiveCrossSectionMm2 === 6 &&
+      run6Xlpe.lineCapacitanceUfPerKm === 0.308 &&
+      run6Pvc.lineCapacitanceUfPerKm === 0.642;
+
     assert(
       'E9-CABLE-SC-1',
       'Cable sizing enforces adiabatic short-circuit withstand without 0.5 discount and applies installationMethod kg',
-      scConstraintEnforced && installMethodOk && dcCapacitanceOk && acCapacitanceOk && permittivityEffectOk,
-      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, XLPE Cap=${dcRun.lineCapacitanceUfPerKm}uF/km, PVC Cap=${pvcRun.lineCapacitanceUfPerKm}uF/km`
+      scConstraintEnforced && installMethodOk && dcCapacitanceOk && acCapacitanceOk && permittivityEffectOk && exactNumericalBoundsOk,
+      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, 6mm² XLPE=${run6Xlpe.lineCapacitanceUfPerKm}uF/km, 6mm² PVC=${run6Pvc.lineCapacitanceUfPerKm}uF/km`
     );
   }
 
@@ -3281,6 +3319,16 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       upstreamGridShortCircuitMva: 10000,
     });
 
+    // High continuous current exceeding 2500A with low short-circuit current
+    const overloadCurrentSub = designMvSubstation({
+      plantCapacityAcMva: 100.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 10,
+    });
+
     const complexImpedanceOk =
       normalSub.shortCircuit.rEquivalentOhms > 0 &&
       normalSub.shortCircuit.xEquivalentOhms > 0 &&
@@ -3294,13 +3342,18 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.initialSymmetricalIscKa &&
       normalSub.shortCircuit.ratedPeakMakingCapacityKa >= normalSub.shortCircuit.peakDynamicIpKa &&
       normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.thermalEquivalentIthKa &&
-      extremeSub.shortCircuit.isBreakerSufficient === false;
+      extremeSub.shortCircuit.isBreakerSufficient === false &&
+      extremeSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
+      extremeSub.shortCircuit.breakerDeficiencyReason?.includes('breaking_capacity_exceeded') === true &&
+      overloadCurrentSub.shortCircuit.isBreakerSufficient === false &&
+      overloadCurrentSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
+      overloadCurrentSub.shortCircuit.breakerDeficiencyReason?.includes('continuous_current_exceeded') === true;
 
     assert(
       'E9-SUB-IEC60909-1',
       'Substation short-circuit uses complex impedance, dynamic kappa, Ith and flags insufficient breaker rating',
       complexImpedanceOk && breakerSufficiencyOk,
-      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, Breaker=${normalSub.shortCircuit.selectedBreakerModel} (${normalSub.shortCircuit.breakingCapacityKa}kA, ok=${normalSub.shortCircuit.isBreakerSufficient}); extreme: Isc=${extremeSub.shortCircuit.initialSymmetricalIscKa}kA, Breaker=${extremeSub.shortCircuit.breakingCapacityKa}kA (ok=${extremeSub.shortCircuit.isBreakerSufficient})`
+      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, Breaker=${normalSub.shortCircuit.selectedBreakerModel} (${normalSub.shortCircuit.breakingCapacityKa}kA, ok=${normalSub.shortCircuit.isBreakerSufficient}); extreme: model=${extremeSub.shortCircuit.selectedBreakerModel}, reason=${extremeSub.shortCircuit.breakerDeficiencyReason}; overloadIr: reason=${overloadCurrentSub.shortCircuit.breakerDeficiencyReason}`
     );
   }
 

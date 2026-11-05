@@ -372,7 +372,13 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const diMm = Number((dcMm + 2.0 * tInsMm).toFixed(2));
 
   // Operating line capacitance C (uF/km) per IEC 60287-1-1 Eq. (2.2):
-  // C = epsilon_r / (18 * ln(D_i / d_c))  [uF/km]
+  // C = epsilon_r / (18 * ln(D_i / d_c))  [uF/km]  (using 1/(18) ≈ 0.0556)
+  // Coaxial geometry boundary conditions & assumptions:
+  // - Models radial electrostatic field across insulation layer between conductor outer radius (r_c = d_c / 2)
+  //   and a grounded coaxial metallic shield, copper tape screen (CTS), or conductive sheath/earth return path at (r_i = D_i / 2).
+  // - This represents the rigorous working operating capacitance for screened single-core cables (or armored MV/LV cables).
+  // - For standard 6 mm² EN 50618 PV DC string cables (d_c = 2.95 mm, t_ins = 0.8 mm, D_i = 4.55 mm):
+  //   XLPE (epsilon_r = 2.4) yields exactly 0.308 uF/km; PVC (epsilon_r = 5.0) yields exactly 0.642 uF/km.
   const lnDiOverDc = Math.log(diMm / dcMm);
   const lineCapacitanceUfPerKm = Number(((0.0556 * epsilonR) / Math.max(0.1, lnDiOverDc)).toFixed(3));
   const totalCapacitanceUf = Number(((lineCapacitanceUfPerKm * config.oneWayLengthM * parallelRuns) / 1000.0).toFixed(4));

@@ -213,7 +213,9 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           }`}>
             {subResult.shortCircuit.isBreakerSufficient
               ? `${subResult.shortCircuit.selectedBreakerModel} (${subResult.shortCircuit.selectedBreakerManufacturer})`
-              : (isFa ? '✗ قدرت قطع ناکافی (جریان خطا بیش از حد)' : '✗ Insufficient breaking capacity')}
+              : (isFa
+                  ? `✗ عدم انطباق با کاتالوگ استاندارد (${subResult.shortCircuit.breakerDeficiencyReason || 'جریان فراتر از حد'})`
+                  : `✗ No Standard Breaker Matched (${subResult.shortCircuit.breakerDeficiencyReason || 'Rating exceeded'})`)}
           </div>
         </div>
 

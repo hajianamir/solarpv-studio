@@ -274,7 +274,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Total PV Peak Capacity (kWp)', arrayDesign.totalPvCapacityKwp],
       ['Total Module Count', arrayDesign.totalModulesCount],
       ['Total Inverter Capacity (kW)', inverter.pnomAcKw * (bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1)],
-      ['Annual Generation (MWh)', ((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1)],
+      ['Annual Generation (MWh, 24h Extrapolated)', ((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1)],
       ['Levelized Cost of Electricity LCOE ($/kWh)', financial.isLcoeDefined ? financial.lcoeUsdPerKwh : 'N/A (Zero Yield)'],
       ['Internal Rate of Return IRR (%)', financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A (Undefined)'],
       ['Net Present Value NPV ($)', financial.npvUsd],
@@ -333,12 +333,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
     const energySheet = [
       ['ENERGY YIELD SIMULATION & PERFORMANCE RATIO (IEC 61724-1)', ''],
+      ['Methodology Note', 'Annual yield metrics represent annualized extrapolations of 24h diurnal simulation (scaled across 365 days) for preliminary screening, rather than an 8760h hourly weather-year TMY simulation.'],
       ['Metric', 'Value', 'Unit', 'Methodology / Standard'],
-      ['Gross DC Annual Generation', (annualGrossMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model'],
-      ['Net AC Annual Generation (P50)', annualGrossMwh.toFixed(1), 'MWh/yr', 'P50 Median Expectation'],
-      ['P75 Bankable Generation', p75Mwh.toFixed(1), 'MWh/yr', 'P75 Statistical Exceedance'],
-      ['P90 Conservative Debt Sizing', p90Mwh.toFixed(1), 'MWh/yr', 'P90 Bankable Exceedance (1.3x DSCR)'],
-      ['Specific Yield', specificYieldKwhKwp, 'kWh/kWp/yr', 'Normalized to STC DC Capacity'],
+      ['Gross DC Annual Generation (24h Extrapolated)', (annualGrossMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h)'],
+      ['Net AC Annual Generation (P50 Indicative)', annualGrossMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Extrapolation (P50 Expectation)'],
+      ['P75 Bankable Generation (Indicative)', p75Mwh.toFixed(1), 'MWh/yr', 'P75 Statistical Exceedance (from Annualized 24h)'],
+      ['P90 Conservative Debt Sizing (Indicative)', p90Mwh.toFixed(1), 'MWh/yr', 'P90 Bankable Exceedance (from Annualized 24h)'],
+      ['Specific Yield', specificYieldKwhKwp, 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Annualized 24h)'],
       ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724 Class A Methodology'],
       ['Soiling Derate', '3.5%', '-', 'Kimber Arid Climate Deposition Model'],
       ['Thermal Temperature Loss', '7.8%', '-', 'Gamma_Pmp = -0.30%/°C'],
@@ -432,7 +433,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       const invCount = bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1;
       const batCount = batterySizing ? batterySizing.totalBatteryUnitsCount : 0;
       const annualKwh = Math.round(simulation.totalGeneration24hKwh * 365);
-      const lcoeVal = financial.isLcoeDefined ? financial.lcoeUsdPerKwh : 0;
+      const lcoeVal = financial.isLcoeDefined ? financial.lcoeUsdPerKwh : null;
 
       const payload = {
         projectName,
@@ -466,7 +467,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${customFileName}_EPC_Proposal.json`;
+      a.download = `${customFileName}_Screening_Proposal.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -592,10 +593,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             <button
               onClick={handleExportApiProposal}
               className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-sky-400 border-sky-500/30"
-              title={isEn ? 'Generate Verified API Proposal (.json)' : 'دریافت پروپوزال رسمی از سرور API'}
+              title={isEn ? 'Export Preliminary JSON Screening Proposal (Preliminary Engineering Screening, not certified EPC package)' : 'دریافت پروپوزال غربالگری اولیه JSON (امکان‌سنجی مقدماتی، غیر از پکیج اجرایی EPC)'}
             >
               <FileCheck className="w-3.5 h-3.5 text-sky-400" />
-              <span>{isEn ? 'API Proposal' : 'پروپوزال API'}</span>
+              <span>{isEn ? 'Screening Proposal (.json)' : 'پروپوزال مقدماتی (.json)'}</span>
             </button>
 
             <label
@@ -828,12 +829,14 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Annual Generation (P50)' : 'تولید سالانه انرژی (P50)'}</span>
+                  <span className="text-slate-400 block text-[10px]">
+                    {isEn ? 'Annual Generation (24h Extrapolated)' : 'تولید سالانه (برون‌یابی ۲۴ ساعته)'}
+                  </span>
                   <strong className="text-base font-mono text-industrial-success print:text-emerald-900">
                     {annualGrossMwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    Specific Yield: {specificYieldKwhKwp} kWh/kWp
+                    {isEn ? 'Extrapolated from 24h profile' : 'برون‌یابی‌شده از پروفایل ۲۴ ساعته'} ({specificYieldKwhKwp} kWh/kWp)
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
@@ -842,7 +845,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     {financial.simplePaybackPeriodYears} yr / {financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A'}
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    LCOE: ${financial.isLcoeDefined ? financial.lcoeUsdPerKwh : 'N/A'} /kWh
+                    LCOE: {financial.isLcoeDefined ? `$${financial.lcoeUsdPerKwh} /kWh` : 'N/A (Zero Yield)'}
                   </span>
                 </div>
               </div>
@@ -1170,16 +1173,20 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               {/* Energy KPI Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'P50 Annual Generation:' : 'تولید سالانه P50 (میانه):'}</span>
+                  <span className="text-slate-400 block text-[10px]">
+                    {isEn ? 'P50 Annual Generation (24h Extrapolated):' : 'تولید سالانه P50 (برون‌یابی ۲۴ ساعته):'}
+                  </span>
                   <strong className="text-base font-mono text-industrial-success print:text-emerald-900">
                     {annualGrossMwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'Expected 50% exceedance' : 'احتمال وقوع ۵۰ درصد'}
+                    {isEn ? 'Annualized 24h diurnal estimate' : 'برون‌یابی سالانه شبیه‌سازی ۲۴ ساعته'}
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'P90 Bankable Generation:' : 'تولید بانکی P90 (تضمینی):'}</span>
+                  <span className="text-slate-400 block text-[10px]">
+                    {isEn ? 'P90 Indicative Debt Sizing:' : 'تولید بانکی P90 (برون‌یابی ۲۴ ساعته):'}
+                  </span>
                   <strong className="text-base font-mono text-industrial-accent print:text-sky-900">
                     {p90Mwh.toLocaleString()} MWh
                   </strong>
@@ -1205,6 +1212,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     {isEn ? 'IEC 61724 Class A' : 'کلاس A اعتبارسنجی شده'}
                   </span>
                 </div>
+              </div>
+
+              <div className="text-[10px] text-slate-400 bg-slate-800/30 print:bg-slate-100 p-2 rounded border border-industrial-border/40 print:border-slate-300">
+                <span className="text-industrial-warning font-semibold">
+                  {isEn ? 'Methodology Note:' : 'یادداشت متدولوژی:'}
+                </span>{' '}
+                {isEn
+                  ? 'Annual yield metrics represent annualized extrapolations from the 24-hour diurnal simulation profile (scaled across 365 days). They provide preliminary engineering screening estimates and should be supplemented by an 8760-hour hourly weather-year (TMY/PVSyst) bankable model for final financing.'
+                  : 'ارقام تولید سالانه انرژی نمایانگر برون‌یابی سالانه از پروفایل شبیه‌سازی ۲۴ ساعته شبانه‌روزی (ضرب در ۳۶۵ روز) است که به عنوان غربالگری اولیه مهندسی عمل نموده و برای تأمین مالی نهایی پروژه باید با شبیه‌سازی کامل ۸۷۶۰ ساعته سال اقلیمی (TMY) تدقیق گردد.'}
               </div>
 
               {/* Loss Waterfall Breakdown Table */}

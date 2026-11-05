@@ -51,6 +51,7 @@ export interface ShortCircuitCalculation {
   selectedBreakerManufacturer: string;
   ratedShortTimeDurationSec: number;
   operatingSequence: string;
+  breakerDeficiencyReason?: string;
 }
 
 export interface MvBreakerCatalogModel {
@@ -313,26 +314,64 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   // Full-load plant collector current at grid voltage:
   const nominalMvCurrentAmps = Number(((plantCapacityAcMva * 1000.0) / (Math.sqrt(3) * gridConnectionVoltageKv)).toFixed(1));
 
+  // Filter catalog for breakers compatible with the grid connection voltage:
+  const voltageCompatibleBreakers = STANDARD_MV_BREAKERS.filter((b) => b.ratedVoltageKv >= gridConnectionVoltageKv);
+
   // Multi-criteria selection from certified manufacturer breaker catalog (IEC 62271-100):
   // 1. Rated voltage Ur >= gridConnectionVoltageKv
   // 2. Rated continuous current Ir >= nominalMvCurrentAmps
   // 3. Rated short-circuit breaking capacity Isc >= initialSymmetricalIscKa
   // 4. Rated peak making capacity Ima >= peakDynamicIpKa
   // 5. Short-time thermal withstand energy: Ik^2 * tk >= Ith^2 * t_clearing
-  const selectedBreaker = STANDARD_MV_BREAKERS.find(
+  const selectedBreaker = voltageCompatibleBreakers.find(
     (b) =>
-      b.ratedVoltageKv >= gridConnectionVoltageKv &&
       b.ratedNormalCurrentAmps >= nominalMvCurrentAmps &&
       b.ratedBreakingCapacityKa >= initialSymmetricalIscKa &&
       b.ratedPeakMakingCapacityKa >= peakDynamicIpKa &&
       b.ratedShortTimeWithstandKa * Math.sqrt(b.ratedShortTimeDurationSec / tk) >= thermalEquivalentIthKa
   );
   const isBreakerSufficient = selectedBreaker !== undefined;
-  const fallbackBreaker = STANDARD_MV_BREAKERS.find((b) => b.ratedVoltageKv >= gridConnectionVoltageKv) ?? STANDARD_MV_BREAKERS[STANDARD_MV_BREAKERS.length - 1];
-  const activeBreaker = selectedBreaker ?? fallbackBreaker;
 
-  const breakingCapacityKa = activeBreaker.ratedBreakingCapacityKa;
-  const ratedPeakMakingCapacityKa = activeBreaker.ratedPeakMakingCapacityKa;
+  // Maximum ratings available in catalog for this voltage class:
+  const maxCatalogIrAmps = voltageCompatibleBreakers.length > 0
+    ? Math.max(...voltageCompatibleBreakers.map((b) => b.ratedNormalCurrentAmps))
+    : 0;
+  const maxCatalogBreakingKa = voltageCompatibleBreakers.length > 0
+    ? Math.max(...voltageCompatibleBreakers.map((b) => b.ratedBreakingCapacityKa))
+    : 0;
+  const maxCatalogMakingKa = voltageCompatibleBreakers.length > 0
+    ? Math.max(...voltageCompatibleBreakers.map((b) => b.ratedPeakMakingCapacityKa))
+    : 0;
+
+  // Identify specific engineering bottleneck when no catalog breaker matches:
+  let breakerDeficiencyReason: string | undefined;
+  if (!isBreakerSufficient) {
+    const reasons: string[] = [];
+    if (voltageCompatibleBreakers.length === 0) {
+      reasons.push('voltage_class_unavailable');
+    } else {
+      if (nominalMvCurrentAmps > maxCatalogIrAmps) {
+        reasons.push(`continuous_current_exceeded (${nominalMvCurrentAmps}A > ${maxCatalogIrAmps}A)`);
+      }
+      if (initialSymmetricalIscKa > maxCatalogBreakingKa) {
+        reasons.push(`breaking_capacity_exceeded (${initialSymmetricalIscKa.toFixed(1)}kA > ${maxCatalogBreakingKa}kA)`);
+      }
+      if (peakDynamicIpKa > maxCatalogMakingKa) {
+        reasons.push(`peak_making_exceeded (${peakDynamicIpKa.toFixed(1)}kA > ${maxCatalogMakingKa}kA)`);
+      }
+      if (reasons.length === 0) {
+        reasons.push('thermal_withstand_or_duty_margin_exceeded');
+      }
+    }
+    breakerDeficiencyReason = reasons.join('; ');
+  }
+
+  const selectedBreakerModel = selectedBreaker ? selectedBreaker.modelDesignation : 'NO_STANDARD_BREAKER_MATCHED';
+  const selectedBreakerManufacturer = selectedBreaker ? selectedBreaker.manufacturer : 'N/A';
+  const breakingCapacityKa = selectedBreaker ? selectedBreaker.ratedBreakingCapacityKa : maxCatalogBreakingKa;
+  const ratedPeakMakingCapacityKa = selectedBreaker ? selectedBreaker.ratedPeakMakingCapacityKa : maxCatalogMakingKa;
+  const ratedShortTimeDurationSec = selectedBreaker ? selectedBreaker.ratedShortTimeDurationSec : 3.0;
+  const operatingSequence = selectedBreaker ? selectedBreaker.operatingSequence : 'N/A';
 
   const shortCircuit: ShortCircuitCalculation = {
     initialSymmetricalIscKa: Math.round(initialSymmetricalIscKa * 10) / 10,
@@ -347,10 +386,11 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     rOverXRatio: Number(rOverXRatio.toFixed(3)),
     kappa,
     isBreakerSufficient,
-    selectedBreakerModel: activeBreaker.modelDesignation,
-    selectedBreakerManufacturer: activeBreaker.manufacturer,
-    ratedShortTimeDurationSec: activeBreaker.ratedShortTimeDurationSec,
-    operatingSequence: activeBreaker.operatingSequence,
+    selectedBreakerModel,
+    selectedBreakerManufacturer,
+    ratedShortTimeDurationSec,
+    operatingSequence,
+    breakerDeficiencyReason,
   };
 
   // 3. IEEE 80 Earthing Grid Calculations
@@ -421,20 +461,28 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const reactivePowerCapacityMvar = Math.round(plantCapacityAcMva * 0.4843 * 100) / 100;
   const powerFactorRange = '±0.90 (Capacitive / Inductive Q(U) Control)';
 
-  const switchgearDescriptionFa = isBreakerSufficient
-    ? `تابلوی کمپکت گازی SF6 فشار متوسط (GIS/RMU) با دژنکتور خلاء مدل ${shortCircuit.selectedBreakerModel} (${shortCircuit.selectedBreakerManufacturer})، رده ولتاژ ${gridConnectionVoltageKv}kV، قدرت قطع نامی ${breakingCapacityKa} kA، قدرت وصل پیک نامی ${ratedPeakMakingCapacityKa} kA و تحمل حرارتی اتصال کوتاه ${breakingCapacityKa} kA به مدت ${shortCircuit.ratedShortTimeDurationSec} ثانیه با سکانس استاندارد ${shortCircuit.operatingSequence} طبق IEC 62271-100، مجهز به رله‌های حفاظتی میکروپروسسوری (ANSI 50/51/50N/51N) و سکسیونر زمین موتوری.`
-    : `هشدار بحرانی عدم کفایت کلید: جریان اتصال کوتاه اولیه (${shortCircuit.initialSymmetricalIscKa} kA یا پیک ${shortCircuit.peakDynamicIpKa} kA) از بالاترین قدرت قطع بریکرهای استاندارد MV کاتالوگ (${breakingCapacityKa} kA قطع / ${ratedPeakMakingCapacityKa} kA وصل پیک) فراتر است. بریکر انتخاب‌شده قادر به قطع این جریان نیست و نصب راکتور محدودکننده جریان (CLR) یا بازنگری در طراحی باسبار الزامی است.`;
+  let switchgearDescriptionFa: string;
+  let switchgearDescriptionEn: string;
 
-  const switchgearDescriptionEn = isBreakerSufficient
-    ? `Medium-voltage gas-insulated switchgear (GIS/RMU) with vacuum circuit breaker ${shortCircuit.selectedBreakerModel} (${shortCircuit.selectedBreakerManufacturer}), rated ${gridConnectionVoltageKv}kV: ${breakingCapacityKa} kA symmetrical breaking, ${ratedPeakMakingCapacityKa} kA peak making, and ${breakingCapacityKa} kA / ${shortCircuit.ratedShortTimeDurationSec}s thermal withstand (${shortCircuit.operatingSequence}) per IEC 62271-100, with numerical protection relay (50/51/50N/51N) and motorized earth switch.`
-    : `CRITICAL BREAKER CAPACITY WARNING: Symmetrical fault current (${shortCircuit.initialSymmetricalIscKa} kA) or peak dynamic current (${shortCircuit.peakDynamicIpKa} kA) exceeds standard medium-voltage catalog breaker rating (${breakingCapacityKa} kA breaking / ${ratedPeakMakingCapacityKa} kA peak making). Sized breaker cannot safely interrupt this fault; current-limiting reactor (CLR) or higher transformer impedance required.`;
+  if (isBreakerSufficient) {
+    switchgearDescriptionFa = `تابلوی کمپکت گازی SF6 فشار متوسط (GIS/RMU) با دژنکتور خلاء مدل ${shortCircuit.selectedBreakerModel} (${shortCircuit.selectedBreakerManufacturer})، رده ولتاژ ${gridConnectionVoltageKv}kV، قدرت قطع نامی ${breakingCapacityKa} kA، قدرت وصل پیک نامی ${ratedPeakMakingCapacityKa} kA و تحمل حرارتی اتصال کوتاه ${breakingCapacityKa} kA به مدت ${shortCircuit.ratedShortTimeDurationSec} ثانیه با سکانس استاندارد ${shortCircuit.operatingSequence} طبق IEC 62271-100، مجهز به رله‌های حفاظتی میکروپروسسوری (ANSI 50/51/50N/51N) و سکسیونر زمین موتوری.`;
+    switchgearDescriptionEn = `Medium-voltage gas-insulated switchgear (GIS/RMU) with vacuum circuit breaker ${shortCircuit.selectedBreakerModel} (${shortCircuit.selectedBreakerManufacturer}), rated ${gridConnectionVoltageKv}kV: ${breakingCapacityKa} kA symmetrical breaking, ${ratedPeakMakingCapacityKa} kA peak making, and ${breakingCapacityKa} kA / ${shortCircuit.ratedShortTimeDurationSec}s thermal withstand (${shortCircuit.operatingSequence}) per IEC 62271-100, with numerical protection relay (50/51/50N/51N) and motorized earth switch.`;
+  } else {
+    if (nominalMvCurrentAmps > maxCatalogIrAmps) {
+      switchgearDescriptionFa = `هشدار عدم کفایت کلید: جریان نامی بار کامل خروجی نیروگاه (${nominalMvCurrentAmps}A) از بالاترین رتبه جریان پیوسته کلیدهای کاتالوگ (${maxCatalogIrAmps}A) بیشتر است. راه‌حل مهندسی: تفکیک باسبار به چند فیدر کلکتور موازی (Split Busbars) یا اتصال به شبکه در سطح ولتاژ بالاتر (مانند ۶۳kV/۱۳۲kV).`;
+      switchgearDescriptionEn = `CIRCUIT BREAKER INADEQUACY WARNING: Plant full-load continuous collector current (${nominalMvCurrentAmps}A) exceeds maximum standard medium-voltage breaker continuous rating (${maxCatalogIrAmps}A). Engineering resolution: implement split busbar architecture with multiple parallel feeder breakers or interconnect at higher transmission voltage (e.g. 63kV/132kV).`;
+    } else {
+      switchgearDescriptionFa = `هشدار بحرانی عدم کفایت کلید: جریان اتصال کوتاه محاسبه‌شده (${shortCircuit.initialSymmetricalIscKa} kA متقارن / ${shortCircuit.peakDynamicIpKa} kA پیک) از حداکثر ظرفیت بریکرهای استاندارد MV کاتالوگ (${maxCatalogBreakingKa} kA قطع / ${maxCatalogMakingKa} kA وصل پیک) فراتر است. راه‌حل مهندسی: نصب راکتور محدودکننده جریان (CLR) یا افزایش امپدانس اتصال‌کوتاه ترانسفورماتور پست.`;
+      switchgearDescriptionEn = `CRITICAL BREAKER CAPACITY WARNING: Symmetrical fault current (${shortCircuit.initialSymmetricalIscKa} kA) or dynamic peak (${shortCircuit.peakDynamicIpKa} kA) exceeds maximum standard medium-voltage catalog breaker rating (${maxCatalogBreakingKa} kA breaking / ${maxCatalogMakingKa} kA peak making). Sized breaker cannot interrupt this fault; current-limiting reactor (CLR) or higher transformer impedance required.`;
+    }
+  }
 
   const notesFa = [
     `ترانسفورماتور افزاینده ${ratedMva} MVA (ظرفیت مؤثر ${effectiveCapacity} MVA با لحاظ افت دمایی ${tempDeratePct}٪ و ارتفاعی ${altDeratePct}٪) با گروه برداری Dyn11 و امپدانس اتصالی ${ukPct}٪ جهت اتصال مطمئن به شبکه ${gridConnectionVoltageKv}kV.`,
     `جریان اتصال کوتاه متقارن اولیه ${shortCircuit.initialSymmetricalIscKa} kA، جریان پیک ضربه‌ای ${shortCircuit.peakDynamicIpKa} kA (ضریب کاپا ${shortCircuit.kappa}) و معادل حرارتی Ith=${shortCircuit.thermalEquivalentIthKa} kA بر اساس امپدانس مختلط R+jX طبق IEC 60909.`,
     ...(isBreakerSufficient
-      ? [`کلید دژنکتور منتخب (${shortCircuit.selectedBreakerModel} با قدرت قطع ${breakingCapacityKa} kA متقارن، قدرت وصل ${ratedPeakMakingCapacityKa} kA پیک و تحمل حرارتی ${shortCircuit.ratedShortTimeDurationSec} ثانیه‌ای) کاملاً با جریان‌های اتصال کوتاه محاسبه‌شده همخوانی داشته و منطبق بر الزامات IEC 62271-100 است.`]
-      : [`هشدار بحرانی: هیچ بریکر استاندارد MV با قدرت قطع کافی برای جریان خطای ${shortCircuit.initialSymmetricalIscKa} kA یافت نشد (حداکثر رده موجود: ${breakingCapacityKa} kA).`]),
+      ? [`کلید دژنکتور منتخب از کاتالوگ مرجع (${shortCircuit.selectedBreakerModel} با قدرت قطع ${breakingCapacityKa} kA متقارن، قدرت وصل ${ratedPeakMakingCapacityKa} kA پیک و تحمل حرارتی ${shortCircuit.ratedShortTimeDurationSec} ثانیه‌ای) مقادیر اتصال کوتاه و بار نامی طراحی را طبق مشخصات کاتالوگ سازنده بر پایه رده‌بندی IEC 62271-100 پوشش می‌دهد؛ انطباق نهایی در اسناد EPC منوط به تایید تایپ‌تست کارخانه‌ای سازنده و تطبیق شرایط محیطی ساختگاه است.`]
+      : [`هشدار بحرانی: هیچ بریکر استاندارد MV با مشخصات کافی برای شرایط پروژه یافت نشد (علت عدم انطباق: ${shortCircuit.breakerDeficiencyReason}).`]),
     `طراحی مش ارتینگ پست بر اساس IEEE 80 با هادی مسی ${earthing.groundGridConductorMm2} mm² و مقاومت کل زمین ${earthing.calculatedGridResistanceOhms} اهم (تأمین ولتاژ گام و لمس مجاز).`,
     `تعبیه ترانسفورماتور مصارف داخلی ${auxiliaryTransformer.ratedKva} kVA جهت تغذیه بدون وقفه SCADA، سیستم‌های حفاظتی و درایوهای ترکر.`,
     `پشتیبانی کامل از تزریق توان راکتیو تا سقف ±${reactivePowerCapacityMvar} Mvar جهت تثبیت ولتاژ خطوط انتقال طبق کد شبکه ایران (Grid Code).`,
