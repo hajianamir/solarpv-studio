@@ -56,6 +56,8 @@ import { exportToWordDocument, exportToExcelWorkbook } from '../engine/reporting
 import { calculateStructuralAndFoundations, cpUpliftFor, type StructuralAnalysisResult, type FoundationType } from '../engine/structuralEngine';
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
+import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
+import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 
 interface OfficialReportModalProps {
   projectName: string;
@@ -73,6 +75,10 @@ interface OfficialReportModalProps {
   bayArchitecture?: PowerplantBayArchitectureResult;
   siteOverrides?: SiteGeotechnicalOverrides;
   foundationType?: FoundationType;
+  waterfallReport?: WaterfallLossReport;
+  appliedShading?: AppliedShading3dRecord | null;
+  isShadingStale?: boolean;
+  bifacialGainPct?: number;
   onClose: () => void;
   onImportProject?: (projectData: any) => void;
   lang?: 'fa' | 'en';
@@ -104,6 +110,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   bayArchitecture,
   siteOverrides,
   foundationType: customFoundationType,
+  waterfallReport,
+  appliedShading,
+  isShadingStale = false,
+  bifacialGainPct: _bifacialGainPct,
   onClose,
   onImportProject,
   lang: defaultLang = 'fa',
@@ -184,10 +194,17 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   // Derived Energy Simulation Metrics
   const annualGrossMwh = Number(((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1));
   const specificYieldKwhKwp = Math.round((annualGrossMwh * 1000) / Math.max(1, arrayDesign.totalPvCapacityKwp));
-  const performanceRatioPct = Number(((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1));
+  // Sourced from unified waterfall loss report (69.2% on standard fixture), falling back to sizing derate factor only if report omitted
+  const performanceRatioPct = waterfallReport
+    ? waterfallReport.performanceRatioPct
+    : Number(((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1));
   const p50Mwh = annualGrossMwh;
   const p75Mwh = Number((annualGrossMwh * 0.945).toFixed(1));
   const p90Mwh = Number((annualGrossMwh * 0.898).toFixed(1));
+
+  // Dynamic Shading Derate & Provenance Metrics
+  const effectiveShadingLossPct = appliedShading ? appliedShading.lossPct : 2.4;
+  const effectiveShadingDerate = Number((1.0 - effectiveShadingLossPct / 100).toFixed(4));
 
   // Customization & Metadata State
   const [docId, setDocId] = useState<string>('EPC-PV-2026-0891');
@@ -221,14 +238,14 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   // Custom Commentary Notes
   const [engineerNotes, setEngineerNotes] = useState<Record<string, string>>({
     summary: isEn
-      ? 'System layout verified against IEC 62548. Grid interconnection voltage coordinated with regional utility.'
-      : 'چیدمان سیستم مطابق با استاندارد IEC 62548 بازبینی شده و سطح ولتاژ اتصال با شبکه توزیع منطقه‌ای هماهنگ شده است.',
+      ? 'Preliminary system layout aligned with IEC 62548 engineering design guidelines for screening. Grid interconnection voltage coordinated with regional utility.'
+      : 'چیدمان اولیه سیستم بر اساس رهنمودهای طراحی استاندارد IEC 62548 جهت غربالگری مهندسی تنظیم گردیده و سطح ولتاژ اتصال با شبکه توزیع منطقه‌ای هماهنگ شده است.',
     climate: isEn
       ? 'Geotechnical and wind data retrieved from official meteorological records and INBC Part 6 specifications.'
       : 'داده‌های ژئوتکنیک و بار باد بر اساس استعلام رسمی مبحث ۶ مقررات ملی ساختمان و مرکز تحقیقات مسکن اخذ شده است.',
     shading: isEn
-      ? 'Pitch distance optimized to eliminate inter-row  during the critical winter solstice noon window (10:00-14:00).'
-      : 'فاصله ردیف‌ها جهت برقراری شرط عدم سایه‌اندازی در بازه ۱۰ الی ۱۴ ظهر انقلاب زمستانی بهینه‌سازی شده است.',
+      ? 'Inter-row pitch distance configured for winter solstice screening window (10:00-14:00 true solar time).'
+      : 'فاصله بین‌ردیفی جهت پوشش پنجره غربالگری ظهر انقلاب زمستانی (۱۰ الی ۱۴ به وقت آفتابی) تنظیم شده است.',
     electrical: isEn
       ? 'Cable sizing incorporates multi-conductor parallel runs to limit voltage drop below 1.5% at nominal full load.'
       : 'سایزینگ کابل‌ها به روش چند رشته موازی انجام شده تا افت ولتاژ در بار نامی کمتر از ۱.۵ درصد محدود گردد.',
@@ -333,20 +350,38 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
     const energySheet = [
       ['ENERGY YIELD SIMULATION & SENSITIVITY SCENARIOS (INDICATIVE)', ''],
-      ['Methodology Note', 'Annual yield metrics represent annualized extrapolations of 24h diurnal simulation (scaled across 365 days) for preliminary screening, rather than an 8760h hourly weather-year TMY simulation. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles.'],
+      ['Methodology Note', 'Annual yield metrics represent annualized extrapolations of 24h diurnal simulation (scaled across 365 days) for preliminary screening, with loss waterfall evaluated via unified 14/15-stage model (IEC 61724-1 PR). Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles.'],
       ['Metric', 'Value', 'Unit', 'Methodology / Standard'],
       ['Gross DC Annual Generation (24h Extrapolated)', (annualGrossMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h)'],
       ['Net AC Annual Generation (Baseline Indicative)', annualGrossMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Baseline Profile'],
+      ...(waterfallReport ? [
+        ['Net Annual Energy Export (Waterfall Model)', waterfallReport.netAnnualEnergyExportMwh.toFixed(1), 'MWh/yr', 'Unified Waterfall Loss Model'],
+        ['Specific Yield (Waterfall Model)', Math.round(waterfallReport.specificAnnualYieldKwhPerKwp).toString(), 'kWh/kWp/yr', 'Unified Waterfall Loss Model'],
+      ] : []),
       ['Illustrative Downside Scenario (-5.5%)', p75Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.945x Sensitivity Factor (Not Probabilistic Exceedance)'],
       ['Illustrative Conservative Downside (-10.2%)', p90Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.898x Sensitivity Factor (Not Bankable P90)'],
-      ['Specific Yield', specificYieldKwhKwp, 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Annualized 24h)'],
-      ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724 Class A Methodology'],
-      ['Soiling Derate', '3.5%', '-', 'Kimber Arid Climate Deposition Model'],
-      ['Thermal Temperature Loss', '7.8%', '-', 'Gamma_Pmp = -0.30%/°C'],
-      ['Ohmic Cable I2R Loss', '1.2%', '-', 'DC + AC Conductor Resistance'],
-      ['Inverter Conversion Efficiency', '98.5%', '-', 'IEC 62891 Weighted Efficiency'],
-      ['Transformer & MV Losses', '1.2%', '-', 'Substation Step-up Transformer'],
-      ['System Availability', '99.0%', '-', 'Annual Scheduled / Unscheduled Uptime'],
+      ['Specific Yield', specificYieldKwhKwp.toString(), 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Annualized 24h)'],
+      ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724-1 Metric (Waterfall Loss Tree)'],
+      ['Near Shading Loss', `-${effectiveShadingLossPct}%`, '-', appliedShading ? (isShadingStale ? '3D Near-Shading Model (⚠️ Stale: Capacity drifted >5%)' : '3D Near-Shading Model') : 'Standard Empirical Default (-2.4%)'],
+      ['Effective Shading Derate', effectiveShadingDerate.toString(), '-', '1 - (Shading Loss / 100)'],
+      ...(waterfallReport ? [
+        ['', ''],
+        ['WATERFALL LOSS BREAKDOWN STAGES', ''],
+        ['Stage ID', 'Loss / Gain (%)', 'Stage Output (MWh)', 'Description'],
+        ...waterfallReport.stages.map((st) => [
+          isEn ? st.nameEn : st.nameFa,
+          `${st.percentageLoss > 0 ? '+' : ''}${st.percentageLoss}%`,
+          (st.stageOutputKwh / 1000).toFixed(1),
+          isEn ? st.descriptionEn : st.descriptionFa,
+        ]),
+      ] : [
+        ['Soiling Derate', '3.5%', '-', 'Kimber Arid Climate Deposition Model'],
+        ['Thermal Temperature Loss', '7.8%', '-', 'Gamma_Pmp = -0.30%/°C'],
+        ['Ohmic Cable I2R Loss', '1.2%', '-', 'DC + AC Conductor Resistance'],
+        ['Inverter Conversion Efficiency', '98.5%', '-', 'IEC 62891 Weighted Efficiency'],
+        ['Transformer & MV Losses', '1.2%', '-', 'Substation Step-up Transformer'],
+        ['System Availability', '99.0%', '-', 'Annual Scheduled / Unscheduled Uptime'],
+      ]),
     ];
 
     const structuralSheet = [
@@ -1115,7 +1150,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   {isEn ? '3. 3D Geometric Shading, Sun Path & Array Pitch Optimization' : '۳. تحلیل سه‌بعدی سایه‌اندازی، مسیر خورشید و بهینه‌سازی فواصل بین‌ردیفی'}
                 </span>
                 <span className="text-[10px] text-industrial-success print:text-emerald-800 font-mono">
-                  {isEn ? 'Winter Solstice Free-of-Shading: VERIFIED' : 'عدم سایه ظهر زمستان: تأیید'}
+                  {isEn ? 'Winter Solstice Geometric Screening: Evaluated' : 'ارزیابی هندسی پنجره ظهر زمستان: انجام شد'}
                 </span>
               </h3>
 
@@ -1135,25 +1170,56 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Annual Beam Shading Loss' : 'تلفات سالانه سایه پرتو مستقیم'}</span>
                   <span className="font-mono font-bold text-industrial-success print:text-emerald-800 text-sm">
-                    ~2.4%
+                    {appliedShading ? `-${effectiveShadingLossPct}%` : `~${effectiveShadingLossPct}%`}
                   </span>
+                  {appliedShading && (
+                    <span className="text-[9px] text-sky-400 block font-mono">
+                      {isEn ? '3D Near-Shading Model' : 'مدل ۳ بعدی سایه‌اندازی'}
+                    </span>
+                  )}
                 </div>
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Effective Shading Derate' : 'ضریب اصلاح سایه در مدل تولید'}</span>
                   <span className="font-mono font-bold text-purple-400 print:text-purple-800 text-sm">
-                    0.976
+                    {effectiveShadingDerate.toFixed(appliedShading ? 4 : 3)}
                   </span>
+                  {appliedShading && (
+                    <span className="text-[9px] text-slate-400 block font-mono">
+                      1 - ({effectiveShadingLossPct}%)
+                    </span>
+                  )}
                 </div>
               </div>
 
+              {/* 3D Shading Provenance & Staleness Banner */}
+              {appliedShading && (
+                <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 border border-sky-500/30 rounded text-xs flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sky-300 font-semibold text-[11px]">
+                      {isEn ? '3D Shading Provenance:' : 'مرجع تحلیل سه‌بعدی سایه:'}
+                    </span>
+                    <span className="text-slate-300 text-[11px]">
+                      {isEn
+                        ? `Applied from representative demo block (${appliedShading.capacityKwp} kWp) at ${new Date(appliedShading.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : `اعمال‌شده از بلوک نمونه (${appliedShading.capacityKwp} کیلووات‌پیک) در ساعت ${new Date(appliedShading.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                    </span>
+                  </div>
+                  {isShadingStale && (
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40">
+                      {isEn ? '⚠️ Stale: Project capacity drifted >5% since 3D run' : '⚠️ داده قدیمی: ظرفیت پروژه بیش از ۵٪ تغییر یافته است'}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-1">
                 <span className="font-bold text-white print:text-black block">
-                  {isEn ? 'Sun Path Geometric Verification & Critical Solar Window:' : 'بررسی هندسی مسیر حرکت خورشید و پنجره بحرانی تابش:'}
+                  {isEn ? 'Sun Path Geometric Screening & Critical Solar Window:' : 'بررسی هندسی مسیر خورشید و پنجره غربالگری تابش:'}
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `At latitude ${effectiveCity.latitude.toFixed(2)}°N, the solar altitude at true solar noon on the winter solstice (December 21) drops to ${(90 - effectiveCity.latitude - 23.45).toFixed(1)}°. The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m guarantees 100% unshaded collector aperture throughout the critical 4-hour window (10:00 to 14:00 true solar time), complying with IEC 62548 standards. For bifacial energy boost, the ground clearance of 0.9m provides a rear view-factor that captures diffuse and ground-reflected albedo irradiance.`
-                    : `در عرض جغرافیایی ${effectiveCity.latitude.toFixed(2)} درجه شمالی، زاویه ارتفاع خورشید در ظهر انقلاب زمستانی به ${(90 - effectiveCity.latitude - 23.45).toFixed(1)} درجه کاهش می‌یابد. فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر به گونه‌ای تنظیم شده که شرط عدم سایه‌اندازی متقابل ردیف‌ها در بازه بحرانی ۱۰ الی ۱۴ ظهر آفتابی کاملاً محقق شود. همچنین ارتفاع آزاد ۰.۹ متری زیر پنل‌ها امکان جذب بهینه تابش‌های بازتابی زمین (Albedo) توسط سطح پشت سلول‌های دوطرفه را فراهم می‌آورد.`}
+                    ? `At latitude ${effectiveCity.latitude.toFixed(2)}°N, the solar altitude at true solar noon on the winter solstice (December 21) drops to ${(90 - effectiveCity.latitude - 23.45).toFixed(1)}°. The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) following IEC 62548 geometric guidance. Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture, which should be verified with detailed 3D/view-factor modeling.`
+                    : `در عرض جغرافیایی ${effectiveCity.latitude.toFixed(2)} درجه شمالی، زاویه ارتفاع خورشید در ظهر انقلاب زمستانی به ${(90 - effectiveCity.latitude - 23.45).toFixed(1)} درجه کاهش می‌یابد. فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر جهت تامین فاصله هندسی نامی در بازه ۴ ساعته غربالگری (۱۰ الی ۱۴ ظهر آفتابی) بر اساس رهنمودهای هندسی IEC 62548 در نظر گرفته شده است. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
                 </p>
               </div>
             </div>
@@ -1167,7 +1233,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   <Activity className="w-4 h-4 text-industrial-success" />
                   {isEn ? '4. Energy Yield Simulation, Loss Waterfall & Sensitivity Scenarios' : '۴. شبیه‌سازی تولید انرژی، نمودار آبشار تلفات و سناریوهای تحلیل حساسیت'}
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">IEC 61724-1 Class A</span>
+                <span className="text-[10px] text-slate-400 font-mono">IEC 61724-1 Standard Metric</span>
               </h3>
 
               {/* Energy KPI Grid */}
@@ -1209,7 +1275,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     {performanceRatioPct}%
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'IEC 61724 Class A' : 'کلاس A اعتبارسنجی شده'}
+                    {isEn ? 'IEC 61724-1 Waterfall PR' : 'ضریب عملکرد آبشار تلفات IEC 61724-1'}
                   </span>
                 </div>
               </div>
@@ -1233,52 +1299,74 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   <thead>
                     <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black text-[11px]">
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Loss Component' : 'مولفه تلفات'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Nominal Loss (%)' : 'درصد تلفات'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Nominal Loss / Gain (%)' : 'درصد تلفات / بهره'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Methodology & Engineering Standard' : 'روش محاسبه و مرجع مهندسی'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Mitigation Strategy' : 'راهکار کاهش و جبران تلفات'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Stage Energy Output' : 'انرژی خروجی مرحله'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-industrial-border print:divide-slate-200 text-[11px]">
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Soiling & Dust Deposition' : 'تلفات غبار و ذرات معلق (Soiling)'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-3.5%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Kimber et al. Arid Model based on {effectiveCity.annualRainfallMm}mm rain</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Automated waterless robotic cleaning schedule' : 'شستشوی مکانیزه رباتیک دوره‌ای'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Thermal Temperature Derate' : 'افت توان حرارتی سلول در اثر گرما'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-7.8%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">NOCT thermal balance (Gamma = -0.30%/°C for TOPCon)</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Ground clearance 0.9m for natural air cooling' : 'ارتفاع ۰.۹ متری از زمین جهت تهویه طبیعی باد'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Incidence Angle Modifier (IAM)' : 'تلفات بازتابش زاویه تابش خورشید'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.8%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Martin & Ruiz ARC double-anti-reflective coating</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'High-transmittance anti-reflective textured glass' : 'شیشه بافت‌دار آنتی‌رفلکتیو با عبوردهی بالا'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'DC Ohmic Resistance (I²R)' : 'تلفات اهمی سیم‌کشی و اتصالات DC'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.2%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">IEC 60287 copper conductor resistance modeling</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Oversized 6mm² solar cables limiting dV <= 1.5%' : 'کابل‌های ۶ میلی‌متر مربع جهت افت زیر ۱.۵ درصد'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Inverter Conversion & MPPT' : 'راندمان تبدیل اینورتر و ردیابی MPPT'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.5%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">IEC 62891 maximum power point tracking efficiency</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Multi-MPPT architecture with independent tracker inputs' : 'تفکیک استرینگ‌ها روی MPPTهای مستقل اینورتر'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Transformer & Grid Evacuation' : 'تلفات ترانسفورماتور و خط انتقال MV'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.2%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Tier 2 EcoDesign low-loss step-up transformer</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'High-efficiency amorphous core transformer' : 'استفاده از ترانسفورماتورهای کم‌تلفات استاندارد'}</td>
-                    </tr>
+                    {waterfallReport ? (
+                      waterfallReport.stages.map((stage) => {
+                        const isGain = stage.percentageLoss > 0;
+                        return (
+                          <tr key={stage.id} className={stage.id === 'bifacial_gain' ? 'bg-emerald-950/20' : ''}>
+                            <td className="p-2 font-medium">{isEn ? stage.nameEn : stage.nameFa}</td>
+                            <td className={`p-2 font-mono ${isGain ? 'text-emerald-400 print:text-emerald-800' : 'text-rose-400 print:text-rose-800'}`}>
+                              {isGain ? `+${stage.percentageLoss}%` : `${stage.percentageLoss}%`}
+                            </td>
+                            <td className="p-2 text-slate-400 print:text-slate-600">
+                              {isEn ? stage.descriptionEn : stage.descriptionFa}
+                            </td>
+                            <td className="p-2 font-mono text-slate-300 print:text-slate-700">
+                              {Math.round(stage.stageOutputKwh / 1000).toLocaleString()} MWh
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Soiling & Dust Deposition' : 'تلفات غبار و ذرات معلق (Soiling)'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-3.5%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Kimber et al. Arid Model based on {effectiveCity.annualRainfallMm}mm rain</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Automated waterless robotic cleaning schedule' : 'شستشوی مکانیزه رباتیک دوره‌ای'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Thermal Temperature Derate' : 'افت توان حرارتی سلول در اثر گرما'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-7.8%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">NOCT thermal balance (Gamma = -0.30%/°C for TOPCon)</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Ground clearance 0.9m for natural air cooling' : 'ارتفاع ۰.۹ متری از زمین جهت تهویه طبیعی باد'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Incidence Angle Modifier (IAM)' : 'تلفات بازتابش زاویه تابش خورشید'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.8%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Martin & Ruiz ARC double-anti-reflective coating</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'High-transmittance anti-reflective textured glass' : 'شیشه بافت‌دار آنتی‌رفلکتیو با عبوردهی بالا'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'DC Ohmic Resistance (I²R)' : 'تلفات اهمی سیم‌کشی و اتصالات DC'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.2%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">IEC 60287 copper conductor resistance modeling</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Oversized 6mm² solar cables limiting dV <= 1.5%' : 'کابل‌های ۶ میلی‌متر مربع جهت افت زیر ۱.۵ درصد'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Inverter Conversion & MPPT' : 'راندمان تبدیل اینورتر و ردیابی MPPT'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.5%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">IEC 62891 maximum power point tracking efficiency</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Multi-MPPT architecture with independent tracker inputs' : 'تفکیک استرینگ‌ها روی MPPTهای مستقل اینورتر'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Transformer & Grid Evacuation' : 'تلفات ترانسفورماتور و خط انتقال MV'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.2%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Tier 2 EcoDesign low-loss step-up transformer</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'High-efficiency amorphous core transformer' : 'استفاده از ترانسفورماتورهای کم‌تلفات استاندارد'}</td>
+                        </tr>
+                      </>
+                    )}
                     <tr className="font-bold bg-slate-800/40 print:bg-slate-100">
                       <td className="p-2 text-white print:text-black">{isEn ? 'Net Delivered System PR' : 'ضریب عملکرد خالص تحویلی به شبکه (PR)'}</td>
                       <td className="p-2 font-mono text-industrial-success print:text-emerald-800">{performanceRatioPct}%</td>
-                      <td className="p-2 text-industrial-success" colSpan={2}>✓ IEC 61724 Class A Compliant</td>
+                      <td className="p-2 text-industrial-success" colSpan={2}>✓ IEC 61724-1 Performance Ratio Calculation</td>
                     </tr>
                   </tbody>
                 </table>

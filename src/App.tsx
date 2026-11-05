@@ -2463,6 +2463,10 @@ export const App: React.FC = () => {
           financial={financialResult}
           bayArchitecture={bayArchitecture}
           siteOverrides={siteOverrides}
+          waterfallReport={waterfallReport}
+          appliedShading={appliedShadingRecord}
+          isShadingStale={isShadingStale}
+          bifacialGainPct={bifacialGainPct}
           onClose={() => setShowReportModal(false)}
           onImportProject={handleImportProject}
           lang={lang}

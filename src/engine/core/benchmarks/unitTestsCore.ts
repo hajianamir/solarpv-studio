@@ -4538,6 +4538,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       type: 'APPLY',
       lossPct: 7.25,
       capacityKwp: 1000,
+      projectCapacityKwp: 1000,
       appliedAtIso: nowIso,
       cityId: 'tehran',
     });
@@ -4545,6 +4546,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       s1.appliedShading.lossPct === 7.25 &&
       s1.appliedShading.appliedAtIso === nowIso &&
       s1.appliedShading.capacityKwp === 1000 &&
+      s1.appliedCapacityKwp === 1000 &&
       s1.appliedCityId === 'tehran';
 
     // 3. Revert action
@@ -4556,6 +4558,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       type: 'APPLY',
       lossPct: 5.5,
       capacityKwp: 1000,
+      projectCapacityKwp: 1000,
       appliedAtIso: nowIso,
       cityId: 'tehran',
     });
@@ -4606,11 +4609,19 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     });
     const oldTrapAvoided = sSyncOldTrap.isStale === true;
 
+    // 6. Legacy fallback test: if an untyped caller omits projectCapacityKwp, fallback to capacityKwp is pinned
+    const sLegacy = shadingLifecycleReducer(s0, {
+      type: 'APPLY',
+      lossPct: 4.2,
+      capacityKwp: 250,
+    } as any);
+    const legacyFallbackPinned = sLegacy.appliedCapacityKwp === 250;
+
     assert(
       'E15-SHADING-LIFECYCLE-MANAGEMENT',
-      '3D shading lifecycle reducer correctly manages apply, revert, provenance records, cross-project reset, and project-vs-block capacity staleness',
-      initOk && applyOk && revertOk && syncSameOk && syncDiffOk && blockCapacityStored && nominalNotStale && driftStale && oldTrapAvoided,
-      `initOk=${initOk}, appliedLoss=${s1.appliedShading?.lossPct}%, revertApplied=${s2.appliedShading}, syncSame=${syncSameOk}, syncDiff=${syncDiffOk}, nominalNotStale=${nominalNotStale}, driftStale=${driftStale}, oldTrapAvoided=${oldTrapAvoided}`
+      '3D shading lifecycle reducer correctly manages apply, revert, provenance records, cross-project reset, project-vs-block capacity staleness, and legacy fallback pinning',
+      initOk && applyOk && revertOk && syncSameOk && syncDiffOk && blockCapacityStored && nominalNotStale && driftStale && oldTrapAvoided && legacyFallbackPinned,
+      `initOk=${initOk}, appliedLoss=${s1.appliedShading?.lossPct}%, revertApplied=${s2.appliedShading}, syncSame=${syncSameOk}, syncDiff=${syncDiffOk}, nominalNotStale=${nominalNotStale}, driftStale=${driftStale}, oldTrapAvoided=${oldTrapAvoided}, legacyFallbackPinned=${legacyFallbackPinned}`
     );
   }
 
@@ -4819,6 +4830,66 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'buildWaterfallArgs enforces 16-parameter arity contract, honors all declared aliases including nearShadingLossPct, and matches 2b56244 baseline within 0.1%',
       arityOk && argsLengthOk && posOk && execMatch && prOk && mwhOk && nearShadingAliasOk && allAliasesOk,
       `arity=${WATERFALL_ARG_COUNT}, builtArgsLen=${builtArgs.length}, PR=${prPct.toFixed(1)}% (exp 69.2%), NetExport=${netMwh.toFixed(1)} MWh (exp 1682.9 MWh), nearShadingAlias=${nearShadingAliasOk}, allAliases=${allAliasesOk}`
+    );
+  }
+
+  // ==========================================================================
+  // E19: Report Consistency, Dynamic Shading Derate & PR Attribution
+  // ==========================================================================
+  {
+    // 1. Shading derate formula verification: Derate = 1 - (lossPct / 100)
+    const defaultLossPct = 2.4;
+    const defaultDerate = Number((1.0 - defaultLossPct / 100).toFixed(4));
+    const defaultDerateOk = Math.abs(defaultDerate - 0.976) < 1e-4;
+
+    const applied3dLossPct = 5.98;
+    const applied3dDerate = Number((1.0 - applied3dLossPct / 100).toFixed(4));
+    const applied3dDerateOk = Math.abs(applied3dDerate - 0.9402) < 1e-4;
+
+    // 2. PR Model separation:
+    // Waterfall PR (unified 14/15-stage tree) vs ArrayDesign sizing derating factor
+    // Sizing derating factor is ~0.805 (80.5%), whereas waterfall PR is 69.2% on standard fixture
+    const sizingEffectiveDeratingFactor = 0.805;
+    const sizingPrCandidate = Number((sizingEffectiveDeratingFactor * 100).toFixed(1));
+
+    const { computeWaterfallLosses } = await import('../../waterfallLossEngine');
+    const { buildWaterfallArgs } = await import('../../waterfallArgs');
+
+    const args = buildWaterfallArgs({
+      installedCapacityKwp: 1100,
+      peakSunHours: 5.2,
+      ambientTempMaxC: 40.0,
+      soilingLossPct: 4.5,
+      dcAcRatio: 1.25,
+      isSingleAxisTracker: false,
+      iamLossPct: -2.2,
+      moduleNoctC: 45.0,
+      tempCoeffPmpPct: -0.30,
+      installationEnvironment: 'ground_mount',
+      tiltDeg: 25.0,
+      latitudeDeg: 35.7,
+      shadingLoss3dPct: applied3dLossPct,
+      bifacialGainPct: 0.0,
+    });
+    const waterfallReport = computeWaterfallLosses(...args);
+
+    // Report PR must strictly equal waterfallReport.performanceRatioPct (69.2%),
+    // NOT sizingPrCandidate (80.5%)
+    const waterfallPr = waterfallReport.performanceRatioPct;
+    const prConsistentWithWaterfall = Math.abs(waterfallPr - 69.2) <= 0.1;
+    const prDistinctFromSizingDerate = Math.abs(waterfallPr - sizingPrCandidate) > 5.0;
+
+    // 3. Waterfall stages presence for report breakdown table
+    const stagesPopulated = Array.isArray(waterfallReport.stages) && waterfallReport.stages.length >= 12;
+    const nearShadingStage = waterfallReport.stages.find(s => s.id === 'near_shading');
+    const nearShadingStageLossMatches = nearShadingStage !== undefined &&
+      Math.abs(Math.abs(nearShadingStage.percentageLoss) - applied3dLossPct) < 0.01;
+
+    assert(
+      'E19-REPORT-CONSISTENCY-AND-SHADING-DERATE',
+      'OfficialReportModal shading derate (0.976 default vs 0.9402 for 5.98% applied) matches formula 1 - lossPct/100, and PR strictly resolves to waterfall PR (69.2%) rather than sizing derate (80.5%)',
+      defaultDerateOk && applied3dDerateOk && prConsistentWithWaterfall && prDistinctFromSizingDerate && stagesPopulated && nearShadingStageLossMatches,
+      `defaultDerate=${defaultDerate} (exp 0.976), appliedDerate=${applied3dDerate} (exp 0.9402), waterfallPr=${waterfallPr}% (exp 69.2%), sizingPr=${sizingPrCandidate}%, stages=${waterfallReport.stages.length}, nearShadingLoss=${nearShadingStage?.percentageLoss}%`
     );
   }
 

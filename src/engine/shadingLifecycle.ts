@@ -32,7 +32,7 @@ export type ShadingLifecycleAction =
       type: 'APPLY';
       lossPct: number;
       capacityKwp: number;
-      projectCapacityKwp?: number;
+      projectCapacityKwp: number;
       appliedAtIso?: string;
       cityId?: string;
     }
@@ -49,6 +49,11 @@ export function shadingLifecycleReducer(
 ): ShadingLifecycleState {
   switch (action.type) {
     case 'APPLY': {
+      if (action.projectCapacityKwp === undefined) {
+        console.warn(
+          '[shadingLifecycle] projectCapacityKwp was omitted from APPLY action. Falling back to capacityKwp (demo block size); this may cause capacity drift staleness if project capacity differs.'
+        );
+      }
       return {
         appliedShading: {
           lossPct: action.lossPct,
