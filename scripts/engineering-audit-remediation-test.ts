@@ -1117,6 +1117,47 @@ async function runAuditRemediationSuite() {
       '8760-hour 3D shading lifecycle preserves valid non-stale applied state after CHECK_SYNC',
       `isStale=${syncState8760.isStale}, appliedMode=${syncState8760.appliedShading?.simulationMode}`
     );
+
+    // 6) Simulation Mode Transition Probe (Decoupled Preview & Seamless Mode Upgrade without Revert)
+    // Starting with applied 3-day fast screening:
+    // Switching preview simulation mode to 8760h flags stale in CHECK_SYNC due to signature difference:
+    const syncStateSwitchedMode = shadingLifecycleReducer(appliedState, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: dcCapacityKwp,
+      currentSignatureHash: appSig8760,
+    });
+    assert(
+      syncStateSwitchedMode.isStale === true && syncStateSwitchedMode.appliedShading !== null,
+      'Switching preview simulation mode flags staleness against existing applied record without destroying applied state',
+      `isStale=${syncStateSwitchedMode.isStale}, reason=${syncStateSwitchedMode.staleReason}`
+    );
+
+    // Re-applying directly with new 8760h result seamlessly upgrades applied record without requiring Revert:
+    const upgradedState8760 = shadingLifecycleReducer(syncStateSwitchedMode, {
+      type: 'APPLY',
+      lossPct: 3.8,
+      capacityKwp: dcCapacityKwp,
+      projectCapacityKwp: dcCapacityKwp,
+      appliedAtIso: new Date().toISOString(),
+      cityId: 'tehran',
+      source: 'project_array_design',
+      signatureHash: viewerSig8760,
+      simulationMode: 'hourly_8760',
+    });
+    const syncUpgraded = shadingLifecycleReducer(upgradedState8760, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: dcCapacityKwp,
+      currentSignatureHash: appSig8760,
+    });
+    assert(
+      syncUpgraded.isStale === false &&
+        syncUpgraded.appliedShading?.simulationMode === 'hourly_8760' &&
+        syncUpgraded.appliedShading?.lossPct === 3.8,
+      'Re-applying 8760h simulation seamlessly clears staleness and updates applied loss without requiring prior manual revert',
+      `isStale=${syncUpgraded.isStale}, lossPct=${syncUpgraded.appliedShading?.lossPct}%`
+    );
   }
 
   // ---------------------------------------------------------------------------

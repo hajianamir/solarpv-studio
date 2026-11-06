@@ -99,7 +99,7 @@ All vulnerabilities across items R1 through R11 have been systematically remedia
 • [R9] Iranian Regulations Financial Annuity & Zero Interest Rate: 4/4 PASS
 • [R10] Data Gateway Circuit Breaker & Policy-Driven Routing: 10/10 PASS
 • [R11] Multi-Faceted Shading Reconciliation & Array Tilt Separation: 7/7 PASS
-• [AREA 1–7] Engineering Audit Remediation Suite: 66/66 PASS (Total 151/151 Audit Assertions Passing)
+• [AREA 1–7] Engineering Audit Remediation Suite: 68/68 PASS (Total 153/153 Audit Assertions Passing)
 ```
 
 ### D. Production Build & Static Analysis
@@ -170,6 +170,10 @@ An independent audit probe of commit `d59e6a9` and review of `93701cc` identifie
    - **Simulator Direct Albedo Fallback:** In `simulateAnnual3dShading`, albedo is directly resolved from `options?.albedo ?? scene.albedo ?? 0.20`, guaranteeing that scenes with custom albedo (e.g. 0.80) produce identical generation ($32,787\,\text{kWh}$) whether options are passed or omitted, and properly propagate albedo through the scene snapshot.
    - **8760-Hour Lifecycle Sync:** `simulationMode` is synchronized bidirectionally between `App.tsx` and `ThreeJsViewer.tsx` and captured in `AppliedShading3dRecord`. Both fast screening (3-day) and full annual weather year (8760h) maintain 100% signature hash equality and keep `isStale: false` after `CHECK_SYNC`.
    - **Powerplant Capacity Label Disambiguation:** In `powerplant` mode, `plantCapacityKw` passes the actual target AC inverter capacity ($1,000\,\text{kW AC}$), while `arrayDesign.totalPvCapacityKwp` supplies the DC module nameplate capacity ($1,250\,\text{kWp DC}$). The 3D viewport displays both clearly: `Target AC Capacity: 1,000 kW AC (Array DC: 1,250 kWp)`.
+9. **D9 (Decoupled Preview Simulation Mode & Seamless Re-Apply UX):**
+   - **Decoupled Preview Selection:** Separated interactive preview simulation mode from the locked applied record, preventing the dropdown from snapping back to the previously applied mode upon user selection.
+   - **Informative Status Badge:** Added contextual indicator (`Applied: [8760h / 3-Day] — Re-run to update project`) notifying the user when their preview mode differs from the project's applied analysis.
+   - **Seamless Mode Upgrade without Revert:** Enabled direct re-simulation and re-application of different simulation modes without requiring the user to execute a manual `Revert` action beforehand.
 
 ---
 

@@ -587,8 +587,6 @@ export const App: React.FC = () => {
       ? Math.round((activePlantCapacityKwp * 1000) / (selectedModule.pmpWatts || 550))
       : arrayDesign.totalModulesCount;
 
-  const activeSimulationMode = appliedShadingRecord?.simulationMode ?? shadingSimulationMode;
-
   const currentShadingSignature = useMemo(() => {
     const scene = buildSceneFromProjectDesign({
       totalPvCapacityKwp: activePlantCapacityKwp,
@@ -614,7 +612,7 @@ export const App: React.FC = () => {
       cityId: city.id,
       peakSunHours: city.peakSunHours,
       albedo: city.albedo,
-      simulationMode: activeSimulationMode,
+      simulationMode: shadingSimulationMode,
     });
   }, [
     activePlantCapacityKwp,
@@ -630,7 +628,7 @@ export const App: React.FC = () => {
     city.peakSunHours,
     city.albedo,
     siteOverrides?.installationEnvironment,
-    activeSimulationMode,
+    shadingSimulationMode,
   ]);
 
   useEffect(() => {
@@ -2450,7 +2448,7 @@ export const App: React.FC = () => {
               }
               plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
-              simulationMode={activeSimulationMode}
+              simulationMode={shadingSimulationMode}
               onSimulationModeChange={setShadingSimulationMode}
               arrayDesign={{
                 totalPvCapacityKwp: activePlantCapacityKwp,
@@ -2491,7 +2489,7 @@ export const App: React.FC = () => {
                   cityId: city.id,
                   source: record.source,
                   signatureHash: record.signatureHash || currentShadingSignature,
-                  simulationMode: record.simulationMode ?? activeSimulationMode,
+                  simulationMode: record.simulationMode ?? shadingSimulationMode,
                 });
               }}
               onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}

@@ -873,6 +873,14 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                 {isEn ? 'Full Annual Weather Year (8760h)' : 'سال کامل هواشناسی (۸۷۶۰ ساعته)'}
               </option>
             </select>
+
+            {appliedShading?.simulationMode && appliedShading.simulationMode !== simulationMode && (
+              <span className="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-mono">
+                {isEn
+                  ? `Applied: ${appliedShading.simulationMode === 'hourly_8760' ? '8760h' : '3-Day'} — Re-run to update project`
+                  : `اعمال‌شده: ${appliedShading.simulationMode === 'hourly_8760' ? '۸۷۶۰ ساعته' : '۳ روزه'} — برای به‌روزرسانی مجدداً اجرا کنید`}
+              </span>
+            )}
           </div>
 
           <div className="text-xs text-slate-400 flex flex-wrap items-center gap-3">
