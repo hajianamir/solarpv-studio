@@ -1,16 +1,34 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
-import { Eye, Sun, Box, Play, RefreshCw, Layers, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, AlertTriangle, RotateCcw } from 'lucide-react';
+import {
+  Eye,
+  Sun,
+  Box,
+  Play,
+  RefreshCw,
+  Layers,
+  CheckCircle2,
+  AlertCircle,
+  BarChart3,
+  ShieldCheck,
+  AlertTriangle,
+  RotateCcw,
+  Sparkles,
+  Compass,
+} from 'lucide-react';
 import {
   simulateAnnual3dShading,
   DEFAULT_ROOFTOP_SCENE,
+  buildSceneFromProjectDesign,
+  calculateRayTracedShadingFactor,
   type AnnualShading3dResult,
   type Scene3DState,
+  type Obstacle3D,
 } from '../engine/roof3dShadingEngine';
 import { type ClimateCity } from '../engine/climaticData';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 
-interface ThreeJsViewerProps {
+export interface ThreeJsViewerProps {
   lang?: 'fa' | 'en';
   city?: ClimateCity;
   plantCapacityKw?: number;
@@ -21,6 +39,25 @@ interface ThreeJsViewerProps {
   onApplyShading?: (record: AppliedShading3dRecord) => void;
   onRevertShading?: () => void;
   onShadingLossChange?: (shadingLossPct: number) => void;
+
+  // Real Project Array Design props
+  arrayDesign?: {
+    totalPvCapacityKwp?: number;
+    totalModulesCount?: number;
+    interRowSpacingM?: number;
+    tiltDeg?: number;
+    azimuthDeg?: number;
+    stringsCount?: number;
+    modulesPerString?: number;
+  };
+  moduleSpecs?: {
+    lengthM?: number;
+    widthM?: number;
+    pmpWatts?: number;
+    modelName?: string;
+  };
+  installationEnvironment?: string;
+  obstacles?: Obstacle3D[];
 }
 
 export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
@@ -34,46 +71,134 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   onApplyShading,
   onRevertShading,
   onShadingLossChange,
+  arrayDesign,
+  moduleSpecs,
+  installationEnvironment,
+  obstacles,
 }) => {
   const isEn = lang === 'en';
   const mountRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
-  const [tiltDeg, setTiltDeg] = useState<number>(15);
+
+  // Scene Selection: defaults to active project array design if available, else demo block fallback
+  const hasProjectData = Boolean(arrayDesign && (arrayDesign.totalModulesCount || 0) > 0);
+  const [sceneMode, setSceneMode] = useState<'project_array' | 'demo_block'>(
+    hasProjectData ? 'project_array' : 'demo_block'
+  );
+
+  const initialTilt = arrayDesign?.tiltDeg ?? city?.optimalTiltAnnualDeg ?? 15;
+  const [tiltDeg, setTiltDeg] = useState<number>(initialTilt);
   const [sunAltitude, setSunAltitude] = useState<number>(45);
   const [sunAzimuth, setSunAzimuth] = useState<number>(180);
   const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
 
-  // Derive representative block capacity dynamically from scene PV tables
-  const demoSceneCapacityKwp = useMemo(() => {
-    const totalWp = DEFAULT_ROOFTOP_SCENE.pvTables.reduce(
-      (sum, t) => sum + (t.ratedPowerWp || 0),
-      0
-    );
-    return totalWp > 0 ? totalWp / 1000.0 : 55.2;
-  }, []);
-  const [annualResult, setAnnualResult] = useState<AnnualShading3dResult | null>(() => {
-    const initScene: Scene3DState = {
+  // Synchronize tilt if project design tilt changes externally
+  useEffect(() => {
+    if (arrayDesign?.tiltDeg !== undefined) {
+      setTiltDeg(arrayDesign.tiltDeg);
+    }
+  }, [arrayDesign?.tiltDeg]);
+
+  // Construct active project scene dynamically from array design
+  const projectScene = useMemo<Scene3DState | null>(() => {
+    if (!hasProjectData || !arrayDesign) return null;
+
+    return buildSceneFromProjectDesign({
+      totalPvCapacityKwp: arrayDesign.totalPvCapacityKwp ?? plantCapacityKw ?? 55.2,
+      totalModulesCount: arrayDesign.totalModulesCount ?? 140,
+      interRowSpacingM: arrayDesign.interRowSpacingM ?? 5.0,
+      tiltDeg,
+      azimuthDeg: arrayDesign.azimuthDeg ?? 0,
+      moduleWidthM: moduleSpecs?.widthM ?? 1.134,
+      moduleLengthM: moduleSpecs?.lengthM ?? 2.278,
+      modulePmpWatts: moduleSpecs?.pmpWatts ?? 550,
+      latitude: city?.latitude,
+      longitude: city?.longitude,
+      elevationM: city?.elevationM,
+      installationEnvironment,
+      obstacles,
+    });
+  }, [
+    hasProjectData,
+    arrayDesign,
+    plantCapacityKw,
+    tiltDeg,
+    moduleSpecs,
+    city,
+    installationEnvironment,
+    obstacles,
+  ]);
+
+  // Active scene state: either connected project array or representative demo block fallback
+  const activeScene: Scene3DState = useMemo(() => {
+    if (sceneMode === 'project_array' && projectScene) {
+      return projectScene;
+    }
+    return {
       ...DEFAULT_ROOFTOP_SCENE,
       anchorLocation: {
         latitude: city?.latitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.latitude,
         longitude: city?.longitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.longitude,
         elevationM: city?.elevationM ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.elevationM,
       },
+      pvTables: DEFAULT_ROOFTOP_SCENE.pvTables.map((t) => ({
+        ...t,
+        tiltDeg,
+      })),
+      tiltDeg,
     };
-    return simulateAnnual3dShading(initScene, 5.2, 40.0, { simulationMode: 'screening_3day' });
+  }, [sceneMode, projectScene, city, tiltDeg]);
+
+  // Scene capacity in kWp
+  const activeSceneCapacityKwp = useMemo(() => {
+    if (activeScene.totalPvCapacityKwp !== undefined) {
+      return activeScene.totalPvCapacityKwp;
+    }
+    const totalWp = activeScene.pvTables.reduce((sum, t) => sum + (t.ratedPowerWp || 0), 0);
+    return totalWp > 0 ? totalWp / 1000.0 : 55.2;
+  }, [activeScene]);
+
+  // Ray-traced optical accessibility result using calculateShadingFactor
+  const [rayTracedResult, setRayTracedResult] = useState<{
+    unshadedRatios: number[];
+    averageUnshadedRatio: number;
+    averageShadingLossPct: number;
+    trianglesCount: number;
+    samplePointsCount: number;
+  } | null>(() => {
+    try {
+      return calculateRayTracedShadingFactor(activeScene, undefined, { includeInterRow: true });
+    } catch {
+      return null;
+    }
   });
 
+  // Reconciled annual shading result
+  const [annualResult, setAnnualResult] = useState<AnnualShading3dResult | null>(() => {
+    try {
+      return simulateAnnual3dShading(activeScene, city?.peakSunHours ?? 5.2, 40.0, {
+        simulationMode: 'screening_3day',
+      });
+    } catch {
+      return null;
+    }
+  });
+
+  // Three.js References
   const sceneRef = useRef<THREE.Scene | null>(null);
   const sunMeshRef = useRef<THREE.Mesh | null>(null);
   const arrayGroupRef = useRef<THREE.Group | null>(null);
+  const obstaclesGroupRef = useRef<THREE.Group | null>(null);
+  const groundGroupRef = useRef<THREE.Group | null>(null);
   const dirLightRef = useRef<THREE.DirectionalLight | null>(null);
 
+  // Initialize WebGL Scene
   useEffect(() => {
     if (!mountRef.current) return;
     if (sceneRef.current) return; // StrictMode idempotency guard
     const container = mountRef.current;
     let width = container.clientWidth || 600;
-    let height = container.clientHeight || 360;
+    let height = container.clientHeight || 380;
 
     // 1. Scene setup
     const scene = new THREE.Scene();
@@ -81,9 +206,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     scene.background = new THREE.Color(0x0f172a);
 
     // 2. Camera setup
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(6, 6, 8);
-    camera.lookAt(0, 0, 0);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 200);
+    camera.position.set(12, 10, 16);
+    camera.lookAt(0, 1, 0);
 
     // 3. Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -99,7 +224,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const w = entry.contentRect.width;
-        const h = entry.contentRect.height || 360;
+        const h = entry.contentRect.height || 380;
         if (w > 0 && h > 0) {
           camera.aspect = w / h;
           camera.updateProjectionMatrix();
@@ -110,7 +235,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     resizeObserver.observe(container);
 
     // 4. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xfff4e6, 1.4);
@@ -118,79 +243,30 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     dirLight.shadow.mapSize.width = 1024;
     dirLight.shadow.mapSize.height = 1024;
     dirLight.shadow.bias = -0.0005;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 80;
+    dirLight.shadow.camera.left = -25;
+    dirLight.shadow.camera.right = 25;
+    dirLight.shadow.camera.top = 25;
+    dirLight.shadow.camera.bottom = -25;
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
-    // 5. Ground Plane
-    const groundGeo = new THREE.PlaneGeometry(24, 24);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.8,
-    });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    // 5. Container Groups for dynamic mesh updates
+    const groundGroup = new THREE.Group();
+    groundGroupRef.current = groundGroup;
+    scene.add(groundGroup);
 
-    // Grid Helper
-    const grid = new THREE.GridHelper(24, 24, 0x38bdf8, 0x334155);
-    grid.position.y = 0.01;
-    scene.add(grid);
-
-    // 6. Photovoltaic Array (2 Rows with tilt)
     const arrayGroup = new THREE.Group();
     arrayGroupRef.current = arrayGroup;
     scene.add(arrayGroup);
 
-    const moduleMat = new THREE.MeshStandardMaterial({
-      color: 0x0284c7,
-      metalness: 0.2,
-      roughness: 0.3,
-    });
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x94a3b8,
-      metalness: 0.8,
-      roughness: 0.4,
-    });
+    const obstaclesGroup = new THREE.Group();
+    obstaclesGroupRef.current = obstaclesGroup;
+    scene.add(obstaclesGroup);
 
-    const createModuleRow = (zPos: number) => {
-      const row = new THREE.Group();
-      row.position.z = zPos;
-      for (let col = -3; col <= 3; col++) {
-        const modMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 1.8), moduleMat);
-        modMesh.castShadow = true;
-        modMesh.receiveShadow = true;
-        modMesh.position.x = col * 0.96;
-        row.add(modMesh);
-
-        // Rack Leg Post
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.8), frameMat);
-        leg.position.set(col * 0.96, -0.4, 0);
-        leg.castShadow = true;
-        row.add(leg);
-      }
-      return row;
-    };
-
-    const row1 = createModuleRow(-1.8);
-    const row2 = createModuleRow(1.8);
-    arrayGroup.add(row1);
-    arrayGroup.add(row2);
-
-    // 7. Front Obstacle Building
-    const obsGeo = new THREE.BoxGeometry(2.5, 2.0, 1.2);
-    const obsMat = new THREE.MeshStandardMaterial({
-      color: 0x475569,
-      roughness: 0.6,
-    });
-    const obstacle = new THREE.Mesh(obsGeo, obsMat);
-    obstacle.position.set(0, 1.0, 4.5);
-    obstacle.castShadow = true;
-    obstacle.receiveShadow = true;
-    scene.add(obstacle);
-
-    // 8. Sun Sphere Indicator
-    const sunGeo = new THREE.SphereGeometry(0.35, 16, 16);
+    // 6. Sun Sphere Indicator
+    const sunGeo = new THREE.SphereGeometry(0.45, 16, 16);
     const sunMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
     const sunMesh = new THREE.Mesh(sunGeo, sunMat);
     sunMeshRef.current = sunMesh;
@@ -200,15 +276,15 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     let isDragging = false;
     let prevX = 0;
     let prevY = 0;
-    let cameraAngleX = 0.6;
-    let cameraAngleY = 0.8;
-    const distance = 11;
+    let cameraAngleX = 0.55;
+    let cameraAngleY = 0.85;
+    const distance = 22;
 
     const updateCameraPos = () => {
       camera.position.x = distance * Math.cos(cameraAngleX) * Math.sin(cameraAngleY);
       camera.position.y = distance * Math.sin(cameraAngleX);
       camera.position.z = distance * Math.cos(cameraAngleX) * Math.cos(cameraAngleY);
-      camera.lookAt(0, 0.5, 0);
+      camera.lookAt(0, 1.5, 0);
     };
     updateCameraPos();
 
@@ -225,7 +301,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       prevX = e.clientX;
       prevY = e.clientY;
       cameraAngleY -= deltaX * 0.01;
-      cameraAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleX + deltaY * 0.01));
+      cameraAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, cameraAngleX + deltaY * 0.01));
       updateCameraPos();
     };
     const onMouseUp = () => {
@@ -247,7 +323,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       prevX = e.touches[0].clientX;
       prevY = e.touches[0].clientY;
       cameraAngleY -= deltaX * 0.01;
-      cameraAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleX + deltaY * 0.01));
+      cameraAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, cameraAngleX + deltaY * 0.01));
       updateCameraPos();
     };
     const onTouchEnd = () => {
@@ -262,7 +338,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     window.addEventListener('touchmove', onTouchMove, { passive: true });
     window.addEventListener('touchend', onTouchEnd);
 
-    // 9. Animation Loop
+    // Animation Loop
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -282,6 +358,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       sceneRef.current = null;
       sunMeshRef.current = null;
       arrayGroupRef.current = null;
+      obstaclesGroupRef.current = null;
+      groundGroupRef.current = null;
       dirLightRef.current = null;
       try {
         if (container.contains(dom)) container.removeChild(dom);
@@ -292,20 +370,159 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     };
   }, []);
 
-  // Update Array Tilt & Sun Vector when state changes
+  // Rebuild 3D Meshes whenever activeScene or tilt changes
   useEffect(() => {
-    if (!arrayGroupRef.current) return;
-    const rad = (tiltDeg * Math.PI) / 180;
-    arrayGroupRef.current.children.forEach((child) => {
-      child.rotation.x = -rad;
-      child.position.y = 0.5 + Math.sin(rad) * 0.8;
+    if (!arrayGroupRef.current || !obstaclesGroupRef.current || !groundGroupRef.current) return;
+
+    // A. Rebuild Ground / Rooftop Plane
+    const groundGroup = groundGroupRef.current;
+    while (groundGroup.children.length > 0) {
+      groundGroup.remove(groundGroup.children[0]);
+    }
+
+    const roofPlane = activeScene.roofPlanes[0];
+    const poly = roofPlane?.polygonEnu || [];
+    let groundWidth = 36;
+    let groundLength = 36;
+    if (poly.length >= 4) {
+      const xs = poly.map((p) => p.x);
+      const ys = poly.map((p) => p.y);
+      groundWidth = Math.max(24, Math.max(...xs) - Math.min(...xs));
+      groundLength = Math.max(24, Math.max(...ys) - Math.min(...ys));
+    }
+
+    const groundGeo = new THREE.PlaneGeometry(groundWidth, groundLength);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: roofPlane?.eavesHeightM ? 0x334155 : 0x1e293b,
+      roughness: 0.85,
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0;
+    ground.receiveShadow = true;
+    groundGroup.add(ground);
+
+    const grid = new THREE.GridHelper(
+      Math.max(groundWidth, groundLength),
+      Math.max(12, Math.round(Math.max(groundWidth, groundLength) / 2)),
+      0x38bdf8,
+      0x475569
+    );
+    grid.position.y = 0.01;
+    groundGroup.add(grid);
+
+    // B. Rebuild PV Tables (Connected Rows from activeScene)
+    const arrayGroup = arrayGroupRef.current;
+    while (arrayGroup.children.length > 0) {
+      arrayGroup.remove(arrayGroup.children[0]);
+    }
+
+    const moduleMat = new THREE.MeshStandardMaterial({
+      color: 0x0284c7,
+      metalness: 0.25,
+      roughness: 0.3,
+    });
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8,
+      metalness: 0.8,
+      roughness: 0.4,
     });
 
-    // Sun Vector
+    const rad = (tiltDeg * Math.PI) / 180;
+
+    activeScene.pvTables.forEach((table) => {
+      const tableGroup = new THREE.Group();
+      // ENU to Three.js: +X = East (X), +Y = North (-Z), +Z = Up (Y)
+      tableGroup.position.set(table.positionEnu.x, 0.4, -table.positionEnu.y);
+
+      // Create sloped rack table
+      const rack = new THREE.Group();
+      rack.rotation.x = -rad;
+      rack.position.y = Math.sin(rad) * (table.slopedLengthM / 4);
+
+      // Modules grid along table width
+      const cols = Math.min(14, Math.max(4, Math.round(table.widthM / 1.15)));
+      const colStep = table.widthM / cols;
+      const modWidth = colStep * 0.92;
+      const modLength = (table.slopedLengthM / 2) * 0.94;
+
+      for (let c = 0; c < cols; c++) {
+        const xPos = (c - (cols - 1) / 2) * colStep;
+
+        // Top portrait module
+        const modMeshTop = new THREE.Mesh(
+          new THREE.BoxGeometry(modWidth, 0.04, modLength),
+          moduleMat
+        );
+        modMeshTop.position.set(xPos, 0, -modLength / 2 - 0.02);
+        modMeshTop.castShadow = true;
+        modMeshTop.receiveShadow = true;
+        rack.add(modMeshTop);
+
+        // Bottom portrait module
+        const modMeshBottom = new THREE.Mesh(
+          new THREE.BoxGeometry(modWidth, 0.04, modLength),
+          moduleMat
+        );
+        modMeshBottom.position.set(xPos, 0, modLength / 2 + 0.02);
+        modMeshBottom.castShadow = true;
+        modMeshBottom.receiveShadow = true;
+        rack.add(modMeshBottom);
+
+        // Rack Support Leg Posts (every 2 columns)
+        if (c % 2 === 0 || c === cols - 1) {
+          const legHeight = 0.8 + Math.sin(rad) * (table.slopedLengthM / 2);
+          const leg = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.025, 0.025, legHeight, 8),
+            frameMat
+          );
+          leg.position.set(xPos, -legHeight / 2 + 0.2, 0);
+          leg.castShadow = true;
+          tableGroup.add(leg);
+        }
+      }
+
+      tableGroup.add(rack);
+      arrayGroup.add(tableGroup);
+    });
+
+    // C. Rebuild Obstacles
+    const obstaclesGroup = obstaclesGroupRef.current;
+    while (obstaclesGroup.children.length > 0) {
+      obstaclesGroup.remove(obstaclesGroup.children[0]);
+    }
+
+    const obsMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      roughness: 0.65,
+    });
+
+    activeScene.obstacles.forEach((obs) => {
+      let obsMesh: THREE.Mesh;
+      if (obs.geometryType === 'cylinder') {
+        const rad = obs.dimensionsM.radiusM || 1.0;
+        const h = obs.dimensionsM.heightM || 3.0;
+        obsMesh = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, h, 24), obsMat);
+        obsMesh.position.set(obs.positionEnu.x, h / 2, -obs.positionEnu.y);
+      } else {
+        const w = obs.dimensionsM.widthM || 3.0;
+        const l = obs.dimensionsM.lengthM || 3.0;
+        const h = obs.dimensionsM.heightM || 2.5;
+        obsMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), obsMat);
+        obsMesh.position.set(obs.positionEnu.x, h / 2, -obs.positionEnu.y);
+      }
+      obsMesh.castShadow = true;
+      obsMesh.receiveShadow = true;
+      obstaclesGroup.add(obsMesh);
+    });
+  }, [activeScene, tiltDeg]);
+
+  // Update Sun Vector when altitude or azimuth changes
+  useEffect(() => {
     if (sunMeshRef.current && dirLightRef.current) {
       const altRad = (sunAltitude * Math.PI) / 180;
       const azRad = ((sunAzimuth - 180) * Math.PI) / 180;
-      const sunDist = 12;
+      const sunDist = 20;
 
       const sunX = sunDist * Math.cos(altRad) * Math.sin(azRad);
       const sunY = sunDist * Math.sin(altRad);
@@ -314,30 +531,23 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       sunMeshRef.current.position.set(sunX, sunY, sunZ);
       dirLightRef.current.position.set(sunX, sunY, sunZ);
     }
-  }, [tiltDeg, sunAltitude, sunAzimuth]);
+  }, [sunAltitude, sunAzimuth]);
 
-  // Execute 3D mesh ray-tracing annual simulation
+  // Execute Ray-Traced Shading & Annual Waterfall Simulation
   const handleRunShadingAnalysis = () => {
     setLoading(true);
     try {
       setTimeout(() => {
-        // Adjust table tilt and geodetic anchor in active scene
-        const updatedScene: Scene3DState = {
-          ...DEFAULT_ROOFTOP_SCENE,
-          anchorLocation: {
-            latitude: city?.latitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.latitude,
-            longitude: city?.longitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.longitude,
-            elevationM: city?.elevationM ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.elevationM,
-          },
-          pvTables: DEFAULT_ROOFTOP_SCENE.pvTables.map(t => ({
-            ...t,
-            tiltDeg,
-          })),
-        };
-        const result = simulateAnnual3dShading(updatedScene, 5.2, 40.0, { simulationMode });
+        const result = simulateAnnual3dShading(activeScene, city?.peakSunHours ?? 5.2, 40.0, {
+          simulationMode,
+        });
+        const rayTraced = calculateRayTracedShadingFactor(activeScene, undefined, {
+          includeInterRow: true,
+        });
         setAnnualResult(result);
+        setRayTracedResult(rayTraced);
         setLoading(false);
-      }, 100);
+      }, 120);
     } catch {
       setLoading(false);
     }
@@ -345,19 +555,79 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Title */}
+      {/* Title Card */}
       <div className="studio-card">
-        <h1 className="text-xl md:text-2xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
-          <Eye className="w-6 h-6 text-industrial-accent" />
-          {isEn
-            ? 'Interactive 3D Photovoltaic & Shading Viewport'
-            : 'نمای سه‌بعدی تعاملی چیدمان نیروگاه و سایه‌اندازی (3D WebGL Viewer)'}
-        </h1>
-        <p className="text-slate-400 text-xs md:text-sm">
-          {isEn
-            ? 'Real-time WebGL ray-traced  simulation with movable solar altitude/azimuth and obstacle geometry.'
-            : 'شبیه‌سازی رندر بلادرنگ بردار تابش، طول سایه موانع و استراکچرها و محاسبه نسبت دسترسی نوری'}
-        </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-1">
+          <h1 className="text-xl md:text-2xl font-bold text-industrial-accent flex items-center gap-2">
+            <Eye className="w-6 h-6 text-industrial-accent" />
+            {isEn
+              ? 'Interactive 3D Photovoltaic & Shading Viewport'
+              : 'نمای سه‌بعدی تعاملی چیدمان نیروگاه و سایه‌اندازی (3D WebGL Viewer)'}
+          </h1>
+
+          {/* Mode Selector Toggle */}
+          <div className="flex items-center gap-2 bg-slate-900/80 p-1 rounded-lg border border-industrial-border text-xs">
+            <button
+              onClick={() => setSceneMode('project_array')}
+              disabled={!hasProjectData}
+              className={`px-3 py-1.5 rounded font-bold transition flex items-center gap-1.5 ${
+                sceneMode === 'project_array'
+                  ? 'bg-sky-500 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white disabled:opacity-40'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Project Array Design (Connected)' : 'طرح مهندسی پروژه (متصل)'}</span>
+            </button>
+            <button
+              onClick={() => setSceneMode('demo_block')}
+              className={`px-3 py-1.5 rounded font-bold transition flex items-center gap-1.5 ${
+                sceneMode === 'demo_block'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Representative Demo Block' : 'بلوک نمونه نمایشی'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Dynamic Status / Connection Badge */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-industrial-border/60 text-xs">
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold flex items-center gap-1 ${
+                sceneMode === 'project_array'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  sceneMode === 'project_array' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                }`}
+              ></span>
+              {sceneMode === 'project_array'
+                ? isEn
+                  ? 'DYNAMICALLY COUPLED TO ACTIVE PROJECT'
+                  : 'همگام‌شده با طرح واقعی پروژه'
+                : isEn
+                  ? 'REPRESENTATIVE DEMO BLOCK (FALLBACK)'
+                  : 'بلوک نمونه نمایشی (پیش‌فرض ۵۵.۲ kWp)'}
+            </span>
+            <span className="text-slate-400 text-[11px] font-mono">
+              {activeScene.pvTables.length} {isEn ? 'tables' : 'میز'} |{' '}
+              {activeSceneCapacityKwp.toFixed(1)} kWp |{' '}
+              {isEn ? 'Pitch:' : 'فاصله سطرها:'}{' '}
+              {arrayDesign?.interRowSpacingM?.toFixed(1) ?? '5.0'}m
+            </span>
+          </div>
+
+          <span className="text-slate-400 text-[11px] font-mono">
+            {city?.nameEn || 'Tehran'} ({city?.latitude.toFixed(2)}°N, {city?.longitude.toFixed(2)}°E)
+          </span>
+        </div>
       </div>
 
       <div className="studio-card">
@@ -414,10 +684,10 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
           </div>
         </div>
 
-        {/* 3D WebGL Canvas Container with Responsive Height */}
+        {/* 3D WebGL Canvas Container */}
         <div
           ref={mountRef}
-          className="w-full h-[280px] sm:h-[380px] md:h-[450px] rounded-lg overflow-hidden border border-industrial-border bg-industrial-bg relative cursor-grab active:cursor-grabbing touch-none"
+          className="w-full h-[300px] sm:h-[400px] md:h-[480px] rounded-lg overflow-hidden border border-industrial-border bg-industrial-bg relative cursor-grab active:cursor-grabbing touch-none"
         />
 
         {/* Bottom Action Bar */}
@@ -447,31 +717,41 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
             <select
               value={simulationMode}
-              onChange={(e) => setSimulationMode(e.target.value as 'hourly_8760' | 'screening_3day')}
+              onChange={(e) =>
+                setSimulationMode(e.target.value as 'hourly_8760' | 'screening_3day')
+              }
               className="studio-input text-xs font-mono py-1.5"
             >
-              <option value="screening_3day">{isEn ? 'Fast Screening (3-Day Step)' : 'غربالگری سریع (گام ۳ روزه)'}</option>
-              <option value="hourly_8760">{isEn ? 'Full Annual Weather Year (8760h)' : 'سال کامل هواشناسی (۸۷۶۰ ساعته)'}</option>
+              <option value="screening_3day">
+                {isEn ? 'Fast Screening (3-Day Step)' : 'غربالگری سریع (گام ۳ روزه)'}
+              </option>
+              <option value="hourly_8760">
+                {isEn ? 'Full Annual Weather Year (8760h)' : 'سال کامل هواشناسی (۸۷۶۰ ساعته)'}
+              </option>
             </select>
           </div>
 
           <div className="text-xs text-slate-400 flex flex-wrap items-center gap-3">
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-sky-500"></span> {isEn ? 'PV Modules' : 'پنل‌های خورشیدی'}
+              <span className="w-3 h-3 rounded bg-sky-500"></span>{' '}
+              {isEn ? 'PV Modules' : 'پنل‌های خورشیدی'}
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-slate-600"></span> {isEn ? 'Obstacle' : 'مانع ساختمانی'}
+              <span className="w-3 h-3 rounded bg-slate-500"></span>{' '}
+              {isEn ? '3D Obstacle' : 'مانع سه‌بعدی'}
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-industrial-warning"></span> {isEn ? 'Solar Vector' : 'بردار پرتو خورشید'}
+              <span className="w-3 h-3 rounded bg-amber-400"></span>{' '}
+              {isEn ? 'Solar Vector' : 'بردار تابش خورشید'}
             </span>
           </div>
         </div>
 
+        {/* Shading Results & Reconciled Waterfall Coupling */}
         {annualResult && (
           <div className="mt-6 space-y-4 animate-fadeIn">
             {/* Top KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
                 <div className="text-xs text-slate-400">
                   {isEn ? 'Combined Annual Shading Loss' : 'کل افت سالانه سایه‌اندازی'}
@@ -480,7 +760,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   {annualResult.annualCombinedShadingLossPct}%
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                  {annualResult.simulationModeUsed} ({annualResult.rawRayCastingStepsCount} steps / {annualResult.totalEvaluatedDaylightHours} {isEn ? 'equiv daylight hrs' : 'ساعت روز معادل'})
+                  {annualResult.simulationModeUsed} ({annualResult.rawRayCastingStepsCount} steps /{' '}
+                  {annualResult.totalEvaluatedDaylightHours}{' '}
+                  {isEn ? 'daylight hrs' : 'ساعت روز'})
                 </div>
               </div>
 
@@ -492,7 +774,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   {annualResult.annualGeometricBeamLossPct}%
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
-                  {isEn ? '12-point mesh ray-facet occlusion' : 'انسداد پرتو در مش ۱۲ نقطه‌ای'}
+                  {isEn ? 'Ray-facet occlusion' : 'انسداد پرتو مستقیم مش'}
                 </div>
               </div>
 
@@ -504,19 +786,37 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   {annualResult.annualElectricalMismatchLossPct}%
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
-                  {isEn ? 'Electrical substring current bottleneck' : 'افت عدم تطابق الکتریکی ساب‌استرینگ'}
+                  {isEn ? 'Electrical substring bottleneck' : 'افت الکتریکی ساب‌استرینگ'}
                 </div>
               </div>
 
               <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
                 <div className="text-xs text-slate-400">
-                  {isEn ? 'Geometric Shading Deficit Index' : 'شاخص کسری انرژی سایه'}
+                  {isEn ? 'Ray-Traced Optical Access' : 'دسترسی نوری ردیابی پرتو'}
                 </div>
-                <div className="text-xl font-bold font-mono text-teal-400 mt-1">
-                  {annualResult.totalLostAnnualKwh.toLocaleString()} <span className="text-xs font-normal text-slate-300">kWh</span>
+                <div className="text-xl font-bold font-mono text-sky-400 mt-1">
+                  {rayTracedResult
+                    ? `${(rayTracedResult.averageUnshadedRatio * 100).toFixed(1)}%`
+                    : `${(100 - annualResult.annualGeometricBeamLossPct).toFixed(1)}%`}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
-                  {isEn ? 'Clear-sky proxy baseline:' : 'مبنای پروکسی آسمان صاف:'} {annualResult.totalUnshadedAnnualKwh.toLocaleString()} kWh
+                  {rayTracedResult
+                    ? `${rayTracedResult.trianglesCount} mesh triangles evaluated`
+                    : 'Möller-Trumbore ray intersection'}
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
+                <div className="text-xs text-slate-400">
+                  {isEn ? 'Geometric Shading Deficit' : 'شاخص کسری انرژی سایه'}
+                </div>
+                <div className="text-xl font-bold font-mono text-teal-400 mt-1">
+                  {annualResult.totalLostAnnualKwh.toLocaleString()}{' '}
+                  <span className="text-xs font-normal text-slate-300">kWh</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {isEn ? 'Unshaded proxy:' : 'مبنای بدون سایه:'}{' '}
+                  {annualResult.totalUnshadedAnnualKwh.toLocaleString()} kWh
                 </div>
               </div>
             </div>
@@ -527,12 +827,18 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs border-b border-industrial-border pb-2">
                   <span className="text-industrial-accent font-bold flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-industrial-success" />
-                    {isEn ? 'Active Project Yield Coupling & Scaled Impact' : 'اتصال مستقیم به تولید سالانه پروژه فعال'}
+                    {isEn
+                      ? 'Active Project Yield Coupling & Scaled Impact'
+                      : 'اتصال مستقیم به تولید سالانه پروژه فعال'}
                   </span>
                   <span className="font-mono text-slate-300 font-semibold text-[11px]">
                     {plantCapacityType === 'ac_target'
-                      ? (isEn ? 'Target AC Capacity:' : 'ظرفیت هدف AC نیروگاه:')
-                      : (isEn ? 'Installed DC Nameplate:' : 'ظرفیت نامی DC نصب‌شده:')}{' '}
+                      ? isEn
+                        ? 'Target AC Capacity:'
+                        : 'ظرفیت هدف AC نیروگاه:'
+                      : isEn
+                        ? 'Installed DC Nameplate:'
+                        : 'ظرفیت نامی DC نصب‌شده:'}{' '}
                     <span className="text-amber-300">
                       {plantCapacityKw.toLocaleString()}{' '}
                       {plantCapacityType === 'ac_target' ? 'kW AC' : 'kWp'}
@@ -540,37 +846,65 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   </span>
                 </div>
                 {(() => {
-                  const lossFraction = Math.min(0.95, Math.max(0, annualResult.annualCombinedShadingLossPct / 100.0));
-                  const unshadedBaselineKwh = lossFraction < 0.95 && lossFraction > 0
-                    ? Math.round(annualYieldKwh / (1.0 - lossFraction))
-                    : Math.round(annualYieldKwh);
-                  const shadingDeficitKwh = Math.max(0, unshadedBaselineKwh - Math.round(annualYieldKwh));
+                  const lossFraction = Math.min(
+                    0.95,
+                    Math.max(0, annualResult.annualCombinedShadingLossPct / 100.0)
+                  );
+                  const unshadedBaselineKwh =
+                    lossFraction < 0.95 && lossFraction > 0
+                      ? Math.round(annualYieldKwh / (1.0 - lossFraction))
+                      : Math.round(annualYieldKwh);
+                  const shadingDeficitKwh = Math.max(
+                    0,
+                    unshadedBaselineKwh - Math.round(annualYieldKwh)
+                  );
 
                   return (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2.5 text-xs font-mono">
                       <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
-                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Plant Unshaded Baseline (Est.):' : 'تولید مبنای بدون سایه نیروگاه:'}</div>
-                        <div className="text-slate-200 font-bold mt-0.5">{unshadedBaselineKwh.toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span></div>
-                      </div>
-                      <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
-                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? '3D Near-Shading Deficit:' : 'کسری سایه‌اندازی سه‌بعدی:'}</div>
-                        <div className="text-red-400 font-bold mt-0.5">
-                          -{shadingDeficitKwh.toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr (-{annualResult.annualCombinedShadingLossPct}%)</span>
+                        <div className="text-[10px] text-slate-400 font-sans">
+                          {isEn
+                            ? 'Plant Unshaded Baseline (Est.):'
+                            : 'تولید مبنای بدون سایه نیروگاه:'}
+                        </div>
+                        <div className="text-slate-200 font-bold mt-0.5">
+                          {unshadedBaselineKwh.toLocaleString()}{' '}
+                          <span className="text-[10px] font-normal font-sans">kWh/yr</span>
                         </div>
                       </div>
                       <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
-                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Net Export (Waterfall-Coupled):' : 'تولید خالص نهایی نیروگاه (متصل به واترفال):'}</div>
+                        <div className="text-[10px] text-slate-400 font-sans">
+                          {isEn ? '3D Near-Shading Deficit:' : 'کسری سایه‌اندازی سه‌بعدی:'}
+                        </div>
+                        <div className="text-red-400 font-bold mt-0.5">
+                          -{shadingDeficitKwh.toLocaleString()}{' '}
+                          <span className="text-[10px] font-normal font-sans">
+                            kWh/yr (-{annualResult.annualCombinedShadingLossPct}%)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                        <div className="text-[10px] text-slate-400 font-sans">
+                          {isEn
+                            ? 'Net Export (Waterfall-Coupled):'
+                            : 'تولید خالص نهایی نیروگاه (متصل به واترفال):'}
+                        </div>
                         <div className="text-emerald-400 font-bold mt-0.5">
-                          {Math.round(annualYieldKwh).toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span>
+                          {Math.round(annualYieldKwh).toLocaleString()}{' '}
+                          <span className="text-[10px] font-normal font-sans">kWh/yr</span>
                         </div>
                       </div>
                     </div>
                   );
                 })()}
                 <div className="text-[10px] text-slate-400 mt-2">
-                  {isEn
-                    ? `Note: The 3D viewport evaluates a representative ${demoSceneCapacityKwp.toFixed(1)} kWp array section with local obstructions. Its geometric shading deficit can be applied to the 14-stage waterfall model and financial cashflows or reverted to default.`
-                    : `توجه: نمای سه‌بعدی یک بلوک نمونه ${demoSceneCapacityKwp.toFixed(1)} کیلوواتی با موانع مجاور را تحلیل می‌کند. درصد کسری سایه محاسبه‌شده را می‌توانید به درخت تلفات و محاسبات مالی پروژه اعمال یا به مقدار پیش‌فرض بازگردانید.`}
+                  {sceneMode === 'project_array'
+                    ? isEn
+                      ? `Active Project Array: Analyzes ${activeScene.pvTables.length} tables (${activeSceneCapacityKwp.toFixed(1)} kWp) arranged at ${arrayDesign?.interRowSpacingM?.toFixed(1) ?? '5.0'}m pitch and ${tiltDeg}° tilt.`
+                      : `طرح واقعی پروژه: تحلیل ${activeScene.pvTables.length} ردیف/میز (${activeSceneCapacityKwp.toFixed(1)} کیلووات‌پیک) با فاصله ردیف ${arrayDesign?.interRowSpacingM?.toFixed(1) ?? '۵.۰'} متر و شیب ${tiltDeg} درجه.`
+                    : isEn
+                      ? `Representative Demo Block: Evaluates a 55.2 kWp section with localized obstructions. Can be applied to the project waterfall model.`
+                      : `بلوک نمونه نمایشی: تحلیل بخش ۵۵.۲ کیلوواتی با موانع مجاور. امکان اعمال به درخت تلفات پروژه.`}
                 </div>
 
                 {/* Apply / Revert Actions */}
@@ -581,7 +915,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                     </span>
                     {appliedShading ? (
                       <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-bold border border-emerald-500/30">
-                        {isEn ? `Applied (-${appliedShading.lossPct}%)` : `اعمال‌شده (-${appliedShading.lossPct}٪)`}
+                        {isEn
+                          ? `Applied (-${appliedShading.lossPct}% from ${appliedShading.source === 'project_array_design' ? 'Project Array' : 'Demo Block'})`
+                          : `اعمال‌شده (-${appliedShading.lossPct}٪ از ${appliedShading.source === 'project_array_design' ? 'طرح پروژه' : 'بلوک نمونه'})`}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[11px] border border-slate-700">
@@ -609,9 +945,12 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                           if (annualResult) {
                             onApplyShading?.({
                               lossPct: annualResult.annualCombinedShadingLossPct,
-                              source: 'representative_demo_block',
+                              source:
+                                sceneMode === 'project_array'
+                                  ? 'project_array_design'
+                                  : 'representative_demo_block',
                               appliedAtIso: new Date().toISOString(),
-                              capacityKwp: demoSceneCapacityKwp,
+                              capacityKwp: activeSceneCapacityKwp,
                             });
                             onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
                           }
@@ -631,11 +970,13 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
             )}
 
             {/* Reconciliation Audit Badge */}
-            <div className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
-              annualResult.isReconciled
-                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
-                : 'bg-amber-500/10 border-amber-500/40 text-amber-300'
-            }`}>
+            <div
+              className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+                annualResult.isReconciled
+                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                  : 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
                 <span>
@@ -653,7 +994,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
             <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-200 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <div className="leading-relaxed">
-                <span className="font-bold">{isEn ? 'Screening Shading Index Notice: ' : 'اطلاعیه شاخص غربالگری سایه‌اندازی: '}</span>
+                <span className="font-bold">
+                  {isEn
+                    ? 'Screening Shading Index Notice: '
+                    : 'اطلاعیه شاخص غربالگری سایه‌اندازی: '}
+                </span>
                 {isEn ? annualResult.screeningNoticeEn : annualResult.screeningNoticeFa}
               </div>
             </div>
@@ -682,11 +1027,23 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   <tbody className="divide-y divide-slate-800 font-mono text-[11px]">
                     {annualResult.tableHeatmap.map((t) => (
                       <tr key={t.tableId} className="hover:bg-slate-850/50">
-                        <td className="p-2 font-sans font-bold text-white">{t.tableId} (#{t.tableIndex})</td>
-                        <td className="p-2 text-sky-300">{t.annualUnshadedKwh.toLocaleString()}</td>
+                        <td className="p-2 font-sans font-bold text-white">
+                          {t.tableId} (#{t.tableIndex})
+                        </td>
+                        <td className="p-2 text-sky-300">
+                          {t.annualUnshadedKwh.toLocaleString()}
+                        </td>
                         <td className="p-2 text-slate-200">{t.annualShadedKwh.toLocaleString()}</td>
-                        <td className="p-2 text-industrial-error font-bold">{t.annualLossKwh.toLocaleString()}</td>
-                        <td className={`p-2 font-bold ${t.annualLossPct > 5.0 ? 'text-industrial-error' : 'text-industrial-warning'}`}>
+                        <td className="p-2 text-industrial-error font-bold">
+                          {t.annualLossKwh.toLocaleString()}
+                        </td>
+                        <td
+                          className={`p-2 font-bold ${
+                            t.annualLossPct > 5.0
+                              ? 'text-industrial-error'
+                              : 'text-industrial-warning'
+                          }`}
+                        >
                           {t.annualLossPct}%
                         </td>
                         <td className="p-2 text-slate-300">{t.averageBeamCoveragePct}%</td>
@@ -703,4 +1060,5 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     </div>
   );
 };
+
 export default ThreeJsViewer;

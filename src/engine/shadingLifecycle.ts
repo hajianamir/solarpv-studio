@@ -8,7 +8,7 @@
 
 export interface AppliedShading3dRecord {
   lossPct: number;
-  source: 'representative_demo_block';
+  source: 'representative_demo_block' | 'project_array_design';
   appliedAtIso: string;
   capacityKwp: number;
 }
@@ -35,6 +35,7 @@ export type ShadingLifecycleAction =
       projectCapacityKwp: number;
       appliedAtIso?: string;
       cityId?: string;
+      source?: 'representative_demo_block' | 'project_array_design';
     }
   | { type: 'REVERT' }
   | { type: 'RESET' }
@@ -57,7 +58,7 @@ export function shadingLifecycleReducer(
       return {
         appliedShading: {
           lossPct: action.lossPct,
-          source: 'representative_demo_block',
+          source: action.source ?? 'representative_demo_block',
           appliedAtIso: action.appliedAtIso || new Date().toISOString(),
           capacityKwp: action.capacityKwp,
         },
