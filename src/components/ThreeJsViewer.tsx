@@ -21,6 +21,7 @@ import {
   DEFAULT_ROOFTOP_SCENE,
   buildSceneFromProjectDesign,
   calculateRayTracedShadingFactor,
+  getLocalRoofElevationAt,
   type AnnualShading3dResult,
   type Scene3DState,
   type Obstacle3D,
@@ -435,16 +436,25 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       color: roofPlane?.eavesHeightM ? 0x334155 : 0x1e293b,
       roughness: 0.85,
     });
+
+    const roofCenterY = roofPlane ? getLocalRoofElevationAt(roofPlane, 0, 0) : 0;
+    const roofMeshGroup = new THREE.Group();
+    roofMeshGroup.position.set(0, roofCenterY, 0);
+
+    // Orient roof plane around vertical axis according to roof azimuth:
+    // In Three.js (+Z = South, +X = East, -X = West), clockwise azimuth from South maps to -rotation.y
+    if (roofPlane?.azimuthDeg) {
+      roofMeshGroup.rotation.y = -((roofPlane.azimuthDeg * Math.PI) / 180);
+    }
+
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
-    const roofY = roofPlane?.eavesHeightM ?? 0;
-    ground.position.y = roofY;
     if (roofPlane?.tiltDeg) {
       const rTiltRad = (roofPlane.tiltDeg * Math.PI) / 180;
       ground.rotation.x = -Math.PI / 2 + rTiltRad;
     }
     ground.receiveShadow = true;
-    groundGroup.add(ground);
+    roofMeshGroup.add(ground);
 
     const grid = new THREE.GridHelper(
       Math.max(groundWidth, groundLength),
@@ -452,12 +462,13 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       0x38bdf8,
       0x475569
     );
-    grid.position.y = roofY + 0.01;
+    grid.position.y = 0.01;
     if (roofPlane?.tiltDeg) {
       const rTiltRad = (roofPlane.tiltDeg * Math.PI) / 180;
       grid.rotation.x = rTiltRad;
     }
-    groundGroup.add(grid);
+    roofMeshGroup.add(grid);
+    groundGroup.add(roofMeshGroup);
 
     // B. Rebuild PV Tables (Connected Rows from activeScene)
     const arrayGroup = arrayGroupRef.current;
@@ -476,22 +487,22 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       roughness: 0.4,
     });
 
-    const rad = (tiltDeg * Math.PI) / 180;
-
     activeScene.pvTables.forEach((table) => {
       const tableGroup = new THREE.Group();
       // ENU to Three.js: +X = East (X), +Y = North (-Z), +Z = Up (Y)
-      const tableBaseZ = table.positionEnu.z ?? (roofY + 1.2);
+      const tableBaseZ = table.positionEnu.z ?? (roofCenterY + 1.2);
       tableGroup.position.set(table.positionEnu.x, tableBaseZ, -table.positionEnu.y);
 
       // Rotate table around vertical axis if table has azimuth (0 = South, 90 = West, -90/270 = East, 180 = North)
+      // Positive ENU azimuth (clockwise from South towards West) maps to negative rotation around +Y in Three.js
       if (table.azimuthDeg) {
-        tableGroup.rotation.y = (table.azimuthDeg * Math.PI) / 180;
+        tableGroup.rotation.y = -((table.azimuthDeg * Math.PI) / 180);
       }
 
-      // Create sloped rack table pivoted at its geometric center
+      // Create sloped rack table pivoted at its geometric center, using table's actual tilt
+      const tableTiltDeg = table.tiltDeg ?? tiltDeg;
       const rack = new THREE.Group();
-      rack.rotation.x = rad;
+      rack.rotation.x = (tableTiltDeg * Math.PI) / 180;
 
       // Modules grid along table width: derived from actual module width and table width
       const modW = moduleSpecs?.widthM || 1.134;
@@ -551,9 +562,12 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
           }
         }
 
-        // Rack Support Leg Posts (every 2 columns) connecting table to roof plane
+        // Rack Support Leg Posts (every 2 columns) connecting table to local roof plane
         if (c % 2 === 0 || c === cols - 1) {
-          const legHeight = Math.max(0.3, tableBaseZ - roofY);
+          const localRoofZ = roofPlane
+            ? getLocalRoofElevationAt(roofPlane, table.positionEnu.x, table.positionEnu.y)
+            : roofCenterY;
+          const legHeight = Math.max(0.3, tableBaseZ - localRoofZ);
           const leg = new THREE.Mesh(
             new THREE.CylinderGeometry(0.025, 0.025, legHeight, 8),
             frameMat

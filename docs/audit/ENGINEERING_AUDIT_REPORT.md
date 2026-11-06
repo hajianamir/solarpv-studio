@@ -3,7 +3,7 @@
 **Auditor:** Arena AI Senior Solar Engineering Agent  
 **Branch:** `arena/b1ee60dc-solarpv-studio`  
 **Test Suites:**
-- `scripts/engineering-audit-remediation-test.ts` (48/48 Passing)
+- `scripts/engineering-audit-remediation-test.ts` (54/54 Passing)
 - `scripts/audit-r1-to-r7-remediation-test.ts` (85/85 Passing)
 - `scripts/run-all-benchmarks.ts` (Core Benchmark & Unit Suite: 100% Passing)
 
@@ -146,13 +146,21 @@ All vulnerabilities across items R1 through R11 have been systematically remedia
 * **Testing Scope Notice:** `test:smoke` is an in-memory Node.js integration script verifying 5 core end-to-end user data flows (API gateway, continuous compliance mode, analytical benchmarks, schema migration, and corrupted payload blocking). It does **not** run inside a real browser or evaluate WebGL GPU shader context, driver resource cleanup, or DOM drag-and-drop events.
 
 ### Item 6: Resolution of Reviewer Probe Discrepancies (D1–D6)
-An independent audit probe of commit `d59e6a9` uncovered 6 discrete engineering discrepancies that have now been fully remediated and verified with dedicated test coverage in `scripts/engineering-audit-remediation-test.ts` (Area 7):
+An independent audit probe of commit `d59e6a9` and review of `93701cc` identified 6 discrete engineering discrepancies that have now been fully remediated and verified with dedicated test coverage in `scripts/engineering-audit-remediation-test.ts` (Area 7):
 1. **D1 (`ThreeJsViewer.tsx:616` Signature Mismatch):** Fixed `setCalculatedSignature` to supply the canonical object payload `{ scene: result.sceneState, cityId: city?.id, peakSunHours: city?.peakSunHours }` rather than passing bare `result.sceneState`. This eliminates immediate post-simulation signature divergence and restores seamless `Apply` workflow functionality.
 2. **D2 (Odd-Module Slot Alignment):** Visual mesh generation in `ThreeJsViewer.tsx` now renders the bottom module first (slot $2c$) and top module second (slot $2c + 1$). For odd module allocations (e.g. $N=27$), this places the single module in the bottom slot and leaves the top slot empty, maintaining complete spatial and geometric parity with analytical ray-tracer facets (`getActiveTableSubRects`).
-3. **D3 (Ray-Tracer Sample Point Weighting Distortion):** `generateTableMeshSamplePoints` previously allocated 12 points to each sub-rect regardless of area, causing a single odd module (1/27 = 3.7% area) to receive 50% of target points and artificially report 50% shading loss. The sample generator now enforces area-weighted, module-uniform sampling ($N=27$ allocates 26 points to full columns and 1 point to the odd module), ensuring shading on a single module produces strictly $\approx 3.70\%$ loss.
+3. **D3 (Ray-Tracer & Annual Simulation Sample Weighting Parity):**
+   - **Annual Path Mesh Sampling:** `computeTableShadingGeometricMesh` now samples across all active columns (including column 13 for $N=27$) and longitudinal substrings, resolving the defect where the annual path previously registered 0% loss for obstacles over the 27th module.
+   - **Inter-Table Capacity Weighting:** `calculateRayTracedShadingFactor` evaluates each table's unshaded ratio and weights it by table rated capacity ($P_{\text{rated}}$), eliminating the distortion where a 2-module shaded table with a 27-module unshaded table reported 30.77% loss; it now strictly reports the true capacity loss of $2 / 29 \approx 6.90\%$.
 4. **D4 (Module Count Scale & Single Module Length):** Removed hardcoded 28-column ceiling clamp (`Math.min(28, ...)` in `ThreeJsViewer.tsx`), permitting arrays of any size (e.g. 2,000 modules) to render without truncation. Single-module tables ($N=1$) now render at full sloped length ($2.278\,\text{m}$) instead of being halved.
-5. **D5 (Roof Plane Visualization & Rise Direction Consistency):** Ground plane mesh in `ThreeJsViewer.tsx` now reflects roof pitch and azimuth. In `getLocalRoofElevationAt`, ascending slope unit vectors were aligned with ENU conventions: azimuth 0° (South-facing) slopes up toward North ($+Y$), and multi-corner clearance checks (`checkTableRoofClearance`) evaluate true 3D local roof surface elevations.
-6. **D6 (Snapshot Reconciliation Drift & NASA Temperature Sentinels):** `simulateAnnual3dShading` now verifies capacity and module count consistency between declared project snapshot totals (`totalPvCapacityKwp`, `totalModulesCount`) and table sums, flagging `isProjectSnapshotConsistent: false` and `overallReconciled: false` on drift (e.g. 999 kWp vs 14.85 kWp). NASA POWER climatology parser now enforces strict physical ranges for `T2M_MIN` and `T2M_MAX` and rejects `-999` sentinels and `tMin > tMax` contradictions.
+5. **D5 (Roof Plane Elevation Origin & Rotated Table Parity):**
+   - **Elevation Origin at $(0, 0)$:** Ground plane mesh in `ThreeJsViewer.tsx` is centered at `getLocalRoofElevationAt(roofPlane, 0, 0)` ($9.05\,\text{m}$ for 5° pitch vs $8.0\,\text{m}$ eaves), completely eliminating the $\sim 1.05\,\text{m}$ visual-to-analytical elevation discrepancy.
+   - **Roof Plane Azimuth:** `roofPlane.azimuthDeg` is transformed into Three.js vertical axis rotation (`-azimuthDeg * Math.PI / 180`).
+   - **Rotated Table Direction:** Table azimuth rotation around $+Y$ in Three.js uses negative angle mapping (`-azimuthDeg`), ensuring that at azimuth 90° (West-facing), downslope faces West ($-X$) and upslope rises toward East ($+X$), matching analytical rise direction. Table racks use `table.tiltDeg` rather than global props.
+6. **D6 (Snapshot Reconciliation Zero-Bypass & NASA Climatology Sentinels):**
+   - **Zero-Bypass Elimination:** Reconciles declared capacity and module counts strictly against table sums, blocking cases where `totalPvCapacityKwp = 0` was falsely treated as consistent with $14.85\,\text{kWp}$ active tables (`isProjectSnapshotConsistent: false`, `overallReconciled: false`).
+   - **NASA POWER Sentinels:** Enforces strict physical bounds $[-70^\circ\text{C}, 65^\circ\text{C}]$, rejects `-999` sentinels, and rejects $T_{\min} > T_{\max}$ contradictions.
+   - **Financial Loan Validation:** Enforces upfront positive integer constraints on loan term (1..25 years) and non-negative loan parameters.
 
 ---
 

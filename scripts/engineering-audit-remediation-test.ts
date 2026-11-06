@@ -21,6 +21,7 @@ import {
   getActiveTableSubRects,
   getLocalRoofElevationAt,
   RoofPlane,
+  Obstacle3D,
 } from '../src/engine/roof3dShadingEngine';
 import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvider';
 import {
@@ -547,19 +548,84 @@ async function runAuditRemediationSuite() {
       `centerOffsetSlope=${oddSubRect.centerOffsetSlope.toFixed(3)}m`
     );
 
-    // Discrepancy 3: Ray-tracer sample point weighting distortion
+    // Discrepancy 3: Ray-tracer & Annual simulation sample point weighting distortion
     const samplePts27 = generateTableMeshSamplePoints(t27);
     assert(
       samplePts27.length === 27,
       'Area-weighted sample point generator allocates exactly 27 points for 27 modules (1 point per module)',
       `ptsCount=${samplePts27.length}`
     );
-    const unshadedFraction = 26 / 27; // 26 unshaded, 1 shaded
-    const singleModuleLossPct = (1 - unshadedFraction) * 100;
+
+    // D3 Real Obstacle Probe: Shading obstacle placed directly over the 27th module (column 13, bottom slot)
+    const mod27Pt = samplePts27[26];
+    const sunOverObs = [{ x: 0, y: -0.866, z: 0.5 }];
+    const obsOverMod27: Obstacle3D = {
+      id: 'obs-over-mod-27',
+      name: 'Shading block directly over 27th module',
+      geometryType: 'cuboid',
+      positionEnu: {
+        x: mod27Pt.x,
+        y: mod27Pt.y - 1.2,
+        z: mod27Pt.z + 0.7,
+      },
+      dimensionsM: { widthM: 1.2, lengthM: 1.2, heightM: 2.0 },
+    };
+
+    const sceneWithMod27Obs = {
+      ...sceneD1,
+      obstacles: [obsOverMod27],
+    };
+
+    // 1) Annual simulation path: must detect shading on module 27 (loss > 0)
+    const annualResMod27 = simulateAnnual3dShading(sceneWithMod27Obs, 5.2, 40.0);
     assert(
-      Math.abs(singleModuleLossPct - (1 / 27) * 100) < 0.01,
-      'Single shaded module in 27-module table causes exactly 3.70% loss, avoiding 50% distortion',
-      `lossPct=${singleModuleLossPct.toFixed(2)}%`
+      annualResMod27.annualGeometricBeamLossPct > 0 && annualResMod27.tableHeatmap[0].annualLossKwh > 0,
+      'Annual 3D simulation path detects obstacle shading on 27th module (annual loss > 0%)',
+      `annualBeamLoss=${annualResMod27.annualGeometricBeamLossPct}%, lossKwh=${annualResMod27.tableHeatmap[0].annualLossKwh.toFixed(1)}`
+    );
+
+    // 2) Ray-tracer path: must detect single module shading ~3.7% loss
+    const rayTraceMod27 = calculateRayTracedShadingFactor(sceneWithMod27Obs, sunOverObs);
+    assert(
+      rayTraceMod27.averageShadingLossPct >= 3.5 && rayTraceMod27.averageShadingLossPct <= 3.9,
+      'Ray-tracer path registers single module shading around 3.7% (~1/27), avoiding 50% distortion',
+      `lossPct=${rayTraceMod27.averageShadingLossPct}% (expected ~3.70%)`
+    );
+
+    // D3 Inter-Table Weighting Probe: Table A (27 modules, unshaded) + Table B (2 modules, fully shaded)
+    // Physical array capacity: Table A = 27/29 (93.1%), Table B = 2/29 (6.9%).
+    // When Table B is 100% shaded, array loss must be ~6.90% (NOT 30.77%).
+    const tableA = { ...t27, id: 'tbl-a', tableIndex: 1, positionEnu: { x: 0, y: 15, z: 10 } };
+    const tableB = {
+      id: 'tbl-b',
+      tableIndex: 2,
+      positionEnu: { x: 0, y: -15, z: 10 },
+      widthM: 2.268,
+      slopedLengthM: 2.278,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+      moduleCount: 2,
+      ratedPowerWp: 1100,
+    };
+    const obsCoveringTableB: Obstacle3D = {
+      id: 'obs-over-tbl-b',
+      name: 'Giant cover over Table B',
+      geometryType: 'cuboid',
+      positionEnu: { x: 0, y: -16, z: 11 },
+      dimensionsM: { widthM: 6.0, lengthM: 6.0, heightM: 5.0 },
+    };
+    const twoTableScene = {
+      ...sceneD1,
+      pvTables: [tableA, tableB],
+      obstacles: [obsCoveringTableB],
+      totalPvCapacityKwp: 15.95,
+      totalModulesCount: 29,
+    };
+    const interTableRayTrace = calculateRayTracedShadingFactor(twoTableScene, sunOverObs);
+    assert(
+      interTableRayTrace.averageShadingLossPct >= 6.5 && interTableRayTrace.averageShadingLossPct <= 7.2,
+      'Multi-table ray-tracer capacity-weights tables: 2 shaded modules in 29-module array yield ~6.90% loss (not 30.77%)',
+      `interTableLoss=${interTableRayTrace.averageShadingLossPct}% (expected 6.90%)`
     );
 
     // Discrepancy 4: Large module count scaling (N=2000) and single module length (N=1)
@@ -613,17 +679,69 @@ async function runAuditRemediationSuite() {
       `zNorth=${zNorthSouthRoof.toFixed(2)}m, zSouth=${zSouthSouthRoof.toFixed(2)}m`
     );
 
-    // Discrepancy 6: Snapshot reconciliation capacity mismatch & NASA temperature sentinels
-    const mismatchedScene = {
-      ...sceneD1,
-      totalPvCapacityKwp: 999.0, // Declared 999 kWp vs actual tables sum 14.85 kWp
-    };
-    const mismatchSimResult = simulateAnnual3dShading(mismatchedScene, 5.2, 40.0);
+    // Visual roof mesh center elevation matches analytical elevation at (0, 0)
+    const analyticalCenterZ = getLocalRoofElevationAt(southFacingRoof, 0, 0);
     assert(
-      mismatchSimResult.reconciliationStatus?.isProjectSnapshotConsistent === false &&
-        mismatchSimResult.isReconciled === false,
+      analyticalCenterZ > southFacingRoof.eavesHeightM &&
+        Math.abs(analyticalCenterZ - (8.0 + 20 * Math.tan((15 * Math.PI) / 180))) < 0.01,
+      'Roof plane center elevation is correctly computed along slope (13.36m vs eaves 8.0m), eliminating visual height discrepancy',
+      `analyticalCenterZ=${analyticalCenterZ.toFixed(2)}m`
+    );
+
+    // Azimuth 90° table orientation: downslope faces West (-X), upslope rises East (+X)
+    const westFacingRoof: RoofPlane = {
+      ...southFacingRoof,
+      id: 'roof-west-facing',
+      azimuthDeg: 90, // Faces West
+    };
+    const zEastWestRoof = getLocalRoofElevationAt(westFacingRoof, 10, 0); // East (+X)
+    const zWestWestRoof = getLocalRoofElevationAt(westFacingRoof, -10, 0); // West (-X)
+    assert(
+      zEastWestRoof > zWestWestRoof,
+      'West-facing roof/table (azimuth 90°) has upslope rising toward East (+X) and downslope toward West (-X)',
+      `zEast=${zEastWestRoof.toFixed(2)}m, zWest=${zWestWestRoof.toFixed(2)}m`
+    );
+
+    // Discrepancy 6: Snapshot reconciliation capacity mismatch & NASA temperature sentinels
+    // Case A: 999 kWp declared vs 14.85 kWp actual
+    const mismatchedScene999 = {
+      ...sceneD1,
+      totalPvCapacityKwp: 999.0,
+    };
+    const simRes999 = simulateAnnual3dShading(mismatchedScene999, 5.2, 40.0);
+    assert(
+      simRes999.reconciliationStatus?.isProjectSnapshotConsistent === false &&
+        simRes999.isReconciled === false,
       'Snapshot reconciliation detects capacity mismatch between declared project total (999 kWp) and table sum (14.85 kWp)',
-      `isProjectSnapshotConsistent=${mismatchSimResult.reconciliationStatus?.isProjectSnapshotConsistent}, overallReconciled=${mismatchSimResult.isReconciled}`
+      `isProjectSnapshotConsistent=${simRes999.reconciliationStatus?.isProjectSnapshotConsistent}, overallReconciled=${simRes999.isReconciled}`
+    );
+
+    // Case B: 0 kWp declared vs 14.85 kWp actual (zero bypass eliminated)
+    const mismatchedSceneZero = {
+      ...sceneD1,
+      totalPvCapacityKwp: 0.0,
+      totalModulesCount: 0,
+    };
+    const simResZero = simulateAnnual3dShading(mismatchedSceneZero, 5.2, 40.0);
+    assert(
+      simResZero.reconciliationStatus?.isProjectSnapshotConsistent === false &&
+        simResZero.isReconciled === false,
+      'Snapshot reconciliation detects zero-capacity bypass: declared 0 kWp with 14.85 kWp active tables flags inconsistent',
+      `isProjectSnapshotConsistent=${simResZero.reconciliationStatus?.isProjectSnapshotConsistent}, overallReconciled=${simResZero.isReconciled}`
+    );
+
+    // Case C: Exact match 14.85 kWp declared and 27 modules
+    const matchedScene = {
+      ...sceneD1,
+      totalPvCapacityKwp: 14.85,
+      totalModulesCount: 27,
+    };
+    const simResMatched = simulateAnnual3dShading(matchedScene, 5.2, 40.0);
+    assert(
+      simResMatched.reconciliationStatus?.isProjectSnapshotConsistent === true &&
+        simResMatched.isReconciled === true,
+      'Snapshot reconciliation confirms perfect consistency when declared capacity and module count match table sums',
+      `isProjectSnapshotConsistent=${simResMatched.reconciliationStatus?.isProjectSnapshotConsistent}, overallReconciled=${simResMatched.isReconciled}`
     );
 
     // NASA temperature validation edge cases

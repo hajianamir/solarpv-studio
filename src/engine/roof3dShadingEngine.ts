@@ -564,8 +564,8 @@ function isPointInActiveTable(table: PvTable3D, lOffset: number, sOffset: number
 }
 
 /**
- * Computes 3D geometric mesh ray-traced shading across a multi-point grid (4 lateral x 3 sloped = 12 vertices)
- * representing the 3 bypass diode substrings of a PV table.
+ * Computes 3D geometric mesh ray-traced shading across a multi-point grid
+ * representing the active module columns and 3 bypass diode substrings of a PV table.
  */
 function computeTableShadingGeometricMesh(
   table: PvTable3D,
@@ -617,21 +617,25 @@ function computeTableShadingGeometricMesh(
   const normY = -Math.cos(tableAzRad) * Math.sin(tiltRad);
   const normZ = Math.cos(tiltRad);
 
-  // 4 lateral sampling points across table width (-0.75, -0.25, 0.25, 0.75 of halfWidth)
-  const lateralFractions = [-0.75, -0.25, 0.25, 0.75];
-  // 3 longitudinal substring zones (-0.60, 0, 0.60 of halfLen) for the 3 bypass diodes
+  // Sample across active columns and 3 longitudinal substring zones
+  const modCount = table.moduleCount ?? 1;
+  const cols = modCount === 1 ? 1 : Math.max(1, Math.ceil(modCount / 2));
+  const colWidth = table.widthM / cols;
+
+  // 3 longitudinal substring zones (-0.60, 0, 0.60 of halfLen) representing 3 bypass diodes
   const substringFractions = [-0.60, 0, 0.60];
 
   let totalMeshPoints = 0;
   let shadedMeshPoints = 0;
   let shadedSubstringsCount = 0;
 
-  for (const sFrac of substringFractions) {
+  for (let sIdx = 0; sIdx < substringFractions.length; sIdx++) {
+    const sFrac = substringFractions[sIdx];
     const sOffset = sFrac * halfLen;
     let isSubstringShaded = false;
 
-    for (const lFrac of lateralFractions) {
-      const lOffset = lFrac * halfWidth;
+    for (let c = 0; c < cols; c++) {
+      const lOffset = -halfWidth + (c + 0.5) * colWidth;
 
       // Exact odd module conservation: omit sampling points falling in empty module slots
       if (!isPointInActiveTable(table, lOffset, sOffset)) {
@@ -680,7 +684,7 @@ function computeTableShadingGeometricMesh(
     electricalMismatchFactor = 0.667;
   } else if (shadedSubstringsCount === 2) {
     electricalMismatchFactor = 0.333;
-  } else if (shadedSubstringsCount === 3) {
+  } else if (shadedSubstringsCount >= 3) {
     electricalMismatchFactor = 0.05;
   }
 
@@ -921,13 +925,14 @@ export function simulateAnnual3dShading(
 
   const isCapacityConsistent =
     scene.totalPvCapacityKwp === undefined ||
-    scene.totalPvCapacityKwp <= 0 ||
-    Math.abs(scene.totalPvCapacityKwp - sumTablesKwp) <= Math.max(0.5, scene.totalPvCapacityKwp * 0.02);
+    (scene.totalPvCapacityKwp === 0 && sumTablesKwp === 0) ||
+    (scene.totalPvCapacityKwp > 0 &&
+      Math.abs(scene.totalPvCapacityKwp - sumTablesKwp) <= Math.max(0.5, scene.totalPvCapacityKwp * 0.02));
 
   const isModulesConsistent =
     scene.totalModulesCount === undefined ||
-    scene.totalModulesCount <= 0 ||
-    scene.totalModulesCount === sumTablesModules;
+    (scene.totalModulesCount === 0 && sumTablesModules === 0) ||
+    (scene.totalModulesCount > 0 && scene.totalModulesCount === sumTablesModules);
 
   const isTablesModuleCountValid =
     scene.pvTables.length === 0 || scene.pvTables.every(t => t.moduleCount > 0);
@@ -1844,22 +1849,36 @@ export function calculateRayTracedShadingFactor(
   const tableTriangles = options?.includeInterRow ? convertPvTablesToTriangles(scene.pvTables) : [];
   const allTriangles = [...obstacleTriangles, ...tableTriangles];
 
-  const allTargetPoints: Vec3[] = [];
-  for (const table of scene.pvTables) {
-    allTargetPoints.push(...generateTableMeshSamplePoints(table));
-  }
-
   const effectiveSunDirs =
     sunDirs && sunDirs.length > 0
       ? sunDirs
       : generateDaylightSunDirections(scene.anchorLocation.latitude, 12);
 
-  const unshadedRatios = calculateShadingFactor(allTriangles, allTargetPoints, effectiveSunDirs);
+  const allTargetPoints: Vec3[] = [];
+  let totalWeightedUnshadedRatio = 0;
+  let totalArrayWeight = 0;
+
+  for (const table of scene.pvTables) {
+    const tablePoints = generateTableMeshSamplePoints(table);
+    allTargetPoints.push(...tablePoints);
+
+    if (tablePoints.length > 0) {
+      const tableUnshadedRatios = calculateShadingFactor(allTriangles, tablePoints, effectiveSunDirs);
+      const tableAvgUnshaded =
+        tableUnshadedRatios.reduce((sum, r) => sum + r, 0) / tableUnshadedRatios.length;
+      const weight = table.ratedPowerWp || (table.moduleCount ? table.moduleCount * 550 : 0) || 1;
+      totalWeightedUnshadedRatio += tableAvgUnshaded * weight;
+      totalArrayWeight += weight;
+    }
+  }
+
+  const unshadedRatios =
+    allTargetPoints.length > 0
+      ? calculateShadingFactor(allTriangles, allTargetPoints, effectiveSunDirs)
+      : [];
 
   const averageUnshadedRatio =
-    unshadedRatios.length > 0
-      ? unshadedRatios.reduce((sum, r) => sum + r, 0) / unshadedRatios.length
-      : 1.0;
+    totalArrayWeight > 0 ? totalWeightedUnshadedRatio / totalArrayWeight : 1.0;
 
   const averageShadingLossPct = Number(((1.0 - averageUnshadedRatio) * 100.0).toFixed(2));
 
