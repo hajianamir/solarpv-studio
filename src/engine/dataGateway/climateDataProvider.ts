@@ -66,10 +66,20 @@ export class ClimateDataProvider {
     options?: { forceAnalytical?: boolean; bypassCache?: boolean; policy?: DataFetchPolicy }
   ): Promise<ClimateResourceData> {
     const realInternet = isRealInternetEnabled();
-    const policy: DataFetchPolicy =
-      options?.forceAnalytical || !realInternet
-        ? 'analytical_only'
-        : (options?.policy ?? 'prefer_remote');
+    const requestedPolicy = options?.policy;
+
+    if (requestedPolicy === 'remote_required' && options?.forceAnalytical) {
+      throw new Error("Conflict: options.forceAnalytical cannot be used with policy 'remote_required'");
+    }
+
+    let policy: DataFetchPolicy;
+    if (requestedPolicy === 'remote_required') {
+      policy = 'remote_required';
+    } else if (options?.forceAnalytical || (!realInternet && !requestedPolicy)) {
+      policy = 'analytical_only';
+    } else {
+      policy = requestedPolicy ?? 'prefer_remote';
+    }
 
     const cacheKey = `clim_${lat.toFixed(3)}_${lng.toFixed(3)}`;
 
@@ -169,6 +179,9 @@ export class ClimateDataProvider {
     };
 
     if (policy === 'remote_required') {
+      if (!realInternet) {
+        throw new Error('remote_required failed: Internet connection is disabled or unavailable and policy is remote_required');
+      }
       try {
         const remoteData = await executeRemoteChain();
         remoteData.metadata.fetchPolicy = policy;

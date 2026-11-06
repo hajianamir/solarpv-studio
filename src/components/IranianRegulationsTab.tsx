@@ -197,10 +197,18 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
             {isFa ? 'دوره بازگشت سرمایه آورده' : 'Equity Simple Payback'}
           </div>
           <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
-            {modelResult.simplePaybackYears} <span className="text-xs font-normal text-slate-300">{isFa ? 'سال' : 'years'}</span>
+            {modelResult.simplePaybackYears !== null ? (
+              <>
+                {modelResult.simplePaybackYears} <span className="text-xs font-normal text-slate-300">{isFa ? 'سال' : 'years'}</span>
+              </>
+            ) : (
+              <span className="text-xs font-normal text-amber-400">{isFa ? 'محقق نشد (>۲۵ سال)' : 'Not achieved (>25y)'}</span>
+            )}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? `تنزیل‌شده: ${modelResult.discountedPaybackYears} سال` : `Discounted: ${modelResult.discountedPaybackYears} yrs`}
+            {isFa
+              ? `تنزیل‌شده: ${modelResult.discountedPaybackYears !== null ? `${modelResult.discountedPaybackYears} سال` : 'محقق نشد'}`
+              : `Discounted: ${modelResult.discountedPaybackYears !== null ? `${modelResult.discountedPaybackYears} yrs` : 'Not achieved'}`}
           </div>
         </div>
 

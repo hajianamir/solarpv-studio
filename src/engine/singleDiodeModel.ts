@@ -71,37 +71,46 @@ export function calculateSingleDiodeCurve(
     };
   }
 
+  if (typeof seriesModulesCount !== 'number' || !Number.isFinite(seriesModulesCount) || seriesModulesCount < 1) {
+    throw new Error(`seriesModulesCount must be a positive integer >= 1, received ${seriesModulesCount}`);
+  }
+  const nSeries = Math.floor(seriesModulesCount);
+
   const gRatio = irradianceWm2 / 1000.0;
   const deltaT = cellTempC - 25.0;
   const tempK = cellTempC + 273.15;
   const tRefK = 298.15;
 
-  // Cells in series stack
-  const cellsInSeries = Math.round(stcVoc / 0.68) * seriesModulesCount;
+  // Cells in single module and series stack
+  const cellsPerModule = Math.round(stcVoc / 0.68);
+  const cellsInSeries = cellsPerModule * nSeries;
 
   // Ideality factor n
   const n = customParams?.n ?? 1.05;
 
-  // Thermal voltage at reference temperature and actual cell temperature
-  const aRef = (n * cellsInSeries * BOLTZMANN * tRefK) / ELECTRON_CHARGE;
-  const aActual = aRef * (tempK / tRefK);
+  // Thermal voltage per module at reference temperature and actual cell temperature
+  const aRefModule = (n * cellsPerModule * BOLTZMANN * tRefK) / ELECTRON_CHARGE;
+  const aActualModule = aRefModule * (tempK / tRefK);
+
+  // String aggregate thermal voltage
+  const aActual = aActualModule * nSeries;
   const vt = (cellsInSeries * BOLTZMANN * tempK) / ELECTRON_CHARGE;
 
-  // Reference Series and Shunt resistance (De Soto parameter extraction)
-  const rsRef = customParams?.rs ?? Math.max(0.01, ((stcVoc - stcVmp) / stcImp) * 0.235);
-  const rshRef = customParams?.rsh ?? Math.max(50.0, (stcVoc / Math.max(1e-6, stcIsc - stcImp)) * 10.0);
+  // Reference Series and Shunt resistance per module (De Soto parameter extraction)
+  const rsRefModule = customParams?.rs !== undefined ? customParams.rs / nSeries : Math.max(0.01, ((stcVoc - stcVmp) / stcImp) * 0.235);
+  const rshRefModule = customParams?.rsh !== undefined ? customParams.rsh / nSeries : Math.max(50.0, (stcVoc / Math.max(1e-6, stcIsc - stcImp)) * 10.0);
 
-  // De Soto Irradiance-scaled shunt resistance: Rsh(G) = Rsh,ref * (G_ref / G)
-  const rsh = rshRef / gRatio;
-  const rs = rsRef;
+  // De Soto Irradiance-scaled shunt resistance & series resistance scaled to full series string
+  const rsh = (rshRefModule / gRatio) * nSeries;
+  const rs = rsRefModule * nSeries;
 
   // Temperature-dependent bandgap energy: Eg(T) = Eg,ref * [1 - dEg/dT * (T - Tref)]
   const egRef = EG_REF_EV;
   const egActual = egRef * (1.0 - D_EG_DT * deltaT);
 
-  // Reference photocurrent & saturation current
-  const iphRef = customParams?.iph ?? (stcIsc * (1.0 + rs / rshRef));
-  const i0Ref = customParams?.i0 ?? ((iphRef - stcVoc / rshRef) / Math.max(1e-12, Math.exp(stcVoc / aRef) - 1.0));
+  // Reference photocurrent & saturation current per module / series string
+  const iphRef = customParams?.iph ?? (stcIsc * (1.0 + rsRefModule / rshRefModule));
+  const i0Ref = customParams?.i0 ?? ((iphRef - stcVoc / rshRefModule) / Math.max(1e-12, Math.exp(stcVoc / aRefModule) - 1.0));
 
   // De Soto Scaled photocurrent: Iph(G, T) = (G / Gref) * [Iph,ref + alpha_Isc * (T - Tref)]
   const iph = gRatio * (iphRef + (tempCoeffIscPct / 100.0) * stcIsc * deltaT);
@@ -115,7 +124,7 @@ export function calculateSingleDiodeCurve(
   const isc = stcIsc * gRatio * (1.0 + (tempCoeffIscPct / 100.0) * deltaT);
   const voc = Math.max(
     0.1,
-    (stcVoc * seriesModulesCount + (tempCoeffVocPct / 100.0) * stcVoc * seriesModulesCount * deltaT) *
+    (stcVoc * nSeries + (tempCoeffVocPct / 100.0) * stcVoc * nSeries * deltaT) *
       (1.0 + 0.05 * Math.log(gRatio))
   );
 
@@ -159,7 +168,7 @@ export function calculateSingleDiodeCurve(
   }
 
   const fillFactor = maxP > 0 ? maxP / (voc * isc) : 0;
-  const nominalArea = 2.5 * seriesModulesCount; // approx 2.5 m² per 580W panel
+  const nominalArea = 2.5 * nSeries; // approx 2.5 m² per 580W panel
   const incidentSolarPower = irradianceWm2 * nominalArea;
   const efficiencyPct = incidentSolarPower > 0 ? (maxP / incidentSolarPower) * 100.0 : 0;
 

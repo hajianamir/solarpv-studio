@@ -85,8 +85,9 @@ export function analyzePowerplantHarmonics(
     ? maxDemandCurrentAmps
     : ratedCurrentAmps;
 
-  // Operating current at actual generation level (e.g. partial load)
-  const actualPowerMw = operatingPowerMw && operatingPowerMw > 0 ? operatingPowerMw : plantCapacityMw;
+  // Operating current at actual generation level (e.g. partial load or shutdown)
+  // Fix M18: 0 MW operating power must NOT fall back to plantCapacityMw
+  const actualPowerMw = operatingPowerMw !== undefined ? Math.max(0, operatingPowerMw) : plantCapacityMw;
   const fundamentalOperatingCurrentAmps = (actualPowerMw * 1000) / (Math.sqrt(3) * gridVoltageKv);
 
   // Isc / IL ratio per IEEE 519-2022:
@@ -137,7 +138,9 @@ export function analyzePowerplantHarmonics(
     sumCurrentSq += Math.pow(currentAmps, 2);
 
     // Approximate harmonic voltage distortion at PCC = (h * I_h / I_sc) * 100
-    const voltPct = (h.pct * h.order) / Math.max(10, shortCircuitRatio * 1.8);
+    const voltPct = fundamentalOperatingCurrentAmps > 0
+      ? (h.pct * h.order) / Math.max(10, shortCircuitRatio * 1.8)
+      : 0;
     sumVoltageSq += Math.pow(voltPct, 2);
 
     // Harmonic limits step down with harmonic order per IEEE 519-2022:
@@ -249,11 +252,14 @@ export function analyzeUpstreamGridConditions(
   );
 
   // Active and Reactive Power calculation
+  // Fix M03: plantCapacityMw is active power P in MW.
+  // Apparent power S = P / cosPhi (MVA).
+  // Reactive power Q = P * tan(phi) = P * (sinPhi / cosPhi) (Mvar).
   const cosPhi = Math.max(0.7, Math.min(1.0, inverterPowerFactor));
-  const sinPhi = Math.sqrt(1 - Math.pow(cosPhi, 2));
-  const pMw = plantCapacityMw * cosPhi;
-  // Q in Mvar: positive if injecting capacitive, negative if absorbing inductive
-  const qMvar = plantCapacityMw * sinPhi * (isPowerFactorLagging ? -1 : 1);
+  const sinPhi = Math.sqrt(Math.max(0, 1 - Math.pow(cosPhi, 2)));
+  const pMw = plantCapacityMw;
+  // Q in Mvar: positive if injecting capacitive (leading), negative if absorbing inductive (lagging)
+  const qMvar = pMw * (sinPhi / cosPhi) * (isPowerFactorLagging ? -1 : 1);
 
   // Approximate PCC Voltage Rise: Delta V% = (P * R_g + Q * X_g) / V_grid^2 * 100
   const deltaVVolts = (pMw * theveninResistanceRgOhm + qMvar * theveninReactanceXgOhm) / Math.pow(gridVoltageKv, 2);
@@ -262,10 +268,12 @@ export function analyzeUpstreamGridConditions(
   // Tavanir & IEC 60038 limit for grid voltage variation at PCC is 2.5% to 3.0%
   const pccVoltageRiseCompliant = Math.abs(pccVoltageRisePct) <= 3.0;
 
-  // Maximum plant capacity that can be connected without exceeding 3% voltage rise
-  const maxAllowablePlantCapacityMw = Number(
-    ((0.03 * Math.pow(gridVoltageKv, 2)) / (cosPhi * theveninResistanceRgOhm + 0.05 * theveninReactanceXgOhm)).toFixed(1)
-  );
+  // Maximum plant capacity that can be connected without exceeding 3% voltage rise:
+  // Delta V = P * (R_g + (Q/P) * X_g) / V^2 <= 0.03
+  const effectiveGridImpedance = theveninResistanceRgOhm + (isPowerFactorLagging ? -1 : 1) * (sinPhi / cosPhi) * theveninReactanceXgOhm;
+  const maxAllowablePlantCapacityMw = effectiveGridImpedance > 0
+    ? Number(((0.03 * Math.pow(gridVoltageKv, 2)) / effectiveGridImpedance).toFixed(1))
+    : Number(((0.03 * Math.pow(gridVoltageKv, 2)) / theveninResistanceRgOhm).toFixed(1));
 
   // Reactive power capability per IEEE 1547 (0.90 lead to 0.90 lag = 44% of P_n in Mvar)
   const maxReactiveMvar = Number((plantCapacityMw * 0.44).toFixed(2));

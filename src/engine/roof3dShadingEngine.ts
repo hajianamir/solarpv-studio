@@ -195,11 +195,35 @@ export function checkTableSetbackCompliance(
   table: PvTable3D,
   roof: RoofPlane
 ): { isCompliant: boolean; minimumClearanceM: number } {
+  const tiltRad = ((table.tiltDeg ?? 0) * Math.PI) / 180.0;
+  const tableAzRad = ((table.azimuthDeg ?? 0) * Math.PI) / 180.0;
+  const halfLen = table.slopedLengthM / 2;
+  const halfWidth = table.widthM / 2;
+
+  const latUx = Math.cos(tableAzRad);
+  const latUy = -Math.sin(tableAzRad);
+
+  const slopeUx = Math.sin(tableAzRad) * Math.cos(tiltRad);
+  const slopeUy = Math.cos(tableAzRad) * Math.cos(tiltRad);
+
+  // Exact 4 corners of the table projected on horizontal (ENU X-Y) plane
   const corners = [
-    { x: table.positionEnu.x - table.widthM / 2, y: table.positionEnu.y - table.slopedLengthM / 2 },
-    { x: table.positionEnu.x + table.widthM / 2, y: table.positionEnu.y - table.slopedLengthM / 2 },
-    { x: table.positionEnu.x + table.widthM / 2, y: table.positionEnu.y + table.slopedLengthM / 2 },
-    { x: table.positionEnu.x - table.widthM / 2, y: table.positionEnu.y + table.slopedLengthM / 2 },
+    {
+      x: table.positionEnu.x - halfWidth * latUx - halfLen * slopeUx,
+      y: table.positionEnu.y - halfWidth * latUy - halfLen * slopeUy,
+    },
+    {
+      x: table.positionEnu.x + halfWidth * latUx - halfLen * slopeUx,
+      y: table.positionEnu.y + halfWidth * latUy - halfLen * slopeUy,
+    },
+    {
+      x: table.positionEnu.x + halfWidth * latUx + halfLen * slopeUx,
+      y: table.positionEnu.y + halfWidth * latUy + halfLen * slopeUy,
+    },
+    {
+      x: table.positionEnu.x - halfWidth * latUx + halfLen * slopeUx,
+      y: table.positionEnu.y - halfWidth * latUy + halfLen * slopeUy,
+    },
   ];
 
   let minDistance = Infinity;
@@ -943,7 +967,7 @@ export function simulateAnnual3dShading(
     (scene.totalPvCapacityKwp === 0 && sumTablesKwp === 0) ||
     (scene.totalPvCapacityKwp > 0 &&
       sumTablesKwp > 0 &&
-      Math.abs(scene.totalPvCapacityKwp - sumTablesKwp) <= Math.max(0.5, scene.totalPvCapacityKwp * 0.02));
+      Math.abs(scene.totalPvCapacityKwp - sumTablesKwp) <= Math.max(0.02, scene.totalPvCapacityKwp * 0.01));
 
   const isModulesConsistent =
     scene.totalModulesCount === undefined ||

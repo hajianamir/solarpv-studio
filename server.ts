@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 import {
@@ -11,6 +10,7 @@ import {
   calculateLcoe,
   calculateNpv,
   calculateIrr,
+  calculateIrrDetailed,
   calculateShadingFactor,
   performQuickSizing,
   DEFAULT_MODULES,
@@ -24,23 +24,75 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(express.json());
 
-// In-Memory Database store
+// In-Memory Database store with persistent file recovery
 const db = new InMemorySolarDatabase();
+const DB_PERSIST_PATH = process.env.SOLARPV_DB_FILE || path.resolve(process.cwd(), 'data/solar-db-snapshot.json');
 
-// Seed initial sample projects
-const initialProject = performQuickSizing(
-  {
-    projectName: "Tehran Villa System",
-    latitude: 35.6895,
-    longitude: 51.3890,
-    dailyKwh: 20.0,
-    autonomyDays: 1.5,
-    moduleId: DEFAULT_MODULES[0].id,
-    inverterId: DEFAULT_INVERTERS[0].id,
-    batteryId: DEFAULT_BATTERIES[0].id,
-  },
-  db
-);
+function saveDatabase(): void {
+  try {
+    const dir = path.dirname(DB_PERSIST_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const snapshot = db.exportSnapshot();
+    const tmpPath = `${DB_PERSIST_PATH}.tmp`;
+    fs.writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), 'utf-8');
+    fs.renameSync(tmpPath, DB_PERSIST_PATH);
+  } catch (err) {
+    console.error('[SolarPV Studio] Failed to persist database snapshot:', err);
+  }
+}
+
+function loadDatabase(): void {
+  try {
+    if (fs.existsSync(DB_PERSIST_PATH)) {
+      const raw = fs.readFileSync(DB_PERSIST_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      const ok = db.importSnapshot(parsed);
+      if (ok) {
+        console.log(`[SolarPV Studio] Restored database from snapshot: ${db.projects.size} projects loaded.`);
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('[SolarPV Studio] Could not load database snapshot, starting with initial seeds:', err);
+  }
+
+  // Seed Tehran Villa System if database has no projects
+  if (db.projects.size === 0) {
+    try {
+      performQuickSizing(
+        {
+          projectName: 'Tehran Villa System',
+          latitude: 35.6895,
+          longitude: 51.389,
+          dailyKwh: 20.0,
+          autonomyDays: 1.5,
+          moduleId: DEFAULT_MODULES[0]?.id || 'mod-default',
+          inverterId: DEFAULT_INVERTERS[0]?.id || 'inv-default',
+          batteryId: DEFAULT_BATTERIES[0]?.id || 'bat-default',
+        },
+        db
+      );
+      saveDatabase();
+    } catch (seedErr) {
+      console.warn('[SolarPV Studio] Initial project seed warning:', seedErr);
+    }
+  }
+}
+
+// Initialize database from persistent snapshot
+loadDatabase();
+
+// Flush database on process exit
+process.on('SIGINT', () => {
+  saveDatabase();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  saveDatabase();
+  process.exit(0);
+});
 
 // ----------------------------------------------------------------
 // API ROUTES
@@ -48,14 +100,33 @@ const initialProject = performQuickSizing(
 
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    projectsCount: db.projects.size,
+    isPersistent: fs.existsSync(DB_PERSIST_PATH),
+  });
 });
 
 // 1. Solar calculations
 app.post('/api/v1/solar/position', (req: Request, res: Response) => {
   try {
-    const { latitudeDeg = 35.6895, longitudeDeg = 51.3890, utcTs = Math.floor(Date.now() / 1000) } = req.body;
-    const result = calculateSolarPosition(Number(latitudeDeg), Number(longitudeDeg), Number(utcTs));
+    const { latitudeDeg = 35.6895, longitudeDeg = 51.389, utcTs = Math.floor(Date.now() / 1000) } = req.body;
+    const lat = Number(latitudeDeg);
+    const lng = Number(longitudeDeg);
+    const ts = Number(utcTs);
+
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      return res.status(400).json({ error: `Invalid latitude: must be between -90 and 90, got ${latitudeDeg}` });
+    }
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+      return res.status(400).json({ error: `Invalid longitude: must be between -180 and 180, got ${longitudeDeg}` });
+    }
+    if (!Number.isFinite(ts) || ts <= 0) {
+      return res.status(400).json({ error: `Invalid timestamp: must be a positive number, got ${utcTs}` });
+    }
+
+    const result = calculateSolarPosition(lat, lng, ts);
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -64,7 +135,33 @@ app.post('/api/v1/solar/position', (req: Request, res: Response) => {
 
 app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
   try {
-    const result = calculatePoaIrradiance(req.body);
+    const body = req.body;
+    if (
+      body.surfaceTiltDeg !== undefined &&
+      (typeof body.surfaceTiltDeg !== 'number' || !Number.isFinite(body.surfaceTiltDeg) || body.surfaceTiltDeg < 0 || body.surfaceTiltDeg > 90)
+    ) {
+      return res.status(400).json({ error: `Invalid surfaceTiltDeg: must be between 0 and 90, got ${body.surfaceTiltDeg}` });
+    }
+    if (
+      body.dniWm2 !== undefined &&
+      (typeof body.dniWm2 !== 'number' || !Number.isFinite(body.dniWm2) || body.dniWm2 < 0)
+    ) {
+      return res.status(400).json({ error: `Invalid dniWm2: must be a non-negative number, got ${body.dniWm2}` });
+    }
+    if (
+      body.dhiWm2 !== undefined &&
+      (typeof body.dhiWm2 !== 'number' || !Number.isFinite(body.dhiWm2) || body.dhiWm2 < 0)
+    ) {
+      return res.status(400).json({ error: `Invalid dhiWm2: must be a non-negative number, got ${body.dhiWm2}` });
+    }
+    if (
+      body.ghiWm2 !== undefined &&
+      (typeof body.ghiWm2 !== 'number' || !Number.isFinite(body.ghiWm2) || body.ghiWm2 < 0)
+    ) {
+      return res.status(400).json({ error: `Invalid ghiWm2: must be a non-negative number, got ${body.ghiWm2}` });
+    }
+
+    const result = calculatePoaIrradiance(body);
     res.json({ poaIrradiance: result });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -74,6 +171,23 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
 // 2. Electrical calculations
 app.post('/api/v1/electrical/string-sizing', (req: Request, res: Response) => {
   try {
+    const { panelVoc, panelVmp, tempMinC, tempMaxC, inverterVdcMax, inverterMpptMin, inverterMpptMax } = req.body;
+    if (!Number.isFinite(panelVoc) || panelVoc <= 0) {
+      return res.status(400).json({ error: `panelVoc must be a positive number, got ${panelVoc}` });
+    }
+    if (!Number.isFinite(panelVmp) || panelVmp <= 0 || panelVmp >= panelVoc) {
+      return res.status(400).json({ error: `panelVmp must be positive and less than panelVoc (${panelVoc}), got ${panelVmp}` });
+    }
+    if (!Number.isFinite(tempMinC) || !Number.isFinite(tempMaxC) || tempMinC > tempMaxC) {
+      return res.status(400).json({ error: `tempMinC (${tempMinC}) cannot exceed tempMaxC (${tempMaxC})` });
+    }
+    if (!Number.isFinite(inverterVdcMax) || inverterVdcMax <= 0) {
+      return res.status(400).json({ error: `inverterVdcMax must be positive, got ${inverterVdcMax}` });
+    }
+    if (!Number.isFinite(inverterMpptMin) || !Number.isFinite(inverterMpptMax) || inverterMpptMin >= inverterMpptMax) {
+      return res.status(400).json({ error: `inverterMpptMin (${inverterMpptMin}) must be less than inverterMpptMax (${inverterMpptMax})` });
+    }
+
     const result = calculateStringSizing(req.body);
     res.json(result);
   } catch (err: any) {
@@ -84,13 +198,26 @@ app.post('/api/v1/electrical/string-sizing', (req: Request, res: Response) => {
 app.post('/api/v1/electrical/voltage-drop', (req: Request, res: Response) => {
   try {
     const { lengthM, currentA, crossSectionMm2, vNominal, rho } = req.body;
-    const pct = calculateVoltageDropDc(
-      Number(lengthM),
-      Number(currentA),
-      Number(crossSectionMm2),
-      Number(vNominal),
-      rho !== undefined ? Number(rho) : undefined
-    );
+    const l = Number(lengthM);
+    const i = Number(currentA);
+    const a = Number(crossSectionMm2);
+    const v = Number(vNominal);
+    const r = rho !== undefined ? Number(rho) : undefined;
+
+    if (!Number.isFinite(l) || l < 0) {
+      return res.status(400).json({ error: `Cable length (lengthM) must be a non-negative finite number, got ${lengthM}` });
+    }
+    if (!Number.isFinite(i) || i < 0) {
+      return res.status(400).json({ error: `Current (currentA) must be a non-negative finite number, got ${currentA}` });
+    }
+    if (!Number.isFinite(a) || a <= 0) {
+      return res.status(400).json({ error: `Cross section (crossSectionMm2) must be a positive non-zero number, got ${crossSectionMm2}` });
+    }
+    if (!Number.isFinite(v) || v <= 0) {
+      return res.status(400).json({ error: `Nominal voltage (vNominal) must be a positive non-zero number, got ${vNominal}` });
+    }
+
+    const pct = calculateVoltageDropDc(l, i, a, v, r);
     res.json({ voltageDropPct: pct });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -101,17 +228,29 @@ app.post('/api/v1/electrical/voltage-drop', (req: Request, res: Response) => {
 app.post('/api/v1/finance/lcoe', (req: Request, res: Response) => {
   try {
     const { capex, opexAnnual, energyAnnual, discountRate = 0.05, lifetimeYears = 25 } = req.body;
+    const c = Number(capex);
+    const o = Number(opexAnnual);
     const energy = Number(energyAnnual);
-    if (!Number.isFinite(energy) || energy <= 0) {
-      return res.json({ lcoeValue: null });
+    const d = Number(discountRate);
+    const lt = Number(lifetimeYears);
+
+    if (!Number.isFinite(c) || c < 0) {
+      return res.status(400).json({ error: `CAPEX must be a non-negative finite number, got ${capex}` });
     }
-    const val = calculateLcoe(
-      Number(capex),
-      Number(opexAnnual),
-      energy,
-      Number(discountRate),
-      Number(lifetimeYears)
-    );
+    if (!Number.isFinite(o) || o < 0) {
+      return res.status(400).json({ error: `Annual OPEX must be a non-negative finite number, got ${opexAnnual}` });
+    }
+    if (!Number.isFinite(energy) || energy <= 0) {
+      return res.status(400).json({ error: `Annual energy must be a positive non-zero finite number, got ${energyAnnual}` });
+    }
+    if (!Number.isFinite(d) || d < 0) {
+      return res.status(400).json({ error: `Discount rate must be a non-negative finite number, got ${discountRate}` });
+    }
+    if (!Number.isFinite(lt) || lt <= 0) {
+      return res.status(400).json({ error: `Lifetime years must be a positive non-zero finite number, got ${lifetimeYears}` });
+    }
+
+    const val = calculateLcoe(c, o, energy, d, lt);
     res.json({ lcoeValue: val });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -121,7 +260,15 @@ app.post('/api/v1/finance/lcoe', (req: Request, res: Response) => {
 app.post('/api/v1/finance/npv', (req: Request, res: Response) => {
   try {
     const { rate, cashflows } = req.body;
-    const val = calculateNpv(Number(rate), cashflows || []);
+    const r = Number(rate);
+    if (!Number.isFinite(r)) {
+      return res.status(400).json({ error: `Rate must be a finite number, got ${rate}` });
+    }
+    if (!Array.isArray(cashflows) || cashflows.some(c => typeof c !== 'number' || !Number.isFinite(c))) {
+      return res.status(400).json({ error: 'Cash flows must be an array of finite numbers' });
+    }
+
+    const val = calculateNpv(r, cashflows);
     res.json({ npvValue: val });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -131,8 +278,15 @@ app.post('/api/v1/finance/npv', (req: Request, res: Response) => {
 app.post('/api/v1/finance/irr', (req: Request, res: Response) => {
   try {
     const { cashflows } = req.body;
-    const val = calculateIrr(cashflows || []);
-    res.json({ irrValue: val });
+    if (!Array.isArray(cashflows) || cashflows.some(c => typeof c !== 'number' || !Number.isFinite(c))) {
+      return res.status(400).json({ error: 'Cash flows must be an array of finite numbers' });
+    }
+
+    const detailed = calculateIrrDetailed(cashflows);
+    res.json({
+      irrValue: detailed.irr,
+      status: detailed.status,
+    });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
@@ -142,6 +296,9 @@ app.post('/api/v1/finance/irr', (req: Request, res: Response) => {
 app.post('/api/v1/shading/analyze', (req: Request, res: Response) => {
   try {
     const { meshTriangles = [], targetPoints = [], sunDirections = [] } = req.body;
+    if (!Array.isArray(meshTriangles) || !Array.isArray(targetPoints) || !Array.isArray(sunDirections)) {
+      return res.status(400).json({ error: 'meshTriangles, targetPoints, and sunDirections must be arrays' });
+    }
     const factors = calculateShadingFactor(meshTriangles, targetPoints, sunDirections);
     res.json({ shadingFactors: factors });
   } catch (err: any) {
@@ -152,7 +309,22 @@ app.post('/api/v1/shading/analyze', (req: Request, res: Response) => {
 // 5. Quick Sizing Project
 app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
   try {
+    const { dailyKwh, autonomyDays, latitude, longitude } = req.body;
+    if (typeof dailyKwh !== 'number' || !Number.isFinite(dailyKwh) || dailyKwh <= 0) {
+      return res.status(400).json({ error: `dailyKwh must be a positive finite number, got ${dailyKwh}` });
+    }
+    if (autonomyDays !== undefined && (typeof autonomyDays !== 'number' || !Number.isFinite(autonomyDays) || autonomyDays < 0)) {
+      return res.status(400).json({ error: `autonomyDays must be a non-negative finite number, got ${autonomyDays}` });
+    }
+    if (latitude !== undefined && (typeof latitude !== 'number' || !Number.isFinite(latitude) || latitude < -90 || latitude > 90)) {
+      return res.status(400).json({ error: `latitude must be between -90 and 90, got ${latitude}` });
+    }
+    if (longitude !== undefined && (typeof longitude !== 'number' || !Number.isFinite(longitude) || longitude < -180 || longitude > 180)) {
+      return res.status(400).json({ error: `longitude must be between -180 and 180, got ${longitude}` });
+    }
+
     const result = performQuickSizing(req.body, db);
+    saveDatabase();
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -170,8 +342,43 @@ app.get('/api/v1/catalog/modules', (_req: Request, res: Response) => {
 });
 
 app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
-  const item = { ...req.body, id: req.body.id || `mod-${Date.now()}` };
+  const pmpWatts = Number(req.body.pmpWatts ?? req.body.pNominalWp);
+  const vmpVolts = Number(req.body.vmpVolts ?? req.body.vMp);
+  const impAmps = Number(req.body.impAmps ?? req.body.iMp);
+  const vocVolts = Number(req.body.vocVolts ?? req.body.vOc);
+  const iscAmps = Number(req.body.iscAmps ?? req.body.iSc);
+
+  if (
+    !Number.isFinite(pmpWatts) || pmpWatts <= 0 ||
+    !Number.isFinite(vmpVolts) || vmpVolts <= 0 ||
+    !Number.isFinite(impAmps) || impAmps <= 0 ||
+    !Number.isFinite(vocVolts) || vocVolts <= 0 ||
+    !Number.isFinite(iscAmps) || iscAmps <= 0
+  ) {
+    return res.status(400).json({
+      error: 'Invalid PV module electrical parameters: pmpWatts, vmpVolts, impAmps, vocVolts, and iscAmps must all be positive finite numbers.',
+    });
+  }
+  if (vmpVolts >= vocVolts) {
+    return res.status(400).json({ error: `vmpVolts (${vmpVolts}V) cannot be greater than or equal to vocVolts (${vocVolts}V).` });
+  }
+  if (impAmps > iscAmps) {
+    return res.status(400).json({ error: `impAmps (${impAmps}A) cannot exceed iscAmps (${iscAmps}A).` });
+  }
+
+  const item = {
+    ...req.body,
+    id: req.body.id || `mod-${Date.now()}`,
+    pmpWatts,
+    vmpVolts,
+    impAmps,
+    vocVolts,
+    iscAmps,
+    modelName: req.body.modelName || req.body.model || 'Custom Module',
+    manufacturer: req.body.manufacturer || 'Generic',
+  };
   db.pvModules.set(item.id, item);
+  saveDatabase();
   res.status(201).json(item);
 });
 
@@ -180,8 +387,34 @@ app.get('/api/v1/catalog/inverters', (_req: Request, res: Response) => {
 });
 
 app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
-  const item = { ...req.body, id: req.body.id || `inv-${Date.now()}` };
+  const pnomAcKw = Number(req.body.pnomAcKw ?? (req.body.pAcNominalW !== undefined ? req.body.pAcNominalW / 1000 : undefined));
+  const vdcMaxVolts = Number(req.body.vdcMaxVolts ?? req.body.vDcMax);
+  const vmpptMinVolts = Number(req.body.vmpptMinVolts ?? req.body.vMpptMin);
+  const vmpptMaxVolts = Number(req.body.vmpptMaxVolts ?? req.body.vMpptMax);
+
+  if (
+    !Number.isFinite(pnomAcKw) || pnomAcKw <= 0 ||
+    !Number.isFinite(vdcMaxVolts) || vdcMaxVolts <= 0 ||
+    !Number.isFinite(vmpptMinVolts) || vmpptMinVolts <= 0 ||
+    !Number.isFinite(vmpptMaxVolts) || vmpptMaxVolts <= vmpptMinVolts
+  ) {
+    return res.status(400).json({
+      error: 'Invalid inverter parameters: pnomAcKw, vdcMaxVolts, vmpptMinVolts, and vmpptMaxVolts must be positive numbers with vmpptMaxVolts > vmpptMinVolts.',
+    });
+  }
+
+  const item = {
+    ...req.body,
+    id: req.body.id || `inv-${Date.now()}`,
+    pnomAcKw,
+    vdcMaxVolts,
+    vmpptMinVolts,
+    vmpptMaxVolts,
+    modelName: req.body.modelName || req.body.model || 'Custom Inverter',
+    manufacturer: req.body.manufacturer || 'Generic',
+  };
   db.inverters.set(item.id, item);
+  saveDatabase();
   res.status(201).json(item);
 });
 
@@ -190,16 +423,36 @@ app.get('/api/v1/catalog/batteries', (_req: Request, res: Response) => {
 });
 
 app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
-  const item = { ...req.body, id: req.body.id || `bat-${Date.now()}` };
+  const nominalVoltageVolts = Number(req.body.nominalVoltageVolts ?? req.body.nominalVoltageV);
+  const capacityKwh = Number(req.body.capacityKwh ?? (req.body.nominalCapacityAh && nominalVoltageVolts ? (req.body.nominalCapacityAh * nominalVoltageVolts) / 1000 : undefined));
+
+  if (
+    !Number.isFinite(nominalVoltageVolts) || nominalVoltageVolts <= 0 ||
+    !Number.isFinite(capacityKwh) || capacityKwh <= 0
+  ) {
+    return res.status(400).json({
+      error: 'Invalid battery parameters: nominalVoltageVolts and capacityKwh must be positive finite numbers.',
+    });
+  }
+
+  const item = {
+    ...req.body,
+    id: req.body.id || `bat-${Date.now()}`,
+    nominalVoltageVolts,
+    capacityKwh,
+    modelName: req.body.modelName || req.body.model || 'Custom Battery',
+    manufacturer: req.body.manufacturer || 'Generic',
+  };
   db.batteries.set(item.id, item);
+  saveDatabase();
   res.status(201).json(item);
 });
 
-// 8. Reports Generation
+// 8. Reports Generation with Snapshot Reconciliation (M09)
 app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
   const {
-    projectName = "Solar Project",
-    projectId = "N/A",
+    projectName,
+    projectId,
     systemCapacityKwp,
     panelCount,
     panelType,
@@ -219,64 +472,132 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
     (annualYieldKwh !== undefined && (typeof annualYieldKwh !== 'number' || !Number.isFinite(annualYieldKwh) || annualYieldKwh < 0)) ||
     (lcoeUsdPerKwh !== undefined && lcoeUsdPerKwh !== null && (typeof lcoeUsdPerKwh !== 'number' || !Number.isFinite(lcoeUsdPerKwh) || lcoeUsdPerKwh < 0))
   ) {
-    return res.status(400).json({ error: "Invalid engineering metrics: capacity, yield, and cost must be non-negative finite numbers; equipment counts must be non-negative integers." });
+    return res.status(400).json({
+      error: 'Invalid engineering metrics: capacity, yield, and cost must be non-negative finite numbers; equipment counts must be non-negative integers.',
+    });
   }
 
+  // Physical consistency check: panelCount and systemCapacityKwp
+  if (panelCount && panelCount > 0 && systemCapacityKwp && systemCapacityKwp > 0) {
+    const impliedWp = (systemCapacityKwp * 1000.0) / panelCount;
+    if (impliedWp < 50 || impliedWp > 1000) {
+      return res.status(400).json({
+        error: `Inconsistent report metrics: panelCount (${panelCount}) and systemCapacityKwp (${systemCapacityKwp} kWp) imply an unphysical module wattage (${impliedWp.toFixed(0)}W). Physical range is 50W-1000W.`,
+      });
+    }
+  }
+
+  // Snapshot Reconciliation against persistent database
+  const projectSnapshot = projectId && projectId !== 'N/A' ? db.projects.get(projectId) : undefined;
+  let resolvedProjectName = projectName ? String(projectName).trim() : (projectSnapshot?.name || 'Solar Project');
+  let resolvedPanelType = panelType;
+  let resolvedInverterType = inverterType;
+  let resolvedBatteryType = batteryType;
+
+  if (projectSnapshot) {
+    // Reconcile equipment names from snapshot catalog IDs
+    if (!resolvedPanelType && projectSnapshot.moduleId) {
+      const mod = db.pvModules.get(projectSnapshot.moduleId);
+      if (mod) resolvedPanelType = `${mod.manufacturer} ${mod.modelName} (${mod.pmpWatts}W)`;
+    }
+    if (!resolvedInverterType && projectSnapshot.inverterId) {
+      const inv = db.inverters.get(projectSnapshot.inverterId);
+      if (inv) resolvedInverterType = `${inv.manufacturer} ${inv.modelName} (${inv.pnomAcKw}kW)`;
+    }
+    if (!resolvedBatteryType && projectSnapshot.batteryId) {
+      const bat = db.batteries.get(projectSnapshot.batteryId);
+      if (bat) resolvedBatteryType = `${bat.manufacturer} ${bat.modelName} (${bat.nominalVoltageVolts}V ${bat.capacityKwh}kWh)`;
+    }
+  }
+
+  // If no project snapshot and equipment name was not supplied, use generic descriptive labels (never fabricate specific models)
+  resolvedPanelType = resolvedPanelType || 'Standard Monocrystalline PV Module';
+  resolvedInverterType = resolvedInverterType || 'Standard Grid-Tied PV Inverter';
+  resolvedBatteryType = resolvedBatteryType || (batteryCount && batteryCount > 0 ? 'Standard Stationary Battery Storage' : 'None');
+
   res.json({
-    title: "Preliminary Feasibility & Engineering Screening Proposal",
-    disclaimer: "This document provides preliminary engineering screening and feasibility metrics generated via automated calculation algorithms. It does not constitute a certified EPC construction package or utility-approved interconnection study, which requires site geotechnical borehole verification, local utility impact studies, and stamped licensed professional engineering approval.",
-    projectName: String(projectName).trim() || "Solar Project",
-    projectId: String(projectId),
+    title: 'Preliminary Feasibility & Engineering Screening Proposal',
+    disclaimer:
+      'This document provides preliminary engineering screening and feasibility metrics generated via automated calculation algorithms. It does not constitute a certified EPC construction package or utility-approved interconnection study, which requires site geotechnical borehole verification, local utility impact studies, and stamped licensed professional engineering approval.',
+    projectName: resolvedProjectName,
+    projectId: projectId ? String(projectId) : (projectSnapshot?.id || 'N/A'),
     generatedAt: new Date().toISOString(),
+    isReconciledAgainstSnapshot: Boolean(projectSnapshot),
     metrics: {
-      systemCapacityKwp: systemCapacityKwp ?? 0,
-      panelCount: panelCount ?? 0,
-      panelType: panelType || "575W N-Type High Efficiency Modules",
-      inverterCount: inverterCount ?? 0,
-      inverterType: inverterType || "10kW String Inverters (Three-Phase)",
-      batteryCount: batteryCount ?? 0,
-      batteryType: batteryType || "10.2kWh LiFePO4 Energy Storage Bank",
-      annualYieldKwh: annualYieldKwh ?? 0,
-      lcoeUsdPerKwh: lcoeUsdPerKwh !== undefined ? lcoeUsdPerKwh : null,
+      systemCapacityKwp: systemCapacityKwp ?? (projectSnapshot?.systemCapacityKwp ?? 0),
+      panelCount: panelCount ?? (projectSnapshot?.panelCount ?? 0),
+      panelType: resolvedPanelType,
+      inverterCount: inverterCount ?? (projectSnapshot?.inverterCount ?? 0),
+      inverterType: resolvedInverterType,
+      batteryCount: batteryCount ?? (projectSnapshot?.batteryCount ?? 0),
+      batteryType: resolvedBatteryType,
+      annualYieldKwh: annualYieldKwh ?? (projectSnapshot?.estimatedAnnualYieldKwh ?? 0),
+      lcoeUsdPerKwh: lcoeUsdPerKwh !== undefined ? lcoeUsdPerKwh : (projectSnapshot?.lcoeUsdPerKwh ?? null),
     },
     standards: [
-      "IEC 62548:2024 (Photovoltaic array design requirements)",
-      "IEC 60364-5-52 (DC cable cross-section & voltage drop)",
-      "IEEE 1547-2018 (Distributed energy interconnection)",
-      "IEC 61643-32 (Surge protection devices for PV systems)",
-      "IEEE 80-2013 (Guide for Safety in AC Substation Grounding)",
-    ]
+      'IEC 62548:2024 (Photovoltaic array design requirements)',
+      'IEC 60364-5-52 (DC cable cross-section & voltage drop)',
+      'IEEE 1547-2018 (Distributed energy interconnection)',
+      'IEC 61643-32 (Surge protection devices for PV systems)',
+      'IEEE 80-2013 (Guide for Safety in AC Substation Grounding)',
+    ],
   });
 });
 
-// 9. Sync Push/Pull
+// 9. Sync Push/Pull with Rejection of Malformed Payloads (M05)
 app.post('/api/v1/sync/push', (req: Request, res: Response) => {
-  const messages = req.body.messages || [];
-  const ackedIds: string[] = [];
-
-  for (const msg of messages) {
-    if (msg.entityType === 'Project' && msg.payloadJson) {
-      try {
-        const proj = typeof msg.payloadJson === 'string' ? JSON.parse(msg.payloadJson) : msg.payloadJson;
-        if (proj && proj.id) {
-          db.projects.set(proj.id, proj);
-        }
-      } catch {
-        // ignore parse error
-      }
-    }
-    db.outbox.push({ ...msg, processed: true, processedAt: new Date().toISOString() });
-    if (msg.id) ackedIds.push(msg.id);
+  const messages = req.body?.messages;
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ error: "Invalid sync request: 'messages' array required." });
   }
 
-  res.json({
-    success: true,
+  const ackedIds: string[] = [];
+  const rejected: Array<{ id?: string; reason: string }> = [];
+
+  for (const msg of messages) {
+    if (!msg || typeof msg !== 'object' || !msg.id) {
+      rejected.push({ id: msg?.id, reason: 'Missing message ID or malformed message structure' });
+      continue;
+    }
+
+    if (msg.entityType === 'Project') {
+      if (!msg.payloadJson) {
+        rejected.push({ id: msg.id, reason: 'Missing payloadJson for Project entity' });
+        continue;
+      }
+      try {
+        const proj = typeof msg.payloadJson === 'string' ? JSON.parse(msg.payloadJson) : msg.payloadJson;
+        if (!proj || typeof proj !== 'object' || !proj.id) {
+          rejected.push({ id: msg.id, reason: 'Malformed project payload: missing id' });
+          continue;
+        }
+        db.projects.set(proj.id, proj);
+      } catch (parseErr: any) {
+        rejected.push({ id: msg.id, reason: `JSON parse error in payloadJson: ${parseErr.message}` });
+        continue;
+      }
+    }
+
+    db.outbox.push({ ...msg, processed: true, processedAt: new Date().toISOString() });
+    ackedIds.push(msg.id);
+  }
+
+  if (ackedIds.length > 0) {
+    saveDatabase();
+  }
+
+  const allSucceeded = rejected.length === 0 && (ackedIds.length > 0 || messages.length === 0);
+  const status = ackedIds.length > 0 || messages.length === 0 ? 200 : 400;
+
+  res.status(status).json({
+    success: allSucceeded,
     processedCount: ackedIds.length,
     ackedIds,
+    rejected,
   });
 });
 
-app.get('/api/v1/sync/pull', (req: Request, res: Response) => {
+app.get('/api/v1/sync/pull', (_req: Request, res: Response) => {
   res.json({
     currentClock: Date.now(),
     projects: Array.from(db.projects.values()),
@@ -284,10 +605,12 @@ app.get('/api/v1/sync/pull', (req: Request, res: Response) => {
 });
 
 // ----------------------------------------------------------------
-// VITE DEV SERVER OR STATIC SERVING
+// VITE DEV SERVER OR STATIC SERVING (M20 dynamic import)
 // ----------------------------------------------------------------
 async function startServer() {
   if (!isProduction) {
+    // Dynamic import to prevent devDependencies requirement in production runtime
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true, allowedHosts: true },
       appType: 'spa',
@@ -308,7 +631,13 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
+// Only start the server when run directly (not when imported for integration tests)
+const isMainModule = process.argv[1] && (process.argv[1].endsWith('server.ts') || process.argv[1].endsWith('server.js'));
+if (process.env.NODE_ENV !== 'test' && isMainModule) {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
+
+export { app, db, saveDatabase, loadDatabase, DB_PERSIST_PATH };

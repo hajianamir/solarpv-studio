@@ -33,12 +33,19 @@ export interface SolarPumpResult {
 }
 
 export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
+  if (
+    input.peakSunHours !== undefined &&
+    (typeof input.peakSunHours !== 'number' || !Number.isFinite(input.peakSunHours) || input.peakSunHours <= 0)
+  ) {
+    throw new Error(`Peak sun hours must be a positive finite number (h/day), received ${input.peakSunHours}`);
+  }
+  const peakSunHours = input.peakSunHours !== undefined ? input.peakSunHours : 5.0;
+
   const wellDepthM = Math.max(0, input.wellDepthM || 0);
   const tankHeightM = Math.max(0, input.tankHeightM || 0);
   const pipeLengthM = Math.max(0, input.pipeLengthM || 0);
   const pipeDiameterMm = Math.max(15, input.pipeDiameterMm || 63);
   const dailyWaterRequirementM3 = Math.max(0, input.dailyWaterRequirementM3 || 0);
-  const peakSunHours = Math.max(1.0, input.peakSunHours || 5.0);
   const irrigationType = input.irrigationType || 'flooding_storage';
 
   // 1. Static Head: well depth to ground + ground to tank surface

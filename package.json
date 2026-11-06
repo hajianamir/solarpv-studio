@@ -16,7 +16,7 @@
     "lint:types": "npm run lint:types:client && npm run lint:types:node",
     "lint": "npm run lint:types && npm run lint:eslint",
     "test": "tsx scripts/run-all-benchmarks.ts",
-    "test:audit": "tsx scripts/audit-r1-to-r7-remediation-test.ts && tsx scripts/engineering-audit-remediation-test.ts",
+    "test:audit": "tsx scripts/audit-r1-to-r7-remediation-test.ts && tsx scripts/engineering-audit-remediation-test.ts && tsx scripts/audit-m01-to-m22-remediation-test.ts",
     "test:all": "npm run test && npm run test:audit",
     "test:coverage": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
     "test:smoke": "tsx scripts/smoke-test.ts",
@@ -31,7 +31,12 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.174.0",
+    "tsx": "^4.19.3",
     "zod": "^4.6.7"
+  },
+  "overrides": {
+    "glob": "^14.0.4",
+    "minimatch": "^11.0.5"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
@@ -49,7 +54,6 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vite": "^6.2.0"
   }

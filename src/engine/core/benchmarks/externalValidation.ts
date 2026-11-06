@@ -28,6 +28,7 @@
 
 import { simulateAnnualSoiling, type DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
 import { simulateAnnualSnowShedding, type HourlySnowWeatherStep } from '../../snow/marionSnowEngine';
+import { generateNrelHubSnowWeather } from '../../snow/marionSnowRecalibration';
 
 export interface FieldStationBenchmark {
   stationId: string;
@@ -166,45 +167,119 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
     },
   });
 
-  // 2. SAM 2023.12.17 Cross-Model Multi-Climate Comparative Benchmarks
+  // 2. SAM 2023.12.17 Cross-Model Multi-Climate Comparative Benchmarks (Dynamic Engine Executions)
+  // 2a. Phoenix, Arizona: Hyper-arid Sonoran desert with ~5 rain wash events / year
+  const phxDays: DailyWeatherSoilingStep[] = Array.from({ length: 365 }, (_, i) => {
+    const d = i + 1;
+    const isRain = [73, 146, 219, 292, 365].includes(d);
+    return {
+      dayOfYear: d,
+      rainfallMm: isRain ? 20.0 : 0.0,
+      dustStormOccurred: false,
+    };
+  });
+  const phxSoilingSim = simulateAnnualSoiling(
+    { dailySoilingRatePercent: 0.115, scheduledWashIntervalDays: 0, maxSoilingCeilingPercent: 25.0 },
+    phxDays
+  );
+  const phxSoilingPct = Number(phxSoilingSim.annualAverageSoilingLossPercent.toFixed(2));
+  const phxSnowPct = 0.0;
+
+  // 2b. Munich, Bavaria: Temperate continental with rain events every ~22 days & winter snow
+  const munichDays: DailyWeatherSoilingStep[] = Array.from({ length: 365 }, (_, i) => {
+    const d = i + 1;
+    const isRain = d % 22 === 0;
+    return {
+      dayOfYear: d,
+      rainfallMm: isRain ? 12.0 : 0.0,
+      dustStormOccurred: false,
+    };
+  });
+  const munichSoilingSim = simulateAnnualSoiling(
+    { dailySoilingRatePercent: 0.170, scheduledWashIntervalDays: 0, maxSoilingCeilingPercent: 20.0 },
+    munichDays
+  );
+  const munichSnowWeather = generateNrelHubSnowWeather(150.0, -0.55, 3, 12, 0.0125, 0.38, 0);
+  const munichSnowSim = simulateAnnualSnowShedding(
+    {
+      tiltDeg: 30.0,
+      groundClearanceM: 0.80,
+      moduleBottomClearanceM: 0.80,
+      dammingRiskThresholdM: 0.50,
+      slideTemperatureThresholdC: 0.50,
+      surfaceSheddingCoeff: 1.0,
+      snowDensityKgPerM3: 100.0,
+    },
+    munichSnowWeather.weather
+  );
+  const munichSoilingPct = Number(munichSoilingSim.annualAverageSoilingLossPercent.toFixed(2));
+  const munichSnowPct = Number(munichSnowSim.annualSnowLossPercent.toFixed(2));
+
+  // 2c. Singapore: Tropical equatorial wash-off every ~15 days & zero snow
+  const sgDays: DailyWeatherSoilingStep[] = Array.from({ length: 365 }, (_, i) => {
+    const d = i + 1;
+    const isRain = d % 15 === 0;
+    return {
+      dayOfYear: d,
+      rainfallMm: isRain ? 25.0 : 0.0,
+      dustStormOccurred: false,
+    };
+  });
+  const sgSoilingSim = simulateAnnualSoiling(
+    { dailySoilingRatePercent: 0.155, scheduledWashIntervalDays: 0, maxSoilingCeilingPercent: 15.0 },
+    sgDays
+  );
+  const sgSoilingPct = Number(sgSoilingSim.annualAverageSoilingLossPercent.toFixed(2));
+  const sgSnowPct = 0.0;
+
+  const samPhxSoiling = 4.20;
+  const samMunichSoiling = 1.80;
+  const samMunichSnow = 2.60;
+  const samSgSoiling = 1.10;
+
+  const phxDelta = Number(((Math.abs(phxSoilingPct - samPhxSoiling) / samPhxSoiling) * 100.0).toFixed(2));
+  const munichSoilingDelta = Number(((Math.abs(munichSoilingPct - samMunichSoiling) / samMunichSoiling) * 100.0).toFixed(2));
+  const munichSnowDelta = Number(((Math.abs(munichSnowPct - samMunichSnow) / samMunichSnow) * 100.0).toFixed(2));
+  const sgDelta = Number(((Math.abs(sgSoilingPct - samSgSoiling) / samSgSoiling) * 100.0).toFixed(2));
+
   const crossModelComparisons: CrossModelSamComparison[] = [
     {
       climateHubId: 'SAM-HUB-PHOENIX',
       locationName: 'Phoenix, Arizona (Sonoran Desert)',
       climateZone: 'Hyper-Arid',
-      samAnnualSoilingPercent: 4.20,
-      studioAnnualSoilingPercent: 4.15,
-      soilingDeltaPercent: Number(((Math.abs(4.15 - 4.20) / 4.20) * 100.0).toFixed(2)),
+      samAnnualSoilingPercent: samPhxSoiling,
+      studioAnnualSoilingPercent: phxSoilingPct,
+      soilingDeltaPercent: phxDelta,
       samAnnualSnowPercent: 0.00,
-      studioAnnualSnowPercent: 0.00,
+      studioAnnualSnowPercent: phxSnowPct,
       snowDeltaPercent: 0.00,
-      overallStatus: options.forceCrossModelFailure ? 'FAIL' : 'PASS',
+      overallStatus: options.forceCrossModelFailure ? 'FAIL' : (phxDelta <= 5.0 ? 'PASS' : 'WARN'),
       referenceSource: 'NREL SAM 2023.12.17 TMY3 Phoenix Case & Kimber (2006)',
     },
     {
       climateHubId: 'SAM-HUB-MUNICH',
       locationName: 'Munich, Bavaria (Central Europe)',
       climateZone: 'Temperate-Continental',
-      samAnnualSoilingPercent: 1.80,
-      studioAnnualSoilingPercent: 1.76,
-      soilingDeltaPercent: Number(((Math.abs(1.76 - 1.80) / 1.80) * 100.0).toFixed(2)),
-      samAnnualSnowPercent: 2.60,
-      studioAnnualSnowPercent: 2.53,
-      snowDeltaPercent: Number(((Math.abs(2.53 - 2.60) / 2.60) * 100.0).toFixed(2)),
-      overallStatus: 'PASS',
+      samAnnualSoilingPercent: samMunichSoiling,
+      studioAnnualSoilingPercent: munichSoilingPct,
+      soilingDeltaPercent: munichSoilingDelta,
+      samAnnualSnowPercent: samMunichSnow,
+      studioAnnualSnowPercent: munichSnowPct,
+      snowDeltaPercent: munichSnowDelta,
+      overallStatus: munichSoilingDelta <= 5.0 && munichSnowDelta <= 5.0 ? 'PASS' : 'WARN',
       referenceSource: 'DWD Munich Trial & NREL SAM 2023.12.17 Marion Snow Model',
     },
     {
       climateHubId: 'SAM-HUB-SINGAPORE',
       locationName: 'Singapore (Changi Airport)',
       climateZone: 'Tropical-Equatorial',
-      samAnnualSoilingPercent: 1.10,
-      studioAnnualSoilingPercent: 1.08,
-      soilingDeltaPercent: Number(((Math.abs(1.08 - 1.10) / 1.10) * 100.0).toFixed(2)),
+      samAnnualSoilingPercent: samSgSoiling,
+      studioAnnualSoilingPercent: sgSoilingPct,
+      soilingDeltaPercent: sgDelta,
       samAnnualSnowPercent: 0.00,
-      studioAnnualSnowPercent: 0.00,
+      studioAnnualSnowPercent: sgSnowPct,
       snowDeltaPercent: 0.00,
-      overallStatus: 'PASS',
+      overallStatus: sgDelta <= 5.0 ? 'PASS' : 'WARN',
       referenceSource: 'SERIS Singapore Field Trial & SAM High-Rainfall Wash-Off Model',
     },
   ];

@@ -15,6 +15,8 @@ export class CircuitBreaker {
   private state: CircuitBreakerState = 'CLOSED';
   private failureCount: number = 0;
   private successCountInHalfOpen: number = 0;
+  private halfOpenTrialsAttempted: number = 0;
+  private halfOpenTrialsInProgress: number = 0;
   private lastStateChangeTimestamp: number = Date.now();
   private totalRequests: number = 0;
   private totalFailures: number = 0;
@@ -55,6 +57,21 @@ export class CircuitBreaker {
       throw openErr;
     }
 
+    if (currentState === 'HALF_OPEN') {
+      if (this.halfOpenTrialsAttempted >= this.config.halfOpenMaxTrials) {
+        const busyErr = new Error(
+          `Circuit breaker is HALF_OPEN and max trials (${this.config.halfOpenMaxTrials}) are already in progress.`
+        );
+        if (fallback) {
+          this.fallbackServed++;
+          return await fallback(busyErr);
+        }
+        throw busyErr;
+      }
+      this.halfOpenTrialsAttempted++;
+      this.halfOpenTrialsInProgress++;
+    }
+
     try {
       const result = await action();
       this.recordSuccess();
@@ -67,6 +84,10 @@ export class CircuitBreaker {
         return await fallback(errorObj);
       }
       throw errorObj;
+    } finally {
+      if (currentState === 'HALF_OPEN') {
+        this.halfOpenTrialsInProgress = Math.max(0, this.halfOpenTrialsInProgress - 1);
+      }
     }
   }
 
@@ -106,11 +127,15 @@ export class CircuitBreaker {
     this.transitionTo('CLOSED');
     this.failureCount = 0;
     this.successCountInHalfOpen = 0;
+    this.halfOpenTrialsAttempted = 0;
+    this.halfOpenTrialsInProgress = 0;
   }
 
   private transitionTo(newState: CircuitBreakerState): void {
     this.state = newState;
     this.lastStateChangeTimestamp = Date.now();
+    this.halfOpenTrialsAttempted = 0;
+    this.halfOpenTrialsInProgress = 0;
     if (newState === 'CLOSED') {
       this.failureCount = 0;
       this.successCountInHalfOpen = 0;
@@ -127,6 +152,8 @@ export class CircuitBreaker {
       parseFailures: this.parseFailures,
       fallbackServed: this.fallbackServed,
       successfulFetches: this.successfulFetches,
+      halfOpenTrialsAttempted: this.halfOpenTrialsAttempted,
+      halfOpenTrialsInProgress: this.halfOpenTrialsInProgress,
       lastChange: this.lastStateChangeTimestamp,
     };
   }

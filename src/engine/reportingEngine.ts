@@ -81,12 +81,24 @@ export function exportToWordDocument(
 }
 
 // ----------------------------------------------------
+// XML Special Characters Escaping Helper
+// ----------------------------------------------------
+export function escapeXml(str: string): string {
+  if (typeof str !== 'string') str = String(str ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+// ----------------------------------------------------
 // Export Multi-Table Structured Excel (.xls XML Format)
 // ----------------------------------------------------
-export function exportToExcelWorkbook(
-  sheets: { sheetName: string; rows: (string | number)[][] }[],
-  filename: string = 'SolarPV_EPC_Data.xls'
-): void {
+export function buildExcelWorkbookXml(
+  sheets: { sheetName: string; rows: (string | number | boolean | null | undefined)[][] }[]
+): string {
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
   <?mso-application progid="Excel.Sheet"?>
   <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -112,7 +124,8 @@ export function exportToExcelWorkbook(
   `;
 
   for (const sheet of sheets) {
-    xml += `<Worksheet ss:Name="${sheet.sheetName.replace(/[:\\/?*[\]]/g, '_').substring(0, 31)}">
+    const sanitizedSheetName = escapeXml(sheet.sheetName.replace(/[:\\/?*[\]]/g, '_').substring(0, 31));
+    xml += `<Worksheet ss:Name="${sanitizedSheetName}">
       <Table>`;
     for (let r = 0; r < sheet.rows.length; r++) {
       const row = sheet.rows[r];
@@ -120,8 +133,9 @@ export function exportToExcelWorkbook(
       xml += '<Row>';
       for (const cell of row) {
         const val = cell ?? '';
-        const isNum = typeof val === 'number';
-        xml += `<Cell${styleAttr}><Data ss:Type="${isNum ? 'Number' : 'String'}">${val}</Data></Cell>`;
+        const isNum = typeof val === 'number' && Number.isFinite(val);
+        const dataVal = isNum ? val : escapeXml(String(val));
+        xml += `<Cell${styleAttr}><Data ss:Type="${isNum ? 'Number' : 'String'}">${dataVal}</Data></Cell>`;
       }
       xml += '</Row>';
     }
@@ -129,6 +143,14 @@ export function exportToExcelWorkbook(
   }
 
   xml += '</Workbook>';
+  return xml;
+}
+
+export function exportToExcelWorkbook(
+  sheets: { sheetName: string; rows: (string | number)[][] }[],
+  filename: string = 'SolarPV_EPC_Data.xls'
+): void {
+  const xml = buildExcelWorkbookXml(sheets);
 
   const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
