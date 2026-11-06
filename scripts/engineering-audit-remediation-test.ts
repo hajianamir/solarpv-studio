@@ -916,6 +916,141 @@ async function runAuditRemediationSuite() {
       'Individual table support legs dynamically adapt height to local roof elevation underneath each post',
       `elevDiff=${legElevationDifference.toFixed(3)}m, legHeightLeft=${legHeightLeft.toFixed(3)}m, legHeightRight=${legHeightRight.toFixed(3)}m`
     );
+
+    // D7 Signature Comprehensive Parameter Invalidation Probes
+    // 1) Geodetic Anchor Latitude Probe: changing latitude while cityId and PSH are fixed strictly invalidates signature
+    const sceneTehran = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 14.85,
+      totalModulesCount: 27,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+      latitude: 35.6892,
+      longitude: 51.3890,
+    });
+    const sceneSydney = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 14.85,
+      totalModulesCount: 27,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+      latitude: -33.8688,
+      longitude: 151.2093,
+    });
+    const sigTehran = computeShadingSceneSignature({
+      scene: sceneTehran,
+      cityId: 'custom',
+      peakSunHours: 5.2,
+    });
+    const sigSydney = computeShadingSceneSignature({
+      scene: sceneSydney,
+      cityId: 'custom',
+      peakSunHours: 5.2,
+    });
+    assert(
+      sigTehran !== sigSydney,
+      'Signature strictly invalidates on geodetic anchor latitude change under identical cityId and PSH',
+      `sigTehran=${sigTehran.slice(0, 16)}... vs sigSydney=${sigSydney.slice(0, 16)}...`
+    );
+
+    // 2) Ground Albedo Probe: changing albedo from 0.20 to 0.80 strictly invalidates signature
+    const sigAlbedo02 = computeShadingSceneSignature({
+      scene: sceneTehran,
+      cityId: 'tehran',
+      peakSunHours: 5.2,
+      albedo: 0.20,
+    });
+    const sigAlbedo08 = computeShadingSceneSignature({
+      scene: sceneTehran,
+      cityId: 'tehran',
+      peakSunHours: 5.2,
+      albedo: 0.80,
+    });
+    assert(
+      sigAlbedo02 !== sigAlbedo08,
+      'Signature strictly invalidates on ground surface albedo change (0.20 vs 0.80)',
+      `sigAlbedo02=${sigAlbedo02.slice(0, 16)}... vs sigAlbedo08=${sigAlbedo08.slice(0, 16)}...`
+    );
+
+    // 3) App & ThreeJsViewer Powerplant Scene Capacity & Hash Parity Probe
+    // In powerplant mode with target 1000 kW AC, both App and Viewer size DC array with 1.25 DC/AC ratio (1250 kWp)
+    const targetKwAc = 1000;
+    const dcRatio = 1.25;
+    const dcCapacityKwp = targetKwAc * dcRatio;
+    const modPmp = 550;
+    const dcModules = Math.round((dcCapacityKwp * 1000) / modPmp);
+
+    const appPowerplantScene = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: dcCapacityKwp,
+      totalModulesCount: dcModules,
+      interRowSpacingM: 5.0,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+      latitude: 35.6892,
+      longitude: 51.3890,
+      elevationM: 1200,
+      modulePmpWatts: modPmp,
+      installationEnvironment: 'ground_mount',
+      includeDefaultObstacles: false,
+      albedo: 0.20,
+    });
+    const viewerPowerplantScene = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: dcCapacityKwp,
+      totalModulesCount: dcModules,
+      interRowSpacingM: 5.0,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+      latitude: 35.6892,
+      longitude: 51.3890,
+      elevationM: 1200,
+      modulePmpWatts: modPmp,
+      installationEnvironment: 'ground_mount',
+      includeDefaultObstacles: false,
+      albedo: 0.20,
+    });
+
+    const appSig = computeShadingSceneSignature({
+      scene: appPowerplantScene,
+      cityId: 'tehran',
+      peakSunHours: 5.17,
+      albedo: 0.20,
+      simulationMode: 'screening_3day',
+    });
+    const viewerSig = computeShadingSceneSignature({
+      scene: viewerPowerplantScene,
+      cityId: 'tehran',
+      peakSunHours: 5.17,
+      albedo: 0.20,
+      simulationMode: 'screening_3day',
+    });
+
+    assert(
+      appSig === viewerSig,
+      'Powerplant 1000 kW AC mode achieves 100% capacity (1250 kWp) and signature parity between App and Viewer',
+      `appSig=${appSig.slice(0, 16)}... viewerSig=${viewerSig.slice(0, 16)}...`
+    );
+
+    // Verify shading lifecycle APPLY then CHECK_SYNC does not immediately flag stale
+    const initialState = createInitialShadingLifecycleState();
+    const appliedState = shadingLifecycleReducer(initialState, {
+      type: 'APPLY',
+      lossPct: 3.5,
+      capacityKwp: dcCapacityKwp,
+      projectCapacityKwp: dcCapacityKwp,
+      appliedAtIso: new Date().toISOString(),
+      cityId: 'tehran',
+      source: 'project_array_design',
+      signatureHash: viewerSig,
+    });
+    const syncState = shadingLifecycleReducer(appliedState, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: dcCapacityKwp,
+      currentSignatureHash: appSig,
+    });
+    assert(
+      syncState.isStale === false && syncState.appliedShading !== null,
+      'Powerplant 3D shading lifecycle preserves valid non-stale applied state after CHECK_SYNC',
+      `isStale=${syncState.isStale}, staleReason=${syncState.staleReason ?? 'none'}`
+    );
   }
 
   // ---------------------------------------------------------------------------

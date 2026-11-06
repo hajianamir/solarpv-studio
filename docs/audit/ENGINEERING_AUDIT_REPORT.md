@@ -99,14 +99,14 @@ All vulnerabilities across items R1 through R11 have been systematically remedia
 • [R9] Iranian Regulations Financial Annuity & Zero Interest Rate: 4/4 PASS
 • [R10] Data Gateway Circuit Breaker & Policy-Driven Routing: 10/10 PASS
 • [R11] Multi-Faceted Shading Reconciliation & Array Tilt Separation: 7/7 PASS
-• [AREA 1–6] Engineering Audit Remediation Suite: 36/36 PASS
+• [AREA 1–7] Engineering Audit Remediation Suite: 63/63 PASS (Total 148/148 Audit Assertions Passing)
 ```
 
 ### D. Production Build & Static Analysis
 ```
 • tsc --noEmit (Client TypeScript Check): 0 errors
 • tsc --project tsconfig.node.json --noEmit (Server & Scripts TypeScript Check, strict: true): 0 errors
-• eslint src/: 0 errors (64 typed explicit-any warnings, cataloged in Section 4)
+• eslint src/: 0 errors (65 typed explicit-any warnings, cataloged in Section 4)
 • vite build: Production bundle generated successfully
 ```
 
@@ -162,12 +162,16 @@ An independent audit probe of commit `d59e6a9` and review of `93701cc` identifie
    - **Zero-Bypass Elimination & Component Conservation:** Reconciles declared capacity and module counts strictly against table sums, blocking cases where `totalPvCapacityKwp = 0` was falsely treated as consistent with $14.85\,\text{kWp}$ active tables (`isProjectSnapshotConsistent: false`, `overallReconciled: false`). In addition, `isComponentEnergyConsistent` is strictly included in `overallReconciled`.
    - **NASA POWER Sentinels & Provenance:** Enforces strict physical bounds $[-70^\circ\text{C}, 65^\circ\text{C}]$, rejects `-999` sentinels, and rejects $T_{\min} > T_{\max}$ contradictions. When temperature is missing from the payload, it defaults with explicit `'estimated'` provenance, `'rule_of_thumb_screening'` method, $15.0\%$ uncertainty, and `isEstimatedFromGlobalModel: true`.
    - **Financial Loan Validation:** Enforces upfront positive integer constraints on loan term (1..25 years) and non-negative loan parameters.
+7. **D7 (Signature Coverage, Powerplant Parity & Asynchronous Exception Safety):**
+   - **Geodetic Anchor & Environmental Invalidation:** Canonical signature incorporates `anchorLocation` (`lat`, `lng`, `elev`), ground surface `albedo`, and `simulationMode`. Probes verify that latitude changes under fixed city and PSH, as well as albedo changes (0.20 to 0.80), strictly invalidate the signature.
+   - **App & Viewer Powerplant Parity:** Sizing in `systemMode === 'powerplant'` uniformly employs DC nameplate capacity ($1250\,\text{kWp}$ for $1000\,\text{kW}$ AC target with 1.25 DC/AC ratio) and module count ($2273$), ensuring that `APPLY -> CHECK_SYNC` preserves non-stale applied state without false staleness trips.
+   - **Asynchronous Exception Handling:** Wrapped the internal execution of `simulateAnnual3dShading` and ray-tracing inside `setTimeout` with a strict `try / catch / finally` structure that guarantees `setLoading(false)` is always executed, preventing UI lockup on unexpected computation errors.
 
 ---
 
 ## 4. Itemized ESLint Warning Inventory & Risk Assessment
 
-All 64 ESLint warnings emitted by `eslint src/` are `@typescript-eslint/no-explicit-any`. Zero lint errors exist. Rather than claiming absolute runtime immunity, these warnings represent an **analyzed and accepted engineering risk** with specific architectural mitigations:
+All 65 ESLint warnings emitted by `eslint src/` are `@typescript-eslint/no-explicit-any`. Zero lint errors exist. Rather than claiming absolute runtime immunity, these warnings represent an **analyzed and accepted engineering risk** with specific architectural mitigations:
 1. Untrusted legacy migration JSON payloads (`projectMigration.ts`, `migrationTestVectors.ts`) where untrusted shapes must be parsed before Zod/v3 validation.
 2. External HTTP REST payloads (`climateDataProvider.ts`, `soilDataProvider.ts`) where API schema changes could occur; guarded by try/catch and fallback fallthroughs.
 3. Unit test mock calls where deliberate invalid types are passed to verify runtime exception throwing.

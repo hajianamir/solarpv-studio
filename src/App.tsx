@@ -577,16 +577,18 @@ export const App: React.FC = () => {
   // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
   const activePlantCapacityKwp =
     systemMode === 'powerplant'
-      ? (targetPowerplantCapacityKw || 1000)
+      ? (targetPowerplantCapacityKw || 1000) * 1.25
       : arrayDesign.totalPvCapacityKwp;
+
+  const activeModulesCount =
+    systemMode === 'powerplant'
+      ? Math.round((activePlantCapacityKwp * 1000) / (selectedModule.pmpWatts || 550))
+      : arrayDesign.totalModulesCount;
 
   const currentShadingSignature = useMemo(() => {
     const scene = buildSceneFromProjectDesign({
       totalPvCapacityKwp: activePlantCapacityKwp,
-      totalModulesCount:
-        systemMode === 'powerplant'
-          ? Math.round(((targetPowerplantCapacityKw || 1000) * 1000) / (selectedModule.pmpWatts || 550))
-          : arrayDesign.totalModulesCount,
+      totalModulesCount: activeModulesCount,
       interRowSpacingM: arrayDesign.interRowSpacingM,
       tiltDeg: city.optimalTiltAnnualDeg,
       azimuthDeg: 0,
@@ -600,21 +602,29 @@ export const App: React.FC = () => {
         siteOverrides?.installationEnvironment ||
         (systemMode === 'powerplant' ? 'ground_mount' : 'rooftop_flat_concrete'),
       includeDefaultObstacles: false,
+      albedo: city.albedo,
     });
 
     return computeShadingSceneSignature({
       scene,
       cityId: city.id,
       peakSunHours: city.peakSunHours,
+      albedo: city.albedo,
+      simulationMode: 'screening_3day',
     });
   }, [
     activePlantCapacityKwp,
-    targetPowerplantCapacityKw,
+    activeModulesCount,
     systemMode,
     selectedModule,
-    arrayDesign.totalModulesCount,
     arrayDesign.interRowSpacingM,
-    city,
+    city.optimalTiltAnnualDeg,
+    city.latitude,
+    city.longitude,
+    city.elevationM,
+    city.id,
+    city.peakSunHours,
+    city.albedo,
     siteOverrides?.installationEnvironment,
   ]);
 
@@ -2428,19 +2438,12 @@ export const App: React.FC = () => {
               lang={lang}
               city={city}
               site={selectedSite}
-              plantCapacityKw={
-                systemMode === 'powerplant'
-                  ? (targetPowerplantCapacityKw || 1000)
-                  : arrayDesign.totalPvCapacityKwp
-              }
+              plantCapacityKw={activePlantCapacityKwp}
               plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
               arrayDesign={{
-                totalPvCapacityKwp:
-                  systemMode === 'powerplant'
-                    ? (targetPowerplantCapacityKw || 1000) * 1.25
-                    : arrayDesign.totalPvCapacityKwp,
-                totalModulesCount: arrayDesign.totalModulesCount,
+                totalPvCapacityKwp: activePlantCapacityKwp,
+                totalModulesCount: activeModulesCount,
                 interRowSpacingM: arrayDesign.interRowSpacingM,
                 tiltDeg: city.optimalTiltAnnualDeg,
                 azimuthDeg: 0,

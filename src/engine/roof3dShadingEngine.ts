@@ -154,6 +154,7 @@ export interface Scene3DState {
   azimuthDeg?: number;
   interRowSpacingM?: number;
   installationEnvironment?: string;
+  albedo?: number;
   obstacleDataStatus?: 'demo_sample' | 'surveyed' | 'verified_unobstructed' | 'missing_unverified' | 'unspecified';
 }
 
@@ -1025,7 +1026,10 @@ export function simulateAnnual3dShading(
   );
 
   return {
-    sceneState: scene,
+    sceneState: {
+      ...scene,
+      ...(options?.albedo !== undefined ? { albedo: options.albedo } : {}),
+    },
     simulationModeUsed,
     rawRayCastingStepsCount,
     totalEvaluatedDaylightHours,
@@ -1169,6 +1173,7 @@ export interface ProjectArrayDesignInputs {
   isDemoMode?: boolean;
   includeDefaultObstacles?: boolean;
   isObstacleFreeVerified?: boolean;
+  albedo?: number;
 }
 
 /**
@@ -1219,6 +1224,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
       tiltDeg,
       azimuthDeg,
       interRowSpacingM: pitchM,
+      albedo: inputs.albedo,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -1405,6 +1411,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
     interRowSpacingM: pitchM,
     installationEnvironment: env,
     obstacleDataStatus,
+    albedo: inputs.albedo,
     updatedAt: new Date().toISOString(),
   };
 }

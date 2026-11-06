@@ -207,8 +207,10 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       scene: activeScene,
       cityId: city?.id,
       peakSunHours: city?.peakSunHours,
+      albedo: activeScene.albedo ?? city?.albedo,
+      simulationMode,
     });
-  }, [activeScene, city?.id, city?.peakSunHours]);
+  }, [activeScene, city?.id, city?.peakSunHours, city?.albedo, simulationMode]);
 
   const [calculatedSignature, setCalculatedSignature] = useState<string | null>(() => {
     try {
@@ -216,6 +218,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         scene: activeScene,
         cityId: city?.id,
         peakSunHours: city?.peakSunHours,
+        albedo: activeScene.albedo ?? city?.albedo,
+        simulationMode,
       });
     } catch {
       return null;
@@ -645,10 +649,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   // Execute Ray-Traced Shading & Annual Waterfall Simulation
   const handleRunShadingAnalysis = () => {
     setLoading(true);
-    try {
-      setTimeout(() => {
+    setTimeout(() => {
+      try {
         const result = simulateAnnual3dShading(activeScene, city?.peakSunHours ?? 5.2, 40.0, {
           simulationMode,
+          albedo: city?.albedo,
         });
         const rayTraced = calculateRayTracedShadingFactor(activeScene, undefined, {
           includeInterRow: true,
@@ -660,13 +665,16 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
             scene: result.sceneState,
             cityId: city?.id,
             peakSunHours: city?.peakSunHours,
+            albedo: result.sceneState.albedo ?? city?.albedo,
+            simulationMode,
           })
         );
+      } catch (err) {
+        console.error('Shading analysis execution error:', err);
+      } finally {
         setLoading(false);
-      }, 120);
-    } catch {
-      setLoading(false);
-    }
+      }
+    }, 120);
   };
 
   return (

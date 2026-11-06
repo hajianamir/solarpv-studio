@@ -57,6 +57,8 @@ export interface ShadingSignatureParams {
   obstaclesCount?: number;
   scene?: Scene3DState;
   engineVersion?: string;
+  albedo?: number;
+  simulationMode?: 'hourly_8760' | 'screening_3day';
 }
 
 /**
@@ -68,6 +70,21 @@ export function computeShadingSceneSignature(params: ShadingSignatureParams): st
 
   if (params.scene) {
     const s = params.scene;
+    const anchor = s.anchorLocation
+      ? {
+          lat: Number((s.anchorLocation.latitude ?? 0).toFixed(4)),
+          lng: Number((s.anchorLocation.longitude ?? 0).toFixed(4)),
+          elev: Number((s.anchorLocation.elevationM ?? 0).toFixed(1)),
+        }
+      : null;
+
+    const albedoVal =
+      params.albedo !== undefined
+        ? params.albedo
+        : s.albedo !== undefined
+          ? s.albedo
+          : null;
+
     const roof = (s.roofPlanes || []).map((r) => ({
       id: r.id,
       eaves: r.eavesHeightM,
@@ -108,6 +125,9 @@ export function computeShadingSceneSignature(params: ShadingSignatureParams): st
     const canonicalObj = {
       engineVersion,
       cityId: params.cityId || 'default',
+      anchor,
+      albedo: albedoVal !== null && albedoVal !== undefined ? Number(Number(albedoVal).toFixed(2)) : null,
+      simMode: params.simulationMode ?? null,
       psh: params.peakSunHours ? Number(params.peakSunHours.toFixed(2)) : null,
       cap: Number(((s.totalPvCapacityKwp ?? params.capacityKwp) || 0).toFixed(2)),
       modCount: s.totalModulesCount ?? null,
