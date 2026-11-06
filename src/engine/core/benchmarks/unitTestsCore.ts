@@ -4902,6 +4902,112 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // ==========================================================================
+  // [E20-3D-ROOFTOP-PROJECT-COUPLING-AND-RAYTRACING] Dynamic 3D Scene & Ray-Tracer
+  // ==========================================================================
+  {
+    const {
+      buildSceneFromProjectDesign,
+      convertObstaclesToTriangles,
+      convertPvTablesToTriangles,
+      generateTableMeshSamplePoints,
+      calculateRayTracedShadingFactor,
+    } = await import('../../roof3dShadingEngine');
+    const { shadingLifecycleReducer, createInitialShadingLifecycleState } = await import(
+      '../../shadingLifecycle'
+    );
+
+    // 1. Dynamic scene construction from utility plant design (1100 kWp, 2000 modules, 6m pitch, 25° tilt)
+    const utilityScene = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 1100,
+      totalModulesCount: 2000,
+      interRowSpacingM: 6.0,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+      latitude: 35.6892,
+      longitude: 51.3890,
+      elevationM: 1200,
+      installationEnvironment: 'ground_mount',
+    });
+
+    const utilTablesCountOk = utilityScene.pvTables.length >= 4;
+    const utilTiltOk = utilityScene.pvTables.every((t) => t.tiltDeg === 25);
+    const totalWp = utilityScene.pvTables.reduce((s, t) => s + t.ratedPowerWp, 0);
+    const utilCapacityOk = Math.abs(totalWp - 1_100_000) <= 1000;
+    const utilPitchOk =
+      utilityScene.pvTables.length >= 2 &&
+      Math.abs(
+        Math.abs(utilityScene.pvTables[1].positionEnu.y - utilityScene.pvTables[0].positionEnu.y) - 6.0
+      ) < 0.05;
+
+    // 2. Rooftop C&I scene construction (56 modules, 30.8 kWp, 3.5m pitch, 15° tilt)
+    const rooftopScene = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 30.8,
+      totalModulesCount: 56,
+      interRowSpacingM: 3.5,
+      tiltDeg: 15,
+      installationEnvironment: 'rooftop_flat_concrete',
+    });
+
+    const roofTablesCountOk = rooftopScene.pvTables.length === 2;
+    const roofEavesOk = rooftopScene.roofPlanes[0].eavesHeightM === 8.0;
+    const roofObstaclesOk =
+      rooftopScene.obstacles.length >= 2 &&
+      rooftopScene.obstacles.some((o) => o.geometryType === 'cuboid') &&
+      rooftopScene.obstacles.some((o) => o.geometryType === 'cylinder');
+
+    // 3. Triangle mesh conversion & ray-triangle intersection
+    const obsTris = convertObstaclesToTriangles(rooftopScene.obstacles);
+    const tableTris = convertPvTablesToTriangles(rooftopScene.pvTables);
+    const samplePts = generateTableMeshSamplePoints(rooftopScene.pvTables[0]);
+
+    const trisOk = obsTris.length >= 10 && tableTris.length === rooftopScene.pvTables.length * 2;
+    const samplePtsOk = samplePts.length === 12;
+
+    // 4. Ray-traced shading execution with calculateShadingFactor
+    const rayTraceRes = calculateRayTracedShadingFactor(rooftopScene, undefined, {
+      includeInterRow: true,
+    });
+
+    const rayTraceOk =
+      rayTraceRes.unshadedRatios.length > 0 &&
+      rayTraceRes.averageUnshadedRatio >= 0.0 &&
+      rayTraceRes.averageUnshadedRatio <= 1.0 &&
+      rayTraceRes.averageShadingLossPct >= 0.0 &&
+      rayTraceRes.trianglesCount === obsTris.length + tableTris.length &&
+      rayTraceRes.samplePointsCount === rooftopScene.pvTables.length * 12;
+
+    // 5. Lifecycle reducer supports project_array_design provenance
+    const sInit = createInitialShadingLifecycleState();
+    const sProjectApply = shadingLifecycleReducer(sInit, {
+      type: 'APPLY',
+      lossPct: rayTraceRes.averageShadingLossPct,
+      capacityKwp: 30.8,
+      projectCapacityKwp: 30.8,
+      source: 'project_array_design',
+    });
+    const provenanceOk =
+      sProjectApply.appliedShading?.source === 'project_array_design' &&
+      sProjectApply.appliedShading.lossPct === rayTraceRes.averageShadingLossPct;
+
+    assert(
+      'E20-3D-ROOFTOP-PROJECT-COUPLING-AND-RAYTRACING',
+      'Dynamic 3D rooftop/ground scene couples to active project array design (capacity, modules, pitch, tilt), triangulates geometry, runs ray-traced shading factor, and preserves project_array_design lifecycle source',
+      utilTablesCountOk &&
+        utilTiltOk &&
+        utilCapacityOk &&
+        utilPitchOk &&
+        roofTablesCountOk &&
+        roofEavesOk &&
+        roofObstaclesOk &&
+        trisOk &&
+        samplePtsOk &&
+        rayTraceOk &&
+        provenanceOk,
+      `utilRows=${utilityScene.pvTables.length}, utilCap=${totalWp / 1000}kWp (exp 1100), utilPitch=6m, roofRows=${rooftopScene.pvTables.length}, obsTris=${obsTris.length}, tableTris=${tableTris.length}, rayTracedLoss=${rayTraceRes.averageShadingLossPct}%, unshadedRatio=${rayTraceRes.averageUnshadedRatio}, source=${sProjectApply.appliedShading?.source}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

@@ -13,6 +13,7 @@
 import { calculateSunPathPosition, type SunPosition } from './shadingSunPathEngine';
 import { computeWaterfallLosses, type WaterfallLossReport } from './waterfallLossEngine';
 import { buildWaterfallArgs } from './waterfallArgs';
+import { calculateShadingFactor, type Triangle, type Vec3 } from './solarPvEngine';
 
 // ============================================================================
 // 1. WGS84 <-> Local ENU Metric Coordinates Transform
@@ -887,3 +888,367 @@ export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {
   ],
   updatedAt: new Date().toISOString(),
 };
+
+// ============================================================================
+// 6. Dynamic Project-Coupled 3D Rooftop Scene Generator & Ray-Traced Shading
+// ============================================================================
+
+export interface ProjectArrayDesignInputs {
+  totalPvCapacityKwp: number;
+  totalModulesCount: number;
+  interRowSpacingM: number;
+  tiltDeg: number;
+  azimuthDeg?: number;
+  moduleWidthM?: number;
+  moduleLengthM?: number;
+  modulePmpWatts?: number;
+  latitude?: number;
+  longitude?: number;
+  elevationM?: number;
+  installationEnvironment?: string;
+  obstacles?: Obstacle3D[];
+}
+
+/**
+ * Builds a dynamic 3D rooftop/ground scene accurately connected to active project design props
+ * (capacity, module count, row pitch spacing, tilt, obstacles, geodetic coordinates).
+ */
+export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): Scene3DState {
+  const lat = inputs.latitude ?? 35.6892;
+  const lng = inputs.longitude ?? 51.3890;
+  const elev = inputs.elevationM ?? 1200;
+
+  const totalModules = Math.max(1, inputs.totalModulesCount || 140);
+  const modWidth = Math.max(0.8, inputs.moduleWidthM || 1.134);
+  const modLength = Math.max(1.2, inputs.moduleLengthM || 2.278);
+  const modPmp =
+    inputs.modulePmpWatts ||
+    (inputs.totalPvCapacityKwp > 0 ? (inputs.totalPvCapacityKwp * 1000) / totalModules : 550);
+  const totalKwp =
+    inputs.totalPvCapacityKwp > 0 ? inputs.totalPvCapacityKwp : (totalModules * modPmp) / 1000;
+
+  const tiltDeg = Math.max(0, Math.min(60, inputs.tiltDeg ?? 25));
+  const azimuthDeg = inputs.azimuthDeg ?? 0;
+  const pitchM = Math.max(1.8, inputs.interRowSpacingM || 5.0);
+
+  const env = inputs.installationEnvironment?.toLowerCase() || '';
+  const isRooftop =
+    !env || env.includes('rooftop') || env.includes('shed') || env.includes('concrete');
+  const eavesHeightM = isRooftop ? 8.0 : 0.0;
+  const tableBaseZM = isRooftop ? eavesHeightM : 0.8;
+
+  // Determine realistic table/row layout based on module count
+  // Standard table: 2 modules in portrait (sloped length = 2 * modLength), N columns wide
+  let numRows: number;
+  let colsPerRow: number;
+
+  if (totalModules <= 28) {
+    numRows = 1;
+    colsPerRow = Math.max(2, Math.ceil(totalModules / 2));
+  } else if (totalModules <= 84) {
+    // 2 to 3 rows of up to 14 columns
+    colsPerRow = 14;
+    numRows = Math.max(2, Math.ceil(totalModules / 28));
+  } else if (totalModules <= 200) {
+    // 3 to 6 rows
+    colsPerRow = 14;
+    numRows = Math.min(6, Math.max(3, Math.ceil(totalModules / 28)));
+  } else {
+    // Large commercial / utility array (e.g. 500 - 2000 modules)
+    // Scale into representative 4 to 8 rows for performant 3D WebGL & ray-tracing
+    numRows = Math.min(8, Math.max(4, Math.round(totalModules / 250)));
+    colsPerRow = 16;
+  }
+
+  const tableWidthM = Number((colsPerRow * modWidth).toFixed(2));
+  const tableSlopedLengthM = Number((2 * modLength).toFixed(2));
+  const modulesPerTable = Math.max(1, Math.round(totalModules / numRows));
+  const ratedPowerWpPerTable = Math.round((totalKwp * 1000) / numRows);
+
+  // Generate PV tables spaced along Y (North-South in ENU)
+  const pvTables: PvTable3D[] = [];
+  const yStart = -((numRows - 1) * pitchM) / 2;
+
+  for (let r = 0; r < numRows; r++) {
+    const yPos = Number((yStart + r * pitchM).toFixed(2));
+    pvTables.push({
+      id: `tbl-proj-${r + 1}`,
+      tableIndex: r + 1,
+      positionEnu: { x: 0, y: yPos, z: tableBaseZM },
+      widthM: tableWidthM,
+      slopedLengthM: tableSlopedLengthM,
+      tiltDeg,
+      azimuthDeg,
+      moduleCount: modulesPerTable,
+      ratedPowerWp: ratedPowerWpPerTable,
+    });
+  }
+
+  // Construct roof plane (or site footprint boundary) with setbacks
+  const setbackM = 1.5;
+  const halfRoofWidth = Math.max(12, tableWidthM / 2 + setbackM + 2.0);
+  const halfRoofLength = Math.max(12, (numRows * pitchM) / 2 + setbackM + 2.0);
+
+  const roofPlanes: RoofPlane[] = [
+    {
+      id: 'roof-project-main',
+      name: isRooftop ? 'Active Project Rooftop Plane' : 'Active Project Ground Footprint',
+      polygonWgs84: [],
+      polygonEnu: [
+        { x: -halfRoofWidth, y: -halfRoofLength },
+        { x: halfRoofWidth, y: -halfRoofLength },
+        { x: halfRoofWidth, y: halfRoofLength },
+        { x: -halfRoofWidth, y: halfRoofLength },
+      ],
+      tiltDeg: isRooftop ? Math.min(5, tiltDeg) : 0,
+      azimuthDeg: 0,
+      eavesHeightM,
+      setbackClearanceM: setbackM,
+    },
+  ];
+
+  // Obstacle modeling: use custom obstacles if provided, otherwise realistic site obstructions
+  let obstacles: Obstacle3D[] = [];
+  if (inputs.obstacles && inputs.obstacles.length > 0) {
+    obstacles = inputs.obstacles;
+  } else if (isRooftop) {
+    // Realistic rooftop obstructions: Central HVAC chiller and vent exhaust stack
+    obstacles = [
+      {
+        id: 'obs-proj-hvac',
+        name: 'Rooftop HVAC Chiller Unit',
+        geometryType: 'cuboid',
+        positionEnu: { x: 0, y: Number((yStart - 4.5).toFixed(2)), z: eavesHeightM },
+        dimensionsM: { widthM: 3.8, lengthM: 3.8, heightM: 2.8 },
+      },
+      {
+        id: 'obs-proj-chimney',
+        name: 'Rooftop Vent Exhaust Stack',
+        geometryType: 'cylinder',
+        positionEnu: { x: Number((tableWidthM / 2 + 2.2).toFixed(2)), y: 0, z: eavesHeightM },
+        dimensionsM: { radiusM: 0.9, heightM: 3.2 },
+      },
+    ];
+  } else {
+    // Ground mount: Perimeter transformer & inverter substation kiosk
+    obstacles = [
+      {
+        id: 'obs-proj-inverter-kiosk',
+        name: 'Central Inverter & MV Substation Kiosk',
+        geometryType: 'cuboid',
+        positionEnu: { x: Number((tableWidthM / 2 + 3.2).toFixed(2)), y: 0, z: 0.0 },
+        dimensionsM: { widthM: 4.2, lengthM: 3.2, heightM: 2.8 },
+      },
+    ];
+  }
+
+  return {
+    anchorLocation: {
+      latitude: lat,
+      longitude: lng,
+      elevationM: elev,
+    },
+    roofPlanes,
+    obstacles,
+    pvTables,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Converts 3D obstacles (cuboids, cylinders, polygons) into 3D Triangles
+ * compatible with the canonical ray-tracing engine (calculateShadingFactor).
+ */
+export function convertObstaclesToTriangles(obstacles: Obstacle3D[]): Triangle[] {
+  const triangles: Triangle[] = [];
+
+  for (const obs of obstacles) {
+    const facets = buildObstacleFacets(obs);
+    for (const facet of facets) {
+      const v = facet.vertices;
+      if (v.length < 3) continue;
+
+      // Triangulate convex planar polygon as triangle fan
+      for (let i = 1; i < v.length - 1; i++) {
+        triangles.push({
+          v0: { x: v[0].x, y: v[0].y, z: v[0].z },
+          v1: { x: v[i].x, y: v[i].y, z: v[i].z },
+          v2: { x: v[i + 1].x, y: v[i + 1].y, z: v[i + 1].z },
+        });
+      }
+    }
+  }
+
+  return triangles;
+}
+
+/**
+ * Converts PV table surfaces into 3D Triangles to support inter-row self-shading ray tracing.
+ */
+export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
+  const triangles: Triangle[] = [];
+
+  for (const table of tables) {
+    const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
+    const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
+    const halfLen = table.slopedLengthM / 2;
+    const halfWidth = table.widthM / 2;
+
+    const latUx = Math.cos(tableAzRad);
+    const latUy = -Math.sin(tableAzRad);
+
+    const slopeUx = -Math.cos(tiltRad) * Math.sin(tableAzRad);
+    const slopeUy = -Math.cos(tiltRad) * Math.cos(tableAzRad);
+    const slopeUz = Math.sin(tiltRad);
+
+    const c0: Vec3 = {
+      x: table.positionEnu.x - halfWidth * latUx - halfLen * slopeUx,
+      y: table.positionEnu.y - halfWidth * latUy - halfLen * slopeUy,
+      z: table.positionEnu.z - halfLen * slopeUz,
+    };
+    const c1: Vec3 = {
+      x: table.positionEnu.x + halfWidth * latUx - halfLen * slopeUx,
+      y: table.positionEnu.y + halfWidth * latUy - halfLen * slopeUy,
+      z: table.positionEnu.z - halfLen * slopeUz,
+    };
+    const c2: Vec3 = {
+      x: table.positionEnu.x + halfWidth * latUx + halfLen * slopeUx,
+      y: table.positionEnu.y + halfWidth * latUy + halfLen * slopeUy,
+      z: table.positionEnu.z + halfLen * slopeUz,
+    };
+    const c3: Vec3 = {
+      x: table.positionEnu.x - halfWidth * latUx + halfLen * slopeUx,
+      y: table.positionEnu.y - halfWidth * latUy + halfLen * slopeUy,
+      z: table.positionEnu.z + halfLen * slopeUz,
+    };
+
+    triangles.push({ v0: c0, v1: c1, v2: c2 });
+    triangles.push({ v0: c0, v1: c2, v2: c3 });
+  }
+
+  return triangles;
+}
+
+/**
+ * Generates sample target vertices across a PV table surface for ray-intersection evaluation.
+ */
+export function generateTableMeshSamplePoints(
+  table: PvTable3D,
+  lateralCount: number = 4,
+  slopedCount: number = 3
+): Vec3[] {
+  const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
+  const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
+  const halfLen = table.slopedLengthM / 2;
+  const halfWidth = table.widthM / 2;
+
+  const latUx = Math.cos(tableAzRad);
+  const latUy = -Math.sin(tableAzRad);
+
+  const slopeUx = -Math.cos(tiltRad) * Math.sin(tableAzRad);
+  const slopeUy = -Math.cos(tiltRad) * Math.cos(tableAzRad);
+  const slopeUz = Math.sin(tiltRad);
+
+  const lateralFractions: number[] = [];
+  for (let c = 0; c < lateralCount; c++) {
+    lateralFractions.push(-0.75 + (c / Math.max(1, lateralCount - 1)) * 1.5);
+  }
+
+  const slopedFractions: number[] = [];
+  for (let r = 0; r < slopedCount; r++) {
+    slopedFractions.push(-0.6 + (r / Math.max(1, slopedCount - 1)) * 1.2);
+  }
+
+  const points: Vec3[] = [];
+  for (const sFrac of slopedFractions) {
+    const sOffset = sFrac * halfLen;
+    for (const lFrac of lateralFractions) {
+      const lOffset = lFrac * halfWidth;
+      points.push({
+        x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx,
+        y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy,
+        z: table.positionEnu.z + sOffset * slopeUz + 0.08,
+      });
+    }
+  }
+
+  return points;
+}
+
+/**
+ * Generates representative daylight sun direction vectors (ENU unit vectors pointing TO the sun)
+ * across key seasonal days (winter solstice, equinox, summer solstice).
+ */
+export function generateDaylightSunDirections(
+  latitude: number,
+  hoursCount: number = 12
+): Vec3[] {
+  const directions: Vec3[] = [];
+  const sampleDays = [80, 172, 355]; // Equinox, Summer Solstice, Winter Solstice
+
+  for (const day of sampleDays) {
+    for (let h = 7; h <= 18; h += Math.max(1, Math.round(12 / hoursCount))) {
+      const sun = calculateSunPathPosition(latitude, day, h);
+      if (!sun.isDaylight || sun.altitudeDeg < 5.0) continue;
+
+      const altRad = (sun.altitudeDeg * Math.PI) / 180.0;
+      const azRad = (sun.azimuthDeg * Math.PI) / 180.0;
+
+      // Unit vector FROM point TO sun in ENU:
+      directions.push({
+        x: -Math.sin(azRad) * Math.cos(altRad),
+        y: -Math.cos(azRad) * Math.cos(altRad),
+        z: Math.sin(altRad),
+      });
+    }
+  }
+
+  return directions;
+}
+
+/**
+ * Executes ray-traced shading analysis directly using `calculateShadingFactor` from solarPvEngine.ts.
+ * Evaluates obstacle occlusion and inter-row shading against target sample points on the array.
+ */
+export function calculateRayTracedShadingFactor(
+  scene: Scene3DState,
+  sunDirs?: Vec3[],
+  options?: { includeInterRow?: boolean; samplePointsPerTable?: number }
+): {
+  unshadedRatios: number[];
+  averageUnshadedRatio: number;
+  averageShadingLossPct: number;
+  trianglesCount: number;
+  samplePointsCount: number;
+} {
+  const obstacleTriangles = convertObstaclesToTriangles(scene.obstacles);
+  const tableTriangles = options?.includeInterRow ? convertPvTablesToTriangles(scene.pvTables) : [];
+  const allTriangles = [...obstacleTriangles, ...tableTriangles];
+
+  const allTargetPoints: Vec3[] = [];
+  for (const table of scene.pvTables) {
+    allTargetPoints.push(...generateTableMeshSamplePoints(table));
+  }
+
+  const effectiveSunDirs =
+    sunDirs && sunDirs.length > 0
+      ? sunDirs
+      : generateDaylightSunDirections(scene.anchorLocation.latitude, 12);
+
+  const unshadedRatios = calculateShadingFactor(allTriangles, allTargetPoints, effectiveSunDirs);
+
+  const averageUnshadedRatio =
+    unshadedRatios.length > 0
+      ? unshadedRatios.reduce((sum, r) => sum + r, 0) / unshadedRatios.length
+      : 1.0;
+
+  const averageShadingLossPct = Number(((1.0 - averageUnshadedRatio) * 100.0).toFixed(2));
+
+  return {
+    unshadedRatios,
+    averageUnshadedRatio: Number(averageUnshadedRatio.toFixed(4)),
+    averageShadingLossPct,
+    trianglesCount: allTriangles.length,
+    samplePointsCount: allTargetPoints.length,
+  };
+}

@@ -995,8 +995,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               </h2>
               <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${isRealInternetEnabled() ? 'bg-emerald-500/20 text-industrial-success border border-emerald-500/30' : 'bg-amber-500/20 text-industrial-warning border border-amber-500/30'}`}>
                 {isRealInternetEnabled()
-                  ? (isEn ? 'REAL_INTERNET: ON (measured data)' : 'REAL_INTERNET: روشن')
-                  : (isEn ? 'REAL_INTERNET: OFF (analytical fallback)' : 'REAL_INTERNET: خاموش (fallback تحلیلی)')}
+                  ? (isEn ? 'REAL_INTERNET: ON (measured data)' : 'REAL_INTERNET: روشن (داده‌های ماهواره‌ای زنده)')
+                  : (isEn ? 'REAL_INTERNET: OFF (analytical fallback)' : 'REAL_INTERNET: خاموش (مدل فیزیکی تحلیلی)')}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1016,6 +1016,24 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 <span>{isEn ? 'Fetch Munich (48.1351, 11.5820)' : 'دریافت مونیخ از API'}</span>
               </button>
             </div>
+          </div>
+
+          <div className="p-2.5 rounded bg-slate-900/60 border border-industrial-border text-[11px] text-slate-300 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${isRealInternetEnabled() ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+              <span>
+                {isRealInternetEnabled()
+                  ? (isEn
+                      ? 'Live Network Mode Active: Direct queries to NASA POWER (Americas) and PVGIS 5.3 (EMEA). Analytical fallback is strictly disabled.'
+                      : 'حالت شبکه فعال: استعلام مستقیم از NASA POWER (قاره آمریکا) و PVGIS 5.3 (اروپا، آفریقا و خاورمیانه). فال‌بک تحلیلی خاموش است.')
+                  : (isEn
+                      ? 'Air-Gapped / Offline Mode: Calibrated Clear-Sky Regional Physical Model (REGIONAL_ANALYTICAL_MODEL) active. Zero external network latency. To enable live API calls, set VITE_REAL_INTERNET=true in .env.'
+                      : 'حالت ایزوله / آفلاین: مدل فیزیکی تحلیلی کالیبره‌شده منطقه‌ای فعال است. بدون تاخیر شبکه خارجی. جهت فعال‌سازی داده‌های زنده، VITE_REAL_INTERNET=true را در فایل .env قرار دهید.')}
+              </span>
+            </div>
+            <span className="font-mono text-[10px] text-slate-400 shrink-0">
+              {isRealInternetEnabled() ? 'PROVENANCE: MEASURED' : 'PROVENANCE: ANALYTICAL'}
+            </span>
           </div>
 
           {climateApiData ? (

@@ -2354,6 +2354,28 @@ export const App: React.FC = () => {
               }
               plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+              arrayDesign={{
+                totalPvCapacityKwp:
+                  systemMode === 'powerplant'
+                    ? (targetPowerplantCapacityKw || 1000) * 1.25
+                    : arrayDesign.totalPvCapacityKwp,
+                totalModulesCount: arrayDesign.totalModulesCount,
+                interRowSpacingM: arrayDesign.interRowSpacingM,
+                tiltDeg: city.optimalTiltAnnualDeg,
+                azimuthDeg: 0,
+                modulesPerString: arrayDesign.modulesPerString,
+                stringsCount: arrayDesign.parallelStringsCount,
+              }}
+              moduleSpecs={{
+                lengthM: selectedModule.lengthM,
+                widthM: selectedModule.widthM,
+                pmpWatts: selectedModule.pmpWatts,
+                modelName: selectedModule.modelName,
+              }}
+              installationEnvironment={
+                siteOverrides?.installationEnvironment ||
+                (systemMode === 'powerplant' ? 'ground_mount' : 'rooftop_flat_concrete')
+              }
               onShadingLossChange={(loss) => {
                 if (loss === null) {
                   dispatchShadingLifecycle({ type: 'REVERT' });
@@ -2369,6 +2391,7 @@ export const App: React.FC = () => {
                   projectCapacityKwp: activePlantCapacityKwp,
                   appliedAtIso: record.appliedAtIso,
                   cityId: city.id,
+                  source: record.source,
                 })
               }
               onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
