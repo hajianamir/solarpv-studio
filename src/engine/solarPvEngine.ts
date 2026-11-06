@@ -33,6 +33,7 @@ export interface Project {
   lcoeUsdPerKwh: number;
   estimatedAnnualYieldKwh?: number;
   createdAt?: string;
+  ownerId?: string;
   moduleId?: string;
   inverterId?: string;
   batteryId?: string;
@@ -44,6 +45,7 @@ export interface QuickSizingRequest {
   longitude: number;
   dailyKwh: number;
   autonomyDays: number;
+  ownerId?: string;
   moduleId?: string;
   inverterId?: string;
   batteryId?: string;
@@ -245,11 +247,12 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
   } = req;
 
   const warnings: string[] = [];
-  const vocMaxTemp = panelVoc * (1.0 + betaVocPerC * (tempMinC - 25.0));
+  const safeBetaVocPerC = betaVocPerC ?? -0.0028;
+  const vocMaxTemp = panelVoc * (1.0 + safeBetaVocPerC * (tempMinC - 25.0));
   // IEC 62548 §7.2: hot-case MPPT floor uses the Pmp temperature
   // coefficient (typically steeper than Voc). Fall back to Voc when
   // betaPmpPerC is absent (conservative approximation).
-  const vmpHotCoeff = (req.betaPmpPerC ?? betaVocPerC);
+  const vmpHotCoeff = (req.betaPmpPerC ?? safeBetaVocPerC);
   const vmpMinTemp = panelVmp * (1.0 + vmpHotCoeff * (tempMaxC - 25.0));
 
   const maxModulesVmax = Math.floor(inverterVdcMax / vocMaxTemp);
@@ -257,7 +260,7 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
   // which occurs at the coldest design temperature. Use the Pmp temperature
   // coefficient when supplied; otherwise fall back to the Voc coefficient
   // (documented conservative approximation).
-  const vmpColdCoeff = betaPmpPerC ?? betaVocPerC;
+  const vmpColdCoeff = betaPmpPerC ?? safeBetaVocPerC;
   const singleModuleVmpMaxCold = panelVmp * (1.0 + vmpColdCoeff * (tempMinC - 25.0));
   const maxModulesMppt = Math.floor(inverterMpptMax / singleModuleVmpMaxCold);
   const maxModules = Math.min(maxModulesVmax, maxModulesMppt);
@@ -722,6 +725,7 @@ export function performQuickSizing(
     lcoeUsdPerKwh: lcoeVal,
     estimatedAnnualYieldKwh: annualYieldKwh,
     createdAt: new Date().toISOString(),
+    ownerId: req.ownerId,
     moduleId: module.id,
     inverterId: inverter.id,
     batteryId: battery.id,

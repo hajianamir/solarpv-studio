@@ -34,7 +34,7 @@ import { StructuralHazardProvider } from '../src/engine/dataGateway/structuralHa
 import { CircuitBreaker } from '../src/engine/dataGateway/circuitBreaker';
 import { calculateSolarPump } from '../src/engine/solarPumpEngine';
 import { buildExcelWorkbookXml, escapeXml } from '../src/engine/reportingEngine';
-import { app } from '../server';
+import { app, setPersistPathForTesting } from '../server';
 
 let passes = 0;
 let failures = 0;
@@ -53,6 +53,11 @@ async function runM01ToM22TestSuite(): Promise<void> {
   console.log('================================================================================');
   console.log(' SolarPV Studio — Comprehensive Audit Remediation Verification Suite (M01–M22)');
   console.log('================================================================================\n');
+
+  const syncPushRoute = (app as any)._router.stack
+    .find((r: any) => r.route && r.route.path === '/api/v1/sync/push' && r.route.methods.post)
+    ?.route.stack[0].handle;
+  let sharedAliceProjectId = '';
 
   // ---------------------------------------------------------------------------
   // [M01] Single Diode I–V Series String Scaling
@@ -182,6 +187,44 @@ async function runM01ToM22TestSuite(): Promise<void> {
       'M03: Max allowable plant capacity correctly calculated from active/reactive impedance formula',
       `maxMw=${gridLagging.maxAllowablePlantCapacityMw}MW`
     );
+
+    // Round-trip test: feeding calculated max capacity back into the voltage rise equation
+    const rtLeading = analyzeUpstreamGridConditions({
+      plantCapacityMw: gridLeading.maxAllowablePlantCapacityMw,
+      gridVoltageKv: 20.0,
+      gridShortCircuitMva: 120.0,
+      gridXrRatio: 6.0,
+      inverterPowerFactor: 0.95,
+      isPowerFactorLagging: false,
+    });
+    assert(
+      rtLeading.pccVoltageRiseCompliant && rtLeading.pccVoltageRisePct <= 3.0,
+      'M03: Round-trip test: leading max capacity strictly complies with <= 3% limit',
+      `rise=${rtLeading.pccVoltageRisePct}%, compliant=${rtLeading.pccVoltageRiseCompliant}`
+    );
+
+    // Reviewer case: 50 MVA grid, X/R = 4, lagging 0.95 PF
+    const reviewerGrid = analyzeUpstreamGridConditions({
+      plantCapacityMw: 10.0,
+      gridVoltageKv: 20.0,
+      gridShortCircuitMva: 50.0,
+      gridXrRatio: 4.0,
+      inverterPowerFactor: 0.95,
+      isPowerFactorLagging: true,
+    });
+    const rtLagging = analyzeUpstreamGridConditions({
+      plantCapacityMw: reviewerGrid.maxAllowablePlantCapacityMw,
+      gridVoltageKv: 20.0,
+      gridShortCircuitMva: 50.0,
+      gridXrRatio: 4.0,
+      inverterPowerFactor: 0.95,
+      isPowerFactorLagging: true,
+    });
+    assert(
+      rtLagging.pccVoltageRiseCompliant && Math.abs(rtLagging.pccVoltageRisePct) <= 3.0,
+      'M03: Reviewer lagging round-trip case complies with <= 3% limit without undervoltage violation',
+      `maxMw=${reviewerGrid.maxAllowablePlantCapacityMw}MW, rise=${rtLagging.pccVoltageRisePct}%`
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -214,6 +257,21 @@ async function runM01ToM22TestSuite(): Promise<void> {
       'M04: Singapore soiling is dynamically executed and matches SAM within tolerance',
       `sim=${sgHub?.studioAnnualSoilingPercent}%, sam=${sgHub?.samAnnualSoilingPercent}%, delta=${sgHub?.soilingDeltaPercent}%`
     );
+
+    const fs = await import('fs');
+    const path = await import('path');
+    const manifestPath = path.resolve(process.cwd(), 'benchmarks/reference_files/sam_reference_manifest.json');
+    const manifestExists = fs.existsSync(manifestPath);
+    let casesCount = 0;
+    if (manifestExists) {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      casesCount = manifest.cases?.length || 0;
+    }
+    assert(
+      manifestExists && casesCount === 3,
+      'M04: SAM reference manifest exists and specifies exact case checksums and configurations',
+      `exists=${manifestExists}, cases=${casesCount}`
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -227,6 +285,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
           { id: 'msg-valid-1', entityType: 'Project', payloadJson: JSON.stringify({ id: 'p-valid', name: 'Valid Project' }) },
           { id: 'msg-corrupt-2', entityType: 'Project', payloadJson: 'CORRUPTED_JSON_NOT_VALID{' },
           { id: 'msg-noid-3', entityType: 'Project', payloadJson: JSON.stringify({ name: 'Project without ID' }) },
+          { id: 'msg-unsupported-4', entityType: 'UnsupportedType', payloadJson: JSON.stringify({ foo: 'bar' }) },
         ],
       },
     };
@@ -245,10 +304,6 @@ async function runM01ToM22TestSuite(): Promise<void> {
     };
 
     // Invoke sync route logic
-    const syncPushRoute = (app as any)._router.stack
-      .find((r: any) => r.route && r.route.path === '/api/v1/sync/push' && r.route.methods.post)
-      ?.route.stack[0].handle;
-
     await syncPushRoute(reqPush, mockRes);
 
     assert(
@@ -267,8 +322,13 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `noIdAcknowledged=${responseBody.ackedIds.includes('msg-noid-3')}`
     );
     assert(
-      responseBody.rejected.length === 2,
-      'M05: Both malformed messages are listed in rejected with failure reasons',
+      !responseBody.ackedIds.includes('msg-unsupported-4'),
+      'M05: Unsupported entityType is NOT acknowledged in ackedIds',
+      `unsupportedAcknowledged=${responseBody.ackedIds.includes('msg-unsupported-4')}`
+    );
+    assert(
+      responseBody.rejected.length === 3,
+      'M05: All 3 invalid messages are listed in rejected with failure reasons',
       `rejectedCount=${responseBody.rejected.length}`
     );
   }
@@ -330,6 +390,83 @@ async function runM01ToM22TestSuite(): Promise<void> {
       'M06: Module catalog endpoint rejects negative wattage with HTTP 400',
       `status=${catModStatus}`
     );
+
+    // M08: String sizing rejects omitted temperature coefficient
+    let ssStatus = 0;
+    let ssBody: any = null;
+    const mockSsRes: any = {
+      status(s: number) { ssStatus = s; return this; },
+      json(d: any) { ssBody = d; return this; },
+    };
+    const ssRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/electrical/string-sizing' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    await ssRoute({ body: { panelVoc: 50, panelVmp: 40, tempMinC: -10, tempMaxC: 45, inverterVdcMax: 1000, inverterMpptMin: 200, inverterMpptMax: 800 } }, mockSsRes);
+    assert(
+      ssStatus === 400 && ssBody.error.includes('Temperature coefficient'),
+      'M08: String sizing rejects omitted temperature coefficient with HTTP 400 instead of nulls',
+      `status=${ssStatus}, error=${ssBody.error}`
+    );
+
+    // M06: Sync push rejects negative project capacity
+    let negPushStatus = 0;
+    let negPushBody: any = null;
+    await syncPushRoute({
+      body: {
+        messages: [
+          {
+            id: 'msg-neg-cap',
+            entityType: 'project',
+            payloadJson: JSON.stringify({ id: 'proj-neg', systemCapacityKwp: -999 }),
+          },
+        ],
+      },
+    }, {
+      status(s: number) { negPushStatus = s; return this; },
+      json(d: any) { negPushBody = d; return this; },
+    });
+    assert(
+      negPushBody.rejected.length === 1 && negPushBody.rejected[0].reason.includes('systemCapacityKwp must be a positive finite number'),
+      'M06: Sync push strictly rejects negative project capacity (-999 kWp)',
+      `rejected=${negPushBody.rejected[0].reason}`
+    );
+
+    // M06: Access control protects projects: Bob cannot overwrite Alice project
+    const aliceProjectRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/projects/quick-size' && r.route.methods.post)
+      ?.route.stack[0].handle;
+    let aliceBody: any = null;
+    await aliceProjectRoute({
+      body: { projectName: 'Alice Array', dailyKwh: 30, autonomyDays: 1, latitude: 35.6, longitude: 51.3, ownerId: 'alice' },
+      headers: {},
+    }, {
+      status() { return this; },
+      json(d: any) { aliceBody = d; return this; },
+    });
+    sharedAliceProjectId = aliceBody.projectId;
+
+    let bobPushBody: any = null;
+    await syncPushRoute({
+      headers: { 'x-user-id': 'bob' },
+      body: {
+        messages: [
+          {
+            id: 'msg-bob-attack',
+            entityType: 'project',
+            payloadJson: JSON.stringify({ id: aliceBody.projectId, name: 'Hacked by Bob', systemCapacityKwp: 50, ownerId: 'bob' }),
+          },
+        ],
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { bobPushBody = d; return this; },
+    });
+    assert(
+      bobPushBody.rejected.length === 1 && bobPushBody.rejected[0].reason.includes('Access denied'),
+      'M06: Access control protects projects: Bob cannot overwrite Alice project',
+      `reason=${bobPushBody.rejected[0].reason}`
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -363,6 +500,32 @@ async function runM01ToM22TestSuite(): Promise<void> {
       'M07: Second database instance cleanly restores projects from exported snapshot',
       `projectsRestored=${db2.projects.size}`
     );
+
+    // M07: Persistent disk failure returns HTTP 500 and 0 ackedIds
+    setPersistPathForTesting('/root/nonexistent_forbidden_directory/snapshot.json');
+    let failPushStatus = 0;
+    let failPushBody: any = null;
+    await syncPushRoute({
+      body: {
+        messages: [
+          {
+            id: 'msg-disk-fail',
+            entityType: 'project',
+            payloadJson: JSON.stringify({ id: 'proj-disk-test', name: 'Disk Fail Test', systemCapacityKwp: 10 }),
+          },
+        ],
+      },
+    }, {
+      status(s: number) { failPushStatus = s; return this; },
+      json(d: any) { failPushBody = d; return this; },
+    });
+    assert(
+      failPushStatus === 500 && failPushBody.ackedIds.length === 0,
+      'M07: Disk write failure refuses durable ack and returns HTTP 500 with explicit rejection',
+      `status=${failPushStatus}, acked=${failPushBody.ackedIds.length}`
+    );
+    // Reset test path
+    setPersistPathForTesting('./data/solar-db-snapshot.json');
   }
 
   // ---------------------------------------------------------------------------
@@ -396,6 +559,16 @@ async function runM01ToM22TestSuite(): Promise<void> {
       repStatus === 200 && !repBody.metrics.panelType.includes('575W N-Type High Efficiency Modules'),
       'M09: Report generation does not fabricate specific commercial brand names when unspecified',
       `resolvedPanelType=${repBody.metrics.panelType}`
+    );
+
+    // Discrepant report metrics against snapshot
+    repStatus = 200;
+    repBody = null;
+    reportRoute({ body: { projectId: sharedAliceProjectId, systemCapacityKwp: 25.0, panelCount: 50 } }, mockRepRes);
+    assert(
+      repStatus === 200 && repBody.isReconciledAgainstSnapshot === false && repBody.discrepancies?.length > 0,
+      'M09: Discrepant report metrics are strictly flagged as NOT reconciled with detailed discrepancies',
+      `isReconciled=${repBody.isReconciledAgainstSnapshot}, discrepanciesCount=${repBody.discrepancies?.length}`
     );
   }
 
@@ -447,6 +620,13 @@ async function runM01ToM22TestSuite(): Promise<void> {
       resZero.paybackStatus === 'not_achieved',
       'M11: Zero generation returns structured paybackStatus: not_achieved',
       `paybackStatus=${resZero.paybackStatus}`
+    );
+
+    const resPositive = runIranianRegulationFinancialModel(100, 180, 'satba_fit_ppa');
+    assert(
+      resPositive.lcoeTomanPerKwh !== null && resPositive.lcoeTomanPerKwh > 1000 && resPositive.lcoeTomanPerKwh < 10000,
+      'M11: Positive generation computes comprehensive 25-year discounted LCOE with OPEX, degradation, and discounting',
+      `lcoe=${resPositive.lcoeTomanPerKwh} Toman/kWh`
     );
   }
 
@@ -521,6 +701,47 @@ async function runM01ToM22TestSuite(): Promise<void> {
       resRot.minimumClearanceM < resUnrot.minimumClearanceM,
       'M13: 45° azimuth rotation extends square table corners diagonally (from 3.0m to 2.17m), reducing clearance',
       `unrotatedClearance=${resUnrot.minimumClearanceM}m, rotatedClearance=${resRot.minimumClearanceM}m`
+    );
+
+    // U-shaped concave roof with an inner cutout/courtyard
+    const uRoof: RoofPlane = {
+      id: 'roof-u-shape',
+      name: 'U-Shaped Rooftop',
+      polygonWgs84: [],
+      polygonEnu: [
+        { x: 0, y: 0 },
+        { x: 30, y: 0 },
+        { x: 30, y: 30 },
+        { x: 20, y: 30 },
+        { x: 20, y: 15 },
+        { x: 10, y: 15 },
+        { x: 10, y: 30 },
+        { x: 0, y: 30 },
+      ],
+      tiltDeg: 0,
+      azimuthDeg: 0,
+      eavesHeightM: 10,
+      setbackClearanceM: 1.0,
+    };
+
+    // A table spanning the courtyard between x=5 and x=25 at y=22
+    const spanningTable: PvTable3D = {
+      id: 'table-spanning',
+      tableIndex: 1,
+      positionEnu: { x: 15, y: 22, z: 10.5 },
+      tiltDeg: 0,
+      azimuthDeg: 0,
+      widthM: 16.0,
+      slopedLengthM: 4.0,
+      moduleCount: 16,
+      ratedPowerWp: 8800,
+    };
+
+    const resSpanning = checkTableSetbackCompliance(spanningTable, uRoof);
+    assert(
+      resSpanning.isCompliant === false && resSpanning.minimumClearanceM === 0,
+      'M13: Concave U-shaped roof strictly detects table cutting across the central void as non-compliant',
+      `isCompliant=${resSpanning.isCompliant}, clearance=${resSpanning.minimumClearanceM}m`
     );
   }
 
@@ -693,6 +914,30 @@ async function runM01ToM22TestSuite(): Promise<void> {
       pump05.flowRateM3PerHour >= 19.0,
       'M19: Solar pump engine does not clamp PSH=0.5 to 1.0 (flowRate ~20-22 m³/h)',
       `flowRate=${pump05.flowRateM3PerHour}m³/h`
+    );
+
+    const pump01 = calculateSolarPump({
+      dailyWaterRequirementM3: 25,
+      peakSunHours: 0.1,
+      wellDepthM: 20,
+      tankHeightM: 5,
+      pipeDiameterMm: 63,
+      pipeLengthM: 30,
+      irrigationType: 'drip',
+    });
+    const pump02 = calculateSolarPump({
+      dailyWaterRequirementM3: 25,
+      peakSunHours: 0.2,
+      wellDepthM: 20,
+      tankHeightM: 5,
+      pipeDiameterMm: 63,
+      pipeLengthM: 30,
+      irrigationType: 'drip',
+    });
+    assert(
+      Math.abs(pump01.flowRateM3PerHour / pump02.flowRateM3PerHour - 2.0) < 0.01,
+      'M19: PSH=0.1 produces proportionally higher flow rate than PSH=0.2 without hidden clamping to 0.2',
+      `flow01=${pump01.flowRateM3PerHour.toFixed(1)}m³/h, flow02=${pump02.flowRateM3PerHour.toFixed(1)}m³/h`
     );
 
     let threw = false;

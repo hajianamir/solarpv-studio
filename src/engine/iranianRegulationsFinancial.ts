@@ -247,9 +247,20 @@ export function runIranianRegulationFinancialModel(
   // Summer blackout loss prevented (for factories: 1 day of summer blackout = billions of Tomans in idle production loss!)
   const summerBlackoutLossPreventedMillionToman = Math.round(capacityKwp * 8.5);
 
-  const lcoeTomanPerKwh = annualGenerationMwh > 0
-    ? Math.round((totalCapexMillionToman * 1e6) / (annualGenerationMwh * 1000 * 20))
-    : null;
+  // Fix M11: 25-year discounted LCOE with OPEX, degradation, and discounting
+  // LCOE = (Capex + Sum(Opex_t / (1+r)^t)) / Sum(Gen_t / (1+r)^t)
+  let lcoeTomanPerKwh: number | null = null;
+  if (annualGenerationMwh > 0) {
+    let discountedLifetimeCostMillion = totalCapexMillionToman;
+    let discountedLifetimeEnergyKwh = 0;
+    for (const cf of cashFlows) {
+      discountedLifetimeCostMillion += cf.opexMillionToman / Math.pow(1.0 + discountRate, cf.year);
+      discountedLifetimeEnergyKwh += (cf.generationMwh * 1000) / Math.pow(1.0 + discountRate, cf.year);
+    }
+    lcoeTomanPerKwh = discountedLifetimeEnergyKwh > 0
+      ? Math.round((discountedLifetimeCostMillion * 1e6) / discountedLifetimeEnergyKwh)
+      : null;
+  }
 
   return {
     frameworkNameFa,

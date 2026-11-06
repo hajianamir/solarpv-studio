@@ -16,6 +16,7 @@ import {
   DEFAULT_MODULES,
   DEFAULT_INVERTERS,
   DEFAULT_BATTERIES,
+  type Project,
 } from './src/engine/solarPvEngine.js';
 
 const app = express();
@@ -26,9 +27,13 @@ app.use(express.json());
 
 // In-Memory Database store with persistent file recovery
 const db = new InMemorySolarDatabase();
-const DB_PERSIST_PATH = process.env.SOLARPV_DB_FILE || path.resolve(process.cwd(), 'data/solar-db-snapshot.json');
+let DB_PERSIST_PATH = process.env.SOLARPV_DB_FILE || path.resolve(process.cwd(), 'data/solar-db-snapshot.json');
 
-function saveDatabase(): void {
+function setPersistPathForTesting(newPath: string): void {
+  DB_PERSIST_PATH = newPath;
+}
+
+function saveDatabase(): boolean {
   try {
     const dir = path.dirname(DB_PERSIST_PATH);
     if (!fs.existsSync(dir)) {
@@ -38,8 +43,10 @@ function saveDatabase(): void {
     const tmpPath = `${DB_PERSIST_PATH}.tmp`;
     fs.writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), 'utf-8');
     fs.renameSync(tmpPath, DB_PERSIST_PATH);
+    return true;
   } catch (err) {
     console.error('[SolarPV Studio] Failed to persist database snapshot:', err);
+    return false;
   }
 }
 
@@ -171,7 +178,7 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
 // 2. Electrical calculations
 app.post('/api/v1/electrical/string-sizing', (req: Request, res: Response) => {
   try {
-    const { panelVoc, panelVmp, tempMinC, tempMaxC, inverterVdcMax, inverterMpptMin, inverterMpptMax } = req.body;
+    const { panelVoc, panelVmp, tempMinC, tempMaxC, inverterVdcMax, inverterMpptMin, inverterMpptMax, betaVocPerC, tempCoeffVocPct } = req.body;
     if (!Number.isFinite(panelVoc) || panelVoc <= 0) {
       return res.status(400).json({ error: `panelVoc must be a positive number, got ${panelVoc}` });
     }
@@ -188,7 +195,22 @@ app.post('/api/v1/electrical/string-sizing', (req: Request, res: Response) => {
       return res.status(400).json({ error: `inverterMpptMin (${inverterMpptMin}) must be less than inverterMpptMax (${inverterMpptMax})` });
     }
 
-    const result = calculateStringSizing(req.body);
+    // Fix M08: Temperature coefficient of Voc must not be omitted (must be a negative finite number)
+    const rawBeta = betaVocPerC !== undefined
+      ? betaVocPerC
+      : tempCoeffVocPct !== undefined
+      ? tempCoeffVocPct / 100.0
+      : undefined;
+    if (rawBeta === undefined || typeof rawBeta !== 'number' || !Number.isFinite(rawBeta) || rawBeta >= 0) {
+      return res.status(400).json({
+        error: `Temperature coefficient of Voc (betaVocPerC or tempCoeffVocPct) is required and must be a negative finite number (e.g. -0.0028 for -0.28%/°C), got ${betaVocPerC ?? tempCoeffVocPct}`,
+      });
+    }
+
+    const result = calculateStringSizing({
+      ...req.body,
+      betaVocPerC: rawBeta,
+    });
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -309,7 +331,7 @@ app.post('/api/v1/shading/analyze', (req: Request, res: Response) => {
 // 5. Quick Sizing Project
 app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
   try {
-    const { dailyKwh, autonomyDays, latitude, longitude } = req.body;
+    const { dailyKwh, autonomyDays, latitude, longitude, ownerId } = req.body;
     if (typeof dailyKwh !== 'number' || !Number.isFinite(dailyKwh) || dailyKwh <= 0) {
       return res.status(400).json({ error: `dailyKwh must be a positive finite number, got ${dailyKwh}` });
     }
@@ -323,7 +345,8 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
       return res.status(400).json({ error: `longitude must be between -180 and 180, got ${longitude}` });
     }
 
-    const result = performQuickSizing(req.body, db);
+    const requesterOwnerId = (req.headers['x-user-id'] as string) || ownerId;
+    const result = performQuickSizing({ ...req.body, ownerId: requesterOwnerId }, db);
     saveDatabase();
     res.json(result);
   } catch (err: any) {
@@ -331,9 +354,40 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
   }
 });
 
-// 6. Project List
+// 6. Project List and Project CRUD with Authorization
 app.get('/api/v1/projects', (_req: Request, res: Response) => {
   res.json(Array.from(db.projects.values()));
+});
+
+app.get('/api/v1/projects/:id', (req: Request, res: Response) => {
+  const project = db.projects.get(req.params.id as string);
+  if (!project) return res.status(404).json({ error: `Project '${req.params.id}' not found` });
+  res.json(project);
+});
+
+app.put('/api/v1/projects/:id', (req: Request, res: Response) => {
+  const existing = db.projects.get(req.params.id as string);
+  if (!existing) {
+    return res.status(404).json({ error: `Project '${req.params.id}' not found` });
+  }
+
+  const requesterId = (req.headers['x-user-id'] as string) || req.body?.ownerId;
+  if (existing.ownerId && requesterId && existing.ownerId !== requesterId) {
+    return res.status(403).json({
+      error: `Access denied: project '${req.params.id}' is owned by '${existing.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+    });
+  }
+
+  const updated: Project = {
+    ...existing,
+    ...req.body,
+    id: req.params.id,
+    ownerId: existing.ownerId || req.body?.ownerId,
+  };
+
+  db.projects.set(req.params.id as string, updated);
+  saveDatabase();
+  res.json(updated);
 });
 
 // 7. Catalog (Modules, Inverters, Batteries)
@@ -487,12 +541,13 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
     }
   }
 
-  // Snapshot Reconciliation against persistent database
+  // Snapshot Reconciliation against persistent database (M09)
   const projectSnapshot = projectId && projectId !== 'N/A' ? db.projects.get(projectId) : undefined;
   let resolvedProjectName = projectName ? String(projectName).trim() : (projectSnapshot?.name || 'Solar Project');
   let resolvedPanelType = panelType;
   let resolvedInverterType = inverterType;
   let resolvedBatteryType = batteryType;
+  const discrepancies: string[] = [];
 
   if (projectSnapshot) {
     // Reconcile equipment names from snapshot catalog IDs
@@ -508,6 +563,30 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
       const bat = db.batteries.get(projectSnapshot.batteryId);
       if (bat) resolvedBatteryType = `${bat.manufacturer} ${bat.modelName} (${bat.nominalVoltageVolts}V ${bat.capacityKwh}kWh)`;
     }
+
+    // Explicit discrepancy checks across physical metrics (M09)
+    if (
+      systemCapacityKwp !== undefined &&
+      Math.abs(systemCapacityKwp - projectSnapshot.systemCapacityKwp) / Math.max(1, projectSnapshot.systemCapacityKwp) > 0.01
+    ) {
+      discrepancies.push(`Capacity mismatch: report=${systemCapacityKwp} kWp vs snapshot=${projectSnapshot.systemCapacityKwp} kWp`);
+    }
+    if (panelCount !== undefined && panelCount !== projectSnapshot.panelCount) {
+      discrepancies.push(`Panel count mismatch: report=${panelCount} vs snapshot=${projectSnapshot.panelCount}`);
+    }
+    if (inverterCount !== undefined && inverterCount !== projectSnapshot.inverterCount) {
+      discrepancies.push(`Inverter count mismatch: report=${inverterCount} vs snapshot=${projectSnapshot.inverterCount}`);
+    }
+    if (batteryCount !== undefined && batteryCount !== projectSnapshot.batteryCount) {
+      discrepancies.push(`Battery count mismatch: report=${batteryCount} vs snapshot=${projectSnapshot.batteryCount}`);
+    }
+    if (
+      annualYieldKwh !== undefined &&
+      projectSnapshot.estimatedAnnualYieldKwh &&
+      Math.abs(annualYieldKwh - projectSnapshot.estimatedAnnualYieldKwh) / projectSnapshot.estimatedAnnualYieldKwh > 0.01
+    ) {
+      discrepancies.push(`Annual yield mismatch: report=${annualYieldKwh} kWh vs snapshot=${projectSnapshot.estimatedAnnualYieldKwh} kWh`);
+    }
   }
 
   // If no project snapshot and equipment name was not supplied, use generic descriptive labels (never fabricate specific models)
@@ -515,14 +594,17 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
   resolvedInverterType = resolvedInverterType || 'Standard Grid-Tied PV Inverter';
   resolvedBatteryType = resolvedBatteryType || (batteryCount && batteryCount > 0 ? 'Standard Stationary Battery Storage' : 'None');
 
-  res.json({
+  const isReconciledAgainstSnapshot = Boolean(projectSnapshot && discrepancies.length === 0);
+
+  res.status(200).json({
     title: 'Preliminary Feasibility & Engineering Screening Proposal',
     disclaimer:
       'This document provides preliminary engineering screening and feasibility metrics generated via automated calculation algorithms. It does not constitute a certified EPC construction package or utility-approved interconnection study, which requires site geotechnical borehole verification, local utility impact studies, and stamped licensed professional engineering approval.',
     projectName: resolvedProjectName,
     projectId: projectId ? String(projectId) : (projectSnapshot?.id || 'N/A'),
     generatedAt: new Date().toISOString(),
-    isReconciledAgainstSnapshot: Boolean(projectSnapshot),
+    isReconciledAgainstSnapshot,
+    discrepancies: discrepancies.length > 0 ? discrepancies : undefined,
     metrics: {
       systemCapacityKwp: systemCapacityKwp ?? (projectSnapshot?.systemCapacityKwp ?? 0),
       panelCount: panelCount ?? (projectSnapshot?.panelCount ?? 0),
@@ -544,7 +626,7 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
   });
 });
 
-// 9. Sync Push/Pull with Rejection of Malformed Payloads (M05)
+// 9. Sync Push/Pull with Rejection of Malformed Payloads (M05, M06, M07)
 app.post('/api/v1/sync/push', (req: Request, res: Response) => {
   const messages = req.body?.messages;
   if (!Array.isArray(messages)) {
@@ -553,6 +635,10 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
 
   const ackedIds: string[] = [];
   const rejected: Array<{ id?: string; reason: string }> = [];
+  const allowedEntityTypes = new Set(['project', 'report', 'shading_scene', 'financial_model']);
+
+  // Track original snapshot before mutations for atomic rollback on persistence failure (M07)
+  const previousProjects = new Map(db.projects);
 
   for (const msg of messages) {
     if (!msg || typeof msg !== 'object' || !msg.id) {
@@ -560,7 +646,16 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
       continue;
     }
 
-    if (msg.entityType === 'Project') {
+    const normType = typeof msg.entityType === 'string' ? msg.entityType.toLowerCase() : '';
+    if (!allowedEntityTypes.has(normType)) {
+      rejected.push({
+        id: msg.id,
+        reason: `Unsupported entityType '${msg.entityType}'. Allowed types: ${Array.from(allowedEntityTypes).join(', ')}`,
+      });
+      continue;
+    }
+
+    if (normType === 'project') {
       if (!msg.payloadJson) {
         rejected.push({ id: msg.id, reason: 'Missing payloadJson for Project entity' });
         continue;
@@ -571,6 +666,30 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
           rejected.push({ id: msg.id, reason: 'Malformed project payload: missing id' });
           continue;
         }
+
+        // Schema validation (M06)
+        if (
+          proj.systemCapacityKwp !== undefined &&
+          (!Number.isFinite(proj.systemCapacityKwp) || proj.systemCapacityKwp <= 0)
+        ) {
+          rejected.push({
+            id: msg.id,
+            reason: `Invalid project schema: systemCapacityKwp must be a positive finite number, got ${proj.systemCapacityKwp}`,
+          });
+          continue;
+        }
+
+        // Ownership authorization check (M06)
+        const existing = db.projects.get(proj.id);
+        const requesterId = (req.headers && (req.headers['x-user-id'] as string)) || msg.userId || proj.ownerId;
+        if (existing?.ownerId && requesterId && existing.ownerId !== requesterId) {
+          rejected.push({
+            id: msg.id,
+            reason: `Access denied: project '${proj.id}' is owned by '${existing.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+          });
+          continue;
+        }
+
         db.projects.set(proj.id, proj);
       } catch (parseErr: any) {
         rejected.push({ id: msg.id, reason: `JSON parse error in payloadJson: ${parseErr.message}` });
@@ -582,8 +701,25 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
     ackedIds.push(msg.id);
   }
 
+  // Durable disk persistence with rollback semantics (M07)
   if (ackedIds.length > 0) {
-    saveDatabase();
+    const persisted = saveDatabase();
+    if (!persisted) {
+      // Rollback memory modifications
+      db.projects.clear();
+      for (const [k, v] of previousProjects.entries()) {
+        db.projects.set(k, v);
+      }
+      return res.status(500).json({
+        success: false,
+        processedCount: 0,
+        ackedIds: [],
+        rejected: [
+          ...rejected,
+          { reason: 'Storage persistence failure: snapshot write failed on disk. All modifications rolled back.' },
+        ],
+      });
+    }
   }
 
   const allSucceeded = rejected.length === 0 && (ackedIds.length > 0 || messages.length === 0);
@@ -640,4 +776,4 @@ if (process.env.NODE_ENV !== 'test' && isMainModule) {
   });
 }
 
-export { app, db, saveDatabase, loadDatabase, DB_PERSIST_PATH };
+export { app, db, saveDatabase, loadDatabase, DB_PERSIST_PATH, setPersistPathForTesting };

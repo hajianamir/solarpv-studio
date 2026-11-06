@@ -1,0 +1,47 @@
+{
+  "provenanceRelease": "NREL SAM 2023.12.17 Revision 1 (System Advisor Model)",
+  "goldenDatasetVersion": "3.0.0",
+  "generatedAt": "2026-11-06T18:00:00.000Z",
+  "hashAlgorithm": "SHA-256",
+  "cases": [
+    {
+      "caseId": "SAM-REF-BIFACIAL-BOULDER",
+      "climateHub": "Boulder, Colorado (Continental Subhumid)",
+      "benchmarkFile": "sam_2023_12_17_bifacial_reference_case.sam",
+      "sha256": "e9a4f7832bc91e77d85c1894b62e49c716e257db318b76a084594c7185df2314",
+      "modelConfiguration": {
+        "pvModuleModel": "Sandia Single-Diode 5-Parameter (N-Type TOPCon 550W Jinko Tiger Neo)",
+        "inverterModel": "Sandia Grid-Tied Inverter (SunGrow SG250HX)",
+        "tracking": "Single-Axis True-Tracking (Backtracking enabled)",
+        "gcr": 0.38,
+        "groundClearanceM": 1.20,
+        "albedo": 0.25,
+        "bifaciality": 0.80
+      },
+      "expectedOutputs": {
+        "annualBifacialGainPct": 10.40,
+        "tolerancePct": 2.0
+      }
+    },
+    {
+      "caseId": "SAM-REF-SOILING-PHOENIX",
+      "climateHub": "Phoenix, Arizona (Sonoran Arid Desert)",
+      "benchmarkFile": "sam_2023_12_17_phoenix_soiling_reference.sam",
+      "sha256": "4a7b51c32d98ef7162b41098ec156a938b8109d736a287df1c08e547fa918b02",
+      "expectedOutputs": {
+        "annualSoilingLossPct": 4.20,
+        "tolerancePct": 3.0
+      }
+    },
+    {
+      "caseId": "SAM-REF-SNOW-MUNICH",
+      "climateHub": "Munich, Bavaria (Central European Alpine Foot)",
+      "benchmarkFile": "sam_2023_12_17_munich_snow_reference.sam",
+      "sha256": "8f3910c2834bfa95e1c48092ec82937bb1842095f9c7821a8d052673d57b1129",
+      "expectedOutputs": {
+        "annualSnowLossPct": 2.60,
+        "tolerancePct": 3.0
+      }
+    }
+  ]
+}

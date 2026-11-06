@@ -269,11 +269,14 @@ export function analyzeUpstreamGridConditions(
   const pccVoltageRiseCompliant = Math.abs(pccVoltageRisePct) <= 3.0;
 
   // Maximum plant capacity that can be connected without exceeding 3% voltage rise:
-  // Delta V = P * (R_g + (Q/P) * X_g) / V^2 <= 0.03
+  // |Delta V%| = P * |R_g + (Q/P) * X_g| / V^2 * 100 <= 3.0%
+  // Round trip guarantee: feeding maxAllowablePlantCapacityMw back must satisfy |Delta V%| <= 3.0%
   const effectiveGridImpedance = theveninResistanceRgOhm + (isPowerFactorLagging ? -1 : 1) * (sinPhi / cosPhi) * theveninReactanceXgOhm;
-  const maxAllowablePlantCapacityMw = effectiveGridImpedance > 0
-    ? Number(((0.03 * Math.pow(gridVoltageKv, 2)) / effectiveGridImpedance).toFixed(1))
-    : Number(((0.03 * Math.pow(gridVoltageKv, 2)) / theveninResistanceRgOhm).toFixed(1));
+  const absEffectiveGridImpedance = Math.abs(effectiveGridImpedance) > 1e-6
+    ? Math.abs(effectiveGridImpedance)
+    : theveninResistanceRgOhm;
+  // Floor to 1 decimal place so rounding up never breaches 3.0%
+  const maxAllowablePlantCapacityMw = Math.floor(((0.03 * Math.pow(gridVoltageKv, 2)) / absEffectiveGridImpedance) * 10) / 10;
 
   // Reactive power capability per IEEE 1547 (0.90 lead to 0.90 lag = 44% of P_n in Mvar)
   const maxReactiveMvar = Number((plantCapacityMw * 0.44).toFixed(2));
