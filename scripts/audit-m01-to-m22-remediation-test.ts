@@ -580,12 +580,20 @@ async function runM01ToM22TestSuite(): Promise<void> {
     let threw = false;
     let errorMessage = '';
 
+    const origFetch = globalThis.fetch;
     try {
-      // In this environment without external satellite API access, remote_required must fail
+      // Mock fetch failure to deterministically verify that remote_required throws
+      // instead of silently falling back to the analytical model in both offline and online CI runners
+      globalThis.fetch = (async () => {
+        throw new Error('Connection refused');
+      }) as any;
+
       await provider.fetchClimateResource(35.689, 51.389, { policy: 'remote_required', bypassCache: true });
     } catch (err: any) {
       threw = true;
       errorMessage = err.message;
+    } finally {
+      globalThis.fetch = origFetch;
     }
 
     assert(
