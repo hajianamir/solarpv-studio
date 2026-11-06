@@ -253,22 +253,30 @@ export class ClimateDataProvider {
       throw new Error(`NASA POWER response missing valid solar irradiance parameter (got ${rawPsh})`);
     }
     const psh = rawPsh;
-    const tMean = params?.T2M?.ANN ?? 20.0;
-    const tMin = params?.T2M_MIN?.ANN ?? -5.0;
-    const tMax = params?.T2M_MAX?.ANN ?? 42.0;
 
     const isTempPhysical = (t: any): boolean =>
       typeof t === 'number' && Number.isFinite(t) && t >= -70 && t <= 65 && t !== -999;
 
-    if (!isTempPhysical(tMean)) {
-      throw new Error(`NASA POWER temperature out of physical range (got ${tMean}°C)`);
+    const rawTMean = params?.T2M?.ANN;
+    if (rawTMean !== undefined && rawTMean !== null && !isTempPhysical(rawTMean)) {
+      throw new Error(`NASA POWER temperature out of physical range or sentinel (got ${rawTMean}°C)`);
     }
-    if (!isTempPhysical(tMin)) {
-      throw new Error(`NASA POWER minimum temperature out of physical range or sentinel (got ${tMin}°C)`);
+
+    const rawTMin = params?.T2M_MIN?.ANN;
+    if (rawTMin !== undefined && rawTMin !== null && !isTempPhysical(rawTMin)) {
+      throw new Error(`NASA POWER minimum temperature out of physical range or sentinel (got ${rawTMin}°C)`);
     }
-    if (!isTempPhysical(tMax)) {
-      throw new Error(`NASA POWER maximum temperature out of physical range or sentinel (got ${tMax}°C)`);
+
+    const rawTMax = params?.T2M_MAX?.ANN;
+    if (rawTMax !== undefined && rawTMax !== null && !isTempPhysical(rawTMax)) {
+      throw new Error(`NASA POWER maximum temperature out of physical range or sentinel (got ${rawTMax}°C)`);
     }
+
+    const hasT2M = rawTMean !== undefined && rawTMean !== null && isTempPhysical(rawTMean);
+    const tMean = hasT2M ? rawTMean : 20.0;
+    const tMin = rawTMin ?? -5.0;
+    const tMax = rawTMax ?? 42.0;
+
     if (tMin > tMax) {
       throw new Error(`NASA POWER temperature consistency error: tMin (${tMin}°C) > tMax (${tMax}°C)`);
     }
@@ -280,7 +288,9 @@ export class ClimateDataProvider {
       peakSunHours: createEngineeringDatum(Number(psh.toFixed(2)), 'available', 'NASA_POWER', 'satellite_reanalysis', 3.0, 'NASA POWER Climatology ALLSKY_SFC_SW_DWN', 'kWh/m²/day'),
       dniKwhM2Day: createEngineeringDatum(Number((psh * 0.72).toFixed(2)), 'estimated', 'NASA_POWER', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
       dhiKwhM2Day: createEngineeringDatum(Number((psh * 0.28).toFixed(2)), 'estimated', 'NASA_POWER', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
-      tempAnnualMeanC: createEngineeringDatum(Number(tMean.toFixed(1)), 'available', 'NASA_POWER', 'satellite_reanalysis', 2.0, 'NASA POWER 2m Temperature (T2M)', '°C'),
+      tempAnnualMeanC: hasT2M
+        ? createEngineeringDatum(Number(tMean.toFixed(1)), 'available', 'NASA_POWER', 'satellite_reanalysis', 2.0, 'NASA POWER 2m Temperature (T2M)', '°C')
+        : createEngineeringDatum(Number(tMean.toFixed(1)), 'estimated', 'NASA_POWER', 'rule_of_thumb_screening', 15.0, 'Regional default estimate (T2M missing from NASA POWER payload)', '°C'),
     };
 
     return {
@@ -302,7 +312,7 @@ export class ClimateDataProvider {
         sourceProvider: 'NASA_POWER',
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
-        isEstimatedFromGlobalModel: false,
+        isEstimatedFromGlobalModel: !hasT2M,
         geographicRegion: 'NASA POWER Climatology (GEOS-5 FP-IT)',
         governingStandards: ['NASA POWER Climatology v2.0', 'WMO Guide to Climatological Practices No. 100'],
       },

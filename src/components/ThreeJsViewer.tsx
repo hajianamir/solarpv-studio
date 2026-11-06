@@ -564,10 +564,14 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
         // Rack Support Leg Posts (every 2 columns) connecting table to local roof plane
         if (c % 2 === 0 || c === cols - 1) {
+          const tableAzRad = (table.azimuthDeg * Math.PI) / 180;
+          // Leg ENU footprint on the roof surface underneath this specific leg post:
+          const legEnuX = table.positionEnu.x + xPos * Math.cos(tableAzRad);
+          const legEnuY = table.positionEnu.y - xPos * Math.sin(tableAzRad);
           const localRoofZ = roofPlane
-            ? getLocalRoofElevationAt(roofPlane, table.positionEnu.x, table.positionEnu.y)
+            ? getLocalRoofElevationAt(roofPlane, legEnuX, legEnuY)
             : roofCenterY;
-          const legHeight = Math.max(0.3, tableBaseZ - localRoofZ);
+          const legHeight = Math.max(0.1, tableBaseZ - localRoofZ);
           const leg = new THREE.Mesh(
             new THREE.CylinderGeometry(0.025, 0.025, legHeight, 8),
             frameMat

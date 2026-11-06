@@ -20,8 +20,10 @@ import {
   generateTableMeshSamplePoints,
   getActiveTableSubRects,
   getLocalRoofElevationAt,
+  computeTableShadingGeometricMesh,
   RoofPlane,
   Obstacle3D,
+  PvTable3D,
 } from '../src/engine/roof3dShadingEngine';
 import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvider';
 import {
@@ -786,6 +788,133 @@ async function runAuditRemediationSuite() {
       nasaTminGreaterTmaxRejected,
       'NASA POWER parser rejects physical contradiction where tMin > tMax',
       `rejected=${nasaTminGreaterTmaxRejected}`
+    );
+
+    // NASA temperature missing fallback provenance check
+    const nasaMissingT2mParsed = (climateGateway as any).parseNasaPowerResponse(35.68, 51.38, {
+      properties: {
+        parameter: {
+          ALLSKY_SFC_SW_DWN: { ANN: 5.17 },
+          // T2M missing
+          T2M_MIN: { ANN: -5.0 },
+          T2M_MAX: { ANN: 42.0 },
+        },
+      },
+    });
+    assert(
+      nasaMissingT2mParsed.provenance?.tempAnnualMeanC?.status === 'estimated' &&
+        nasaMissingT2mParsed.metadata?.isEstimatedFromGlobalModel === true,
+      'NASA POWER missing temperature provenance is explicitly tagged estimated with rule_of_thumb_screening',
+      `status=${nasaMissingT2mParsed.provenance?.tempAnnualMeanC?.status}, isEstimated=${nasaMissingT2mParsed.metadata?.isEstimatedFromGlobalModel}`
+    );
+
+    // D3 Exact Quadrature Area-Weighting in Annual Mesh Helper Probe
+    // Vertical sun ray: tests direct geometric beam occlusion across module slots using computeTableShadingGeometricMesh
+    const verticalSun = {
+      hour: 12,
+      isDaylight: true,
+      altitudeDeg: 90.0,
+      azimuthDeg: 180.0,
+      zenithDeg: 0.0,
+      hourAngleDeg: 0.0,
+      declinationDeg: 0.0,
+    };
+
+    const table28Flat = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 15.4,
+      totalModulesCount: 28,
+      tiltDeg: 0,
+      azimuthDeg: 0,
+      includeDefaultObstacles: false,
+    }).pvTables[0];
+
+    // Obstacle covering exactly the bottom row (Y < 0, 14 out of 28 modules)
+    const obsBottom28: Obstacle3D = {
+      id: 'obs-28-bot',
+      name: 'Bottom Row Blocker 28',
+      geometryType: 'cuboid',
+      positionEnu: { x: table28Flat.positionEnu.x, y: table28Flat.positionEnu.y - table28Flat.slopedLengthM / 4, z: table28Flat.positionEnu.z + 1.0 },
+      dimensionsM: { widthM: table28Flat.widthM + 1.0, lengthM: table28Flat.slopedLengthM / 2 + 0.1, heightM: 0.5 },
+    };
+    const facets28 = buildObstacleFacets(obsBottom28);
+    const res28Mesh = computeTableShadingGeometricMesh(table28Flat, facets28, verticalSun);
+    // Geometric beam loss must be exactly 50.0% (14 / 28 modules), NOT 66.67%
+    assert(
+      Math.abs(res28Mesh.directBeamLossFraction - 0.50) < 0.001,
+      'Annual mesh sampling applies exact 50.0% area-weighting to bottom row of 28-module table (not 66.67%)',
+      `beamLoss=${(res28Mesh.directBeamLossFraction * 100).toFixed(2)}% (expected 50.00%)`
+    );
+
+    // Obstacle covering bottom row of 27-module table (14 / 27 modules = 51.85%)
+    const table27Flat = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 14.85,
+      totalModulesCount: 27,
+      tiltDeg: 0,
+      azimuthDeg: 0,
+      includeDefaultObstacles: false,
+    }).pvTables[0];
+    const obsBottom27: Obstacle3D = {
+      id: 'obs-27-bot',
+      name: 'Bottom Row Blocker 27',
+      geometryType: 'cuboid',
+      positionEnu: { x: table27Flat.positionEnu.x, y: table27Flat.positionEnu.y - table27Flat.slopedLengthM / 4, z: table27Flat.positionEnu.z + 1.0 },
+      dimensionsM: { widthM: table27Flat.widthM + 1.0, lengthM: table27Flat.slopedLengthM / 2 + 0.1, heightM: 0.5 },
+    };
+    const facets27 = buildObstacleFacets(obsBottom27);
+    const res27Mesh = computeTableShadingGeometricMesh(table27Flat, facets27, verticalSun);
+    // Geometric beam loss must be exactly 14/27 = 51.85%, NOT 68.29%
+    assert(
+      Math.abs(res27Mesh.directBeamLossFraction - 14 / 27) < 0.001,
+      'Annual mesh sampling applies exact 51.85% area-weighting to bottom row of 27-module table (not 68.29%)',
+      `beamLoss=${(res27Mesh.directBeamLossFraction * 100).toFixed(2)}% (expected 51.85%)`
+    );
+
+    // Obstacle covering ONLY the 27th module (column 13, bottom slot) -> 1 / 27 = 3.70%
+    const colWidth27 = table27Flat.widthM / 14;
+    const xMod27 = table27Flat.positionEnu.x - table27Flat.widthM / 2 + (13 + 0.5) * colWidth27;
+    const yMod27 = table27Flat.positionEnu.y - table27Flat.slopedLengthM / 4;
+    const obsMod27: Obstacle3D = {
+      id: 'obs-mod27-exact',
+      name: 'Module 27 Blocker',
+      geometryType: 'cuboid',
+      positionEnu: { x: xMod27, y: yMod27, z: table27Flat.positionEnu.z + 1.0 },
+      dimensionsM: { widthM: colWidth27 + 0.05, lengthM: table27Flat.slopedLengthM / 2 + 0.1, heightM: 0.5 },
+    };
+    const facetsMod27 = buildObstacleFacets(obsMod27);
+    const resMod27Mesh = computeTableShadingGeometricMesh(table27Flat, facetsMod27, verticalSun);
+    // Geometric beam loss must be exactly 1/27 = 3.70%, NOT 4.88%
+    assert(
+      Math.abs(resMod27Mesh.directBeamLossFraction - 1 / 27) < 0.001,
+      'Annual mesh sampling applies exact 3.70% area-weighting to 27th module alone (not 4.88%)',
+      `beamLoss=${(resMod27Mesh.directBeamLossFraction * 100).toFixed(2)}% (expected 3.70%)`
+    );
+
+    // D5 Support Leg Footprint Elevation Alignment Probe on Pitched Roof
+    const roofPitched = southFacingRoof; // 15° pitch, azimuth 0° (slopes along Y)
+    const tableRotated90: PvTable3D = {
+      ...t27,
+      azimuthDeg: 90,
+      positionEnu: { x: 0, y: 0, z: 20.0 },
+    };
+    const azRad90 = (90 * Math.PI) / 180;
+    const legLeftX = -tableRotated90.widthM / 2;
+    const legRightX = tableRotated90.widthM / 2;
+    const legLeftEnuX = tableRotated90.positionEnu.x + legLeftX * Math.cos(azRad90);
+    const legLeftEnuY = tableRotated90.positionEnu.y - legLeftX * Math.sin(azRad90);
+    const legRightEnuX = tableRotated90.positionEnu.x + legRightX * Math.cos(azRad90);
+    const legRightEnuY = tableRotated90.positionEnu.y - legRightX * Math.sin(azRad90);
+
+    const roofZLeft = getLocalRoofElevationAt(roofPitched, legLeftEnuX, legLeftEnuY);
+    const roofZRight = getLocalRoofElevationAt(roofPitched, legRightEnuX, legRightEnuY);
+    const legHeightLeft = Math.max(0.1, tableRotated90.positionEnu.z - roofZLeft);
+    const legHeightRight = Math.max(0.1, tableRotated90.positionEnu.z - roofZRight);
+
+    // The two legs must adapt to the roof slope elevation difference (~4.25m across table width)
+    const legElevationDifference = Math.abs(roofZLeft - roofZRight);
+    assert(
+      legElevationDifference > 0.60 && Math.abs(Math.abs(legHeightLeft - legHeightRight) - legElevationDifference) < 0.001,
+      'Individual table support legs dynamically adapt height to local roof elevation underneath each post',
+      `elevDiff=${legElevationDifference.toFixed(3)}m, legHeightLeft=${legHeightLeft.toFixed(3)}m, legHeightRight=${legHeightRight.toFixed(3)}m`
     );
   }
 

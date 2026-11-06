@@ -151,6 +151,7 @@ export interface Scene3DState {
   totalPvCapacityKwp?: number;
   totalModulesCount?: number;
   tiltDeg?: number;
+  azimuthDeg?: number;
   interRowSpacingM?: number;
   installationEnvironment?: string;
   obstacleDataStatus?: 'demo_sample' | 'surveyed' | 'verified_unobstructed' | 'missing_unverified' | 'unspecified';
@@ -567,7 +568,7 @@ function isPointInActiveTable(table: PvTable3D, lOffset: number, sOffset: number
  * Computes 3D geometric mesh ray-traced shading across a multi-point grid
  * representing the active module columns and 3 bypass diode substrings of a PV table.
  */
-function computeTableShadingGeometricMesh(
+export function computeTableShadingGeometricMesh(
   table: PvTable3D,
   allObstacleFacets: PlanarFacet3D[],
   sun: SunPosition
@@ -617,68 +618,80 @@ function computeTableShadingGeometricMesh(
   const normY = -Math.cos(tableAzRad) * Math.sin(tiltRad);
   const normZ = Math.cos(tiltRad);
 
-  // Sample across active columns and 3 longitudinal substring zones
+  // Sample across active module slots and 3 bypass diode substrings per module
   const modCount = table.moduleCount ?? 1;
   const cols = modCount === 1 ? 1 : Math.max(1, Math.ceil(modCount / 2));
   const colWidth = table.widthM / cols;
 
-  // 3 longitudinal substring zones (-0.60, 0, 0.60 of halfLen) representing 3 bypass diodes
-  const substringFractions = [-0.60, 0, 0.60];
-
   let totalMeshPoints = 0;
   let shadedMeshPoints = 0;
-  let shadedSubstringsCount = 0;
+  let zone0Shaded = false;
+  let zone1Shaded = false;
+  let zone2Shaded = false;
 
-  for (let sIdx = 0; sIdx < substringFractions.length; sIdx++) {
-    const sFrac = substringFractions[sIdx];
-    const sOffset = sFrac * halfLen;
-    let isSubstringShaded = false;
+  for (let c = 0; c < cols; c++) {
+    const lOffset = -halfWidth + (c + 0.5) * colWidth;
+    const rows = modCount === 1 ? [0] : [0, 1];
 
-    for (let c = 0; c < cols; c++) {
-      const lOffset = -halfWidth + (c + 0.5) * colWidth;
-
-      // Exact odd module conservation: omit sampling points falling in empty module slots
-      if (!isPointInActiveTable(table, lOffset, sOffset)) {
+    for (const r of rows) {
+      const slotIdx = modCount === 1 ? 0 : 2 * c + r;
+      if (slotIdx >= modCount) {
         continue;
       }
 
-      totalMeshPoints++;
+      // 3 longitudinal bypass diode substrings per active module, ensuring exact uniform quadrature area-weighting:
+      // If modCount === 1: module spans [-halfLen, +halfLen], substrings at [-2/3, 0, 2/3] * halfLen
+      // If modCount > 1:
+      //   row 0 (bottom) spans [-halfLen, 0], substrings at [-5/6, -3/6, -1/6] * halfLen
+      //   row 1 (top) spans [0, +halfLen], substrings at [+1/6, +3/6, +5/6] * halfLen
+      const subFracs =
+        modCount === 1
+          ? [-2 / 3, 0, 2 / 3]
+          : r === 0
+            ? [-5 / 6, -3 / 6, -1 / 6]
+            : [1 / 6, 3 / 6, 5 / 6];
 
-      const ptOrigin = {
-        x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx + 0.04 * normX,
-        y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy + 0.04 * normY,
-        z: table.positionEnu.z + sOffset * slopeUz + 0.04 * normZ,
-      };
+      for (let sIdx = 0; sIdx < subFracs.length; sIdx++) {
+        const sOffset = subFracs[sIdx] * halfLen;
+        totalMeshPoints++;
 
-      let isPointShaded = false;
-      for (const facet of allObstacleFacets) {
-        if (testRayFacetIntersection(ptOrigin, rayDir, facet)) {
-          isPointShaded = true;
-          break;
+        const ptOrigin = {
+          x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx + 0.04 * normX,
+          y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy + 0.04 * normY,
+          z: table.positionEnu.z + sOffset * slopeUz + 0.04 * normZ,
+        };
+
+        let isPointShaded = false;
+        for (const facet of allObstacleFacets) {
+          if (testRayFacetIntersection(ptOrigin, rayDir, facet)) {
+            isPointShaded = true;
+            break;
+          }
+        }
+
+        if (isPointShaded) {
+          shadedMeshPoints++;
+          if (sOffset < -0.33 * halfLen) {
+            zone0Shaded = true;
+          } else if (sOffset <= 0.33 * halfLen) {
+            zone1Shaded = true;
+          } else {
+            zone2Shaded = true;
+          }
         }
       }
-
-      if (isPointShaded) {
-        shadedMeshPoints++;
-        isSubstringShaded = true;
-      }
-    }
-
-    if (isSubstringShaded) {
-      shadedSubstringsCount++;
     }
   }
 
-  // Direct geometric beam loss fraction = fraction of area occluded
+  const shadedSubstringsCount = (zone0Shaded ? 1 : 0) + (zone1Shaded ? 1 : 0) + (zone2Shaded ? 1 : 0);
+
+  // Direct geometric beam loss fraction = fraction of area occluded (exact area-weighted)
   const directBeamLossFraction = totalMeshPoints > 0 ? shadedMeshPoints / totalMeshPoints : 0;
   const beamCoveragePct = Number((directBeamLossFraction * 100.0).toFixed(1));
   const isDiodeTriggered = shadedSubstringsCount > 0;
 
   // 3-Bypass-Diode electrical curve:
-  // 0 shaded: 1.0 (no bypass)
-  // 1 substring shaded: 2/3 active = 0.667
-  // 2 substrings shaded: 1/3 active = 0.333
-  // 3 substrings shaded: 0.05 (diffuse floor)
+  // Evaluates table substring zone occlusion across bypass diode string channels
   let electricalMismatchFactor = 1.0;
   if (shadedSubstringsCount === 1) {
     electricalMismatchFactor = 0.667;
@@ -927,12 +940,15 @@ export function simulateAnnual3dShading(
     scene.totalPvCapacityKwp === undefined ||
     (scene.totalPvCapacityKwp === 0 && sumTablesKwp === 0) ||
     (scene.totalPvCapacityKwp > 0 &&
+      sumTablesKwp > 0 &&
       Math.abs(scene.totalPvCapacityKwp - sumTablesKwp) <= Math.max(0.5, scene.totalPvCapacityKwp * 0.02));
 
   const isModulesConsistent =
     scene.totalModulesCount === undefined ||
     (scene.totalModulesCount === 0 && sumTablesModules === 0) ||
-    (scene.totalModulesCount > 0 && scene.totalModulesCount === sumTablesModules);
+    (scene.totalModulesCount > 0 &&
+      sumTablesModules > 0 &&
+      scene.totalModulesCount === sumTablesModules);
 
   const isTablesModuleCountValid =
     scene.pvTables.length === 0 || scene.pvTables.every(t => t.moduleCount > 0);
@@ -941,7 +957,10 @@ export function simulateAnnual3dShading(
     isCapacityConsistent && isModulesConsistent && isTablesModuleCountValid;
 
   const isReconciled =
-    isArithmeticBalanceOk && isHeatmapAggregationConsistent && isProjectSnapshotConsistent;
+    isArithmeticBalanceOk &&
+    isHeatmapAggregationConsistent &&
+    isComponentEnergyConsistent &&
+    isProjectSnapshotConsistent;
 
   const reconciliationNotes = [
     'Arithmetic balance verified across generation, unshaded baseline, and lost kWh. Diffuse and ground view factors are modeled under unobstructed hemispherical screening assumptions.',
@@ -1196,7 +1215,9 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
       pvTables: [],
       obstacles: inputs.obstacles ?? [],
       totalPvCapacityKwp: 0,
+      totalModulesCount: 0,
       tiltDeg,
+      azimuthDeg,
       interRowSpacingM: pitchM,
       updatedAt: new Date().toISOString(),
     };
@@ -1380,6 +1401,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
     totalPvCapacityKwp: totalKwp,
     totalModulesCount: totalModules,
     tiltDeg,
+    azimuthDeg,
     interRowSpacingM: pitchM,
     installationEnvironment: env,
     obstacleDataStatus,
