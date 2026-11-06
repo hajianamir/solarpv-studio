@@ -34,24 +34,43 @@ export class ClimateDataProvider {
     return `${prefix}-${dateStr}-${randHex}`;
   }
 
-  public async fetchClimateResource(lat: number, lng: number): Promise<ClimateResourceData> {
+  public clearCache(): void {
+    this.cache.clear();
+  }
+
+  public async fetchClimateResource(
+    lat: number,
+    lng: number,
+    options?: { forceAnalytical?: boolean; bypassCache?: boolean }
+  ): Promise<ClimateResourceData> {
     const cacheKey = `clim_${lat.toFixed(3)}_${lng.toFixed(3)}`;
-    const cached = this.cache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < this.cacheTtlMs) {
-      return {
-        ...cached.data,
-        metadata: {
-          ...cached.data.metadata,
-          isCached: true,
-        },
-      };
+    if (!options?.bypassCache) {
+      const cached = this.cache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp) < this.cacheTtlMs) {
+        return {
+          ...cached.data,
+          metadata: {
+            ...cached.data.metadata,
+            isCached: true,
+          },
+        };
+      }
     }
 
     const realInternet = isRealInternetEnabled();
 
+    // If explicitly disabled via REAL_INTERNET=false or options.forceAnalytical,
+    // bypass external HTTP calls directly and return regional analytical model
+    if (!realInternet || options?.forceAnalytical) {
+      const analyticalResult = this.computeAnalyticalClimateResource(lat, lng, true);
+      this.cache.set(cacheKey, { data: analyticalResult, timestamp: Date.now() });
+      return analyticalResult;
+    }
+
+    // Default: Always attempt real external HTTP fetch first (NASA POWER / PVGIS)
     return this.circuitBreaker.execute(
       async () => {
-        // Multi-tier Fallback Chain: NASA POWER -> PVGIS -> Analytical
+        // Multi-tier Fallback Chain: NASA POWER -> PVGIS -> Analytical fallback
         if (lng > -30 && lng <= 65 && lat >= -35 && lat <= 70) {
           try {
             return await this.fetchPvgisResource(lat, lng);
@@ -59,15 +78,8 @@ export class ClimateDataProvider {
             try {
               return await this.fetchNasaPowerResource(lat, lng);
             } catch (nasaErr) {
-              if (realInternet) {
-                throw new Error(
-                  `REAL_INTERNET=true: Both PVGIS and NASA POWER unreachable for (${lat}, ${lng}). PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}; NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}. No analytical fallback allowed in REAL_INTERNET mode.`
-                );
-              }
-              // Fall through to analytical fallback with diagnostic trace
-              throw new Error(
-                `Both PVGIS and NASA POWER unreachable for (${lat}, ${lng}). PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}; NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}`
-              );
+              // External network error or timeout: graceful fallback to regional analytical model
+              return this.computeAnalyticalClimateResource(lat, lng, true);
             }
           }
         } else {
@@ -77,35 +89,17 @@ export class ClimateDataProvider {
             try {
               return await this.fetchPvgisResource(lat, lng);
             } catch (pvgisErr) {
-              if (realInternet) {
-                throw new Error(
-                  `REAL_INTERNET=true: Both NASA POWER and PVGIS unreachable for (${lat}, ${lng}). NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}; PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}. No analytical fallback allowed in REAL_INTERNET mode.`
-                );
-              }
-              // Fall through to analytical fallback with diagnostic trace
-              throw new Error(
-                `Both NASA POWER and PVGIS unreachable for (${lat}, ${lng}). NASA POWER: ${nasaErr instanceof Error ? nasaErr.message : String(nasaErr)}; PVGIS: ${pvgisErr instanceof Error ? pvgisErr.message : String(pvgisErr)}`
-              );
+              // External network error or timeout: graceful fallback to regional analytical model
+              return this.computeAnalyticalClimateResource(lat, lng, true);
             }
           }
         }
       },
       () => {
-        // Calibrated analytical physical model fallback — only used when REAL_INTERNET is not set
-        if (realInternet) {
-          throw new Error(
-            `REAL_INTERNET=true: Circuit breaker open for (${lat}, ${lng}). Analytical fallback disabled in REAL_INTERNET mode.`
-          );
-        }
+        // Calibrated analytical physical model fallback when circuit breaker is tripped
         return this.computeAnalyticalClimateResource(lat, lng, true);
       }
     ).then((result) => {
-      // HARD CHECK: In REAL_INTERNET mode, reject analytical model results
-      if (realInternet && result.metadata.sourceProvider === 'REGIONAL_ANALYTICAL_MODEL') {
-        throw new Error(
-          `REAL_INTERNET=true: Result for (${lat}, ${lng}) is from REGIONAL_ANALYTICAL_MODEL — real provider data was not obtained.`
-        );
-      }
       this.cache.set(cacheKey, { data: result, timestamp: Date.now() });
       return result;
     });

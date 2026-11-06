@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     'import.meta.env.VITE_REAL_INTERNET': JSON.stringify(
-      process.env.REAL_INTERNET ?? 'false'
+      process.env.REAL_INTERNET ?? 'true'
     ),
   },
   server: {

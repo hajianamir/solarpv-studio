@@ -1,27 +1,33 @@
 /**
  * Cross-runtime environment flag reader.
  * Works in Node (scripts/tsx, Express) and in the browser (Vite).
- * Never throws. Returns `false` when the flag cannot be read.
+ * Never throws.
+ *
+ * DEFAULT BEHAVIOR: Returns `true` (automatic reference database internet queries:
+ * NASA POWER, PVGIS 5.3, OpenStreetMap Nominatim/Overpass).
+ * Returns `false` ONLY when explicitly opted out with `REAL_INTERNET=false` (Node)
+ * or `VITE_REAL_INTERNET=false` (Vite) for air-gapped / fully offline operations.
  */
 export function isRealInternetEnabled(): boolean {
-  // Node / server context
+  // Explicit opt-out in Node / server context
   try {
     // @ts-ignore - `process` may not exist in the browser
-    if (typeof process !== 'undefined' && process?.env?.REAL_INTERNET === 'true') {
-      return true;
+    if (typeof process !== 'undefined' && process?.env?.REAL_INTERNET === 'false') {
+      return false;
     }
   } catch {
     /* ignore */
   }
-  // Browser / Vite context
+  // Explicit opt-out in Browser / Vite context
   try {
     // @ts-ignore - `import.meta.env` is Vite-specific and may be undefined
-    const meta = import.meta as any;
-    if (meta?.env?.VITE_REAL_INTERNET === 'true') {
-      return true;
+    const meta = import.meta as { env?: Record<string, string | undefined> };
+    if (meta?.env?.VITE_REAL_INTERNET === 'false') {
+      return false;
     }
   } catch {
     /* ignore */
   }
-  return false;
+  // Default is true: automatic live reference data fetching
+  return true;
 }

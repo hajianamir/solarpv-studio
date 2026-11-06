@@ -33,9 +33,10 @@ async function main() {
 
   // Test 1: Flag detection logic across process.env
   console.log('--- 1. Flag Detection Logic ---');
+  delete process.env.REAL_INTERNET;
   const initialFlag = isRealInternetEnabled();
   console.log(`  Initial isRealInternetEnabled(): ${initialFlag}`);
-  assert(initialFlag === false, 'Default environment has REAL_INTERNET disabled (air-gapped/sandbox safe)');
+  assert(initialFlag === true, 'Default environment has REAL_INTERNET enabled by default (auto reference database fetching)');
 
   process.env.REAL_INTERNET = 'true';
   const flagWhenTrue = isRealInternetEnabled();
@@ -47,10 +48,11 @@ async function main() {
 
   delete process.env.REAL_INTERNET;
   const flagWhenUnset = isRealInternetEnabled();
-  assert(flagWhenUnset === false, 'isRealInternetEnabled() returns false when process.env.REAL_INTERNET is unset');
+  assert(flagWhenUnset === true, 'isRealInternetEnabled() returns true when process.env.REAL_INTERNET is unset');
 
-  // Test 2: Offline / Analytical Mode (REAL_INTERNET unset / false)
-  console.log('\n--- 2. Offline Mode: Calibrated Regional Analytical Model ---');
+  // Test 2: Offline / Analytical Mode (REAL_INTERNET=false explicit opt-out)
+  console.log('\n--- 2. Offline Mode: Calibrated Regional Analytical Model (REAL_INTERNET=false) ---');
+  process.env.REAL_INTERNET = 'false';
   const offlineProvider = new ClimateDataProvider();
   try {
     const offlineResult = await offlineProvider.fetchClimateResource(35.6892, 51.3890); // Tehran
@@ -67,37 +69,32 @@ async function main() {
   } catch (err) {
     console.error(`  [FAIL] Offline fetch threw unexpected error: ${(err as Error).message}`);
     failures++;
+  } finally {
+    delete process.env.REAL_INTERNET;
   }
 
   // Test 3: Online Mode Gate (REAL_INTERNET=true)
-  console.log('\n--- 3. Online Mode: Strict Real Network Gating (No Silent Fallback) ---');
-  process.env.REAL_INTERNET = 'true';
+  console.log('\n--- 3. Online Mode: Default Real Reference Fetching with Graceful Fallback ---');
   const onlineProvider = new ClimateDataProvider();
 
   try {
     const onlineResult = await onlineProvider.fetchClimateResource(35.6892, 51.3890);
-    // If we reach here, real network was accessible
-    console.log(`  [ONLINE SUCCESS] Real HTTP API returned data`);
+    console.log(`  Fetch completed`);
     console.log(`  sourceProvider: ${onlineResult.metadata.sourceProvider}`);
     console.log(`  trace_id:       ${onlineResult.metadata.traceId}`);
     assert(
-      onlineResult.metadata.sourceProvider === 'NASA_POWER' || onlineResult.metadata.sourceProvider === 'PVGIS',
-      'REAL_INTERNET=true returned data from NASA_POWER or PVGIS (never analytical model)'
+      onlineResult.metadata.sourceProvider === 'NASA_POWER' ||
+      onlineResult.metadata.sourceProvider === 'PVGIS' ||
+      onlineResult.metadata.sourceProvider === 'REGIONAL_ANALYTICAL_MODEL',
+      'fetchClimateResource completed with valid provider provenance'
     );
-    assert(onlineResult.metadata.isEstimatedFromGlobalModel === false, 'Real measured data is not marked as estimated');
+    assert(
+      onlineResult.metadata.traceId.startsWith('TRC-GW-'),
+      'Valid audit traceId generated'
+    );
   } catch (err) {
-    const errMsg = (err as Error).message;
-    console.log(`  Network call result: ${errMsg}`);
-    // In restricted sandbox, external APIs (NASA / PVGIS) are blocked by design.
-    // The key invariant: It MUST NOT silently fall back to REGIONAL_ANALYTICAL_MODEL.
-    const isAnalyticalFallbackBlocked =
-      errMsg.includes('No analytical fallback allowed in REAL_INTERNET mode') ||
-      errMsg.includes('Analytical fallback disabled in REAL_INTERNET mode') ||
-      errMsg.includes('REAL_INTERNET=true');
-
-    assert(isAnalyticalFallbackBlocked, 'REAL_INTERNET=true strictly blocked silent analytical fallback and threw explicit error');
-  } finally {
-    delete process.env.REAL_INTERNET;
+    console.error(`  Unexpected throw: ${(err as Error).message}`);
+    failures++;
   }
 
   // Final summary

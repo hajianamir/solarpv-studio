@@ -6,10 +6,16 @@ import { SiteLocationMap } from './SiteLocationMap';
 interface ClimateTabProps {
   selectedCity: ClimateCity;
   onCityChange: (city: ClimateCity) => void;
+  onCreate3dRooftop?: (city: ClimateCity) => void;
   lang?: 'fa' | 'en';
 }
 
-export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChange, lang = 'fa' }) => {
+export const ClimateTab: React.FC<ClimateTabProps> = ({
+  selectedCity,
+  onCityChange,
+  onCreate3dRooftop,
+  lang = 'fa',
+}) => {
   const isEn = lang === 'en';
   const [isEditing, setIsEditing] = useState(false);
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
@@ -60,7 +66,12 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({ selectedCity, onCityChan
       )}
 
       {/* Interactive Map View */}
-      <SiteLocationMap currentCity={selectedCity} onSelectLocation={onCityChange} lang={lang} />
+      <SiteLocationMap
+        currentCity={selectedCity}
+        onSelectLocation={onCityChange}
+        onCreate3dRooftop={onCreate3dRooftop}
+        lang={lang}
+      />
 
       {/* Selected City Details Card */}
       <div className="studio-card">
