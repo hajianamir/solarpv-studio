@@ -14,14 +14,24 @@
  *   This provides hard proof that real provider data (NASA POWER / PVGIS) was obtained.
  */
 
-import { type ClimateResourceData, type DataProvenanceMetadata } from './types';
+import { type ClimateResourceData, type DataProvenanceMetadata, type DataFetchPolicy, createEngineeringDatum } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 import { isRealInternetEnabled } from '../env/runtimeEnv';
 
+interface ClimateCacheEntry {
+  data: ClimateResourceData;
+  timestamp: number;
+  ttlMs: number;
+  isEstimated: boolean;
+  policy: DataFetchPolicy;
+}
+
 export class ClimateDataProvider {
-  private cache: Map<string, { data: ClimateResourceData; timestamp: number }> = new Map();
-  private readonly cacheTtlMs: number = 7 * 24 * 60 * 60 * 1000; // 7 days TTL
-  private circuitBreaker = new CircuitBreaker();
+  private cache: Map<string, ClimateCacheEntry> = new Map();
+  private readonly remoteCacheTtlMs: number = 7 * 24 * 60 * 60 * 1000; // 7 days TTL for verified satellite data
+  private readonly fallbackCacheTtlMs: number = 5 * 60 * 1000; // 5 min TTL for analytical fallback
+  private nasaBreaker = new CircuitBreaker({ failureThreshold: 3, resetTimeoutMs: 30000, halfOpenMaxTrials: 2 });
+  private pvgisBreaker = new CircuitBreaker({ failureThreshold: 3, resetTimeoutMs: 30000, halfOpenMaxTrials: 2 });
 
   /**
    * Generates a deterministic calculation trace ID conforming to SolarPV Studio auditing standards:
@@ -38,71 +48,173 @@ export class ClimateDataProvider {
     this.cache.clear();
   }
 
+  public getNasaCircuitBreaker(): CircuitBreaker {
+    return this.nasaBreaker;
+  }
+
+  public getPvgisCircuitBreaker(): CircuitBreaker {
+    return this.pvgisBreaker;
+  }
+
+  public getCircuitBreaker(): CircuitBreaker {
+    return this.nasaBreaker;
+  }
+
   public async fetchClimateResource(
     lat: number,
     lng: number,
-    options?: { forceAnalytical?: boolean; bypassCache?: boolean }
+    options?: { forceAnalytical?: boolean; bypassCache?: boolean; policy?: DataFetchPolicy }
   ): Promise<ClimateResourceData> {
+    const realInternet = isRealInternetEnabled();
+    const policy: DataFetchPolicy =
+      options?.forceAnalytical || !realInternet
+        ? 'analytical_only'
+        : (options?.policy ?? 'prefer_remote');
+
     const cacheKey = `clim_${lat.toFixed(3)}_${lng.toFixed(3)}`;
+
+    // Policy-aware Cache Lookup (Checked before any network action)
     if (!options?.bypassCache) {
       const cached = this.cache.get(cacheKey);
-      if (cached && (Date.now() - cached.timestamp) < this.cacheTtlMs) {
-        return {
-          ...cached.data,
-          metadata: {
-            ...cached.data.metadata,
-            isCached: true,
-          },
-        };
+      if (cached && (Date.now() - cached.timestamp) < cached.ttlMs) {
+        if (policy === 'analytical_only') {
+          return {
+            ...cached.data,
+            metadata: {
+              ...cached.data.metadata,
+              isCached: true,
+              cacheStatus: 'hit',
+              fetchPolicy: policy,
+            },
+          };
+        }
+        if (policy === 'remote_required') {
+          // Analytical cached results are NOT eligible for remote_required
+          if (!cached.isEstimated) {
+            return {
+              ...cached.data,
+              metadata: {
+                ...cached.data.metadata,
+                isCached: true,
+                cacheStatus: 'hit',
+                fetchPolicy: policy,
+              },
+            };
+          }
+        }
+        if (policy === 'prefer_remote') {
+          if (!cached.isEstimated) {
+            return {
+              ...cached.data,
+              metadata: {
+                ...cached.data.metadata,
+                isCached: true,
+                cacheStatus: 'hit',
+                fetchPolicy: policy,
+              },
+            };
+          }
+          // If cached data is analytical fallback, only return it if both breakers are currently OPEN
+          if (this.pvgisBreaker.getState() === 'OPEN' && this.nasaBreaker.getState() === 'OPEN') {
+            return {
+              ...cached.data,
+              metadata: {
+                ...cached.data.metadata,
+                isCached: true,
+                cacheStatus: 'hit',
+                fetchPolicy: policy,
+              },
+            };
+          }
+        }
       }
     }
 
-    const realInternet = isRealInternetEnabled();
-
-    // If explicitly disabled via REAL_INTERNET=false or options.forceAnalytical,
-    // bypass external HTTP calls directly and return regional analytical model
-    if (!realInternet || options?.forceAnalytical) {
+    if (policy === 'analytical_only') {
       const analyticalResult = this.computeAnalyticalClimateResource(lat, lng, true);
-      this.cache.set(cacheKey, { data: analyticalResult, timestamp: Date.now() });
+      analyticalResult.metadata.fetchPolicy = policy;
+      analyticalResult.metadata.cacheStatus = options?.bypassCache ? 'bypassed' : 'miss';
+      this.cache.set(cacheKey, {
+        data: analyticalResult,
+        timestamp: Date.now(),
+        ttlMs: this.fallbackCacheTtlMs,
+        isEstimated: true,
+        policy,
+      });
       return analyticalResult;
     }
 
-    // Default: Always attempt real external HTTP fetch first (NASA POWER / PVGIS)
-    return this.circuitBreaker.execute(
-      async () => {
-        // Multi-tier Fallback Chain: NASA POWER -> PVGIS -> Analytical fallback
-        if (lng > -30 && lng <= 65 && lat >= -35 && lat <= 70) {
-          try {
-            return await this.fetchPvgisResource(lat, lng);
-          } catch (pvgisErr) {
-            try {
-              return await this.fetchNasaPowerResource(lat, lng);
-            } catch (nasaErr) {
-              // External network error or timeout: graceful fallback to regional analytical model
-              return this.computeAnalyticalClimateResource(lat, lng, true);
-            }
-          }
-        } else {
-          try {
-            return await this.fetchNasaPowerResource(lat, lng);
-          } catch (nasaErr) {
-            try {
-              return await this.fetchPvgisResource(lat, lng);
-            } catch (pvgisErr) {
-              // External network error or timeout: graceful fallback to regional analytical model
-              return this.computeAnalyticalClimateResource(lat, lng, true);
-            }
-          }
+    // Determine regional routing priority: EMEA/Asia prefers PVGIS; Americas/Pacific prefers NASA POWER
+    const isEmeaAsia = lng > -30 && lng <= 65 && lat >= -35 && lat <= 70;
+    const primaryProvider: 'PVGIS' | 'NASA_POWER' = isEmeaAsia ? 'PVGIS' : 'NASA_POWER';
+
+    const executeRemoteChain = async (): Promise<ClimateResourceData> => {
+      const pBreaker = primaryProvider === 'PVGIS' ? this.pvgisBreaker : this.nasaBreaker;
+      const sBreaker = primaryProvider === 'PVGIS' ? this.nasaBreaker : this.pvgisBreaker;
+      const pFetch = primaryProvider === 'PVGIS' ? () => this.fetchPvgisResource(lat, lng) : () => this.fetchNasaPowerResource(lat, lng);
+      const sFetch = primaryProvider === 'PVGIS' ? () => this.fetchNasaPowerResource(lat, lng) : () => this.fetchPvgisResource(lat, lng);
+
+      try {
+        return await pBreaker.execute(pFetch);
+      } catch (pErr) {
+        // Failover to secondary provider
+        try {
+          return await sBreaker.execute(sFetch);
+        } catch (sErr) {
+          throw new Error(
+            `All remote providers failed. Primary (${primaryProvider}): ${(pErr as Error).message}; Secondary: ${(sErr as Error).message}`
+          );
         }
-      },
-      () => {
-        // Calibrated analytical physical model fallback when circuit breaker is tripped
-        return this.computeAnalyticalClimateResource(lat, lng, true);
       }
-    ).then((result) => {
-      this.cache.set(cacheKey, { data: result, timestamp: Date.now() });
-      return result;
-    });
+    };
+
+    if (policy === 'remote_required') {
+      try {
+        const remoteData = await executeRemoteChain();
+        remoteData.metadata.fetchPolicy = policy;
+        remoteData.metadata.cacheStatus = options?.bypassCache ? 'bypassed' : 'miss';
+        this.cache.set(cacheKey, {
+          data: remoteData,
+          timestamp: Date.now(),
+          ttlMs: this.remoteCacheTtlMs,
+          isEstimated: false,
+          policy,
+        });
+        return remoteData;
+      } catch (remoteErr) {
+        throw new Error(`remote_required failed: ${(remoteErr as Error).message}`);
+      }
+    }
+
+    // Default policy: prefer_remote
+    try {
+      const remoteData = await executeRemoteChain();
+      remoteData.metadata.fetchPolicy = policy;
+      remoteData.metadata.cacheStatus = options?.bypassCache ? 'bypassed' : 'miss';
+      this.cache.set(cacheKey, {
+        data: remoteData,
+        timestamp: Date.now(),
+        ttlMs: this.remoteCacheTtlMs,
+        isEstimated: false,
+        policy,
+      });
+      return remoteData;
+    } catch {
+      // Graceful fallback to regional analytical model with explicit estimated provenance
+      const fallbackResult = this.computeAnalyticalClimateResource(lat, lng, true);
+      fallbackResult.metadata.fetchPolicy = policy;
+      fallbackResult.metadata.cacheStatus = options?.bypassCache ? 'bypassed' : 'miss';
+      fallbackResult.metadata.circuitBreakerStatus =
+        this.pvgisBreaker.getState() === 'OPEN' || this.nasaBreaker.getState() === 'OPEN' ? 'OPEN' : 'CLOSED';
+      this.cache.set(cacheKey, {
+        data: fallbackResult,
+        timestamp: Date.now(),
+        ttlMs: this.fallbackCacheTtlMs,
+        isEstimated: true,
+        policy,
+      });
+      return fallbackResult;
+    }
   }
 
   /**
@@ -130,16 +242,34 @@ export class ClimateDataProvider {
   private parseNasaPowerResponse(lat: number, lng: number, json: any): ClimateResourceData {
     const params = json?.properties?.parameter;
     const rawPsh = params?.ALLSKY_SFC_SW_DWN?.ANN;
-    if (rawPsh === undefined || rawPsh === null || typeof rawPsh !== 'number') {
-      throw new Error('NASA POWER response missing valid ALLSKY_SFC_SW_DWN.ANN parameter');
+    if (
+      rawPsh === undefined ||
+      rawPsh === null ||
+      typeof rawPsh !== 'number' ||
+      !Number.isFinite(rawPsh) ||
+      rawPsh < 0.1 ||
+      rawPsh > 12.0
+    ) {
+      throw new Error(`NASA POWER response missing valid solar irradiance parameter (got ${rawPsh})`);
     }
     const psh = rawPsh;
     const tMean = params?.T2M?.ANN ?? 20.0;
     const tMin = params?.T2M_MIN?.ANN ?? -5.0;
     const tMax = params?.T2M_MAX?.ANN ?? 42.0;
 
+    if (typeof tMean === 'number' && (tMean < -70 || tMean > 65)) {
+      throw new Error(`NASA POWER temperature out of physical range (got ${tMean}°C)`);
+    }
+
     const absLat = Math.abs(lat);
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
+
+    const provenance = {
+      peakSunHours: createEngineeringDatum(Number(psh.toFixed(2)), 'available', 'NASA_POWER', 'satellite_reanalysis', 3.0, 'NASA POWER Climatology ALLSKY_SFC_SW_DWN', 'kWh/m²/day'),
+      dniKwhM2Day: createEngineeringDatum(Number((psh * 0.72).toFixed(2)), 'estimated', 'NASA_POWER', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
+      dhiKwhM2Day: createEngineeringDatum(Number((psh * 0.28).toFixed(2)), 'estimated', 'NASA_POWER', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
+      tempAnnualMeanC: createEngineeringDatum(Number(tMean.toFixed(1)), 'available', 'NASA_POWER', 'satellite_reanalysis', 2.0, 'NASA POWER 2m Temperature (T2M)', '°C'),
+    };
 
     return {
       latitude: Number(lat.toFixed(4)),
@@ -164,6 +294,7 @@ export class ClimateDataProvider {
         geographicRegion: 'NASA POWER Climatology (GEOS-5 FP-IT)',
         governingStandards: ['NASA POWER Climatology v2.0', 'WMO Guide to Climatological Practices No. 100'],
       },
+      provenance,
     };
   }
 
@@ -191,13 +322,29 @@ export class ClimateDataProvider {
 
   private parsePvgisResponse(lat: number, lng: number, json: any): ClimateResourceData {
     const monthly = json?.outputs?.monthly;
-    if (!Array.isArray(monthly) || monthly.length === 0) {
-      throw new Error('PVGIS response missing valid monthly solar irradiance outputs');
+    if (!Array.isArray(monthly) || monthly.length !== 12) {
+      throw new Error(`PVGIS response missing complete 12-month irradiance outputs (got ${Array.isArray(monthly) ? monthly.length : 0} months)`);
     }
-    const annualKwh = monthly.reduce((acc: number, m: any) => acc + (m['H(h)_m'] ?? 150), 0);
+    let annualKwh = 0;
+    for (let i = 0; i < monthly.length; i++) {
+      const m = monthly[i];
+      const hMonth = m?.['H(h)_m'];
+      if (typeof hMonth !== 'number' || !Number.isFinite(hMonth) || hMonth <= 0 || hMonth > 450) {
+        throw new Error(`PVGIS response contains invalid monthly irradiance in month ${i + 1} (got ${hMonth})`);
+      }
+      annualKwh += hMonth;
+    }
     const psh = Number((annualKwh / 365).toFixed(2));
     const absLat = Math.abs(lat);
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
+    const estimatedMeanTempC = absLat > 45 ? 10.5 : 22.0;
+
+    const provenance = {
+      peakSunHours: createEngineeringDatum(psh, 'available', 'PVGIS', 'satellite_reanalysis', 3.0, 'PVGIS 5.3 monthly horizontal irradiance H(h)_m sum', 'kWh/m²/day'),
+      dniKwhM2Day: createEngineeringDatum(Number((psh * 0.70).toFixed(2)), 'estimated', 'PVGIS', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
+      dhiKwhM2Day: createEngineeringDatum(Number((psh * 0.30).toFixed(2)), 'estimated', 'PVGIS', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
+      tempAnnualMeanC: createEngineeringDatum(estimatedMeanTempC, 'estimated', 'PVGIS', 'rule_of_thumb_screening', 15.0, 'Regional latitude-based estimate (PVGIS MRcalc does not return temperature)', '°C'),
+    };
 
     return {
       latitude: Number(lat.toFixed(4)),
@@ -222,6 +369,7 @@ export class ClimateDataProvider {
         geographicRegion: 'PVGIS 5.3 SARAH-2 / ERA5',
         governingStandards: ['PVGIS v5.3 (European Commission JRC)', 'IEC 61724-1 Class A'],
       },
+      provenance,
     };
   }
 
@@ -241,7 +389,7 @@ export class ClimateDataProvider {
       if (!resp.ok) {
         throw new Error(`Nominatim HTTP ${resp.status}`);
       }
-      const data = await resp.json();
+      const data = (await resp.json()) as any;
       const name = data?.address?.city || data?.address?.town || data?.address?.village || data?.display_name;
       if (name) return String(name);
       throw new Error('Nominatim returned no place name');
@@ -307,7 +455,7 @@ export class ClimateDataProvider {
       if (!resp.ok) {
         throw new Error(`Overpass HTTP ${resp.status}`);
       }
-      const data = await resp.json();
+      const data = (await resp.json()) as any;
       const elements = data?.elements || [];
       const footprints = elements.map((el: any) => ({
         id: el.id,
@@ -370,6 +518,13 @@ export class ClimateDataProvider {
 
     const region = absLat < 23.5 ? 'Tropical Belt' : isSouth ? 'Southern Temperate Zone' : 'Northern Temperate Zone';
 
+    const provenance = {
+      peakSunHours: createEngineeringDatum(Number(psh.toFixed(2)), isEstimatedFallback ? 'estimated' : 'available', provider, 'analytical_model', 12.0, 'Calculated from regional latitude/longitude analytical model', 'kWh/m²/day'),
+      dniKwhM2Day: createEngineeringDatum(dni, 'estimated', provider, 'analytical_model', 15.0, 'Analytical clear-sky geographic proxy model', 'kWh/m²/day'),
+      dhiKwhM2Day: createEngineeringDatum(dhi, 'estimated', provider, 'analytical_model', 15.0, 'Analytical clear-sky geographic proxy model', 'kWh/m²/day'),
+      tempAnnualMeanC: createEngineeringDatum(Number(((tMin + tMax) / 2.0).toFixed(1)), 'estimated', provider, 'analytical_model', 10.0, 'Analytical latitude and elevation model', '°C'),
+    };
+
     return {
       latitude: Number(lat.toFixed(4)),
       longitude: Number(lng.toFixed(4)),
@@ -393,6 +548,7 @@ export class ClimateDataProvider {
         geographicRegion: region,
         governingStandards: standards,
       },
+      provenance,
     };
   }
 }

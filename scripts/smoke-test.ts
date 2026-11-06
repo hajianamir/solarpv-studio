@@ -118,7 +118,7 @@ console.log('  -> Status: SUCCESS [PASS]\n');
 // Step 4: Import v2 Legacy File (RECOVERED_WITH_WARNINGS)
 // -----------------------------------------------------------------------------
 console.log('[Step 4/5] Loading legacy v2 project vector (MIGR-01-POWERPLANT-1MW)...');
-const v2Vector = REAL_WORLD_V2_TEST_VECTORS.find(v => v.vectorId === 'MIGR-01-POWERPLANT-1MW') ?? REAL_WORLD_V2_TEST_VECTORS[1];
+const v2Vector = REAL_WORLD_V2_TEST_VECTORS.find((v: any) => v.vectorId === 'MIGR-01-POWERPLANT-1MW' || v.id === 'MIGR-01-POWERPLANT-1MW') ?? REAL_WORLD_V2_TEST_VECTORS[1];
 const v2Payload = v2Vector.rawPayload;
 const v2Result = migrateProjectToV3(v2Payload);
 console.log(`  ✓ Migration Status: [${v2Result.migrationStatus}]`);
@@ -136,7 +136,7 @@ console.log('  -> Status: SUCCESS [PASS]\n');
 // Step 5: Import Corrupted File (BLOCKED_INCONSISTENT)
 // -----------------------------------------------------------------------------
 console.log('[Step 5/5] Loading physically inconsistent payload (MIGR-05-CORRUPTED-INCONSISTENT)...');
-const malformedVector = REAL_WORLD_V2_TEST_VECTORS.find(v => v.vectorId === 'MIGR-05-CORRUPTED-INCONSISTENT') ?? REAL_WORLD_V2_TEST_VECTORS[5];
+const malformedVector = REAL_WORLD_V2_TEST_VECTORS.find((v: any) => v.vectorId === 'MIGR-05-CORRUPTED-INCONSISTENT' || v.id === 'MIGR-05-CORRUPTED-INCONSISTENT') ?? REAL_WORLD_V2_TEST_VECTORS[5];
 const malformedPayload = malformedVector.rawPayload;
 const malformedResult = migrateProjectToV3(malformedPayload);
 console.log(`  ✓ Migration Status: [${malformedResult.migrationStatus}]`);

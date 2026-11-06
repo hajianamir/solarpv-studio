@@ -115,6 +115,14 @@ async function runAuditRemediationSuite() {
       `ySouth=${pSouth.y.toFixed(2)}, yNorth=${pNorth.y.toFixed(2)}, zSouth=${pSouth.z.toFixed(2)}, zNorth=${pNorth.z.toFixed(2)}`
     );
 
+    // Physical clearance constraint (R11): Lowest edge must strictly clear the roof eaves height
+    const roofEaves = scene.roofPlanes[0]?.eavesHeightM ?? 8.0;
+    assert(
+      pSouth.z > roofEaves,
+      `PV table lowest edge strictly clears roof plane (no roof penetration)`,
+      `lowestZ=${pSouth.z.toFixed(2)}m > roofEaves=${roofEaves.toFixed(2)}m (clearance=${(pSouth.z - roofEaves).toFixed(2)}m)`
+    );
+
     // Normal vector points South (-Y) and Up (+Z)
     const tiltRad = (t0.tiltDeg * Math.PI) / 180.0;
     const ny = -Math.cos(0) * Math.sin(tiltRad);
@@ -315,7 +323,14 @@ async function runAuditRemediationSuite() {
   // ---------------------------------------------------------------------------
   console.log('\n--- [AREA 4] Grid Compliance & LVRT Screening ---');
   {
-    const pcc = analyzeUpstreamGridConditions(5.0, 20.0, 250.0);
+    const pcc = analyzeUpstreamGridConditions({
+      plantCapacityMw: 5.0,
+      gridVoltageKv: 20.0,
+      gridShortCircuitMva: 250.0,
+      gridXrRatio: 8.0,
+      inverterPowerFactor: 0.98,
+      isPowerFactorLagging: true,
+    });
     assert(
       pcc.lvrtCompliance.status === 'screening_only',
       `LVRT compliance status is 'screening_only' without manufacturer curves`,
@@ -347,6 +362,7 @@ async function runAuditRemediationSuite() {
     // 5b. Structural preliminary screening disclaimer
     const struct = calculateStructuralAndFoundations({
       totalModulesCount: 140,
+      tablesCount: 5,
       moduleLengthM: 2.278,
       moduleWidthM: 1.134,
       moduleWeightKg: 28.5,
@@ -356,7 +372,7 @@ async function runAuditRemediationSuite() {
       basicWindSpeedKmh: 120,
       groundSnowLoadKgM2: 50,
       foundationType: 'shed_roof_clamp_rail',
-      soilType: 'medium_dense_sand',
+      soilType: 'dense_sand_gravel',
     });
     assert(
       struct.isScreeningPreliminary === true &&
@@ -426,7 +442,7 @@ async function runAuditRemediationSuite() {
       designPvArray(
         100,
         -1.0, // invalid PSH
-        { pmpWatts: 550, vocVolts: 50.8, vmpVolts: 41.28, iscAmps: 13.99, impAmps: 13.33, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, noctC: 45, lengthM: 2.278, widthM: 1.134 },
+        { modelName: 'Tiger Neo 550W', manufacturer: 'Jinko Solar', pmpWatts: 550, vocVolts: 50.8, vmpVolts: 41.28, iscAmps: 13.99, impAmps: 13.33, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, noctC: 45, lengthM: 2.278, widthM: 1.134 },
         { modelName: 'Inv', manufacturer: 'Mfg', pnomAcKw: 50, vdcMaxVolts: 1000, vmpptMinVolts: 200, vmpptMaxVolts: 850, iscMaxAmpsPerMppt: 40, imppMaxAmpsPerMppt: 32, mpptChannelsCount: 2, efficiencyMaxPct: 98.5, isThreePhase: true },
         { ambientTempMinC: -10, ambientTempMaxC: 45, soilingLossPct: 3, dcCableLossPct: 1.5, mismatchAndLidLossPct: 2, inverterClippingLossPct: 0.5, systemAvailabilityPct: 99, groundAlbedo: 0.2, arrayTiltDeg: 25 },
         35.68
@@ -444,7 +460,7 @@ async function runAuditRemediationSuite() {
     const infeasibleDesign = designPvArray(
       100,
       5.2,
-      { pmpWatts: 550, vocVolts: 50.8, vmpVolts: 41.28, iscAmps: 13.99, impAmps: 13.33, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, noctC: 45, lengthM: 2.278, widthM: 1.134 },
+      { modelName: 'Tiger Neo 550W', manufacturer: 'Jinko Solar', pmpWatts: 550, vocVolts: 50.8, vmpVolts: 41.28, iscAmps: 13.99, impAmps: 13.33, tempCoeffVocPct: -0.25, tempCoeffPmpPct: -0.30, noctC: 45, lengthM: 2.278, widthM: 1.134 },
       // Tiny MPPT window that cannot fit any valid string: vmpptMin = 950V, vmpptMax = 960V, vdcMax = 970V
       { modelName: 'NarrowInv', manufacturer: 'Mfg', pnomAcKw: 50, vdcMaxVolts: 970, vmpptMinVolts: 950, vmpptMaxVolts: 960, iscMaxAmpsPerMppt: 40, imppMaxAmpsPerMppt: 32, mpptChannelsCount: 2, efficiencyMaxPct: 98.5, isThreePhase: true },
       { ambientTempMinC: -10, ambientTempMaxC: 45, soilingLossPct: 3, dcCableLossPct: 1.5, mismatchAndLidLossPct: 2, inverterClippingLossPct: 0.5, systemAvailabilityPct: 99, groundAlbedo: 0.2, arrayTiltDeg: 25 },

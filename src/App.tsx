@@ -64,8 +64,10 @@ import { rearGainPercent } from './engine/bifacialGain';
 import {
   shadingLifecycleReducer,
   createInitialShadingLifecycleState,
+  computeShadingSceneSignature,
   type AppliedShading3dRecord,
 } from './engine/shadingLifecycle';
+import { buildSceneFromProjectDesign } from './engine/roof3dShadingEngine';
 import { type TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
 import { sizeBatteryBank, computeAutonomyEnergyRequirement, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
@@ -244,7 +246,7 @@ export const App: React.FC = () => {
   );
   const appliedShadingRecord = shadingLifecycle.appliedShading;
   const isShadingStale = shadingLifecycle.isStale ?? false;
-  const shadingLoss3dPct = appliedShadingRecord?.lossPct ?? null;
+  const shadingLoss3dPct = isShadingStale ? null : (appliedShadingRecord?.lossPct ?? null);
   
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
@@ -578,13 +580,52 @@ export const App: React.FC = () => {
       ? (targetPowerplantCapacityKw || 1000)
       : arrayDesign.totalPvCapacityKwp;
 
+  const currentShadingSignature = useMemo(() => {
+    const scene = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: activePlantCapacityKwp,
+      totalModulesCount:
+        systemMode === 'powerplant'
+          ? Math.round(((targetPowerplantCapacityKw || 1000) * 1000) / (selectedModule.pmpWatts || 550))
+          : arrayDesign.totalModulesCount,
+      interRowSpacingM: arrayDesign.interRowSpacingM,
+      tiltDeg: city.optimalTiltAnnualDeg,
+      azimuthDeg: 0,
+      latitude: city.latitude,
+      longitude: city.longitude,
+      elevationM: city.elevationM,
+      moduleWidthM: selectedModule.widthM,
+      moduleLengthM: selectedModule.lengthM,
+      modulePmpWatts: selectedModule.pmpWatts,
+      installationEnvironment:
+        siteOverrides?.installationEnvironment ||
+        (systemMode === 'powerplant' ? 'ground_mount' : 'rooftop_flat_concrete'),
+      includeDefaultObstacles: false,
+    });
+
+    return computeShadingSceneSignature({
+      scene,
+      cityId: city.id,
+      peakSunHours: city.peakSunHours,
+    });
+  }, [
+    activePlantCapacityKwp,
+    targetPowerplantCapacityKw,
+    systemMode,
+    selectedModule,
+    arrayDesign.totalModulesCount,
+    arrayDesign.interRowSpacingM,
+    city,
+    siteOverrides?.installationEnvironment,
+  ]);
+
   useEffect(() => {
     dispatchShadingLifecycle({
       type: 'CHECK_SYNC',
       currentCityId: city.id,
       currentCapacityKwp: activePlantCapacityKwp,
+      currentSignatureHash: currentShadingSignature,
     });
-  }, [city.id, activePlantCapacityKwp]);
+  }, [city.id, activePlantCapacityKwp, currentShadingSignature]);
 
   // 4. Inverter Clustering Evaluation
   const inverterClustering = useMemo(() => {
@@ -2432,6 +2473,7 @@ export const App: React.FC = () => {
                   appliedAtIso: record.appliedAtIso,
                   cityId: city.id,
                   source: record.source,
+                  signatureHash: record.signatureHash || currentShadingSignature,
                 })
               }
               onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}

@@ -7,33 +7,43 @@ import type { SoilClassification } from '../types/climateTypes';
 
 export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
+export type DataFetchPolicy = 'analytical_only' | 'prefer_remote' | 'remote_required';
+
 export type DatumStatus = 'available' | 'estimated' | 'missing' | 'invalid' | 'not_evaluated';
 
 export interface EngineeringDatum<T> {
-  value: T;
+  value: T | null;
+  unit?: string;
   status: DatumStatus;
   source: string; // e.g., 'PVGIS-ERA5', 'NASA_POWER', 'ISRIC_SOILGRIDS', 'INBC_PART_6', 'REGIONAL_ANALYTICAL_MODEL', 'SCREENING_ESTIMATE'
   method: 'direct_measurement' | 'satellite_reanalysis' | 'geostatistical_interpolation' | 'analytical_model' | 'rule_of_thumb_screening';
+  period?: string;
+  retrievedAt?: string;
   uncertaintyPct?: number;
   timestamp?: string;
   notes?: string;
 }
 
 export function createEngineeringDatum<T>(
-  value: T,
+  value: T | null,
   status: DatumStatus = 'available',
   source: string = 'REGIONAL_ANALYTICAL_MODEL',
   method: EngineeringDatum<T>['method'] = 'analytical_model',
   uncertaintyPct?: number,
-  notes?: string
+  notes?: string,
+  unit: string = ''
 ): EngineeringDatum<T> {
+  const now = new Date().toISOString();
   return {
     value,
+    unit,
     status,
     source,
     method,
     uncertaintyPct,
-    timestamp: new Date().toISOString(),
+    period: 'annual_climatology',
+    retrievedAt: now,
+    timestamp: now,
     notes,
   };
 }
@@ -44,6 +54,9 @@ export interface DataProvenanceMetadata {
   retrievalTimestamp: string;
   isCached: boolean;
   isEstimatedFromGlobalModel: boolean;
+  fetchPolicy?: DataFetchPolicy;
+  cacheStatus?: 'hit' | 'miss' | 'bypassed';
+  circuitBreakerStatus?: CircuitBreakerState;
   geographicRegion: string;
   governingStandards: string[];
 }
@@ -63,6 +76,13 @@ export interface ClimateResourceData {
   optimalTiltDeg: number;
   soilingLossPercent: number;
   metadata: DataProvenanceMetadata;
+  provenance?: {
+    peakSunHours?: EngineeringDatum<number>;
+    dniKwhM2Day?: EngineeringDatum<number>;
+    dhiKwhM2Day?: EngineeringDatum<number>;
+    tempAnnualMeanC?: EngineeringDatum<number>;
+    soilingLossPercent?: EngineeringDatum<number>;
+  };
 }
 
 export interface SoilPropertiesData {

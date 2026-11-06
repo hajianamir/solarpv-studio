@@ -69,9 +69,23 @@ export function runIranianRegulationFinancialModel(
   const equityContributionMillionToman = totalCapexMillionToman - bankLoanMillionToman;
 
   // Annual loan annuity payment (Equal Installments)
-  const r = loanInterestPct / 100.0;
-  const annuityFactor = (r * Math.pow(1 + r, loanTermYears)) / (Math.pow(1 + r, loanTermYears) - 1);
-  const annualLoanAnnuity = bankLoanMillionToman > 0 ? bankLoanMillionToman * annuityFactor : 0;
+  // Handles zero interest rate (annuity = principal / term) and validates non-negative rates
+  let annualLoanAnnuity = 0;
+  if (bankLoanMillionToman > 0) {
+    if (loanTermYears <= 0) {
+      throw new Error(`Loan term must be a positive integer, received ${loanTermYears} years`);
+    }
+    const r = loanInterestPct / 100.0;
+    if (r < 0) {
+      throw new Error(`Loan interest percentage cannot be negative, received ${loanInterestPct}%`);
+    } else if (r === 0) {
+      annualLoanAnnuity = bankLoanMillionToman / loanTermYears;
+    } else {
+      const powTerm = Math.pow(1 + r, loanTermYears);
+      const annuityFactor = (r * powTerm) / (powTerm - 1);
+      annualLoanAnnuity = bankLoanMillionToman * annuityFactor;
+    }
+  }
 
   // 3. 25-Year Cash Flow Projection
   const cashFlows: CashFlowYear[] = [];
@@ -129,6 +143,7 @@ export function runIranianRegulationFinancialModel(
   const projectCashFlowSeries = [-totalCapexMillionToman, ...cashFlows.map(c => c.revenueMillionToman - c.opexMillionToman)];
 
   const calcIrr = (series: number[]): number | null => {
+    if (series.some(c => !Number.isFinite(c))) return null;
     const hasPos = series.some(c => c > 0);
     const hasNeg = series.some(c => c < 0);
     if (!hasPos || !hasNeg) return null;

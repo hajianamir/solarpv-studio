@@ -109,6 +109,7 @@ export interface RoofPlane {
   tiltDeg: number; // Slope angle from horizontal (0 = flat roof, 15-35 = pitched)
   azimuthDeg: number; // Orientation (0 = South, -90 = East, +90 = West)
   eavesHeightM: number; // Height above ground at lowest edge
+  ridgeHeightM?: number; // Height above ground at ridge edge (if pitched)
   setbackClearanceM: number; // Safety setback from perimeter edges (m, e.g. 0.8m)
 }
 
@@ -152,6 +153,7 @@ export interface Scene3DState {
   tiltDeg?: number;
   interRowSpacingM?: number;
   installationEnvironment?: string;
+  obstacleDataStatus?: 'demo_sample' | 'surveyed' | 'verified_unobstructed' | 'missing_unverified' | 'unspecified';
 }
 
 // ============================================================================
@@ -277,6 +279,15 @@ export interface ShadingSimulationOptions {
   albedo?: number;
 }
 
+export interface ShadingReconciliationStatus {
+  isArithmeticBalanceOk: boolean;
+  isHeatmapAggregationConsistent: boolean;
+  isComponentEnergyConsistent: boolean;
+  isProjectSnapshotConsistent: boolean;
+  overallReconciled: boolean;
+  reconciliationNotes: string;
+}
+
 export interface AnnualShading3dResult {
   sceneState: Scene3DState;
   simulationModeUsed: 'hourly_8760' | 'screening_3day';
@@ -291,7 +302,16 @@ export interface AnnualShading3dResult {
   reconciliationDeltaKwh: number;
   tableHeatmap: TableHeatmapCell[];
   isReconciled: boolean;
+  reconciliationStatus?: ShadingReconciliationStatus;
   waterfallLossReport: WaterfallLossReport;
+  methodologyDescription?: string;
+  weatherDataSource?: string;
+  diffuseTranspositionAssumption?: string;
+  targetAnnualHorizontalIrradiationKwhM2?: number;
+  simulatedAnnualHorizontalIrradiationKwhM2?: number;
+  pshIntegralConservationErrorPct?: number;
+  isEnergyConservationPreserved?: boolean;
+  energyBalanceNote?: string;
   screeningNoticeFa: string;
   screeningNoticeEn: string;
 }
@@ -527,6 +547,22 @@ export function testRayFacetIntersection(
   return inside;
 }
 
+function isPointInActiveTable(table: PvTable3D, lOffset: number, sOffset: number): boolean {
+  const modCount = table.moduleCount;
+  if (!modCount || modCount <= 0) return false;
+  if (modCount === 1) return true;
+  const cols = Math.max(1, Math.ceil(modCount / 2));
+  const colWidth = table.widthM / cols;
+  const halfWidth = table.widthM / 2;
+
+  // Determine which column this sample offset falls into
+  const c = Math.min(cols - 1, Math.max(0, Math.floor((lOffset + halfWidth) / colWidth)));
+  // Bottom module slot is sOffset <= 0, top module slot is sOffset > 0
+  const isBottom = sOffset <= 0;
+  const slotIdx = isBottom ? 2 * c : 2 * c + 1;
+  return slotIdx < modCount;
+}
+
 /**
  * Computes 3D geometric mesh ray-traced shading across a multi-point grid (4 lateral x 3 sloped = 12 vertices)
  * representing the 3 bypass diode substrings of a PV table.
@@ -596,6 +632,12 @@ function computeTableShadingGeometricMesh(
 
     for (const lFrac of lateralFractions) {
       const lOffset = lFrac * halfWidth;
+
+      // Exact odd module conservation: omit sampling points falling in empty module slots
+      if (!isPointInActiveTable(table, lOffset, sOffset)) {
+        continue;
+      }
+
       totalMeshPoints++;
 
       const ptOrigin = {
@@ -666,6 +708,12 @@ export function simulateAnnual3dShading(
   ambientTempMaxC: number = 40.0,
   options?: ShadingSimulationOptions
 ): AnnualShading3dResult {
+  if (typeof peakSunHours !== 'number' || !isFinite(peakSunHours) || peakSunHours <= 0) {
+    throw new Error(
+      `simulateAnnual3dShading: peakSunHours must be a finite positive number (> 0), received ${peakSunHours}`
+    );
+  }
+
   const lat = scene.anchorLocation.latitude;
   const isFull8760 = options?.simulationMode === 'hourly_8760';
   const stepDays = isFull8760 ? 1 : (options?.stepDays ?? 3);
@@ -712,13 +760,31 @@ export function simulateAnnual3dShading(
   let totalEvaluatedDaylightHours = 0;
   let rawRayCastingStepsCount = 0;
 
-  // Annual loop: 365 days x 24 hours
-  for (let day = 1; day <= 365; day += stepDays) {
-    const weight = stepDays;
-
-    for (let hour = 5; hour <= 19; hour++) {
+  // 1. Calculate diurnal profile shape integral across the 365-day weighted cycle
+  // to guarantee that the annual weighted integral of horizontal irradiance
+  // strictly equals peakSunHours * 365 * 1000 Wh/m² (exact PSH energy conservation).
+  const safeStepDays = Math.max(1, Math.min(365, Math.round(Number(stepDays) || 3)));
+  let diurnalShapeIntegral = 0;
+  for (let day = 1; day <= 365; day += safeStepDays) {
+    const weight = Math.min(safeStepDays, 365 - day + 1);
+    for (let hour = 0; hour < 24; hour++) {
       const sun = calculateSunPathPosition(lat, day, hour);
-      if (!sun.isDaylight || sun.altitudeDeg < 3.0) continue;
+      if (!sun.isDaylight || sun.altitudeDeg < 1.0) continue;
+      const altRad = (sun.altitudeDeg * Math.PI) / 180.0;
+      diurnalShapeIntegral += weight * Math.pow(Math.sin(altRad), 1.15);
+    }
+  }
+
+  const targetAnnualHorizontalIrradiationWhM2 = peakSunHours * 365.0 * 1000.0;
+  let simulatedHorizontalIrradiationWhM2 = 0;
+
+  // Annual loop: 365 days partitioned by safe stepDays (sum of weights strictly = 365 days)
+  for (let day = 1; day <= 365; day += safeStepDays) {
+    const weight = Math.min(safeStepDays, 365 - day + 1);
+
+    for (let hour = 0; hour < 24; hour++) {
+      const sun = calculateSunPathPosition(lat, day, hour);
+      if (!sun.isDaylight || sun.altitudeDeg < 1.0) continue;
 
       rawRayCastingStepsCount++;
       totalEvaluatedDaylightHours += weight;
@@ -734,9 +800,12 @@ export function simulateAnnual3dShading(
         z: sinAlt,
       };
 
-      // Clear-sky beam / diffuse irradiance model calibrated to site peakSunHours
-      const pshRatio = Math.max(0.2, peakSunHours / 5.2);
-      const ghiProxyWh = Math.max(0, 950.0 * Math.pow(sinAlt, 1.15) * pshRatio);
+      // Rigorous PSH normalization: weighted integral of horizontal irradiance strictly equals target PSH * 365 * 1000 Wh/m²
+      const ghiProxyWh =
+        diurnalShapeIntegral > 0
+          ? (targetAnnualHorizontalIrradiationWhM2 * Math.pow(sinAlt, 1.15)) / diurnalShapeIntegral
+          : 0;
+      simulatedHorizontalIrradiationWhM2 += weight * ghiProxyWh;
       const dhiProxyWh = 0.18 * ghiProxyWh;
       const dniProxyWh = sinAlt > 0.05 ? Math.max(0, (ghiProxyWh - dhiProxyWh) / sinAlt) : 0;
       const albedo = options?.albedo ?? 0.20;
@@ -758,9 +827,12 @@ export function simulateAnnual3dShading(
         const poaBeamWh = dniProxyWh * cosAoi;
         const poaDiffWh = dhiProxyWh * ((1.0 + Math.cos(tTiltRad)) / 2.0);
         const poaGndWh = ghiProxyWh * albedo * ((1.0 - Math.cos(tTiltRad)) / 2.0);
-        const poaTotalWh = poaBeamWh + poaDiffWh + poaGndWh;
 
-        const stepUnshadedKwh = (poaTotalWh * (table.ratedPowerWp / 1000.0) * weight) / 1000.0;
+        const scale = ((table.ratedPowerWp / 1000.0) * weight) / 1000.0;
+        const stepBeamUnshadedKwh = poaBeamWh * scale;
+        const stepDiffUnshadedKwh = poaDiffWh * scale;
+        const stepGndUnshadedKwh = poaGndWh * scale;
+        const stepUnshadedKwh = stepBeamUnshadedKwh + stepDiffUnshadedKwh + stepGndUnshadedKwh;
         stats.unshadedKwh += stepUnshadedKwh;
 
         // Gather all obstacle facets PLUS inter-row table facets (excluding self)
@@ -778,16 +850,19 @@ export function simulateAnnual3dShading(
           stats.diodeHours += weight;
         }
 
-        // Direct geometric beam loss (kWh) from occluded cell area
-        const stepDirectBeamKwh = stepUnshadedKwh * meshRes.directBeamLossFraction;
-        // Additional substring mismatch loss (kWh) from bypassed diodes clipping active current
-        const stepDiodeMismatchKwh = stepUnshadedKwh * meshRes.diodeMismatchLossFraction;
+        // Direct geometric beam loss (kWh) from line-of-sight occlusion strictly affects direct beam
+        const stepDirectBeamKwh = stepBeamUnshadedKwh * meshRes.directBeamLossFraction;
+
+        // Substring diode mismatch loss occurs on substrings with active cell occlusion
+        const remainingTableKwh = Math.max(0, stepUnshadedKwh - stepDirectBeamKwh);
+        const stepDiodeMismatchKwh = remainingTableKwh * meshRes.diodeMismatchLossFraction;
+
+        const stepTotalLostKwh = Math.min(stepUnshadedKwh, stepDirectBeamKwh + stepDiodeMismatchKwh);
+        const stepShadedKwh = Math.max(0, stepUnshadedKwh - stepTotalLostKwh);
 
         stats.directBeamLossKwh += stepDirectBeamKwh;
         stats.diodeMismatchLossKwh += stepDiodeMismatchKwh;
-
-        // Shaded generation directly subtracts both geometric beam occlusion and electrical mismatch
-        stats.shadedKwh += stepUnshadedKwh - (stepDirectBeamKwh + stepDiodeMismatchKwh);
+        stats.shadedKwh += stepShadedKwh;
       }
     }
   }
@@ -825,7 +900,6 @@ export function simulateAnnual3dShading(
   const totalLost = Math.max(0, totalUnshaded - totalShaded);
   const totalHeatmapLoss = tableHeatmap.reduce((s, c) => s + c.annualLossKwh, 0);
   const reconciliationDeltaKwh = Math.abs(totalHeatmapLoss - totalLost);
-  const isReconciled = totalUnshaded > 0 && reconciliationDeltaKwh <= 1.0;
 
   const aggregateShadingLossPct = totalUnshaded > 0 ? Number(((totalLost / totalUnshaded) * 100.0).toFixed(2)) : 0.0;
   const annualGeometricBeamLossPct =
@@ -833,8 +907,50 @@ export function simulateAnnual3dShading(
   const annualElectricalMismatchLossPct =
     totalUnshaded > 0 ? Number(((totalDiodeMismatchLossKwh / totalUnshaded) * 100.0).toFixed(2)) : 0.0;
 
-  // Reconcile into the canonical waterfall loss tree
-  const totalPlantKwp = scene.pvTables.reduce((s, t) => s + t.ratedPowerWp / 1000.0, 0) || 100.0;
+  const isArithmeticBalanceOk = Math.abs(totalUnshaded - (totalShaded + totalLost)) <= 1.0;
+  const isHeatmapAggregationConsistent =
+    (totalUnshaded > 0 && reconciliationDeltaKwh <= 1.0) || (totalUnshaded === 0 && totalLost === 0);
+  const isComponentEnergyConsistent =
+    Math.abs(annualGeometricBeamLossPct + annualElectricalMismatchLossPct - aggregateShadingLossPct) <= 0.05 ||
+    Math.abs(totalDirectBeamLossKwh + totalDiodeMismatchLossKwh - totalLost) <= Math.max(5.0, totalUnshaded * 0.001) ||
+    totalUnshaded === 0;
+  const isProjectSnapshotConsistent = scene.pvTables.length > 0 ? scene.pvTables.every(t => t.moduleCount > 0) : true;
+
+  const isReconciled = isArithmeticBalanceOk && isHeatmapAggregationConsistent;
+
+  const reconciliationStatus: ShadingReconciliationStatus = {
+    isArithmeticBalanceOk,
+    isHeatmapAggregationConsistent,
+    isComponentEnergyConsistent,
+    isProjectSnapshotConsistent,
+    overallReconciled: isReconciled,
+    reconciliationNotes:
+      'Arithmetic balance verified across generation, unshaded baseline, and lost kWh. Diffuse and ground view factors are modeled under unobstructed hemispherical screening assumptions.',
+  };
+
+  const targetAnnualHorizontalIrradiationKwhM2 = Number((targetAnnualHorizontalIrradiationWhM2 / 1000.0).toFixed(2));
+  const simulatedAnnualHorizontalIrradiationKwhM2 = Number((simulatedHorizontalIrradiationWhM2 / 1000.0).toFixed(2));
+  const pshIntegralConservationErrorPct =
+    targetAnnualHorizontalIrradiationKwhM2 > 0
+      ? Number(
+          (
+            (Math.abs(simulatedAnnualHorizontalIrradiationKwhM2 - targetAnnualHorizontalIrradiationKwhM2) /
+              targetAnnualHorizontalIrradiationKwhM2) *
+            100.0
+          ).toFixed(4)
+        )
+      : 0.0;
+  const isEnergyConservationPreserved = isArithmeticBalanceOk;
+
+  // Reconcile into the canonical waterfall loss tree (0 kWp yields 0 MWh instead of fake 100 kWp plant)
+  const totalPlantKwp =
+    scene.totalPvCapacityKwp !== undefined
+      ? scene.totalPvCapacityKwp
+      : scene.pvTables.reduce((s, t) => s + t.ratedPowerWp / 1000.0, 0);
+
+  // Array tilt (not flat roof pitch) is passed to waterfall POA transposition
+  const resolvedArrayTiltDeg = scene.tiltDeg ?? scene.pvTables[0]?.tiltDeg ?? 25.0;
+
   const waterfallReport = computeWaterfallLosses(
     ...buildWaterfallArgs({
       installedCapacityKwp: totalPlantKwp,
@@ -847,7 +963,7 @@ export function simulateAnnual3dShading(
       iamLossPct: -2.2,
       noctC: 45.0,
       tempCoeffPmpPct: -0.30,
-      fixedTiltDeg: scene.roofPlanes[0]?.tiltDeg ?? 25.0,
+      fixedTiltDeg: resolvedArrayTiltDeg,
       latitudeDeg: lat,
       shadingLossOverridePct: aggregateShadingLossPct,
     })
@@ -867,7 +983,20 @@ export function simulateAnnual3dShading(
     reconciliationDeltaKwh,
     tableHeatmap,
     isReconciled,
+    reconciliationStatus,
     waterfallLossReport: waterfallReport,
+    methodologyDescription:
+      'Annual clear-sky optical ray-tracing screening proxy (isotropic diffuse and albedo transposition with multi-point substring mesh line-of-sight occlusion)',
+    weatherDataSource:
+      'Estimated clear-sky proxy calibrated to site annual peak sun hours (PSH); not an empirical 8760-hour measured satellite TMY dataset',
+    diffuseTranspositionAssumption:
+      'Sky diffuse and ground-reflected radiation assume unobstructed hemispherical view factor; geometric ray-tracing evaluates direct beam line-of-sight occlusion',
+    targetAnnualHorizontalIrradiationKwhM2,
+    simulatedAnnualHorizontalIrradiationKwhM2,
+    pshIntegralConservationErrorPct,
+    isEnergyConservationPreserved,
+    energyBalanceNote:
+      'Energy accounting balance (E_unshaded = E_shaded + E_lost) verifies algorithmic arithmetic conservation only. It does not validate empirical transposition accuracy, circumsolar diffuse anisotropy, or non-linear multi-string mismatch behavior.',
     screeningNoticeFa:
       'شاخص‌های سایه‌اندازی هندسی بر پایه تقریب تابش افقی آسمان صاف و شبکه چندنقطه‌ای ساب‌استرینگ محاسبه شده‌اند. این مقادیر شاخص غربالگری سایه هستند و مدل کامل جابجایی پرز، تلفات دمایی و برش اینورتر را در بر نمی‌گیرند.',
     screeningNoticeEn:
@@ -914,7 +1043,7 @@ export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {
     {
       id: 'tbl-1',
       tableIndex: 1,
-      positionEnu: { x: -8, y: -1, z: 8.0 },
+      positionEnu: { x: -8, y: -1, z: 8.95 },
       widthM: 12.0,
       slopedLengthM: 4.6,
       tiltDeg: 15,
@@ -925,7 +1054,7 @@ export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {
     {
       id: 'tbl-2',
       tableIndex: 2,
-      positionEnu: { x: 8, y: -1, z: 8.0 },
+      positionEnu: { x: 8, y: -1, z: 8.95 },
       widthM: 12.0,
       slopedLengthM: 4.6,
       tiltDeg: 15,
@@ -936,7 +1065,7 @@ export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {
     {
       id: 'tbl-3',
       tableIndex: 3,
-      positionEnu: { x: -8, y: 8, z: 8.0 },
+      positionEnu: { x: -8, y: 8, z: 8.95 },
       widthM: 12.0,
       slopedLengthM: 4.6,
       tiltDeg: 15,
@@ -947,7 +1076,7 @@ export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {
     {
       id: 'tbl-4',
       tableIndex: 4,
-      positionEnu: { x: 8, y: 8, z: 8.0 },
+      positionEnu: { x: 8, y: 8, z: 8.95 },
       widthM: 12.0,
       slopedLengthM: 4.6,
       tiltDeg: 15,
@@ -971,8 +1100,8 @@ export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {
 export interface ProjectArrayDesignInputs {
   totalPvCapacityKwp: number;
   totalModulesCount: number;
-  interRowSpacingM: number;
-  tiltDeg: number;
+  interRowSpacingM?: number;
+  tiltDeg?: number;
   azimuthDeg?: number;
   moduleWidthM?: number;
   moduleLengthM?: number;
@@ -984,6 +1113,7 @@ export interface ProjectArrayDesignInputs {
   obstacles?: Obstacle3D[];
   isDemoMode?: boolean;
   includeDefaultObstacles?: boolean;
+  isObstacleFreeVerified?: boolean;
 }
 
 /**
@@ -1003,7 +1133,8 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
   const isRooftop =
     !env || env.includes('rooftop') || env.includes('shed') || env.includes('concrete');
   const eavesHeightM = isRooftop ? 8.0 : 0.0;
-  const tableBaseZM = isRooftop ? eavesHeightM : 0.8;
+  const clearanceM = isRooftop ? 0.35 : 0.8;
+  const tiltRad = (tiltDeg * Math.PI) / 180.0;
 
   // Zero-capacity or zero-panel guard: generate empty scene without fabricating panels
   if (inputs.totalModulesCount === 0 || inputs.totalPvCapacityKwp === 0) {
@@ -1066,37 +1197,13 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
   const baseWatts = Math.floor(totalWatts / numRows);
   const remWatts = totalWatts % numRows;
 
-  // Generate PV tables spaced along Y (North-South in ENU)
-  const pvTables: PvTable3D[] = [];
-  const yStart = -((numRows - 1) * pitchM) / 2;
-
-  for (let r = 0; r < numRows; r++) {
-    const yPos = Number((yStart + r * pitchM).toFixed(2));
-    const tableModules = baseModules + (r < remModules ? 1 : 0);
-    const tableWatts = baseWatts + (r < remWatts ? 1 : 0);
-    const tableCols = Math.max(1, Math.ceil(tableModules / 2));
-    const tableWidthM = Number((tableCols * modWidth).toFixed(2));
-    const tableSlopedLengthM = tableModules === 1 ? modLength : Number((2 * modLength).toFixed(2));
-
-    pvTables.push({
-      id: `tbl-proj-${r + 1}`,
-      tableIndex: r + 1,
-      positionEnu: { x: 0, y: yPos, z: tableBaseZM },
-      widthM: tableWidthM,
-      slopedLengthM: tableSlopedLengthM,
-      tiltDeg,
-      azimuthDeg,
-      moduleCount: tableModules,
-      ratedPowerWp: tableWatts,
-    });
-  }
-
-  const maxTableWidthM = pvTables.length > 0 ? Math.max(...pvTables.map(t => t.widthM)) : 10;
-
   // Construct roof plane (or site footprint boundary) with setbacks
+  const maxTableCols = Math.max(1, Math.ceil(baseModules / 2));
+  const estimatedMaxTableWidthM = Number((maxTableCols * modWidth).toFixed(2));
   const setbackM = 1.5;
-  const halfRoofWidth = Math.max(12, maxTableWidthM / 2 + setbackM + 2.0);
+  const halfRoofWidth = Math.max(12, estimatedMaxTableWidthM / 2 + setbackM + 2.0);
   const halfRoofLength = Math.max(12, (numRows * pitchM) / 2 + setbackM + 2.0);
+  const roofTiltDeg = isRooftop ? Math.min(5, tiltDeg) : 0;
 
   const roofPlanes: RoofPlane[] = [
     {
@@ -1109,26 +1216,88 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
         { x: halfRoofWidth, y: halfRoofLength },
         { x: -halfRoofWidth, y: halfRoofLength },
       ],
-      tiltDeg: isRooftop ? Math.min(5, tiltDeg) : 0,
+      tiltDeg: roofTiltDeg,
       azimuthDeg: 0,
       eavesHeightM,
       setbackClearanceM: setbackM,
     },
   ];
 
-  // Obstacle modeling: use custom obstacles if provided, or only inject defaults if requested/demo
+  // Generate PV tables spaced along Y (North-South in ENU)
+  const pvTables: PvTable3D[] = [];
+  const yStart = -((numRows - 1) * pitchM) / 2;
+
+  for (let r = 0; r < numRows; r++) {
+    const yPos = Number((yStart + r * pitchM).toFixed(2));
+    const tableModules = baseModules + (r < remModules ? 1 : 0);
+    const tableWatts = baseWatts + (r < remWatts ? 1 : 0);
+    const tableCols = Math.max(1, Math.ceil(tableModules / 2));
+    const tableWidthM = Number((tableCols * modWidth).toFixed(2));
+    const tableSlopedLengthM = tableModules === 1 ? modLength : Number((2 * modLength).toFixed(2));
+
+    // Local roof surface elevation directly under table center
+    const localRoofAtCenter = isRooftop && roofTiltDeg > 0
+      ? getLocalRoofElevationAt(roofPlanes[0], 0, yPos)
+      : eavesHeightM;
+
+    // Initial center elevation Z ensuring lowest edge clears center elevation
+    let tableCenterZM = Number(
+      (localRoofAtCenter + clearanceM + (tableSlopedLengthM / 2.0) * Math.sin(tiltRad)).toFixed(3)
+    );
+
+    // Rigorous 4-corner local clearance evaluation against sloped/pitched roof surface (R11)
+    const tempTable: PvTable3D = {
+      id: `tbl-proj-${r + 1}`,
+      tableIndex: r + 1,
+      positionEnu: { x: 0, y: yPos, z: tableCenterZM },
+      widthM: tableWidthM,
+      slopedLengthM: tableSlopedLengthM,
+      tiltDeg,
+      azimuthDeg,
+      moduleCount: tableModules,
+      ratedPowerWp: tableWatts,
+    };
+
+    const clearanceCheck = checkTableRoofClearance(tempTable, roofPlanes[0]);
+    if (clearanceCheck.minClearanceM < clearanceM) {
+      const shortfall = Number((clearanceM - clearanceCheck.minClearanceM).toFixed(3));
+      tableCenterZM = Number((tableCenterZM + shortfall).toFixed(3));
+    }
+
+    pvTables.push({
+      id: `tbl-proj-${r + 1}`,
+      tableIndex: r + 1,
+      positionEnu: { x: 0, y: yPos, z: tableCenterZM },
+      widthM: tableWidthM,
+      slopedLengthM: tableSlopedLengthM,
+      tiltDeg,
+      azimuthDeg,
+      moduleCount: tableModules,
+      ratedPowerWp: tableWatts,
+    });
+  }
+
+  const maxTableWidthM = pvTables.length > 0 ? Math.max(...pvTables.map(t => t.widthM)) : estimatedMaxTableWidthM;
+
+  // Obstacle modeling & data status resolution:
+  // 1. Array of obstacles provided (> 0 items) -> 'surveyed'
+  // 2. Array of obstacles explicitly empty ([]) OR isObstacleFreeVerified === true -> 'verified_unobstructed'
+  // 3. Explicit demo mode (isDemoMode === true || includeDefaultObstacles === true) -> 'demo_sample'
+  // 4. Default for real project with inputs.obstacles undefined -> 'missing_unverified' (array clean, no fake obstacles)
   let obstacles: Obstacle3D[] = [];
-  if (inputs.obstacles !== undefined) {
+  let obstacleDataStatus: 'demo_sample' | 'surveyed' | 'verified_unobstructed' | 'missing_unverified' =
+    'missing_unverified';
+
+  if (Array.isArray(inputs.obstacles)) {
     obstacles = inputs.obstacles;
-  } else if (inputs.includeDefaultObstacles === false) {
+    obstacleDataStatus = obstacles.length > 0 ? 'surveyed' : 'verified_unobstructed';
+  } else if (inputs.isObstacleFreeVerified === true) {
     obstacles = [];
-  } else if (
-    inputs.isDemoMode ||
-    inputs.includeDefaultObstacles === true ||
-    inputs.installationEnvironment === 'rooftop_flat_concrete'
-  ) {
+    obstacleDataStatus = 'verified_unobstructed';
+  } else if (inputs.isDemoMode === true || inputs.includeDefaultObstacles === true) {
+    obstacleDataStatus = 'demo_sample';
     if (isRooftop) {
-      // Standard rooftop obstructions for demo/screening
+      // Standard rooftop obstructions for explicit demo/screening mode only
       obstacles = [
         {
           id: 'obs-proj-hvac',
@@ -1146,7 +1315,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
         },
       ];
     } else {
-      // Ground mount substation kiosk for demo/screening
+      // Ground mount substation kiosk for explicit demo/screening mode only
       obstacles = [
         {
           id: 'obs-proj-inverter-kiosk',
@@ -1160,6 +1329,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
   } else {
     // Real projects without specified obstacles have clean unobstructed arrays
     obstacles = [];
+    obstacleDataStatus = 'missing_unverified';
   }
 
   return {
@@ -1176,6 +1346,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
     tiltDeg,
     interRowSpacingM: pitchM,
     installationEnvironment: env,
+    obstacleDataStatus,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -1207,14 +1378,94 @@ export function convertObstaclesToTriangles(obstacles: Obstacle3D[]): Triangle[]
   return triangles;
 }
 
+export interface ActiveTableSubRect {
+  centerOffsetLat: number;   // lateral offset from table center
+  centerOffsetSlope: number; // sloped offset from table center
+  width: number;
+  slopedLength: number;
+  moduleSlotIndex: number;
+}
+
+/**
+ * Decomposes a PV table into active rectangular module zones.
+ * For odd module counts (e.g. 27 modules on a 14-col x 2-row table), the empty slot is
+ * excluded so neither receiving facets nor occluding triangles are generated for it.
+ */
+export function getActiveTableSubRects(table: PvTable3D): ActiveTableSubRect[] {
+  const modCount = table.moduleCount;
+  if (!modCount || modCount <= 0) return [];
+  if (modCount === 1) {
+    return [
+      {
+        centerOffsetLat: 0,
+        centerOffsetSlope: 0,
+        width: table.widthM,
+        slopedLength: table.slopedLengthM,
+        moduleSlotIndex: 0,
+      },
+    ];
+  }
+
+  const cols = Math.max(1, Math.ceil(modCount / 2));
+  const isOdd = modCount % 2 !== 0;
+
+  // Complete even module count: table forms a single continuous rectangular surface
+  if (!isOdd) {
+    return [
+      {
+        centerOffsetLat: 0,
+        centerOffsetSlope: 0,
+        width: table.widthM,
+        slopedLength: table.slopedLengthM,
+        moduleSlotIndex: 0,
+      },
+    ];
+  }
+
+  // Odd module count: partition into (cols - 1) full columns + 1 half-length odd column
+  const colWidth = table.widthM / cols;
+  const halfLen = table.slopedLengthM / 2;
+  const rects: ActiveTableSubRect[] = [];
+
+  if (cols > 1) {
+    const fullColsWidth = (cols - 1) * colWidth;
+    const fullColsCenterLat = -table.widthM / 2 + fullColsWidth / 2;
+    rects.push({
+      centerOffsetLat: fullColsCenterLat,
+      centerOffsetSlope: 0,
+      width: fullColsWidth,
+      slopedLength: table.slopedLengthM,
+      moduleSlotIndex: 0,
+    });
+  }
+
+  const oddColCenterLat = table.widthM / 2 - colWidth / 2;
+  rects.push({
+    centerOffsetLat: oddColCenterLat,
+    centerOffsetSlope: -halfLen / 2,
+    width: colWidth,
+    slopedLength: halfLen,
+    moduleSlotIndex: modCount - 1,
+  });
+
+  return rects;
+}
+
+/**
+ * Calculates active collector area (m²) strictly summing active module surfaces.
+ */
+export function calculateTableActiveCollectorAreaM2(table: PvTable3D): number {
+  const subRects = getActiveTableSubRects(table);
+  return subRects.reduce((sum, sr) => sum + sr.width * sr.slopedLength, 0);
+}
+
 /**
  * Builds planar bounding facet representation of a PV table surface in ENU coordinates.
+ * Excludes phantom module slots for odd module counts (R01, R10).
  */
 export function buildTableFacets(table: PvTable3D): PlanarFacet3D[] {
   const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
   const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
-  const halfLen = table.slopedLengthM / 2;
-  const halfWidth = table.widthM / 2;
 
   const latUx = Math.cos(tableAzRad);
   const latUy = -Math.sin(tableAzRad);
@@ -1227,81 +1478,70 @@ export function buildTableFacets(table: PvTable3D): PlanarFacet3D[] {
   const ny = -Math.cos(tableAzRad) * Math.sin(tiltRad);
   const nz = Math.cos(tiltRad);
 
-  const c0 = {
-    x: table.positionEnu.x - halfWidth * latUx - halfLen * slopeUx,
-    y: table.positionEnu.y - halfWidth * latUy - halfLen * slopeUy,
-    z: table.positionEnu.z - halfLen * slopeUz,
-  };
-  const c1 = {
-    x: table.positionEnu.x + halfWidth * latUx - halfLen * slopeUx,
-    y: table.positionEnu.y + halfWidth * latUy - halfLen * slopeUy,
-    z: table.positionEnu.z - halfLen * slopeUz,
-  };
-  const c2 = {
-    x: table.positionEnu.x + halfWidth * latUx + halfLen * slopeUx,
-    y: table.positionEnu.y + halfWidth * latUy + halfLen * slopeUy,
-    z: table.positionEnu.z + halfLen * slopeUz,
-  };
-  const c3 = {
-    x: table.positionEnu.x - halfWidth * latUx + halfLen * slopeUx,
-    y: table.positionEnu.y - halfWidth * latUy + halfLen * slopeUy,
-    z: table.positionEnu.z + halfLen * slopeUz,
-  };
+  const subRects = getActiveTableSubRects(table);
+  if (subRects.length === 0) return [];
 
-  const d = -(nx * c0.x + ny * c0.y + nz * c0.z);
+  const facets: PlanarFacet3D[] = [];
 
-  return [
-    {
-      name: `${table.id}-surface`,
+  for (let i = 0; i < subRects.length; i++) {
+    const sr = subRects[i];
+    const cx = table.positionEnu.x + sr.centerOffsetLat * latUx + sr.centerOffsetSlope * slopeUx;
+    const cy = table.positionEnu.y + sr.centerOffsetLat * latUy + sr.centerOffsetSlope * slopeUy;
+    const cz = table.positionEnu.z + sr.centerOffsetSlope * slopeUz;
+
+    const hw = sr.width / 2;
+    const hl = sr.slopedLength / 2;
+
+    const c0 = {
+      x: cx - hw * latUx - hl * slopeUx,
+      y: cy - hw * latUy - hl * slopeUy,
+      z: cz - hl * slopeUz,
+    };
+    const c1 = {
+      x: cx + hw * latUx - hl * slopeUx,
+      y: cy + hw * latUy - hl * slopeUy,
+      z: cz - hl * slopeUz,
+    };
+    const c2 = {
+      x: cx + hw * latUx + hl * slopeUx,
+      y: cy + hw * latUy + hl * slopeUy,
+      z: cz + hl * slopeUz,
+    };
+    const c3 = {
+      x: cx - hw * latUx + hl * slopeUx,
+      y: cy - hw * latUy + hl * slopeUy,
+      z: cz + hl * slopeUz,
+    };
+
+    const d = -(nx * c0.x + ny * c0.y + nz * c0.z);
+
+    facets.push({
+      name: `${table.id}-surface-${i}`,
       normal: { x: nx, y: ny, z: nz },
       d,
       vertices: [c0, c1, c2, c3],
-    },
-  ];
+    });
+  }
+
+  return facets;
 }
 
 /**
  * Converts PV table surfaces into 3D Triangles to support inter-row self-shading ray tracing.
+ * Accurately excludes empty slots for odd module counts.
  */
 export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
   const triangles: Triangle[] = [];
 
   for (const table of tables) {
-    const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
-    const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
-    const halfLen = table.slopedLengthM / 2;
-    const halfWidth = table.widthM / 2;
-
-    const latUx = Math.cos(tableAzRad);
-    const latUy = -Math.sin(tableAzRad);
-
-    const slopeUx = Math.sin(tableAzRad) * Math.cos(tiltRad);
-    const slopeUy = Math.cos(tableAzRad) * Math.cos(tiltRad);
-    const slopeUz = Math.sin(tiltRad);
-
-    const c0: Vec3 = {
-      x: table.positionEnu.x - halfWidth * latUx - halfLen * slopeUx,
-      y: table.positionEnu.y - halfWidth * latUy - halfLen * slopeUy,
-      z: table.positionEnu.z - halfLen * slopeUz,
-    };
-    const c1: Vec3 = {
-      x: table.positionEnu.x + halfWidth * latUx - halfLen * slopeUx,
-      y: table.positionEnu.y + halfWidth * latUy - halfLen * slopeUy,
-      z: table.positionEnu.z - halfLen * slopeUz,
-    };
-    const c2: Vec3 = {
-      x: table.positionEnu.x + halfWidth * latUx + halfLen * slopeUx,
-      y: table.positionEnu.y + halfWidth * latUy + halfLen * slopeUy,
-      z: table.positionEnu.z + halfLen * slopeUz,
-    };
-    const c3: Vec3 = {
-      x: table.positionEnu.x - halfWidth * latUx + halfLen * slopeUx,
-      y: table.positionEnu.y - halfWidth * latUy + halfLen * slopeUy,
-      z: table.positionEnu.z + halfLen * slopeUz,
-    };
-
-    triangles.push({ v0: c0, v1: c1, v2: c2 });
-    triangles.push({ v0: c0, v1: c2, v2: c3 });
+    const facets = buildTableFacets(table);
+    for (const facet of facets) {
+      const v = facet.vertices;
+      if (v.length >= 4) {
+        triangles.push({ v0: v[0], v1: v[1], v2: v[2] });
+        triangles.push({ v0: v[0], v1: v[2], v2: v[3] });
+      }
+    }
   }
 
   return triangles;
@@ -1309,6 +1549,7 @@ export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
 
 /**
  * Generates sample target vertices across a PV table surface for ray-intersection evaluation.
+ * Points are placed exclusively inside active module zones.
  */
 export function generateTableMeshSamplePoints(
   table: PvTable3D,
@@ -1317,8 +1558,6 @@ export function generateTableMeshSamplePoints(
 ): Vec3[] {
   const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
   const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
-  const halfLen = table.slopedLengthM / 2;
-  const halfWidth = table.widthM / 2;
 
   const latUx = Math.cos(tableAzRad);
   const latUy = -Math.sin(tableAzRad);
@@ -1331,31 +1570,152 @@ export function generateTableMeshSamplePoints(
   const normY = -Math.cos(tableAzRad) * Math.sin(tiltRad);
   const normZ = Math.cos(tiltRad);
 
-  const lateralFractions: number[] = [];
-  for (let c = 0; c < lateralCount; c++) {
-    lateralFractions.push(-0.75 + (c / Math.max(1, lateralCount - 1)) * 1.5);
-  }
-
-  const slopedFractions: number[] = [];
-  for (let r = 0; r < slopedCount; r++) {
-    slopedFractions.push(-0.6 + (r / Math.max(1, slopedCount - 1)) * 1.2);
-  }
-
+  const subRects = getActiveTableSubRects(table);
   const points: Vec3[] = [];
   const normalOffset = 0.05; // 5 cm above panel surface along normal vector to guard against numerical coplanar self-intersection
-  for (const sFrac of slopedFractions) {
-    const sOffset = sFrac * halfLen;
-    for (const lFrac of lateralFractions) {
-      const lOffset = lFrac * halfWidth;
-      points.push({
-        x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx + normalOffset * normX,
-        y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy + normalOffset * normY,
-        z: table.positionEnu.z + sOffset * slopeUz + normalOffset * normZ,
-      });
+
+  for (const sr of subRects) {
+    const cx = table.positionEnu.x + sr.centerOffsetLat * latUx + sr.centerOffsetSlope * slopeUx;
+    const cy = table.positionEnu.y + sr.centerOffsetLat * latUy + sr.centerOffsetSlope * slopeUy;
+    const cz = table.positionEnu.z + sr.centerOffsetSlope * slopeUz;
+
+    const hw = sr.width / 2;
+    const hl = sr.slopedLength / 2;
+
+    const lCols = Math.max(1, lateralCount);
+    const sRows = Math.max(1, slopedCount);
+
+    for (let r = 0; r < sRows; r++) {
+      const sFrac = sRows === 1 ? 0 : -0.5 + (r / (sRows - 1)) * 1.0;
+      const sOffset = sFrac * hl;
+      for (let c = 0; c < lCols; c++) {
+        const lFrac = lCols === 1 ? 0 : -0.5 + (c / (lCols - 1)) * 1.0;
+        const lOffset = lFrac * hw;
+        points.push({
+          x: cx + lOffset * latUx + sOffset * slopeUx + normalOffset * normX,
+          y: cy + lOffset * latUy + sOffset * slopeUy + normalOffset * normY,
+          z: cz + sOffset * slopeUz + normalOffset * normZ,
+        });
+      }
     }
   }
 
   return points;
+}
+
+/**
+ * Computes local roof surface elevation Z at coordinates (x, y) ENU.
+ * For flat roofs, this returns eavesHeightM.
+ * For pitched roofs, this evaluates the planar elevation based on roof pitch and slope azimuth.
+ */
+export function getLocalRoofElevationAt(roofPlane: RoofPlane, x: number, y: number): number {
+  const baseZ = roofPlane.eavesHeightM;
+  if (!roofPlane.tiltDeg || roofPlane.tiltDeg === 0) {
+    return baseZ;
+  }
+
+  const pitchRad = (roofPlane.tiltDeg * Math.PI) / 180.0;
+  const azRad = ((roofPlane.azimuthDeg || 0) * Math.PI) / 180.0;
+
+  // Unit vector in direction of ascending roof slope:
+  // Azimuth 0 = slopes Up toward North, 180 = slopes Up toward South, etc.
+  const riseDirX = -Math.sin(azRad);
+  const riseDirY = -Math.cos(azRad);
+
+  let refRise = 0;
+  if (roofPlane.polygonEnu && roofPlane.polygonEnu.length > 0) {
+    const rises = roofPlane.polygonEnu.map(p => p.x * riseDirX + p.y * riseDirY);
+    refRise = Math.min(...rises);
+  }
+
+  const currentRise = x * riseDirX + y * riseDirY;
+  const distAlongSlope = Math.max(0, currentRise - refRise);
+  const deltaZ = distAlongSlope * Math.tan(pitchRad);
+
+  if (roofPlane.ridgeHeightM !== undefined && roofPlane.ridgeHeightM > baseZ) {
+    return Math.min(roofPlane.ridgeHeightM, baseZ + deltaZ);
+  }
+
+  return baseZ + deltaZ;
+}
+
+/**
+ * Checks all 3D corners of all active PV tables against the local roof surface underneath them.
+ * Returns the minimum physical clearance across all corners and tables.
+ */
+export function checkTableRoofClearance(
+  table: PvTable3D,
+  roofPlane: RoofPlane
+): {
+  minClearanceM: number;
+  cornerClearances: { corner: string; clearanceM: number; tableZ: number; roofZ: number }[];
+  isNonPenetrating: boolean;
+} {
+  const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
+  const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
+  const halfLen = table.slopedLengthM / 2;
+  const halfWidth = table.widthM / 2;
+
+  const latUx = Math.cos(tableAzRad);
+  const latUy = -Math.sin(tableAzRad);
+
+  const slopeUx = Math.sin(tableAzRad) * Math.cos(tiltRad);
+  const slopeUy = Math.cos(tableAzRad) * Math.cos(tiltRad);
+  const slopeUz = Math.sin(tiltRad);
+
+  const corners: { name: string; pos: Vec3 }[] = [
+    {
+      name: 'South-West (Lower-Left)',
+      pos: {
+        x: table.positionEnu.x - halfWidth * latUx - halfLen * slopeUx,
+        y: table.positionEnu.y - halfWidth * latUy - halfLen * slopeUy,
+        z: table.positionEnu.z - halfLen * slopeUz,
+      },
+    },
+    {
+      name: 'South-East (Lower-Right)',
+      pos: {
+        x: table.positionEnu.x + halfWidth * latUx - halfLen * slopeUx,
+        y: table.positionEnu.y + halfWidth * latUy - halfLen * slopeUy,
+        z: table.positionEnu.z - halfLen * slopeUz,
+      },
+    },
+    {
+      name: 'North-East (Upper-Right)',
+      pos: {
+        x: table.positionEnu.x + halfWidth * latUx + halfLen * slopeUx,
+        y: table.positionEnu.y + halfWidth * latUy + halfLen * slopeUy,
+        z: table.positionEnu.z + halfLen * slopeUz,
+      },
+    },
+    {
+      name: 'North-West (Upper-Left)',
+      pos: {
+        x: table.positionEnu.x - halfWidth * latUx + halfLen * slopeUx,
+        y: table.positionEnu.y - halfWidth * latUy + halfLen * slopeUy,
+        z: table.positionEnu.z + halfLen * slopeUz,
+      },
+    },
+  ];
+
+  const cornerClearances = corners.map(c => {
+    const roofZ = getLocalRoofElevationAt(roofPlane, c.pos.x, c.pos.y);
+    const clearanceM = Number((c.pos.z - roofZ).toFixed(3));
+    return {
+      corner: c.name,
+      clearanceM,
+      tableZ: Number(c.pos.z.toFixed(3)),
+      roofZ: Number(roofZ.toFixed(3)),
+    };
+  });
+
+  const minClearanceM = Math.min(...cornerClearances.map(c => c.clearanceM));
+
+  return {
+    minClearanceM,
+    cornerClearances,
+    isNonPenetrating: minClearanceM > 0,
+  };
 }
 
 /**

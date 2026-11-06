@@ -18,6 +18,10 @@ export class CircuitBreaker {
   private lastStateChangeTimestamp: number = Date.now();
   private totalRequests: number = 0;
   private totalFailures: number = 0;
+  private transportFailures: number = 0;
+  private parseFailures: number = 0;
+  private fallbackServed: number = 0;
+  private successfulFetches: number = 0;
 
   constructor(private readonly config: CircuitBreakerConfig = {
     failureThreshold: 3,
@@ -37,26 +41,37 @@ export class CircuitBreaker {
 
   public async execute<T>(
     action: () => Promise<T>,
-    fallback: (err?: Error) => Promise<T> | T
+    fallback?: (err: Error) => Promise<T> | T
   ): Promise<T> {
     this.totalRequests++;
     const currentState = this.getState();
 
     if (currentState === 'OPEN') {
-      return fallback(new Error('Circuit breaker is OPEN. Falling back to analytical model.'));
+      const openErr = new Error('Circuit breaker is OPEN. Fast failover to fallback.');
+      if (fallback) {
+        this.fallbackServed++;
+        return await fallback(openErr);
+      }
+      throw openErr;
     }
 
     try {
       const result = await action();
       this.recordSuccess();
       return result;
-    } catch (err: any) {
-      this.recordFailure();
-      return fallback(err instanceof Error ? err : new Error(String(err)));
+    } catch (err: unknown) {
+      const errorObj = err instanceof Error ? err : new Error(String(err));
+      this.recordFailure(errorObj);
+      if (fallback) {
+        this.fallbackServed++;
+        return await fallback(errorObj);
+      }
+      throw errorObj;
     }
   }
 
   public recordSuccess(): void {
+    this.successfulFetches++;
     if (this.state === 'HALF_OPEN') {
       this.successCountInHalfOpen++;
       if (this.successCountInHalfOpen >= this.config.halfOpenMaxTrials) {
@@ -67,9 +82,21 @@ export class CircuitBreaker {
     }
   }
 
-  public recordFailure(): void {
+  public recordFailure(err?: Error): void {
     this.totalFailures++;
     this.failureCount++;
+    if (
+      err &&
+      (err.message.includes('missing') ||
+        err.message.includes('invalid') ||
+        err.message.includes('JSON') ||
+        err.message.includes('parse'))
+    ) {
+      this.parseFailures++;
+    } else {
+      this.transportFailures++;
+    }
+
     if (this.state === 'HALF_OPEN' || this.failureCount >= this.config.failureThreshold) {
       this.transitionTo('OPEN');
     }
@@ -96,7 +123,15 @@ export class CircuitBreaker {
       failureCount: this.failureCount,
       totalRequests: this.totalRequests,
       totalFailures: this.totalFailures,
+      transportFailures: this.transportFailures,
+      parseFailures: this.parseFailures,
+      fallbackServed: this.fallbackServed,
+      successfulFetches: this.successfulFetches,
       lastChange: this.lastStateChangeTimestamp,
     };
+  }
+
+  public getMetrics() {
+    return this.getStats();
   }
 }

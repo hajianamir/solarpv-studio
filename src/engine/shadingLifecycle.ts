@@ -1,3 +1,5 @@
+import type { Scene3DState } from './roof3dShadingEngine';
+
 // Lifecycle state and pure reducer for 3D representative block shading input
 //
 // DISCLAIMER / METHODOLOGY LIMITATION:
@@ -6,12 +8,20 @@
 // is an indicative engineering screening proxy. Full utility/C&I plant shading requires exhaustive
 // multi-row terrain or full-layout CAD ray tracing.
 
+export interface ShadingAnalysisMetadata {
+  inputSignature: string;
+  engineVersion: string;
+  calculatedAt: string;
+  status: 'valid' | 'stale' | 'failed';
+}
+
 export interface AppliedShading3dRecord {
   lossPct: number;
   source: 'representative_demo_block' | 'project_array_design';
   appliedAtIso: string;
   capacityKwp: number;
   signatureHash?: string;
+  metadata?: ShadingAnalysisMetadata;
 }
 
 export interface ShadingLifecycleState {
@@ -20,23 +30,105 @@ export interface ShadingLifecycleState {
   appliedCapacityKwp?: number;
   appliedSignatureHash?: string;
   isStale?: boolean;
+  staleReason?: string;
 }
 
-export function computeShadingSceneSignature(params: {
-  capacityKwp: number;
+/** Pure deterministic 64-bit FNV-1a hex hasher */
+function fnv1a64Hex(str: string): string {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x84222325;
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    h1 ^= code;
+    h1 = Math.imul(h1, 0x01000193);
+    h2 ^= code;
+    h2 = Math.imul(h2, 0x5bd1e995);
+  }
+  return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
+}
+
+export interface ShadingSignatureParams {
+  capacityKwp?: number;
   tiltDeg?: number;
   azimuthDeg?: number;
   pitchM?: number;
   cityId?: string;
+  peakSunHours?: number;
   obstaclesCount?: number;
-}): string {
+  scene?: Scene3DState;
+  engineVersion?: string;
+}
+
+/**
+ * Computes a canonical, deterministic signature hash of the 3D scene geometry,
+ * layout topology, and site parameters.
+ */
+export function computeShadingSceneSignature(params: ShadingSignatureParams): string {
+  const engineVersion = params.engineVersion ?? '3.1.0-remediated';
+
+  if (params.scene) {
+    const s = params.scene;
+    const roof = (s.roofPlanes || []).map((r) => ({
+      id: r.id,
+      eaves: r.eavesHeightM,
+      tilt: r.tiltDeg,
+      az: r.azimuthDeg,
+      poly: r.polygonEnu,
+    }));
+    const tables = (s.pvTables || [])
+      .map((t) => ({
+        id: t.id,
+        x: Number((t.positionEnu.x || 0).toFixed(2)),
+        y: Number((t.positionEnu.y || 0).toFixed(2)),
+        z: Number((t.positionEnu.z || 0).toFixed(2)),
+        w: Number((t.widthM || 0).toFixed(2)),
+        l: Number((t.slopedLengthM || 0).toFixed(2)),
+        tilt: Number((t.tiltDeg || 0).toFixed(1)),
+        az: Number((t.azimuthDeg || 0).toFixed(1)),
+        mod: t.moduleCount,
+        wp: t.ratedPowerWp,
+      }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    const obstacles = (s.obstacles || [])
+      .map((o) => ({
+        id: o.id,
+        type: o.geometryType,
+        x: Number((o.positionEnu.x || 0).toFixed(2)),
+        y: Number((o.positionEnu.y || 0).toFixed(2)),
+        z: Number((o.positionEnu.z || 0).toFixed(2)),
+        w: o.dimensionsM?.widthM ? Number(o.dimensionsM.widthM.toFixed(2)) : null,
+        l: o.dimensionsM?.lengthM ? Number(o.dimensionsM.lengthM.toFixed(2)) : null,
+        h: o.dimensionsM?.heightM ? Number(o.dimensionsM.heightM.toFixed(2)) : null,
+        r: o.dimensionsM?.radiusM ? Number(o.dimensionsM.radiusM.toFixed(2)) : null,
+        rot: o.rotationDeg ? Number(o.rotationDeg.toFixed(1)) : 0,
+      }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    const canonicalObj = {
+      engineVersion,
+      cityId: params.cityId || 'default',
+      psh: params.peakSunHours ? Number(params.peakSunHours.toFixed(2)) : null,
+      cap: Number(((s.totalPvCapacityKwp ?? params.capacityKwp) || 0).toFixed(2)),
+      tilt: Number(((s.tiltDeg ?? params.tiltDeg) || 0).toFixed(1)),
+      pitch: Number(((s.interRowSpacingM ?? params.pitchM) || 0).toFixed(2)),
+      env: s.installationEnvironment || 'rooftop',
+      roof,
+      tables,
+      obstacles,
+    };
+
+    return fnv1a64Hex(JSON.stringify(canonicalObj));
+  }
+
+  // Legacy fallback if full scene object is not provided
   const cap = (params.capacityKwp || 0).toFixed(1);
   const tilt = (params.tiltDeg ?? 25).toFixed(1);
   const az = (params.azimuthDeg ?? 0).toFixed(1);
   const pitch = (params.pitchM ?? 5.0).toFixed(1);
   const city = params.cityId || 'default';
   const obs = params.obstaclesCount ?? 0;
-  return `cap:${cap}|tilt:${tilt}|az:${az}|pitch:${pitch}|city:${city}|obs:${obs}`;
+  return `cap:${cap}|tilt:${tilt}|az:${az}|pitch:${pitch}|city:${city}|obs:${obs}|v:${engineVersion}`;
 }
 
 export function createInitialShadingLifecycleState(): ShadingLifecycleState {
@@ -136,9 +228,17 @@ export function shadingLifecycleReducer(
           action.currentSignatureHash !== state.appliedSignatureHash
       );
 
+      let staleReason: string | undefined;
+      if (signatureChanged) {
+        staleReason = 'Scene geometry, obstacles, or layout parameters changed since analysis was applied';
+      } else if (capacityChanged) {
+        staleReason = 'Project capacity changed by > 5% since analysis was applied';
+      }
+
       return {
         ...state,
         isStale: capacityChanged || signatureChanged,
+        staleReason: capacityChanged || signatureChanged ? staleReason : undefined,
       };
     }
     default:

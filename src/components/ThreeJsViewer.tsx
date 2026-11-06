@@ -26,7 +26,7 @@ import {
   type Obstacle3D,
 } from '../engine/roof3dShadingEngine';
 import { type ClimateCity } from '../engine/climaticData';
-import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
+import { type AppliedShading3dRecord, computeShadingSceneSignature } from '../engine/shadingLifecycle';
 
 export interface ThreeJsViewerProps {
   lang?: 'fa' | 'en';
@@ -199,6 +199,29 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       return null;
     }
   });
+
+  // Canonical input signature of the active scene
+  const currentSceneSignature = useMemo(() => {
+    return computeShadingSceneSignature({
+      scene: activeScene,
+      cityId: city?.id,
+      peakSunHours: city?.peakSunHours,
+    });
+  }, [activeScene, city?.id, city?.peakSunHours]);
+
+  const [calculatedSignature, setCalculatedSignature] = useState<string | null>(() => {
+    try {
+      return computeShadingSceneSignature({
+        scene: activeScene,
+        cityId: city?.id,
+        peakSunHours: city?.peakSunHours,
+      });
+    } catch {
+      return null;
+    }
+  });
+
+  const isAnalysisStale = Boolean(calculatedSignature && currentSceneSignature !== calculatedSignature);
 
   // Three.js References
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -414,7 +437,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = 0;
+    const roofY = roofPlane?.eavesHeightM ?? 0;
+    ground.position.y = roofY;
     ground.receiveShadow = true;
     groundGroup.add(ground);
 
@@ -424,7 +448,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       0x38bdf8,
       0x475569
     );
-    grid.position.y = 0.01;
+    grid.position.y = roofY + 0.01;
     groundGroup.add(grid);
 
     // B. Rebuild PV Tables (Connected Rows from activeScene)
@@ -449,50 +473,68 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     activeScene.pvTables.forEach((table) => {
       const tableGroup = new THREE.Group();
       // ENU to Three.js: +X = East (X), +Y = North (-Z), +Z = Up (Y)
-      tableGroup.position.set(table.positionEnu.x, 0.4, -table.positionEnu.y);
+      const tableBaseZ = table.positionEnu.z ?? (roofY + 1.2);
+      tableGroup.position.set(table.positionEnu.x, tableBaseZ, -table.positionEnu.y);
 
-      // Create sloped rack table
+      // Rotate table around vertical axis if table has azimuth (0 = South, 90 = West, -90/270 = East, 180 = North)
+      if (table.azimuthDeg) {
+        tableGroup.rotation.y = (table.azimuthDeg * Math.PI) / 180;
+      }
+
+      // Create sloped rack table pivoted at its geometric center
       const rack = new THREE.Group();
       rack.rotation.x = rad;
-      rack.position.y = Math.sin(rad) * (table.slopedLengthM / 4);
 
-      // Modules grid along table width
-      const cols = Math.min(14, Math.max(4, Math.round(table.widthM / 1.15)));
+      // Modules grid along table width: derived from actual module width and table width
+      const modW = moduleSpecs?.widthM || 1.134;
+      const modL = moduleSpecs?.lengthM || 2.278;
+      const calculatedCols = Math.max(1, Math.round(table.widthM / modW));
+      const cols = Math.min(28, calculatedCols);
       const colStep = table.widthM / cols;
-      const modWidth = colStep * 0.92;
+      const modWidth = colStep * 0.94;
       const modLength = (table.slopedLengthM / 2) * 0.94;
+
+      // Exact conservation of module meshes: do NOT render phantom modules for odd counts (R01, R10)
+      const targetModules = table.moduleCount ?? (cols * 2);
+      let modulesRendered = 0;
 
       for (let c = 0; c < cols; c++) {
         const xPos = (c - (cols - 1) / 2) * colStep;
 
         // Top portrait module
-        const modMeshTop = new THREE.Mesh(
-          new THREE.BoxGeometry(modWidth, 0.04, modLength),
-          moduleMat
-        );
-        modMeshTop.position.set(xPos, 0, -modLength / 2 - 0.02);
-        modMeshTop.castShadow = true;
-        modMeshTop.receiveShadow = true;
-        rack.add(modMeshTop);
+        if (modulesRendered < targetModules) {
+          const modMeshTop = new THREE.Mesh(
+            new THREE.BoxGeometry(modWidth, 0.04, modLength),
+            moduleMat
+          );
+          modMeshTop.position.set(xPos, 0, -modLength / 2 - 0.02);
+          modMeshTop.castShadow = true;
+          modMeshTop.receiveShadow = true;
+          rack.add(modMeshTop);
+          modulesRendered++;
+        }
 
         // Bottom portrait module
-        const modMeshBottom = new THREE.Mesh(
-          new THREE.BoxGeometry(modWidth, 0.04, modLength),
-          moduleMat
-        );
-        modMeshBottom.position.set(xPos, 0, modLength / 2 + 0.02);
-        modMeshBottom.castShadow = true;
-        modMeshBottom.receiveShadow = true;
-        rack.add(modMeshBottom);
+        if (modulesRendered < targetModules) {
+          const modMeshBottom = new THREE.Mesh(
+            new THREE.BoxGeometry(modWidth, 0.04, modLength),
+            moduleMat
+          );
+          modMeshBottom.position.set(xPos, 0, modLength / 2 + 0.02);
+          modMeshBottom.castShadow = true;
+          modMeshBottom.receiveShadow = true;
+          rack.add(modMeshBottom);
+          modulesRendered++;
+        }
 
-        // Rack Support Leg Posts (every 2 columns)
+        // Rack Support Leg Posts (every 2 columns) connecting table to roof plane
         if (c % 2 === 0 || c === cols - 1) {
-          const legHeight = 0.8 + Math.sin(rad) * (table.slopedLengthM / 2);
+          const legHeight = Math.max(0.3, tableBaseZ - roofY);
           const leg = new THREE.Mesh(
             new THREE.CylinderGeometry(0.025, 0.025, legHeight, 8),
             frameMat
           );
-          leg.position.set(xPos, -legHeight / 2 + 0.2, 0);
+          leg.position.set(xPos, -legHeight / 2, 0);
           leg.castShadow = true;
           tableGroup.add(leg);
         }
@@ -515,7 +557,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
     activeScene.obstacles.forEach((obs) => {
       let obsMesh: THREE.Mesh;
-      const baseZ = obs.positionEnu.z ?? 0;
+      const baseZ = obs.positionEnu.z ?? (roofPlane?.eavesHeightM ?? 0);
       if (obs.geometryType === 'cylinder') {
         const rad = obs.dimensionsM.radiusM || 1.0;
         const h = obs.dimensionsM.heightM || 3.0;
@@ -535,18 +577,23 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       obsMesh.receiveShadow = true;
       obstaclesGroup.add(obsMesh);
     });
-  }, [activeScene, tiltDeg]);
+  }, [activeScene, tiltDeg, moduleSpecs?.widthM, moduleSpecs?.lengthM]);
 
   // Update Sun Vector when altitude or azimuth changes
+  // Coordinate convention:
+  // Three.js: +X = East, -X = West, +Y = Up, +Z = South, -Z = North
+  // sunAzimuth slider: 90 = East, 180 = South, 270 = West
   useEffect(() => {
     if (sunMeshRef.current && dirLightRef.current) {
       const altRad = (sunAltitude * Math.PI) / 180;
-      const azRad = ((sunAzimuth - 180) * Math.PI) / 180;
+      const compassRad = (sunAzimuth * Math.PI) / 180;
       const sunDist = 20;
 
-      const sunX = sunDist * Math.cos(altRad) * Math.sin(azRad);
+      // In Three.js: +X is East, so sin(compassRad) gives +1 at 90° (East) and -1 at 270° (West)
+      const sunX = sunDist * Math.cos(altRad) * Math.sin(compassRad);
       const sunY = sunDist * Math.sin(altRad);
-      const sunZ = sunDist * Math.cos(altRad) * Math.cos(azRad);
+      // In Three.js: +Z is South, so -cos(compassRad) gives +1 at 180° (South) and -1 at 0° (North)
+      const sunZ = -sunDist * Math.cos(altRad) * Math.cos(compassRad);
 
       sunMeshRef.current.position.set(sunX, sunY, sunZ);
       dirLightRef.current.position.set(sunX, sunY, sunZ);
@@ -566,6 +613,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         });
         setAnnualResult(result);
         setRayTracedResult(rayTraced);
+        setCalculatedSignature(computeShadingSceneSignature(result.sceneState));
         setLoading(false);
       }, 120);
     } catch {
@@ -928,6 +976,34 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                       : `بلوک نمونه نمایشی: تحلیل بخش ۵۵.۲ کیلوواتی با موانع مجاور. امکان اعمال به درخت تلفات پروژه.`}
                 </div>
 
+                {/* Obstacle Completeness Status Badge */}
+                <div className="mt-2 text-[11px] p-2 rounded border border-industrial-border/60 bg-slate-900/60 flex items-center justify-between gap-2">
+                  <span className="text-slate-400">
+                    {isEn ? 'Obstacle Survey Status:' : 'وضعیت داده‌های موانع صحنه:'}
+                  </span>
+                  {activeScene.obstacleDataStatus === 'missing_unverified' ? (
+                    <span className="text-amber-400 font-medium text-[10px]">
+                      {isEn
+                        ? '⚠ Missing / Unverified (Array modeled unobstructed; survey required)'
+                        : '⚠ فاقد برداشت موانع (بدون مانع مدل شده؛ نیازمند نقشه‌برداری میدانی)'}
+                    </span>
+                  ) : activeScene.obstacleDataStatus === 'verified_unobstructed' ? (
+                    <span className="text-emerald-400 font-medium text-[10px]">
+                      {isEn ? '✓ Explicitly Verified Unobstructed' : '✓ تأیید صریح عدم وجود مانع'}
+                    </span>
+                  ) : activeScene.obstacleDataStatus === 'surveyed' ? (
+                    <span className="text-blue-400 font-medium text-[10px]">
+                      {isEn
+                        ? `✓ Surveyed Obstacles (${activeScene.obstacles.length})`
+                        : `✓ موانع نقشه‌برداری‌شده (${activeScene.obstacles.length} مورد)`}
+                    </span>
+                  ) : (
+                    <span className="text-purple-400 font-medium text-[10px]">
+                      {isEn ? 'ℹ Demo Sample Obstacles' : 'ℹ موانع نمونه نمایشی'}
+                    </span>
+                  )}
+                </div>
+
                 {/* Apply / Revert Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2.5 border-t border-industrial-border/60">
                   <div className="flex items-center gap-2 text-xs">
@@ -947,7 +1023,13 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                     )}
                     {appliedShading && isShadingStale && (
                       <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[11px] font-bold border border-amber-500/40">
-                        {isEn ? '⚠️ Stale (Capacity changed)' : '⚠️ قدیمی (تغییر ظرفیت پروژه)'}
+                        {isEn ? '⚠️ Stale (Inputs changed)' : '⚠️ قدیمی (تغییر پارامترهای پروژه)'}
+                      </span>
+                    )}
+                    {!appliedShading && isAnalysisStale && (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[11px] font-semibold border border-amber-500/40 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                        {isEn ? 'Inputs changed (Re-run required)' : 'تغییر هندسه (اجرای مجدد الزامی است)'}
                       </span>
                     )}
                   </div>
@@ -963,7 +1045,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                     ) : (
                       <button
                         onClick={() => {
-                          if (annualResult) {
+                          if (annualResult && !isAnalysisStale) {
                             onApplyShading?.({
                               lossPct: annualResult.annualCombinedShadingLossPct,
                               source:
@@ -972,12 +1054,20 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                                   : 'representative_demo_block',
                               appliedAtIso: new Date().toISOString(),
                               capacityKwp: activeSceneCapacityKwp,
+                              signatureHash: calculatedSignature ?? currentSceneSignature,
                             });
                             onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
                           }
                         }}
-                        disabled={!annualResult}
-                        className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                        disabled={!annualResult || isAnalysisStale}
+                        className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                        title={
+                          isAnalysisStale
+                            ? isEn
+                              ? 'Geometry changed since analysis run. Please re-run simulation.'
+                              : 'هندسه تغییر کرده است. لطفاً شبیه‌سازی را مجدداً اجرا کنید.'
+                            : undefined
+                        }
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         {isEn
