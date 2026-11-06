@@ -1019,7 +1019,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
 
   // Obstacle modeling: use custom obstacles if provided, otherwise realistic site obstructions
   let obstacles: Obstacle3D[] = [];
-  if (inputs.obstacles && inputs.obstacles.length > 0) {
+  if (inputs.obstacles !== undefined) {
     obstacles = inputs.obstacles;
   } else if (isRooftop) {
     // Realistic rooftop obstructions: Central HVAC chiller and vent exhaust stack

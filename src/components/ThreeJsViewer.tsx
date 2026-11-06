@@ -31,6 +31,13 @@ import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 export interface ThreeJsViewerProps {
   lang?: 'fa' | 'en';
   city?: ClimateCity;
+  site?: {
+    lat: number;
+    lng: number;
+    climateData?: ClimateCity;
+    city?: ClimateCity;
+    arrayDesign?: unknown;
+  };
   plantCapacityKw?: number;
   plantCapacityType?: 'ac_target' | 'dc_nameplate';
   annualYieldKwh?: number;
@@ -63,6 +70,7 @@ export interface ThreeJsViewerProps {
 export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   lang = 'fa',
   city,
+  site,
   plantCapacityKw,
   plantCapacityType = 'dc_nameplate',
   annualYieldKwh,
@@ -80,13 +88,19 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const mountRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
 
+  // Harmonized site and climate data resolution
+  const effectiveCity = site?.climateData || site?.city || city;
+  const siteLat = site?.lat ?? effectiveCity?.latitude ?? 35.6892;
+  const siteLng = site?.lng ?? effectiveCity?.longitude ?? 51.3890;
+  const siteElev = effectiveCity?.elevationM ?? 1200;
+
   // Scene Selection: defaults to active project array design if available, else demo block fallback
   const hasProjectData = Boolean(arrayDesign && (arrayDesign.totalModulesCount || 0) > 0);
   const [sceneMode, setSceneMode] = useState<'project_array' | 'demo_block'>(
     hasProjectData ? 'project_array' : 'demo_block'
   );
 
-  const initialTilt = arrayDesign?.tiltDeg ?? city?.optimalTiltAnnualDeg ?? 15;
+  const initialTilt = arrayDesign?.tiltDeg ?? effectiveCity?.optimalTiltAnnualDeg ?? 15;
   const [tiltDeg, setTiltDeg] = useState<number>(initialTilt);
   const [sunAltitude, setSunAltitude] = useState<number>(45);
   const [sunAzimuth, setSunAzimuth] = useState<number>(180);
@@ -112,9 +126,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       moduleWidthM: moduleSpecs?.widthM ?? 1.134,
       moduleLengthM: moduleSpecs?.lengthM ?? 2.278,
       modulePmpWatts: moduleSpecs?.pmpWatts ?? 550,
-      latitude: city?.latitude,
-      longitude: city?.longitude,
-      elevationM: city?.elevationM,
+      latitude: siteLat,
+      longitude: siteLng,
+      elevationM: siteElev,
       installationEnvironment,
       obstacles,
     });
@@ -124,7 +138,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     plantCapacityKw,
     tiltDeg,
     moduleSpecs,
-    city,
+    siteLat,
+    siteLng,
+    siteElev,
     installationEnvironment,
     obstacles,
   ]);
@@ -137,9 +153,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     return {
       ...DEFAULT_ROOFTOP_SCENE,
       anchorLocation: {
-        latitude: city?.latitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.latitude,
-        longitude: city?.longitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.longitude,
-        elevationM: city?.elevationM ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.elevationM,
+        latitude: siteLat,
+        longitude: siteLng,
+        elevationM: siteElev,
       },
       pvTables: DEFAULT_ROOFTOP_SCENE.pvTables.map((t) => ({
         ...t,
@@ -147,7 +163,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       })),
       tiltDeg,
     };
-  }, [sceneMode, projectScene, city, tiltDeg]);
+  }, [sceneMode, projectScene, siteLat, siteLng, siteElev, tiltDeg]);
 
   // Scene capacity in kWp
   const activeSceneCapacityKwp = useMemo(() => {
@@ -624,8 +640,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
             </span>
           </div>
 
-          <span className="text-slate-400 text-[11px] font-mono">
-            {city?.nameEn || 'Tehran'} ({city?.latitude.toFixed(2)}°N, {city?.longitude.toFixed(2)}°E)
+          <span className="text-slate-300 text-[11px] font-mono flex items-center gap-1.5 bg-slate-900/80 px-2 py-0.5 rounded border border-industrial-border">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+            {effectiveCity?.nameEn || 'Site'} ({siteLat.toFixed(4)}°N, {siteLng.toFixed(4)}°E)
           </span>
         </div>
       </div>

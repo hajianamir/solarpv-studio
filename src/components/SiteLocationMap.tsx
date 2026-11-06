@@ -16,6 +16,7 @@ import {
   Map as MapIcon,
   Compass,
   AlertTriangle,
+  Box,
 } from 'lucide-react';
 import { type ClimateCity, getClimateData, fetchClimateData } from '../engine/climaticData';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
@@ -23,12 +24,14 @@ import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 interface SiteLocationMapProps {
   currentCity: ClimateCity;
   onSelectLocation: (city: ClimateCity) => void;
+  onCreate3dRooftop?: (city: ClimateCity) => void;
   lang?: 'fa' | 'en';
 }
 
 export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   currentCity,
   onSelectLocation,
+  onCreate3dRooftop,
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
@@ -418,52 +421,72 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           </div>
         </div>
 
-        {/* 4-Way Layer Switcher */}
-        <div className="flex flex-wrap items-center gap-1 bg-slate-800 p-1 rounded border border-industrial-border text-xs">
-          <button
-            type="button"
-            onClick={() => handleSwitchLayer('hybrid')}
-            className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
-              activeLayer === 'hybrid' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-            title={isEn ? 'Satellite Imagery with Roads and Places labels' : 'تصاویر ماهواره‌ای به همراه اسامی اماکن، جاده‌ها و مرزها'}
-          >
-            <Layers className="w-3.5 h-3.5 text-industrial-warning" />
-            <span>{isEn ? 'Hybrid Satellite' : 'ماهواره‌ای ترکیبی'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSwitchLayer('satellite_pure')}
-            className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
-              activeLayer === 'satellite_pure' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-            title={isEn ? 'Pure Satellite without overlays' : 'تصاویر ماهواره‌ای طبیعی'}
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Pure Satellite' : 'ماهواره‌ای خالص'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSwitchLayer('streets')}
-            className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
-              activeLayer === 'streets' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-            title={isEn ? 'Detailed Street Map' : 'نقشه خیابانی و معابر'}
-          >
-            <MapIcon className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Streets Map' : 'معابر شهری'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSwitchLayer('topo')}
-            className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
-              activeLayer === 'topo' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-            title={isEn ? 'Topographic & Elevation Contour Map' : 'نقشه توپوگرافی و تراز ارتفاعی زمین (OpenTopoMap)'}
-          >
-            <Compass className="w-3.5 h-3.5 text-industrial-success" />
-            <span>{isEn ? 'Topography' : 'توپوگرافی و شیب'}</span>
-          </button>
+        {/* 4-Way Layer Switcher & 3D Rooftop Action */}
+        <div className="flex flex-wrap items-center gap-2">
+          {onCreate3dRooftop && (
+            <button
+              type="button"
+              onClick={() => onCreate3dRooftop(currentCity)}
+              className="px-3 py-1.5 rounded bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold shadow transition flex items-center gap-1.5"
+              title={
+                isEn
+                  ? 'Generate 3D rooftop and near-shading layout for this exact site'
+                  : 'ایجاد مدل سه‌بعدی سقف و شبیه‌سازی سایه‌اندازی برای این نقطه'
+              }
+            >
+              <Box className="w-4 h-4 text-white" />
+              <span>
+                {isEn ? 'Create 3D Rooftop from this Site' : 'ایجاد سقف سه‌بعدی از این محل'}
+              </span>
+            </button>
+          )}
+
+          <div className="flex flex-wrap items-center gap-1 bg-slate-800 p-1 rounded border border-industrial-border text-xs">
+            <button
+              type="button"
+              onClick={() => handleSwitchLayer('hybrid')}
+              className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
+                activeLayer === 'hybrid' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+              }`}
+              title={isEn ? 'Satellite Imagery with Roads and Places labels' : 'تصاویر ماهواره‌ای به همراه اسامی اماکن، جاده‌ها و مرزها'}
+            >
+              <Layers className="w-3.5 h-3.5 text-industrial-warning" />
+              <span>{isEn ? 'Hybrid Satellite' : 'ماهواره‌ای ترکیبی'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchLayer('satellite_pure')}
+              className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
+                activeLayer === 'satellite_pure' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+              }`}
+              title={isEn ? 'Pure Satellite without overlays' : 'تصاویر ماهواره‌ای طبیعی'}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Pure Satellite' : 'ماهواره‌ای خالص'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchLayer('streets')}
+              className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
+                activeLayer === 'streets' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+              }`}
+              title={isEn ? 'Detailed Street Map' : 'نقشه خیابانی و معابر'}
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Streets Map' : 'معابر شهری'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchLayer('topo')}
+              className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
+                activeLayer === 'topo' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+              }`}
+              title={isEn ? 'Topographic & Elevation Contour Map' : 'نقشه توپوگرافی و تراز ارتفاعی زمین (OpenTopoMap)'}
+            >
+              <Compass className="w-3.5 h-3.5 text-industrial-success" />
+              <span>{isEn ? 'Topography' : 'توپوگرافی و شیب'}</span>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -1160,17 +1160,18 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   );
 
   // ==========================================================================
-  // BLOCKER-1: REAL_INTERNET=true hard assertion — no REGIONAL_ANALYTICAL_MODEL
+  // BLOCKER-1: Automatic real reference data fetching enabled by default
   // ==========================================================================
-  // When REAL_INTERNET=true, real HTTP calls to NASA POWER / PVGIS are mandatory.
-  // Analytical fallback is disabled. In sandbox/offline (REAL_INTERNET not set),
-  // analytical fallback is permitted and this gate documents that expectation.
-  const realInternetGate = !isRealInternetEnabled();
+  // By default, SolarPV Studio automatically attempts real HTTP reference queries
+  // (NASA POWER, PVGIS 5.3, OSM Nominatim). If offline or network-blocked,
+  // the data gateway catches errors and falls back to REGIONAL_ANALYTICAL_MODEL.
+  // The runtime flag isRealInternetEnabled() must return true by default.
+  const realInternetDefault = isRealInternetEnabled();
   assert(
     'BLOCKER-1',
-    'REAL_INTERNET gate: analytical fallback allowed when not set',
-    realInternetGate === true,
-    'REAL_INTERNET not set — analytical fallback permitted; real HTTP proof requires networked machine'
+    'REAL_INTERNET default: live reference database auto-fetch enabled by default',
+    realInternetDefault === true,
+    'REAL_INTERNET enabled by default — automatic real reference data fetching active; fallback handles network disconnects gracefully'
   );
 
   // ==========================================================================

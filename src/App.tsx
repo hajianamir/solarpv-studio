@@ -174,6 +174,25 @@ export const App: React.FC = () => {
     lang === 'fa' ? 'طرح مهندسی نیروگاه خورشیدی و EPC' : 'Solar PV Engineering & EPC Project'
   );
   const [city, setCity] = useState<ClimateCity>(getDefaultClimateCity());
+  const [selectedSite, setSelectedSite] = useState<{
+    lat: number;
+    lng: number;
+    climateData: ClimateCity;
+  }>({
+    lat: getDefaultClimateCity().latitude,
+    lng: getDefaultClimateCity().longitude,
+    climateData: getDefaultClimateCity(),
+  });
+
+  // Keep selectedSite tightly synchronized with active project location
+  useEffect(() => {
+    setSelectedSite({
+      lat: city.latitude,
+      lng: city.longitude,
+      climateData: city,
+    });
+  }, [city]);
+
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
 
@@ -2146,7 +2165,27 @@ export const App: React.FC = () => {
 
           {/* SITE & CLIMATE MAP TAB */}
           {activeTab === 'climate' && (
-            <ClimateTab selectedCity={city} onCityChange={setCity} lang={lang} />
+            <ClimateTab
+              selectedCity={city}
+              onCityChange={(newCity) => {
+                setCity(newCity);
+                setSelectedSite({
+                  lat: newCity.latitude,
+                  lng: newCity.longitude,
+                  climateData: newCity,
+                });
+              }}
+              onCreate3dRooftop={(newCity) => {
+                setCity(newCity);
+                setSelectedSite({
+                  lat: newCity.latitude,
+                  lng: newCity.longitude,
+                  climateData: newCity,
+                });
+                setActiveTab('3d_viewer');
+              }}
+              lang={lang}
+            />
           )}
 
           {/* ELECTRICAL LOADS TAB (Hidden in Powerplant mode) */}
@@ -2347,6 +2386,7 @@ export const App: React.FC = () => {
             <ThreeJsViewer
               lang={lang}
               city={city}
+              site={selectedSite}
               plantCapacityKw={
                 systemMode === 'powerplant'
                   ? (targetPowerplantCapacityKw || 1000)
