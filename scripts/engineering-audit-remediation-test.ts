@@ -11,6 +11,9 @@
  * 6. Electrical Sizing & 24h Battery Dispatch (strict energy conservation, voltage feasibility, no artificial clamps)
  */
 
+import React from 'react';
+import ReactDOMServer from 'react-dom/server';
+import { ThreeJsViewer } from '../src/components/ThreeJsViewer';
 import {
   buildSceneFromProjectDesign,
   simulateAnnual3dShading,
@@ -1157,6 +1160,74 @@ async function runAuditRemediationSuite() {
         syncUpgraded.appliedShading?.lossPct === 3.8,
       'Re-applying 8760h simulation seamlessly clears staleness and updates applied loss without requiring prior manual revert',
       `isStale=${syncUpgraded.isStale}, lossPct=${syncUpgraded.appliedShading?.lossPct}%`
+    );
+
+    // 7) Component-Level SSR Button Availability Probe: Independent Apply / Update vs Revert in UI
+    const testCity = {
+      id: 'tehran',
+      nameFa: 'تهران',
+      nameEn: 'Tehran',
+      latitude: 35.6892,
+      longitude: 51.3890,
+      elevationM: 1200,
+      peakSunHours: 5.2,
+      optimalTiltAnnualDeg: 25,
+      albedo: 0.20,
+    };
+    const testArrayDesign = {
+      totalPvCapacityKwp: 14.85,
+      totalModulesCount: 27,
+      interRowSpacingM: 5.0,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+    };
+
+    // Sub-case 7a: Initial unapplied state -> Apply button present, Revert absent
+    const htmlUnapplied = ReactDOMServer.renderToString(
+      React.createElement(ThreeJsViewer, {
+        lang: 'en',
+        city: testCity as any,
+        arrayDesign: testArrayDesign,
+        plantCapacityKw: 14.85,
+        annualYieldKwh: 25000,
+        appliedShading: null,
+        simulationMode: 'screening_3day',
+      })
+    );
+    const unappliedHasApply = htmlUnapplied.includes('Apply -');
+    const unappliedHasRevert = htmlUnapplied.includes('Revert to Default');
+    assert(
+      unappliedHasApply && !unappliedHasRevert,
+      'ThreeJsViewer UI: Initial state renders Apply button without Revert button',
+      `hasApply=${unappliedHasApply}, hasRevert=${unappliedHasRevert}`
+    );
+
+    // Sub-case 7b: Existing applied 3-day record, previewing fresh 8760h mode
+    // Both Revert AND Update Project buttons MUST be rendered independently!
+    const htmlAppliedWithModeChange = ReactDOMServer.renderToString(
+      React.createElement(ThreeJsViewer, {
+        lang: 'en',
+        city: testCity as any,
+        arrayDesign: testArrayDesign,
+        plantCapacityKw: 14.85,
+        annualYieldKwh: 25000,
+        appliedShading: {
+          lossPct: 2.8,
+          source: 'project_array_design',
+          appliedAtIso: new Date().toISOString(),
+          capacityKwp: 14.85,
+          signatureHash: 'some-hash-3day',
+          simulationMode: 'screening_3day',
+        },
+        simulationMode: 'hourly_8760',
+      })
+    );
+    const appliedHasUpdate = htmlAppliedWithModeChange.includes('Update Project');
+    const appliedHasRevert = htmlAppliedWithModeChange.includes('Revert to Default');
+    assert(
+      appliedHasUpdate && appliedHasRevert,
+      'ThreeJsViewer UI: When applied record exists and fresh 8760h result is ready, BOTH Update Project and Revert buttons are rendered',
+      `hasUpdate=${appliedHasUpdate}, hasRevert=${appliedHasRevert}`
     );
   }
 

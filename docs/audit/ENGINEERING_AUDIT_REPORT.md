@@ -99,7 +99,7 @@ All vulnerabilities across items R1 through R11 have been systematically remedia
 • [R9] Iranian Regulations Financial Annuity & Zero Interest Rate: 4/4 PASS
 • [R10] Data Gateway Circuit Breaker & Policy-Driven Routing: 10/10 PASS
 • [R11] Multi-Faceted Shading Reconciliation & Array Tilt Separation: 7/7 PASS
-• [AREA 1–7] Engineering Audit Remediation Suite: 68/68 PASS (Total 153/153 Audit Assertions Passing)
+• [AREA 1–7] Engineering Audit Remediation Suite: 70/70 PASS (Total 155/155 Audit Assertions Passing)
 ```
 
 ### D. Production Build & Static Analysis
@@ -174,6 +174,9 @@ An independent audit probe of commit `d59e6a9` and review of `93701cc` identifie
    - **Decoupled Preview Selection:** Separated interactive preview simulation mode from the locked applied record, preventing the dropdown from snapping back to the previously applied mode upon user selection.
    - **Informative Status Badge:** Added contextual indicator (`Applied: [8760h / 3-Day] — Re-run to update project`) notifying the user when their preview mode differs from the project's applied analysis.
    - **Seamless Mode Upgrade without Revert:** Enabled direct re-simulation and re-application of different simulation modes without requiring the user to execute a manual `Revert` action beforehand.
+10. **D10 (Independent UI Action Buttons & SSR Accessibility Verification):**
+   - **Independent Action Buttons:** Eliminated the mutually exclusive ternary conditional (`appliedShading ? <Revert /> : <Apply />`) in `ThreeJsViewer.tsx`. The `Revert` button is rendered whenever an applied record exists, while the `Apply / Update` button is always rendered alongside it, dynamically displaying `Update Project (-X%)` whenever a fresh simulation result differs from the active applied record.
+   - **Component SSR Validation:** Integrated two component-level React SSR assertions (`ReactDOMServer.renderToString`) verifying that both initial unapplied state and active applied state with updated simulation correctly expose their respective action buttons in the rendered HTML output.
 
 ---
 

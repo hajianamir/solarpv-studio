@@ -1122,7 +1122,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {appliedShading ? (
+                    {appliedShading && (
                       <button
                         onClick={onRevertShading}
                         className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors"
@@ -1130,40 +1130,61 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                         <RotateCcw className="w-3.5 h-3.5" />
                         {isEn ? 'Revert to Default (-2.4%)' : 'بازگشت به پیش‌فرض (-۲.۴٪)'}
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          if (annualResult && !isAnalysisStale) {
-                            onApplyShading?.({
-                              lossPct: annualResult.annualCombinedShadingLossPct,
-                              source:
-                                sceneMode === 'project_array'
-                                  ? 'project_array_design'
-                                  : 'representative_demo_block',
-                              appliedAtIso: new Date().toISOString(),
-                              capacityKwp: activeSceneCapacityKwp,
-                              signatureHash: calculatedSignature ?? currentSceneSignature,
-                              simulationMode,
-                            });
-                            onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
-                          }
-                        }}
-                        disabled={!annualResult || isAnalysisStale}
-                        className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
-                        title={
-                          isAnalysisStale
-                            ? isEn
-                              ? 'Geometry changed since analysis run. Please re-run simulation.'
-                              : 'هندسه تغییر کرده است. لطفاً شبیه‌سازی را مجدداً اجرا کنید.'
-                            : undefined
+                    )}
+
+                    <button
+                      onClick={() => {
+                        if (annualResult && !isAnalysisStale) {
+                          onApplyShading?.({
+                            lossPct: annualResult.annualCombinedShadingLossPct,
+                            source:
+                              sceneMode === 'project_array'
+                                ? 'project_array_design'
+                                : 'representative_demo_block',
+                            appliedAtIso: new Date().toISOString(),
+                            capacityKwp: activeSceneCapacityKwp,
+                            signatureHash: calculatedSignature ?? currentSceneSignature,
+                            simulationMode,
+                          });
+                          onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
                         }
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {isEn
+                      }}
+                      disabled={
+                        !annualResult ||
+                        isAnalysisStale ||
+                        (Boolean(appliedShading) &&
+                          calculatedSignature === appliedShading?.signatureHash &&
+                          appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct)
+                      }
+                      className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                      title={
+                        isAnalysisStale
+                          ? isEn
+                            ? 'Geometry changed since analysis run. Please re-run simulation.'
+                            : 'هندسه تغییر کرده است. لطفاً شبیه‌سازی را مجدداً اجرا کنید.'
+                          : appliedShading &&
+                              calculatedSignature === appliedShading?.signatureHash &&
+                              appliedShading?.lossPct === annualResult?.annualCombinedShadingLossPct
+                            ? isEn
+                              ? 'This exact simulation result is already applied to the project.'
+                              : 'این نتیجهٔ شبیه‌سازی در حال حاضر به پروژه اعمال شده است.'
+                            : undefined
+                      }
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {appliedShading
+                        ? calculatedSignature === appliedShading?.signatureHash &&
+                          appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct
+                          ? isEn
+                            ? `Applied (-${appliedShading.lossPct}%)`
+                            : `اعمال‌شده (-${appliedShading.lossPct}٪)`
+                          : isEn
+                            ? `Update Project (-${annualResult.annualCombinedShadingLossPct}%)`
+                            : `به‌روزرسانی ضریب پروژه (-${annualResult.annualCombinedShadingLossPct}٪)`
+                        : isEn
                           ? `Apply -${annualResult.annualCombinedShadingLossPct}% to Project`
                           : `اعمال کسری -${annualResult.annualCombinedShadingLossPct}٪ به پروژه`}
-                      </button>
-                    )}
+                    </button>
                   </div>
                 </div>
               </div>
