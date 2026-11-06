@@ -308,6 +308,10 @@ export interface StructuralAnalysisResult {
   /** Minimum embedment depth required to protect against frost heave (frostDepth + 1.0m). */
   minDepthForFrostM: number;
   isStructurallySafe: boolean;
+  /** Flags that structural check is a preliminary engineering screening without site-specific structural drawings. */
+  isScreeningPreliminary: boolean;
+  screeningDisclaimerFa: string;
+  screeningDisclaimerEn: string;
   /** Human-readable reason the design is or isn't safe, per foundation type. */
   safetyReasonEn: string;
   safetyReasonFa: string;
@@ -756,6 +760,11 @@ export function calculateStructuralAndFoundations(
   //  - ballasted block: self-weight resists overturning and sliding
   //  - pile / screw / rock-grouted: uplift tension governs (Eurocode 7: FoS_uplift >= 2.0)
   //  - concrete pier: both uplift and self-weight overturning required
+  const screeningDisclaimerFa =
+    'توجه: ارزیابی سازه و فونداسیون در سطح غربالگری اولیه مهندسی (Screening) است. تاییدیه نهایی مستلزم بررسی نقشه‌های چون‌ساخت، آزمایش کشش برجا (Pullout Test) و محاسبات تفصیلی مهندس محاسب دارای پروانه اشتغال می‌باشد.';
+  const screeningDisclaimerEn =
+    'NOTICE: This structural screening is preliminary. Definitive certification requires as-built structural drawings, site pullout tests, and endorsement by a licensed professional structural engineer.';
+
   let isStructurallySafe: boolean;
   let safetyReasonEn: string;
   let safetyReasonFa: string;
@@ -767,10 +776,10 @@ export function calculateStructuralAndFoundations(
       const isRoofLoadSafe = roofDeadLoadKgM2 <= 35.0; // safe industrial shed live/dead capacity (typ. 50-75 kg/m2)
       isStructurallySafe = fosClampUplift >= 2.0 && isRoofLoadSafe;
       safetyReasonEn = isStructurallySafe
-        ? `Industrial shed clamp mounting verified. Roof dead load (${roofDeadLoadKgM2} kg/m² <= allowable 50 kg/m²). Clamps resist wind uplift (FoS = ${fosClampUplift} >= 2.0). Zero soil penetration required.`
+        ? `[Preliminary Screening] Industrial shed clamp mounting evaluated against assumed allowable load (dead load ${roofDeadLoadKgM2} kg/m² <= 35 kg/m², fastener FoS = ${fosClampUplift} >= 2.0). Requires structural framing review.`
         : `Industrial shed clamp warning: check purlin fastener pullout (FoS = ${fosClampUplift}) or roof dead load (${roofDeadLoadKgM2} kg/m²).`;
       safetyReasonFa = isStructurallySafe
-        ? `اتصال کلمپ به سقف سوله صنعتی تأیید شد. بار مرده اضافی (${roofDeadLoadKgM2} kg/m² کمتر از ۵۰ kg/m² مجاز سوله). مقاومت کششی کلمپ‌ها و پیچ‌های پرلین در برابر مکش باد (FoS = ${fosClampUplift} >= ۲.۰) تأمین است. بدون نیاز به کوبش در زمین.`
+        ? `[غربالگری اولیه] اتصال کلمپ به سقف سوله بر مبنای فرضیات استاندارد ارزیابی شد (بار مرده ${roofDeadLoadKgM2} kg/m² کمتر از ۳۵ kg/m² فرضی، FoS مکش باد = ${fosClampUplift} >= ۲.۰). کنترل ظرفیت تیرها و پرلین‌ها در نقشه‌های چون‌ساخت الزامی است.`
         : `هشدار اتصال سقف سوله: مقاومت پیچ‌های پرلین (FoS = ${fosClampUplift}) یا اضافه بار سقف (${roofDeadLoadKgM2} kg/m²) نیازمند بازبینی است.`;
       break;
     }
@@ -779,10 +788,10 @@ export function calculateStructuralAndFoundations(
       const fosAnchorUplift = Number((anchorTensileCapacityKn / Math.max(0.1, windUpliftForceKn)).toFixed(2));
       isStructurallySafe = fosAnchorUplift >= 2.0;
       safetyReasonEn = isStructurallySafe
-        ? `Rooftop chemical anchor stanchions verified (Uplift FoS = ${fosAnchorUplift} >= 2.0). 10cm slab embedment with EPDM/bituminous sealant. Zero soil penetration.`
+        ? `[Preliminary Screening] Rooftop chemical anchor stanchions evaluated (Uplift FoS = ${fosAnchorUplift} >= 2.0 assuming sound concrete slab). Concrete thickness and tensile pullout must be verified on site.`
         : `Rooftop anchor bolt capacity insufficient (FoS = ${fosAnchorUplift} < 2.0). Increase anchor diameter or post count.`;
       safetyReasonFa = isStructurallySafe
-        ? `مهار انکربولت در دال بتنی سقف تأیید شد (FoS کشش انکر = ${fosAnchorUplift} >= ۲.۰). عمق مهار ۱۰cm در دال با عایق‌بندی قیری/پلی‌یورتان. بدون نیاز به کوبش در زمین.`
+        ? `[غربالگری اولیه] مهار انکربولت در دال بتنی سقف ارزیابی شد (FoS کشش انکر = ${fosAnchorUplift} >= ۲.۰ با فرض دال بتنی سالم). ضخامت دال بتنی و مقاومت برشی پانچ باید در محل پروژه بررسی گردد.`
         : `ظرفیت کشش انکربولت سقف ناکافی است (FoS = ${fosAnchorUplift} < ۲.۰). تعداد انکرها یا قطر بولت را افزایش دهید.`;
       break;
     }
@@ -791,10 +800,10 @@ export function calculateStructuralAndFoundations(
       const isRoofLoadSafe = roofDeadLoadKgM2 <= 40.0;
       isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isRoofLoadSafe;
       safetyReasonEn = isStructurallySafe
-        ? `Rooftop ballasted block verified (Overturning FoS = ${fosOverturning} >= 1.5, sliding FoS = ${fosSliding} >= 1.4, roof load ${roofDeadLoadKgM2} kg/m² <= 40 kg/m²). Non-penetrating with EPDM pads.`
+        ? `[Preliminary Screening] Rooftop ballasted block evaluated (Overturning FoS = ${fosOverturning} >= 1.5, sliding FoS = ${fosSliding} >= 1.4, roof dead load ${roofDeadLoadKgM2} kg/m² <= 40 kg/m²). Roof structural capacity must be certified.`
         : `Rooftop ballast block warning: Overturning FoS = ${fosOverturning}, Sliding FoS = ${fosSliding}, roof load = ${roofDeadLoadKgM2} kg/m². Adjust ballast weight or tilt angle.`;
       safetyReasonFa = isStructurallySafe
-        ? `بلوک‌های بالاست وزنی پشت‌بام تأیید است (FoS واژگونی = ${fosOverturning} >= ۱.۵، FoS لغزش = ${fosSliding} >= ۱.۴، اضافه بار سقف = ${roofDeadLoadKgM2} kg/m²). غیرنفوذی و محافظ عایق رطوبتی سقف.`
+        ? `[غربالگری اولیه] بلوک‌های بالاست وزنی پشت‌بام ارزیابی شد (FoS واژگونی = ${fosOverturning} >= ۱.۵، FoS لغزش = ${fosSliding} >= ۱.۴، اضافه بار سقف = ${roofDeadLoadKgM2} kg/m²). ظرفیت سازه‌ای سقف ساختمان باید توسط مهندس سازه تایید گردد.`
         : `هشدار بالاست پشت‌بام: FoS واژگونی = ${fosOverturning}، FoS لغزش = ${fosSliding}، اضافه بار سقف = ${roofDeadLoadKgM2} kg/m². زاویه شیب یا وزن بالاست را بازبینی فرمایید.`;
       break;
     }
@@ -893,6 +902,9 @@ export function calculateStructuralAndFoundations(
     fosUplift,
     upliftCapacityPerPostKn: Number(upliftCapacityPerPostKn.toFixed(2)),
     isStructurallySafe,
+    isScreeningPreliminary: true,
+    screeningDisclaimerFa,
+    screeningDisclaimerEn,
     safetyReasonEn,
     safetyReasonFa,
     engineeringRemarksFa,

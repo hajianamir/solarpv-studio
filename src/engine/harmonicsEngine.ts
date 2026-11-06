@@ -38,6 +38,17 @@ export interface UpstreamGridConditionsInput {
   isPowerFactorLagging: boolean;  // inductive vs capacitive
 }
 
+export type LvrtEvaluationStatus = 'compliant' | 'non_compliant' | 'screening_only' | 'not_evaluated';
+
+export interface LvrtComplianceInfo {
+  zeroVoltageRideThroughMs: number;
+  recoveryTimeSec: number;
+  status: LvrtEvaluationStatus;
+  statusFa: string;
+  statusEn: string;
+  complianceBasis: string;
+}
+
 export interface UpstreamGridAnalysisResult {
   shortCircuitRatioScr: number;
   gridStrengthCategory: 'strong' | 'moderate' | 'weak';
@@ -57,11 +68,7 @@ export interface UpstreamGridAnalysisResult {
   flickerShortTermPst: number;
   flickerLongTermPlt: number;
   isFlickerCompliant: boolean;
-  lvrtCompliance: {
-    zeroVoltageRideThroughMs: number;
-    recoveryTimeSec: number;
-    statusFa: string;
-  };
+  lvrtCompliance: LvrtComplianceInfo;
 }
 
 export function analyzePowerplantHarmonics(
@@ -290,7 +297,10 @@ export function analyzeUpstreamGridConditions(
     lvrtCompliance: {
       zeroVoltageRideThroughMs: 150,
       recoveryTimeSec: 1.5,
-      statusFa: 'تطابق کامل با منحنی کدهای دیسپاچینگ توانیر (Fault Ride-Through)',
+      status: 'screening_only',
+      statusFa: 'ارزیابی غربالگری اولیه بر مبنای پروفایل استاندارد شبکه؛ تأیید نهایی منوط به ارائه منحنی‌های تایپ‌تست سازنده اینورتر است.',
+      statusEn: 'Preliminary screening against grid code template; definitive compliance requires manufacturer inverter FRT type-test certificate.',
+      complianceBasis: 'Grid-code generic envelope screening (manufacturer dynamic curves not loaded)',
     },
   };
 }

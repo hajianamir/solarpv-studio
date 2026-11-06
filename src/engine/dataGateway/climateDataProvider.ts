@@ -129,7 +129,11 @@ export class ClimateDataProvider {
 
   private parseNasaPowerResponse(lat: number, lng: number, json: any): ClimateResourceData {
     const params = json?.properties?.parameter;
-    const psh = params?.ALLSKY_SFC_SW_DWN?.ANN ?? 5.2;
+    const rawPsh = params?.ALLSKY_SFC_SW_DWN?.ANN;
+    if (rawPsh === undefined || rawPsh === null || typeof rawPsh !== 'number') {
+      throw new Error('NASA POWER response missing valid ALLSKY_SFC_SW_DWN.ANN parameter');
+    }
+    const psh = rawPsh;
     const tMean = params?.T2M?.ANN ?? 20.0;
     const tMin = params?.T2M_MIN?.ANN ?? -5.0;
     const tMax = params?.T2M_MAX?.ANN ?? 42.0;
@@ -187,10 +191,10 @@ export class ClimateDataProvider {
 
   private parsePvgisResponse(lat: number, lng: number, json: any): ClimateResourceData {
     const monthly = json?.outputs?.monthly;
-    let annualKwh = 1800;
-    if (Array.isArray(monthly) && monthly.length > 0) {
-      annualKwh = monthly.reduce((acc: number, m: any) => acc + (m['H(h)_m'] ?? 150), 0);
+    if (!Array.isArray(monthly) || monthly.length === 0) {
+      throw new Error('PVGIS response missing valid monthly solar irradiance outputs');
     }
+    const annualKwh = monthly.reduce((acc: number, m: any) => acc + (m['H(h)_m'] ?? 150), 0);
     const psh = Number((annualKwh / 365).toFixed(2));
     const absLat = Math.abs(lat);
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));

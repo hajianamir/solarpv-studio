@@ -173,9 +173,11 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
             {isFa ? 'نرخ بازده داخلی آورده (Equity IRR)' : 'Equity IRR (%)'}
           </div>
           <div className="text-2xl font-bold font-mono text-industrial-success mt-1">
-            {modelResult.equityIrrPct}%
+            {modelResult.equityIrrPct !== null ? `${modelResult.equityIrrPct}%` : 'N/A'}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">Project IRR: {modelResult.projectIrrPct}%</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
+            Project IRR: {modelResult.projectIrrPct !== null ? `${modelResult.projectIrrPct}%` : 'N/A'}
+          </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
@@ -255,9 +257,13 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
                     </span>
                   </td>
                   <td className="p-2.5 text-center">
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${cf.dscr >= 1.25 ? 'bg-industrial-success text-industrial-success' : 'bg-slate-800 text-slate-400'}`}>
-                      {cf.dscr > 5 ? '> 5.0' : cf.dscr.toFixed(2)}
-                    </span>
+                    {cf.dscr !== null ? (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${cf.dscr >= 1.25 ? 'bg-industrial-success text-industrial-success' : 'bg-slate-800 text-slate-400'}`}>
+                        {cf.dscr > 5 ? '> 5.0' : cf.dscr.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500">—</span>
+                    )}
                   </td>
                 </tr>
               ))}

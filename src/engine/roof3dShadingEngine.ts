@@ -126,6 +126,7 @@ export interface Obstacle3D {
     radiusM?: number; // For cylinder (e.g. tree, vents)
   };
   azimuthDeg?: number;
+  rotationDeg?: number;
 }
 
 export interface PvTable3D {
@@ -323,7 +324,7 @@ export function buildObstacleFacets(obs: Obstacle3D): PlanarFacet3D[] {
       const midTheta = (theta1 + theta2) / 2;
       const nx = Math.cos(midTheta);
       const ny = Math.sin(midTheta);
-      const d = -(nx * (x + r * nx) + ny * (y + r * ny));
+      const d = -(nx * x1 + ny * y1);
       facets.push({
         name: `${obs.id}-wall-${i}`,
         normal: { x: nx, y: ny, z: 0 },
@@ -345,7 +346,7 @@ export function buildObstacleFacets(obs: Obstacle3D): PlanarFacet3D[] {
       vertices: topVerts,
     });
   } else {
-    // Cuboid facet construction
+    // Cuboid facet construction with optional planar rotation around Z axis
     const w = obs.dimensionsM?.widthM ?? 3.0;
     const l = obs.dimensionsM?.lengthM ?? 3.0;
     const { x, y, z } = pos;
@@ -357,70 +358,86 @@ export function buildObstacleFacets(obs: Obstacle3D): PlanarFacet3D[] {
     const zMin = z;
     const zMax = z + h;
 
+    const rotRad = ((obs.rotationDeg ?? 0) * Math.PI) / 180.0;
+    const cosR = Math.cos(rotRad);
+    const sinR = Math.sin(rotRad);
+
+    const rotPt = (px: number, py: number, pz: number) => {
+      const dx = px - x;
+      const dy = py - y;
+      return {
+        x: x + dx * cosR - dy * sinR,
+        y: y + dx * sinR + dy * cosR,
+        z: pz,
+      };
+    };
+
+    const rotNorm = (nx: number, ny: number, nz: number) => ({
+      x: nx * cosR - ny * sinR,
+      y: nx * sinR + ny * cosR,
+      z: nz,
+    });
+
+    const makeFacet = (
+      name: string,
+      rawNormal: { x: number; y: number; z: number },
+      rawVerts: Array<{ x: number; y: number; z: number }>
+    ): PlanarFacet3D => {
+      const normal = rotNorm(rawNormal.x, rawNormal.y, rawNormal.z);
+      const vertices = rawVerts.map(v => rotPt(v.x, v.y, v.z));
+      const d = -(normal.x * vertices[0].x + normal.y * vertices[0].y + normal.z * vertices[0].z);
+      return { name, normal, d, vertices };
+    };
+
     // 1. Top face (+Z)
-    facets.push({
-      name: `${obs.id}-top`,
-      normal: { x: 0, y: 0, z: 1 },
-      d: -zMax,
-      vertices: [
+    facets.push(
+      makeFacet(`${obs.id}-top`, { x: 0, y: 0, z: 1 }, [
         { x: xMin, y: yMin, z: zMax },
         { x: xMax, y: yMin, z: zMax },
         { x: xMax, y: yMax, z: zMax },
         { x: xMin, y: yMax, z: zMax },
-      ],
-    });
+      ])
+    );
 
     // 2. South face (-Y)
-    facets.push({
-      name: `${obs.id}-south`,
-      normal: { x: 0, y: -1, z: 0 },
-      d: yMin,
-      vertices: [
+    facets.push(
+      makeFacet(`${obs.id}-south`, { x: 0, y: -1, z: 0 }, [
         { x: xMin, y: yMin, z: zMin },
         { x: xMax, y: yMin, z: zMin },
         { x: xMax, y: yMin, z: zMax },
         { x: xMin, y: yMin, z: zMax },
-      ],
-    });
+      ])
+    );
 
     // 3. North face (+Y)
-    facets.push({
-      name: `${obs.id}-north`,
-      normal: { x: 0, y: 1, z: 0 },
-      d: -yMax,
-      vertices: [
+    facets.push(
+      makeFacet(`${obs.id}-north`, { x: 0, y: 1, z: 0 }, [
         { x: xMax, y: yMax, z: zMin },
         { x: xMin, y: yMax, z: zMin },
         { x: xMin, y: yMax, z: zMax },
         { x: xMax, y: yMax, z: zMax },
-      ],
-    });
+      ])
+    );
 
     // 4. West face (-X)
-    facets.push({
-      name: `${obs.id}-west`,
-      normal: { x: -1, y: 0, z: 0 },
-      d: xMin,
-      vertices: [
+    facets.push(
+      makeFacet(`${obs.id}-west`, { x: -1, y: 0, z: 0 }, [
         { x: xMin, y: yMax, z: zMin },
         { x: xMin, y: yMin, z: zMin },
         { x: xMin, y: yMin, z: zMax },
         { x: xMin, y: yMax, z: zMax },
-      ],
-    });
+      ])
+    );
 
     // 5. East face (+X)
-    facets.push({
-      name: `${obs.id}-east`,
-      normal: { x: 1, y: 0, z: 0 },
-      d: -xMax,
-      vertices: [
+    facets.push(
+      makeFacet(`${obs.id}-east`, { x: 1, y: 0, z: 0 }, [
         { x: xMax, y: yMin, z: zMin },
         { x: xMax, y: yMax, z: zMin },
         { x: xMax, y: yMax, z: zMax },
         { x: xMax, y: yMin, z: zMax },
-      ],
-    });
+      ])
+    );
   }
 
   return facets;
@@ -460,8 +477,8 @@ export function testRayFacetIntersection(
   const { normal, d, vertices } = facetOrFacets;
   const denom = normal.x * dir.x + normal.y * dir.y + normal.z * dir.z;
 
-  // Backface culling or parallel ray
-  if (denom >= -1e-6) return false;
+  // Parallel ray check (double-sided: handles both thick obstacle walls and thin PV tables)
+  if (Math.abs(denom) <= 1e-6) return false;
 
   const numer = -(normal.x * origin.x + normal.y * origin.y + normal.z * origin.z + d);
   const t = numer / denom;
@@ -555,9 +572,14 @@ function computeTableShadingGeometricMesh(
   const latUy = -Math.sin(tableAzRad);
 
   // Longitudinal unit vector along slope (up-slope direction):
-  const slopeUx = -Math.cos(tiltRad) * Math.sin(tableAzRad);
-  const slopeUy = -Math.cos(tiltRad) * Math.cos(tableAzRad);
+  const slopeUx = Math.sin(tableAzRad) * Math.cos(tiltRad);
+  const slopeUy = Math.cos(tableAzRad) * Math.cos(tiltRad);
   const slopeUz = Math.sin(tiltRad);
+
+  // Normal vector:
+  const normX = -Math.sin(tableAzRad) * Math.sin(tiltRad);
+  const normY = -Math.cos(tableAzRad) * Math.sin(tiltRad);
+  const normZ = Math.cos(tiltRad);
 
   // 4 lateral sampling points across table width (-0.75, -0.25, 0.25, 0.75 of halfWidth)
   const lateralFractions = [-0.75, -0.25, 0.25, 0.75];
@@ -577,9 +599,9 @@ function computeTableShadingGeometricMesh(
       totalMeshPoints++;
 
       const ptOrigin = {
-        x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx,
-        y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy,
-        z: table.positionEnu.z + sOffset * slopeUz + 0.1, // slightly above roof plane
+        x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx + 0.04 * normX,
+        y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy + 0.04 * normY,
+        z: table.positionEnu.z + sOffset * slopeUz + 0.04 * normZ,
       };
 
       let isPointShaded = false;
@@ -655,6 +677,12 @@ export function simulateAnnual3dShading(
     allObstacleFacets.push(...buildObstacleFacets(obs));
   }
 
+  // Pre-build planar facets for all PV tables to support inter-row self-shading
+  const tableFacetsMap = new Map<string, PlanarFacet3D[]>();
+  for (const table of scene.pvTables) {
+    tableFacetsMap.set(table.id, buildTableFacets(table));
+  }
+
   // Heatmap accumulators per table
   const tableData: Map<
     string,
@@ -695,18 +723,55 @@ export function simulateAnnual3dShading(
       rawRayCastingStepsCount++;
       totalEvaluatedDaylightHours += weight;
 
-      // Clear-sky beam / diffuse irradiance model (W/m² on horizontal)
-      const sinAlt = Math.sin((sun.altitudeDeg * Math.PI) / 180.0);
-      const ghiProxyWh = Math.max(0, 950.0 * Math.pow(sinAlt, 1.15));
+      const altRad = (sun.altitudeDeg * Math.PI) / 180.0;
+      const azRad = (sun.azimuthDeg * Math.PI) / 180.0;
+      const sinAlt = Math.sin(altRad);
+
+      // Ray direction vector pointing TO the sun in ENU
+      const sunDir = {
+        x: -Math.sin(azRad) * Math.cos(altRad),
+        y: -Math.cos(azRad) * Math.cos(altRad),
+        z: sinAlt,
+      };
+
+      // Clear-sky beam / diffuse irradiance model calibrated to site peakSunHours
+      const pshRatio = Math.max(0.2, peakSunHours / 5.2);
+      const ghiProxyWh = Math.max(0, 950.0 * Math.pow(sinAlt, 1.15) * pshRatio);
+      const dhiProxyWh = 0.18 * ghiProxyWh;
+      const dniProxyWh = sinAlt > 0.05 ? Math.max(0, (ghiProxyWh - dhiProxyWh) / sinAlt) : 0;
+      const albedo = options?.albedo ?? 0.20;
 
       for (const table of scene.pvTables) {
         const stats = tableData.get(table.id)!;
         stats.daylightHours += weight;
 
-        const stepUnshadedKwh = (ghiProxyWh * (table.ratedPowerWp / 1000.0) * weight) / 1000.0;
+        // Plane of Array (POA) irradiance accounting for table tilt and azimuth
+        const tTiltRad = (table.tiltDeg * Math.PI) / 180.0;
+        const tAzRad = (table.azimuthDeg * Math.PI) / 180.0;
+        const normX = -Math.sin(tAzRad) * Math.sin(tTiltRad);
+        const normY = -Math.cos(tAzRad) * Math.sin(tTiltRad);
+        const normZ = Math.cos(tTiltRad);
+
+        // cos(AOI) = dot(normal, sunDir)
+        const cosAoi = Math.max(0, normX * sunDir.x + normY * sunDir.y + normZ * sunDir.z);
+
+        const poaBeamWh = dniProxyWh * cosAoi;
+        const poaDiffWh = dhiProxyWh * ((1.0 + Math.cos(tTiltRad)) / 2.0);
+        const poaGndWh = ghiProxyWh * albedo * ((1.0 - Math.cos(tTiltRad)) / 2.0);
+        const poaTotalWh = poaBeamWh + poaDiffWh + poaGndWh;
+
+        const stepUnshadedKwh = (poaTotalWh * (table.ratedPowerWp / 1000.0) * weight) / 1000.0;
         stats.unshadedKwh += stepUnshadedKwh;
 
-        const meshRes = computeTableShadingGeometricMesh(table, allObstacleFacets, sun);
+        // Gather all obstacle facets PLUS inter-row table facets (excluding self)
+        const occlusionFacetsForTable: PlanarFacet3D[] = [...allObstacleFacets];
+        for (const [id, f] of tableFacetsMap.entries()) {
+          if (id !== table.id) {
+            occlusionFacetsForTable.push(...f);
+          }
+        }
+
+        const meshRes = computeTableShadingGeometricMesh(table, occlusionFacetsForTable, sun);
 
         stats.beamCoverageSum += meshRes.beamCoveragePct * weight;
         if (meshRes.isDiodeTriggered) {
@@ -917,6 +982,8 @@ export interface ProjectArrayDesignInputs {
   elevationM?: number;
   installationEnvironment?: string;
   obstacles?: Obstacle3D[];
+  isDemoMode?: boolean;
+  includeDefaultObstacles?: boolean;
 }
 
 /**
@@ -928,15 +995,6 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
   const lng = inputs.longitude ?? 51.3890;
   const elev = inputs.elevationM ?? 1200;
 
-  const totalModules = Math.max(1, inputs.totalModulesCount || 140);
-  const modWidth = Math.max(0.8, inputs.moduleWidthM || 1.134);
-  const modLength = Math.max(1.2, inputs.moduleLengthM || 2.278);
-  const modPmp =
-    inputs.modulePmpWatts ||
-    (inputs.totalPvCapacityKwp > 0 ? (inputs.totalPvCapacityKwp * 1000) / totalModules : 550);
-  const totalKwp =
-    inputs.totalPvCapacityKwp > 0 ? inputs.totalPvCapacityKwp : (totalModules * modPmp) / 1000;
-
   const tiltDeg = Math.max(0, Math.min(60, inputs.tiltDeg ?? 25));
   const azimuthDeg = inputs.azimuthDeg ?? 0;
   const pitchM = Math.max(1.8, inputs.interRowSpacingM || 5.0);
@@ -947,33 +1005,66 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
   const eavesHeightM = isRooftop ? 8.0 : 0.0;
   const tableBaseZM = isRooftop ? eavesHeightM : 0.8;
 
-  // Determine realistic table/row layout based on module count
-  // Standard table: 2 modules in portrait (sloped length = 2 * modLength), N columns wide
-  let numRows: number;
-  let colsPerRow: number;
-
-  if (totalModules <= 28) {
-    numRows = 1;
-    colsPerRow = Math.max(2, Math.ceil(totalModules / 2));
-  } else if (totalModules <= 84) {
-    // 2 to 3 rows of up to 14 columns
-    colsPerRow = 14;
-    numRows = Math.max(2, Math.ceil(totalModules / 28));
-  } else if (totalModules <= 200) {
-    // 3 to 6 rows
-    colsPerRow = 14;
-    numRows = Math.min(6, Math.max(3, Math.ceil(totalModules / 28)));
-  } else {
-    // Large commercial / utility array (e.g. 500 - 2000 modules)
-    // Scale into representative 4 to 8 rows for performant 3D WebGL & ray-tracing
-    numRows = Math.min(8, Math.max(4, Math.round(totalModules / 250)));
-    colsPerRow = 16;
+  // Zero-capacity or zero-panel guard: generate empty scene without fabricating panels
+  if (inputs.totalModulesCount === 0 || inputs.totalPvCapacityKwp === 0) {
+    return {
+      anchorLocation: { latitude: lat, longitude: lng, elevationM: elev },
+      roofPlanes: [
+        {
+          id: 'roof-project-empty',
+          name: isRooftop ? 'Empty Rooftop Plane' : 'Empty Ground Footprint',
+          polygonWgs84: [],
+          polygonEnu: [
+            { x: -10, y: -10 },
+            { x: 10, y: -10 },
+            { x: 10, y: 10 },
+            { x: -10, y: 10 },
+          ],
+          tiltDeg: 0,
+          azimuthDeg: 0,
+          eavesHeightM,
+          setbackClearanceM: 1.5,
+        },
+      ],
+      pvTables: [],
+      obstacles: inputs.obstacles ?? [],
+      totalPvCapacityKwp: 0,
+      tiltDeg,
+      interRowSpacingM: pitchM,
+      updatedAt: new Date().toISOString(),
+    };
   }
 
-  const tableWidthM = Number((colsPerRow * modWidth).toFixed(2));
-  const tableSlopedLengthM = Number((2 * modLength).toFixed(2));
-  const modulesPerTable = Math.max(1, Math.round(totalModules / numRows));
-  const ratedPowerWpPerTable = Math.round((totalKwp * 1000) / numRows);
+  const totalModules = Math.max(1, inputs.totalModulesCount || 140);
+  const modWidth = Math.max(0.8, inputs.moduleWidthM || 1.134);
+  const modLength = Math.max(1.2, inputs.moduleLengthM || 2.278);
+  const modPmp =
+    inputs.modulePmpWatts ||
+    (inputs.totalPvCapacityKwp > 0 ? (inputs.totalPvCapacityKwp * 1000) / totalModules : 550);
+  const totalKwp =
+    inputs.totalPvCapacityKwp > 0 ? inputs.totalPvCapacityKwp : (totalModules * modPmp) / 1000;
+  const totalWatts = Math.round(totalKwp * 1000);
+
+  // Determine realistic table/row layout based on module count
+  let numRows: number;
+  if (totalModules === 1) {
+    numRows = 1;
+  } else if (totalModules <= 28) {
+    numRows = 1;
+  } else if (totalModules <= 84) {
+    numRows = Math.min(3, Math.max(2, Math.ceil(totalModules / 28)));
+  } else if (totalModules <= 200) {
+    numRows = Math.min(6, Math.max(3, Math.ceil(totalModules / 28)));
+  } else {
+    // Large commercial / utility array: scale into 4 to 8 rows
+    numRows = Math.min(8, Math.max(4, Math.round(totalModules / 250)));
+  }
+
+  // Exact conservation partition of modules and rated Watts across tables
+  const baseModules = Math.floor(totalModules / numRows);
+  const remModules = totalModules % numRows;
+  const baseWatts = Math.floor(totalWatts / numRows);
+  const remWatts = totalWatts % numRows;
 
   // Generate PV tables spaced along Y (North-South in ENU)
   const pvTables: PvTable3D[] = [];
@@ -981,6 +1072,12 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
 
   for (let r = 0; r < numRows; r++) {
     const yPos = Number((yStart + r * pitchM).toFixed(2));
+    const tableModules = baseModules + (r < remModules ? 1 : 0);
+    const tableWatts = baseWatts + (r < remWatts ? 1 : 0);
+    const tableCols = Math.max(1, Math.ceil(tableModules / 2));
+    const tableWidthM = Number((tableCols * modWidth).toFixed(2));
+    const tableSlopedLengthM = tableModules === 1 ? modLength : Number((2 * modLength).toFixed(2));
+
     pvTables.push({
       id: `tbl-proj-${r + 1}`,
       tableIndex: r + 1,
@@ -989,14 +1086,16 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
       slopedLengthM: tableSlopedLengthM,
       tiltDeg,
       azimuthDeg,
-      moduleCount: modulesPerTable,
-      ratedPowerWp: ratedPowerWpPerTable,
+      moduleCount: tableModules,
+      ratedPowerWp: tableWatts,
     });
   }
 
+  const maxTableWidthM = pvTables.length > 0 ? Math.max(...pvTables.map(t => t.widthM)) : 10;
+
   // Construct roof plane (or site footprint boundary) with setbacks
   const setbackM = 1.5;
-  const halfRoofWidth = Math.max(12, tableWidthM / 2 + setbackM + 2.0);
+  const halfRoofWidth = Math.max(12, maxTableWidthM / 2 + setbackM + 2.0);
   const halfRoofLength = Math.max(12, (numRows * pitchM) / 2 + setbackM + 2.0);
 
   const roofPlanes: RoofPlane[] = [
@@ -1017,39 +1116,50 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
     },
   ];
 
-  // Obstacle modeling: use custom obstacles if provided, otherwise realistic site obstructions
+  // Obstacle modeling: use custom obstacles if provided, or only inject defaults if requested/demo
   let obstacles: Obstacle3D[] = [];
   if (inputs.obstacles !== undefined) {
     obstacles = inputs.obstacles;
-  } else if (isRooftop) {
-    // Realistic rooftop obstructions: Central HVAC chiller and vent exhaust stack
-    obstacles = [
-      {
-        id: 'obs-proj-hvac',
-        name: 'Rooftop HVAC Chiller Unit',
-        geometryType: 'cuboid',
-        positionEnu: { x: 0, y: Number((yStart - 4.5).toFixed(2)), z: eavesHeightM },
-        dimensionsM: { widthM: 3.8, lengthM: 3.8, heightM: 2.8 },
-      },
-      {
-        id: 'obs-proj-chimney',
-        name: 'Rooftop Vent Exhaust Stack',
-        geometryType: 'cylinder',
-        positionEnu: { x: Number((tableWidthM / 2 + 2.2).toFixed(2)), y: 0, z: eavesHeightM },
-        dimensionsM: { radiusM: 0.9, heightM: 3.2 },
-      },
-    ];
+  } else if (inputs.includeDefaultObstacles === false) {
+    obstacles = [];
+  } else if (
+    inputs.isDemoMode ||
+    inputs.includeDefaultObstacles === true ||
+    inputs.installationEnvironment === 'rooftop_flat_concrete'
+  ) {
+    if (isRooftop) {
+      // Standard rooftop obstructions for demo/screening
+      obstacles = [
+        {
+          id: 'obs-proj-hvac',
+          name: 'Rooftop HVAC Chiller Unit',
+          geometryType: 'cuboid',
+          positionEnu: { x: 0, y: Number((yStart - 4.5).toFixed(2)), z: eavesHeightM },
+          dimensionsM: { widthM: 3.8, lengthM: 3.8, heightM: 2.8 },
+        },
+        {
+          id: 'obs-proj-chimney',
+          name: 'Rooftop Vent Exhaust Stack',
+          geometryType: 'cylinder',
+          positionEnu: { x: Number((maxTableWidthM / 2 + 2.2).toFixed(2)), y: 0, z: eavesHeightM },
+          dimensionsM: { radiusM: 0.9, heightM: 3.2 },
+        },
+      ];
+    } else {
+      // Ground mount substation kiosk for demo/screening
+      obstacles = [
+        {
+          id: 'obs-proj-inverter-kiosk',
+          name: 'Central Inverter & MV Substation Kiosk',
+          geometryType: 'cuboid',
+          positionEnu: { x: Number((maxTableWidthM / 2 + 3.2).toFixed(2)), y: 0, z: 0.0 },
+          dimensionsM: { widthM: 4.2, lengthM: 3.2, heightM: 2.8 },
+        },
+      ];
+    }
   } else {
-    // Ground mount: Perimeter transformer & inverter substation kiosk
-    obstacles = [
-      {
-        id: 'obs-proj-inverter-kiosk',
-        name: 'Central Inverter & MV Substation Kiosk',
-        geometryType: 'cuboid',
-        positionEnu: { x: Number((tableWidthM / 2 + 3.2).toFixed(2)), y: 0, z: 0.0 },
-        dimensionsM: { widthM: 4.2, lengthM: 3.2, heightM: 2.8 },
-      },
-    ];
+    // Real projects without specified obstacles have clean unobstructed arrays
+    obstacles = [];
   }
 
   return {
@@ -1098,6 +1208,59 @@ export function convertObstaclesToTriangles(obstacles: Obstacle3D[]): Triangle[]
 }
 
 /**
+ * Builds planar bounding facet representation of a PV table surface in ENU coordinates.
+ */
+export function buildTableFacets(table: PvTable3D): PlanarFacet3D[] {
+  const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
+  const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
+  const halfLen = table.slopedLengthM / 2;
+  const halfWidth = table.widthM / 2;
+
+  const latUx = Math.cos(tableAzRad);
+  const latUy = -Math.sin(tableAzRad);
+
+  const slopeUx = Math.sin(tableAzRad) * Math.cos(tiltRad);
+  const slopeUy = Math.cos(tableAzRad) * Math.cos(tiltRad);
+  const slopeUz = Math.sin(tiltRad);
+
+  const nx = -Math.sin(tableAzRad) * Math.sin(tiltRad);
+  const ny = -Math.cos(tableAzRad) * Math.sin(tiltRad);
+  const nz = Math.cos(tiltRad);
+
+  const c0 = {
+    x: table.positionEnu.x - halfWidth * latUx - halfLen * slopeUx,
+    y: table.positionEnu.y - halfWidth * latUy - halfLen * slopeUy,
+    z: table.positionEnu.z - halfLen * slopeUz,
+  };
+  const c1 = {
+    x: table.positionEnu.x + halfWidth * latUx - halfLen * slopeUx,
+    y: table.positionEnu.y + halfWidth * latUy - halfLen * slopeUy,
+    z: table.positionEnu.z - halfLen * slopeUz,
+  };
+  const c2 = {
+    x: table.positionEnu.x + halfWidth * latUx + halfLen * slopeUx,
+    y: table.positionEnu.y + halfWidth * latUy + halfLen * slopeUy,
+    z: table.positionEnu.z + halfLen * slopeUz,
+  };
+  const c3 = {
+    x: table.positionEnu.x - halfWidth * latUx + halfLen * slopeUx,
+    y: table.positionEnu.y - halfWidth * latUy + halfLen * slopeUy,
+    z: table.positionEnu.z + halfLen * slopeUz,
+  };
+
+  const d = -(nx * c0.x + ny * c0.y + nz * c0.z);
+
+  return [
+    {
+      name: `${table.id}-surface`,
+      normal: { x: nx, y: ny, z: nz },
+      d,
+      vertices: [c0, c1, c2, c3],
+    },
+  ];
+}
+
+/**
  * Converts PV table surfaces into 3D Triangles to support inter-row self-shading ray tracing.
  */
 export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
@@ -1112,8 +1275,8 @@ export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
     const latUx = Math.cos(tableAzRad);
     const latUy = -Math.sin(tableAzRad);
 
-    const slopeUx = -Math.cos(tiltRad) * Math.sin(tableAzRad);
-    const slopeUy = -Math.cos(tiltRad) * Math.cos(tableAzRad);
+    const slopeUx = Math.sin(tableAzRad) * Math.cos(tiltRad);
+    const slopeUy = Math.cos(tableAzRad) * Math.cos(tiltRad);
     const slopeUz = Math.sin(tiltRad);
 
     const c0: Vec3 = {
@@ -1160,9 +1323,13 @@ export function generateTableMeshSamplePoints(
   const latUx = Math.cos(tableAzRad);
   const latUy = -Math.sin(tableAzRad);
 
-  const slopeUx = -Math.cos(tiltRad) * Math.sin(tableAzRad);
-  const slopeUy = -Math.cos(tiltRad) * Math.cos(tableAzRad);
+  const slopeUx = Math.sin(tableAzRad) * Math.cos(tiltRad);
+  const slopeUy = Math.cos(tableAzRad) * Math.cos(tiltRad);
   const slopeUz = Math.sin(tiltRad);
+
+  const normX = -Math.sin(tableAzRad) * Math.sin(tiltRad);
+  const normY = -Math.cos(tableAzRad) * Math.sin(tiltRad);
+  const normZ = Math.cos(tiltRad);
 
   const lateralFractions: number[] = [];
   for (let c = 0; c < lateralCount; c++) {
@@ -1175,14 +1342,15 @@ export function generateTableMeshSamplePoints(
   }
 
   const points: Vec3[] = [];
+  const normalOffset = 0.05; // 5 cm above panel surface along normal vector to guard against numerical coplanar self-intersection
   for (const sFrac of slopedFractions) {
     const sOffset = sFrac * halfLen;
     for (const lFrac of lateralFractions) {
       const lOffset = lFrac * halfWidth;
       points.push({
-        x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx,
-        y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy,
-        z: table.positionEnu.z + sOffset * slopeUz + 0.08,
+        x: table.positionEnu.x + lOffset * latUx + sOffset * slopeUx + normalOffset * normX,
+        y: table.positionEnu.y + lOffset * latUy + sOffset * slopeUy + normalOffset * normY,
+        z: table.positionEnu.z + sOffset * slopeUz + normalOffset * normZ,
       });
     }
   }

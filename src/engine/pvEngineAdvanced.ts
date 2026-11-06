@@ -60,6 +60,8 @@ export interface PvArrayDesignResult {
   maxMpptOperatingCurrentAmps: number;
   maxMpptShortCircuitCurrentAmps: number;
   isMpptCurrentCompliant: boolean;
+  isVoltageFeasible: boolean;
+  isDesignFeasible: boolean;
   dcAcRatio: number;
   effectiveDeratingFactor: number;
   cellTempHotC: number;
@@ -100,13 +102,17 @@ export function designPvArray(
   const derateMismatch = 1.0 - (deratings.mismatchAndLidLossPct / 100.0);
   const derateInverter = inverter.efficiencyMaxPct / 100.0;
   const derateAvailability = deratings.systemAvailabilityPct / 100.0;
+  const derateClipping = 1.0 - ((deratings.inverterClippingLossPct ?? 0.0) / 100.0);
 
   const effectiveDeratingFactor =
-    derateTemp * derateSoiling * derateCable * derateMismatch * derateInverter * derateAvailability;
+    derateTemp * derateSoiling * derateCable * derateMismatch * derateInverter * derateAvailability * derateClipping;
 
   // 4. Required DC Array power
   // Energy = P_dc * PSH * Deratings
-  const psh = Math.max(2.5, peakSunHours);
+  if (peakSunHours <= 0) {
+    throw new Error("Invalid peakSunHours: value must be strictly positive and non-zero.");
+  }
+  const psh = peakSunHours;
   const requiredArrayKwp = requiredDailyKwh / (psh * effectiveDeratingFactor);
 
   // 5. String Sizing per IEC 62548 / NEC 690.7
@@ -140,9 +146,12 @@ export function designPvArray(
 
   // Min series modules limited by MPPT Min
   const minModulesAllowed = Math.ceil(inverter.vmpptMinVolts / singleModuleVmpMinHot);
+  const isVoltageFeasible = minModulesAllowed <= upperLimit && minModulesAllowed > 0;
 
-  if (minModulesAllowed > upperLimit) {
-    warnings.push("محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (حداقل ماژول از حداکثر بیشتر است).");
+  if (!isVoltageFeasible) {
+    warnings.push(
+      "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
+    );
   }
 
   // Choose optimal modules per string (aiming for middle of MPPT window, approx ~70% of VdcMax)
@@ -229,6 +238,8 @@ export function designPvArray(
     maxMpptOperatingCurrentAmps,
     maxMpptShortCircuitCurrentAmps,
     isMpptCurrentCompliant,
+    isVoltageFeasible,
+    isDesignFeasible: isVoltageFeasible && isMpptCurrentCompliant,
     dcAcRatio,
     effectiveDeratingFactor,
     cellTempHotC,

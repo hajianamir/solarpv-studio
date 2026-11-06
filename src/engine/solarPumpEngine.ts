@@ -67,7 +67,7 @@ export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
   }
 
   // 2. Effective pumping hours per day (typically PSH * 0.90 for high efficiency band)
-  const pumpingHours = Math.max(3.5, peakSunHours * 0.95);
+  const pumpingHours = Math.max(0.2, peakSunHours * 0.90);
   const flowRateM3PerHour = dailyWaterRequirementM3 / pumpingHours;
   const flowRateM3PerSec = flowRateM3PerHour / 3600.0;
   const flowRateLitersPerSecond = flowRateM3PerHour / 3.6;

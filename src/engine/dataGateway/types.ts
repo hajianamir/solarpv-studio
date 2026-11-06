@@ -7,6 +7,37 @@ import type { SoilClassification } from '../types/climateTypes';
 
 export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
+export type DatumStatus = 'available' | 'estimated' | 'missing' | 'invalid' | 'not_evaluated';
+
+export interface EngineeringDatum<T> {
+  value: T;
+  status: DatumStatus;
+  source: string; // e.g., 'PVGIS-ERA5', 'NASA_POWER', 'ISRIC_SOILGRIDS', 'INBC_PART_6', 'REGIONAL_ANALYTICAL_MODEL', 'SCREENING_ESTIMATE'
+  method: 'direct_measurement' | 'satellite_reanalysis' | 'geostatistical_interpolation' | 'analytical_model' | 'rule_of_thumb_screening';
+  uncertaintyPct?: number;
+  timestamp?: string;
+  notes?: string;
+}
+
+export function createEngineeringDatum<T>(
+  value: T,
+  status: DatumStatus = 'available',
+  source: string = 'REGIONAL_ANALYTICAL_MODEL',
+  method: EngineeringDatum<T>['method'] = 'analytical_model',
+  uncertaintyPct?: number,
+  notes?: string
+): EngineeringDatum<T> {
+  return {
+    value,
+    status,
+    source,
+    method,
+    uncertaintyPct,
+    timestamp: new Date().toISOString(),
+    notes,
+  };
+}
+
 export interface DataProvenanceMetadata {
   traceId: string;
   sourceProvider: 'NSRDB' | 'PVGIS' | 'NASA_POWER' | 'ISRIC_SOILGRIDS' | 'DLUBAL_GEOZONE' | 'REGIONAL_ANALYTICAL_MODEL';

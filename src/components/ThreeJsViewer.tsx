@@ -453,7 +453,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
       // Create sloped rack table
       const rack = new THREE.Group();
-      rack.rotation.x = -rad;
+      rack.rotation.x = rad;
       rack.position.y = Math.sin(rad) * (table.slopedLengthM / 4);
 
       // Modules grid along table width
@@ -515,17 +515,21 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
     activeScene.obstacles.forEach((obs) => {
       let obsMesh: THREE.Mesh;
+      const baseZ = obs.positionEnu.z ?? 0;
       if (obs.geometryType === 'cylinder') {
         const rad = obs.dimensionsM.radiusM || 1.0;
         const h = obs.dimensionsM.heightM || 3.0;
         obsMesh = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, h, 24), obsMat);
-        obsMesh.position.set(obs.positionEnu.x, h / 2, -obs.positionEnu.y);
+        obsMesh.position.set(obs.positionEnu.x, baseZ + h / 2, -obs.positionEnu.y);
       } else {
         const w = obs.dimensionsM.widthM || 3.0;
         const l = obs.dimensionsM.lengthM || 3.0;
         const h = obs.dimensionsM.heightM || 2.5;
         obsMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), obsMat);
-        obsMesh.position.set(obs.positionEnu.x, h / 2, -obs.positionEnu.y);
+        obsMesh.position.set(obs.positionEnu.x, baseZ + h / 2, -obs.positionEnu.y);
+        if (obs.rotationDeg) {
+          obsMesh.rotation.y = -(obs.rotationDeg * Math.PI) / 180;
+        }
       }
       obsMesh.castShadow = true;
       obsMesh.receiveShadow = true;

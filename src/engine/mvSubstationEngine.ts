@@ -242,11 +242,14 @@ export interface Ieee80EarthingResult {
   touchVoltageLimitVolts: number;  // Maximum permissible safe touch voltage
   stepVoltageLimitVolts: number;   // Maximum permissible safe step voltage
   calculatedGridResistanceOhms: number; // Target Rg <= 1.0 Ohm
-  isCompliant: boolean;
+  isCompliant: boolean; // Comprehensive IEEE 80 compliance: Rg <= 1.0 && isTouchSafe && isStepSafe
+  isResistanceCompliant: boolean; // Grid resistance threshold Rg <= 1.0 Ohm
   actualMeshVoltageVolts: number;
   actualStepVoltageVolts: number;
   isTouchSafe: boolean;
   isStepSafe: boolean;
+  complianceNotesFa?: string;
+  complianceNotesEn?: string;
 }
 
 export interface AuxiliaryTransformerSpec {
@@ -674,16 +677,32 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const actualMesh = Math.round((soilResistivityOhmM * ifaultKa * 1000.0 * 0.65) / (totalBuriedLengthM * 1.5));
   const actualStep = Math.round((soilResistivityOhmM * ifaultKa * 1000.0 * 0.35) / (totalBuriedLengthM * 1.2));
 
+  const isResistanceCompliant = calculatedGridResistanceOhms <= 1.0;
+  const isTouchSafe = actualMesh <= touchVoltageLimitVolts;
+  const isStepSafe = actualStep <= stepVoltageLimitVolts;
+  const isCompliant = isResistanceCompliant && isTouchSafe && isStepSafe;
+
   const earthing: Ieee80EarthingResult = {
     groundGridConductorMm2: Math.min(240, Math.max(70, groundGridConductorMm2)),
     touchVoltageLimitVolts,
     stepVoltageLimitVolts,
     calculatedGridResistanceOhms,
-    isCompliant: calculatedGridResistanceOhms <= 1.0,
+    isCompliant,
+    isResistanceCompliant,
     actualMeshVoltageVolts: actualMesh,
     actualStepVoltageVolts: actualStep,
-    isTouchSafe: actualMesh <= touchVoltageLimitVolts,
-    isStepSafe: actualStep <= stepVoltageLimitVolts,
+    isTouchSafe,
+    isStepSafe,
+    complianceNotesFa: isCompliant
+      ? 'شبکه زمین پست طبق IEEE 80 هم از نظر مقاومت کمتر از ۱ اهم و هم از نظر ولتاژهای تماس و گام ایمن است.'
+      : !isResistanceCompliant
+        ? 'مقاومت شبکه زمین از ۱ اهم بیشتر است. نیاز به افزایش طول هادی مدفون یا افزودن میله راد عمقی.'
+        : 'ولتاژ تماس یا گام از حد مجاز انسانی فراتر است! ضخامت لایه شن سطحی یا تراکم مش زمین را افزایش دهید.',
+    complianceNotesEn: isCompliant
+      ? 'Substation grounding grid fully compliant with IEEE 80 (Rg <= 1.0 Ohm, touch and step voltages safe).'
+      : !isResistanceCompliant
+        ? 'Ground resistance exceeds 1.0 Ohm target; add deep vertical ground rods or expand grid perimeter.'
+        : 'Touch or step voltage exceeds safe physiological threshold per IEEE 80; increase gravel surface layer or mesh density.',
   };
 
   // 4. Auxiliary Station Service Transformer (مصارف داخلی)
