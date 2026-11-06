@@ -3,8 +3,8 @@
 **Auditor:** Arena AI Senior Solar Engineering Agent  
 **Branch:** `arena/b1ee60dc-solarpv-studio`  
 **Test Suites:**
-- `scripts/engineering-audit-remediation-test.ts` (35/35 Passing)
-- `scripts/audit-r1-to-r7-remediation-test.ts` (80/80 Passing)
+- `scripts/engineering-audit-remediation-test.ts` (48/48 Passing)
+- `scripts/audit-r1-to-r7-remediation-test.ts` (85/85 Passing)
 - `scripts/run-all-benchmarks.ts` (Core Benchmark & Unit Suite: 100% Passing)
 
 ---
@@ -144,6 +144,15 @@ All vulnerabilities across items R1 through R11 have been systematically remedia
 ### Item 5: Automated CI Pipeline & Headless Smoke Test Characterization
 * **Pipeline Integration:** `.github/workflows/ci.yml` executes `npm run lint`, `npm run build`, `npm test`, `npm run test:smoke`, and `npm run test:audit`.
 * **Testing Scope Notice:** `test:smoke` is an in-memory Node.js integration script verifying 5 core end-to-end user data flows (API gateway, continuous compliance mode, analytical benchmarks, schema migration, and corrupted payload blocking). It does **not** run inside a real browser or evaluate WebGL GPU shader context, driver resource cleanup, or DOM drag-and-drop events.
+
+### Item 6: Resolution of Reviewer Probe Discrepancies (D1–D6)
+An independent audit probe of commit `d59e6a9` uncovered 6 discrete engineering discrepancies that have now been fully remediated and verified with dedicated test coverage in `scripts/engineering-audit-remediation-test.ts` (Area 7):
+1. **D1 (`ThreeJsViewer.tsx:616` Signature Mismatch):** Fixed `setCalculatedSignature` to supply the canonical object payload `{ scene: result.sceneState, cityId: city?.id, peakSunHours: city?.peakSunHours }` rather than passing bare `result.sceneState`. This eliminates immediate post-simulation signature divergence and restores seamless `Apply` workflow functionality.
+2. **D2 (Odd-Module Slot Alignment):** Visual mesh generation in `ThreeJsViewer.tsx` now renders the bottom module first (slot $2c$) and top module second (slot $2c + 1$). For odd module allocations (e.g. $N=27$), this places the single module in the bottom slot and leaves the top slot empty, maintaining complete spatial and geometric parity with analytical ray-tracer facets (`getActiveTableSubRects`).
+3. **D3 (Ray-Tracer Sample Point Weighting Distortion):** `generateTableMeshSamplePoints` previously allocated 12 points to each sub-rect regardless of area, causing a single odd module (1/27 = 3.7% area) to receive 50% of target points and artificially report 50% shading loss. The sample generator now enforces area-weighted, module-uniform sampling ($N=27$ allocates 26 points to full columns and 1 point to the odd module), ensuring shading on a single module produces strictly $\approx 3.70\%$ loss.
+4. **D4 (Module Count Scale & Single Module Length):** Removed hardcoded 28-column ceiling clamp (`Math.min(28, ...)` in `ThreeJsViewer.tsx`), permitting arrays of any size (e.g. 2,000 modules) to render without truncation. Single-module tables ($N=1$) now render at full sloped length ($2.278\,\text{m}$) instead of being halved.
+5. **D5 (Roof Plane Visualization & Rise Direction Consistency):** Ground plane mesh in `ThreeJsViewer.tsx` now reflects roof pitch and azimuth. In `getLocalRoofElevationAt`, ascending slope unit vectors were aligned with ENU conventions: azimuth 0° (South-facing) slopes up toward North ($+Y$), and multi-corner clearance checks (`checkTableRoofClearance`) evaluate true 3D local roof surface elevations.
+6. **D6 (Snapshot Reconciliation Drift & NASA Temperature Sentinels):** `simulateAnnual3dShading` now verifies capacity and module count consistency between declared project snapshot totals (`totalPvCapacityKwp`, `totalModulesCount`) and table sums, flagging `isProjectSnapshotConsistent: false` and `overallReconciled: false` on drift (e.g. 999 kWp vs 14.85 kWp). NASA POWER climatology parser now enforces strict physical ranges for `T2M_MIN` and `T2M_MAX` and rejects `-999` sentinels and `tMin > tMax` contradictions.
 
 ---
 

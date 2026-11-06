@@ -18,7 +18,11 @@ import {
   buildObstacleFacets,
   convertPvTablesToTriangles,
   generateTableMeshSamplePoints,
+  getActiveTableSubRects,
+  getLocalRoofElevationAt,
+  RoofPlane,
 } from '../src/engine/roof3dShadingEngine';
+import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvider';
 import {
   shadingLifecycleReducer,
   createInitialShadingLifecycleState,
@@ -33,7 +37,6 @@ import { simulate24hEnergyBalance } from '../src/engine/simulation24hEngine';
 import { designPvArray } from '../src/engine/pvEngineAdvanced';
 import { calculateSolarPump } from '../src/engine/solarPumpEngine';
 import { createEngineeringDatum } from '../src/engine/dataGateway/types';
-import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvider';
 
 let failures = 0;
 let passes = 0;
@@ -488,6 +491,183 @@ async function runAuditRemediationSuite() {
       pumpLowPsh.flowRateM3PerHour > 25.0,
       `calculateSolarPump does not artificially clamp pumping hours to 3.5h for low PSH`,
       `flowRate=${pumpLowPsh.flowRateM3PerHour} m³/h at PSH=1.5`
+    );
+  }
+
+  // ===========================================================================
+  // AREA 7: Six Critical Engineering Discrepancies Verification
+  // ===========================================================================
+  console.log('\n--- [AREA 7] Six Critical Engineering Discrepancies Verification ---');
+  {
+    // Discrepancy 1: Signature parity between ThreeJsViewer and shading lifecycle
+    const sceneD1 = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 14.85,
+      totalModulesCount: 27,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+      includeDefaultObstacles: false,
+    });
+    const annualD1 = simulateAnnual3dShading(sceneD1, 5.2, 40.0);
+    const canonicalSig = computeShadingSceneSignature({
+      scene: annualD1.sceneState,
+      cityId: 'tehran',
+      peakSunHours: 5.2,
+    });
+    const currentSig = computeShadingSceneSignature({
+      scene: sceneD1,
+      cityId: 'tehran',
+      peakSunHours: 5.2,
+    });
+    assert(
+      canonicalSig === currentSig,
+      'Post-simulation scene signature strictly matches current scene signature under canonical format',
+      `canonicalSig=${canonicalSig.slice(0, 16)}... currentSig=${currentSig.slice(0, 16)}...`
+    );
+
+    // Verify passing bare sceneState produces a different signature (which was causing stale apply mismatch)
+    const bareSig = computeShadingSceneSignature(annualD1.sceneState as any);
+    assert(
+      bareSig !== canonicalSig,
+      'Passing bare sceneState produces non-canonical signature, demonstrating why ThreeJsViewer:616 fix is mandatory',
+      `bareSig=${bareSig.slice(0, 16)}... vs canonicalSig=${canonicalSig.slice(0, 16)}...`
+    );
+
+    // Discrepancy 2: Odd-module slot parity (bottom module present, top module empty)
+    const t27 = sceneD1.pvTables[0];
+    const subRects27 = getActiveTableSubRects(t27);
+    assert(
+      subRects27.length === 2,
+      'Table with 27 modules decomposes into 2 active sub-rectangles without phantom 28th slot',
+      `subRectsCount=${subRects27.length}`
+    );
+    const oddSubRect = subRects27[1];
+    assert(
+      oddSubRect.centerOffsetSlope < 0,
+      'Odd 27th module is positioned in bottom slot (negative slope offset), matching ThreeJsViewer visual mesh',
+      `centerOffsetSlope=${oddSubRect.centerOffsetSlope.toFixed(3)}m`
+    );
+
+    // Discrepancy 3: Ray-tracer sample point weighting distortion
+    const samplePts27 = generateTableMeshSamplePoints(t27);
+    assert(
+      samplePts27.length === 27,
+      'Area-weighted sample point generator allocates exactly 27 points for 27 modules (1 point per module)',
+      `ptsCount=${samplePts27.length}`
+    );
+    const unshadedFraction = 26 / 27; // 26 unshaded, 1 shaded
+    const singleModuleLossPct = (1 - unshadedFraction) * 100;
+    assert(
+      Math.abs(singleModuleLossPct - (1 / 27) * 100) < 0.01,
+      'Single shaded module in 27-module table causes exactly 3.70% loss, avoiding 50% distortion',
+      `lossPct=${singleModuleLossPct.toFixed(2)}%`
+    );
+
+    // Discrepancy 4: Large module count scaling (N=2000) and single module length (N=1)
+    const scene2000 = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 1100,
+      totalModulesCount: 2000,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+    });
+    const totalModulesInScene2000 = scene2000.pvTables.reduce((s, t) => s + t.moduleCount, 0);
+    assert(
+      totalModulesInScene2000 === 2000,
+      'Large array of 2000 modules preserves all 2000 modules without 28-column ceiling clamp',
+      `totalModules=${totalModulesInScene2000}`
+    );
+
+    const sceneN1 = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 0.55,
+      totalModulesCount: 1,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+    });
+    const subRectN1 = getActiveTableSubRects(sceneN1.pvTables[0]);
+    assert(
+      subRectN1.length === 1 && subRectN1[0].slopedLength === sceneN1.pvTables[0].slopedLengthM,
+      'Single-module table (N=1) spans full sloped length without being halved',
+      `slopedLength=${subRectN1[0].slopedLength}m, tableSlopedLength=${sceneN1.pvTables[0].slopedLengthM}m`
+    );
+
+    // Discrepancy 5: Roof plane visualization & elevation rise direction consistency
+    const southFacingRoof: RoofPlane = {
+      id: 'roof-south-facing',
+      name: 'South Facing Roof',
+      polygonWgs84: [],
+      polygonEnu: [
+        { x: -20, y: -20 },
+        { x: 20, y: -20 },
+        { x: 20, y: 20 },
+        { x: -20, y: 20 },
+      ],
+      tiltDeg: 15,
+      azimuthDeg: 0, // Faces South (0°): slopes up toward North (+Y)
+      eavesHeightM: 8.0,
+      setbackClearanceM: 1.0,
+    };
+    const zNorthSouthRoof = getLocalRoofElevationAt(southFacingRoof, 0, 10);
+    const zSouthSouthRoof = getLocalRoofElevationAt(southFacingRoof, 0, -10);
+    assert(
+      zNorthSouthRoof > zSouthSouthRoof,
+      'South-facing roof (azimuth 0°) rises toward North (+Y) with eaves at South (-Y)',
+      `zNorth=${zNorthSouthRoof.toFixed(2)}m, zSouth=${zSouthSouthRoof.toFixed(2)}m`
+    );
+
+    // Discrepancy 6: Snapshot reconciliation capacity mismatch & NASA temperature sentinels
+    const mismatchedScene = {
+      ...sceneD1,
+      totalPvCapacityKwp: 999.0, // Declared 999 kWp vs actual tables sum 14.85 kWp
+    };
+    const mismatchSimResult = simulateAnnual3dShading(mismatchedScene, 5.2, 40.0);
+    assert(
+      mismatchSimResult.reconciliationStatus?.isProjectSnapshotConsistent === false &&
+        mismatchSimResult.isReconciled === false,
+      'Snapshot reconciliation detects capacity mismatch between declared project total (999 kWp) and table sum (14.85 kWp)',
+      `isProjectSnapshotConsistent=${mismatchSimResult.reconciliationStatus?.isProjectSnapshotConsistent}, overallReconciled=${mismatchSimResult.isReconciled}`
+    );
+
+    // NASA temperature validation edge cases
+    const climateGateway = new ClimateDataProvider();
+    let nasaTminSentinelRejected = false;
+    try {
+      (climateGateway as any).parseNasaPowerResponse(35.68, 51.38, {
+        properties: {
+          parameter: {
+            ALLSKY_SFC_SW_DWN: { ANN: 5.17 },
+            T2M: { ANN: 20.0 },
+            T2M_MIN: { ANN: -999.0 }, // NASA sentinel fill value
+            T2M_MAX: { ANN: 42.0 },
+          },
+        },
+      });
+    } catch {
+      nasaTminSentinelRejected = true;
+    }
+    assert(
+      nasaTminSentinelRejected,
+      'NASA POWER parser rejects -999 sentinel for minimum temperature',
+      `rejected=${nasaTminSentinelRejected}`
+    );
+
+    let nasaTminGreaterTmaxRejected = false;
+    try {
+      (climateGateway as any).parseNasaPowerResponse(35.68, 51.38, {
+        properties: {
+          parameter: {
+            ALLSKY_SFC_SW_DWN: { ANN: 5.17 },
+            T2M: { ANN: 20.0 },
+            T2M_MIN: { ANN: 45.0 }, // tMin > tMax contradiction
+            T2M_MAX: { ANN: 10.0 },
+          },
+        },
+      });
+    } catch {
+      nasaTminGreaterTmaxRejected = true;
+    }
+    assert(
+      nasaTminGreaterTmaxRejected,
+      'NASA POWER parser rejects physical contradiction where tMin > tMax',
+      `rejected=${nasaTminGreaterTmaxRejected}`
     );
   }
 

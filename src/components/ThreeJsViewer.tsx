@@ -439,6 +439,10 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     ground.rotation.x = -Math.PI / 2;
     const roofY = roofPlane?.eavesHeightM ?? 0;
     ground.position.y = roofY;
+    if (roofPlane?.tiltDeg) {
+      const rTiltRad = (roofPlane.tiltDeg * Math.PI) / 180;
+      ground.rotation.x = -Math.PI / 2 + rTiltRad;
+    }
     ground.receiveShadow = true;
     groundGroup.add(ground);
 
@@ -449,6 +453,10 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       0x475569
     );
     grid.position.y = roofY + 0.01;
+    if (roofPlane?.tiltDeg) {
+      const rTiltRad = (roofPlane.tiltDeg * Math.PI) / 180;
+      grid.rotation.x = rTiltRad;
+    }
     groundGroup.add(grid);
 
     // B. Rebuild PV Tables (Connected Rows from activeScene)
@@ -489,42 +497,58 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       const modW = moduleSpecs?.widthM || 1.134;
       const modL = moduleSpecs?.lengthM || 2.278;
       const calculatedCols = Math.max(1, Math.round(table.widthM / modW));
-      const cols = Math.min(28, calculatedCols);
+      const targetModules = table.moduleCount ?? (calculatedCols * 2);
+      const isSingleModule = targetModules === 1;
+      const cols = isSingleModule ? 1 : Math.max(1, Math.ceil(targetModules / 2));
       const colStep = table.widthM / cols;
-      const modWidth = colStep * 0.94;
-      const modLength = (table.slopedLengthM / 2) * 0.94;
+      const modWidth = Math.min(modW, colStep * 0.94);
+      const modLength = isSingleModule
+        ? table.slopedLengthM * 0.94
+        : (table.slopedLengthM / 2) * 0.94;
 
-      // Exact conservation of module meshes: do NOT render phantom modules for odd counts (R01, R10)
-      const targetModules = table.moduleCount ?? (cols * 2);
       let modulesRendered = 0;
 
       for (let c = 0; c < cols; c++) {
         const xPos = (c - (cols - 1) / 2) * colStep;
 
-        // Top portrait module
-        if (modulesRendered < targetModules) {
-          const modMeshTop = new THREE.Mesh(
+        if (isSingleModule) {
+          // Single module: centered on rack with full module length
+          const modMesh = new THREE.Mesh(
             new THREE.BoxGeometry(modWidth, 0.04, modLength),
             moduleMat
           );
-          modMeshTop.position.set(xPos, 0, -modLength / 2 - 0.02);
-          modMeshTop.castShadow = true;
-          modMeshTop.receiveShadow = true;
-          rack.add(modMeshTop);
+          modMesh.position.set(xPos, 0, 0);
+          modMesh.castShadow = true;
+          modMesh.receiveShadow = true;
+          rack.add(modMesh);
           modulesRendered++;
-        }
+        } else {
+          // Multi-module table (2-portrait):
+          // 1. Bottom portrait module (slot 2c) rendered FIRST (matching ray-tracer facet)
+          if (modulesRendered < targetModules) {
+            const modMeshBottom = new THREE.Mesh(
+              new THREE.BoxGeometry(modWidth, 0.04, modLength),
+              moduleMat
+            );
+            modMeshBottom.position.set(xPos, 0, modLength / 2 + 0.02);
+            modMeshBottom.castShadow = true;
+            modMeshBottom.receiveShadow = true;
+            rack.add(modMeshBottom);
+            modulesRendered++;
+          }
 
-        // Bottom portrait module
-        if (modulesRendered < targetModules) {
-          const modMeshBottom = new THREE.Mesh(
-            new THREE.BoxGeometry(modWidth, 0.04, modLength),
-            moduleMat
-          );
-          modMeshBottom.position.set(xPos, 0, modLength / 2 + 0.02);
-          modMeshBottom.castShadow = true;
-          modMeshBottom.receiveShadow = true;
-          rack.add(modMeshBottom);
-          modulesRendered++;
+          // 2. Top portrait module (slot 2c + 1) rendered SECOND
+          if (modulesRendered < targetModules) {
+            const modMeshTop = new THREE.Mesh(
+              new THREE.BoxGeometry(modWidth, 0.04, modLength),
+              moduleMat
+            );
+            modMeshTop.position.set(xPos, 0, -modLength / 2 - 0.02);
+            modMeshTop.castShadow = true;
+            modMeshTop.receiveShadow = true;
+            rack.add(modMeshTop);
+            modulesRendered++;
+          }
         }
 
         // Rack Support Leg Posts (every 2 columns) connecting table to roof plane
@@ -613,7 +637,13 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         });
         setAnnualResult(result);
         setRayTracedResult(rayTraced);
-        setCalculatedSignature(computeShadingSceneSignature(result.sceneState));
+        setCalculatedSignature(
+          computeShadingSceneSignature({
+            scene: result.sceneState,
+            cityId: city?.id,
+            peakSunHours: city?.peakSunHours,
+          })
+        );
         setLoading(false);
       }, 120);
     } catch {

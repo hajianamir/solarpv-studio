@@ -914,9 +914,41 @@ export function simulateAnnual3dShading(
     Math.abs(annualGeometricBeamLossPct + annualElectricalMismatchLossPct - aggregateShadingLossPct) <= 0.05 ||
     Math.abs(totalDirectBeamLossKwh + totalDiodeMismatchLossKwh - totalLost) <= Math.max(5.0, totalUnshaded * 0.001) ||
     totalUnshaded === 0;
-  const isProjectSnapshotConsistent = scene.pvTables.length > 0 ? scene.pvTables.every(t => t.moduleCount > 0) : true;
 
-  const isReconciled = isArithmeticBalanceOk && isHeatmapAggregationConsistent;
+  const sumTablesWatts = scene.pvTables.reduce((s, t) => s + (t.ratedPowerWp || 0), 0);
+  const sumTablesKwp = sumTablesWatts / 1000.0;
+  const sumTablesModules = scene.pvTables.reduce((s, t) => s + (t.moduleCount || 0), 0);
+
+  const isCapacityConsistent =
+    scene.totalPvCapacityKwp === undefined ||
+    scene.totalPvCapacityKwp <= 0 ||
+    Math.abs(scene.totalPvCapacityKwp - sumTablesKwp) <= Math.max(0.5, scene.totalPvCapacityKwp * 0.02);
+
+  const isModulesConsistent =
+    scene.totalModulesCount === undefined ||
+    scene.totalModulesCount <= 0 ||
+    scene.totalModulesCount === sumTablesModules;
+
+  const isTablesModuleCountValid =
+    scene.pvTables.length === 0 || scene.pvTables.every(t => t.moduleCount > 0);
+
+  const isProjectSnapshotConsistent =
+    isCapacityConsistent && isModulesConsistent && isTablesModuleCountValid;
+
+  const isReconciled =
+    isArithmeticBalanceOk && isHeatmapAggregationConsistent && isProjectSnapshotConsistent;
+
+  const reconciliationNotes = [
+    'Arithmetic balance verified across generation, unshaded baseline, and lost kWh. Diffuse and ground view factors are modeled under unobstructed hemispherical screening assumptions.',
+    !isCapacityConsistent
+      ? `Capacity mismatch: declared ${scene.totalPvCapacityKwp} kWp vs table sum ${sumTablesKwp.toFixed(2)} kWp.`
+      : '',
+    !isModulesConsistent
+      ? `Module count mismatch: declared ${scene.totalModulesCount} vs table sum ${sumTablesModules}.`
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const reconciliationStatus: ShadingReconciliationStatus = {
     isArithmeticBalanceOk,
@@ -924,8 +956,7 @@ export function simulateAnnual3dShading(
     isComponentEnergyConsistent,
     isProjectSnapshotConsistent,
     overallReconciled: isReconciled,
-    reconciliationNotes:
-      'Arithmetic balance verified across generation, unshaded baseline, and lost kWh. Diffuse and ground view factors are modeled under unobstructed hemispherical screening assumptions.',
+    reconciliationNotes,
   };
 
   const targetAnnualHorizontalIrradiationKwhM2 = Number((targetAnnualHorizontalIrradiationWhM2 / 1000.0).toFixed(2));
@@ -1574,7 +1605,12 @@ export function generateTableMeshSamplePoints(
   const points: Vec3[] = [];
   const normalOffset = 0.05; // 5 cm above panel surface along normal vector to guard against numerical coplanar self-intersection
 
-  for (const sr of subRects) {
+  if (subRects.length === 0) return points;
+
+  // Single sub-rect (even module counts or single-module tables):
+  // Generate lateralCount x slopedCount regular grid
+  if (subRects.length === 1) {
+    const sr = subRects[0];
     const cx = table.positionEnu.x + sr.centerOffsetLat * latUx + sr.centerOffsetSlope * slopeUx;
     const cy = table.positionEnu.y + sr.centerOffsetLat * latUy + sr.centerOffsetSlope * slopeUy;
     const cz = table.positionEnu.z + sr.centerOffsetSlope * slopeUz;
@@ -1591,6 +1627,42 @@ export function generateTableMeshSamplePoints(
       for (let c = 0; c < lCols; c++) {
         const lFrac = lCols === 1 ? 0 : -0.5 + (c / (lCols - 1)) * 1.0;
         const lOffset = lFrac * hw;
+        points.push({
+          x: cx + lOffset * latUx + sOffset * slopeUx + normalOffset * normX,
+          y: cy + lOffset * latUy + sOffset * slopeUy + normalOffset * normY,
+          z: cz + sOffset * slopeUz + normalOffset * normZ,
+        });
+      }
+    }
+    return points;
+  }
+
+  // Multi-subrect (odd module count):
+  // Distribute sample points with area-weighted / module-uniform density across active modules.
+  // Each active module receives equal sampling density so an odd module (e.g. 1/27 = 3.7% area)
+  // does not receive 50% of the sample points.
+  const modCount = table.moduleCount;
+  const cols = Math.max(1, Math.ceil(modCount / 2));
+  const fullCols = cols - 1;
+
+  for (const sr of subRects) {
+    const cx = table.positionEnu.x + sr.centerOffsetLat * latUx + sr.centerOffsetSlope * slopeUx;
+    const cy = table.positionEnu.y + sr.centerOffsetLat * latUy + sr.centerOffsetSlope * slopeUy;
+    const cz = table.positionEnu.z + sr.centerOffsetSlope * slopeUz;
+
+    const hw = sr.width / 2;
+    const hl = sr.slopedLength / 2;
+
+    const isOddColSubRect = sr.slopedLength < table.slopedLengthM * 0.75;
+    const lCols = isOddColSubRect ? 1 : Math.max(1, fullCols);
+    const sRows = isOddColSubRect ? 1 : 2;
+
+    for (let r = 0; r < sRows; r++) {
+      const sFrac = sRows === 1 ? 0 : -0.25 + r * 0.5;
+      const sOffset = sFrac * hl * 2;
+      for (let c = 0; c < lCols; c++) {
+        const lFrac = lCols === 1 ? 0 : -0.5 + (c + 0.5) / lCols;
+        const lOffset = lFrac * hw * 2;
         points.push({
           x: cx + lOffset * latUx + sOffset * slopeUx + normalOffset * normX,
           y: cy + lOffset * latUy + sOffset * slopeUy + normalOffset * normY,
@@ -1618,9 +1690,13 @@ export function getLocalRoofElevationAt(roofPlane: RoofPlane, x: number, y: numb
   const azRad = ((roofPlane.azimuthDeg || 0) * Math.PI) / 180.0;
 
   // Unit vector in direction of ascending roof slope:
-  // Azimuth 0 = slopes Up toward North, 180 = slopes Up toward South, etc.
-  const riseDirX = -Math.sin(azRad);
-  const riseDirY = -Math.cos(azRad);
+  // In ENU (+X=East, +Y=North, +Z=Up):
+  // Azimuth 0 = faces South, slopes Up toward North (+Y)
+  // Azimuth 90 = faces West, slopes Up toward East (+X)
+  // Azimuth 180 = faces North, slopes Up toward South (-Y)
+  // Azimuth 270/-90 = faces East, slopes Up toward West (-X)
+  const riseDirX = Math.sin(azRad);
+  const riseDirY = Math.cos(azRad);
 
   let refRise = 0;
   if (roofPlane.polygonEnu && roofPlane.polygonEnu.length > 0) {

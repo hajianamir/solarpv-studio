@@ -44,6 +44,22 @@ export function runIranianRegulationFinancialModel(
   loanTermYears: number = 5,
   inflationPct: number = 25.0
 ): IranianFinancialModelResult {
+  if (
+    typeof loanTermYears !== 'number' ||
+    !Number.isFinite(loanTermYears) ||
+    loanTermYears <= 0 ||
+    !Number.isInteger(loanTermYears) ||
+    loanTermYears > 25
+  ) {
+    throw new Error(`Loan term must be a positive integer between 1 and 25 years, received ${loanTermYears}`);
+  }
+  if (typeof loanInterestPct !== 'number' || !Number.isFinite(loanInterestPct) || loanInterestPct < 0) {
+    throw new Error(`Loan interest percentage cannot be negative, received ${loanInterestPct}%`);
+  }
+  if (typeof loanSharePct !== 'number' || !Number.isFinite(loanSharePct) || loanSharePct < 0 || loanSharePct > 100) {
+    throw new Error(`Loan share percentage must be between 0% and 100%, received ${loanSharePct}%`);
+  }
+
   // 1. Determine tariff and framework details
   let tariffPerKwhToman = customTariffTomanPerKwh;
   let frameworkNameFa = '';

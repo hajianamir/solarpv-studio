@@ -395,12 +395,13 @@ async function run() {
         { x: -15, y: 15 },
       ],
       tiltDeg: 15,
-      azimuthDeg: 180, // slopes up toward South
+      azimuthDeg: 180, // slopes up toward South (-Y in ENU)
       eavesHeightM: 8.0,
       setbackClearanceM: 1.0,
     };
-    const localZNorth = getLocalRoofElevationAt(pitchedRoof, 0, -10);
-    const localZSouth = getLocalRoofElevationAt(pitchedRoof, 0, 10);
+    // In ENU (+X=East, +Y=North, +Z=Up): -Y is South (y = -10), +Y is North (y = 10)
+    const localZSouth = getLocalRoofElevationAt(pitchedRoof, 0, -10);
+    const localZNorth = getLocalRoofElevationAt(pitchedRoof, 0, 10);
     assert(
       localZSouth > localZNorth,
       'Pitched roof surface elevation increases along ascending slope direction',
@@ -421,7 +422,11 @@ async function run() {
       ...table27,
       positionEnu: {
         ...table27.positionEnu,
-        z: localRoofAtTable + 0.35 + (table27.slopedLengthM / 2) * Math.sin((table27.tiltDeg * Math.PI) / 180),
+        z:
+          localRoofAtTable +
+          0.35 +
+          (table27.slopedLengthM / 2) *
+            (Math.sin((table27.tiltDeg * Math.PI) / 180) + Math.tan((pitchedRoof.tiltDeg * Math.PI) / 180)),
       },
     };
     const pitchedClearance = checkTableRoofClearance(tableOnPitched, pitchedRoof);

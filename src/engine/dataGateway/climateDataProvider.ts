@@ -257,8 +257,20 @@ export class ClimateDataProvider {
     const tMin = params?.T2M_MIN?.ANN ?? -5.0;
     const tMax = params?.T2M_MAX?.ANN ?? 42.0;
 
-    if (typeof tMean === 'number' && (tMean < -70 || tMean > 65)) {
+    const isTempPhysical = (t: any): boolean =>
+      typeof t === 'number' && Number.isFinite(t) && t >= -70 && t <= 65 && t !== -999;
+
+    if (!isTempPhysical(tMean)) {
       throw new Error(`NASA POWER temperature out of physical range (got ${tMean}°C)`);
+    }
+    if (!isTempPhysical(tMin)) {
+      throw new Error(`NASA POWER minimum temperature out of physical range or sentinel (got ${tMin}°C)`);
+    }
+    if (!isTempPhysical(tMax)) {
+      throw new Error(`NASA POWER maximum temperature out of physical range or sentinel (got ${tMax}°C)`);
+    }
+    if (tMin > tMax) {
+      throw new Error(`NASA POWER temperature consistency error: tMin (${tMin}°C) > tMax (${tMax}°C)`);
     }
 
     const absLat = Math.abs(lat);
