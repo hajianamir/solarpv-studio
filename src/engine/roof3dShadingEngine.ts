@@ -736,6 +736,7 @@ export function simulateAnnual3dShading(
   const isFull8760 = options?.simulationMode === 'hourly_8760';
   const stepDays = isFull8760 ? 1 : (options?.stepDays ?? 3);
   const simulationModeUsed = isFull8760 ? 'hourly_8760' : 'screening_3day';
+  const resolvedAlbedo = options?.albedo ?? scene.albedo ?? 0.20;
 
   // Build 3D planar facets for all obstacles in scene
   const allObstacleFacets: PlanarFacet3D[] = [];
@@ -826,7 +827,7 @@ export function simulateAnnual3dShading(
       simulatedHorizontalIrradiationWhM2 += weight * ghiProxyWh;
       const dhiProxyWh = 0.18 * ghiProxyWh;
       const dniProxyWh = sinAlt > 0.05 ? Math.max(0, (ghiProxyWh - dhiProxyWh) / sinAlt) : 0;
-      const albedo = options?.albedo ?? 0.20;
+      const albedo = resolvedAlbedo;
 
       for (const table of scene.pvTables) {
         const stats = tableData.get(table.id)!;
@@ -1028,7 +1029,7 @@ export function simulateAnnual3dShading(
   return {
     sceneState: {
       ...scene,
-      ...(options?.albedo !== undefined ? { albedo: options.albedo } : {}),
+      albedo: resolvedAlbedo,
     },
     simulationModeUsed,
     rawRayCastingStepsCount,
@@ -1224,7 +1225,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
       tiltDeg,
       azimuthDeg,
       interRowSpacingM: pitchM,
-      albedo: inputs.albedo,
+      albedo: inputs.albedo ?? 0.20,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -1411,7 +1412,7 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
     interRowSpacingM: pitchM,
     installationEnvironment: env,
     obstacleDataStatus,
-    albedo: inputs.albedo,
+    albedo: inputs.albedo ?? 0.20,
     updatedAt: new Date().toISOString(),
   };
 }

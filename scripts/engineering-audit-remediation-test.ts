@@ -1051,6 +1051,72 @@ async function runAuditRemediationSuite() {
       'Powerplant 3D shading lifecycle preserves valid non-stale applied state after CHECK_SYNC',
       `isStale=${syncState.isStale}, staleReason=${syncState.staleReason ?? 'none'}`
     );
+
+    // 4) Scene Albedo Direct Consumption in Simulator Probe
+    // simulateAnnual3dShading must respect scene.albedo directly when options.albedo is omitted
+    const sceneAlbedo08 = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 14.85,
+      totalModulesCount: 27,
+      tiltDeg: 25,
+      azimuthDeg: 0,
+      latitude: 35.6892,
+      longitude: 51.3890,
+      albedo: 0.80,
+    });
+    const resWithoutOptions = simulateAnnual3dShading(sceneAlbedo08, 5.2, 40.0);
+    const resWithOptions08 = simulateAnnual3dShading(sceneAlbedo08, 5.2, 40.0, { albedo: 0.80 });
+
+    assert(
+      resWithoutOptions.totalUnshadedAnnualKwh === resWithOptions08.totalUnshadedAnnualKwh &&
+        resWithoutOptions.sceneState.albedo === 0.80,
+      'simulateAnnual3dShading directly consumes scene.albedo when options.albedo is omitted (identical unshaded kWh and preserved albedo)',
+      `unshadedWithoutOpt=${resWithoutOptions.totalUnshadedAnnualKwh} kWh, unshadedWithOpt=${resWithOptions08.totalUnshadedAnnualKwh} kWh, sceneAlbedo=${resWithoutOptions.sceneState.albedo}`
+    );
+
+    // 5) Hourly 8760 Mode App & ThreeJsViewer Signature & Lifecycle Parity Probe
+    const appSig8760 = computeShadingSceneSignature({
+      scene: appPowerplantScene,
+      cityId: 'tehran',
+      peakSunHours: 5.17,
+      albedo: 0.20,
+      simulationMode: 'hourly_8760',
+    });
+    const viewerSig8760 = computeShadingSceneSignature({
+      scene: viewerPowerplantScene,
+      cityId: 'tehran',
+      peakSunHours: 5.17,
+      albedo: 0.20,
+      simulationMode: 'hourly_8760',
+    });
+
+    assert(
+      appSig8760 === viewerSig8760,
+      'Powerplant 8760-hour simulation mode achieves 100% signature parity between App and Viewer',
+      `appSig8760=${appSig8760.slice(0, 16)}... viewerSig8760=${viewerSig8760.slice(0, 16)}...`
+    );
+
+    const appliedState8760 = shadingLifecycleReducer(initialState, {
+      type: 'APPLY',
+      lossPct: 3.5,
+      capacityKwp: dcCapacityKwp,
+      projectCapacityKwp: dcCapacityKwp,
+      appliedAtIso: new Date().toISOString(),
+      cityId: 'tehran',
+      source: 'project_array_design',
+      signatureHash: viewerSig8760,
+      simulationMode: 'hourly_8760',
+    });
+    const syncState8760 = shadingLifecycleReducer(appliedState8760, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: dcCapacityKwp,
+      currentSignatureHash: appSig8760,
+    });
+    assert(
+      syncState8760.isStale === false && syncState8760.appliedShading?.simulationMode === 'hourly_8760',
+      '8760-hour 3D shading lifecycle preserves valid non-stale applied state after CHECK_SYNC',
+      `isStale=${syncState8760.isStale}, appliedMode=${syncState8760.appliedShading?.simulationMode}`
+    );
   }
 
   // ---------------------------------------------------------------------------

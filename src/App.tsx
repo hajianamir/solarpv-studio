@@ -575,6 +575,8 @@ export const App: React.FC = () => {
   }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment]);
 
   // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
+  const [shadingSimulationMode, setShadingSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
+
   const activePlantCapacityKwp =
     systemMode === 'powerplant'
       ? (targetPowerplantCapacityKw || 1000) * 1.25
@@ -584,6 +586,8 @@ export const App: React.FC = () => {
     systemMode === 'powerplant'
       ? Math.round((activePlantCapacityKwp * 1000) / (selectedModule.pmpWatts || 550))
       : arrayDesign.totalModulesCount;
+
+  const activeSimulationMode = appliedShadingRecord?.simulationMode ?? shadingSimulationMode;
 
   const currentShadingSignature = useMemo(() => {
     const scene = buildSceneFromProjectDesign({
@@ -610,7 +614,7 @@ export const App: React.FC = () => {
       cityId: city.id,
       peakSunHours: city.peakSunHours,
       albedo: city.albedo,
-      simulationMode: 'screening_3day',
+      simulationMode: activeSimulationMode,
     });
   }, [
     activePlantCapacityKwp,
@@ -626,6 +630,7 @@ export const App: React.FC = () => {
     city.peakSunHours,
     city.albedo,
     siteOverrides?.installationEnvironment,
+    activeSimulationMode,
   ]);
 
   useEffect(() => {
@@ -2438,9 +2443,15 @@ export const App: React.FC = () => {
               lang={lang}
               city={city}
               site={selectedSite}
-              plantCapacityKw={activePlantCapacityKwp}
+              plantCapacityKw={
+                systemMode === 'powerplant'
+                  ? (targetPowerplantCapacityKw || 1000)
+                  : activePlantCapacityKwp
+              }
               plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+              simulationMode={activeSimulationMode}
+              onSimulationModeChange={setShadingSimulationMode}
               arrayDesign={{
                 totalPvCapacityKwp: activePlantCapacityKwp,
                 totalModulesCount: activeModulesCount,
@@ -2467,7 +2478,10 @@ export const App: React.FC = () => {
               }}
               appliedShading={appliedShadingRecord}
               isShadingStale={isShadingStale}
-              onApplyShading={(record) =>
+              onApplyShading={(record) => {
+                if (record.simulationMode) {
+                  setShadingSimulationMode(record.simulationMode);
+                }
                 dispatchShadingLifecycle({
                   type: 'APPLY',
                   lossPct: record.lossPct,
@@ -2477,8 +2491,9 @@ export const App: React.FC = () => {
                   cityId: city.id,
                   source: record.source,
                   signatureHash: record.signatureHash || currentShadingSignature,
-                })
-              }
+                  simulationMode: record.simulationMode ?? activeSimulationMode,
+                });
+              }}
               onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
             />
           )}

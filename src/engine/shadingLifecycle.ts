@@ -21,6 +21,7 @@ export interface AppliedShading3dRecord {
   appliedAtIso: string;
   capacityKwp: number;
   signatureHash?: string;
+  simulationMode?: 'hourly_8760' | 'screening_3day';
   metadata?: ShadingAnalysisMetadata;
 }
 
@@ -29,6 +30,7 @@ export interface ShadingLifecycleState {
   appliedCityId?: string;
   appliedCapacityKwp?: number;
   appliedSignatureHash?: string;
+  appliedSimulationMode?: 'hourly_8760' | 'screening_3day';
   isStale?: boolean;
   staleReason?: string;
 }
@@ -83,7 +85,7 @@ export function computeShadingSceneSignature(params: ShadingSignatureParams): st
         ? params.albedo
         : s.albedo !== undefined
           ? s.albedo
-          : null;
+          : 0.20;
 
     const roof = (s.roofPlanes || []).map((r) => ({
       id: r.id,
@@ -170,6 +172,7 @@ export type ShadingLifecycleAction =
       cityId?: string;
       source?: 'representative_demo_block' | 'project_array_design';
       signatureHash?: string;
+      simulationMode?: 'hourly_8760' | 'screening_3day';
     }
   | { type: 'REVERT' }
   | { type: 'RESET' }
@@ -201,10 +204,12 @@ export function shadingLifecycleReducer(
           appliedAtIso: action.appliedAtIso || new Date().toISOString(),
           capacityKwp: action.capacityKwp,
           signatureHash: action.signatureHash,
+          simulationMode: action.simulationMode,
         },
         appliedCityId: action.cityId,
         appliedCapacityKwp: action.projectCapacityKwp ?? action.capacityKwp,
         appliedSignatureHash: action.signatureHash,
+        appliedSimulationMode: action.simulationMode,
         isStale: false,
       };
     }

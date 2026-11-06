@@ -99,7 +99,7 @@ All vulnerabilities across items R1 through R11 have been systematically remedia
 • [R9] Iranian Regulations Financial Annuity & Zero Interest Rate: 4/4 PASS
 • [R10] Data Gateway Circuit Breaker & Policy-Driven Routing: 10/10 PASS
 • [R11] Multi-Faceted Shading Reconciliation & Array Tilt Separation: 7/7 PASS
-• [AREA 1–7] Engineering Audit Remediation Suite: 63/63 PASS (Total 148/148 Audit Assertions Passing)
+• [AREA 1–7] Engineering Audit Remediation Suite: 66/66 PASS (Total 151/151 Audit Assertions Passing)
 ```
 
 ### D. Production Build & Static Analysis
@@ -166,6 +166,10 @@ An independent audit probe of commit `d59e6a9` and review of `93701cc` identifie
    - **Geodetic Anchor & Environmental Invalidation:** Canonical signature incorporates `anchorLocation` (`lat`, `lng`, `elev`), ground surface `albedo`, and `simulationMode`. Probes verify that latitude changes under fixed city and PSH, as well as albedo changes (0.20 to 0.80), strictly invalidate the signature.
    - **App & Viewer Powerplant Parity:** Sizing in `systemMode === 'powerplant'` uniformly employs DC nameplate capacity ($1250\,\text{kWp}$ for $1000\,\text{kW}$ AC target with 1.25 DC/AC ratio) and module count ($2273$), ensuring that `APPLY -> CHECK_SYNC` preserves non-stale applied state without false staleness trips.
    - **Asynchronous Exception Handling:** Wrapped the internal execution of `simulateAnnual3dShading` and ray-tracing inside `setTimeout` with a strict `try / catch / finally` structure that guarantees `setLoading(false)` is always executed, preventing UI lockup on unexpected computation errors.
+8. **D8 (Simulator Direct Albedo Consumption, 8760 Mode Lifecycle & AC/DC Label Disambiguation):**
+   - **Simulator Direct Albedo Fallback:** In `simulateAnnual3dShading`, albedo is directly resolved from `options?.albedo ?? scene.albedo ?? 0.20`, guaranteeing that scenes with custom albedo (e.g. 0.80) produce identical generation ($32,787\,\text{kWh}$) whether options are passed or omitted, and properly propagate albedo through the scene snapshot.
+   - **8760-Hour Lifecycle Sync:** `simulationMode` is synchronized bidirectionally between `App.tsx` and `ThreeJsViewer.tsx` and captured in `AppliedShading3dRecord`. Both fast screening (3-day) and full annual weather year (8760h) maintain 100% signature hash equality and keep `isStale: false` after `CHECK_SYNC`.
+   - **Powerplant Capacity Label Disambiguation:** In `powerplant` mode, `plantCapacityKw` passes the actual target AC inverter capacity ($1,000\,\text{kW AC}$), while `arrayDesign.totalPvCapacityKwp` supplies the DC module nameplate capacity ($1,250\,\text{kWp DC}$). The 3D viewport displays both clearly: `Target AC Capacity: 1,000 kW AC (Array DC: 1,250 kWp)`.
 
 ---
 

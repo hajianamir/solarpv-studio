@@ -47,6 +47,8 @@ export interface ThreeJsViewerProps {
   onApplyShading?: (record: AppliedShading3dRecord) => void;
   onRevertShading?: () => void;
   onShadingLossChange?: (shadingLossPct: number) => void;
+  simulationMode?: 'hourly_8760' | 'screening_3day';
+  onSimulationModeChange?: (mode: 'hourly_8760' | 'screening_3day') => void;
 
   // Real Project Array Design props
   arrayDesign?: {
@@ -80,6 +82,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   onApplyShading,
   onRevertShading,
   onShadingLossChange,
+  simulationMode: propSimulationMode,
+  onSimulationModeChange,
   arrayDesign,
   moduleSpecs,
   installationEnvironment,
@@ -94,6 +98,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const siteLat = site?.lat ?? effectiveCity?.latitude ?? 35.6892;
   const siteLng = site?.lng ?? effectiveCity?.longitude ?? 51.3890;
   const siteElev = effectiveCity?.elevationM ?? 1200;
+  const effectiveAlbedo = effectiveCity?.albedo ?? 0.20;
 
   // Scene Selection: defaults to active project array design if available, else demo block fallback
   const hasProjectData = Boolean(arrayDesign && (arrayDesign.totalModulesCount || 0) > 0);
@@ -105,7 +110,15 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const [tiltDeg, setTiltDeg] = useState<number>(initialTilt);
   const [sunAltitude, setSunAltitude] = useState<number>(45);
   const [sunAzimuth, setSunAzimuth] = useState<number>(180);
-  const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
+  const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>(
+    propSimulationMode ?? 'screening_3day'
+  );
+
+  useEffect(() => {
+    if (propSimulationMode && propSimulationMode !== simulationMode) {
+      setSimulationMode(propSimulationMode);
+    }
+  }, [propSimulationMode, simulationMode]);
 
   // Synchronize tilt if project design tilt changes externally
   useEffect(() => {
@@ -132,6 +145,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       elevationM: siteElev,
       installationEnvironment,
       obstacles,
+      albedo: effectiveAlbedo,
     });
   }, [
     hasProjectData,
@@ -144,6 +158,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     siteElev,
     installationEnvironment,
     obstacles,
+    effectiveAlbedo,
   ]);
 
   // Active scene state: either connected project array or representative demo block fallback
@@ -163,8 +178,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         tiltDeg,
       })),
       tiltDeg,
+      albedo: effectiveAlbedo,
     };
-  }, [sceneMode, projectScene, siteLat, siteLng, siteElev, tiltDeg]);
+  }, [sceneMode, projectScene, siteLat, siteLng, siteElev, tiltDeg, effectiveAlbedo]);
 
   // Scene capacity in kWp
   const activeSceneCapacityKwp = useMemo(() => {
@@ -194,7 +210,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const [annualResult, setAnnualResult] = useState<AnnualShading3dResult | null>(() => {
     try {
       return simulateAnnual3dShading(activeScene, city?.peakSunHours ?? 5.2, 40.0, {
-        simulationMode: 'screening_3day',
+        simulationMode: propSimulationMode ?? 'screening_3day',
+        albedo: activeScene.albedo ?? effectiveAlbedo,
       });
     } catch {
       return null;
@@ -842,9 +859,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
             <select
               value={simulationMode}
-              onChange={(e) =>
-                setSimulationMode(e.target.value as 'hourly_8760' | 'screening_3day')
-              }
+              onChange={(e) => {
+                const newMode = e.target.value as 'hourly_8760' | 'screening_3day';
+                setSimulationMode(newMode);
+                onSimulationModeChange?.(newMode);
+              }}
               className="studio-input text-xs font-mono py-1.5"
             >
               <option value="screening_3day">
@@ -968,6 +987,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                       {plantCapacityKw.toLocaleString()}{' '}
                       {plantCapacityType === 'ac_target' ? 'kW AC' : 'kWp'}
                     </span>
+                    {plantCapacityType === 'ac_target' && arrayDesign?.totalPvCapacityKwp && (
+                      <span className="text-slate-400 font-normal ml-1">
+                        ({isEn ? 'Array DC:' : 'آرایه DC:'} {arrayDesign.totalPvCapacityKwp.toLocaleString()} kWp)
+                      </span>
+                    )}
                   </span>
                 </div>
                 {(() => {
@@ -1111,6 +1135,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                               appliedAtIso: new Date().toISOString(),
                               capacityKwp: activeSceneCapacityKwp,
                               signatureHash: calculatedSignature ?? currentSceneSignature,
+                              simulationMode,
                             });
                             onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
                           }
