@@ -64,6 +64,7 @@ async function main() {
       arrayTiltDeg: climate.optimalTiltAnnualDeg,
       postsPerTable: 4,
       clearanceHeightM: 1.2,
+      slopeDeg: 0,
     });
 
     console.log(`\n--- ${site.name} (${site.lat.toFixed(4)}°, ${site.lng.toFixed(4)}°) | trace ${traceId.slice(0, 13)}... ---`);

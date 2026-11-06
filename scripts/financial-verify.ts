@@ -16,7 +16,7 @@ function assert(condition: boolean, message: string) {
   else { console.error(`  [FAIL] ${message}`); failures++; }
 }
 
-function main() {
+async function main() {
   console.log('================================================================================');
   console.log(' PR-2a-6 REPAIR — Mode-aware financial engine (Ambiguity C)');
   console.log('================================================================================\n');
@@ -53,7 +53,7 @@ function main() {
     const b = res.capexBreakdown;
     const offgrid = m.mode === 'offgrid';
     console.log(`\n--- ${m.label} ---`);
-    console.log(`  LCOE: ${res.lcoeUsdPerKwh.toFixed(4)} USD/kWh | Cost of Energy Served: ${res.costOfEnergyServedUsdPerKwh.toFixed(6)} USD/kWh`);
+    console.log(`  LCOE: ${(res.lcoeUsdPerKwh ?? 0).toFixed(4)} USD/kWh | Cost of Energy Served: ${(res.costOfEnergyServedUsdPerKwh ?? 0).toFixed(6)} USD/kWh`);
     console.log(`  CAPEX: ${b.totalCapexUsd.toLocaleString('en-US')} USD | Substation: ${b.substationMvUsd} USD | Grid: ${b.gridInterconnectionUsd} USD | HV Conn: ${b.hvConnectionUsd} USD`);
     console.log(`  Diesel fuel: ${res.dieselFuelCostUsd.toFixed(2)} USD/yr | Diesel OPEX: ${res.dieselOpexUsd} USD/yr | Battery repl Y12: ${b.batteryReplacementYear12Usd} USD`);
     console.log(`  PPA tariff: ${res.ppaTariffTomanPerKwh} Toman/kWh | Land lease: ${res.landLeaseAnnualUsd.toFixed(2)} USD/yr | Grid operator fee: ${res.gridOperatorFeeAnnualUsd.toFixed(2)} USD/yr`);
@@ -61,8 +61,8 @@ function main() {
 
     results.push({
       mode: m.label,
-      lcoeUsd: res.lcoeUsdPerKwh,
-      lcoeTom: res.lcoeTomanPerKwh,
+      lcoeUsd: res.lcoeUsdPerKwh ?? 0,
+      lcoeTom: res.lcoeTomanPerKwh ?? 0,
       capexUsd: b.totalCapexUsd,
       substationUsd: b.substationMvUsd,
       gridUsd: b.gridInterconnectionUsd,
@@ -71,7 +71,7 @@ function main() {
       dieselOpexUsd: res.dieselOpexUsd,
       battReplUsd: b.batteryReplacementYear12Usd,
       feedInRevenue: offgrid ? 0 : res.annualRevenueUsd,
-      costOfEnergyServedUsd: res.costOfEnergyServedUsdPerKwh,
+      costOfEnergyServedUsd: res.costOfEnergyServedUsdPerKwh ?? 0,
       hvConnectionUsd: b.hvConnectionUsd,
       landLeaseAnnualUsd: res.landLeaseAnnualUsd,
       gridOperatorFeeAnnualUsd: res.gridOperatorFeeAnnualUsd,

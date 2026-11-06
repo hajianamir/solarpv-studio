@@ -18,6 +18,8 @@ export interface Simulation24hResult {
   totalConsumption24hKwh: number;
   totalSurplus24hKwh: number;
   totalDeficit24hKwh: number;
+  energyNotServedKwh: number;
+  lossOfPowerSupplyProbabilityPct: number;
   minBatterySocPct: number;
   maxBatterySocPct: number;
   isSelfSufficient: boolean;
@@ -42,13 +44,14 @@ export function simulate24hEnergyBalance(
   daytimeKwh: number,
   nighttimeKwh: number,
   batteryUsableKwh: number,
-  batteryCapacityTotalKwh: number
+  batteryCapacityTotalKwh: number,
+  initialBatterySocPct: number = 50.0
 ): Simulation24hResult {
   const steps: HourlyEnergyStep[] = [];
-  let currentBatteryWh = batteryCapacityTotalKwh * 0.90 * 1000.0; // Start at 90% SoC
   const maxBatteryWh = batteryCapacityTotalKwh * 1000.0;
   const hasBattery = maxBatteryWh > 1e-6; // BUG-3: guard zero-capacity BESS (powerplant mode)
   const minAllowedBatteryWh = (batteryCapacityTotalKwh - batteryUsableKwh) * 1000.0;
+  let currentBatteryWh = hasBattery ? (maxBatteryWh * (initialBatterySocPct / 100.0)) : 0;
 
   // Approximate bell curve irradiance fractions for 24 hours
   // Daylight typically from hour 6 to 18, peaking at 12
@@ -69,17 +72,25 @@ export function simulate24hEnergyBalance(
   let minSoc = 100;
   let maxSoc = 0;
 
+  const chargeEff = 0.95;
+  const dischargeEff = 0.95;
+  // Maximum continuous PCS / C-rate power limit (1.0C continuous rating)
+  const maxPcsPowerKw = batteryCapacityTotalKwh * 1.0;
+
   for (let h = 0; h < 24; h++) {
     const isDay = h >= 6 && h < 18;
     const solarKwh = (solarFractions[h] / sumFractions) * totalDailyGenerationKwh;
-    // Distribute load realistically (slight peak in evening 18-22 and noon 12-14)
+
+    // Distribute load realistically with strict partition normalization:
+    // Day: 3 peak hours @ 1.3 + 9 standard hours @ 0.9 => sum = 12.0
+    // Night: 5 evening hours @ 1.4 + 7 night hours @ 0.7 => sum = 11.9
     let loadKwh = 0;
     if (isDay) {
       const dayFactor = (h >= 12 && h <= 14) ? 1.3 : 0.9;
-      loadKwh = (daytimeKwh / 12.0) * dayFactor;
+      loadKwh = (daytimeKwh * dayFactor) / 12.0;
     } else {
       const nightFactor = (h >= 18 && h <= 22) ? 1.4 : 0.7;
-      loadKwh = (nighttimeKwh / 12.0) * nightFactor;
+      loadKwh = (nighttimeKwh * nightFactor) / 11.9;
     }
 
     const netKwh = solarKwh - loadKwh;
@@ -89,28 +100,32 @@ export function simulate24hEnergyBalance(
     let deficitKwh = 0;
 
     if (netKwh > 0) {
-      // Solar surplus charges battery
-      const spaceInBatWh = maxBatteryWh - currentBatteryWh;
-      const netWh = netKwh * 1000.0 * 0.95; // 95% charge efficiency
-      if (netWh <= spaceInBatWh) {
-        chargeKwh = netWh / 1000.0;
-        currentBatteryWh += netWh;
+      if (hasBattery) {
+        // Solar surplus charges battery up to available capacity and PCS rating
+        const spaceInBatWh = Math.max(0, maxBatteryWh - currentBatteryWh);
+        const maxAbsorbKwh = (spaceInBatWh / chargeEff) / 1000.0;
+        const allowedChargeKwh = Math.min(netKwh, maxAbsorbKwh, maxPcsPowerKw);
+        chargeKwh = Math.max(0, allowedChargeKwh);
+        currentBatteryWh += chargeKwh * 1000.0 * chargeEff;
+        // Surplus is remainder solar that does NOT enter battery; strictly unpenalized by battery efficiency
+        surplusKwh = netKwh - chargeKwh;
       } else {
-        chargeKwh = spaceInBatWh / 1000.0;
-        currentBatteryWh = maxBatteryWh;
-        surplusKwh = (netWh - spaceInBatWh) / 1000.0;
+        chargeKwh = 0;
+        surplusKwh = netKwh;
       }
     } else {
-      // Net deficit discharges battery
-      const neededWh = Math.abs(netKwh) * 1000.0 / 0.95; // discharge efficiency
-      const availableWh = Math.max(0, currentBatteryWh - minAllowedBatteryWh);
-      if (neededWh <= availableWh) {
-        dischargeKwh = Math.abs(netKwh);
-        currentBatteryWh -= neededWh;
+      const neededKwh = Math.abs(netKwh);
+      if (hasBattery) {
+        // Net deficit discharges battery down to minimum allowable reserve
+        const availableWh = Math.max(0, currentBatteryWh - minAllowedBatteryWh);
+        const maxDeliverableKwh = (availableWh * dischargeEff) / 1000.0;
+        const allowedDischargeKwh = Math.min(neededKwh, maxDeliverableKwh, maxPcsPowerKw);
+        dischargeKwh = Math.max(0, allowedDischargeKwh);
+        currentBatteryWh -= (dischargeKwh * 1000.0) / dischargeEff;
+        deficitKwh = neededKwh - dischargeKwh;
       } else {
-        dischargeKwh = (availableWh * 0.95) / 1000.0;
-        currentBatteryWh = minAllowedBatteryWh;
-        deficitKwh = Math.abs(netKwh) - dischargeKwh;
+        dischargeKwh = 0;
+        deficitKwh = neededKwh;
       }
     }
 
@@ -140,15 +155,21 @@ export function simulate24hEnergyBalance(
     });
   }
 
+  const lpspPct = totalLoad > 0 ? Number(((totalDeficit / totalLoad) * 100).toFixed(2)) : 0;
+  const initialWh = hasBattery ? maxBatteryWh * (initialBatterySocPct / 100.0) : 0;
+  const isSelfSufficient = totalDeficit < 0.1 && (!hasBattery || currentBatteryWh >= initialWh * 0.98);
+
   return {
     hourlySteps: steps,
     totalGeneration24hKwh: Math.round(totalGen * 10) / 10,
     totalConsumption24hKwh: Math.round(totalLoad * 10) / 10,
     totalSurplus24hKwh: Math.round(totalSurplus * 10) / 10,
     totalDeficit24hKwh: Math.round(totalDeficit * 10) / 10,
+    energyNotServedKwh: Math.round(totalDeficit * 10) / 10,
+    lossOfPowerSupplyProbabilityPct: lpspPct,
     minBatterySocPct: hasBattery ? minSoc : 100,
     maxBatterySocPct: hasBattery ? maxSoc : 100,
-    isSelfSufficient: totalDeficit < 0.1,
+    isSelfSufficient,
   };
 }
 

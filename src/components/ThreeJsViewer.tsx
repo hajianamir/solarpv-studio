@@ -21,12 +21,13 @@ import {
   DEFAULT_ROOFTOP_SCENE,
   buildSceneFromProjectDesign,
   calculateRayTracedShadingFactor,
+  getLocalRoofElevationAt,
   type AnnualShading3dResult,
   type Scene3DState,
   type Obstacle3D,
 } from '../engine/roof3dShadingEngine';
 import { type ClimateCity } from '../engine/climaticData';
-import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
+import { type AppliedShading3dRecord, computeShadingSceneSignature } from '../engine/shadingLifecycle';
 
 export interface ThreeJsViewerProps {
   lang?: 'fa' | 'en';
@@ -46,6 +47,8 @@ export interface ThreeJsViewerProps {
   onApplyShading?: (record: AppliedShading3dRecord) => void;
   onRevertShading?: () => void;
   onShadingLossChange?: (shadingLossPct: number) => void;
+  simulationMode?: 'hourly_8760' | 'screening_3day';
+  onSimulationModeChange?: (mode: 'hourly_8760' | 'screening_3day') => void;
 
   // Real Project Array Design props
   arrayDesign?: {
@@ -79,6 +82,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   onApplyShading,
   onRevertShading,
   onShadingLossChange,
+  simulationMode: propSimulationMode,
+  onSimulationModeChange,
   arrayDesign,
   moduleSpecs,
   installationEnvironment,
@@ -93,6 +98,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const siteLat = site?.lat ?? effectiveCity?.latitude ?? 35.6892;
   const siteLng = site?.lng ?? effectiveCity?.longitude ?? 51.3890;
   const siteElev = effectiveCity?.elevationM ?? 1200;
+  const effectiveAlbedo = effectiveCity?.albedo ?? 0.20;
 
   // Scene Selection: defaults to active project array design if available, else demo block fallback
   const hasProjectData = Boolean(arrayDesign && (arrayDesign.totalModulesCount || 0) > 0);
@@ -104,7 +110,15 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const [tiltDeg, setTiltDeg] = useState<number>(initialTilt);
   const [sunAltitude, setSunAltitude] = useState<number>(45);
   const [sunAzimuth, setSunAzimuth] = useState<number>(180);
-  const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
+  const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>(
+    propSimulationMode ?? 'screening_3day'
+  );
+
+  useEffect(() => {
+    if (propSimulationMode && propSimulationMode !== simulationMode) {
+      setSimulationMode(propSimulationMode);
+    }
+  }, [propSimulationMode, simulationMode]);
 
   // Synchronize tilt if project design tilt changes externally
   useEffect(() => {
@@ -131,6 +145,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       elevationM: siteElev,
       installationEnvironment,
       obstacles,
+      albedo: effectiveAlbedo,
     });
   }, [
     hasProjectData,
@@ -143,6 +158,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     siteElev,
     installationEnvironment,
     obstacles,
+    effectiveAlbedo,
   ]);
 
   // Active scene state: either connected project array or representative demo block fallback
@@ -162,8 +178,9 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         tiltDeg,
       })),
       tiltDeg,
+      albedo: effectiveAlbedo,
     };
-  }, [sceneMode, projectScene, siteLat, siteLng, siteElev, tiltDeg]);
+  }, [sceneMode, projectScene, siteLat, siteLng, siteElev, tiltDeg, effectiveAlbedo]);
 
   // Scene capacity in kWp
   const activeSceneCapacityKwp = useMemo(() => {
@@ -193,12 +210,40 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const [annualResult, setAnnualResult] = useState<AnnualShading3dResult | null>(() => {
     try {
       return simulateAnnual3dShading(activeScene, city?.peakSunHours ?? 5.2, 40.0, {
-        simulationMode: 'screening_3day',
+        simulationMode: propSimulationMode ?? 'screening_3day',
+        albedo: activeScene.albedo ?? effectiveAlbedo,
       });
     } catch {
       return null;
     }
   });
+
+  // Canonical input signature of the active scene
+  const currentSceneSignature = useMemo(() => {
+    return computeShadingSceneSignature({
+      scene: activeScene,
+      cityId: city?.id,
+      peakSunHours: city?.peakSunHours,
+      albedo: activeScene.albedo ?? city?.albedo,
+      simulationMode,
+    });
+  }, [activeScene, city?.id, city?.peakSunHours, city?.albedo, simulationMode]);
+
+  const [calculatedSignature, setCalculatedSignature] = useState<string | null>(() => {
+    try {
+      return computeShadingSceneSignature({
+        scene: activeScene,
+        cityId: city?.id,
+        peakSunHours: city?.peakSunHours,
+        albedo: activeScene.albedo ?? city?.albedo,
+        simulationMode,
+      });
+    } catch {
+      return null;
+    }
+  });
+
+  const isAnalysisStale = Boolean(calculatedSignature && currentSceneSignature !== calculatedSignature);
 
   // Three.js References
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -412,11 +457,25 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       color: roofPlane?.eavesHeightM ? 0x334155 : 0x1e293b,
       roughness: 0.85,
     });
+
+    const roofCenterY = roofPlane ? getLocalRoofElevationAt(roofPlane, 0, 0) : 0;
+    const roofMeshGroup = new THREE.Group();
+    roofMeshGroup.position.set(0, roofCenterY, 0);
+
+    // Orient roof plane around vertical axis according to roof azimuth:
+    // In Three.js (+Z = South, +X = East, -X = West), clockwise azimuth from South maps to -rotation.y
+    if (roofPlane?.azimuthDeg) {
+      roofMeshGroup.rotation.y = -((roofPlane.azimuthDeg * Math.PI) / 180);
+    }
+
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = 0;
+    if (roofPlane?.tiltDeg) {
+      const rTiltRad = (roofPlane.tiltDeg * Math.PI) / 180;
+      ground.rotation.x = -Math.PI / 2 + rTiltRad;
+    }
     ground.receiveShadow = true;
-    groundGroup.add(ground);
+    roofMeshGroup.add(ground);
 
     const grid = new THREE.GridHelper(
       Math.max(groundWidth, groundLength),
@@ -425,7 +484,12 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       0x475569
     );
     grid.position.y = 0.01;
-    groundGroup.add(grid);
+    if (roofPlane?.tiltDeg) {
+      const rTiltRad = (roofPlane.tiltDeg * Math.PI) / 180;
+      grid.rotation.x = rTiltRad;
+    }
+    roofMeshGroup.add(grid);
+    groundGroup.add(roofMeshGroup);
 
     // B. Rebuild PV Tables (Connected Rows from activeScene)
     const arrayGroup = arrayGroupRef.current;
@@ -444,55 +508,96 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       roughness: 0.4,
     });
 
-    const rad = (tiltDeg * Math.PI) / 180;
-
     activeScene.pvTables.forEach((table) => {
       const tableGroup = new THREE.Group();
       // ENU to Three.js: +X = East (X), +Y = North (-Z), +Z = Up (Y)
-      tableGroup.position.set(table.positionEnu.x, 0.4, -table.positionEnu.y);
+      const tableBaseZ = table.positionEnu.z ?? (roofCenterY + 1.2);
+      tableGroup.position.set(table.positionEnu.x, tableBaseZ, -table.positionEnu.y);
 
-      // Create sloped rack table
+      // Rotate table around vertical axis if table has azimuth (0 = South, 90 = West, -90/270 = East, 180 = North)
+      // Positive ENU azimuth (clockwise from South towards West) maps to negative rotation around +Y in Three.js
+      if (table.azimuthDeg) {
+        tableGroup.rotation.y = -((table.azimuthDeg * Math.PI) / 180);
+      }
+
+      // Create sloped rack table pivoted at its geometric center, using table's actual tilt
+      const tableTiltDeg = table.tiltDeg ?? tiltDeg;
       const rack = new THREE.Group();
-      rack.rotation.x = -rad;
-      rack.position.y = Math.sin(rad) * (table.slopedLengthM / 4);
+      rack.rotation.x = (tableTiltDeg * Math.PI) / 180;
 
-      // Modules grid along table width
-      const cols = Math.min(14, Math.max(4, Math.round(table.widthM / 1.15)));
+      // Modules grid along table width: derived from actual module width and table width
+      const modW = moduleSpecs?.widthM || 1.134;
+      const modL = moduleSpecs?.lengthM || 2.278;
+      const calculatedCols = Math.max(1, Math.round(table.widthM / modW));
+      const targetModules = table.moduleCount ?? (calculatedCols * 2);
+      const isSingleModule = targetModules === 1;
+      const cols = isSingleModule ? 1 : Math.max(1, Math.ceil(targetModules / 2));
       const colStep = table.widthM / cols;
-      const modWidth = colStep * 0.92;
-      const modLength = (table.slopedLengthM / 2) * 0.94;
+      const modWidth = Math.min(modW, colStep * 0.94);
+      const modLength = isSingleModule
+        ? table.slopedLengthM * 0.94
+        : (table.slopedLengthM / 2) * 0.94;
+
+      let modulesRendered = 0;
 
       for (let c = 0; c < cols; c++) {
         const xPos = (c - (cols - 1) / 2) * colStep;
 
-        // Top portrait module
-        const modMeshTop = new THREE.Mesh(
-          new THREE.BoxGeometry(modWidth, 0.04, modLength),
-          moduleMat
-        );
-        modMeshTop.position.set(xPos, 0, -modLength / 2 - 0.02);
-        modMeshTop.castShadow = true;
-        modMeshTop.receiveShadow = true;
-        rack.add(modMeshTop);
+        if (isSingleModule) {
+          // Single module: centered on rack with full module length
+          const modMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(modWidth, 0.04, modLength),
+            moduleMat
+          );
+          modMesh.position.set(xPos, 0, 0);
+          modMesh.castShadow = true;
+          modMesh.receiveShadow = true;
+          rack.add(modMesh);
+          modulesRendered++;
+        } else {
+          // Multi-module table (2-portrait):
+          // 1. Bottom portrait module (slot 2c) rendered FIRST (matching ray-tracer facet)
+          if (modulesRendered < targetModules) {
+            const modMeshBottom = new THREE.Mesh(
+              new THREE.BoxGeometry(modWidth, 0.04, modLength),
+              moduleMat
+            );
+            modMeshBottom.position.set(xPos, 0, modLength / 2 + 0.02);
+            modMeshBottom.castShadow = true;
+            modMeshBottom.receiveShadow = true;
+            rack.add(modMeshBottom);
+            modulesRendered++;
+          }
 
-        // Bottom portrait module
-        const modMeshBottom = new THREE.Mesh(
-          new THREE.BoxGeometry(modWidth, 0.04, modLength),
-          moduleMat
-        );
-        modMeshBottom.position.set(xPos, 0, modLength / 2 + 0.02);
-        modMeshBottom.castShadow = true;
-        modMeshBottom.receiveShadow = true;
-        rack.add(modMeshBottom);
+          // 2. Top portrait module (slot 2c + 1) rendered SECOND
+          if (modulesRendered < targetModules) {
+            const modMeshTop = new THREE.Mesh(
+              new THREE.BoxGeometry(modWidth, 0.04, modLength),
+              moduleMat
+            );
+            modMeshTop.position.set(xPos, 0, -modLength / 2 - 0.02);
+            modMeshTop.castShadow = true;
+            modMeshTop.receiveShadow = true;
+            rack.add(modMeshTop);
+            modulesRendered++;
+          }
+        }
 
-        // Rack Support Leg Posts (every 2 columns)
+        // Rack Support Leg Posts (every 2 columns) connecting table to local roof plane
         if (c % 2 === 0 || c === cols - 1) {
-          const legHeight = 0.8 + Math.sin(rad) * (table.slopedLengthM / 2);
+          const tableAzRad = (table.azimuthDeg * Math.PI) / 180;
+          // Leg ENU footprint on the roof surface underneath this specific leg post:
+          const legEnuX = table.positionEnu.x + xPos * Math.cos(tableAzRad);
+          const legEnuY = table.positionEnu.y - xPos * Math.sin(tableAzRad);
+          const localRoofZ = roofPlane
+            ? getLocalRoofElevationAt(roofPlane, legEnuX, legEnuY)
+            : roofCenterY;
+          const legHeight = Math.max(0.1, tableBaseZ - localRoofZ);
           const leg = new THREE.Mesh(
             new THREE.CylinderGeometry(0.025, 0.025, legHeight, 8),
             frameMat
           );
-          leg.position.set(xPos, -legHeight / 2 + 0.2, 0);
+          leg.position.set(xPos, -legHeight / 2, 0);
           leg.castShadow = true;
           tableGroup.add(leg);
         }
@@ -515,34 +620,43 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
     activeScene.obstacles.forEach((obs) => {
       let obsMesh: THREE.Mesh;
+      const baseZ = obs.positionEnu.z ?? (roofPlane?.eavesHeightM ?? 0);
       if (obs.geometryType === 'cylinder') {
         const rad = obs.dimensionsM.radiusM || 1.0;
         const h = obs.dimensionsM.heightM || 3.0;
         obsMesh = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, h, 24), obsMat);
-        obsMesh.position.set(obs.positionEnu.x, h / 2, -obs.positionEnu.y);
+        obsMesh.position.set(obs.positionEnu.x, baseZ + h / 2, -obs.positionEnu.y);
       } else {
         const w = obs.dimensionsM.widthM || 3.0;
         const l = obs.dimensionsM.lengthM || 3.0;
         const h = obs.dimensionsM.heightM || 2.5;
         obsMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), obsMat);
-        obsMesh.position.set(obs.positionEnu.x, h / 2, -obs.positionEnu.y);
+        obsMesh.position.set(obs.positionEnu.x, baseZ + h / 2, -obs.positionEnu.y);
+        if (obs.rotationDeg) {
+          obsMesh.rotation.y = -(obs.rotationDeg * Math.PI) / 180;
+        }
       }
       obsMesh.castShadow = true;
       obsMesh.receiveShadow = true;
       obstaclesGroup.add(obsMesh);
     });
-  }, [activeScene, tiltDeg]);
+  }, [activeScene, tiltDeg, moduleSpecs?.widthM, moduleSpecs?.lengthM]);
 
   // Update Sun Vector when altitude or azimuth changes
+  // Coordinate convention:
+  // Three.js: +X = East, -X = West, +Y = Up, +Z = South, -Z = North
+  // sunAzimuth slider: 90 = East, 180 = South, 270 = West
   useEffect(() => {
     if (sunMeshRef.current && dirLightRef.current) {
       const altRad = (sunAltitude * Math.PI) / 180;
-      const azRad = ((sunAzimuth - 180) * Math.PI) / 180;
+      const compassRad = (sunAzimuth * Math.PI) / 180;
       const sunDist = 20;
 
-      const sunX = sunDist * Math.cos(altRad) * Math.sin(azRad);
+      // In Three.js: +X is East, so sin(compassRad) gives +1 at 90° (East) and -1 at 270° (West)
+      const sunX = sunDist * Math.cos(altRad) * Math.sin(compassRad);
       const sunY = sunDist * Math.sin(altRad);
-      const sunZ = sunDist * Math.cos(altRad) * Math.cos(azRad);
+      // In Three.js: +Z is South, so -cos(compassRad) gives +1 at 180° (South) and -1 at 0° (North)
+      const sunZ = -sunDist * Math.cos(altRad) * Math.cos(compassRad);
 
       sunMeshRef.current.position.set(sunX, sunY, sunZ);
       dirLightRef.current.position.set(sunX, sunY, sunZ);
@@ -552,21 +666,32 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   // Execute Ray-Traced Shading & Annual Waterfall Simulation
   const handleRunShadingAnalysis = () => {
     setLoading(true);
-    try {
-      setTimeout(() => {
+    setTimeout(() => {
+      try {
         const result = simulateAnnual3dShading(activeScene, city?.peakSunHours ?? 5.2, 40.0, {
           simulationMode,
+          albedo: city?.albedo,
         });
         const rayTraced = calculateRayTracedShadingFactor(activeScene, undefined, {
           includeInterRow: true,
         });
         setAnnualResult(result);
         setRayTracedResult(rayTraced);
+        setCalculatedSignature(
+          computeShadingSceneSignature({
+            scene: result.sceneState,
+            cityId: city?.id,
+            peakSunHours: city?.peakSunHours,
+            albedo: result.sceneState.albedo ?? city?.albedo,
+            simulationMode,
+          })
+        );
+      } catch (err) {
+        console.error('Shading analysis execution error:', err);
+      } finally {
         setLoading(false);
-      }, 120);
-    } catch {
-      setLoading(false);
-    }
+      }
+    }, 120);
   };
 
   return (
@@ -734,9 +859,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
             <select
               value={simulationMode}
-              onChange={(e) =>
-                setSimulationMode(e.target.value as 'hourly_8760' | 'screening_3day')
-              }
+              onChange={(e) => {
+                const newMode = e.target.value as 'hourly_8760' | 'screening_3day';
+                setSimulationMode(newMode);
+                onSimulationModeChange?.(newMode);
+              }}
               className="studio-input text-xs font-mono py-1.5"
             >
               <option value="screening_3day">
@@ -746,6 +873,14 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                 {isEn ? 'Full Annual Weather Year (8760h)' : 'سال کامل هواشناسی (۸۷۶۰ ساعته)'}
               </option>
             </select>
+
+            {appliedShading?.simulationMode && appliedShading.simulationMode !== simulationMode && (
+              <span className="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-mono">
+                {isEn
+                  ? `Applied: ${appliedShading.simulationMode === 'hourly_8760' ? '8760h' : '3-Day'} — Re-run to update project`
+                  : `اعمال‌شده: ${appliedShading.simulationMode === 'hourly_8760' ? '۸۷۶۰ ساعته' : '۳ روزه'} — برای به‌روزرسانی مجدداً اجرا کنید`}
+              </span>
+            )}
           </div>
 
           <div className="text-xs text-slate-400 flex flex-wrap items-center gap-3">
@@ -860,6 +995,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                       {plantCapacityKw.toLocaleString()}{' '}
                       {plantCapacityType === 'ac_target' ? 'kW AC' : 'kWp'}
                     </span>
+                    {plantCapacityType === 'ac_target' && arrayDesign?.totalPvCapacityKwp && (
+                      <span className="text-slate-400 font-normal ml-1">
+                        ({isEn ? 'Array DC:' : 'آرایه DC:'} {arrayDesign.totalPvCapacityKwp.toLocaleString()} kWp)
+                      </span>
+                    )}
                   </span>
                 </div>
                 {(() => {
@@ -924,6 +1064,34 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                       : `بلوک نمونه نمایشی: تحلیل بخش ۵۵.۲ کیلوواتی با موانع مجاور. امکان اعمال به درخت تلفات پروژه.`}
                 </div>
 
+                {/* Obstacle Completeness Status Badge */}
+                <div className="mt-2 text-[11px] p-2 rounded border border-industrial-border/60 bg-slate-900/60 flex items-center justify-between gap-2">
+                  <span className="text-slate-400">
+                    {isEn ? 'Obstacle Survey Status:' : 'وضعیت داده‌های موانع صحنه:'}
+                  </span>
+                  {activeScene.obstacleDataStatus === 'missing_unverified' ? (
+                    <span className="text-amber-400 font-medium text-[10px]">
+                      {isEn
+                        ? '⚠ Missing / Unverified (Array modeled unobstructed; survey required)'
+                        : '⚠ فاقد برداشت موانع (بدون مانع مدل شده؛ نیازمند نقشه‌برداری میدانی)'}
+                    </span>
+                  ) : activeScene.obstacleDataStatus === 'verified_unobstructed' ? (
+                    <span className="text-emerald-400 font-medium text-[10px]">
+                      {isEn ? '✓ Explicitly Verified Unobstructed' : '✓ تأیید صریح عدم وجود مانع'}
+                    </span>
+                  ) : activeScene.obstacleDataStatus === 'surveyed' ? (
+                    <span className="text-blue-400 font-medium text-[10px]">
+                      {isEn
+                        ? `✓ Surveyed Obstacles (${activeScene.obstacles.length})`
+                        : `✓ موانع نقشه‌برداری‌شده (${activeScene.obstacles.length} مورد)`}
+                    </span>
+                  ) : (
+                    <span className="text-purple-400 font-medium text-[10px]">
+                      {isEn ? 'ℹ Demo Sample Obstacles' : 'ℹ موانع نمونه نمایشی'}
+                    </span>
+                  )}
+                </div>
+
                 {/* Apply / Revert Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2.5 border-t border-industrial-border/60">
                   <div className="flex items-center gap-2 text-xs">
@@ -943,12 +1111,18 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                     )}
                     {appliedShading && isShadingStale && (
                       <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[11px] font-bold border border-amber-500/40">
-                        {isEn ? '⚠️ Stale (Capacity changed)' : '⚠️ قدیمی (تغییر ظرفیت پروژه)'}
+                        {isEn ? '⚠️ Stale (Inputs changed)' : '⚠️ قدیمی (تغییر پارامترهای پروژه)'}
+                      </span>
+                    )}
+                    {!appliedShading && isAnalysisStale && (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[11px] font-semibold border border-amber-500/40 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                        {isEn ? 'Inputs changed (Re-run required)' : 'تغییر هندسه (اجرای مجدد الزامی است)'}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {appliedShading ? (
+                    {appliedShading && (
                       <button
                         onClick={onRevertShading}
                         className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors"
@@ -956,31 +1130,61 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                         <RotateCcw className="w-3.5 h-3.5" />
                         {isEn ? 'Revert to Default (-2.4%)' : 'بازگشت به پیش‌فرض (-۲.۴٪)'}
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          if (annualResult) {
-                            onApplyShading?.({
-                              lossPct: annualResult.annualCombinedShadingLossPct,
-                              source:
-                                sceneMode === 'project_array'
-                                  ? 'project_array_design'
-                                  : 'representative_demo_block',
-                              appliedAtIso: new Date().toISOString(),
-                              capacityKwp: activeSceneCapacityKwp,
-                            });
-                            onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
-                          }
-                        }}
-                        disabled={!annualResult}
-                        className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {isEn
+                    )}
+
+                    <button
+                      onClick={() => {
+                        if (annualResult && !isAnalysisStale) {
+                          onApplyShading?.({
+                            lossPct: annualResult.annualCombinedShadingLossPct,
+                            source:
+                              sceneMode === 'project_array'
+                                ? 'project_array_design'
+                                : 'representative_demo_block',
+                            appliedAtIso: new Date().toISOString(),
+                            capacityKwp: activeSceneCapacityKwp,
+                            signatureHash: calculatedSignature ?? currentSceneSignature,
+                            simulationMode,
+                          });
+                          onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
+                        }
+                      }}
+                      disabled={
+                        !annualResult ||
+                        isAnalysisStale ||
+                        (Boolean(appliedShading) &&
+                          calculatedSignature === appliedShading?.signatureHash &&
+                          appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct)
+                      }
+                      className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                      title={
+                        isAnalysisStale
+                          ? isEn
+                            ? 'Geometry changed since analysis run. Please re-run simulation.'
+                            : 'هندسه تغییر کرده است. لطفاً شبیه‌سازی را مجدداً اجرا کنید.'
+                          : appliedShading &&
+                              calculatedSignature === appliedShading?.signatureHash &&
+                              appliedShading?.lossPct === annualResult?.annualCombinedShadingLossPct
+                            ? isEn
+                              ? 'This exact simulation result is already applied to the project.'
+                              : 'این نتیجهٔ شبیه‌سازی در حال حاضر به پروژه اعمال شده است.'
+                            : undefined
+                      }
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {appliedShading
+                        ? calculatedSignature === appliedShading?.signatureHash &&
+                          appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct
+                          ? isEn
+                            ? `Applied (-${appliedShading.lossPct}%)`
+                            : `اعمال‌شده (-${appliedShading.lossPct}٪)`
+                          : isEn
+                            ? `Update Project (-${annualResult.annualCombinedShadingLossPct}%)`
+                            : `به‌روزرسانی ضریب پروژه (-${annualResult.annualCombinedShadingLossPct}٪)`
+                        : isEn
                           ? `Apply -${annualResult.annualCombinedShadingLossPct}% to Project`
                           : `اعمال کسری -${annualResult.annualCombinedShadingLossPct}٪ به پروژه`}
-                      </button>
-                    )}
+                    </button>
                   </div>
                 </div>
               </div>

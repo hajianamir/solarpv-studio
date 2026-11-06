@@ -64,8 +64,10 @@ import { rearGainPercent } from './engine/bifacialGain';
 import {
   shadingLifecycleReducer,
   createInitialShadingLifecycleState,
+  computeShadingSceneSignature,
   type AppliedShading3dRecord,
 } from './engine/shadingLifecycle';
+import { buildSceneFromProjectDesign } from './engine/roof3dShadingEngine';
 import { type TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
 import { sizeBatteryBank, computeAutonomyEnergyRequirement, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
@@ -244,7 +246,7 @@ export const App: React.FC = () => {
   );
   const appliedShadingRecord = shadingLifecycle.appliedShading;
   const isShadingStale = shadingLifecycle.isStale ?? false;
-  const shadingLoss3dPct = appliedShadingRecord?.lossPct ?? null;
+  const shadingLoss3dPct = isShadingStale ? null : (appliedShadingRecord?.lossPct ?? null);
   
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
@@ -573,18 +575,70 @@ export const App: React.FC = () => {
   }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment]);
 
   // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
+  const [shadingSimulationMode, setShadingSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
+
   const activePlantCapacityKwp =
     systemMode === 'powerplant'
-      ? (targetPowerplantCapacityKw || 1000)
+      ? (targetPowerplantCapacityKw || 1000) * 1.25
       : arrayDesign.totalPvCapacityKwp;
+
+  const activeModulesCount =
+    systemMode === 'powerplant'
+      ? Math.round((activePlantCapacityKwp * 1000) / (selectedModule.pmpWatts || 550))
+      : arrayDesign.totalModulesCount;
+
+  const currentShadingSignature = useMemo(() => {
+    const scene = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: activePlantCapacityKwp,
+      totalModulesCount: activeModulesCount,
+      interRowSpacingM: arrayDesign.interRowSpacingM,
+      tiltDeg: city.optimalTiltAnnualDeg,
+      azimuthDeg: 0,
+      latitude: city.latitude,
+      longitude: city.longitude,
+      elevationM: city.elevationM,
+      moduleWidthM: selectedModule.widthM,
+      moduleLengthM: selectedModule.lengthM,
+      modulePmpWatts: selectedModule.pmpWatts,
+      installationEnvironment:
+        siteOverrides?.installationEnvironment ||
+        (systemMode === 'powerplant' ? 'ground_mount' : 'rooftop_flat_concrete'),
+      includeDefaultObstacles: false,
+      albedo: city.albedo,
+    });
+
+    return computeShadingSceneSignature({
+      scene,
+      cityId: city.id,
+      peakSunHours: city.peakSunHours,
+      albedo: city.albedo,
+      simulationMode: shadingSimulationMode,
+    });
+  }, [
+    activePlantCapacityKwp,
+    activeModulesCount,
+    systemMode,
+    selectedModule,
+    arrayDesign.interRowSpacingM,
+    city.optimalTiltAnnualDeg,
+    city.latitude,
+    city.longitude,
+    city.elevationM,
+    city.id,
+    city.peakSunHours,
+    city.albedo,
+    siteOverrides?.installationEnvironment,
+    shadingSimulationMode,
+  ]);
 
   useEffect(() => {
     dispatchShadingLifecycle({
       type: 'CHECK_SYNC',
       currentCityId: city.id,
       currentCapacityKwp: activePlantCapacityKwp,
+      currentSignatureHash: currentShadingSignature,
     });
-  }, [city.id, activePlantCapacityKwp]);
+  }, [city.id, activePlantCapacityKwp, currentShadingSignature]);
 
   // 4. Inverter Clustering Evaluation
   const inverterClustering = useMemo(() => {
@@ -2390,16 +2444,15 @@ export const App: React.FC = () => {
               plantCapacityKw={
                 systemMode === 'powerplant'
                   ? (targetPowerplantCapacityKw || 1000)
-                  : arrayDesign.totalPvCapacityKwp
+                  : activePlantCapacityKwp
               }
               plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+              simulationMode={shadingSimulationMode}
+              onSimulationModeChange={setShadingSimulationMode}
               arrayDesign={{
-                totalPvCapacityKwp:
-                  systemMode === 'powerplant'
-                    ? (targetPowerplantCapacityKw || 1000) * 1.25
-                    : arrayDesign.totalPvCapacityKwp,
-                totalModulesCount: arrayDesign.totalModulesCount,
+                totalPvCapacityKwp: activePlantCapacityKwp,
+                totalModulesCount: activeModulesCount,
                 interRowSpacingM: arrayDesign.interRowSpacingM,
                 tiltDeg: city.optimalTiltAnnualDeg,
                 azimuthDeg: 0,
@@ -2423,7 +2476,10 @@ export const App: React.FC = () => {
               }}
               appliedShading={appliedShadingRecord}
               isShadingStale={isShadingStale}
-              onApplyShading={(record) =>
+              onApplyShading={(record) => {
+                if (record.simulationMode) {
+                  setShadingSimulationMode(record.simulationMode);
+                }
                 dispatchShadingLifecycle({
                   type: 'APPLY',
                   lossPct: record.lossPct,
@@ -2432,8 +2488,10 @@ export const App: React.FC = () => {
                   appliedAtIso: record.appliedAtIso,
                   cityId: city.id,
                   source: record.source,
-                })
-              }
+                  signatureHash: record.signatureHash || currentShadingSignature,
+                  simulationMode: record.simulationMode ?? shadingSimulationMode,
+                });
+              }}
               onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
             />
           )}

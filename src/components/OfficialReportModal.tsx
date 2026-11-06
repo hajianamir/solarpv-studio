@@ -211,7 +211,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const p90Mwh = Number((primaryAnnualEnergyMwh * 0.898).toFixed(1));
 
   // Dynamic Shading Derate & Provenance Metrics
-  const effectiveShadingLossPct = appliedShading ? appliedShading.lossPct : 2.4;
+  const isAppliedShadingActive = Boolean(appliedShading && !isShadingStale);
+  const effectiveShadingLossPct = isAppliedShadingActive ? appliedShading!.lossPct : 2.4;
   const effectiveShadingDerate = Number((1.0 - effectiveShadingLossPct / 100).toFixed(4));
 
   // Customization & Metadata State
@@ -370,7 +371,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Gross DC Annual Generation (24h Extrapolated)', (diurnal24hAnnualMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h Diagnostic)'],
       ['Illustrative Downside Scenario (-5.5%)', p75Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.945x Sensitivity Factor (Not Probabilistic Exceedance)'],
       ['Illustrative Conservative Downside (-10.2%)', p90Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.898x Sensitivity Factor (Not Bankable P90)'],
-      ['Near Shading Loss', `-${effectiveShadingLossPct}%`, '-', appliedShading ? (isShadingStale ? '3D Near-Shading Model (⚠️ Stale: Capacity drifted >5%)' : '3D Near-Shading Model') : 'Standard Empirical Default (-2.4%)'],
+      ['Near Shading Loss', `-${effectiveShadingLossPct}%`, '-', isAppliedShadingActive ? '3D Near-Shading Model' : (isShadingStale ? 'Standard Empirical Default (-2.4%, ⚠️ 3D Shading Stale: Parameters Changed)' : 'Standard Empirical Default (-2.4%)')],
       ['Effective Shading Derate', effectiveShadingDerate.toString(), '-', '1 - (Shading Loss / 100)'],
       ...(waterfallReport ? [
         ['', ''],
@@ -1179,18 +1180,18 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Annual Beam Shading Loss' : 'تلفات سالانه سایه پرتو مستقیم'}</span>
                   <span className="font-mono font-bold text-industrial-success print:text-emerald-800 text-sm">
-                    {appliedShading ? `-${effectiveShadingLossPct}%` : `~${effectiveShadingLossPct}%`}
+                    {isAppliedShadingActive ? `-${effectiveShadingLossPct}%` : `~${effectiveShadingLossPct}%`}
                   </span>
                   {appliedShading && (
                     <span className="text-[9px] text-sky-400 block font-mono">
-                      {isEn ? '3D Near-Shading Model' : 'مدل ۳ بعدی سایه‌اندازی'}
+                      {isAppliedShadingActive ? (isEn ? '3D Near-Shading Model' : 'مدل ۳ بعدی سایه‌اندازی') : (isEn ? 'Default (⚠️ 3D Run Stale)' : 'پیش‌فرض (تحلیل قدیمی)')}
                     </span>
                   )}
                 </div>
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Effective Shading Derate' : 'ضریب اصلاح سایه در مدل تولید'}</span>
                   <span className="font-mono font-bold text-purple-400 print:text-purple-800 text-sm">
-                    {effectiveShadingDerate.toFixed(appliedShading ? 4 : 3)}
+                    {effectiveShadingDerate.toFixed(isAppliedShadingActive ? 4 : 3)}
                   </span>
                   {appliedShading && (
                     <span className="text-[9px] text-slate-400 block font-mono">
@@ -1220,13 +1221,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     </span>
                     <span className="text-slate-300 text-[11px]">
                       {isEn
-                        ? `Applied from representative demo block (${appliedShading.capacityKwp} kWp) at ${new Date(appliedShading.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                        : `اعمال‌شده از بلوک نمونه (${appliedShading.capacityKwp} کیلووات‌پیک) در ساعت ${new Date(appliedShading.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                        ? `Applied from ${appliedShading.source === 'project_array_design' ? 'project array design' : 'representative demo block'} (${appliedShading.capacityKwp} kWp) at ${new Date(appliedShading.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : `اعمال‌شده از ${appliedShading.source === 'project_array_design' ? 'طرح اختصاصی آرایه' : 'بلوک نمونه'} (${appliedShading.capacityKwp} کیلووات‌پیک) در ساعت ${new Date(appliedShading.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                     </span>
                   </div>
                   {isShadingStale && (
                     <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40">
-                      {isEn ? '⚠️ Stale: Project capacity drifted >5% since 3D run' : '⚠️ داده قدیمی: ظرفیت پروژه بیش از ۵٪ تغییر یافته است'}
+                      {isEn ? '⚠️ Stale: Project parameters changed since 3D run (Reverted to 2.4% baseline)' : '⚠️ داده قدیمی: پارامترهای پروژه تغییر یافته‌اند (بازگشت به مبنای ۲.۴٪)'}
                     </span>
                   )}
                 </div>

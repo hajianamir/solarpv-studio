@@ -90,7 +90,7 @@ async function main() {
     console.log(`  climate timestamp:  ${siteData.climateResource.metadata.retrievalTimestamp}`);
     console.log(`  climate est:        ${siteData.climateResource.metadata.isEstimatedFromGlobalModel}`);
     assert(siteData.traceId.startsWith('TRC-GW'), 'Gateway trace_id present');
-    assert(siteData.climateCity.dataRetrievalDate.length > 0, 'dataRetrievalDate present');
+    assert(Boolean(siteData.climateCity?.dataRetrievalDate && siteData.climateCity.dataRetrievalDate.length > 0), 'dataRetrievalDate present');
     assert(siteData.climateResource.metadata.traceId.length > 0, 'Climate resource trace_id present');
   } catch (err) {
     console.log(`  [ERROR] Gateway failed: ${(err as Error).message}`);

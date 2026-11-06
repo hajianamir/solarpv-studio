@@ -4941,13 +4941,14 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
         Math.abs(utilityScene.pvTables[1].positionEnu.y - utilityScene.pvTables[0].positionEnu.y) - 6.0
       ) < 0.05;
 
-    // 2. Rooftop C&I scene construction (56 modules, 30.8 kWp, 3.5m pitch, 15° tilt)
+    // 2. Rooftop C&I scene construction (56 modules, 30.8 kWp, 3.5m pitch, 15° tilt, demo mode with screening obstacles)
     const rooftopScene = buildSceneFromProjectDesign({
       totalPvCapacityKwp: 30.8,
       totalModulesCount: 56,
       interRowSpacingM: 3.5,
       tiltDeg: 15,
       installationEnvironment: 'rooftop_flat_concrete',
+      isDemoMode: true,
     });
 
     const roofTablesCountOk = rooftopScene.pvTables.length === 2;

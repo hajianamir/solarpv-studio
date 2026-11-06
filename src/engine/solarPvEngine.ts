@@ -237,7 +237,9 @@ export function calculateVoltageDropDc(
   rho: number = 0.0175 // Copper default in ohm-mm2/m
 ): number {
   if (crossSectionMm2 <= 0 || vNominal <= 0) {
-    return 0.0;
+    throw new Error(
+      "Invalid cable crossSectionMm2 or nominal voltage: values must be positive and non-zero."
+    );
   }
   const resistance = rho * (2.0 * lengthM) / crossSectionMm2;
   const vDrop = resistance * currentA;

@@ -14,7 +14,7 @@ export interface CashFlowYear {
   debtServiceMillionToman: number;
   netCashFlowMillionToman: number;
   cumulativeCashFlowMillionToman: number;
-  dscr: number; // Debt Service Coverage Ratio
+  dscr: number | null; // Debt Service Coverage Ratio (null if no debt service)
 }
 
 export interface IranianFinancialModelResult {
@@ -23,8 +23,8 @@ export interface IranianFinancialModelResult {
   totalCapexMillionToman: number;
   equityContributionMillionToman: number;
   bankLoanMillionToman: number;
-  projectIrrPct: number;
-  equityIrrPct: number;
+  projectIrrPct: number | null;
+  equityIrrPct: number | null;
   npvMillionToman: number;
   simplePaybackYears: number;
   discountedPaybackYears: number;
@@ -44,6 +44,22 @@ export function runIranianRegulationFinancialModel(
   loanTermYears: number = 5,
   inflationPct: number = 25.0
 ): IranianFinancialModelResult {
+  if (
+    typeof loanTermYears !== 'number' ||
+    !Number.isFinite(loanTermYears) ||
+    loanTermYears <= 0 ||
+    !Number.isInteger(loanTermYears) ||
+    loanTermYears > 25
+  ) {
+    throw new Error(`Loan term must be a positive integer between 1 and 25 years, received ${loanTermYears}`);
+  }
+  if (typeof loanInterestPct !== 'number' || !Number.isFinite(loanInterestPct) || loanInterestPct < 0) {
+    throw new Error(`Loan interest percentage cannot be negative, received ${loanInterestPct}%`);
+  }
+  if (typeof loanSharePct !== 'number' || !Number.isFinite(loanSharePct) || loanSharePct < 0 || loanSharePct > 100) {
+    throw new Error(`Loan share percentage must be between 0% and 100%, received ${loanSharePct}%`);
+  }
+
   // 1. Determine tariff and framework details
   let tariffPerKwhToman = customTariffTomanPerKwh;
   let frameworkNameFa = '';
@@ -69,9 +85,23 @@ export function runIranianRegulationFinancialModel(
   const equityContributionMillionToman = totalCapexMillionToman - bankLoanMillionToman;
 
   // Annual loan annuity payment (Equal Installments)
-  const r = loanInterestPct / 100.0;
-  const annuityFactor = (r * Math.pow(1 + r, loanTermYears)) / (Math.pow(1 + r, loanTermYears) - 1);
-  const annualLoanAnnuity = bankLoanMillionToman > 0 ? bankLoanMillionToman * annuityFactor : 0;
+  // Handles zero interest rate (annuity = principal / term) and validates non-negative rates
+  let annualLoanAnnuity = 0;
+  if (bankLoanMillionToman > 0) {
+    if (loanTermYears <= 0) {
+      throw new Error(`Loan term must be a positive integer, received ${loanTermYears} years`);
+    }
+    const r = loanInterestPct / 100.0;
+    if (r < 0) {
+      throw new Error(`Loan interest percentage cannot be negative, received ${loanInterestPct}%`);
+    } else if (r === 0) {
+      annualLoanAnnuity = bankLoanMillionToman / loanTermYears;
+    } else {
+      const powTerm = Math.pow(1 + r, loanTermYears);
+      const annuityFactor = (r * powTerm) / (powTerm - 1);
+      annualLoanAnnuity = bankLoanMillionToman * annuityFactor;
+    }
+  }
 
   // 3. 25-Year Cash Flow Projection
   const cashFlows: CashFlowYear[] = [];
@@ -95,7 +125,7 @@ export function runIranianRegulationFinancialModel(
     const debtService = yr <= loanTermYears ? Math.round(annualLoanAnnuity) : 0;
 
     const netOperatingIncome = revenueMillion - opexMillion;
-    const dscr = debtService > 0 ? Math.round((netOperatingIncome / debtService) * 100) / 100 : 9.9;
+    const dscr = debtService > 0 ? Math.round((netOperatingIncome / debtService) * 100) / 100 : null;
 
     const netCashFlow = netOperatingIncome - debtService;
     cumulativeCash += netCashFlow;
@@ -124,26 +154,70 @@ export function runIranianRegulationFinancialModel(
     });
   }
 
-  // 4. Calculate Internal Rate of Return (IRR)
+  // 4. Calculate Internal Rate of Return (IRR) via robust hybrid root-finder
   const equityCashFlowSeries = [-equityContributionMillionToman, ...cashFlows.map(c => c.netCashFlowMillionToman)];
   const projectCashFlowSeries = [-totalCapexMillionToman, ...cashFlows.map(c => c.revenueMillionToman - c.opexMillionToman)];
 
-  const calcIrr = (series: number[]): number => {
-    let rate = 0.25;
-    for (let i = 0; i < 50; i++) {
-      let npv = 0;
-      let dNpv = 0;
+  const calcIrr = (series: number[]): number | null => {
+    if (series.some(c => !Number.isFinite(c))) return null;
+    const hasPos = series.some(c => c > 0);
+    const hasNeg = series.some(c => c < 0);
+    if (!hasPos || !hasNeg) return null;
+
+    const npv = (r: number): number => {
+      let sum = 0;
       for (let t = 0; t < series.length; t++) {
-        const denom = Math.pow(1 + rate, t);
-        npv += series[t] / denom;
-        dNpv += (-t * series[t]) / (denom * (1 + rate));
+        sum += series[t] / Math.pow(1.0 + r, t);
       }
-      if (Math.abs(dNpv) < 1e-6) break;
-      const next = rate - npv / dNpv;
-      if (Math.abs(next - rate) < 1e-4) return Math.round(next * 1000) / 10;
-      rate = next;
+      return sum;
+    };
+
+    // Multi-guess Newton-Raphson
+    const guesses = [0.20, 0.35, 0.10, 0.50, -0.10, 0.80];
+    for (const guess of guesses) {
+      let rate = guess;
+      for (let i = 0; i < 40; i++) {
+        if (rate <= -0.99 || rate > 10.0) break;
+        let val = 0;
+        let dVal = 0;
+        for (let t = 0; t < series.length; t++) {
+          const denom = Math.pow(1.0 + rate, t);
+          val += series[t] / denom;
+          dVal += (-t * series[t]) / (denom * (1.0 + rate));
+        }
+        if (Math.abs(dVal) < 1e-9) break;
+        const next = rate - val / dVal;
+        if (Math.abs(next - rate) < 1e-5 && Math.abs(val) < 1e-2) {
+          if (next > -0.99 && next < 10.0) {
+            return Math.round(next * 1000) / 10;
+          }
+        }
+        rate = next;
+      }
     }
-    return 32.5;
+
+    // Bounded Bolzano bisection fallback on [-0.95, +5.0]
+    const low = -0.95;
+    const high = 5.0;
+    const npvLow = npv(low);
+    const npvHigh = npv(high);
+    if (npvLow * npvHigh <= 0) {
+      let a = low;
+      let b = high;
+      for (let iter = 0; iter < 70; iter++) {
+        const mid = (a + b) / 2.0;
+        const npvMid = npv(mid);
+        if (npvMid * npvLow > 0) {
+          a = mid;
+        } else {
+          b = mid;
+        }
+      }
+      const root = (a + b) / 2.0;
+      return Math.round(root * 1000) / 10;
+    }
+
+    return null;
   };
 
   const equityIrrPct = calcIrr(equityCashFlowSeries);

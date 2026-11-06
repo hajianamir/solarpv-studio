@@ -315,9 +315,9 @@ export function computeWaterfallLosses(
     'Substation cooling fans, SCADA telecontrol power, and scheduled grid maintenance downtime.'
   );
 
-  const netAnnualEnergyExportMwh = Math.round((currentEnergy / 1000.0) * 10) / 10;
-  const specificAnnualYieldKwhPerKwp = Math.round(currentEnergy / installedCapacityKwp);
-  const performanceRatioPct = Math.round((currentEnergy / effectivePoaEnergyKwh) * 1000) / 10;
+  const netAnnualEnergyExportMwh = installedCapacityKwp > 0 ? Math.round((currentEnergy / 1000.0) * 10) / 10 : 0;
+  const specificAnnualYieldKwhPerKwp = installedCapacityKwp > 0 ? Math.round(currentEnergy / installedCapacityKwp) : 0;
+  const performanceRatioPct = effectivePoaEnergyKwh > 0 ? Math.round((currentEnergy / effectivePoaEnergyKwh) * 1000) / 10 : 0;
 
   return {
     installedCapacityKwp,

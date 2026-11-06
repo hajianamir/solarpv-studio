@@ -32,3 +32,6 @@ jobs:
 
       - name: Smoke Test (5 end-to-end flows)
         run: npm run test:smoke
+
+      - name: Run Engineering Audit Remediation Tests (R01-R07, R08-R13, Areas 1-10)
+        run: npm run test:audit

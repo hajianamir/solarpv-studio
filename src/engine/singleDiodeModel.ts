@@ -50,7 +50,28 @@ export function calculateSingleDiodeCurve(
   seriesModulesCount: number = 1,
   customParams?: Partial<DiodeParameters>
 ): IvCurveResult {
-  const gRatio = Math.max(0.01, irradianceWm2 / 1000.0);
+  if (typeof irradianceWm2 !== 'number' || !Number.isFinite(irradianceWm2) || irradianceWm2 < 0) {
+    throw new Error(`Irradiance must be a non-negative finite number (W/m²), received ${irradianceWm2}`);
+  }
+  if (irradianceWm2 === 0) {
+    return {
+      points: [
+        { v: 0, i: 0, p: 0 },
+        { v: 0, i: 0, p: 0 },
+      ],
+      voc: 0,
+      isc: 0,
+      vmp: 0,
+      imp: 0,
+      pmp: 0,
+      fillFactor: 0,
+      efficiencyPct: 0,
+      irradianceWm2: 0,
+      cellTempC,
+    };
+  }
+
+  const gRatio = irradianceWm2 / 1000.0;
   const deltaT = cellTempC - 25.0;
   const tempK = cellTempC + 273.15;
   const tRefK = 298.15;
