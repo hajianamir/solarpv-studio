@@ -101,10 +101,14 @@ app.post('/api/v1/electrical/voltage-drop', (req: Request, res: Response) => {
 app.post('/api/v1/finance/lcoe', (req: Request, res: Response) => {
   try {
     const { capex, opexAnnual, energyAnnual, discountRate = 0.05, lifetimeYears = 25 } = req.body;
+    const energy = Number(energyAnnual);
+    if (!Number.isFinite(energy) || energy <= 0) {
+      return res.json({ lcoeValue: null });
+    }
     const val = calculateLcoe(
       Number(capex),
       Number(opexAnnual),
-      Number(energyAnnual),
+      energy,
       Number(discountRate),
       Number(lifetimeYears)
     );
@@ -208,16 +212,19 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
   } = req.body;
 
   if (
-    (systemCapacityKwp !== undefined && (typeof systemCapacityKwp !== 'number' || systemCapacityKwp < 0)) ||
-    (panelCount !== undefined && (typeof panelCount !== 'number' || panelCount < 0)) ||
-    (annualYieldKwh !== undefined && (typeof annualYieldKwh !== 'number' || annualYieldKwh < 0))
+    (systemCapacityKwp !== undefined && (typeof systemCapacityKwp !== 'number' || !Number.isFinite(systemCapacityKwp) || systemCapacityKwp < 0)) ||
+    (panelCount !== undefined && (typeof panelCount !== 'number' || !Number.isInteger(panelCount) || panelCount < 0)) ||
+    (inverterCount !== undefined && (typeof inverterCount !== 'number' || !Number.isInteger(inverterCount) || inverterCount < 0)) ||
+    (batteryCount !== undefined && (typeof batteryCount !== 'number' || !Number.isInteger(batteryCount) || batteryCount < 0)) ||
+    (annualYieldKwh !== undefined && (typeof annualYieldKwh !== 'number' || !Number.isFinite(annualYieldKwh) || annualYieldKwh < 0)) ||
+    (lcoeUsdPerKwh !== undefined && lcoeUsdPerKwh !== null && (typeof lcoeUsdPerKwh !== 'number' || !Number.isFinite(lcoeUsdPerKwh) || lcoeUsdPerKwh < 0))
   ) {
-    return res.status(400).json({ error: "Invalid engineering metrics: capacity, count, or yield cannot be negative." });
+    return res.status(400).json({ error: "Invalid engineering metrics: capacity, yield, and cost must be non-negative finite numbers; equipment counts must be non-negative integers." });
   }
 
   res.json({
-    title: "Preliminary EPC Solar PV Design Proposal",
-    disclaimer: "This report provides preliminary engineering screening and feasibility metrics subject to formal geotechnical site surveys and grid interconnection studies.",
+    title: "Preliminary Feasibility & Engineering Screening Proposal",
+    disclaimer: "This document provides preliminary engineering screening and feasibility metrics generated via automated calculation algorithms. It does not constitute a certified EPC construction package or utility-approved interconnection study, which requires site geotechnical borehole verification, local utility impact studies, and stamped licensed professional engineering approval.",
     projectName: String(projectName).trim() || "Solar Project",
     projectId: String(projectId),
     generatedAt: new Date().toISOString(),
@@ -230,7 +237,7 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
       batteryCount: batteryCount ?? 0,
       batteryType: batteryType || "10.2kWh LiFePO4 Energy Storage Bank",
       annualYieldKwh: annualYieldKwh ?? 0,
-      lcoeUsdPerKwh: lcoeUsdPerKwh ?? 0,
+      lcoeUsdPerKwh: lcoeUsdPerKwh !== undefined ? lcoeUsdPerKwh : null,
     },
     standards: [
       "IEC 62548:2024 (Photovoltaic array design requirements)",

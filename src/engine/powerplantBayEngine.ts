@@ -24,6 +24,87 @@ export interface MvBayDefinition {
   collectorCableSpec: string; // e.g. "3x(1x185 mm²) AL/XLPE/SWA/PVC 20kV"
 }
 
+export interface SubstationBayCountInput {
+  incomingFeedersCount: number; // N_incomer (from PV power blocks)
+  transformerBaysCount: number; // N_transformer (step-up substation main transformers)
+  meteringBaysCount: number; // N_metering (revenue VT/PT metering cubicles)
+  spareBaysCount: number; // N_spare (equipped spare bays for future expansion)
+  busTieBaysCount?: number; // N_bus_tie (bus coupler / section breaker cubicles)
+  outgoingLineBaysCount?: number; // N_outgoing (outgoing feeders to transmission grid)
+  auxiliaryTransformerBaysCount?: number; // N_aux (station service auxiliary transformer cubicles)
+}
+
+export interface SubstationBayCountResult {
+  incomingFeedersCount: number;
+  transformerBaysCount: number;
+  meteringBaysCount: number;
+  spareBaysCount: number;
+  busTieBaysCount: number;
+  outgoingLineBaysCount: number;
+  auxiliaryTransformerBaysCount: number;
+  totalSubstationCubicles: number;
+  formula: string;
+  isInputValid: boolean;
+  validationWarnings: string[];
+}
+
+/**
+ * Canonical Substation Bay & Cubicle Counting Algorithm
+ * Implements non-negative integer sanitization and strict sum:
+ * N_total = N_incomer + N_transformer + N_metering + N_spare + N_bus_tie + N_outgoing + N_aux
+ */
+export function calculateSubstationBayCount(input: SubstationBayCountInput): SubstationBayCountResult {
+  const warnings: string[] = [];
+
+  const sanitizeBay = (val: number | undefined, fieldName: string): number => {
+    if (val === undefined || !Number.isFinite(val)) {
+      if (val !== undefined) warnings.push(`Invalid non-finite input for ${fieldName}; defaulted to 0.`);
+      return 0;
+    }
+    if (val < 0) {
+      warnings.push(`Negative bay count for ${fieldName} (${val}) rejected; clamped to 0.`);
+      return 0;
+    }
+    if (!Number.isInteger(val)) {
+      const rounded = Math.round(val);
+      warnings.push(`Fractional bay count for ${fieldName} (${val}) rounded to integer ${rounded}.`);
+      return rounded;
+    }
+    return val;
+  };
+
+  const incomingFeedersCount = sanitizeBay(input.incomingFeedersCount, 'incomingFeedersCount');
+  const transformerBaysCount = sanitizeBay(input.transformerBaysCount, 'transformerBaysCount');
+  const meteringBaysCount = sanitizeBay(input.meteringBaysCount, 'meteringBaysCount');
+  const spareBaysCount = sanitizeBay(input.spareBaysCount, 'spareBaysCount');
+  const busTieBaysCount = sanitizeBay(input.busTieBaysCount, 'busTieBaysCount');
+  const outgoingLineBaysCount = sanitizeBay(input.outgoingLineBaysCount, 'outgoingLineBaysCount');
+  const auxiliaryTransformerBaysCount = sanitizeBay(input.auxiliaryTransformerBaysCount, 'auxiliaryTransformerBaysCount');
+
+  const totalSubstationCubicles =
+    incomingFeedersCount +
+    transformerBaysCount +
+    meteringBaysCount +
+    spareBaysCount +
+    busTieBaysCount +
+    outgoingLineBaysCount +
+    auxiliaryTransformerBaysCount;
+
+  return {
+    incomingFeedersCount,
+    transformerBaysCount,
+    meteringBaysCount,
+    spareBaysCount,
+    busTieBaysCount,
+    outgoingLineBaysCount,
+    auxiliaryTransformerBaysCount,
+    totalSubstationCubicles,
+    formula: 'N_total = N_incomer + N_transformer + N_metering + N_spare + N_bus_tie + N_outgoing + N_aux',
+    isInputValid: warnings.length === 0,
+    validationWarnings: warnings,
+  };
+}
+
 export interface PowerplantBayArchitectureResult {
   technology: InverterTechnology;
   totalPlantCapacityMw: number;
@@ -39,10 +120,14 @@ export interface PowerplantBayArchitectureResult {
     totalNominalCurrentAmps: number;
     recommendedBusbarRatingAmps: number; // e.g. 1250A or 2000A
     incomingBayFeedersCount: number;
-    auxiliaryTransformerBayCount: number;
+    transformerBaysCount: number;
     meteringBayCount: number;
+    spareBaysCount: number;
+    busTieBaysCount: number;
     outgoingLineBayCount: number;
+    auxiliaryTransformerBayCount: number;
     totalSubstationCubicles: number;
+    bayCountResult: SubstationBayCountResult;
   };
   keyAdvantagesFa: string[];
   keyAdvantagesEn: string[];
@@ -89,7 +174,7 @@ export function designPowerplantBays(
   const bayCapacityMw = safeCapacityMw / actualBaysCount;
   const bayDcMwp = safeDcMwp / actualBaysCount;
 
-  // 3. Build each Bay
+  // 3. Build each Power Block MV Bay
   const bays: MvBayDefinition[] = [];
   for (let i = 1; i <= actualBaysCount; i++) {
     const bayInverterCount = technology === 'mv_turnkey'
@@ -140,13 +225,24 @@ export function designPowerplantBays(
   else busbarRating = 630;
 
   // Substation cubicles count:
-  // Incoming Bays + 1 Aux Service Station Transformer + 1 Metering (PT) + 1 Outgoing Line to Grid
+  // Strict formula: N_total = N_incomer + N_transformer + N_metering + N_spare + N_bus_tie + N_outgoing + N_aux
   const incomingBayFeedersCount = actualBaysCount;
+  const transformerBaysCount = 0; // In standard collector busbar, step-up occurs at incoming or outgoing
   const auxiliaryTransformerBayCount = 1;
   const meteringBayCount = 1;
+  const spareBaysCount = actualBaysCount >= 4 ? 1 : 0;
+  const busTieBaysCount = actualBaysCount >= 6 ? 1 : 0;
   const outgoingLineBayCount = safeCapacityMw > 20 ? 2 : 1;
-  const totalSubstationCubicles =
-    incomingBayFeedersCount + auxiliaryTransformerBayCount + meteringBayCount + outgoingLineBayCount;
+
+  const bayCountResult = calculateSubstationBayCount({
+    incomingFeedersCount: incomingBayFeedersCount,
+    transformerBaysCount,
+    meteringBaysCount: meteringBayCount,
+    spareBaysCount,
+    busTieBaysCount,
+    outgoingLineBaysCount: outgoingLineBayCount,
+    auxiliaryTransformerBaysCount: auxiliaryTransformerBayCount,
+  });
 
   const keyAdvantagesFa =
     technology === 'string_inverter'
@@ -193,10 +289,14 @@ export function designPowerplantBays(
       totalNominalCurrentAmps,
       recommendedBusbarRatingAmps: busbarRating,
       incomingBayFeedersCount,
-      auxiliaryTransformerBayCount,
+      transformerBaysCount,
       meteringBayCount,
+      spareBaysCount,
+      busTieBaysCount,
       outgoingLineBayCount,
-      totalSubstationCubicles,
+      auxiliaryTransformerBayCount,
+      totalSubstationCubicles: bayCountResult.totalSubstationCubicles,
+      bayCountResult,
     },
     keyAdvantagesFa,
     keyAdvantagesEn,

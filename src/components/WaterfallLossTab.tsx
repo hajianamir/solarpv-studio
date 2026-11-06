@@ -1,29 +1,41 @@
 import React from 'react';
-import { Layers, ArrowDownRight, Award, Info, CheckCircle2, TrendingDown } from 'lucide-react';
+import { Layers, ArrowDownRight, Award, Info, CheckCircle2, TrendingDown, Sparkles } from 'lucide-react';
 import { computeWaterfallLosses, type WaterfallLossReport } from '../engine/waterfallLossEngine';
+import { buildWaterfallArgs } from '../engine/waterfallArgs';
+import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 import { type TrackerConfig } from '../engine/tracker/backtrackingEngine';
 
 interface WaterfallLossTabProps {
-  installedCapacityKwp: number;
-  peakSunHours: number;
-  ambientTempMaxC: number;
-  soilingLossPct: number;
-  dcAcRatio: number;
+  report?: WaterfallLossReport;
+  installedCapacityKwp?: number;
+  peakSunHours?: number;
+  ambientTempMaxC?: number;
+  soilingLossPct?: number;
+  dcAcRatio?: number;
   noctC?: number;
   tempCoeffPmpPct?: number;
   trackerConfig?: TrackerConfig | null;
+  bifacialGainPct?: number;
+  shadingProvenance?: AppliedShading3dRecord | null;
+  isShadingStale?: boolean;
+  onClearShading?: () => void;
   lang?: 'fa' | 'en';
 }
 
 export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
-  installedCapacityKwp,
-  peakSunHours,
-  ambientTempMaxC,
-  soilingLossPct,
-  dcAcRatio,
+  report: externalReport,
+  installedCapacityKwp = 1000,
+  peakSunHours = 5.0,
+  ambientTempMaxC = 35.0,
+  soilingLossPct = 4.5,
+  dcAcRatio = 1.25,
   noctC = 45.0,
   tempCoeffPmpPct = -0.30,
   trackerConfig = null,
+  bifacialGainPct,
+  shadingProvenance,
+  isShadingStale = false,
+  onClearShading,
   lang = 'fa',
 }) => {
   // PR-2a-7-FOLLOWUP-2 (BUG-3): `hasTracker` local state removed.
@@ -32,18 +44,20 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   const activeTrackerConfig: TrackerConfig | undefined = trackerConfig ?? undefined;
   const isFa = lang === 'fa';
 
-  const report: WaterfallLossReport = computeWaterfallLosses(
-    installedCapacityKwp,
-    peakSunHours,
-    ambientTempMaxC,
-    soilingLossPct,
-    dcAcRatio,
-    false, // hasTracker bool always false here; trackerConfig prop is authoritative
-    0.0,
-    -2.2,
-    noctC,
-    tempCoeffPmpPct,
-    activeTrackerConfig
+  const report: WaterfallLossReport = externalReport ?? computeWaterfallLosses(
+    ...buildWaterfallArgs({
+      installedCapacityKwp,
+      peakSunHours,
+      ambientTempMaxC,
+      soilingLossPct,
+      dcAcRatio,
+      hasTracker: Boolean(activeTrackerConfig),
+      snowLossPct: 0.0,
+      iamLossPct: -2.2,
+      noctC,
+      tempCoeffPmpPct,
+      trackerConfig: activeTrackerConfig,
+    })
   );
 
   return (
@@ -92,6 +106,37 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
         </div>
       </div>
 
+      {/* 3D Shading Provenance Banner */}
+      {shadingProvenance && (
+        <div className="p-3 bg-industrial-surface border border-sky-500/40 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sky-300">
+              {isFa ? 'سایه‌اندازی سه‌بعدی فعال:' : 'Active 3D Shading Input:'}
+            </span>
+            <span className="font-mono font-bold text-amber-300">
+              -{shadingProvenance.lossPct}%
+            </span>
+            <span className="text-[11px] text-slate-400">
+              ({isFa ? 'اعمال‌شده در' : 'Applied at'}{' '}
+              {new Date(shadingProvenance.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+            </span>
+            {isShadingStale && (
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40">
+                {isFa ? '⚠️ قدیمی: تغییر ظرفیت پروژه' : '⚠️ Stale: Capacity changed'}
+              </span>
+            )}
+          </div>
+          {onClearShading && (
+            <button
+              onClick={onClearShading}
+              className="text-xs text-amber-400 hover:text-amber-300 underline cursor-pointer"
+            >
+              {isFa ? 'بازگشت به مقدار پیش‌فرض (-۲.۴٪)' : 'Revert to default (-2.4%)'}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
@@ -131,6 +176,25 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
           <div className="text-xl font-bold font-mono text-purple-400 mt-1">
             {Math.round(report.effectivePoaEnergyKwh / 1000).toLocaleString()} <span className="text-xs font-normal text-slate-300">MWh</span>
           </div>
+        </div>
+      </div>
+
+      {/* Gain & Loss Sign Convention Legend */}
+      <div className="p-3 bg-industrial-surface border border-industrial-border/70 rounded-lg text-xs flex items-start gap-2.5">
+        <Info className="w-4 h-4 text-sky-400 mt-0.5 shrink-0" />
+        <div className="text-slate-300 leading-relaxed">
+          <span className="font-semibold text-white">
+            {isFa ? 'قرارداد علامت مراحل زنجیره انرژی:' : 'Energy Chain Sign Convention:'}
+          </span>{' '}
+          {isFa ? (
+            <>
+              مراحل مثبت (<span className="text-emerald-400 font-mono font-bold">+</span>) نمایانگر بهره‌های تشعشعی ضربی مانند بهره دوطرفگی پشت پنل (ضرب در ۱ + Gain٪) و مراحل منفی (<span className="text-rose-400 font-mono font-bold">-</span>) نمایانگر ضرایب اتلاف متوالی (ضرب در ۱ - Loss٪) هستند. درصدها جمع حسابی نمی‌شوند، بلکه به صورت ضرب زنجیره‌ای بر خروجی مرحله قبل اعمال می‌گردند.
+            </>
+          ) : (
+            <>
+              Positive (<span className="text-emerald-400 font-mono font-bold">+</span>) stages represent multiplicative irradiance gains such as bifacial rear reflection (× (1 + Gain%)), whereas negative (<span className="text-rose-400 font-mono font-bold">-</span>) stages represent sequential derating losses (× (1 - Loss%)). Percentages are compounded multiplicatively, not summed arithmetically.
+            </>
+          )}
         </div>
       </div>
 
@@ -186,19 +250,35 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
               </tr>
 
               {report.stages.map((stage, idx) => (
-                <tr key={stage.id} className="hover:bg-slate-850/60">
+                <tr
+                  key={stage.id}
+                  className={
+                    stage.id === 'bifacial_gain'
+                      ? 'bg-emerald-950/20 hover:bg-emerald-950/30 border-l-2 border-emerald-400'
+                      : 'hover:bg-slate-850/60'
+                  }
+                >
                   <td className="p-2.5 font-mono text-slate-400">{idx + 2}</td>
                   <td className="p-2.5 font-medium text-white">
-                    {isFa ? stage.nameFa : stage.nameEn}
-                    <div className="text-[10px] text-slate-400 font-normal">
-                      {isFa ? stage.nameEn : stage.nameFa}
+                    <div className="flex items-center gap-1.5">
+                      {stage.id === 'bifacial_gain' && (
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      )}
+                      <div>
+                        <span className={stage.id === 'bifacial_gain' ? 'text-emerald-300 font-bold' : ''}>
+                          {isFa ? stage.nameFa : stage.nameEn}
+                        </span>
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          {isFa ? stage.nameEn : stage.nameFa}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="p-2.5 text-slate-300">
                     {isFa ? stage.descriptionFa : stage.descriptionEn || stage.nameEn}
                   </td>
                   <td className="p-2.5 font-mono font-bold">
-                    <span className={stage.percentageLoss >= 0 ? 'text-industrial-success' : 'text-industrial-error'}>
+                    <span className={stage.percentageLoss >= 0 ? 'text-industrial-success font-extrabold' : 'text-industrial-error'}>
                       {stage.percentageLoss > 0 ? `+${stage.percentageLoss}%` : `${stage.percentageLoss}%`}
                     </span>
                     <div className="text-[10px] text-slate-500 font-normal">

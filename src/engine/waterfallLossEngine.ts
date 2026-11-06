@@ -67,7 +67,8 @@ export function computeWaterfallLosses(
   installationEnv?: InstallationEnvironment,
   fixedTiltDeg?: number,
   latitudeDeg?: number,
-  shadingLossOverridePct?: number
+  shadingLossOverridePct?: number,
+  bifacialGainPct?: number
 ): WaterfallLossReport {
   // 1. Raw Global Horizontal Irradiance (GHI)
   // GHI annual = PSH * 365 days * 1 kW/m² reference
@@ -139,6 +140,19 @@ export function computeWaterfallLosses(
       descriptionEn: descEn,
     });
   };
+
+  // 0b. Bifacial Rear Irradiance Gain (First-Order Proxy)
+  // Applied multiplicatively immediately after transposition and before near-shading.
+  if (bifacialGainPct !== undefined && bifacialGainPct > 0) {
+    addStage(
+      'bifacial_gain',
+      'بهره تابش بازتابی پشت پنل (Bifacial Rear Gain)',
+      'Bifacial Rear Irradiance Gain (First-Order Proxy)',
+      bifacialGainPct,
+      'افزایش دریافت پرتوهای خورشیدی از سطح پشتی ماژول ناشی از بازتابش آلبدوی زمین و ضریب دوطرفگی',
+      'First-order empirical proxy rear-side irradiance collection from ground albedo reflection.'
+    );
+  }
 
   // 1. Near Shading Loss (Row-on-row & ground horizon shading)
   const nearShadingPct = nearShadingPctDefault;

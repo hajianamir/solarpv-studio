@@ -10,6 +10,10 @@ import {
   Flame,
   CheckCircle2,
   Table,
+  Activity,
+  Play,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   type FinancialAnalysisResult,
@@ -18,6 +22,11 @@ import {
 import { type ClimateCity } from '../engine/climaticData';
 import { type FoundationType } from '../engine/structuralEngine';
 import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import {
+  runFinancialUncertaintyPropagation,
+  type FinancialUqResult,
+} from '../engine/core/uncertaintyPropagation';
+import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 
 interface FinancialTabProps {
   financial: FinancialAnalysisResult;
@@ -26,6 +35,12 @@ interface FinancialTabProps {
   city?: ClimateCity;
   foundationType?: FoundationType;
   lang?: 'fa' | 'en';
+  isBifacial?: boolean;
+  bifacialityFactor?: number;
+  groundCoverRatio?: number;
+  bifacialGainPct?: number;
+  shadingProvenance?: AppliedShading3dRecord | null;
+  isShadingStale?: boolean;
 }
 
 export const FinancialTab: React.FC<FinancialTabProps> = ({
@@ -35,9 +50,62 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   city,
   foundationType = 'rammed_steel_pile',
   lang = 'fa',
+  isBifacial = false,
+  bifacialityFactor = 0.80,
+  groundCoverRatio = 0.38,
+  bifacialGainPct,
+  shadingProvenance,
+  isShadingStale = false,
 }) => {
   const [showCashflowTable, setShowCashflowTable] = useState(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
+  const [uqResult, setUqResult] = useState<FinancialUqResult | null>(null);
+  const [uqSampleSize, setUqSampleSize] = useState<number>(100);
+  const [isUqRunning, setIsUqRunning] = useState<boolean>(false);
+  const [uqErrorMessage, setUqErrorMessage] = useState<string | null>(null);
+
+  const isReadyForUq = (financial.systemKwp ?? 0) > 0 && (financial.annualEnergyYieldKwh ?? 0) > 0;
+
+  const handleRunUqSimulation = () => {
+    setUqErrorMessage(null);
+    if (!isReadyForUq) {
+      setUqErrorMessage(
+        lang === 'fa'
+          ? 'ظرفیت سامانه یا انرژی تولیدی سالانه در مدل مالی تعیین نشده است. لطفاً ابتدا ظرفیت پنل‌ها و تولید سالانه را تنظیم نمایید.'
+          : 'System capacity or annual energy yield is missing or non-positive. Please configure system sizing before running financial UQ.'
+      );
+      return;
+    }
+
+    setIsUqRunning(true);
+    setTimeout(() => {
+      try {
+        const res = runFinancialUncertaintyPropagation({
+          plantCapacityKwp: financial.systemKwp,
+          batteryCapacityKwh: financial.batteryKwh || 0,
+          inverterCapacityKw: financial.inverterKw || financial.systemKwp,
+          baseAnnualYieldKwh: financial.annualEnergyYieldKwh,
+          basePricing: pricing,
+          systemMode: financial.systemMode || 'powerplant',
+          sampleSize: uqSampleSize,
+          seed: 42,
+          isBifacial,
+          bifacialityFactor,
+          groundCoverRatio,
+        });
+        setUqResult(res);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setUqErrorMessage(
+          lang === 'fa'
+            ? `خطا در اجرای شبیه‌سازی عدم قطعیت مالی: ${msg}`
+            : `Error executing financial UQ simulation: ${msg}`
+        );
+      } finally {
+        setIsUqRunning(false);
+      }
+    }, 100);
+  };
 
   // Salt corrosion / ISO 9223 exposure for LCOE derating (resolved via OSM Nominatim shoreline distance)
   useEffect(() => {
@@ -66,6 +134,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     epcLaborUsdPerKw: 0.01,
     gridTariffTomanPerKwh: 0.01,
     ppaTariffTomanPerKwh: 0.01,
+    offgridAvoidedCostTomanPerKwh: 0.01,
+    hvConnectionUsdPerKva: 0.01,
+    dieselFuelPriceTomanPerLiter: 100,
   };
 
   const sanitizeNumericField = (
@@ -205,15 +276,41 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
             <label className="text-slate-400 block mb-1">
-              {lang === 'fa' ? 'تعرفه فروش برق (تومان/kWh):' : 'Tariff (Toman/kWh):'}
+              {financial.systemMode === 'powerplant'
+                ? (lang === 'fa' ? 'تعرفه قرارداد PPA (تومان/kWh):' : 'PPA Tariff (Toman/kWh):')
+                : financial.systemMode === 'offgrid'
+                  ? (lang === 'fa' ? 'هزینه اجتناب‌شده دیزل (تومان/kWh):' : 'Avoided Diesel Cost (Toman/kWh):')
+                  : (lang === 'fa' ? 'تعرفه فروش برق خانگی/صنعتی (تومان/kWh):' : 'Retail Tariff (Toman/kWh):')}
             </label>
             <input
               type="number"
               step="500"
-              value={pricing.gridTariffTomanPerKwh}
-              onChange={(e) => updateField('gridTariffTomanPerKwh', parseFloat(e.target.value) || 0)}
+              value={
+                financial.systemMode === 'powerplant'
+                  ? pricing.ppaTariffTomanPerKwh
+                  : financial.systemMode === 'offgrid'
+                    ? (pricing.offgridAvoidedCostTomanPerKwh ?? 21600)
+                    : pricing.gridTariffTomanPerKwh
+              }
+              onChange={(e) => {
+                const val = parseFloat(e.target.value) || 0;
+                if (financial.systemMode === 'powerplant') {
+                  updateField('ppaTariffTomanPerKwh', val);
+                } else if (financial.systemMode === 'offgrid') {
+                  updateField('offgridAvoidedCostTomanPerKwh', val);
+                } else {
+                  updateField('gridTariffTomanPerKwh', val);
+                }
+              }}
               className="studio-input w-full font-mono font-bold text-industrial-success text-xs"
             />
+            <span className="text-[10px] text-slate-500 block mt-0.5">
+              {financial.systemMode === 'powerplant'
+                ? (lang === 'fa' ? 'مدل قرارداد خرید تضمینی ساتبا' : 'SATBA Guaranteed PPA')
+                : financial.systemMode === 'offgrid'
+                  ? (lang === 'fa' ? 'پروکسی هزینه تولید برق با ژنراتور دیزلی' : 'Diesel displacement proxy')
+                  : (lang === 'fa' ? 'تعرفه مصوب شرکت توزیع/برق منطقه‌ای' : 'Utility retail net-metering')}
+            </span>
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
@@ -246,33 +343,50 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </label>
 
           {pricing.includeDieselGenSet && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-              <div>
-                <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'قیمت خرید دیزل ($):' : 'GenSet CAPEX ($):'}</label>
-                <input
-                  type="number"
-                  value={pricing.dieselGenSetCapexUsd || 15000}
-                  onChange={(e) => updateField('dieselGenSetCapexUsd', parseFloat(e.target.value) || 0)}
-                  className="studio-input w-full text-xs font-mono"
-                />
+            <div className="space-y-2 pt-2">
+              <div className="text-[11px] text-amber-300 bg-amber-950/30 p-2 rounded border border-amber-800/40">
+                {lang === 'fa'
+                  ? '⚠ توجه مهندسی (پروکسی تخمینی): محاسبات سوخت دیزل بر اساس ساعات کارکرد سالانه و نرخ مصرف تخمینی است و شبیه‌سازی ساعتی ۸۷۶۰ ساعته دیسپچ را نمایندگی نمی‌کند.'
+                  : '⚠ Engineering Notice (Estimated Proxy): Diesel fuel economics are estimated from annual runtime and consumption parameters; this is an indicative proxy without 8760h hourly dispatch simulation.'}
               </div>
-              <div>
-                <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'مصرف گازوئیل سالانه (لیتر):' : 'Annual Fuel (Liters):'}</label>
-                <input
-                  type="number"
-                  value={pricing.dieselAnnualFuelLiters || 2500}
-                  onChange={(e) => updateField('dieselAnnualFuelLiters', parseFloat(e.target.value) || 0)}
-                  className="studio-input w-full text-xs font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'نرخ هر لیتر گازوئیل (تومان):' : 'Fuel Price (Toman/L):'}</label>
-                <input
-                  type="number"
-                  value={pricing.dieselFuelPriceTomanPerLiter || 3500}
-                  onChange={(e) => updateField('dieselFuelPriceTomanPerLiter', parseFloat(e.target.value) || 0)}
-                  className="studio-input w-full text-xs font-mono"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'قیمت خرید دیزل ($):' : 'GenSet CAPEX ($):'}</label>
+                  <input
+                    type="number"
+                    value={pricing.dieselGenSetCapexUsd || 15000}
+                    onChange={(e) => updateField('dieselGenSetCapexUsd', parseFloat(e.target.value) || 0)}
+                    className="studio-input w-full text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'ساعات کارکرد سالانه (h):' : 'Annual Run Hours (h):'}</label>
+                  <input
+                    type="number"
+                    value={pricing.dieselAnnualRunHours || 250}
+                    onChange={(e) => updateField('dieselAnnualRunHours', parseFloat(e.target.value) || 0)}
+                    className="studio-input w-full text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'مصرف گازوئیل (L/h):' : 'Fuel Rate (L/h):'}</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={pricing.dieselFuelConsumptionLitersPerHour || 14}
+                    onChange={(e) => updateField('dieselFuelConsumptionLitersPerHour', parseFloat(e.target.value) || 0)}
+                    className="studio-input w-full text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'نرخ هر لیتر (تومان):' : 'Fuel Price (Toman/L):'}</label>
+                  <input
+                    type="number"
+                    value={pricing.dieselFuelPriceTomanPerLiter || 3500}
+                    onChange={(e) => updateField('dieselFuelPriceTomanPerLiter', parseFloat(e.target.value) || 0)}
+                    className="studio-input w-full text-xs font-mono"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -294,19 +408,19 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'دوره بازگشت سرمایه ساده' : 'Simple Payback Period'}</div>
           <div className="text-xl font-bold font-mono text-industrial-success mt-1">
-            {financial.simplePaybackPeriodYears} <span className="text-xs font-normal text-slate-300">{lang === 'fa' ? 'سال' : 'Years'}</span>
+            {financial.simplePayback ? financial.simplePayback.formattedYears : `${financial.simplePaybackPeriodYears} سال`}
           </div>
           <div className="text-xs font-mono text-slate-400 mt-0.5">
-            {lang === 'fa' ? 'تنزیل‌شده:' : 'Discounted:'} {financial.discountedPaybackPeriodYears} {lang === 'fa' ? 'سال' : 'yrs'}
+            {lang === 'fa' ? 'تنزیل‌شده:' : 'Discounted:'} {financial.discountedPayback ? financial.discountedPayback.formattedYears : `${financial.discountedPaybackPeriodYears} سال`}
           </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'نرخ بازده داخلی (IRR)' : 'Internal Rate of Return (IRR)'}</div>
           <div className="text-xl font-bold font-mono text-purple-400 mt-1">
-            {financial.isIrrDefined
+            {financial.isIrrDefined && financial.irrPct !== null
               ? `${financial.irrPct}%`
-              : (lang === 'fa' ? 'تعریف‌نشده (بدون ریشه)' : 'N/A (No Real Root)')}
+              : (lang === 'fa' ? `تعریف‌نشده (${financial.irrStatus})` : `N/A (${financial.irrStatus})`)}
           </div>
           <div className="text-xs font-mono text-industrial-success mt-0.5">
             NPV: {(financial.npvToman / 1_000_000_000).toFixed(2)} میلیارد تومان
@@ -316,12 +430,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'بهای تمام‌شده انرژی (LCOE)' : 'Levelized Cost of Energy (LCOE)'}</div>
           <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
-            {financial.isLcoeDefined
+            {financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null
               ? `$${financial.lcoeUsdPerKwh.toFixed(4)}`
               : (lang === 'fa' ? 'نامعتبر (تولید صفر)' : 'N/A (Zero Energy)')}
           </div>
           <div className="text-xs font-mono text-slate-300 mt-0.5">
-            {financial.isLcoeDefined
+            {financial.isLcoeDefined && financial.lcoeTomanPerKwh !== null
               ? `${financial.lcoeTomanPerKwh.toLocaleString()} تومان / kWh`
               : '—'}
           </div>
@@ -390,9 +504,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
                 <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'بهای تمام‌شده تراز شده کل:' : 'Net Levelized LCOE:'}</span>
-                <span className="font-mono font-bold text-industrial-success text-base">${financial.lcoeUsdPerKwh.toFixed(4)}</span>
+                <span className="font-mono font-bold text-industrial-success text-base">{financial.lcoeUsdPerKwh !== null ? `$${financial.lcoeUsdPerKwh.toFixed(4)}` : 'N/A'}</span>
                 <span className="text-[9px] text-slate-300 block mt-0.5">
-                  ~{financial.lcoeTomanPerKwh.toLocaleString()} Toman/kWh
+                  {financial.lcoeTomanPerKwh !== null ? `~${financial.lcoeTomanPerKwh.toLocaleString()} Toman/kWh` : '—'}
                 </span>
               </div>
             </div>
@@ -525,12 +639,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-850 font-mono text-[11px]">
-                {financial.cashFlow25Years.map((row) => (
+                {(financial.cashFlowWithYear0 || financial.cashFlow25Years).map((row) => (
                   <tr key={row.year} className="hover:bg-slate-850/50">
-                    <td className="p-2 text-white font-bold">{row.year}</td>
+                    <td className="p-2 text-white font-bold">{row.year === 0 ? (lang === 'fa' ? 'سال ۰ (CAPEX)' : 'Year 0 (CAPEX)') : row.year}</td>
                     <td className="p-2 text-industrial-accent">{row.generationKwh.toLocaleString()}</td>
                     <td className="p-2 text-industrial-success">{(row.revenueToman / 1_000_000).toFixed(1)} م.ت</td>
-                    <td className="p-2 text-red-300">{(row.opexToman / 1_000_000).toFixed(1)} م.ت</td>
+                    <td className="p-2 text-red-300">{((row.year === 0 ? row.capexToman : row.opexToman) / 1_000_000).toFixed(1)} م.ت</td>
                     <td className="p-2 font-bold text-slate-100">{(row.netCashFlowToman / 1_000_000).toFixed(1)} م.ت</td>
                     <td className={`p-2 font-bold ${row.cumulativeCashFlowToman >= 0 ? 'text-industrial-success' : 'text-industrial-error'}`}>
                       {(row.cumulativeCashFlowToman / 1_000_000).toFixed(1)} م.ت
@@ -539,6 +653,222 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Uncertainty Quantification (UQ) & Latin Hypercube Sampling Card */}
+      <div className="studio-card">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-sm font-bold text-industrial-accent flex items-center gap-2">
+              <Activity className="w-4 h-4 text-purple-400" />
+              {lang === 'fa'
+                ? 'تحلیل عدم قطعیت آماری، کوپولا و حساسیت تورنادو (Monte Carlo & Latin Hypercube Sampling)'
+                : 'Financial Uncertainty Quantification (LHS & Copula-driven Monte Carlo)'}
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {lang === 'fa'
+                ? 'نمونه‌برداری ساختاریافته LHS از عدم قطعیت تابش خورشیدی (GHI)، گردوغبار، آلبدو، هزینه CAPEX/OPEX و نرخ تنزیل'
+                : 'Stratified LHS sampling across GHI irradiance, soiling, albedo, CAPEX, OPEX, and discount rate.'}
+            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                {isBifacial
+                  ? (lang === 'fa'
+                    ? `ماژول دوطرفه (Bifacial BF=${bifacialityFactor.toFixed(2)}, GCR=${groundCoverRatio.toFixed(2)}, آلبدو ۰.۲۲) — بهره تابش پشت +${(bifacialGainPct ?? 3.0).toFixed(1)}٪ (تقریب درجه اول)`
+                    : `Bifacial Array (BF=${bifacialityFactor.toFixed(2)}, GCR=${groundCoverRatio.toFixed(2)}, albedo 0.22) — Rear gain +${(bifacialGainPct ?? 3.0).toFixed(1)}% (first-order proxy)`)
+                  : (lang === 'fa'
+                    ? 'ماژول یک‌طرفه (Monofacial) - اثر آلبدو محدود به بازتاب افقی'
+                    : 'Monofacial Array - Low Albedo Sensitivity')}
+              </span>
+              {shadingProvenance && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                  {lang === 'fa'
+                    ? `سایه سه‌بعدی: -${shadingProvenance.lossPct}٪`
+                    : `3D Shading: -${shadingProvenance.lossPct}%`}
+                  {isShadingStale && (
+                    <span className="text-amber-300 ml-1 font-bold">
+                      {lang === 'fa' ? '(⚠️ تغییر ظرفیت)' : '(⚠️ Stale: Capacity changed)'}
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={uqSampleSize}
+              onChange={(e) => setUqSampleSize(parseInt(e.target.value) || 100)}
+              className="studio-input text-xs font-mono py-1.5"
+            >
+              <option value="50">50 {lang === 'fa' ? 'نمونه (سریع)' : 'trials (fast)'}</option>
+              <option value="100">100 {lang === 'fa' ? 'نمونه (استاندارد)' : 'trials (standard)'}</option>
+              <option value="200">200 {lang === 'fa' ? 'نمونه (دقیق)' : 'trials (high-res)'}</option>
+            </select>
+
+            <button
+              onClick={handleRunUqSimulation}
+              disabled={isUqRunning || !isReadyForUq}
+              className={`studio-btn-primary text-xs py-1.5 px-3 flex items-center gap-2 rounded-lg font-bold ${
+                !isReadyForUq ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isUqRunning ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>{lang === 'fa' ? 'درحال اجرای شبیه‌سازی...' : 'Running LHS Trials...'}</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>{lang === 'fa' ? 'اجرای شبیه‌سازی عدم قطعیت' : 'Run LHS UQ Simulation'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {uqErrorMessage && (
+          <div className="mt-3 p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-200 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{uqErrorMessage}</span>
+          </div>
+        )}
+
+        {!isReadyForUq && (
+          <div className="mt-3 p-2.5 bg-slate-800/60 border border-slate-700 rounded-lg text-xs text-slate-400 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-industrial-warning shrink-0" />
+            <span>
+              {lang === 'fa'
+                ? 'توجه: برای اجرای تحلیل عدم قطعیت، ابتدا باید ظرفیت سامانه (kWp) و انرژی سالانه محاسبه شده باشد.'
+                : 'Notice: System capacity (kWp) and annual yield must be computed before running UQ sensitivity analysis.'}
+            </span>
+          </div>
+        )}
+
+        {uqResult && (
+          <div className="mt-4 space-y-4 animate-fadeIn">
+            {/* Bankable Category & Quantile Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'رتبه اعتباری و ریسک مالی' : 'Bankability Risk Rating'}</div>
+                <div className="text-base font-bold font-mono text-industrial-success mt-1">
+                  {uqResult.bankableRiskCategory}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {uqResult.sampleCount} {lang === 'fa' ? 'آزمون ساختاریافته LHS' : 'stratified LHS trials'}
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'تولید سالانه (MWh) - P10/P50/P90' : 'Annual Yield (MWh) - P10/P50/P90'}</div>
+                <div className="text-base font-bold font-mono text-sky-400 mt-1">
+                  {uqResult.annualGenerationMwh.p50} <span className="text-xs font-normal text-slate-300">MWh</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                  P10: {uqResult.annualGenerationMwh.p10} | P90: {uqResult.annualGenerationMwh.p90} (±{uqResult.annualGenerationMwh.relativeSpreadPercent}%)
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'بهای تمام‌شده انرژی (LCOE $/MWh)' : 'LCOE ($/MWh) - P10/P50/P90'}</div>
+                <div className="text-base font-bold font-mono text-industrial-warning mt-1">
+                  ${uqResult.lcoeUsdPerMwh.p50} <span className="text-xs font-normal text-slate-300">/MWh</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                  P10: ${uqResult.lcoeUsdPerMwh.p10} | P90: ${uqResult.lcoeUsdPerMwh.p90}
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'ارزش فعلی خالص (NPV USD)' : 'Project NPV (USD) - P10/P50/P90'}</div>
+                <div className="text-base font-bold font-mono text-emerald-400 mt-1">
+                  ${uqResult.npvUsd.p50.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                  P10: ${uqResult.npvUsd.p10.toLocaleString()} | P90: ${uqResult.npvUsd.p90.toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            {/* Aleatory vs Epistemic Uncertainty Breakdown */}
+            {uqResult.uncertaintyDecomposition && (
+              <div className="p-3 bg-slate-900/60 border border-industrial-border rounded-lg text-xs space-y-2">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-sky-400" />
+                    {lang === 'fa' ? 'تفکیک عدم قطعیت فیزیکی (Aleatory) و مدل/اقتصادی (Epistemic):' : 'Aleatory vs Epistemic Uncertainty Decomposition:'}
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    {lang === 'fa' ? 'خطای استاندارد همگرایی: ' : 'Std Error: '}
+                    ${uqResult.convergenceStandardErrorNpvUsd?.toLocaleString()} USD
+                  </span>
+                </div>
+
+                {/* Split Bar */}
+                <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden flex">
+                  <div
+                    style={{ width: `${uqResult.uncertaintyDecomposition.aleatoryVariancePct}%` }}
+                    className="bg-sky-500 h-full"
+                    title={`Aleatory (Physical Climate): ${uqResult.uncertaintyDecomposition.aleatoryVariancePct}%`}
+                  />
+                  <div
+                    style={{ width: `${uqResult.uncertaintyDecomposition.epistemicVariancePct}%` }}
+                    className="bg-amber-500 h-full"
+                    title={`Epistemic (Techno-Economic): ${uqResult.uncertaintyDecomposition.epistemicVariancePct}%`}
+                  />
+                </div>
+
+                <div className="flex justify-between text-[11px] text-slate-400">
+                  <span className="text-sky-300">
+                    ● {lang === 'fa' ? 'عدم قطعیت فیزیکی اقلیم (تابش، غبار، آلبدو):' : 'Aleatory Climate Variance (GHI, soiling, albedo):'}{' '}
+                    <strong>{uqResult.uncertaintyDecomposition.aleatoryVariancePct}%</strong>
+                  </span>
+                  <span className="text-amber-300">
+                    ● {lang === 'fa' ? 'عدم قطعیت اقتصادی و پارامترها (CAPEX, OPEX, تعرفه، تنزیل):' : 'Epistemic Financial Variance (CAPEX, OPEX, tariff, discount):'}{' '}
+                    <strong>{uqResult.uncertaintyDecomposition.epistemicVariancePct}%</strong>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Sensitivity Tornado Ranking */}
+            <div className="studio-card">
+              <h4 className="text-xs font-bold text-slate-300 mb-2">
+                {lang === 'fa'
+                  ? 'رتبه‌بندی حساسیت تورنادو (سهم از واریانس کل NPV طبق رگرسیون رتبه‌ای استاندارد SRC²):'
+                  : 'Tornado Sensitivity Ranking (First-Order Variance Contribution via SRC² per Saltelli et al.):'}
+              </h4>
+              <div className="space-y-2">
+                {uqResult.tornadoSensitivityRanking.map((item) => (
+                  <div key={item.variableId} className="space-y-1">
+                    <div className="flex justify-between text-xs text-slate-300 font-mono">
+                      <span>{item.name}</span>
+                      <span className="text-industrial-accent font-bold">{item.varianceContributionPercent}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div
+                        style={{ width: `${Math.min(100, item.varianceContributionPercent)}%` }}
+                        className={`h-full rounded-full ${
+                          item.sensitivityType === 'aleatory' ? 'bg-sky-500' : 'bg-industrial-warning'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Screening and Bankability Notice */}
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-200 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <span className="font-bold">{lang === 'fa' ? 'اطلاعیه ارزیابی ریسک و تأمین مالی: ' : 'Bankability & Risk Notice: '}</span>
+                {lang === 'fa' ? uqResult.screeningAndBankabilityNoticeFa : uqResult.screeningAndBankabilityNoticeEn}
+              </div>
+            </div>
           </div>
         )}
       </div>

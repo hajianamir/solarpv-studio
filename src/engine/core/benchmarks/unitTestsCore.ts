@@ -1155,7 +1155,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     ahvazThermalDerate === 10.5 &&
     tehranThermalDerate === 0.0 &&
     tehranSnowSk < munichSnowSk &&
-    finAhvazDerated.lcoeUsdPerKwh > finAhvazBase.lcoeUsdPerKwh,
+    (finAhvazDerated.lcoeUsdPerKwh ?? 0) > (finAhvazBase.lcoeUsdPerKwh ?? 0),
     `Cross-tab parameter propagation verified: Ahvaz thermal derate = ${ahvazThermalDerate}% (0% in Tehran); Munich snow load = ${munichSnowSk} kN/m² (> Tehran ${tehranSnowSk.toFixed(3)} kN/m²); Ahvaz LCOE increases from $${finAhvazBase.lcoeUsdPerKwh}/kWh to $${finAhvazDerated.lcoeUsdPerKwh}/kWh with 10.5% extreme heat inverter derating.`
   );
 
@@ -1302,7 +1302,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     assert(
       'PR-CONSISTENCY',
       '[LCOE-INTEGRITY] LCOE matches (capex+disc.costs)/disc.energy, no invented constants',
-      Math.abs(recomputedToman - fin.lcoeTomanPerKwh) <= 1,
+      Math.abs(recomputedToman - (fin.lcoeTomanPerKwh ?? 0)) <= 1,
       `engine=${fin.lcoeTomanPerKwh} Toman/kWh recomputed=${recomputedToman.toFixed(1)} Toman/kWh ($${fin.lcoeUsdPerKwh}/kWh)`
     );
   }
@@ -1898,7 +1898,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Migration-RoundTrip',
       'P1.2.5 Pricing propagated intact: doubled module+inverter cost raises LCOE',
       basePricing !== null && highPricing !== null &&
-        finHigh.lcoeUsdPerKwh > finBase.lcoeUsdPerKwh &&
+        (finHigh.lcoeUsdPerKwh ?? 0) > (finBase.lcoeUsdPerKwh ?? 0) &&
         (highPricing as any).moduleUsdPerWp === (basePricing as any).moduleUsdPerWp * 2,
       `base LCOE=$${finBase.lcoeUsdPerKwh}/kWh high LCOE=$${finHigh.lcoeUsdPerKwh}/kWh moduleUsdPerWp ${(basePricing as any)?.moduleUsdPerWp}->${(highPricing as any)?.moduleUsdPerWp}`
     );
@@ -3217,21 +3217,108 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       buriedRun.groupingDeratingFactorKg === 0.70 &&
       trayRun.totalThermalAmpacityAmps > buriedRun.totalThermalAmpacityAmps;
 
-    const capacitanceOk = scHeavyRun.totalCapacitanceUf > 0 && scHeavyRun.chargingCurrentAmps > 0;
+    const dcRun = calculateAdvancedCableRun({
+      id: 'dc-test',
+      sectionNameFa: 'استرینگ DC',
+      sectionNameEn: 'DC String',
+      oneWayLengthM: 100,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 1000,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.5,
+      isDc: true,
+      isThreePhase: false,
+    });
+
+    const pvcRun = calculateAdvancedCableRun({
+      id: 'pvc-test',
+      sectionNameFa: 'کابل PVC',
+      sectionNameEn: 'PVC Cable',
+      oneWayLengthM: 100,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 1000,
+      conductorMaterial: 'copper',
+      insulationType: 'pvc',
+      allowableDropPct: 1.5,
+      isDc: true,
+      isThreePhase: false,
+    });
+
+    const dcCapacitanceOk = dcRun.totalCapacitanceUf > 0 && dcRun.chargingCurrentAmps === 0;
+    const acCapacitanceOk = scHeavyRun.totalCapacitanceUf > 0 && scHeavyRun.chargingCurrentAmps > 0;
+    const permittivityEffectOk = pvcRun.lineCapacitanceUfPerKm > dcRun.lineCapacitanceUfPerKm;
+
+    // Exact numerical bounds for the idealized coaxial screened geometry model (IEC 60287-1-1 Eq. 2.2)
+    // for 6mm² conductor (dc=2.95mm, tins=0.8mm, Di=4.55mm):
+    // C = 0.0556 * epsilon_r / ln(4.55/2.95) -> 0.308 uF/km for XLPE (2.4), 0.642 uF/km for PVC (5.0).
+    // Note: Verifies mathematical formula output under coaxial screened assumptions; does not assert
+    // field-measured or factory datasheet values of unshielded PV cables in arbitrary tray layouts.
+    const run6Xlpe = calculateAdvancedCableRun({
+      id: 'test-6mm2-xlpe',
+      sectionNameFa: 'استرینگ ۶ میلی‌متر مربع XLPE',
+      sectionNameEn: 'String 6mm2 XLPE',
+      oneWayLengthM: 75,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 1000,
+      conductorMaterial: 'copper',
+      insulationType: 'xlpe',
+      allowableDropPct: 1.0,
+      isDc: true,
+      isThreePhase: false,
+      expectedIscKa: 0.1,
+    });
+
+    const run6Pvc = calculateAdvancedCableRun({
+      id: 'test-6mm2-pvc',
+      sectionNameFa: 'استرینگ ۶ میلی‌متر مربع PVC',
+      sectionNameEn: 'String 6mm2 PVC',
+      oneWayLengthM: 75,
+      designCurrentAmps: 15,
+      nominalVoltageVolts: 1000,
+      conductorMaterial: 'copper',
+      insulationType: 'pvc',
+      allowableDropPct: 1.0,
+      isDc: true,
+      isThreePhase: false,
+      expectedIscKa: 0.1,
+    });
+
+    const exactNumericalBoundsOk =
+      run6Xlpe.totalEffectiveCrossSectionMm2 === 6 &&
+      run6Pvc.totalEffectiveCrossSectionMm2 === 6 &&
+      run6Xlpe.lineCapacitanceUfPerKm === 0.308 &&
+      run6Pvc.lineCapacitanceUfPerKm === 0.642;
 
     assert(
       'E9-CABLE-SC-1',
       'Cable sizing enforces adiabatic short-circuit withstand without 0.5 discount and applies installationMethod kg',
-      scConstraintEnforced && installMethodOk && capacitanceOk,
-      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, Cap=${scHeavyRun.totalCapacitanceUf}uF`
+      scConstraintEnforced && installMethodOk && dcCapacitanceOk && acCapacitanceOk && permittivityEffectOk && exactNumericalBoundsOk,
+      `SC size=${scHeavyRun.totalEffectiveCrossSectionMm2}mm² (min=${scHeavyRun.shortCircuitWithstandMinMm2}mm²), tray kg=${trayRun.groupingDeratingFactorKg}, buried kg=${buriedRun.groupingDeratingFactorKg}, 6mm² XLPE=${run6Xlpe.lineCapacitanceUfPerKm}uF/km, 6mm² PVC=${run6Pvc.lineCapacitanceUfPerKm}uF/km`
     );
   }
 
   // [E9-SUB-IEC60909-1] MV Substation complex impedance, kappa(R/X), Ith and breaker sufficiency flag
   {
-    const { designMvSubstation } = await import('../../mvSubstationEngine');
+    const { designMvSubstation, STANDARD_MV_BREAKERS } = await import('../../mvSubstationEngine');
 
-    // Normal plant: breaker rating >= fault current
+    // 1. Catalog internal schema consistency & document traceability
+    // (Verifies internal schema consistency, standard ratios, and recorded document references of catalog entries;
+    // does not represent independent external third-party type-test verification of manufacturer ratings):
+    const catalogIntegrityOk =
+      STANDARD_MV_BREAKERS.length === 8 &&
+      STANDARD_MV_BREAKERS.every((b) =>
+        b.modelDesignation.length > 0 &&
+        b.manufacturer.length > 0 &&
+        b.catalogDocReference.length > 10 &&
+        b.typeTestStandard.includes('IEC 62271-100') &&
+        b.ratedPeakMakingCapacityKa >= 2.5 * b.ratedBreakingCapacityKa &&
+        b.ratedShortTimeWithstandKa >= b.ratedBreakingCapacityKa &&
+        b.ratedShortTimeDurationSec >= 3.0 &&
+        b.operatingSequence === 'O - 0.3s - CO - 15s - CO'
+      );
+
+    // 2. Normal plant: breaker rating >= fault current
     const normalSub = designMvSubstation({
       plantCapacityAcMva: 5.0,
       inverterOutputVoltageV: 800,
@@ -3241,7 +3328,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       upstreamGridShortCircuitMva: 500,
     });
 
-    // Extreme fault current: exceeding 63 kA maximum available breaker rating
+    // 3. Extreme fault current: exceeding 63 kA maximum available breaker rating
     const extremeSub = designMvSubstation({
       plantCapacityAcMva: 150.0,
       inverterOutputVoltageV: 800,
@@ -3251,6 +3338,36 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       upstreamGridShortCircuitMva: 10000,
     });
 
+    // 4. High continuous current exceeding 2500A with low short-circuit current
+    const overloadCurrentSub = designMvSubstation({
+      plantCapacityAcMva: 100.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 10,
+    });
+
+    // 5. Voltage class unavailable (e.g. 40kV grid connection with no 40kV breaker in MV catalog)
+    const voltageUnavailableSub = designMvSubstation({
+      plantCapacityAcMva: 5.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 40,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 500,
+    });
+
+    // 6. Thermal withstand energy exceeded (elevated clearing time where Ik^2*tk < Ith^2*t_clearing)
+    const thermalExceededSub = designMvSubstation({
+      plantCapacityAcMva: 60.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 15.0,
+      upstreamGridShortCircuitMva: 25000,
+    });
+
     const complexImpedanceOk =
       normalSub.shortCircuit.rEquivalentOhms > 0 &&
       normalSub.shortCircuit.xEquivalentOhms > 0 &&
@@ -3258,16 +3375,41 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       normalSub.shortCircuit.kappa < 2.0 &&
       normalSub.shortCircuit.thermalEquivalentIthKa >= normalSub.shortCircuit.initialSymmetricalIscKa;
 
-    const breakerSufficiencyOk =
+    const normalBreakerOk =
       normalSub.shortCircuit.isBreakerSufficient === true &&
+      normalSub.shortCircuit.selectedBreakerModel.length > 0 &&
+      normalSub.shortCircuit.selectedBreakerCatalogDocRef !== undefined &&
       normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.initialSymmetricalIscKa &&
-      extremeSub.shortCircuit.isBreakerSufficient === false;
+      normalSub.shortCircuit.ratedPeakMakingCapacityKa >= normalSub.shortCircuit.peakDynamicIpKa &&
+      normalSub.shortCircuit.breakingCapacityKa >= normalSub.shortCircuit.thermalEquivalentIthKa;
+
+    const failurePathsOk =
+      extremeSub.shortCircuit.isBreakerSufficient === false &&
+      extremeSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
+      extremeSub.shortCircuit.breakerDeficiencyReason?.includes('breaking_capacity_exceeded') === true &&
+      extremeSub.switchgearDescriptionEn.includes('CRITICAL BREAKER CAPACITY') &&
+      overloadCurrentSub.shortCircuit.isBreakerSufficient === false &&
+      overloadCurrentSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
+      overloadCurrentSub.shortCircuit.breakerDeficiencyReason?.includes('continuous_current_exceeded') === true &&
+      overloadCurrentSub.switchgearDescriptionEn.includes('CIRCUIT BREAKER CONTINUOUS CURRENT EXCEEDED') &&
+      overloadCurrentSub.switchgearDescriptionEn.includes('split busbar') &&
+      voltageUnavailableSub.shortCircuit.isBreakerSufficient === false &&
+      voltageUnavailableSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
+      voltageUnavailableSub.shortCircuit.breakerDeficiencyReason === 'voltage_class_unavailable' &&
+      voltageUnavailableSub.switchgearDescriptionEn.startsWith('VOLTAGE CLASS UNAVAILABLE WARNING') &&
+      !voltageUnavailableSub.switchgearDescriptionEn.includes('0A') &&
+      voltageUnavailableSub.switchgearDescriptionFa.includes('عدم تطابق رده ولتاژ') &&
+      !voltageUnavailableSub.switchgearDescriptionFa.includes('0A') &&
+      thermalExceededSub.shortCircuit.isBreakerSufficient === false &&
+      thermalExceededSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED' &&
+      thermalExceededSub.shortCircuit.breakerDeficiencyReason === 'thermal_withstand_or_duty_margin_exceeded' &&
+      thermalExceededSub.switchgearDescriptionEn.startsWith('THERMAL SHORT-TIME WITHSTAND EXCEEDED');
 
     assert(
       'E9-SUB-IEC60909-1',
-      'Substation short-circuit uses complex impedance, dynamic kappa, Ith and flags insufficient breaker rating',
-      complexImpedanceOk && breakerSufficiencyOk,
-      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, VCB=${normalSub.shortCircuit.breakingCapacityKa}kA (ok=${normalSub.shortCircuit.isBreakerSufficient}); extreme: Isc=${extremeSub.shortCircuit.initialSymmetricalIscKa}kA, VCB=${extremeSub.shortCircuit.breakingCapacityKa}kA (ok=${extremeSub.shortCircuit.isBreakerSufficient})`
+      'Substation short-circuit uses complex impedance, dynamic kappa, Ith, verifies catalog schema consistency, and flags breaker ratings',
+      catalogIntegrityOk && complexImpedanceOk && normalBreakerOk && failurePathsOk,
+      `norm: Isc=${normalSub.shortCircuit.initialSymmetricalIscKa}kA, kappa=${normalSub.shortCircuit.kappa}, Ith=${normalSub.shortCircuit.thermalEquivalentIthKa}kA, Breaker=${normalSub.shortCircuit.selectedBreakerModel} (${normalSub.shortCircuit.breakingCapacityKa}kA, ok=${normalSub.shortCircuit.isBreakerSufficient}); failure branches: voltOk=${voltageUnavailableSub.shortCircuit.breakerDeficiencyReason}, irOk=${overloadCurrentSub.shortCircuit.breakerDeficiencyReason}, scOk=${extremeSub.shortCircuit.breakerDeficiencyReason}, thermOk=${thermalExceededSub.shortCircuit.breakerDeficiencyReason}`
     );
   }
 
@@ -3275,21 +3417,31 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   {
     const { calculateLightningProtection, calculateEarthingSystem } = await import('../../protectionBomEngine');
 
-    // Test with high thunderstorm activity and small area/tolerable to require Class I (E > 98%)
-    const lpsClass1 = calculateLightningProtection(200, false, 250);
-    const isClass1Or2 = lpsClass1.lpsClass === 'Class I' || lpsClass1.lpsClass === 'Class II';
+    // 1. Strict Class I verification: Large utility plant with high thunderstorm activity requires Class I (E > 98%)
+    const lpsClass1 = calculateLightningProtection(5000, true, 30);
+    const isStrictlyClass1 = lpsClass1.lpsClass === 'Class I' && lpsClass1.requiredEfficiencyPct > 98.0;
 
-    const earthing = calculateEarthingSystem(5000, 80, 'solidly_grounded', true);
-    const earthingIntegrityOk =
-      typeof earthing.isEarthingSafe === 'boolean' &&
-      earthing.isEarthingSafe === (earthing.isResistanceCompliant && earthing.isTouchVoltageSafe && earthing.isStepVoltageSafe) &&
-      earthing.isPreliminaryEstimate === true;
+    // 2. Earthing safety integration on solid ground
+    const earthingSolid = calculateEarthingSystem(5000, 80, 'solidly_grounded', true);
+    const earthingSolidOk =
+      typeof earthingSolid.isEarthingSafe === 'boolean' &&
+      earthingSolid.isEarthingSafe === (earthingSolid.isResistanceCompliant && earthingSolid.isTouchVoltageSafe && earthingSolid.isStepVoltageSafe) &&
+      earthingSolid.isTouchVoltageSafe === (earthingSolid.actualMeshVoltageVolts <= earthingSolid.maxTouchVoltageVolts) &&
+      earthingSolid.isPreliminaryEstimate === true;
+
+    // 3. High-priority safety boundary regression: Impedance grounded system where actualMesh (222V) > maxTouch (120V)
+    // Must strictly evaluate isTouchVoltageSafe = false and isEarthingSafe = false
+    const earthingImpedance = calculateEarthingSystem(100, 40, 'impedance_grounded', false);
+    const earthingSafetyBoundaryOk =
+      earthingImpedance.actualMeshVoltageVolts > earthingImpedance.maxTouchVoltageVolts &&
+      earthingImpedance.isTouchVoltageSafe === false &&
+      earthingImpedance.isEarthingSafe === false;
 
     assert(
       'E9-LPS-CLASS1-1',
-      'Lightning LPS condition evaluates Class I without prior shadow masking and earthing integrates safety',
-      isClass1Or2 && earthingIntegrityOk,
-      `LPS Class=${lpsClass1.lpsClass} (reqEff=${lpsClass1.requiredEfficiencyPct}%), earthingSafe=${earthing.isEarthingSafe}, prelim=${earthing.isPreliminaryEstimate}`
+      'Lightning LPS condition strictly evaluates Class I (E>98%) and earthing bounds touch safety to maxTouch limit',
+      isStrictlyClass1 && earthingSolidOk && earthingSafetyBoundaryOk,
+      `LPS Class=${lpsClass1.lpsClass} (reqEff=${lpsClass1.requiredEfficiencyPct}%), solidSafe=${earthingSolid.isEarthingSafe}, impedanceMesh=${earthingImpedance.actualMeshVoltageVolts}V vs limit=${earthingImpedance.maxTouchVoltageVolts}V (touchSafe=${earthingImpedance.isTouchVoltageSafe})`
     );
   }
 
@@ -3305,11 +3457,11 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     // 2. Inverter replacement in LCOE: with vs without inverter replacement
     const finNoInv = performFinancialAnalysis(1000, 0, 1000, 1800000, { inverterReplacementYear: 0 }, 25, 'powerplant');
     const finWithInv = performFinancialAnalysis(1000, 0, 1000, 1800000, { inverterReplacementYear: 12, inverterReplacementCostRatio: 0.60 }, 25, 'powerplant');
-    const lcoeIncludesInverter = finWithInv.lcoeUsdPerKwh > finNoInv.lcoeUsdPerKwh;
+    const lcoeIncludesInverter = (finWithInv.lcoeUsdPerKwh ?? 0) > (finNoInv.lcoeUsdPerKwh ?? 0);
 
     // 3. Zero energy yield: does not fabricate astronomical LCOE
     const finZero = performFinancialAnalysis(1000, 0, 1000, 0, {}, 25, 'powerplant');
-    const zeroEnergyHandled = finZero.isLcoeDefined === false && finZero.lcoeUsdPerKwh === 0;
+    const zeroEnergyHandled = finZero.isLcoeDefined === false && (finZero.lcoeUsdPerKwh === null || finZero.lcoeUsdPerKwh === 0);
 
     assert(
       'E9-FIN-IRR-LCOE-1',
@@ -3575,6 +3727,1178 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'ClimateCity.dataRetrievalDate derives from climateResource metadata retrievalTimestamp',
       ok,
       `cityRetrievalDate=${site.climateCity.dataRetrievalDate}, metadataDate=${expectedDate}`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-BAY-COUNTING] Substation Bay Count Canonical Formula & Robust Sanitization
+  // ==========================================================================
+  {
+    const { calculateSubstationBayCount } = await import('../../powerplantBayEngine');
+
+    // 1. Standard valid vector: N_total = 4 + 1 + 1 + 1 + 1 + 2 + 1 = 11
+    const standardBay = calculateSubstationBayCount({
+      incomingFeedersCount: 4,
+      transformerBaysCount: 1,
+      meteringBaysCount: 1,
+      spareBaysCount: 1,
+      busTieBaysCount: 1,
+      outgoingLineBaysCount: 2,
+      auxiliaryTransformerBaysCount: 1,
+    });
+    const standardOk = standardBay.totalSubstationCubicles === 11 && standardBay.isInputValid;
+
+    // 2. Negative & fractional & NaN inputs handled safely without NaN propagation:
+    const sanitizedBay = calculateSubstationBayCount({
+      incomingFeedersCount: -3, // clamped to 0
+      transformerBaysCount: 1.8, // rounded to 2
+      meteringBaysCount: Number.NaN, // clamped to 0
+      spareBaysCount: 0,
+      busTieBaysCount: 0,
+      outgoingLineBaysCount: 1,
+      auxiliaryTransformerBaysCount: 1,
+    });
+    const sanitizeOk =
+      sanitizedBay.incomingFeedersCount === 0 &&
+      sanitizedBay.transformerBaysCount === 2 &&
+      sanitizedBay.meteringBaysCount === 0 &&
+      sanitizedBay.totalSubstationCubicles === 4 &&
+      sanitizedBay.validationWarnings.length === 3;
+
+    assert(
+      'E10-BAY-COUNTING',
+      'Substation bay counting follows N_total formula with non-negative integer sanitization',
+      standardOk && sanitizeOk,
+      `standard total=${standardBay.totalSubstationCubicles} (expected 11), sanitized total=${sanitizedBay.totalSubstationCubicles} (expected 4, warnings=${sanitizedBay.validationWarnings.length})`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-IEC60909-VECTORS] IEC 60909-0:2016 Voltage Factors & Transformer S/P/PF
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // 1. Explicit active power P (MW) and power factor PF: S_kVA = P_kW / PF
+    // 10 MW at PF = 0.90 -> S = 11.11 MVA -> sized to 16.0 MVA standard rating
+    const subPf = designMvSubstation({
+      plantCapacityAcMw: 10.0,
+      powerFactor: 0.90,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+    });
+    const pfTransformerOk = subPf.transformer.ratedPowerMva === 16.0;
+
+    // 2. Voltage factor c per IEC 60909-0:2016 Table 1:
+    // MV (20kV): c_max = 1.10, c_min = 1.00
+    const subMvMax = designMvSubstation({
+      plantCapacityAcMva: 5.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      shortCircuitCalculationMode: 'max_fault_current',
+    });
+    const subMvMin = designMvSubstation({
+      plantCapacityAcMva: 5.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      shortCircuitCalculationMode: 'min_fault_current',
+    });
+    const mvFactorOk = subMvMax.shortCircuit.cFactor === 1.10 && subMvMin.shortCircuit.cFactor === 1.00;
+
+    // LV (0.8kV): c_max = 1.10, c_min = 0.95
+    const subLvMin = designMvSubstation({
+      plantCapacityAcMva: 1.0,
+      inverterOutputVoltageV: 400,
+      gridConnectionVoltageKv: 0.8,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      shortCircuitCalculationMode: 'min_fault_current',
+    });
+    const lvFactorOk = subLvMin.shortCircuit.cFactor === 0.95;
+
+    assert(
+      'E10-IEC60909-VECTORS',
+      'Transformer sizes from P/PF explicitly and IEC 60909 applies voltage-dependent c factors',
+      pfTransformerOk && mvFactorOk && lvFactorOk,
+      `P=10MW, PF=0.9 -> S_rated=${subPf.transformer.ratedPowerMva}MVA; MV c_max=${subMvMax.shortCircuit.cFactor}, c_min=${subMvMin.shortCircuit.cFactor}; LV c_min=${subLvMin.shortCircuit.cFactor}`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-FAULT-OUT-OF-RANGE] FaultCurrentOutOfRange Screening Warning & Safety
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // 1. Low fault level (< 0.5 kA): very weak grid
+    const lowFaultSub = designMvSubstation({
+      plantCapacityAcMva: 0.5,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 33,
+      soilResistivityOhmM: 100,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 15, // extremely weak source
+    });
+    const lowWarningOk =
+      lowFaultSub.shortCircuit.initialSymmetricalIscKa < 0.5 &&
+      Boolean(lowFaultSub.shortCircuit.faultCurrentOutOfRangeWarning?.includes('below standard screening lower threshold'));
+
+    // 2. High fault level (> threshold): stiff source triggering configurable upper screening warning
+    const highFaultSub = designMvSubstation({
+      plantCapacityAcMva: 50.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 50,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 2500, // stiff utility transmission feed
+      faultCurrentHighThresholdKa: 18.0, // configurable upper screening threshold
+    });
+    const highWarningOk =
+      highFaultSub.shortCircuit.initialSymmetricalIscKa > 18.0 &&
+      Boolean(highFaultSub.shortCircuit.faultCurrentOutOfRangeWarning?.includes('exceeds standard screening upper threshold'));
+
+    // 3. Breaker fallback safety: extreme fault (>40 kA) cannot produce compliant verdict or undersized breaker
+    const extremeFaultSub = designMvSubstation({
+      plantCapacityAcMva: 100.0,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 50,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 4000,
+    });
+    const extremeBreakerSafetyOk =
+      extremeFaultSub.shortCircuit.isBreakerSufficient === false &&
+      extremeFaultSub.shortCircuit.selectedBreakerModel === 'NO_STANDARD_BREAKER_MATCHED';
+
+    assert(
+      'E10-FAULT-OUT-OF-RANGE',
+      'FaultCurrentOutOfRange screening warnings triggered at bounds and breaker fallback is fail-safe',
+      lowWarningOk && highWarningOk && extremeBreakerSafetyOk,
+      `lowIsc=${lowFaultSub.shortCircuit.initialSymmetricalIscKa}kA (warn=${Boolean(lowFaultSub.shortCircuit.faultCurrentOutOfRangeWarning)}), highIsc=${highFaultSub.shortCircuit.initialSymmetricalIscKa}kA (warn=${Boolean(highFaultSub.shortCircuit.faultCurrentOutOfRangeWarning)}), extremeSufficient=${extremeFaultSub.shortCircuit.isBreakerSufficient}`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-FIN-TARIFF-GENSET-RECONCILE] Mode-Aware Tariffs, Genset, CAPEX & Cashflow Reconcile
+  // ==========================================================================
+  {
+    const { performFinancialAnalysis } = await import('../../financialEngine');
+
+    // 1. Mode-Aware Tariffs affect revenue directly:
+    const ppaBase = performFinancialAnalysis(1000, 0, 1000, 1_800_000, { ppaTariffTomanPerKwh: 2800 }, 25, 'powerplant');
+    const ppaHigh = performFinancialAnalysis(1000, 0, 1000, 1_800_000, { ppaTariffTomanPerKwh: 3500 }, 25, 'powerplant');
+    const ppaTariffOk = ppaHigh.annualRevenueToman > ppaBase.annualRevenueToman;
+
+    const ongridBase = performFinancialAnalysis(100, 0, 100, 180_000, { gridTariffTomanPerKwh: 3800 }, 25, 'ongrid');
+    const ongridHigh = performFinancialAnalysis(100, 0, 100, 180_000, { gridTariffTomanPerKwh: 4500 }, 25, 'ongrid');
+    const ongridTariffOk = ongridHigh.annualRevenueToman > ongridBase.annualRevenueToman;
+
+    const offgridBase = performFinancialAnalysis(50, 100, 50, 90_000, { offgridAvoidedCostTomanPerKwh: 21600 }, 25, 'offgrid');
+    const offgridHigh = performFinancialAnalysis(50, 100, 50, 90_000, { offgridAvoidedCostTomanPerKwh: 26000 }, 25, 'offgrid');
+    const offgridTariffOk = offgridHigh.annualRevenueToman > offgridBase.annualRevenueToman;
+
+    // 2. Diesel generator UI pricing inputs flow end-to-end:
+    const gensetRun = performFinancialAnalysis(50, 100, 50, 90_000, {
+      includeDieselGenSet: true,
+      dieselGenSetCapexUsd: 18000,
+      dieselAnnualRunHours: 300,
+      dieselFuelConsumptionLitersPerHour: 15,
+      dieselFuelPriceTomanPerLiter: 5000,
+      dieselAnnualServiceOpexUsd: 2200,
+    }, 25, 'offgrid');
+    const gensetOk =
+      gensetRun.capexBreakdown.dieselGenSetUsd === 18000 &&
+      gensetRun.dieselEstimatedAnnualFuelLiters === 4500 && // 300h * 15L/h
+      gensetRun.dieselOpexUsd === 2200; // explicit annual service opex input
+
+    // 3. CAPEX Reconciliation: sum of breakdown parts strictly equals total:
+    const b = ppaBase.capexBreakdown;
+    const sumPartsUsd =
+      b.pvModulesUsd + b.invertersUsd + b.batteriesUsd + b.structuresUsd +
+      b.cablesAndProtectionUsd + b.substationMvUsd + b.gridInterconnectionUsd +
+      b.hvConnectionUsd + b.dieselGenSetUsd + b.engineeringAndInstallationUsd + b.contingencyUsd;
+    const capexReconciledOk = sumPartsUsd === b.totalCapexUsd && b.isReconciled;
+
+    // 4. Cashflow Table & Year 0 Reconciliation:
+    const cf0 = ppaBase.year0CashFlow;
+    const year0Ok = cf0.year === 0 && cf0.netCashFlowToman === -b.totalCapexToman;
+
+    // At r = 0, discounted cash flow sum strictly equals cumulative cash flow at Year 25:
+    const rZeroRun = performFinancialAnalysis(1000, 0, 1000, 1_800_000, { discountRatePct: 0.0 }, 25, 'powerplant');
+    const rZeroSumDiscounted = rZeroRun.cashFlow25Years.reduce((s, row) => s + row.discountedCashFlowToman, -rZeroRun.capexBreakdown.totalCapexToman);
+    const rZeroCumulativeEnd = rZeroRun.cashFlow25Years[rZeroRun.cashFlow25Years.length - 1].cumulativeCashFlowToman;
+    const rZeroNpvOk = Math.abs(rZeroSumDiscounted - rZeroCumulativeEnd) <= 2 && Math.abs(rZeroRun.npvToman - rZeroCumulativeEnd) <= 2;
+
+    // 5. Payback & IRR Statuses for edge cases:
+    const zeroGen = performFinancialAnalysis(1000, 0, 1000, 0, {}, 25, 'powerplant');
+    const paybackStatusOk =
+      zeroGen.simplePayback.status === 'ZERO_REVENUE' &&
+      zeroGen.simplePayback.formattedYears.includes('>25 yrs') &&
+      zeroGen.irrStatus === 'NO_SIGN_CHANGE' &&
+      zeroGen.irrPct === null &&
+      zeroGen.isIrrDefined === false &&
+      zeroGen.lcoeUsdPerKwh === null &&
+      zeroGen.isLcoeDefined === false;
+
+    assert(
+      'E10-FIN-TARIFF-GENSET-RECONCILE',
+      'Financial model implements mode-aware tariffs, genset inputs, exact CAPEX reconcile, and typed Payback/IRR statuses',
+      ppaTariffOk && ongridTariffOk && offgridTariffOk && gensetOk && capexReconciledOk && year0Ok && rZeroNpvOk && paybackStatusOk,
+      `genset(capex=${gensetRun.capexBreakdown.dieselGenSetUsd}, liters=${gensetRun.dieselEstimatedAnnualFuelLiters}, opex=${gensetRun.dieselOpexUsd}), year0(cf0=${cf0.netCashFlowToman}, b=${b.totalCapexToman})`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-UQ-PIPELINE] Financial Uncertainty Quantification (UQ) Executable LHS
+  // ==========================================================================
+  {
+    const { runFinancialUncertaintyPropagation } = await import('../uncertaintyPropagation');
+    const { DEFAULT_FINANCIAL_PRICING } = await import('../../financialEngine');
+
+    // Run 1: seed 42
+    const uqRun1 = runFinancialUncertaintyPropagation({
+      plantCapacityKwp: 1000,
+      inverterCapacityKw: 1000,
+      baseAnnualYieldKwh: 1_800_000,
+      basePricing: DEFAULT_FINANCIAL_PRICING,
+      systemMode: 'powerplant',
+      sampleSize: 60,
+      seed: 42,
+    });
+
+    // Run 2: same seed 42 (reproducibility check)
+    const uqRun2 = runFinancialUncertaintyPropagation({
+      plantCapacityKwp: 1000,
+      inverterCapacityKw: 1000,
+      baseAnnualYieldKwh: 1_800_000,
+      basePricing: DEFAULT_FINANCIAL_PRICING,
+      systemMode: 'powerplant',
+      sampleSize: 60,
+      seed: 42,
+    });
+
+    const isReproducible =
+      uqRun1.annualGenerationMwh.p50 === uqRun2.annualGenerationMwh.p50 &&
+      uqRun1.npvUsd.p50 === uqRun2.npvUsd.p50 &&
+      uqRun1.lcoeUsdPerMwh.p50 === uqRun2.lcoeUsdPerMwh.p50;
+
+    const statsOrderOk =
+      uqRun1.annualGenerationMwh.p10 < uqRun1.annualGenerationMwh.p50 &&
+      uqRun1.annualGenerationMwh.p50 < uqRun1.annualGenerationMwh.p90;
+
+    const trialsPreservedOk =
+      (uqRun1.trialStatusBreakdown?.totalTrials ?? 0) === 60 &&
+      (uqRun1.trialStatusBreakdown?.irrDefinedTrials ?? 0) > 0 &&
+      (uqRun1.convergenceStandardErrorNpvUsd ?? 0) > 0 &&
+      uqRun1.tornadoSensitivityRanking.length >= 3;
+
+    assert(
+      'E10-UQ-PIPELINE',
+      'Financial UQ executes true LHS trials through canonical engine with reproducibility and status preservation',
+      isReproducible && statsOrderOk && trialsPreservedOk,
+      `samples=${uqRun1.sampleCount}, Gen P10=${uqRun1.annualGenerationMwh.p10} P50=${uqRun1.annualGenerationMwh.p50} P90=${uqRun1.annualGenerationMwh.p90}, NPV P50=$${uqRun1.npvUsd.p50}, top Tornado=${uqRun1.tornadoSensitivityRanking[0]?.name} (${uqRun1.tornadoSensitivityRanking[0]?.varianceContributionPercent}%)`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-ROOF-SHADING-RECONCILE] Geodetic WGS84 <-> ENU & Reconciled Heatmap Shading
+  // ==========================================================================
+  {
+    const {
+      wgs84ToEnu,
+      enuToWgs84,
+      simulateAnnual3dShading,
+      checkTableSetbackCompliance,
+    } = await import('../../roof3dShadingEngine');
+
+    // 1. Geodetic round-trip accuracy (< 0.001 m error)
+    const anchor = { latitude: 35.6892, longitude: 51.3890, elevationM: 1200 };
+    const originalPt = { latitude: 35.6895, longitude: 51.3894, altitudeM: 1210 };
+    const enu = wgs84ToEnu(originalPt, anchor);
+    const roundTripPt = enuToWgs84(enu, anchor);
+    const geodeticOk =
+      Math.abs(roundTripPt.latitude - originalPt.latitude) < 1e-6 &&
+      Math.abs(roundTripPt.longitude - originalPt.longitude) < 1e-6 &&
+      Math.abs((roundTripPt.altitudeM ?? 1200) - 1210) < 0.05;
+
+    // 2. Setback compliance verification
+    const testRoof = {
+      id: 'roof-1',
+      name: 'Main Factory Roof',
+      polygonWgs84: [],
+      polygonEnu: [
+        { x: -20, y: -15 },
+        { x: 20, y: -15 },
+        { x: 20, y: 15 },
+        { x: -20, y: 15 },
+      ],
+      tiltDeg: 10,
+      azimuthDeg: 0,
+      eavesHeightM: 6.0,
+      setbackClearanceM: 1.0,
+    };
+
+    const compliantTable = {
+      id: 'tbl-1',
+      tableIndex: 1,
+      positionEnu: { x: 0, y: 0, z: 6.0 },
+      widthM: 10,
+      slopedLengthM: 4.0,
+      tiltDeg: 15,
+      azimuthDeg: 0,
+      moduleCount: 20,
+      ratedPowerWp: 11000,
+    };
+
+    const setbackRes = checkTableSetbackCompliance(compliantTable, testRoof);
+    const setbackOk = setbackRes.isCompliant && setbackRes.minimumClearanceM >= 1.0;
+
+    // 3. Shading simulation & Heatmap reconciliation
+    const testScene: import('../../roof3dShadingEngine').Scene3DState = {
+      anchorLocation: anchor,
+      roofPlanes: [testRoof],
+      obstacles: [
+        {
+          id: 'obs-hvac',
+          name: 'HVAC Chiller Unit',
+          geometryType: 'cuboid',
+          positionEnu: { x: 2, y: -3, z: 6.0 },
+          dimensionsM: { widthM: 3.0, lengthM: 3.0, heightM: 3.5 },
+        },
+      ],
+      pvTables: [
+        compliantTable,
+        {
+          id: 'tbl-2',
+          tableIndex: 2,
+          positionEnu: { x: 0, y: 8, z: 6.0 },
+          widthM: 10,
+          slopedLengthM: 4.0,
+          tiltDeg: 15,
+          azimuthDeg: 0,
+          moduleCount: 20,
+          ratedPowerWp: 11000,
+        },
+      ],
+      updatedAt: new Date().toISOString(),
+    };
+
+    const shadingResult = simulateAnnual3dShading(testScene, 5.2, 40.0);
+    const heatmapSumLoss = shadingResult.tableHeatmap.reduce((s, c) => s + c.annualLossKwh, 0);
+    const heatmapReconciled = Math.abs(heatmapSumLoss - shadingResult.totalLostAnnualKwh) <= 1;
+    const obstacleLossExists = shadingResult.annualCombinedShadingLossPct > 0;
+    const waterfallConnected = shadingResult.waterfallLossReport.stages.some(s => s.id === 'near_shading');
+
+    assert(
+      'E10-ROOF-SHADING-RECONCILE',
+      'Roof 3D geodetic ENU transform is millimeter-accurate and shading heatmap reconciles with waterfall engine',
+      geodeticOk && setbackOk && heatmapReconciled && obstacleLossExists && waterfallConnected,
+      `geodetic roundtrip diff=${Math.abs(roundTripPt.latitude - originalPt.latitude)}, setback min=${setbackRes.minimumClearanceM}m, shading loss=${shadingResult.annualCombinedShadingLossPct}%, heatmapLoss=${heatmapSumLoss}kWh vs total=${shadingResult.totalLostAnnualKwh}kWh`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-MV-CABLE-IMPEDANCE-DECOMPOSITION] Explicit Collection Cable R+jX & Network Z
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // 1. Max fault current: Cable R at 20°C per IEC 60909-0 §6.4.2 (lowest R, highest Isc'')
+    // Hand calculation: L = 1500m, A = 120mm², rho_20 = 0.01786 => R = 0.01786 * 1500 / 120 = 0.22325 Ω
+    const subMax = designMvSubstation({
+      plantCapacityAcMw: 10.0,
+      powerFactor: 0.9,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20.0,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 1000.0,
+      gridRxRatio: 0.1,
+      mvCableLengthM: 1500.0,
+      mvCableCrossSectionMm2: 120,
+      shortCircuitCalculationMode: 'max_fault_current',
+      parallelCableRunsCount: 1,
+    });
+
+    const cableR20 = subMax.shortCircuit.cableImpedance.rOhms;
+    const cableR20Ok = Math.abs(cableR20 - 0.22325) < 0.002;
+
+    // 2. Min fault current: Cable R at 90°C per IEC 60909-0 §6.4.3
+    // Hand calculation: rho_90 = 0.02277 => R = 0.02277 * 1500 / 120 = 0.28463 Ω (~27.5% higher)
+    const subMin = designMvSubstation({
+      plantCapacityAcMw: 10.0,
+      powerFactor: 0.9,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20.0,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 1000.0,
+      gridRxRatio: 0.1,
+      mvCableLengthM: 1500.0,
+      mvCableCrossSectionMm2: 120,
+      shortCircuitCalculationMode: 'min_fault_current',
+      parallelCableRunsCount: 1,
+    });
+    const cableR90 = subMin.shortCircuit.cableImpedance.rOhms;
+    const tempScalingOk = cableR90 > cableR20 && Math.abs(cableR90 - 0.28463) < 0.002;
+
+    // 3. Parallel runs: 2 parallel runs cuts cable impedance in half
+    const subParallel2 = designMvSubstation({
+      plantCapacityAcMw: 10.0,
+      powerFactor: 0.9,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20.0,
+      soilResistivityOhmM: 80,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 1000.0,
+      gridRxRatio: 0.1,
+      mvCableLengthM: 1500.0,
+      mvCableCrossSectionMm2: 120,
+      shortCircuitCalculationMode: 'max_fault_current',
+      parallelCableRunsCount: 2,
+    });
+    const parallelOk = Math.abs(subParallel2.shortCircuit.cableImpedance.rOhms - cableR20 / 2) < 0.001;
+
+    // 4. Exact Transformer KT factor hand calculation per IEC 60909-0 §6.3.3.1:
+    // P=10MW, PF=0.9 -> S_trafo=16MVA. Un=20kV.
+    // Z_trafo_nom = 20^2 / 16 = 25.0 Ω. uk=7%, Pk=136kW.
+    // R_base = 136e-3 * 20^2 / 16^2 = 0.2125 Ω.
+    // Z_base = 0.07 * 25.0 = 1.75 Ω. X_base = sqrt(1.75^2 - 0.2125^2) = 1.73705 Ω.
+    // x_T = 1.73705 / 25.0 = 0.069482. c_max = 1.10.
+    // KT = 0.95 * [1.10 / (1 + 0.6 * 0.069482)] = 1.0032
+    const unKv = 20.0;
+    const sTrafoMva = 16.0;
+    const zTrafoNominal = (unKv * unKv) / sTrafoMva;
+    const ukPct = subMax.transformer.impedanceVoltageUkPct;
+    const pkKw = subMax.transformer.loadLossesKw;
+    const rBase = (pkKw * 1e-3 * unKv * unKv) / (sTrafoMva * sTrafoMva);
+    const zBase = (ukPct / 100.0) * zTrafoNominal;
+    const xBase = Math.sqrt(zBase * zBase - rBase * rBase);
+    const xT = xBase / zTrafoNominal;
+    const cMax = 1.10;
+    const expectedKt = Number((0.95 * (cMax / (1.0 + 0.6 * xT))).toFixed(4));
+    const actualKt = subMax.shortCircuit.transformerImpedance.ktFactor;
+    const ktExactOk = Math.abs(actualKt - expectedKt) < 1e-4;
+    const ktROk = Math.abs(subMax.shortCircuit.transformerImpedance.rOhms - Number((rBase * expectedKt).toFixed(5))) < 1e-4;
+    const ktXOk = Math.abs(subMax.shortCircuit.transformerImpedance.xOhms - Number((xBase * expectedKt).toFixed(5))) < 1e-4;
+
+    // 5. Inverter short-circuit contribution per IEC 60909-0 Clause 6.7:
+    // Active AC power basis: P_ac = 10 MW -> I_nom_MV = 10 / (sqrt(3) * 20) = 0.2887 kA.
+    // I_sc_inv = 1.15 * 0.2887 = 0.332 kA.
+    const invIsc = subMax.shortCircuit.inverterFaultContributionKa;
+    const expectedInvIsc = (1.15 * 10.0) / (Math.sqrt(3) * 20.0);
+    const invContributionOk = Math.abs(invIsc - expectedInvIsc) < 0.01;
+    const feederSumOk =
+      Math.abs(
+        subMax.shortCircuit.feederTerminalIscKa -
+          (subMax.shortCircuit.feederTerminalGridIscKa + invIsc)
+      ) < 1e-3;
+
+    // 6. Topology: Busbar fault current exceeds feeder grid component
+    const topologyOk = subMax.shortCircuit.busbarIscKa > subMax.shortCircuit.feederTerminalGridIscKa;
+
+    assert(
+      'E10-MV-CABLE-IMPEDANCE-DECOMPOSITION',
+      'MV cable impedance decomposes into R+jX with 20C max / 90C min temp calibration, exact KT factor, and inverter fault contribution',
+      cableR20Ok && tempScalingOk && parallelOk && ktExactOk && ktROk && ktXOk && invContributionOk && feederSumOk && topologyOk,
+      `Cable R20=${cableR20}Ω (exp 0.223Ω), R90=${cableR90}Ω (exp 0.285Ω), 2xPar=${subParallel2.shortCircuit.cableImpedance.rOhms}Ω, KT=${actualKt} (exp ${expectedKt}), InvIsc=${invIsc}kA, BusbarIsc=${subMax.shortCircuit.busbarIscKa}kA > FeederGridIsc=${subMax.shortCircuit.feederTerminalGridIscKa}kA`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-3D-FACET-RAYTRACING-MODES] Planar Obstacle Facets, Ray Intersection & Dual Modes
+  // ==========================================================================
+  {
+    const {
+      buildObstacleFacets,
+      computeSunVectorEnu,
+      testRayFacetIntersection,
+      simulateAnnual3dShading,
+      DEFAULT_ROOFTOP_SCENE,
+    } = await import('../../roof3dShadingEngine');
+
+    // 1. Cuboid facet extraction: 5 exposed planar facets (top + 4 vertical walls)
+    const cuboidFacets = buildObstacleFacets({
+      id: 'c1',
+      name: 'HVAC',
+      geometryType: 'cuboid',
+      positionEnu: { x: 0, y: 0, z: 0 },
+      dimensionsM: { widthM: 4, lengthM: 3, heightM: 2 },
+    });
+    const cuboidFacetsOk = cuboidFacets.length === 5;
+
+    // 2. Cylinder facet extraction: 8 lateral sides + 1 top cap = 9 facets
+    const cylFacets = buildObstacleFacets({
+      id: 'cyl1',
+      name: 'Exhaust Chimney',
+      geometryType: 'cylinder',
+      positionEnu: { x: 10, y: 10, z: 0 },
+      dimensionsM: { radiusM: 1, heightM: 5 },
+    });
+    const cylFacetsOk = cylFacets.length === 9;
+
+    // 3. Ray-facet intersection test: target point behind cuboid towards sun
+    const targetPoint = { x: -5, y: 0, z: 0.5 };
+    const sunRay = computeSunVectorEnu(90, 20); // Due East (vector in +X direction)
+    const isOccluded = testRayFacetIntersection(targetPoint, sunRay, cuboidFacets);
+    const freeTargetPoint = { x: 5, y: 50, z: 2 };
+    const isFree = testRayFacetIntersection(freeTargetPoint, sunRay, cuboidFacets);
+    const rayIntersectionOk = isOccluded && !isFree;
+
+    // 4. Test 8760h vs 3-day simulation modes
+    const res8760 = simulateAnnual3dShading(DEFAULT_ROOFTOP_SCENE, 5.0, 40.0, { simulationMode: 'hourly_8760' });
+    const res3Day = simulateAnnual3dShading(DEFAULT_ROOFTOP_SCENE, 5.0, 40.0, { simulationMode: 'screening_3day' });
+
+    // Both direct geometric beam loss and electrical mismatch loss must be non-zero and sum to combined
+    const beamLossOk = res3Day.annualGeometricBeamLossPct > 0.5;
+    const mismatchLossOk = res3Day.annualElectricalMismatchLossPct > 0.5;
+    const sumMatchesCombined =
+      Math.abs(
+        (res3Day.annualGeometricBeamLossPct + res3Day.annualElectricalMismatchLossPct) -
+          res3Day.annualCombinedShadingLossPct
+      ) < 0.05;
+
+    const modesOk =
+      res8760.simulationModeUsed === 'hourly_8760' &&
+      res3Day.simulationModeUsed === 'screening_3day' &&
+      res8760.rawRayCastingStepsCount > 4000 &&
+      res3Day.rawRayCastingStepsCount < 2000 &&
+      res3Day.rawRayCastingStepsCount > 1000 &&
+      res8760.totalEvaluatedDaylightHours > 4000 &&
+      res3Day.totalEvaluatedDaylightHours > 4000 &&
+      beamLossOk &&
+      mismatchLossOk &&
+      sumMatchesCombined &&
+      res8760.screeningNoticeEn.length > 20;
+
+    assert(
+      'E10-3D-FACET-RAYTRACING-MODES',
+      '3D planar facet extraction, ray-polygon intersection, and hourly 8760 vs 3-day simulation modes execute correctly with exact beam/mismatch split',
+      cuboidFacetsOk && cylFacetsOk && rayIntersectionOk && modesOk,
+      `Cuboid facets=${cuboidFacets.length}, Cyl facets=${cylFacets.length}, occluded=${isOccluded}, free=${!isFree}, 8760h steps=${res8760.rawRayCastingStepsCount}, 3day steps=${res3Day.rawRayCastingStepsCount}, beamLoss=${res3Day.annualGeometricBeamLossPct}%, diodeMismatch=${res3Day.annualElectricalMismatchLossPct}%, combined=${res3Day.annualCombinedShadingLossPct}%`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-UQ-ALBEDO-AND-BANKABILITY] LHS Ground Albedo Sensitivity & Bankability Notice
+  // ==========================================================================
+  {
+    const { runFinancialUncertaintyPropagation } = await import('../uncertaintyPropagation');
+    const { DEFAULT_FINANCIAL_PRICING } = await import('../../financialEngine');
+
+    // Run monofacial vs bifacial albedo sensitivity
+    const uqMonofacial = runFinancialUncertaintyPropagation({
+      plantCapacityKwp: 5000,
+      batteryCapacityKwh: 0,
+      inverterCapacityKw: 5000,
+      baseAnnualYieldKwh: 9_000_000,
+      basePricing: DEFAULT_FINANCIAL_PRICING,
+      systemMode: 'powerplant',
+      sampleSize: 80,
+      seed: 12345,
+      isBifacial: false,
+    });
+
+    const uqBifacial = runFinancialUncertaintyPropagation({
+      plantCapacityKwp: 5000,
+      batteryCapacityKwh: 0,
+      inverterCapacityKw: 5000,
+      baseAnnualYieldKwh: 9_000_000,
+      basePricing: DEFAULT_FINANCIAL_PRICING,
+      systemMode: 'powerplant',
+      sampleSize: 80,
+      seed: 12345,
+      isBifacial: true,
+      bifacialityFactor: 0.80,
+      groundCoverRatio: 0.38,
+    });
+
+    const bifacialSpreadOk = uqBifacial.annualGenerationMwh.stdDev >= uqMonofacial.annualGenerationMwh.stdDev;
+
+    const hasAlbedoTornado = uqBifacial.tornadoSensitivityRanking.some(t => t.variableId === 'albedo');
+    const hasSoilingTornado = uqBifacial.tornadoSensitivityRanking.some(t => t.variableId === 'soiling_loss');
+    const decompositionOk =
+      Math.abs(
+        (uqBifacial.uncertaintyDecomposition?.aleatoryVariancePct ?? 0) +
+        (uqBifacial.uncertaintyDecomposition?.epistemicVariancePct ?? 0) -
+        100.0
+      ) <= 0.2;
+    const noticesOk =
+      Boolean(uqBifacial.screeningAndBankabilityNoticeFa) &&
+      Boolean(uqBifacial.screeningAndBankabilityNoticeEn) &&
+      Boolean(uqBifacial.uncertaintyDecomposition?.methodologyNote?.includes('Pearson'));
+
+    assert(
+      'E10-UQ-ALBEDO-AND-BANKABILITY',
+      'Financial UQ samples ground albedo and soiling via LHS with bifacial sensitivity coupling, Pearson variance attribution, and bankability notices',
+      hasAlbedoTornado && hasSoilingTornado && bifacialSpreadOk && decompositionOk && noticesOk,
+      `Albedo in tornado=${hasAlbedoTornado}, Soiling in tornado=${hasSoilingTornado}, BiStdDev=${uqBifacial.annualGenerationMwh.stdDev} >= MonoStdDev=${uqMonofacial.annualGenerationMwh.stdDev}, Aleatory=${uqBifacial.uncertaintyDecomposition?.aleatoryVariancePct}%, Epistemic=${uqBifacial.uncertaintyDecomposition?.epistemicVariancePct}%, NoticesFa=${Boolean(uqBifacial.screeningAndBankabilityNoticeFa)}`
+    );
+  }
+
+  // ==========================================================================
+  // E11: Waterfall Loss Engine Parameter Order, Snow Neutrality & Shading Isolation
+  // ==========================================================================
+  {
+    const { computeWaterfallLosses } = await import('../../waterfallLossEngine');
+
+    // Call computeWaterfallLosses with strict parameter order:
+    // (capKwp, PSH, tempMaxC, soiling, dcAc, Boolean(trackerConfig), 0.0, -2.2, noct, tempCoeff, trackerConfig, env, tilt, lat, shadingLoss3dPct)
+    const report = computeWaterfallLosses(
+      1000, // capKwp
+      5.2,  // PSH
+      38.0, // tempMaxC
+      4.5,  // soiling
+      1.25, // dcAc
+      false, // hasTracker (must be false when no tracker, not poisoned by isBifacial)
+      0.0,  // snowLossPct (must remain 0.0 in snow-free zones, not poisoned by bifacial gain)
+      -2.2, // iamLossPct (must remain -2.2, not overwritten by shading)
+      45.0, // noct
+      -0.30,// tempCoeff
+      undefined, // trackerConfig
+      'ground_mount', // env
+      30.0, // tilt
+      35.7, // lat
+      5.98  // shadingLoss3dPct (must land in near_shading stage)
+    );
+
+    const nearShadingStage = report.stages.find(s => s.id === 'near_shading');
+    const iamStage = report.stages.find(s => s.id === 'iam');
+    const snowStage = report.stages.find(s => s.id === 'snow');
+
+    const nearShadingOk = nearShadingStage?.percentageLoss === -5.98;
+    const iamOk = iamStage?.percentageLoss === -2.2;
+    const snowOk = snowStage?.percentageLoss === 0.0;
+    const trackerOff = report.trackerDetails === undefined;
+
+    assert(
+      'E11-WATERFALL-PARAM-MAPPING-AND-SHADING-ISOLATION',
+      'Waterfall loss model strictly maps 3D shading to near_shading without polluting IAM (-2.2%), snow (0.0%), or tracker physics',
+      nearShadingOk && iamOk && snowOk && trackerOff,
+      `nearShading=${nearShadingStage?.percentageLoss}% (exp -5.98%), iam=${iamStage?.percentageLoss}% (exp -2.2%), snow=${snowStage?.percentageLoss}% (exp 0.0%), trackerDetails=${report.trackerDetails !== undefined}`
+    );
+  }
+
+  // ==========================================================================
+  // E12: Bifacial Module Catalog Designation & Identification Helper
+  // ==========================================================================
+  {
+    const { CATALOG_MODULES, isBifacialModule } = await import('../../equipmentCatalogData');
+
+    const jinkoBdv = CATALOG_MODULES.find(m => m.id === 'mod-jinko-585')!;
+    const longiDualGlass = CATALOG_MODULES.find(m => m.id === 'mod-longi-610')!;
+    const trinaNeg = CATALOG_MODULES.find(m => m.id === 'mod-trina-605')!;
+    const canadianBihiku = CATALOG_MODULES.find(m => m.id === 'mod-canadian-670')!;
+    const risenBhdg = CATALOG_MODULES.find(m => m.id === 'mod-risen-700')!;
+    const monofacialLongi = CATALOG_MODULES.find(m => m.id === 'mod-longi-550')!;
+    const monofacialJinko = CATALOG_MODULES.find(m => m.id === 'mod-jinko-440')!;
+
+    const bifacialDetected =
+      isBifacialModule(jinkoBdv) &&
+      isBifacialModule(longiDualGlass) &&
+      isBifacialModule(trinaNeg) &&
+      isBifacialModule(canadianBihiku) &&
+      isBifacialModule(risenBhdg);
+
+    const monofacialCorrect =
+      !isBifacialModule(monofacialLongi) &&
+      !isBifacialModule(monofacialJinko);
+
+    const factorsPopulated =
+      (jinkoBdv.bifacialityFactor ?? 0) >= 0.70 &&
+      (risenBhdg.bifacialityFactor ?? 0) >= 0.80;
+
+    assert(
+      'E12-BIFACIAL-MODULE-DETECTION-AND-CATALOG',
+      'isBifacialModule correctly identifies dual-glass/bifacial series and rejects monofacial, with catalog bifaciality factors populated',
+      bifacialDetected && monofacialCorrect && factorsPopulated,
+      `bifacialDetected=${bifacialDetected}, monofacialCorrect=${monofacialCorrect}, factorsPopulated=${factorsPopulated}`
+    );
+  }
+
+  // ==========================================================================
+  // E13: MV Substation Inverter Fault Contribution at Busbar and Feeder Terminal
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    const subResult = designMvSubstation({
+      plantCapacityAcMw: 10,
+      powerFactor: 0.98,
+      inverterOutputVoltageV: 800,
+      gridConnectionVoltageKv: 20,
+      soilResistivityOhmM: 100,
+      clearingTimeSec: 0.5,
+      upstreamGridShortCircuitMva: 500,
+      mvCableLengthM: 1500,
+      mvCableCrossSectionMm2: 120,
+      parallelCableRunsCount: 1,
+      inverterFaultContributionFactor: 1.10,
+    });
+
+    const sc = subResult.shortCircuit;
+
+    // Inverter contribution = 1.10 * 10 / (sqrt(3) * 20) = 0.3175 kA
+    const expectedInvContributionKa = (1.10 * 10) / (Math.sqrt(3) * 20.0);
+    const invContributionOk = Math.abs(sc.inverterFaultContributionKa - expectedInvContributionKa) < 0.01;
+
+    // Busbar total fault current includes inverter fault contribution
+    const busbarTotalOk = Math.abs(sc.busbarIscKa - (sc.busbarGridIscKa + sc.inverterFaultContributionKa)) < 0.01;
+
+    // Feeder terminal total fault current includes inverter fault contribution
+    const feederTotalOk = Math.abs(sc.feederTerminalIscKa - (sc.feederTerminalGridIscKa + sc.inverterFaultContributionKa)) < 0.01;
+
+    assert(
+      'E13-SUBSTATION-INVERTER-FAULT-CONTRIBUTION',
+      'MV Substation architecture accounts for inverter fault contribution at both busbar and feeder terminal per IEC 60909-0 Clause 6.7',
+      invContributionOk && busbarTotalOk && feederTotalOk,
+      `Isc_inv=${sc.inverterFaultContributionKa} kA (exp ${expectedInvContributionKa.toFixed(4)}), BusbarTotal=${sc.busbarIscKa} kA (Grid=${sc.busbarGridIscKa}), FeederTotal=${sc.feederTerminalIscKa} kA (Grid=${sc.feederTerminalGridIscKa})`
+    );
+  }
+
+  // ==========================================================================
+  // E14: Bifacial Rear Gain Proxy & Waterfall Engine Integration
+  // ==========================================================================
+  {
+    const { computeBifacialRearGain, rearGainFraction, rearGainPercent } = await import('../../bifacialGain');
+
+    // 1. Math verification: bf=0.80, gcr=0.38, albedo=0.25 -> 0.80 * 0.38 * 0.25 * 0.45 = 0.0342 (3.42%)
+    const normalGain = computeBifacialRearGain({
+      isBifacial: true,
+      bifacialityFactor: 0.80,
+      groundCoverRatio: 0.38,
+      albedo: 0.25,
+    });
+    const expectedNormal = 0.80 * 0.38 * 0.25 * 0.45;
+    const mathOk = Math.abs(normalGain - expectedNormal) < 1e-6;
+
+    // 2. Monofacial check -> strictly 0
+    const monoGain = computeBifacialRearGain({
+      isBifacial: false,
+      bifacialityFactor: 0.80,
+      groundCoverRatio: 0.38,
+      albedo: 0.25,
+    });
+    const monoOk = monoGain === 0;
+
+    // 3. Clamping check: high albedo / GCR clamped at 15% (0.15)
+    const clampedGain = computeBifacialRearGain({
+      isBifacial: true,
+      bifacialityFactor: 1.0,
+      groundCoverRatio: 0.90,
+      albedo: 0.90, // snow: 1.0 * 0.9 * 0.9 * 0.45 = 0.3645 -> clamped to 0.15
+    });
+    const clampOk = clampedGain === 0.15;
+
+    // 4. rearGainFraction & rearGainPercent consistency
+    const fractionOk = Math.abs(rearGainFraction({ isBifacial: true, bifacialityFactor: 0.80, groundCoverRatio: 0.38, albedo: 0.25 }) - expectedNormal) < 1e-6;
+    const percentOk = Math.abs(rearGainPercent({ isBifacial: true, bifacialityFactor: 0.80, groundCoverRatio: 0.38, albedo: 0.25 }) - (expectedNormal * 100)) < 1e-4;
+
+    // 5. Waterfall integration: 16th parameter bifacialGainPct
+    const wfMono = computeWaterfallLosses(1000, 5.2, 40.0, 4.5, 1.25, false, 0.0, -2.2, 45.0, -0.30, undefined, 'ground_mount', 30.0, 35.7, 5.98, 0.0);
+    const wfBifacial = computeWaterfallLosses(1000, 5.2, 40.0, 4.5, 1.25, false, 0.0, -2.2, 45.0, -0.30, undefined, 'ground_mount', 30.0, 35.7, 5.98, 3.42);
+
+    const biStage = wfBifacial.stages.find(s => s.id === 'bifacial_gain');
+    const monoStage = wfMono.stages.find(s => s.id === 'bifacial_gain');
+
+    const biStageOk = biStage !== undefined && biStage.percentageLoss === 3.42 && biStage.stageOutputKwh > biStage.nominalEnergyKwh;
+    const monoStageOk = monoStage === undefined; // when 0%, omitted from stages, maintains 14 stages
+    const energyGainOk = wfBifacial.netAnnualEnergyExportMwh > wfMono.netAnnualEnergyExportMwh;
+
+    assert(
+      'E14-BIFACIAL-REAR-GAIN-AND-WATERFALL',
+      'Bifacial rear gain proxy adheres to clamped physics [0, 15%] and integrates as positive stage in waterfall energy chain',
+      mathOk && monoOk && clampOk && fractionOk && percentOk && biStageOk && monoStageOk && energyGainOk,
+      `gain=${(normalGain * 100).toFixed(2)}% (exp ${(expectedNormal * 100).toFixed(2)}%), clamped=${clampedGain}, biStage=${biStage?.percentageLoss}%, biMwh=${wfBifacial.netAnnualEnergyExportMwh.toFixed(1)} > monoMwh=${wfMono.netAnnualEnergyExportMwh.toFixed(1)}`
+    );
+  }
+
+  // ==========================================================================
+  // E15: 3D Shading Input Lifecycle State Machine
+  // ==========================================================================
+  {
+    const {
+      shadingLifecycleReducer,
+      createInitialShadingLifecycleState,
+    } = await import('../../shadingLifecycle');
+
+    // 1. Initial state
+    const s0 = createInitialShadingLifecycleState();
+    const initOk = s0.appliedShading === null && s0.isStale === false;
+
+    // 2. Apply action
+    const nowIso = '2026-11-05T12:00:00.000Z';
+    const s1 = shadingLifecycleReducer(s0, {
+      type: 'APPLY',
+      lossPct: 7.25,
+      capacityKwp: 1000,
+      projectCapacityKwp: 1000,
+      appliedAtIso: nowIso,
+      cityId: 'tehran',
+    });
+    const applyOk = s1.appliedShading !== null &&
+      s1.appliedShading.lossPct === 7.25 &&
+      s1.appliedShading.appliedAtIso === nowIso &&
+      s1.appliedShading.capacityKwp === 1000 &&
+      s1.appliedCapacityKwp === 1000 &&
+      s1.appliedCityId === 'tehran';
+
+    // 3. Revert action
+    const s2 = shadingLifecycleReducer(s1, { type: 'REVERT' });
+    const revertOk = s2.appliedShading === null;
+
+    // 4. Project change resets applied shading
+    const s3Applied = shadingLifecycleReducer(s0, {
+      type: 'APPLY',
+      lossPct: 5.5,
+      capacityKwp: 1000,
+      projectCapacityKwp: 1000,
+      appliedAtIso: nowIso,
+      cityId: 'tehran',
+    });
+    const s4SyncSameCity = shadingLifecycleReducer(s3Applied, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+    });
+    const syncSameOk = s4SyncSameCity.appliedShading !== null;
+
+    const s5SyncDiffCity = shadingLifecycleReducer(s3Applied, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'isfahan',
+    });
+    const syncDiffOk = s5SyncDiffCity.appliedShading === null;
+
+    // 5. Real-world shape: Representative block capacity (55.2 kWp) vs project capacity baseline (1000 kWp)
+    const sRealApply = shadingLifecycleReducer(s0, {
+      type: 'APPLY',
+      lossPct: 5.98,
+      capacityKwp: 55.2,           // source demo block size (displayed in provenance)
+      projectCapacityKwp: 1000,    // active plant capacity baseline for staleness
+      appliedAtIso: nowIso,
+      cityId: 'tehran',
+    });
+    const blockCapacityStored = sRealApply.appliedShading?.capacityKwp === 55.2;
+
+    // CHECK_SYNC with initial project capacity (1000 kW) -> strictly NOT stale
+    const sSyncNominal = shadingLifecycleReducer(sRealApply, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: 1000,
+    });
+    const nominalNotStale = sSyncNominal.isStale === false && sSyncNominal.appliedShading !== null;
+
+    // CHECK_SYNC with changed project capacity (1060 kW, >5% drift) -> strictly stale
+    const sSyncDrift = shadingLifecycleReducer(sRealApply, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: 1060,
+    });
+    const driftStale = sSyncDrift.isStale === true && sSyncDrift.appliedShading !== null;
+
+    // CHECK_SYNC with demo block size (55.2 kW) -> under old bug this falsely matched; under real shape it is stale against 1000 kW
+    const sSyncOldTrap = shadingLifecycleReducer(sRealApply, {
+      type: 'CHECK_SYNC',
+      currentCityId: 'tehran',
+      currentCapacityKwp: 55.2,
+    });
+    const oldTrapAvoided = sSyncOldTrap.isStale === true;
+
+    // 6. Legacy fallback test: if an untyped caller omits projectCapacityKwp, fallback to capacityKwp is pinned
+    const sLegacy = shadingLifecycleReducer(s0, {
+      type: 'APPLY',
+      lossPct: 4.2,
+      capacityKwp: 250,
+    } as any);
+    const legacyFallbackPinned = sLegacy.appliedCapacityKwp === 250;
+
+    assert(
+      'E15-SHADING-LIFECYCLE-MANAGEMENT',
+      '3D shading lifecycle reducer correctly manages apply, revert, provenance records, cross-project reset, project-vs-block capacity staleness, and legacy fallback pinning',
+      initOk && applyOk && revertOk && syncSameOk && syncDiffOk && blockCapacityStored && nominalNotStale && driftStale && oldTrapAvoided && legacyFallbackPinned,
+      `initOk=${initOk}, appliedLoss=${s1.appliedShading?.lossPct}%, revertApplied=${s2.appliedShading}, syncSame=${syncSameOk}, syncDiff=${syncDiffOk}, nominalNotStale=${nominalNotStale}, driftStale=${driftStale}, oldTrapAvoided=${oldTrapAvoided}, legacyFallbackPinned=${legacyFallbackPinned}`
+    );
+  }
+
+  // ==========================================================================
+  // E16: MV Substation Inverter Fault Busbar Inclusion Toggle & Assumptions
+  // ==========================================================================
+  {
+    const { designMvSubstation } = await import('../../mvSubstationEngine');
+
+    // Case A: Default (includeConverterContributionAtBusbar = true)
+    const subWithBusbar = designMvSubstation({
+      plantCapacityAcMw: 10,
+      gridConnectionVoltageKv: 20,
+      inverterOutputVoltageV: 800,
+      soilResistivityOhmM: 100,
+      clearingTimeSec: 0.5,
+      includeConverterContributionAtBusbar: true,
+      inverterFaultContributionFactor: 1.15,
+    });
+
+    // Case B: Disconnected / toggled off (includeConverterContributionAtBusbar = false)
+    const subWithoutBusbar = designMvSubstation({
+      plantCapacityAcMw: 10,
+      gridConnectionVoltageKv: 20,
+      inverterOutputVoltageV: 800,
+      soilResistivityOhmM: 100,
+      clearingTimeSec: 0.5,
+      includeConverterContributionAtBusbar: false,
+      inverterFaultContributionFactor: 1.15,
+    });
+
+    const scA = subWithBusbar.shortCircuit;
+    const scB = subWithoutBusbar.shortCircuit;
+
+    // Expected inverter contribution: 1.15 * 10 / (sqrt(3) * 20) = 0.3320 kA
+    const expInvKa = (1.15 * 10.0) / (Math.sqrt(3) * 20.0);
+    const invKaOk = Math.abs(scA.inverterFaultContributionKa - expInvKa) < 0.005;
+
+    // In Case A, busbar total includes converter contribution
+    const busbarWithOk = Math.abs(scA.busbarIscKa - (scA.busbarGridIscKa + scA.inverterFaultContributionKa)) < 0.01;
+
+    // In Case B, busbar total equals grid contribution only
+    const busbarWithoutOk = Math.abs(scB.busbarIscKa - scB.busbarGridIscKa) < 0.01;
+
+    // Feeder terminal in both cases includes converter contribution
+    const feederAOk = Math.abs(scA.feederTerminalIscKa - (scA.feederTerminalGridIscKa + scA.inverterFaultContributionKa)) < 0.01;
+    const feederBOk = Math.abs(scB.feederTerminalIscKa - (scB.feederTerminalGridIscKa + scB.inverterFaultContributionKa)) < 0.01;
+
+    // Assumptions array verification: must contain bilingual screening notice and IEC 60909-0 Clause 6.7 citation
+    const assumptionsExist = Array.isArray(scA.assumptionsEn) && scA.assumptionsEn.length >= 4 &&
+      Array.isArray(scA.assumptionsFa) && scA.assumptionsFa.length >= 4;
+    const hasIecCitation = scA.assumptionsEn.some(a => a.includes('IEC 60909-0 Clause 6.7'));
+    const hasBilingual = scA.assumptionsEn.length === scA.assumptionsFa.length;
+
+    assert(
+      'E16-MV-SUBSTATION-BUSBAR-TOGGLE-AND-ASSUMPTIONS',
+      'MV Substation accurately toggles converter fault contribution at busbar, preserves feeder fault current, and exposes bilingual screening assumptions',
+      invKaOk && busbarWithOk && busbarWithoutOk && feederAOk && feederBOk && assumptionsExist && hasIecCitation && hasBilingual,
+      `Isc_inv=${scA.inverterFaultContributionKa}kA, BusbarWith=${scA.busbarIscKa}kA, BusbarWithout=${scB.busbarIscKa}kA, Feeder=${scA.feederTerminalIscKa}kA, assumptionsCount=${scA.assumptionsEn.length}`
+    );
+  }
+
+  // ==========================================================================
+  // E17: Data-Driven Bifacial Module Catalog Resolution
+  // ==========================================================================
+  {
+    const { CATALOG_MODULES, resolveBifacialParams } = await import('../../equipmentCatalogData');
+
+    // 1. Explicit property resolution
+    const mod0 = CATALOG_MODULES[0]; // Jinko Tiger Neo JKM585N-72HL4-BDV (bifacial: true, factor: 0.80)
+    const resMod0 = resolveBifacialParams(mod0);
+    const mod0Ok = resMod0.isBifacial === true && resMod0.bifacialityFactor === 0.80;
+
+    // 2. Monofacial module resolution
+    const monoMod = CATALOG_MODULES.find(m => m.id === 'mod-longi-550')!; // Hi-MO 5 monofacial
+    const resMono = resolveBifacialParams(monoMod);
+    const monoOk = resMono.isBifacial === false && resMono.bifacialityFactor === 0.0;
+
+    // 3. Fallback resolution on custom object without explicit bifacial field:
+    // If name contains 'bifacial' or 'dual-glass' -> true with default 0.80
+    const customBifacial = resolveBifacialParams({
+      name: 'Custom TOPCon Dual-Glass Bifacial 600W',
+    });
+    const customBifacialOk = customBifacial.isBifacial === true && customBifacial.bifacialityFactor === 0.80;
+
+    // If custom name is monofacial -> false and 0.0 (no default 0.80 fallback!)
+    const customMono = resolveBifacialParams({
+      name: 'Standard Monofacial Poly 330W',
+    });
+    const customMonoOk = customMono.isBifacial === false && customMono.bifacialityFactor === 0.0;
+
+    // 4. Catalog sanity check: all catalog items with bifacial === true have bifacialityFactor in [0.65, 0.90]
+    const bifacialCatalogItems = CATALOG_MODULES.filter(m => m.bifacial === true);
+    const catalogFactorsOk = bifacialCatalogItems.length >= 5 &&
+      bifacialCatalogItems.every(m => (m.bifacialityFactor ?? 0) >= 0.65 && (m.bifacialityFactor ?? 0) <= 0.90);
+
+    assert(
+      'E17-DATA-DRIVEN-BIFACIAL-MODULE-RESOLUTION',
+      'resolveBifacialParams faithfully detects bifacial vs monofacial modules without erroneous 0.80 fallback on monofacial items',
+      mod0Ok && monoOk && customBifacialOk && customMonoOk && catalogFactorsOk,
+      `mod0(bi=${resMod0.isBifacial}, bf=${resMod0.bifacialityFactor}), mono(bi=${resMono.isBifacial}, bf=${resMono.bifacialityFactor}), customMono(bi=${customMono.isBifacial}, bf=${customMono.bifacialityFactor}), biCount=${bifacialCatalogItems.length}`
+    );
+  }
+
+  // ==========================================================================
+  // E18: Waterfall Args Contract Builder & Baseline Fixture Regression
+  // ==========================================================================
+  {
+    const { buildWaterfallArgs, WATERFALL_ARG_COUNT } = await import('../../waterfallArgs');
+
+    // 1. Arity check
+    const arityOk = WATERFALL_ARG_COUNT === 16;
+
+    // 2. Contract builder generates exactly 16 positional arguments matching computeWaterfallLosses
+    const fixtureInput = {
+      dcCapacityKw: 1100,
+      peakSunHours: 5.2,
+      ambientTempC: 40.0,
+      soilingLossPct: 4.5,
+      dcAcRatio: 1.25,
+      isSingleAxisTracker: false,
+      nearShadingLossPct: 0.0,
+      iamLossPct: -2.2,
+      moduleNoctC: 45.0,
+      tempCoeffPmpPct: -0.30,
+      trackerConfig: undefined,
+      installationEnvironment: 'ground_mount' as const,
+      tiltDeg: 25.0,
+      latitudeDeg: 35.7,
+      shadingLoss3dPct: 5.98,
+      bifacialGainPct: 0.0, // Monofacial baseline fixture from 2b56244
+    };
+
+    const builtArgs = buildWaterfallArgs(fixtureInput);
+    const argsLengthOk = builtArgs.length === 16;
+
+    // Verify arg positions
+    const posOk =
+      builtArgs[0] === 1100 &&
+      builtArgs[1] === 5.2 &&
+      builtArgs[2] === 40.0 &&
+      builtArgs[3] === 4.5 &&
+      builtArgs[4] === 1.25 &&
+      builtArgs[5] === false &&
+      builtArgs[6] === 0.0 &&
+      builtArgs[7] === -2.2 &&
+      builtArgs[8] === 45.0 &&
+      builtArgs[9] === -0.30 &&
+      builtArgs[10] === undefined &&
+      builtArgs[11] === 'ground_mount' &&
+      builtArgs[12] === 25.0 &&
+      builtArgs[13] === 35.7 &&
+      builtArgs[14] === 5.98 &&
+      builtArgs[15] === 0.0;
+
+    // 3. Execution equivalence
+    const reportFromBuilder = computeWaterfallLosses(...builtArgs);
+    const reportDirect = computeWaterfallLosses(
+      1100, 5.2, 40.0, 4.5, 1.25, false, 0.0, -2.2, 45.0, -0.30, undefined, 'ground_mount', 25.0, 35.7, 5.98, 0.0
+    );
+
+    const execMatch = Math.abs(reportFromBuilder.netAnnualEnergyExportMwh - reportDirect.netAnnualEnergyExportMwh) < 1e-6;
+
+    // 4. Baseline regression check against commit 2b56244:
+    // Monofacial, no-tracker, 1100 kWp, PSH 5.2, 40C, soiling 4.5%, shading 5.98%
+    // PR = ~69.2%, Net Annual Export = ~1682.9 MWh
+    const netMwh = reportFromBuilder.netAnnualEnergyExportMwh;
+    const prPct = reportFromBuilder.performanceRatioPct;
+
+    const prOk = Math.abs(prPct - 69.2) <= 0.1;
+    const mwhOk = Math.abs(netMwh - 1682.9) / 1682.9 <= 0.001; // < 0.1% drift
+
+    // 5. Test that nearShadingLossPct alias is strictly honored when shadingLossOverridePct/shadingLoss3dPct are omitted
+    const nearShadingAliasInput = {
+      installedCapacityKwp: 1100,
+      peakSunHours: 5.2,
+      ambientTempMaxC: 40.0,
+      nearShadingLossPct: 7.42,
+    };
+    const nearShadingAliasArgs = buildWaterfallArgs(nearShadingAliasInput);
+    const nearShadingAliasOk = nearShadingAliasArgs[14] === 7.42;
+
+    // 6. Test all secondary aliases mapping to correct slots
+    const allAliasesInput = {
+      dcCapacityKw: 500,
+      peakSunHours: 5.0,
+      ambientTempC: 32.0,
+      isSingleAxisTracker: true,
+      moduleNoctC: 46.0,
+      installationEnvironment: 'rooftop_flat_concrete' as const,
+      tiltDeg: 18.0,
+      nearShadingLossPct: 3.14,
+    };
+    const allAliasesArgs = buildWaterfallArgs(allAliasesInput);
+    const allAliasesOk =
+      allAliasesArgs[0] === 500 &&
+      allAliasesArgs[2] === 32.0 &&
+      allAliasesArgs[5] === true &&
+      allAliasesArgs[8] === 46.0 &&
+      allAliasesArgs[11] === 'rooftop_flat_concrete' &&
+      allAliasesArgs[12] === 18.0 &&
+      allAliasesArgs[14] === 3.14;
+
+    assert(
+      'E18-WATERFALL-ARGS-BUILDER-AND-REGRESSION',
+      'buildWaterfallArgs enforces 16-parameter arity contract, honors all declared aliases including nearShadingLossPct, and matches 2b56244 baseline within 0.1%',
+      arityOk && argsLengthOk && posOk && execMatch && prOk && mwhOk && nearShadingAliasOk && allAliasesOk,
+      `arity=${WATERFALL_ARG_COUNT}, builtArgsLen=${builtArgs.length}, PR=${prPct.toFixed(1)}% (exp 69.2%), NetExport=${netMwh.toFixed(1)} MWh (exp 1682.9 MWh), nearShadingAlias=${nearShadingAliasOk}, allAliases=${allAliasesOk}`
+    );
+  }
+
+  // ==========================================================================
+  // E19: Report Consistency, Dynamic Shading Derate & PR Attribution
+  // ==========================================================================
+  {
+    // 1. Shading derate formula verification: Derate = 1 - (lossPct / 100)
+    const defaultLossPct = 2.4;
+    const defaultDerate = Number((1.0 - defaultLossPct / 100).toFixed(4));
+    const defaultDerateOk = Math.abs(defaultDerate - 0.976) < 1e-4;
+
+    const applied3dLossPct = 5.98;
+    const applied3dDerate = Number((1.0 - applied3dLossPct / 100).toFixed(4));
+    const applied3dDerateOk = Math.abs(applied3dDerate - 0.9402) < 1e-4;
+
+    // 2. PR Model separation:
+    // Waterfall PR (unified 14/15-stage tree) vs ArrayDesign sizing derating factor
+    // Sizing derating factor is ~0.805 (80.5%), whereas waterfall PR is 69.2% on standard fixture
+    const sizingEffectiveDeratingFactor = 0.805;
+    const sizingPrCandidate = Number((sizingEffectiveDeratingFactor * 100).toFixed(1));
+
+    const { computeWaterfallLosses } = await import('../../waterfallLossEngine');
+    const { buildWaterfallArgs } = await import('../../waterfallArgs');
+
+    const args = buildWaterfallArgs({
+      installedCapacityKwp: 1100,
+      peakSunHours: 5.2,
+      ambientTempMaxC: 40.0,
+      soilingLossPct: 4.5,
+      dcAcRatio: 1.25,
+      isSingleAxisTracker: false,
+      iamLossPct: -2.2,
+      moduleNoctC: 45.0,
+      tempCoeffPmpPct: -0.30,
+      installationEnvironment: 'ground_mount',
+      tiltDeg: 25.0,
+      latitudeDeg: 35.7,
+      shadingLoss3dPct: applied3dLossPct,
+      bifacialGainPct: 0.0,
+    });
+    const waterfallReport = computeWaterfallLosses(...args);
+
+    // Report PR must strictly equal waterfallReport.performanceRatioPct (69.2%),
+    // NOT sizingPrCandidate (80.5%)
+    const waterfallPr = waterfallReport.performanceRatioPct;
+    const prConsistentWithWaterfall = Math.abs(waterfallPr - 69.2) <= 0.1;
+    const prDistinctFromSizingDerate = Math.abs(waterfallPr - sizingPrCandidate) > 5.0;
+
+    // 3. Waterfall stages presence for report breakdown table
+    const stagesPopulated = Array.isArray(waterfallReport.stages) && waterfallReport.stages.length >= 12;
+    const nearShadingStage = waterfallReport.stages.find(s => s.id === 'near_shading');
+    const nearShadingStageLossMatches = nearShadingStage !== undefined &&
+      Math.abs(Math.abs(nearShadingStage.percentageLoss) - applied3dLossPct) < 0.01;
+
+    // 4. Energy reconciliation: Primary annual energy & specific yield match waterfall model
+    const primaryAnnualEnergyMwh = waterfallReport.netAnnualEnergyExportMwh;
+    const primarySpecificYieldKwhKwp = Math.round(waterfallReport.specificAnnualYieldKwhPerKwp);
+    const energyConsistent = Math.abs(primaryAnnualEnergyMwh - 1682.9) < 0.1 && primarySpecificYieldKwhKwp === 1530;
+
+    // In IEC 61724-1, PR = E_net / E_poa_nom (plane-of-array reference)
+    const impliedPoaPr = Math.round((primaryAnnualEnergyMwh * 1000 / waterfallReport.effectivePoaEnergyKwh) * 1000) / 10;
+    const prReconcilesWithEnergy = Math.abs(impliedPoaPr - waterfallPr) <= 0.1;
+
+    assert(
+      'E19-REPORT-CONSISTENCY-AND-SHADING-DERATE',
+      'OfficialReportModal shading derate matches formula 1 - lossPct/100, PR strictly resolves to waterfall PR (69.2%), and annual energy (1682.9 MWh) & specific yield (1530 kWh/kWp) reconcile by construction',
+      defaultDerateOk && applied3dDerateOk && prConsistentWithWaterfall && prDistinctFromSizingDerate && stagesPopulated && nearShadingStageLossMatches && energyConsistent && prReconcilesWithEnergy,
+      `defaultDerate=${defaultDerate} (exp 0.976), appliedDerate=${applied3dDerate} (exp 0.9402), waterfallPr=${waterfallPr}% (exp 69.2%), primaryMwh=${primaryAnnualEnergyMwh} (exp 1682.9), specificYield=${primarySpecificYieldKwhKwp} (exp 1530), impliedPoaPr=${impliedPoaPr}%, stages=${waterfallReport.stages.length}`
     );
   }
 

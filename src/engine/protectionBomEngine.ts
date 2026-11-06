@@ -55,6 +55,7 @@ export interface CableRunResult {
   lineCapacitanceUfPerKm: number;
   totalCapacitanceUf: number;
   chargingCurrentAmps: number;
+  capacitanceModelNote: string;
   troubleshootingGuideFa?: string;
   troubleshootingGuideEn?: string;
 }
@@ -350,15 +351,49 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     : config.nominalVoltageVolts * config.designCurrentAmps;
   const powerLossPct = Number(((powerLossWatts / Math.max(1, totalTransferredPowerWatts)) * 100.0).toFixed(2));
 
-  // 8. Line Capacitance & AC Charging Current (IEC 60287 / IEC 60502)
-  const lineCapacitanceUfPerKm = config.isDc
-    ? 0.0
-    : Number((0.20 + 0.035 * Math.log(Math.max(1.5, perRunSection))).toFixed(3));
+  // 8. Line Capacitance & AC Charging Current per IEC 60287-1-1 & IEC 60502-1 / EN 50618:
+  // Relative dielectric permittivity epsilon_r per IEC 60287-1-1 Table 3:
+  // XLPE = 2.4, PVC = 5.0
+  const epsilonR = config.insulationType === 'pvc' ? 5.0 : 2.4;
+
+  // Stranded circular compacted conductor outer diameter d_c (mm) per IEC 60228:
+  const dcMm = Number((2.0 * Math.sqrt(perRunSection / (Math.PI * 0.88))).toFixed(2));
+
+  // Nominal insulation thickness t_ins (mm) per IEC 60502-1 Table 5 / EN 50618:
+  let tInsMm = 0.8;
+  if (perRunSection > 240) tInsMm = 2.2;
+  else if (perRunSection > 185) tInsMm = 2.0;
+  else if (perRunSection > 120) tInsMm = 1.8;
+  else if (perRunSection > 70) tInsMm = 1.6;
+  else if (perRunSection > 35) tInsMm = 1.4;
+  else if (perRunSection > 16) tInsMm = 1.2;
+  else if (perRunSection > 6) tInsMm = 1.0;
+
+  // Diameter over insulation D_i (mm):
+  const diMm = Number((dcMm + 2.0 * tInsMm).toFixed(2));
+
+  // Operating line capacitance C (uF/km) per IEC 60287-1-1 Eq. (2.2):
+  // C = epsilon_r / (18 * ln(D_i / d_c))  [uF/km]  (using 1/(18) ≈ 0.0556)
+  // Coaxial geometry boundary conditions & assumptions:
+  // - Models radial electrostatic field across insulation layer between conductor outer radius (r_c = d_c / 2)
+  //   and a grounded coaxial metallic shield, copper tape screen (CTS), or conductive sheath/earth return path at (r_i = D_i / 2).
+  // - This represents the rigorous working operating capacitance for screened single-core cables (or armored MV/LV cables).
+  // - For standard 6 mm² EN 50618 PV DC string cables (d_c = 2.95 mm, t_ins = 0.8 mm, D_i = 4.55 mm):
+  //   XLPE (epsilon_r = 2.4) yields exactly 0.308 uF/km; PVC (epsilon_r = 5.0) yields exactly 0.642 uF/km.
+  // - Engineering limitation note: Standard PV solar cables (EN 50618 / IEC 62930) are typically unshielded;
+  //   actual capacitance depends on conduit/tray laying geometry, earthing proximity, and manufacturer construction datasheets.
+  //   Insulation thickness uses nominal low-voltage cross-section ladders and does not substitute certified factory testing.
+  const lnDiOverDc = Math.log(diMm / dcMm);
+  const lineCapacitanceUfPerKm = Number(((0.0556 * epsilonR) / Math.max(0.1, lnDiOverDc)).toFixed(3));
   const totalCapacitanceUf = Number(((lineCapacitanceUfPerKm * config.oneWayLengthM * parallelRuns) / 1000.0).toFixed(4));
   const vPhase = config.isThreePhase ? config.nominalVoltageVolts / Math.sqrt(3) : config.nominalVoltageVolts;
+  // Steady-state 50Hz reactive charging current applies only to AC circuits (zero for pure DC):
   const chargingCurrentAmps = config.isDc
     ? 0.0
     : Number((2.0 * Math.PI * 50.0 * (totalCapacitanceUf * 1e-6) * vPhase).toFixed(4));
+
+  const capacitanceModelNote =
+    'Idealized coaxial screened geometry per IEC 60287-1-1 Eq. 2.2; actual capacitance of unshielded/multicore cables depends on laying geometry and manufacturer datasheets.';
 
   // Full compliance requires voltage drop, thermal ampacity, AND short-circuit withstand:
   const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant;
@@ -426,6 +461,7 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     lineCapacitanceUfPerKm,
     totalCapacitanceUf,
     chargingCurrentAmps,
+    capacitanceModelNote,
     troubleshootingGuideFa,
     troubleshootingGuideEn,
   };
@@ -497,19 +533,20 @@ export function calculateEarthingSystem(
   const actualMeshVoltageVolts = Math.round((rho * ifaultKa * 1000.0 * km * ki) / (totalLength * 1.5));
   const actualStepVoltageVolts = Math.round((rho * ifaultKa * 1000.0 * 0.35 * ki) / (totalLength * 1.2));
 
-  const isTouchVoltageSafe = actualMeshVoltageVolts <= tolerableTouch;
-  const isStepVoltageSafe = actualStepVoltageVolts <= tolerableStep;
-
-  // Maximum touch & step voltage limits according to standard regulatory thresholds
+  // Maximum touch & step voltage limits according to standard regulatory thresholds (IEEE 80 / IEC 60364-4-41)
   let maxTouch = tolerableTouch;
   let maxStep = tolerableStep;
   if (upstreamSystem === 'impedance_grounded') {
-    maxTouch = 120.0;
-    maxStep = 400.0;
+    maxTouch = Math.min(tolerableTouch, 120.0);
+    maxStep = Math.min(tolerableStep, 400.0);
   } else if (upstreamSystem === 'isolated_it') {
-    maxTouch = 50.0;
-    maxStep = 200.0;
+    maxTouch = Math.min(tolerableTouch, 50.0);
+    maxStep = Math.min(tolerableStep, 200.0);
   }
+
+  // Safety compliance flags must verify actual potential against governing limit (maxTouch / maxStep)
+  const isTouchVoltageSafe = actualMeshVoltageVolts <= maxTouch;
+  const isStepVoltageSafe = actualStepVoltageVolts <= maxStep;
 
   const earthingExecutionStepsFa = [
     '۱. حفر رینگ ارت پیرامونی: حفر کانال به عمق حداقل ۸۰ سانتی‌متر دور تا دور محوطه آرایه‌ها و پست برق.',
@@ -560,9 +597,9 @@ export function calculateEarthingSystem(
     isEarthingSafe: effectiveRg <= targetResistance && isTouchVoltageSafe && isStepVoltageSafe,
     isPreliminaryEstimate: true,
     disclaimerFa:
-      'توجه: محاسبات ولتاژ تماس و گام بر پایه فرضیات لایه سطحی سنگ‌ریزه و توزیع تخمینی جریان خطا ارائه شده است. انطباق نهایی و اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر و طراحی تفصیلی شبکه مش در نرم‌افزارهای تخصصی است.',
+      'توجه: محاسبات مقاومت زمین و ولتاژهای تماس و گام صرفاً ارزیابی اولیه غربالگری بر پایه مدل خاک یکنواخت و حدود فرضی پیش‌فرض (مانند سقف فرضی ولتاژ تماس ۱۲۰ ولت برای سیستم زمین‌شده از طریق امپدانس یا ۵۰ ولت برای IT) است. این حدود فرضی برای کلیه حوزه‌ها الزام‌آور نبوده و حد واقعی به زمان قطع حفاظت، رطوبت محیط و مقررات محلی وابسته است. طراحی اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر و مدل‌سازی تفصیلی شبکه مش است.',
     disclaimerEn:
-      'Notice: Touch and step voltage verifications are preliminary screening estimates based on assumed crushed rock layer and default split factor. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing and site-specific grid modeling.',
+      'Notice: Ground resistance and touch/step potential verifications are preliminary screening estimates using uniform soil assumptions and indicative default regulatory ceilings (e.g. 120V touch voltage limit for impedance-grounded systems, 50V for IT). Actual limits depend on fault duration, environmental wetness, and local utility interconnection codes. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing and site-specific grid modeling.',
     bentoniteEnhancedResistanceOhms: bentoniteEnhancedResistance,
     bentoniteApplied: applyBentoniteEnhancement,
     earthingExecutionStepsFa,

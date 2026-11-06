@@ -56,6 +56,8 @@ import { exportToWordDocument, exportToExcelWorkbook } from '../engine/reporting
 import { calculateStructuralAndFoundations, cpUpliftFor, type StructuralAnalysisResult, type FoundationType } from '../engine/structuralEngine';
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
+import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
+import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 
 interface OfficialReportModalProps {
   projectName: string;
@@ -73,6 +75,10 @@ interface OfficialReportModalProps {
   bayArchitecture?: PowerplantBayArchitectureResult;
   siteOverrides?: SiteGeotechnicalOverrides;
   foundationType?: FoundationType;
+  waterfallReport?: WaterfallLossReport;
+  appliedShading?: AppliedShading3dRecord | null;
+  isShadingStale?: boolean;
+  bifacialGainPct?: number;
   onClose: () => void;
   onImportProject?: (projectData: any) => void;
   lang?: 'fa' | 'en';
@@ -104,6 +110,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   bayArchitecture,
   siteOverrides,
   foundationType: customFoundationType,
+  waterfallReport,
+  appliedShading,
+  isShadingStale = false,
+  bifacialGainPct,
   onClose,
   onImportProject,
   lang: defaultLang = 'fa',
@@ -181,13 +191,28 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     });
   }, [systemMode, bayArchitecture, arrayDesign, inverter, effectiveCity]);
 
-  // Derived Energy Simulation Metrics
-  const annualGrossMwh = Number(((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1));
-  const specificYieldKwhKwp = Math.round((annualGrossMwh * 1000) / Math.max(1, arrayDesign.totalPvCapacityKwp));
-  const performanceRatioPct = Number(((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1));
-  const p50Mwh = annualGrossMwh;
-  const p75Mwh = Number((annualGrossMwh * 0.945).toFixed(1));
-  const p90Mwh = Number((annualGrossMwh * 0.898).toFixed(1));
+  // Derived Energy Simulation Metrics:
+  // Single-source primary annual energy and specific yield from unified waterfall loss report,
+  // preserving 24h diurnal simulation as a secondary diagnostic profile.
+  const diurnal24hAnnualMwh = Number(((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1));
+  const primaryAnnualEnergyMwh = waterfallReport
+    ? waterfallReport.netAnnualEnergyExportMwh
+    : diurnal24hAnnualMwh;
+  const primarySpecificYieldKwhKwp = waterfallReport
+    ? Math.round(waterfallReport.specificAnnualYieldKwhPerKwp)
+    : Math.round((diurnal24hAnnualMwh * 1000) / Math.max(1, arrayDesign.totalPvCapacityKwp));
+
+  // Sourced from unified waterfall loss report (69.2% on standard fixture), falling back to sizing derate factor only if report omitted
+  const performanceRatioPct = waterfallReport
+    ? waterfallReport.performanceRatioPct
+    : Number(((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1));
+  const p50Mwh = primaryAnnualEnergyMwh;
+  const p75Mwh = Number((primaryAnnualEnergyMwh * 0.945).toFixed(1));
+  const p90Mwh = Number((primaryAnnualEnergyMwh * 0.898).toFixed(1));
+
+  // Dynamic Shading Derate & Provenance Metrics
+  const effectiveShadingLossPct = appliedShading ? appliedShading.lossPct : 2.4;
+  const effectiveShadingDerate = Number((1.0 - effectiveShadingLossPct / 100).toFixed(4));
 
   // Customization & Metadata State
   const [docId, setDocId] = useState<string>('EPC-PV-2026-0891');
@@ -221,14 +246,14 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   // Custom Commentary Notes
   const [engineerNotes, setEngineerNotes] = useState<Record<string, string>>({
     summary: isEn
-      ? 'System layout verified against IEC 62548. Grid interconnection voltage coordinated with regional utility.'
-      : 'چیدمان سیستم مطابق با استاندارد IEC 62548 بازبینی شده و سطح ولتاژ اتصال با شبکه توزیع منطقه‌ای هماهنگ شده است.',
+      ? 'Preliminary system layout aligned with IEC 62548 engineering design guidelines for screening. Grid interconnection voltage coordinated with regional utility.'
+      : 'چیدمان اولیه سیستم بر اساس رهنمودهای طراحی استاندارد IEC 62548 جهت غربالگری مهندسی تنظیم گردیده و سطح ولتاژ اتصال با شبکه توزیع منطقه‌ای هماهنگ شده است.',
     climate: isEn
       ? 'Geotechnical and wind data retrieved from official meteorological records and INBC Part 6 specifications.'
       : 'داده‌های ژئوتکنیک و بار باد بر اساس استعلام رسمی مبحث ۶ مقررات ملی ساختمان و مرکز تحقیقات مسکن اخذ شده است.',
     shading: isEn
-      ? 'Pitch distance optimized to eliminate inter-row  during the critical winter solstice noon window (10:00-14:00).'
-      : 'فاصله ردیف‌ها جهت برقراری شرط عدم سایه‌اندازی در بازه ۱۰ الی ۱۴ ظهر انقلاب زمستانی بهینه‌سازی شده است.',
+      ? 'Inter-row pitch distance configured for winter solstice screening window (10:00-14:00 true solar time).'
+      : 'فاصله بین‌ردیفی جهت پوشش پنجره غربالگری ظهر انقلاب زمستانی (۱۰ الی ۱۴ به وقت آفتابی) تنظیم شده است.',
     electrical: isEn
       ? 'Cable sizing incorporates multi-conductor parallel runs to limit voltage drop below 1.5% at nominal full load.'
       : 'سایزینگ کابل‌ها به روش چند رشته موازی انجام شده تا افت ولتاژ در بار نامی کمتر از ۱.۵ درصد محدود گردد.',
@@ -274,11 +299,14 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Total PV Peak Capacity (kWp)', arrayDesign.totalPvCapacityKwp],
       ['Total Module Count', arrayDesign.totalModulesCount],
       ['Total Inverter Capacity (kW)', inverter.pnomAcKw * (bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1)],
-      ['Annual Generation (MWh)', ((simulation.totalGeneration24hKwh * 365) / 1000).toFixed(1)],
-      ['Levelized Cost of Electricity LCOE ($/kWh)', financial.isLcoeDefined ? financial.lcoeUsdPerKwh : 'N/A (Zero Yield)'],
-      ['Internal Rate of Return IRR (%)', financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A (Undefined)'],
+      ['Net Annual Generation (MWh, Waterfall)', primaryAnnualEnergyMwh.toFixed(1)],
+      ['Specific Annual Yield (kWh/kWp)', primarySpecificYieldKwhKwp],
+      ['Diurnal Diagnostic Generation (MWh, 24h)', diurnal24hAnnualMwh.toFixed(1)],
+      ['Performance Ratio PR (%)', `${performanceRatioPct}%`],
+      ['Levelized Cost of Electricity LCOE ($/kWh)', financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? financial.lcoeUsdPerKwh : 'N/A (Zero Yield)'],
+      ['Internal Rate of Return IRR (%)', financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A (Undefined)'],
       ['Net Present Value NPV ($)', financial.npvUsd],
-      ['Simple Payback (Years)', financial.simplePaybackPeriodYears],
+      ['Simple Payback (Years)', financial.simplePayback ? financial.simplePayback.formattedYears : (financial.simplePaybackPeriodYears ?? 'N/A')],
     ];
 
     const climateSheet = [
@@ -332,20 +360,36 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     ];
 
     const energySheet = [
-      ['ENERGY YIELD SIMULATION & PERFORMANCE RATIO (IEC 61724-1)', ''],
+      ['ENERGY YIELD SIMULATION & SENSITIVITY SCENARIOS (INDICATIVE)', ''],
+      ['Methodology Note', 'Primary annual yield metrics represent unified 14/15-stage waterfall loss modeling (IEC 61724-1 PR), supplemented by the 24h diurnal simulation profile as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles.'],
       ['Metric', 'Value', 'Unit', 'Methodology / Standard'],
-      ['Gross DC Annual Generation', (annualGrossMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model'],
-      ['Net AC Annual Generation (P50)', annualGrossMwh.toFixed(1), 'MWh/yr', 'P50 Median Expectation'],
-      ['P75 Bankable Generation', p75Mwh.toFixed(1), 'MWh/yr', 'P75 Statistical Exceedance'],
-      ['P90 Conservative Debt Sizing', p90Mwh.toFixed(1), 'MWh/yr', 'P90 Bankable Exceedance (1.3x DSCR)'],
-      ['Specific Yield', specificYieldKwhKwp, 'kWh/kWp/yr', 'Normalized to STC DC Capacity'],
-      ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724 Class A Methodology'],
-      ['Soiling Derate', '3.5%', '-', 'Kimber Arid Climate Deposition Model'],
-      ['Thermal Temperature Loss', '7.8%', '-', 'Gamma_Pmp = -0.30%/°C'],
-      ['Ohmic Cable I2R Loss', '1.2%', '-', 'DC + AC Conductor Resistance'],
-      ['Inverter Conversion Efficiency', '98.5%', '-', 'IEC 62891 Weighted Efficiency'],
-      ['Transformer & MV Losses', '1.2%', '-', 'Substation Step-up Transformer'],
-      ['System Availability', '99.0%', '-', 'Annual Scheduled / Unscheduled Uptime'],
+      ['Net AC Annual Generation (Primary)', primaryAnnualEnergyMwh.toFixed(1), 'MWh/yr', waterfallReport ? 'Unified Waterfall Loss Model' : 'Annualized 24h Baseline Profile'],
+      ['Specific Annual Yield (Primary)', primarySpecificYieldKwhKwp.toString(), 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Primary Model)'],
+      ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724-1 Metric (Waterfall Loss Tree)'],
+      ['Diurnal Diagnostic Net AC Generation', diurnal24hAnnualMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Diurnal Profile (Diagnostic)'],
+      ['Gross DC Annual Generation (24h Extrapolated)', (diurnal24hAnnualMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h Diagnostic)'],
+      ['Illustrative Downside Scenario (-5.5%)', p75Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.945x Sensitivity Factor (Not Probabilistic Exceedance)'],
+      ['Illustrative Conservative Downside (-10.2%)', p90Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.898x Sensitivity Factor (Not Bankable P90)'],
+      ['Near Shading Loss', `-${effectiveShadingLossPct}%`, '-', appliedShading ? (isShadingStale ? '3D Near-Shading Model (⚠️ Stale: Capacity drifted >5%)' : '3D Near-Shading Model') : 'Standard Empirical Default (-2.4%)'],
+      ['Effective Shading Derate', effectiveShadingDerate.toString(), '-', '1 - (Shading Loss / 100)'],
+      ...(waterfallReport ? [
+        ['', ''],
+        ['WATERFALL LOSS BREAKDOWN STAGES', ''],
+        ['Stage ID', 'Loss / Gain (%)', 'Stage Output (MWh)', 'Description'],
+        ...waterfallReport.stages.map((st) => [
+          isEn ? st.nameEn : st.nameFa,
+          `${st.percentageLoss > 0 ? '+' : ''}${st.percentageLoss}%`,
+          (st.stageOutputKwh / 1000).toFixed(1),
+          isEn ? st.descriptionEn : st.descriptionFa,
+        ]),
+      ] : [
+        ['Soiling Derate', '3.5%', '-', 'Kimber Arid Climate Deposition Model'],
+        ['Thermal Temperature Loss', '7.8%', '-', 'Gamma_Pmp = -0.30%/°C'],
+        ['Ohmic Cable I2R Loss', '1.2%', '-', 'DC + AC Conductor Resistance'],
+        ['Inverter Conversion Efficiency', '98.5%', '-', 'IEC 62891 Weighted Efficiency'],
+        ['Transformer & MV Losses', '1.2%', '-', 'Substation Step-up Transformer'],
+        ['System Availability', '99.0%', '-', 'Annual Scheduled / Unscheduled Uptime'],
+      ]),
     ];
 
     const structuralSheet = [
@@ -412,6 +456,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       generator,
       financial,
       bayArchitecture,
+      waterfallReport,
     };
 
     const blob = new Blob([JSON.stringify(fullProjectState, null, 2)], {
@@ -425,6 +470,55 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportApiProposal = async () => {
+    try {
+      const invCount = bayArchitecture ? bayArchitecture.bays.reduce((s, b) => s + b.inverterCount, 0) : 1;
+      const batCount = batterySizing ? batterySizing.totalBatteryUnitsCount : 0;
+      const annualKwh = Math.round(primaryAnnualEnergyMwh * 1000);
+      const lcoeVal = financial.isLcoeDefined ? financial.lcoeUsdPerKwh : null;
+
+      const payload = {
+        projectName,
+        projectId: docId,
+        systemCapacityKwp: Number(arrayDesign.totalPvCapacityKwp.toFixed(2)),
+        panelCount: Math.round(arrayDesign.totalModulesCount),
+        panelType: `${module.manufacturer} ${module.modelName} (${module.pmpWatts}W)`,
+        inverterCount: Math.round(invCount),
+        inverterType: `${inverter.manufacturer} ${inverter.modelName} (${inverter.pnomAcKw}kW)`,
+        batteryCount: Math.round(batCount),
+        batteryType: batterySizing ? `${batterySizing.chemistry.nameEn} (${batterySizing.grossCapacityKwh.toFixed(1)}kWh)` : 'N/A',
+        annualYieldKwh: annualKwh,
+        lcoeUsdPerKwh: lcoeVal,
+      };
+
+      const res = await fetch('/api/v1/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Server rejected proposal metrics');
+      }
+
+      const proposal = await res.json();
+      const blob = new Blob([JSON.stringify(proposal, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${customFileName}_Screening_Proposal.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(isEn ? `API Validation/Export Notice: ${err.message}` : `پیام اعتبارسنجی خروجی گزارش: ${err.message}`);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -538,6 +632,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             >
               <Download className="w-3.5 h-3.5 text-industrial-warning" />
               <span>{isEn ? 'Save Project' : 'ذخیره پروژه'}</span>
+            </button>
+
+            <button
+              onClick={handleExportApiProposal}
+              className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-sky-400 border-sky-500/30"
+              title={isEn ? 'Export Preliminary JSON Screening Proposal (Preliminary Engineering Screening, not certified EPC package)' : 'دریافت پروپوزال غربالگری اولیه JSON (امکان‌سنجی مقدماتی، غیر از پکیج اجرایی EPC)'}
+            >
+              <FileCheck className="w-3.5 h-3.5 text-sky-400" />
+              <span>{isEn ? 'Screening Proposal (.json)' : 'پروپوزال مقدماتی (.json)'}</span>
             </button>
 
             <label
@@ -663,7 +766,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   { key: 'summary', fa: 'خلاصه پروژه', en: 'Project Summary' },
                   { key: 'climate', fa: 'اقلیم و خاک', en: 'Site & Geotechnical' },
                   { key: 'shading', fa: 'تحلیل سایه‌اندازی', en: 'Shading & Sun Path' },
-                  { key: 'energy', fa: 'شبیه‌سازی انرژی', en: 'Energy Yield (P50/P90)' },
+                  { key: 'energy', fa: 'شبیه‌سازی انرژی و سناریوهای حساسیت', en: 'Energy Yield & Sensitivity' },
                   { key: 'electrical', fa: 'طراحی الکتریکی و کابل', en: 'Electrical & Cables' },
                   { key: 'structural', fa: 'سازه و فونداسیون', en: 'Structure & Foundation' },
                   { key: 'financial', fa: 'تحلیل مالی و بازگشت', en: 'Financial Pro-Forma' },
@@ -770,21 +873,23 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Annual Generation (P50)' : 'تولید سالانه انرژی (P50)'}</span>
+                  <span className="text-slate-400 block text-[10px]">
+                    {isEn ? 'Net Annual Generation (Waterfall)' : 'تولید سالانه خالص (مدل آبشار)'}
+                  </span>
                   <strong className="text-base font-mono text-industrial-success print:text-emerald-900">
-                    {annualGrossMwh.toLocaleString()} MWh
+                    {primaryAnnualEnergyMwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    Specific Yield: {specificYieldKwhKwp} kWh/kWp
+                    {isEn ? 'Specific Yield' : 'تولید ویژه'}: {primarySpecificYieldKwhKwp} kWh/kWp
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Simple Payback / IRR' : 'بازگشت سرمایه / IRR'}</span>
                   <strong className="text-base font-mono text-purple-400 print:text-purple-900">
-                    {financial.simplePaybackPeriodYears} yr / {financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A'}
+                    {financial.simplePayback ? financial.simplePayback.formattedYears : `${financial.simplePaybackPeriodYears} yr`} / {financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'}
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    LCOE: ${financial.isLcoeDefined ? financial.lcoeUsdPerKwh : 'N/A'} /kWh
+                    LCOE: {financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `$${financial.lcoeUsdPerKwh} /kWh` : 'N/A (Zero Yield)'}
                   </span>
                 </div>
               </div>
@@ -800,7 +905,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black text-[11px]">
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Standard Code' : 'کد استاندارد'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Scope / Domain' : 'حوزه شمول و دامنه کاربرد'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Design Criterion Verified' : 'معیار طراحی کنترل‌شده'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Engineering Design Criterion' : 'معیار طراحی مهندسی'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Compliance Status' : 'وضعیت انطباق'}</th>
                     </tr>
                   </thead>
@@ -853,8 +958,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <p className="leading-relaxed text-[11px] text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `This EPC technical report presents the preliminary engineering design for ${projectName} with a nominal peak DC capacity of ${arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp. The system employs high-efficiency TOPCon bifacial modules coupled with industrial multi-MPPT string inverters at an optimized DC/AC ratio of ${arrayDesign.dcAcRatio.toFixed(2)}. All structural and foundation sizing complies with ASCE 7-22 and Eurocode 7 standards, accounting for site-specific wind velocity pressure (${structCalc.velocityWindPressureQzN_M2} N/m²) and frost penetration constraints (${structCalc.recommendedDepthM}m embedment). Levelized Cost of Electricity (LCOE) is estimated at $${financial.lcoeUsdPerKwh}/kWh with an internal rate of return (IRR) of ${financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A'}, providing a preliminary financial screening subject to geotechnical validation and grid interconnection approval.`
-                    : `این گزارش فنی جامع، مبانی طراحی و محاسبات اولیه مهندسی نیروگاه خورشیدی ${projectName} را با ظرفیت نامی ${arrayDesign.totalPvCapacityKwp.toFixed(1)} کیلووات‌پیک ارائه می‌دهد. آرایه نیروگاه بر پایه ماژول‌های دوطرفه TOPCon و اینورترهای چند کاناله صنعتی با نسبت توان بهینه ${arrayDesign.dcAcRatio.toFixed(2)} طراحی گردیده است. تمامی محاسبات سازه و فونداسیون منطبق بر مبحث ۶ و ۷ مقررات ملی ساختمان و استانداردهای ASCE 7-22 و یوروکد ۷ صورت پذیرفته که در آن فشار سرعتی باد منطقه (${structCalc.velocityWindPressureQzN_M2} نیوتن بر مترمربع) و عمق یخبندان ساختگاه (عمق کوبش ${structCalc.recommendedDepthM} متر) لحاظ گردیده است. بهای تمام‌شده تولید برق ${financial.lcoeUsdPerKwh} دلار بر کیلووات‌ساعت و نرخ بازده داخلی ${financial.isIrrDefined ? `${financial.irrPct} درصد` : 'تعریف‌نشده'} برآورد گردیده که ارائه‌دهنده ارزیابی امکان‌سنجی اولیه پروژه با فرض انطباق شرایط ساختگاه و شبکه است.`}
+                    ? `This EPC technical report presents the preliminary engineering screening design for ${projectName} with a nominal peak DC capacity of ${arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp. The system employs high-efficiency TOPCon bifacial modules coupled with industrial multi-MPPT string inverters at an optimized DC/AC ratio of ${arrayDesign.dcAcRatio.toFixed(2)}. Structural and civil foundation sizing follows preliminary screening methodologies per ASCE 7-22 and Eurocode 7 principles, accounting for site-specific wind velocity pressure (${structCalc.velocityWindPressureQzN_M2} N/m²) and frost penetration constraints (${structCalc.recommendedDepthM}m embedment), subject to definitive geotechnical borehole testing. Levelized Cost of Electricity (LCOE) is ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `estimated at $${financial.lcoeUsdPerKwh}/kWh` : 'not applicable (zero lifetime generation)'} with an internal rate of return (IRR) of ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'}, providing an indicative screening appraisal.`
+                    : `این گزارش فنی، مبانی طراحی و محاسبات اولیه امکان‌سنجی مهندسی نیروگاه خورشیدی ${projectName} را با ظرفیت نامی ${arrayDesign.totalPvCapacityKwp.toFixed(1)} کیلووات‌پیک ارائه می‌دهد. آرایه نیروگاه بر پایه ماژول‌های دوطرفه TOPCon و اینورترهای چند کاناله صنعتی با نسبت توان بهینه ${arrayDesign.dcAcRatio.toFixed(2)} مدل‌سازی گردیده است. محاسبات سازه و فونداسیون بر مبنای ارزیابی اولیه مهندسی با رویکرد مبحث ۶ و ۷ مقررات ملی ساختمان و اصول ASCE 7-22 و یوروکد ۷ تدوین گردیده که در آن فشار سرعتی باد منطقه (${structCalc.velocityWindPressureQzN_M2} نیوتن بر مترمربع) و عمق یخبندان ساختگاه (عمق کوبش ${structCalc.recommendedDepthM} متر) لحاظ شده و انطباق اجرایی آن منوط به نتایج گمانه‌زنی ژئوتکنیک محلی است. بهای تمام‌شده تولید برق ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `${financial.lcoeUsdPerKwh} دلار بر کیلووات‌ساعت` : 'تعریف‌نشده (تولید صفر)'} و نرخ بازده داخلی ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct} درصد` : 'تعریف‌نشده'} برآورد گردیده که ارائه‌دهنده غربالگری اولیه امکان‌سنجی پروژه است.`}
                 </p>
                 <div className="pt-2 border-t border-industrial-border/40 text-[11px]">
                   <strong className="text-industrial-warning">{isEn ? 'Key Actionable Recommendations:' : 'توصیه‌های کلیدی اجرایی:'}</strong>
@@ -1054,11 +1159,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   {isEn ? '3. 3D Geometric Shading, Sun Path & Array Pitch Optimization' : '۳. تحلیل سه‌بعدی سایه‌اندازی، مسیر خورشید و بهینه‌سازی فواصل بین‌ردیفی'}
                 </span>
                 <span className="text-[10px] text-industrial-success print:text-emerald-800 font-mono">
-                  {isEn ? 'Winter Solstice Free-of-Shading: VERIFIED' : 'عدم سایه ظهر زمستان: تأیید'}
+                  {isEn ? 'Winter Solstice Geometric Screening: Evaluated' : 'ارزیابی هندسی پنجره ظهر زمستان: انجام شد'}
                 </span>
               </h3>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 text-xs">
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Row Pitch Distance' : 'فاصله محور ردیف‌ها (Pitch)'}</span>
                   <span className="font-mono font-bold text-industrial-accent print:text-sky-800 text-sm">
@@ -1074,65 +1179,113 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Annual Beam Shading Loss' : 'تلفات سالانه سایه پرتو مستقیم'}</span>
                   <span className="font-mono font-bold text-industrial-success print:text-emerald-800 text-sm">
-                    ~2.4%
+                    {appliedShading ? `-${effectiveShadingLossPct}%` : `~${effectiveShadingLossPct}%`}
                   </span>
+                  {appliedShading && (
+                    <span className="text-[9px] text-sky-400 block font-mono">
+                      {isEn ? '3D Near-Shading Model' : 'مدل ۳ بعدی سایه‌اندازی'}
+                    </span>
+                  )}
                 </div>
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Effective Shading Derate' : 'ضریب اصلاح سایه در مدل تولید'}</span>
                   <span className="font-mono font-bold text-purple-400 print:text-purple-800 text-sm">
-                    0.976
+                    {effectiveShadingDerate.toFixed(appliedShading ? 4 : 3)}
                   </span>
+                  {appliedShading && (
+                    <span className="text-[9px] text-slate-400 block font-mono">
+                      1 - ({effectiveShadingLossPct}%)
+                    </span>
+                  )}
                 </div>
+                {bifacialGainPct !== undefined && bifacialGainPct > 0 && (
+                  <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded col-span-2 sm:col-span-4 lg:col-span-1">
+                    <span className="text-slate-400 block text-[10px]">{isEn ? 'Bifacial Rear Gain Proxy' : 'بهره فرضی پشت پنل (Bifacial)'}</span>
+                    <span className="font-mono font-bold text-emerald-400 print:text-emerald-800 text-sm">
+                      +{bifacialGainPct.toFixed(1)}%
+                    </span>
+                    <span className="text-[9px] text-slate-400 block font-mono">
+                      {isEn ? 'First-order optical proxy' : 'تخمین اولیه اپتیکی'}
+                    </span>
+                  </div>
+                )}
               </div>
+
+              {/* 3D Shading Provenance & Staleness Banner */}
+              {appliedShading && (
+                <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 border border-sky-500/30 rounded text-xs flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sky-300 font-semibold text-[11px]">
+                      {isEn ? '3D Shading Provenance:' : 'مرجع تحلیل سه‌بعدی سایه:'}
+                    </span>
+                    <span className="text-slate-300 text-[11px]">
+                      {isEn
+                        ? `Applied from representative demo block (${appliedShading.capacityKwp} kWp) at ${new Date(appliedShading.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : `اعمال‌شده از بلوک نمونه (${appliedShading.capacityKwp} کیلووات‌پیک) در ساعت ${new Date(appliedShading.appliedAtIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                    </span>
+                  </div>
+                  {isShadingStale && (
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40">
+                      {isEn ? '⚠️ Stale: Project capacity drifted >5% since 3D run' : '⚠️ داده قدیمی: ظرفیت پروژه بیش از ۵٪ تغییر یافته است'}
+                    </span>
+                  )}
+                </div>
+              )}
 
               <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-1">
                 <span className="font-bold text-white print:text-black block">
-                  {isEn ? 'Sun Path Geometric Verification & Critical Solar Window:' : 'بررسی هندسی مسیر حرکت خورشید و پنجره بحرانی تابش:'}
+                  {isEn ? 'Sun Path Geometric Screening & Critical Solar Window:' : 'بررسی هندسی مسیر خورشید و پنجره غربالگری تابش:'}
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `At latitude ${effectiveCity.latitude.toFixed(2)}°N, the solar altitude at true solar noon on the winter solstice (December 21) drops to ${(90 - effectiveCity.latitude - 23.45).toFixed(1)}°. The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m guarantees 100% unshaded collector aperture throughout the critical 4-hour window (10:00 to 14:00 true solar time), complying with IEC 62548 standards. For bifacial energy boost, the ground clearance of 0.9m provides a rear view-factor that captures diffuse and ground-reflected albedo irradiance.`
-                    : `در عرض جغرافیایی ${effectiveCity.latitude.toFixed(2)} درجه شمالی، زاویه ارتفاع خورشید در ظهر انقلاب زمستانی به ${(90 - effectiveCity.latitude - 23.45).toFixed(1)} درجه کاهش می‌یابد. فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر به گونه‌ای تنظیم شده که شرط عدم سایه‌اندازی متقابل ردیف‌ها در بازه بحرانی ۱۰ الی ۱۴ ظهر آفتابی کاملاً محقق شود. همچنین ارتفاع آزاد ۰.۹ متری زیر پنل‌ها امکان جذب بهینه تابش‌های بازتابی زمین (Albedo) توسط سطح پشت سلول‌های دوطرفه را فراهم می‌آورد.`}
+                    ? `At latitude ${effectiveCity.latitude.toFixed(2)}°N, the solar altitude at true solar noon on the winter solstice (December 21) drops to ${(90 - effectiveCity.latitude - 23.45).toFixed(1)}°. The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) following IEC 62548 geometric guidance. Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (screening proxy: +${bifacialGainPct.toFixed(1)}%)` : ''}, which should be verified with detailed 3D/view-factor modeling.`
+                    : `در عرض جغرافیایی ${effectiveCity.latitude.toFixed(2)} درجه شمالی، زاویه ارتفاع خورشید در ظهر انقلاب زمستانی به ${(90 - effectiveCity.latitude - 23.45).toFixed(1)} درجه کاهش می‌یابد. فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر جهت تامین فاصله هندسی نامی در بازه ۴ ساعته غربالگری (۱۰ الی ۱۴ ظهر آفتابی) بر اساس رهنمودهای هندسی IEC 62548 در نظر گرفته شده است. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (تخمین غربالگری: +${bifacialGainPct.toFixed(1)}٪)` : ''} که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Section 4: Energy Simulation, Loss Waterfall & PR */}
+          {/* Section 4: Energy Simulation, Loss Waterfall & Sensitivity Scenarios */}
           {includedSections.energy && (
             <div className="studio-card print:border print:border-slate-300 print:p-4 space-y-4">
               <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-industrial-success" />
-                  {isEn ? '4. Energy Yield Simulation, Loss Waterfall & Performance Ratio (P50/P90)' : '۴. شبیه‌سازی تولید انرژی، نمودار آبشار تلفات و تحلیل عدم قطعیت بانکی (P50/P90)'}
+                  {isEn ? '4. Energy Yield Simulation, Loss Waterfall & Sensitivity Scenarios' : '۴. شبیه‌سازی تولید انرژی، نمودار آبشار تلفات و سناریوهای تحلیل حساسیت'}
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">IEC 61724-1 Class A</span>
+                <span className="text-[10px] text-slate-400 font-mono">IEC 61724-1 Standard Metric</span>
               </h3>
 
               {/* Energy KPI Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'P50 Annual Generation:' : 'تولید سالانه P50 (میانه):'}</span>
+                  <span className="text-slate-400 block text-[10px]">
+                    {isEn ? 'Net Annual Generation (Waterfall):' : 'تولید سالانه خالص (مدل آبشار):'}
+                  </span>
                   <strong className="text-base font-mono text-industrial-success print:text-emerald-900">
-                    {annualGrossMwh.toLocaleString()} MWh
+                    {primaryAnnualEnergyMwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'Expected 50% exceedance' : 'احتمال وقوع ۵۰ درصد'}
+                    {waterfallReport
+                      ? (isEn ? 'Unified Waterfall Loss Model' : 'مدل یکپارچه آبشار تلفات')
+                      : (isEn ? 'Annualized 24h diurnal estimate' : 'برون‌یابی سالانه شبیه‌سازی ۲۴ ساعته')}
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'P90 Bankable Generation:' : 'تولید بانکی P90 (تضمینی):'}</span>
+                  <span className="text-slate-400 block text-[10px]">
+                    {isEn ? 'Illustrative Downside (-10.2%):' : 'سناریوی کاهشی فرضی (-۱۰.۲٪):'}
+                  </span>
                   <strong className="text-base font-mono text-industrial-accent print:text-sky-900">
                     {p90Mwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'Debt Sizing (1.3x DSCR)' : 'مبنای استقراض بانکی و وام'}
+                    {isEn ? 'Fixed 0.898x Sensitivity Factor (Not Bankable P90)' : 'ضریب حساسیت ثابت ۰.۸۹۸ (بدون ادعای P90 بانکی)'}
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/60 print:bg-slate-100 rounded border border-industrial-border/60 print:border-slate-300">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Specific Yield:' : 'تولید ویژه نامالایز (Specific):'}</span>
                   <strong className="text-base font-mono text-industrial-warning print:text-amber-900">
-                    {specificYieldKwhKwp} kWh/kWp
+                    {primarySpecificYieldKwhKwp} kWh/kWp
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
                     {isEn ? 'Hours at STC Rating' : 'ساعت کارکرد در توان نامی'}
@@ -1144,9 +1297,18 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     {performanceRatioPct}%
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'IEC 61724 Class A' : 'کلاس A اعتبارسنجی شده'}
+                    {isEn ? 'IEC 61724-1 Waterfall PR' : 'ضریب عملکرد آبشار تلفات IEC 61724-1'}
                   </span>
                 </div>
+              </div>
+
+              <div className="text-[10px] text-slate-400 bg-slate-800/30 print:bg-slate-100 p-2 rounded border border-industrial-border/40 print:border-slate-300">
+                <span className="text-industrial-warning font-semibold">
+                  {isEn ? 'Methodology Note:' : 'یادداشت متدولوژی:'}
+                </span>{' '}
+                {isEn
+                  ? 'Primary annual yield metrics represent unified 14/15-stage waterfall loss modeling (IEC 61724-1 PR), supplemented by the 24-hour diurnal profile as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity scaling factors rather than formal probabilistic exceedance percentiles (which require multi-year TMY inter-annual dispersion modeling). They provide preliminary engineering screening estimates and should be supplemented by an 8760-hour hourly weather-year (TMY/PVSyst) bankable model for final financing.'
+                  : 'ارقام تولید سالانه انرژی بر پایه مدل‌سازی جامع ۱۴/۱۵ مرحله‌ای آبشار تلفات (ضریب عملکرد IEC 61724-1) محاسبه شده و پروفایل ۲۴ ساعته شبانه‌روزی به عنوان غربالگری تشخیصی مکمل عمل می‌کند. سناریوهای کاهشی (-۵.۵٪ و -۱۰.۲٪) صرفاً ضرایب حساسیت فرضی و نمایشی هستند نه صدک‌های آماری قطعی توزیع احتمالاتی سال‌های اقلیمی؛ این مقادیر به عنوان غربالگری اولیه مهندسی عمل نموده و برای تأمین مالی و تعیین ساختار بدهی بانکی باید با شبیه‌سازی کامل ۸۷۶۰ ساعته سال اقلیمی (TMY) تدقیق گردند.'}
               </div>
 
               {/* Loss Waterfall Breakdown Table */}
@@ -1159,52 +1321,74 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   <thead>
                     <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black text-[11px]">
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Loss Component' : 'مولفه تلفات'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Nominal Loss (%)' : 'درصد تلفات'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Nominal Loss / Gain (%)' : 'درصد تلفات / بهره'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Methodology & Engineering Standard' : 'روش محاسبه و مرجع مهندسی'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Mitigation Strategy' : 'راهکار کاهش و جبران تلفات'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Stage Energy Output' : 'انرژی خروجی مرحله'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-industrial-border print:divide-slate-200 text-[11px]">
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Soiling & Dust Deposition' : 'تلفات غبار و ذرات معلق (Soiling)'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-3.5%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Kimber et al. Arid Model based on {effectiveCity.annualRainfallMm}mm rain</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Automated waterless robotic cleaning schedule' : 'شستشوی مکانیزه رباتیک دوره‌ای'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Thermal Temperature Derate' : 'افت توان حرارتی سلول در اثر گرما'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-7.8%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">NOCT thermal balance (Gamma = -0.30%/°C for TOPCon)</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Ground clearance 0.9m for natural air cooling' : 'ارتفاع ۰.۹ متری از زمین جهت تهویه طبیعی باد'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Incidence Angle Modifier (IAM)' : 'تلفات بازتابش زاویه تابش خورشید'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.8%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Martin & Ruiz ARC double-anti-reflective coating</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'High-transmittance anti-reflective textured glass' : 'شیشه بافت‌دار آنتی‌رفلکتیو با عبوردهی بالا'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'DC Ohmic Resistance (I²R)' : 'تلفات اهمی سیم‌کشی و اتصالات DC'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.2%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">IEC 60287 copper conductor resistance modeling</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Oversized 6mm² solar cables limiting dV <= 1.5%' : 'کابل‌های ۶ میلی‌متر مربع جهت افت زیر ۱.۵ درصد'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Inverter Conversion & MPPT' : 'راندمان تبدیل اینورتر و ردیابی MPPT'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.5%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">IEC 62891 maximum power point tracking efficiency</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Multi-MPPT architecture with independent tracker inputs' : 'تفکیک استرینگ‌ها روی MPPTهای مستقل اینورتر'}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Transformer & Grid Evacuation' : 'تلفات ترانسفورماتور و خط انتقال MV'}</td>
-                      <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.2%</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Tier 2 EcoDesign low-loss step-up transformer</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'High-efficiency amorphous core transformer' : 'استفاده از ترانسفورماتورهای کم‌تلفات استاندارد'}</td>
-                    </tr>
+                    {waterfallReport ? (
+                      waterfallReport.stages.map((stage) => {
+                        const isGain = stage.percentageLoss > 0;
+                        return (
+                          <tr key={stage.id} className={stage.id === 'bifacial_gain' ? 'bg-emerald-950/20' : ''}>
+                            <td className="p-2 font-medium">{isEn ? stage.nameEn : stage.nameFa}</td>
+                            <td className={`p-2 font-mono ${isGain ? 'text-emerald-400 print:text-emerald-800' : 'text-rose-400 print:text-rose-800'}`}>
+                              {isGain ? `+${stage.percentageLoss}%` : `${stage.percentageLoss}%`}
+                            </td>
+                            <td className="p-2 text-slate-400 print:text-slate-600">
+                              {isEn ? stage.descriptionEn : stage.descriptionFa}
+                            </td>
+                            <td className="p-2 font-mono text-slate-300 print:text-slate-700">
+                              {Math.round(stage.stageOutputKwh / 1000).toLocaleString()} MWh
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Soiling & Dust Deposition' : 'تلفات غبار و ذرات معلق (Soiling)'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-3.5%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Kimber et al. Arid Model based on {effectiveCity.annualRainfallMm}mm rain</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Automated waterless robotic cleaning schedule' : 'شستشوی مکانیزه رباتیک دوره‌ای'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Thermal Temperature Derate' : 'افت توان حرارتی سلول در اثر گرما'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-7.8%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">NOCT thermal balance (Gamma = -0.30%/°C for TOPCon)</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Ground clearance 0.9m for natural air cooling' : 'ارتفاع ۰.۹ متری از زمین جهت تهویه طبیعی باد'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Incidence Angle Modifier (IAM)' : 'تلفات بازتابش زاویه تابش خورشید'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.8%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Martin & Ruiz ARC double-anti-reflective coating</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'High-transmittance anti-reflective textured glass' : 'شیشه بافت‌دار آنتی‌رفلکتیو با عبوردهی بالا'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'DC Ohmic Resistance (I²R)' : 'تلفات اهمی سیم‌کشی و اتصالات DC'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.2%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">IEC 60287 copper conductor resistance modeling</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Oversized 6mm² solar cables limiting dV <= 1.5%' : 'کابل‌های ۶ میلی‌متر مربع جهت افت زیر ۱.۵ درصد'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Inverter Conversion & MPPT' : 'راندمان تبدیل اینورتر و ردیابی MPPT'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.5%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">IEC 62891 maximum power point tracking efficiency</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Multi-MPPT architecture with independent tracker inputs' : 'تفکیک استرینگ‌ها روی MPPTهای مستقل اینورتر'}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Transformer & Grid Evacuation' : 'تلفات ترانسفورماتور و خط انتقال MV'}</td>
+                          <td className="p-2 font-mono text-rose-400 print:text-rose-800">-1.2%</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Tier 2 EcoDesign low-loss step-up transformer</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'High-efficiency amorphous core transformer' : 'استفاده از ترانسفورماتورهای کم‌تلفات استاندارد'}</td>
+                        </tr>
+                      </>
+                    )}
                     <tr className="font-bold bg-slate-800/40 print:bg-slate-100">
                       <td className="p-2 text-white print:text-black">{isEn ? 'Net Delivered System PR' : 'ضریب عملکرد خالص تحویلی به شبکه (PR)'}</td>
                       <td className="p-2 font-mono text-industrial-success print:text-emerald-800">{performanceRatioPct}%</td>
-                      <td className="p-2 text-industrial-success" colSpan={2}>✓ IEC 61724 Class A Compliant</td>
+                      <td className="p-2 text-industrial-success" colSpan={2}>✓ IEC 61724-1 Performance Ratio Calculation</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1481,7 +1665,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   {isEn ? '7. Financial Feasibility, CAPEX Breakdown & 25-Year Cash Flow Pro-Forma' : '۷. تحلیل توجیه‌پذیری اقتصادی، ساختار سرمایه‌گذاری و جریان نقدینگی ۲۵ ساله'}
                 </span>
                 <span className="text-[10px] text-industrial-success print:text-emerald-800 font-mono">
-                  IRR: {financial.isIrrDefined ? `${financial.irrPct}%` : 'N/A'} | NPV: ${financial.npvUsd.toLocaleString()}
+                  IRR: {financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'} | NPV: ${financial.npvUsd.toLocaleString()}
                 </span>
               </h3>
 
@@ -1495,19 +1679,19 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Levelized Cost (LCOE):' : 'بهای تمام‌شده هر کیلووات‌ساعت:'}</span>
                   <span className="font-mono font-bold text-industrial-accent print:text-sky-800 text-sm">
-                    {financial.isLcoeDefined ? `$${financial.lcoeUsdPerKwh} /kWh` : 'N/A (Zero Yield)'}
+                    {financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `$${financial.lcoeUsdPerKwh} /kWh` : 'N/A (Zero Yield)'}
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Internal Rate of Return (IRR):' : 'نرخ بازده داخلی (IRR):'}</span>
                   <span className="font-mono font-bold text-industrial-success print:text-emerald-800 text-sm">
-                    {financial.isIrrDefined ? `${financial.irrPct}%` : (isEn ? 'N/A (Undefined)' : 'تعریف‌نشده')}
+                    {financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : (isEn ? 'N/A (Undefined)' : 'تعریف‌نشده')}
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Payback Period:' : 'دوره بازگشت سرمایه:'}</span>
                   <span className="font-mono font-bold text-purple-400 print:text-purple-800 text-sm">
-                    {financial.simplePaybackPeriodYears} {isEn ? 'Years' : 'سال'}
+                    {financial.simplePayback ? financial.simplePayback.formattedYears : `${financial.simplePaybackPeriodYears} سال`}
                   </span>
                 </div>
               </div>

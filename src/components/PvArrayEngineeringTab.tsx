@@ -356,6 +356,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                       noctC: 45.0,
                       lengthM: found.lengthMm / 1000.0,
                       widthM: found.widthMm / 1000.0,
+                      bifacialityFactor: found.bifacialityFactor,
                     });
                   }
                 }}

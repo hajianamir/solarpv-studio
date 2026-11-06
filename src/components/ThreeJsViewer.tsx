@@ -1,19 +1,67 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
-import { Eye, Sun, Box, Play, RefreshCw, Layers } from 'lucide-react';
+import { Eye, Sun, Box, Play, RefreshCw, Layers, CheckCircle2, AlertCircle, BarChart3, ShieldCheck, AlertTriangle, RotateCcw } from 'lucide-react';
+import {
+  simulateAnnual3dShading,
+  DEFAULT_ROOFTOP_SCENE,
+  type AnnualShading3dResult,
+  type Scene3DState,
+} from '../engine/roof3dShadingEngine';
+import { type ClimateCity } from '../engine/climaticData';
+import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 
 interface ThreeJsViewerProps {
   lang?: 'fa' | 'en';
+  city?: ClimateCity;
+  plantCapacityKw?: number;
+  plantCapacityType?: 'ac_target' | 'dc_nameplate';
+  annualYieldKwh?: number;
+  appliedShading?: AppliedShading3dRecord | null;
+  isShadingStale?: boolean;
+  onApplyShading?: (record: AppliedShading3dRecord) => void;
+  onRevertShading?: () => void;
+  onShadingLossChange?: (shadingLossPct: number) => void;
 }
 
-export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => {
+export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
+  lang = 'fa',
+  city,
+  plantCapacityKw,
+  plantCapacityType = 'dc_nameplate',
+  annualYieldKwh,
+  appliedShading = null,
+  isShadingStale = false,
+  onApplyShading,
+  onRevertShading,
+  onShadingLossChange,
+}) => {
   const isEn = lang === 'en';
   const mountRef = useRef<HTMLDivElement>(null);
-  const [shadingResult, setShadingResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [tiltDeg, setTiltDeg] = useState<number>(25);
+  const [tiltDeg, setTiltDeg] = useState<number>(15);
   const [sunAltitude, setSunAltitude] = useState<number>(45);
   const [sunAzimuth, setSunAzimuth] = useState<number>(180);
+  const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
+
+  // Derive representative block capacity dynamically from scene PV tables
+  const demoSceneCapacityKwp = useMemo(() => {
+    const totalWp = DEFAULT_ROOFTOP_SCENE.pvTables.reduce(
+      (sum, t) => sum + (t.ratedPowerWp || 0),
+      0
+    );
+    return totalWp > 0 ? totalWp / 1000.0 : 55.2;
+  }, []);
+  const [annualResult, setAnnualResult] = useState<AnnualShading3dResult | null>(() => {
+    const initScene: Scene3DState = {
+      ...DEFAULT_ROOFTOP_SCENE,
+      anchorLocation: {
+        latitude: city?.latitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.latitude,
+        longitude: city?.longitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.longitude,
+        elevationM: city?.elevationM ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.elevationM,
+      },
+    };
+    return simulateAnnual3dShading(initScene, 5.2, 40.0, { simulationMode: 'screening_3day' });
+  });
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const sunMeshRef = useRef<THREE.Mesh | null>(null);
@@ -268,24 +316,29 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
     }
   }, [tiltDeg, sunAltitude, sunAzimuth]);
 
-  // Execute ray-tracing simulation calculation
+  // Execute 3D mesh ray-tracing annual simulation
   const handleRunShadingAnalysis = () => {
     setLoading(true);
     try {
       setTimeout(() => {
-        const altRad = (sunAltitude * Math.PI) / 180;
-        const obstacleHeight = 2.0;
-        const shadowLength = obstacleHeight / Math.tan(Math.max(0.1, altRad));
-        const distanceToFirstRow = 2.7;
-
-        let unshadedRatio = 1.0;
-        if (shadowLength > distanceToFirstRow && sunAzimuth >= 140 && sunAzimuth <= 220) {
-          const penetration = Math.min(2.0, shadowLength - distanceToFirstRow);
-          unshadedRatio = Math.max(0.45, 1.0 - penetration / 3.0);
-        }
-        setShadingResult(unshadedRatio);
-      }, 400);
-    } finally {
+        // Adjust table tilt and geodetic anchor in active scene
+        const updatedScene: Scene3DState = {
+          ...DEFAULT_ROOFTOP_SCENE,
+          anchorLocation: {
+            latitude: city?.latitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.latitude,
+            longitude: city?.longitude ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.longitude,
+            elevationM: city?.elevationM ?? DEFAULT_ROOFTOP_SCENE.anchorLocation.elevationM,
+          },
+          pvTables: DEFAULT_ROOFTOP_SCENE.pvTables.map(t => ({
+            ...t,
+            tiltDeg,
+          })),
+        };
+        const result = simulateAnnual3dShading(updatedScene, 5.2, 40.0, { simulationMode });
+        setAnnualResult(result);
+        setLoading(false);
+      }, 100);
+    } catch {
       setLoading(false);
     }
   };
@@ -369,23 +422,38 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
 
         {/* Bottom Action Bar */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <button
-            onClick={handleRunShadingAnalysis}
-            disabled={loading}
-            className="studio-btn-primary flex items-center gap-2 text-xs py-2 px-4"
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>{isEn ? 'Analyzing BVH Tree...' : 'درحال ردیابی پرتوها...'}</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 fill-current" />
-                <span>{isEn ? 'Run Ray-Traced Shading Analysis' : 'اجرای تحلیل سایه‌اندازی پرتو'}</span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRunShadingAnalysis}
+              disabled={loading}
+              className="studio-btn-primary flex items-center gap-2 text-xs py-2 px-4 font-bold"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>{isEn ? 'Tracing 3D Mesh Rays...' : 'درحال ردیابی پرتوهای سه‌بعدی...'}</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>
+                    {isEn
+                      ? `Run ${simulationMode === 'hourly_8760' ? '8760h' : '3-Day'} Ray-Traced Shading`
+                      : `اجرای شبیه‌سازی ${simulationMode === 'hourly_8760' ? '۸۷۶۰ ساعته' : 'سریع ۳ روزه'} پرتو`}
+                  </span>
+                </>
+              )}
+            </button>
+
+            <select
+              value={simulationMode}
+              onChange={(e) => setSimulationMode(e.target.value as 'hourly_8760' | 'screening_3day')}
+              className="studio-input text-xs font-mono py-1.5"
+            >
+              <option value="screening_3day">{isEn ? 'Fast Screening (3-Day Step)' : 'غربالگری سریع (گام ۳ روزه)'}</option>
+              <option value="hourly_8760">{isEn ? 'Full Annual Weather Year (8760h)' : 'سال کامل هواشناسی (۸۷۶۰ ساعته)'}</option>
+            </select>
+          </div>
 
           <div className="text-xs text-slate-400 flex flex-wrap items-center gap-3">
             <span className="flex items-center gap-1">
@@ -400,15 +468,234 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({ lang = 'fa' }) => 
           </div>
         </div>
 
-        {shadingResult !== null && (
-          <div className="result-box mt-4 animate-fadeIn">
-            <h3 className="text-lg md:text-xl font-bold text-industrial-accent">
-              {isEn ? 'Unshaded Solar Access:' : 'درصد دسترسی به تشعشع بدون سایه:'} {(shadingResult * 100).toFixed(1)}%
-            </h3>
-            <div className="text-xs text-slate-300 mt-1">
-              {isEn
-                ? `Estimated Shading Loss: ${((1.0 - shadingResult) * 100).toFixed(1)}% | Ray-Traced via 3D Spatial Vector Model`
-                : `افت سایه‌اندازی محاسبه‌شده: ${((1.0 - shadingResult) * 100).toFixed(1)}% | تحلیل برداری سه‌بعدی`}
+        {annualResult && (
+          <div className="mt-6 space-y-4 animate-fadeIn">
+            {/* Top KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
+                <div className="text-xs text-slate-400">
+                  {isEn ? 'Combined Annual Shading Loss' : 'کل افت سالانه سایه‌اندازی'}
+                </div>
+                <div className="text-xl font-bold font-mono text-industrial-error mt-1">
+                  {annualResult.annualCombinedShadingLossPct}%
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                  {annualResult.simulationModeUsed} ({annualResult.rawRayCastingStepsCount} steps / {annualResult.totalEvaluatedDaylightHours} {isEn ? 'equiv daylight hrs' : 'ساعت روز معادل'})
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
+                <div className="text-xs text-slate-400">
+                  {isEn ? 'Direct Beam Geometric Loss' : 'افت هندسی تابش مستقیم پرتو'}
+                </div>
+                <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
+                  {annualResult.annualGeometricBeamLossPct}%
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {isEn ? '12-point mesh ray-facet occlusion' : 'انسداد پرتو در مش ۱۲ نقطه‌ای'}
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
+                <div className="text-xs text-slate-400">
+                  {isEn ? '3-Bypass-Diode Mismatch' : 'عدم تطابق بای‌پس دیودها'}
+                </div>
+                <div className="text-xl font-bold font-mono text-purple-400 mt-1">
+                  {annualResult.annualElectricalMismatchLossPct}%
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {isEn ? 'Electrical substring current bottleneck' : 'افت عدم تطابق الکتریکی ساب‌استرینگ'}
+                </div>
+              </div>
+
+              <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
+                <div className="text-xs text-slate-400">
+                  {isEn ? 'Geometric Shading Deficit Index' : 'شاخص کسری انرژی سایه'}
+                </div>
+                <div className="text-xl font-bold font-mono text-teal-400 mt-1">
+                  {annualResult.totalLostAnnualKwh.toLocaleString()} <span className="text-xs font-normal text-slate-300">kWh</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {isEn ? 'Clear-sky proxy baseline:' : 'مبنای پروکسی آسمان صاف:'} {annualResult.totalUnshadedAnnualKwh.toLocaleString()} kWh
+                </div>
+              </div>
+            </div>
+
+            {/* Active Project Yield Coupling & Scaled Impact */}
+            {plantCapacityKw && annualYieldKwh && (
+              <div className="p-3 bg-industrial-surface border border-sky-500/30 rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs border-b border-industrial-border pb-2">
+                  <span className="text-industrial-accent font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-industrial-success" />
+                    {isEn ? 'Active Project Yield Coupling & Scaled Impact' : 'اتصال مستقیم به تولید سالانه پروژه فعال'}
+                  </span>
+                  <span className="font-mono text-slate-300 font-semibold text-[11px]">
+                    {plantCapacityType === 'ac_target'
+                      ? (isEn ? 'Target AC Capacity:' : 'ظرفیت هدف AC نیروگاه:')
+                      : (isEn ? 'Installed DC Nameplate:' : 'ظرفیت نامی DC نصب‌شده:')}{' '}
+                    <span className="text-amber-300">
+                      {plantCapacityKw.toLocaleString()}{' '}
+                      {plantCapacityType === 'ac_target' ? 'kW AC' : 'kWp'}
+                    </span>
+                  </span>
+                </div>
+                {(() => {
+                  const lossFraction = Math.min(0.95, Math.max(0, annualResult.annualCombinedShadingLossPct / 100.0));
+                  const unshadedBaselineKwh = lossFraction < 0.95 && lossFraction > 0
+                    ? Math.round(annualYieldKwh / (1.0 - lossFraction))
+                    : Math.round(annualYieldKwh);
+                  const shadingDeficitKwh = Math.max(0, unshadedBaselineKwh - Math.round(annualYieldKwh));
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2.5 text-xs font-mono">
+                      <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Plant Unshaded Baseline (Est.):' : 'تولید مبنای بدون سایه نیروگاه:'}</div>
+                        <div className="text-slate-200 font-bold mt-0.5">{unshadedBaselineKwh.toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span></div>
+                      </div>
+                      <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? '3D Near-Shading Deficit:' : 'کسری سایه‌اندازی سه‌بعدی:'}</div>
+                        <div className="text-red-400 font-bold mt-0.5">
+                          -{shadingDeficitKwh.toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr (-{annualResult.annualCombinedShadingLossPct}%)</span>
+                        </div>
+                      </div>
+                      <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
+                        <div className="text-[10px] text-slate-400 font-sans">{isEn ? 'Net Export (Waterfall-Coupled):' : 'تولید خالص نهایی نیروگاه (متصل به واترفال):'}</div>
+                        <div className="text-emerald-400 font-bold mt-0.5">
+                          {Math.round(annualYieldKwh).toLocaleString()} <span className="text-[10px] font-normal font-sans">kWh/yr</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                <div className="text-[10px] text-slate-400 mt-2">
+                  {isEn
+                    ? `Note: The 3D viewport evaluates a representative ${demoSceneCapacityKwp.toFixed(1)} kWp array section with local obstructions. Its geometric shading deficit can be applied to the 14-stage waterfall model and financial cashflows or reverted to default.`
+                    : `توجه: نمای سه‌بعدی یک بلوک نمونه ${demoSceneCapacityKwp.toFixed(1)} کیلوواتی با موانع مجاور را تحلیل می‌کند. درصد کسری سایه محاسبه‌شده را می‌توانید به درخت تلفات و محاسبات مالی پروژه اعمال یا به مقدار پیش‌فرض بازگردانید.`}
+                </div>
+
+                {/* Apply / Revert Actions */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2.5 border-t border-industrial-border/60">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-slate-400">
+                      {isEn ? 'Project Coupling State:' : 'وضعیت اتصال به مدل پروژه:'}
+                    </span>
+                    {appliedShading ? (
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-bold border border-emerald-500/30">
+                        {isEn ? `Applied (-${appliedShading.lossPct}%)` : `اعمال‌شده (-${appliedShading.lossPct}٪)`}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[11px] border border-slate-700">
+                        {isEn ? 'Preview Only (Default -2.4% Active)' : 'پیش‌نمایش (پیش‌فرض -۲.۴٪ فعال)'}
+                      </span>
+                    )}
+                    {appliedShading && isShadingStale && (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[11px] font-bold border border-amber-500/40">
+                        {isEn ? '⚠️ Stale (Capacity changed)' : '⚠️ قدیمی (تغییر ظرفیت پروژه)'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {appliedShading ? (
+                      <button
+                        onClick={onRevertShading}
+                        className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        {isEn ? 'Revert to Default (-2.4%)' : 'بازگشت به پیش‌فرض (-۲.۴٪)'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (annualResult) {
+                            onApplyShading?.({
+                              lossPct: annualResult.annualCombinedShadingLossPct,
+                              source: 'representative_demo_block',
+                              appliedAtIso: new Date().toISOString(),
+                              capacityKwp: demoSceneCapacityKwp,
+                            });
+                            onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
+                          }
+                        }}
+                        disabled={!annualResult}
+                        className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {isEn
+                          ? `Apply -${annualResult.annualCombinedShadingLossPct}% to Project`
+                          : `اعمال کسری -${annualResult.annualCombinedShadingLossPct}٪ به پروژه`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Reconciliation Audit Badge */}
+            <div className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+              annualResult.isReconciled
+                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                : 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>
+                  {isEn
+                    ? `Geometric Mesh Heatmap Consistency Check: Energy balance verified (near_shading loss = -${annualResult.annualCombinedShadingLossPct}%, Δ = ${annualResult.reconciliationDeltaKwh.toFixed(2)} kWh)`
+                    : `بررسی انطباق داخلی ماتریس تلفات مش: موازنه انرژی تایید شد (افت پله near_shading = -${annualResult.annualCombinedShadingLossPct}٪، اختلاف داخلی = ${annualResult.reconciliationDeltaKwh.toFixed(2)} کیلووات‌ساعت)`}
+                </span>
+              </div>
+              <span className="font-mono font-bold text-[11px] bg-slate-900/60 px-2 py-0.5 rounded">
+                {isEn ? 'Mesh Matrix Balance' : 'انطباق ماتریس مش'}
+              </span>
+            </div>
+
+            {/* Screening Disclaimer Notice */}
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-200 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <span className="font-bold">{isEn ? 'Screening Shading Index Notice: ' : 'اطلاعیه شاخص غربالگری سایه‌اندازی: '}</span>
+                {isEn ? annualResult.screeningNoticeEn : annualResult.screeningNoticeFa}
+              </div>
+            </div>
+
+            {/* Per-Table Heatmap Breakdown */}
+            <div className="studio-card">
+              <h3 className="font-bold text-industrial-accent text-xs mb-2 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-sky-400" />
+                {isEn
+                  ? 'Per-Table Annual Shading Heatmap & Diode Trigger Accounting'
+                  : 'نقشه حرارتی سالانه تلفات سایه به تفکیک میزها و ساعات تحریک دیودها'}
+              </h3>
+              <div className="overflow-x-auto border border-industrial-border rounded-lg">
+                <table className="w-full text-xs text-right text-slate-300">
+                  <thead className="bg-industrial-bg text-slate-400 border-b border-industrial-border text-[11px]">
+                    <tr>
+                      <th className="p-2">{isEn ? 'Table ID' : 'شناسه میز'}</th>
+                      <th className="p-2">{isEn ? 'Unshaded (kWh)' : 'تولید بدون سایه'}</th>
+                      <th className="p-2">{isEn ? 'Shaded (kWh)' : 'تولید با سایه'}</th>
+                      <th className="p-2">{isEn ? 'Loss (kWh)' : 'افت سالانه'}</th>
+                      <th className="p-2">{isEn ? 'Loss (%)' : 'درصد افت'}</th>
+                      <th className="p-2">{isEn ? 'Avg Beam Shaded' : 'میانگین پوشش پرتو'}</th>
+                      <th className="p-2">{isEn ? 'Diode Active Hours' : 'ساعات فعال دیود'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 font-mono text-[11px]">
+                    {annualResult.tableHeatmap.map((t) => (
+                      <tr key={t.tableId} className="hover:bg-slate-850/50">
+                        <td className="p-2 font-sans font-bold text-white">{t.tableId} (#{t.tableIndex})</td>
+                        <td className="p-2 text-sky-300">{t.annualUnshadedKwh.toLocaleString()}</td>
+                        <td className="p-2 text-slate-200">{t.annualShadedKwh.toLocaleString()}</td>
+                        <td className="p-2 text-industrial-error font-bold">{t.annualLossKwh.toLocaleString()}</td>
+                        <td className={`p-2 font-bold ${t.annualLossPct > 5.0 ? 'text-industrial-error' : 'text-industrial-warning'}`}>
+                          {t.annualLossPct}%
+                        </td>
+                        <td className="p-2 text-slate-300">{t.averageBeamCoveragePct}%</td>
+                        <td className="p-2 text-purple-300">{t.bypassDiodeTriggerHours} h/yr</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

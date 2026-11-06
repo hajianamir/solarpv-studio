@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useReducer } from 'react';
 import {
   Sun,
   Zap,
@@ -27,6 +27,7 @@ import {
   Settings,
   Hammer,
   AlertTriangle,
+  RotateCcw,
   Save,
   FolderOpen,
   Download,
@@ -58,6 +59,13 @@ import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides
 import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
+import { buildWaterfallArgs } from './engine/waterfallArgs';
+import { rearGainPercent } from './engine/bifacialGain';
+import {
+  shadingLifecycleReducer,
+  createInitialShadingLifecycleState,
+  type AppliedShading3dRecord,
+} from './engine/shadingLifecycle';
 import { type TrackerConfig } from './engine/tracker/backtrackingEngine';
 import { calculateThermalDerate } from './engine/core/thermalDerate';
 import { sizeBatteryBank, computeAutonomyEnergyRequirement, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
@@ -81,6 +89,8 @@ import {
   CATALOG_INVERTERS,
   getFullModulesCatalog,
   getFullInvertersCatalog,
+  isBifacialModule,
+  resolveBifacialParams,
 } from './engine/equipmentCatalogData';
 import {
   designPowerplantBays,
@@ -180,6 +190,7 @@ export const App: React.FC = () => {
     noctC: 45.0,
     lengthM: CATALOG_MODULES[0].lengthMm / 1000.0,
     widthM: CATALOG_MODULES[0].widthMm / 1000.0,
+    bifacialityFactor: CATALOG_MODULES[0].bifacialityFactor,
   });
 
   // Default utility inverter
@@ -206,6 +217,15 @@ export const App: React.FC = () => {
   const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
   // PR-2a-7: single-axis tracker config (null = fixed tilt)
   const [trackerConfig, setTrackerConfig] = useState<TrackerConfig | null>(null);
+  // 3D Shading input lifecycle managed via pure reducer (Apply / Revert / Provenance / Staleness)
+  const [shadingLifecycle, dispatchShadingLifecycle] = useReducer(
+    shadingLifecycleReducer,
+    undefined,
+    createInitialShadingLifecycleState
+  );
+  const appliedShadingRecord = shadingLifecycle.appliedShading;
+  const isShadingStale = shadingLifecycle.isStale ?? false;
+  const shadingLoss3dPct = appliedShadingRecord?.lossPct ?? null;
   
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
@@ -466,26 +486,41 @@ export const App: React.FC = () => {
   // This overpaneling is intentional (maximizes AC export), and the UI displays
   // both values in PvArrayEngineeringTab (see ISSUE-2b).
   // ============================================================================
+  const bifacialParams = resolveBifacialParams(selectedModule);
+  const isBifacial = bifacialParams.isBifacial;
+  const bifacialityFactor = bifacialParams.bifacialityFactor;
+  const groundCoverRatio = 0.38;
+  const bifacialGainPct = rearGainPercent({
+    isBifacial,
+    bifacialityFactor,
+    groundCoverRatio,
+    albedo: city.albedo ?? 0.20,
+  });
+
   const effectiveDailyKwhDemand = useMemo(() => {
     if (systemMode === 'powerplant') {
       // PR-2a-7-P0 (P0-1): daily energy target derived from the unified 14-stage
       // waterfall loss model — the old hardcoded PR constant was removed.
       // Basis: netAnnualEnergyExportMwh / 365 days for the target capacity.
       const targetKw = targetPowerplantCapacityKw || 1000;
-      const wf = computeWaterfallLosses(
-        targetKw,
-        city.peakSunHours,
-        city.tempMaxC,
-        city.soilingLossPct,
-        1.25,
-        false,
-        0.0,
-        -2.2,
-        selectedModule.noctC,
-        selectedModule.tempCoeffPmpPct,
-        trackerConfig ?? undefined,
-        siteOverrides?.installationEnvironment || 'ground_mount'
-      );
+      const args = buildWaterfallArgs({
+        dcCapacityKw: targetKw,
+        peakSunHours: city.peakSunHours,
+        ambientTempC: city.tempMaxC,
+        soilingLossPct: city.soilingLossPct,
+        dcAcRatio: 1.25,
+        isSingleAxisTracker: Boolean(trackerConfig),
+        iamLossPct: -2.2,
+        moduleNoctC: selectedModule.noctC,
+        tempCoeffPmpPct: selectedModule.tempCoeffPmpPct,
+        trackerConfig: trackerConfig ?? undefined,
+        installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
+        tiltDeg: city.optimalTiltAnnualDeg,
+        latitudeDeg: city.latitude,
+        shadingLoss3dPct: shadingLoss3dPct !== null ? shadingLoss3dPct : undefined,
+        bifacialGainPct,
+      });
+      const wf = computeWaterfallLosses(...args);
       return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
     } else if (systemMode === 'ongrid') {
       const averagePowerKw = (loadAnalysis.totalDailyEnergyKwh || 20) / 24.0;
@@ -493,7 +528,7 @@ export const App: React.FC = () => {
     } else {
       return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
     }
-  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
+  }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment, shadingLoss3dPct, bifacialGainPct]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
   // 3. Advanced PV Array Engineering Sizing
   const arrayDesign = useMemo(() => {
@@ -517,6 +552,20 @@ export const App: React.FC = () => {
       city.latitude
     );
   }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment]);
+
+  // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
+  const activePlantCapacityKwp =
+    systemMode === 'powerplant'
+      ? (targetPowerplantCapacityKw || 1000)
+      : arrayDesign.totalPvCapacityKwp;
+
+  useEffect(() => {
+    dispatchShadingLifecycle({
+      type: 'CHECK_SYNC',
+      currentCityId: city.id,
+      currentCapacityKwp: activePlantCapacityKwp,
+    });
+  }, [city.id, activePlantCapacityKwp]);
 
   // 4. Inverter Clustering Evaluation
   const inverterClustering = useMemo(() => {
@@ -679,28 +728,39 @@ export const App: React.FC = () => {
     );
   }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, outageHours]);
 
-  // 10. Annual energy yield — SINGLE source: unified 14-stage waterfall loss model
+  // 10. Annual energy yield — SINGLE source: unified 14/15-stage waterfall loss model
   // (PR-2a-7-P0, P0-1). The old parallel hardcoded-PR path is
   // deleted. FinancialTab and WaterfallLossTab both consume this same report,
   // so they display the identical annual energy (< 0.1% difference).
   const waterfallReport = useMemo(() => {
-    return computeWaterfallLosses(
-      arrayDesign.totalPvCapacityKwp,
-      city.peakSunHours,
-      city.tempMaxC,
-      city.soilingLossPct,
-      arrayDesign.totalPvCapacityKwp / Math.max(0.1, inverterClustering.totalInverterCapacityKw),
-      false,
-      0.0,
-      -2.2,
-      selectedModule.noctC,
-      selectedModule.tempCoeffPmpPct,
-      trackerConfig ?? undefined,
-      siteOverrides?.installationEnvironment || 'ground_mount',
-      city.optimalTiltAnnualDeg,
-      city.latitude
-    );
-  }, [arrayDesign, city, inverterClustering, selectedModule, trackerConfig, siteOverrides?.installationEnvironment]);
+    const args = buildWaterfallArgs({
+      dcCapacityKw: arrayDesign.totalPvCapacityKwp,
+      peakSunHours: city.peakSunHours,
+      ambientTempC: city.tempMaxC,
+      soilingLossPct: city.soilingLossPct,
+      dcAcRatio: arrayDesign.totalPvCapacityKwp / Math.max(0.1, inverterClustering.totalInverterCapacityKw),
+      isSingleAxisTracker: Boolean(trackerConfig),
+      iamLossPct: -2.2,
+      moduleNoctC: selectedModule.noctC,
+      tempCoeffPmpPct: selectedModule.tempCoeffPmpPct,
+      trackerConfig: trackerConfig ?? undefined,
+      installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
+      tiltDeg: city.optimalTiltAnnualDeg,
+      latitudeDeg: city.latitude,
+      shadingLoss3dPct: shadingLoss3dPct !== null ? shadingLoss3dPct : undefined,
+      bifacialGainPct,
+    });
+    return computeWaterfallLosses(...args);
+  }, [
+    arrayDesign,
+    city,
+    inverterClustering,
+    selectedModule,
+    trackerConfig,
+    siteOverrides?.installationEnvironment,
+    shadingLoss3dPct,
+    bifacialGainPct,
+  ]);
 
   const annualYieldKwh = waterfallReport.netAnnualEnergyExportMwh * 1000.0;
 
@@ -725,9 +785,15 @@ export const App: React.FC = () => {
       annualYieldKwh,
       {
         ...userPricing,
-        includeDieselGenSet: enableDieselGenerator,
-        dieselGenSetCapexUsd: enableDieselGenerator ? generatorSizing.estimatedCapexUsd : 0,
-        dieselAnnualFuelLiters: enableDieselGenerator ? Math.round(generatorSizing.fuelConsumptionLitersPerHour * 100) : 0,
+        includeDieselGenSet: userPricing.includeDieselGenSet !== undefined
+          ? userPricing.includeDieselGenSet
+          : enableDieselGenerator,
+        dieselGenSetCapexUsd: (userPricing.dieselGenSetCapexUsd !== undefined && userPricing.dieselGenSetCapexUsd > 0)
+          ? userPricing.dieselGenSetCapexUsd
+          : (enableDieselGenerator ? generatorSizing.estimatedCapexUsd : 0),
+        dieselAnnualFuelLiters: (userPricing.dieselAnnualFuelLiters !== undefined && userPricing.dieselAnnualFuelLiters > 0)
+          ? userPricing.dieselAnnualFuelLiters
+          : (enableDieselGenerator ? Math.round(generatorSizing.fuelConsumptionLitersPerHour * 100) : 0),
       },
       25,
       systemMode
@@ -946,7 +1012,7 @@ export const App: React.FC = () => {
               title: t.tabFinancial,
               icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
               code: '25Y Cash Flow',
-              badge: `IRR ${financialResult.irrPct}%`,
+              badge: financialResult.isIrrDefined && financialResult.irrPct !== null ? `IRR ${financialResult.irrPct}%` : 'IRR N/A',
             },
             {
               id: 'iran_regulations' as ActiveModuleTab,
@@ -1126,7 +1192,7 @@ export const App: React.FC = () => {
               title: t.tabFinancial,
               icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
               code: '25Y Cash Flow',
-              badge: `IRR ${financialResult.irrPct}%`,
+              badge: financialResult.isIrrDefined && financialResult.irrPct !== null ? `IRR ${financialResult.irrPct}%` : 'IRR N/A',
             },
             {
               id: 'iran_regulations' as ActiveModuleTab,
@@ -1146,7 +1212,7 @@ export const App: React.FC = () => {
         },
       ];
     }
-  }, [systemMode, t, lang, city.peakSunHours, mvVoltageKv, customBaysCount, arrayDesign.totalPvCapacityKwp, arrayDesign.effectiveDeratingFactor, loadAnalysis.totalDailyEnergyKwh, batterySizing.grossCapacityKwh, simulationResult.isSelfSufficient, financialResult.irrPct]);
+  }, [systemMode, t, lang, city.peakSunHours, mvVoltageKv, customBaysCount, arrayDesign.totalPvCapacityKwp, arrayDesign.effectiveDeratingFactor, loadAnalysis.totalDailyEnergyKwh, batterySizing.grossCapacityKwh, simulationResult.isSelfSufficient, financialResult.irrPct, financialResult.isIrrDefined]);
 
   // Flattened list of tabs for Sequential Navigation and Command Palette
   const flattenedTabsList = useMemo(() => {
@@ -1573,12 +1639,12 @@ export const App: React.FC = () => {
 
           <div className="studio-hud-pill hidden lg:inline-flex">
             <span className="text-slate-400">LCOE:</span>
-            <strong className="text-data-accent">${financialResult.lcoeUsdPerKwh}/kWh</strong>
+            <strong className="text-data-accent">{financialResult.isLcoeDefined && financialResult.lcoeUsdPerKwh !== null ? `$${financialResult.lcoeUsdPerKwh}/kWh` : 'N/A'}</strong>
           </div>
 
           <div className="studio-hud-pill hidden xl:inline-flex">
             <span className="text-slate-400">IRR:</span>
-            <strong className="text-emerald-400">{financialResult.irrPct}%</strong>
+            <strong className="text-emerald-400">{financialResult.isIrrDefined && financialResult.irrPct !== null ? `${financialResult.irrPct}%` : 'N/A'}</strong>
           </div>
         </div>
 
@@ -2200,6 +2266,7 @@ export const App: React.FC = () => {
           {/* WATERFALL LOSS TAB */}
           {activeTab === 'waterfall_loss' && (
             <WaterfallLossTab
+              report={waterfallReport}
               installedCapacityKwp={arrayDesign.totalPvCapacityKwp}
               peakSunHours={city.peakSunHours}
               ambientTempMaxC={city.tempMaxC}
@@ -2211,6 +2278,10 @@ export const App: React.FC = () => {
               noctC={selectedModule.noctC}
               tempCoeffPmpPct={selectedModule.tempCoeffPmpPct}
               trackerConfig={trackerConfig}
+              bifacialGainPct={bifacialGainPct}
+              shadingProvenance={appliedShadingRecord}
+              isShadingStale={isShadingStale}
+              onClearShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
               lang={lang}
             />
           )}
@@ -2226,6 +2297,12 @@ export const App: React.FC = () => {
               onPricingChange={setUserPricing}
               city={city}
               lang={lang}
+              isBifacial={isBifacial}
+              bifacialityFactor={bifacialityFactor}
+              groundCoverRatio={groundCoverRatio}
+              bifacialGainPct={bifacialGainPct}
+              shadingProvenance={appliedShadingRecord}
+              isShadingStale={isShadingStale}
             />
           )}
 
@@ -2266,7 +2343,37 @@ export const App: React.FC = () => {
           {activeTab === 'cad_layout' && <PowerplantCadLayoutTab lang={lang} />}
 
           {/* 3D VIEWER TAB */}
-          {activeTab === '3d_viewer' && <ThreeJsViewer lang={lang} />}
+          {activeTab === '3d_viewer' && (
+            <ThreeJsViewer
+              lang={lang}
+              city={city}
+              plantCapacityKw={
+                systemMode === 'powerplant'
+                  ? (targetPowerplantCapacityKw || 1000)
+                  : arrayDesign.totalPvCapacityKwp
+              }
+              plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
+              annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+              onShadingLossChange={(loss) => {
+                if (loss === null) {
+                  dispatchShadingLifecycle({ type: 'REVERT' });
+                }
+              }}
+              appliedShading={appliedShadingRecord}
+              isShadingStale={isShadingStale}
+              onApplyShading={(record) =>
+                dispatchShadingLifecycle({
+                  type: 'APPLY',
+                  lossPct: record.lossPct,
+                  capacityKwp: record.capacityKwp,
+                  projectCapacityKwp: activePlantCapacityKwp,
+                  appliedAtIso: record.appliedAtIso,
+                  cityId: city.id,
+                })
+              }
+              onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
+            />
+          )}
 
           {/* SCENARIOS COMPARISON TAB (Only for Battery modes) */}
           {activeTab === 'scenarios' && systemMode !== 'powerplant' && (
@@ -2356,6 +2463,10 @@ export const App: React.FC = () => {
           financial={financialResult}
           bayArchitecture={bayArchitecture}
           siteOverrides={siteOverrides}
+          waterfallReport={waterfallReport}
+          appliedShading={appliedShadingRecord}
+          isShadingStale={isShadingStale}
+          bifacialGainPct={bifacialGainPct}
           onClose={() => setShowReportModal(false)}
           onImportProject={handleImportProject}
           lang={lang}
