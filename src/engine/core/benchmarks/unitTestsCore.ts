@@ -4990,6 +4990,21 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       sProjectApply.appliedShading?.source === 'project_array_design' &&
       sProjectApply.appliedShading.lossPct === rayTraceRes.averageShadingLossPct;
 
+    // 6. Metadata inspection (Scene3DState top-level properties)
+    const utilMetadataOk =
+      utilityScene.totalPvCapacityKwp === 1100 &&
+      utilityScene.totalModulesCount === 2000 &&
+      utilityScene.tiltDeg === 25 &&
+      utilityScene.interRowSpacingM === 6.0 &&
+      utilityScene.installationEnvironment === 'ground_mount';
+
+    const roofMetadataOk =
+      rooftopScene.totalPvCapacityKwp === 30.8 &&
+      rooftopScene.totalModulesCount === 56 &&
+      rooftopScene.tiltDeg === 15 &&
+      rooftopScene.interRowSpacingM === 3.5 &&
+      rooftopScene.installationEnvironment === 'rooftop_flat_concrete';
+
     assert(
       'E20-3D-ROOFTOP-PROJECT-COUPLING-AND-RAYTRACING',
       'Dynamic 3D rooftop/ground scene couples to active project array design (capacity, modules, pitch, tilt), triangulates geometry, runs ray-traced shading factor, and preserves project_array_design lifecycle source',
@@ -5003,7 +5018,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
         trisOk &&
         samplePtsOk &&
         rayTraceOk &&
-        provenanceOk,
+        provenanceOk &&
+        utilMetadataOk &&
+        roofMetadataOk,
       `utilRows=${utilityScene.pvTables.length}, utilCap=${totalWp / 1000}kWp (exp 1100), utilPitch=6m, roofRows=${rooftopScene.pvTables.length}, obsTris=${obsTris.length}, tableTris=${tableTris.length}, rayTracedLoss=${rayTraceRes.averageShadingLossPct}%, unshadedRatio=${rayTraceRes.averageUnshadedRatio}, source=${sProjectApply.appliedShading?.source}`
     );
   }

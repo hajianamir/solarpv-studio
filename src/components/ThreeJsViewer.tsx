@@ -145,11 +145,15 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         ...t,
         tiltDeg,
       })),
+      tiltDeg,
     };
   }, [sceneMode, projectScene, city, tiltDeg]);
 
   // Scene capacity in kWp
   const activeSceneCapacityKwp = useMemo(() => {
+    if (activeScene.totalPvCapacityKwp !== undefined) {
+      return activeScene.totalPvCapacityKwp;
+    }
     const totalWp = activeScene.pvTables.reduce((sum, t) => sum + (t.ratedPowerWp || 0), 0);
     return totalWp > 0 ? totalWp / 1000.0 : 55.2;
   }, [activeScene]);

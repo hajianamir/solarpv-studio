@@ -146,6 +146,11 @@ export interface Scene3DState {
   obstacles: Obstacle3D[];
   pvTables: PvTable3D[];
   updatedAt: string;
+  totalPvCapacityKwp?: number;
+  totalModulesCount?: number;
+  tiltDeg?: number;
+  interRowSpacingM?: number;
+  installationEnvironment?: string;
 }
 
 // ============================================================================
@@ -886,6 +891,11 @@ export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {
       ratedPowerWp: 13800,
     },
   ],
+  totalPvCapacityKwp: 55.2,
+  totalModulesCount: 96,
+  tiltDeg: 15,
+  interRowSpacingM: 9.0,
+  installationEnvironment: 'rooftop_industrial',
   updatedAt: new Date().toISOString(),
 };
 
@@ -1051,6 +1061,11 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
     roofPlanes,
     obstacles,
     pvTables,
+    totalPvCapacityKwp: totalKwp,
+    totalModulesCount: totalModules,
+    tiltDeg,
+    interRowSpacingM: pitchM,
+    installationEnvironment: env,
     updatedAt: new Date().toISOString(),
   };
 }
