@@ -174,7 +174,7 @@ export interface FinancialAnalysisResult {
   // Cost of energy served (proxy when dispatch is unsimulated)
   costOfEnergyServedUsdPerKwh: number | null;
   costOfEnergyServedProxyUsdPerKwh: number | null;
-  costOfEnergyServedStatus: 'DISPATCH_SIMULATED' | 'PROXY_UNCONSTRAINED_YIELD' | 'UNDEFINED' | 'GRID_DELIVERED' | 'HOURLY_LOAD_CONSTRAINED';
+  costOfEnergyServedStatus: 'DISPATCH_SIMULATED' | 'PROXY_UNCONSTRAINED_YIELD' | 'UNDEFINED' | 'GRID_DELIVERED' | 'HOURLY_LOAD_CONSTRAINED' | 'DEMAND_CONSTRAINED';
   costOfEnergyServedNoteFa: string;
   costOfEnergyServedNoteEn: string;
   // Active tariff applied
@@ -388,12 +388,13 @@ export function performFinancialAnalysis(
       // Off-Grid: Avoided cost of remote diesel power displacement or offgrid equivalent electricity value
       const avoidedDieselTariff = p.offgridAvoidedCostTomanPerKwh ?? 21600;
       activeModeTariffTomanPerKwh = avoidedDieselTariff;
-      // In off-grid, energy that can generate economic value is constrained by served load
-      const offgridServedKwh = p.offgridServedLoadKwhAnnual && p.offgridServedLoadKwhAnnual > 0
+      // In off-grid, energy that can generate economic value is constrained by both load demand and actual PV generation capability (F-B)
+      const rawDemandKwh = p.offgridServedLoadKwhAnnual && p.offgridServedLoadKwhAnnual > 0
         ? p.offgridServedLoadKwhAnnual
         : (p.offgridDailyLoadKwh && p.offgridDailyLoadKwh > 0
-            ? Math.min(safeAnnualYieldKwh, p.offgridDailyLoadKwh * 365)
+            ? p.offgridDailyLoadKwh * 365
             : safeAnnualYieldKwh);
+      const offgridServedKwh = Math.min(safeAnnualYieldKwh, rawDemandKwh);
       year1RevenueToman = offgridServedKwh * avoidedDieselTariff;
       break;
     }
@@ -485,11 +486,12 @@ export function performFinancialAnalysis(
       revenue = (selfConsumedKwh * retailTariff * tariffEscalationFactor) +
                 (exportedKwh * exportTariff * tariffEscalationFactor);
     } else if (systemMode === 'offgrid') {
-      const offgridServedKwh = p.offgridServedLoadKwhAnnual && p.offgridServedLoadKwhAnnual > 0
+      const rawDemandKwh = p.offgridServedLoadKwhAnnual && p.offgridServedLoadKwhAnnual > 0
         ? p.offgridServedLoadKwhAnnual
         : (p.offgridDailyLoadKwh && p.offgridDailyLoadKwh > 0
-            ? Math.min(safeAnnualYieldKwh, p.offgridDailyLoadKwh * 365)
+            ? p.offgridDailyLoadKwh * 365
             : safeAnnualYieldKwh);
+      const offgridServedKwh = Math.min(safeAnnualYieldKwh, rawDemandKwh);
       const degradedServedKwh = Math.min(degradedGen, offgridServedKwh);
       const unitTariffEscalated = activeModeTariffTomanPerKwh * Math.pow(1.0 + p.tariffEscalationPct / 100.0, yr - 1);
       revenue = degradedServedKwh * unitTariffEscalated;
@@ -657,6 +659,14 @@ export function performFinancialAnalysis(
   }
 
   // 6. Levelized Cost of Energy (LCOE) Full-Precision Calculation
+  const isOffgridDemandConstrained = systemMode === 'offgrid' && Boolean(p.offgridServedLoadKwhAnnual || p.offgridDailyLoadKwh);
+  const rawDemandKwh = p.offgridServedLoadKwhAnnual && p.offgridServedLoadKwhAnnual > 0
+    ? p.offgridServedLoadKwhAnnual
+    : (p.offgridDailyLoadKwh && p.offgridDailyLoadKwh > 0
+        ? p.offgridDailyLoadKwh * 365
+        : safeAnnualYieldKwh);
+  const offgridServedKwh = Math.min(safeAnnualYieldKwh, rawDemandKwh);
+
   let sumDiscountedCostsToman = capexBreakdown.totalCapexToman;
   let sumDiscountedEnergyKwh = 0;
   for (let yr = 1; yr <= safeLifetimeYears; yr++) {
@@ -667,7 +677,12 @@ export function performFinancialAnalysis(
       (cashFlow25Years[yr - 1].inverterReplacementToman ?? 0);
     const discountDiv = Math.pow(1.0 + r, yr);
     sumDiscountedCostsToman += discountDiv > 0 ? yrCostToman / discountDiv : yrCostToman;
-    sumDiscountedEnergyKwh += discountDiv > 0 ? cashFlow25Years[yr - 1].generationKwh / discountDiv : cashFlow25Years[yr - 1].generationKwh;
+
+    // F-A: In offgrid with demand constraint, LCOE denominator uses served energy to prevent dump load distortion
+    const yrEnergyKwh = isOffgridDemandConstrained
+      ? Math.min(cashFlow25Years[yr - 1].generationKwh, offgridServedKwh)
+      : cashFlow25Years[yr - 1].generationKwh;
+    sumDiscountedEnergyKwh += discountDiv > 0 ? yrEnergyKwh / discountDiv : yrEnergyKwh;
   }
 
   const isLcoeDefined = sumDiscountedEnergyKwh > 0 && safeAnnualYieldKwh > 0;
@@ -693,21 +708,22 @@ export function performFinancialAnalysis(
     landLeaseAnnualUsd +
     gridOperatorFeeAnnualUsd;
 
-  const costOfEnergyServedProxyUsdPerKwh = safeAnnualYieldKwh > 0
-    ? Number((annualCostOfEnergyServedUsd / safeAnnualYieldKwh).toFixed(6))
+  const effectiveAnnualServedKwh = isOffgridDemandConstrained ? offgridServedKwh : safeAnnualYieldKwh;
+  const costOfEnergyServedProxyUsdPerKwh = effectiveAnnualServedKwh > 0
+    ? Number((annualCostOfEnergyServedUsd / effectiveAnnualServedKwh).toFixed(6))
     : null;
 
   const costOfEnergyServedStatus: FinancialAnalysisResult['costOfEnergyServedStatus'] =
     safeAnnualYieldKwh <= 0
       ? 'UNDEFINED'
       : systemMode === 'offgrid'
-        ? (p.offgridServedLoadKwhAnnual || p.offgridDailyLoadKwh ? 'HOURLY_LOAD_CONSTRAINED' : 'PROXY_UNCONSTRAINED_YIELD')
+        ? (isOffgridDemandConstrained ? 'DEMAND_CONSTRAINED' : 'PROXY_UNCONSTRAINED_YIELD')
         : 'GRID_DELIVERED';
 
   const costOfEnergyServedNoteFa =
     systemMode === 'offgrid'
-      ? (p.offgridServedLoadKwhAnnual || p.offgridDailyLoadKwh
-          ? 'شاخص بهای تمام‌شده انرژی تحویلی در حالت مستقل از شبکه بر مبنای بار واقعی تقاضای مصرف‌کننده و کسر انرژی مازاد شارژ محاسبه شده است.'
+      ? (isOffgridDemandConstrained
+          ? 'شاخص بهای تمام‌شده انرژی تحویلی در حالت مستقل از شبکه بر مبنای بار واقعی تقاضای مصرف‌کننده (Demand-Constrained) و کسر انرژی مازاد شارژ محاسبه شده است.'
           : 'شاخص هزینه انرژی در حالت آف‌گرید به‌عنوان پروکسی مبتنی بر کل تولید بدون محدودیت بار محاسبه شده است؛ برای ارزیابی بار واقعی، دیماند مصرف را وارد نمایید.')
       : (systemMode === 'ongrid'
           ? `محاسبه‌شده بر اساس نسبت خودمصرفی محلی (${p.selfConsumptionRatioPct ?? 100}٪) و تعرفه صادرات مازاد به شبکه.`
@@ -715,8 +731,8 @@ export function performFinancialAnalysis(
 
   const costOfEnergyServedNoteEn =
     systemMode === 'offgrid'
-      ? (p.offgridServedLoadKwhAnnual || p.offgridDailyLoadKwh
-          ? 'Off-grid Cost of Energy Served is constrained to consumer demand profile, excluding unabsorbed dump load.'
+      ? (isOffgridDemandConstrained
+          ? 'Off-grid Cost of Energy Served is constrained to consumer demand profile (Demand-Constrained), excluding unabsorbed dump load.'
           : 'Off-grid Cost of Energy Served represents an unconstrained annual yield proxy without 8760h dispatch; specify load demand for constrained appraisal.')
       : (systemMode === 'ongrid'
           ? `Calculated from local self-consumption coverage (${p.selfConsumptionRatioPct ?? 100}%) and surplus grid export tariff.`
@@ -791,10 +807,18 @@ export function performFinancialAnalysis(
 
     // Mode-Aware Dynamic Financial Parameters
     opexEscalationPct: p.opexEscalationPct !== undefined ? p.opexEscalationPct : 8.0,
-    selfConsumptionRatioPct: p.selfConsumptionRatioPct !== undefined ? p.selfConsumptionRatioPct : 100,
+    selfConsumptionRatioPct: systemMode === 'powerplant' ? 0 : (p.selfConsumptionRatioPct !== undefined ? p.selfConsumptionRatioPct : 100),
     gridExportTariffTomanPerKwh: p.gridExportTariffTomanPerKwh !== undefined ? p.gridExportTariffTomanPerKwh : p.gridTariffTomanPerKwh,
     customerType: p.customerType,
-    selfConsumedYieldKwh: Math.round(safeAnnualYieldKwh * ((p.selfConsumptionRatioPct ?? 100) / 100.0)),
-    exportedYieldKwh: Math.round(safeAnnualYieldKwh * (1.0 - ((p.selfConsumptionRatioPct ?? 100) / 100.0))),
+    selfConsumedYieldKwh: systemMode === 'powerplant'
+      ? 0
+      : systemMode === 'offgrid'
+        ? Math.round(offgridServedKwh)
+        : Math.round(safeAnnualYieldKwh * ((p.selfConsumptionRatioPct ?? 100) / 100.0)),
+    exportedYieldKwh: systemMode === 'powerplant'
+      ? Math.round(safeAnnualYieldKwh)
+      : systemMode === 'offgrid'
+        ? 0
+        : Math.round(safeAnnualYieldKwh * (1.0 - ((p.selfConsumptionRatioPct ?? 100) / 100.0))),
   };
 }

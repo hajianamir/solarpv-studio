@@ -956,9 +956,11 @@ export const App: React.FC = () => {
       arrayDesign.totalPvCapacityKwp,
       loadAnalysis.totalDailyEnergyKwh,
       autonomyDays,
-      userPricing.usdToTomanRate
+      userPricing.usdToTomanRate,
+      userPricing.discountRatePct,
+      city.peakSunHours || 5.17
     );
-  }, [arrayDesign, loadAnalysis, autonomyDays, userPricing.usdToTomanRate]);
+  }, [arrayDesign.totalPvCapacityKwp, loadAnalysis.totalDailyEnergyKwh, autonomyDays, userPricing.usdToTomanRate, userPricing.discountRatePct, city.peakSunHours]);
 
   // Handler for restoring imported project from JSON with three-state safety model & custom equipment restoration (OFF-01, OFF-02)
   const handleImportProject = (importedData: any) => {

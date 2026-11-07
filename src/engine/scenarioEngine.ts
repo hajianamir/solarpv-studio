@@ -31,7 +31,9 @@ export function generateScenarios(
   basePvCapacityKwp: number,
   baseDailyKwh: number,
   baseAutonomyDays: number,
-  usdRate: number = 90_000
+  usdRate: number = 90_000,
+  discountRatePct: number = 18.0,
+  peakSunHours: number = 5.17
 ): ScenarioDetails[] {
   // Scenario 1: Standard Optimized LiFePO4
   const s1PvKwp = Math.round(basePvCapacityKwp * 10) / 10;
@@ -60,13 +62,14 @@ export function generateScenarios(
   const s3Tco25y = Math.round(s3CapexUsd + s3BatKwh * 160 + 2000);
   const s3Weight = Math.round(s3PvKwp * 40 + s3BatKwh * 11 + s3InvKw * 8 + 250);
 
-  // Dynamic LCOE Calculation (LC-07): Calculate real discounted 25-year LCOE based on scenario parameters
-  const discountRate = 0.08;
+  // Dynamic LCOE Calculation (LC-07 / F-C): Calculate real discounted 25-year LCOE based on scenario parameters
+  const discountRate = Math.max(0.01, (discountRatePct ?? 18.0) / 100.0);
+  const effectivePsh = Math.max(1.0, peakSunHours ?? 5.17);
   const lifetimeYears = 25;
   const degradationPct = 0.5;
 
   // Scenario 1: LiFePO4 (1 battery replacement at yr 12)
-  const s1AnnualGen = s1PvKwp * 4.5 * 365 * 0.78;
+  const s1AnnualGen = s1PvKwp * effectivePsh * 365 * 0.78;
   const s1AnnualOpex = s1CapexUsd * 0.012;
   const s1BatRepPv = (s1BatKwh * 130) / Math.pow(1 + discountRate, 12);
   const s1Lcoe = s1AnnualGen > 0
@@ -74,7 +77,7 @@ export function generateScenarios(
     : 0.085;
 
   // Scenario 2: Gel (battery replacement every 4 years)
-  const s2AnnualGen = s2PvKwp * 4.5 * 365 * 0.78;
+  const s2AnnualGen = s2PvKwp * effectivePsh * 365 * 0.78;
   const s2AnnualOpex = s2CapexUsd * 0.015;
   let s2BatRepPv = 0;
   for (let yr = 4; yr < 25; yr += 4) {
@@ -85,7 +88,7 @@ export function generateScenarios(
     : 0.125;
 
   // Scenario 3: Industrial Redundant (battery replacement at yr 15)
-  const s3AnnualGen = s3PvKwp * 4.5 * 365 * 0.80;
+  const s3AnnualGen = s3PvKwp * effectivePsh * 365 * 0.80;
   const s3AnnualOpex = s3CapexUsd * 0.010;
   const s3BatRepPv = (s3BatKwh * 160) / Math.pow(1 + discountRate, 15);
   const s3Lcoe = s3AnnualGen > 0
