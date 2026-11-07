@@ -133,7 +133,14 @@ export function runIranianRegulationFinancialModel(
     const revenueMillion = Math.round((genMwh * 1000 * escalatedTariff) / 1e6);
 
     const opexMillion = Math.round(initialOpex * Math.pow(1.0 + opexEscalationRate, yr - 1));
-    const debtService = yr <= loanTermYears ? Math.round(annualLoanAnnuity) : 0;
+    const roundedBaseAnnuity = Math.round(annualLoanAnnuity);
+    const totalExpectedRoundedDebt = Math.round(annualLoanAnnuity * loanTermYears);
+    const debtService =
+      yr < loanTermYears
+        ? roundedBaseAnnuity
+        : yr === loanTermYears
+        ? Math.max(0, totalExpectedRoundedDebt - roundedBaseAnnuity * (loanTermYears - 1))
+        : 0;
 
     const netOperatingIncome = revenueMillion - opexMillion;
     const dscr = debtService > 0 ? Math.round((netOperatingIncome / debtService) * 100) / 100 : null;

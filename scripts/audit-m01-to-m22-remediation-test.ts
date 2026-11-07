@@ -25,6 +25,7 @@ import {
 import {
   checkTableSetbackCompliance,
   simulateAnnual3dShading,
+  buildSceneFromProjectDesign,
   type PvTable3D,
   type RoofPlane,
   type Scene3DState,
@@ -1098,7 +1099,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
     // Discrepant report metrics against snapshot
     repStatus = 200;
     repBody = null;
-    reportRoute({ body: { projectId: sharedAliceProjectId, systemCapacityKwp: 25.0, panelCount: 50 } }, mockRepRes);
+    reportRoute({ headers: { 'x-user-id': 'alice' }, body: { projectId: sharedAliceProjectId, systemCapacityKwp: 25.0, panelCount: 50 } }, mockRepRes);
     assert(
       repStatus === 200 && repBody.isReconciledAgainstSnapshot === false && repBody.discrepancies?.length > 0,
       'M09: Discrepant report metrics are strictly flagged as NOT reconciled with detailed discrepancies',
@@ -1619,6 +1620,376 @@ async function runM01ToM22TestSuite(): Promise<void> {
       xml.includes('<Data ss:Type="String">Module &quot;TOPCon&quot; 580W</Data>'),
       'M22: Quotes in cell values are properly XML escaped',
       'found=true'
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // [N01–N08] Post-PR#21 Comprehensive Audit Remediation Verification
+  // ---------------------------------------------------------------------------
+  console.log('\n--- [N01–N08] Post-PR#21 Comprehensive Audit Remediation Verification ---');
+
+  // N01: Project Read Authorization & Privacy (P1)
+  {
+    process.env.NODE_ENV = 'production';
+    process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+
+    const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const mkJwt = (sub: string) => {
+      const h = b64({ alg: 'HS256', typ: 'JWT' });
+      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+      return `${h}.${p}.${s}`;
+    };
+    const aliceJwt = mkJwt('alice');
+    const bobJwt = mkJwt('bob');
+
+    const aliceProjId = 'proj-n01-alice-private';
+    activeDb.projects.set(aliceProjId, {
+      id: aliceProjId,
+      name: 'Alice Top Secret Array',
+      ownerId: 'alice',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 50,
+      autonomyDays: 1,
+      systemCapacityKwp: 20.0,
+      panelCount: 40,
+      inverterCount: 2,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0.04,
+      estimatedAnnualYieldKwh: 35000,
+      createdAt: new Date().toISOString(),
+    });
+
+    const projGetRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/projects/:id' && r.route.methods.get)
+      ?.route.stack[0].handle;
+    const projListRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/projects' && r.route.methods.get)
+      ?.route.stack[0].handle;
+    const syncPullRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/sync/pull' && r.route.methods.get)
+      ?.route.stack[0].handle;
+    const repRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/reports/generate' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    // 1. Unauthenticated GET /projects/:id on Alice's private project is rejected with 401
+    let unauthGetStatus = 0;
+    await projGetRoute({ params: { id: aliceProjId }, headers: {} }, {
+      status(s: number) { unauthGetStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      unauthGetStatus === 401,
+      'N01: Unauthenticated request to read private project returns HTTP 401',
+      `status=${unauthGetStatus}`
+    );
+
+    // 2. Bob GET /projects/:id on Alice's project is rejected with 403 Access Denied
+    let bobGetStatus = 0;
+    await projGetRoute({ params: { id: aliceProjId }, headers: { authorization: `Bearer ${bobJwt}` } }, {
+      status(s: number) { bobGetStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      bobGetStatus === 403,
+      'N01: Bob attempting to read Alice private project returns HTTP 403 Access Denied',
+      `status=${bobGetStatus}`
+    );
+
+    // 3. Alice GET /projects/:id returns 200
+    let aliceGetStatus = 200;
+    let aliceGetBody: any = null;
+    await projGetRoute({ params: { id: aliceProjId }, headers: { authorization: `Bearer ${aliceJwt}` } }, {
+      status(s: number) { aliceGetStatus = s; return this; },
+      json(d: any) { aliceGetBody = d; return this; },
+    });
+    assert(
+      aliceGetStatus === 200 && aliceGetBody?.id === aliceProjId,
+      'N01: Alice successfully reads her own private project with HTTP 200',
+      `status=${aliceGetStatus}`
+    );
+
+    // 4. Bob GET /projects does not leak Alice's project
+    let bobListBody: any = null;
+    await projListRoute({ headers: { authorization: `Bearer ${bobJwt}` } }, {
+      status() { return this; },
+      json(d: any) { bobListBody = d; return this; },
+    });
+    const bobCanSeeAliceProj = Array.isArray(bobListBody) && bobListBody.some((p: any) => p.id === aliceProjId);
+    assert(
+      !bobCanSeeAliceProj,
+      'N01: Bob GET /projects does not expose Alice private project in project list',
+      `bobCanSeeAliceProj=${bobCanSeeAliceProj}`
+    );
+
+    // 5. Bob GET /sync/pull does not leak Alice's project
+    let bobPullBody: any = null;
+    await syncPullRoute({ headers: { authorization: `Bearer ${bobJwt}` } }, {
+      status() { return this; },
+      json(d: any) { bobPullBody = d; return this; },
+    });
+    const bobCanPullAliceProj = Array.isArray(bobPullBody?.projects) && bobPullBody.projects.some((p: any) => p.id === aliceProjId);
+    assert(
+      !bobCanPullAliceProj,
+      'N01: Bob GET /sync/pull does not leak Alice private project in sync pull stream',
+      `bobCanPullAliceProj=${bobCanPullAliceProj}`
+    );
+
+    // 6. Bob generating official report on Alice's project is rejected with 403
+    let bobReportStatus = 0;
+    await repRoute({ headers: { authorization: `Bearer ${bobJwt}` }, body: { projectId: aliceProjId } }, {
+      status(s: number) { bobReportStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      bobReportStatus === 403,
+      'N01: Bob generating official report on Alice private project returns HTTP 403 Access Denied',
+      `status=${bobReportStatus}`
+    );
+
+    // Clean up N01 environment
+    delete process.env.JWT_SECRET;
+    delete process.env.NODE_ENV;
+  }
+
+  // N02: Catalog Modification Authorization & Built-in Protection (P1)
+  {
+    process.env.NODE_ENV = 'production';
+    process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+
+    const catModPost = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    // 1. Unauthenticated module catalog modification is rejected with 401
+    let unauthModStatus = 0;
+    await catModPost({
+      headers: {},
+      body: { id: 'mod-custom-hacker', modelName: 'Hacker Panel', pmpWatts: 500, vmpVolts: 40, impAmps: 12.5, vocVolts: 48, iscAmps: 13.5 },
+    }, {
+      status(s: number) { unauthModStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      unauthModStatus === 401,
+      'N02: Unauthenticated catalog modification returns HTTP 401 in secure mode',
+      `status=${unauthModStatus}`
+    );
+
+    // 2. Overwriting built-in catalog item returns 403
+    const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const mkJwt = (sub: string) => {
+      const h = b64({ alg: 'HS256', typ: 'JWT' });
+      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+      return `${h}.${p}.${s}`;
+    };
+    let overwriteBuiltinStatus = 0;
+    await catModPost({
+      headers: { authorization: `Bearer ${mkJwt('alice')}` },
+      body: { id: 'mod-jinko-550', modelName: 'Corrupted Jinko', pmpWatts: 50, vmpVolts: 40, impAmps: 1.25, vocVolts: 48, iscAmps: 1.35 },
+    }, {
+      status(s: number) { overwriteBuiltinStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      overwriteBuiltinStatus === 403,
+      'N02: Attempting to overwrite built-in catalog equipment is rejected with HTTP 403',
+      `status=${overwriteBuiltinStatus}`
+    );
+
+    delete process.env.JWT_SECRET;
+    delete process.env.NODE_ENV;
+  }
+
+  // N03: Malformed & Unauthenticated Sync Entities Rejected (P2)
+  {
+    const syncPush = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/sync/push' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    let syncBrokenRes: any = null;
+    await syncPush({
+      headers: {},
+      body: {
+        messages: [
+          { id: 'msg-broken-report', entityType: 'report', payloadJson: '{broken' },
+          { id: 'msg-broken-shading', entityType: 'shading_scene', payloadJson: '{broken' },
+          { id: 'msg-broken-finance', entityType: 'financial_model', payloadJson: '{broken' },
+          { id: 'msg-empty-report', entityType: 'report' },
+        ],
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { syncBrokenRes = d; return this; },
+    });
+
+    assert(
+      syncBrokenRes?.ackedIds?.length === 0 && syncBrokenRes?.rejected?.length === 4,
+      'N03: Malformed or missing payloadJson on report, shading_scene, and financial_model are strictly rejected without false acks',
+      `ackedCount=${syncBrokenRes?.ackedIds?.length}, rejectedCount=${syncBrokenRes?.rejected?.length}`
+    );
+  }
+
+  // N04: Calculations Input Validation & Elimination of False Success (P2)
+  {
+    const poaRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/solar/poa' && r.route.methods.post)
+      ?.route.stack[0].handle;
+    const npvRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/finance/npv' && r.route.methods.post)
+      ?.route.stack[0].handle;
+    const lcoeRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/finance/lcoe' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    // POA with empty body {}
+    let poaEmptyStatus = 0;
+    await poaRoute({ body: {} }, { status(s: number) { poaEmptyStatus = s; return this; }, json() { return this; } });
+    assert(poaEmptyStatus === 400, 'N04: POA endpoint with empty body {} returns HTTP 400 instead of HTTP 200 with null', `status=${poaEmptyStatus}`);
+
+    // NPV with rate: -1
+    let npvNegStatus = 0;
+    await npvRoute({ body: { rate: -1, cashflows: [-100, 50, 60] } }, { status(s: number) { npvNegStatus = s; return this; }, json() { return this; } });
+    assert(npvNegStatus === 400, 'N04: NPV endpoint with rate <= -1 returns HTTP 400 instead of HTTP 200 with null', `status=${npvNegStatus}`);
+
+    // LCOE with lifetimeYears: 0.5
+    let lcoeFractionalStatus = 0;
+    await lcoeRoute({ body: { capex: 10000, opexAnnual: 200, energyAnnual: 5000, lifetimeYears: 0.5 } }, { status(s: number) { lcoeFractionalStatus = s; return this; }, json() { return this; } });
+    assert(lcoeFractionalStatus === 400, 'N04: LCOE endpoint with lifetimeYears < 1 returns HTTP 400 instead of HTTP 200 with 0', `status=${lcoeFractionalStatus}`);
+  }
+
+  // N05: Project Schema Input Range Validation (P2)
+  {
+    const projPut = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/projects/:id' && r.route.methods.put)
+      ?.route.stack[0].handle;
+
+    const testProjId = 'proj-n05-validation';
+    activeDb.projects.set(testProjId, {
+      id: testProjId,
+      name: 'Validation Test Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 20,
+      autonomyDays: 1,
+      systemCapacityKwp: 10,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0.05,
+      createdAt: new Date().toISOString(),
+    });
+
+    let negPanelStatus = 0;
+    await projPut({ params: { id: testProjId }, body: { panelCount: -1 } }, { status(s: number) { negPanelStatus = s; return this; }, json() { return this; } });
+    assert(negPanelStatus === 400, 'N05: Project PUT with negative panelCount returns HTTP 400', `status=${negPanelStatus}`);
+
+    let badLatStatus = 0;
+    await projPut({ params: { id: testProjId }, body: { latitude: 120 } }, { status(s: number) { badLatStatus = s; return this; }, json() { return this; } });
+    assert(badLatStatus === 400, 'N05: Project PUT with invalid latitude > 90 returns HTTP 400', `status=${badLatStatus}`);
+  }
+
+  // N06: Report Strict Reconciliation against Snapshot Baseline (P2)
+  {
+    const repRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/reports/generate' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    const reconProjId = 'proj-n06-recon';
+    activeDb.projects.set(reconProjId, {
+      id: reconProjId,
+      name: 'Recon Test Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 20,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0.05,
+      estimatedAnnualYieldKwh: 15000,
+      createdAt: new Date().toISOString(),
+    });
+
+    let repLcoeRes: any = null;
+    await repRoute({ body: { projectId: reconProjId, systemCapacityKwp: 10.0, panelCount: 20, inverterCount: 1, annualYieldKwh: 15000, lcoeUsdPerKwh: 999 } }, {
+      status() { return this; },
+      json(d: any) { repLcoeRes = d; return this; },
+    });
+    assert(
+      repLcoeRes?.isReconciledAgainstSnapshot === false && repLcoeRes?.discrepancies?.some((d: string) => d.includes('LCOE mismatch')),
+      'N06: Report with discrepant LCOE (999 vs 0.05) is flagged as NOT reconciled with detailed discrepancy',
+      `isReconciled=${repLcoeRes?.isReconciledAgainstSnapshot}`
+    );
+
+    // Missing baseline yield flags discrepancy
+    const missingBaselineId = 'proj-n06-missing-yield';
+    activeDb.projects.set(missingBaselineId, {
+      id: missingBaselineId,
+      name: 'Missing Baseline Yield Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 20,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0.05,
+      createdAt: new Date().toISOString(),
+    });
+
+    let repMissingRes: any = null;
+    await repRoute({ body: { projectId: missingBaselineId, systemCapacityKwp: 10.0, annualYieldKwh: 1_000_000_000 } }, {
+      status() { return this; },
+      json(d: any) { repMissingRes = d; return this; },
+    });
+    assert(
+      repMissingRes?.isReconciledAgainstSnapshot === false && repMissingRes?.discrepancies?.some((d: string) => d.includes('missing baseline estimatedAnnualYieldKwh')),
+      'N06: Snapshot missing baseline annual yield flags discrepancy and refuses false reconciliation',
+      `isReconciled=${repMissingRes?.isReconciledAgainstSnapshot}`
+    );
+  }
+
+  // N07: Canonical Capacity in 3D Builder & Reconciliation (P2)
+  {
+    const scene = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 15.34,
+      totalModulesCount: 27,
+      modulePmpWatts: 550,
+      latitude: 35.6892,
+      longitude: 51.3890,
+    });
+    const sumTablesWp = scene.pvTables.reduce((sum, t) => sum + (t.ratedPowerWp || 0), 0);
+    const sumTablesKwp = Number((sumTablesWp / 1000.0).toFixed(2));
+    assert(
+      sumTablesKwp === 14.85,
+      'N07: 3D scene builder constructs tables with canonical power 27 * 550W = 14.85 kWp without silent redistribution to 15.34 kWp',
+      `sumTablesKwp=${sumTablesKwp}`
+    );
+
+    const shadingSim = simulateAnnual3dShading(scene);
+    assert(
+      shadingSim.reconciliationStatus?.isProjectSnapshotConsistent === false &&
+      Boolean(shadingSim.reconciliationStatus?.reconciliationNotes.includes('Capacity mismatch')),
+      'N07: Declared capacity discrepancy (15.34 vs 14.85 kWp) is flagged as inconsistent in shading reconciliation',
+      `isSnapshotConsistent=${shadingSim.reconciliationStatus?.isProjectSnapshotConsistent}`
+    );
+  }
+
+  // Low Priority: Loan Installment Rounding to Exact Principal Total
+  {
+    const loanModel = runIranianRegulationFinancialModel(100, 180, 'satba_fit_ppa', 4200, 70, 0, 6, 0);
+    // Loan principal: 100kWp * 31.5 = 3150 Million Toman. 70% debt = 2205 Million Toman.
+    const totalDebtPaid = loanModel.cashFlow25Years.reduce((sum, yr) => sum + yr.debtServiceMillionToman, 0);
+    assert(
+      totalDebtPaid === 2205,
+      'Loan installment rounding: Zero-interest loan exactly repays 2205 Million Toman principal over 6 years without overpayment',
+      `totalDebtPaid=${totalDebtPaid}, expected=2205`
     );
   }
 

@@ -32,6 +32,17 @@ function isAuthConfigured(): boolean {
   return Boolean(process.env.INTERNAL_GATEWAY_SECRET || process.env.JWT_SECRET);
 }
 
+const BUILT_IN_CATALOG_IDS = new Set<string>([
+  ...DEFAULT_MODULES.map(m => m.id),
+  ...DEFAULT_INVERTERS.map(i => i.id),
+  ...DEFAULT_BATTERIES.map(b => b.id),
+  'mod-jinko-550',
+  'mod-longi-540',
+  'inv-huawei-100k',
+  'inv-sma-50k',
+  'bat-byd-lvs',
+]);
+
 app.use(express.json());
 
 // In-Memory Database store with persistent file recovery
@@ -151,33 +162,43 @@ app.post('/api/v1/solar/position', (req: Request, res: Response) => {
 
 app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
   try {
-    const body = req.body;
+    const body = req.body || {};
+    const ghi = Number(body.ghi ?? body.ghiWm2);
+    const dni = Number(body.dni ?? body.dniWm2);
+    const dhi = Number(body.dhi ?? body.dhiWm2);
+    const tiltDeg = Number(body.tiltDeg ?? body.surfaceTiltDeg);
+    const azimuthDeg = Number(body.azimuthDeg ?? body.surfaceAzimuthDeg ?? 0);
+    const sunZenithDeg = Number(body.sunZenithDeg ?? body.zenithDeg);
+    const sunAzimuthDeg = Number(body.sunAzimuthDeg ?? body.solarAzimuthDeg ?? 180);
+
     if (
-      body.surfaceTiltDeg !== undefined &&
-      (typeof body.surfaceTiltDeg !== 'number' || !Number.isFinite(body.surfaceTiltDeg) || body.surfaceTiltDeg < 0 || body.surfaceTiltDeg > 90)
+      !Number.isFinite(ghi) || ghi < 0 ||
+      !Number.isFinite(dni) || dni < 0 ||
+      !Number.isFinite(dhi) || dhi < 0 ||
+      !Number.isFinite(tiltDeg) || tiltDeg < 0 || tiltDeg > 90 ||
+      !Number.isFinite(sunZenithDeg) || sunZenithDeg < 0 || sunZenithDeg > 180 ||
+      !Number.isFinite(azimuthDeg) ||
+      !Number.isFinite(sunAzimuthDeg)
     ) {
-      return res.status(400).json({ error: `Invalid surfaceTiltDeg: must be between 0 and 90, got ${body.surfaceTiltDeg}` });
-    }
-    if (
-      body.dniWm2 !== undefined &&
-      (typeof body.dniWm2 !== 'number' || !Number.isFinite(body.dniWm2) || body.dniWm2 < 0)
-    ) {
-      return res.status(400).json({ error: `Invalid dniWm2: must be a non-negative number, got ${body.dniWm2}` });
-    }
-    if (
-      body.dhiWm2 !== undefined &&
-      (typeof body.dhiWm2 !== 'number' || !Number.isFinite(body.dhiWm2) || body.dhiWm2 < 0)
-    ) {
-      return res.status(400).json({ error: `Invalid dhiWm2: must be a non-negative number, got ${body.dhiWm2}` });
-    }
-    if (
-      body.ghiWm2 !== undefined &&
-      (typeof body.ghiWm2 !== 'number' || !Number.isFinite(body.ghiWm2) || body.ghiWm2 < 0)
-    ) {
-      return res.status(400).json({ error: `Invalid ghiWm2: must be a non-negative number, got ${body.ghiWm2}` });
+      return res.status(400).json({
+        error: 'Invalid POA request: ghi, dni, dhi, tiltDeg (0-90), and sunZenithDeg (0-180) are required non-negative finite numbers.',
+      });
     }
 
-    const result = calculatePoaIrradiance(body);
+    const result = calculatePoaIrradiance({
+      ghi,
+      dni,
+      dhi,
+      tiltDeg,
+      azimuthDeg,
+      sunZenithDeg,
+      sunAzimuthDeg,
+    });
+
+    if (!Number.isFinite(result) || result < 0) {
+      return res.status(400).json({ error: 'POA calculation resulted in an invalid non-finite value' });
+    }
+
     res.json({ poaIrradiance: result });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -309,11 +330,14 @@ app.post('/api/v1/finance/lcoe', (req: Request, res: Response) => {
     if (!Number.isFinite(d) || d < 0) {
       return res.status(400).json({ error: `Discount rate must be a non-negative finite number, got ${discountRate}` });
     }
-    if (!Number.isFinite(lt) || lt <= 0) {
-      return res.status(400).json({ error: `Lifetime years must be a positive non-zero finite number, got ${lifetimeYears}` });
+    if (!Number.isFinite(lt) || lt < 1) {
+      return res.status(400).json({ error: `Lifetime years must be at least 1 year, got ${lifetimeYears}` });
     }
 
     const val = calculateLcoe(c, o, energy, d, lt);
+    if (!Number.isFinite(val) || val <= 0) {
+      return res.status(400).json({ error: 'LCOE calculation resulted in an invalid non-positive or non-finite value' });
+    }
     res.json({ lcoeValue: val });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -324,14 +348,17 @@ app.post('/api/v1/finance/npv', (req: Request, res: Response) => {
   try {
     const { rate, cashflows } = req.body;
     const r = Number(rate);
-    if (!Number.isFinite(r)) {
-      return res.status(400).json({ error: `Rate must be a finite number, got ${rate}` });
+    if (!Number.isFinite(r) || r <= -1) {
+      return res.status(400).json({ error: `Discount rate must be a finite number greater than -1 (-100%), got ${rate}` });
     }
-    if (!Array.isArray(cashflows) || cashflows.some(c => typeof c !== 'number' || !Number.isFinite(c))) {
-      return res.status(400).json({ error: 'Cash flows must be an array of finite numbers' });
+    if (!Array.isArray(cashflows) || cashflows.length === 0 || cashflows.some(c => typeof c !== 'number' || !Number.isFinite(c))) {
+      return res.status(400).json({ error: 'Cash flows must be a non-empty array of finite numbers' });
     }
 
     const val = calculateNpv(r, cashflows);
+    if (!Number.isFinite(val)) {
+      return res.status(400).json({ error: 'NPV calculation resulted in a non-finite value' });
+    }
     res.json({ npvValue: val });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -396,6 +423,51 @@ function validateProjectSchema(candidate: any): { valid: boolean; error?: string
         valid: false,
         error: `Project systemCapacityKwp must be a positive finite number, got ${candidate.systemCapacityKwp}`,
       };
+    }
+  }
+  if (candidate.panelCount !== undefined) {
+    if (typeof candidate.panelCount !== 'number' || !Number.isInteger(candidate.panelCount) || candidate.panelCount < 0) {
+      return { valid: false, error: `Project panelCount must be a non-negative integer, got ${candidate.panelCount}` };
+    }
+  }
+  if (candidate.inverterCount !== undefined) {
+    if (typeof candidate.inverterCount !== 'number' || !Number.isInteger(candidate.inverterCount) || candidate.inverterCount < 0) {
+      return { valid: false, error: `Project inverterCount must be a non-negative integer, got ${candidate.inverterCount}` };
+    }
+  }
+  if (candidate.batteryCount !== undefined) {
+    if (typeof candidate.batteryCount !== 'number' || !Number.isInteger(candidate.batteryCount) || candidate.batteryCount < 0) {
+      return { valid: false, error: `Project batteryCount must be a non-negative integer, got ${candidate.batteryCount}` };
+    }
+  }
+  if (candidate.dailyLoadKwh !== undefined) {
+    if (typeof candidate.dailyLoadKwh !== 'number' || !Number.isFinite(candidate.dailyLoadKwh) || candidate.dailyLoadKwh < 0) {
+      return { valid: false, error: `Project dailyLoadKwh must be a non-negative finite number, got ${candidate.dailyLoadKwh}` };
+    }
+  }
+  if (candidate.autonomyDays !== undefined) {
+    if (typeof candidate.autonomyDays !== 'number' || !Number.isFinite(candidate.autonomyDays) || candidate.autonomyDays < 0) {
+      return { valid: false, error: `Project autonomyDays must be a non-negative finite number, got ${candidate.autonomyDays}` };
+    }
+  }
+  if (candidate.latitude !== undefined) {
+    if (typeof candidate.latitude !== 'number' || !Number.isFinite(candidate.latitude) || candidate.latitude < -90 || candidate.latitude > 90) {
+      return { valid: false, error: `Project latitude must be between -90 and 90, got ${candidate.latitude}` };
+    }
+  }
+  if (candidate.longitude !== undefined) {
+    if (typeof candidate.longitude !== 'number' || !Number.isFinite(candidate.longitude) || candidate.longitude < -180 || candidate.longitude > 180) {
+      return { valid: false, error: `Project longitude must be between -180 and 180, got ${candidate.longitude}` };
+    }
+  }
+  if (candidate.lcoeUsdPerKwh !== undefined && candidate.lcoeUsdPerKwh !== null) {
+    if (typeof candidate.lcoeUsdPerKwh !== 'number' || !Number.isFinite(candidate.lcoeUsdPerKwh) || candidate.lcoeUsdPerKwh < 0) {
+      return { valid: false, error: `Project lcoeUsdPerKwh must be a non-negative finite number, got ${candidate.lcoeUsdPerKwh}` };
+    }
+  }
+  if (candidate.estimatedAnnualYieldKwh !== undefined) {
+    if (typeof candidate.estimatedAnnualYieldKwh !== 'number' || !Number.isFinite(candidate.estimatedAnnualYieldKwh) || candidate.estimatedAnnualYieldKwh < 0) {
+      return { valid: false, error: `Project estimatedAnnualYieldKwh must be a non-negative finite number, got ${candidate.estimatedAnnualYieldKwh}` };
     }
   }
   return { valid: true };
@@ -569,13 +641,50 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
 });
 
 // 6. Project List and Project CRUD with Authorization
-app.get('/api/v1/projects', (_req: Request, res: Response) => {
-  res.json(Array.from(db.projects.values()));
+app.get('/api/v1/projects', (req: Request, res: Response) => {
+  const { userId: requesterId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+  const isSecure = isProductionEnv() || isAuthConfigured();
+  if (isSecure && !requesterId) {
+    return res.status(401).json({ error: 'Authentication required: reading projects requires a verified identity.' });
+  }
+
+  const allProjects = Array.from(db.projects.values());
+  // In authenticated / secure mode, strictly filter projects so users only see their own projects (or unowned legacy projects)
+  const accessibleProjects = (isSecure || requesterId)
+    ? allProjects.filter((p) => !p.ownerId || p.ownerId === requesterId)
+    : allProjects;
+
+  res.json(accessibleProjects);
 });
 
 app.get('/api/v1/projects/:id', (req: Request, res: Response) => {
   const project = db.projects.get(req.params.id as string);
   if (!project) return res.status(404).json({ error: `Project '${req.params.id}' not found` });
+
+  const { userId: requesterId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+  const isSecure = isProductionEnv() || isAuthConfigured();
+
+  if (project.ownerId) {
+    if (!requesterId) {
+      return res.status(401).json({
+        error: `Authentication required: project '${req.params.id}' is private and owned by '${project.ownerId}'.`,
+      });
+    }
+    if (project.ownerId !== requesterId) {
+      return res.status(403).json({
+        error: `Access denied: project '${req.params.id}' is owned by '${project.ownerId}', requester is '${requesterId}'. Cannot read.`,
+      });
+    }
+  } else if (isSecure && !requesterId) {
+    return res.status(401).json({ error: 'Authentication required: reading projects requires a verified identity.' });
+  }
+
   res.json(project);
 });
 
@@ -643,6 +752,17 @@ app.get('/api/v1/catalog/modules', (_req: Request, res: Response) => {
 });
 
 app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
+  const { userId: requesterId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+  const isSecure = isProductionEnv() || isAuthConfigured();
+  if (isSecure && !requesterId) {
+    return res.status(401).json({
+      error: 'Authentication required: modifying equipment in the catalog requires a verified identity.',
+    });
+  }
+
   const pmpWatts = Number(req.body.pmpWatts ?? req.body.pNominalWp);
   const vmpVolts = Number(req.body.vmpVolts ?? req.body.vMp);
   const impAmps = Number(req.body.impAmps ?? req.body.iMp);
@@ -678,6 +798,13 @@ app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
     modelName: req.body.modelName || req.body.model || 'Custom Module',
     manufacturer: req.body.manufacturer || 'Generic',
   };
+
+  if (BUILT_IN_CATALOG_IDS.has(item.id)) {
+    return res.status(403).json({
+      error: `Cannot overwrite built-in equipment '${item.id}'. Specify a custom ID to add new catalog items.`,
+    });
+  }
+
   const previousItem = db.pvModules.get(item.id);
   db.pvModules.set(item.id, item);
   const persisted = saveDatabase();
@@ -697,6 +824,17 @@ app.get('/api/v1/catalog/inverters', (_req: Request, res: Response) => {
 });
 
 app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
+  const { userId: requesterId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+  const isSecure = isProductionEnv() || isAuthConfigured();
+  if (isSecure && !requesterId) {
+    return res.status(401).json({
+      error: 'Authentication required: modifying equipment in the catalog requires a verified identity.',
+    });
+  }
+
   const pnomAcKw = Number(req.body.pnomAcKw ?? (req.body.pAcNominalW !== undefined ? req.body.pAcNominalW / 1000 : undefined));
   const vdcMaxVolts = Number(req.body.vdcMaxVolts ?? req.body.vDcMax);
   const vmpptMinVolts = Number(req.body.vmpptMinVolts ?? req.body.vMpptMin);
@@ -723,6 +861,13 @@ app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
     modelName: req.body.modelName || req.body.model || 'Custom Inverter',
     manufacturer: req.body.manufacturer || 'Generic',
   };
+
+  if (BUILT_IN_CATALOG_IDS.has(item.id)) {
+    return res.status(403).json({
+      error: `Cannot overwrite built-in equipment '${item.id}'. Specify a custom ID to add new catalog items.`,
+    });
+  }
+
   const previousItem = db.inverters.get(item.id);
   db.inverters.set(item.id, item);
   const persisted = saveDatabase();
@@ -742,6 +887,17 @@ app.get('/api/v1/catalog/batteries', (_req: Request, res: Response) => {
 });
 
 app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
+  const { userId: requesterId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+  const isSecure = isProductionEnv() || isAuthConfigured();
+  if (isSecure && !requesterId) {
+    return res.status(401).json({
+      error: 'Authentication required: modifying equipment in the catalog requires a verified identity.',
+    });
+  }
+
   const nominalVoltageVolts = Number(req.body.nominalVoltageVolts ?? req.body.nominalVoltageV);
   const capacityKwh = Number(req.body.capacityKwh ?? (req.body.nominalCapacityAh && nominalVoltageVolts ? (req.body.nominalCapacityAh * nominalVoltageVolts) / 1000 : undefined));
 
@@ -762,6 +918,13 @@ app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
     modelName: req.body.modelName || req.body.model || 'Custom Battery',
     manufacturer: req.body.manufacturer || 'Generic',
   };
+
+  if (BUILT_IN_CATALOG_IDS.has(item.id)) {
+    return res.status(403).json({
+      error: `Cannot overwrite built-in equipment '${item.id}'. Specify a custom ID to add new catalog items.`,
+    });
+  }
+
   const previousItem = db.batteries.get(item.id);
   db.batteries.set(item.id, item);
   const persisted = saveDatabase();
@@ -776,8 +939,13 @@ app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
   res.status(201).json(item);
 });
 
-// 8. Reports Generation with Snapshot Reconciliation (M09)
+// 8. Reports Generation with Snapshot Reconciliation (M09, N01, N06)
 app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
+  const { userId: requesterId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+
   const {
     projectName,
     projectId,
@@ -815,8 +983,27 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
     }
   }
 
-  // Snapshot Reconciliation against persistent database (M09)
+  // Snapshot Reconciliation against persistent database (M09, N01, N06)
   const projectSnapshot = projectId && projectId !== 'N/A' ? db.projects.get(projectId) : undefined;
+  const isSecure = isProductionEnv() || isAuthConfigured();
+
+  if (projectSnapshot?.ownerId) {
+    if (!requesterId) {
+      return res.status(401).json({
+        error: `Authentication required: project '${projectId}' is private. Identity required to generate report.`,
+      });
+    }
+    if (projectSnapshot.ownerId !== requesterId) {
+      return res.status(403).json({
+        error: `Access denied: project '${projectId}' is owned by '${projectSnapshot.ownerId}', requester is '${requesterId}'. Cannot generate report.`,
+      });
+    }
+  } else if (projectSnapshot && isSecure && !requesterId) {
+    return res.status(401).json({
+      error: 'Authentication required: generating reports on projects requires a verified identity.',
+    });
+  }
+
   let resolvedProjectName = projectName ? String(projectName).trim() : (projectSnapshot?.name || 'Solar Project');
   let resolvedPanelType = panelType;
   let resolvedInverterType = inverterType;
@@ -838,32 +1025,61 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
       if (bat) resolvedBatteryType = `${bat.manufacturer} ${bat.modelName} (${bat.nominalVoltageVolts}V ${bat.capacityKwh}kWh)`;
     }
 
-    // Explicit discrepancy checks across physical metrics (M09)
-    if (
-      systemCapacityKwp !== undefined &&
-      Math.abs(systemCapacityKwp - projectSnapshot.systemCapacityKwp) / Math.max(1, projectSnapshot.systemCapacityKwp) > 0.01
-    ) {
-      discrepancies.push(`Capacity mismatch: report=${systemCapacityKwp} kWp vs snapshot=${projectSnapshot.systemCapacityKwp} kWp`);
+    // Explicit discrepancy checks across physical metrics (M09, N06)
+    if (systemCapacityKwp !== undefined) {
+      if (typeof projectSnapshot.systemCapacityKwp !== 'number') {
+        discrepancies.push('Snapshot missing baseline systemCapacityKwp; cannot reconcile capacity.');
+      } else if (
+        Math.abs(systemCapacityKwp - projectSnapshot.systemCapacityKwp) / Math.max(1, projectSnapshot.systemCapacityKwp) > 0.01
+      ) {
+        discrepancies.push(`Capacity mismatch: report=${systemCapacityKwp} kWp vs snapshot=${projectSnapshot.systemCapacityKwp} kWp`);
+      }
     }
-    if (panelCount !== undefined && panelCount !== projectSnapshot.panelCount) {
-      discrepancies.push(`Panel count mismatch: report=${panelCount} vs snapshot=${projectSnapshot.panelCount}`);
+    if (panelCount !== undefined) {
+      if (typeof projectSnapshot.panelCount !== 'number') {
+        discrepancies.push('Snapshot missing baseline panelCount; cannot reconcile panel count.');
+      } else if (panelCount !== projectSnapshot.panelCount) {
+        discrepancies.push(`Panel count mismatch: report=${panelCount} vs snapshot=${projectSnapshot.panelCount}`);
+      }
     }
-    if (inverterCount !== undefined && inverterCount !== projectSnapshot.inverterCount) {
-      discrepancies.push(`Inverter count mismatch: report=${inverterCount} vs snapshot=${projectSnapshot.inverterCount}`);
+    if (inverterCount !== undefined) {
+      if (typeof projectSnapshot.inverterCount !== 'number') {
+        discrepancies.push('Snapshot missing baseline inverterCount; cannot reconcile inverter count.');
+      } else if (inverterCount !== projectSnapshot.inverterCount) {
+        discrepancies.push(`Inverter count mismatch: report=${inverterCount} vs snapshot=${projectSnapshot.inverterCount}`);
+      }
     }
-    if (batteryCount !== undefined && batteryCount !== projectSnapshot.batteryCount) {
-      discrepancies.push(`Battery count mismatch: report=${batteryCount} vs snapshot=${projectSnapshot.batteryCount}`);
+    if (batteryCount !== undefined) {
+      if (typeof projectSnapshot.batteryCount !== 'number') {
+        discrepancies.push('Snapshot missing baseline batteryCount; cannot reconcile battery count.');
+      } else if (batteryCount !== projectSnapshot.batteryCount) {
+        discrepancies.push(`Battery count mismatch: report=${batteryCount} vs snapshot=${projectSnapshot.batteryCount}`);
+      }
     }
-    if (annualYieldKwh !== undefined && typeof projectSnapshot.estimatedAnnualYieldKwh === 'number') {
-      const snapYield = projectSnapshot.estimatedAnnualYieldKwh;
-      if (snapYield === 0) {
-        if (annualYieldKwh !== 0) {
-          discrepancies.push(`Annual yield mismatch: report=${annualYieldKwh} kWh vs snapshot=0 kWh`);
-        }
+    if (annualYieldKwh !== undefined) {
+      if (typeof projectSnapshot.estimatedAnnualYieldKwh !== 'number') {
+        discrepancies.push('Snapshot missing baseline estimatedAnnualYieldKwh; cannot reconcile annual yield.');
       } else {
-        const delta = Math.abs(annualYieldKwh - snapYield) / snapYield;
+        const snapYield = projectSnapshot.estimatedAnnualYieldKwh;
+        if (snapYield === 0) {
+          if (annualYieldKwh !== 0) {
+            discrepancies.push(`Annual yield mismatch: report=${annualYieldKwh} kWh vs snapshot=0 kWh`);
+          }
+        } else {
+          const delta = Math.abs(annualYieldKwh - snapYield) / snapYield;
+          if (delta > 0.01) {
+            discrepancies.push(`Annual yield mismatch: report=${annualYieldKwh} kWh vs snapshot=${snapYield} kWh`);
+          }
+        }
+      }
+    }
+    if (lcoeUsdPerKwh !== undefined && lcoeUsdPerKwh !== null) {
+      if (typeof projectSnapshot.lcoeUsdPerKwh !== 'number') {
+        discrepancies.push('Snapshot missing baseline lcoeUsdPerKwh; cannot reconcile LCOE.');
+      } else {
+        const delta = Math.abs(lcoeUsdPerKwh - projectSnapshot.lcoeUsdPerKwh) / Math.max(0.001, projectSnapshot.lcoeUsdPerKwh);
         if (delta > 0.01) {
-          discrepancies.push(`Annual yield mismatch: report=${annualYieldKwh} kWh vs snapshot=${snapYield} kWh`);
+          discrepancies.push(`LCOE mismatch: report=${lcoeUsdPerKwh} USD/kWh vs snapshot=${projectSnapshot.lcoeUsdPerKwh} USD/kWh`);
         }
       }
     }
@@ -908,7 +1124,7 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
   });
 });
 
-// 9. Sync Push/Pull with Rejection of Malformed Payloads (M05, M06, M07)
+// 9. Sync Push/Pull with Rejection of Malformed Payloads (M05, M06, M07, N01, N03)
 app.post('/api/v1/sync/push', (req: Request, res: Response) => {
   const { userId: headerUserId, authError } = resolveRequesterIdentity(req);
   if (authError) {
@@ -923,6 +1139,7 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
   const ackedIds: string[] = [];
   const rejected: Array<{ id?: string; reason: string }> = [];
   const allowedEntityTypes = new Set(['project', 'report', 'shading_scene', 'financial_model']);
+  const isSecure = isProductionEnv() || isAuthConfigured();
 
   // Track original snapshot before mutations for atomic rollback on persistence failure (M07)
   const previousProjects = new Map(db.projects);
@@ -943,73 +1160,103 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
       continue;
     }
 
+    // In secure mode (production or when auth secrets are configured), all sync mutations require verified identity (N03)
+    if (isSecure && !headerUserId) {
+      rejected.push({
+        id: msg.id,
+        reason: 'Authentication required: syncing updates requires a verified identity.',
+      });
+      continue;
+    }
+
+    // Require non-empty payloadJson for all entity types (N03)
+    if (!msg.payloadJson) {
+      rejected.push({ id: msg.id, reason: `Missing payloadJson for ${normType} entity` });
+      continue;
+    }
+
+    let payload: any;
+    try {
+      payload = typeof msg.payloadJson === 'string' ? JSON.parse(msg.payloadJson) : msg.payloadJson;
+    } catch (parseErr: any) {
+      rejected.push({ id: msg.id, reason: `JSON parse error in payloadJson: ${parseErr.message}` });
+      continue;
+    }
+
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      rejected.push({ id: msg.id, reason: `Malformed payloadJson: must be a JSON object` });
+      continue;
+    }
+
+    // Check project reference ownership for all entity types if referenced
+    const refProjectId = payload.projectId || (normType === 'project' ? payload.id : undefined);
+    if (refProjectId && typeof refProjectId === 'string') {
+      const existingProject = db.projects.get(refProjectId);
+      if (existingProject?.ownerId) {
+        if (!headerUserId) {
+          rejected.push({
+            id: msg.id,
+            reason: `Authentication required: project '${refProjectId}' is owned by '${existingProject.ownerId}'.`,
+          });
+          continue;
+        }
+        if (existingProject.ownerId !== headerUserId) {
+          rejected.push({
+            id: msg.id,
+            reason: `Access denied: project '${refProjectId}' is owned by '${existingProject.ownerId}', requester is '${headerUserId}'. Cannot modify.`,
+          });
+          continue;
+        }
+      }
+    }
+
     if (normType === 'project') {
-      if (!msg.payloadJson) {
-        rejected.push({ id: msg.id, reason: 'Missing payloadJson for Project entity' });
+      if (!payload.id || typeof payload.id !== 'string') {
+        rejected.push({ id: msg.id, reason: 'Malformed project payload: missing id' });
         continue;
       }
-      try {
-        const proj = typeof msg.payloadJson === 'string' ? JSON.parse(msg.payloadJson) : msg.payloadJson;
-        if (!proj || typeof proj !== 'object' || !proj.id) {
-          rejected.push({ id: msg.id, reason: 'Malformed project payload: missing id' });
-          continue;
-        }
 
-        // Schema validation (M06)
-        const validation = validateProjectSchema(proj);
-        if (!validation.valid) {
-          rejected.push({
-            id: msg.id,
-            reason: `Invalid project schema: ${validation.error}`,
-          });
-          continue;
-        }
+      // Schema validation (M06, N05)
+      const validation = validateProjectSchema(payload);
+      if (!validation.valid) {
+        rejected.push({
+          id: msg.id,
+          reason: `Invalid project schema: ${validation.error}`,
+        });
+        continue;
+      }
 
-        // Ownership authorization check (M06)
-        const existing = db.projects.get(proj.id);
-        const requesterId = headerUserId;
+      const existing = db.projects.get(payload.id);
+      // Preserve existing ownerId; if unowned, bind strictly to authenticated requesterId (never trust payload ownerId)
+      const projectToStore: Project = {
+        ...payload,
+        ownerId: existing?.ownerId || headerUserId || undefined,
+      };
 
-        // In secure mode (production or when auth secrets are configured), all sync project mutations require verified authentication
-        const isSecure = isProductionEnv() || isAuthConfigured();
-        if (isSecure && !requesterId) {
-          rejected.push({
-            id: msg.id,
-            reason: 'Authentication required: syncing project modifications requires a verified identity.',
-          });
-          continue;
-        }
-
-        if (existing?.ownerId) {
-          if (!requesterId) {
-            rejected.push({
-              id: msg.id,
-              reason: `Authentication required: project '${proj.id}' is owned by '${existing.ownerId}'. Identity must be supplied via Bearer token or authenticated gateway header.`,
-            });
-            continue;
-          }
-          if (existing.ownerId !== requesterId) {
-            rejected.push({
-              id: msg.id,
-              reason: `Access denied: project '${proj.id}' is owned by '${existing.ownerId}', requester is '${requesterId}'. Cannot modify.`,
-            });
-            continue;
-          }
-        }
-
-        // Preserve existing ownerId; if unowned, bind strictly to authenticated requesterId (never trust payload ownerId)
-        const projectToStore: Project = {
-          ...proj,
-          ownerId: existing?.ownerId || requesterId || undefined,
-        };
-
-        db.projects.set(proj.id, projectToStore);
-      } catch (parseErr: any) {
-        rejected.push({ id: msg.id, reason: `JSON parse error in payloadJson: ${parseErr.message}` });
+      db.projects.set(payload.id, projectToStore);
+    } else if (normType === 'report') {
+      if (!payload.id && !payload.reportId && !payload.title && !payload.projectName) {
+        rejected.push({ id: msg.id, reason: 'Malformed report payload: missing report identifier or title' });
+        continue;
+      }
+    } else if (normType === 'shading_scene') {
+      if (!payload.id && !payload.sceneId && !payload.roofPlanes && !payload.pvTables) {
+        rejected.push({ id: msg.id, reason: 'Malformed shading_scene payload: missing scene identifier or geometry' });
+        continue;
+      }
+    } else if (normType === 'financial_model') {
+      if (!payload.id && !payload.modelId && !payload.framework && !payload.capacityKwp) {
+        rejected.push({ id: msg.id, reason: 'Malformed financial_model payload: missing model identifier or parameters' });
         continue;
       }
     }
 
-    db.outbox.push({ ...msg, processed: true, processedAt: new Date().toISOString() });
+    db.outbox.push({
+      ...msg,
+      payloadJson: typeof msg.payloadJson === 'string' ? msg.payloadJson : JSON.stringify(msg.payloadJson),
+      processed: true,
+      processedAt: new Date().toISOString(),
+    });
     ackedIds.push(msg.id);
   }
 
@@ -1046,10 +1293,24 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
   });
 });
 
-app.get('/api/v1/sync/pull', (_req: Request, res: Response) => {
+app.get('/api/v1/sync/pull', (req: Request, res: Response) => {
+  const { userId: requesterId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+  const isSecure = isProductionEnv() || isAuthConfigured();
+  if (isSecure && !requesterId) {
+    return res.status(401).json({ error: 'Authentication required: pulling sync updates requires a verified identity.' });
+  }
+
+  const allProjects = Array.from(db.projects.values());
+  const accessibleProjects = (isSecure || requesterId)
+    ? allProjects.filter((p) => !p.ownerId || p.ownerId === requesterId)
+    : allProjects;
+
   res.json({
     currentClock: Date.now(),
-    projects: Array.from(db.projects.values()),
+    projects: accessibleProjects,
   });
 });
 

@@ -1321,12 +1321,18 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
   const totalModules = Math.max(1, inputs.totalModulesCount || 140);
   const modWidth = Math.max(0.8, inputs.moduleWidthM || 1.134);
   const modLength = Math.max(1.2, inputs.moduleLengthM || 2.278);
-  const modPmp =
-    inputs.modulePmpWatts ||
-    (inputs.totalPvCapacityKwp > 0 ? (inputs.totalPvCapacityKwp * 1000) / totalModules : 550);
-  const totalKwp =
-    inputs.totalPvCapacityKwp > 0 ? inputs.totalPvCapacityKwp : (totalModules * modPmp) / 1000;
-  const totalWatts = Math.round(totalKwp * 1000);
+
+  // Canonical physical Pmp per module (N07)
+  const modPmp = inputs.modulePmpWatts && inputs.modulePmpWatts > 0
+    ? inputs.modulePmpWatts
+    : (inputs.totalPvCapacityKwp > 0 ? (inputs.totalPvCapacityKwp * 1000) / totalModules : 550);
+
+  // Canonical physical table power is strictly derived from N * Pmp (never artificially redistributed)
+  const canonicalKwp = Number(((totalModules * modPmp) / 1000.0).toFixed(4));
+  const totalWatts = Math.round(canonicalKwp * 1000);
+
+  // Declared project capacity is preserved as totalPvCapacityKwp for reconciliation mismatch detection
+  const totalKwp = inputs.totalPvCapacityKwp > 0 ? inputs.totalPvCapacityKwp : canonicalKwp;
 
   // Determine realistic table/row layout based on module count
   let numRows: number;
@@ -1977,7 +1983,13 @@ export function calculateRayTracedShadingFactor(
   let totalArrayWeight = 0;
 
   for (const table of scene.pvTables) {
-    const tablePoints = generateTableMeshSamplePoints(table);
+    const lateral = options?.samplePointsPerTable
+      ? Math.max(2, Math.round(Math.sqrt(options.samplePointsPerTable * (4 / 3))))
+      : 4;
+    const sloped = options?.samplePointsPerTable
+      ? Math.max(1, Math.round(options.samplePointsPerTable / lateral))
+      : 3;
+    const tablePoints = generateTableMeshSamplePoints(table, lateral, sloped);
     allTargetPoints.push(...tablePoints);
 
     if (tablePoints.length > 0) {

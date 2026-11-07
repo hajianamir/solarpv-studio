@@ -325,14 +325,15 @@ export function calculateLcoe(
     return 0.0;
   }
 
+  const effectiveYears = Math.max(1, Math.round(lifetimeYears));
   let totalCostPv = capex;
-  for (let t = 1; t <= lifetimeYears; t++) {
+  for (let t = 1; t <= effectiveYears; t++) {
     totalCostPv += opexAnnual / Math.pow(1.0 + discountRate, t);
   }
 
   let totalEnergyPv = 0;
   const dFrac = degradationPct / 100.0;
-  for (let t = 1; t <= lifetimeYears; t++) {
+  for (let t = 1; t <= effectiveYears; t++) {
     totalEnergyPv += (energyAnnual * Math.pow(1.0 - dFrac, t - 1)) / Math.pow(1.0 + discountRate, t);
   }
 

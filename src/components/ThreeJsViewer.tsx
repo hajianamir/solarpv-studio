@@ -1003,17 +1003,26 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   </span>
                 </div>
                 {(() => {
-                  const lossFraction = Math.min(
+                  const appliedLossFraction = Math.min(
+                    0.95,
+                    Math.max(0, (appliedShading?.lossPct ?? 0) / 100.0)
+                  );
+                  // True unshaded baseline of the plant before any applied shading derate (N08)
+                  const unshadedBaselineKwh =
+                    appliedLossFraction > 0 && appliedLossFraction < 0.95
+                      ? Math.round(annualYieldKwh / (1.0 - appliedLossFraction))
+                      : Math.round(annualYieldKwh);
+
+                  // Preview metrics based on fresh simulation result vs independent unshaded baseline
+                  const previewLossFraction = Math.min(
                     0.95,
                     Math.max(0, annualResult.annualCombinedShadingLossPct / 100.0)
                   );
-                  const unshadedBaselineKwh =
-                    lossFraction < 0.95 && lossFraction > 0
-                      ? Math.round(annualYieldKwh / (1.0 - lossFraction))
-                      : Math.round(annualYieldKwh);
-                  const shadingDeficitKwh = Math.max(
-                    0,
-                    unshadedBaselineKwh - Math.round(annualYieldKwh)
+                  const shadingDeficitKwh = Math.round(
+                    unshadedBaselineKwh * previewLossFraction
+                  );
+                  const previewNetExportKwh = Math.round(
+                    unshadedBaselineKwh * (1.0 - previewLossFraction)
                   );
 
                   return (
@@ -1043,11 +1052,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                       <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
                         <div className="text-[10px] text-slate-400 font-sans">
                           {isEn
-                            ? 'Net Export (Waterfall-Coupled):'
-                            : 'تولید خالص نهایی نیروگاه (متصل به واترفال):'}
+                            ? 'Net Export (Preview):'
+                            : 'تولید خالص پیش‌نمایش:'}
                         </div>
                         <div className="text-emerald-400 font-bold mt-0.5">
-                          {Math.round(annualYieldKwh).toLocaleString()}{' '}
+                          {previewNetExportKwh.toLocaleString()}{' '}
                           <span className="text-[10px] font-normal font-sans">kWh/yr</span>
                         </div>
                       </div>
