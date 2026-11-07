@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Sparkles,
   Compass,
+  X,
 } from 'lucide-react';
 import {
   simulateAnnual3dShading,
@@ -26,6 +27,7 @@ import {
   type Scene3DState,
   type Obstacle3D,
 } from '../engine/roof3dShadingEngine';
+import { runAnnualShadingSimulationAsync } from '../engine/workers/shadingWorkerClient';
 import { type ClimateCity } from '../engine/climaticData';
 import { type AppliedShading3dRecord, computeShadingSceneSignature } from '../engine/shadingLifecycle';
 
@@ -94,6 +96,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const isEn = lang === 'en';
   const mountRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
+  const [simulationProgress, setSimulationProgress] = useState<number | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Harmonized site and climate data resolution
   const effectiveCity = site?.climateData || site?.city || city;
@@ -665,35 +669,56 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
     }
   }, [sunAltitude, sunAzimuth]);
 
-  // Execute Ray-Traced Shading & Annual Waterfall Simulation
-  const handleRunShadingAnalysis = () => {
+  // Execute Ray-Traced Shading & Annual Waterfall Simulation with Web Worker, progress, and cancellation (MAIN-05)
+  const handleRunShadingAnalysis = async () => {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setLoading(true);
-    setTimeout(() => {
-      try {
-        const result = simulateAnnual3dShading(activeScene, city?.peakSunHours ?? 5.2, 40.0, {
+    setSimulationProgress(0);
+
+    try {
+      const result = await runAnnualShadingSimulationAsync(activeScene, city?.peakSunHours ?? 5.2, 40.0, {
+        simulationMode,
+        albedo: city?.albedo,
+        abortSignal: controller.signal,
+        onProgress: (pct) => {
+          setSimulationProgress(pct);
+        },
+      });
+
+      const rayTraced = calculateRayTracedShadingFactor(activeScene, undefined, {
+        includeInterRow: true,
+      });
+
+      setAnnualResult(result);
+      setRayTracedResult(rayTraced);
+      setCalculatedSignature(
+        computeShadingSceneSignature({
+          scene: result.sceneState,
+          cityId: city?.id,
+          peakSunHours: city?.peakSunHours,
+          albedo: result.sceneState.albedo ?? city?.albedo,
           simulationMode,
-          albedo: city?.albedo,
-        });
-        const rayTraced = calculateRayTracedShadingFactor(activeScene, undefined, {
-          includeInterRow: true,
-        });
-        setAnnualResult(result);
-        setRayTracedResult(rayTraced);
-        setCalculatedSignature(
-          computeShadingSceneSignature({
-            scene: result.sceneState,
-            cityId: city?.id,
-            peakSunHours: city?.peakSunHours,
-            albedo: result.sceneState.albedo ?? city?.albedo,
-            simulationMode,
-          })
-        );
-      } catch (err) {
+        })
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('cancelled') || msg.includes('AbortError')) {
+        console.log('3D shading simulation cancelled by user.');
+      } else {
         console.error('Shading analysis execution error:', err);
-      } finally {
-        setLoading(false);
       }
-    }, 120);
+    } finally {
+      setLoading(false);
+      setSimulationProgress(null);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleCancelSimulation = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
   };
 
   return (
@@ -845,7 +870,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>{isEn ? 'Tracing 3D Mesh Rays...' : 'درحال ردیابی پرتوهای سه‌بعدی...'}</span>
+                  <span>
+                    {isEn
+                      ? `Tracing 3D Mesh Rays... ${simulationProgress !== null ? `${simulationProgress}%` : ''}`
+                      : `درحال ردیابی پرتوهای سه‌بعدی... ${simulationProgress !== null ? `${simulationProgress}٪` : ''}`}
+                  </span>
                 </>
               ) : (
                 <>
@@ -858,6 +887,30 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                 </>
               )}
             </button>
+
+            {loading && (
+              <button
+                type="button"
+                onClick={handleCancelSimulation}
+                className="studio-btn text-xs py-2 px-3 text-rose-400 hover:text-rose-300 border-rose-500/40 hover:bg-rose-500/10 flex items-center gap-1.5 transition-colors"
+                title={isEn ? 'Cancel ongoing simulation' : 'لغو شبیه‌سازی در حال اجرا'}
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Cancel' : 'لغو'}</span>
+              </button>
+            )}
+
+            {loading && simulationProgress !== null && (
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="w-24 md:w-32 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                  <div
+                    className="bg-industrial-accent h-full transition-all duration-150"
+                    style={{ width: `${simulationProgress}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-mono text-industrial-accent">{simulationProgress}%</span>
+              </div>
+            )}
 
             <select
               value={simulationMode}

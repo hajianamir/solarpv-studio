@@ -104,28 +104,36 @@ import {
 import { LoadProfilingTab } from './components/LoadProfilingTab';
 import { ClimateTab } from './components/ClimateTab';
 import { PvArrayEngineeringTab } from './components/PvArrayEngineeringTab';
-import { BessTab } from './components/BessTab';
-import { ProtectionBomTab } from './components/ProtectionBomTab';
-import { Simulation24hTab } from './components/Simulation24hTab';
 import { FinancialTab } from './components/FinancialTab';
 import { SingleLineDiagram } from './components/SingleLineDiagram';
-import { ScenarioComparisonTab } from './components/ScenarioComparisonTab';
 import { CatalogTab } from './components/CatalogTab';
-import { ThreeJsViewer } from './components/ThreeJsViewer';
-import { OfficialReportModal } from './components/OfficialReportModal';
 
-// Components - Advanced Powerplant & Utility Modules
-import { PowerplantCadLayoutTab } from './components/PowerplantCadLayoutTab';
-import { WaterfallLossTab } from './components/WaterfallLossTab';
-import { IvCurveTracerTab } from './components/IvCurveTracerTab';
-import { MvSubstationTab } from './components/MvSubstationTab';
-import { SolarPumpingTab } from './components/SolarPumpingTab';
-import { IranianRegulationsTab } from './components/IranianRegulationsTab';
-import { StructuralFoundationTab } from './components/StructuralFoundationTab';
-import { HarmonicsGridTab } from './components/HarmonicsGridTab';
-import { RFC3ReportsTab } from './components/RFC3ReportsTab';
+// Dynamically lazy-loaded modules for optimal initial bundle performance (MAIN-05)
+const ThreeJsViewer = React.lazy(() => import('./components/ThreeJsViewer'));
+const PowerplantCadLayoutTab = React.lazy(() => import('./components/PowerplantCadLayoutTab'));
+const HarmonicsGridTab = React.lazy(() => import('./components/HarmonicsGridTab').then((m) => ({ default: m.HarmonicsGridTab })));
+const MvSubstationTab = React.lazy(() => import('./components/MvSubstationTab'));
+const StructuralFoundationTab = React.lazy(() => import('./components/StructuralFoundationTab').then((m) => ({ default: m.StructuralFoundationTab })));
+const BessTab = React.lazy(() => import('./components/BessTab').then((m) => ({ default: m.BessTab })));
+const SolarPumpingTab = React.lazy(() => import('./components/SolarPumpingTab').then((m) => ({ default: m.SolarPumpingTab })));
+const IranianRegulationsTab = React.lazy(() => import('./components/IranianRegulationsTab').then((m) => ({ default: m.IranianRegulationsTab })));
+const ProtectionBomTab = React.lazy(() => import('./components/ProtectionBomTab'));
+const IvCurveTracerTab = React.lazy(() => import('./components/IvCurveTracerTab'));
+const RFC3ReportsTab = React.lazy(() => import('./components/RFC3ReportsTab'));
+const ScenarioComparisonTab = React.lazy(() => import('./components/ScenarioComparisonTab').then((m) => ({ default: m.ScenarioComparisonTab })));
+const Simulation24hTab = React.lazy(() => import('./components/Simulation24hTab').then((m) => ({ default: m.Simulation24hTab })));
+const OfficialReportModal = React.lazy(() => import('./components/OfficialReportModal').then((m) => ({ default: m.OfficialReportModal })));
+const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab').then((m) => ({ default: m.WaterfallLossTab })));
 import { migrateProjectToV3 } from './engine/core/projectMigration';
 import { generateTraceId } from './engine/core/modelRegistry';
+
+// Fallback component for lazy-loaded tabs (MAIN-05)
+const TabSuspenseFallback: React.FC<{ lang: string }> = ({ lang }) => (
+  <div className="h-72 rounded-xl border border-industrial-border bg-industrial-surface/50 flex flex-col items-center justify-center gap-3 text-slate-400">
+    <div className="w-8 h-8 rounded-full border-2 border-industrial-accent border-t-transparent animate-spin" />
+    <span className="text-xs font-mono">{lang === 'fa' ? 'در حال بارگذاری ماژول مهندسی...' : 'Loading Engineering Module...'}</span>
+  </div>
+);
 
 export type SystemMode = 'powerplant' | 'ongrid' | 'offgrid';
 
@@ -2265,8 +2273,9 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {/* SITE & CLIMATE MAP TAB */}
-          {activeTab === 'climate' && (
+          <React.Suspense fallback={<TabSuspenseFallback lang={lang} />}>
+            {/* SITE & CLIMATE MAP TAB */}
+            {activeTab === 'climate' && (
             <ClimateTab
               selectedCity={city}
               onCityChange={(newCity) => {
@@ -2485,64 +2494,73 @@ export const App: React.FC = () => {
 
           {/* 3D VIEWER TAB */}
           {activeTab === '3d_viewer' && (
-            <ThreeJsViewer
-              lang={lang}
-              city={city}
-              site={selectedSite}
-              plantCapacityKw={
-                systemMode === 'powerplant'
-                  ? (targetPowerplantCapacityKw || 1000)
-                  : activePlantCapacityKwp
+            <React.Suspense
+              fallback={
+                <div className="h-96 rounded-xl border border-industrial-border bg-industrial-surface/50 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <div className="w-8 h-8 rounded-full border-2 border-industrial-accent border-t-transparent animate-spin" />
+                  <span className="text-sm font-medium">{lang === 'fa' ? 'در حال راه‌اندازی موتور سه‌بعدی Three.js...' : 'Initializing Three.js 3D Engine...'}</span>
+                </div>
               }
-              plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
-              annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
-              waterfallShadingLossPct={shadingLoss3dPct !== null ? shadingLoss3dPct : 2.4}
-              simulationMode={shadingSimulationMode}
-              onSimulationModeChange={setShadingSimulationMode}
-              arrayDesign={{
-                totalPvCapacityKwp: activePlantCapacityKwp,
-                totalModulesCount: activeModulesCount,
-                interRowSpacingM: arrayDesign.interRowSpacingM,
-                tiltDeg: city.optimalTiltAnnualDeg,
-                azimuthDeg: 0,
-                modulesPerString: arrayDesign.modulesPerString,
-                stringsCount: arrayDesign.parallelStringsCount,
-              }}
-              moduleSpecs={{
-                lengthM: selectedModule.lengthM,
-                widthM: selectedModule.widthM,
-                pmpWatts: selectedModule.pmpWatts,
-                modelName: selectedModule.modelName,
-              }}
-              installationEnvironment={
-                siteOverrides?.installationEnvironment ||
-                (systemMode === 'powerplant' ? 'ground_mount' : 'rooftop_flat_concrete')
-              }
-              onShadingLossChange={(loss) => {
-                if (loss === null) {
-                  dispatchShadingLifecycle({ type: 'REVERT' });
+            >
+              <ThreeJsViewer
+                lang={lang}
+                city={city}
+                site={selectedSite}
+                plantCapacityKw={
+                  systemMode === 'powerplant'
+                    ? (targetPowerplantCapacityKw || 1000)
+                    : activePlantCapacityKwp
                 }
-              }}
-              appliedShading={appliedShadingRecord}
-              isShadingStale={isShadingStale}
-              onApplyShading={(record) => {
-                if (record.simulationMode) {
-                  setShadingSimulationMode(record.simulationMode);
+                plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
+                annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+                waterfallShadingLossPct={shadingLoss3dPct !== null ? shadingLoss3dPct : 2.4}
+                simulationMode={shadingSimulationMode}
+                onSimulationModeChange={setShadingSimulationMode}
+                arrayDesign={{
+                  totalPvCapacityKwp: activePlantCapacityKwp,
+                  totalModulesCount: activeModulesCount,
+                  interRowSpacingM: arrayDesign.interRowSpacingM,
+                  tiltDeg: city.optimalTiltAnnualDeg,
+                  azimuthDeg: 0,
+                  modulesPerString: arrayDesign.modulesPerString,
+                  stringsCount: arrayDesign.parallelStringsCount,
+                }}
+                moduleSpecs={{
+                  lengthM: selectedModule.lengthM,
+                  widthM: selectedModule.widthM,
+                  pmpWatts: selectedModule.pmpWatts,
+                  modelName: selectedModule.modelName,
+                }}
+                installationEnvironment={
+                  siteOverrides?.installationEnvironment ||
+                  (systemMode === 'powerplant' ? 'ground_mount' : 'rooftop_flat_concrete')
                 }
-                dispatchShadingLifecycle({
-                  type: 'APPLY',
-                  lossPct: record.lossPct,
-                  capacityKwp: record.capacityKwp,
-                  projectCapacityKwp: activePlantCapacityKwp,
-                  appliedAtIso: record.appliedAtIso,
-                  cityId: city.id,
-                  source: record.source,
-                  signatureHash: record.signatureHash || currentShadingSignature,
-                  simulationMode: record.simulationMode ?? shadingSimulationMode,
-                });
-              }}
-              onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
-            />
+                onShadingLossChange={(loss) => {
+                  if (loss === null) {
+                    dispatchShadingLifecycle({ type: 'REVERT' });
+                  }
+                }}
+                appliedShading={appliedShadingRecord}
+                isShadingStale={isShadingStale}
+                onApplyShading={(record) => {
+                  if (record.simulationMode) {
+                    setShadingSimulationMode(record.simulationMode);
+                  }
+                  dispatchShadingLifecycle({
+                    type: 'APPLY',
+                    lossPct: record.lossPct,
+                    capacityKwp: record.capacityKwp,
+                    projectCapacityKwp: activePlantCapacityKwp,
+                    appliedAtIso: record.appliedAtIso,
+                    cityId: city.id,
+                    source: record.source,
+                    signatureHash: record.signatureHash || currentShadingSignature,
+                    simulationMode: record.simulationMode ?? shadingSimulationMode,
+                  });
+                }}
+                onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
+              />
+            </React.Suspense>
           )}
 
           {/* SCENARIOS COMPARISON TAB (Only for Battery modes) */}
@@ -2571,15 +2589,16 @@ export const App: React.FC = () => {
           {/* EQUIPMENT CATALOG TAB */}
           {activeTab === 'catalog' && <CatalogTab lang={lang} />}
 
-          {/* RFC 3.0 COMPREHENSIVE REPORTS TAB */}
-          {activeTab === 'rfc3_reports' && (
-            <RFC3ReportsTab
-              lang={lang}
-              onJumpTab={(t) => setActiveTab(t)}
-              city={city}
-              siteOverrides={siteOverrides}
-            />
-          )}
+            {/* RFC 3.0 COMPREHENSIVE REPORTS TAB */}
+            {activeTab === 'rfc3_reports' && (
+              <RFC3ReportsTab
+                lang={lang}
+                onJumpTab={(t) => setActiveTab(t)}
+                city={city}
+                siteOverrides={siteOverrides}
+              />
+            )}
+          </React.Suspense>
         </main>
 
         {/* 24px Industrial CAD/SCADA Telemetry Status Bar */}
@@ -2618,29 +2637,31 @@ export const App: React.FC = () => {
 
       {/* OFFICIAL EPC REPORT MODAL */}
       {showReportModal && (
-        <OfficialReportModal
-          projectName={projectName}
-          systemMode={systemMode}
-          city={city}
-          loadAnalysis={loadAnalysis}
-          module={selectedModule}
-          inverter={selectedInverter}
-          arrayDesign={arrayDesign}
-          batterySizing={batterySizing}
-          protection={protectionSystem}
-          simulation={simulationResult}
-          generator={generatorSizing}
-          financial={financialResult}
-          bayArchitecture={bayArchitecture}
-          siteOverrides={siteOverrides}
-          waterfallReport={waterfallReport}
-          appliedShading={appliedShadingRecord}
-          isShadingStale={isShadingStale}
-          bifacialGainPct={bifacialGainPct}
-          onClose={() => setShowReportModal(false)}
-          onImportProject={handleImportProject}
-          lang={lang}
-        />
+        <React.Suspense fallback={null}>
+          <OfficialReportModal
+            projectName={projectName}
+            systemMode={systemMode}
+            city={city}
+            loadAnalysis={loadAnalysis}
+            module={selectedModule}
+            inverter={selectedInverter}
+            arrayDesign={arrayDesign}
+            batterySizing={batterySizing}
+            protection={protectionSystem}
+            simulation={simulationResult}
+            generator={generatorSizing}
+            financial={financialResult}
+            bayArchitecture={bayArchitecture}
+            siteOverrides={siteOverrides}
+            waterfallReport={waterfallReport}
+            appliedShading={appliedShadingRecord}
+            isShadingStale={isShadingStale}
+            bifacialGainPct={bifacialGainPct}
+            onClose={() => setShowReportModal(false)}
+            onImportProject={handleImportProject}
+            lang={lang}
+          />
+        </React.Suspense>
       )}
 
     </div>

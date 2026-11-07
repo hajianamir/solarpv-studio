@@ -350,6 +350,12 @@ export interface PlanarFacet3D {
   normal: { x: number; y: number; z: number };
   d: number; // nx*x + ny*y + nz*z + d = 0
   vertices: Array<{ x: number; y: number; z: number }>;
+  minX?: number;
+  maxX?: number;
+  minY?: number;
+  maxY?: number;
+  minZ?: number;
+  maxZ?: number;
 }
 
 export interface TableHeatmapCell {
@@ -367,6 +373,8 @@ export interface ShadingSimulationOptions {
   simulationMode?: 'hourly_8760' | 'screening_3day';
   stepDays?: number;
   albedo?: number;
+  abortSignal?: AbortSignal;
+  onProgress?: (progressPct: number, currentDay: number, totalDays: number) => void;
 }
 
 export interface ShadingReconciliationStatus {
@@ -572,6 +580,110 @@ export function computeSunVectorEnu(
 }
 
 /**
+ * Caches and ensures axis-aligned bounding box for a 3D planar facet (MAIN-05 performance).
+ */
+export function ensureFacetBounds(f: PlanarFacet3D): void {
+  if (f.minX !== undefined) return;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  const verts = f.vertices;
+  for (let i = 0; i < verts.length; i++) {
+    const v = verts[i];
+    if (v.x < minX) minX = v.x;
+    if (v.x > maxX) maxX = v.x;
+    if (v.y < minY) minY = v.y;
+    if (v.y > maxY) maxY = v.y;
+    if (v.z < minZ) minZ = v.z;
+    if (v.z > maxZ) maxZ = v.z;
+  }
+  f.minX = minX;
+  f.maxX = maxX;
+  f.minY = minY;
+  f.maxY = maxY;
+  f.minZ = minZ;
+  f.maxZ = maxZ;
+}
+
+/**
+ * Tests whether a planar facet can potentially intersect any ray originating from
+ * the oriented PV table bounding box along the given ray direction (MAIN-05 fast slab test).
+ */
+export function doesFacetIntersectTableBeam(
+  tMinX: number,
+  tMaxX: number,
+  tMinY: number,
+  tMaxY: number,
+  tMinZ: number,
+  tMaxZ: number,
+  f: PlanarFacet3D,
+  dirX: number,
+  dirY: number,
+  dirZ: number
+): boolean {
+  ensureFacetBounds(f);
+
+  let tEnter = 0.05;
+  let tExit = 5000.0;
+
+  // X slab
+  if (Math.abs(dirX) < 1e-7) {
+    if (tMaxX < f.minX! || tMinX > f.maxX!) return false;
+  } else {
+    const invD = 1.0 / dirX;
+    let t1 = (f.minX! - tMaxX) * invD;
+    let t2 = (f.maxX! - tMinX) * invD;
+    if (t1 > t2) {
+      const tmp = t1;
+      t1 = t2;
+      t2 = tmp;
+    }
+    if (t1 > tEnter) tEnter = t1;
+    if (t2 < tExit) tExit = t2;
+    if (tEnter > tExit) return false;
+  }
+
+  // Y slab
+  if (Math.abs(dirY) < 1e-7) {
+    if (tMaxY < f.minY! || tMinY > f.maxY!) return false;
+  } else {
+    const invD = 1.0 / dirY;
+    let t1 = (f.minY! - tMaxY) * invD;
+    let t2 = (f.maxY! - tMinY) * invD;
+    if (t1 > t2) {
+      const tmp = t1;
+      t1 = t2;
+      t2 = tmp;
+    }
+    if (t1 > tEnter) tEnter = t1;
+    if (t2 < tExit) tExit = t2;
+    if (tEnter > tExit) return false;
+  }
+
+  // Z slab
+  if (Math.abs(dirZ) < 1e-7) {
+    if (tMaxZ < f.minZ! || tMinZ > f.maxZ!) return false;
+  } else {
+    const invD = 1.0 / dirZ;
+    let t1 = (f.minZ! - tMaxZ) * invD;
+    let t2 = (f.maxZ! - tMinZ) * invD;
+    if (t1 > t2) {
+      const tmp = t1;
+      t1 = t2;
+      t2 = tmp;
+    }
+    if (t1 > tEnter) tEnter = t1;
+    if (t2 < tExit) tExit = t2;
+    if (tEnter > tExit) return false;
+  }
+
+  return true;
+}
+
+/**
  * Tests 3D ray intersection against one or more planar polygon facets in ENU space.
  * Ray: P(t) = origin + t * dir (t > 0).
  */
@@ -598,6 +710,20 @@ export function testRayFacetIntersection(
   const px = origin.x + t * dir.x;
   const py = origin.y + t * dir.y;
   const pz = origin.z + t * dir.z;
+
+  // Fast AABB rejection before polygon winding evaluation (MAIN-05)
+  ensureFacetBounds(facetOrFacets);
+  const eps = 1e-4;
+  if (
+    px < facetOrFacets.minX! - eps ||
+    px > facetOrFacets.maxX! + eps ||
+    py < facetOrFacets.minY! - eps ||
+    py > facetOrFacets.maxY! + eps ||
+    pz < facetOrFacets.minZ! - eps ||
+    pz > facetOrFacets.maxZ! + eps
+  ) {
+    return false;
+  }
 
   // Project onto dominant 2D coordinate plane for robust polygon test without array allocations (MAIN-05)
   const absX = Math.abs(normal.x);
@@ -729,10 +855,84 @@ export function computeTableShadingGeometricMesh(
   const normY = -Math.cos(tableAzRad) * Math.sin(tiltRad);
   const normZ = Math.cos(tiltRad);
 
+  // Pre-calculate table oriented bounding box in ENU
+  const cX = table.positionEnu.x;
+  const cY = table.positionEnu.y;
+  const cZ = table.positionEnu.z;
+
+  const extX = Math.abs(halfWidth * latUx) + Math.abs(halfLen * slopeUx) + 0.1;
+  const extY = Math.abs(halfWidth * latUy) + Math.abs(halfLen * slopeUy) + 0.1;
+  const extZ = Math.abs(halfLen * slopeUz) + 0.1;
+
+  const tMinX = cX - extX;
+  const tMaxX = cX + extX;
+  const tMinY = cY - extY;
+  const tMaxY = cY + extY;
+  const tMinZ = cZ - extZ;
+  const tMaxZ = cZ + extZ;
+
+  // Filter candidate facets whose swept beam volume intersects the table along rayDir (MAIN-05)
+  const candidateFacets: PlanarFacet3D[] = [];
+  for (let i = 0; i < allObstacleFacets.length; i++) {
+    const f = allObstacleFacets[i];
+    if (doesFacetIntersectTableBeam(tMinX, tMaxX, tMinY, tMaxY, tMinZ, tMaxZ, f, dirX, dirY, dirZ)) {
+      candidateFacets.push(f);
+    }
+  }
+
+  // Fast-path: When zero facets can occlude this table at this sun position, return 0% unshaded
+  if (candidateFacets.length === 0) {
+    return {
+      beamCoveragePct: 0,
+      isDiodeTriggered: false,
+      electricalMismatchFactor: 1.0,
+      directBeamLossFraction: 0,
+      diodeMismatchLossFraction: 0,
+    };
+  }
+
   // Sample across active module slots and 3 bypass diode substrings per module
   const modCount = table.moduleCount ?? 1;
   const cols = modCount === 1 ? 1 : Math.max(1, Math.ceil(modCount / 2));
   const colWidth = table.widthM / cols;
+
+  let minCol = 0;
+  let maxCol = cols - 1;
+
+  // For very large arrays (> 50 columns / utility fields), calculate candidate swath along lateral axis (MAIN-05)
+  if (cols > 50) {
+    let minOffset = Infinity;
+    let maxOffset = -Infinity;
+
+    for (let fIdx = 0; fIdx < candidateFacets.length; fIdx++) {
+      const f = candidateFacets[fIdx];
+      const effDirZ = Math.max(0.01, dirZ);
+      const t1 = Math.max(0.05, (f.minZ! - tMaxZ) / effDirZ);
+      const t2 = Math.max(0.05, (f.maxZ! - tMinZ) / effDirZ);
+
+      const oMinX = Math.min(f.minX! - t1 * dirX, f.minX! - t2 * dirX, f.maxX! - t1 * dirX, f.maxX! - t2 * dirX);
+      const oMaxX = Math.max(f.minX! - t1 * dirX, f.minX! - t2 * dirX, f.maxX! - t1 * dirX, f.maxX! - t2 * dirX);
+      const oMinY = Math.min(f.minY! - t1 * dirY, f.minY! - t2 * dirY, f.maxY! - t1 * dirY, f.maxY! - t2 * dirY);
+      const oMaxY = Math.max(f.minY! - t1 * dirY, f.minY! - t2 * dirY, f.maxY! - t1 * dirY, f.maxY! - t2 * dirY);
+
+      const p1 = (oMinX - cX) * latUx + (oMinY - cY) * latUy;
+      const p2 = (oMinX - cX) * latUx + (oMaxY - cY) * latUy;
+      const p3 = (oMaxX - cX) * latUx + (oMinY - cY) * latUy;
+      const p4 = (oMaxX - cX) * latUx + (oMaxY - cY) * latUy;
+
+      const fMinProj = Math.min(p1, p2, p3, p4);
+      const fMaxProj = Math.max(p1, p2, p3, p4);
+
+      if (fMinProj < minOffset) minOffset = fMinProj;
+      if (fMaxProj > maxOffset) maxOffset = fMaxProj;
+    }
+
+    minOffset -= colWidth * 1.5;
+    maxOffset += colWidth * 1.5;
+
+    minCol = Math.max(0, Math.floor((minOffset + halfWidth) / colWidth));
+    maxCol = Math.min(cols - 1, Math.ceil((maxOffset + halfWidth) / colWidth));
+  }
 
   let totalMeshPoints = 0;
   let shadedMeshPoints = 0;
@@ -740,7 +940,14 @@ export function computeTableShadingGeometricMesh(
   let zone1Shaded = false;
   let zone2Shaded = false;
 
-  for (let c = 0; c < cols; c++) {
+  // Account for skipped unshaded columns outside active shadow swath in totalMeshPoints
+  if (cols > 50 && (minCol > 0 || maxCol < cols - 1)) {
+    const skippedCols = cols - (maxCol - minCol + 1);
+    const ptsPerCol = (modCount === 1 ? 1 : 2) * 3;
+    totalMeshPoints += Math.max(0, skippedCols * ptsPerCol);
+  }
+
+  for (let c = minCol; c <= maxCol; c++) {
     const lOffset = -halfWidth + (c + 0.5) * colWidth;
     const rows = modCount === 1 ? [0] : [0, 1];
 
@@ -773,8 +980,8 @@ export function computeTableShadingGeometricMesh(
         };
 
         let isPointShaded = false;
-        for (const facet of allObstacleFacets) {
-          if (testRayFacetIntersection(ptOrigin, rayDir, facet)) {
+        for (let fIdx = 0; fIdx < candidateFacets.length; fIdx++) {
+          if (testRayFacetIntersection(ptOrigin, rayDir, candidateFacets[fIdx])) {
             isPointShaded = true;
             break;
           }
@@ -922,6 +1129,14 @@ export function simulateAnnual3dShading(
 
   // Annual loop: 365 days partitioned by safe stepDays (sum of weights strictly = 365 days)
   for (let day = 1; day <= 365; day += safeStepDays) {
+    if (options?.abortSignal?.aborted) {
+      throw new Error('Simulation aborted by user');
+    }
+    if (options?.onProgress) {
+      const pct = Math.min(99, Math.round((day / 365) * 100));
+      options.onProgress(pct, day, 365);
+    }
+
     const weight = Math.min(safeStepDays, 365 - day + 1);
 
     for (let hour = 0; hour < 24; hour++) {
@@ -1144,7 +1359,7 @@ export function simulateAnnual3dShading(
     })
   );
 
-  return {
+  const result: AnnualShading3dResult = {
     sceneState: {
       ...scene,
       albedo: resolvedAlbedo,
@@ -1180,6 +1395,12 @@ export function simulateAnnual3dShading(
     screeningNoticeEn:
       'Geometric shading indices evaluated using clear-sky horizontal proxy irradiance with multi-point substring mesh sampling. These represent relative optical screening indices and do not incorporate Perez diffuse transposition, cell temperature deratings, or inverter clipping.',
   };
+
+  if (options?.onProgress) {
+    options.onProgress(100, 365, 365);
+  }
+
+  return result;
 }
 
 export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {

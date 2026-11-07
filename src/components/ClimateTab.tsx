@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle, Loader2 } from 'lucide-react';
 import { type ClimateCity } from '../engine/climaticData';
-import { SiteLocationMap } from './SiteLocationMap';
+
+const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
 
 interface ClimateTabProps {
   selectedCity: ClimateCity;
@@ -66,12 +67,21 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
       )}
 
       {/* Interactive Map View */}
-      <SiteLocationMap
-        currentCity={selectedCity}
-        onSelectLocation={onCityChange}
-        onCreate3dRooftop={onCreate3dRooftop}
-        lang={lang}
-      />
+      <React.Suspense
+        fallback={
+          <div className="h-[400px] w-full rounded-xl border border-industrial-border bg-industrial-surface/50 flex flex-col items-center justify-center gap-2 text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin text-industrial-accent" />
+            <span className="text-xs">{lang === 'fa' ? 'در حال بارگذاری نقشه...' : 'Loading GIS Map Engine...'}</span>
+          </div>
+        }
+      >
+        <SiteLocationMap
+          currentCity={selectedCity}
+          onSelectLocation={onCityChange}
+          onCreate3dRooftop={onCreate3dRooftop}
+          lang={lang}
+        />
+      </React.Suspense>
 
       {/* Selected City Details Card */}
       <div className="studio-card">

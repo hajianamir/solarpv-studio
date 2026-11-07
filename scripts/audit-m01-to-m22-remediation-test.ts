@@ -2711,6 +2711,78 @@ async function runM01ToM22TestSuite(): Promise<void> {
     );
   }
 
+  // P3/MAIN-05: 10,000 Module Screening Performance & Swath Acceleration
+  {
+    const scene10k = {
+      anchorLocation: { latitude: 35.6, longitude: 51.3, elevationM: 1200 },
+      roofPlanes: [],
+      pvTables: [
+        {
+          id: 'tbl-10k',
+          tableIndex: 1,
+          positionEnu: { x: 0, y: 0, z: 2 },
+          widthM: 500,
+          slopedLengthM: 2.3,
+          tiltDeg: 25,
+          azimuthDeg: 180,
+          moduleCount: 10000,
+          ratedPowerWp: 5500000,
+        },
+      ],
+      obstacles: [
+        {
+          id: 'obs-tree-10k',
+          name: 'Tree 1',
+          type: 'tree' as const,
+          positionEnu: { x: 50, y: 50, z: 0 },
+          geometry: { radiusM: 5, heightM: 12 },
+        },
+      ],
+      totalPvCapacityKwp: 5500,
+      totalModulesCount: 10000,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const progressRecords: number[] = [];
+    const t0 = performance.now();
+    const res10k = simulateAnnual3dShading(scene10k as any, 5.2, 40.0, {
+      simulationMode: 'screening_3day',
+      onProgress: (pct) => progressRecords.push(pct),
+    });
+    const elapsed10k = performance.now() - t0;
+
+    assert(
+      elapsed10k < 500 && res10k.reconciliationStatus?.isArithmeticBalanceOk === true,
+      'P3/MAIN-05: 10,000-module screening finishes in < 500ms (down from 4.4s) with arithmetic balance preserved',
+      `elapsed=${elapsed10k.toFixed(1)}ms, unshaded=${res10k.totalUnshadedAnnualKwh}, lost=${res10k.totalLostAnnualKwh}`
+    );
+
+    assert(
+      progressRecords.length > 5 && progressRecords[progressRecords.length - 1] === 100,
+      'P3/MAIN-05: Shading simulation invokes onProgress callback smoothly reaching 100%',
+      `progressUpdatesCount=${progressRecords.length}, lastProgress=${progressRecords[progressRecords.length - 1]}%`
+    );
+
+    // Abort cancellation verification
+    const controller = new AbortController();
+    controller.abort();
+    let abortedCleanly = false;
+    try {
+      simulateAnnual3dShading(scene10k as any, 5.2, 40.0, {
+        abortSignal: controller.signal,
+      });
+    } catch (err: any) {
+      if (err?.message?.includes('aborted') || err?.name === 'AbortError') {
+        abortedCleanly = true;
+      }
+    }
+    assert(
+      abortedCleanly,
+      'P3/MAIN-05: Shading simulation respects AbortSignal and aborts immediately when cancelled by user',
+      `abortedCleanly=${abortedCleanly}`
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // SUMMARY
   // ---------------------------------------------------------------------------
