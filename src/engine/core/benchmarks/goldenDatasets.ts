@@ -296,7 +296,7 @@ export const GOLDEN_BIFACIAL_NREL: BifacialGoldenDataset = {
   frontDhiWm2: 130.0,
   rearIrradianceWm2: 110.50,
   bifacialGainPercent: 10.40,
-  samReferenceCaseFileSha256: 'e9a4f7832bc91e77d85c1894b62e49c716e257db318b76a084594c7185df2314',
+  samReferenceCaseFileSha256: '36a5c27d1f0c469c1b33a9046012eb75c8d9ba5988d6f0c99eefad43cc98eab8',
   samSoftwareRelease: 'NREL SAM 2023.12.17 Revision 1',
   tolerancePercent: BENCHMARK_TOLERANCE_TABLE.BIFACIAL_2D_VF.tolerancePercent, // \epsilon = 2.0%
 };

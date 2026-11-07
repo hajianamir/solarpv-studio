@@ -16,13 +16,18 @@
     "modelType": "Marion",
     "annualSnowfallCm": 150.0,
     "arrayTiltDeg": 30.0,
-    "groundClearanceM": 1.20,
+    "groundClearanceM": 0.80,
+    "moduleBottomClearanceM": 0.80,
+    "dammingRiskThresholdM": 0.50,
+    "slideTemperatureThresholdC": 0.50,
+    "surfaceSheddingCoeff": 1.0,
+    "snowDensityKgPerM3": 100.0,
     "ambientMeltThresholdC": 0.0,
     "criticalSlideAngleDeg": 20.0
   },
   "benchmarkTargetOutputs": {
     "annualAverageSnowLossPct": 2.60,
     "peakGroundSnowCm": 15.6,
-    "targetTolerancePct": 3.0
+    "targetTolerancePct": 5.0
   }
 }

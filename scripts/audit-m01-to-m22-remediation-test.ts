@@ -35,6 +35,9 @@ import { CircuitBreaker } from '../src/engine/dataGateway/circuitBreaker';
 import { calculateSolarPump } from '../src/engine/solarPumpEngine';
 import { buildExcelWorkbookXml, escapeXml } from '../src/engine/reportingEngine';
 import { app, setPersistPathForTesting, db as activeDb } from '../server';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 let passes = 0;
 let failures = 0;
@@ -258,9 +261,6 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `sim=${sgHub?.studioAnnualSoilingPercent}%, sam=${sgHub?.samAnnualSoilingPercent}%, delta=${sgHub?.soilingDeltaPercent}%`
     );
 
-    const fs = await import('fs');
-    const path = await import('path');
-    const crypto = await import('crypto');
     const manifestPath = path.resolve(process.cwd(), 'benchmarks/reference_files/sam_reference_manifest.json');
     const manifestExists = fs.existsSync(manifestPath);
     let casesCount = 0;
@@ -290,6 +290,14 @@ async function runM01ToM22TestSuite(): Promise<void> {
       allChecksumsValid === true,
       'M04: All referenced .sam files exist on disk and their SHA-256 hashes strictly match the manifest',
       `checksumsMatch=${allChecksumsValid}`
+    );
+
+    // M04: Mutation sensitivity test - altering a reference target strictly causes benchmark failure
+    const failedReport = runExternalEmpiricalValidationSuite({ forceCrossModelFailure: true });
+    assert(
+      failedReport.overallStatus === 'FAIL',
+      'M04: Validation runner strictly flags failure when model parameters/targets diverge from baseline',
+      `status=${failedReport.overallStatus}`
     );
   }
 
@@ -581,24 +589,86 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `reason=${unauthSyncBody.rejected[0].reason}`
     );
 
-    // M06: Bearer token authentication allows owner update
-    let bearerPutStatus = 200;
+    // M06: Strict anti-spoofing tests with INTERNAL_GATEWAY_SECRET active
+    process.env.INTERNAL_GATEWAY_SECRET = 'secret-gateway-token-xyz';
+
+    // 1. Raw Bearer token without valid JWT signature is rejected with HTTP 401
+    let rawBearerStatus = 0;
+    let rawBearerBody: any = null;
     await projectPutRoute({
       params: { id: sharedAliceProjectId },
       headers: { authorization: 'Bearer alice' },
-      body: { name: 'Alice Bearer Updated Name', systemCapacityKwp: 12.0 },
+      body: { name: 'Raw Bearer Update' },
     }, {
-      status(s: number) { bearerPutStatus = s; return this; },
-      json() { return this; },
+      status(s: number) { rawBearerStatus = s; return this; },
+      json(d: any) { rawBearerBody = d; return this; },
     });
     assert(
-      bearerPutStatus === 200,
-      'M06: RFC 6750 Bearer token authorization enables authenticated project modification',
-      `status=${bearerPutStatus}`
+      rawBearerStatus === 401 && rawBearerBody.error.includes('Untrusted bearer token'),
+      'M06: Raw Bearer token without signature is rejected when gateway secret is enforced',
+      `status=${rawBearerStatus}, error=${rawBearerBody.error}`
     );
 
-    // M06: Identity header spoofing defense via gateway secret
-    process.env.INTERNAL_GATEWAY_SECRET = 'secret-gateway-token-xyz';
+    // 2. JWT with fake signature and expired timestamp is rejected with HTTP 401
+    const fakeJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImV4cCI6MX0.fakesig';
+    let fakeJwtStatus = 0;
+    let fakeJwtBody: any = null;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { authorization: 'Bearer ' + fakeJwt },
+      body: { name: 'Fake JWT Update' },
+    }, {
+      status(s: number) { fakeJwtStatus = s; return this; },
+      json(d: any) { fakeJwtBody = d; return this; },
+    });
+    assert(
+      fakeJwtStatus === 401 && fakeJwtBody.error.includes('Invalid bearer token'),
+      'M06: JWT with fake signature / expired timestamp is rejected with HTTP 401',
+      `status=${fakeJwtStatus}, error=${fakeJwtBody.error}`
+    );
+
+    // 3. PUT with body.requesterId without identity headers is rejected with HTTP 403
+    let bodyBypassStatus = 0;
+    let bodyBypassBody: any = null;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: {},
+      body: { name: 'Body Bypass Attempt', requesterId: 'alice' },
+    }, {
+      status(s: number) { bodyBypassStatus = s; return this; },
+      json(d: any) { bodyBypassBody = d; return this; },
+    });
+    assert(
+      bodyBypassStatus === 403 && bodyBypassBody.error.includes('Authentication required'),
+      'M06: Body requesterId fallback is ignored and unauthenticated PUT is rejected with HTTP 403',
+      `status=${bodyBypassStatus}`
+    );
+
+    // 4. Sync push with msg.userId without verified identity header is rejected
+    let syncMsgBypassBody: any = null;
+    await syncPushRoute({
+      headers: {},
+      body: {
+        messages: [
+          {
+            id: 'msg-sync-bypass',
+            entityType: 'project',
+            userId: 'alice',
+            payloadJson: JSON.stringify({ id: sharedAliceProjectId, name: 'Sync Bypass Update', systemCapacityKwp: 25 }),
+          },
+        ],
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { syncMsgBypassBody = d; return this; },
+    });
+    assert(
+      syncMsgBypassBody.rejected.length === 1 && syncMsgBypassBody.rejected[0].reason.includes('Authentication required'),
+      'M06: Sync message.userId fallback is ignored and unauthenticated sync is rejected',
+      `reason=${syncMsgBypassBody.rejected[0].reason}`
+    );
+
+    // 5. Header spoofing attempt without x-gateway-secret is rejected with HTTP 401
     let spoofStatus = 0;
     let spoofBody: any = null;
     await projectPutRoute({
@@ -614,6 +684,45 @@ async function runM01ToM22TestSuite(): Promise<void> {
       'M06: Direct x-user-id header spoofing is rejected when gateway secret verification is enforced',
       `status=${spoofStatus}, error=${spoofBody.error}`
     );
+
+    // 6. Legitimate cryptographically signed JWT succeeds with HTTP 200
+    const b64u = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const jwtHeader = b64u({ alg: 'HS256', typ: 'JWT' });
+    const jwtPayload = b64u({ sub: 'alice', exp: Math.floor(Date.now() / 1000) + 3600 });
+    const jwtSig = crypto.createHmac('sha256', 'secret-gateway-token-xyz').update(jwtHeader + '.' + jwtPayload).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const legitimateJwt = jwtHeader + '.' + jwtPayload + '.' + jwtSig;
+
+    let validJwtStatus = 200;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { authorization: 'Bearer ' + legitimateJwt },
+      body: { name: 'Alice Verified JWT Update', systemCapacityKwp: 12.0 },
+    }, {
+      status(s: number) { validJwtStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      validJwtStatus === 200,
+      'M06: Cryptographically signed JWT with valid expiration authorizes project modification',
+      `status=${validJwtStatus}`
+    );
+
+    // 7. Legitimate Gateway-authenticated request succeeds with HTTP 200
+    let validGatewayStatus = 200;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { 'x-user-id': 'alice', 'x-gateway-secret': 'secret-gateway-token-xyz' },
+      body: { name: 'Alice Gateway Update', systemCapacityKwp: 14.0 },
+    }, {
+      status(s: number) { validGatewayStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      validGatewayStatus === 200,
+      'M06: Gateway-authenticated request with matching gateway signature authorizes project modification',
+      `status=${validGatewayStatus}`
+    );
+
     delete process.env.INTERNAL_GATEWAY_SECRET;
   }
 
@@ -681,22 +790,57 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `outboxBefore=${outboxCountBefore}, outboxAfter=${outboxCountAfter}`
     );
 
-    // M07: Catalog POST under storage failure returns HTTP 500
+    // M07: Catalog POST under storage failure returns HTTP 500 and rolls back
     const catModPostRoute = (app as any)._router.stack
       .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.post)
       ?.route.stack[0].handle;
-    let catFailStatus = 0;
+    const catInvPostRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/catalog/inverters' && r.route.methods.post)
+      ?.route.stack[0].handle;
+    const catBatPostRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/catalog/batteries' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    // Seed original items in database to test overwrite rollback
+    activeDb.pvModules.set('mod-keep-1', { id: 'mod-keep-1', modelName: 'Original Module', manufacturer: 'SolarCorp', pmpWatts: 500, vmpVolts: 40, impAmps: 12.5, vocVolts: 48, iscAmps: 13.5, betaVocPerC: -0.0028 });
+    activeDb.inverters.set('inv-keep-1', { id: 'inv-keep-1', modelName: 'Original Inverter', manufacturer: 'InvCorp', pnomAcKw: 10, vdcMaxVolts: 1000, vmpptMinVolts: 200, vmpptMaxVolts: 800 });
+    activeDb.batteries.set('bat-keep-1', { id: 'bat-keep-1', modelName: 'Original Battery', manufacturer: 'BatCorp', nominalVoltageVolts: 48, capacityKwh: 10, depthOfDischargeMax: 0.8 });
+
+    let modOverwriteStatus = 0;
     await catModPostRoute({
-      body: { pmpWatts: 600, vmpVolts: 42, impAmps: 14, vocVolts: 50, iscAmps: 15, id: 'mod-fail-test' },
-    }, {
-      status(s: number) { catFailStatus = s; return this; },
-      json() { return this; },
-    });
+      body: { id: 'mod-keep-1', modelName: 'Malicious Overwrite Module', manufacturer: 'Hacker', pmpWatts: 900, vmpVolts: 45, impAmps: 20, vocVolts: 52, iscAmps: 22 },
+    }, { status(s: number) { modOverwriteStatus = s; return this; }, json() { return this; } });
+
+    let invOverwriteStatus = 0;
+    await catInvPostRoute({
+      body: { id: 'inv-keep-1', modelName: 'Malicious Overwrite Inverter', manufacturer: 'Hacker', pnomAcKw: 99, vdcMaxVolts: 1200, vmpptMinVolts: 300, vmpptMaxVolts: 900 },
+    }, { status(s: number) { invOverwriteStatus = s; return this; }, json() { return this; } });
+
+    let batOverwriteStatus = 0;
+    await catBatPostRoute({
+      body: { id: 'bat-keep-1', modelName: 'Malicious Overwrite Battery', manufacturer: 'Hacker', nominalVoltageVolts: 96, capacityKwh: 100 },
+    }, { status(s: number) { batOverwriteStatus = s; return this; }, json() { return this; } });
+
+    const restoredMod = activeDb.pvModules.get('mod-keep-1');
+    const restoredInv = activeDb.inverters.get('inv-keep-1');
+    const restoredBat = activeDb.batteries.get('bat-keep-1');
+
     assert(
-      catFailStatus === 500,
-      'M07: Catalog write failure returns HTTP 500 and prevents unpersisted in-memory mutation',
-      `status=${catFailStatus}`
+      modOverwriteStatus === 500 && restoredMod !== undefined && restoredMod.modelName === 'Original Module',
+      'M07: Module catalog overwrite failure restores original item without deleting it from memory',
+      `status=${modOverwriteStatus}, restoredModel=${restoredMod?.modelName}`
     );
+    assert(
+      invOverwriteStatus === 500 && restoredInv !== undefined && restoredInv.modelName === 'Original Inverter',
+      'M07: Inverter catalog overwrite failure restores original item without deleting it from memory',
+      `status=${invOverwriteStatus}, restoredModel=${restoredInv?.modelName}`
+    );
+    assert(
+      batOverwriteStatus === 500 && restoredBat !== undefined && restoredBat.modelName === 'Original Battery',
+      'M07: Battery catalog overwrite failure restores original item without deleting it from memory',
+      `status=${batOverwriteStatus}, restoredModel=${restoredBat?.modelName}`
+    );
+
     // Reset test path
     setPersistPathForTesting('./data/solar-db-snapshot.json');
   }

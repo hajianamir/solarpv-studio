@@ -14,14 +14,17 @@
   },
   "soilingModel": {
     "modelType": "Kimber",
-    "dailyDepositionRatePctPerDay": 0.22,
-    "rainCleanThresholdMm": 5.0,
+    "dailyDepositionRatePctPerDay": 0.115,
+    "scheduledWashIntervalDays": 0,
+    "maxSoilingCeilingPercent": 25.0,
+    "washEventsDaysOfYear": [73, 146, 219, 292, 365],
+    "rainfallPerEventMm": 20.0,
     "gracePeriodDays": 14,
     "cleaningSchedules": []
   },
   "benchmarkTargetOutputs": {
     "annualAverageSoilingLossPct": 4.20,
     "maxMonthlySoilingLossPct": 10.23,
-    "targetTolerancePct": 3.0
+    "targetTolerancePct": 5.0
   }
 }

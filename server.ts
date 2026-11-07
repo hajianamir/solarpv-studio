@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import {
   InMemorySolarDatabase,
   calculateSolarPosition,
@@ -395,33 +396,69 @@ function validateProjectSchema(candidate: any): { valid: boolean; error?: string
 /**
  * Resolves caller identity from Authorization bearer token or trusted gateway header.
  * Defends against identity header spoofing (M06):
- * 1. Supports RFC 6750 Bearer tokens (JWT payload decoding for 'sub' or 'userId', or bearer token identity).
- * 2. If INTERNAL_GATEWAY_SECRET is configured in production, direct x-user-id headers are rejected unless
- *    accompanied by a matching x-gateway-secret header from the trusted reverse proxy / API gateway.
- * 3. In development/testing environments (where INTERNAL_GATEWAY_SECRET is unset), x-user-id is accepted.
+ * 1. Supports RFC 6750 Bearer tokens with cryptographic HMAC-SHA256 signature and expiration validation.
+ * 2. If INTERNAL_GATEWAY_SECRET or JWT_SECRET is configured, unsigned/raw bearer strings and invalid/expired JWTs are strictly rejected.
+ * 3. Direct x-user-id headers are rejected unless accompanied by a matching x-gateway-secret header when INTERNAL_GATEWAY_SECRET is set.
  */
 function resolveRequesterIdentity(req: Request): { userId?: string; authError?: string } {
   if (!req || !req.headers) return {};
+
+  const gatewaySecret = process.env.INTERNAL_GATEWAY_SECRET;
+  const jwtSecret = process.env.JWT_SECRET || gatewaySecret;
 
   const authHeader = req.headers['authorization'];
   if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7).trim();
     if (token) {
-      // Check for JWT structure (header.payload.signature)
       const parts = token.split('.');
       if (parts.length === 3) {
+        // Standard JWT: header.payload.signature
+        if (jwtSecret) {
+          const expectedSig = crypto
+            .createHmac('sha256', jwtSecret)
+            .update(parts[0] + '.' + parts[1])
+            .digest('base64')
+            .replace(/=/g, '')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_');
+          if (parts[2] !== expectedSig) {
+            return { authError: 'Invalid bearer token: signature verification failed' };
+          }
+        } else if (gatewaySecret) {
+          return { authError: 'Invalid bearer token: signature verification secret missing' };
+        }
+
         try {
           const payloadJson = Buffer.from(parts[1], 'base64').toString('utf-8');
           const payload = JSON.parse(payloadJson);
+
+          // Expiration check (exp in seconds)
+          if (typeof payload.exp === 'number' && Date.now() / 1000 > payload.exp) {
+            return { authError: 'Invalid bearer token: token has expired' };
+          }
+          // Not before check (nbf in seconds)
+          if (typeof payload.nbf === 'number' && Date.now() / 1000 < payload.nbf) {
+            return { authError: 'Invalid bearer token: token not yet valid' };
+          }
+
           const userId = payload.sub || payload.userId || payload.id;
           if (typeof userId === 'string' && userId.trim()) {
             return { userId: userId.trim() };
           }
+          return { authError: 'Invalid bearer token: missing sub/userId in payload' };
         } catch {
-          return { authError: 'Invalid bearer token payload encoding' };
+          return { authError: 'Invalid bearer token: malformed payload encoding' };
         }
       }
-      // Simple bearer user token: 'Bearer <userId>' or 'Bearer user:<userId>'
+
+      // If gatewaySecret or JWT_SECRET is enforced, raw unverified strings are NOT allowed!
+      if (gatewaySecret || process.env.JWT_SECRET) {
+        return {
+          authError: 'Untrusted bearer token: cryptographically signed JWT or trusted gateway authorization required',
+        };
+      }
+
+      // In local dev without gateway/JWT secret configured:
       const normalized = token.startsWith('user:') ? token.slice(5) : token;
       if (normalized.trim()) {
         return { userId: normalized.trim() };
@@ -430,7 +467,6 @@ function resolveRequesterIdentity(req: Request): { userId?: string; authError?: 
   }
 
   // Gateway secret verification to prevent direct external x-user-id spoofing
-  const gatewaySecret = process.env.INTERNAL_GATEWAY_SECRET;
   const rawUserId = req.headers['x-user-id'];
   if (typeof rawUserId === 'string' && rawUserId.trim()) {
     if (gatewaySecret) {
@@ -500,16 +536,16 @@ app.put('/api/v1/projects/:id', (req: Request, res: Response) => {
   if (authError) {
     return res.status(401).json({ error: authError });
   }
-  const effectiveRequesterId = requesterId || req.body?.requesterId;
+
   if (existing.ownerId) {
-    if (!effectiveRequesterId) {
+    if (!requesterId) {
       return res.status(403).json({
         error: `Authentication required: project '${req.params.id}' is owned by '${existing.ownerId}'. Identity must be supplied via Bearer token or authenticated gateway header.`,
       });
     }
-    if (existing.ownerId !== effectiveRequesterId) {
+    if (existing.ownerId !== requesterId) {
       return res.status(403).json({
-        error: `Access denied: project '${req.params.id}' is owned by '${existing.ownerId}', requester is '${effectiveRequesterId}'. Cannot modify.`,
+        error: `Access denied: project '${req.params.id}' is owned by '${existing.ownerId}', requester is '${requesterId}'. Cannot modify.`,
       });
     }
   }
@@ -526,7 +562,7 @@ app.put('/api/v1/projects/:id', (req: Request, res: Response) => {
 
   const updated: Project = {
     ...candidate,
-    ownerId: existing.ownerId || req.body?.ownerId,
+    ownerId: existing.ownerId, // owner cannot be modified or erased via PUT
   };
 
   db.projects.set(req.params.id as string, updated);
@@ -579,10 +615,15 @@ app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
     modelName: req.body.modelName || req.body.model || 'Custom Module',
     manufacturer: req.body.manufacturer || 'Generic',
   };
+  const previousItem = db.pvModules.get(item.id);
   db.pvModules.set(item.id, item);
   const persisted = saveDatabase();
   if (!persisted) {
-    db.pvModules.delete(item.id);
+    if (previousItem !== undefined) {
+      db.pvModules.set(item.id, previousItem);
+    } else {
+      db.pvModules.delete(item.id);
+    }
     return res.status(500).json({ error: 'Failed to persist PV module to storage.' });
   }
   res.status(201).json(item);
@@ -619,10 +660,15 @@ app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
     modelName: req.body.modelName || req.body.model || 'Custom Inverter',
     manufacturer: req.body.manufacturer || 'Generic',
   };
+  const previousItem = db.inverters.get(item.id);
   db.inverters.set(item.id, item);
   const persisted = saveDatabase();
   if (!persisted) {
-    db.inverters.delete(item.id);
+    if (previousItem !== undefined) {
+      db.inverters.set(item.id, previousItem);
+    } else {
+      db.inverters.delete(item.id);
+    }
     return res.status(500).json({ error: 'Failed to persist inverter to storage.' });
   }
   res.status(201).json(item);
@@ -653,10 +699,15 @@ app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
     modelName: req.body.modelName || req.body.model || 'Custom Battery',
     manufacturer: req.body.manufacturer || 'Generic',
   };
+  const previousItem = db.batteries.get(item.id);
   db.batteries.set(item.id, item);
   const persisted = saveDatabase();
   if (!persisted) {
-    db.batteries.delete(item.id);
+    if (previousItem !== undefined) {
+      db.batteries.set(item.id, previousItem);
+    } else {
+      db.batteries.delete(item.id);
+    }
     return res.status(500).json({ error: 'Failed to persist battery to storage.' });
   }
   res.status(201).json(item);
@@ -853,12 +904,12 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
 
         // Ownership authorization check (M06)
         const existing = db.projects.get(proj.id);
-        const requesterId = headerUserId || msg.userId;
+        const requesterId = headerUserId;
         if (existing?.ownerId) {
           if (!requesterId) {
             rejected.push({
               id: msg.id,
-              reason: `Authentication required: project '${proj.id}' is owned by '${existing.ownerId}'. Identity must be supplied.`,
+              reason: `Authentication required: project '${proj.id}' is owned by '${existing.ownerId}'. Identity must be supplied via Bearer token or authenticated gateway header.`,
             });
             continue;
           }

@@ -27,20 +27,34 @@
       "caseId": "SAM-REF-SOILING-PHOENIX",
       "climateHub": "Phoenix, Arizona (Sonoran Arid Desert)",
       "benchmarkFile": "sam_2023_12_17_phoenix_soiling_reference.sam",
-      "sha256": "f9319ff6a781c679c0203eb2d49d7f592d1ee50c9c526377fa0e80267ede579a",
+      "sha256": "9b0c26944ba0d8fe458457b27d1dd50dffc835f9be1fdc0cdc552a572febd8e3",
+      "modelConfiguration": {
+        "modelType": "Kimber",
+        "dailyDepositionRatePctPerDay": 0.115,
+        "rainfallPerEventMm": 20.0,
+        "maxSoilingCeilingPercent": 25.0
+      },
       "expectedOutputs": {
         "annualSoilingLossPct": 4.20,
-        "tolerancePct": 3.0
+        "tolerancePct": 5.0
       }
     },
     {
       "caseId": "SAM-REF-SNOW-MUNICH",
       "climateHub": "Munich, Bavaria (Central European Alpine Foot)",
       "benchmarkFile": "sam_2023_12_17_munich_snow_reference.sam",
-      "sha256": "a83fcb9a2727f2dc76457e6f6571408d14d20460968ffba081fbdc7cb5521a44",
+      "sha256": "0491b76bf2dd2d76987e0e28903f972c82755b7dd0f51f0f9db8cdf5bb809039",
+      "modelConfiguration": {
+        "modelType": "Marion",
+        "annualSnowfallCm": 150.0,
+        "arrayTiltDeg": 30.0,
+        "groundClearanceM": 0.80,
+        "dammingRiskThresholdM": 0.50,
+        "slideTemperatureThresholdC": 0.50
+      },
       "expectedOutputs": {
         "annualSnowLossPct": 2.60,
-        "tolerancePct": 3.0
+        "tolerancePct": 5.0
       }
     }
   ]

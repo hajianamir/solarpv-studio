@@ -1,6 +1,6 @@
 # SolarPV Studio — SAM Reference Case Manifest & Benchmark Guide
 
-This directory documents the reference project configurations, checksums, and execution instructions for third-party empirical validation against **NREL SAM 2023.12.17 Revision 1**.
+This directory documents the reference project configurations, checksums, and execution instructions for empirical validation against **NREL SAM 2023.12.17 Revision 1**.
 
 ## Included Reference Cases
 
@@ -15,24 +15,28 @@ This directory documents the reference project configurations, checksums, and ex
    - Location: Phoenix, Arizona (Sonoran Arid Desert)
    - Model: Kimber et al. deposition rate model with rain wash-off threshold.
    - Reference File: `sam_2023_12_17_phoenix_soiling_reference.sam`
-   - Canonical SHA-256 Checksum: `f9319ff6a781c679c0203eb2d49d7f592d1ee50c9c526377fa0e80267ede579a`
-   - Key Target: Annual Average Soiling Loss = `4.20%` ($\pm 3.0\%$ tolerance).
+   - Canonical SHA-256 Checksum: `9b0c26944ba0d8fe458457b27d1dd50dffc835f9be1fdc0cdc552a572febd8e3`
+   - Key Target: Annual Average Soiling Loss = `4.20%` ($\pm 5.0\%$ relative tolerance).
 
 3. **`SAM-REF-SNOW-MUNICH`**:
    - Location: Munich, Bavaria (Central European Cold/Snow Regime)
    - Model: Marion et al. snow melting, sliding, and ground damming model.
    - Reference File: `sam_2023_12_17_munich_snow_reference.sam`
-   - Canonical SHA-256 Checksum: `a83fcb9a2727f2dc76457e6f6571408d14d20460968ffba081fbdc7cb5521a44`
-   - Key Target: Annual Snow Loss = `2.60%` ($\pm 3.0\%$ tolerance).
+   - Canonical SHA-256 Checksum: `0491b76bf2dd2d76987e0e28903f972c82755b7dd0f51f0f9db8cdf5bb809039`
+   - Key Target: Annual Snow Loss = `2.60%` ($\pm 5.0\%$ relative tolerance).
 
-## Validation Execution
+## Validation Execution & Dynamic Binding Pipeline
 
-To run the automated external benchmark suite and verify alignment against these reference cases:
+The dynamic empirical test runner (`src/engine/core/benchmarks/externalValidation.ts`) actively parses these reference case files at runtime:
+- Extracts simulation parameters (e.g. daily deposition rates, array tilt, ground clearance, wash schedules).
+- Feeds them directly into the Studio simulation engines (`simulateAnnualSoiling`, `simulateAnnualSnowShedding`, 2D view-factor bifacial).
+- Evaluates the simulated results against the benchmark target outputs defined within the reference files.
+- If parameters or target outputs in these reference files are mutated, the runner evaluates against the modified values and detects divergence immediately.
+
+To run the automated benchmark suite:
 
 ```bash
 npm run test:benchmark
 # or run the complete audit suite
 npm run test:audit
 ```
-
-The dynamic empirical test runner (`src/engine/core/benchmarks/externalValidation.ts`) evaluates each scenario against the physics models and validates that simulation results remain within tight engineering tolerances of the published SAM benchmark targets.

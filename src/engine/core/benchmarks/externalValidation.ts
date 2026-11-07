@@ -114,6 +114,27 @@ export const PHYSICAL_VALIDITY_BOUNDARIES = {
 };
 
 /**
+ * Helper to dynamically load versioned reference case files from benchmarks/reference_files/
+ * Safe in both Node.js (reads from disk) and browser environments (graceful fallback).
+ */
+function loadSamReferenceCase(filename: string): any {
+  try {
+    const reqFn = typeof (globalThis as any).require === 'function' ? (globalThis as any).require : null;
+    if (reqFn && typeof process !== 'undefined' && process?.versions?.node) {
+      const fs = reqFn('fs');
+      const path = reqFn('path');
+      const filePath = path.resolve(process.cwd(), 'benchmarks/reference_files', filename);
+      if (fs.existsSync(filePath)) {
+        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      }
+    }
+  } catch {
+    // Fall back to baseline values
+  }
+  return null;
+}
+
+/**
  * Runs the IEC 61724-1 empirical sensor cross-check and SAM multi-climate suite.
  */
 export function runExternalEmpiricalValidationSuite(options: ExternalValidationOptions = {}): ExternalValidationReport {
@@ -168,24 +189,57 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
   });
 
   // 2. SAM 2023.12.17 Cross-Model Multi-Climate Comparative Benchmarks (Dynamic Engine Executions)
-  // 2a. Phoenix, Arizona: Hyper-arid Sonoran desert with ~5 rain wash events / year
+  // Dynamically load versioned SAM reference cases from benchmarks/reference_files/
+  const phxRef = loadSamReferenceCase('sam_2023_12_17_phoenix_soiling_reference.sam');
+  const munichRef = loadSamReferenceCase('sam_2023_12_17_munich_snow_reference.sam');
+
+  // 2a. Phoenix, Arizona: Hyper-arid Sonoran desert with rain wash events dynamically loaded from reference case
+  const phxWashDays: number[] = Array.isArray(phxRef?.soilingModel?.washEventsDaysOfYear)
+    ? phxRef.soilingModel.washEventsDaysOfYear
+    : [73, 146, 219, 292, 365];
+  const phxRainMm = typeof phxRef?.soilingModel?.rainfallPerEventMm === 'number'
+    ? phxRef.soilingModel.rainfallPerEventMm
+    : 20.0;
+  const phxDailyRate = typeof phxRef?.soilingModel?.dailyDepositionRatePctPerDay === 'number'
+    ? phxRef.soilingModel.dailyDepositionRatePctPerDay
+    : 0.115;
+  const phxMaxCeiling = typeof phxRef?.soilingModel?.maxSoilingCeilingPercent === 'number'
+    ? phxRef.soilingModel.maxSoilingCeilingPercent
+    : 25.0;
+
   const phxDays: DailyWeatherSoilingStep[] = Array.from({ length: 365 }, (_, i) => {
     const d = i + 1;
-    const isRain = [73, 146, 219, 292, 365].includes(d);
+    const isRain = phxWashDays.includes(d);
     return {
       dayOfYear: d,
-      rainfallMm: isRain ? 20.0 : 0.0,
+      rainfallMm: isRain ? phxRainMm : 0.0,
       dustStormOccurred: false,
     };
   });
   const phxSoilingSim = simulateAnnualSoiling(
-    { dailySoilingRatePercent: 0.115, scheduledWashIntervalDays: 0, maxSoilingCeilingPercent: 25.0 },
+    { dailySoilingRatePercent: phxDailyRate, scheduledWashIntervalDays: 0, maxSoilingCeilingPercent: phxMaxCeiling },
     phxDays
   );
   const phxSoilingPct = Number(phxSoilingSim.annualAverageSoilingLossPercent.toFixed(2));
   const phxSnowPct = 0.0;
 
-  // 2b. Munich, Bavaria: Temperate continental with rain events every ~22 days & winter snow
+  // 2b. Munich, Bavaria: Temperate continental with rain events every ~22 days & winter snow dynamically loaded
+  const munichSnowfallCm = typeof munichRef?.snowModel?.annualSnowfallCm === 'number'
+    ? munichRef.snowModel.annualSnowfallCm
+    : 150.0;
+  const munichTiltDeg = typeof munichRef?.snowModel?.arrayTiltDeg === 'number'
+    ? munichRef.snowModel.arrayTiltDeg
+    : 30.0;
+  const munichClearanceM = typeof munichRef?.snowModel?.groundClearanceM === 'number'
+    ? munichRef.snowModel.groundClearanceM
+    : 0.80;
+  const munichDammingM = typeof munichRef?.snowModel?.dammingRiskThresholdM === 'number'
+    ? munichRef.snowModel.dammingRiskThresholdM
+    : 0.50;
+  const munichSlideTempC = typeof munichRef?.snowModel?.slideTemperatureThresholdC === 'number'
+    ? munichRef.snowModel.slideTemperatureThresholdC
+    : 0.50;
+
   const munichDays: DailyWeatherSoilingStep[] = Array.from({ length: 365 }, (_, i) => {
     const d = i + 1;
     const isRain = d % 22 === 0;
@@ -199,14 +253,14 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
     { dailySoilingRatePercent: 0.170, scheduledWashIntervalDays: 0, maxSoilingCeilingPercent: 20.0 },
     munichDays
   );
-  const munichSnowWeather = generateNrelHubSnowWeather(150.0, -0.55, 3, 12, 0.0125, 0.38, 0);
+  const munichSnowWeather = generateNrelHubSnowWeather(munichSnowfallCm, -0.55, 3, 12, 0.0125, 0.38, 0);
   const munichSnowSim = simulateAnnualSnowShedding(
     {
-      tiltDeg: 30.0,
-      groundClearanceM: 0.80,
-      moduleBottomClearanceM: 0.80,
-      dammingRiskThresholdM: 0.50,
-      slideTemperatureThresholdC: 0.50,
+      tiltDeg: munichTiltDeg,
+      groundClearanceM: munichClearanceM,
+      moduleBottomClearanceM: munichClearanceM,
+      dammingRiskThresholdM: munichDammingM,
+      slideTemperatureThresholdC: munichSlideTempC,
       surfaceSheddingCoeff: 1.0,
       snowDensityKgPerM3: 100.0,
     },
@@ -232,9 +286,22 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
   const sgSoilingPct = Number(sgSoilingSim.annualAverageSoilingLossPercent.toFixed(2));
   const sgSnowPct = 0.0;
 
-  const samPhxSoiling = 4.20;
+  // Extract SAM comparison target values directly from the reference cases (with fallback)
+  const samPhxSoiling = typeof phxRef?.benchmarkTargetOutputs?.annualAverageSoilingLossPct === 'number'
+    ? phxRef.benchmarkTargetOutputs.annualAverageSoilingLossPct
+    : 4.20;
+  const phxTol = typeof phxRef?.benchmarkTargetOutputs?.targetTolerancePct === 'number'
+    ? phxRef.benchmarkTargetOutputs.targetTolerancePct
+    : 5.0;
+
   const samMunichSoiling = 1.80;
-  const samMunichSnow = 2.60;
+  const samMunichSnow = typeof munichRef?.benchmarkTargetOutputs?.annualAverageSnowLossPct === 'number'
+    ? munichRef.benchmarkTargetOutputs.annualAverageSnowLossPct
+    : 2.60;
+  const munichTol = typeof munichRef?.benchmarkTargetOutputs?.targetTolerancePct === 'number'
+    ? munichRef.benchmarkTargetOutputs.targetTolerancePct
+    : 5.0;
+
   const samSgSoiling = 1.10;
 
   const phxDelta = Number(((Math.abs(phxSoilingPct - samPhxSoiling) / samPhxSoiling) * 100.0).toFixed(2));
@@ -253,8 +320,8 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
       samAnnualSnowPercent: 0.00,
       studioAnnualSnowPercent: phxSnowPct,
       snowDeltaPercent: 0.00,
-      overallStatus: options.forceCrossModelFailure ? 'FAIL' : (phxDelta <= 5.0 ? 'PASS' : 'WARN'),
-      referenceSource: 'NREL SAM 2023.12.17 TMY3 Phoenix Case & Kimber (2006)',
+      overallStatus: options.forceCrossModelFailure ? 'FAIL' : (phxDelta <= phxTol ? 'PASS' : 'WARN'),
+      referenceSource: phxRef ? 'sam_2023_12_17_phoenix_soiling_reference.sam (Dynamically Bound)' : 'NREL SAM 2023.12.17 TMY3 Phoenix Case & Kimber (2006)',
     },
     {
       climateHubId: 'SAM-HUB-MUNICH',
@@ -266,8 +333,8 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
       samAnnualSnowPercent: samMunichSnow,
       studioAnnualSnowPercent: munichSnowPct,
       snowDeltaPercent: munichSnowDelta,
-      overallStatus: munichSoilingDelta <= 5.0 && munichSnowDelta <= 5.0 ? 'PASS' : 'WARN',
-      referenceSource: 'DWD Munich Trial & NREL SAM 2023.12.17 Marion Snow Model',
+      overallStatus: munichSoilingDelta <= 5.0 && munichSnowDelta <= munichTol ? 'PASS' : 'WARN',
+      referenceSource: munichRef ? 'sam_2023_12_17_munich_snow_reference.sam (Dynamically Bound)' : 'DWD Munich Trial & NREL SAM 2023.12.17 Marion Snow Model',
     },
     {
       climateHubId: 'SAM-HUB-SINGAPORE',
