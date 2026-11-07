@@ -159,8 +159,9 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
         </div>
 
         <div className="flex items-center gap-3 pt-2 border-t border-industrial-border">
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+          <label htmlFor="iv-partial-shading-checkbox" className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
             <input
+              id="iv-partial-shading-checkbox"
               type="checkbox"
               checked={hasPartialShading}
               onChange={(e) => setHasPartialShading(e.target.checked)}

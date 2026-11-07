@@ -29,6 +29,7 @@ import {
   buildSceneFromProjectDesign,
   calculateRayTracedShadingFactor,
   generateTableMeshSamplePoints,
+  computeTableShadingGeometricMesh,
   type PvTable3D,
   type RoofPlane,
   type Scene3DState,
@@ -2460,9 +2461,17 @@ async function runM01ToM22TestSuite(): Promise<void> {
       setHeaders['X-Content-Type-Options'] === 'nosniff' &&
       setHeaders['X-Frame-Options'] === 'SAMEORIGIN' &&
       setHeaders['Referrer-Policy'] === 'strict-origin-when-cross-origin' &&
-      Boolean(setHeaders['Content-Security-Policy'] && setHeaders['Content-Security-Policy'].includes("default-src 'self'")) &&
+      Boolean(
+        setHeaders['Content-Security-Policy'] &&
+        setHeaders['Content-Security-Policy'].includes("default-src 'self'") &&
+        setHeaders['Content-Security-Policy'].includes('arcgisonline.com') &&
+        setHeaders['Content-Security-Policy'].includes('opentopomap.org') &&
+        setHeaders['Content-Security-Policy'].includes('nominatim.openstreetmap.org') &&
+        setHeaders['Content-Security-Policy'].includes('overpass-api.de') &&
+        setHeaders['Content-Security-Policy'].includes('rest.isric.org')
+      ) &&
       nextCalled,
-      'P3/MAIN-02: Global security headers middleware applies nosniff, SAMEORIGIN, and functional Content-Security-Policy',
+      'P3/MAIN-02: Global security headers middleware applies nosniff, SAMEORIGIN, and complete functional Content-Security-Policy',
       `headers=${JSON.stringify(setHeaders)}`
     );
   }
@@ -2584,6 +2593,43 @@ async function runM01ToM22TestSuite(): Promise<void> {
       'P3/MAIN-06: Report rejects snapshot with dangling equipment catalog reference as unreconciled',
       `isReconciled=${dangRepRes?.isReconciledAgainstSnapshot}, discrepancies=${JSON.stringify(dangRepRes?.discrepancies)}`
     );
+
+    // Missing batteryCount in baseline snapshot (MAIN-06):
+    const missingBatCountSnapId = 'proj-missing-batcount-baseline';
+    activeDb.projects.set(missingBatCountSnapId, {
+      id: missingBatCountSnapId,
+      name: 'Missing BatteryCount Baseline Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 10,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      moduleId: 'mod-0',
+      inverterId: 'inv-0',
+      // batteryCount is undefined
+      estimatedAnnualYieldKwh: 15000,
+      lcoeUsdPerKwh: 0.05,
+      createdAt: new Date().toISOString(),
+    } as any);
+
+    let batRepRes: any = null;
+    await reportRoute({
+      body: {
+        projectId: missingBatCountSnapId,
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { batRepRes = d; return this; },
+    });
+
+    assert(
+      batRepRes?.isReconciledAgainstSnapshot === false &&
+      batRepRes?.discrepancies?.some((d: string) => d.includes('missing baseline batteryCount')),
+      'P3/MAIN-06: Report rejects snapshot with missing batteryCount baseline as unreconciled',
+      `isReconciled=${batRepRes?.isReconciledAgainstSnapshot}, discrepancies=${JSON.stringify(batRepRes?.discrepancies)}`
+    );
   }
 
   // P3 Polish: Legacy Catalog Item Protected Against First-Claim Overwrite (MAIN-07)
@@ -2636,6 +2682,32 @@ async function runM01ToM22TestSuite(): Promise<void> {
       legStatus === 403 && legBody?.error?.includes('legacy system catalog item and cannot be overwritten'),
       'P3/MAIN-07: Authenticated user cannot first-claim or overwrite existing legacy catalog item (HTTP 403)',
       `status=${legStatus}, error=${legBody?.error}`
+    );
+  }
+
+  // P3 Polish: Zero Obstacle Fast-Path Shading Metric (MAIN-05)
+  {
+    const dummyTable: PvTable3D = {
+      id: 'table-fastpath-test',
+      tableIndex: 1,
+      positionEnu: { x: 0, y: 0, z: 2 },
+      widthM: 10,
+      slopedLengthM: 2,
+      tiltDeg: 25,
+      azimuthDeg: 180,
+      moduleCount: 27,
+      ratedPowerWp: 14850,
+    };
+    const noonSun = { hour: 12, altitudeDeg: 60, azimuthDeg: 180, isDaylight: true };
+    const resFast = computeTableShadingGeometricMesh(dummyTable, [], noonSun);
+
+    assert(
+      resFast.beamCoveragePct === 0 &&
+      resFast.directBeamLossFraction === 0 &&
+      resFast.isDiodeTriggered === false &&
+      resFast.electricalMismatchFactor === 1.0,
+      'P3/MAIN-05: Zero-obstacle fast path returns beamCoveragePct: 0 (unshaded) and zero beam loss',
+      `beamCoveragePct=${resFast.beamCoveragePct}, directLoss=${resFast.directBeamLossFraction}`
     );
   }
 

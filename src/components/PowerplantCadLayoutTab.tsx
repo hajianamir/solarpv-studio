@@ -56,10 +56,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
       <div className="studio-card">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-structure-type" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Racking Structure Type:' : 'نوع استراکچر نگهدارنده:'}
             </label>
             <select
+              id="cad-structure-type"
               value={structureType}
               onChange={(e) => setStructureType(e.target.value as RackingStructureType)}
               className="studio-input text-xs"
@@ -71,10 +72,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-land-length-m" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Land Length (m):' : 'طول زمین / سقف سوله (m):'}
             </label>
             <input
+              id="cad-land-length-m"
               type="number"
               step="10"
               value={landLengthM}
@@ -84,10 +86,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-land-width-m" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Land Width (m):' : 'عرض زمین / سقف سوله (m):'}
             </label>
             <input
+              id="cad-land-width-m"
               type="number"
               step="10"
               value={landWidthM}
@@ -97,10 +100,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-row-pitch-m" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Row Pitch Spacing (m):' : 'فاصله بین ردیف‌ها (Pitch m):'}
             </label>
             <input
+              id="cad-row-pitch-m"
               type="number"
               step="0.5"
               value={rowPitchM}
@@ -110,10 +114,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-array-tilt-deg" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Tilt Angle (°):' : 'زاویه شیب استراکچر (°):'}
             </label>
             <input
+              id="cad-array-tilt-deg"
               type="number"
               step="1"
               value={arrayTiltDeg}
@@ -123,10 +128,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-module-wattage" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Module Rating (Wp):' : 'توان نامی هر پنل (Wp):'}
             </label>
             <input
+              id="cad-module-wattage"
               type="number"
               step="5"
               value={moduleWattage}
@@ -136,10 +142,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-road-width-m" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Access Road Width (m):' : 'عرض جاده‌های دسترسی (m):'}
             </label>
             <input
+              id="cad-road-width-m"
               type="number"
               step="0.5"
               value={roadWidthM}

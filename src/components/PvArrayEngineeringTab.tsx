@@ -182,8 +182,9 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
           <span className="font-semibold text-slate-300">
             {lang === 'fa' ? 'معماری tracker:' : 'Tracker Architecture:'}
           </span>
-          <label className="flex items-center gap-1.5 cursor-pointer">
+          <label htmlFor="tracker-fixed-tilt" className="flex items-center gap-1.5 cursor-pointer">
             <input
+              id="tracker-fixed-tilt"
               type="radio"
               name="trackerMode"
               checked={trackerConfig === null}
@@ -192,8 +193,9 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             />
             <span>{lang === 'fa' ? 'شیب ثابت (Fixed Tilt)' : 'Fixed Tilt'}</span>
           </label>
-          <label className="flex items-center gap-1.5 cursor-pointer">
+          <label htmlFor="tracker-1axis" className="flex items-center gap-1.5 cursor-pointer">
             <input
+              id="tracker-1axis"
               type="radio"
               name="trackerMode"
               checked={trackerConfig !== null}
@@ -208,20 +210,20 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
         {trackerConfig !== null && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
-              <label className="text-slate-400 block mb-1">GCR (0.30-0.45):</label>
-              <input type="number" step="0.01" min="0.1" max="0.9" value={gcrInput}
+              <label htmlFor="tracker-gcr-input" className="text-slate-400 block mb-1">GCR (0.30-0.45):</label>
+              <input id="tracker-gcr-input" type="number" step="0.01" min="0.1" max="0.9" value={gcrInput}
                 onChange={(e) => { const v = Math.min(0.9, Math.max(0.1, parseFloat(e.target.value) || 0.33)); setGcrInput(v); onTrackerConfigChange?.({ ...trackerConfig, gcr: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
             <div>
-              <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'شیب محور (درجه)' : 'Axis tilt (deg)'}:</label>
-              <input type="number" step="1" min="-30" max="30" value={axisTiltInput}
+              <label htmlFor="tracker-axis-tilt-input" className="text-slate-400 block mb-1">{lang === 'fa' ? 'شیب محور (درجه)' : 'Axis tilt (deg)'}:</label>
+              <input id="tracker-axis-tilt-input" type="number" step="1" min="-30" max="30" value={axisTiltInput}
                 onChange={(e) => { const v = Math.min(30, Math.max(-30, parseFloat(e.target.value) || 0)); setAxisTiltInput(v); onTrackerConfigChange?.({ ...trackerConfig, axisTiltDeg: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
             <div>
-              <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'حداکثر چرخش (درجه)' : 'Max rotation (deg)'}:</label>
-              <input type="number" step="5" min="15" max="90" value={maxRotInput}
+              <label htmlFor="tracker-max-rotation-input" className="text-slate-400 block mb-1">{lang === 'fa' ? 'حداکثر چرخش (درجه)' : 'Max rotation (deg)'}:</label>
+              <input id="tracker-max-rotation-input" type="number" step="5" min="15" max="90" value={maxRotInput}
                 onChange={(e) => { const v = Math.min(90, Math.max(15, parseFloat(e.target.value) || 60)); setMaxRotInput(v); onTrackerConfigChange?.({ ...trackerConfig, maxRotationDeg: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
@@ -320,7 +322,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             {/* 1. Module Picker */}
             <div className="studio-card">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-slate-300">
+                <label htmlFor="pv-module-picker-select" className="text-xs font-semibold text-slate-300">
                   {isEn ? 'Select PV Module Model:' : 'انتخاب مدل پنل فتوولتائیک:'}
                 </label>
                 <span className="text-industrial-warning font-mono font-bold text-xs">{selectedModule.pmpWatts}W TOPCon</span>
@@ -339,6 +341,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               </div>
 
               <select
+                id="pv-module-picker-select"
                 value={selectedModule.modelName}
                 onChange={(e) => {
                   const found = CATALOG_MODULES.find((m) => m.modelName === e.target.value);
@@ -382,7 +385,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             {/* 2. Inverter Picker with Powerplant/Turnkey Enforcement */}
             <div className="studio-card">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-slate-300">
+                <label htmlFor="pv-inverter-picker-select" className="text-xs font-semibold text-slate-300">
                   {isEn ? 'Select Solar Inverter Model:' : 'انتخاب مدل اینورتر خورشیدی:'}
                 </label>
                 <span className="text-industrial-accent font-mono font-bold text-xs">{selectedInverter.pnomAcKw} kW AC</span>
@@ -451,6 +454,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               </div>
 
               <select
+                id="pv-inverter-picker-select"
                 value={selectedInverter.modelName}
                 onChange={(e) => {
                   const found = CATALOG_INVERTERS.find((i) => i.modelName === e.target.value);

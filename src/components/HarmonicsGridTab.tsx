@@ -79,10 +79,11 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="harmonics-capacity-mw" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'ظرفیت کل نامی نیروگاه (MW):' : 'Plant AC Capacity (MW):'}
             </label>
             <input
+              id="harmonics-capacity-mw"
               type="number"
               step="0.5"
               min="0.1"
@@ -93,10 +94,11 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="harmonics-grid-voltage-kv" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'ولتاژ خط اتصال به شبکه (kV):' : 'Interconnection Voltage (kV):'}
             </label>
             <select
+              id="harmonics-grid-voltage-kv"
               value={gridVoltageKv}
               onChange={(e) => setGridVoltageKv(parseInt(e.target.value) || 20)}
               className="studio-input text-xs"
@@ -109,10 +111,11 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="harmonics-short-circuit-mva" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'ظرفیت اتصال کوتاه بالادست (MVA):' : 'Upstream S_sc (MVA):'}
             </label>
             <input
+              id="harmonics-short-circuit-mva"
               type="number"
               step="50"
               min="50"
@@ -124,10 +127,11 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="harmonics-grid-xr-ratio" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'نسبت راکتانس به مقاومت (X/R):' : 'Grid X/R Ratio:'}
             </label>
             <input
+              id="harmonics-grid-xr-ratio"
               type="number"
               step="0.5"
               min="1"
@@ -138,11 +142,12 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="harmonics-power-factor" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'ضریب توان اینورترها (cos φ):' : 'Power Factor (cos φ):'}
             </label>
             <div className="flex gap-1">
               <input
+                id="harmonics-power-factor"
                 type="number"
                 step="0.01"
                 min="0.85"

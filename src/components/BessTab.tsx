@@ -105,11 +105,12 @@ export const BessTab: React.FC<BessTabProps> = ({
       <div className="studio-card">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <div>
-            <label className="block text-xs font-bold text-industrial-accent mb-1.5 flex items-center gap-2">
+            <label htmlFor="bess-selected-chemistry" className="block text-xs font-bold text-industrial-accent mb-1.5 flex items-center gap-2">
               <Boxes className="w-4 h-4 text-indigo-400" />
               {lang === 'fa' ? 'انتخاب فناوری شیمیایی باتری (Dropdown List):' : 'Select Battery Chemistry Technology (Dropdown List):'}
             </label>
             <select
+              id="bess-selected-chemistry"
               value={selectedChemistry}
               onChange={(e) => onChemistryChange(e.target.value as BatteryChemistry)}
               className="studio-input w-full text-xs font-bold py-2 bg-industrial-surface border-indigo-500/50 text-white focus:border-indigo-400"
@@ -159,11 +160,12 @@ export const BessTab: React.FC<BessTabProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="bess-autonomy-days-range" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'روزهای خودمختاری (Autonomy Days):' : 'Days of Autonomy:'}
             </label>
             <div className="flex items-center gap-2">
               <input
+                id="bess-autonomy-days-range"
                 type="range"
                 min="0.5"
                 max="5.0"
@@ -180,10 +182,11 @@ export const BessTab: React.FC<BessTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="bess-unit-voltage" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'ولتاژ نامی هر واحد باتری:' : 'Nominal Voltage per Unit:'}
             </label>
             <select
+              id="bess-unit-voltage"
               value={unitVoltageV}
               onChange={(e) => setUnitVoltageV(parseInt(e.target.value) || 12)}
               className="studio-input text-xs font-mono"
@@ -196,10 +199,11 @@ export const BessTab: React.FC<BessTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="bess-unit-capacity" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'ظرفیت هر واحد باتری (Ah):' : 'Unit Nominal Capacity (Ah):'}
             </label>
             <select
+              id="bess-unit-capacity"
               value={unitCapacityAh}
               onChange={(e) => setUnitCapacityAh(parseInt(e.target.value) || 100)}
               className="studio-input text-xs font-mono"
@@ -214,10 +218,11 @@ export const BessTab: React.FC<BessTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="bess-unit-weight" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'وزن تقریبی هر واحد (کیلوگرم):' : 'Weight per Unit (kg):'}
             </label>
             <input
+              id="bess-unit-weight"
               type="number"
               min="5"
               max="150"

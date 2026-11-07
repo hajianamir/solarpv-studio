@@ -689,10 +689,10 @@ export function computeTableShadingGeometricMesh(
     };
   }
 
-  // Fast-path: When there are zero occluding facets in the scene, table is 100% unshaded (MAIN-05)
+  // Fast-path: When there are zero occluding facets in the scene, table has 0% shaded occlusion (MAIN-05)
   if (allObstacleFacets.length === 0) {
     return {
-      beamCoveragePct: 100,
+      beamCoveragePct: 0,
       isDiodeTriggered: false,
       electricalMismatchFactor: 1.0,
       directBeamLossFraction: 0,

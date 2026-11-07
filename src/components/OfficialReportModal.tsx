@@ -645,12 +645,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             </button>
 
             <label
+              htmlFor="report-restore-file-input"
               className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 cursor-pointer"
               title={isEn ? 'Restore Project from JSON' : 'بازیابی پروژه از فایل'}
             >
               <Upload className="w-3.5 h-3.5 text-purple-400" />
               <span>{isEn ? 'Load' : 'بارگذاری'}</span>
-              <input type="file" accept=".json,.solarpv.json" onChange={handleFileChange} className="hidden" />
+              <input id="report-restore-file-input" type="file" accept=".json,.solarpv.json" onChange={handleFileChange} className="hidden" />
             </label>
 
             <button
@@ -686,8 +687,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
-                <label className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Document ID:' : 'شماره سند:'}</label>
+                <label htmlFor="report-doc-id" className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Document ID:' : 'شماره سند:'}</label>
                 <input
+                  id="report-doc-id"
                   type="text"
                   value={docId}
                   onChange={(e) => setDocId(e.target.value)}
@@ -695,8 +697,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Revision:' : 'نسخه گزارش:'}</label>
+                <label htmlFor="report-doc-version" className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Revision:' : 'نسخه گزارش:'}</label>
                 <input
+                  id="report-doc-version"
                   type="text"
                   value={docVersion}
                   onChange={(e) => setDocVersion(e.target.value)}
@@ -704,8 +707,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Engineering Company:' : 'نام مهندس مشاور / شرکت:'}</label>
+                <label htmlFor="report-company-name" className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Engineering Company:' : 'نام مهندس مشاور / شرکت:'}</label>
                 <input
+                  id="report-company-name"
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
@@ -713,8 +717,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Client / Investor Name:' : 'نام کارفرما / سرمایه‌گذار:'}</label>
+                <label htmlFor="report-client-name" className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Client / Investor Name:' : 'نام کارفرما / سرمایه‌گذار:'}</label>
                 <input
+                  id="report-client-name"
                   type="text"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
@@ -725,8 +730,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Lead Engineer / Designer:' : 'طراح و مدیر پروژه:'}</label>
+                <label htmlFor="report-lead-engineer" className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Lead Engineer / Designer:' : 'طراح و مدیر پروژه:'}</label>
                 <input
+                  id="report-lead-engineer"
                   type="text"
                   value={leadEngineer}
                   onChange={(e) => setLeadEngineer(e.target.value)}
@@ -734,8 +740,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Approval Status:' : 'وضعیت تأیید سند:'}</label>
+                <label htmlFor="report-approval-status" className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Approval Status:' : 'وضعیت تأیید سند:'}</label>
                 <select
+                  id="report-approval-status"
                   value={approvalStatus}
                   onChange={(e) => setApprovalStatus(e.target.value as any)}
                   className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
@@ -747,8 +754,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </select>
               </div>
               <div>
-                <label className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Export File Name:' : 'نام فایل ذخیره‌سازی:'}</label>
+                <label htmlFor="report-file-name" className="text-[11px] text-slate-400 block mb-0.5">{isEn ? 'Export File Name:' : 'نام فایل ذخیره‌سازی:'}</label>
                 <input
+                  id="report-file-name"
                   type="text"
                   value={customFileName}
                   onChange={(e) => setCustomFileName(e.target.value)}
@@ -773,8 +781,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   { key: 'financial', fa: 'تحلیل مالی و بازگشت', en: 'Financial Pro-Forma' },
                   { key: 'bom', fa: 'فهرست تجهیزات BOM', en: 'Bill of Materials' },
                 ].map((s) => (
-                  <label key={s.key} className="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                  <label key={s.key} htmlFor={`report-section-${s.key}`} className="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
                     <input
+                      id={`report-section-${s.key}`}
                       type="checkbox"
                       checked={includedSections[s.key as ReportSectionKey]}
                       onChange={() => toggleSection(s.key as ReportSectionKey)}

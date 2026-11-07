@@ -303,10 +303,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
             <form onSubmit={handleAddLoad} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label htmlFor="load-appliance-name" className="block text-slate-300 font-semibold mb-1">
                   {isFa ? 'نام وسیله برقی:' : 'Appliance Name:'}
                 </label>
                 <input
+                  id="load-appliance-name"
                   type="text"
                   required
                   placeholder={isFa ? 'مثال: یخچال، پمپ آب، اسپلیت' : 'e.g. Refrigerator, Pump, AC'}
@@ -318,10 +319,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label htmlFor="load-category-select" className="block text-slate-300 font-semibold mb-1">
                     {isFa ? 'دسته‌بندی:' : 'Category:'}
                   </label>
                   <select
+                    id="load-category-select"
                     value={category}
                     onChange={(e) => setCategory(e.target.value as LoadCategory)}
                     className="studio-input"
@@ -337,10 +339,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label htmlFor="load-quantity-input" className="block text-slate-300 font-semibold mb-1">
                     {isFa ? 'تعداد:' : 'Quantity:'}
                   </label>
                   <input
+                    id="load-quantity-input"
                     type="number"
                     min="1"
                     value={quantity}
@@ -352,10 +355,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label htmlFor="load-rated-watts-input" className="block text-slate-300 font-semibold mb-1">
                     {isFa ? 'توان نامی (Watt):' : 'Rated Power (W):'}
                   </label>
                   <input
+                    id="load-rated-watts-input"
                     type="number"
                     min="1"
                     value={ratedWatts}
@@ -364,10 +368,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label htmlFor="load-surge-multiplier-input" className="block text-slate-300 font-semibold mb-1">
                     {isFa ? 'ضریب استارت هجومی:' : 'Surge Multiplier:'}
                   </label>
                   <input
+                    id="load-surge-multiplier-input"
                     type="number"
                     step="0.1"
                     min="1"
@@ -383,10 +388,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label htmlFor="load-day-hours-input" className="block text-slate-300 font-semibold mb-1">
                     {isFa ? 'ساعات روز (۰ تا ۱۲):' : 'Day Operation (0-12h):'}
                   </label>
                   <input
+                    id="load-day-hours-input"
                     type="number"
                     step="0.5"
                     min="0"
@@ -397,10 +403,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label htmlFor="load-night-hours-input" className="block text-slate-300 font-semibold mb-1">
                     {isFa ? 'ساعات شب (۰ تا ۱۲):' : 'Night Operation (0-12h):'}
                   </label>
                   <input
+                    id="load-night-hours-input"
                     type="number"
                     step="0.5"
                     min="0"

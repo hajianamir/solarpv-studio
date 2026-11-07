@@ -204,10 +204,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
           <div className="space-y-4 text-xs">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-psh-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Peak Sun Hours (PSH)' : 'ساعات آفتابی اوج (PSH)'}
                 </label>
                 <input
+                  id="climate-psh-input"
                   type="number"
                   step="0.05"
                   className="studio-input"
@@ -217,10 +218,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-temp-min-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Min Design Temp (°C)' : 'حداقل دمای طراحی (°C)'}
                 </label>
                 <input
+                  id="climate-temp-min-input"
                   type="number"
                   step="1"
                   className="studio-input"
@@ -230,10 +232,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-temp-max-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Max Design Temp (°C)' : 'حداکثر دمای طراحی (°C)'}
                 </label>
                 <input
+                  id="climate-temp-max-input"
                   type="number"
                   step="1"
                   className="studio-input"
@@ -243,10 +246,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-optimal-tilt-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Optimal Annual Tilt (°)' : 'شیب بهینه سالانه (°)'}
                 </label>
                 <input
+                  id="climate-optimal-tilt-input"
                   type="number"
                   step="1"
                   className="studio-input"
@@ -256,10 +260,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-soiling-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Soiling Loss (%)' : 'افت گرد و غبار (%)'}
                 </label>
                 <input
+                  id="climate-soiling-input"
                   type="number"
                   step="0.5"
                   className="studio-input"
@@ -269,10 +274,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-albedo-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Albedo Factor' : 'ضریب آلبیدو'}
                 </label>
                 <input
+                  id="climate-albedo-input"
                   type="number"
                   step="0.02"
                   className="studio-input"
@@ -282,10 +288,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-latitude-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Latitude (°N)' : 'عرض جغرافیایی (°)'}
                 </label>
                 <input
+                  id="climate-latitude-input"
                   type="number"
                   step="0.0001"
                   className="studio-input"
@@ -295,10 +302,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-longitude-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Longitude (°E)' : 'طول جغرافیایی (°)'}
                 </label>
                 <input
+                  id="climate-longitude-input"
                   type="number"
                   step="0.0001"
                   className="studio-input"

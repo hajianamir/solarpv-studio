@@ -421,10 +421,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   {lang === 'fa' ? 'کابل DC استرینگ خورشیدی' : 'DC Solar String Cable'}
                 </span>
                 <div>
-                  <label className="text-slate-400 block mb-1">
+                  <label htmlFor="dc-string-length" className="text-slate-400 block mb-1">
                     {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
                   </label>
                   <input
+                    id="dc-string-length"
                     type="number"
                     min="5"
                     max="500"
@@ -435,8 +436,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
+                    <label htmlFor="dc-string-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
                     <select
+                      id="dc-string-material"
                       value={dcStringMaterial}
                       onChange={(e) => setDcStringMaterial(e.target.value as ConductorMaterial)}
                       className="studio-input w-full text-xs"
@@ -446,8 +448,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
+                    <label htmlFor="dc-string-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
                     <select
+                      id="dc-string-insulation"
                       value={dcStringInsulation}
                       onChange={(e) => setDcStringInsulation(e.target.value as InsulationType)}
                       className="studio-input w-full text-xs"
@@ -465,10 +468,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   {lang === 'fa' ? 'کابل باسبار اصلی DC آرایه' : 'Main DC Array Feeder'}
                 </span>
                 <div>
-                  <label className="text-slate-400 block mb-1">
+                  <label htmlFor="dc-main-feeder-length" className="text-slate-400 block mb-1">
                     {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
                   </label>
                   <input
+                    id="dc-main-feeder-length"
                     type="number"
                     min="5"
                     max="1000"
@@ -479,8 +483,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
+                    <label htmlFor="dc-main-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
                     <select
+                      id="dc-main-material"
                       value={dcMainMaterial}
                       onChange={(e) => setDcMainMaterial(e.target.value as ConductorMaterial)}
                       className="studio-input w-full text-xs"
@@ -490,8 +495,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
+                    <label htmlFor="dc-main-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
                     <select
+                      id="dc-main-insulation"
                       value={dcMainInsulation}
                       onChange={(e) => setDcMainInsulation(e.target.value as InsulationType)}
                       className="studio-input w-full text-xs"
@@ -509,10 +515,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   {lang === 'fa' ? 'کابل AC خروجی اینورتر' : 'Inverter AC Output Cable'}
                 </span>
                 <div>
-                  <label className="text-slate-400 block mb-1">
+                  <label htmlFor="ac-output-length" className="text-slate-400 block mb-1">
                     {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
                   </label>
                   <input
+                    id="ac-output-length"
                     type="number"
                     min="5"
                     max="2000"
@@ -523,8 +530,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
+                    <label htmlFor="ac-output-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
                     <select
+                      id="ac-output-material"
                       value={acMaterial}
                       onChange={(e) => setAcMaterial(e.target.value as ConductorMaterial)}
                       className="studio-input w-full text-xs"
@@ -534,8 +542,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
+                    <label htmlFor="ac-output-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
                     <select
+                      id="ac-output-insulation"
                       value={acInsulation}
                       onChange={(e) => setAcInsulation(e.target.value as InsulationType)}
                       className="studio-input w-full text-xs"
@@ -716,8 +725,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   ? 'محاسبات سیستم ارتینگ، هم‌بندی و پتانسیل گام و لمس (IEEE 80 / IEC 60364-5-54)'
                   : 'Earthing System Design & Touch/Step Potential (IEEE 80)'}
               </span>
-              <label className="flex items-center gap-2 cursor-pointer bg-industrial-surface px-2.5 py-1 rounded border border-industrial-border text-xs">
+              <label htmlFor="protection-bentonite-checkbox" className="flex items-center gap-2 cursor-pointer bg-industrial-surface px-2.5 py-1 rounded border border-industrial-border text-xs">
                 <input
+                  id="protection-bentonite-checkbox"
                   type="checkbox"
                   checked={applyBentonite}
                   onChange={(e) => setApplyBentonite(e.target.checked)}
@@ -731,10 +741,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2 text-xs">
-                <label className="text-slate-300 font-semibold block">
+                <label htmlFor="protection-soil-resistivity" className="text-slate-300 font-semibold block">
                   {lang === 'fa' ? 'مقاومت ویژه خاک محوطه (Ω·m / Soil Resistivity):' : 'Soil Resistivity (Ω·m):'}
                 </label>
                 <input
+                  id="protection-soil-resistivity"
                   type="number"
                   min="20"
                   max="2000"
@@ -748,10 +759,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
 
               <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2 text-xs">
-                <label className="text-slate-300 font-semibold block">
+                <label htmlFor="protection-upstream-grounding" className="text-slate-300 font-semibold block">
                   {lang === 'fa' ? 'سیستم زمین و اتصال به شبکه بالادست:' : 'Upstream Grid Earthing Scheme:'}
                 </label>
                 <select
+                  id="protection-upstream-grounding"
                   value={upstreamGrounding}
                   onChange={(e) => setUpstreamGrounding(e.target.value as UpstreamGroundingSystem)}
                   className="studio-input w-full"

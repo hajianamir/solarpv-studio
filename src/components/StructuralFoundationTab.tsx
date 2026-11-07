@@ -525,12 +525,13 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
           {/* Wind Speed */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+            <label htmlFor="struct-wind-speed" className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
               <Wind className="w-3.5 h-3.5 text-industrial-accent" />
               <span>{isEn ? 'Basic Wind Speed:' : 'سرعت مبنای باد (V_b):'}</span>
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-wind-speed"
                 type="number"
                 step="5"
                 min="80"
@@ -552,12 +553,13 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Ground Snow Load */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+            <label htmlFor="struct-snow-load" className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
               <ThermometerSnowflake className="w-3.5 h-3.5 text-sky-300" />
               <span>{isEn ? 'Ground Snow (S_k):' : 'بار برف مبنای زمین:'}</span>
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-snow-load"
                 type="number"
                 step="10"
                 min="0"
@@ -579,11 +581,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Soil Bearing Capacity */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+            <label htmlFor="struct-bearing-capacity" className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Allowable Bearing (q_a):' : 'ظرفیت باربری خاک (q_a):'}
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-bearing-capacity"
                 type="number"
                 step="10"
                 min="80"
@@ -605,11 +608,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Soil Friction Angle */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+            <label htmlFor="struct-friction-angle" className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Friction Angle (φ):' : 'زاویه اصطکاک داخلی (φ):'}
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-friction-angle"
                 type="number"
                 step="1"
                 min="15"
@@ -631,11 +635,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Frost Depth */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+            <label htmlFor="struct-frost-depth" className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Frost Penetration Depth:' : 'عمق یخبندان منطقه:'}
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-frost-depth"
                 type="number"
                 step="5"
                 min="0"
@@ -657,11 +662,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Soil Cohesion */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+            <label htmlFor="struct-cohesion" className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Soil Cohesion (c):' : 'چسبندگی خاک (c):'}
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-cohesion"
                 type="number"
                 step="5"
                 min="0"
@@ -680,11 +686,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Soil Unit Weight */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+            <label htmlFor="struct-soil-density" className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Soil Unit Weight (γ):' : 'وزن مخصوص خاک (γ):'}
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-soil-density"
                 type="number"
                 step="0.5"
                 min="14"
@@ -703,12 +710,13 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Annual Rainfall */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+            <label htmlFor="struct-annual-rainfall" className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
               <CloudRain className="w-3.5 h-3.5 text-industrial-primary" />
               <span>{isEn ? 'Annual Rainfall:' : 'بارش سالانه:'}</span>
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-annual-rainfall"
                 type="number"
                 step="10"
                 min="10"
@@ -727,11 +735,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Seismic Zone Coefficient */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+            <label htmlFor="struct-seismic-zone" className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Seismic Coeff (A - Std 2800):' : 'شتاب مبنا زلزله (استاندارد ۲۸۰۰):'}
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-seismic-zone"
                 type="number"
                 step="0.05"
                 min="0.15"
@@ -750,10 +759,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Soil Classification Selector */}
           <div className="p-2.5 bg-slate-800/80 rounded-lg border border-industrial-border">
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+            <label htmlFor="struct-soil-type" className="text-[11px] text-slate-300 font-semibold block mb-1">
               {isEn ? 'Geotech Category:' : 'تیپ خاک ژئوتکنیکی:'}
             </label>
             <select
+              id="struct-soil-type"
               value={soilType}
               onChange={(e) => {
                 const val = e.target.value as SoilType;
@@ -804,7 +814,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           {/* Distance to Sea */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] text-slate-300 font-semibold flex items-center gap-1">
+              <label htmlFor="struct-distance-coastline" className="text-[11px] text-slate-300 font-semibold flex items-center gap-1">
                 <Waves className="w-3.5 h-3.5 text-sky-400" />
                 <span>{isEn ? 'Distance to Coastline:' : 'فاصله تا ساحل دریا:'}</span>
               </label>
@@ -814,6 +824,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-distance-coastline"
                 type="number"
                 step="0.5"
                 min="0"
@@ -874,11 +885,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* ISO 9223 Corrosivity Category */}
           <div>
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+            <label htmlFor="struct-corrosion-category" className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
               <ShieldAlert className="w-3.5 h-3.5 text-industrial-warning" />
               <span>{isEn ? 'ISO 9223 Category Mode:' : 'رده خوردگی ISO 9223:'}</span>
             </label>
             <select
+              id="struct-corrosion-category"
               value={manualCorrosionCategory}
               onChange={(e) => setManualCorrosionCategory(e.target.value as Iso9223Category | 'auto')}
               className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white"
@@ -897,11 +909,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Site Surface Drainage */}
           <div>
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+            <label htmlFor="struct-drainage-condition" className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
               <CloudRain className="w-3.5 h-3.5 text-industrial-primary" />
               <span>{isEn ? 'Site Surface Drainage:' : 'وضعیت زهکشی سطحی و رواناب:'}</span>
             </label>
             <select
+              id="struct-drainage-condition"
               value={drainageCondition}
               onChange={(e) => {
                 const val = e.target.value as SiteDrainageCondition;
@@ -921,12 +934,13 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           {/* Groundwater Table Depth */}
           <div>
-            <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+            <label htmlFor="struct-groundwater-depth" className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
               <Droplets className="w-3.5 h-3.5 text-cyan-400" />
               <span>{isEn ? 'Groundwater Table Depth (GWL):' : 'تراز عمق آب زیرزمینی (GWL):'}</span>
             </label>
             <div className="flex items-center gap-1.5">
               <input
+                id="struct-groundwater-depth"
                 type="number"
                 step="0.5"
                 min="0.3"
@@ -1707,10 +1721,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="struct-foundation-type" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Foundation / Mounting Type:' : 'نوع فونداسیون و اتصال سازه:'}
             </label>
             <select
+              id="struct-foundation-type"
               value={foundationType}
               onChange={(e) => {
                 const val = e.target.value as FoundationType;
@@ -1753,10 +1768,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="struct-modules-count" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Total PV Modules Count:' : 'تعداد کل پنل‌ها:'}
             </label>
             <input
+              id="struct-modules-count"
               type="number"
               step="10"
               value={modulesCount}
@@ -1766,10 +1782,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="struct-modules-per-table" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Modules per Table (2P):' : 'تعداد پنل در هر میز سازه (Table):'}
             </label>
             <select
+              id="struct-modules-per-table"
               value={modulesPerTable}
               onChange={(e) => setModulesPerTable(parseInt(e.target.value) || 28)}
               className="studio-input text-xs"
@@ -1782,10 +1799,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="struct-tilt-deg" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Array Tilt Angle (deg):' : 'زاویه شیب استراکچر (درجه):'}
             </label>
             <input
+              id="struct-tilt-deg"
               type="number"
               min="10"
               max="50"
@@ -1804,7 +1822,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-industrial-border/60 text-xs">
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="text-slate-300 font-semibold">
+              <label htmlFor="struct-custom-embedment-depth" className="text-slate-300 font-semibold">
                 {structResult.recommendedDepthM === 0
                   ? (isEn ? 'Soil Penetration Depth:' : 'عمق نفوذ / کوبش در خاک:')
                   : (isEn ? 'Pile Embedment Depth:' : 'عمق کوبش شمع در خاک:')}
@@ -1826,6 +1844,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             ) : (
               <div className="flex items-center gap-2">
                 <input
+                  id="struct-custom-embedment-depth"
                   type="range"
                   min="0.8"
                   max="3.5"
@@ -1866,7 +1885,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="text-slate-300 font-semibold">
+              <label htmlFor="struct-custom-posts-per-table" className="text-slate-300 font-semibold">
                 {isEn ? 'Posts per Table:' : 'تعداد پایه‌ها در هر میز:'}
               </label>
               <span className="font-mono text-sky-300 font-bold">
@@ -1874,6 +1893,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               </span>
             </div>
             <select
+              id="struct-custom-posts-per-table"
               value={customPostsPerTable ?? 'auto'}
               onChange={(e) => {
                 const val = e.target.value;
@@ -1896,13 +1916,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="text-slate-300 font-semibold">
+              <label htmlFor="struct-ground-clearance" className="text-slate-300 font-semibold">
                 {isEn ? 'Ground Clearance Height:' : 'ارتفاع آزاد زیر پنل (Clearance):'}
               </label>
               <span className="font-mono text-purple-300 font-bold">{groundClearanceM} m</span>
             </div>
             <div className="flex items-center gap-2">
               <input
+                id="struct-ground-clearance"
                 type="range"
                 min="0.5"
                 max="2.0"

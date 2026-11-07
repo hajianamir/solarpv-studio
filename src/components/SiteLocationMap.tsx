@@ -612,10 +612,11 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-0.5">
+                      <label htmlFor="map-coord-latitude" className="text-[10px] text-slate-400 block mb-0.5">
                         {isEn ? 'Latitude (°N):' : 'عرض جغرافیایی (°N):'}
                       </label>
                       <input
+                        id="map-coord-latitude"
                         type="number"
                         step="0.0001"
                         value={inputLat}
@@ -625,10 +626,11 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-0.5">
+                      <label htmlFor="map-coord-longitude" className="text-[10px] text-slate-400 block mb-0.5">
                         {isEn ? 'Longitude (°E):' : 'طول جغرافیایی (°E):'}
                       </label>
                       <input
+                        id="map-coord-longitude"
                         type="number"
                         step="0.0001"
                         value={inputLng}

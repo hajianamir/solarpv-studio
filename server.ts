@@ -40,8 +40,8 @@ function securityHeadersMiddleware(_req: Request, res: Response, next: (e?: any)
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https://*.tile.openstreetmap.org",
-      "connect-src 'self' https://developer.nrel.gov https://re.jrc.ec.europa.eu https://power.larc.nasa.gov ws: wss:",
+      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.tile.opentopomap.org https://server.arcgisonline.com",
+      "connect-src 'self' https://developer.nrel.gov https://re.jrc.ec.europa.eu https://power.larc.nasa.gov https://nominatim.openstreetmap.org https://overpass-api.de https://rest.isric.org ws: wss:",
       "worker-src 'self' blob:",
       "frame-ancestors 'self'",
       "object-src 'none'",
@@ -1243,8 +1243,19 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
     } else if (typeof projectSnapshot.inverterCount !== 'number' || !Number.isInteger(projectSnapshot.inverterCount) || projectSnapshot.inverterCount < 0) {
       discrepancies.push('Snapshot baseline contains invalid inverterCount; cannot reconcile report.');
     }
-    if (projectSnapshot.batteryCount !== undefined && (typeof projectSnapshot.batteryCount !== 'number' || !Number.isInteger(projectSnapshot.batteryCount) || projectSnapshot.batteryCount < 0)) {
+    if (projectSnapshot.batteryCount === undefined) {
+      discrepancies.push('Snapshot missing baseline batteryCount; cannot reconcile report.');
+    } else if (typeof projectSnapshot.batteryCount !== 'number' || !Number.isInteger(projectSnapshot.batteryCount) || projectSnapshot.batteryCount < 0) {
       discrepancies.push('Snapshot baseline contains invalid batteryCount; cannot reconcile report.');
+    }
+    if (!projectSnapshot.moduleId) {
+      discrepancies.push('Snapshot missing baseline moduleId; cannot reconcile equipment.');
+    }
+    if (!projectSnapshot.inverterId) {
+      discrepancies.push('Snapshot missing baseline inverterId; cannot reconcile equipment.');
+    }
+    if (typeof projectSnapshot.batteryCount === 'number' && projectSnapshot.batteryCount > 0 && !projectSnapshot.batteryId) {
+      discrepancies.push('Snapshot missing baseline batteryId; cannot reconcile equipment.');
     }
     if (projectSnapshot.lcoeUsdPerKwh === undefined || projectSnapshot.lcoeUsdPerKwh === null) {
       discrepancies.push('Snapshot missing baseline lcoeUsdPerKwh; cannot reconcile report.');

@@ -257,8 +257,9 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
           </div>
 
           {/* User Activation Toggle Checkbox (User Request #4) */}
-          <label className="flex items-center gap-2 cursor-pointer bg-industrial-surface px-3 py-1.5 rounded-lg border border-industrial-border hover:border-industrial-warning/60 transition">
+          <label htmlFor="sim24-enable-generator-checkbox" className="flex items-center gap-2 cursor-pointer bg-industrial-surface px-3 py-1.5 rounded-lg border border-industrial-border hover:border-industrial-warning/60 transition">
             <input
+              id="sim24-enable-generator-checkbox"
               type="checkbox"
               checked={enableDieselGenerator}
               onChange={(e) => onToggleDieselGenerator && onToggleDieselGenerator(e.target.checked)}
@@ -279,13 +280,14 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
         {enableDieselGenerator ? (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label htmlFor="sim24-outage-hours-range" className="block text-xs font-semibold text-slate-300 mb-1">
                 {isEn
                   ? 'Target Continuous Outage Duration for Fuel Storage Calculation:'
                   : 'ساعات قطعی مداوم شبکه جهت برآورد حجم مخزن سوخت:'}
               </label>
               <div className="flex items-center gap-3">
                 <input
+                  id="sim24-outage-hours-range"
                   type="range"
                   min="6"
                   max="72"
