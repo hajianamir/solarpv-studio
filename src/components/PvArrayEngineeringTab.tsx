@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Sun, Cpu, AlertTriangle, CheckCircle2, Layers, Zap, Eye, Search } from 'lucide-react';
 import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
 import { type InverterClusteringResult } from '../engine/inverterClustering';
-import { CATALOG_MODULES, CATALOG_INVERTERS, type CatalogInverter } from '../engine/equipmentCatalogData';
-import { type ClimateCity } from '../engine/climaticData';
+import { CatalogRepository, type EnhancedCatalogModule, type EnhancedCatalogInverter } from '../engine/catalogRepository';
+import { type ClimateCity, getDefaultClimateCity } from '../engine/climaticData';
 import { ShadingAnalysisSubTab } from './ShadingAnalysisSubTab';
 import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
 import { type TrackerConfig, computeTrackerState } from '../engine/tracker/backtrackingEngine';
@@ -35,39 +35,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
   onInverterChange,
   arrayDesign,
   inverterClustering,
-  city = {
-    id: 'tehran',
-    nameFa: 'تهران',
-    nameEn: 'Tehran',
-    provinceFa: 'تهران',
-    provinceEn: 'Tehran',
-    latitude: 35.6892,
-    longitude: 51.389,
-    elevationM: 1190,
-    peakSunHours: 5.35,
-    tempMinC: -10,
-    tempMaxC: 42,
-    albedo: 0.2,
-    soilingLossPct: 4.5,
-    optimalTiltAnnualDeg: 32,
-    optimalTiltWinterDeg: 47,
-    optimalTiltSummerDeg: 17,
-    descriptionFa: '',
-    descriptionEn: '',
-    basicWindSpeedKmh: 130,
-    groundSnowLoadKgM2: 100,
-    annualRainfallMm: 230,
-    soilType: 'dense_sand_gravel',
-    soilBearingCapacityKpa: 250,
-    soilInternalFrictionAngleDeg: 34,
-    soilCohesionKpa: 15,
-    soilDensityKnM3: 18.5,
-    frostDepthCm: 40,
-    seismicZoneCoefficientA: 0.35,
-    dataSourceFa: '',
-    dataSourceEn: '',
-    dataRetrievalDate: '2024-06-15',
-  },
+  city = getDefaultClimateCity(),
   systemMode = 'powerplant',
   targetPowerplantCapacityKw = 1000,
   annualYieldMwh,
@@ -99,9 +67,26 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
     return () => { mounted = false; };
   }, [city]);
 
+  // Catalog Repository Reactive Store
+  const [catalogVersion, setCatalogVersion] = useState(0);
+  useEffect(() => {
+    return CatalogRepository.getInstance().subscribe(() => {
+      setCatalogVersion((v) => v + 1);
+    });
+  }, []);
+
+  const allModules = useMemo(() => {
+    void catalogVersion;
+    return CatalogRepository.getInstance().getModules();
+  }, [catalogVersion]);
+  const allInverters = useMemo(() => {
+    void catalogVersion;
+    return CatalogRepository.getInstance().getInverters();
+  }, [catalogVersion]);
+
   // Filtered Modules
   const filteredModules = useMemo(() => {
-    return CATALOG_MODULES.filter((m) => {
+    return allModules.filter((m) => {
       const q = moduleSearch.toLowerCase();
       return (
         m.manufacturer.toLowerCase().includes(q) ||
@@ -110,12 +95,12 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
         m.cellType.toLowerCase().includes(q)
       );
     });
-  }, [moduleSearch]);
+  }, [allModules, moduleSearch]);
 
   // Filtered Inverters:
   // RULE (Item 5): MV Turnkey stations (MW capacity) MUST ONLY be active/selectable in Powerplant mode!
   const filteredInverters = useMemo(() => {
-    return CATALOG_INVERTERS.filter((inv) => {
+    return allInverters.filter((inv) => {
       // If not powerplant, exclude mv_turnkey
       if (systemMode !== 'powerplant' && inv.technology === 'mv_turnkey') {
         return false;
@@ -133,7 +118,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
         inv.pnomKw.toString().includes(q)
       );
     });
-  }, [systemMode, inverterCategory, inverterSearch]);
+  }, [allInverters, systemMode, inverterCategory, inverterSearch]);
 
   return (
     <div className="space-y-6">
@@ -182,8 +167,9 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
           <span className="font-semibold text-slate-300">
             {lang === 'fa' ? 'معماری tracker:' : 'Tracker Architecture:'}
           </span>
-          <label className="flex items-center gap-1.5 cursor-pointer">
+          <label htmlFor="tracker-fixed-tilt" className="flex items-center gap-1.5 cursor-pointer">
             <input
+              id="tracker-fixed-tilt"
               type="radio"
               name="trackerMode"
               checked={trackerConfig === null}
@@ -192,8 +178,9 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             />
             <span>{lang === 'fa' ? 'شیب ثابت (Fixed Tilt)' : 'Fixed Tilt'}</span>
           </label>
-          <label className="flex items-center gap-1.5 cursor-pointer">
+          <label htmlFor="tracker-1axis" className="flex items-center gap-1.5 cursor-pointer">
             <input
+              id="tracker-1axis"
               type="radio"
               name="trackerMode"
               checked={trackerConfig !== null}
@@ -208,20 +195,20 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
         {trackerConfig !== null && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
-              <label className="text-slate-400 block mb-1">GCR (0.30-0.45):</label>
-              <input type="number" step="0.01" min="0.1" max="0.9" value={gcrInput}
+              <label htmlFor="tracker-gcr-input" className="text-slate-400 block mb-1">GCR (0.30-0.45):</label>
+              <input id="tracker-gcr-input" type="number" step="0.01" min="0.1" max="0.9" value={gcrInput}
                 onChange={(e) => { const v = Math.min(0.9, Math.max(0.1, parseFloat(e.target.value) || 0.33)); setGcrInput(v); onTrackerConfigChange?.({ ...trackerConfig, gcr: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
             <div>
-              <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'شیب محور (درجه)' : 'Axis tilt (deg)'}:</label>
-              <input type="number" step="1" min="-30" max="30" value={axisTiltInput}
+              <label htmlFor="tracker-axis-tilt-input" className="text-slate-400 block mb-1">{lang === 'fa' ? 'شیب محور (درجه)' : 'Axis tilt (deg)'}:</label>
+              <input id="tracker-axis-tilt-input" type="number" step="1" min="-30" max="30" value={axisTiltInput}
                 onChange={(e) => { const v = Math.min(30, Math.max(-30, parseFloat(e.target.value) || 0)); setAxisTiltInput(v); onTrackerConfigChange?.({ ...trackerConfig, axisTiltDeg: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
             <div>
-              <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'حداکثر چرخش (درجه)' : 'Max rotation (deg)'}:</label>
-              <input type="number" step="5" min="15" max="90" value={maxRotInput}
+              <label htmlFor="tracker-max-rotation-input" className="text-slate-400 block mb-1">{lang === 'fa' ? 'حداکثر چرخش (درجه)' : 'Max rotation (deg)'}:</label>
+              <input id="tracker-max-rotation-input" type="number" step="5" min="15" max="90" value={maxRotInput}
                 onChange={(e) => { const v = Math.min(90, Math.max(15, parseFloat(e.target.value) || 60)); setMaxRotInput(v); onTrackerConfigChange?.({ ...trackerConfig, maxRotationDeg: v }); }}
                 className="studio-input w-full font-mono" />
             </div>
@@ -320,7 +307,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             {/* 1. Module Picker */}
             <div className="studio-card">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-slate-300">
+                <label htmlFor="pv-module-picker-select" className="text-xs font-semibold text-slate-300">
                   {isEn ? 'Select PV Module Model:' : 'انتخاب مدل پنل فتوولتائیک:'}
                 </label>
                 <span className="text-industrial-warning font-mono font-bold text-xs">{selectedModule.pmpWatts}W TOPCon</span>
@@ -339,9 +326,10 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               </div>
 
               <select
+                id="pv-module-picker-select"
                 value={selectedModule.modelName}
                 onChange={(e) => {
-                  const found = CATALOG_MODULES.find((m) => m.modelName === e.target.value);
+                  const found = allModules.find((m) => m.modelName === e.target.value);
                   if (found) {
                     onModuleChange({
                       manufacturer: found.manufacturer,
@@ -353,7 +341,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                       impAmps: found.impAmps,
                       tempCoeffVocPct: found.tempCoeffVocPct,
                       tempCoeffPmpPct: found.tempCoeffPmpPct,
-                      noctC: 45.0,
+                      noctC: found.noctC ?? 45.0,
                       lengthM: found.lengthMm / 1000.0,
                       widthM: found.widthMm / 1000.0,
                       bifacialityFactor: found.bifacialityFactor,
@@ -382,7 +370,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             {/* 2. Inverter Picker with Powerplant/Turnkey Enforcement */}
             <div className="studio-card">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-slate-300">
+                <label htmlFor="pv-inverter-picker-select" className="text-xs font-semibold text-slate-300">
                   {isEn ? 'Select Solar Inverter Model:' : 'انتخاب مدل اینورتر خورشیدی:'}
                 </label>
                 <span className="text-industrial-accent font-mono font-bold text-xs">{selectedInverter.pnomAcKw} kW AC</span>
@@ -451,9 +439,10 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               </div>
 
               <select
+                id="pv-inverter-picker-select"
                 value={selectedInverter.modelName}
                 onChange={(e) => {
-                  const found = CATALOG_INVERTERS.find((i) => i.modelName === e.target.value);
+                  const found = allInverters.find((i) => i.modelName === e.target.value);
                   if (found) {
                     onInverterChange({
                       manufacturer: found.manufacturer,

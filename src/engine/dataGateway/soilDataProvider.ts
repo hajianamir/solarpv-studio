@@ -10,7 +10,7 @@
  */
 
 import type { SoilClassification } from '../types/climateTypes';
-import { type SoilPropertiesData } from './types';
+import { type SoilPropertiesData, type ParameterProvenance, createParameterProvenance } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 
 export class SoilDataProvider {
@@ -77,22 +77,142 @@ export class SoilDataProvider {
     let bdodGcm3 = 1.45;
     let ph = 7.0;
 
+    let hasClay = false;
+    let hasSand = false;
+    let hasSilt = false;
+    let hasBdod = false;
+    let hasPh = false;
+
     const layers = json?.properties?.layers;
-    if (Array.isArray(layers)) {
+    if (Array.isArray(layers) && layers.length > 0) {
       for (const layer of layers) {
         const meanVal = layer?.depths?.[0]?.values?.mean;
-        if (typeof meanVal === 'number') {
-          if (layer.name === 'clay') clayPct = meanVal / 10.0;
-          if (layer.name === 'sand') sandPct = meanVal / 10.0;
-          if (layer.name === 'silt') siltPct = meanVal / 10.0;
-          if (layer.name === 'bdod') bdodGcm3 = meanVal / 100.0;
-          if (layer.name === 'phh2o') ph = meanVal / 10.0;
+        if (typeof meanVal === 'number' && Number.isFinite(meanVal) && meanVal >= 0) {
+          if (layer.name === 'clay') { clayPct = meanVal / 10.0; hasClay = true; }
+          if (layer.name === 'sand') { sandPct = meanVal / 10.0; hasSand = true; }
+          if (layer.name === 'silt') { siltPct = meanVal / 10.0; hasSilt = true; }
+          if (layer.name === 'bdod') { bdodGcm3 = meanVal / 100.0; hasBdod = true; }
+          if (layer.name === 'phh2o') { ph = meanVal / 10.0; hasPh = true; }
         }
       }
     }
 
     const { classification, bearingKpa, phiDeg, bearingRangeKpa, frictionRangeDeg, cohesionKpa, densityKnM3, disclaimer } =
       this.mapTextureToGeotechnicalParams(clayPct, sandPct, siltPct, bdodGcm3);
+
+    const frostDepth = Math.abs(lat) > 45 ? 60 : 20;
+    const isTextureFromProvider = hasClay || hasSand || hasSilt;
+
+    const fieldProvenance: Record<string, ParameterProvenance> = {
+      clayFractionPercent: hasClay
+        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
+            sourceDataset: 'SoilGrids 250m v2.0',
+            sourceParameter: 'clay/mean (0-30cm)',
+            unit: '%',
+            value: Number(clayPct.toFixed(1)),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: '%',
+            value: Number(clayPct.toFixed(1)),
+            derivationMethod: 'Geomorphic zonal texture estimate (clay missing from ISRIC payload)',
+            qualityNote: 'لایه رس در پاسخ ISRIC وجود نداشت — برآورد تحلیلی',
+          }),
+      sandFractionPercent: hasSand
+        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
+            sourceDataset: 'SoilGrids 250m v2.0',
+            sourceParameter: 'sand/mean (0-30cm)',
+            unit: '%',
+            value: Number(sandPct.toFixed(1)),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: '%',
+            value: Number(sandPct.toFixed(1)),
+            derivationMethod: 'Geomorphic zonal texture estimate (sand missing from ISRIC payload)',
+            qualityNote: 'لایه ماسه در پاسخ ISRIC وجود نداشت — برآورد تحلیلی',
+          }),
+      siltFractionPercent: hasSilt
+        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
+            sourceDataset: 'SoilGrids 250m v2.0',
+            sourceParameter: 'silt/mean (0-30cm)',
+            unit: '%',
+            value: Number(siltPct.toFixed(1)),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: '%',
+            value: Number(siltPct.toFixed(1)),
+            derivationMethod: 'Geomorphic zonal texture estimate (silt missing from ISRIC payload)',
+            qualityNote: 'لایه لای در پاسخ ISRIC وجود نداشت — برآورد تحلیلی',
+          }),
+      bulkDensityGPerCm3: hasBdod
+        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
+            sourceDataset: 'SoilGrids 250m v2.0',
+            sourceParameter: 'bdod/mean (0-30cm)',
+            unit: 'g/cm³',
+            value: Number(bdodGcm3.toFixed(2)),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: 'g/cm³',
+            value: Number(bdodGcm3.toFixed(2)),
+            derivationMethod: 'Standard dry bulk density default (1.45 g/cm³)',
+          }),
+      phH2O: hasPh
+        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
+            sourceDataset: 'SoilGrids 250m v2.0',
+            sourceParameter: 'phh2o/mean (0-30cm)',
+            unit: 'pH',
+            value: Number(ph.toFixed(1)),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: 'pH',
+            value: Number(ph.toFixed(1)),
+            derivationMethod: 'Neutral soil pH default (7.0)',
+          }),
+      soilBearingCapacityKpa: createParameterProvenance(
+        isTextureFromProvider ? 'provider_derived' : 'local_model',
+        isTextureFromProvider ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
+        {
+          unit: 'kPa',
+          value: bearingKpa,
+          derivationMethod: 'Semi-empirical correlation from texture fractions & dry density (Bowles 1996 / Terzaghi)',
+          qualityNote: 'برآورد ژئوتکنیکی غربالگری — جایگزین آزمایش مکانیک خاک و گمانه‌زنی سایت نیست',
+        }
+      ),
+      soilInternalFrictionAngleDeg: createParameterProvenance(
+        isTextureFromProvider ? 'provider_derived' : 'local_model',
+        isTextureFromProvider ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
+        {
+          unit: 'deg',
+          value: phiDeg,
+          derivationMethod: 'Correlation from sand/gravel fraction and USCS soil classification',
+          qualityNote: 'برآورد غربالگری زاویه اصطکاک داخلی',
+        }
+      ),
+      soilCohesionKpa: createParameterProvenance(
+        isTextureFromProvider ? 'provider_derived' : 'local_model',
+        isTextureFromProvider ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
+        {
+          unit: 'kPa',
+          value: cohesionKpa,
+          derivationMethod: 'Correlation from clay fraction and soil classification plasticity',
+          qualityNote: 'برآورد چسبندگی خاک',
+        }
+      ),
+      soilDensityKnM3: createParameterProvenance(
+        isTextureFromProvider ? 'provider_derived' : 'local_model',
+        isTextureFromProvider ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
+        {
+          unit: 'kN/m³',
+          value: densityKnM3,
+          derivationMethod: 'Calculated from bulk density: bdod (g/cm³) × 9.81',
+        }
+      ),
+      frostDepthCm: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'cm',
+        value: frostDepth,
+        derivationMethod: 'Latitude-based seasonal frost penetration screening rule',
+        qualityNote: 'برآورد غربالگری — نیازمند انطباق با مبحث ششم مقررات ملی ساختمان یا آیین‌نامه محلی',
+      }),
+    };
 
     return {
       latitude: Number(lat.toFixed(4)),
@@ -108,19 +228,20 @@ export class SoilDataProvider {
       frictionAngleRangeDeg: frictionRangeDeg,
       soilCohesionKpa: cohesionKpa,
       soilDensityKnM3: densityKnM3,
-      frostDepthCm: Math.abs(lat) > 45 ? 60 : 20,
+      frostDepthCm: frostDepth,
       phH2O: Number(ph.toFixed(1)),
       estimatedFromGlobalModel: true,
       geotechnicalDisclaimer: disclaimer,
       metadata: {
         traceId: this.generateTraceId('TRC-SOIL'),
-        sourceProvider: 'ISRIC_SOILGRIDS',
+        sourceProvider: isTextureFromProvider ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
         isEstimatedFromGlobalModel: true,
-        geographicRegion: 'Global Soil Grids 250m Resolution',
+        geographicRegion: isTextureFromProvider ? 'Global Soil Grids 250m Resolution' : 'Geomorphic Analytical Model',
         governingStandards: ['ISRIC World Soil Information', 'ASTM D2487 (USCS)', 'Eurocode 7 (EN 1997-1)'],
       },
+      fieldProvenance,
     };
   }
 
@@ -150,6 +271,62 @@ export class SoilDataProvider {
     const { bearingKpa, phiDeg, bearingRangeKpa, frictionRangeDeg, cohesionKpa, densityKnM3, disclaimer } =
       this.mapTextureToGeotechnicalParams(clayPct, sandPct, siltPct, bdod);
 
+    const frostDepth = absLat > 45 ? 70 : 15;
+
+    const fieldProvenance: Record<string, ParameterProvenance> = {
+      clayFractionPercent: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '%',
+        value: clayPct,
+        derivationMethod: 'Geomorphic zonal texture estimate (arid vs temperate)',
+      }),
+      sandFractionPercent: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '%',
+        value: sandPct,
+        derivationMethod: 'Geomorphic zonal texture estimate',
+      }),
+      siltFractionPercent: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '%',
+        value: siltPct,
+        derivationMethod: 'Geomorphic zonal texture estimate',
+      }),
+      bulkDensityGPerCm3: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'g/cm³',
+        value: bdod,
+        derivationMethod: 'Geomorphic zonal dry bulk density estimate',
+      }),
+      phH2O: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'pH',
+        value: 7.2,
+        derivationMethod: 'Standard neutral soil pH estimate',
+      }),
+      soilBearingCapacityKpa: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'kPa',
+        value: bearingKpa,
+        derivationMethod: 'Semi-empirical correlation from texture fractions & dry density',
+        qualityNote: 'برآورد ژئوتکنیکی غربالگری — جایگزین آزمایش مکانیک خاک نیست',
+      }),
+      soilInternalFrictionAngleDeg: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'deg',
+        value: phiDeg,
+        derivationMethod: 'Correlation from sand/gravel fraction and USCS soil classification',
+      }),
+      soilCohesionKpa: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'kPa',
+        value: cohesionKpa,
+        derivationMethod: 'Correlation from clay fraction and soil classification plasticity',
+      }),
+      soilDensityKnM3: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'kN/m³',
+        value: densityKnM3,
+        derivationMethod: 'Calculated from bulk density: bdod (g/cm³) × 9.81',
+      }),
+      frostDepthCm: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'cm',
+        value: frostDepth,
+        derivationMethod: 'Latitude-based seasonal frost penetration screening rule',
+      }),
+    };
+
     return {
       latitude: Number(lat.toFixed(4)),
       longitude: Number(lng.toFixed(4)),
@@ -164,7 +341,7 @@ export class SoilDataProvider {
       frictionAngleRangeDeg: frictionRangeDeg,
       soilCohesionKpa: cohesionKpa,
       soilDensityKnM3: densityKnM3,
-      frostDepthCm: absLat > 45 ? 70 : 15,
+      frostDepthCm: frostDepth,
       phH2O: 7.2,
       estimatedFromGlobalModel: true,
       geotechnicalDisclaimer: disclaimer,
@@ -177,6 +354,7 @@ export class SoilDataProvider {
         geographicRegion: 'Global Geomorphic Classification',
         governingStandards: ['ASCE 7-22 Geotechnical Design', 'Eurocode 7'],
       },
+      fieldProvenance,
     };
   }
 

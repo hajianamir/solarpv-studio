@@ -20,6 +20,10 @@ interface SldProps {
   dcCableMm2: number;
   batCableMm2: number;
   acCableMm2: number;
+  isUtilityPowerplant?: boolean;
+  targetGroundResistanceOhms?: number;
+  batteryRackBondingMm2?: number;
+  dcSystemEarthing?: 'floating' | 'functional_negative' | 'functional_positive';
   lang?: 'fa' | 'en';
 }
 
@@ -42,11 +46,18 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
   dcCableMm2,
   batCableMm2,
   acCableMm2,
+  isUtilityPowerplant = false,
+  targetGroundResistanceOhms,
+  batteryRackBondingMm2,
+  dcSystemEarthing = 'floating',
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
+
+  const targetResistance = targetGroundResistanceOhms ?? (isUtilityPowerplant ? 1.0 : 4.0);
+  const bessBondingMm2 = batteryRackBondingMm2 ?? 16;
 
   const elementDetails: Record<string, { title: string; specs: string[]; standard: string }> = {
     pv_array: {
@@ -97,6 +108,18 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
         isEn ? `Battery Rating: ${batteryAh} Ah @ ${batteryVoltageVdc}V DC` : `ظرفیت آمپرساعت: ${batteryAh} Ah در ولتاژ ${batteryVoltageVdc}V DC`,
         isEn ? `Main Fast-Acting DC Fuse: ${batteryFuseAmps}A Mega DC Fuse` : `فیوز اصلی پرسرعت: فیوز مگا ${batteryFuseAmps}A DC با پایه نسوز`,
         isEn ? `DC Battery Heavy Cables: ${batCableMm2} mm² Flexible Copper` : `کابل ارتباطی DC سنگین: سطح مقطع ${batCableMm2} میلی‌متر مربع مس دابل`,
+        isEn ? `Rack Protective Bonding: ${bessBondingMm2} mm² Cu to Main Grounding Busbar` : `هم‌بندی حفاظتی رک باتری: هادی مسی ${bessBondingMm2}mm² به شینه اصلی ارت`,
+        isEn
+          ? (dcSystemEarthing === 'functional_negative'
+              ? "DC Architecture: Functional Earth (- Pole Grounded via GFDI, single MET)"
+              : dcSystemEarthing === 'functional_positive'
+              ? "DC Architecture: Functional Earth (+ Pole Grounded via GFDI, single MET)"
+              : "DC Architecture: Floating DC Poles (IT system with IMD, single MET)")
+          : (dcSystemEarthing === 'functional_negative'
+              ? "ساختار DC: ارت عملکردی قطب منفی (GFDI متصل به شینه واحد MET)"
+              : dcSystemEarthing === 'functional_positive'
+              ? "ساختار DC: ارت عملکردی قطب مثبت (GFDI متصل به شینه واحد MET)"
+              : "ساختار DC: قطب‌های شناور IT (پایش با IMD، شینه واحد MET)"),
       ],
       standard: "IEC 62619 & UL 1973",
     },
@@ -114,8 +137,8 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
       title: isEn ? "Protective Earthing & Equipotential Bonding (PE)" : "سیستم زمین حفاظتی و هم‌پتانسیل‌سازی (PE / Earthing)",
       specs: [
         isEn ? "3-Meter Pure Copper Clad Grounding Rods in Soil" : "میله ارت مسی به طول ۳ متر مدفون در چاه ارت",
-        isEn ? "Overall Earth Resistance: Less than 5.0 Ohms (IEEE 80)" : "مقاومت کل زمین: کمتر از ۵ اهم",
-        isEn ? "Full Equipotential Bonding of Racking, Frames & Inverter Enclosure" : "هم‌پتانسیل‌سازی کامل استراکچر فلزی، قاب پنل‌ها و بدنه اینورتر",
+        isEn ? `Overall Earth Resistance: ≤ ${targetResistance} Ω (Target per IEEE 80 / IEC 60364)` : `مقاومت کل زمین: حداکثر ${targetResistance} اهم طبق استاندارد IEEE 80 و مقررات ملی`,
+        isEn ? "Full Equipotential Bonding of Racking, Frames, BESS Racks & Inverter Enclosure" : "هم‌پتانسیل‌سازی کامل استراکچر فلزی، قاب پنل‌ها، رک‌های باتری و بدنه اینورتر به شینه MET",
       ],
       standard: "IEC 60364-5-54 & IEEE 142",
     },
@@ -343,6 +366,12 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
                 <text x="475" y="337" textAnchor="start" fill="#94a3b8" fontSize="8">Mega DC Fuse</text>
               </g>
 
+              {/* Earth connection from BESS rack to Main Ground Bar */}
+              <line x1="520" y1="355" x2="520" y2="365" stroke="#10b981" strokeWidth="2.5" strokeDasharray="3 3" />
+              <text x="526" y="362" textAnchor="start" fill="#10b981" fontSize="7" className="font-mono">
+                BESS PE ({bessBondingMm2}mm²)
+              </text>
+
               {/* AC Run: Inverter to AC Distribution Board */}
               <line x1="575" y1="147" x2="650" y2="147" stroke="#34d399" strokeWidth="3" markerEnd="url(#arrow-green)" />
               <text x="612" y="138" textAnchor="middle" fill="#34d399" fontSize="9 font-mono">AC Line ({acCableMm2}mm²)</text>
@@ -414,7 +443,17 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
               >
                 <line x1="100" y1="365" x2="850" y2="365" stroke="#10b981" strokeWidth="4" />
                 <text x="120" y="385" textAnchor="start" fill="#10b981" fontSize="11" fontWeight="bold">
-                  {isEn ? 'PE Grounding Busbar (16mm² Cu Conductor)' : 'باسبار شین ارت حفاظتی - هادی ۱۶mm²'}
+                  {isEn
+                    ? (dcSystemEarthing === 'functional_negative'
+                        ? 'Unified MET / Main Ground Bar (DC Functional - Pole via GFDI)'
+                        : dcSystemEarthing === 'functional_positive'
+                        ? 'Unified MET / Main Ground Bar (DC Functional + Pole via GFDI)'
+                        : 'Unified MET / Main Ground Bar (Floating DC / IT with IMD)')
+                    : (dcSystemEarthing === 'functional_negative'
+                        ? 'شینه اصلی ارت یکپارچه MET (ارت عملکردی قطب منفی با GFDI)'
+                        : dcSystemEarthing === 'functional_positive'
+                        ? 'شینه اصلی ارت یکپارچه MET (ارت عملکردی قطب مثبت با GFDI)'
+                        : 'شینه اصلی ارت یکپارچه MET (سیستم شناور IT مجهز به IMD)')}
                 </text>
 
                 {/* Earth symbol */}
@@ -422,7 +461,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
                 <line x1="785" y1="390" x2="815" y2="390" stroke="#10b981" strokeWidth="3" />
                 <line x1="790" y1="396" x2="810" y2="396" stroke="#10b981" strokeWidth="2.5" />
                 <line x1="795" y1="402" x2="805" y2="402" stroke="#10b981" strokeWidth="2" />
-                <text x="825" y="398" textAnchor="start" fill="#10b981" fontSize="9 font-mono">&lt; 5 Ω</text>
+                <text x="825" y="398" textAnchor="start" fill="#10b981" fontSize="9 font-mono">≤ {targetResistance} Ω</text>
               </g>
             </svg>
           </div>

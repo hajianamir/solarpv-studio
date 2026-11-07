@@ -188,10 +188,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-4">
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label className="text-slate-400 block mb-1">
+            <label htmlFor="fin-pricing-module" className="text-slate-400 block mb-1">
               {lang === 'fa' ? 'قیمت پنل ($/Wp):' : 'Module ($/Wp):'}
             </label>
             <input
+              id="fin-pricing-module"
               type="number"
               step="0.01"
               value={pricing.moduleUsdPerWp}
@@ -204,10 +205,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label className="text-slate-400 block mb-1">
+            <label htmlFor="fin-pricing-inverter" className="text-slate-400 block mb-1">
               {lang === 'fa' ? 'قیمت اینورتر ($/kW):' : 'Inverter ($/kW):'}
             </label>
             <input
+              id="fin-pricing-inverter"
               type="number"
               step="5"
               value={pricing.inverterUsdPerKw}
@@ -220,10 +222,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label className="text-slate-400 block mb-1">
+            <label htmlFor="fin-pricing-battery" className="text-slate-400 block mb-1">
               {lang === 'fa' ? 'قیمت باتری ($/kWh):' : 'Battery ($/kWh):'}
             </label>
             <input
+              id="fin-pricing-battery"
               type="number"
               step="10"
               value={pricing.batteryUsdPerKwh}
@@ -236,10 +239,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label className="text-slate-400 block mb-1">
+            <label htmlFor="fin-pricing-structure" className="text-slate-400 block mb-1">
               {lang === 'fa' ? 'سازه و استراکچر ($/Wp):' : 'Structure ($/Wp):'}
             </label>
             <input
+              id="fin-pricing-structure"
               type="number"
               step="0.005"
               value={pricing.structureUsdPerWp}
@@ -249,10 +253,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label className="text-slate-400 block mb-1">
+            <label htmlFor="fin-pricing-cabling" className="text-slate-400 block mb-1">
               {lang === 'fa' ? 'کابل‌کشی و BOP ($/Wp):' : 'BOP & Cabling ($/Wp):'}
             </label>
             <input
+              id="fin-pricing-cabling"
               type="number"
               step="0.005"
               value={pricing.cablingBopUsdPerWp}
@@ -262,10 +267,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label className="text-slate-400 block mb-1">
+            <label htmlFor="fin-pricing-substation" className="text-slate-400 block mb-1">
               {lang === 'fa' ? 'پست MV و اتصال ($/MVA):' : 'MV Substation ($/MVA):'}
             </label>
             <input
+              id="fin-pricing-substation"
               type="number"
               step="5000"
               value={pricing.substationUsdPerMva}
@@ -275,7 +281,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label className="text-slate-400 block mb-1">
+            <label htmlFor="fin-pricing-tariff" className="text-slate-400 block mb-1">
               {financial.systemMode === 'powerplant'
                 ? (lang === 'fa' ? 'تعرفه قرارداد PPA (تومان/kWh):' : 'PPA Tariff (Toman/kWh):')
                 : financial.systemMode === 'offgrid'
@@ -283,6 +289,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   : (lang === 'fa' ? 'تعرفه فروش برق خانگی/صنعتی (تومان/kWh):' : 'Retail Tariff (Toman/kWh):')}
             </label>
             <input
+              id="fin-pricing-tariff"
               type="number"
               step="500"
               value={
@@ -314,10 +321,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label className="text-slate-400 block mb-1">
+            <label htmlFor="fin-pricing-usd-toman" className="text-slate-400 block mb-1">
               {lang === 'fa' ? 'نرخ تسعیر دلار (تومان):' : 'USD/Toman Rate:'}
             </label>
             <input
+              id="fin-pricing-usd-toman"
               type="number"
               step="1000"
               value={pricing.usdToTomanRate}
@@ -329,8 +337,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
         {/* Optional Diesel Generator Pricing Toggle */}
         <div className="p-3 bg-industrial-bg border border-industrial-border rounded-lg text-xs space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer text-industrial-warning font-bold">
+          <label htmlFor="fin-include-diesel-genset" className="flex items-center gap-2 cursor-pointer text-industrial-warning font-bold">
             <input
+              id="fin-include-diesel-genset"
               type="checkbox"
               checked={!!pricing.includeDieselGenSet}
               onChange={(e) => updateField('includeDieselGenSet', e.target.checked)}
@@ -351,8 +360,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'قیمت خرید دیزل ($):' : 'GenSet CAPEX ($):'}</label>
+                  <label htmlFor="fin-pricing-diesel-genset-capex" className="text-slate-400 block mb-1">{lang === 'fa' ? 'قیمت خرید دیزل ($):' : 'GenSet CAPEX ($):'}</label>
                   <input
+                    id="fin-pricing-diesel-genset-capex"
                     type="number"
                     value={pricing.dieselGenSetCapexUsd || 15000}
                     onChange={(e) => updateField('dieselGenSetCapexUsd', parseFloat(e.target.value) || 0)}
@@ -360,8 +370,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'ساعات کارکرد سالانه (h):' : 'Annual Run Hours (h):'}</label>
+                  <label htmlFor="fin-pricing-diesel-annual-hours" className="text-slate-400 block mb-1">{lang === 'fa' ? 'ساعات کارکرد سالانه (h):' : 'Annual Run Hours (h):'}</label>
                   <input
+                    id="fin-pricing-diesel-annual-hours"
                     type="number"
                     value={pricing.dieselAnnualRunHours || 250}
                     onChange={(e) => updateField('dieselAnnualRunHours', parseFloat(e.target.value) || 0)}
@@ -369,8 +380,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'مصرف گازوئیل (L/h):' : 'Fuel Rate (L/h):'}</label>
+                  <label htmlFor="fin-pricing-diesel-fuel-rate" className="text-slate-400 block mb-1">{lang === 'fa' ? 'مصرف گازوئیل (L/h):' : 'Fuel Rate (L/h):'}</label>
                   <input
+                    id="fin-pricing-diesel-fuel-rate"
                     type="number"
                     step="0.5"
                     value={pricing.dieselFuelConsumptionLitersPerHour || 14}
@@ -379,8 +391,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'نرخ هر لیتر (تومان):' : 'Fuel Price (Toman/L):'}</label>
+                  <label htmlFor="fin-pricing-diesel-fuel-price" className="text-slate-400 block mb-1">{lang === 'fa' ? 'نرخ هر لیتر (تومان):' : 'Fuel Price (Toman/L):'}</label>
                   <input
+                    id="fin-pricing-diesel-fuel-price"
                     type="number"
                     value={pricing.dieselFuelPriceTomanPerLiter || 3500}
                     onChange={(e) => updateField('dieselFuelPriceTomanPerLiter', parseFloat(e.target.value) || 0)}

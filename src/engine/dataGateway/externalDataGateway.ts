@@ -6,8 +6,14 @@
 import { ClimateDataProvider } from './climateDataProvider';
 import { SoilDataProvider } from './soilDataProvider';
 import { StructuralHazardProvider } from './structuralHazardProvider';
-import { type ClimateResourceData, type SoilPropertiesData, type StructuralHazardData } from './types';
-import type { ClimateCity, SoilClassification } from '../types/climateTypes';
+import {
+  type ClimateResourceData,
+  type SoilPropertiesData,
+  type StructuralHazardData,
+  type ParameterProvenance,
+  createParameterProvenance,
+} from './types';
+import { type ClimateCity, type SoilClassification, calculateDesignDaylightHours } from '../types/climateTypes';
 import { estimateGeodesicDistanceToCoastKm } from '../corrosion/coastlineModel';
 
 export interface ComprehensiveSiteData {
@@ -51,6 +57,44 @@ export class ExternalDataGateway {
       this.climateProvider.reverseGeocodeNominatim(lat, lng),
     ]);
 
+    const distCoastKm = estimateGeodesicDistanceToCoastKm(lat, lng);
+    const gwDepthM = distCoastKm <= 2.0 ? 1.5 : distCoastKm <= 10.0 ? 3.0 : 6.0;
+    const drainage: ClimateCity['drainageCondition'] =
+      climateResource.annualPrecipitationMm > 600 || soilProperties.soilClassification === 'medium_clay'
+        ? 'poor_flood_prone'
+        : climateResource.annualPrecipitationMm > 350
+        ? 'moderate'
+        : 'well_drained';
+
+    const designDaylight = calculateDesignDaylightHours(lat);
+
+    const cityFieldProvenance: Record<string, ParameterProvenance> = {
+      ...(climateResource.fieldProvenance || {}),
+      ...(soilProperties.fieldProvenance || {}),
+      ...(structuralHazard.fieldProvenance || {}),
+      daylightHoursDesign: createParameterProvenance('local_model', 'ASTRONOMICAL_SPA_MODEL', {
+        unit: 'hours',
+        value: designDaylight.daylightHoursDesign,
+        derivationMethod: 'Astronomical sunset hour angle at local winter solstice',
+      }),
+      nightHoursDesign: createParameterProvenance('local_model', 'ASTRONOMICAL_SPA_MODEL', {
+        unit: 'hours',
+        value: designDaylight.nightHoursDesign,
+        derivationMethod: '24.0 - daylightHoursDesign',
+      }),
+      distanceToCoastKm: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'km',
+        value: distCoastKm,
+        derivationMethod: 'Geodesic distance calculation to world coastline dataset',
+      }),
+      groundwaterDepthM: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'm',
+        value: gwDepthM,
+        derivationMethod: 'Coastal proximity step heuristic',
+        qualityNote: 'برآورد هیدرولوژیکی غربالگری — نیازمند بررسی میدانی (Site Investigation Required)',
+      }),
+    };
+
     const climateCity: ClimateCity = {
       id: `gateway_${lat.toFixed(3)}_${lng.toFixed(3)}`,
       nameFa: nominatimName,
@@ -61,6 +105,8 @@ export class ExternalDataGateway {
       longitude: lng,
       elevationM: climateResource.elevationM,
       peakSunHours: climateResource.peakSunHours,
+      daylightHoursDesign: designDaylight.daylightHoursDesign,
+      nightHoursDesign: designDaylight.nightHoursDesign,
       tempMinC: climateResource.tempMinC,
       tempMaxC: climateResource.tempMaxC,
       albedo: climateResource.albedo,
@@ -83,19 +129,10 @@ export class ExternalDataGateway {
       dataSourceFa: `درگاه یکپارچه جهانی (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
       dataSourceEn: `Unified External Gateway (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
       dataRetrievalDate: (climateResource.metadata.retrievalTimestamp || new Date().toISOString()).slice(0, 10),
-      distanceToCoastKm: estimateGeodesicDistanceToCoastKm(lat, lng),
-      drainageCondition:
-        climateResource.annualPrecipitationMm > 600 || soilProperties.soilClassification === 'medium_clay'
-          ? 'poor_flood_prone'
-          : climateResource.annualPrecipitationMm > 350
-          ? 'moderate'
-          : 'well_drained',
-      groundwaterDepthM:
-        estimateGeodesicDistanceToCoastKm(lat, lng) <= 2.0
-          ? 1.5
-          : estimateGeodesicDistanceToCoastKm(lat, lng) <= 10.0
-          ? 3.0
-          : 6.0,
+      distanceToCoastKm: distCoastKm,
+      drainageCondition: drainage,
+      groundwaterDepthM: gwDepthM,
+      fieldProvenance: cityFieldProvenance,
     };
 
     return {

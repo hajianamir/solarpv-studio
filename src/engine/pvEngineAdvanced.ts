@@ -206,7 +206,7 @@ export function designPvArray(
   const netArrayAreaM2 = totalModulesCount * moduleAreaM2;
 
   // Inter-row pitch calculation for winter solstice noon:
-  // Solar altitude angle at winter solstice: alpha = 90 - latitude - 23.45
+  // Solar altitude angle at winter solstice: alpha = 90 - |latitude| - |delta|
   // Row spacing D = H * (cos(tilt) + sin(tilt) / tan(alpha))
   const tiltRad = (deratings.arrayTiltDeg * Math.PI) / 180.0;
   const panelHeightProjectedM = module.lengthM * Math.sin(tiltRad);

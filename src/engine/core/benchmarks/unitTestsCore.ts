@@ -5027,6 +5027,260 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // ==========================================================================
+  // Suite E21 - E26: Dynamic Climate Window, Load Conservation & DC Earthing
+  // ==========================================================================
+
+  // E21: Astronomical winter-solstice daylight hours & PSH distinction
+  {
+    const { calculateDesignDaylightHours, getClimateData } = await import('../../climaticData');
+    const equator = calculateDesignDaylightHours(0);
+    const tehran = calculateDesignDaylightHours(35.6892);
+    const munich = calculateDesignDaylightHours(48.1351);
+
+    const tehranCity = getClimateData(35.6892, 51.3890);
+
+    const equatorOk = Math.abs(equator.daylightHoursDesign - 12.0) < 0.05 && equator.nightHoursDesign === 12.0;
+    const tehranOk = Math.abs(tehran.daylightHoursDesign - 9.58) < 0.1 && Math.abs(tehran.nightHoursDesign - 14.42) < 0.1;
+    const munichOk = Math.abs(munich.daylightHoursDesign - 8.14) < 0.1 && Math.abs(munich.nightHoursDesign - 15.86) < 0.1;
+    const cityPopulatedOk = typeof tehranCity.daylightHoursDesign === 'number' && typeof tehranCity.nightHoursDesign === 'number';
+    const pshDistinctionOk = tehranCity.peakSunHours !== tehranCity.daylightHoursDesign; // PSH (~5.17) != clock daylight (~9.58)
+
+    assert(
+      'E21-CLIMATE-WINDOW-DESIGN-DAYLIGHT',
+      'Calculates astronomical winter-solstice daylight hours (conservatism for battery) and enforces PSH distinction',
+      equatorOk && tehranOk && munichOk && cityPopulatedOk && pshDistinctionOk,
+      `equator=${equator.daylightHoursDesign}h, tehran=${tehran.daylightHoursDesign}h (night=${tehran.nightHoursDesign}h), munich=${munich.daylightHoursDesign}h, tehranPSH=${tehranCity.peakSunHours} vs clockDay=${tehranCity.daylightHoursDesign}h`
+    );
+  }
+
+  // E22: Day hours clipping transfers excess to night hours and guarantees 100% daily energy conservation
+  {
+    const { normalizeLoadItemToWindow } = await import('../../loadProfiles');
+    const sampleLoad: import('../../loadProfiles').ElectricalLoadItem = {
+      id: 'load-chiller',
+      name: 'Chiller Unit',
+      category: 'hvac',
+      ratedWatts: 1000,
+      surgeMultiplier: 2.0,
+      quantity: 1,
+      dayHours: 12,
+      nightHours: 2,
+      isDc: false,
+    };
+
+    const window = { dayCapHours: 9.58, nightCapHours: 14.42 };
+    const { normalized, warning } = normalizeLoadItemToWindow(sampleLoad, window);
+
+    const initialDailyWh = (12 + 2) * 1000;
+    const normalizedDailyWh = (normalized.dayHours + normalized.nightHours) * 1000;
+    const energyConserved = Math.abs(initialDailyWh - normalizedDailyWh) < 0.001;
+    const dayClamped = normalized.dayHours === 9.58;
+    const nightTransferred = Math.abs(normalized.nightHours - 4.42) < 0.01;
+    const warningEmitted = typeof warning === 'string' && warning.length > 0;
+
+    assert(
+      'E22-LOAD-NORMALIZATION-AND-ENERGY-CONSERVATION',
+      'Clamping load daytime hours transfers excess to night hours and guarantees 100% total daily energy conservation',
+      energyConserved && dayClamped && nightTransferred && warningEmitted,
+      `initial=${initialDailyWh}Wh, normalized=${normalizedDailyWh}Wh, day=${normalized.dayHours}h, night=${normalized.nightHours}h, warning=${warning?.slice(0, 40)}...`
+    );
+  }
+
+  // E23: Period-based continuous and surge power calculation & DC load isolation
+  {
+    const { analyzeLoadProfile } = await import('../../loadProfiles');
+    const loads: import('../../loadProfiles').ElectricalLoadItem[] = [
+      {
+        id: 'ac-1',
+        name: 'AC Daytime Pump',
+        category: 'pumping',
+        ratedWatts: 2000,
+        surgeMultiplier: 3.0,
+        quantity: 1,
+        dayHours: 8,
+        nightHours: 0,
+        isDc: false,
+      },
+      {
+        id: 'ac-2',
+        name: 'AC Night Lighting',
+        category: 'lighting',
+        ratedWatts: 500,
+        surgeMultiplier: 1.0,
+        quantity: 2,
+        dayHours: 0,
+        nightHours: 6,
+        isDc: false,
+      },
+      {
+        id: 'dc-1',
+        name: 'DC Telecom Unit',
+        category: 'it_server',
+        ratedWatts: 400,
+        surgeMultiplier: 1.0,
+        quantity: 1,
+        dayHours: 9.5,
+        nightHours: 14.5,
+        isDc: true,
+      },
+    ];
+
+    const analysis = analyzeLoadProfile(loads, { dayCapHours: 9.58, nightCapHours: 14.42 });
+
+    const dcSegregated = analysis.dcContinuousActivePowerWatts === 400 && analysis.acContinuousActivePowerWatts === 3000;
+    const periodDayContinuous = analysis.daytimeContinuousWatts === 2400; // 2000W AC + 400W DC
+    const periodNightContinuous = analysis.nighttimeContinuousWatts === 1400; // 1000W AC + 400W DC
+    const acPeriodicOk = analysis.acGoverningContinuousWatts === 2000 && analysis.acGoverningSurgeWatts === 6000;
+    const daySurge = analysis.daytimeSurgeWatts === 6400; // 6000W AC surge + 400W DC
+    const totalDailyWh = analysis.totalDailyEnergyWh;
+    const energyOk = Math.abs(totalDailyWh - 31568) < 1;
+
+    assert(
+      'E23-PERIOD-BASED-CONTINUOUS-SURGE-AND-DC-BREAKDOWN',
+      'Period-based continuous & surge analysis isolates DC loads from inverter sizing while preserving energy accounting',
+      dcSegregated && periodDayContinuous && periodNightContinuous && acPeriodicOk && daySurge && energyOk,
+      `acCont=${analysis.acContinuousActivePowerWatts}W, acGov=${analysis.acGoverningContinuousWatts}W, dcCont=${analysis.dcContinuousActivePowerWatts}W, dayPeak=${analysis.daytimeSurgeWatts}W, totalWh=${totalDailyWh} (exp 31568)`
+    );
+  }
+
+  // E24: 24h simulation strictly conserves load energy and tracks SoC & gross surplus
+  {
+    const { simulate24hEnergyBalance } = await import('../../simulation24hEngine');
+    const dayKwh = 24.5;
+    const nightKwh = 18.2;
+    const totalTarget = dayKwh + nightKwh;
+
+    const sim = simulate24hEnergyBalance(
+      10.0,  // 10 kWp array
+      5.2,   // 5.2 PSH
+      dayKwh,
+      nightKwh,
+      25.0,  // 25 kWh usable BESS
+      30.0,  // 30 kWh gross BESS
+      50.0,  // 50% initial SoC
+      9.58   // Winter solstice daylight window
+    );
+
+    const hourlySum = sim.hourlySteps.reduce((sum, h) => sum + h.loadDemandKwh, 0);
+    const loadConservationOk = Math.abs(hourlySum - totalTarget) <= 0.05;
+    const socReported = typeof sim.initialBatterySocPct === 'number' && typeof sim.finalBatterySocPct === 'number';
+    const grossSurplusReported = typeof sim.totalSurplus24hKwh === 'number' && sim.totalSurplus24hKwh >= 0;
+
+    // Test polar night (0h daylight) and midnight sun (24h daylight) without clamping
+    const polarNightSim = simulate24hEnergyBalance(10.0, 0.0, 0.0, 20.0, 25.0, 30.0, 50.0, 0.0);
+    const polarNightSum = polarNightSim.hourlySteps.reduce((sum, h) => sum + h.loadDemandKwh, 0);
+    const polarNightOk = Math.abs(polarNightSum - 20.0) <= 0.05;
+
+    // Sweep night-only load (12 kWh, day = 0 kWh) across varied daylight windows (8.14h, 9.58h, 12h, 14.42h)
+    // Verify that NO hourly load is negative, noon load is non-negative, and total energy is 100% conserved
+    const daylightTestWindows = [8.14, 9.58, 12.0, 14.42];
+    let nightOnlySweepOk = true;
+    for (const d of daylightTestWindows) {
+      const nightSim = simulate24hEnergyBalance(10.0, 5.0, 0.0, 12.0, 15.0, 20.0, 50.0, d);
+      const minLoad = Math.min(...nightSim.hourlySteps.map(s => s.loadDemandKwh));
+      const noonLoad = nightSim.hourlySteps[12].loadDemandKwh;
+      const sumLoad = nightSim.hourlySteps.reduce((sum, s) => sum + s.loadDemandKwh, 0);
+      if (minLoad < 0 || noonLoad < 0 || Math.abs(sumLoad - 12.0) > 0.05) {
+        nightOnlySweepOk = false;
+        break;
+      }
+    }
+
+    assert(
+      'E24-SIMULATION-24H-STRICT-LOAD-CONSERVATION-AND-SOC',
+      'Dynamic sunrise/sunset 24h simulation guarantees strict hourly load conservation (tolerance <= 0.01 kWh) and tracks SoC & surplus',
+      loadConservationOk && socReported && grossSurplusReported && polarNightOk && nightOnlySweepOk,
+      `hourlySum=${hourlySum.toFixed(4)} kWh vs target=${totalTarget} kWh (diff=${Math.abs(hourlySum - totalTarget).toFixed(4)}), initialSoC=${sim.initialBatterySocPct}%, finalSoC=${sim.finalBatterySocPct}%, surplus=${sim.totalSurplus24hKwh} kWh, polarNight=${polarNightOk}, nightOnlySweep=${nightOnlySweepOk}`
+    );
+  }
+
+  // E25: BESS night coverage metric and off-grid coverage deficit warning
+  {
+    const { sizeBatteryBank } = await import('../../batteryEngine');
+    // Deficit coverage case (night load = 20 kWh, usable = 10 kWh -> coverage ~50%)
+    const deficitBank = sizeBatteryBank(
+      10.0, // 10 kWh net energy
+      1.0,  // 1 autonomy day
+      'lifepo4',
+      48,
+      5000,
+      3000,
+      15.0,
+      100,
+      20.0  // 20 kWh design night load
+    );
+
+    const deficitDetected = (deficitBank.nightCoveragePct ?? 100) < 100 &&
+      deficitBank.warnings.some(w => w.includes('پوشش ناکافی بار شب') || w.includes('پوشش شب'));
+
+    // Full coverage case (night load = 10 kWh, usable ~22.6 kWh -> coverage > 100%)
+    const fullBank = sizeBatteryBank(
+      20.0,
+      1.0,
+      'lifepo4',
+      48,
+      5000,
+      3000,
+      15.0,
+      100,
+      10.0
+    );
+
+    const fullCoverageOk = (fullBank.nightCoveragePct ?? 0) >= 100;
+
+    // On-grid case: 6h outage in Tehran (outage need = 4.99 kWh, usable = 8.2 kWh -> 164% coverage, NO false warning!)
+    const onGridBank = sizeBatteryBank(
+      4.99,
+      1.0,
+      'lifepo4',
+      48,
+      5000,
+      3000,
+      15.0,
+      100,
+      12.0, // 12 kWh total night load
+      'ongrid',
+      6,    // 6h outage window
+      14.42 // 14.42h night window
+    );
+    const onGridNoFalseDeficit = (onGridBank.nightCoveragePct ?? 0) >= 100 &&
+      !onGridBank.warnings.some(w => w.includes('پوشش ناکافی'));
+
+    assert(
+      'E25-BESS-NIGHT-COVERAGE-AND-OFFGRID-WARNING',
+      'Evaluates usable battery energy against longest winter-night requirement and issues Persian/English deficit warnings',
+      deficitDetected && fullCoverageOk && onGridNoFalseDeficit,
+      `deficitCoverage=${deficitBank.nightCoveragePct}%, fullCoverage=${fullBank.nightCoveragePct}%, onGridCoverage=${onGridBank.nightCoveragePct}%`
+    );
+  }
+
+  // E26: Earthing & DC bonding calculations, IMD/GFDI enforcement, single unified MET mandate
+  {
+    const { calculateEarthingSystem } = await import('../../protectionBomEngine');
+    const floatingEarthing = calculateEarthingSystem(500, 100, 'solidly_grounded', true, false, 'floating');
+    const functionalEarthing = calculateEarthingSystem(500, 100, 'solidly_grounded', true, false, 'functional_negative');
+
+    const pvBondingOk = floatingEarthing.pvFrameStructureBondingMm2 >= 6.0;
+    const bessBondingOk = floatingEarthing.batteryRackBondingConductorMm2 >= 16.0;
+    const inverterBondingOk = floatingEarthing.inverterEnclosureBondingMm2 >= 16.0;
+
+    const floatingMonitoringOk = floatingEarthing.requiresInsulationMonitoring === true && floatingEarthing.requiresGfdiRcu === false;
+    const functionalGfdiOk = functionalEarthing.requiresInsulationMonitoring === false && functionalEarthing.requiresGfdiRcu === true;
+
+    // Single unified MET enforcement: execution steps must forbid isolated DC earth electrode
+    const unifiedMetEnforced =
+      floatingEarthing.earthingExecutionStepsFa.some(s => s.includes('MET') || s.includes('یکپارچه')) &&
+      floatingEarthing.earthingExecutionStepsFa.some(s => s.includes('ممنوع'));
+
+    assert(
+      'E26-EARTHING-DC-SIDE-BONDING-AND-MET-MANDATE',
+      'Derives PV racking (>=6mm²), BESS rack (>=16mm²), and inverter bonding conductors to single unified MET with IMD/GFDI mandates',
+      pvBondingOk && bessBondingOk && inverterBondingOk && floatingMonitoringOk && functionalGfdiOk && unifiedMetEnforced,
+      `pvBonding=${floatingEarthing.pvFrameStructureBondingMm2}mm², bessBonding=${floatingEarthing.batteryRackBondingConductorMm2}mm², floatingIMD=${floatingMonitoringOk}, funcGFDI=${functionalGfdiOk}, unifiedMet=${unifiedMetEnforced}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

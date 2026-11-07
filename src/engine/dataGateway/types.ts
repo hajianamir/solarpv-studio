@@ -3,7 +3,37 @@
  * SolarPV Studio v3.0 - Global Multi-Region Data Integration Architecture
  */
 
-import type { SoilClassification } from '../types/climateTypes';
+import type { SoilClassification, ProvenanceSourceKind, ParameterProvenance } from '../types/climateTypes';
+
+export type { ProvenanceSourceKind, ParameterProvenance };
+
+export function createParameterProvenance(
+  sourceKind: ProvenanceSourceKind,
+  providerName: string,
+  options?: {
+    sourceDataset?: string;
+    sourceParameter?: string;
+    endpointOrVersion?: string;
+    retrievedAt?: string;
+    derivationMethod?: string;
+    qualityNote?: string;
+    unit?: string;
+    value?: number | string | null;
+  }
+): ParameterProvenance {
+  return {
+    sourceKind,
+    providerName,
+    sourceDataset: options?.sourceDataset,
+    sourceParameter: options?.sourceParameter,
+    endpointOrVersion: options?.endpointOrVersion,
+    retrievedAt: options?.retrievedAt || new Date().toISOString(),
+    derivationMethod: options?.derivationMethod,
+    qualityNote: options?.qualityNote,
+    unit: options?.unit,
+    value: options?.value,
+  };
+}
 
 export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
@@ -76,6 +106,7 @@ export interface ClimateResourceData {
   optimalTiltDeg: number;
   soilingLossPercent: number;
   metadata: DataProvenanceMetadata;
+  fieldProvenance: Record<string, ParameterProvenance>;
   provenance?: {
     peakSunHours?: EngineeringDatum<number>;
     dniKwhM2Day?: EngineeringDatum<number>;
@@ -104,6 +135,7 @@ export interface SoilPropertiesData {
   estimatedFromGlobalModel: boolean;
   geotechnicalDisclaimer?: string;
   metadata: DataProvenanceMetadata;
+  fieldProvenance: Record<string, ParameterProvenance>;
 }
 
 export interface StructuralHazardData {
@@ -117,6 +149,7 @@ export interface StructuralHazardData {
   windStandardCode: 'ASCE_7_22' | 'EN_1991_1_4' | 'INBC_PART_6' | 'AS_NZS_1170_2';
   snowStandardCode: 'ASCE_7_22_CH7' | 'EN_1991_1_3' | 'INBC_PART_6' | 'AS_NZS_1170_3';
   metadata: DataProvenanceMetadata;
+  fieldProvenance: Record<string, ParameterProvenance>;
 }
 
 export interface GatewayHealthStatus {

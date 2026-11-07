@@ -146,11 +146,12 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
           </h3>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1 flex justify-between">
+            <label htmlFor="shading-pitch-distance" className="block text-xs font-semibold text-slate-300 mb-1 flex justify-between">
               <span>{isEn ? 'Row Pitch Distance (m):' : 'فاصله محور تا محور ردیف‌ها (Pitch):'}</span>
               <span className="text-industrial-accent font-mono font-bold">{pitchDistanceM} m</span>
             </label>
             <input
+              id="shading-pitch-distance"
               type="range"
               min="4.0"
               max="15.0"
@@ -170,10 +171,11 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              <label htmlFor="shading-array-tilt" className="block text-[11px] font-semibold text-slate-300 mb-1">
                 {isEn ? 'Tilt Angle (°):' : 'زاویه شیب استراکچر:'}
               </label>
               <input
+                id="shading-array-tilt"
                 type="number"
                 min="5"
                 max="50"
@@ -183,10 +185,11 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              <label htmlFor="shading-table-sloped-width" className="block text-[11px] font-semibold text-slate-300 mb-1">
                 {isEn ? 'Table Sloped Width (m):' : 'طول شیبدار میز (متر):'}
               </label>
               <input
+                id="shading-table-sloped-width"
                 type="number"
                 step="0.1"
                 min="1.5"
@@ -200,10 +203,11 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              <label htmlFor="shading-ground-clearance" className="block text-[11px] font-semibold text-slate-300 mb-1">
                 {isEn ? 'Ground Clearance (m):' : 'ارتفاع لبه پایین (متر):'}
               </label>
               <input
+                id="shading-ground-clearance"
                 type="number"
                 step="0.05"
                 min="0.3"
@@ -214,10 +218,11 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              <label htmlFor="shading-array-azimuth" className="block text-[11px] font-semibold text-slate-300 mb-1">
                 {isEn ? 'Array Azimuth (°):' : 'آزیموت آرایه (جنوب=۰):'}
               </label>
               <input
+                id="shading-array-azimuth"
                 type="number"
                 step="1"
                 min="-60"
@@ -232,8 +237,9 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
           {/* Obstacle Sizing */}
           <div className="pt-2 border-t border-industrial-border">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 cursor-pointer">
+              <label htmlFor="shading-has-obstacle-checkbox" className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 cursor-pointer">
                 <input
+                  id="shading-has-obstacle-checkbox"
                   type="checkbox"
                   checked={hasObstacle}
                   onChange={(e) => setHasObstacle(e.target.checked)}

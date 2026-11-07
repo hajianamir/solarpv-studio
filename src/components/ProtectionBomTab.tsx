@@ -28,6 +28,7 @@ import {
   type InstallationMethod,
   type UpstreamGroundingSystem,
   type ProtectionBomItem,
+  type DcSystemEarthingType,
 } from '../engine/protectionBomEngine';
 import type { InstallationEnvironment } from '../engine/types/climateTypes';
 
@@ -41,6 +42,9 @@ interface ProtectionBomTabProps {
   systemDcVoltage?: number;
   isThreePhase?: boolean;
   ambientTempC?: number;
+  totalModulesCount?: number;
+  dcSystemEarthing?: DcSystemEarthingType;
+  onDcSystemEarthingChange?: (earthing: DcSystemEarthingType) => void;
   installationEnvironment?: InstallationEnvironment;
   lang?: 'fa' | 'en';
 }
@@ -55,6 +59,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   systemDcVoltage = 48,
   isThreePhase = true,
   ambientTempC = 42,
+  totalModulesCount = 100,
+  dcSystemEarthing = 'floating',
+  onDcSystemEarthingChange,
   installationEnvironment = 'ground_mount',
   lang = 'fa',
 }) => {
@@ -76,10 +83,17 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   const [batteryCableLengthM, setBatteryCableLengthM] = useState<number>(3);
   const [batteryMaterial, setBatteryMaterial] = useState<ConductorMaterial>('copper');
 
-  // Earthing Inputs
+  // Earthing & DC Grounding Inputs
   const [soilResistivity, setSoilResistivity] = useState<number>(100);
   const [upstreamGrounding, setUpstreamGrounding] = useState<UpstreamGroundingSystem>('solidly_grounded');
   const [applyBentonite, setApplyBentonite] = useState<boolean>(false);
+  const [internalDcEarthing, setInternalDcEarthing] = useState<DcSystemEarthingType>(dcSystemEarthing);
+  const currentDcEarthing = dcSystemEarthing ?? internalDcEarthing;
+
+  const handleDcEarthingChange = (mode: DcSystemEarthingType) => {
+    setInternalDcEarthing(mode);
+    onDcSystemEarthingChange?.(mode);
+  };
 
   // Active view tab
   const [activeSubTab, setActiveSubTab] = useState<'cables' | 'earthing' | 'lightning' | 'bom'>('cables');
@@ -176,16 +190,17 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
     installationMethod,
   ]);
 
-  // 2. Earthing Analysis (IEEE 80 Sverak + Touch/Step verification)
+  // 2. Earthing Analysis (IEEE 80 Sverak + Touch/Step verification + DC Earthing Architecture)
   const earthingResult = useMemo(() => {
     return calculateEarthingSystem(
       systemCapacityKw,
       soilResistivity,
       upstreamGrounding,
       isUtilityPowerplant,
-      applyBentonite
+      applyBentonite,
+      currentDcEarthing
     );
-  }, [systemCapacityKw, soilResistivity, upstreamGrounding, isUtilityPowerplant, applyBentonite]);
+  }, [systemCapacityKw, soilResistivity, upstreamGrounding, isUtilityPowerplant, applyBentonite, currentDcEarthing]);
 
   // 3. Lightning Protection Analysis (IEC 62305 Risk & Separation Distance)
   const lightningResult = useMemo(() => {
@@ -258,14 +273,70 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       {
         id: 'bom-7',
         category: 'earthing',
-        deviceFa: 'تسمه / سیم لخت مسی دفنی رینگ هم‌بندی',
+        deviceFa: 'تسمه / سیم لخت مسی دفنی رینگ هم‌بندی پیرامونی',
         deviceEn: 'Bare Stranded Copper Conductor for Ground Ring',
         specificationFa: `${earthingResult.buriedConductorCrossSectionMm2} mm² Soft Drawn Copper`,
         rating: `${earthingResult.buriedConductorCrossSectionMm2} mm²`,
         quantity: earthingResult.buriedBareConductorLengthM,
         locationFa: 'کانال پیرامونی محوطه سازه‌ها و پست برق',
       },
+      // Section B: Equipotential bonding and DC grounding BOM items per IEC 62548 / IEC 60364-5-54 / IEC 62485-2
+      {
+        id: 'bom-pe-clips',
+        category: 'earthing',
+        deviceFa: 'گیره و لَگ ارت دندانه‌دار فریم ماژول‌های خورشیدی',
+        deviceEn: 'Module Frame Serrated Grounding Clips / Lugs',
+        specificationFa: 'استاندارد IEC 62548 و UL 2703 با دندانه‌های نافذ در لایه اکسید آلومینیوم',
+        rating: 'Stainless Steel / Copper Lug',
+        quantity: Math.max(1, totalModulesCount),
+        locationFa: 'فریم آلومینیومی کلیه ماژول‌های خورشیدی و اتصال به ریل',
+      },
+      {
+        id: 'bom-pe-structure',
+        category: 'earthing',
+        deviceFa: 'هادی هم‌بندی پایه‌ها و شاسی فلزی استراکچر خورشیدی',
+        deviceEn: 'PV Array Structure Equipotential Bonding Conductor',
+        specificationFa: earthingResult.pvFrameStructureBondingBasisFa,
+        rating: `${earthingResult.pvFrameStructureBondingMm2} mm² Cu`,
+        quantity: isUtilityPowerplant ? Math.max(25, Math.ceil(parallelStringsCount * 2)) : 10,
+        locationFa: 'پایه‌های فلزی استراکچر تا شینه رینگ ارت پیرامونی',
+      },
+      {
+        id: 'bom-pe-bess',
+        category: 'earthing',
+        deviceFa: 'هادی هم‌بندی حفاظتی رک و کابینت فلزی بانک باتری (BESS)',
+        deviceEn: 'BESS Battery Metal Rack & Cabinet Protective Bonding Conductor',
+        specificationFa: earthingResult.batteryRackBondingBasisFa,
+        rating: `${earthingResult.batteryRackBondingConductorMm2} mm² Cu`,
+        quantity: isUtilityPowerplant ? 15 : 6,
+        locationFa: 'شاسی و بدنه فلزی رک باتری تا شینه اصلی ارت (MET)',
+      },
     ];
+
+    // DC Earthing / Monitoring BOM Item
+    if (earthingResult.requiresInsulationMonitoring) {
+      bom.push({
+        id: 'bom-imd',
+        category: 'earthing',
+        deviceFa: 'دستگاه پایش پیوسته مقاومت عایقی مدار DC (Insulation Monitoring Device - IMD)',
+        deviceEn: 'DC Continuous Insulation Monitoring Device (IMD)',
+        specificationFa: 'استاندارد IEC 61557-8 جهت پایش آنلاین مدار DC شناور IT',
+        rating: '0-1000 kΩ / 1500VDC',
+        quantity: 1,
+        locationFa: 'تابلوی کنترل مانیتورینگ DC و ورودی اینورتر',
+      });
+    } else {
+      bom.push({
+        id: 'bom-gfdi',
+        category: 'earthing',
+        deviceFa: 'رله و سنسور آشکارسازی و قطع خطای زمین DC (GFDI / RCMU)',
+        deviceEn: 'DC Ground Fault Detector Interrupter (GFDI / RCMU)',
+        specificationFa: 'استاندارد IEC 62109-2 جهت قطع خودکار ارت عملکردی در صورت خطای زمین',
+        rating: '30mA - 300mA / 1500VDC',
+        quantity: 1,
+        locationFa: 'مسیر هادی اتصال زمین قطب DC در ورودی اینورتر',
+      });
+    }
 
     if (isUtilityPowerplant) {
       bom.push({
@@ -289,6 +360,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
     systemCapacityKw,
     cableRuns,
     earthingResult,
+    totalModulesCount,
   ]);
 
   return (
@@ -421,10 +493,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   {lang === 'fa' ? 'کابل DC استرینگ خورشیدی' : 'DC Solar String Cable'}
                 </span>
                 <div>
-                  <label className="text-slate-400 block mb-1">
+                  <label htmlFor="dc-string-length" className="text-slate-400 block mb-1">
                     {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
                   </label>
                   <input
+                    id="dc-string-length"
                     type="number"
                     min="5"
                     max="500"
@@ -435,8 +508,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
+                    <label htmlFor="dc-string-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
                     <select
+                      id="dc-string-material"
                       value={dcStringMaterial}
                       onChange={(e) => setDcStringMaterial(e.target.value as ConductorMaterial)}
                       className="studio-input w-full text-xs"
@@ -446,8 +520,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
+                    <label htmlFor="dc-string-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
                     <select
+                      id="dc-string-insulation"
                       value={dcStringInsulation}
                       onChange={(e) => setDcStringInsulation(e.target.value as InsulationType)}
                       className="studio-input w-full text-xs"
@@ -465,10 +540,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   {lang === 'fa' ? 'کابل باسبار اصلی DC آرایه' : 'Main DC Array Feeder'}
                 </span>
                 <div>
-                  <label className="text-slate-400 block mb-1">
+                  <label htmlFor="dc-main-feeder-length" className="text-slate-400 block mb-1">
                     {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
                   </label>
                   <input
+                    id="dc-main-feeder-length"
                     type="number"
                     min="5"
                     max="1000"
@@ -479,8 +555,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
+                    <label htmlFor="dc-main-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
                     <select
+                      id="dc-main-material"
                       value={dcMainMaterial}
                       onChange={(e) => setDcMainMaterial(e.target.value as ConductorMaterial)}
                       className="studio-input w-full text-xs"
@@ -490,8 +567,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
+                    <label htmlFor="dc-main-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
                     <select
+                      id="dc-main-insulation"
                       value={dcMainInsulation}
                       onChange={(e) => setDcMainInsulation(e.target.value as InsulationType)}
                       className="studio-input w-full text-xs"
@@ -509,10 +587,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   {lang === 'fa' ? 'کابل AC خروجی اینورتر' : 'Inverter AC Output Cable'}
                 </span>
                 <div>
-                  <label className="text-slate-400 block mb-1">
+                  <label htmlFor="ac-output-length" className="text-slate-400 block mb-1">
                     {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
                   </label>
                   <input
+                    id="ac-output-length"
                     type="number"
                     min="5"
                     max="2000"
@@ -523,8 +602,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
+                    <label htmlFor="ac-output-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
                     <select
+                      id="ac-output-material"
                       value={acMaterial}
                       onChange={(e) => setAcMaterial(e.target.value as ConductorMaterial)}
                       className="studio-input w-full text-xs"
@@ -534,8 +614,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
+                    <label htmlFor="ac-output-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
                     <select
+                      id="ac-output-insulation"
                       value={acInsulation}
                       onChange={(e) => setAcInsulation(e.target.value as InsulationType)}
                       className="studio-input w-full text-xs"
@@ -716,8 +797,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   ? 'محاسبات سیستم ارتینگ، هم‌بندی و پتانسیل گام و لمس (IEEE 80 / IEC 60364-5-54)'
                   : 'Earthing System Design & Touch/Step Potential (IEEE 80)'}
               </span>
-              <label className="flex items-center gap-2 cursor-pointer bg-industrial-surface px-2.5 py-1 rounded border border-industrial-border text-xs">
+              <label htmlFor="protection-bentonite-checkbox" className="flex items-center gap-2 cursor-pointer bg-industrial-surface px-2.5 py-1 rounded border border-industrial-border text-xs">
                 <input
+                  id="protection-bentonite-checkbox"
                   type="checkbox"
                   checked={applyBentonite}
                   onChange={(e) => setApplyBentonite(e.target.checked)}
@@ -729,12 +811,13 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </label>
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2 text-xs">
-                <label className="text-slate-300 font-semibold block">
+                <label htmlFor="protection-soil-resistivity" className="text-slate-300 font-semibold block">
                   {lang === 'fa' ? 'مقاومت ویژه خاک محوطه (Ω·m / Soil Resistivity):' : 'Soil Resistivity (Ω·m):'}
                 </label>
                 <input
+                  id="protection-soil-resistivity"
                   type="number"
                   min="20"
                   max="2000"
@@ -748,10 +831,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
 
               <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2 text-xs">
-                <label className="text-slate-300 font-semibold block">
+                <label htmlFor="protection-upstream-grounding" className="text-slate-300 font-semibold block">
                   {lang === 'fa' ? 'سیستم زمین و اتصال به شبکه بالادست:' : 'Upstream Grid Earthing Scheme:'}
                 </label>
                 <select
+                  id="protection-upstream-grounding"
                   value={upstreamGrounding}
                   onChange={(e) => setUpstreamGrounding(e.target.value as UpstreamGroundingSystem)}
                   className="studio-input w-full"
@@ -769,6 +853,71 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 <span className="text-[10px] text-slate-400 block">
                   {lang === 'fa' ? 'تعیین‌کننده جریان خطای اتصال زمین و ولتاژ لمس مجاز طبق استانداردهای توانیر' : 'Defines fault clearance time & allowable step/touch potentials'}
                 </span>
+              </div>
+
+              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2 text-xs">
+                <label htmlFor="protection-dc-system-earthing" className="text-slate-300 font-semibold block">
+                  {lang === 'fa' ? 'رژیم زمین سمت DC (پنل و باتری):' : 'DC System Earthing Architecture:'}
+                </label>
+                <select
+                  id="protection-dc-system-earthing"
+                  value={currentDcEarthing}
+                  onChange={(e) => handleDcEarthingChange(e.target.value as DcSystemEarthingType)}
+                  className="studio-input w-full"
+                >
+                  <option value="floating">
+                    {lang === 'fa' ? '۱. قطب‌های شناور (Floating / پیش‌فرض استاندارد)' : '1. Floating DC Poles (Standard Default - IT)'}
+                  </option>
+                  <option value="functional_negative">
+                    {lang === 'fa' ? '۲. ارت عملکردی قطب منفی (با الزام سازنده)' : '2. Functional Negative Earthing (Mandated)'}
+                  </option>
+                  <option value="functional_positive">
+                    {lang === 'fa' ? '۳. ارت عملکردی قطب مثبت (با الزام سازنده)' : '3. Functional Positive Earthing (Mandated)'}
+                  </option>
+                </select>
+                <span className="text-[10px] text-slate-400 block">
+                  {currentDcEarthing === 'floating'
+                    ? (lang === 'fa' ? '✓ قطب‌های DC شناور؛ پایش آنلاین مقاومت عایقی با دستگاه IMD الزامی است.' : '✓ DC poles floating; continuous IMD insulation monitoring active.')
+                    : (lang === 'fa' ? '⚠ هشدار: ارت عملکردی فقط با الزام سازنده مجاز است و نیازمند حفاظت GFDI/RCMU می‌باشد.' : '⚠ Warning: Functional earthing requires written manufacturer authorization & GFDI.')}
+                </span>
+              </div>
+            </div>
+
+            {/* Single Unified Earthing Principle Box */}
+            <div className="p-3 bg-sky-950/40 border border-sky-800/80 rounded-lg text-xs space-y-1 mb-4">
+              <div className="flex items-center gap-2 font-bold text-sky-300">
+                <Shield className="w-4 h-4 text-sky-400 shrink-0" />
+                <span>{lang === 'fa' ? 'حکم مهندسی هم‌بندی و سیستم ارت یکپارچه (Single Unified Earth Grid):' : 'Unified Protective Bonding & Single Earthing Grid Mandate:'}</span>
+              </div>
+              <p className="text-slate-300 text-[11px] leading-relaxed">
+                {lang === 'fa'
+                  ? '۱) هم‌بندی حفاظتی فریم ماژول‌ها، استراکچر فلزی، بدنه اینورتر و رک باتری الزامی بوده و همه به «یک» شینه اصلی ارت (MET) متصل می‌شوند. ۲) احداث چاه ارت مجزا یا ایزوله برای بخش DC ممنوع است؛ هر الکترود جدید باید به همین شبکه متصل گردد. ۳) قطب‌های حامل جریان DC به‌صورت پیش‌فرض شناورند و نباید زمین شوند؛ مانیتورینگ پیوسته عایقی با IMD انجام می‌شود.'
+                  : '1) Protective equipotential bonding of PV frames, racking, inverter enclosures, and BESS battery racks to a single Main Earthing Terminal (MET) is mandatory. 2) Separate/isolated grounding pits for DC are strictly prohibited. 3) DC poles remain floating by default; continuous insulation monitoring (IMD) is active.'}
+              </p>
+            </div>
+
+            {/* Equipotential Bonding Schedule Cards */}
+            <div className="p-3 rounded-lg border border-industrial-border bg-industrial-surface mb-4">
+              <h4 className="text-xs font-bold text-industrial-accent mb-2.5 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-industrial-warning" />
+                {lang === 'fa' ? 'جدول هادی‌های هم‌بندی حفاظتی و سیستم زمین (Equipotential Bonding Schedule):' : 'Protective Equipotential Bonding Conductor Schedule:'}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-2.5 bg-industrial-bg rounded-lg border border-industrial-border space-y-1">
+                  <span className="text-slate-400 block text-[11px]">{lang === 'fa' ? 'هم‌بندی فریم و سازه ماژول‌ها' : 'PV Frame & Structure Bonding'}</span>
+                  <span className="text-base font-bold font-mono text-emerald-400">{earthingResult.pvFrameStructureBondingMm2} mm² Cu</span>
+                  <span className="text-[10px] text-slate-400 block">{lang === 'fa' ? earthingResult.pvFrameStructureBondingBasisFa : earthingResult.pvFrameStructureBondingBasisEn}</span>
+                </div>
+                <div className="p-2.5 bg-industrial-bg rounded-lg border border-industrial-border space-y-1">
+                  <span className="text-slate-400 block text-[11px]">{lang === 'fa' ? 'هم‌بندی رک و کابینت باتری BESS' : 'BESS Battery Rack Bonding'}</span>
+                  <span className="text-base font-bold font-mono text-indigo-400">{earthingResult.batteryRackBondingConductorMm2} mm² Cu</span>
+                  <span className="text-[10px] text-slate-400 block">{lang === 'fa' ? earthingResult.batteryRackBondingBasisFa : earthingResult.batteryRackBondingBasisEn}</span>
+                </div>
+                <div className="p-2.5 bg-industrial-bg rounded-lg border border-industrial-border space-y-1">
+                  <span className="text-slate-400 block text-[11px]">{lang === 'fa' ? 'هم‌بندی بدنه اینورتر' : 'Inverter Chassis Bonding'}</span>
+                  <span className="text-base font-bold font-mono text-sky-400">{earthingResult.inverterEnclosureBondingMm2} mm² Cu</span>
+                  <span className="text-[10px] text-slate-400 block">{lang === 'fa' ? earthingResult.inverterEnclosureBondingBasisFa : earthingResult.inverterEnclosureBondingBasisEn}</span>
+                </div>
               </div>
             </div>
 

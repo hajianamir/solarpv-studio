@@ -84,9 +84,9 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
 
       {/* Framework Selector & Loan Parameters */}
       <div className="studio-card">
-        <label className="block text-xs font-semibold text-slate-300 mb-2">
+        <span className="block text-xs font-semibold text-slate-300 mb-2">
           {isFa ? 'انتخاب چارچوب قانونی و ساختار فروش برق در ایران:' : 'Select Regulatory Power Offtake Framework in Iran:'}
-        </label>
+        </span>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
           {frameworksList.map((item) => (
             <div
@@ -111,10 +111,11 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
         {/* Financial Drivers */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-3 border-t border-industrial-border">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="iran-reg-tariff" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'نرخ فروش برق (تومان/kWh):' : 'Electricity Tariff (Toman/kWh):'}
             </label>
             <input
+              id="iran-reg-tariff"
               type="number"
               step="100"
               value={customTariffToman}
@@ -124,10 +125,11 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="iran-reg-debt-ratio" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'سهم تسهیلات بانکی (وام ٪):' : 'Bank Debt Financing (%):'}
             </label>
             <input
+              id="iran-reg-debt-ratio"
               type="number"
               step="5"
               min="0"
@@ -139,10 +141,11 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="iran-reg-interest-rate" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'نرخ سود تسهیلات بانکی (٪):' : 'Loan Interest Rate (%):'}
             </label>
             <input
+              id="iran-reg-interest-rate"
               type="number"
               step="1"
               value={loanInterestPct}
@@ -152,10 +155,11 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="iran-reg-debt-tenor" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'دوره بازپرداخت وام (سال):' : 'Debt Tenor (Years):'}
             </label>
             <input
+              id="iran-reg-debt-tenor"
               type="number"
               step="1"
               value={loanTermYears}

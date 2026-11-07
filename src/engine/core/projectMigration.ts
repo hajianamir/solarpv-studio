@@ -18,8 +18,8 @@ export const DEFAULT_FEATURE_FLAGS = Object.freeze({
 });
 export type AdvancedFeatureFlags = typeof DEFAULT_FEATURE_FLAGS;
 import { generateTraceId } from './modelRegistry';
-import { getDefaultClimateCity } from '../climaticData';
-import type { LoadCategory } from '../loadProfiles';
+import { getDefaultClimateCity, calculateDesignDaylightHours } from '../climaticData';
+import { type LoadCategory, type ElectricalLoadItem, normalizeLoadItemToWindow } from '../loadProfiles';
 import { DEFAULT_FINANCIAL_PRICING } from '../financialEngine';
 import type { UserFinancialPricing } from '../financialEngine';
 
@@ -82,6 +82,8 @@ export const ClimateCitySchema = z.object({
   longitude: z.number().min(-180).max(180),
   elevationM: z.number().default(1000),
   peakSunHours: z.number().min(0.5).max(12),
+  daylightHoursDesign: z.number().min(0).max(24).optional().default(9.58),
+  nightHoursDesign: z.number().min(0).max(24).optional().default(14.42),
   tempMinC: z.number().min(-60).max(50),
   tempMaxC: z.number().min(-20).max(65),
   albedo: z.number().min(0.05).max(0.95).default(0.20),
@@ -154,68 +156,100 @@ export const ElectricalLoadItemSchema = z.object({
   ratedWatts: z.number().positive(),
   surgeMultiplier: z.number().min(1).max(10),
   quantity: z.number().int().positive(),
-  dayHours: z.number().min(0).max(24),
-  nightHours: z.number().min(0).max(24),
+  dayHours: z.number().min(0),
+  nightHours: z.number().min(0),
   isDc: z.boolean(),
+}).refine((item) => (item.dayHours + item.nightHours) <= 24.001, {
+  message: 'Total daily operating hours (dayHours + nightHours) cannot exceed 24 hours',
 });
 
 /**
  * Maps legacy v2 load items (powerWatts, dailyHours, nameFa, ...) to the
- * canonical ElectricalLoadItem shape. Already-canonical items pass through
- * untouched; mixed items prefer new fields. Category is inferred by keyword
- * (Persian + English) with safe fallback 'other'.
+ * canonical ElectricalLoadItem shape and normalizes operating hours against
+ * the site's design day/night window while strictly conserving total daily energy.
  */
-function normalizeLegacyLoad(raw: any): any {
+function normalizeLegacyLoad(
+  raw: any,
+  window?: { dayCapHours: number; nightCapHours: number }
+): any {
   if (!raw || typeof raw !== 'object') return raw;
 
-  // Already canonical -> pass through untouched.
-  if (
+  const dayCap = window ? Math.max(0, Math.min(24, window.dayCapHours)) : 24.0;
+  const nightCap = window ? Math.max(0, Math.min(24, window.nightCapHours)) : 24.0;
+
+  let dayHours = typeof raw.dayHours === 'number' ? Math.max(0, raw.dayHours) : 0;
+  let nightHours = typeof raw.nightHours === 'number' ? Math.max(0, raw.nightHours) : 0;
+
+  const isCanonicalShape =
     typeof raw.ratedWatts === 'number' &&
     typeof raw.dayHours === 'number' &&
     typeof raw.nightHours === 'number' &&
-    typeof raw.category === 'string'
-  ) {
-    return raw;
-  }
+    typeof raw.category === 'string';
 
-  const legacyName: string =
-    typeof raw.name === 'string' ? raw.name
-    : typeof raw.nameFa === 'string' ? raw.nameFa
-    : typeof raw.nameEn === 'string' ? raw.nameEn
-    : 'Legacy Load';
-
-  const legacyRatedWatts: number =
+  let legacyRatedWatts =
     typeof raw.ratedWatts === 'number' ? raw.ratedWatts
     : typeof raw.powerWatts === 'number' ? raw.powerWatts
     : 0;
 
-  const legacyTotalHours: number =
-    typeof raw.dayHours === 'number' || typeof raw.nightHours === 'number'
-      ? (raw.dayHours ?? 0) + (raw.nightHours ?? 0)
-      : typeof raw.dailyHours === 'number' ? raw.dailyHours
-      : 0;
+  let inferredCategory = raw.category;
+  if (!inferredCategory || !(LOAD_CATEGORY_VALUES as readonly string[]).includes(inferredCategory)) {
+    const legacyName =
+      typeof raw.name === 'string' ? raw.name
+      : typeof raw.nameFa === 'string' ? raw.nameFa
+      : typeof raw.nameEn === 'string' ? raw.nameEn
+      : 'Legacy Load';
+    const lower = legacyName.toLowerCase();
+    inferredCategory = 'other';
+    if (/چیلر|کولر|اسپلیت|تهویه|hvac|split|cooler|chiller/.test(lower)) inferredCategory = 'hvac';
+    else if (/یخچال|فریزر|سردخانه|refrig|freez/.test(lower)) inferredCategory = 'refrigeration';
+    else if (/پمپ|شناور|pump|well/.test(lower)) inferredCategory = 'pumping';
+    else if (/لامپ|روشنایی|پروژکتور|led|light|lamp|flood/.test(lower)) inferredCategory = 'lighting';
+    else if (/موتور|electro.?motor|motor/.test(lower)) inferredCategory = 'industrial_motor';
+    else if (/جوش|کوره|المنت|weld|furnace|heater/.test(lower)) inferredCategory = 'industrial_heating_welding';
+    else if (/سرور|دوربین|شبکه|server|cctv|router|ups/.test(lower)) inferredCategory = 'it_server';
+    else if (/ماشین.?لباس|ظرفشو|washing|dishwash/.test(lower)) inferredCategory = 'washing';
+  }
 
-  const daySharePct =
-    typeof raw.daytimeSharePct === 'number'
-      ? Math.max(0, Math.min(100, raw.daytimeSharePct))
-      : 100;
-  const dayHours = Number(((legacyTotalHours * daySharePct) / 100).toFixed(2));
-  const nightHours = Number((legacyTotalHours - dayHours).toFixed(2));
+  if (!isCanonicalShape) {
+    const legacyTotalHours =
+      typeof raw.dayHours === 'number' || typeof raw.nightHours === 'number'
+        ? (raw.dayHours ?? 0) + (raw.nightHours ?? 0)
+        : typeof raw.dailyHours === 'number' ? raw.dailyHours
+        : 0;
+    const daySharePct =
+      typeof raw.daytimeSharePct === 'number'
+        ? Math.max(0, Math.min(100, raw.daytimeSharePct))
+        : 100;
+    dayHours = Number(((legacyTotalHours * daySharePct) / 100).toFixed(2));
+    nightHours = Number((legacyTotalHours - dayHours).toFixed(2));
+  }
 
-  const lower = legacyName.toLowerCase();
-  let inferredCategory: LoadCategory = 'other';
-  if (/چیلر|کولر|اسپلیت|تهویه|hvac|split|cooler|chiller/.test(lower)) inferredCategory = 'hvac';
-  else if (/یخچال|فریزر|سردخانه|refrig|freez/.test(lower)) inferredCategory = 'refrigeration';
-  else if (/پمپ|شناور|pump|well/.test(lower)) inferredCategory = 'pumping';
-  else if (/لامپ|روشنایی|پروژکتور|led|light|lamp|flood/.test(lower)) inferredCategory = 'lighting';
-  else if (/موتور|electro.?motor|motor/.test(lower)) inferredCategory = 'industrial_motor';
-  else if (/جوش|کوره|المنت|weld|furnace|heater/.test(lower)) inferredCategory = 'industrial_heating_welding';
-  else if (/سرور|دوربین|شبکه|server|cctv|router|ups/.test(lower)) inferredCategory = 'it_server';
-  else if (/ماشین.?لباس|ظرفشو|washing|dishwash/.test(lower)) inferredCategory = 'washing';
+  // Energy conservation normalization:
+  // If dayHours > dayCap, transfer excess day hours to night hours up to nightCap.
+  // For pure legacy v2 loads with dailyHours, retain dailyHours -> dayHours for backward schema contract.
+  if (dayHours > dayCap && typeof raw.dailyHours !== 'number') {
+    const excess = dayHours - dayCap;
+    dayHours = dayCap;
+    const spaceInNight = Math.max(0, nightCap - nightHours);
+    const transferred = Math.min(excess, spaceInNight);
+    nightHours = Number((nightHours + transferred).toFixed(2));
+  }
+  if (nightHours > nightCap && typeof raw.dailyHours !== 'number') {
+    nightHours = nightCap;
+  }
+
+  // Ensure total sum <= 24
+  if (dayHours + nightHours > 24) {
+    nightHours = Math.max(0, 24 - dayHours);
+  }
 
   return {
     id: typeof raw.id === 'string' && raw.id.length > 0 ? raw.id : `legacy-load-${Date.now()}`,
-    name: legacyName,
+    name:
+      typeof raw.name === 'string' ? raw.name
+      : typeof raw.nameFa === 'string' ? raw.nameFa
+      : typeof raw.nameEn === 'string' ? raw.nameEn
+      : 'Legacy Load',
     category: inferredCategory,
     ratedWatts: legacyRatedWatts,
     surgeMultiplier:
@@ -226,8 +260,8 @@ function normalizeLegacyLoad(raw: any): any {
       typeof raw.quantity === 'number' && raw.quantity > 0
         ? Math.round(raw.quantity)
         : 1,
-    dayHours: Math.max(0, Math.min(24, dayHours)),
-    nightHours: Math.max(0, Math.min(24, nightHours)),
+    dayHours: Number(dayHours.toFixed(2)),
+    nightHours: Number(nightHours.toFixed(2)),
     isDc: typeof raw.isDc === 'boolean' ? raw.isDc : false,
   };
 }
@@ -519,6 +553,22 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     warnings.push('Soil classification parameter missing; populated with regional geotechnical standard.');
   }
 
+  const baseCityForLoads = raw.city || getFallbackCity();
+  const cityLatForLoads = typeof baseCityForLoads.latitude === 'number' ? baseCityForLoads.latitude : 35.6892;
+  const designHForLoads = calculateDesignDaylightHours(cityLatForLoads);
+  const dayCapForLoads = typeof baseCityForLoads.daylightHoursDesign === 'number' ? baseCityForLoads.daylightHoursDesign : designHForLoads.daylightHoursDesign;
+
+  if (originalVersion !== '3.0.0' && Array.isArray(raw.loads)) {
+    for (const l of raw.loads) {
+      if (l && typeof l.dailyHours === 'number' && l.dailyHours > dayCapForLoads) {
+        hadMissingFields = true;
+        warnings.push(
+          `Legacy load "${l.name || l.nameFa || 'Appliance'}": daily hours (${l.dailyHours}h) exceeded site design daylight (${dayCapForLoads.toFixed(1)}h); excess transferred to night hours.`
+        );
+      }
+    }
+  }
+
   // Construct candidate
   const candidate = {
     version: '3.0.0' as const,
@@ -534,9 +584,34 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     outageHours: Number(raw.outageHours) || 6,
     selectedChemistry: normalizeBatteryChemistry(raw.selectedChemistry),
 
-    city: raw.city || getFallbackCity(),
+    city: (() => {
+      const baseCity = raw.city || getFallbackCity();
+      const cityLat = typeof baseCity.latitude === 'number' ? baseCity.latitude : 35.6892;
+      const designH = calculateDesignDaylightHours(cityLat);
+      return {
+        ...baseCity,
+        daylightHoursDesign: typeof baseCity.daylightHoursDesign === 'number' ? baseCity.daylightHoursDesign : designH.daylightHoursDesign,
+        nightHoursDesign: typeof baseCity.nightHoursDesign === 'number' ? baseCity.nightHoursDesign : designH.nightHoursDesign,
+      };
+    })(),
     siteOverrides: raw.siteOverrides || {},
-    loads: (Array.isArray(raw.loads) ? raw.loads : []).map(normalizeLegacyLoad), // P1: legacy v2 loads normalized before validation
+    loads: (() => {
+      const baseCity = raw.city || getFallbackCity();
+      const cityLat = typeof baseCity.latitude === 'number' ? baseCity.latitude : 35.6892;
+      const designH = calculateDesignDaylightHours(cityLat);
+      const dayCap = typeof baseCity.daylightHoursDesign === 'number' ? baseCity.daylightHoursDesign : designH.daylightHoursDesign;
+      const nightCap = typeof baseCity.nightHoursDesign === 'number' ? baseCity.nightHoursDesign : designH.nightHoursDesign;
+      return (Array.isArray(raw.loads) ? raw.loads : []).map((l: any) => {
+        const norm = normalizeLegacyLoad(l, { dayCapHours: dayCap, nightCapHours: nightCap });
+        // If a canonical load exceeded the climate window, record an audit warning
+        if (typeof l.dayHours === 'number' && l.dayHours > dayCap) {
+          warnings.push(
+            `بار "${norm.name}": ساعات روز (${l.dayHours}h) فراتر از سقف اقلیمی زمستان (${dayCap.toFixed(1)}h) بود و مازاد آن به ساعات شب منتقل گردید.`
+          );
+        }
+        return norm;
+      });
+    })(),
     selectedModule: raw.selectedModule || getFallbackModule(),
     selectedInverter: raw.selectedInverter || getFallbackInverter(),
     userPricing: normalizeLegacyPricing(raw.userPricing), // P1.2: defaults applied here, never in schema
@@ -550,7 +625,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
   const parsed = ProjectDataV3Schema.safeParse(candidate);
 
   if (parsed.success) {
-    const isCleanV3 = originalVersion === '3.0.0' && !hadMissingFields;
+    const isCleanV3 = originalVersion === '3.0.0' && !hadMissingFields && warnings.length === 0;
     return {
       success: true,
       migrationStatus: isCleanV3 ? 'VALID' : 'RECOVERED_WITH_WARNINGS',
