@@ -838,6 +838,19 @@ export function simulateAnnual3dShading(
     tableFacetsMap.set(table.id, buildTableFacets(table));
   }
 
+  // Pre-build combined occlusion facets per table (all obstacles + other tables)
+  // to avoid re-allocating and concatenating arrays on every single hourly time step (P3-05 optimization)
+  const occlusionFacetsByTable = new Map<string, PlanarFacet3D[]>();
+  for (const table of scene.pvTables) {
+    const tableOcclusion: PlanarFacet3D[] = [...allObstacleFacets];
+    for (const [id, f] of tableFacetsMap.entries()) {
+      if (id !== table.id) {
+        tableOcclusion.push(...f);
+      }
+    }
+    occlusionFacetsByTable.set(table.id, tableOcclusion);
+  }
+
   // Heatmap accumulators per table
   const tableData: Map<
     string,
@@ -942,13 +955,8 @@ export function simulateAnnual3dShading(
         const stepUnshadedKwh = stepBeamUnshadedKwh + stepDiffUnshadedKwh + stepGndUnshadedKwh;
         stats.unshadedKwh += stepUnshadedKwh;
 
-        // Gather all obstacle facets PLUS inter-row table facets (excluding self)
-        const occlusionFacetsForTable: PlanarFacet3D[] = [...allObstacleFacets];
-        for (const [id, f] of tableFacetsMap.entries()) {
-          if (id !== table.id) {
-            occlusionFacetsForTable.push(...f);
-          }
-        }
+        // Use pre-computed occlusion facets for this table (P3-05 optimization)
+        const occlusionFacetsForTable = occlusionFacetsByTable.get(table.id) || allObstacleFacets;
 
         const meshRes = computeTableShadingGeometricMesh(table, occlusionFacetsForTable, sun);
 

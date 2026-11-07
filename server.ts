@@ -24,6 +24,19 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Disable Express fingerprinting header (P3-02)
+app.disable('x-powered-by');
+
+// Global standard security headers (P3-02)
+function securityHeadersMiddleware(_req: Request, res: Response, next: (e?: any) => void): void {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+}
+app.use(securityHeadersMiddleware);
+
 function isProductionEnv(): boolean {
   return process.env.NODE_ENV === 'production';
 }
@@ -44,6 +57,19 @@ const BUILT_IN_CATALOG_IDS = new Set<string>([
 ]);
 
 app.use(express.json());
+
+// Robust JSON body parse error handler (P3-01)
+function jsonErrorHandler(err: any, _req: Request, res: Response, next: (e?: any) => void): void {
+  if (err instanceof SyntaxError && 'status' in err && (err as any).status === 400 && 'body' in err) {
+    res.status(400).json({
+      error: 'Invalid JSON payload in request body.',
+      message: (err as any).message || 'Malformed JSON syntax',
+    });
+    return;
+  }
+  next(err);
+}
+app.use(jsonErrorHandler);
 
 // In-Memory Database store with persistent file recovery
 const db = new InMemorySolarDatabase();
@@ -814,15 +840,21 @@ app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
   }
 
   const previousItem = db.pvModules.get(item.id) as any;
-  if (previousItem?.ownerId) {
-    if (!requesterId) {
+  if (previousItem) {
+    if (previousItem.ownerId) {
+      if (!requesterId) {
+        return res.status(401).json({
+          error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
+        });
+      }
+      if (previousItem.ownerId !== requesterId) {
+        return res.status(403).json({
+          error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+        });
+      }
+    } else if (isSecure && !requesterId) {
       return res.status(401).json({
-        error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
-      });
-    }
-    if (previousItem.ownerId !== requesterId) {
-      return res.status(403).json({
-        error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+        error: `Authentication required: cannot modify existing catalog item '${item.id}' without authentication.`,
       });
     }
   }
@@ -903,15 +935,21 @@ app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
   }
 
   const previousItem = db.inverters.get(item.id) as any;
-  if (previousItem?.ownerId) {
-    if (!requesterId) {
+  if (previousItem) {
+    if (previousItem.ownerId) {
+      if (!requesterId) {
+        return res.status(401).json({
+          error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
+        });
+      }
+      if (previousItem.ownerId !== requesterId) {
+        return res.status(403).json({
+          error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+        });
+      }
+    } else if (isSecure && !requesterId) {
       return res.status(401).json({
-        error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
-      });
-    }
-    if (previousItem.ownerId !== requesterId) {
-      return res.status(403).json({
-        error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+        error: `Authentication required: cannot modify existing catalog item '${item.id}' without authentication.`,
       });
     }
   }
@@ -986,15 +1024,21 @@ app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
   }
 
   const previousItem = db.batteries.get(item.id) as any;
-  if (previousItem?.ownerId) {
-    if (!requesterId) {
+  if (previousItem) {
+    if (previousItem.ownerId) {
+      if (!requesterId) {
+        return res.status(401).json({
+          error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
+        });
+      }
+      if (previousItem.ownerId !== requesterId) {
+        return res.status(403).json({
+          error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+        });
+      }
+    } else if (isSecure && !requesterId) {
       return res.status(401).json({
-        error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
-      });
-    }
-    if (previousItem.ownerId !== requesterId) {
-      return res.status(403).json({
-        error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+        error: `Authentication required: cannot modify existing catalog item '${item.id}' without authentication.`,
       });
     }
   }
@@ -1101,6 +1145,38 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
     if (!resolvedBatteryType && projectSnapshot.batteryId) {
       const bat = db.batteries.get(projectSnapshot.batteryId);
       if (bat) resolvedBatteryType = `${bat.manufacturer} ${bat.modelName} (${bat.nominalVoltageVolts}V ${bat.capacityKwh}kWh)`;
+    }
+
+    // Equipment baseline reference verification (P3-06)
+    if (panelType) {
+      if (!projectSnapshot.moduleId) {
+        discrepancies.push('Snapshot missing baseline moduleId; cannot reconcile panel model.');
+      } else {
+        const mod = db.pvModules.get(projectSnapshot.moduleId);
+        if (mod && !panelType.toLowerCase().includes(mod.modelName.toLowerCase()) && !mod.modelName.toLowerCase().includes(panelType.toLowerCase())) {
+          discrepancies.push(`Panel model mismatch: report=${panelType} vs snapshot=${mod.manufacturer} ${mod.modelName}`);
+        }
+      }
+    }
+    if (inverterType) {
+      if (!projectSnapshot.inverterId) {
+        discrepancies.push('Snapshot missing baseline inverterId; cannot reconcile inverter model.');
+      } else {
+        const inv = db.inverters.get(projectSnapshot.inverterId);
+        if (inv && !inverterType.toLowerCase().includes(inv.modelName.toLowerCase()) && !inv.modelName.toLowerCase().includes(inverterType.toLowerCase())) {
+          discrepancies.push(`Inverter model mismatch: report=${inverterType} vs snapshot=${inv.manufacturer} ${inv.modelName}`);
+        }
+      }
+    }
+    if (batteryType && batteryType !== 'None' && (!batteryCount || batteryCount > 0)) {
+      if (!projectSnapshot.batteryId) {
+        discrepancies.push('Snapshot missing baseline batteryId; cannot reconcile battery model.');
+      } else {
+        const bat = db.batteries.get(projectSnapshot.batteryId);
+        if (bat && !batteryType.toLowerCase().includes(bat.modelName.toLowerCase()) && !bat.modelName.toLowerCase().includes(batteryType.toLowerCase())) {
+          discrepancies.push(`Battery model mismatch: report=${batteryType} vs snapshot=${bat.manufacturer} ${bat.modelName}`);
+        }
+      }
     }
 
     // Baseline completeness and validity checks on snapshot itself (R847-02)
@@ -1490,6 +1566,14 @@ app.get('/api/v1/sync/pull', (req: Request, res: Response) => {
   res.json({
     currentClock: Date.now(),
     projects: accessibleProjects,
+  });
+});
+
+// 404 handler for unmatched API routes (P3-01)
+app.all('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({
+    error: 'API endpoint not found',
+    path: req.originalUrl || req.url,
   });
 });
 

@@ -13,4 +13,17 @@ export default defineConfig({
     port: 3000,
     allowedHosts: true,
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-three': ['three'],
+          'vendor-leaflet': ['leaflet'],
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-lucide': ['lucide-react'],
+        },
+      },
+    },
+  },
 });

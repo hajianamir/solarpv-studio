@@ -259,18 +259,31 @@ export const App: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [commandSearchQuery, setCommandSearchQuery] = useState<string>('');
+  const [paletteSelectedIndex, setPaletteSelectedIndex] = useState<number>(0);
   const [isProjectJsonModalOpen, setIsProjectJsonModalOpen] = useState<boolean>(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Autofocus search input when Command Palette opens
+  // Dynamically synchronize HTML document lang and dir with user language preference (P3-03)
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+  }, [lang]);
+
+  // Autofocus search input when Command Palette opens and reset index
   useEffect(() => {
     if (isCommandPaletteOpen) {
+      setPaletteSelectedIndex(0);
       setTimeout(() => searchInputRef.current?.focus(), 60);
     } else {
       setCommandSearchQuery('');
+      setPaletteSelectedIndex(0);
     }
   }, [isCommandPaletteOpen]);
+
+  useEffect(() => {
+    setPaletteSelectedIndex(0);
+  }, [commandSearchQuery]);
 
   // Auto-switch inverters when Inverter Technology changes
   const handleInverterTechChange = (tech: InverterTechnology) => {
@@ -1402,6 +1415,30 @@ export const App: React.FC = () => {
                 }
                 value={commandSearchQuery}
                 onChange={(e) => setCommandSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setPaletteSelectedIndex((prev) =>
+                      filteredCommandTabs.length > 0 ? (prev + 1) % filteredCommandTabs.length : 0
+                    );
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setPaletteSelectedIndex((prev) =>
+                      filteredCommandTabs.length > 0
+                        ? (prev - 1 + filteredCommandTabs.length) % filteredCommandTabs.length
+                        : 0
+                    );
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (filteredCommandTabs.length > 0 && filteredCommandTabs[paletteSelectedIndex]) {
+                      setActiveTab(filteredCommandTabs[paletteSelectedIndex].id);
+                      setIsCommandPaletteOpen(false);
+                    }
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setIsCommandPaletteOpen(false);
+                  }
+                }}
                 className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none font-sans"
               />
               <button
@@ -1419,33 +1456,39 @@ export const App: React.FC = () => {
                   {lang === 'fa' ? 'ماژولی با این عنوان یافت نشد' : 'No engineering modules found'}
                 </div>
               ) : (
-                filteredCommandTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setIsCommandPaletteOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-lg transition text-right ${
-                      activeTab === tab.id
-                        ? 'bg-sky-600/20 text-sky-300 border border-sky-500/40'
-                        : 'text-slate-300 hover:bg-[#141C2E] hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-1.5 rounded bg-slate-800/80 text-sky-400">{tab.icon}</div>
-                      <div>
-                        <strong className="block text-xs text-white">{tab.title}</strong>
-                        {tab.code && <span className="text-[10px] text-slate-400 font-mono">{tab.code}</span>}
+                filteredCommandTabs.map((tab, idx) => {
+                  const isHighlighted = idx === paletteSelectedIndex;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsCommandPaletteOpen(false);
+                      }}
+                      onMouseEnter={() => setPaletteSelectedIndex(idx)}
+                      className={`w-full flex items-center justify-between p-2.5 rounded-lg transition text-right ${
+                        isHighlighted
+                          ? 'bg-sky-600/30 text-white border border-sky-400 ring-1 ring-sky-500/50 shadow-sm'
+                          : activeTab === tab.id
+                          ? 'bg-sky-600/20 text-sky-300 border border-sky-500/40'
+                          : 'text-slate-300 hover:bg-[#141C2E] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded bg-slate-800/80 text-sky-400">{tab.icon}</div>
+                        <div>
+                          <strong className="block text-xs text-white">{tab.title}</strong>
+                          {tab.code && <span className="text-[10px] text-slate-400 font-mono">{tab.code}</span>}
+                        </div>
                       </div>
-                    </div>
-                    {tab.badge && (
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#1F2937] text-amber-300 border border-slate-700">
-                        {tab.badge}
-                      </span>
-                    )}
-                  </button>
-                ))
+                      {tab.badge && (
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#1F2937] text-amber-300 border border-slate-700">
+                          {tab.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
 

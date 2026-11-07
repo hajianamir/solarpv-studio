@@ -2407,6 +2407,172 @@ async function runM01ToM22TestSuite(): Promise<void> {
     );
   }
 
+  // P3 Polish: Unknown /api/* Route 404 JSON Handler
+  {
+    const api404Route = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/*')
+      ?.route.stack[0].handle;
+
+    let notFoundCode = 0;
+    let notFoundBody: any = null;
+    await api404Route(
+      { originalUrl: '/api/v1/nonexistent/service' },
+      {
+        status(c: number) { notFoundCode = c; return this; },
+        json(d: any) { notFoundBody = d; return this; },
+      }
+    );
+
+    assert(
+      notFoundCode === 404 && notFoundBody?.error === 'API endpoint not found',
+      'P3: Unknown /api/* route returns 404 JSON response instead of SPA HTML',
+      `code=${notFoundCode}, error=${notFoundBody?.error}`
+    );
+  }
+
+  // P3 Polish: Global Security Headers Middleware
+  {
+    const secHeadersMiddleware = (app as any)._router.stack
+      .find((r: any) => r.name === 'securityHeadersMiddleware')
+      ?.handle;
+
+    const setHeaders: Record<string, string> = {};
+    const mockRes = {
+      setHeader(k: string, v: string) { setHeaders[k] = v; },
+    };
+    let nextCalled = false;
+    if (secHeadersMiddleware) {
+      secHeadersMiddleware({}, mockRes, () => { nextCalled = true; });
+    }
+
+    assert(
+      setHeaders['X-Content-Type-Options'] === 'nosniff' &&
+      setHeaders['X-Frame-Options'] === 'SAMEORIGIN' &&
+      setHeaders['Referrer-Policy'] === 'strict-origin-when-cross-origin' &&
+      nextCalled,
+      'P3: Global security headers middleware applies nosniff and SAMEORIGIN headers',
+      `headers=${JSON.stringify(setHeaders)}`
+    );
+  }
+
+  // P3 Polish: JSON Body Parser SyntaxError Handler
+  {
+    const jsonErrHandler = (app as any)._router.stack
+      .find((r: any) => r.name === 'jsonErrorHandler')
+      ?.handle;
+
+    const synErr = new SyntaxError('Unexpected token in JSON');
+    (synErr as any).status = 400;
+    (synErr as any).body = '{"bad: true}';
+
+    let jsonErrCode = 0;
+    let jsonErrBody: any = null;
+    if (jsonErrHandler) {
+      jsonErrHandler(synErr, {}, {
+        status(c: number) { jsonErrCode = c; return this; },
+        json(d: any) { jsonErrBody = d; return this; },
+      }, () => {});
+    }
+
+    assert(
+      jsonErrCode === 400 && jsonErrBody?.error?.includes('Invalid JSON payload'),
+      'P3: JSON body parse error handler intercepts SyntaxError and responds with 400 JSON',
+      `code=${jsonErrCode}, error=${jsonErrBody?.error}`
+    );
+  }
+
+  // P3 Polish: Report Baseline Missing Equipment Reference Check
+  {
+    const reportRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/reports/generate' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    const missingEquipSnapId = 'proj-missing-equip-baseline';
+    activeDb.projects.set(missingEquipSnapId, {
+      id: missingEquipSnapId,
+      name: 'Missing Equipment Baseline Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 10,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      estimatedAnnualYieldKwh: 15000,
+      lcoeUsdPerKwh: 0.05,
+      // moduleId omitted!
+      createdAt: new Date().toISOString(),
+    } as any);
+
+    let misRepRes: any = null;
+    await reportRoute({
+      body: {
+        projectId: missingEquipSnapId,
+        panelType: 'Jinko Solar 550W TOPCon',
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { misRepRes = d; return this; },
+    });
+
+    assert(
+      misRepRes?.isReconciledAgainstSnapshot === false &&
+      misRepRes?.discrepancies?.some((d: string) => d.includes('Snapshot missing baseline moduleId')),
+      'P3: Report flags missing baseline moduleId in snapshot as reconciliation discrepancy',
+      `isReconciled=${misRepRes?.isReconciledAgainstSnapshot}, discrepancies=${JSON.stringify(misRepRes?.discrepancies)}`
+    );
+  }
+
+  // P3 Polish: Legacy Catalog Item Protected Against Anonymous Overwrites
+  {
+    const catModPost = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    const legacyModId = 'mod-legacy-custom-001';
+    activeDb.pvModules.set(legacyModId, {
+      id: legacyModId,
+      modelName: 'Legacy Custom Module',
+      manufacturer: 'Vintage Solar',
+      pmpWatts: 400,
+      vmpVolts: 40,
+      impAmps: 10,
+      vocVolts: 48,
+      iscAmps: 10.5,
+      betaVocPerC: -0.28,
+      // ownerId is undefined (legacy item)
+    } as any);
+
+    const origEnv = process.env.INTERNAL_GATEWAY_SECRET;
+    process.env.INTERNAL_GATEWAY_SECRET = 'active-secret-auth';
+
+    let legStatus = 0;
+    let legBody: any = null;
+    await catModPost({
+      headers: {}, // anonymous request
+      body: {
+        id: legacyModId,
+        pmpWatts: 450,
+        vmpVolts: 42,
+        impAmps: 10.7,
+        vocVolts: 50,
+        iscAmps: 11.2,
+      },
+    }, {
+      status(c: number) { legStatus = c; return this; },
+      json(d: any) { legBody = d; return this; },
+    });
+
+    process.env.INTERNAL_GATEWAY_SECRET = origEnv;
+
+    assert(
+      legStatus === 401 && legBody?.error?.includes('Authentication required'),
+      'P3: Modifying existing legacy catalog item without ownerId requires authentication in secure mode',
+      `status=${legStatus}, error=${legBody?.error}`
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // SUMMARY
   // ---------------------------------------------------------------------------
