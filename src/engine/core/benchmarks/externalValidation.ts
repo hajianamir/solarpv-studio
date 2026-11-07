@@ -113,25 +113,89 @@ export const PHYSICAL_VALIDITY_BOUNDARIES = {
   maxGroundClearanceM: 2.50,
 };
 
+function getNodeFs(): { readFileSync: (path: string, enc: string) => string; existsSync: (path: string) => boolean } | null {
+  try {
+    if (typeof process !== 'undefined' && process?.versions?.node) {
+      if (typeof (process as any).getBuiltinModule === 'function') {
+        return (process as any).getBuiltinModule('fs');
+      }
+      if (typeof (globalThis as any).require === 'function') {
+        return (globalThis as any).require('fs');
+      }
+      return new Function('return require("fs")')();
+    }
+  } catch {}
+  return null;
+}
+
+function getNodePath(): { resolve: (...paths: string[]) => string; dirname: (path: string) => string } | null {
+  try {
+    if (typeof process !== 'undefined' && process?.versions?.node) {
+      if (typeof (process as any).getBuiltinModule === 'function') {
+        return (process as any).getBuiltinModule('path');
+      }
+      if (typeof (globalThis as any).require === 'function') {
+        return (globalThis as any).require('path');
+      }
+      return new Function('return require("path")')();
+    }
+  } catch {}
+  return null;
+}
+
 /**
  * Helper to dynamically load versioned reference case files from benchmarks/reference_files/
- * Safe in both Node.js (reads from disk) and browser environments (graceful fallback).
+ * Safe across Node.js (reads strictly from disk with fail-closed validation) and browser runtimes.
  */
 function loadSamReferenceCase(filename: string): any {
-  try {
-    const reqFn = typeof (globalThis as any).require === 'function' ? (globalThis as any).require : null;
-    if (reqFn && typeof process !== 'undefined' && process?.versions?.node) {
-      const fs = reqFn('fs');
-      const path = reqFn('path');
-      const filePath = path.resolve(process.cwd(), 'benchmarks/reference_files', filename);
-      if (fs.existsSync(filePath)) {
-        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      }
-    }
-  } catch {
-    // Fall back to baseline values
+  const isNode = typeof process !== 'undefined' && Boolean(process?.versions?.node);
+  if (!isNode) {
+    // In client browser builds, return null to fall back to static compiled baselines
+    return null;
   }
-  return null;
+
+  const fs = getNodeFs();
+  const path = getNodePath();
+  if (!fs || !path) {
+    throw new Error(`[SAM Benchmark Loader] Node environment detected but failed to initialize fs/path modules for '${filename}'.`);
+  }
+
+  let filePath = path.resolve(process.cwd(), 'benchmarks/reference_files', filename);
+  if (!fs.existsSync(filePath)) {
+    // Check up to 3 parent directories in case cwd is in a subdirectory
+    let cur = process.cwd();
+    for (let i = 0; i < 3; i++) {
+      const candidate = path.resolve(cur, 'benchmarks/reference_files', filename);
+      if (fs.existsSync(candidate)) {
+        filePath = candidate;
+        break;
+      }
+      cur = path.dirname(cur);
+    }
+  }
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(
+      `[SAM Benchmark Loader] Required SAM reference case file '${filename}' was not found at '${filePath}'. ` +
+      `Dynamic benchmark execution requires valid reference case files on disk.`
+    );
+  }
+
+  try {
+    const rawContent = fs.readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(rawContent);
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error(`Invalid JSON object structure`);
+    }
+    if (!parsed.benchmarkTargetOutputs || typeof parsed.benchmarkTargetOutputs !== 'object') {
+      throw new Error(`Missing required 'benchmarkTargetOutputs' configuration`);
+    }
+    return parsed;
+  } catch (err: any) {
+    throw new Error(
+      `[SAM Benchmark Loader] Failed to load/parse reference case '${filename}': ${err.message}`
+    );
+  }
 }
 
 /**

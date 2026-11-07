@@ -292,7 +292,47 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `checksumsMatch=${allChecksumsValid}`
     );
 
-    // M04: Mutation sensitivity test - altering a reference target strictly causes benchmark failure
+    // M04: Real disk mutation sensitivity test - altering a reference target strictly causes benchmark failure
+    const phxFilePath = path.resolve(process.cwd(), 'benchmarks/reference_files/sam_2023_12_17_phoenix_soiling_reference.sam');
+    const phxOriginalContent = fs.readFileSync(phxFilePath, 'utf-8');
+    try {
+      const phxMutated = JSON.parse(phxOriginalContent);
+      phxMutated.benchmarkTargetOutputs.annualAverageSoilingLossPct = 99.0;
+      fs.writeFileSync(phxFilePath, JSON.stringify(phxMutated, null, 2));
+
+      const mutatedReport = runExternalEmpiricalValidationSuite();
+      const phxHub = mutatedReport.crossModelComparisons.find(c => c.climateHubId === 'SAM-HUB-PHOENIX');
+      assert(
+        mutatedReport.overallStatus === 'FAIL' && phxHub?.overallStatus === 'WARN' && phxHub?.samAnnualSoilingPercent === 99.0,
+        'M04: Real on-disk SAM file mutation is dynamically consumed and immediately fails validation',
+        `overallStatus=${mutatedReport.overallStatus}, phxStatus=${phxHub?.overallStatus}, phxTarget=${phxHub?.samAnnualSoilingPercent}%`
+      );
+    } finally {
+      fs.writeFileSync(phxFilePath, phxOriginalContent);
+    }
+
+    // M04: Missing reference file strictly throws explicit error rather than silently falling back
+    let missingFileErrorCaught = false;
+    try {
+      const tempPath = phxFilePath + '.temp_test_bak';
+      fs.renameSync(phxFilePath, tempPath);
+      try {
+        runExternalEmpiricalValidationSuite();
+      } catch (err: any) {
+        if (err.message.includes('Required SAM reference case file') && err.message.includes('was not found')) {
+          missingFileErrorCaught = true;
+        }
+      } finally {
+        fs.renameSync(tempPath, phxFilePath);
+      }
+    } catch {}
+    assert(
+      missingFileErrorCaught === true,
+      'M04: Missing SAM reference file strictly throws fail-closed error rather than silently falling back to defaults',
+      `caught=${missingFileErrorCaught}`
+    );
+
+    // M04: Validation runner forceCrossModelFailure option verification
     const failedReport = runExternalEmpiricalValidationSuite({ forceCrossModelFailure: true });
     assert(
       failedReport.overallStatus === 'FAIL',
@@ -589,45 +629,86 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `reason=${unauthSyncBody.rejected[0].reason}`
     );
 
-    // M06: Strict anti-spoofing tests with INTERNAL_GATEWAY_SECRET active
-    process.env.INTERNAL_GATEWAY_SECRET = 'secret-gateway-token-xyz';
+    // -------------------------------------------------------------------------
+    // M06 Mode 1: JWT-Only Mode (JWT_SECRET set, INTERNAL_GATEWAY_SECRET unset)
+    // -------------------------------------------------------------------------
+    delete process.env.INTERNAL_GATEWAY_SECRET;
+    process.env.JWT_SECRET = 'jwt-only-secret-abc';
 
-    // 1. Raw Bearer token without valid JWT signature is rejected with HTTP 401
-    let rawBearerStatus = 0;
-    let rawBearerBody: any = null;
+    // 1a. Raw x-user-id header without JWT is strictly rejected in JWT-only mode (fail-closed against JWT bypass)
+    let jwtOnlyRawUserStatus = 0;
+    let jwtOnlyRawUserBody: any = null;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { 'x-user-id': 'alice' }, // Bypassing JWT via raw header
+      body: { name: 'Raw Header Bypass Attempt' },
+    }, {
+      status(s: number) { jwtOnlyRawUserStatus = s; return this; },
+      json(d: any) { jwtOnlyRawUserBody = d; return this; },
+    });
+    assert(
+      jwtOnlyRawUserStatus === 401 && jwtOnlyRawUserBody.error.includes('JWT-only mode'),
+      'M06: Raw x-user-id header is strictly rejected in JWT-only mode (fail-closed against JWT bypass)',
+      `status=${jwtOnlyRawUserStatus}, error=${jwtOnlyRawUserBody.error}`
+    );
+
+    // 1b. Raw Bearer token is rejected in JWT-only mode
+    let jwtOnlyRawBearerStatus = 0;
+    let jwtOnlyRawBearerBody: any = null;
     await projectPutRoute({
       params: { id: sharedAliceProjectId },
       headers: { authorization: 'Bearer alice' },
-      body: { name: 'Raw Bearer Update' },
+      body: { name: 'Raw Bearer Attempt' },
     }, {
-      status(s: number) { rawBearerStatus = s; return this; },
-      json(d: any) { rawBearerBody = d; return this; },
+      status(s: number) { jwtOnlyRawBearerStatus = s; return this; },
+      json(d: any) { jwtOnlyRawBearerBody = d; return this; },
     });
     assert(
-      rawBearerStatus === 401 && rawBearerBody.error.includes('Untrusted bearer token'),
-      'M06: Raw Bearer token without signature is rejected when gateway secret is enforced',
-      `status=${rawBearerStatus}, error=${rawBearerBody.error}`
+      jwtOnlyRawBearerStatus === 401 && jwtOnlyRawBearerBody.error.includes('Untrusted bearer token'),
+      'M06: Raw Bearer token is rejected in JWT-only mode',
+      `status=${jwtOnlyRawBearerStatus}`
     );
 
-    // 2. JWT with fake signature and expired timestamp is rejected with HTTP 401
+    // 1c. Fake signature JWT is rejected
     const fakeJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImV4cCI6MX0.fakesig';
     let fakeJwtStatus = 0;
-    let fakeJwtBody: any = null;
     await projectPutRoute({
       params: { id: sharedAliceProjectId },
       headers: { authorization: 'Bearer ' + fakeJwt },
-      body: { name: 'Fake JWT Update' },
+      body: { name: 'Fake JWT Attempt' },
     }, {
       status(s: number) { fakeJwtStatus = s; return this; },
-      json(d: any) { fakeJwtBody = d; return this; },
+      json() { return this; },
     });
     assert(
-      fakeJwtStatus === 401 && fakeJwtBody.error.includes('Invalid bearer token'),
-      'M06: JWT with fake signature / expired timestamp is rejected with HTTP 401',
-      `status=${fakeJwtStatus}, error=${fakeJwtBody.error}`
+      fakeJwtStatus === 401,
+      'M06: Forged JWT signature is rejected with HTTP 401',
+      `status=${fakeJwtStatus}`
     );
 
-    // 3. PUT with body.requesterId without identity headers is rejected with HTTP 403
+    // 1d. Validly signed JWT authorizes update in JWT-only mode
+    const b64u = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const jwtHeader = b64u({ alg: 'HS256', typ: 'JWT' });
+    const jwtPayload = b64u({ sub: 'alice', exp: Math.floor(Date.now() / 1000) + 3600 });
+    const jwtSig = crypto.createHmac('sha256', 'jwt-only-secret-abc').update(jwtHeader + '.' + jwtPayload).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const validJwt = jwtHeader + '.' + jwtPayload + '.' + jwtSig;
+
+    let validJwtOnlyStatus = 200;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { authorization: 'Bearer ' + validJwt },
+      body: { name: 'Alice Legit JWT Update', systemCapacityKwp: 12.0 },
+    }, {
+      status(s: number) { validJwtOnlyStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      validJwtOnlyStatus === 200,
+      'M06: Validly signed JWT succeeds in JWT-only mode',
+      `status=${validJwtOnlyStatus}`
+    );
+
+    // 1e. PUT with body.requesterId without identity headers is rejected with HTTP 403
     let bodyBypassStatus = 0;
     let bodyBypassBody: any = null;
     await projectPutRoute({
@@ -644,7 +725,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `status=${bodyBypassStatus}`
     );
 
-    // 4. Sync push with msg.userId without verified identity header is rejected
+    // 1f. Sync push with msg.userId without verified identity header is rejected
     let syncMsgBypassBody: any = null;
     await syncPushRoute({
       headers: {},
@@ -668,61 +749,92 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `reason=${syncMsgBypassBody.rejected[0].reason}`
     );
 
-    // 5. Header spoofing attempt without x-gateway-secret is rejected with HTTP 401
-    let spoofStatus = 0;
-    let spoofBody: any = null;
+    // -------------------------------------------------------------------------
+    // M06 Mode 2: Gateway-Only Mode (INTERNAL_GATEWAY_SECRET set, JWT_SECRET unset)
+    // -------------------------------------------------------------------------
+    delete process.env.JWT_SECRET;
+    process.env.INTERNAL_GATEWAY_SECRET = 'secret-gateway-token-xyz';
+
+    // 2a. Direct x-user-id header without x-gateway-secret is rejected
+    let gwSpoofStatus = 0;
+    let gwSpoofBody: any = null;
     await projectPutRoute({
       params: { id: sharedAliceProjectId },
       headers: { 'x-user-id': 'alice' }, // Missing x-gateway-secret!
       body: { name: 'Spoofed Update Attempt' },
     }, {
-      status(s: number) { spoofStatus = s; return this; },
-      json(d: any) { spoofBody = d; return this; },
+      status(s: number) { gwSpoofStatus = s; return this; },
+      json(d: any) { gwSpoofBody = d; return this; },
     });
     assert(
-      spoofStatus === 401 && spoofBody.error.includes('gateway signature'),
-      'M06: Direct x-user-id header spoofing is rejected when gateway secret verification is enforced',
-      `status=${spoofStatus}, error=${spoofBody.error}`
+      gwSpoofStatus === 401 && gwSpoofBody.error.includes('gateway signature'),
+      'M06: Direct x-user-id header spoofing is rejected in Gateway-only mode',
+      `status=${gwSpoofStatus}`
     );
 
-    // 6. Legitimate cryptographically signed JWT succeeds with HTTP 200
-    const b64u = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    const jwtHeader = b64u({ alg: 'HS256', typ: 'JWT' });
-    const jwtPayload = b64u({ sub: 'alice', exp: Math.floor(Date.now() / 1000) + 3600 });
-    const jwtSig = crypto.createHmac('sha256', 'secret-gateway-token-xyz').update(jwtHeader + '.' + jwtPayload).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    const legitimateJwt = jwtHeader + '.' + jwtPayload + '.' + jwtSig;
-
-    let validJwtStatus = 200;
+    // 2b. Bearer token is rejected in Gateway-only mode
+    let gwBearerStatus = 0;
     await projectPutRoute({
       params: { id: sharedAliceProjectId },
-      headers: { authorization: 'Bearer ' + legitimateJwt },
-      body: { name: 'Alice Verified JWT Update', systemCapacityKwp: 12.0 },
+      headers: { authorization: 'Bearer ' + validJwt },
+      body: { name: 'Bearer in Gateway-Only Mode' },
     }, {
-      status(s: number) { validJwtStatus = s; return this; },
+      status(s: number) { gwBearerStatus = s; return this; },
       json() { return this; },
     });
     assert(
-      validJwtStatus === 200,
-      'M06: Cryptographically signed JWT with valid expiration authorizes project modification',
-      `status=${validJwtStatus}`
+      gwBearerStatus === 401,
+      'M06: Bearer token is rejected in Gateway-only mode (fail-closed)',
+      `status=${gwBearerStatus}`
     );
 
-    // 7. Legitimate Gateway-authenticated request succeeds with HTTP 200
-    let validGatewayStatus = 200;
+    // 2c. Valid gateway secret authorizes request with constant-time equality check
+    let validGwStatus = 200;
     await projectPutRoute({
       params: { id: sharedAliceProjectId },
       headers: { 'x-user-id': 'alice', 'x-gateway-secret': 'secret-gateway-token-xyz' },
       body: { name: 'Alice Gateway Update', systemCapacityKwp: 14.0 },
     }, {
-      status(s: number) { validGatewayStatus = s; return this; },
+      status(s: number) { validGwStatus = s; return this; },
       json() { return this; },
     });
     assert(
-      validGatewayStatus === 200,
-      'M06: Gateway-authenticated request with matching gateway signature authorizes project modification',
-      `status=${validGatewayStatus}`
+      validGwStatus === 200,
+      'M06: Valid gateway secret authorizes project modification with constant-time equality check',
+      `status=${validGwStatus}`
     );
 
+    // -------------------------------------------------------------------------
+    // M06 Mode 3: Mixed Mode (both JWT_SECRET and INTERNAL_GATEWAY_SECRET set)
+    // -------------------------------------------------------------------------
+    process.env.JWT_SECRET = 'jwt-only-secret-abc';
+    process.env.INTERNAL_GATEWAY_SECRET = 'secret-gateway-token-xyz';
+
+    let mixedJwtStatus = 200;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { authorization: 'Bearer ' + validJwt },
+      body: { name: 'Alice Mixed JWT Update', systemCapacityKwp: 15.0 },
+    }, {
+      status(s: number) { mixedJwtStatus = s; return this; },
+      json() { return this; },
+    });
+    let mixedGwStatus = 200;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { 'x-user-id': 'alice', 'x-gateway-secret': 'secret-gateway-token-xyz' },
+      body: { name: 'Alice Mixed Gateway Update', systemCapacityKwp: 16.0 },
+    }, {
+      status(s: number) { mixedGwStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      mixedJwtStatus === 200 && mixedGwStatus === 200,
+      'M06: In mixed mode, both valid JWT and valid Gateway secret are independently authorized',
+      `jwtStatus=${mixedJwtStatus}, gwStatus=${mixedGwStatus}`
+    );
+
+    delete process.env.JWT_SECRET;
     delete process.env.INTERNAL_GATEWAY_SECRET;
   }
 

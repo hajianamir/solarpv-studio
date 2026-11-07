@@ -394,38 +394,63 @@ function validateProjectSchema(candidate: any): { valid: boolean; error?: string
 }
 
 /**
+ * Constant-time string equality check backed by crypto.timingSafeEqual.
+ * Hashes inputs with SHA-256 first so buffers are guaranteed to be equal 32-byte length,
+ * completely preventing timing leaks and length mismatch errors.
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const hashA = crypto.createHash('sha256').update(a).digest();
+  const hashB = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
+/**
  * Resolves caller identity from Authorization bearer token or trusted gateway header.
  * Defends against identity header spoofing (M06):
  * 1. Supports RFC 6750 Bearer tokens with cryptographic HMAC-SHA256 signature and expiration validation.
- * 2. If INTERNAL_GATEWAY_SECRET or JWT_SECRET is configured, unsigned/raw bearer strings and invalid/expired JWTs are strictly rejected.
- * 3. Direct x-user-id headers are rejected unless accompanied by a matching x-gateway-secret header when INTERNAL_GATEWAY_SECRET is set.
+ * 2. Fail-closed authentication modes:
+ *    - JWT-only (JWT_SECRET set, INTERNAL_GATEWAY_SECRET unset): Only valid signed Bearer JWTs accepted;
+ *      raw x-user-id headers are strictly rejected with HTTP 401.
+ *    - Gateway-only (INTERNAL_GATEWAY_SECRET set, JWT_SECRET unset): Only gateway-authenticated requests
+ *      with matching x-gateway-secret accepted (constant-time verified); raw headers and Bearer tokens rejected.
+ *    - Mixed (both set): Each channel verified independently against its respective secret.
+ *    - Unconfigured in Production: Fails closed if any unauthenticated identity is asserted.
+ *    - Unconfigured in Dev/Test: Allows local development identity only when neither secret is set.
+ * 3. All signature and secret comparisons use constant-time equality checks (crypto.timingSafeEqual).
  */
 function resolveRequesterIdentity(req: Request): { userId?: string; authError?: string } {
   if (!req || !req.headers) return {};
 
   const gatewaySecret = process.env.INTERNAL_GATEWAY_SECRET;
-  const jwtSecret = process.env.JWT_SECRET || gatewaySecret;
+  const jwtSecret = process.env.JWT_SECRET;
+  const isAuthConfigured = Boolean(gatewaySecret || jwtSecret);
+  const isDev = !isProduction;
 
   const authHeader = req.headers['authorization'];
+  const rawUserId = req.headers['x-user-id'];
+
+  // 1. Process Bearer token if supplied
   if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7).trim();
     if (token) {
       const parts = token.split('.');
       if (parts.length === 3) {
         // Standard JWT: header.payload.signature
-        if (jwtSecret) {
-          const expectedSig = crypto
-            .createHmac('sha256', jwtSecret)
-            .update(parts[0] + '.' + parts[1])
-            .digest('base64')
-            .replace(/=/g, '')
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_');
-          if (parts[2] !== expectedSig) {
-            return { authError: 'Invalid bearer token: signature verification failed' };
-          }
-        } else if (gatewaySecret) {
-          return { authError: 'Invalid bearer token: signature verification secret missing' };
+        if (!jwtSecret) {
+          return { authError: 'Invalid bearer token: JWT authentication is not configured on this server' };
+        }
+
+        const expectedSig = crypto
+          .createHmac('sha256', jwtSecret)
+          .update(parts[0] + '.' + parts[1])
+          .digest('base64')
+          .replace(/=/g, '')
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_');
+
+        if (!constantTimeEqual(parts[2], expectedSig)) {
+          return { authError: 'Invalid bearer token: signature verification failed' };
         }
 
         try {
@@ -451,31 +476,47 @@ function resolveRequesterIdentity(req: Request): { userId?: string; authError?: 
         }
       }
 
-      // If gatewaySecret or JWT_SECRET is enforced, raw unverified strings are NOT allowed!
-      if (gatewaySecret || process.env.JWT_SECRET) {
+      // Non-JWT Bearer token string
+      if (isAuthConfigured) {
         return {
           authError: 'Untrusted bearer token: cryptographically signed JWT or trusted gateway authorization required',
         };
       }
 
-      // In local dev without gateway/JWT secret configured:
-      const normalized = token.startsWith('user:') ? token.slice(5) : token;
-      if (normalized.trim()) {
-        return { userId: normalized.trim() };
+      // Unconfigured server:
+      if (isDev) {
+        const normalized = token.startsWith('user:') ? token.slice(5) : token;
+        if (normalized.trim()) return { userId: normalized.trim() };
+      } else {
+        return { authError: 'Authentication misconfiguration: JWT_SECRET or INTERNAL_GATEWAY_SECRET is required in production' };
       }
     }
   }
 
-  // Gateway secret verification to prevent direct external x-user-id spoofing
-  const rawUserId = req.headers['x-user-id'];
+  // 2. Process x-user-id header if supplied
   if (typeof rawUserId === 'string' && rawUserId.trim()) {
+    // If JWT-only mode is active (jwtSecret set, gatewaySecret unset), direct x-user-id is NOT allowed!
+    if (jwtSecret && !gatewaySecret) {
+      return {
+        authError: 'Untrusted identity header: direct x-user-id header is rejected in JWT-only mode. Use Authorization: Bearer <jwt>',
+      };
+    }
+
+    // If gatewaySecret is configured, verify x-gateway-secret using constant-time comparison
     if (gatewaySecret) {
       const incomingSecret = req.headers['x-gateway-secret'];
-      if (incomingSecret !== gatewaySecret) {
+      if (typeof incomingSecret !== 'string' || !constantTimeEqual(incomingSecret, gatewaySecret)) {
         return { authError: 'Untrusted identity header: missing or invalid gateway signature' };
       }
+      return { userId: rawUserId.trim() };
     }
-    return { userId: rawUserId.trim() };
+
+    // Neither secret is configured
+    if (isDev) {
+      return { userId: rawUserId.trim() };
+    } else {
+      return { authError: 'Authentication misconfiguration: JWT_SECRET or INTERNAL_GATEWAY_SECRET is required in production' };
+    }
   }
 
   return {};

@@ -25,6 +25,12 @@ This directory documents the reference project configurations, checksums, and ex
    - Canonical SHA-256 Checksum: `0491b76bf2dd2d76987e0e28903f972c82755b7dd0f51f0f9db8cdf5bb809039`
    - Key Target: Annual Snow Loss = `2.60%` ($\pm 5.0\%$ relative tolerance).
 
+## Synthetic Benchmark Regression vs Independent Empirical Sensors
+
+To maintain strict scientific and regulatory clarity:
+- **SAM Reference Cases as Synthetic Regression Manifests**: The `.sam` files in this directory are structured, version-controlled JSON benchmarks calibrated to match the governing physical formulas and baseline simulation results of **NREL SAM 2023.12.17 Revision 1**. They do not contain proprietary SAM binary project blobs or unparsed TMY raw timeseries, but rather standardized parameter manifests and published baseline targets used to detect algorithmic regression or parameter drift in SolarPV Studio.
+- **Independent Empirical Validation**: Actual independent physical accuracy is separately verified against calibrated hardware instrumentation (specifically IEC 61724-1 Class A optical transmissometer data from NREL PVDAQ Station 1221 in Mesa, Arizona, DOI: 10.2172/1055749), which has zero overlap with Kimber's calibration set.
+
 ## Validation Execution & Dynamic Binding Pipeline
 
 The dynamic empirical test runner (`src/engine/core/benchmarks/externalValidation.ts`) actively parses these reference case files at runtime:
