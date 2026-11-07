@@ -508,6 +508,24 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </span>
             </div>
 
+            {!pricing.offgridDailyLoadKwh && !pricing.offgridServedLoadKwhAnnual && (
+              <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-600/60 text-amber-200 text-[11px] flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block text-amber-300 font-bold mb-0.5">
+                    {lang === 'fa'
+                      ? 'توجه: محاسبات آف‌گرید در حالت «غربالگری خوش‌بینانه» (Unconstrained Proxy)'
+                      : 'Notice: Off-Grid Financials Running in Optimistic Unconstrained Screening Mode'}
+                  </strong>
+                  <span>
+                    {lang === 'fa'
+                      ? 'چون دیماند روزانه بار مشخص نشده است، کل انرژی بالقوه خورشیدی به‌عنوان برق مفید منظور شده و تلفات عدم جذب باتری/مازاد شارژ (Dump Load) کسر نمی‌گردد. برای محاسبه دقیق بهای تمام‌شده و نرخ بازدهی واقعی، دیماند مصرف روزانه را در کادر زیر وارد نمایید.'
+                      : 'Because daily consumer load demand is not specified, all potential PV generation is assumed useful without deducting unabsorbed battery dump load. Enter consumer daily demand below for bankable demand-constrained LCOE and IRR.'}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="fin-offgrid-daily-load" className="text-slate-300 font-medium block mb-1">
