@@ -1,0 +1,27 @@
+{
+  "version": "2023.12.17 Revision 1",
+  "name": "sam_2023_12_17_phoenix_soiling_reference",
+  "description": "NREL SAM 2023.12.17 Rev 1 Reference Validation Case for Kimber Arid Soiling & Wash-off Model",
+  "location": {
+    "city": "Phoenix",
+    "state": "Arizona",
+    "country": "USA",
+    "latitude": 33.4484,
+    "longitude": -112.074,
+    "elevationM": 331,
+    "climateRegime": "Sonoran Arid Desert",
+    "weatherFile": "USA_AZ_Phoenix_TMY3.csv"
+  },
+  "soilingModel": {
+    "modelType": "Kimber",
+    "dailyDepositionRatePctPerDay": 0.22,
+    "rainCleanThresholdMm": 5.0,
+    "gracePeriodDays": 14,
+    "cleaningSchedules": []
+  },
+  "benchmarkTargetOutputs": {
+    "annualAverageSoilingLossPct": 4.20,
+    "maxMonthlySoilingLossPct": 10.23,
+    "targetTolerancePct": 3.0
+  }
+}

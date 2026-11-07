@@ -247,12 +247,20 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
   } = req;
 
   const warnings: string[] = [];
-  const safeBetaVocPerC = betaVocPerC ?? -0.0028;
+  const safeBetaVocPerC =
+    typeof betaVocPerC === 'number' && Number.isFinite(betaVocPerC) && betaVocPerC < 0
+      ? betaVocPerC
+      : -0.0028;
+  const safeBetaPmpPerC =
+    typeof betaPmpPerC === 'number' && Number.isFinite(betaPmpPerC) && betaPmpPerC < 0
+      ? betaPmpPerC
+      : safeBetaVocPerC;
+
   const vocMaxTemp = panelVoc * (1.0 + safeBetaVocPerC * (tempMinC - 25.0));
   // IEC 62548 §7.2: hot-case MPPT floor uses the Pmp temperature
   // coefficient (typically steeper than Voc). Fall back to Voc when
   // betaPmpPerC is absent (conservative approximation).
-  const vmpHotCoeff = (req.betaPmpPerC ?? safeBetaVocPerC);
+  const vmpHotCoeff = safeBetaPmpPerC;
   const vmpMinTemp = panelVmp * (1.0 + vmpHotCoeff * (tempMaxC - 25.0));
 
   const maxModulesVmax = Math.floor(inverterVdcMax / vocMaxTemp);
@@ -260,7 +268,7 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
   // which occurs at the coldest design temperature. Use the Pmp temperature
   // coefficient when supplied; otherwise fall back to the Voc coefficient
   // (documented conservative approximation).
-  const vmpColdCoeff = betaPmpPerC ?? safeBetaVocPerC;
+  const vmpColdCoeff = safeBetaPmpPerC;
   const singleModuleVmpMaxCold = panelVmp * (1.0 + vmpColdCoeff * (tempMinC - 25.0));
   const maxModulesMppt = Math.floor(inverterMpptMax / singleModuleVmpMaxCold);
   const maxModules = Math.min(maxModulesVmax, maxModulesMppt);

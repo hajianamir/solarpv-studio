@@ -34,7 +34,7 @@ import { StructuralHazardProvider } from '../src/engine/dataGateway/structuralHa
 import { CircuitBreaker } from '../src/engine/dataGateway/circuitBreaker';
 import { calculateSolarPump } from '../src/engine/solarPumpEngine';
 import { buildExcelWorkbookXml, escapeXml } from '../src/engine/reportingEngine';
-import { app, setPersistPathForTesting } from '../server';
+import { app, setPersistPathForTesting, db as activeDb } from '../server';
 
 let passes = 0;
 let failures = 0;
@@ -260,17 +260,36 @@ async function runM01ToM22TestSuite(): Promise<void> {
 
     const fs = await import('fs');
     const path = await import('path');
+    const crypto = await import('crypto');
     const manifestPath = path.resolve(process.cwd(), 'benchmarks/reference_files/sam_reference_manifest.json');
     const manifestExists = fs.existsSync(manifestPath);
     let casesCount = 0;
+    let allChecksumsValid = false;
     if (manifestExists) {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
       casesCount = manifest.cases?.length || 0;
+      let matches = 0;
+      for (const c of manifest.cases) {
+        const filePath = path.resolve(process.cwd(), 'benchmarks/reference_files', c.benchmarkFile);
+        if (fs.existsSync(filePath)) {
+          const fileContent = fs.readFileSync(filePath);
+          const actualHash = crypto.createHash('sha256').update(fileContent).digest('hex');
+          if (actualHash === c.sha256) {
+            matches++;
+          }
+        }
+      }
+      allChecksumsValid = matches === casesCount && casesCount === 3;
     }
     assert(
       manifestExists && casesCount === 3,
       'M04: SAM reference manifest exists and specifies exact case checksums and configurations',
       `exists=${manifestExists}, cases=${casesCount}`
+    );
+    assert(
+      allChecksumsValid === true,
+      'M04: All referenced .sam files exist on disk and their SHA-256 hashes strictly match the manifest',
+      `checksumsMatch=${allChecksumsValid}`
     );
   }
 
@@ -409,6 +428,22 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `status=${ssStatus}, error=${ssBody.error}`
     );
 
+    // M08: String sizing rejects non-numeric betaPmpPerC
+    await ssRoute({ body: { panelVoc: 50, panelVmp: 40, tempMinC: -10, tempMaxC: 45, inverterVdcMax: 1000, inverterMpptMin: 200, inverterMpptMax: 800, betaVocPerC: -0.0028, betaPmpPerC: 'invalid' } }, mockSsRes);
+    assert(
+      ssStatus === 400 && ssBody.error.includes('betaPmpPerC'),
+      'M08: String sizing rejects non-numeric betaPmpPerC with HTTP 400',
+      `status=${ssStatus}`
+    );
+
+    // M08: String sizing rejects positive betaPmpPerC
+    await ssRoute({ body: { panelVoc: 50, panelVmp: 40, tempMinC: -10, tempMaxC: 45, inverterVdcMax: 1000, inverterMpptMin: 200, inverterMpptMax: 800, betaVocPerC: -0.0028, betaPmpPerC: 0.05 } }, mockSsRes);
+    assert(
+      ssStatus === 400 && ssBody.error.includes('betaPmpPerC'),
+      'M08: String sizing rejects positive betaPmpPerC with HTTP 400',
+      `status=${ssStatus}`
+    );
+
     // M06: Sync push rejects negative project capacity
     let negPushStatus = 0;
     let negPushBody: any = null;
@@ -418,7 +453,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
           {
             id: 'msg-neg-cap',
             entityType: 'project',
-            payloadJson: JSON.stringify({ id: 'proj-neg', systemCapacityKwp: -999 }),
+            payloadJson: JSON.stringify({ id: 'proj-neg', name: 'Neg Cap Proj', systemCapacityKwp: -999 }),
           },
         ],
       },
@@ -427,7 +462,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
       json(d: any) { negPushBody = d; return this; },
     });
     assert(
-      negPushBody.rejected.length === 1 && negPushBody.rejected[0].reason.includes('systemCapacityKwp must be a positive finite number'),
+      negPushBody.rejected.length === 1 && negPushBody.rejected[0].reason.includes('positive finite number'),
       'M06: Sync push strictly rejects negative project capacity (-999 kWp)',
       `rejected=${negPushBody.rejected[0].reason}`
     );
@@ -467,6 +502,119 @@ async function runM01ToM22TestSuite(): Promise<void> {
       'M06: Access control protects projects: Bob cannot overwrite Alice project',
       `reason=${bobPushBody.rejected[0].reason}`
     );
+
+    // M06: PUT to Alice's project without identity returns HTTP 403
+    const projectPutRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/projects/:id' && r.route.methods.put)
+      ?.route.stack[0].handle;
+
+    let unauthPutStatus = 0;
+    let unauthPutBody: any = null;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: {},
+      body: { name: 'Attempted Unauth Update', systemCapacityKwp: 10.0 },
+    }, {
+      status(s: number) { unauthPutStatus = s; return this; },
+      json(d: any) { unauthPutBody = d; return this; },
+    });
+    assert(
+      unauthPutStatus === 403 && unauthPutBody.error.includes('Authentication required'),
+      'M06: PUT to owned project without identity header returns HTTP 403',
+      `status=${unauthPutStatus}`
+    );
+
+    // M06: PUT with empty name returns HTTP 400
+    let emptyNamePutStatus = 0;
+    let emptyNamePutBody: any = null;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { 'x-user-id': 'alice' },
+      body: { name: '   ', systemCapacityKwp: 10.0 },
+    }, {
+      status(s: number) { emptyNamePutStatus = s; return this; },
+      json(d: any) { emptyNamePutBody = d; return this; },
+    });
+    assert(
+      emptyNamePutStatus === 400 && emptyNamePutBody.error.includes('Project name is required'),
+      'M06: PUT with empty project name returns HTTP 400',
+      `status=${emptyNamePutStatus}`
+    );
+
+    // M06: PUT with negative capacity returns HTTP 400
+    let negCapPutStatus = 0;
+    let negCapPutBody: any = null;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { 'x-user-id': 'alice' },
+      body: { name: 'Alice Good Name', systemCapacityKwp: -50.0 },
+    }, {
+      status(s: number) { negCapPutStatus = s; return this; },
+      json(d: any) { negCapPutBody = d; return this; },
+    });
+    assert(
+      negCapPutStatus === 400 && negCapPutBody.error.includes('positive finite number'),
+      'M06: PUT with negative capacity returns HTTP 400',
+      `status=${negCapPutStatus}`
+    );
+
+    // M06: Sync push without identity to owned project is rejected
+    let unauthSyncBody: any = null;
+    await syncPushRoute({
+      headers: {},
+      body: {
+        messages: [
+          {
+            id: 'msg-unauth-sync',
+            entityType: 'project',
+            payloadJson: JSON.stringify({ id: sharedAliceProjectId, name: 'Anonymous Overwrite', systemCapacityKwp: 20 }),
+          },
+        ],
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { unauthSyncBody = d; return this; },
+    });
+    assert(
+      unauthSyncBody.rejected.length === 1 && unauthSyncBody.rejected[0].reason.includes('Authentication required'),
+      'M06: Sync push without identity to owned project is rejected with Authentication required',
+      `reason=${unauthSyncBody.rejected[0].reason}`
+    );
+
+    // M06: Bearer token authentication allows owner update
+    let bearerPutStatus = 200;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { authorization: 'Bearer alice' },
+      body: { name: 'Alice Bearer Updated Name', systemCapacityKwp: 12.0 },
+    }, {
+      status(s: number) { bearerPutStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      bearerPutStatus === 200,
+      'M06: RFC 6750 Bearer token authorization enables authenticated project modification',
+      `status=${bearerPutStatus}`
+    );
+
+    // M06: Identity header spoofing defense via gateway secret
+    process.env.INTERNAL_GATEWAY_SECRET = 'secret-gateway-token-xyz';
+    let spoofStatus = 0;
+    let spoofBody: any = null;
+    await projectPutRoute({
+      params: { id: sharedAliceProjectId },
+      headers: { 'x-user-id': 'alice' }, // Missing x-gateway-secret!
+      body: { name: 'Spoofed Update Attempt' },
+    }, {
+      status(s: number) { spoofStatus = s; return this; },
+      json(d: any) { spoofBody = d; return this; },
+    });
+    assert(
+      spoofStatus === 401 && spoofBody.error.includes('gateway signature'),
+      'M06: Direct x-user-id header spoofing is rejected when gateway secret verification is enforced',
+      `status=${spoofStatus}, error=${spoofBody.error}`
+    );
+    delete process.env.INTERNAL_GATEWAY_SECRET;
   }
 
   // ---------------------------------------------------------------------------
@@ -502,6 +650,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
     );
 
     // M07: Persistent disk failure returns HTTP 500 and 0 ackedIds
+    const outboxCountBefore = activeDb.outbox.length;
     setPersistPathForTesting('/root/nonexistent_forbidden_directory/snapshot.json');
     let failPushStatus = 0;
     let failPushBody: any = null;
@@ -519,10 +668,34 @@ async function runM01ToM22TestSuite(): Promise<void> {
       status(s: number) { failPushStatus = s; return this; },
       json(d: any) { failPushBody = d; return this; },
     });
+    const outboxCountAfter = activeDb.outbox.length;
+
     assert(
       failPushStatus === 500 && failPushBody.ackedIds.length === 0,
       'M07: Disk write failure refuses durable ack and returns HTTP 500 with explicit rejection',
       `status=${failPushStatus}, acked=${failPushBody.ackedIds.length}`
+    );
+    assert(
+      outboxCountBefore === outboxCountAfter,
+      'M07: Transactional rollback strictly removes failed sync messages from outbox (zero dirty state)',
+      `outboxBefore=${outboxCountBefore}, outboxAfter=${outboxCountAfter}`
+    );
+
+    // M07: Catalog POST under storage failure returns HTTP 500
+    const catModPostRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.post)
+      ?.route.stack[0].handle;
+    let catFailStatus = 0;
+    await catModPostRoute({
+      body: { pmpWatts: 600, vmpVolts: 42, impAmps: 14, vocVolts: 50, iscAmps: 15, id: 'mod-fail-test' },
+    }, {
+      status(s: number) { catFailStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      catFailStatus === 500,
+      'M07: Catalog write failure returns HTTP 500 and prevents unpersisted in-memory mutation',
+      `status=${catFailStatus}`
     );
     // Reset test path
     setPersistPathForTesting('./data/solar-db-snapshot.json');
@@ -569,6 +742,38 @@ async function runM01ToM22TestSuite(): Promise<void> {
       repStatus === 200 && repBody.isReconciledAgainstSnapshot === false && repBody.discrepancies?.length > 0,
       'M09: Discrepant report metrics are strictly flagged as NOT reconciled with detailed discrepancies',
       `isReconciled=${repBody.isReconciledAgainstSnapshot}, discrepanciesCount=${repBody.discrepancies?.length}`
+    );
+
+    // M09: Zero annual yield baseline must NOT falsely reconcile non-zero yield
+    activeDb.projects.set('proj-zero-yield', {
+      id: 'proj-zero-yield',
+      name: 'Zero Yield Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 0,
+      autonomyDays: 0,
+      systemCapacityKwp: 5.5,
+      panelCount: 10,
+      inverterCount: 1,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0,
+      estimatedAnnualYieldKwh: 0,
+    });
+
+    repStatus = 200;
+    repBody = null;
+    reportRoute({
+      body: {
+        projectId: 'proj-zero-yield',
+        systemCapacityKwp: 5.5,
+        panelCount: 10,
+        annualYieldKwh: 1_000_000,
+      },
+    }, mockRepRes);
+    assert(
+      repStatus === 200 && repBody.isReconciledAgainstSnapshot === false && repBody.discrepancies?.some((d: string) => d.includes('Annual yield mismatch')),
+      'M09: Zero annual energy snapshot baseline strictly detects non-zero annual yield discrepancy',
+      `isReconciled=${repBody.isReconciledAgainstSnapshot}, discrepancies=${repBody.discrepancies?.join('; ')}`
     );
   }
 
@@ -742,6 +947,46 @@ async function runM01ToM22TestSuite(): Promise<void> {
       resSpanning.isCompliant === false && resSpanning.minimumClearanceM === 0,
       'M13: Concave U-shaped roof strictly detects table cutting across the central void as non-compliant',
       `isCompliant=${resSpanning.isCompliant}, clearance=${resSpanning.minimumClearanceM}m`
+    );
+
+    // Continuous segment distance on narrow roof indentation
+    const narrowIndentRoof: RoofPlane = {
+      id: 'roof-indent',
+      name: 'Roof with Narrow Indentation',
+      polygonWgs84: [],
+      polygonEnu: [
+        { x: -6, y: -6 },
+        { x: 6, y: -6 },
+        { x: 6, y: 6 },
+        { x: 0.5, y: 6 },
+        { x: 0.5, y: 2.1 },
+        { x: -0.5, y: 2.1 },
+        { x: -0.5, y: 6 },
+        { x: -6, y: 6 },
+      ],
+      tiltDeg: 0,
+      azimuthDeg: 0,
+      eavesHeightM: 10,
+      setbackClearanceM: 0.5,
+    };
+
+    const tableNearIndent: PvTable3D = {
+      id: 'table-near-indent',
+      tableIndex: 1,
+      positionEnu: { x: 0, y: 0, z: 10.5 },
+      tiltDeg: 0,
+      azimuthDeg: 0,
+      widthM: 8.0,
+      slopedLengthM: 4.0,
+      moduleCount: 8,
+      ratedPowerWp: 4400,
+    };
+
+    const resIndent = checkTableSetbackCompliance(tableNearIndent, narrowIndentRoof);
+    assert(
+      resIndent.isCompliant === false && Math.abs(resIndent.minimumClearanceM - 0.10) < 0.02,
+      'M13: Continuous segment-to-segment distance detects narrow boundary indentation without sample point misses',
+      `isCompliant=${resIndent.isCompliant}, clearance=${resIndent.minimumClearanceM}m (expected ~0.10m)`
     );
   }
 

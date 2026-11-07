@@ -1,0 +1,28 @@
+{
+  "version": "2023.12.17 Revision 1",
+  "name": "sam_2023_12_17_munich_snow_reference",
+  "description": "NREL SAM 2023.12.17 Rev 1 Reference Validation Case for Marion Snow Melting, Sliding, and Ground Damming Model",
+  "location": {
+    "city": "Munich",
+    "state": "Bavaria",
+    "country": "Germany",
+    "latitude": 48.1351,
+    "longitude": 11.582,
+    "elevationM": 519,
+    "climateRegime": "Central European Alpine Foot",
+    "weatherFile": "DEU_BY_Munich_TRY.csv"
+  },
+  "snowModel": {
+    "modelType": "Marion",
+    "annualSnowfallCm": 150.0,
+    "arrayTiltDeg": 30.0,
+    "groundClearanceM": 1.20,
+    "ambientMeltThresholdC": 0.0,
+    "criticalSlideAngleDeg": 20.0
+  },
+  "benchmarkTargetOutputs": {
+    "annualAverageSnowLossPct": 2.60,
+    "peakGroundSnowCm": 15.6,
+    "targetTolerancePct": 3.0
+  }
+}

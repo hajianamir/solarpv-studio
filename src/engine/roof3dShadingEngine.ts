@@ -204,6 +204,24 @@ function doSegmentsIntersect(
   );
 }
 
+/** Computes exact Euclidean minimum distance between two 2D line segments */
+function distanceBetweenSegments(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  q1: { x: number; y: number },
+  q2: { x: number; y: number }
+): number {
+  if (doSegmentsIntersect(p1, p2, q1, q2)) {
+    return 0;
+  }
+  return Math.min(
+    distanceToSegment(p1, q1, q2),
+    distanceToSegment(p2, q1, q2),
+    distanceToSegment(q1, p1, p2),
+    distanceToSegment(q2, p1, p2)
+  );
+}
+
 /** Checks whether a table satisfies the setback clearance from roof perimeter */
 export function checkTableSetbackCompliance(
   table: PvTable3D,
@@ -254,37 +272,36 @@ export function checkTableSetbackCompliance(
     }
   }
 
-  // 2. Perimeter sampling points to ensure full polygon interior containment
-  const samplePoints: Array<{ x: number; y: number }> = [];
-  const samplesPerEdge = 4;
-  for (let c = 0; c < 4; c++) {
-    const c1 = corners[c];
-    const c2 = corners[(c + 1) % 4];
-    for (let s = 0; s < samplesPerEdge; s++) {
-      const frac = s / samplesPerEdge;
-      samplePoints.push({
-        x: c1.x + frac * (c2.x - c1.x),
-        y: c1.y + frac * (c2.y - c1.y),
-      });
-    }
+  // 2. Center point and all corners must be strictly inside roof polygon
+  if (!isPointInsidePolygon({ x: table.positionEnu.x, y: table.positionEnu.y }, roof.polygonEnu)) {
+    return { isCompliant: false, minimumClearanceM: 0 };
   }
-
-  // Center point
-  samplePoints.push({ x: table.positionEnu.x, y: table.positionEnu.y });
-
-  for (const pt of samplePoints) {
-    if (!isPointInsidePolygon(pt, roof.polygonEnu)) {
+  for (const corner of corners) {
+    if (!isPointInsidePolygon(corner, roof.polygonEnu)) {
       return { isCompliant: false, minimumClearanceM: 0 };
     }
   }
 
+  // Also check edge midpoints to catch concave polygon cutouts
+  for (let c = 0; c < 4; c++) {
+    const c1 = corners[c];
+    const c2 = corners[(c + 1) % 4];
+    const mid = { x: (c1.x + c2.x) / 2, y: (c1.y + c2.y) / 2 };
+    if (!isPointInsidePolygon(mid, roof.polygonEnu)) {
+      return { isCompliant: false, minimumClearanceM: 0 };
+    }
+  }
+
+  // 3. Exact continuous segment-to-segment distance calculation (no sample point misses)
   let minDistance = Infinity;
-  for (const pt of samplePoints) {
-    for (let i = 0; i < roof.polygonEnu.length; i++) {
-      const p1 = roof.polygonEnu[i];
-      const p2 = roof.polygonEnu[(i + 1) % roof.polygonEnu.length];
-      const dist = distanceToSegment(pt, p1, p2);
-      if (dist < minDistance) minDistance = dist;
+  for (let c = 0; c < 4; c++) {
+    const c1 = corners[c];
+    const c2 = corners[(c + 1) % 4];
+    for (let r = 0; r < roof.polygonEnu.length; r++) {
+      const r1 = roof.polygonEnu[r];
+      const r2 = roof.polygonEnu[(r + 1) % roof.polygonEnu.length];
+      const segDist = distanceBetweenSegments(c1, c2, r1, r2);
+      if (segDist < minDistance) minDistance = segDist;
     }
   }
 

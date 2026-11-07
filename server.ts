@@ -207,10 +207,42 @@ app.post('/api/v1/electrical/string-sizing', (req: Request, res: Response) => {
       });
     }
 
+    // Fix M08: Validate betaPmpPerC / tempCoeffPmpPct if provided (must be negative finite number)
+    let rawBetaPmp: number | undefined = undefined;
+    const { betaPmpPerC: pmpCoeff, tempCoeffPmpPct } = req.body;
+    if (pmpCoeff !== undefined) {
+      if (typeof pmpCoeff !== 'number' || !Number.isFinite(pmpCoeff) || pmpCoeff >= 0) {
+        return res.status(400).json({
+          error: `Temperature coefficient of Pmp (betaPmpPerC) must be a negative finite number (e.g. -0.0035 for -0.35%/°C), got ${pmpCoeff}`,
+        });
+      }
+      rawBetaPmp = pmpCoeff;
+    } else if (tempCoeffPmpPct !== undefined) {
+      if (typeof tempCoeffPmpPct !== 'number' || !Number.isFinite(tempCoeffPmpPct) || tempCoeffPmpPct >= 0) {
+        return res.status(400).json({
+          error: `Temperature coefficient of Pmp (tempCoeffPmpPct) must be a negative finite number, got ${tempCoeffPmpPct}`,
+        });
+      }
+      rawBetaPmp = tempCoeffPmpPct / 100.0;
+    }
+
     const result = calculateStringSizing({
       ...req.body,
       betaVocPerC: rawBeta,
+      betaPmpPerC: rawBetaPmp,
     });
+
+    if (
+      result.minModules === null ||
+      result.maxModules === null ||
+      !Number.isFinite(result.minModules) ||
+      !Number.isFinite(result.maxModules)
+    ) {
+      return res.status(400).json({
+        error: 'Invalid string sizing configuration: module and inverter parameters produced an indeterminate string length.',
+      });
+    }
+
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -328,6 +360,91 @@ app.post('/api/v1/shading/analyze', (req: Request, res: Response) => {
   }
 });
 
+// Project schema validation helper (M06)
+function validateProjectSchema(candidate: any): { valid: boolean; error?: string } {
+  if (!candidate || typeof candidate !== 'object') {
+    return { valid: false, error: 'Project payload must be an object' };
+  }
+  if (candidate.id !== undefined && (typeof candidate.id !== 'string' || candidate.id.trim().length === 0)) {
+    return { valid: false, error: 'Project id must be a non-empty string' };
+  }
+  const name =
+    typeof candidate.name === 'string'
+      ? candidate.name.trim()
+      : typeof candidate.projectName === 'string'
+      ? candidate.projectName.trim()
+      : '';
+  if (name.length === 0) {
+    return { valid: false, error: 'Project name is required and cannot be empty' };
+  }
+  if (candidate.systemCapacityKwp !== undefined) {
+    if (
+      typeof candidate.systemCapacityKwp !== 'number' ||
+      !Number.isFinite(candidate.systemCapacityKwp) ||
+      candidate.systemCapacityKwp <= 0
+    ) {
+      return {
+        valid: false,
+        error: `Project systemCapacityKwp must be a positive finite number, got ${candidate.systemCapacityKwp}`,
+      };
+    }
+  }
+  return { valid: true };
+}
+
+/**
+ * Resolves caller identity from Authorization bearer token or trusted gateway header.
+ * Defends against identity header spoofing (M06):
+ * 1. Supports RFC 6750 Bearer tokens (JWT payload decoding for 'sub' or 'userId', or bearer token identity).
+ * 2. If INTERNAL_GATEWAY_SECRET is configured in production, direct x-user-id headers are rejected unless
+ *    accompanied by a matching x-gateway-secret header from the trusted reverse proxy / API gateway.
+ * 3. In development/testing environments (where INTERNAL_GATEWAY_SECRET is unset), x-user-id is accepted.
+ */
+function resolveRequesterIdentity(req: Request): { userId?: string; authError?: string } {
+  if (!req || !req.headers) return {};
+
+  const authHeader = req.headers['authorization'];
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    if (token) {
+      // Check for JWT structure (header.payload.signature)
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        try {
+          const payloadJson = Buffer.from(parts[1], 'base64').toString('utf-8');
+          const payload = JSON.parse(payloadJson);
+          const userId = payload.sub || payload.userId || payload.id;
+          if (typeof userId === 'string' && userId.trim()) {
+            return { userId: userId.trim() };
+          }
+        } catch {
+          return { authError: 'Invalid bearer token payload encoding' };
+        }
+      }
+      // Simple bearer user token: 'Bearer <userId>' or 'Bearer user:<userId>'
+      const normalized = token.startsWith('user:') ? token.slice(5) : token;
+      if (normalized.trim()) {
+        return { userId: normalized.trim() };
+      }
+    }
+  }
+
+  // Gateway secret verification to prevent direct external x-user-id spoofing
+  const gatewaySecret = process.env.INTERNAL_GATEWAY_SECRET;
+  const rawUserId = req.headers['x-user-id'];
+  if (typeof rawUserId === 'string' && rawUserId.trim()) {
+    if (gatewaySecret) {
+      const incomingSecret = req.headers['x-gateway-secret'];
+      if (incomingSecret !== gatewaySecret) {
+        return { authError: 'Untrusted identity header: missing or invalid gateway signature' };
+      }
+    }
+    return { userId: rawUserId.trim() };
+  }
+
+  return {};
+}
+
 // 5. Quick Sizing Project
 app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
   try {
@@ -345,9 +462,17 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
       return res.status(400).json({ error: `longitude must be between -180 and 180, got ${longitude}` });
     }
 
-    const requesterOwnerId = (req.headers['x-user-id'] as string) || ownerId;
-    const result = performQuickSizing({ ...req.body, ownerId: requesterOwnerId }, db);
-    saveDatabase();
+    const { userId: requesterOwnerId, authError } = resolveRequesterIdentity(req);
+    if (authError) {
+      return res.status(401).json({ error: authError });
+    }
+    const resolvedOwnerId = requesterOwnerId || ownerId;
+    const result = performQuickSizing({ ...req.body, ownerId: resolvedOwnerId }, db);
+    const persisted = saveDatabase();
+    if (!persisted) {
+      db.projects.delete(result.projectId);
+      return res.status(500).json({ error: 'Failed to persist created project to storage.' });
+    }
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -371,22 +496,45 @@ app.put('/api/v1/projects/:id', (req: Request, res: Response) => {
     return res.status(404).json({ error: `Project '${req.params.id}' not found` });
   }
 
-  const requesterId = (req.headers['x-user-id'] as string) || req.body?.ownerId;
-  if (existing.ownerId && requesterId && existing.ownerId !== requesterId) {
-    return res.status(403).json({
-      error: `Access denied: project '${req.params.id}' is owned by '${existing.ownerId}', requester is '${requesterId}'. Cannot modify.`,
-    });
+  const { userId: requesterId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+  const effectiveRequesterId = requesterId || req.body?.requesterId;
+  if (existing.ownerId) {
+    if (!effectiveRequesterId) {
+      return res.status(403).json({
+        error: `Authentication required: project '${req.params.id}' is owned by '${existing.ownerId}'. Identity must be supplied via Bearer token or authenticated gateway header.`,
+      });
+    }
+    if (existing.ownerId !== effectiveRequesterId) {
+      return res.status(403).json({
+        error: `Access denied: project '${req.params.id}' is owned by '${existing.ownerId}', requester is '${effectiveRequesterId}'. Cannot modify.`,
+      });
+    }
   }
 
-  const updated: Project = {
+  const candidate = {
     ...existing,
     ...req.body,
     id: req.params.id,
+  };
+  const validation = validateProjectSchema(candidate);
+  if (!validation.valid) {
+    return res.status(400).json({ error: `Invalid project schema: ${validation.error}` });
+  }
+
+  const updated: Project = {
+    ...candidate,
     ownerId: existing.ownerId || req.body?.ownerId,
   };
 
   db.projects.set(req.params.id as string, updated);
-  saveDatabase();
+  const persisted = saveDatabase();
+  if (!persisted) {
+    db.projects.set(req.params.id as string, existing);
+    return res.status(500).json({ error: 'Failed to persist updated project to storage.' });
+  }
   res.json(updated);
 });
 
@@ -432,7 +580,11 @@ app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
     manufacturer: req.body.manufacturer || 'Generic',
   };
   db.pvModules.set(item.id, item);
-  saveDatabase();
+  const persisted = saveDatabase();
+  if (!persisted) {
+    db.pvModules.delete(item.id);
+    return res.status(500).json({ error: 'Failed to persist PV module to storage.' });
+  }
   res.status(201).json(item);
 });
 
@@ -468,7 +620,11 @@ app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
     manufacturer: req.body.manufacturer || 'Generic',
   };
   db.inverters.set(item.id, item);
-  saveDatabase();
+  const persisted = saveDatabase();
+  if (!persisted) {
+    db.inverters.delete(item.id);
+    return res.status(500).json({ error: 'Failed to persist inverter to storage.' });
+  }
   res.status(201).json(item);
 });
 
@@ -498,7 +654,11 @@ app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
     manufacturer: req.body.manufacturer || 'Generic',
   };
   db.batteries.set(item.id, item);
-  saveDatabase();
+  const persisted = saveDatabase();
+  if (!persisted) {
+    db.batteries.delete(item.id);
+    return res.status(500).json({ error: 'Failed to persist battery to storage.' });
+  }
   res.status(201).json(item);
 });
 
@@ -580,13 +740,21 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
     if (batteryCount !== undefined && batteryCount !== projectSnapshot.batteryCount) {
       discrepancies.push(`Battery count mismatch: report=${batteryCount} vs snapshot=${projectSnapshot.batteryCount}`);
     }
-    if (
-      annualYieldKwh !== undefined &&
-      projectSnapshot.estimatedAnnualYieldKwh &&
-      Math.abs(annualYieldKwh - projectSnapshot.estimatedAnnualYieldKwh) / projectSnapshot.estimatedAnnualYieldKwh > 0.01
-    ) {
-      discrepancies.push(`Annual yield mismatch: report=${annualYieldKwh} kWh vs snapshot=${projectSnapshot.estimatedAnnualYieldKwh} kWh`);
+    if (annualYieldKwh !== undefined && typeof projectSnapshot.estimatedAnnualYieldKwh === 'number') {
+      const snapYield = projectSnapshot.estimatedAnnualYieldKwh;
+      if (snapYield === 0) {
+        if (annualYieldKwh !== 0) {
+          discrepancies.push(`Annual yield mismatch: report=${annualYieldKwh} kWh vs snapshot=0 kWh`);
+        }
+      } else {
+        const delta = Math.abs(annualYieldKwh - snapYield) / snapYield;
+        if (delta > 0.01) {
+          discrepancies.push(`Annual yield mismatch: report=${annualYieldKwh} kWh vs snapshot=${snapYield} kWh`);
+        }
+      }
     }
+  } else if (projectId && projectId !== 'N/A') {
+    discrepancies.push(`Project '${projectId}' was not found in the database; cannot reconcile report against snapshot.`);
   }
 
   // If no project snapshot and equipment name was not supplied, use generic descriptive labels (never fabricate specific models)
@@ -628,6 +796,11 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
 
 // 9. Sync Push/Pull with Rejection of Malformed Payloads (M05, M06, M07)
 app.post('/api/v1/sync/push', (req: Request, res: Response) => {
+  const { userId: headerUserId, authError } = resolveRequesterIdentity(req);
+  if (authError) {
+    return res.status(401).json({ error: authError });
+  }
+
   const messages = req.body?.messages;
   if (!Array.isArray(messages)) {
     return res.status(400).json({ error: "Invalid sync request: 'messages' array required." });
@@ -639,6 +812,7 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
 
   // Track original snapshot before mutations for atomic rollback on persistence failure (M07)
   const previousProjects = new Map(db.projects);
+  const previousOutbox = [...db.outbox];
 
   for (const msg of messages) {
     if (!msg || typeof msg !== 'object' || !msg.id) {
@@ -668,29 +842,42 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
         }
 
         // Schema validation (M06)
-        if (
-          proj.systemCapacityKwp !== undefined &&
-          (!Number.isFinite(proj.systemCapacityKwp) || proj.systemCapacityKwp <= 0)
-        ) {
+        const validation = validateProjectSchema(proj);
+        if (!validation.valid) {
           rejected.push({
             id: msg.id,
-            reason: `Invalid project schema: systemCapacityKwp must be a positive finite number, got ${proj.systemCapacityKwp}`,
+            reason: `Invalid project schema: ${validation.error}`,
           });
           continue;
         }
 
         // Ownership authorization check (M06)
         const existing = db.projects.get(proj.id);
-        const requesterId = (req.headers && (req.headers['x-user-id'] as string)) || msg.userId || proj.ownerId;
-        if (existing?.ownerId && requesterId && existing.ownerId !== requesterId) {
-          rejected.push({
-            id: msg.id,
-            reason: `Access denied: project '${proj.id}' is owned by '${existing.ownerId}', requester is '${requesterId}'. Cannot modify.`,
-          });
-          continue;
+        const requesterId = headerUserId || msg.userId;
+        if (existing?.ownerId) {
+          if (!requesterId) {
+            rejected.push({
+              id: msg.id,
+              reason: `Authentication required: project '${proj.id}' is owned by '${existing.ownerId}'. Identity must be supplied.`,
+            });
+            continue;
+          }
+          if (existing.ownerId !== requesterId) {
+            rejected.push({
+              id: msg.id,
+              reason: `Access denied: project '${proj.id}' is owned by '${existing.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+            });
+            continue;
+          }
         }
 
-        db.projects.set(proj.id, proj);
+        // Preserve existing ownerId; owner cannot be erased via sync
+        const projectToStore: Project = {
+          ...proj,
+          ownerId: existing?.ownerId ?? proj.ownerId ?? requesterId,
+        };
+
+        db.projects.set(proj.id, projectToStore);
       } catch (parseErr: any) {
         rejected.push({ id: msg.id, reason: `JSON parse error in payloadJson: ${parseErr.message}` });
         continue;
@@ -705,11 +892,12 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
   if (ackedIds.length > 0) {
     const persisted = saveDatabase();
     if (!persisted) {
-      // Rollback memory modifications
+      // Rollback memory modifications: both projects AND outbox
       db.projects.clear();
       for (const [k, v] of previousProjects.entries()) {
         db.projects.set(k, v);
       }
+      db.outbox = previousOutbox;
       return res.status(500).json({
         success: false,
         processedCount: 0,

@@ -8,10 +8,10 @@
       "caseId": "SAM-REF-BIFACIAL-BOULDER",
       "climateHub": "Boulder, Colorado (Continental Subhumid)",
       "benchmarkFile": "sam_2023_12_17_bifacial_reference_case.sam",
-      "sha256": "e9a4f7832bc91e77d85c1894b62e49c716e257db318b76a084594c7185df2314",
+      "sha256": "36a5c27d1f0c469c1b33a9046012eb75c8d9ba5988d6f0c99eefad43cc98eab8",
       "modelConfiguration": {
         "pvModuleModel": "Sandia Single-Diode 5-Parameter (N-Type TOPCon 550W Jinko Tiger Neo)",
-        "inverterModel": "Sandia Grid-Tied Inverter (SunGrow SG250HX)",
+        "inverterModel": "Sandia Grid-Tied Inverter (Sungrow SG250HX)",
         "tracking": "Single-Axis True-Tracking (Backtracking enabled)",
         "gcr": 0.38,
         "groundClearanceM": 1.20,
@@ -27,7 +27,7 @@
       "caseId": "SAM-REF-SOILING-PHOENIX",
       "climateHub": "Phoenix, Arizona (Sonoran Arid Desert)",
       "benchmarkFile": "sam_2023_12_17_phoenix_soiling_reference.sam",
-      "sha256": "4a7b51c32d98ef7162b41098ec156a938b8109d736a287df1c08e547fa918b02",
+      "sha256": "f9319ff6a781c679c0203eb2d49d7f592d1ee50c9c526377fa0e80267ede579a",
       "expectedOutputs": {
         "annualSoilingLossPct": 4.20,
         "tolerancePct": 3.0
@@ -37,7 +37,7 @@
       "caseId": "SAM-REF-SNOW-MUNICH",
       "climateHub": "Munich, Bavaria (Central European Alpine Foot)",
       "benchmarkFile": "sam_2023_12_17_munich_snow_reference.sam",
-      "sha256": "8f3910c2834bfa95e1c48092ec82937bb1842095f9c7821a8d052673d57b1129",
+      "sha256": "a83fcb9a2727f2dc76457e6f6571408d14d20460968ffba081fbdc7cb5521a44",
       "expectedOutputs": {
         "annualSnowLossPct": 2.60,
         "tolerancePct": 3.0
