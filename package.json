@@ -17,7 +17,7 @@
     "lint": "npm run lint:types && npm run lint:eslint",
     "test": "tsx scripts/run-all-benchmarks.ts",
     "test:benchmark": "tsx scripts/run-all-benchmarks.ts",
-    "test:audit": "tsx scripts/audit-r1-to-r7-remediation-test.ts && tsx scripts/engineering-audit-remediation-test.ts && tsx scripts/audit-m01-to-m22-remediation-test.ts && tsx scripts/verify-all-phases-audit.ts",
+    "test:audit": "tsx scripts/audit-r1-to-r7-remediation-test.ts && tsx scripts/engineering-audit-remediation-test.ts && tsx scripts/audit-m01-to-m22-remediation-test.ts && tsx scripts/verify-all-phases-audit.ts && tsx scripts/verify-api-sizing-thermal-audit.ts",
     "test:all": "npm run test && npm run test:audit",
     "test:coverage": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
     "test:smoke": "tsx scripts/smoke-test.ts",
