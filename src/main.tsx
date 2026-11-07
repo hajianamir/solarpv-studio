@@ -12,3 +12,15 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+// Register PWA Service Worker for offline app-shell capability (OFF-03)
+if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .catch((err) => {
+        // SW registration is non-blocking
+        console.debug('[PWA] Service worker registration note:', err);
+      });
+  });
+}

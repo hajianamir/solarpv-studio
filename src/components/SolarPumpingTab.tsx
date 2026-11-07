@@ -59,8 +59,9 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
             </p>
           </div>
 
-          <label className="flex items-center gap-2.5 p-2 px-3 rounded-lg bg-industrial-bg border border-industrial-border cursor-pointer text-xs font-bold text-industrial-accent shrink-0 self-start sm:self-auto">
+          <label htmlFor="pumping-enable-checkbox" className="flex items-center gap-2.5 p-2 px-3 rounded-lg bg-industrial-bg border border-industrial-border cursor-pointer text-xs font-bold text-industrial-accent shrink-0 self-start sm:self-auto">
             <input
+              id="pumping-enable-checkbox"
               type="checkbox"
               checked={isEnabled}
               onChange={(e) => setIsEnabled(e.target.checked)}
@@ -99,10 +100,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
           <div className="studio-card">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label htmlFor="pumping-well-depth" className="block text-slate-300 font-semibold mb-1">
                   {isFa ? 'عمق چاه آب (m):' : 'Well Depth (m):'}
                 </label>
                 <input
+                  id="pumping-well-depth"
                   type="number"
                   step="5"
                   value={wellDepthM}
@@ -112,10 +114,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label htmlFor="pumping-tank-height" className="block text-slate-300 font-semibold mb-1">
                   {isFa ? 'ارتفاع تا مخزن/استخر (m):' : 'Tank Height (m):'}
                 </label>
                 <input
+                  id="pumping-tank-height"
                   type="number"
                   step="2"
                   value={tankHeightM}
@@ -125,10 +128,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label htmlFor="pumping-pipe-length" className="block text-slate-300 font-semibold mb-1">
                   {isFa ? 'طول خط انتقال لوله (m):' : 'Pipeline Length (m):'}
                 </label>
                 <input
+                  id="pumping-pipe-length"
                   type="number"
                   step="10"
                   value={pipeLengthM}
@@ -138,10 +142,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label htmlFor="pumping-pipe-diameter" className="block text-slate-300 font-semibold mb-1">
                   {isFa ? 'قطر لوله پلی‌اتیلن (mm):' : 'Pipe Diameter (mm):'}
                 </label>
                 <select
+                  id="pumping-pipe-diameter"
                   value={pipeDiameterMm}
                   onChange={(e) => setPipeDiameterMm(parseInt(e.target.value) || 63)}
                   className="studio-input text-xs"
@@ -156,10 +161,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label htmlFor="pumping-daily-water-req" className="block text-slate-300 font-semibold mb-1">
                   {isFa ? 'دبی آب مورد نیاز (m³/day):' : 'Daily Water Demand (m³/d):'}
                 </label>
                 <input
+                  id="pumping-daily-water-req"
                   type="number"
                   step="10"
                   value={dailyWaterRequirementM3}
@@ -169,10 +175,11 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label htmlFor="pumping-irrigation-type" className="block text-slate-300 font-semibold mb-1">
                   {isFa ? 'روش آبیاری مزرعه:' : 'Irrigation Method:'}
                 </label>
                 <select
+                  id="pumping-irrigation-type"
                   value={irrigationType}
                   onChange={(e) => setIrrigationType(e.target.value as any)}
                   className="studio-input text-xs"

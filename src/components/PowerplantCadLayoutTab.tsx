@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Grid, Layers, MapPin, ZoomIn, ZoomOut, Check, Maximize2, Shield, Compass } from 'lucide-react';
+import { Grid, Layers, MapPin, ZoomIn, ZoomOut, Check, Maximize2, Shield, Compass, Download } from 'lucide-react';
 import {
   generatePowerplantLayout,
+  generatePowerplantDxf,
   type PowerplantCadParameters,
   type RackingStructureType,
   type PowerplantCadLayoutResult,
@@ -22,7 +23,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
   const [roadWidthM, setRoadWidthM] = useState<number>(6.0);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
-  const cadResult: PowerplantCadLayoutResult = generatePowerplantLayout({
+  const layoutParams: PowerplantCadParameters = {
     structureType,
     landLengthM,
     landWidthM,
@@ -33,7 +34,9 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
     moduleLengthM: 2.278,
     moduleWidthM: 1.134,
     roadWidthM,
-  });
+  };
+
+  const cadResult: PowerplantCadLayoutResult = generatePowerplantLayout(layoutParams);
 
   return (
     <div className="space-y-6">
@@ -56,10 +59,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
       <div className="studio-card">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-structure-type" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Racking Structure Type:' : 'نوع استراکچر نگهدارنده:'}
             </label>
             <select
+              id="cad-structure-type"
               value={structureType}
               onChange={(e) => setStructureType(e.target.value as RackingStructureType)}
               className="studio-input text-xs"
@@ -71,10 +75,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-land-length-m" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Land Length (m):' : 'طول زمین / سقف سوله (m):'}
             </label>
             <input
+              id="cad-land-length-m"
               type="number"
               step="10"
               value={landLengthM}
@@ -84,10 +89,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-land-width-m" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Land Width (m):' : 'عرض زمین / سقف سوله (m):'}
             </label>
             <input
+              id="cad-land-width-m"
               type="number"
               step="10"
               value={landWidthM}
@@ -97,10 +103,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-row-pitch-m" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Row Pitch Spacing (m):' : 'فاصله بین ردیف‌ها (Pitch m):'}
             </label>
             <input
+              id="cad-row-pitch-m"
               type="number"
               step="0.5"
               value={rowPitchM}
@@ -110,10 +117,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-array-tilt-deg" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Tilt Angle (°):' : 'زاویه شیب استراکچر (°):'}
             </label>
             <input
+              id="cad-array-tilt-deg"
               type="number"
               step="1"
               value={arrayTiltDeg}
@@ -123,10 +131,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-module-wattage" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Module Rating (Wp):' : 'توان نامی هر پنل (Wp):'}
             </label>
             <input
+              id="cad-module-wattage"
               type="number"
               step="5"
               value={moduleWattage}
@@ -136,10 +145,11 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="cad-road-width-m" className="block text-slate-300 font-semibold mb-1">
               {isEn ? 'Access Road Width (m):' : 'عرض جاده‌های دسترسی (m):'}
             </label>
             <input
+              id="cad-road-width-m"
               type="number"
               step="0.5"
               value={roadWidthM}
@@ -212,11 +222,31 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           <h3 className="font-bold text-industrial-accent text-sm flex items-center gap-2">
             <Layers className="w-4 h-4 text-industrial-accent" />
             {isEn
-              ? 'CAD Spatial Layout of PV Tables, Internal Roads & MV Substations'
-              : 'نقشه‌برداری CAD جانمایی استراکچرها، جاده‌ها و پست‌های فشار متوسط'}
+              ? 'True-Scale CAD Spatial Layout of PV Tables & Civil Infrastructure'
+              : 'نقشه‌برداری CAD جانمایی مهندسی با مقیاس واقعی استراکچرها و زیرساخت'}
           </h3>
 
           <div className="flex items-center gap-2 text-xs">
+            <button
+              onClick={() => {
+                const dxfString = generatePowerplantDxf(cadResult, layoutParams);
+                const blob = new Blob([dxfString], { type: 'application/dxf' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `SolarPV_CAD_Layout_${landLengthM}x${landWidthM}m.dxf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              }}
+              className="px-2.5 py-1 bg-sky-700 hover:bg-sky-600 text-white font-medium rounded flex items-center gap-1.5 transition-colors border border-sky-500/50"
+              title={isEn ? 'Export true-scale AutoCAD DXF file' : 'دریافت فایل استاندارد اتوکد DXF با لایه‌بندی کامل مهندسی'}
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Export DXF' : 'خروجی فایل اتوکد (DXF)'}</span>
+            </button>
+            <div className="h-4 w-px bg-industrial-border mx-1" />
             <button
               onClick={() => setZoomLevel((prev) => Math.max(0.6, prev - 0.1))}
               className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-industrial-border"
@@ -233,6 +263,19 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
         </div>
 
+        {/* Engineering Scale Disclosure Notice */}
+        <div className="mb-2 px-3 py-1.5 bg-sky-950/40 border border-sky-800/40 rounded text-[11px] text-sky-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>
+              {isEn
+                ? `True Engineering Scale: 1px = ${(1 / Math.min((860 - 70) / landLengthM, (420 - 90) / landWidthM)).toFixed(2)}m | Rendering ${cadResult.tables.length} physical tables (${cadResult.rowsCount} rows × ${cadResult.tablesPerRow} cols)`
+                : `مقیاس مهندسی واقعی: هر پیکسل معادل ${(1 / Math.min((860 - 70) / landLengthM, (420 - 90) / landWidthM)).toFixed(2)} متر | جانمایی ${cadResult.tables.length} میز فیزیکی واقعی (${cadResult.rowsCount} ردیف در ${cadResult.tablesPerRow} ستون)`}
+            </span>
+          </div>
+          <span className="text-slate-400 text-[10px]">AutoCAD DXF R15 Compliant</span>
+        </div>
+
         <div className="overflow-x-auto bg-industrial-bg p-4 rounded-lg border border-industrial-border flex justify-center">
           <div
             style={{
@@ -241,103 +284,142 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
               transition: 'transform 0.15s ease',
             }}
           >
-            <svg width="860" height="420" viewBox="0 0 860 420" className="select-none font-sans min-w-[700px]">
-              {/* Land Boundary */}
-              <rect
-                x="20"
-                y="20"
-                width="820"
-                height="380"
-                rx="8"
-                fill="#0f172a"
-                stroke="#334155"
-                strokeWidth="2"
-                strokeDasharray="5 5"
-              />
-              <text x="35" y="42" fill="#64748b" fontSize="11" fontWeight="bold">
-                {isEn
-                  ? `Project Boundary (${landLengthM}m × ${landWidthM}m - ${cadResult.totalLandAreaHectares} Ha)`
-                  : `مرز زمین پروژه (${landLengthM}m × ${landWidthM}m - ${cadResult.totalLandAreaHectares} هکتار)`}
-              </text>
+            {(() => {
+              const svgW = 860;
+              const svgH = 420;
+              const padX = 35;
+              const padY = 45;
+              const maxDrawW = svgW - 2 * padX;
+              const maxDrawH = svgH - 2 * padY;
+              const scale = Math.min(maxDrawW / landLengthM, maxDrawH / landWidthM);
+              const boundaryW = landLengthM * scale;
+              const boundaryH = landWidthM * scale;
+              const startX = padX + (maxDrawW - boundaryW) / 2;
+              const startY = padY + (maxDrawH - boundaryH) / 2;
+              const midXM = landLengthM / 2;
 
-              {/* Perimeter Road & Buffer */}
-              <rect x="40" y="55" width="780" height="325" rx="4" fill="#1e293b" stroke="#475569" strokeWidth="1" opacity="0.6" />
+              return (
+                <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} className="select-none font-sans min-w-[700px]">
+                  {/* Land Boundary */}
+                  <rect
+                    x={startX}
+                    y={startY}
+                    width={boundaryW}
+                    height={boundaryH}
+                    rx="4"
+                    fill="#0f172a"
+                    stroke="#38bdf8"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 4"
+                  />
+                  <text x={startX + 10} y={startY - 10} fill="#94a3b8" fontSize="11" fontWeight="bold">
+                    {isEn
+                      ? `Project Boundary (${landLengthM}m × ${landWidthM}m — ${cadResult.totalLandAreaHectares} Ha)`
+                      : `محدوده واقعی زمین (${landLengthM}m × ${landWidthM}m — ${cadResult.totalLandAreaHectares} هکتار)`}
+                  </text>
 
-              {/* Main Access Central Corridor */}
-              <line x1="430" y1="55" x2="430" y2="380" stroke="#f59e0b" strokeWidth="6" strokeDasharray="8 4" opacity="0.7" />
-              <text x="435" y="75" fill="#f59e0b" fontSize="9" fontWeight="bold">
-                {isEn ? `Main Central Access Corridor (${roadWidthM}m)` : `جاده مرکزی اصلی (${roadWidthM}m)`}
-              </text>
+                  {/* Perimeter Road & Setback Buffer */}
+                  {boundaryW > 24 * scale && boundaryH > 24 * scale && (
+                    <rect
+                      x={startX + 6 * scale}
+                      y={startY + 6 * scale}
+                      width={boundaryW - 12 * scale}
+                      height={boundaryH - 12 * scale}
+                      rx="3"
+                      fill="#1e293b"
+                      stroke="#475569"
+                      strokeWidth="1"
+                      opacity="0.4"
+                    />
+                  )}
 
-              {/* Racking Table Rows */}
-              {[90, 130, 170, 210, 250, 290, 330].map((y, rowIdx) => (
-                <g key={rowIdx}>
-                  {/* Left Block Tables */}
-                  {[60, 130, 200, 270, 340].map((x, colIdx) => (
-                    <g key={`l-${colIdx}`}>
-                      <rect
-                        x={x}
-                        y={y}
-                        width="58"
-                        height="20"
-                        rx="2"
-                        fill="#0284c7"
-                        stroke="#38bdf8"
-                        strokeWidth="1"
-                        opacity="0.85"
-                      />
-                      <line x1={x + 29} y1={y} x2={x + 29} y2={y + 20} stroke="#0369a1" strokeWidth="1" />
-                    </g>
-                  ))}
+                  {/* Main Access Central Corridor */}
+                  <rect
+                    x={startX + (midXM - roadWidthM / 2) * scale}
+                    y={startY + 6 * scale}
+                    width={Math.max(4, roadWidthM * scale)}
+                    height={Math.max(0, boundaryH - 12 * scale)}
+                    fill="#f59e0b"
+                    opacity="0.25"
+                  />
+                  <line
+                    x1={startX + midXM * scale}
+                    y1={startY + 6 * scale}
+                    x2={startX + midXM * scale}
+                    y2={startY + boundaryH - 6 * scale}
+                    stroke="#f59e0b"
+                    strokeWidth="2"
+                    strokeDasharray="6 3"
+                    opacity="0.8"
+                  />
 
-                  {/* Right Block Tables */}
-                  {[460, 530, 600, 670, 740].map((x, colIdx) => (
-                    <g key={`r-${colIdx}`}>
-                      <rect
-                        x={x}
-                        y={y}
-                        width="58"
-                        height="20"
-                        rx="2"
-                        fill="#0284c7"
-                        stroke="#38bdf8"
-                        strokeWidth="1"
-                        opacity="0.85"
-                      />
-                      <line x1={x + 29} y1={y} x2={x + 29} y2={y + 20} stroke="#0369a1" strokeWidth="1" />
-                    </g>
-                  ))}
-                </g>
-              ))}
+                  {/* Dynamically Placed PV Tables matching Land Dimensions & Table Counts */}
+                  {cadResult.tables.map((tbl) => {
+                    const tx = startX + tbl.xM * scale;
+                    const ty = startY + tbl.yM * scale;
+                    const tw = Math.max(2, tbl.lengthM * scale);
+                    const th = Math.max(1.5, tbl.widthM * scale);
+                    return (
+                      <g key={tbl.id}>
+                        <rect
+                          x={tx}
+                          y={ty}
+                          width={tw}
+                          height={th}
+                          rx={tw > 10 ? 1 : 0}
+                          fill="#0284c7"
+                          stroke="#38bdf8"
+                          strokeWidth={tw > 15 ? 0.75 : 0.4}
+                          opacity="0.88"
+                        />
+                        {tw > 25 && (
+                          <line
+                            x1={tx + tw / 2}
+                            y1={ty}
+                            x2={tx + tw / 2}
+                            y2={ty + th}
+                            stroke="#0369a1"
+                            strokeWidth="0.5"
+                          />
+                        )}
+                      </g>
+                    );
+                  })}
 
-              {/* MV Substation Inverter Skid Station (Center) */}
-              <rect
-                x="400"
-                y="190"
-                width="60"
-                height="45"
-                rx="4"
-                fill="#8b5cf6"
-                stroke="#c084fc"
-                strokeWidth="2"
-              />
-              <text x="430" y="210" fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">
-                {isEn ? 'MV Sub' : 'پست MV'}
-              </text>
-              <text x="430" y="224" fill="#ddd6fe" fontSize="8" textAnchor="middle">
-                20/33 kV
-              </text>
+                  {/* Central MV Power Station Skid */}
+                  <rect
+                    x={startX + (midXM - 6) * scale}
+                    y={startY + 12 * scale}
+                    width={Math.max(12, 12 * scale)}
+                    height={Math.max(8, 8 * scale)}
+                    rx="2"
+                    fill="#8b5cf6"
+                    stroke="#c084fc"
+                    strokeWidth="1.5"
+                  />
+                  <text
+                    x={startX + midXM * scale}
+                    y={startY + 12 * scale + Math.max(6, 5 * scale)}
+                    fill="#ffffff"
+                    fontSize={Math.max(7, Math.min(10, 8 * scale))}
+                    fontWeight="bold"
+                    textAnchor="middle"
+                  >
+                    MV Skid
+                  </text>
 
-              {/* North Arrow Compass Indicator */}
-              <g transform="translate(800, 70)">
-                <circle cx="0" cy="0" r="16" fill="#0f172a" stroke="#64748b" strokeWidth="1.5" />
-                <polygon points="0,-13 4,0 0,-3 -4,0" fill="#ef4444" />
-                <polygon points="0,13 4,0 0,3 -4,0" fill="#94a3b8" />
-                <text x="0" y="-17" fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="middle">
-                  N
-                </text>
-              </g>
-            </svg>
+                  {/* North Arrow Compass Indicator */}
+                  <g transform={`translate(${svgW - 40}, 45)`}>
+                    <circle cx="0" cy="0" r="15" fill="#0f172a" stroke="#64748b" strokeWidth="1.5" />
+                    <polygon points="0,-12 4,0 0,-3 -4,0" fill="#ef4444" />
+                    <polygon points="0,12 4,0 0,3 -4,0" fill="#94a3b8" />
+                    <text x="0" y="-15" fill="#ef4444" fontSize="9" fontWeight="bold" textAnchor="middle">
+                      N
+                    </text>
+                  </g>
+                </svg>
+              );
+            })()}
           </div>
         </div>
 

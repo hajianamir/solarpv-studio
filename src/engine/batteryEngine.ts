@@ -1,5 +1,7 @@
 // Battery Energy Storage System (BESS) & Degradation Life-Cycle Engine
 
+export type SystemMode = 'powerplant' | 'ongrid' | 'offgrid';
+
 export type BatteryChemistry = 'lifepo4' | 'gel_deep_cycle' | 'agm_flooded' | 'ternary_ncm' | 'LiFePO4' | string;
 
 export interface BatteryChemistryProfile {
@@ -91,9 +93,15 @@ BATTERY_CHEMISTRIES['LiFePO4'] = BATTERY_CHEMISTRIES['lifepo4'];
 BATTERY_CHEMISTRIES['LFP'] = BATTERY_CHEMISTRIES['lifepo4'];
 BATTERY_CHEMISTRIES['gel'] = BATTERY_CHEMISTRIES['gel_deep_cycle'];
 BATTERY_CHEMISTRIES['Gel'] = BATTERY_CHEMISTRIES['gel_deep_cycle'];
+BATTERY_CHEMISTRIES['Gel Deep Cycle'] = BATTERY_CHEMISTRIES['gel_deep_cycle'];
 BATTERY_CHEMISTRIES['agm'] = BATTERY_CHEMISTRIES['agm_flooded'];
 BATTERY_CHEMISTRIES['AGM'] = BATTERY_CHEMISTRIES['agm_flooded'];
+BATTERY_CHEMISTRIES['agm_vrla'] = BATTERY_CHEMISTRIES['agm_flooded'];
+BATTERY_CHEMISTRIES['AGM VRLA'] = BATTERY_CHEMISTRIES['agm_flooded'];
+BATTERY_CHEMISTRIES['opzs_tubular'] = BATTERY_CHEMISTRIES['agm_flooded'];
+BATTERY_CHEMISTRIES['OPzS Tubular'] = BATTERY_CHEMISTRIES['agm_flooded'];
 BATTERY_CHEMISTRIES['ncm'] = BATTERY_CHEMISTRIES['ternary_ncm'];
+BATTERY_CHEMISTRIES['Ternary NCM'] = BATTERY_CHEMISTRIES['ternary_ncm'];
 
 export interface BatteryBankSizingResult {
   chemistry: BatteryChemistryProfile;
@@ -111,6 +119,10 @@ export interface BatteryBankSizingResult {
   estimatedLifespanYears: number;
   expectedTotalCycles: number;
   warnings: string[];
+  nightCoveragePct?: number; // Off-grid design night or On-grid outage coverage ratio (%)
+  coverageTargetKwh?: number;
+  coverageLabelFa?: string;
+  coverageLabelEn?: string;
 }
 
 const FALLBACK_BATTERY_PROFILE: BatteryChemistryProfile = {
@@ -148,11 +160,11 @@ export function computeAutonomyEnergyRequirement(
   totalDailyKwh: number,
   nighttimeKwh: number,
   outageHours: number,
-  nominalNightHours: number = 12,
+  nominalNightHours: number = 12.0,
 ): number {
   if (systemMode === 'powerplant') return 0;
   if (systemMode === 'ongrid') {
-    const safeNight = Math.max(1, nominalNightHours);
+    const safeNight = Math.max(1, Number(nominalNightHours) || 12.0);
     const fraction = Math.min(1, Math.max(0, outageHours) / safeNight);
     return nighttimeKwh * fraction;
   }
@@ -167,7 +179,11 @@ export function sizeBatteryBank(
   inverterPeakWatts: number = 5000,
   inverterContinuousWatts: number = 3000,
   minAmbientTempC: number = 15.0,
-  unitBatteryAh: number = 100 // standard 100Ah or 200Ah unit block
+  unitBatteryAh: number = 100, // standard 100Ah or 200Ah unit block
+  designNighttimeKwh?: number, // Design night energy requirement for coverage verification
+  systemMode: SystemMode = 'offgrid',
+  outageHours?: number,
+  designNightHours?: number
 ): BatteryBankSizingResult {
   // Normalize chemistry key safely
   const rawKey = typeof chemistryType === 'string' ? chemistryType : (chemistryType as any)?.id || 'lifepo4';
@@ -215,6 +231,10 @@ export function sizeBatteryBank(
       estimatedLifespanYears: profile.typicalLifespanYears,
       expectedTotalCycles: profile.standardCycleLifeAt80DoD,
       warnings: [],
+      nightCoveragePct: 100,
+      coverageTargetKwh: 0,
+      coverageLabelFa: systemMode === 'ongrid' ? 'پوشش دوره خاموشی' : 'پوشش شبِ طراحی',
+      coverageLabelEn: systemMode === 'ongrid' ? 'Outage Window Coverage' : 'Design Night Coverage',
     };
   }
 
@@ -261,6 +281,44 @@ export function sizeBatteryBank(
     );
   }
 
+  // Coverage evaluation:
+  // For On-Grid: target is the backup energy for the requested outage window
+  // For Off-Grid: target is the design night requirement for the longest winter night
+  let nightCoveragePct = 100.0;
+  let coverageTargetKwh = 0;
+  let coverageLabelFa = 'پوشش شبِ طراحی';
+  let coverageLabelEn = 'Design Night Coverage';
+
+  const isOnGrid = systemMode === 'ongrid';
+
+  if (isOnGrid) {
+    coverageLabelFa = 'پوشش دوره خاموشی';
+    coverageLabelEn = 'Outage Window Coverage';
+    const effectiveOutage = Math.max(0, outageHours ?? 6);
+    const nightDesignH = Math.max(1, designNightHours ?? 12.0);
+    const nightScale = Math.min(1.0, effectiveOutage / nightDesignH);
+    coverageTargetKwh = Number(((designNighttimeKwh ?? dailyEnergyForAutonomyKwh) * nightScale).toFixed(2));
+    if (coverageTargetKwh > 0.001) {
+      nightCoveragePct = Number(((actualUsableKwh / coverageTargetKwh) * 100).toFixed(1));
+      if (actualUsableKwh < coverageTargetKwh) {
+        warnings.push(
+          `پوشش ناکافی دوره خاموشی: ظرفیت قابل‌استفاده بانک (${actualUsableKwh.toFixed(1)} kWh) کمتر از نیاز دوره خاموشی (${coverageTargetKwh.toFixed(1)} kWh، پوشش ${nightCoveragePct}٪) است!`
+        );
+      }
+    }
+  } else {
+    // Off-grid mode
+    coverageTargetKwh = Number((designNighttimeKwh ?? dailyEnergyForAutonomyKwh).toFixed(2));
+    if (coverageTargetKwh > 0.001) {
+      nightCoveragePct = Number(((actualUsableKwh / coverageTargetKwh) * 100).toFixed(1));
+      if (actualUsableKwh < coverageTargetKwh) {
+        warnings.push(
+          `پوشش ناکافی بار شب: ظرفیت قابل‌استفاده بانک (${actualUsableKwh.toFixed(1)} kWh) کمتر از نیاز شبِ طراحی (${coverageTargetKwh.toFixed(1)} kWh، پوشش ${nightCoveragePct}٪) است!`
+        );
+      }
+    }
+  }
+
   // Lifespan estimation based on cycles and DoD
   const cycleLifeAtActualDoD = (profile.standardCycleLifeAt80DoD || 3000) * (0.80 / Math.max(0.1, dodFraction));
   const cyclesPerYear = 365;
@@ -286,5 +344,9 @@ export function sizeBatteryBank(
     estimatedLifespanYears,
     expectedTotalCycles: Math.round(cycleLifeAtActualDoD),
     warnings,
+    nightCoveragePct,
+    coverageTargetKwh,
+    coverageLabelFa,
+    coverageLabelEn,
   };
 }

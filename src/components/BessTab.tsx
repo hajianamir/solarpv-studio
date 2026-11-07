@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Battery as BatteryIcon,
   Shield,
@@ -13,12 +13,14 @@ import {
   Weight,
   Maximize2,
   Sliders,
+  Database,
 } from 'lucide-react';
 import {
   type BatteryChemistry,
   BATTERY_CHEMISTRIES,
   type BatteryBankSizingResult,
 } from '../engine/batteryEngine';
+import { CatalogRepository, type EnhancedCatalogBattery } from '../engine/catalogRepository';
 
 interface BessTabProps {
   selectedChemistry: BatteryChemistry;
@@ -28,6 +30,9 @@ interface BessTabProps {
   batterySizing: BatteryBankSizingResult;
   systemTopology?: 'on_grid' | 'off_grid' | 'hybrid';
   onTopologyChange?: (topology: 'on_grid' | 'off_grid' | 'hybrid') => void;
+  nighttimeKwh?: number;
+  outageHours?: number;
+  nightHoursDesign?: number;
   lang?: 'fa' | 'en';
 }
 
@@ -39,8 +44,25 @@ export const BessTab: React.FC<BessTabProps> = ({
   batterySizing,
   systemTopology = 'off_grid',
   onTopologyChange,
+  nighttimeKwh,
+  outageHours,
+  nightHoursDesign,
   lang = 'fa',
 }) => {
+  const repo = CatalogRepository.getInstance();
+  const [catalogVersion, setCatalogVersion] = useState(0);
+
+  useEffect(() => {
+    return repo.subscribe(() => {
+      setCatalogVersion((v) => v + 1);
+    });
+  }, [repo]);
+
+  const availableBatteries = repo.getBatteries();
+  const [selectedBatteryModelId, setSelectedBatteryModelId] = useState<string>(
+    availableBatteries[0]?.id || ''
+  );
+
   // Customizable unit battery model selection
   const [unitVoltageV, setUnitVoltageV] = useState<number>(
     selectedChemistry === 'lifepo4' && batterySizing.systemVoltageVdc === 48 ? 48 : 12
@@ -48,12 +70,33 @@ export const BessTab: React.FC<BessTabProps> = ({
   const [unitCapacityAh, setUnitCapacityAh] = useState<number>(100);
   const [unitWeightKg, setUnitWeightKg] = useState<number>(32);
 
+  const handleSelectBatteryModel = (modelId: string) => {
+    setSelectedBatteryModelId(modelId);
+    const model = availableBatteries.find((b) => b.id === modelId);
+    if (model) {
+      setUnitVoltageV(model.nominalVoltageVolts);
+      setUnitCapacityAh(model.nominalCapacityAh);
+      setUnitWeightKg(model.weightKg);
+
+      // Map catalog chemistry to BatteryChemistry type
+      let chem: BatteryChemistry = 'lifepo4';
+      if (model.chemistry === 'Gel Deep Cycle') chem = 'gel_deep_cycle';
+      else if (model.chemistry === 'AGM VRLA') chem = 'agm_flooded';
+      else if (model.chemistry === 'Ternary NCM') chem = 'ternary_ncm';
+      else if (model.chemistry === 'OPzS Tubular') chem = 'agm_flooded';
+      onChemistryChange(chem);
+    }
+  };
+
   // Recalculate series & parallel with chosen unit
   const calculatedSeries = Math.max(1, Math.round(batterySizing.systemVoltageVdc / unitVoltageV));
   const calculatedParallel = Math.max(1, Math.ceil(batterySizing.totalCapacityAh / unitCapacityAh));
   const calculatedTotalUnits = calculatedSeries * calculatedParallel;
   const totalWeightKg = calculatedTotalUnits * unitWeightKg;
   const totalFootprintM2 = Number((calculatedTotalUnits * 0.18).toFixed(2)); // approx 0.18m² per unit with rack clearance
+
+  const isNightCoverageDeficit = batterySizing.nightCoveragePct !== undefined && batterySizing.nightCoveragePct < 100;
+  const isOnGrid = systemTopology === 'on_grid' || systemTopology === 'hybrid';
 
   return (
     <div className="space-y-6">
@@ -70,6 +113,21 @@ export const BessTab: React.FC<BessTabProps> = ({
             ? 'محاسبه دقیق ظرفیت بانک باتری (Ah & kWh)، تعداد باتری سری و موازی، نرخ دشارژ C-Rate، وزن و فضای فیزیکی مورد نیاز در اتاق باتری'
             : 'Precise battery bank sizing (Ah & kWh), series & parallel unit calculations, C-Rate discharge safety, and physical footprint.'}
         </p>
+      </div>
+
+      {/* Earthing & Bonding Advisory Note (B2 requirement) */}
+      <div className="p-3 bg-sky-950/40 border border-sky-800/80 rounded-lg text-xs flex items-start gap-2.5">
+        <Shield className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+        <div className="text-slate-300">
+          <strong className="text-sky-300 block mb-0.5 font-bold">
+            {lang === 'fa' ? 'یادداشت مهندسی سیستم زمین و هم‌بندی رک باتری (IEC 60364-5-54 / IEC 62485-2):' : 'BESS Earthing & Protective Bonding Mandate:'}
+          </strong>
+          <span>
+            {lang === 'fa'
+              ? 'رک/کابینت باتری به ارت اصلی سیستم هم‌بند می‌شود؛ قطب‌های DC باتری شناورند و ارت جداگانه اجرا نمی‌شود.'
+              : 'Battery racks and metal enclosures must be equipotentially bonded to the Main Earthing Terminal (MET); DC battery poles remain floating, and separate isolated earthing is prohibited.'}
+          </span>
+        </div>
       </div>
 
       {/* On-Grid / Powerplant Notice */}
@@ -101,15 +159,77 @@ export const BessTab: React.FC<BessTabProps> = ({
         </div>
       )}
 
+      {/* Battery Model Selector Card from Catalog (CAT-05) */}
+      <div className="studio-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-industrial-border/60">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Database className="w-4 h-4 text-indigo-400" />
+              {lang === 'fa' ? 'انتخاب مدل تجاری باتری از کاتالوگ (BESS Model Selector):' : 'Select Battery Model from Equipment Catalog:'}
+            </h3>
+            <p className="text-[11px] text-slate-400">
+              {lang === 'fa'
+                ? 'مشخصات واحد باتری، ولتاژ، ظرفیت، و فناوری شیمیایی مستقیماً از دیتاشیت کاتالوگ استخراج و اعمال می‌شود.'
+                : 'Unit voltage, capacity, weight, and chemistry are extracted and injected directly from the selected catalog model.'}
+            </p>
+          </div>
+          <span className="text-[10px] px-2.5 py-1 rounded bg-indigo-950 text-indigo-300 font-mono border border-indigo-800/60">
+            {availableBatteries.length} {lang === 'fa' ? 'مدل موجود' : 'models available'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <div>
+            <label htmlFor="bess-catalog-model-select" className="block text-xs font-semibold text-slate-300 mb-1">
+              {lang === 'fa' ? 'مدل باتری (Built-in / Custom):' : 'Battery Unit Model:'}
+            </label>
+            <select
+              id="bess-catalog-model-select"
+              value={selectedBatteryModelId}
+              onChange={(e) => handleSelectBatteryModel(e.target.value)}
+              className="studio-input w-full text-xs font-mono py-2 bg-industrial-surface border-indigo-500/50 text-white"
+            >
+              {availableBatteries.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.origin === 'custom' ? '⭐ [Custom] ' : ''}
+                  {b.manufacturer} - {b.modelName} ({b.capacityKwh} kWh, {b.nominalVoltageVolts}V {b.nominalCapacityAh}Ah - {b.chemistry})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {availableBatteries.find((b) => b.id === selectedBatteryModelId) && (() => {
+            const activeModel = availableBatteries.find((b) => b.id === selectedBatteryModelId)!;
+            return (
+              <div className="p-2.5 bg-slate-900/60 border border-indigo-500/30 rounded text-xs space-y-1">
+                <div className="flex justify-between text-slate-300">
+                  <span>{lang === 'fa' ? 'سازنده و فناوری:' : 'Brand & Chem:'}</span>
+                  <strong className="text-white">{activeModel.manufacturer} ({activeModel.chemistry})</strong>
+                </div>
+                <div className="grid grid-cols-3 gap-1 pt-1 text-[11px] font-mono text-slate-300">
+                  <div>V: <strong className="text-sky-300">{activeModel.nominalVoltageVolts}V</strong></div>
+                  <div>Cap: <strong className="text-industrial-accent">{activeModel.nominalCapacityAh}Ah</strong></div>
+                  <div>DoD: <strong className="text-industrial-success">{activeModel.recommendedDoDPct}%</strong></div>
+                  <div>Max I: <strong className="text-industrial-warning">{activeModel.maxContinuousDischargeA}A</strong></div>
+                  <div>Cycles: <strong className="text-white">{activeModel.cycleLifeAt80DoD}</strong></div>
+                  <div>BMS: <strong className="text-indigo-300">{activeModel.hasIntegratedBms ? 'Yes' : 'External'}</strong></div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
       {/* Chemistry Selector Dropdown List */}
       <div className="studio-card">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <div>
-            <label className="block text-xs font-bold text-industrial-accent mb-1.5 flex items-center gap-2">
+            <label htmlFor="bess-selected-chemistry" className="block text-xs font-bold text-industrial-accent mb-1.5 flex items-center gap-2">
               <Boxes className="w-4 h-4 text-indigo-400" />
               {lang === 'fa' ? 'انتخاب فناوری شیمیایی باتری (Dropdown List):' : 'Select Battery Chemistry Technology (Dropdown List):'}
             </label>
             <select
+              id="bess-selected-chemistry"
               value={selectedChemistry}
               onChange={(e) => onChemistryChange(e.target.value as BatteryChemistry)}
               className="studio-input w-full text-xs font-bold py-2 bg-industrial-surface border-indigo-500/50 text-white focus:border-indigo-400"
@@ -159,11 +279,14 @@ export const BessTab: React.FC<BessTabProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
-              {lang === 'fa' ? 'روزهای خودمختاری (Autonomy Days):' : 'Days of Autonomy:'}
+            <label htmlFor="bess-autonomy-days-range" className="block text-slate-300 font-semibold mb-1">
+              {systemTopology === 'hybrid'
+                ? (lang === 'fa' ? 'ضریب استمرار خاموشی (Outage Multiplier):' : 'Outage Multiplier Days:')
+                : (lang === 'fa' ? 'روزهای خودمختاری آف‌گرید (Autonomy Days):' : 'Days of Autonomy:')}
             </label>
             <div className="flex items-center gap-2">
               <input
+                id="bess-autonomy-days-range"
                 type="range"
                 min="0.5"
                 max="5.0"
@@ -176,14 +299,19 @@ export const BessTab: React.FC<BessTabProps> = ({
                 {autonomyDays} روز
               </span>
             </div>
-            <span className="text-[10px] text-slate-400">تعداد روزهای بدون تابش تحت بار شب</span>
+            <span className="text-[10px] text-slate-400">
+              {systemTopology === 'hybrid'
+                ? (lang === 'fa' ? `ضریب اعمال‌شده در نیاز خاموشی (${autonomyDays} روز)` : `Multiplier on blackout requirement (${autonomyDays}d)`)
+                : (lang === 'fa' ? 'تعداد روزهای بدون تابش تحت بار شب' : 'Consecutive sunless days covered')}
+            </span>
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="bess-unit-voltage" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'ولتاژ نامی هر واحد باتری:' : 'Nominal Voltage per Unit:'}
             </label>
             <select
+              id="bess-unit-voltage"
               value={unitVoltageV}
               onChange={(e) => setUnitVoltageV(parseInt(e.target.value) || 12)}
               className="studio-input text-xs font-mono"
@@ -196,10 +324,11 @@ export const BessTab: React.FC<BessTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="bess-unit-capacity" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'ظرفیت هر واحد باتری (Ah):' : 'Unit Nominal Capacity (Ah):'}
             </label>
             <select
+              id="bess-unit-capacity"
               value={unitCapacityAh}
               onChange={(e) => setUnitCapacityAh(parseInt(e.target.value) || 100)}
               className="studio-input text-xs font-mono"
@@ -214,10 +343,11 @@ export const BessTab: React.FC<BessTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="bess-unit-weight" className="block text-slate-300 font-semibold mb-1">
               {lang === 'fa' ? 'وزن تقریبی هر واحد (کیلوگرم):' : 'Weight per Unit (kg):'}
             </label>
             <input
+              id="bess-unit-weight"
               type="number"
               min="5"
               max="150"
@@ -238,44 +368,85 @@ export const BessTab: React.FC<BessTabProps> = ({
             : 'Battery Sizing Matrix & Physical Quantity:'}
         </h3>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-4">
+        {/* Coverage Deficit Warning Banner */}
+        {isNightCoverageDeficit && (
+          <div className="p-3 bg-red-950/40 border border-red-800 rounded-lg text-xs text-red-200 mb-4 flex items-center gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-industrial-error shrink-0" />
+            <div>
+              <strong className="block font-bold">
+                {lang === 'fa'
+                  ? (isOnGrid ? 'هشدار مهندسی کسری پوشش خاموشی (Outage Coverage Deficit):' : 'هشدار مهندسی کسری پوشش شب (Night Coverage Deficit):')
+                  : (isOnGrid ? 'Outage Window Coverage Deficit Warning:' : 'Design Night Coverage Deficit Warning:')}
+              </strong>
+              <span>
+                {lang === 'fa'
+                  ? (isOnGrid
+                      ? `ظرفیت قابل‌استفاده بانک باتری (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) کمتر از انرژی مورد نیاز دوره خاموشی (${outageHours ?? 6} ساعته: ${batterySizing.coverageTargetKwh?.toFixed(1) ?? '...'} kWh) است (پوشش: ${batterySizing.nightCoveragePct}%). لطفاً ظرفیت باتری یا ساعت پشتیبانی را تنظیم کنید.`
+                      : `ظرفیت قابل‌استفاده بانک باتری (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) کمتر از انرژی مورد نیاز طولانی‌ترین شب سال (${nightHoursDesign ?? 14} ساعته: ${nighttimeKwh?.toFixed(1) ?? '...'} kWh) است (پوشش: ${batterySizing.nightCoveragePct}%). لطفاً ظرفیت باتری یا روزهای خودمختاری را افزایش دهید.`)
+                  : (isOnGrid
+                      ? `Usable battery capacity (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) is below outage window load (${outageHours ?? 6}h: ${batterySizing.coverageTargetKwh?.toFixed(1) ?? '...'} kWh), covering only ${batterySizing.nightCoveragePct}%. Increase battery capacity.`
+                      : `Usable battery capacity (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) is below winter solstice night load (${nightHoursDesign ?? 14}h: ${nighttimeKwh?.toFixed(1) ?? '...'} kWh), covering only ${batterySizing.nightCoveragePct}%. Increase battery capacity or autonomy.`)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs mb-4">
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">ظرفیت کل ناخالص</span>
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'ظرفیت کل ناخالص' : 'Gross Capacity'}</span>
             <span className="text-lg font-bold font-mono text-indigo-400">
               {batterySizing.grossCapacityKwh.toFixed(1)} kWh
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-              {batterySizing.totalCapacityAh} Ah در ولتاژ {batterySizing.systemVoltageVdc}V DC
+              {batterySizing.totalCapacityAh} Ah ({batterySizing.systemVoltageVdc}V)
             </span>
           </div>
 
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">ظرفیت قابل استفاده (Net Usable)</span>
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'ظرفیت قابل استفاده' : 'Net Usable'}</span>
             <span className="text-lg font-bold font-mono text-industrial-success">
               {batterySizing.usableCapacityKwh.toFixed(1)} kWh
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              با DoD مجاز {batterySizing.chemistry.recommendedDoDPct}%
+              DoD: {batterySizing.chemistry.recommendedDoDPct}%
             </span>
           </div>
 
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">تعداد کل باتری‌های مورد نیاز</span>
-            <span className="text-lg font-bold font-mono text-industrial-accent">
-              {calculatedTotalUnits} عدد باتری
+            <span className="text-slate-400 block mb-0.5">
+              {lang === 'fa'
+                ? (batterySizing.coverageLabelFa || (isOnGrid ? 'پوشش خاموشی' : 'پوشش شبِ طراحی'))
+                : (batterySizing.coverageLabelEn || (isOnGrid ? 'Outage Coverage' : 'Night Coverage'))}
+            </span>
+            <span className={`text-lg font-bold font-mono ${
+              (batterySizing.nightCoveragePct ?? 100) >= 100 ? 'text-industrial-success' : 'text-industrial-error'
+            }`}>
+              {batterySizing.nightCoveragePct !== undefined ? `${batterySizing.nightCoveragePct}%` : '100%'}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              {calculatedParallel} استرینگ موازی × {calculatedSeries} باتری سری
+              {(batterySizing.nightCoveragePct ?? 100) >= 100
+                ? (lang === 'fa' ? (isOnGrid ? '✓ پوشش کامل خاموشی' : '✓ پوشش کامل شب') : '✓ Fully covered')
+                : (lang === 'fa' ? '⚠ کسری انرژی' : '⚠ Deficit')}
             </span>
           </div>
 
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">وزن و مساحت اتاق باتری</span>
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'تعداد کل باتری‌ها' : 'Total Units'}</span>
+            <span className="text-lg font-bold font-mono text-industrial-accent">
+              {calculatedTotalUnits} عدد
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              {calculatedParallel}P × {calculatedSeries}S
+            </span>
+          </div>
+
+          <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'وزن و مساحت رک' : 'Weight & Area'}</span>
             <span className="text-lg font-bold font-mono text-purple-400">
               {totalWeightKg.toLocaleString()} kg
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              مساحت اشغال رک: ~{totalFootprintM2} m²
+              ~{totalFootprintM2} m²
             </span>
           </div>
         </div>

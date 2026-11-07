@@ -72,10 +72,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="mv-grid-voltage-kv" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'ولتاژ خط انتقال شبکه (kV):' : 'Grid Interconnection Voltage (kV):'}
             </label>
             <select
+              id="mv-grid-voltage-kv"
               value={gridVoltageKv}
               onChange={(e) => setGridVoltageKv(parseInt(e.target.value) || 20)}
               className="studio-input text-xs"
@@ -87,10 +88,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="mv-inverter-voltage-v" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'ولتاژ خروجی اینورترها (V):' : 'Inverter AC Output Voltage (V):'}
             </label>
             <select
+              id="mv-inverter-voltage-v"
               value={inverterVoltageV}
               onChange={(e) => setInverterVoltageV(parseInt(e.target.value) || 800)}
               className="studio-input text-xs"
@@ -102,11 +104,12 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+            <label htmlFor="mv-site-ambient-temp" className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
               <span>{isFa ? 'دمای حداکثر محیط (°C):' : 'Max Ambient Temp (°C):'}</span>
               <span className="font-mono text-industrial-warning font-bold">{siteAmbientTemp}°C</span>
             </label>
             <input
+              id="mv-site-ambient-temp"
               type="number"
               min="25"
               max="55"
@@ -117,11 +120,12 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+            <label htmlFor="mv-site-elevation" className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
               <span>{isFa ? 'ارتفاع از سطح دریا (متر):' : 'Site Elevation (m):'}</span>
               <span className="font-mono text-sky-300 font-bold">{siteElevation}m</span>
             </label>
             <input
+              id="mv-site-elevation"
               type="number"
               min="0"
               max="3500"
@@ -133,10 +137,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="mv-soil-resistivity" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'مقاومت ویژه خاک پست (Ω·m):' : 'Soil Apparent Resistivity (Ω·m):'}
             </label>
             <input
+              id="mv-soil-resistivity"
               type="number"
               step="10"
               value={soilResistivityOhmM}
@@ -146,10 +151,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="mv-clearing-time-sec" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'مدت زمان پاک‌سازی خطا tc (ثانیه):' : 'Fault Clearing Time tc (s):'}
             </label>
             <input
+              id="mv-clearing-time-sec"
               type="number"
               step="0.1"
               value={clearingTimeSec}
@@ -159,10 +165,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="mv-grid-mva" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'سطح اتصال کوتاه شبکه بالادست (MVA):' : 'Upstream Grid Fault Level (MVA):'}
             </label>
             <select
+              id="mv-grid-mva"
               value={gridMva}
               onChange={(e) => setGridMva(parseInt(e.target.value) || 500)}
               className="studio-input text-xs font-mono"
@@ -177,11 +184,12 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+            <label htmlFor="mv-grid-rx-ratio" className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
               <span>{isFa ? 'نسبت R/X شبکه بالادست:' : 'Grid R/X Ratio:'}</span>
               <span className="font-mono text-sky-400 font-bold">{gridRxRatio.toFixed(2)}</span>
             </label>
             <input
+              id="mv-grid-rx-ratio"
               type="number"
               step="0.01"
               min="0.02"
@@ -196,11 +204,12 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+            <label htmlFor="mv-cable-length-m" className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
               <span>{isFa ? 'طول کابل MV جمع‌آورنده (m):' : 'MV Collection Cable Length (m):'}</span>
               <span className="font-mono text-industrial-warning font-bold">{cableLengthM} m</span>
             </label>
             <input
+              id="mv-cable-length-m"
               type="number"
               step="50"
               min="0"
@@ -212,10 +221,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="mv-cable-section-mm2" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'سطح مقطع کابل MV (mm² Cu):' : 'MV Cable Section (mm² Cu):'}
             </label>
             <select
+              id="mv-cable-section-mm2"
               value={cableSectionMm2}
               onChange={(e) => setCableSectionMm2(parseInt(e.target.value) || 120)}
               className="studio-input text-xs font-mono"
@@ -230,10 +240,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="mv-parallel-runs" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'تعداد فیدرهای موازی کلکتور:' : 'Parallel Feeder Runs:'}
             </label>
             <select
+              id="mv-parallel-runs"
               value={parallelRuns}
               onChange={(e) => setParallelRuns(parseInt(e.target.value) || 1)}
               className="studio-input text-xs font-mono"
@@ -247,10 +258,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <label htmlFor="mv-fault-location" className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'نقطه محاسبه اتصال کوتاه:' : 'Short-Circuit Fault Point:'}
             </label>
             <select
+              id="mv-fault-location"
               value={faultLocation}
               onChange={(e) => setFaultLocation(e.target.value as 'mv_busbar' | 'feeder_terminal')}
               className="studio-input text-xs font-mono"
@@ -261,9 +273,9 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">
+            <span className="block text-slate-300 font-semibold mb-1">
               {isFa ? 'توان نامی نیروگاه در نقطه تزریق:' : 'Plant Active AC Capacity:'}
-            </label>
+            </span>
             <div className="p-2 bg-industrial-surface rounded border border-industrial-border text-industrial-accent font-mono font-bold">
               {plantCapacityAcMw} MW
             </div>
@@ -574,8 +586,9 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
 
         {/* Inverter Contribution at Busbar Toggle */}
         <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-          <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+          <label htmlFor="mv-converter-at-busbar" className="flex items-center gap-2 cursor-pointer text-slate-200">
             <input
+              id="mv-converter-at-busbar"
               type="checkbox"
               checked={includeConverterAtBusbar}
               onChange={(e) => setIncludeConverterAtBusbar(e.target.checked)}

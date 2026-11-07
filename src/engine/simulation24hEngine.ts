@@ -22,6 +22,9 @@ export interface Simulation24hResult {
   lossOfPowerSupplyProbabilityPct: number;
   minBatterySocPct: number;
   maxBatterySocPct: number;
+  initialBatterySocPct: number;
+  finalBatterySocPct: number;
+  reliesOnInitialCharge: boolean;
   isSelfSufficient: boolean;
 }
 
@@ -45,25 +48,67 @@ export function simulate24hEnergyBalance(
   nighttimeKwh: number,
   batteryUsableKwh: number,
   batteryCapacityTotalKwh: number,
-  initialBatterySocPct: number = 50.0
+  initialBatterySocPct: number = 50.0,
+  daylightHoursDesign?: number
 ): Simulation24hResult {
   const steps: HourlyEnergyStep[] = [];
   const maxBatteryWh = batteryCapacityTotalKwh * 1000.0;
-  const hasBattery = maxBatteryWh > 1e-6; // BUG-3: guard zero-capacity BESS (powerplant mode)
+  const hasBattery = maxBatteryWh > 1e-6; // guard zero-capacity BESS
   const minAllowedBatteryWh = (batteryCapacityTotalKwh - batteryUsableKwh) * 1000.0;
   let currentBatteryWh = hasBattery ? (maxBatteryWh * (initialBatterySocPct / 100.0)) : 0;
 
-  // Approximate bell curve irradiance fractions for 24 hours
-  // Daylight typically from hour 6 to 18, peaking at 12
-  const solarFractions = [
-    0, 0, 0, 0, 0, 0.01,
-    0.04, 0.08, 0.12, 0.15, 0.18, 0.19, // 6:00 to 11:00
-    0.19, 0.18, 0.15, 0.11, 0.07, 0.02, // 12:00 to 17:00
-    0, 0, 0, 0, 0, 0
-  ];
-  const sumFractions = solarFractions.reduce((a, b) => a + b, 0);
+  // Site Daylight Window around solar noon (12:00)
+  // Supports full physical astronomical range [0.0, 24.0] hours (polar night to midnight sun)
+  const D = daylightHoursDesign !== undefined
+    ? Math.max(0.0, Math.min(24.0, Number(daylightHoursDesign)))
+    : 12.0;
+  const tSunrise = 12.0 - D / 2.0;
+  const tSunset = 12.0 + D / 2.0;
 
-  const totalDailyGenerationKwh = totalPvCapacityKwp * peakSunHours * 0.78;
+  // Compute astronomical solar generation curve based on site daylight window
+  const solarWeights: number[] = new Array(24).fill(0);
+  const dayFracs: number[] = new Array(24).fill(0);
+  const nightFracs: number[] = new Array(24).fill(0);
+
+  for (let h = 0; h < 24; h++) {
+    const hStart = h;
+    const hEnd = h + 1;
+    const overlapStart = Math.max(hStart, tSunrise);
+    const overlapEnd = Math.min(hEnd, tSunset);
+    const dayFrac = Math.max(0, overlapEnd - overlapStart);
+    dayFracs[h] = dayFrac;
+    nightFracs[h] = 1.0 - dayFrac;
+
+    if (dayFrac > 0 && D > 0) {
+      const tMid = (overlapStart + overlapEnd) / 2.0;
+      const angle = (Math.PI * (tMid - tSunrise)) / D;
+      solarWeights[h] = dayFrac * Math.sin(Math.max(0, Math.min(Math.PI, angle)));
+    }
+  }
+
+  const sumSolarWeights = solarWeights.reduce((a, b) => a + b, 0);
+  const totalDailyGenerationKwh = D > 0 ? totalPvCapacityKwp * peakSunHours * 0.78 : 0;
+
+  // Calculate day and night load hourly distributions with strict conservation:
+  // Daytime load weights: midday peak (12:00-14:00) 1.3, standard 0.9
+  const dayLoadWeights: number[] = new Array(24).fill(0);
+  for (let h = 0; h < 24; h++) {
+    if (dayFracs[h] > 0) {
+      const middayBoost = (h >= 12 && h <= 14) ? 1.3 : 0.9;
+      dayLoadWeights[h] = dayFracs[h] * middayBoost;
+    }
+  }
+  const sumDayLoadWeights = dayLoadWeights.reduce((a, b) => a + b, 0);
+
+  // Nighttime load weights: evening peak (18:00-22:00) 1.4, deep night 0.7
+  const nightLoadWeights: number[] = new Array(24).fill(0);
+  for (let h = 0; h < 24; h++) {
+    if (nightFracs[h] > 0) {
+      const eveningBoost = (h >= 18 && h <= 22) ? 1.4 : 0.7;
+      nightLoadWeights[h] = nightFracs[h] * eveningBoost;
+    }
+  }
+  const sumNightLoadWeights = nightLoadWeights.reduce((a, b) => a + b, 0);
 
   let totalGen = 0;
   let totalLoad = 0;
@@ -74,24 +119,45 @@ export function simulate24hEnergyBalance(
 
   const chargeEff = 0.95;
   const dischargeEff = 0.95;
-  // Maximum continuous PCS / C-rate power limit (1.0C continuous rating)
   const maxPcsPowerKw = batteryCapacityTotalKwh * 1.0;
 
+  // Pre-calculate hourly loads with exact rounding and distribute residual without negative values
+  // BEFORE the simulation loop, guaranteeing load and deficit equality in polar / deficit hours
+  const targetTotalLoad = Number((daytimeKwh + nighttimeKwh).toFixed(2));
+  const hourlyLoadsKwh: number[] = new Array(24).fill(0);
   for (let h = 0; h < 24; h++) {
-    const isDay = h >= 6 && h < 18;
-    const solarKwh = (solarFractions[h] / sumFractions) * totalDailyGenerationKwh;
+    const loadDayKwh = sumDayLoadWeights > 0 ? (dayLoadWeights[h] / sumDayLoadWeights) * daytimeKwh : (daytimeKwh / 24.0);
+    const loadNightKwh = sumNightLoadWeights > 0 ? (nightLoadWeights[h] / sumNightLoadWeights) * nighttimeKwh : (nighttimeKwh / 24.0);
+    hourlyLoadsKwh[h] = Math.round((loadDayKwh + loadNightKwh) * 100) / 100;
+  }
+  const preSum = hourlyLoadsKwh.reduce((sum, v) => sum + v, 0);
+  let preResidual = Number((targetTotalLoad - preSum).toFixed(2));
 
-    // Distribute load realistically with strict partition normalization:
-    // Day: 3 peak hours @ 1.3 + 9 standard hours @ 0.9 => sum = 12.0
-    // Night: 5 evening hours @ 1.4 + 7 night hours @ 0.7 => sum = 11.9
-    let loadKwh = 0;
-    if (isDay) {
-      const dayFactor = (h >= 12 && h <= 14) ? 1.3 : 0.9;
-      loadKwh = (daytimeKwh * dayFactor) / 12.0;
-    } else {
-      const nightFactor = (h >= 18 && h <= 22) ? 1.4 : 0.7;
-      loadKwh = (nighttimeKwh * nightFactor) / 11.9;
+  if (Math.abs(preResidual) >= 0.005) {
+    // Sort hours by load descending so the largest load absorbs the residual without turning negative
+    const candidateIndices = Array.from({ length: 24 }, (_, i) => i)
+      .sort((a, b) => hourlyLoadsKwh[b] - hourlyLoadsKwh[a]);
+
+    for (const h of candidateIndices) {
+      if (hourlyLoadsKwh[h] + preResidual >= 0) {
+        hourlyLoadsKwh[h] = Number((hourlyLoadsKwh[h] + preResidual).toFixed(2));
+        preResidual = 0;
+        break;
+      } else if (hourlyLoadsKwh[h] > 0) {
+        const absorb = hourlyLoadsKwh[h];
+        preResidual = Number((preResidual + absorb).toFixed(2));
+        hourlyLoadsKwh[h] = 0;
+      }
     }
+  }
+
+  for (let h = 0; h < 24; h++) {
+    const solarKwh = sumSolarWeights > 0
+      ? (solarWeights[h] / sumSolarWeights) * totalDailyGenerationKwh
+      : 0;
+
+    // Load partition: exactly conserves daytimeKwh and nighttimeKwh
+    const loadKwh = hourlyLoadsKwh[h];
 
     const netKwh = solarKwh - loadKwh;
     let chargeKwh = 0;
@@ -157,18 +223,23 @@ export function simulate24hEnergyBalance(
 
   const lpspPct = totalLoad > 0 ? Number(((totalDeficit / totalLoad) * 100).toFixed(2)) : 0;
   const initialWh = hasBattery ? maxBatteryWh * (initialBatterySocPct / 100.0) : 0;
-  const isSelfSufficient = totalDeficit < 0.1 && (!hasBattery || currentBatteryWh >= initialWh * 0.98);
+  const finalSoc = hasBattery ? Math.round((currentBatteryWh / maxBatteryWh) * 100) : 100;
+  const reliesOnInitialCharge = hasBattery && totalDeficit < 0.1 && currentBatteryWh < initialWh * 0.98;
+  const isSelfSufficient = totalDeficit < 0.1 && (!hasBattery || !reliesOnInitialCharge);
 
   return {
     hourlySteps: steps,
     totalGeneration24hKwh: Math.round(totalGen * 10) / 10,
-    totalConsumption24hKwh: Math.round(totalLoad * 10) / 10,
+    totalConsumption24hKwh: Math.round((daytimeKwh + nighttimeKwh) * 10) / 10,
     totalSurplus24hKwh: Math.round(totalSurplus * 10) / 10,
     totalDeficit24hKwh: Math.round(totalDeficit * 10) / 10,
     energyNotServedKwh: Math.round(totalDeficit * 10) / 10,
     lossOfPowerSupplyProbabilityPct: lpspPct,
     minBatterySocPct: hasBattery ? minSoc : 100,
     maxBatterySocPct: hasBattery ? maxSoc : 100,
+    initialBatterySocPct,
+    finalBatterySocPct: finalSoc,
+    reliesOnInitialCharge,
     isSelfSufficient,
   };
 }

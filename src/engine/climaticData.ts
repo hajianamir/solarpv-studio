@@ -5,12 +5,17 @@
 import { ExternalDataGateway } from './dataGateway/externalDataGateway';
 import { estimateGeodesicDistanceToCoastKm } from './corrosion/saltCorrosionEngine';
 
-import type {
-  ClimateCity,
-  SoilClassification,
-  SiteGeotechnicalOverrides,
-  SiteDrainageCondition,
+import {
+  calculateDesignDaylightHours,
+  type ClimateCity,
+  type SoilClassification,
+  type SiteGeotechnicalOverrides,
+  type SiteDrainageCondition,
 } from './types/climateTypes';
+
+export {
+  calculateDesignDaylightHours,
+};
 
 export type {
   ClimateCity,
@@ -222,6 +227,8 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
     longitude: Number(lng.toFixed(4)),
     elevationM: Math.round(Math.max(0, 450 + (35 - absLat) * 20)),
     peakSunHours: Number(basePsh.toFixed(2)),
+    daylightHoursDesign: calculateDesignDaylightHours(lat).daylightHoursDesign,
+    nightHoursDesign: calculateDesignDaylightHours(lat).nightHoursDesign,
     tempMinC: Number(tMin.toFixed(1)),
     tempMaxC: Number(tMax.toFixed(1)),
     albedo: 0.20,

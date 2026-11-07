@@ -56,7 +56,7 @@ import {
 import { type Language, translations } from './i18n';
 
 import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
-import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
+import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoadsToWindow } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
 import { buildWaterfallArgs } from './engine/waterfallArgs';
@@ -78,6 +78,7 @@ import {
   calculateLightningProtection,
   type CompleteProtectionSystemResult,
   type ProtectionBomItem,
+  type DcSystemEarthingType,
 } from './engine/protectionBomEngine';
 import { simulate24hEnergyBalance, sizeDieselGenerator } from './engine/simulation24hEngine';
 import {
@@ -87,13 +88,10 @@ import {
 } from './engine/financialEngine';
 import { generateScenarios } from './engine/scenarioEngine';
 import {
-  CATALOG_MODULES,
-  CATALOG_INVERTERS,
-  getFullModulesCatalog,
-  getFullInvertersCatalog,
   isBifacialModule,
   resolveBifacialParams,
 } from './engine/equipmentCatalogData';
+import { CatalogRepository } from './engine/catalogRepository';
 import {
   designPowerplantBays,
   type InverterTechnology,
@@ -104,28 +102,37 @@ import {
 import { LoadProfilingTab } from './components/LoadProfilingTab';
 import { ClimateTab } from './components/ClimateTab';
 import { PvArrayEngineeringTab } from './components/PvArrayEngineeringTab';
-import { BessTab } from './components/BessTab';
-import { ProtectionBomTab } from './components/ProtectionBomTab';
-import { Simulation24hTab } from './components/Simulation24hTab';
 import { FinancialTab } from './components/FinancialTab';
 import { SingleLineDiagram } from './components/SingleLineDiagram';
-import { ScenarioComparisonTab } from './components/ScenarioComparisonTab';
 import { CatalogTab } from './components/CatalogTab';
-import { ThreeJsViewer } from './components/ThreeJsViewer';
-import { OfficialReportModal } from './components/OfficialReportModal';
 
-// Components - Advanced Powerplant & Utility Modules
-import { PowerplantCadLayoutTab } from './components/PowerplantCadLayoutTab';
-import { WaterfallLossTab } from './components/WaterfallLossTab';
-import { IvCurveTracerTab } from './components/IvCurveTracerTab';
-import { MvSubstationTab } from './components/MvSubstationTab';
-import { SolarPumpingTab } from './components/SolarPumpingTab';
-import { IranianRegulationsTab } from './components/IranianRegulationsTab';
-import { StructuralFoundationTab } from './components/StructuralFoundationTab';
-import { HarmonicsGridTab } from './components/HarmonicsGridTab';
-import { RFC3ReportsTab } from './components/RFC3ReportsTab';
+// Dynamically lazy-loaded modules for optimal initial bundle performance (MAIN-05)
+const ThreeJsViewer = React.lazy(() => import('./components/ThreeJsViewer'));
+const PowerplantCadLayoutTab = React.lazy(() => import('./components/PowerplantCadLayoutTab'));
+const HarmonicsGridTab = React.lazy(() => import('./components/HarmonicsGridTab').then((m) => ({ default: m.HarmonicsGridTab })));
+const MvSubstationTab = React.lazy(() => import('./components/MvSubstationTab'));
+const StructuralFoundationTab = React.lazy(() => import('./components/StructuralFoundationTab').then((m) => ({ default: m.StructuralFoundationTab })));
+const BessTab = React.lazy(() => import('./components/BessTab').then((m) => ({ default: m.BessTab })));
+const SolarPumpingTab = React.lazy(() => import('./components/SolarPumpingTab').then((m) => ({ default: m.SolarPumpingTab })));
+const IranianRegulationsTab = React.lazy(() => import('./components/IranianRegulationsTab').then((m) => ({ default: m.IranianRegulationsTab })));
+const ProtectionBomTab = React.lazy(() => import('./components/ProtectionBomTab'));
+const IvCurveTracerTab = React.lazy(() => import('./components/IvCurveTracerTab'));
+const RFC3ReportsTab = React.lazy(() => import('./components/RFC3ReportsTab'));
+const ScenarioComparisonTab = React.lazy(() => import('./components/ScenarioComparisonTab').then((m) => ({ default: m.ScenarioComparisonTab })));
+const Simulation24hTab = React.lazy(() => import('./components/Simulation24hTab').then((m) => ({ default: m.Simulation24hTab })));
+const OfficialReportModal = React.lazy(() => import('./components/OfficialReportModal').then((m) => ({ default: m.OfficialReportModal })));
+const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab').then((m) => ({ default: m.WaterfallLossTab })));
 import { migrateProjectToV3 } from './engine/core/projectMigration';
+import { createProjectTransferEnvelope, restoreProjectTransferEnvelope } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
+
+// Fallback component for lazy-loaded tabs (MAIN-05)
+const TabSuspenseFallback: React.FC<{ lang: string }> = ({ lang }) => (
+  <div className="h-72 rounded-xl border border-industrial-border bg-industrial-surface/50 flex flex-col items-center justify-center gap-3 text-slate-400">
+    <div className="w-8 h-8 rounded-full border-2 border-industrial-accent border-t-transparent animate-spin" />
+    <span className="text-xs font-mono">{lang === 'fa' ? 'در حال بارگذاری ماژول مهندسی...' : 'Loading Engineering Module...'}</span>
+  </div>
+);
 
 export type SystemMode = 'powerplant' | 'ongrid' | 'offgrid';
 
@@ -193,29 +200,46 @@ export const App: React.FC = () => {
       lng: city.longitude,
       climateData: city,
     });
+    // P3: Dynamically normalize loads state against active climate window to preserve energy
+    setLoads((prevLoads) => {
+      const { items } = normalizeLoadsToWindow(prevLoads, {
+        daylightHoursDesign: city.daylightHoursDesign,
+        nightHoursDesign: city.nightHoursDesign,
+      });
+      const hasChanged = items.some(
+        (item, idx) =>
+          item.dayHours !== prevLoads[idx]?.dayHours || item.nightHours !== prevLoads[idx]?.nightHours
+      );
+      return hasChanged ? items : prevLoads;
+    });
   }, [city]);
 
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
 
+  const catalogRepo = CatalogRepository.getInstance();
+  const initialModules = catalogRepo.getModules();
+  const initialInverters = catalogRepo.getInverters();
+  const defaultMod = initialModules[0];
+
   const [selectedModule, setSelectedModule] = useState<ModuleSpecs>({
-    manufacturer: CATALOG_MODULES[0].manufacturer,
-    modelName: CATALOG_MODULES[0].modelName,
-    pmpWatts: CATALOG_MODULES[0].pmpWatts,
-    vocVolts: CATALOG_MODULES[0].vocVolts,
-    vmpVolts: CATALOG_MODULES[0].vmpVolts,
-    iscAmps: CATALOG_MODULES[0].iscAmps,
-    impAmps: CATALOG_MODULES[0].impAmps,
-    tempCoeffVocPct: CATALOG_MODULES[0].tempCoeffVocPct,
-    tempCoeffPmpPct: CATALOG_MODULES[0].tempCoeffPmpPct,
-    noctC: 45.0,
-    lengthM: CATALOG_MODULES[0].lengthMm / 1000.0,
-    widthM: CATALOG_MODULES[0].widthMm / 1000.0,
-    bifacialityFactor: CATALOG_MODULES[0].bifacialityFactor,
+    manufacturer: defaultMod.manufacturer,
+    modelName: defaultMod.modelName,
+    pmpWatts: defaultMod.pmpWatts,
+    vocVolts: defaultMod.vocVolts,
+    vmpVolts: defaultMod.vmpVolts,
+    iscAmps: defaultMod.iscAmps,
+    impAmps: defaultMod.impAmps,
+    tempCoeffVocPct: defaultMod.tempCoeffVocPct,
+    tempCoeffPmpPct: defaultMod.tempCoeffPmpPct,
+    noctC: defaultMod.noctC ?? 45.0,
+    lengthM: defaultMod.lengthMm / 1000.0,
+    widthM: defaultMod.widthMm / 1000.0,
+    bifacialityFactor: defaultMod.bifacialityFactor,
   });
 
   // Default utility inverter
-  const defaultUtilInv = CATALOG_INVERTERS.find((i) => i.id === 'inv-huawei-330ktl') || CATALOG_INVERTERS[0];
+  const defaultUtilInv = initialInverters.find((i) => i.id === 'inv-huawei-330ktl') || initialInverters[0];
 
   const [selectedInverter, setSelectedInverter] = useState<InverterSpecs>({
     manufacturer: defaultUtilInv.manufacturer,
@@ -234,6 +258,7 @@ export const App: React.FC = () => {
   const [selectedChemistry, setSelectedChemistry] = useState<BatteryChemistry>('lifepo4');
   const [autonomyDays, setAutonomyDays] = useState<number>(1.5);
   const [outageHours, setOutageHours] = useState<number>(6); // For ongrid mode blackout calculation
+  const [dcSystemEarthing, setDcSystemEarthing] = useState<DcSystemEarthingType>('floating');
   const [targetPowerplantCapacityKw, setTargetPowerplantCapacityKw] = useState<number>(1000); // 1MW default
   const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
   // PR-2a-7: single-axis tracker config (null = fixed tilt)
@@ -259,24 +284,38 @@ export const App: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [commandSearchQuery, setCommandSearchQuery] = useState<string>('');
+  const [paletteSelectedIndex, setPaletteSelectedIndex] = useState<number>(0);
   const [isProjectJsonModalOpen, setIsProjectJsonModalOpen] = useState<boolean>(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Autofocus search input when Command Palette opens
+  // Dynamically synchronize HTML document lang and dir with user language preference (P3-03)
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+  }, [lang]);
+
+  // Autofocus search input when Command Palette opens and reset index
   useEffect(() => {
     if (isCommandPaletteOpen) {
+      setPaletteSelectedIndex(0);
       setTimeout(() => searchInputRef.current?.focus(), 60);
     } else {
       setCommandSearchQuery('');
+      setPaletteSelectedIndex(0);
     }
   }, [isCommandPaletteOpen]);
+
+  useEffect(() => {
+    setPaletteSelectedIndex(0);
+  }, [commandSearchQuery]);
 
   // Auto-switch inverters when Inverter Technology changes
   const handleInverterTechChange = (tech: InverterTechnology) => {
     setInverterTech(tech);
+    const inverters = catalogRepo.getInverters();
     if (tech === 'mv_turnkey') {
-      const turnkey = CATALOG_INVERTERS.find((i) => i.technology === 'mv_turnkey');
+      const turnkey = inverters.find((i) => i.technology === 'mv_turnkey');
       if (turnkey) {
         setSelectedInverter({
           manufacturer: turnkey.manufacturer,
@@ -293,7 +332,7 @@ export const App: React.FC = () => {
         });
       }
     } else {
-      const stringInv = CATALOG_INVERTERS.find((i) => i.technology === 'string_inverter');
+      const stringInv = inverters.find((i) => i.technology === 'string_inverter');
       if (stringInv) {
         setSelectedInverter({
           manufacturer: stringInv.manufacturer,
@@ -428,10 +467,10 @@ export const App: React.FC = () => {
     }
   };
 
-  // Export project to clean v3.0.0 JSON file
+  // Export project with full transfer envelope and custom equipment snapshots (OFF-01)
   const handleExportProjectJson = () => {
     const projectData = {
-      version: '3.0.0',
+      version: '3.1.0',
       savedAt: new Date().toISOString(),
       traceId: generateTraceId(),
       projectName,
@@ -452,12 +491,25 @@ export const App: React.FC = () => {
       userPricing,
       trackerConfig,
     };
-    const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+    const envelope = createProjectTransferEnvelope({
+      projectName,
+      projectData,
+      metadata: {
+        docVersion: '3.1.0',
+        companyName: 'SolarPV Studio Engineering Platform',
+        leadEngineer: 'Project Lead',
+      },
+      activeModule: selectedModule,
+      activeInverter: selectedInverter,
+    });
+    const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${projectName.replace(/\s+/g, '_')}_v3.json`;
+    a.download = `${projectName.replace(/\s+/g, '_')}.solarpv.json`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     setIsProjectJsonModalOpen(false);
   };
@@ -480,7 +532,14 @@ export const App: React.FC = () => {
   };
 
   // 1. Analyze Loads
-  const loadAnalysis = useMemo(() => analyzeLoadProfile(loads), [loads]);
+  const loadAnalysis = useMemo(
+    () =>
+      analyzeLoadProfile(loads, {
+        daylightHoursDesign: city.daylightHoursDesign,
+        nightHoursDesign: city.nightHoursDesign,
+      }),
+    [loads, city.daylightHoursDesign, city.nightHoursDesign]
+  );
 
   // 2. Compute Target Energy Demand Based on System Mode
   // ============================================================================
@@ -645,11 +704,15 @@ export const App: React.FC = () => {
     const contWatts =
       systemMode === 'powerplant'
         ? (targetPowerplantCapacityKw || 1000) * 1000
-        : loadAnalysis.continuousActivePowerWatts;
+        : (typeof loadAnalysis.acGoverningContinuousWatts === 'number'
+            ? loadAnalysis.acGoverningContinuousWatts
+            : (loadAnalysis.continuousActivePowerWatts || 0));
     const peakWatts =
       systemMode === 'powerplant'
         ? (targetPowerplantCapacityKw || 1000) * 1100
-        : loadAnalysis.maxSurgePeakPowerWatts;
+        : (typeof loadAnalysis.acGoverningSurgeWatts === 'number'
+            ? loadAnalysis.acGoverningSurgeWatts
+            : (loadAnalysis.maxSurgePeakPowerWatts || 0));
 
     return evaluateInverterClustering(
       contWatts,
@@ -666,6 +729,7 @@ export const App: React.FC = () => {
       loadAnalysis.totalDailyEnergyKwh,
       loadAnalysis.nighttimeEnergyWh / 1000.0,
       outageHours || 6,
+      city.nightHoursDesign
     );
 
     return sizeBatteryBank(
@@ -673,9 +737,14 @@ export const App: React.FC = () => {
       systemMode === 'powerplant' ? 0 : autonomyDays,
       selectedChemistry,
       inverterClustering.recommendedDcVoltageVdc || 48,
-      loadAnalysis.maxSurgePeakPowerWatts,
-      loadAnalysis.continuousActivePowerWatts,
-      city.tempMinC
+      loadAnalysis.governingSurgeWatts || loadAnalysis.maxSurgePeakPowerWatts,
+      loadAnalysis.governingContinuousWatts || loadAnalysis.continuousActivePowerWatts,
+      city.tempMinC,
+      100,
+      loadAnalysis.nighttimeEnergyWh / 1000.0,
+      systemMode,
+      outageHours || 6,
+      city.nightHoursDesign
     );
   }, [systemMode, loadAnalysis, outageHours, autonomyDays, selectedChemistry, inverterClustering, city]);
 
@@ -755,7 +824,9 @@ export const App: React.FC = () => {
       capacityKw,
       100,
       'solidly_grounded',
-      isUtil
+      isUtil,
+      false,
+      dcSystemEarthing
     );
 
     const lightning = calculateLightningProtection(
@@ -769,7 +840,7 @@ export const App: React.FC = () => {
       lightning,
       protectionBom: [] as ProtectionBomItem[],
     };
-  }, [arrayDesign, selectedModule, selectedInverter, inverterClustering, systemMode, targetPowerplantCapacityKw, city]);
+  }, [arrayDesign, selectedModule, selectedInverter, inverterClustering, systemMode, targetPowerplantCapacityKw, city, dcSystemEarthing]);
 
   // 8. 24-Hour Balance Simulation
   const simulationResult = useMemo(() => {
@@ -779,7 +850,9 @@ export const App: React.FC = () => {
       loadAnalysis.daytimeEnergyWh / 1000.0,
       loadAnalysis.nighttimeEnergyWh / 1000.0,
       batterySizing.usableCapacityKwh,
-      batterySizing.grossCapacityKwh
+      batterySizing.grossCapacityKwh,
+      50.0,
+      city.daylightHoursDesign
     );
   }, [arrayDesign, city, loadAnalysis, batterySizing]);
 
@@ -788,11 +861,15 @@ export const App: React.FC = () => {
     const contWatts =
       systemMode === 'powerplant'
         ? Math.max(15000, (targetPowerplantCapacityKw || 1000) * 15) // Substation auxiliary power (~1.5%)
-        : loadAnalysis.continuousActivePowerWatts;
+        : (typeof loadAnalysis.acGoverningContinuousWatts === 'number'
+            ? loadAnalysis.acGoverningContinuousWatts
+            : (loadAnalysis.continuousActivePowerWatts || 0));
     const peakWatts =
       systemMode === 'powerplant'
         ? contWatts * 2.2
-        : loadAnalysis.maxSurgePeakPowerWatts;
+        : (typeof loadAnalysis.acGoverningSurgeWatts === 'number'
+            ? loadAnalysis.acGoverningSurgeWatts
+            : (loadAnalysis.maxSurgePeakPowerWatts || 0));
 
     return sizeDieselGenerator(
       contWatts,
@@ -883,10 +960,13 @@ export const App: React.FC = () => {
     );
   }, [arrayDesign, loadAnalysis, autonomyDays, userPricing.usdToTomanRate]);
 
-  // Handler for restoring imported project from JSON with three-state safety model
+  // Handler for restoring imported project from JSON with three-state safety model & custom equipment restoration (OFF-01, OFF-02)
   const handleImportProject = (importedData: any) => {
     try {
-      const migrationResult = migrateProjectToV3(importedData);
+      const envelopeResult = importedData?.migrationStatus
+        ? importedData
+        : restoreProjectTransferEnvelope(importedData);
+      const migrationResult = envelopeResult.migrationResult || envelopeResult;
 
       // State 3: BLOCKED INCONSISTENT
       if (migrationResult.migrationStatus === 'BLOCKED_INCONSISTENT') {
@@ -1402,6 +1482,30 @@ export const App: React.FC = () => {
                 }
                 value={commandSearchQuery}
                 onChange={(e) => setCommandSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setPaletteSelectedIndex((prev) =>
+                      filteredCommandTabs.length > 0 ? (prev + 1) % filteredCommandTabs.length : 0
+                    );
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setPaletteSelectedIndex((prev) =>
+                      filteredCommandTabs.length > 0
+                        ? (prev - 1 + filteredCommandTabs.length) % filteredCommandTabs.length
+                        : 0
+                    );
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (filteredCommandTabs.length > 0 && filteredCommandTabs[paletteSelectedIndex]) {
+                      setActiveTab(filteredCommandTabs[paletteSelectedIndex].id);
+                      setIsCommandPaletteOpen(false);
+                    }
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setIsCommandPaletteOpen(false);
+                  }
+                }}
                 className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none font-sans"
               />
               <button
@@ -1419,33 +1523,39 @@ export const App: React.FC = () => {
                   {lang === 'fa' ? 'ماژولی با این عنوان یافت نشد' : 'No engineering modules found'}
                 </div>
               ) : (
-                filteredCommandTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setIsCommandPaletteOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-lg transition text-right ${
-                      activeTab === tab.id
-                        ? 'bg-sky-600/20 text-sky-300 border border-sky-500/40'
-                        : 'text-slate-300 hover:bg-[#141C2E] hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-1.5 rounded bg-slate-800/80 text-sky-400">{tab.icon}</div>
-                      <div>
-                        <strong className="block text-xs text-white">{tab.title}</strong>
-                        {tab.code && <span className="text-[10px] text-slate-400 font-mono">{tab.code}</span>}
+                filteredCommandTabs.map((tab, idx) => {
+                  const isHighlighted = idx === paletteSelectedIndex;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsCommandPaletteOpen(false);
+                      }}
+                      onMouseEnter={() => setPaletteSelectedIndex(idx)}
+                      className={`w-full flex items-center justify-between p-2.5 rounded-lg transition text-right ${
+                        isHighlighted
+                          ? 'bg-sky-600/30 text-white border border-sky-400 ring-1 ring-sky-500/50 shadow-sm'
+                          : activeTab === tab.id
+                          ? 'bg-sky-600/20 text-sky-300 border border-sky-500/40'
+                          : 'text-slate-300 hover:bg-[#141C2E] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded bg-slate-800/80 text-sky-400">{tab.icon}</div>
+                        <div>
+                          <strong className="block text-xs text-white">{tab.title}</strong>
+                          {tab.code && <span className="text-[10px] text-slate-400 font-mono">{tab.code}</span>}
+                        </div>
                       </div>
-                    </div>
-                    {tab.badge && (
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#1F2937] text-amber-300 border border-slate-700">
-                        {tab.badge}
-                      </span>
-                    )}
-                  </button>
-                ))
+                      {tab.badge && (
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#1F2937] text-amber-300 border border-slate-700">
+                          {tab.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
 
@@ -1503,8 +1613,8 @@ export const App: React.FC = () => {
 
             <p className="text-slate-300 leading-relaxed text-[11px]">
               {lang === 'fa'
-                ? 'می‌توانید کل پیکربندی پروژه را به صورت فایل استاندارد JSON نسخه v3.0.0 دانلود کرده و یا فایل پروژه قبلی را بارگذاری نمایید.'
-                : 'Export the complete project configuration as a validated v3.0.0 JSON file or restore an existing project file.'}
+                ? 'می‌توانید کل پیکربندی پروژه را به صورت پاکت استاندارد مهندسی JSON (نسخه v3.1.0 با اسنپ‌شات کامل تجهیزات سفارشی) دانلود کرده و یا فایل پروژه را بارگذاری نمایید.'
+                : 'Export complete project configuration as a validated v3.1.0 JSON transfer envelope with custom equipment snapshots or restore an existing project file.'}
             </p>
 
             <div className="grid grid-cols-2 gap-3 pt-2">
@@ -1513,8 +1623,8 @@ export const App: React.FC = () => {
                 className="p-3 bg-[#141C2E] hover:bg-[#1E293B] border border-sky-500/40 rounded-lg text-center space-y-1.5 transition text-sky-300 font-bold"
               >
                 <Download className="w-5 h-5 mx-auto text-sky-400" />
-                <span className="block text-xs">{lang === 'fa' ? 'دانلود فایل JSON' : 'Export JSON'}</span>
-                <span className="block text-[10px] text-slate-400 font-normal">v3.0.0 Compliant</span>
+                <span className="block text-xs">{lang === 'fa' ? 'دانلود پاکت JSON' : 'Export Envelope'}</span>
+                <span className="block text-[10px] text-slate-400 font-normal">v3.1.0 Envelope (OFF-01)</span>
               </button>
 
               <button
@@ -2078,10 +2188,11 @@ export const App: React.FC = () => {
                     {/* Capacity & Bay Settings */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
                       <div>
-                        <label className="text-slate-300 font-bold block mb-1">
+                        <label htmlFor="target-plant-capacity-input" className="text-slate-300 font-bold block mb-1">
                           {lang === 'fa' ? 'ظرفیت هدف نیروگاه (kW AC):' : 'Target Plant Capacity (kW AC):'}
                         </label>
                         <input
+                          id="target-plant-capacity-input"
                           type="number"
                           step="500"
                           value={targetPowerplantCapacityKw}
@@ -2096,10 +2207,11 @@ export const App: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="text-slate-300 font-bold block mb-1">
+                        <label htmlFor="custom-bays-count-input" className="text-slate-300 font-bold block mb-1">
                           {lang === 'fa' ? 'تعداد بی‌های خروجی MV (بهینه‌سازی نرم‌افزار):' : 'MV Output Bays Count (Optimized):'}
                         </label>
                         <input
+                          id="custom-bays-count-input"
                           type="number"
                           min="1"
                           max="20"
@@ -2115,10 +2227,11 @@ export const App: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="text-slate-300 font-bold block mb-1">
+                        <label htmlFor="mv-voltage-select" className="text-slate-300 font-bold block mb-1">
                           {lang === 'fa' ? 'سطح ولتاژ باسبار جمع‌آوری (MV Busbar):' : 'MV Collector Busbar Voltage Level:'}
                         </label>
                         <select
+                          id="mv-voltage-select"
                           value={mvVoltageKv}
                           onChange={(e) => setMvVoltageKv(Number(e.target.value))}
                           className="studio-input w-full font-mono font-bold text-emerald-300"
@@ -2173,12 +2286,13 @@ export const App: React.FC = () => {
                 {/* Specific Parameter Config for On-Grid / Off-Grid */}
                 {systemMode === 'ongrid' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                    <label className="text-xs font-bold text-sky-300 block">
+                    <label htmlFor="outage-hours-input" className="text-xs font-bold text-sky-300 block">
                       {lang === 'fa'
                         ? 'مدت زمان انتظار خاموشی و قطعی شبکه (ساعت در روز / Blackout Hours):'
                         : 'Grid Blackout & Outage Hours Per Day:'}
                     </label>
                     <input
+                      id="outage-hours-input"
                       type="number"
                       value={outageHours}
                       onChange={(e) => setOutageHours(Math.max(1, Math.min(24, Number(e.target.value))))}
@@ -2194,12 +2308,13 @@ export const App: React.FC = () => {
 
                 {systemMode === 'offgrid' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                    <label className="text-xs font-bold text-emerald-300 block">
+                    <label htmlFor="autonomy-days-input" className="text-xs font-bold text-emerald-300 block">
                       {lang === 'fa'
                         ? 'روزهای خودکفایی و پشتیبانی ابری (Autonomy Days):'
                         : 'Autonomy Days (Days without Sunshine):'}
                     </label>
                     <input
+                      id="autonomy-days-input"
                       type="number"
                       step="0.5"
                       value={autonomyDays}
@@ -2217,8 +2332,9 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {/* SITE & CLIMATE MAP TAB */}
-          {activeTab === 'climate' && (
+          <React.Suspense fallback={<TabSuspenseFallback lang={lang} />}>
+            {/* SITE & CLIMATE MAP TAB */}
+            {activeTab === 'climate' && (
             <ClimateTab
               selectedCity={city}
               onCityChange={(newCity) => {
@@ -2248,6 +2364,13 @@ export const App: React.FC = () => {
               loads={loads}
               onLoadsChange={setLoads}
               analysisResult={loadAnalysis}
+              climateWindow={{
+                daylightHoursDesign: city.daylightHoursDesign,
+                nightHoursDesign: city.nightHoursDesign,
+              }}
+              systemMode={systemMode}
+              outageHours={outageHours}
+              peakSunHours={city.peakSunHours}
               lang={lang}
             />
           )}
@@ -2283,6 +2406,9 @@ export const App: React.FC = () => {
               batterySizing={batterySizing}
               systemTopology={systemMode === 'ongrid' ? 'hybrid' : 'off_grid'}
               onTopologyChange={(top) => setSystemMode(top === 'hybrid' ? 'ongrid' : 'offgrid')}
+              nighttimeKwh={loadAnalysis.nighttimeEnergyWh / 1000.0}
+              outageHours={outageHours}
+              nightHoursDesign={city.nightHoursDesign}
               lang={lang}
             />
           )}
@@ -2325,6 +2451,9 @@ export const App: React.FC = () => {
               systemDcVoltage={inverterClustering.recommendedDcVoltageVdc || 48}
               isThreePhase={selectedInverter.isThreePhase}
               ambientTempC={city.tempMaxC}
+              totalModulesCount={arrayDesign.totalModulesCount}
+              dcSystemEarthing={dcSystemEarthing}
+              onDcSystemEarthingChange={setDcSystemEarthing}
               installationEnvironment={siteOverrides?.installationEnvironment || 'ground_mount'}
               lang={lang}
             />
@@ -2428,6 +2557,10 @@ export const App: React.FC = () => {
               dcCableMm2={protectionSystem.cableRuns[0]?.totalEffectiveCrossSectionMm2 || 6}
               batCableMm2={protectionSystem.cableRuns[1]?.totalEffectiveCrossSectionMm2 || 35}
               acCableMm2={protectionSystem.cableRuns[2]?.totalEffectiveCrossSectionMm2 || 50}
+              isUtilityPowerplant={systemMode === 'powerplant'}
+              targetGroundResistanceOhms={protectionSystem.earthing.targetGroundResistanceOhms}
+              batteryRackBondingMm2={protectionSystem.earthing.batteryRackBondingConductorMm2}
+              dcSystemEarthing={dcSystemEarthing}
               lang={lang}
             />
           )}
@@ -2437,64 +2570,73 @@ export const App: React.FC = () => {
 
           {/* 3D VIEWER TAB */}
           {activeTab === '3d_viewer' && (
-            <ThreeJsViewer
-              lang={lang}
-              city={city}
-              site={selectedSite}
-              plantCapacityKw={
-                systemMode === 'powerplant'
-                  ? (targetPowerplantCapacityKw || 1000)
-                  : activePlantCapacityKwp
+            <React.Suspense
+              fallback={
+                <div className="h-96 rounded-xl border border-industrial-border bg-industrial-surface/50 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <div className="w-8 h-8 rounded-full border-2 border-industrial-accent border-t-transparent animate-spin" />
+                  <span className="text-sm font-medium">{lang === 'fa' ? 'در حال راه‌اندازی موتور سه‌بعدی Three.js...' : 'Initializing Three.js 3D Engine...'}</span>
+                </div>
               }
-              plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
-              annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
-              waterfallShadingLossPct={shadingLoss3dPct !== null ? shadingLoss3dPct : 2.4}
-              simulationMode={shadingSimulationMode}
-              onSimulationModeChange={setShadingSimulationMode}
-              arrayDesign={{
-                totalPvCapacityKwp: activePlantCapacityKwp,
-                totalModulesCount: activeModulesCount,
-                interRowSpacingM: arrayDesign.interRowSpacingM,
-                tiltDeg: city.optimalTiltAnnualDeg,
-                azimuthDeg: 0,
-                modulesPerString: arrayDesign.modulesPerString,
-                stringsCount: arrayDesign.parallelStringsCount,
-              }}
-              moduleSpecs={{
-                lengthM: selectedModule.lengthM,
-                widthM: selectedModule.widthM,
-                pmpWatts: selectedModule.pmpWatts,
-                modelName: selectedModule.modelName,
-              }}
-              installationEnvironment={
-                siteOverrides?.installationEnvironment ||
-                (systemMode === 'powerplant' ? 'ground_mount' : 'rooftop_flat_concrete')
-              }
-              onShadingLossChange={(loss) => {
-                if (loss === null) {
-                  dispatchShadingLifecycle({ type: 'REVERT' });
+            >
+              <ThreeJsViewer
+                lang={lang}
+                city={city}
+                site={selectedSite}
+                plantCapacityKw={
+                  systemMode === 'powerplant'
+                    ? (targetPowerplantCapacityKw || 1000)
+                    : activePlantCapacityKwp
                 }
-              }}
-              appliedShading={appliedShadingRecord}
-              isShadingStale={isShadingStale}
-              onApplyShading={(record) => {
-                if (record.simulationMode) {
-                  setShadingSimulationMode(record.simulationMode);
+                plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
+                annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+                waterfallShadingLossPct={shadingLoss3dPct !== null ? shadingLoss3dPct : 2.4}
+                simulationMode={shadingSimulationMode}
+                onSimulationModeChange={setShadingSimulationMode}
+                arrayDesign={{
+                  totalPvCapacityKwp: activePlantCapacityKwp,
+                  totalModulesCount: activeModulesCount,
+                  interRowSpacingM: arrayDesign.interRowSpacingM,
+                  tiltDeg: city.optimalTiltAnnualDeg,
+                  azimuthDeg: 0,
+                  modulesPerString: arrayDesign.modulesPerString,
+                  stringsCount: arrayDesign.parallelStringsCount,
+                }}
+                moduleSpecs={{
+                  lengthM: selectedModule.lengthM,
+                  widthM: selectedModule.widthM,
+                  pmpWatts: selectedModule.pmpWatts,
+                  modelName: selectedModule.modelName,
+                }}
+                installationEnvironment={
+                  siteOverrides?.installationEnvironment ||
+                  (systemMode === 'powerplant' ? 'ground_mount' : 'rooftop_flat_concrete')
                 }
-                dispatchShadingLifecycle({
-                  type: 'APPLY',
-                  lossPct: record.lossPct,
-                  capacityKwp: record.capacityKwp,
-                  projectCapacityKwp: activePlantCapacityKwp,
-                  appliedAtIso: record.appliedAtIso,
-                  cityId: city.id,
-                  source: record.source,
-                  signatureHash: record.signatureHash || currentShadingSignature,
-                  simulationMode: record.simulationMode ?? shadingSimulationMode,
-                });
-              }}
-              onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
-            />
+                onShadingLossChange={(loss) => {
+                  if (loss === null) {
+                    dispatchShadingLifecycle({ type: 'REVERT' });
+                  }
+                }}
+                appliedShading={appliedShadingRecord}
+                isShadingStale={isShadingStale}
+                onApplyShading={(record) => {
+                  if (record.simulationMode) {
+                    setShadingSimulationMode(record.simulationMode);
+                  }
+                  dispatchShadingLifecycle({
+                    type: 'APPLY',
+                    lossPct: record.lossPct,
+                    capacityKwp: record.capacityKwp,
+                    projectCapacityKwp: activePlantCapacityKwp,
+                    appliedAtIso: record.appliedAtIso,
+                    cityId: city.id,
+                    source: record.source,
+                    signatureHash: record.signatureHash || currentShadingSignature,
+                    simulationMode: record.simulationMode ?? shadingSimulationMode,
+                  });
+                }}
+                onRevertShading={() => dispatchShadingLifecycle({ type: 'REVERT' })}
+              />
+            </React.Suspense>
           )}
 
           {/* SCENARIOS COMPARISON TAB (Only for Battery modes) */}
@@ -2523,15 +2665,16 @@ export const App: React.FC = () => {
           {/* EQUIPMENT CATALOG TAB */}
           {activeTab === 'catalog' && <CatalogTab lang={lang} />}
 
-          {/* RFC 3.0 COMPREHENSIVE REPORTS TAB */}
-          {activeTab === 'rfc3_reports' && (
-            <RFC3ReportsTab
-              lang={lang}
-              onJumpTab={(t) => setActiveTab(t)}
-              city={city}
-              siteOverrides={siteOverrides}
-            />
-          )}
+            {/* RFC 3.0 COMPREHENSIVE REPORTS TAB */}
+            {activeTab === 'rfc3_reports' && (
+              <RFC3ReportsTab
+                lang={lang}
+                onJumpTab={(t) => setActiveTab(t)}
+                city={city}
+                siteOverrides={siteOverrides}
+              />
+            )}
+          </React.Suspense>
         </main>
 
         {/* 24px Industrial CAD/SCADA Telemetry Status Bar */}
@@ -2570,29 +2713,31 @@ export const App: React.FC = () => {
 
       {/* OFFICIAL EPC REPORT MODAL */}
       {showReportModal && (
-        <OfficialReportModal
-          projectName={projectName}
-          systemMode={systemMode}
-          city={city}
-          loadAnalysis={loadAnalysis}
-          module={selectedModule}
-          inverter={selectedInverter}
-          arrayDesign={arrayDesign}
-          batterySizing={batterySizing}
-          protection={protectionSystem}
-          simulation={simulationResult}
-          generator={generatorSizing}
-          financial={financialResult}
-          bayArchitecture={bayArchitecture}
-          siteOverrides={siteOverrides}
-          waterfallReport={waterfallReport}
-          appliedShading={appliedShadingRecord}
-          isShadingStale={isShadingStale}
-          bifacialGainPct={bifacialGainPct}
-          onClose={() => setShowReportModal(false)}
-          onImportProject={handleImportProject}
-          lang={lang}
-        />
+        <React.Suspense fallback={null}>
+          <OfficialReportModal
+            projectName={projectName}
+            systemMode={systemMode}
+            city={city}
+            loadAnalysis={loadAnalysis}
+            module={selectedModule}
+            inverter={selectedInverter}
+            arrayDesign={arrayDesign}
+            batterySizing={batterySizing}
+            protection={protectionSystem}
+            simulation={simulationResult}
+            generator={generatorSizing}
+            financial={financialResult}
+            bayArchitecture={bayArchitecture}
+            siteOverrides={siteOverrides}
+            waterfallReport={waterfallReport}
+            appliedShading={appliedShadingRecord}
+            isShadingStale={isShadingStale}
+            bifacialGainPct={bifacialGainPct}
+            onClose={() => setShowReportModal(false)}
+            onImportProject={handleImportProject}
+            lang={lang}
+          />
+        </React.Suspense>
       )}
 
     </div>

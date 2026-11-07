@@ -29,6 +29,7 @@ import {
   buildSceneFromProjectDesign,
   calculateRayTracedShadingFactor,
   generateTableMeshSamplePoints,
+  computeTableShadingGeometricMesh,
   type PvTable3D,
   type RoofPlane,
   type Scene3DState,
@@ -2404,6 +2405,381 @@ async function runM01ToM22TestSuite(): Promise<void> {
       invRepRes?.discrepancies?.some((d: string) => d.includes('invalid inverterCount')),
       'P3: Report rejects snapshot containing invalid inverterCount as unreconciled',
       `isReconciled=${invRepRes?.isReconciledAgainstSnapshot}`
+    );
+  }
+
+  // P3 Polish: Unknown /api and /api/* Route 404 JSON Handler (MAIN-01)
+  {
+    const api404Route = (app as any)._router.stack
+      .find((r: any) => r.route && (r.route.path === '/api/*' || (Array.isArray(r.route.path) && r.route.path.includes('/api'))))
+      ?.route.stack[0].handle;
+
+    let notFoundCode1 = 0;
+    let notFoundBody1: any = null;
+    await api404Route(
+      { originalUrl: '/api/v1/nonexistent/service' },
+      {
+        status(c: number) { notFoundCode1 = c; return this; },
+        json(d: any) { notFoundBody1 = d; return this; },
+      }
+    );
+
+    let notFoundCode2 = 0;
+    let notFoundBody2: any = null;
+    await api404Route(
+      { originalUrl: '/api' },
+      {
+        status(c: number) { notFoundCode2 = c; return this; },
+        json(d: any) { notFoundBody2 = d; return this; },
+      }
+    );
+
+    assert(
+      notFoundCode1 === 404 && notFoundBody1?.error === 'API endpoint not found' &&
+      notFoundCode2 === 404 && notFoundBody2?.error === 'API endpoint not found',
+      'P3/MAIN-01: Both /api and /api/* routes return 404 JSON response instead of SPA HTML',
+      `code1=${notFoundCode1}, code2=${notFoundCode2}`
+    );
+  }
+
+  // P3 Polish: Global Security Headers Middleware with CSP (MAIN-02)
+  {
+    const secHeadersMiddleware = (app as any)._router.stack
+      .find((r: any) => r.name === 'securityHeadersMiddleware')
+      ?.handle;
+
+    const setHeaders: Record<string, string> = {};
+    const mockRes = {
+      setHeader(k: string, v: string) { setHeaders[k] = v; },
+    };
+    let nextCalled = false;
+    if (secHeadersMiddleware) {
+      secHeadersMiddleware({}, mockRes, () => { nextCalled = true; });
+    }
+
+    assert(
+      setHeaders['X-Content-Type-Options'] === 'nosniff' &&
+      setHeaders['X-Frame-Options'] === 'SAMEORIGIN' &&
+      setHeaders['Referrer-Policy'] === 'strict-origin-when-cross-origin' &&
+      Boolean(
+        setHeaders['Content-Security-Policy'] &&
+        setHeaders['Content-Security-Policy'].includes("default-src 'self'") &&
+        setHeaders['Content-Security-Policy'].includes('arcgisonline.com') &&
+        setHeaders['Content-Security-Policy'].includes('opentopomap.org') &&
+        setHeaders['Content-Security-Policy'].includes('nominatim.openstreetmap.org') &&
+        setHeaders['Content-Security-Policy'].includes('overpass-api.de') &&
+        setHeaders['Content-Security-Policy'].includes('rest.isric.org')
+      ) &&
+      nextCalled,
+      'P3/MAIN-02: Global security headers middleware applies nosniff, SAMEORIGIN, and complete functional Content-Security-Policy',
+      `headers=${JSON.stringify(setHeaders)}`
+    );
+  }
+
+  // P3 Polish: JSON Body Parser SyntaxError & 413 Payload Too Large Handler (MAIN-01)
+  {
+    const jsonErrHandler = (app as any)._router.stack
+      .find((r: any) => r.name === 'jsonErrorHandler')
+      ?.handle;
+
+    const synErr = new SyntaxError('Unexpected token in JSON');
+    (synErr as any).status = 400;
+    (synErr as any).body = '{"bad: true}';
+
+    let jsonErrCode = 0;
+    let jsonErrBody: any = null;
+    if (jsonErrHandler) {
+      jsonErrHandler(synErr, { path: '/api/v1/projects' }, {
+        status(c: number) { jsonErrCode = c; return this; },
+        json(d: any) { jsonErrBody = d; return this; },
+      }, () => {});
+    }
+
+    const largeErr = new Error('Payload too large');
+    (largeErr as any).type = 'entity.too.large';
+    (largeErr as any).status = 413;
+
+    let largeErrCode = 0;
+    let largeErrBody: any = null;
+    if (jsonErrHandler) {
+      jsonErrHandler(largeErr, { path: '/api/v1/projects' }, {
+        status(c: number) { largeErrCode = c; return this; },
+        json(d: any) { largeErrBody = d; return this; },
+      }, () => {});
+    }
+
+    assert(
+      jsonErrCode === 400 && jsonErrBody?.error?.includes('Invalid JSON payload') &&
+      largeErrCode === 413 && largeErrBody?.error === 'Payload Too Large',
+      'P3/MAIN-01: JSON body parse error handler intercepts SyntaxError (400) and entity.too.large (413) as JSON',
+      `code400=${jsonErrCode}, code413=${largeErrCode}`
+    );
+  }
+
+  // P3 Polish: Report Baseline Missing Equipment Reference Check (MAIN-06)
+  {
+    const reportRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/reports/generate' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    const missingEquipSnapId = 'proj-missing-equip-baseline';
+    activeDb.projects.set(missingEquipSnapId, {
+      id: missingEquipSnapId,
+      name: 'Missing Equipment Baseline Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 10,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      estimatedAnnualYieldKwh: 15000,
+      lcoeUsdPerKwh: 0.05,
+      // moduleId omitted!
+      createdAt: new Date().toISOString(),
+    } as any);
+
+    let misRepRes: any = null;
+    await reportRoute({
+      body: {
+        projectId: missingEquipSnapId,
+        panelType: 'Jinko Solar 550W TOPCon',
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { misRepRes = d; return this; },
+    });
+
+    assert(
+      misRepRes?.isReconciledAgainstSnapshot === false &&
+      misRepRes?.discrepancies?.some((d: string) => d.includes('Snapshot missing baseline moduleId')),
+      'P3: Report flags missing baseline moduleId in snapshot as reconciliation discrepancy',
+      `isReconciled=${misRepRes?.isReconciledAgainstSnapshot}, discrepancies=${JSON.stringify(misRepRes?.discrepancies)}`
+    );
+
+    // Dangling catalog reference in snapshot:
+    const danglingSnapId = 'proj-dangling-catalog-ref';
+    activeDb.projects.set(danglingSnapId, {
+      id: danglingSnapId,
+      name: 'Dangling Catalog Ref Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 10,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      estimatedAnnualYieldKwh: 15000,
+      lcoeUsdPerKwh: 0.05,
+      moduleId: 'mod-nonexistent-ghost-id',
+      createdAt: new Date().toISOString(),
+    } as any);
+
+    let dangRepRes: any = null;
+    await reportRoute({
+      body: {
+        projectId: danglingSnapId,
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { dangRepRes = d; return this; },
+    });
+
+    assert(
+      dangRepRes?.isReconciledAgainstSnapshot === false &&
+      dangRepRes?.discrepancies?.some((d: string) => d.includes('non-existent module ID')),
+      'P3/MAIN-06: Report rejects snapshot with dangling equipment catalog reference as unreconciled',
+      `isReconciled=${dangRepRes?.isReconciledAgainstSnapshot}, discrepancies=${JSON.stringify(dangRepRes?.discrepancies)}`
+    );
+
+    // Missing batteryCount in baseline snapshot (MAIN-06):
+    const missingBatCountSnapId = 'proj-missing-batcount-baseline';
+    activeDb.projects.set(missingBatCountSnapId, {
+      id: missingBatCountSnapId,
+      name: 'Missing BatteryCount Baseline Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 10,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      moduleId: 'mod-0',
+      inverterId: 'inv-0',
+      // batteryCount is undefined
+      estimatedAnnualYieldKwh: 15000,
+      lcoeUsdPerKwh: 0.05,
+      createdAt: new Date().toISOString(),
+    } as any);
+
+    let batRepRes: any = null;
+    await reportRoute({
+      body: {
+        projectId: missingBatCountSnapId,
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { batRepRes = d; return this; },
+    });
+
+    assert(
+      batRepRes?.isReconciledAgainstSnapshot === false &&
+      batRepRes?.discrepancies?.some((d: string) => d.includes('missing baseline batteryCount')),
+      'P3/MAIN-06: Report rejects snapshot with missing batteryCount baseline as unreconciled',
+      `isReconciled=${batRepRes?.isReconciledAgainstSnapshot}, discrepancies=${JSON.stringify(batRepRes?.discrepancies)}`
+    );
+  }
+
+  // P3 Polish: Legacy Catalog Item Protected Against First-Claim Overwrite (MAIN-07)
+  {
+    const catModPost = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    const legacyModId = 'mod-legacy-custom-001';
+    activeDb.pvModules.set(legacyModId, {
+      id: legacyModId,
+      modelName: 'Legacy Custom Module',
+      manufacturer: 'Vintage Solar',
+      pmpWatts: 400,
+      vmpVolts: 40,
+      impAmps: 10,
+      vocVolts: 48,
+      iscAmps: 10.5,
+      betaVocPerC: -0.28,
+      // ownerId is undefined (legacy item)
+    } as any);
+
+    const origEnv = process.env.INTERNAL_GATEWAY_SECRET;
+    process.env.INTERNAL_GATEWAY_SECRET = 'active-secret-auth';
+
+    // Authenticated user attempting first-claim overwrite on legacy item:
+    let legStatus = 0;
+    let legBody: any = null;
+    await catModPost({
+      headers: {
+        'x-user-id': 'charlie-claimant',
+        'x-gateway-secret': 'active-secret-auth',
+      },
+      body: {
+        id: legacyModId,
+        pmpWatts: 450,
+        vmpVolts: 42,
+        impAmps: 10.7,
+        vocVolts: 50,
+        iscAmps: 11.2,
+      },
+    }, {
+      status(c: number) { legStatus = c; return this; },
+      json(d: any) { legBody = d; return this; },
+    });
+
+    process.env.INTERNAL_GATEWAY_SECRET = origEnv;
+
+    assert(
+      legStatus === 403 && legBody?.error?.includes('legacy system catalog item and cannot be overwritten'),
+      'P3/MAIN-07: Authenticated user cannot first-claim or overwrite existing legacy catalog item (HTTP 403)',
+      `status=${legStatus}, error=${legBody?.error}`
+    );
+  }
+
+  // P3 Polish: Zero Obstacle Fast-Path Shading Metric (MAIN-05)
+  {
+    const dummyTable: PvTable3D = {
+      id: 'table-fastpath-test',
+      tableIndex: 1,
+      positionEnu: { x: 0, y: 0, z: 2 },
+      widthM: 10,
+      slopedLengthM: 2,
+      tiltDeg: 25,
+      azimuthDeg: 180,
+      moduleCount: 27,
+      ratedPowerWp: 14850,
+    };
+    const noonSun = { hour: 12, altitudeDeg: 60, azimuthDeg: 180, isDaylight: true };
+    const resFast = computeTableShadingGeometricMesh(dummyTable, [], noonSun);
+
+    assert(
+      resFast.beamCoveragePct === 0 &&
+      resFast.directBeamLossFraction === 0 &&
+      resFast.isDiodeTriggered === false &&
+      resFast.electricalMismatchFactor === 1.0,
+      'P3/MAIN-05: Zero-obstacle fast path returns beamCoveragePct: 0 (unshaded) and zero beam loss',
+      `beamCoveragePct=${resFast.beamCoveragePct}, directLoss=${resFast.directBeamLossFraction}`
+    );
+  }
+
+  // P3/MAIN-05: 10,000 Module Screening Performance & Swath Acceleration
+  {
+    const scene10k = {
+      anchorLocation: { latitude: 35.6, longitude: 51.3, elevationM: 1200 },
+      roofPlanes: [],
+      pvTables: [
+        {
+          id: 'tbl-10k',
+          tableIndex: 1,
+          positionEnu: { x: 0, y: 0, z: 2 },
+          widthM: 500,
+          slopedLengthM: 2.3,
+          tiltDeg: 25,
+          azimuthDeg: 180,
+          moduleCount: 10000,
+          ratedPowerWp: 5500000,
+        },
+      ],
+      obstacles: [
+        {
+          id: 'obs-tree-10k',
+          name: 'Tree 1',
+          type: 'tree' as const,
+          positionEnu: { x: 50, y: 50, z: 0 },
+          geometry: { radiusM: 5, heightM: 12 },
+        },
+      ],
+      totalPvCapacityKwp: 5500,
+      totalModulesCount: 10000,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const progressRecords: number[] = [];
+    const t0 = performance.now();
+    const res10k = simulateAnnual3dShading(scene10k as any, 5.2, 40.0, {
+      simulationMode: 'screening_3day',
+      onProgress: (pct) => progressRecords.push(pct),
+    });
+    const elapsed10k = performance.now() - t0;
+
+    assert(
+      elapsed10k < 500 && res10k.reconciliationStatus?.isArithmeticBalanceOk === true,
+      'P3/MAIN-05: 10,000-module screening finishes in < 500ms (down from 4.4s) with arithmetic balance preserved',
+      `elapsed=${elapsed10k.toFixed(1)}ms, unshaded=${res10k.totalUnshadedAnnualKwh}, lost=${res10k.totalLostAnnualKwh}`
+    );
+
+    assert(
+      progressRecords.length > 5 && progressRecords[progressRecords.length - 1] === 100,
+      'P3/MAIN-05: Shading simulation invokes onProgress callback smoothly reaching 100%',
+      `progressUpdatesCount=${progressRecords.length}, lastProgress=${progressRecords[progressRecords.length - 1]}%`
+    );
+
+    // Abort cancellation verification
+    const controller = new AbortController();
+    controller.abort();
+    let abortedCleanly = false;
+    try {
+      simulateAnnual3dShading(scene10k as any, 5.2, 40.0, {
+        abortSignal: controller.signal,
+      });
+    } catch (err: any) {
+      if (err?.message?.includes('aborted') || err?.name === 'AbortError') {
+        abortedCleanly = true;
+      }
+    }
+    assert(
+      abortedCleanly,
+      'P3/MAIN-05: Shading simulation respects AbortSignal and aborts immediately when cancelled by user',
+      `abortedCleanly=${abortedCleanly}`
     );
   }
 

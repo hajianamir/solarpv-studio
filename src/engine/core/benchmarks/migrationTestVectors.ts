@@ -119,7 +119,7 @@ export const REAL_WORLD_V2_TEST_VECTORS: MigrationTestCase[] = [
           ratedWatts: 45000,
           surgeMultiplier: 2.5,
           quantity: 1,
-          dayHours: 10,
+          dayHours: 8,
           nightHours: 6,
           isDc: false,
         },

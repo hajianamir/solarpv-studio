@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle, Loader2, Database, Info } from 'lucide-react';
 import { type ClimateCity } from '../engine/climaticData';
-import { SiteLocationMap } from './SiteLocationMap';
+import { formatCoordinates } from '../engine/geoCoordinates';
+
+const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
 
 interface ClimateTabProps {
   selectedCity: ClimateCity;
@@ -17,6 +19,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
+  const isFa = lang === 'fa';
   const [isEditing, setIsEditing] = useState(false);
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
 
@@ -66,12 +69,21 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
       )}
 
       {/* Interactive Map View */}
-      <SiteLocationMap
-        currentCity={selectedCity}
-        onSelectLocation={onCityChange}
-        onCreate3dRooftop={onCreate3dRooftop}
-        lang={lang}
-      />
+      <React.Suspense
+        fallback={
+          <div className="h-[400px] w-full rounded-xl border border-industrial-border bg-industrial-surface/50 flex flex-col items-center justify-center gap-2 text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin text-industrial-accent" />
+            <span className="text-xs">{lang === 'fa' ? 'در حال بارگذاری نقشه...' : 'Loading GIS Map Engine...'}</span>
+          </div>
+        }
+      >
+        <SiteLocationMap
+          currentCity={selectedCity}
+          onSelectLocation={onCityChange}
+          onCreate3dRooftop={onCreate3dRooftop}
+          lang={lang}
+        />
+      </React.Suspense>
 
       {/* Selected City Details Card */}
       <div className="studio-card">
@@ -144,7 +156,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                 {isEn ? 'Coordinates & Elevation' : 'مختصات جغرافیایی و ارتفاع'}
               </span>
               <span className="font-mono text-slate-200 block text-xs">
-                {selectedCity.latitude}° N, {selectedCity.longitude}° E
+                {formatCoordinates(selectedCity.latitude, selectedCity.longitude)}
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
                 {isEn ? `Elevation: ${selectedCity.elevationM} m MSL` : `ارتفاع از دریا: ${selectedCity.elevationM} متر`}
@@ -204,10 +216,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
           <div className="space-y-4 text-xs">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-psh-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Peak Sun Hours (PSH)' : 'ساعات آفتابی اوج (PSH)'}
                 </label>
                 <input
+                  id="climate-psh-input"
                   type="number"
                   step="0.05"
                   className="studio-input"
@@ -217,10 +230,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-temp-min-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Min Design Temp (°C)' : 'حداقل دمای طراحی (°C)'}
                 </label>
                 <input
+                  id="climate-temp-min-input"
                   type="number"
                   step="1"
                   className="studio-input"
@@ -230,10 +244,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-temp-max-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Max Design Temp (°C)' : 'حداکثر دمای طراحی (°C)'}
                 </label>
                 <input
+                  id="climate-temp-max-input"
                   type="number"
                   step="1"
                   className="studio-input"
@@ -243,10 +258,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-optimal-tilt-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Optimal Annual Tilt (°)' : 'شیب بهینه سالانه (°)'}
                 </label>
                 <input
+                  id="climate-optimal-tilt-input"
                   type="number"
                   step="1"
                   className="studio-input"
@@ -256,10 +272,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-soiling-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Soiling Loss (%)' : 'افت گرد و غبار (%)'}
                 </label>
                 <input
+                  id="climate-soiling-input"
                   type="number"
                   step="0.5"
                   className="studio-input"
@@ -269,10 +286,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
+                <label htmlFor="climate-albedo-input" className="block text-slate-300 mb-1">
                   {isEn ? 'Albedo Factor' : 'ضریب آلبیدو'}
                 </label>
                 <input
+                  id="climate-albedo-input"
                   type="number"
                   step="0.02"
                   className="studio-input"
@@ -282,10 +300,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
-                  {isEn ? 'Latitude (°N)' : 'عرض جغرافیایی (°)'}
+                <label htmlFor="climate-latitude-input" className="block text-slate-300 mb-1">
+                  {isEn ? 'Latitude (° [-90..+90])' : 'عرض جغرافیایی (°)'}
                 </label>
                 <input
+                  id="climate-latitude-input"
                   type="number"
                   step="0.0001"
                   className="studio-input"
@@ -295,10 +314,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1">
-                  {isEn ? 'Longitude (°E)' : 'طول جغرافیایی (°)'}
+                <label htmlFor="climate-longitude-input" className="block text-slate-300 mb-1">
+                  {isEn ? 'Longitude (° [-180..+180])' : 'طول جغرافیایی (°)'}
                 </label>
                 <input
+                  id="climate-longitude-input"
                   type="number"
                   step="0.0001"
                   className="studio-input"
@@ -327,6 +347,191 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Parameter-Level Data Provenance Table (ENV-07) */}
+      <div className="studio-card space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-industrial-border pb-2">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-sm font-bold text-white">
+              {isEn ? 'Environmental & Geotechnical Telemetry Provenance' : 'جدول ردیابی منشأ و اصالت داده‌های محیطی و ژئوتکنیکی (ENV-01..07)'}
+            </h3>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
+            <span>{isEn ? 'Source:' : 'مرجع پایگاه:'} <strong className="text-slate-200">{isEn ? selectedCity.dataSourceEn : selectedCity.dataSourceFa}</strong></span>
+            {selectedCity.dataRetrievalDate && (
+              <span className="px-2 py-0.5 rounded bg-slate-800 text-sky-300">
+                {selectedCity.dataRetrievalDate}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-400">
+          {isFa
+            ? 'بر اساس الزامات استاندارد، تک‌تک پارامترهای طراحی دارای شناسه اصالت (Provenance) تفکیک‌شده هستند. پارامترهای با منبع مدل غربالگری یا پیش‌فرض نیازمند صحه‌گذاری میدانی در محل سایت می‌باشند.'
+            : 'Per engineering compliance standards, each parameter carries distinct origin telemetry. Values marked as screening models or defaults require field verification during site investigation.'}
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-right border-collapse">
+            <thead>
+              <tr className="border-b border-industrial-border text-slate-400 bg-industrial-surface/60">
+                <th className="p-2 text-right">{isFa ? 'پارامتر مهندسی' : 'Parameter'}</th>
+                <th className="p-2 text-center">{isFa ? 'مقدار طراحی' : 'Design Value'}</th>
+                <th className="p-2 text-center">{isFa ? 'تأمین‌کننده / منبع' : 'Provider / Source'}</th>
+                <th className="p-2 text-center">{isFa ? 'نوع اصالت (Origin Kind)' : 'Origin Telemetry'}</th>
+                <th className="p-2 text-right">{isFa ? 'روش مشتق‌سازی / توضیحات کیفی' : 'Derivation / Notes'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-industrial-border/40 font-mono text-[11px]">
+              {(() => {
+                const prov = selectedCity.fieldProvenance || {};
+                const rows = [
+                  {
+                    key: 'peakSunHours',
+                    nameFa: 'ساعات اوج تابش (PSH)',
+                    nameEn: 'Peak Sun Hours (PSH)',
+                    val: `${selectedCity.peakSunHours} kWh/m²/day`,
+                    defaultKind: 'provider_value' as const,
+                    defaultSource: 'NASA_POWER / PVGIS',
+                  },
+                  {
+                    key: 'daylightHoursDesign',
+                    nameFa: 'پنجره نجومی روز طراحی (انقلاب زمستانی)',
+                    nameEn: 'Design Daylight Hours (Winter Solstice)',
+                    val: `${selectedCity.daylightHoursDesign} h`,
+                    defaultKind: 'local_model' as const,
+                    defaultSource: 'ASTRONOMICAL_SPA_MODEL',
+                  },
+                  {
+                    key: 'tempMinC',
+                    nameFa: 'حداقل دمای حدی طراحی (T_min)',
+                    nameEn: 'Min Design Ambient Temp',
+                    val: `${selectedCity.tempMinC} °C`,
+                    defaultKind: 'provider_value' as const,
+                    defaultSource: 'NASA_POWER (T2M_MIN)',
+                  },
+                  {
+                    key: 'tempMaxC',
+                    nameFa: 'حداکثر دمای حدی طراحی (T_max)',
+                    nameEn: 'Max Design Ambient Temp',
+                    val: `${selectedCity.tempMaxC} °C`,
+                    defaultKind: 'provider_value' as const,
+                    defaultSource: 'NASA_POWER (T2M_MAX)',
+                  },
+                  {
+                    key: 'annualRainfallMm',
+                    nameFa: 'بارش سالانه باران (Precipitation)',
+                    nameEn: 'Annual Precipitation',
+                    val: `${selectedCity.annualRainfallMm} mm`,
+                    defaultKind: prov.annualPrecipitationMm?.sourceKind || 'local_model',
+                    defaultSource: prov.annualPrecipitationMm?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
+                  },
+                  {
+                    key: 'basicWindSpeedKmh',
+                    nameFa: 'سرعت مبنای باد (V_b - وزش ۳ ثانیه‌ای)',
+                    nameEn: 'Basic Wind Speed (3-sec gust)',
+                    val: `${selectedCity.basicWindSpeedKmh} km/h`,
+                    defaultKind: 'local_model' as const,
+                    defaultSource: 'REGIONAL_ANALYTICAL_MODEL (Code Screening)',
+                  },
+                  {
+                    key: 'groundSnowLoadKgM2',
+                    nameFa: 'بار برف مبنای زمین (S_k)',
+                    nameEn: 'Ground Snow Load (S_k)',
+                    val: `${selectedCity.groundSnowLoadKgM2} kg/m²`,
+                    defaultKind: 'local_model' as const,
+                    defaultSource: 'REGIONAL_ANALYTICAL_MODEL (Code Screening)',
+                  },
+                  {
+                    key: 'soilBearingCapacityKpa',
+                    nameFa: 'ظرفیت باربری مجاز خاک (q_a)',
+                    nameEn: 'Allowable Soil Bearing Capacity',
+                    val: `${selectedCity.soilBearingCapacityKpa} kPa`,
+                    defaultKind: prov.soilBearingCapacityKpa?.sourceKind || 'provider_derived',
+                    defaultSource: prov.soilBearingCapacityKpa?.providerName || 'ISRIC_SOILGRIDS / USCS',
+                  },
+                  {
+                    key: 'soilInternalFrictionAngleDeg',
+                    nameFa: 'زاویه اصطکاک داخلی خاک (φ)',
+                    nameEn: 'Soil Internal Friction Angle',
+                    val: `${selectedCity.soilInternalFrictionAngleDeg}°`,
+                    defaultKind: prov.soilInternalFrictionAngleDeg?.sourceKind || 'provider_derived',
+                    defaultSource: 'ISRIC_SOILGRIDS / USCS',
+                  },
+                  {
+                    key: 'frostDepthCm',
+                    nameFa: 'عمق یخبندان فصلی (Frost Depth)',
+                    nameEn: 'Seasonal Frost Penetration Depth',
+                    val: `${selectedCity.frostDepthCm} cm`,
+                    defaultKind: 'local_model' as const,
+                    defaultSource: 'REGIONAL_ANALYTICAL_MODEL',
+                  },
+                  {
+                    key: 'groundwaterDepthM',
+                    nameFa: 'تراز آب زیرزمینی (GWL)',
+                    nameEn: 'Groundwater Table Depth',
+                    val: `${selectedCity.groundwaterDepthM ?? 6.0} m`,
+                    defaultKind: 'local_model' as const,
+                    defaultSource: 'REGIONAL_ANALYTICAL_MODEL (Coastal Proximity)',
+                  },
+                  {
+                    key: 'albedo',
+                    nameFa: 'ضریب بازتابش زمین (Albedo)',
+                    nameEn: 'Ground Surface Albedo',
+                    val: `${selectedCity.albedo}`,
+                    defaultKind: 'local_model' as const,
+                    defaultSource: 'Standard Surface Heuristic (0.20)',
+                  },
+                  {
+                    key: 'optimalTiltAnnualDeg',
+                    nameFa: 'زاویه شیب بهینه سالانه',
+                    nameEn: 'Optimal Annual Tilt Angle',
+                    val: `${selectedCity.optimalTiltAnnualDeg}°`,
+                    defaultKind: 'local_model' as const,
+                    defaultSource: 'Latitude-Based Geometric Rule',
+                  },
+                ];
+
+                return rows.map((r) => {
+                  const p = prov[r.key];
+                  const kind = p?.sourceKind || r.defaultKind;
+                  const source = p?.providerName || r.defaultSource;
+                  const note = p?.qualityNote || p?.derivationMethod || (kind === 'local_model' ? (isFa ? 'مدل تحلیلی غربالگری منطقه‌ای — نیازمند مطالعه میدانی سایت' : 'Regional screening model — requires site geotechnical investigation') : (isFa ? 'داده مستقیم اندازه‌گیری / ماهواره‌ای' : 'Satellite / direct provider data'));
+
+                  const kindBadge = (() => {
+                    switch (kind) {
+                      case 'provider_value':
+                        return <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">{isFa ? 'داده مستقیم منبع' : 'Provider Value'}</span>;
+                      case 'provider_derived':
+                        return <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40">{isFa ? 'مشتق از منبع' : 'Provider Derived'}</span>;
+                      case 'local_model':
+                        return <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">{isFa ? 'مدل غربالگری تحلیلی' : 'Local Screening Model'}</span>;
+                      case 'unavailable':
+                        return <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-bold border border-red-500/40">{isFa ? 'ناموجود در منبع' : 'Unavailable'}</span>;
+                      case 'user_input':
+                        return <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">{isFa ? 'ورودی دستی کاربر' : 'User Input'}</span>;
+                      default:
+                        return <span className="px-2 py-0.5 rounded bg-slate-700 text-slate-300">{kind}</span>;
+                    }
+                  })();
+
+                  return (
+                    <tr key={r.key} className="hover:bg-slate-800/40 transition">
+                      <td className="p-2 text-slate-200 font-sans font-medium">{isFa ? r.nameFa : r.nameEn}</td>
+                      <td className="p-2 text-center text-white font-bold">{r.val}</td>
+                      <td className="p-2 text-center text-slate-300">{source}</td>
+                      <td className="p-2 text-center">{kindBadge}</td>
+                      <td className="p-2 text-slate-400 font-sans text-[10px] leading-tight">{note}</td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

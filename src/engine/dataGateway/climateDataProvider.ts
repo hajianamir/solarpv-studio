@@ -14,7 +14,14 @@
  *   This provides hard proof that real provider data (NASA POWER / PVGIS) was obtained.
  */
 
-import { type ClimateResourceData, type DataProvenanceMetadata, type DataFetchPolicy, createEngineeringDatum } from './types';
+import {
+  type ClimateResourceData,
+  type DataProvenanceMetadata,
+  type DataFetchPolicy,
+  type ParameterProvenance,
+  createEngineeringDatum,
+  createParameterProvenance,
+} from './types';
 import { CircuitBreaker } from './circuitBreaker';
 import { isRealInternetEnabled } from '../env/runtimeEnv';
 
@@ -234,7 +241,7 @@ export class ClimateDataProvider {
    * Real HTTP Query to NASA POWER Climatology API (Free, no API key required)
    */
   public async fetchNasaPowerResource(lat: number, lng: number): Promise<ClimateResourceData> {
-    const url = `https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=ALLSKY_SFC_SW_DWN,T2M,T2M_MIN,T2M_MAX,WS10M&community=RE&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&format=JSON`;
+    const url = `https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=ALLSKY_SFC_SW_DWN,T2M,T2M_MIN,T2M_MAX,WS10M,PRECTOTCORR&community=RE&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&format=JSON`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3500);
 
@@ -294,13 +301,136 @@ export class ClimateDataProvider {
       throw new Error(`NASA POWER temperature consistency error: tMin (${tMin}°C) > tMax (${tMax}°C)`);
     }
 
+    // Precipitation validation & derivation (ENV-03)
+    const rawPrectotcorr = params?.PRECTOTCORR?.ANN;
+    const hasPrecip =
+      typeof rawPrectotcorr === 'number' &&
+      Number.isFinite(rawPrectotcorr) &&
+      rawPrectotcorr >= 0 &&
+      rawPrectotcorr <= 100 &&
+      rawPrectotcorr !== -999;
+
+    let precipMm: number;
+    let precipProvenance: ParameterProvenance;
     const absLat = Math.abs(lat);
+    if (hasPrecip) {
+      precipMm = Number((rawPrectotcorr * 365.25).toFixed(1));
+      precipProvenance = createParameterProvenance('provider_value', 'NASA_POWER', {
+        sourceDataset: 'NASA POWER Climatology (GEOS-5 FP-IT)',
+        sourceParameter: 'PRECTOTCORR',
+        unit: 'mm/year',
+        value: precipMm,
+        derivationMethod: 'Annual sum: daily precipitation (mm/day) × 365.25',
+      });
+    } else {
+      // Missing from NASA payload -> Fallback to regional analytical climatology model (honest local_model)
+      // Never fabricate as NASA_POWER, and never inject a false literal 0 mm which distorts soiling/corrosion downstream
+      const isMENA = absLat < 40 && lng > 25 && lng < 65;
+      const analyticalPrecip = absLat > 45 ? 750 : (isMENA ? 180 : 450);
+      precipMm = analyticalPrecip;
+      precipProvenance = createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        sourceDataset: 'Regional Climatology Screening Model',
+        sourceParameter: 'PRECTOTCORR_FALLBACK',
+        unit: 'mm/year',
+        value: analyticalPrecip,
+        derivationMethod: 'Regional precipitation climatology (PRECTOTCORR missing from NASA payload; avoided false zero)',
+        qualityNote: 'بارش در خروجی NASA POWER موجود نبود — برآورد اقلیمی منطقه‌ای به عنوان مدل تحلیلی اعمال شد',
+      });
+    }
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
+    const dniVal = Number((psh * 0.72).toFixed(2));
+    const dhiVal = Number((psh * 0.28).toFixed(2));
+    const soilingVal = absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0;
+
+    const fieldProvenance: Record<string, ParameterProvenance> = {
+      peakSunHours: createParameterProvenance('provider_value', 'NASA_POWER', {
+        sourceDataset: 'NASA POWER Climatology (GEOS-5 FP-IT)',
+        sourceParameter: 'ALLSKY_SFC_SW_DWN',
+        unit: 'kWh/m²/day',
+        value: Number(psh.toFixed(2)),
+      }),
+      dniKwhM2Day: createParameterProvenance('provider_derived', 'NASA_POWER', {
+        sourceDataset: 'NASA POWER Climatology',
+        sourceParameter: 'ALLSKY_SFC_SW_DWN',
+        unit: 'kWh/m²/day',
+        value: dniVal,
+        derivationMethod: 'Standard partition proxy: GHI × 0.72',
+      }),
+      dhiKwhM2Day: createParameterProvenance('provider_derived', 'NASA_POWER', {
+        sourceDataset: 'NASA POWER Climatology',
+        sourceParameter: 'ALLSKY_SFC_SW_DWN',
+        unit: 'kWh/m²/day',
+        value: dhiVal,
+        derivationMethod: 'Standard partition proxy: GHI × 0.28',
+      }),
+      tempAnnualMeanC: hasT2M
+        ? createParameterProvenance('provider_value', 'NASA_POWER', {
+            sourceDataset: 'NASA POWER Climatology',
+            sourceParameter: 'T2M',
+            unit: '°C',
+            value: Number(tMean.toFixed(1)),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: '°C',
+            value: Number(tMean.toFixed(1)),
+            derivationMethod: 'Regional temperature default (T2M missing from NASA payload)',
+          }),
+      tempMinC: rawTMin !== undefined && isTempPhysical(rawTMin)
+        ? createParameterProvenance('provider_value', 'NASA_POWER', {
+            sourceDataset: 'NASA POWER Climatology',
+            sourceParameter: 'T2M_MIN',
+            unit: '°C',
+            value: Number(tMin.toFixed(1)),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: '°C',
+            value: Number(tMin.toFixed(1)),
+            derivationMethod: 'Regional minimum temperature screening model',
+          }),
+      tempMaxC: rawTMax !== undefined && isTempPhysical(rawTMax)
+        ? createParameterProvenance('provider_value', 'NASA_POWER', {
+            sourceDataset: 'NASA POWER Climatology',
+            sourceParameter: 'T2M_MAX',
+            unit: '°C',
+            value: Number(tMax.toFixed(1)),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: '°C',
+            value: Number(tMax.toFixed(1)),
+            derivationMethod: 'Regional maximum temperature screening model',
+          }),
+      albedo: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'dimensionless',
+        value: 0.20,
+        derivationMethod: 'Standard ground surface albedo default (0.20)',
+      }),
+      annualPrecipitationMm: precipProvenance,
+      optimalTiltDeg: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'deg',
+        value: optTilt,
+        derivationMethod: 'Latitude-based optimal tilt rule Math.round(absLat * 0.88)',
+      }),
+      soilingLossPercent: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '%',
+        value: soilingVal,
+        derivationMethod: 'Regional arid/temperate dust deposition heuristic',
+      }),
+      elevationM: json?.geometry?.coordinates?.[2] !== undefined
+        ? createParameterProvenance('provider_value', 'NASA_POWER', {
+            unit: 'm',
+            value: Math.round(json.geometry.coordinates[2]),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: 'm',
+            value: Math.round(Math.max(0, 450 + (35 - absLat) * 15)),
+            derivationMethod: 'Regional hypsometric estimate',
+          }),
+    };
 
     const provenance = {
       peakSunHours: createEngineeringDatum(Number(psh.toFixed(2)), 'available', 'NASA_POWER', 'satellite_reanalysis', 3.0, 'NASA POWER Climatology ALLSKY_SFC_SW_DWN', 'kWh/m²/day'),
-      dniKwhM2Day: createEngineeringDatum(Number((psh * 0.72).toFixed(2)), 'estimated', 'NASA_POWER', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
-      dhiKwhM2Day: createEngineeringDatum(Number((psh * 0.28).toFixed(2)), 'estimated', 'NASA_POWER', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
+      dniKwhM2Day: createEngineeringDatum(dniVal, 'estimated', 'NASA_POWER', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
+      dhiKwhM2Day: createEngineeringDatum(dhiVal, 'estimated', 'NASA_POWER', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
       tempAnnualMeanC: hasT2M
         ? createEngineeringDatum(Number(tMean.toFixed(1)), 'available', 'NASA_POWER', 'satellite_reanalysis', 2.0, 'NASA POWER 2m Temperature (T2M)', '°C')
         : createEngineeringDatum(Number(tMean.toFixed(1)), 'estimated', 'NASA_POWER', 'rule_of_thumb_screening', 15.0, 'Regional default estimate (T2M missing from NASA POWER payload)', '°C'),
@@ -311,15 +441,15 @@ export class ClimateDataProvider {
       longitude: Number(lng.toFixed(4)),
       elevationM: Math.round(json?.geometry?.coordinates?.[2] ?? Math.max(0, 450 + (35 - absLat) * 15)),
       peakSunHours: Number(psh.toFixed(2)),
-      dniKwhM2Day: Number((psh * 0.72).toFixed(2)),
-      dhiKwhM2Day: Number((psh * 0.28).toFixed(2)),
+      dniKwhM2Day: dniVal,
+      dhiKwhM2Day: dhiVal,
       tempMinC: Number(tMin.toFixed(1)),
       tempMaxC: Number(tMax.toFixed(1)),
       tempAnnualMeanC: Number(tMean.toFixed(1)),
       albedo: 0.20,
-      annualPrecipitationMm: absLat > 40 ? 750 : 250,
+      annualPrecipitationMm: precipMm,
       optimalTiltDeg: optTilt,
-      soilingLossPercent: absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0,
+      soilingLossPercent: soilingVal,
       metadata: {
         traceId: this.generateTraceId('TRC-GW'),
         sourceProvider: 'NASA_POWER',
@@ -329,6 +459,7 @@ export class ClimateDataProvider {
         geographicRegion: 'NASA POWER Climatology (GEOS-5 FP-IT)',
         governingStandards: ['NASA POWER Climatology v2.0', 'WMO Guide to Climatological Practices No. 100'],
       },
+      fieldProvenance,
       provenance,
     };
   }
@@ -373,11 +504,87 @@ export class ClimateDataProvider {
     const absLat = Math.abs(lat);
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
     const estimatedMeanTempC = absLat > 45 ? 10.5 : 22.0;
+    const tMin = absLat > 45 ? -15 : 2;
+    const tMax = absLat > 45 ? 32 : 40;
+    const dniVal = Number((psh * 0.70).toFixed(2));
+    const dhiVal = Number((psh * 0.30).toFixed(2));
+    const soilingVal = absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0;
+
+    const fieldProvenance: Record<string, ParameterProvenance> = {
+      peakSunHours: createParameterProvenance('provider_derived', 'PVGIS', {
+        sourceDataset: 'PVGIS 5.3 SARAH-2 / ERA5',
+        sourceParameter: 'H(h)_m annual sum / 365',
+        unit: 'kWh/m²/day',
+        value: psh,
+        derivationMethod: 'Derived from sum of 12 monthly horizontal irradiation values / 365',
+      }),
+      dniKwhM2Day: createParameterProvenance('provider_derived', 'PVGIS', {
+        sourceDataset: 'PVGIS 5.3',
+        sourceParameter: 'H(h)_m',
+        unit: 'kWh/m²/day',
+        value: dniVal,
+        derivationMethod: 'Direct partition proxy: GHI × 0.70',
+      }),
+      dhiKwhM2Day: createParameterProvenance('provider_derived', 'PVGIS', {
+        sourceDataset: 'PVGIS 5.3',
+        sourceParameter: 'H(h)_m',
+        unit: 'kWh/m²/day',
+        value: dhiVal,
+        derivationMethod: 'Diffuse partition proxy: GHI × 0.30',
+      }),
+      tempAnnualMeanC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '°C',
+        value: estimatedMeanTempC,
+        derivationMethod: 'Regional latitude temperature model (PVGIS MRcalc does not provide temperature)',
+        qualityNote: 'PVGIS MRcalc دمای هوا برنمی‌گرداند؛ برآورد مدل تحلیلی اقلیمی است',
+      }),
+      tempMinC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '°C',
+        value: tMin,
+        derivationMethod: 'Regional latitude temperature model',
+      }),
+      tempMaxC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '°C',
+        value: tMax,
+        derivationMethod: 'Regional latitude temperature model',
+      }),
+      albedo: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'dimensionless',
+        value: 0.20,
+        derivationMethod: 'Standard ground surface albedo default (0.20)',
+      }),
+      annualPrecipitationMm: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'mm/year',
+        value: 600,
+        derivationMethod: 'Regional precipitation climatology (PVGIS MRcalc does not provide precipitation)',
+        qualityNote: 'PVGIS بارش برنمی‌گرداند؛ برآورد مدل تحلیلی اقلیمی است',
+      }),
+      optimalTiltDeg: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'deg',
+        value: optTilt,
+        derivationMethod: 'Latitude-based optimal tilt rule Math.round(absLat * 0.88)',
+      }),
+      soilingLossPercent: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '%',
+        value: soilingVal,
+        derivationMethod: 'Regional arid/temperate dust deposition heuristic',
+      }),
+      elevationM: json?.inputs?.location?.elevation !== undefined
+        ? createParameterProvenance('provider_value', 'PVGIS', {
+            unit: 'm',
+            value: Math.round(json.inputs.location.elevation),
+          })
+        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+            unit: 'm',
+            value: 500,
+            derivationMethod: 'Default elevation',
+          }),
+    };
 
     const provenance = {
       peakSunHours: createEngineeringDatum(psh, 'available', 'PVGIS', 'satellite_reanalysis', 3.0, 'PVGIS 5.3 monthly horizontal irradiance H(h)_m sum', 'kWh/m²/day'),
-      dniKwhM2Day: createEngineeringDatum(Number((psh * 0.70).toFixed(2)), 'estimated', 'PVGIS', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
-      dhiKwhM2Day: createEngineeringDatum(Number((psh * 0.30).toFixed(2)), 'estimated', 'PVGIS', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
+      dniKwhM2Day: createEngineeringDatum(dniVal, 'estimated', 'PVGIS', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
+      dhiKwhM2Day: createEngineeringDatum(dhiVal, 'estimated', 'PVGIS', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
       tempAnnualMeanC: createEngineeringDatum(estimatedMeanTempC, 'estimated', 'PVGIS', 'rule_of_thumb_screening', 15.0, 'Regional latitude-based estimate (PVGIS MRcalc does not return temperature)', '°C'),
     };
 
@@ -386,24 +593,25 @@ export class ClimateDataProvider {
       longitude: Number(lng.toFixed(4)),
       elevationM: Math.round(json?.inputs?.location?.elevation ?? 500),
       peakSunHours: psh,
-      dniKwhM2Day: Number((psh * 0.70).toFixed(2)),
-      dhiKwhM2Day: Number((psh * 0.30).toFixed(2)),
-      tempMinC: absLat > 45 ? -15 : 2,
-      tempMaxC: absLat > 45 ? 32 : 40,
-      tempAnnualMeanC: absLat > 45 ? 10.5 : 22.0,
+      dniKwhM2Day: dniVal,
+      dhiKwhM2Day: dhiVal,
+      tempMinC: tMin,
+      tempMaxC: tMax,
+      tempAnnualMeanC: estimatedMeanTempC,
       albedo: 0.20,
       annualPrecipitationMm: 600,
       optimalTiltDeg: optTilt,
-      soilingLossPercent: absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0,
+      soilingLossPercent: soilingVal,
       metadata: {
         traceId: this.generateTraceId('TRC-GW'),
         sourceProvider: 'PVGIS',
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
-        isEstimatedFromGlobalModel: false,
+        isEstimatedFromGlobalModel: true, // Mark true because temperature and precipitation are local estimates!
         geographicRegion: 'PVGIS 5.3 SARAH-2 / ERA5',
         governingStandards: ['PVGIS v5.3 (European Commission JRC)', 'IEC 61724-1 Class A'],
       },
+      fieldProvenance,
       provenance,
     };
   }
@@ -552,28 +760,90 @@ export class ClimateDataProvider {
     }
 
     const region = absLat < 23.5 ? 'Tropical Belt' : isSouth ? 'Southern Temperate Zone' : 'Northern Temperate Zone';
+    const precipMm = absLat > 40 ? 800 : 250;
+    const tMean = Number(((tMin + tMax) / 2.0).toFixed(1));
+    const elevM = Math.round(Math.max(0, 450 + (35 - absLat) * 15));
+    const soilingVal = absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0;
+
+    const fieldProvenance: Record<string, ParameterProvenance> = {
+      peakSunHours: createParameterProvenance('local_model', provider, {
+        unit: 'kWh/m²/day',
+        value: Number(psh.toFixed(2)),
+        derivationMethod: 'Calculated from regional latitude/longitude analytical model',
+      }),
+      dniKwhM2Day: createParameterProvenance('local_model', provider, {
+        unit: 'kWh/m²/day',
+        value: dni,
+        derivationMethod: 'Analytical clear-sky geographic proxy model',
+      }),
+      dhiKwhM2Day: createParameterProvenance('local_model', provider, {
+        unit: 'kWh/m²/day',
+        value: dhi,
+        derivationMethod: 'Analytical clear-sky geographic proxy model',
+      }),
+      tempAnnualMeanC: createParameterProvenance('local_model', provider, {
+        unit: '°C',
+        value: tMean,
+        derivationMethod: 'Analytical latitude and elevation temperature model',
+      }),
+      tempMinC: createParameterProvenance('local_model', provider, {
+        unit: '°C',
+        value: tMin,
+        derivationMethod: 'Analytical extreme temperature screening model',
+      }),
+      tempMaxC: createParameterProvenance('local_model', provider, {
+        unit: '°C',
+        value: tMax,
+        derivationMethod: 'Analytical extreme temperature screening model',
+      }),
+      albedo: createParameterProvenance('local_model', provider, {
+        unit: 'dimensionless',
+        value: 0.20,
+        derivationMethod: 'Standard ground surface albedo default (0.20)',
+      }),
+      annualPrecipitationMm: createParameterProvenance('local_model', provider, {
+        unit: 'mm/year',
+        value: precipMm,
+        derivationMethod: 'Analytical latitude-zonal precipitation climatology',
+      }),
+      optimalTiltDeg: createParameterProvenance('local_model', provider, {
+        unit: 'deg',
+        value: optTilt,
+        derivationMethod: 'Empirical optimal tilt rule Math.round(absLat * 0.88)',
+      }),
+      soilingLossPercent: createParameterProvenance('local_model', provider, {
+        unit: '%',
+        value: soilingVal,
+        derivationMethod: 'Regional arid/temperate dust deposition heuristic',
+      }),
+      elevationM: createParameterProvenance('local_model', provider, {
+        unit: 'm',
+        value: elevM,
+        derivationMethod: 'Regional hypsometric estimate',
+      }),
+    };
 
     const provenance = {
       peakSunHours: createEngineeringDatum(Number(psh.toFixed(2)), isEstimatedFallback ? 'estimated' : 'available', provider, 'analytical_model', 12.0, 'Calculated from regional latitude/longitude analytical model', 'kWh/m²/day'),
       dniKwhM2Day: createEngineeringDatum(dni, 'estimated', provider, 'analytical_model', 15.0, 'Analytical clear-sky geographic proxy model', 'kWh/m²/day'),
       dhiKwhM2Day: createEngineeringDatum(dhi, 'estimated', provider, 'analytical_model', 15.0, 'Analytical clear-sky geographic proxy model', 'kWh/m²/day'),
-      tempAnnualMeanC: createEngineeringDatum(Number(((tMin + tMax) / 2.0).toFixed(1)), 'estimated', provider, 'analytical_model', 10.0, 'Analytical latitude and elevation model', '°C'),
+      tempAnnualMeanC: createEngineeringDatum(tMean, 'estimated', provider, 'analytical_model', 10.0, 'Analytical latitude and elevation model', '°C'),
     };
 
     return {
       latitude: Number(lat.toFixed(4)),
       longitude: Number(lng.toFixed(4)),
-      elevationM: Math.round(Math.max(0, 450 + (35 - absLat) * 15)),
+      elevationM: elevM,
       peakSunHours: Number(psh.toFixed(2)),
       dniKwhM2Day: dni,
       dhiKwhM2Day: dhi,
       tempMinC: tMin,
       tempMaxC: tMax,
-      tempAnnualMeanC: Number(((tMin + tMax) / 2.0).toFixed(1)),
+      tempAnnualMeanC: tMean,
       albedo: 0.20,
-      annualPrecipitationMm: absLat > 40 ? 800 : 250,
+      annualPrecipitationMm: precipMm,
       optimalTiltDeg: optTilt,
-      soilingLossPercent: absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0,
+      soilingLossPercent: soilingVal,
       metadata: {
         traceId: this.generateTraceId('TRC-GW'),
         sourceProvider: provider,
@@ -583,6 +853,7 @@ export class ClimateDataProvider {
         geographicRegion: region,
         governingStandards: standards,
       },
+      fieldProvenance,
       provenance,
     };
   }
