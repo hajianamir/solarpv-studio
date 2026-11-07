@@ -242,12 +242,15 @@ export interface Ieee80EarthingResult {
   touchVoltageLimitVolts: number;  // Maximum permissible safe touch voltage
   stepVoltageLimitVolts: number;   // Maximum permissible safe step voltage
   calculatedGridResistanceOhms: number; // Target Rg <= 1.0 Ohm
-  isCompliant: boolean; // Comprehensive IEEE 80 compliance: Rg <= 1.0 && isTouchSafe && isStepSafe
+  isCompliant: boolean; // Comprehensive IEEE 80 compliance: Rg <= 1.0 && isTouchSafe && isStepSafe && isConductorCompliant
   isResistanceCompliant: boolean; // Grid resistance threshold Rg <= 1.0 Ohm
   actualMeshVoltageVolts: number;
   actualStepVoltageVolts: number;
   isTouchSafe: boolean;
   isStepSafe: boolean;
+  isConductorCompliant?: boolean;
+  requiredConductorMm2?: number;
+  parallelConductorsCount?: number;
   complianceNotesFa?: string;
   complianceNotesEn?: string;
 }
@@ -658,7 +661,15 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   };
 
   // 3. IEEE 80 Earthing Grid Calculations
-  const groundGridConductorMm2 = Math.max(70.0, Math.ceil((initialSymmetricalIscKa * Math.sqrt(clearingTimeSec)) / 0.15));
+  // Sizing of copper earthing conductor (Onderdonk formula per IEEE 80: Kf = 0.15 for copper exothermically welded)
+  const STANDARD_GROUND_CONDUCTORS = [70, 95, 120, 150, 185, 240, 300, 400, 500];
+  const requiredConductorMm2 = Math.max(70.0, Math.ceil((initialSymmetricalIscKa * Math.sqrt(clearingTimeSec)) / 0.15));
+
+  // Select standard copper conductor cross section >= required
+  const selectedStandardMm2 = STANDARD_GROUND_CONDUCTORS.find(s => s >= requiredConductorMm2) ?? requiredConductorMm2;
+  const parallelConductorsCount = requiredConductorMm2 > 500 ? Math.ceil(requiredConductorMm2 / 240) : (requiredConductorMm2 > 240 ? 2 : 1);
+  const groundGridConductorMm2 = selectedStandardMm2;
+  const isConductorCompliant = groundGridConductorMm2 >= requiredConductorMm2;
 
   // Tolerable Touch & Step Voltages for 50kg body with 10cm gravel surface layer (rho_s ≈ 3000 ohm-m)
   const cs = 1.0 - (0.09 * (1.0 - soilResistivityOhmM / 3000.0)) / (2.0 * 0.10 + 0.09);
@@ -680,10 +691,10 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const isResistanceCompliant = calculatedGridResistanceOhms <= 1.0;
   const isTouchSafe = actualMesh <= touchVoltageLimitVolts;
   const isStepSafe = actualStep <= stepVoltageLimitVolts;
-  const isCompliant = isResistanceCompliant && isTouchSafe && isStepSafe;
+  const isCompliant = isResistanceCompliant && isTouchSafe && isStepSafe && isConductorCompliant;
 
   const earthing: Ieee80EarthingResult = {
-    groundGridConductorMm2: Math.min(240, Math.max(70, groundGridConductorMm2)),
+    groundGridConductorMm2,
     touchVoltageLimitVolts,
     stepVoltageLimitVolts,
     calculatedGridResistanceOhms,
@@ -693,16 +704,23 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     actualStepVoltageVolts: actualStep,
     isTouchSafe,
     isStepSafe,
+    isConductorCompliant,
+    requiredConductorMm2,
+    parallelConductorsCount,
     complianceNotesFa: isCompliant
-      ? 'شبکه زمین پست طبق IEEE 80 هم از نظر مقاومت کمتر از ۱ اهم و هم از نظر ولتاژهای تماس و گام ایمن است.'
-      : !isResistanceCompliant
-        ? 'مقاومت شبکه زمین از ۱ اهم بیشتر است. نیاز به افزایش طول هادی مدفون یا افزودن میله راد عمقی.'
-        : 'ولتاژ تماس یا گام از حد مجاز انسانی فراتر است! ضخامت لایه شن سطحی یا تراکم مش زمین را افزایش دهید.',
+      ? 'شبکه زمین پست طبق IEEE 80 هم از نظر مقاومت کمتر از ۱ اهم، هم ولتاژهای تماس و گام و هم سطح مقطع حرارتی هادی ایمن است.'
+      : !isConductorCompliant
+        ? `سطح مقطع هادی زمین (${groundGridConductorMm2} mm²) کمتر از نیاز حرارتی اتصال کوتاه (${requiredConductorMm2} mm²) است! خطر ذوب هادی طبق فرمول Onderdonk استاندارد IEEE 80.`
+        : !isResistanceCompliant
+          ? 'مقاومت شبکه زمین از ۱ اهم بیشتر است. نیاز به افزایش طول هادی مدفون یا افزودن میله راد عمقی.'
+          : 'ولتاژ تماس یا گام از حد مجاز انسانی فراتر است! ضخامت لایه شن سطحی یا تراکم مش زمین را افزایش دهید.',
     complianceNotesEn: isCompliant
-      ? 'Substation grounding grid fully compliant with IEEE 80 (Rg <= 1.0 Ohm, touch and step voltages safe).'
-      : !isResistanceCompliant
-        ? 'Ground resistance exceeds 1.0 Ohm target; add deep vertical ground rods or expand grid perimeter.'
-        : 'Touch or step voltage exceeds safe physiological threshold per IEEE 80; increase gravel surface layer or mesh density.',
+      ? 'Substation grounding grid fully compliant with IEEE 80 (Rg <= 1.0 Ohm, touch and step voltages safe, and conductor thermal cross-section adequate).'
+      : !isConductorCompliant
+        ? `Earthing conductor cross-section (${groundGridConductorMm2} mm²) is insufficient for fault current thermal withstand (${requiredConductorMm2} mm² required per IEEE 80 Onderdonk equation).`
+        : !isResistanceCompliant
+          ? 'Ground resistance exceeds 1.0 Ohm target; add deep vertical ground rods or expand grid perimeter.'
+          : 'Touch or step voltage exceeds safe physiological threshold per IEEE 80; increase gravel surface layer or mesh density.',
   };
 
   // 4. Auxiliary Station Service Transformer (مصارف داخلی)

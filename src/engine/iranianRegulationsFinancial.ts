@@ -26,9 +26,10 @@ export interface IranianFinancialModelResult {
   projectIrrPct: number | null;
   equityIrrPct: number | null;
   npvMillionToman: number;
-  simplePaybackYears: number;
-  discountedPaybackYears: number;
-  lcoeTomanPerKwh: number;
+  simplePaybackYears: number | null;
+  discountedPaybackYears: number | null;
+  paybackStatus: 'achieved' | 'not_achieved';
+  lcoeTomanPerKwh: number | null;
   article16PenaltyAvoidedMillionToman: number;
   summerBlackoutLossPreventedMillionToman: number;
   cashFlow25Years: CashFlowYear[];
@@ -58,6 +59,9 @@ export function runIranianRegulationFinancialModel(
   }
   if (typeof loanSharePct !== 'number' || !Number.isFinite(loanSharePct) || loanSharePct < 0 || loanSharePct > 100) {
     throw new Error(`Loan share percentage must be between 0% and 100%, received ${loanSharePct}%`);
+  }
+  if (typeof inflationPct !== 'number' || !Number.isFinite(inflationPct) || inflationPct < 0) {
+    throw new Error(`Inflation percentage must be a non-negative finite number, received ${inflationPct}%`);
   }
 
   // 1. Determine tariff and framework details
@@ -109,20 +113,34 @@ export function runIranianRegulationFinancialModel(
   const degradationRate = 0.0045; // 0.45% per year for N-Type TOPCon
   let initialOpex = totalCapexMillionToman * 0.015; // 1.5% of capex per year
 
-  let simplePaybackYears = 25.0;
-  let discountedPaybackYears = 25.0;
+  // Inflation escalation indexing:
+  // At default 25% inflation: tariff escalates at ~12% (0.48 * 25%), OPEX at ~15% (0.60 * 25%)
+  const tariffEscalationRate = (inflationPct / 100.0) * 0.48;
+  const opexEscalationRate = (inflationPct / 100.0) * 0.60;
+
+  let simplePaybackYears: number | null = null;
+  let discountedPaybackYears: number | null = null;
+  let isSimplePaybackAchieved = false;
+  let isDiscountedPaybackAchieved = false;
   let cumulativeDiscounted = -equityContributionMillionToman;
   const discountRate = 0.20; // 20% cost of capital in IRR
 
   for (let yr = 1; yr <= 25; yr++) {
     const genMwh = annualGenerationMwh * Math.pow(1.0 - degradationRate, yr - 1);
 
-    // Tariff escalation with partial inflation indexing (typically ~15% annual step in green board / SATBA adjustment)
-    const escalatedTariff = tariffPerKwhToman * Math.pow(1.0 + 0.12, yr - 1);
+    // Tariff and OPEX escalation with inflation indexing
+    const escalatedTariff = tariffPerKwhToman * Math.pow(1.0 + tariffEscalationRate, yr - 1);
     const revenueMillion = Math.round((genMwh * 1000 * escalatedTariff) / 1e6);
 
-    const opexMillion = Math.round(initialOpex * Math.pow(1.0 + 0.15, yr - 1));
-    const debtService = yr <= loanTermYears ? Math.round(annualLoanAnnuity) : 0;
+    const opexMillion = Math.round(initialOpex * Math.pow(1.0 + opexEscalationRate, yr - 1));
+    const roundedBaseAnnuity = Math.round(annualLoanAnnuity);
+    const totalExpectedRoundedDebt = Math.round(annualLoanAnnuity * loanTermYears);
+    const debtService =
+      yr < loanTermYears
+        ? roundedBaseAnnuity
+        : yr === loanTermYears
+        ? Math.max(0, totalExpectedRoundedDebt - roundedBaseAnnuity * (loanTermYears - 1))
+        : 0;
 
     const netOperatingIncome = revenueMillion - opexMillion;
     const dscr = debtService > 0 ? Math.round((netOperatingIncome / debtService) * 100) / 100 : null;
@@ -131,15 +149,17 @@ export function runIranianRegulationFinancialModel(
     cumulativeCash += netCashFlow;
 
     // Simple payback detection
-    if (cumulativeCash >= 0 && simplePaybackYears === 25.0) {
-      simplePaybackYears = Math.round((yr - 1 + (Math.abs(cumulativeCash - netCashFlow) / netCashFlow)) * 10) / 10;
+    if (cumulativeCash >= 0 && !isSimplePaybackAchieved) {
+      simplePaybackYears = Math.round((yr - 1 + (Math.abs(cumulativeCash - netCashFlow) / Math.max(1e-6, netCashFlow))) * 10) / 10;
+      isSimplePaybackAchieved = true;
     }
 
     // Discounted payback detection
     const discountedCash = netCashFlow / Math.pow(1.0 + discountRate, yr);
     cumulativeDiscounted += discountedCash;
-    if (cumulativeDiscounted >= 0 && discountedPaybackYears === 25.0) {
-      discountedPaybackYears = Math.round((yr - 1 + (Math.abs(cumulativeDiscounted - discountedCash) / discountedCash)) * 10) / 10;
+    if (cumulativeDiscounted >= 0 && !isDiscountedPaybackAchieved) {
+      discountedPaybackYears = Math.round((yr - 1 + (Math.abs(cumulativeDiscounted - discountedCash) / Math.max(1e-6, discountedCash))) * 10) / 10;
+      isDiscountedPaybackAchieved = true;
     }
 
     cashFlows.push({
@@ -234,7 +254,20 @@ export function runIranianRegulationFinancialModel(
   // Summer blackout loss prevented (for factories: 1 day of summer blackout = billions of Tomans in idle production loss!)
   const summerBlackoutLossPreventedMillionToman = Math.round(capacityKwp * 8.5);
 
-  const lcoeTomanPerKwh = Math.round((totalCapexMillionToman * 1e6) / (annualGenerationMwh * 1000 * 20));
+  // Fix M11: 25-year discounted LCOE with OPEX, degradation, and discounting
+  // LCOE = (Capex + Sum(Opex_t / (1+r)^t)) / Sum(Gen_t / (1+r)^t)
+  let lcoeTomanPerKwh: number | null = null;
+  if (annualGenerationMwh > 0) {
+    let discountedLifetimeCostMillion = totalCapexMillionToman;
+    let discountedLifetimeEnergyKwh = 0;
+    for (const cf of cashFlows) {
+      discountedLifetimeCostMillion += cf.opexMillionToman / Math.pow(1.0 + discountRate, cf.year);
+      discountedLifetimeEnergyKwh += (cf.generationMwh * 1000) / Math.pow(1.0 + discountRate, cf.year);
+    }
+    lcoeTomanPerKwh = discountedLifetimeEnergyKwh > 0
+      ? Math.round((discountedLifetimeCostMillion * 1e6) / discountedLifetimeEnergyKwh)
+      : null;
+  }
 
   return {
     frameworkNameFa,
@@ -247,6 +280,7 @@ export function runIranianRegulationFinancialModel(
     npvMillionToman,
     simplePaybackYears,
     discountedPaybackYears,
+    paybackStatus: isSimplePaybackAchieved ? 'achieved' : 'not_achieved',
     lcoeTomanPerKwh,
     article16PenaltyAvoidedMillionToman,
     summerBlackoutLossPreventedMillionToman,

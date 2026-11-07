@@ -33,6 +33,10 @@ export interface Project {
   lcoeUsdPerKwh: number;
   estimatedAnnualYieldKwh?: number;
   createdAt?: string;
+  ownerId?: string;
+  moduleId?: string;
+  inverterId?: string;
+  batteryId?: string;
 }
 
 export interface QuickSizingRequest {
@@ -41,6 +45,7 @@ export interface QuickSizingRequest {
   longitude: number;
   dailyKwh: number;
   autonomyDays: number;
+  ownerId?: string;
   moduleId?: string;
   inverterId?: string;
   batteryId?: string;
@@ -162,7 +167,7 @@ export const DEFAULT_MODULES: PvModule[] = ADAPTED_MODULES;
 export const DEFAULT_INVERTERS: Inverter[] = ADAPTED_INVERTERS;
 export const DEFAULT_BATTERIES: Battery[] = ADAPTED_BATTERIES;
 
-// In-Memory Database store
+// In-Memory Database store with optional JSON snapshot persistence
 export class InMemorySolarDatabase {
   public projects: Map<string, Project> = new Map();
   public pvModules: Map<string, PvModule> = new Map();
@@ -178,6 +183,50 @@ export class InMemorySolarDatabase {
     seedModules.forEach((m) => this.pvModules.set(m.id, m));
     seedInverters.forEach((i) => this.inverters.set(i.id, i));
     seedBatteries.forEach((b) => this.batteries.set(b.id, b));
+  }
+
+  public exportSnapshot(): {
+    version: number;
+    timestamp: string;
+    projects: [string, Project][];
+    pvModules: [string, PvModule][];
+    inverters: [string, Inverter][];
+    batteries: [string, Battery][];
+    outbox: any[];
+  } {
+    return {
+      version: 1,
+      timestamp: new Date().toISOString(),
+      projects: Array.from(this.projects.entries()),
+      pvModules: Array.from(this.pvModules.entries()),
+      inverters: Array.from(this.inverters.entries()),
+      batteries: Array.from(this.batteries.entries()),
+      outbox: [...this.outbox],
+    };
+  }
+
+  public importSnapshot(snapshot: any): boolean {
+    if (!snapshot || typeof snapshot !== 'object') return false;
+    try {
+      if (Array.isArray(snapshot.projects)) {
+        this.projects = new Map(snapshot.projects);
+      }
+      if (Array.isArray(snapshot.pvModules)) {
+        snapshot.pvModules.forEach(([k, v]: [string, PvModule]) => this.pvModules.set(k, v));
+      }
+      if (Array.isArray(snapshot.inverters)) {
+        snapshot.inverters.forEach(([k, v]: [string, Inverter]) => this.inverters.set(k, v));
+      }
+      if (Array.isArray(snapshot.batteries)) {
+        snapshot.batteries.forEach(([k, v]: [string, Battery]) => this.batteries.set(k, v));
+      }
+      if (Array.isArray(snapshot.outbox)) {
+        this.outbox = [...snapshot.outbox];
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 
@@ -198,11 +247,20 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
   } = req;
 
   const warnings: string[] = [];
-  const vocMaxTemp = panelVoc * (1.0 + betaVocPerC * (tempMinC - 25.0));
+  const safeBetaVocPerC =
+    typeof betaVocPerC === 'number' && Number.isFinite(betaVocPerC) && betaVocPerC < 0
+      ? betaVocPerC
+      : -0.0028;
+  const safeBetaPmpPerC =
+    typeof betaPmpPerC === 'number' && Number.isFinite(betaPmpPerC) && betaPmpPerC < 0
+      ? betaPmpPerC
+      : safeBetaVocPerC;
+
+  const vocMaxTemp = panelVoc * (1.0 + safeBetaVocPerC * (tempMinC - 25.0));
   // IEC 62548 §7.2: hot-case MPPT floor uses the Pmp temperature
   // coefficient (typically steeper than Voc). Fall back to Voc when
   // betaPmpPerC is absent (conservative approximation).
-  const vmpHotCoeff = (req.betaPmpPerC ?? betaVocPerC);
+  const vmpHotCoeff = safeBetaPmpPerC;
   const vmpMinTemp = panelVmp * (1.0 + vmpHotCoeff * (tempMaxC - 25.0));
 
   const maxModulesVmax = Math.floor(inverterVdcMax / vocMaxTemp);
@@ -210,7 +268,7 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
   // which occurs at the coldest design temperature. Use the Pmp temperature
   // coefficient when supplied; otherwise fall back to the Voc coefficient
   // (documented conservative approximation).
-  const vmpColdCoeff = betaPmpPerC ?? betaVocPerC;
+  const vmpColdCoeff = safeBetaPmpPerC;
   const singleModuleVmpMaxCold = panelVmp * (1.0 + vmpColdCoeff * (tempMinC - 25.0));
   const maxModulesMppt = Math.floor(inverterMpptMax / singleModuleVmpMaxCold);
   const maxModules = Math.min(maxModulesVmax, maxModulesMppt);
@@ -236,9 +294,15 @@ export function calculateVoltageDropDc(
   vNominal: number,
   rho: number = 0.0175 // Copper default in ohm-mm2/m
 ): number {
-  if (crossSectionMm2 <= 0 || vNominal <= 0) {
+  if (
+    typeof lengthM !== 'number' || !Number.isFinite(lengthM) || lengthM < 0 ||
+    typeof currentA !== 'number' || !Number.isFinite(currentA) || currentA < 0 ||
+    typeof crossSectionMm2 !== 'number' || !Number.isFinite(crossSectionMm2) || crossSectionMm2 <= 0 ||
+    typeof vNominal !== 'number' || !Number.isFinite(vNominal) || vNominal <= 0 ||
+    typeof rho !== 'number' || !Number.isFinite(rho) || rho <= 0
+  ) {
     throw new Error(
-      "Invalid cable crossSectionMm2 or nominal voltage: values must be positive and non-zero."
+      "Invalid DC cable parameters: length (m) and current (A) must be non-negative finite numbers; crossSectionMm2, vNominal, and rho must be positive non-zero finite numbers."
     );
   }
   const resistance = rho * (2.0 * lengthM) / crossSectionMm2;
@@ -257,18 +321,20 @@ export function calculateLcoe(
   lifetimeYears: number,
   degradationPct: number = 0   // NEW (BUG-7) — annual module degradation, %/year
 ): number {
-  if (energyAnnual <= 0 || lifetimeYears <= 0) {
+  if (energyAnnual <= 0 || !Number.isFinite(lifetimeYears) || lifetimeYears <= 0) {
     return 0.0;
   }
 
+  // Bound lifetime to physically sensible range [1, 100] years to prevent CPU DoS / infinite loop freeze (R847-05)
+  const effectiveYears = Math.min(100, Math.max(1, Math.round(lifetimeYears)));
   let totalCostPv = capex;
-  for (let t = 1; t <= lifetimeYears; t++) {
+  for (let t = 1; t <= effectiveYears; t++) {
     totalCostPv += opexAnnual / Math.pow(1.0 + discountRate, t);
   }
 
   let totalEnergyPv = 0;
   const dFrac = degradationPct / 100.0;
-  for (let t = 1; t <= lifetimeYears; t++) {
+  for (let t = 1; t <= effectiveYears; t++) {
     totalEnergyPv += (energyAnnual * Math.pow(1.0 - dFrac, t - 1)) / Math.pow(1.0 + discountRate, t);
   }
 
@@ -281,13 +347,23 @@ export function calculateNpv(rate: number, cashflows: number[]): number {
   return cashflows.reduce((sum, cf, t) => sum + cf / Math.pow(1.0 + rate, t), 0);
 }
 
-export function calculateIrr(cashflows: number[]): number {
-  if (!cashflows || cashflows.length < 2) return 0.0;
+export interface IrrResult {
+  irr: number | null;
+  status: 'converged' | 'no_root' | 'invalid_input';
+  iterations?: number;
+}
+
+export function calculateIrrDetailed(cashflows: number[]): IrrResult {
+  if (!cashflows || !Array.isArray(cashflows) || cashflows.length < 2 || cashflows.some(c => !Number.isFinite(c))) {
+    return { irr: null, status: 'invalid_input' };
+  }
 
   const hasPos = cashflows.some(c => c > 0);
   const hasNeg = cashflows.some(c => c < 0);
   // If there are no positive or no negative cash flows, no rate of return exists in (-1, +inf)
-  if (!hasPos || !hasNeg) return 0.0;
+  if (!hasPos || !hasNeg) {
+    return { irr: null, status: 'no_root' };
+  }
 
   // Count sign changes (Descartes' rule of signs)
   let signChanges = 0;
@@ -317,9 +393,9 @@ export function calculateIrr(cashflows: number[]): number {
       while (calculateNpv(high, cashflows) > 0 && high < 1000.0) {
         high *= 2.0;
       }
-      if (calculateNpv(high, cashflows) > 0) return 0.0;
+      if (calculateNpv(high, cashflows) > 0) return { irr: null, status: 'no_root' };
     } else if (undiscountedSum === 0) {
-      return 0.0;
+      return { irr: 0.0, status: 'converged', iterations: 1 };
     }
 
     // Bracketed bisection method (guaranteed convergence to 1e-8 for monotonic NPV)
@@ -332,7 +408,7 @@ export function calculateIrr(cashflows: number[]): number {
         high = mid;
       }
     }
-    return (low + high) / 2.0;
+    return { irr: (low + high) / 2.0, status: 'converged', iterations: 80 };
   }
 
   // Non-conventional cash flows (multiple sign changes or non-standard initial flow):
@@ -356,7 +432,7 @@ export function calculateIrr(cashflows: number[]): number {
 
     const nextRate = rate - f / df;
     if (Math.abs(nextRate - rate) < tolerance && nextRate > -0.99 && nextRate < 10.0) {
-      return nextRate;
+      return { irr: nextRate, status: 'converged', iterations: i + 1 };
     }
     rate = nextRate;
   }
@@ -378,11 +454,16 @@ export function calculateIrr(cashflows: number[]): number {
           low = mid;
         }
       }
-      return (low + high) / 2.0;
+      return { irr: (low + high) / 2.0, status: 'converged', iterations: 60 };
     }
   }
 
-  return 0.0;
+  return { irr: null, status: 'no_root' };
+}
+
+export function calculateIrr(cashflows: number[]): number | null {
+  const result = calculateIrrDetailed(cashflows);
+  return result.irr;
 }
 
 // ----------------------------------------------------
@@ -654,6 +735,10 @@ export function performQuickSizing(
     lcoeUsdPerKwh: lcoeVal,
     estimatedAnnualYieldKwh: annualYieldKwh,
     createdAt: new Date().toISOString(),
+    ownerId: req.ownerId,
+    moduleId: module.id,
+    inverterId: inverter.id,
+    batteryId: battery.id,
   };
 
   db.projects.set(projectId, project);

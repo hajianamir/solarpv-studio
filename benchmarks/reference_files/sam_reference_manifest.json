@@ -1,0 +1,61 @@
+{
+  "provenanceRelease": "NREL SAM 2023.12.17 Revision 1 (System Advisor Model)",
+  "goldenDatasetVersion": "3.0.0",
+  "generatedAt": "2026-11-06T18:00:00.000Z",
+  "hashAlgorithm": "SHA-256",
+  "cases": [
+    {
+      "caseId": "SAM-REF-BIFACIAL-BOULDER",
+      "climateHub": "Boulder, Colorado (Continental Subhumid)",
+      "benchmarkFile": "sam_2023_12_17_bifacial_reference_case.sam",
+      "sha256": "36a5c27d1f0c469c1b33a9046012eb75c8d9ba5988d6f0c99eefad43cc98eab8",
+      "modelConfiguration": {
+        "pvModuleModel": "Sandia Single-Diode 5-Parameter (N-Type TOPCon 550W Jinko Tiger Neo)",
+        "inverterModel": "Sandia Grid-Tied Inverter (Sungrow SG250HX)",
+        "tracking": "Single-Axis True-Tracking (Backtracking enabled)",
+        "gcr": 0.38,
+        "groundClearanceM": 1.20,
+        "albedo": 0.25,
+        "bifaciality": 0.80
+      },
+      "expectedOutputs": {
+        "annualBifacialGainPct": 10.40,
+        "tolerancePct": 2.0
+      }
+    },
+    {
+      "caseId": "SAM-REF-SOILING-PHOENIX",
+      "climateHub": "Phoenix, Arizona (Sonoran Arid Desert)",
+      "benchmarkFile": "sam_2023_12_17_phoenix_soiling_reference.sam",
+      "sha256": "9b0c26944ba0d8fe458457b27d1dd50dffc835f9be1fdc0cdc552a572febd8e3",
+      "modelConfiguration": {
+        "modelType": "Kimber",
+        "dailyDepositionRatePctPerDay": 0.115,
+        "rainfallPerEventMm": 20.0,
+        "maxSoilingCeilingPercent": 25.0
+      },
+      "expectedOutputs": {
+        "annualSoilingLossPct": 4.20,
+        "tolerancePct": 5.0
+      }
+    },
+    {
+      "caseId": "SAM-REF-SNOW-MUNICH",
+      "climateHub": "Munich, Bavaria (Central European Alpine Foot)",
+      "benchmarkFile": "sam_2023_12_17_munich_snow_reference.sam",
+      "sha256": "0491b76bf2dd2d76987e0e28903f972c82755b7dd0f51f0f9db8cdf5bb809039",
+      "modelConfiguration": {
+        "modelType": "Marion",
+        "annualSnowfallCm": 150.0,
+        "arrayTiltDeg": 30.0,
+        "groundClearanceM": 0.80,
+        "dammingRiskThresholdM": 0.50,
+        "slideTemperatureThresholdC": 0.50
+      },
+      "expectedOutputs": {
+        "annualSnowLossPct": 2.60,
+        "tolerancePct": 5.0
+      }
+    }
+  ]
+}

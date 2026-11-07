@@ -2448,6 +2448,7 @@ export const App: React.FC = () => {
               }
               plantCapacityType={systemMode === 'powerplant' ? 'ac_target' : 'dc_nameplate'}
               annualYieldKwh={waterfallReport.netAnnualEnergyExportMwh * 1000}
+              waterfallShadingLossPct={shadingLoss3dPct !== null ? shadingLoss3dPct : 2.4}
               simulationMode={shadingSimulationMode}
               onSimulationModeChange={setShadingSimulationMode}
               arrayDesign={{

@@ -190,30 +190,118 @@ function distanceToSegment(
   return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
 }
 
+function doSegmentsIntersect(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  p3: { x: number; y: number },
+  p4: { x: number; y: number }
+): boolean {
+  const ccw = (a: { x: number; y: number }, b: { x: number; y: number }, c: { x: number; y: number }) =>
+    (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
+  return (
+    ccw(p1, p3, p4) !== ccw(p2, p3, p4) &&
+    ccw(p1, p2, p3) !== ccw(p1, p2, p4)
+  );
+}
+
+/** Computes exact Euclidean minimum distance between two 2D line segments */
+function distanceBetweenSegments(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  q1: { x: number; y: number },
+  q2: { x: number; y: number }
+): number {
+  if (doSegmentsIntersect(p1, p2, q1, q2)) {
+    return 0;
+  }
+  return Math.min(
+    distanceToSegment(p1, q1, q2),
+    distanceToSegment(p2, q1, q2),
+    distanceToSegment(q1, p1, p2),
+    distanceToSegment(q2, p1, p2)
+  );
+}
+
 /** Checks whether a table satisfies the setback clearance from roof perimeter */
 export function checkTableSetbackCompliance(
   table: PvTable3D,
   roof: RoofPlane
 ): { isCompliant: boolean; minimumClearanceM: number } {
+  const tiltRad = ((table.tiltDeg ?? 0) * Math.PI) / 180.0;
+  const tableAzRad = ((table.azimuthDeg ?? 0) * Math.PI) / 180.0;
+  const halfLen = table.slopedLengthM / 2;
+  const halfWidth = table.widthM / 2;
+
+  const latUx = Math.cos(tableAzRad);
+  const latUy = -Math.sin(tableAzRad);
+
+  const slopeUx = Math.sin(tableAzRad) * Math.cos(tiltRad);
+  const slopeUy = Math.cos(tableAzRad) * Math.cos(tiltRad);
+
+  // Exact 4 corners of the table projected on horizontal (ENU X-Y) plane
   const corners = [
-    { x: table.positionEnu.x - table.widthM / 2, y: table.positionEnu.y - table.slopedLengthM / 2 },
-    { x: table.positionEnu.x + table.widthM / 2, y: table.positionEnu.y - table.slopedLengthM / 2 },
-    { x: table.positionEnu.x + table.widthM / 2, y: table.positionEnu.y + table.slopedLengthM / 2 },
-    { x: table.positionEnu.x - table.widthM / 2, y: table.positionEnu.y + table.slopedLengthM / 2 },
+    {
+      x: table.positionEnu.x - halfWidth * latUx - halfLen * slopeUx,
+      y: table.positionEnu.y - halfWidth * latUy - halfLen * slopeUy,
+    },
+    {
+      x: table.positionEnu.x + halfWidth * latUx - halfLen * slopeUx,
+      y: table.positionEnu.y + halfWidth * latUy - halfLen * slopeUy,
+    },
+    {
+      x: table.positionEnu.x + halfWidth * latUx + halfLen * slopeUx,
+      y: table.positionEnu.y + halfWidth * latUy + halfLen * slopeUy,
+    },
+    {
+      x: table.positionEnu.x - halfWidth * latUx + halfLen * slopeUx,
+      y: table.positionEnu.y - halfWidth * latUy + halfLen * slopeUy,
+    },
   ];
 
-  let minDistance = Infinity;
+  // Fix M13: Comprehensive polygon containment check for concave / irregular roof geometries.
+  // 1. Any intersection between table edges and roof boundary segments is an immediate breach.
+  for (let c = 0; c < 4; c++) {
+    const c1 = corners[c];
+    const c2 = corners[(c + 1) % 4];
+    for (let r = 0; r < roof.polygonEnu.length; r++) {
+      const r1 = roof.polygonEnu[r];
+      const r2 = roof.polygonEnu[(r + 1) % roof.polygonEnu.length];
+      if (doSegmentsIntersect(c1, c2, r1, r2)) {
+        return { isCompliant: false, minimumClearanceM: 0 };
+      }
+    }
+  }
 
+  // 2. Center point and all corners must be strictly inside roof polygon
+  if (!isPointInsidePolygon({ x: table.positionEnu.x, y: table.positionEnu.y }, roof.polygonEnu)) {
+    return { isCompliant: false, minimumClearanceM: 0 };
+  }
   for (const corner of corners) {
     if (!isPointInsidePolygon(corner, roof.polygonEnu)) {
       return { isCompliant: false, minimumClearanceM: 0 };
     }
+  }
 
-    for (let i = 0; i < roof.polygonEnu.length; i++) {
-      const p1 = roof.polygonEnu[i];
-      const p2 = roof.polygonEnu[(i + 1) % roof.polygonEnu.length];
-      const dist = distanceToSegment(corner, p1, p2);
-      if (dist < minDistance) minDistance = dist;
+  // Also check edge midpoints to catch concave polygon cutouts
+  for (let c = 0; c < 4; c++) {
+    const c1 = corners[c];
+    const c2 = corners[(c + 1) % 4];
+    const mid = { x: (c1.x + c2.x) / 2, y: (c1.y + c2.y) / 2 };
+    if (!isPointInsidePolygon(mid, roof.polygonEnu)) {
+      return { isCompliant: false, minimumClearanceM: 0 };
+    }
+  }
+
+  // 3. Exact continuous segment-to-segment distance calculation (no sample point misses)
+  let minDistance = Infinity;
+  for (let c = 0; c < 4; c++) {
+    const c1 = corners[c];
+    const c2 = corners[(c + 1) % 4];
+    for (let r = 0; r < roof.polygonEnu.length; r++) {
+      const r1 = roof.polygonEnu[r];
+      const r2 = roof.polygonEnu[(r + 1) % roof.polygonEnu.length];
+      const segDist = distanceBetweenSegments(c1, c2, r1, r2);
+      if (segDist < minDistance) minDistance = segDist;
     }
   }
 
@@ -943,7 +1031,7 @@ export function simulateAnnual3dShading(
     (scene.totalPvCapacityKwp === 0 && sumTablesKwp === 0) ||
     (scene.totalPvCapacityKwp > 0 &&
       sumTablesKwp > 0 &&
-      Math.abs(scene.totalPvCapacityKwp - sumTablesKwp) <= Math.max(0.5, scene.totalPvCapacityKwp * 0.02));
+      Math.abs(scene.totalPvCapacityKwp - sumTablesKwp) <= Math.max(0.02, scene.totalPvCapacityKwp * 0.01));
 
   const isModulesConsistent =
     scene.totalModulesCount === undefined ||
@@ -1233,12 +1321,18 @@ export function buildSceneFromProjectDesign(inputs: ProjectArrayDesignInputs): S
   const totalModules = Math.max(1, inputs.totalModulesCount || 140);
   const modWidth = Math.max(0.8, inputs.moduleWidthM || 1.134);
   const modLength = Math.max(1.2, inputs.moduleLengthM || 2.278);
-  const modPmp =
-    inputs.modulePmpWatts ||
-    (inputs.totalPvCapacityKwp > 0 ? (inputs.totalPvCapacityKwp * 1000) / totalModules : 550);
-  const totalKwp =
-    inputs.totalPvCapacityKwp > 0 ? inputs.totalPvCapacityKwp : (totalModules * modPmp) / 1000;
-  const totalWatts = Math.round(totalKwp * 1000);
+
+  // Canonical physical Pmp per module (N07)
+  const modPmp = inputs.modulePmpWatts && inputs.modulePmpWatts > 0
+    ? inputs.modulePmpWatts
+    : (inputs.totalPvCapacityKwp > 0 ? (inputs.totalPvCapacityKwp * 1000) / totalModules : 550);
+
+  // Canonical physical table power is strictly derived from N * Pmp (never artificially redistributed)
+  const canonicalKwp = Number(((totalModules * modPmp) / 1000.0).toFixed(4));
+  const totalWatts = Math.round(canonicalKwp * 1000);
+
+  // Declared project capacity is preserved as totalPvCapacityKwp for reconciliation mismatch detection
+  const totalKwp = inputs.totalPvCapacityKwp > 0 ? inputs.totalPvCapacityKwp : canonicalKwp;
 
   // Determine realistic table/row layout based on module count
   let numRows: number;
@@ -1613,6 +1707,86 @@ export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
   return triangles;
 }
 
+function generateSubRectGridPoints(
+  sr: ActiveTableSubRect,
+  targetCount: number,
+  table: PvTable3D,
+  latUx: number,
+  latUy: number,
+  slopeUx: number,
+  slopeUy: number,
+  slopeUz: number,
+  normX: number,
+  normY: number,
+  normZ: number,
+  normalOffset: number
+): Vec3[] {
+  if (targetCount <= 0) return [];
+  const cx = table.positionEnu.x + sr.centerOffsetLat * latUx + sr.centerOffsetSlope * slopeUx;
+  const cy = table.positionEnu.y + sr.centerOffsetLat * latUy + sr.centerOffsetSlope * slopeUy;
+  const cz = table.positionEnu.z + sr.centerOffsetSlope * slopeUz;
+
+  if (targetCount === 1) {
+    return [
+      {
+        x: cx + normalOffset * normX,
+        y: cy + normalOffset * normY,
+        z: cz + normalOffset * normZ,
+      },
+    ];
+  }
+
+  const hw = sr.width / 2;
+  const hl = sr.slopedLength / 2;
+  const aspect = Math.max(0.2, sr.width / sr.slopedLength);
+
+  let bestL = 1;
+  let bestS = targetCount;
+  let bestErr = Infinity;
+  let bestAspectDiff = Infinity;
+
+  for (let l = 1; l <= targetCount; l++) {
+    const s = Math.max(1, Math.ceil(targetCount / l));
+    const prod = l * s;
+    const err = prod - targetCount;
+    if (err < 0) continue;
+    const aspectDiff = Math.abs(l / s - aspect);
+    if (err < bestErr || (err === bestErr && aspectDiff < bestAspectDiff)) {
+      bestErr = err;
+      bestAspectDiff = aspectDiff;
+      bestL = l;
+      bestS = s;
+    }
+  }
+
+  const rawGrid: Vec3[] = [];
+  for (let r = 0; r < bestS; r++) {
+    const sFrac = bestS === 1 ? 0 : -0.5 + (r / (bestS - 1));
+    const sOffset = sFrac * hl * 2 * 0.9;
+    for (let c = 0; c < bestL; c++) {
+      const lFrac = bestL === 1 ? 0 : -0.5 + (c / (bestL - 1));
+      const lOffset = lFrac * hw * 2 * 0.9;
+      rawGrid.push({
+        x: cx + lOffset * latUx + sOffset * slopeUx + normalOffset * normX,
+        y: cy + lOffset * latUy + sOffset * slopeUy + normalOffset * normY,
+        z: cz + sOffset * slopeUz + normalOffset * normZ,
+      });
+    }
+  }
+
+  if (rawGrid.length === targetCount) {
+    return rawGrid;
+  }
+
+  // Sample evenly without duplicate coordinates (P3)
+  const sampled: Vec3[] = [];
+  const step = rawGrid.length / targetCount;
+  for (let i = 0; i < targetCount; i++) {
+    sampled.push(rawGrid[Math.min(rawGrid.length - 1, Math.floor(i * step))]);
+  }
+  return sampled;
+}
+
 /**
  * Generates sample target vertices across a PV table surface for ray-intersection evaluation.
  * Points are placed exclusively inside active module zones.
@@ -1620,7 +1794,8 @@ export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
 export function generateTableMeshSamplePoints(
   table: PvTable3D,
   lateralCount: number = 4,
-  slopedCount: number = 3
+  slopedCount: number = 3,
+  exactTargetCount?: number
 ): Vec3[] {
   const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
   const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
@@ -1636,11 +1811,58 @@ export function generateTableMeshSamplePoints(
   const normY = -Math.cos(tableAzRad) * Math.sin(tiltRad);
   const normZ = Math.cos(tiltRad);
 
-  const subRects = getActiveTableSubRects(table);
-  const points: Vec3[] = [];
   const normalOffset = 0.05; // 5 cm above panel surface along normal vector to guard against numerical coplanar self-intersection
 
+  // Exact 1-point request: table centroid (R847-08)
+  if (exactTargetCount === 1) {
+    return [
+      {
+        x: table.positionEnu.x + normalOffset * normX,
+        y: table.positionEnu.y + normalOffset * normY,
+        z: table.positionEnu.z + normalOffset * normZ,
+      },
+    ];
+  }
+
+  const subRects = getActiveTableSubRects(table);
+  const points: Vec3[] = [];
+
   if (subRects.length === 0) return points;
+
+  // When exactTargetCount is supplied, distribute sample points continuously across sub-rects without duplicate points (P3)
+  if (exactTargetCount !== undefined && exactTargetCount > 0) {
+    const totalArea = subRects.reduce((sum, sr) => sum + sr.width * sr.slopedLength, 0);
+    let remainingPoints = exactTargetCount;
+    const subRectPoints: Vec3[] = [];
+
+    for (let i = 0; i < subRects.length; i++) {
+      const sr = subRects[i];
+      const area = sr.width * sr.slopedLength;
+      const isLast = i === subRects.length - 1;
+      const srTarget = isLast
+        ? remainingPoints
+        : Math.min(remainingPoints, Math.max(1, Math.round(exactTargetCount * (area / totalArea))));
+      remainingPoints -= srTarget;
+
+      const pts = generateSubRectGridPoints(
+        sr,
+        srTarget,
+        table,
+        latUx,
+        latUy,
+        slopeUx,
+        slopeUy,
+        slopeUz,
+        normX,
+        normY,
+        normZ,
+        normalOffset
+      );
+      subRectPoints.push(...pts);
+    }
+
+    return subRectPoints;
+  }
 
   // Single sub-rect (even module counts or single-module tables):
   // Generate lateralCount x slopedCount regular grid
@@ -1704,6 +1926,24 @@ export function generateTableMeshSamplePoints(
           z: cz + sOffset * slopeUz + normalOffset * normZ,
         });
       }
+    }
+  }
+
+  // Exact target count post-processing (R847-08)
+  if (exactTargetCount !== undefined && exactTargetCount > 0 && points.length !== exactTargetCount) {
+    if (points.length > exactTargetCount) {
+      const step = points.length / exactTargetCount;
+      const sampled: Vec3[] = [];
+      for (let i = 0; i < exactTargetCount; i++) {
+        sampled.push(points[Math.min(points.length - 1, Math.floor(i * step))]);
+      }
+      return sampled;
+    } else if (points.length < exactTargetCount && points.length > 0) {
+      const res = [...points];
+      while (res.length < exactTargetCount) {
+        res.push(points[res.length % points.length]);
+      }
+      return res;
     }
   }
 
@@ -1889,7 +2129,36 @@ export function calculateRayTracedShadingFactor(
   let totalArrayWeight = 0;
 
   for (const table of scene.pvTables) {
-    const tablePoints = generateTableMeshSamplePoints(table);
+    let tablePoints: Vec3[];
+    if (options?.samplePointsPerTable) {
+      const target = Math.max(1, Math.round(options.samplePointsPerTable));
+      if (target === 1) {
+        tablePoints = generateTableMeshSamplePoints(table, 1, 1, 1);
+      } else {
+        // Optimal grid search for best aspect ratio (4/3) matching target (R847-08)
+        let bestL = 1;
+        let bestS = target;
+        let bestErr = Infinity;
+        let bestAspectDiff = Infinity;
+        const targetAspect = 4 / 3;
+
+        for (let l = 1; l <= target; l++) {
+          const s = Math.max(1, Math.round(target / l));
+          const prod = l * s;
+          const err = Math.abs(prod - target);
+          const aspectDiff = Math.abs(l / s - targetAspect);
+          if (err < bestErr || (err === bestErr && aspectDiff < bestAspectDiff)) {
+            bestErr = err;
+            bestAspectDiff = aspectDiff;
+            bestL = l;
+            bestS = s;
+          }
+        }
+        tablePoints = generateTableMeshSamplePoints(table, bestL, bestS, target);
+      }
+    } else {
+      tablePoints = generateTableMeshSamplePoints(table, 4, 3);
+    }
     allTargetPoints.push(...tablePoints);
 
     if (tablePoints.length > 0) {

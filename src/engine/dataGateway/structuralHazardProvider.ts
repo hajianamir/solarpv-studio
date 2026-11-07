@@ -111,7 +111,7 @@ export class StructuralHazardProvider {
         sourceProvider: 'REGIONAL_ANALYTICAL_MODEL',
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
-        isEstimatedFromGlobalModel: isFallback,
+        isEstimatedFromGlobalModel: true,
         geographicRegion: isEurope ? 'Eurocode Zone' : isAmericas ? 'ASCE 7 Zone' : isIran ? 'INBC 6 Zone' : 'Global Zone',
         governingStandards: [windCode, snowCode, 'Dlubal GeoZone GraphQL Schema'],
       },

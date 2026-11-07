@@ -1,0 +1,54 @@
+{
+  "version": "2023.12.17 Revision 1",
+  "name": "sam_2023_12_17_bifacial_reference_case",
+  "description": "NREL SAM 2023.12.17 Rev 1 Reference Validation Case for Bifacial PV Tracking Array",
+  "location": {
+    "city": "Boulder",
+    "state": "Colorado",
+    "country": "USA",
+    "latitude": 40.015,
+    "longitude": -105.2705,
+    "elevationM": 1655,
+    "weatherFile": "USA_CO_Boulder_TMY3.csv"
+  },
+  "pvLayout": {
+    "trackingType": "single_axis_horizontal",
+    "backtracking": true,
+    "gcr": 0.38,
+    "rowPitchM": 6.0,
+    "collectorWidthM": 2.278,
+    "groundClearanceM": 1.2,
+    "groundAlbedo": 0.25,
+    "bifaciality": 0.80,
+    "torqueTubeDiameterM": 0.12,
+    "torqueTubeClearanceM": 0.10
+  },
+  "pvModule": {
+    "model": "Jinko Solar Co., Ltd JKM550N-72HL4-BDV",
+    "technology": "N-Type TOPCon Bifacial",
+    "stcPmpW": 550.26,
+    "stcVocV": 50.80,
+    "stcIscA": 13.99,
+    "stcVmpV": 41.28,
+    "stcImpA": 13.33,
+    "seriesResistanceOhm": 0.231,
+    "shuntResistanceOhm": 485.0,
+    "diodeIdealityFactor": 1.048,
+    "tempCoeffPmpPctPerC": -0.30,
+    "tempCoeffVocPctPerC": -0.25
+  },
+  "inverter": {
+    "model": "Sungrow Power Supply SG250HX",
+    "ratedPowerAcKw": 250.0,
+    "vdcMaxVolts": 1500,
+    "vmpptMinVolts": 860,
+    "vmpptMaxVolts": 1300,
+    "efficiencyEuroPct": 98.8
+  },
+  "benchmarkTargetOutputs": {
+    "annualBifacialRearGainPct": 10.40,
+    "annualDniKwhM2": 1950.4,
+    "annualDhiKwhM2": 520.2,
+    "targetTolerancePct": 2.0
+  }
+}

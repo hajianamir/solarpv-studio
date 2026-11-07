@@ -44,6 +44,7 @@ export interface ThreeJsViewerProps {
   annualYieldKwh?: number;
   appliedShading?: AppliedShading3dRecord | null;
   isShadingStale?: boolean;
+  waterfallShadingLossPct?: number;
   onApplyShading?: (record: AppliedShading3dRecord) => void;
   onRevertShading?: () => void;
   onShadingLossChange?: (shadingLossPct: number) => void;
@@ -79,6 +80,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   annualYieldKwh,
   appliedShading = null,
   isShadingStale = false,
+  waterfallShadingLossPct,
   onApplyShading,
   onRevertShading,
   onShadingLossChange,
@@ -1003,17 +1005,31 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   </span>
                 </div>
                 {(() => {
-                  const lossFraction = Math.min(
+                  // Determine effective shading loss percentage currently baked into annualYieldKwh (R847-04)
+                  const effectiveBakedLossPct = waterfallShadingLossPct !== undefined
+                    ? waterfallShadingLossPct
+                    : (appliedShading && !isShadingStale ? appliedShading.lossPct : 2.4);
+
+                  const appliedLossFraction = Math.min(
+                    0.95,
+                    Math.max(0, effectiveBakedLossPct / 100.0)
+                  );
+                  // True unshaded baseline of the plant before any applied or default shading derate (N08, R847-04)
+                  const unshadedBaselineKwh =
+                    appliedLossFraction > 0 && appliedLossFraction < 0.95
+                      ? Math.round(annualYieldKwh / (1.0 - appliedLossFraction))
+                      : Math.round(annualYieldKwh);
+
+                  // Preview metrics based on fresh simulation result vs independent unshaded baseline
+                  const previewLossFraction = Math.min(
                     0.95,
                     Math.max(0, annualResult.annualCombinedShadingLossPct / 100.0)
                   );
-                  const unshadedBaselineKwh =
-                    lossFraction < 0.95 && lossFraction > 0
-                      ? Math.round(annualYieldKwh / (1.0 - lossFraction))
-                      : Math.round(annualYieldKwh);
-                  const shadingDeficitKwh = Math.max(
-                    0,
-                    unshadedBaselineKwh - Math.round(annualYieldKwh)
+                  const shadingDeficitKwh = Math.round(
+                    unshadedBaselineKwh * previewLossFraction
+                  );
+                  const previewNetExportKwh = Math.round(
+                    unshadedBaselineKwh * (1.0 - previewLossFraction)
                   );
 
                   return (
@@ -1043,11 +1059,11 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                       <div className="p-2 bg-slate-900/40 rounded border border-industrial-border/60">
                         <div className="text-[10px] text-slate-400 font-sans">
                           {isEn
-                            ? 'Net Export (Waterfall-Coupled):'
-                            : 'تولید خالص نهایی نیروگاه (متصل به واترفال):'}
+                            ? 'Net Export (Preview):'
+                            : 'تولید خالص پیش‌نمایش:'}
                         </div>
                         <div className="text-emerald-400 font-bold mt-0.5">
-                          {Math.round(annualYieldKwh).toLocaleString()}{' '}
+                          {previewNetExportKwh.toLocaleString()}{' '}
                           <span className="text-[10px] font-normal font-sans">kWh/yr</span>
                         </div>
                       </div>
@@ -1132,59 +1148,72 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                       </button>
                     )}
 
-                    <button
-                      onClick={() => {
-                        if (annualResult && !isAnalysisStale) {
-                          onApplyShading?.({
-                            lossPct: annualResult.annualCombinedShadingLossPct,
-                            source:
-                              sceneMode === 'project_array'
-                                ? 'project_array_design'
-                                : 'representative_demo_block',
-                            appliedAtIso: new Date().toISOString(),
-                            capacityKwp: activeSceneCapacityKwp,
-                            signatureHash: calculatedSignature ?? currentSceneSignature,
-                            simulationMode,
-                          });
-                          onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
-                        }
-                      }}
-                      disabled={
-                        !annualResult ||
-                        isAnalysisStale ||
-                        (Boolean(appliedShading) &&
-                          calculatedSignature === appliedShading?.signatureHash &&
-                          appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct)
-                      }
-                      className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
-                      title={
-                        isAnalysisStale
-                          ? isEn
-                            ? 'Geometry changed since analysis run. Please re-run simulation.'
-                            : 'هندسه تغییر کرده است. لطفاً شبیه‌سازی را مجدداً اجرا کنید.'
-                          : appliedShading &&
+                    {(() => {
+                      const isSimulationReconciled =
+                        !annualResult?.reconciliationStatus ||
+                        annualResult.reconciliationStatus.overallReconciled;
+
+                      return (
+                        <button
+                          onClick={() => {
+                            if (annualResult && !isAnalysisStale && isSimulationReconciled) {
+                              onApplyShading?.({
+                                lossPct: annualResult.annualCombinedShadingLossPct,
+                                source:
+                                  sceneMode === 'project_array'
+                                    ? 'project_array_design'
+                                    : 'representative_demo_block',
+                                appliedAtIso: new Date().toISOString(),
+                                capacityKwp: activeSceneCapacityKwp,
+                                signatureHash: calculatedSignature ?? currentSceneSignature,
+                                simulationMode,
+                              });
+                              onShadingLossChange?.(annualResult.annualCombinedShadingLossPct);
+                            }
+                          }}
+                          disabled={
+                            !annualResult ||
+                            isAnalysisStale ||
+                            !isSimulationReconciled ||
+                            (Boolean(appliedShading) &&
                               calculatedSignature === appliedShading?.signatureHash &&
-                              appliedShading?.lossPct === annualResult?.annualCombinedShadingLossPct
-                            ? isEn
-                              ? 'This exact simulation result is already applied to the project.'
-                              : 'این نتیجهٔ شبیه‌سازی در حال حاضر به پروژه اعمال شده است.'
-                            : undefined
-                      }
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {appliedShading
-                        ? calculatedSignature === appliedShading?.signatureHash &&
-                          appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct
-                          ? isEn
-                            ? `Applied (-${appliedShading.lossPct}%)`
-                            : `اعمال‌شده (-${appliedShading.lossPct}٪)`
-                          : isEn
-                            ? `Update Project (-${annualResult.annualCombinedShadingLossPct}%)`
-                            : `به‌روزرسانی ضریب پروژه (-${annualResult.annualCombinedShadingLossPct}٪)`
-                        : isEn
-                          ? `Apply -${annualResult.annualCombinedShadingLossPct}% to Project`
-                          : `اعمال کسری -${annualResult.annualCombinedShadingLossPct}٪ به پروژه`}
-                    </button>
+                              appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct)
+                          }
+                          className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                          title={
+                            isAnalysisStale
+                              ? isEn
+                                ? 'Geometry changed since analysis run. Please re-run simulation.'
+                                : 'هندسه تغییر کرده است. لطفاً شبیه‌سازی را مجدداً اجرا کنید.'
+                              : !isSimulationReconciled
+                                ? isEn
+                                  ? 'Cannot apply: Shading simulation is not reconciled (e.g. capacity or energy balance mismatch). Check reconciliation status below.'
+                                  : 'امکان اعمال وجود ندارد: شبیه‌سازی سایه‌اندازی تراز نشده است (عدم تطابق ظرفیت یا توازن انرژی).'
+                                : appliedShading &&
+                                  calculatedSignature === appliedShading?.signatureHash &&
+                                  appliedShading?.lossPct === annualResult?.annualCombinedShadingLossPct
+                                  ? isEn
+                                    ? 'This exact simulation result is already applied to the project.'
+                                    : 'این نتیجهٔ شبیه‌سازی در حال حاضر به پروژه اعمال شده است.'
+                                  : undefined
+                          }
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {appliedShading
+                            ? calculatedSignature === appliedShading?.signatureHash &&
+                              appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct
+                              ? isEn
+                                ? `Applied (-${appliedShading.lossPct}%)`
+                                : `اعمال‌شده (-${appliedShading.lossPct}٪)`
+                              : isEn
+                                ? `Update Project (-${annualResult.annualCombinedShadingLossPct}%)`
+                                : `به‌روزرسانی ضریب پروژه (-${annualResult.annualCombinedShadingLossPct}٪)`
+                            : isEn
+                              ? `Apply -${annualResult.annualCombinedShadingLossPct}% to Project`
+                              : `اعمال کسری -${annualResult.annualCombinedShadingLossPct}٪ به پروژه`}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

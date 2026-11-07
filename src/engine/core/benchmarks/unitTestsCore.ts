@@ -2124,8 +2124,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     assert(
       'P2-FIN-GOLDEN-3',
       'IRR of [-1000, 300, 400, 500, 300] ≈ 0.18028 (verified via NPV bisection)',
-      Math.abs(irr - 0.18028) < 1e-4,
-      `computed=${irr.toFixed(6)} expected≈0.18028 tolerance=1e-4`
+      irr !== null && Math.abs(irr - 0.18028) < 1e-4,
+      `computed=${irr !== null ? irr.toFixed(6) : 'null'} expected≈0.18028 tolerance=1e-4`
     );
   }
 
@@ -3082,10 +3082,10 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const { calculateIrr } = await import('../../solarPvEngine');
     const { performFinancialAnalysis } = await import('../../financialEngine');
 
-    // 1. IRR with zero or negative-only cash flows must not return fabricated -50% / -99%
+    // 1. IRR with zero or negative-only cash flows must return null (no root exists) rather than fabricated numbers or 0.0
     const allZero = calculateIrr([0, 0, 0, 0, 0]);
     const allNegative = calculateIrr([-1000, -200, -200, -200]);
-    const irrZeroChecked = allZero === 0.0 && allNegative === 0.0;
+    const irrZeroChecked = allZero === null && allNegative === null;
 
     // 2. Chemistry battery replacement: AGM (~3y) vs Gel (~4y) vs LFP (~12y)
     const finAgm = performFinancialAnalysis(100, 50, 100, 150000, { batteryChemistry: 'agm_flooded' }, 25, 'ongrid');
@@ -3453,7 +3453,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     // 1. Negative IRR: [-100, 50] -> -50% (-0.5)
     const irrNeg = calculateIrr([-100, 50]);
-    const irrNegOk = Math.abs(irrNeg - (-0.5)) < 1e-4;
+    const irrNegOk = irrNeg !== null && Math.abs(irrNeg - (-0.5)) < 1e-4;
 
     // 2. Inverter replacement in LCOE: with vs without inverter replacement
     const finNoInv = performFinancialAnalysis(1000, 0, 1000, 1800000, { inverterReplacementYear: 0 }, 25, 'powerplant');
@@ -3468,7 +3468,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'E9-FIN-IRR-LCOE-1',
       'IRR correctly calculates valid negative returns ([-100, 50] -> -50%) and LCOE includes inverter replacement',
       irrNegOk && lcoeIncludesInverter && zeroEnergyHandled,
-      `irrNeg=${(irrNeg * 100).toFixed(1)}% (exp -50%), LCOE noInv=$${finNoInv.lcoeUsdPerKwh} withInv=$${finWithInv.lcoeUsdPerKwh}, zeroYieldLcoeDefined=${finZero.isLcoeDefined}`
+      `irrNeg=${irrNeg !== null ? (irrNeg * 100).toFixed(1) : 'null'}% (exp -50%), LCOE noInv=$${finNoInv.lcoeUsdPerKwh} withInv=$${finWithInv.lcoeUsdPerKwh}, zeroYieldLcoeDefined=${finZero.isLcoeDefined}`
     );
   }
 

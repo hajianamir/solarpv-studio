@@ -364,6 +364,11 @@ for (const c of extVal.crossModelComparisons) {
 }
 console.log('+--------------------+--------------------------+---------------+---------------+---------------+--------+\n');
 
+if (extVal.overallStatus !== 'PASS') {
+  console.error('FATAL: External empirical validation suite failed (IEC 61724-1 sensor or SAM benchmark targets failed)');
+  process.exit(1);
+}
+
 // -----------------------------------------------------------------------------
 // 10. BIPV/T Multiphysics Coupling & Thermal Non-Uniformity Engine (PR-2a-4)
 // -----------------------------------------------------------------------------
