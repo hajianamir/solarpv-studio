@@ -5172,11 +5172,26 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const polarNightSum = polarNightSim.hourlySteps.reduce((sum, h) => sum + h.loadDemandKwh, 0);
     const polarNightOk = Math.abs(polarNightSum - 20.0) <= 0.05;
 
+    // Sweep night-only load (12 kWh, day = 0 kWh) across varied daylight windows (8.14h, 9.58h, 12h, 14.42h)
+    // Verify that NO hourly load is negative, noon load is non-negative, and total energy is 100% conserved
+    const daylightTestWindows = [8.14, 9.58, 12.0, 14.42];
+    let nightOnlySweepOk = true;
+    for (const d of daylightTestWindows) {
+      const nightSim = simulate24hEnergyBalance(10.0, 5.0, 0.0, 12.0, 15.0, 20.0, 50.0, d);
+      const minLoad = Math.min(...nightSim.hourlySteps.map(s => s.loadDemandKwh));
+      const noonLoad = nightSim.hourlySteps[12].loadDemandKwh;
+      const sumLoad = nightSim.hourlySteps.reduce((sum, s) => sum + s.loadDemandKwh, 0);
+      if (minLoad < 0 || noonLoad < 0 || Math.abs(sumLoad - 12.0) > 0.05) {
+        nightOnlySweepOk = false;
+        break;
+      }
+    }
+
     assert(
       'E24-SIMULATION-24H-STRICT-LOAD-CONSERVATION-AND-SOC',
       'Dynamic sunrise/sunset 24h simulation guarantees strict hourly load conservation (tolerance <= 0.01 kWh) and tracks SoC & surplus',
-      loadConservationOk && socReported && grossSurplusReported && polarNightOk,
-      `hourlySum=${hourlySum.toFixed(4)} kWh vs target=${totalTarget} kWh (diff=${Math.abs(hourlySum - totalTarget).toFixed(4)}), initialSoC=${sim.initialBatterySocPct}%, finalSoC=${sim.finalBatterySocPct}%, surplus=${sim.totalSurplus24hKwh} kWh, polarNight=${polarNightOk}`
+      loadConservationOk && socReported && grossSurplusReported && polarNightOk && nightOnlySweepOk,
+      `hourlySum=${hourlySum.toFixed(4)} kWh vs target=${totalTarget} kWh (diff=${Math.abs(hourlySum - totalTarget).toFixed(4)}), initialSoC=${sim.initialBatterySocPct}%, finalSoC=${sim.finalBatterySocPct}%, surplus=${sim.totalSurplus24hKwh} kWh, polarNight=${polarNightOk}, nightOnlySweep=${nightOnlySweepOk}`
     );
   }
 

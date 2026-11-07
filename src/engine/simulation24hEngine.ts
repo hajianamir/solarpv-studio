@@ -121,7 +121,7 @@ export function simulate24hEnergyBalance(
   const dischargeEff = 0.95;
   const maxPcsPowerKw = batteryCapacityTotalKwh * 1.0;
 
-  // Pre-calculate hourly loads with exact rounding and distribute residual to noon hour (12)
+  // Pre-calculate hourly loads with exact rounding and distribute residual without negative values
   // BEFORE the simulation loop, guaranteeing load and deficit equality in polar / deficit hours
   const targetTotalLoad = Number((daytimeKwh + nighttimeKwh).toFixed(2));
   const hourlyLoadsKwh: number[] = new Array(24).fill(0);
@@ -131,9 +131,24 @@ export function simulate24hEnergyBalance(
     hourlyLoadsKwh[h] = Math.round((loadDayKwh + loadNightKwh) * 100) / 100;
   }
   const preSum = hourlyLoadsKwh.reduce((sum, v) => sum + v, 0);
-  const preResidual = Number((targetTotalLoad - preSum).toFixed(2));
+  let preResidual = Number((targetTotalLoad - preSum).toFixed(2));
+
   if (Math.abs(preResidual) >= 0.005) {
-    hourlyLoadsKwh[12] = Number((hourlyLoadsKwh[12] + preResidual).toFixed(2));
+    // Sort hours by load descending so the largest load absorbs the residual without turning negative
+    const candidateIndices = Array.from({ length: 24 }, (_, i) => i)
+      .sort((a, b) => hourlyLoadsKwh[b] - hourlyLoadsKwh[a]);
+
+    for (const h of candidateIndices) {
+      if (hourlyLoadsKwh[h] + preResidual >= 0) {
+        hourlyLoadsKwh[h] = Number((hourlyLoadsKwh[h] + preResidual).toFixed(2));
+        preResidual = 0;
+        break;
+      } else if (hourlyLoadsKwh[h] > 0) {
+        const absorb = hourlyLoadsKwh[h];
+        preResidual = Number((preResidual + absorb).toFixed(2));
+        hourlyLoadsKwh[h] = 0;
+      }
+    }
   }
 
   for (let h = 0; h < 24; h++) {
