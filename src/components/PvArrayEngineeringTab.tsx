@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Sun, Cpu, AlertTriangle, CheckCircle2, Layers, Zap, Eye, Search } from 'lucide-react';
 import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
 import { type InverterClusteringResult } from '../engine/inverterClustering';
-import { CATALOG_MODULES, CATALOG_INVERTERS, type CatalogInverter } from '../engine/equipmentCatalogData';
+import { CatalogRepository, type EnhancedCatalogModule, type EnhancedCatalogInverter } from '../engine/catalogRepository';
 import { type ClimateCity, getDefaultClimateCity } from '../engine/climaticData';
 import { ShadingAnalysisSubTab } from './ShadingAnalysisSubTab';
 import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
@@ -67,9 +67,26 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
     return () => { mounted = false; };
   }, [city]);
 
+  // Catalog Repository Reactive Store
+  const [catalogVersion, setCatalogVersion] = useState(0);
+  useEffect(() => {
+    return CatalogRepository.getInstance().subscribe(() => {
+      setCatalogVersion((v) => v + 1);
+    });
+  }, []);
+
+  const allModules = useMemo(() => {
+    void catalogVersion;
+    return CatalogRepository.getInstance().getModules();
+  }, [catalogVersion]);
+  const allInverters = useMemo(() => {
+    void catalogVersion;
+    return CatalogRepository.getInstance().getInverters();
+  }, [catalogVersion]);
+
   // Filtered Modules
   const filteredModules = useMemo(() => {
-    return CATALOG_MODULES.filter((m) => {
+    return allModules.filter((m) => {
       const q = moduleSearch.toLowerCase();
       return (
         m.manufacturer.toLowerCase().includes(q) ||
@@ -78,12 +95,12 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
         m.cellType.toLowerCase().includes(q)
       );
     });
-  }, [moduleSearch]);
+  }, [allModules, moduleSearch]);
 
   // Filtered Inverters:
   // RULE (Item 5): MV Turnkey stations (MW capacity) MUST ONLY be active/selectable in Powerplant mode!
   const filteredInverters = useMemo(() => {
-    return CATALOG_INVERTERS.filter((inv) => {
+    return allInverters.filter((inv) => {
       // If not powerplant, exclude mv_turnkey
       if (systemMode !== 'powerplant' && inv.technology === 'mv_turnkey') {
         return false;
@@ -101,7 +118,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
         inv.pnomKw.toString().includes(q)
       );
     });
-  }, [systemMode, inverterCategory, inverterSearch]);
+  }, [allInverters, systemMode, inverterCategory, inverterSearch]);
 
   return (
     <div className="space-y-6">
@@ -312,7 +329,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 id="pv-module-picker-select"
                 value={selectedModule.modelName}
                 onChange={(e) => {
-                  const found = CATALOG_MODULES.find((m) => m.modelName === e.target.value);
+                  const found = allModules.find((m) => m.modelName === e.target.value);
                   if (found) {
                     onModuleChange({
                       manufacturer: found.manufacturer,
@@ -324,7 +341,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                       impAmps: found.impAmps,
                       tempCoeffVocPct: found.tempCoeffVocPct,
                       tempCoeffPmpPct: found.tempCoeffPmpPct,
-                      noctC: 45.0,
+                      noctC: found.noctC ?? 45.0,
                       lengthM: found.lengthMm / 1000.0,
                       widthM: found.widthMm / 1000.0,
                       bifacialityFactor: found.bifacialityFactor,
@@ -425,7 +442,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 id="pv-inverter-picker-select"
                 value={selectedInverter.modelName}
                 onChange={(e) => {
-                  const found = CATALOG_INVERTERS.find((i) => i.modelName === e.target.value);
+                  const found = allInverters.find((i) => i.modelName === e.target.value);
                   if (found) {
                     onInverterChange({
                       manufacturer: found.manufacturer,

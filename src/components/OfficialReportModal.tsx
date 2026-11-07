@@ -43,6 +43,7 @@ import {
   ThermometerSnowflake,
   FileCheck,
   BookOpen,
+  Database,
 } from 'lucide-react';
 import { type ClimateCity, type SiteGeotechnicalOverrides, getEffectiveClimateCity } from '../engine/climaticData';
 import { type LoadAnalysisResult } from '../engine/loadProfiles';
@@ -53,11 +54,16 @@ import { type Simulation24hResult, type GeneratorSizingResult } from '../engine/
 import { type FinancialAnalysisResult } from '../engine/financialEngine';
 import { type PowerplantBayArchitectureResult } from '../engine/powerplantBayEngine';
 import { exportToWordDocument, exportToExcelWorkbook } from '../engine/reportingEngine';
+import {
+  createProjectTransferEnvelope,
+  restoreProjectTransferEnvelope,
+} from '../engine/offlineTransferEngine';
 import { calculateStructuralAndFoundations, cpUpliftFor, type StructuralAnalysisResult, type FoundationType } from '../engine/structuralEngine';
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
+import { formatCoordinates, calculateSolsticeSolarGeometry } from '../engine/geoCoordinates';
 
 interface OfficialReportModalProps {
   projectName: string;
@@ -208,7 +214,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     : Number(((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1));
   const p50Mwh = primaryAnnualEnergyMwh;
   const p75Mwh = Number((primaryAnnualEnergyMwh * 0.945).toFixed(1));
-  const p90Mwh = Number((primaryAnnualEnergyMwh * 0.898).toFixed(1));
+  const illustrativeDownsideMwh = Number((primaryAnnualEnergyMwh * 0.898).toFixed(1));
 
   // Dynamic Shading Derate & Provenance Metrics
   const isAppliedShadingActive = Boolean(appliedShading && !isShadingStale);
@@ -280,7 +286,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const handleExportWord = () => {
     if (!reportContainerRef.current) return;
     const reportHtml = reportContainerRef.current.innerHTML;
-    exportToWordDocument(reportHtml, `${customFileName}.doc`);
+    exportToWordDocument(reportHtml, `${customFileName}.docx`);
   };
 
   const handleExportExcel = () => {
@@ -370,7 +376,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Diurnal Diagnostic Net AC Generation', diurnal24hAnnualMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Diurnal Profile (Diagnostic)'],
       ['Gross DC Annual Generation (24h Extrapolated)', (diurnal24hAnnualMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h Diagnostic)'],
       ['Illustrative Downside Scenario (-5.5%)', p75Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.945x Sensitivity Factor (Not Probabilistic Exceedance)'],
-      ['Illustrative Conservative Downside (-10.2%)', p90Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.898x Sensitivity Factor (Not Bankable P90)'],
+      ['Illustrative Conservative Downside (-10.2%)', illustrativeDownsideMwh.toFixed(1), 'MWh/yr', 'Illustrative 0.898x Sensitivity Factor (Not Bankable P90)'],
       ['Near Shading Loss', `-${effectiveShadingLossPct}%`, '-', isAppliedShadingActive ? '3D Near-Shading Model' : (isShadingStale ? 'Standard Empirical Default (-2.4%, ⚠️ 3D Shading Stale: Parameters Changed)' : 'Standard Empirical Default (-2.4%)')],
       ['Effective Shading Derate', effectiveShadingDerate.toString(), '-', '1 - (Shading Loss / 100)'],
       ...(waterfallReport ? [
@@ -423,15 +429,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
         { sheetName: 'Structural & Foundations', rows: structuralSheet },
         { sheetName: 'Financial 25Y CashFlow', rows: financialSheet },
       ],
-      `${customFileName}.xls`
+      `${customFileName}.xlsx`
     );
   };
 
-  // Full Project JSON Export with Custom Filename
+  // Full Project JSON Export with Custom Filename & Custom Equipment Envelope (OFF-01)
   const handleExportJson = () => {
     const fullProjectState = {
       app: 'SolarPV Studio Engineering Platform',
-      version: '3.0.0',
+      version: '3.1.0',
       exportedAt: new Date().toISOString(),
       metadata: {
         docId,
@@ -450,6 +456,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       loadAnalysis,
       module,
       inverter,
+      selectedModule: module,
+      selectedInverter: inverter,
       arrayDesign,
       batterySizing,
       protection,
@@ -460,7 +468,27 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       waterfallReport,
     };
 
-    const blob = new Blob([JSON.stringify(fullProjectState, null, 2)], {
+    const envelope = createProjectTransferEnvelope({
+      projectName,
+      projectData: fullProjectState,
+      metadata: {
+        docId,
+        docVersion,
+        companyName,
+        leadEngineer,
+        clientName,
+        approvalStatus,
+        detailLevel,
+        engineerNotes,
+      },
+      currencyConfig: {
+        primaryCurrency: 'USD',
+      },
+      activeModule: module,
+      activeInverter: inverter,
+    });
+
+    const blob = new Blob([JSON.stringify(envelope, null, 2)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
@@ -529,11 +557,16 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       reader.onload = (event) => {
         try {
           const parsed = JSON.parse(event.target?.result as string);
-          onImportProject(parsed);
+          const restoreResult = restoreProjectTransferEnvelope(parsed);
+          onImportProject(restoreResult);
+          const equipCount =
+            restoreResult.restoredCustomEquipment.modulesCount +
+            restoreResult.restoredCustomEquipment.invertersCount +
+            restoreResult.restoredCustomEquipment.batteriesCount;
           alert(
             isEn
-              ? 'Project state successfully restored from local file.'
-              : 'پروژه با موفقیت از فایل محلی بازیابی شد.'
+              ? `Project state restored successfully (Schema: ${restoreResult.envelopeSchemaVersion}${equipCount > 0 ? `, Restored ${equipCount} custom equipment` : ''}).`
+              : `پروژه با موفقیت بازیابی شد (نسخه اسکیما: ${restoreResult.envelopeSchemaVersion}${equipCount > 0 ? `، بازیابی ${equipCount} تجهیز سفارشی` : ''}).`
           );
           onClose();
         } catch {
@@ -574,8 +607,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               </h2>
               <p className="text-[11px] text-slate-400">
                 {isEn
-                  ? 'Multi-format export: PDF, Word (.doc), Excel (.xls) & Local Project (.json) with full traceability'
-                  : 'تولید گزارش رسمی با فرمت‌های PDF، Word، Excel و ذخیره کامل پروژه در قالب فایل محلی'}
+                  ? 'Multi-format export: PDF, Word (.docx), Excel (.xlsx) & Local Project (.json) with full traceability'
+                  : 'تولید گزارش رسمی با فرمت‌های PDF، Word (.docx)، Excel (.xlsx) و ذخیره کامل پروژه در قالب فایل محلی'}
               </p>
             </div>
           </div>
@@ -611,19 +644,19 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             <button
               onClick={handleExportWord}
               className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-industrial-primary border-industrial-primary/30"
-              title={isEn ? 'Export as Microsoft Word (.doc)' : 'خروجی فایل ورد'}
+              title={isEn ? 'Export as Microsoft Word (.docx)' : 'خروجی فایل ورد (.docx)'}
             >
               <FileCode className="w-3.5 h-3.5 text-industrial-primary" />
-              <span>{isEn ? 'Word (.doc)' : 'Word'}</span>
+              <span>{isEn ? 'Word (.docx)' : 'Word (.docx)'}</span>
             </button>
 
             <button
               onClick={handleExportExcel}
               className="studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 text-industrial-success border-industrial-success/30"
-              title={isEn ? 'Export Multi-Sheet Excel Workbook' : 'خروجی اکسل چند شیت'}
+              title={isEn ? 'Export Multi-Sheet Excel Workbook (.xlsx)' : 'خروجی اکسل چند شیت (.xlsx)'}
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-industrial-success" />
-              <span>{isEn ? 'Excel (.xls)' : 'Excel'}</span>
+              <span>{isEn ? 'Excel (.xlsx)' : 'Excel (.xlsx)'}</span>
             </button>
 
             <button
@@ -823,9 +856,19 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 print:text-slate-700 max-w-2xl mx-auto">
               {isEn
-                ? `Utility-Grade PV System Feasibility & EPC Design Dossier for ${effectiveCity.nameEn}, Iran`
+                ? `Utility-Grade PV System Feasibility & EPC Design Dossier for ${effectiveCity.nameEn}`
                 : `طرح توجیهی فنی، محاسبات الکتریکی، ژئوتکنیک، سازه و ارزیابی مالی برای ساختگاه ${effectiveCity.nameFa}`}
             </p>
+
+            {/* Conceptual Screening Maturity Level Badge (OUT-04) */}
+            <div className="my-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 print:bg-amber-50 print:text-amber-900 text-[11px] font-medium">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>
+                {isEn
+                  ? 'Maturity: Conceptual Screening Dossier — Detailed topographic survey, geotechnical borehole logging & certified datasheets required before IFC/As-Built execution.'
+                  : 'سطح آمادگی: غربالگری مفهومی (Conceptual Screening) — نیازمند تدقیق نقشه‌برداری میدانی، آزمایش مکانیک خاک و دیتاشیت تأییدشده پیش از صدور نقشه‌های اجرایی (IFC).'}
+              </span>
+            </div>
 
             {/* Metadata Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300 print:text-black bg-slate-800/60 print:bg-slate-100 p-2.5 rounded-lg mt-4 border border-industrial-border/60 print:border-slate-300">
@@ -1000,7 +1043,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Coordinates & Elevation:' : 'مختصات و ارتفاع از دریا:'}</span>
                   <span className="font-mono text-white print:text-black font-bold">
-                    {effectiveCity.latitude.toFixed(2)}°N, {effectiveCity.longitude.toFixed(2)}°E ({effectiveCity.elevationM}m)
+                    {formatCoordinates(effectiveCity.latitude, effectiveCity.longitude)} ({effectiveCity.elevationM}m)
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
@@ -1044,6 +1087,131 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   <span className="font-mono text-white print:text-black font-bold">
                     {effectiveCity.frostDepthCm} cm
                   </span>
+                </div>
+              </div>
+
+              {/* Data Provenance & Telemetry Integrity Audit Table (ENV-07) */}
+              <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs space-y-1.5">
+                <div className="flex items-center justify-between border-b border-industrial-border/50 print:border-slate-300 pb-1">
+                  <span className="font-bold text-white print:text-black flex items-center gap-1.5">
+                    <Database className="w-3.5 h-3.5 text-indigo-400" />
+                    {isEn ? 'Site Environmental & Geotechnical Telemetry Provenance (ENV-01..07):' : 'جدول ردیابی منشأ و اصالت داده‌های محیطی و ژئوتکنیکی ساختگاه:'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 print:text-slate-600 font-mono">
+                    {effectiveCity.dataRetrievalDate || new Date().toISOString().slice(0, 10)}
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right border-collapse text-[10px]">
+                    <thead>
+                      <tr className="border-b border-industrial-border/60 print:border-slate-300 text-slate-400 print:text-slate-600 bg-slate-900/40 print:bg-slate-100">
+                        <th className="p-1.5 text-right">{isEn ? 'Parameter' : 'پارامتر'}</th>
+                        <th className="p-1.5 text-center">{isEn ? 'Design Value' : 'مقدار'}</th>
+                        <th className="p-1.5 text-center">{isEn ? 'Provider' : 'تأمین‌کننده'}</th>
+                        <th className="p-1.5 text-center">{isEn ? 'Origin Kind' : 'نوع اصالت'}</th>
+                        <th className="p-1.5 text-right">{isEn ? 'Method / Notes' : 'روش / یادداشت کیفی'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-industrial-border/30 print:divide-slate-200 font-mono">
+                      {(() => {
+                        const prov = effectiveCity.fieldProvenance || {};
+                        const telemetryRows = [
+                          {
+                            k: 'peakSunHours',
+                            name: isEn ? 'Peak Sun Hours (PSH)' : 'ساعات اوج تابش (PSH)',
+                            val: `${effectiveCity.peakSunHours} kWh/m²/day`,
+                            src: prov.peakSunHours?.providerName || 'NASA_POWER / PVGIS',
+                            kind: prov.peakSunHours?.sourceKind || 'provider_value',
+                            note: isEn ? 'Satellite / Reanalysis data' : 'داده مستقیم ماهواره‌ای / بازتحلیل',
+                          },
+                          {
+                            k: 'daylightHoursDesign',
+                            name: isEn ? 'Design Daylight Hours' : 'پنجره نجومی روز طراحی',
+                            val: `${effectiveCity.daylightHoursDesign} h`,
+                            src: 'ASTRONOMICAL_SPA_MODEL',
+                            kind: 'local_model',
+                            note: isEn ? 'Sunset hour angle formula at winter solstice' : 'محاسبه زاویه ساعت غروب خورشید در انقلاب زمستانی',
+                          },
+                          {
+                            k: 'tempMinC',
+                            name: isEn ? 'Min Design Ambient Temp' : 'حداقل دمای حدی محیط',
+                            val: `${effectiveCity.tempMinC} °C`,
+                            src: prov.tempMinC?.providerName || 'NASA_POWER',
+                            kind: prov.tempMinC?.sourceKind || 'provider_value',
+                            note: isEn ? 'Extreme minimum design temperature' : 'حداقل دمای سرد زمستان',
+                          },
+                          {
+                            k: 'tempMaxC',
+                            name: isEn ? 'Max Design Ambient Temp' : 'حداکثر دمای حدی محیط',
+                            val: `${effectiveCity.tempMaxC} °C`,
+                            src: prov.tempMaxC?.providerName || 'NASA_POWER',
+                            kind: prov.tempMaxC?.sourceKind || 'provider_value',
+                            note: isEn ? 'Extreme maximum design temperature' : 'حداکثر دمای گرم تابستان',
+                          },
+                          {
+                            k: 'annualRainfallMm',
+                            name: isEn ? 'Annual Precipitation' : 'بارش سالانه باران',
+                            val: `${effectiveCity.annualRainfallMm} mm`,
+                            src: prov.annualPrecipitationMm?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
+                            kind: prov.annualPrecipitationMm?.sourceKind || 'local_model',
+                            note: prov.annualPrecipitationMm?.qualityNote || (isEn ? 'Regional climatology estimate' : 'برآورد اقلیمی منطقه‌ای'),
+                          },
+                          {
+                            k: 'basicWindSpeedKmh',
+                            name: isEn ? 'Basic Wind Speed (V_b)' : 'سرعت مبنای باد',
+                            val: `${effectiveCity.basicWindSpeedKmh} km/h`,
+                            src: 'REGIONAL_ANALYTICAL_MODEL',
+                            kind: 'local_model',
+                            note: isEn ? 'Regional code screening model (Not site anemometer)' : 'مدل غربالگری منطقه‌ای — جایگزین آیین‌نامه/مطالعهٔ سایت نیست',
+                          },
+                          {
+                            k: 'groundSnowLoadKgM2',
+                            name: isEn ? 'Ground Snow Load (S_k)' : 'بار برف مبنای زمین',
+                            val: `${effectiveCity.groundSnowLoadKgM2} kg/m²`,
+                            src: 'REGIONAL_ANALYTICAL_MODEL',
+                            kind: 'local_model',
+                            note: isEn ? 'Regional code screening model' : 'مدل غربالگری منطقه‌ای — جایگزین آیین‌نامه/مطالعهٔ سایت نیست',
+                          },
+                          {
+                            k: 'soilBearingCapacityKpa',
+                            name: isEn ? 'Soil Bearing Capacity (q_a)' : 'ظرفیت باربری خاک',
+                            val: `${effectiveCity.soilBearingCapacityKpa} kPa`,
+                            src: prov.soilBearingCapacityKpa?.providerName || 'ISRIC_SOILGRIDS',
+                            kind: prov.soilBearingCapacityKpa?.sourceKind || 'provider_derived',
+                            note: isEn ? 'Texture correlation (Requires borehole investigation)' : 'برآورد ژئوتکنیکی غربالگری — جایگزین آزمایش مکانیک خاک نیست',
+                          },
+                          {
+                            k: 'groundwaterDepthM',
+                            name: isEn ? 'Groundwater Table (GWL)' : 'تراز آب زیرزمینی',
+                            val: `${effectiveCity.groundwaterDepthM ?? 6.0} m`,
+                            src: 'REGIONAL_ANALYTICAL_MODEL',
+                            kind: 'local_model',
+                            note: isEn ? 'Coastal proximity rule (Site borehole required)' : 'برآورد هیدرولوژیکی غربالگری — نیازمند بررسی میدانی',
+                          },
+                        ];
+
+                        return telemetryRows.map((r) => (
+                          <tr key={r.k} className="hover:bg-slate-800/30 print:hover:bg-transparent">
+                            <td className="p-1 text-slate-200 print:text-black font-sans font-medium">{r.name}</td>
+                            <td className="p-1 text-center text-white print:text-black font-bold">{r.val}</td>
+                            <td className="p-1 text-center text-slate-300 print:text-slate-700">{r.src}</td>
+                            <td className="p-1 text-center">
+                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                r.kind === 'provider_value'
+                                  ? 'bg-emerald-500/20 text-emerald-300 print:bg-emerald-100 print:text-emerald-800'
+                                  : r.kind === 'provider_derived'
+                                  ? 'bg-sky-500/20 text-sky-300 print:bg-sky-100 print:text-sky-800'
+                                  : 'bg-amber-500/20 text-amber-300 print:bg-amber-100 print:text-amber-800'
+                              }`}>
+                                {r.kind}
+                              </span>
+                            </td>
+                            <td className="p-1 text-slate-400 print:text-slate-600 font-sans text-[9px]">{r.note}</td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -1248,8 +1416,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `At latitude ${effectiveCity.latitude.toFixed(2)}°N, the solar altitude at true solar noon on the winter solstice (December 21) drops to ${(90 - effectiveCity.latitude - 23.45).toFixed(1)}°. The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) following IEC 62548 geometric guidance. Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (screening proxy: +${bifacialGainPct.toFixed(1)}%)` : ''}, which should be verified with detailed 3D/view-factor modeling.`
-                    : `در عرض جغرافیایی ${effectiveCity.latitude.toFixed(2)} درجه شمالی، زاویه ارتفاع خورشید در ظهر انقلاب زمستانی به ${(90 - effectiveCity.latitude - 23.45).toFixed(1)} درجه کاهش می‌یابد. فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر جهت تامین فاصله هندسی نامی در بازه ۴ ساعته غربالگری (۱۰ الی ۱۴ ظهر آفتابی) بر اساس رهنمودهای هندسی IEC 62548 در نظر گرفته شده است. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (تخمین غربالگری: +${bifacialGainPct.toFixed(1)}٪)` : ''} که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
+                    ? `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeEn} The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) following IEC 62548 geometric guidance. Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (screening proxy: +${bifacialGainPct.toFixed(1)}%)` : ''}, which should be verified with detailed 3D/view-factor modeling.`
+                    : `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeFa} فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر جهت تامین فاصله هندسی نامی در بازه ۴ ساعته غربالگری (۱۰ الی ۱۴ ظهر آفتابی) بر اساس رهنمودهای هندسی IEC 62548 در نظر گرفته شده است. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (تخمین غربالگری: +${bifacialGainPct.toFixed(1)}٪)` : ''} که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
                 </p>
               </div>
             </div>
@@ -1286,7 +1454,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     {isEn ? 'Illustrative Downside (-10.2%):' : 'سناریوی کاهشی فرضی (-۱۰.۲٪):'}
                   </span>
                   <strong className="text-base font-mono text-industrial-accent print:text-sky-900">
-                    {p90Mwh.toLocaleString()} MWh
+                    {illustrativeDownsideMwh.toLocaleString()} MWh
                   </strong>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
                     {isEn ? 'Fixed 0.898x Sensitivity Factor (Not Bankable P90)' : 'ضریب حساسیت ثابت ۰.۸۹۸ (بدون ادعای P90 بانکی)'}

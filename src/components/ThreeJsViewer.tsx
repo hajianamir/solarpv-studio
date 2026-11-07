@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
+import { formatCoordinates } from '../engine/geoCoordinates';
 import {
   Eye,
   Sun,
@@ -119,6 +120,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const [simulationMode, setSimulationMode] = useState<'hourly_8760' | 'screening_3day'>(
     propSimulationMode ?? 'screening_3day'
   );
+  const [showDemoObstacles, setShowDemoObstacles] = useState(false);
 
   useEffect(() => {
     if (propSimulationMode && propSimulationMode !== simulationMode) {
@@ -168,12 +170,28 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   ]);
 
   // Active scene state: either connected project array or representative demo block fallback
+  // OUT-03: Eliminate unsolicited fake obstacles when user input is empty
   const activeScene: Scene3DState = useMemo(() => {
+    const userObstaclesProvided = Array.isArray(obstacles) && obstacles.length > 0;
     if (sceneMode === 'project_array' && projectScene) {
-      return projectScene;
+      return {
+        ...projectScene,
+        obstacles: userObstaclesProvided
+          ? obstacles!
+          : (showDemoObstacles ? projectScene.obstacles : []),
+        obstacleDataStatus: userObstaclesProvided
+          ? 'surveyed'
+          : (showDemoObstacles ? 'demo_sample' : 'verified_unobstructed'),
+      };
     }
     return {
       ...DEFAULT_ROOFTOP_SCENE,
+      obstacles: userObstaclesProvided
+        ? obstacles!
+        : (showDemoObstacles ? DEFAULT_ROOFTOP_SCENE.obstacles : []),
+      obstacleDataStatus: userObstaclesProvided
+        ? 'surveyed'
+        : (showDemoObstacles ? 'demo_sample' : 'verified_unobstructed'),
       anchorLocation: {
         latitude: siteLat,
         longitude: siteLng,
@@ -186,7 +204,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       tiltDeg,
       albedo: effectiveAlbedo,
     };
-  }, [sceneMode, projectScene, siteLat, siteLng, siteElev, tiltDeg, effectiveAlbedo]);
+  }, [sceneMode, projectScene, siteLat, siteLng, siteElev, tiltDeg, effectiveAlbedo, obstacles, showDemoObstacles]);
 
   // Scene capacity in kWp
   const activeSceneCapacityKwp = useMemo(() => {
@@ -792,11 +810,48 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
             </span>
           </div>
 
-          <span className="text-slate-300 text-[11px] font-mono flex items-center gap-1.5 bg-slate-900/80 px-2 py-0.5 rounded border border-industrial-border">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-            {effectiveCity?.nameEn || 'Site'} ({siteLat.toFixed(4)}°N, {siteLng.toFixed(4)}°E)
-          </span>
+          <div className="flex items-center gap-3">
+            {(!obstacles || obstacles.length === 0) && (
+              <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400 hover:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={showDemoObstacles}
+                  onChange={(e) => setShowDemoObstacles(e.target.checked)}
+                  className="rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
+                />
+                <span>{isEn ? 'Preview Sample Obstacles' : 'پیش‌نمایش موانع نمونه'}</span>
+              </label>
+            )}
+            <span className="text-slate-300 text-[11px] font-mono flex items-center gap-1.5 bg-slate-900/80 px-2 py-0.5 rounded border border-industrial-border">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+              {effectiveCity?.nameEn || 'Site'} ({formatCoordinates(siteLat, siteLng, 4)})
+            </span>
+          </div>
         </div>
+
+        {/* Representative Sub-Array Disclosure Banner for Utility-Scale Plants (OUT-03) */}
+        {sceneMode === 'project_array' && (arrayDesign?.totalModulesCount ?? 0) > activeScene.pvTables.reduce((s, t) => s + (t.moduleCount || 0), 0) && (
+          <div className="mt-2.5 p-2.5 rounded border border-amber-500/40 bg-amber-950/20 text-amber-200 text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-bold flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  {isEn
+                    ? 'Representative Sub-Array Modeling (Utility-Scale Array Disclosure)'
+                    : 'افشای مدل‌سازی زیرآرایه نماینده (نیروگاه در مقیاس صنعتی)'}
+                </span>
+                <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] rounded border border-amber-500/30 font-mono font-bold">
+                  {activeScene.pvTables.reduce((s, t) => s + (t.moduleCount || 0), 0)} / {arrayDesign?.totalModulesCount} {isEn ? 'Modules Modeled' : 'ماژول مدل‌شده'}
+                </span>
+              </div>
+              <p className="mt-1 text-slate-300 text-[11px] leading-relaxed">
+                {isEn
+                  ? `For real-time GPU ray tracing performance, this ${activeSceneCapacityKwp.toFixed(1)} kWp array is rendered using ${activeScene.pvTables.length} representative rows (${activeScene.pvTables.reduce((s, t) => s + (t.moduleCount || 0), 0)} modules) to evaluate inter-row pitch (${arrayDesign?.interRowSpacingM?.toFixed(1) ?? '5.0'}m) and sun path geometry truthfully without browser latency.`
+                  : `جهت ردیابی پرتو (Ray Tracing) بلادرنگ در مرورگر، این نیروگاه ${activeSceneCapacityKwp.toFixed(1)} کیلوواتی با ${activeScene.pvTables.length} ردیف نماینده (${activeScene.pvTables.reduce((s, t) => s + (t.moduleCount || 0), 0)} ماژول) با گام سطر ${arrayDesign?.interRowSpacingM?.toFixed(1) ?? '۵.۰'} متر تحلیل می‌شود تا ضرایب زاویه سایه‌اندازی با دقت فیزیکی کامل و بدون افت سرعت مرورگر محاسبه گردد.`}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="studio-card">

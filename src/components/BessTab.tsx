@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Battery as BatteryIcon,
   Shield,
@@ -13,12 +13,14 @@ import {
   Weight,
   Maximize2,
   Sliders,
+  Database,
 } from 'lucide-react';
 import {
   type BatteryChemistry,
   BATTERY_CHEMISTRIES,
   type BatteryBankSizingResult,
 } from '../engine/batteryEngine';
+import { CatalogRepository, type EnhancedCatalogBattery } from '../engine/catalogRepository';
 
 interface BessTabProps {
   selectedChemistry: BatteryChemistry;
@@ -47,12 +49,44 @@ export const BessTab: React.FC<BessTabProps> = ({
   nightHoursDesign,
   lang = 'fa',
 }) => {
+  const repo = CatalogRepository.getInstance();
+  const [catalogVersion, setCatalogVersion] = useState(0);
+
+  useEffect(() => {
+    return repo.subscribe(() => {
+      setCatalogVersion((v) => v + 1);
+    });
+  }, [repo]);
+
+  const availableBatteries = repo.getBatteries();
+  const [selectedBatteryModelId, setSelectedBatteryModelId] = useState<string>(
+    availableBatteries[0]?.id || ''
+  );
+
   // Customizable unit battery model selection
   const [unitVoltageV, setUnitVoltageV] = useState<number>(
     selectedChemistry === 'lifepo4' && batterySizing.systemVoltageVdc === 48 ? 48 : 12
   );
   const [unitCapacityAh, setUnitCapacityAh] = useState<number>(100);
   const [unitWeightKg, setUnitWeightKg] = useState<number>(32);
+
+  const handleSelectBatteryModel = (modelId: string) => {
+    setSelectedBatteryModelId(modelId);
+    const model = availableBatteries.find((b) => b.id === modelId);
+    if (model) {
+      setUnitVoltageV(model.nominalVoltageVolts);
+      setUnitCapacityAh(model.nominalCapacityAh);
+      setUnitWeightKg(model.weightKg);
+
+      // Map catalog chemistry to BatteryChemistry type
+      let chem: BatteryChemistry = 'lifepo4';
+      if (model.chemistry === 'Gel Deep Cycle') chem = 'gel';
+      else if (model.chemistry === 'AGM VRLA') chem = 'agm_vrla';
+      else if (model.chemistry === 'Ternary NCM') chem = 'ternary_ncm';
+      else if (model.chemistry === 'OPzS Tubular') chem = 'opzs_tubular';
+      onChemistryChange(chem);
+    }
+  };
 
   // Recalculate series & parallel with chosen unit
   const calculatedSeries = Math.max(1, Math.round(batterySizing.systemVoltageVdc / unitVoltageV));
@@ -124,6 +158,67 @@ export const BessTab: React.FC<BessTabProps> = ({
           )}
         </div>
       )}
+
+      {/* Battery Model Selector Card from Catalog (CAT-05) */}
+      <div className="studio-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-industrial-border/60">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Database className="w-4 h-4 text-indigo-400" />
+              {lang === 'fa' ? 'انتخاب مدل تجاری باتری از کاتالوگ (BESS Model Selector):' : 'Select Battery Model from Equipment Catalog:'}
+            </h3>
+            <p className="text-[11px] text-slate-400">
+              {lang === 'fa'
+                ? 'مشخصات واحد باتری، ولتاژ، ظرفیت، و فناوری شیمیایی مستقیماً از دیتاشیت کاتالوگ استخراج و اعمال می‌شود.'
+                : 'Unit voltage, capacity, weight, and chemistry are extracted and injected directly from the selected catalog model.'}
+            </p>
+          </div>
+          <span className="text-[10px] px-2.5 py-1 rounded bg-indigo-950 text-indigo-300 font-mono border border-indigo-800/60">
+            {availableBatteries.length} {lang === 'fa' ? 'مدل موجود' : 'models available'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <div>
+            <label htmlFor="bess-catalog-model-select" className="block text-xs font-semibold text-slate-300 mb-1">
+              {lang === 'fa' ? 'مدل باتری (Built-in / Custom):' : 'Battery Unit Model:'}
+            </label>
+            <select
+              id="bess-catalog-model-select"
+              value={selectedBatteryModelId}
+              onChange={(e) => handleSelectBatteryModel(e.target.value)}
+              className="studio-input w-full text-xs font-mono py-2 bg-industrial-surface border-indigo-500/50 text-white"
+            >
+              {availableBatteries.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.origin === 'custom' ? '⭐ [Custom] ' : ''}
+                  {b.manufacturer} - {b.modelName} ({b.capacityKwh} kWh, {b.nominalVoltageVolts}V {b.nominalCapacityAh}Ah - {b.chemistry})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {availableBatteries.find((b) => b.id === selectedBatteryModelId) && (() => {
+            const activeModel = availableBatteries.find((b) => b.id === selectedBatteryModelId)!;
+            return (
+              <div className="p-2.5 bg-slate-900/60 border border-indigo-500/30 rounded text-xs space-y-1">
+                <div className="flex justify-between text-slate-300">
+                  <span>{lang === 'fa' ? 'سازنده و فناوری:' : 'Brand & Chem:'}</span>
+                  <strong className="text-white">{activeModel.manufacturer} ({activeModel.chemistry})</strong>
+                </div>
+                <div className="grid grid-cols-3 gap-1 pt-1 text-[11px] font-mono text-slate-300">
+                  <div>V: <strong className="text-sky-300">{activeModel.nominalVoltageVolts}V</strong></div>
+                  <div>Cap: <strong className="text-industrial-accent">{activeModel.nominalCapacityAh}Ah</strong></div>
+                  <div>DoD: <strong className="text-industrial-success">{activeModel.recommendedDoDPct}%</strong></div>
+                  <div>Max I: <strong className="text-industrial-warning">{activeModel.maxContinuousDischargeA}A</strong></div>
+                  <div>Cycles: <strong className="text-white">{activeModel.cycleLifeAt80DoD}</strong></div>
+                  <div>BMS: <strong className="text-indigo-300">{activeModel.hasIntegratedBms ? 'Yes' : 'External'}</strong></div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
 
       {/* Chemistry Selector Dropdown List */}
       <div className="studio-card">

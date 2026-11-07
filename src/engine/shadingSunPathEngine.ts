@@ -161,7 +161,7 @@ export function analyze3dShadingAndSunPath(input: ShadingGeometryInput): Shading
     ((Math.atan(verticalHeightRiseM / clearGroundSpacingM) * 180.0) / Math.PI).toFixed(1)
   );
 
-  // Winter solstice solar noon altitude: alpha_noon = 90 - lat - 23.45
+  // Winter solstice solar noon altitude: alpha_noon = 90 - |lat| - |delta|
   // Winter solstice is the worst-case shadow angle regardless of
   // hemisphere. Solar declination at winter solstice is -23.45 deg in the
   // Northern hemisphere (Dec 21) and +23.45 deg seen from the Southern

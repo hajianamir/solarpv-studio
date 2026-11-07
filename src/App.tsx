@@ -88,13 +88,10 @@ import {
 } from './engine/financialEngine';
 import { generateScenarios } from './engine/scenarioEngine';
 import {
-  CATALOG_MODULES,
-  CATALOG_INVERTERS,
-  getFullModulesCatalog,
-  getFullInvertersCatalog,
   isBifacialModule,
   resolveBifacialParams,
 } from './engine/equipmentCatalogData';
+import { CatalogRepository } from './engine/catalogRepository';
 import {
   designPowerplantBays,
   type InverterTechnology,
@@ -126,6 +123,7 @@ const Simulation24hTab = React.lazy(() => import('./components/Simulation24hTab'
 const OfficialReportModal = React.lazy(() => import('./components/OfficialReportModal').then((m) => ({ default: m.OfficialReportModal })));
 const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab').then((m) => ({ default: m.WaterfallLossTab })));
 import { migrateProjectToV3 } from './engine/core/projectMigration';
+import { restoreProjectTransferEnvelope } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
 
 // Fallback component for lazy-loaded tabs (MAIN-05)
@@ -219,24 +217,29 @@ export const App: React.FC = () => {
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
 
+  const catalogRepo = CatalogRepository.getInstance();
+  const initialModules = catalogRepo.getModules();
+  const initialInverters = catalogRepo.getInverters();
+  const defaultMod = initialModules[0];
+
   const [selectedModule, setSelectedModule] = useState<ModuleSpecs>({
-    manufacturer: CATALOG_MODULES[0].manufacturer,
-    modelName: CATALOG_MODULES[0].modelName,
-    pmpWatts: CATALOG_MODULES[0].pmpWatts,
-    vocVolts: CATALOG_MODULES[0].vocVolts,
-    vmpVolts: CATALOG_MODULES[0].vmpVolts,
-    iscAmps: CATALOG_MODULES[0].iscAmps,
-    impAmps: CATALOG_MODULES[0].impAmps,
-    tempCoeffVocPct: CATALOG_MODULES[0].tempCoeffVocPct,
-    tempCoeffPmpPct: CATALOG_MODULES[0].tempCoeffPmpPct,
-    noctC: 45.0,
-    lengthM: CATALOG_MODULES[0].lengthMm / 1000.0,
-    widthM: CATALOG_MODULES[0].widthMm / 1000.0,
-    bifacialityFactor: CATALOG_MODULES[0].bifacialityFactor,
+    manufacturer: defaultMod.manufacturer,
+    modelName: defaultMod.modelName,
+    pmpWatts: defaultMod.pmpWatts,
+    vocVolts: defaultMod.vocVolts,
+    vmpVolts: defaultMod.vmpVolts,
+    iscAmps: defaultMod.iscAmps,
+    impAmps: defaultMod.impAmps,
+    tempCoeffVocPct: defaultMod.tempCoeffVocPct,
+    tempCoeffPmpPct: defaultMod.tempCoeffPmpPct,
+    noctC: defaultMod.noctC ?? 45.0,
+    lengthM: defaultMod.lengthMm / 1000.0,
+    widthM: defaultMod.widthMm / 1000.0,
+    bifacialityFactor: defaultMod.bifacialityFactor,
   });
 
   // Default utility inverter
-  const defaultUtilInv = CATALOG_INVERTERS.find((i) => i.id === 'inv-huawei-330ktl') || CATALOG_INVERTERS[0];
+  const defaultUtilInv = initialInverters.find((i) => i.id === 'inv-huawei-330ktl') || initialInverters[0];
 
   const [selectedInverter, setSelectedInverter] = useState<InverterSpecs>({
     manufacturer: defaultUtilInv.manufacturer,
@@ -310,8 +313,9 @@ export const App: React.FC = () => {
   // Auto-switch inverters when Inverter Technology changes
   const handleInverterTechChange = (tech: InverterTechnology) => {
     setInverterTech(tech);
+    const inverters = catalogRepo.getInverters();
     if (tech === 'mv_turnkey') {
-      const turnkey = CATALOG_INVERTERS.find((i) => i.technology === 'mv_turnkey');
+      const turnkey = inverters.find((i) => i.technology === 'mv_turnkey');
       if (turnkey) {
         setSelectedInverter({
           manufacturer: turnkey.manufacturer,
@@ -328,7 +332,7 @@ export const App: React.FC = () => {
         });
       }
     } else {
-      const stringInv = CATALOG_INVERTERS.find((i) => i.technology === 'string_inverter');
+      const stringInv = inverters.find((i) => i.technology === 'string_inverter');
       if (stringInv) {
         setSelectedInverter({
           manufacturer: stringInv.manufacturer,
@@ -943,10 +947,13 @@ export const App: React.FC = () => {
     );
   }, [arrayDesign, loadAnalysis, autonomyDays, userPricing.usdToTomanRate]);
 
-  // Handler for restoring imported project from JSON with three-state safety model
+  // Handler for restoring imported project from JSON with three-state safety model & custom equipment restoration (OFF-01, OFF-02)
   const handleImportProject = (importedData: any) => {
     try {
-      const migrationResult = migrateProjectToV3(importedData);
+      const envelopeResult = importedData?.migrationStatus
+        ? importedData
+        : restoreProjectTransferEnvelope(importedData);
+      const migrationResult = envelopeResult.migrationResult || envelopeResult;
 
       // State 3: BLOCKED INCONSISTENT
       if (migrationResult.migrationStatus === 'BLOCKED_INCONSISTENT') {

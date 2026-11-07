@@ -8,7 +8,7 @@
  * - Dlubal GeoZone GraphQL schema mapping & regional wind/snow zoning
  */
 
-import { type StructuralHazardData } from './types';
+import { type StructuralHazardData, type ParameterProvenance, createParameterProvenance } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 
 export class StructuralHazardProvider {
@@ -96,6 +96,42 @@ export class StructuralHazardProvider {
     const qzKnM2 = Number((qzN_M2 / 1000.0).toFixed(3));
     const snowSkKnM2 = Number(((groundSnowKgM2 * 9.81) / 1000.0).toFixed(3));
 
+    const screeningDisclaimerFa = 'مدل غربالگری منطقه‌ای — جایگزین آیین‌نامه/مطالعهٔ سایت نیست';
+
+    const fieldProvenance: Record<string, ParameterProvenance> = {
+      basicWindSpeedKmh: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        sourceDataset: `Regional Code Screening (${windCode})`,
+        unit: 'km/h',
+        value: basicWindSpeedKmh,
+        derivationMethod: 'Regional zoning map screening estimate (3-sec gust V_b)',
+        qualityNote: screeningDisclaimerFa,
+      }),
+      basicWindPressureQzKnM2: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'kN/m²',
+        value: qzKnM2,
+        derivationMethod: 'Velocity pressure formula: qz = 0.5 × rho × V^2 (rho = 1.225 kg/m³)',
+      }),
+      groundSnowLoadKgM2: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        sourceDataset: `Regional Snow Map (${snowCode})`,
+        unit: 'kg/m²',
+        value: groundSnowKgM2,
+        derivationMethod: 'Regional elevation and latitude snow load screening heuristic',
+        qualityNote: screeningDisclaimerFa,
+      }),
+      groundSnowLoadSkKnM2: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: 'kN/m²',
+        value: snowSkKnM2,
+        derivationMethod: 'Calculated: groundSnowKgM2 × 9.81 / 1000',
+      }),
+      seismicAccelerationA: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        sourceDataset: 'Global Seismic Hazard Screening Map',
+        unit: 'dimensionless (g)',
+        value: seismicA,
+        derivationMethod: 'Tectonic zoning base acceleration parameter A',
+        qualityNote: screeningDisclaimerFa,
+      }),
+    };
+
     return {
       latitude: Number(lat.toFixed(4)),
       longitude: Number(lng.toFixed(4)),
@@ -115,6 +151,7 @@ export class StructuralHazardProvider {
         geographicRegion: isEurope ? 'Eurocode Zone' : isAmericas ? 'ASCE 7 Zone' : isIran ? 'INBC 6 Zone' : 'Global Zone',
         governingStandards: [windCode, snowCode, 'Dlubal GeoZone GraphQL Schema'],
       },
+      fieldProvenance,
     };
   }
 }

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { type ClimateCity, getClimateData, fetchClimateData } from '../engine/climaticData';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
+import { formatLatitude, formatLongitude, formatCoordinates } from '../engine/geoCoordinates';
 
 interface SiteLocationMapProps {
   currentCity: ClimateCity;
@@ -205,7 +206,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         marker.getPopup()?.setContent(
           `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
             <strong style="color:#0f172a; font-size:13px;">${isEn ? cityData.nameEn : cityData.nameFa}</strong><br/>
-            <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${latVal.toFixed(4)}°N, ${lngVal.toFixed(4)}°E</span><br/>
+            <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${formatCoordinates(latVal, lngVal, 4)}</span><br/>
             <span style="color:#f59e0b; font-weight:bold;">${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${cityData.peakSunHours} PSH</span>
           </div>`
         );
@@ -214,7 +215,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       marker.bindPopup(
         `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
           <strong style="color:#0f172a; font-size:13px;">${isEn ? currentCity.nameEn : currentCity.nameFa}</strong><br/>
-          <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${coords.lat.toFixed(4)}°N, ${coords.lng.toFixed(4)}°E</span><br/>
+          <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${formatCoordinates(coords.lat, coords.lng, 4)}</span><br/>
           <span style="color:#f59e0b; font-weight:bold;">${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${currentCity.peakSunHours} PSH</span>
         </div>`
       );
@@ -406,10 +407,10 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         {/* Live Coordinate Badges */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
           <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-sky-300">
-            LAT: <strong className="text-white">{coords.lat.toFixed(4)}°N</strong>
+            LAT: <strong className="text-white">{formatLatitude(coords.lat, 4)}</strong>
           </div>
           <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-sky-300">
-            LNG: <strong className="text-white">{coords.lng.toFixed(4)}°E</strong>
+            LNG: <strong className="text-white">{formatLongitude(coords.lng, 4)}</strong>
           </div>
           <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-industrial-warning flex items-center gap-1">
             <Sun className="w-3.5 h-3.5" />
@@ -613,7 +614,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label htmlFor="map-coord-latitude" className="text-[10px] text-slate-400 block mb-0.5">
-                        {isEn ? 'Latitude (°N):' : 'عرض جغرافیایی (°N):'}
+                        {isEn ? 'Latitude (° [-90..+90]):' : 'عرض جغرافیایی (منفی=جنوبی):'}
                       </label>
                       <input
                         id="map-coord-latitude"
@@ -627,7 +628,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                     </div>
                     <div>
                       <label htmlFor="map-coord-longitude" className="text-[10px] text-slate-400 block mb-0.5">
-                        {isEn ? 'Longitude (°E):' : 'طول جغرافیایی (°E):'}
+                        {isEn ? 'Longitude (° [-180..+180]):' : 'طول جغرافیایی (منفی=غربی):'}
                       </label>
                       <input
                         id="map-coord-longitude"

@@ -21,6 +21,27 @@ export type InstallationEnvironment =
   | 'industrial_shed'          // سقف سوله صنعتی (ورق ذوزنقه‌ای / ساندویچ پانل / Standing Seam)
   | 'rooftop_flat_concrete';   // پشت‌بام بتنی مسطح ساختمان
 
+export type ProvenanceSourceKind =
+  | 'provider_value'
+  | 'provider_derived'
+  | 'local_model'
+  | 'user_input'
+  | 'default_unverified'
+  | 'unavailable';
+
+export interface ParameterProvenance {
+  sourceKind: ProvenanceSourceKind;
+  providerName: string;
+  sourceDataset?: string;
+  sourceParameter?: string;
+  endpointOrVersion?: string;
+  retrievedAt: string;
+  derivationMethod?: string;
+  qualityNote?: string;
+  unit?: string;
+  value?: number | string | null;
+}
+
 export interface ClimateCity {
   id: string;
   nameFa: string;
@@ -61,6 +82,7 @@ export interface ClimateCity {
   distanceToCoastKm?: number;        // Geodesic distance to nearest sea/coast (km)
   drainageCondition?: SiteDrainageCondition; // Site hydrology drainage classification
   groundwaterDepthM?: number;        // Depth to groundwater table GWL (m)
+  fieldProvenance?: Record<string, ParameterProvenance>; // Strict per-field provenance mapping (ENV-01)
 }
 
 /**
