@@ -24,6 +24,14 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
+function isProductionEnv(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+function isAuthConfigured(): boolean {
+  return Boolean(process.env.INTERNAL_GATEWAY_SECRET || process.env.JWT_SECRET);
+}
+
 app.use(express.json());
 
 // In-Memory Database store with persistent file recovery
@@ -424,8 +432,8 @@ function resolveRequesterIdentity(req: Request): { userId?: string; authError?: 
 
   const gatewaySecret = process.env.INTERNAL_GATEWAY_SECRET;
   const jwtSecret = process.env.JWT_SECRET;
-  const isAuthConfigured = Boolean(gatewaySecret || jwtSecret);
-  const isDev = !isProduction;
+  const authConfigured = Boolean(gatewaySecret || jwtSecret);
+  const isDev = !isProductionEnv();
 
   const authHeader = req.headers['authorization'];
   const rawUserId = req.headers['x-user-id'];
@@ -477,7 +485,7 @@ function resolveRequesterIdentity(req: Request): { userId?: string; authError?: 
       }
 
       // Non-JWT Bearer token string
-      if (isAuthConfigured) {
+      if (authConfigured) {
         return {
           authError: 'Untrusted bearer token: cryptographically signed JWT or trusted gateway authorization required',
         };
@@ -543,6 +551,10 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
     if (authError) {
       return res.status(401).json({ error: authError });
     }
+    const isSecure = isProductionEnv() || isAuthConfigured();
+    if (isSecure && !requesterOwnerId) {
+      return res.status(401).json({ error: 'Authentication required: creating projects requires a verified identity.' });
+    }
     const resolvedOwnerId = requesterOwnerId || ownerId;
     const result = performQuickSizing({ ...req.body, ownerId: resolvedOwnerId }, db);
     const persisted = saveDatabase();
@@ -578,6 +590,15 @@ app.put('/api/v1/projects/:id', (req: Request, res: Response) => {
     return res.status(401).json({ error: authError });
   }
 
+  const isSecure = isProductionEnv() || isAuthConfigured();
+
+  // In secure mode (production or when auth secrets are configured), all project mutations require verified authentication
+  if (isSecure && !requesterId) {
+    return res.status(401).json({
+      error: 'Authentication required: modifying projects requires a verified identity.',
+    });
+  }
+
   if (existing.ownerId) {
     if (!requesterId) {
       return res.status(403).json({
@@ -601,9 +622,10 @@ app.put('/api/v1/projects/:id', (req: Request, res: Response) => {
     return res.status(400).json({ error: `Invalid project schema: ${validation.error}` });
   }
 
+  // Preserve existing ownerId; if unowned, bind strictly to authenticated requesterId (never accept ownerId from body)
   const updated: Project = {
     ...candidate,
-    ownerId: existing.ownerId, // owner cannot be modified or erased via PUT
+    ownerId: existing.ownerId || requesterId || undefined,
   };
 
   db.projects.set(req.params.id as string, updated);
@@ -946,6 +968,17 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
         // Ownership authorization check (M06)
         const existing = db.projects.get(proj.id);
         const requesterId = headerUserId;
+
+        // In secure mode (production or when auth secrets are configured), all sync project mutations require verified authentication
+        const isSecure = isProductionEnv() || isAuthConfigured();
+        if (isSecure && !requesterId) {
+          rejected.push({
+            id: msg.id,
+            reason: 'Authentication required: syncing project modifications requires a verified identity.',
+          });
+          continue;
+        }
+
         if (existing?.ownerId) {
           if (!requesterId) {
             rejected.push({
@@ -963,10 +996,10 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
           }
         }
 
-        // Preserve existing ownerId; owner cannot be erased via sync
+        // Preserve existing ownerId; if unowned, bind strictly to authenticated requesterId (never trust payload ownerId)
         const projectToStore: Project = {
           ...proj,
-          ownerId: existing?.ownerId ?? proj.ownerId ?? requesterId,
+          ownerId: existing?.ownerId || requesterId || undefined,
         };
 
         db.projects.set(proj.id, projectToStore);

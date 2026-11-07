@@ -144,6 +144,50 @@ function getNodePath(): { resolve: (...paths: string[]) => string; dirname: (pat
 }
 
 /**
+ * Strict schema validator for SAM reference case benchmark manifests.
+ * Prevents silent fallback on missing, null, or invalid target parameters.
+ */
+function validateSamReferenceCase(filename: string, parsed: any): void {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`Reference case file '${filename}' must contain a valid JSON object.`);
+  }
+
+  const targets = parsed.benchmarkTargetOutputs;
+  if (!targets || typeof targets !== 'object' || Array.isArray(targets)) {
+    throw new Error(`Reference case file '${filename}' missing required 'benchmarkTargetOutputs' object.`);
+  }
+
+  const isFinitePositive = (v: any): v is number => typeof v === 'number' && Number.isFinite(v) && !Number.isNaN(v) && v > 0;
+  const isFiniteNonNegative = (v: any): v is number => typeof v === 'number' && Number.isFinite(v) && !Number.isNaN(v) && v >= 0;
+
+  if (!isFinitePositive(targets.targetTolerancePct) || targets.targetTolerancePct > 50) {
+    throw new Error(
+      `Reference case file '${filename}': 'benchmarkTargetOutputs.targetTolerancePct' must be a positive finite number <= 50, got ${JSON.stringify(targets.targetTolerancePct)}.`
+    );
+  }
+
+  if (filename.includes('phoenix')) {
+    if (!isFiniteNonNegative(targets.annualAverageSoilingLossPct) || targets.annualAverageSoilingLossPct > 100) {
+      throw new Error(
+        `Reference case file '${filename}': 'benchmarkTargetOutputs.annualAverageSoilingLossPct' must be a non-negative finite number <= 100, got ${JSON.stringify(targets.annualAverageSoilingLossPct)}.`
+      );
+    }
+  } else if (filename.includes('munich')) {
+    if (!isFiniteNonNegative(targets.annualAverageSnowLossPct) || targets.annualAverageSnowLossPct > 100) {
+      throw new Error(
+        `Reference case file '${filename}': 'benchmarkTargetOutputs.annualAverageSnowLossPct' must be a non-negative finite number <= 100, got ${JSON.stringify(targets.annualAverageSnowLossPct)}.`
+      );
+    }
+  } else if (filename.includes('bifacial')) {
+    if (!isFiniteNonNegative(targets.annualBifacialRearGainPct) || targets.annualBifacialRearGainPct > 100) {
+      throw new Error(
+        `Reference case file '${filename}': 'benchmarkTargetOutputs.annualBifacialRearGainPct' must be a non-negative finite number <= 100, got ${JSON.stringify(targets.annualBifacialRearGainPct)}.`
+      );
+    }
+  }
+}
+
+/**
  * Helper to dynamically load versioned reference case files from benchmarks/reference_files/
  * Safe across Node.js (reads strictly from disk with fail-closed validation) and browser runtimes.
  */
@@ -184,16 +228,11 @@ function loadSamReferenceCase(filename: string): any {
   try {
     const rawContent = fs.readFileSync(filePath, 'utf-8');
     const parsed = JSON.parse(rawContent);
-    if (!parsed || typeof parsed !== 'object') {
-      throw new Error(`Invalid JSON object structure`);
-    }
-    if (!parsed.benchmarkTargetOutputs || typeof parsed.benchmarkTargetOutputs !== 'object') {
-      throw new Error(`Missing required 'benchmarkTargetOutputs' configuration`);
-    }
+    validateSamReferenceCase(filename, parsed);
     return parsed;
   } catch (err: any) {
     throw new Error(
-      `[SAM Benchmark Loader] Failed to load/parse reference case '${filename}': ${err.message}`
+      `[SAM Benchmark Loader] Failed to load/validate reference case '${filename}': ${err.message}`
     );
   }
 }
@@ -350,19 +389,19 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
   const sgSoilingPct = Number(sgSoilingSim.annualAverageSoilingLossPercent.toFixed(2));
   const sgSnowPct = 0.0;
 
-  // Extract SAM comparison target values directly from the reference cases (with fallback)
-  const samPhxSoiling = typeof phxRef?.benchmarkTargetOutputs?.annualAverageSoilingLossPct === 'number'
+  // Extract SAM comparison target values directly from the reference cases (strictly validated by schema)
+  const samPhxSoiling = phxRef
     ? phxRef.benchmarkTargetOutputs.annualAverageSoilingLossPct
     : 4.20;
-  const phxTol = typeof phxRef?.benchmarkTargetOutputs?.targetTolerancePct === 'number'
+  const phxTol = phxRef
     ? phxRef.benchmarkTargetOutputs.targetTolerancePct
     : 5.0;
 
   const samMunichSoiling = 1.80;
-  const samMunichSnow = typeof munichRef?.benchmarkTargetOutputs?.annualAverageSnowLossPct === 'number'
+  const samMunichSnow = munichRef
     ? munichRef.benchmarkTargetOutputs.annualAverageSnowLossPct
     : 2.60;
-  const munichTol = typeof munichRef?.benchmarkTargetOutputs?.targetTolerancePct === 'number'
+  const munichTol = munichRef
     ? munichRef.benchmarkTargetOutputs.targetTolerancePct
     : 5.0;
 

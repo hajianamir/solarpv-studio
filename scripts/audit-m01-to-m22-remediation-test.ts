@@ -332,6 +332,35 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `caught=${missingFileErrorCaught}`
     );
 
+    // M04: Incomplete / invalid benchmarkTargetOutputs schema strictly throws error without falling back to constants
+    const schemaTestCases = [
+      { name: 'empty benchmarkTargetOutputs {}', mutate: (m: any) => { m.benchmarkTargetOutputs = {}; } },
+      { name: 'invalid string type "invalid"', mutate: (m: any) => { m.benchmarkTargetOutputs.annualAverageSoilingLossPct = 'invalid'; } },
+      { name: 'null target value', mutate: (m: any) => { m.benchmarkTargetOutputs.annualAverageSoilingLossPct = null; } },
+      { name: 'deleted target key', mutate: (m: any) => { delete m.benchmarkTargetOutputs.annualAverageSoilingLossPct; } },
+    ];
+
+    for (const tc of schemaTestCases) {
+      let schemaErrorCaught = false;
+      try {
+        const mutated = JSON.parse(phxOriginalContent);
+        tc.mutate(mutated);
+        fs.writeFileSync(phxFilePath, JSON.stringify(mutated, null, 2));
+        runExternalEmpiricalValidationSuite();
+      } catch (err: any) {
+        if (err.message.includes('Reference case file') || err.message.includes('benchmarkTargetOutputs')) {
+          schemaErrorCaught = true;
+        }
+      } finally {
+        fs.writeFileSync(phxFilePath, phxOriginalContent);
+      }
+      assert(
+        schemaErrorCaught === true,
+        `M04: Benchmark schema strictly throws on ${tc.name} without silent fallback to constant 4.2`,
+        `caught=${schemaErrorCaught}`
+      );
+    }
+
     // M04: Validation runner forceCrossModelFailure option verification
     const failedReport = runExternalEmpiricalValidationSuite({ forceCrossModelFailure: true });
     assert(
@@ -708,7 +737,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `status=${validJwtOnlyStatus}`
     );
 
-    // 1e. PUT with body.requesterId without identity headers is rejected with HTTP 403
+    // 1e. PUT with body.requesterId without identity headers is rejected with HTTP 401/403
     let bodyBypassStatus = 0;
     let bodyBypassBody: any = null;
     await projectPutRoute({
@@ -720,8 +749,8 @@ async function runM01ToM22TestSuite(): Promise<void> {
       json(d: any) { bodyBypassBody = d; return this; },
     });
     assert(
-      bodyBypassStatus === 403 && bodyBypassBody.error.includes('Authentication required'),
-      'M06: Body requesterId fallback is ignored and unauthenticated PUT is rejected with HTTP 403',
+      (bodyBypassStatus === 401 || bodyBypassStatus === 403) && bodyBypassBody.error.includes('Authentication required'),
+      'M06: Body requesterId fallback is ignored and unauthenticated PUT is rejected with HTTP 401/403',
       `status=${bodyBypassStatus}`
     );
 
@@ -747,6 +776,82 @@ async function runM01ToM22TestSuite(): Promise<void> {
       syncMsgBypassBody.rejected.length === 1 && syncMsgBypassBody.rejected[0].reason.includes('Authentication required'),
       'M06: Sync message.userId fallback is ignored and unauthenticated sync is rejected',
       `reason=${syncMsgBypassBody.rejected[0].reason}`
+    );
+
+    // 1g. Unowned / Seed Project Mutation & Ownership Claim Protection (P1 Finding)
+    const unownedSeedId = 'proj-seed-test-unowned';
+    activeDb.projects.set(unownedSeedId, {
+      id: unownedSeedId,
+      name: 'Initial Unowned Seed System',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 35.0,
+      autonomyDays: 1.0,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0.05,
+      createdAt: new Date().toISOString(),
+    });
+
+    // In JWT-only mode (or production), unauthenticated PUT to unowned seed project is rejected with HTTP 401
+    let unauthUnownedPutStatus = 0;
+    let unauthUnownedPutBody: any = null;
+    await projectPutRoute({
+      params: { id: unownedSeedId },
+      headers: {},
+      body: { name: 'Mallory Unauth Overwrite' },
+    }, {
+      status(s: number) { unauthUnownedPutStatus = s; return this; },
+      json(d: any) { unauthUnownedPutBody = d; return this; },
+    });
+    assert(
+      unauthUnownedPutStatus === 401 && unauthUnownedPutBody.error.includes('Authentication required'),
+      'M06: Unauthenticated PUT to unowned/seed project is strictly rejected with HTTP 401 in secure mode',
+      `status=${unauthUnownedPutStatus}, error=${unauthUnownedPutBody.error}`
+    );
+
+    // Unauthenticated sync attempting to claim unowned project with ownerId: 'mallory' is rejected
+    let mallorySyncBody: any = null;
+    await syncPushRoute({
+      headers: {},
+      body: {
+        messages: [
+          {
+            id: 'msg-mallory-claim',
+            entityType: 'project',
+            payloadJson: JSON.stringify({ id: unownedSeedId, name: 'Claimed by Mallory', ownerId: 'mallory' }),
+          },
+        ],
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { mallorySyncBody = d; return this; },
+    });
+    assert(
+      mallorySyncBody.rejected.length === 1 &&
+      mallorySyncBody.rejected[0].reason.includes('Authentication required') &&
+      activeDb.projects.get(unownedSeedId)?.ownerId !== 'mallory',
+      'M06: Unauthenticated sync cannot claim ownership of unowned/seed projects via payload ownerId',
+      `rejected=${mallorySyncBody.rejected.length}, ownerInDb=${activeDb.projects.get(unownedSeedId)?.ownerId}`
+    );
+
+    // Authenticated Alice claims the unowned project via valid JWT
+    let aliceClaimStatus = 200;
+    await projectPutRoute({
+      params: { id: unownedSeedId },
+      headers: { authorization: 'Bearer ' + validJwt },
+      body: { name: 'Alice Claimed Seed System', systemCapacityKwp: 12.0 },
+    }, {
+      status(s: number) { aliceClaimStatus = s; return this; },
+      json() { return this; },
+    });
+    const claimedProj = activeDb.projects.get(unownedSeedId);
+    assert(
+      aliceClaimStatus === 200 && claimedProj?.ownerId === 'alice',
+      'M06: Authenticated requester successfully claims unowned project and binds ownership to verified identity',
+      `status=${aliceClaimStatus}, ownerId=${claimedProj?.ownerId}`
     );
 
     // -------------------------------------------------------------------------
