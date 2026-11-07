@@ -19,7 +19,7 @@ export const DEFAULT_FEATURE_FLAGS = Object.freeze({
 export type AdvancedFeatureFlags = typeof DEFAULT_FEATURE_FLAGS;
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity, calculateDesignDaylightHours } from '../climaticData';
-import type { LoadCategory } from '../loadProfiles';
+import { type LoadCategory, type ElectricalLoadItem, normalizeLoadItemToWindow } from '../loadProfiles';
 import { DEFAULT_FINANCIAL_PRICING } from '../financialEngine';
 import type { UserFinancialPricing } from '../financialEngine';
 
@@ -602,20 +602,14 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
       const dayCap = typeof baseCity.daylightHoursDesign === 'number' ? baseCity.daylightHoursDesign : designH.daylightHoursDesign;
       const nightCap = typeof baseCity.nightHoursDesign === 'number' ? baseCity.nightHoursDesign : designH.nightHoursDesign;
       return (Array.isArray(raw.loads) ? raw.loads : []).map((l: any) => {
-        if (originalVersion === '3.0.0' && typeof l.dayHours === 'number' && typeof l.nightHours === 'number') {
-          return {
-            id: String(l.id || `load-${Math.random().toString(36).slice(2, 7)}`),
-            name: String(l.name || l.nameFa || 'Appliance'),
-            category: LOAD_CATEGORY_VALUES.includes(l.category) ? l.category : 'other',
-            ratedWatts: Math.max(1, Number(l.ratedWatts) || 100),
-            surgeMultiplier: Math.max(1, Math.min(10, Number(l.surgeMultiplier) || 1)),
-            quantity: Math.max(1, Math.round(Number(l.quantity) || 1)),
-            dayHours: Math.max(0, Math.min(24, Number(l.dayHours) || 0)),
-            nightHours: Math.max(0, Math.min(24, Number(l.nightHours) || 0)),
-            isDc: Boolean(l.isDc),
-          };
+        const norm = normalizeLegacyLoad(l, { dayCapHours: dayCap, nightCapHours: nightCap });
+        // If a canonical load exceeded the climate window, record an audit warning
+        if (typeof l.dayHours === 'number' && l.dayHours > dayCap) {
+          warnings.push(
+            `بار "${norm.name}": ساعات روز (${l.dayHours}h) فراتر از سقف اقلیمی زمستان (${dayCap.toFixed(1)}h) بود و مازاد آن به ساعات شب منتقل گردید.`
+          );
         }
-        return normalizeLegacyLoad(l, { dayCapHours: dayCap, nightCapHours: nightCap });
+        return norm;
       });
     })(),
     selectedModule: raw.selectedModule || getFallbackModule(),
@@ -631,7 +625,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
   const parsed = ProjectDataV3Schema.safeParse(candidate);
 
   if (parsed.success) {
-    const isCleanV3 = originalVersion === '3.0.0' && !hadMissingFields;
+    const isCleanV3 = originalVersion === '3.0.0' && !hadMissingFields && warnings.length === 0;
     return {
       success: true,
       migrationStatus: isCleanV3 ? 'VALID' : 'RECOVERED_WITH_WARNINGS',

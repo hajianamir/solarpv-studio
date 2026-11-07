@@ -58,8 +58,10 @@ export function simulate24hEnergyBalance(
   let currentBatteryWh = hasBattery ? (maxBatteryWh * (initialBatterySocPct / 100.0)) : 0;
 
   // Site Daylight Window around solar noon (12:00)
-  // Default to 12.0h if not provided, or clamp between 2h and 22h
-  const D = Math.max(2.0, Math.min(22.0, Number(daylightHoursDesign) || 12.0));
+  // Supports full physical astronomical range [0.0, 24.0] hours (polar night to midnight sun)
+  const D = daylightHoursDesign !== undefined
+    ? Math.max(0.0, Math.min(24.0, Number(daylightHoursDesign)))
+    : 12.0;
   const tSunrise = 12.0 - D / 2.0;
   const tSunset = 12.0 + D / 2.0;
 
@@ -77,7 +79,7 @@ export function simulate24hEnergyBalance(
     dayFracs[h] = dayFrac;
     nightFracs[h] = 1.0 - dayFrac;
 
-    if (dayFrac > 0) {
+    if (dayFrac > 0 && D > 0) {
       const tMid = (overlapStart + overlapEnd) / 2.0;
       const angle = (Math.PI * (tMid - tSunrise)) / D;
       solarWeights[h] = dayFrac * Math.sin(Math.max(0, Math.min(Math.PI, angle)));
@@ -85,7 +87,7 @@ export function simulate24hEnergyBalance(
   }
 
   const sumSolarWeights = solarWeights.reduce((a, b) => a + b, 0);
-  const totalDailyGenerationKwh = totalPvCapacityKwp * peakSunHours * 0.78;
+  const totalDailyGenerationKwh = D > 0 ? totalPvCapacityKwp * peakSunHours * 0.78 : 0;
 
   // Calculate day and night load hourly distributions with strict conservation:
   // Daytime load weights: midday peak (12:00-14:00) 1.3, standard 0.9
@@ -125,8 +127,8 @@ export function simulate24hEnergyBalance(
       : 0;
 
     // Load partition: exactly conserves daytimeKwh and nighttimeKwh
-    const loadDayKwh = sumDayLoadWeights > 0 ? (dayLoadWeights[h] / sumDayLoadWeights) * daytimeKwh : 0;
-    const loadNightKwh = sumNightLoadWeights > 0 ? (nightLoadWeights[h] / sumNightLoadWeights) * nighttimeKwh : 0;
+    const loadDayKwh = sumDayLoadWeights > 0 ? (dayLoadWeights[h] / sumDayLoadWeights) * daytimeKwh : (daytimeKwh / 24.0);
+    const loadNightKwh = sumNightLoadWeights > 0 ? (nightLoadWeights[h] / sumNightLoadWeights) * nighttimeKwh : (nighttimeKwh / 24.0);
     const loadKwh = loadDayKwh + loadNightKwh;
 
     const netKwh = solarKwh - loadKwh;

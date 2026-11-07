@@ -288,7 +288,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         deviceEn: 'Module Frame Serrated Grounding Clips / Lugs',
         specificationFa: 'استاندارد IEC 62548 و UL 2703 با دندانه‌های نافذ در لایه اکسید آلومینیوم',
         rating: 'Stainless Steel / Copper Lug',
-        quantity: Math.max(parallelStringsCount * 24, totalModulesCount),
+        quantity: Math.max(1, totalModulesCount),
         locationFa: 'فریم آلومینیومی کلیه ماژول‌های خورشیدی و اتصال به ریل',
       },
       {

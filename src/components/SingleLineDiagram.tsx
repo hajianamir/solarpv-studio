@@ -23,6 +23,7 @@ interface SldProps {
   isUtilityPowerplant?: boolean;
   targetGroundResistanceOhms?: number;
   batteryRackBondingMm2?: number;
+  dcSystemEarthing?: 'floating' | 'functional_negative' | 'functional_positive';
   lang?: 'fa' | 'en';
 }
 
@@ -48,6 +49,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
   isUtilityPowerplant = false,
   targetGroundResistanceOhms,
   batteryRackBondingMm2,
+  dcSystemEarthing = 'floating',
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
@@ -107,7 +109,17 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
         isEn ? `Main Fast-Acting DC Fuse: ${batteryFuseAmps}A Mega DC Fuse` : `فیوز اصلی پرسرعت: فیوز مگا ${batteryFuseAmps}A DC با پایه نسوز`,
         isEn ? `DC Battery Heavy Cables: ${batCableMm2} mm² Flexible Copper` : `کابل ارتباطی DC سنگین: سطح مقطع ${batCableMm2} میلی‌متر مربع مس دابل`,
         isEn ? `Rack Protective Bonding: ${bessBondingMm2} mm² Cu to Main Grounding Busbar` : `هم‌بندی حفاظتی رک باتری: هادی مسی ${bessBondingMm2}mm² به شینه اصلی ارت`,
-        isEn ? "DC Architecture: Floating DC Poles (IT system, no isolated earth)" : "ساختار DC: قطب‌های شناور IT بدون ارت مجزا",
+        isEn
+          ? (dcSystemEarthing === 'functional_negative'
+              ? "DC Architecture: Functional Earth (- Pole Grounded via GFDI, single MET)"
+              : dcSystemEarthing === 'functional_positive'
+              ? "DC Architecture: Functional Earth (+ Pole Grounded via GFDI, single MET)"
+              : "DC Architecture: Floating DC Poles (IT system with IMD, single MET)")
+          : (dcSystemEarthing === 'functional_negative'
+              ? "ساختار DC: ارت عملکردی قطب منفی (GFDI متصل به شینه واحد MET)"
+              : dcSystemEarthing === 'functional_positive'
+              ? "ساختار DC: ارت عملکردی قطب مثبت (GFDI متصل به شینه واحد MET)"
+              : "ساختار DC: قطب‌های شناور IT (پایش با IMD، شینه واحد MET)"),
       ],
       standard: "IEC 62619 & UL 1973",
     },
@@ -431,7 +443,17 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
               >
                 <line x1="100" y1="365" x2="850" y2="365" stroke="#10b981" strokeWidth="4" />
                 <text x="120" y="385" textAnchor="start" fill="#10b981" fontSize="11" fontWeight="bold">
-                  {isEn ? 'PE Grounding Busbar (16mm² Cu Conductor)' : 'باسبار شین ارت حفاظتی - هادی ۱۶mm²'}
+                  {isEn
+                    ? (dcSystemEarthing === 'functional_negative'
+                        ? 'Unified MET / Main Ground Bar (DC Functional - Pole via GFDI)'
+                        : dcSystemEarthing === 'functional_positive'
+                        ? 'Unified MET / Main Ground Bar (DC Functional + Pole via GFDI)'
+                        : 'Unified MET / Main Ground Bar (Floating DC / IT with IMD)')
+                    : (dcSystemEarthing === 'functional_negative'
+                        ? 'شینه اصلی ارت یکپارچه MET (ارت عملکردی قطب منفی با GFDI)'
+                        : dcSystemEarthing === 'functional_positive'
+                        ? 'شینه اصلی ارت یکپارچه MET (ارت عملکردی قطب مثبت با GFDI)'
+                        : 'شینه اصلی ارت یکپارچه MET (سیستم شناور IT مجهز به IMD)')}
                 </text>
 
                 {/* Earth symbol */}

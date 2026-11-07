@@ -56,7 +56,7 @@ import {
 import { type Language, translations } from './i18n';
 
 import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
-import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile } from './engine/loadProfiles';
+import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoadsToWindow } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
 import { buildWaterfallArgs } from './engine/waterfallArgs';
@@ -201,6 +201,18 @@ export const App: React.FC = () => {
       lat: city.latitude,
       lng: city.longitude,
       climateData: city,
+    });
+    // P3: Dynamically normalize loads state against active climate window to preserve energy
+    setLoads((prevLoads) => {
+      const { items } = normalizeLoadsToWindow(prevLoads, {
+        daylightHoursDesign: city.daylightHoursDesign,
+        nightHoursDesign: city.nightHoursDesign,
+      });
+      const hasChanged = items.some(
+        (item, idx) =>
+          item.dayHours !== prevLoads[idx]?.dayHours || item.nightHours !== prevLoads[idx]?.nightHours
+      );
+      return hasChanged ? items : prevLoads;
     });
   }, [city]);
 
@@ -675,11 +687,11 @@ export const App: React.FC = () => {
     const contWatts =
       systemMode === 'powerplant'
         ? (targetPowerplantCapacityKw || 1000) * 1000
-        : loadAnalysis.continuousActivePowerWatts;
+        : (loadAnalysis.acGoverningContinuousWatts || loadAnalysis.governingContinuousWatts || loadAnalysis.continuousActivePowerWatts);
     const peakWatts =
       systemMode === 'powerplant'
         ? (targetPowerplantCapacityKw || 1000) * 1100
-        : loadAnalysis.maxSurgePeakPowerWatts;
+        : (loadAnalysis.acGoverningSurgeWatts || loadAnalysis.governingSurgeWatts || loadAnalysis.maxSurgePeakPowerWatts);
 
     return evaluateInverterClustering(
       contWatts,
@@ -704,11 +716,14 @@ export const App: React.FC = () => {
       systemMode === 'powerplant' ? 0 : autonomyDays,
       selectedChemistry,
       inverterClustering.recommendedDcVoltageVdc || 48,
-      loadAnalysis.maxSurgePeakPowerWatts,
-      loadAnalysis.continuousActivePowerWatts,
+      loadAnalysis.governingSurgeWatts || loadAnalysis.maxSurgePeakPowerWatts,
+      loadAnalysis.governingContinuousWatts || loadAnalysis.continuousActivePowerWatts,
       city.tempMinC,
       100,
-      loadAnalysis.nighttimeEnergyWh / 1000.0
+      loadAnalysis.nighttimeEnergyWh / 1000.0,
+      systemMode,
+      outageHours || 6,
+      city.nightHoursDesign
     );
   }, [systemMode, loadAnalysis, outageHours, autonomyDays, selectedChemistry, inverterClustering, city]);
 
@@ -825,11 +840,11 @@ export const App: React.FC = () => {
     const contWatts =
       systemMode === 'powerplant'
         ? Math.max(15000, (targetPowerplantCapacityKw || 1000) * 15) // Substation auxiliary power (~1.5%)
-        : loadAnalysis.continuousActivePowerWatts;
+        : (loadAnalysis.acGoverningContinuousWatts || loadAnalysis.governingContinuousWatts || loadAnalysis.continuousActivePowerWatts);
     const peakWatts =
       systemMode === 'powerplant'
         ? contWatts * 2.2
-        : loadAnalysis.maxSurgePeakPowerWatts;
+        : (loadAnalysis.acGoverningSurgeWatts || loadAnalysis.governingSurgeWatts || loadAnalysis.maxSurgePeakPowerWatts);
 
     return sizeDieselGenerator(
       contWatts,
@@ -2325,6 +2340,9 @@ export const App: React.FC = () => {
                 daylightHoursDesign: city.daylightHoursDesign,
                 nightHoursDesign: city.nightHoursDesign,
               }}
+              systemMode={systemMode}
+              outageHours={outageHours}
+              peakSunHours={city.peakSunHours}
               lang={lang}
             />
           )}
@@ -2514,6 +2532,7 @@ export const App: React.FC = () => {
               isUtilityPowerplant={systemMode === 'powerplant'}
               targetGroundResistanceOhms={protectionSystem.earthing.targetGroundResistanceOhms}
               batteryRackBondingMm2={protectionSystem.earthing.batteryRackBondingConductorMm2}
+              dcSystemEarthing={dcSystemEarthing}
               lang={lang}
             />
           )}

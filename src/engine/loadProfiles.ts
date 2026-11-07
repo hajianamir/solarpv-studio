@@ -65,6 +65,14 @@ export interface LoadAnalysisResult {
   acMaxSurgePeakPowerWatts: number;
   dcMaxSurgePeakPowerWatts: number;
 
+  // Periodic AC powers for precise inverter and generator sizing
+  daytimeAcContinuousWatts: number;
+  nighttimeAcContinuousWatts: number;
+  acGoverningContinuousWatts: number;
+  daytimeAcSurgeWatts: number;
+  nighttimeAcSurgeWatts: number;
+  acGoverningSurgeWatts: number;
+
   // Periodic powers (daytime vs nighttime vs coincident worst-case)
   daytimeContinuousWatts: number;
   nighttimeContinuousWatts: number;
@@ -376,6 +384,8 @@ export function analyzeLoadProfile(
   let dcContinuousActivePowerWatts = 0;
   let daytimeContinuousWatts = 0;
   let nighttimeContinuousWatts = 0;
+  let daytimeAcContinuousWatts = 0;
+  let nighttimeAcContinuousWatts = 0;
 
   interface MotorEntry {
     name: string;
@@ -388,25 +398,25 @@ export function analyzeLoadProfile(
   const motorLoads: MotorEntry[] = [];
   let nonMotorDaytimeWatts = 0;
   let nonMotorNighttimeWatts = 0;
+  let nonMotorDaytimeAcWatts = 0;
+  let nonMotorNighttimeAcWatts = 0;
   let nonMotorCoincidentWatts = 0;
   let nonMotorAcCoincidentWatts = 0;
   let nonMotorDcCoincidentWatts = 0;
 
-  for (const item of items) {
-    const totalWatts = item.ratedWatts * item.quantity;
-    const clampedDay = Math.max(0, Math.min(dayCap, item.dayHours));
-    const clampedNight = Math.max(0, Math.min(nightCap, item.nightHours));
-
-    if (
-      item.dayHours > dayCap ||
-      item.dayHours < 0 ||
-      item.nightHours > nightCap ||
-      item.nightHours < 0
-    ) {
-      warnings.push(
-        `بار "${item.name}": ساعات روز/شب خارج از محدوده اقلیمی [0, ${dayCap.toFixed(1)}] و [0, ${nightCap.toFixed(1)}] بود و به مرزهای مجاز محدود شد.`
-      );
+  for (const rawItem of items) {
+    // Conservation of energy: normalize load against climate window, transferring excess day hours to night hours
+    const { normalized: item, warning } = normalizeLoadItemToWindow(rawItem, {
+      dayCapHours: dayCap,
+      nightCapHours: nightCap,
+    });
+    if (warning) {
+      warnings.push(warning);
     }
+
+    const totalWatts = item.ratedWatts * item.quantity;
+    const clampedDay = item.dayHours;
+    const clampedNight = item.nightHours;
 
     const itemDayWh = totalWatts * clampedDay;
     const itemNightWh = totalWatts * clampedNight;
@@ -429,9 +439,15 @@ export function analyzeLoadProfile(
 
     if (isDay) {
       daytimeContinuousWatts += totalWatts;
+      if (!item.isDc) {
+        daytimeAcContinuousWatts += totalWatts;
+      }
     }
     if (isNight) {
       nighttimeContinuousWatts += totalWatts;
+      if (!item.isDc) {
+        nighttimeAcContinuousWatts += totalWatts;
+      }
     }
 
     const surgePower = totalWatts * item.surgeMultiplier;
@@ -449,8 +465,14 @@ export function analyzeLoadProfile(
       if (item.isDc) nonMotorDcCoincidentWatts += totalWatts;
       else nonMotorAcCoincidentWatts += totalWatts;
 
-      if (isDay) nonMotorDaytimeWatts += totalWatts;
-      if (isNight) nonMotorNighttimeWatts += totalWatts;
+      if (isDay) {
+        nonMotorDaytimeWatts += totalWatts;
+        if (!item.isDc) nonMotorDaytimeAcWatts += totalWatts;
+      }
+      if (isNight) {
+        nonMotorNighttimeWatts += totalWatts;
+        if (!item.isDc) nonMotorNighttimeAcWatts += totalWatts;
+      }
     }
 
     const itemAnalysis: LoadItemAnalysis = {
@@ -480,6 +502,7 @@ export function analyzeLoadProfile(
 
   const coincidentWorstCaseContinuousWatts = acContinuousActivePowerWatts + dcContinuousActivePowerWatts;
   const governingContinuousWatts = Math.max(daytimeContinuousWatts, nighttimeContinuousWatts);
+  const acGoverningContinuousWatts = Math.max(daytimeAcContinuousWatts, nighttimeAcContinuousWatts);
 
   // Coincident worst-case surge (all active loads)
   const coincidentWorstCaseSurgeWatts = calcSurge(
@@ -488,20 +511,29 @@ export function analyzeLoadProfile(
     coincidentWorstCaseContinuousWatts
   );
 
-  // Daytime surge
+  // Daytime total surge
   const dayMotors = motorLoads.filter((m) => m.isDay);
   const daytimeSurgeWatts = calcSurge(dayMotors, nonMotorDaytimeWatts, daytimeContinuousWatts);
 
-  // Nighttime surge
+  // Nighttime total surge
   const nightMotors = motorLoads.filter((m) => m.isNight);
   const nighttimeSurgeWatts = calcSurge(nightMotors, nonMotorNighttimeWatts, nighttimeContinuousWatts);
 
-  // Governing periodic surge
+  // Governing periodic surge (total AC + DC)
   const governingSurgeWatts = Math.max(daytimeSurgeWatts, nighttimeSurgeWatts);
 
   // AC-only surge for Inverter sizing
   const acMotors = motorLoads.filter((m) => !m.isDc);
   const acMaxSurgePeakPowerWatts = calcSurge(acMotors, nonMotorAcCoincidentWatts, acContinuousActivePowerWatts);
+
+  // AC periodic surge
+  const dayAcMotors = motorLoads.filter((m) => m.isDay && !m.isDc);
+  const daytimeAcSurgeWatts = calcSurge(dayAcMotors, nonMotorDaytimeAcWatts, daytimeAcContinuousWatts);
+
+  const nightAcMotors = motorLoads.filter((m) => m.isNight && !m.isDc);
+  const nighttimeAcSurgeWatts = calcSurge(nightAcMotors, nonMotorNighttimeAcWatts, nighttimeAcContinuousWatts);
+
+  const acGoverningSurgeWatts = Math.max(daytimeAcSurgeWatts, nighttimeAcSurgeWatts);
 
   // DC-only surge
   const dcMotors = motorLoads.filter((m) => m.isDc);
@@ -510,9 +542,9 @@ export function analyzeLoadProfile(
   const totalDailyEnergyWh = daytimeEnergyWh + nighttimeEnergyWh;
   const totalDailyEnergyKwh = totalDailyEnergyWh / 1000.0;
 
-  // Inverter selection: Sized for AC loads (with 25% safety margin for continuous, 20% for surge)
-  const recommendedInverterContinuousWatts = Math.ceil((acContinuousActivePowerWatts * 1.25) / 100) * 100;
-  const recommendedInverterPeakSurgeWatts = Math.ceil((acMaxSurgePeakPowerWatts * 1.2) / 100) * 100;
+  // Inverter selection: Sized for AC loads in governing period with safety margins
+  const recommendedInverterContinuousWatts = Math.ceil(((acGoverningContinuousWatts || acContinuousActivePowerWatts) * 1.25) / 100) * 100;
+  const recommendedInverterPeakSurgeWatts = Math.ceil(((acGoverningSurgeWatts || acMaxSurgePeakPowerWatts) * 1.2) / 100) * 100;
 
   return {
     daytimeEnergyWh,
@@ -529,6 +561,12 @@ export function analyzeLoadProfile(
     dcContinuousActivePowerWatts,
     acMaxSurgePeakPowerWatts,
     dcMaxSurgePeakPowerWatts,
+    daytimeAcContinuousWatts,
+    nighttimeAcContinuousWatts,
+    acGoverningContinuousWatts,
+    daytimeAcSurgeWatts,
+    nighttimeAcSurgeWatts,
+    acGoverningSurgeWatts,
     daytimeContinuousWatts,
     nighttimeContinuousWatts,
     daytimeSurgeWatts,

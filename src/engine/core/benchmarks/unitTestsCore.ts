@@ -5131,6 +5131,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const dcSegregated = analysis.dcContinuousActivePowerWatts === 400 && analysis.acContinuousActivePowerWatts === 3000;
     const periodDayContinuous = analysis.daytimeContinuousWatts === 2400; // 2000W AC + 400W DC
     const periodNightContinuous = analysis.nighttimeContinuousWatts === 1400; // 1000W AC + 400W DC
+    const acPeriodicOk = analysis.acGoverningContinuousWatts === 2000 && analysis.acGoverningSurgeWatts === 6000;
     const daySurge = analysis.daytimeSurgeWatts === 6400; // 6000W AC surge + 400W DC
     const totalDailyWh = analysis.totalDailyEnergyWh;
     const energyOk = Math.abs(totalDailyWh - 31568) < 1;
@@ -5138,8 +5139,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     assert(
       'E23-PERIOD-BASED-CONTINUOUS-SURGE-AND-DC-BREAKDOWN',
       'Period-based continuous & surge analysis isolates DC loads from inverter sizing while preserving energy accounting',
-      dcSegregated && periodDayContinuous && periodNightContinuous && daySurge && energyOk,
-      `acCont=${analysis.acContinuousActivePowerWatts}W, dcCont=${analysis.dcContinuousActivePowerWatts}W, dayPeak=${analysis.daytimeSurgeWatts}W, nightPeak=${analysis.nighttimeSurgeWatts}W, totalWh=${totalDailyWh} (exp 31568)`
+      dcSegregated && periodDayContinuous && periodNightContinuous && acPeriodicOk && daySurge && energyOk,
+      `acCont=${analysis.acContinuousActivePowerWatts}W, acGov=${analysis.acGoverningContinuousWatts}W, dcCont=${analysis.dcContinuousActivePowerWatts}W, dayPeak=${analysis.daytimeSurgeWatts}W, totalWh=${totalDailyWh} (exp 31568)`
     );
   }
 
@@ -5166,11 +5167,16 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const socReported = typeof sim.initialBatterySocPct === 'number' && typeof sim.finalBatterySocPct === 'number';
     const grossSurplusReported = typeof sim.totalSurplus24hKwh === 'number' && sim.totalSurplus24hKwh >= 0;
 
+    // Test polar night (0h daylight) and midnight sun (24h daylight) without clamping
+    const polarNightSim = simulate24hEnergyBalance(10.0, 0.0, 0.0, 20.0, 25.0, 30.0, 50.0, 0.0);
+    const polarNightSum = polarNightSim.hourlySteps.reduce((sum, h) => sum + h.loadDemandKwh, 0);
+    const polarNightOk = Math.abs(polarNightSum - 20.0) <= 0.05;
+
     assert(
       'E24-SIMULATION-24H-STRICT-LOAD-CONSERVATION-AND-SOC',
       'Dynamic sunrise/sunset 24h simulation guarantees strict hourly load conservation (tolerance <= 0.01 kWh) and tracks SoC & surplus',
-      loadConservationOk && socReported && grossSurplusReported,
-      `hourlySum=${hourlySum.toFixed(4)} kWh vs target=${totalTarget} kWh (diff=${Math.abs(hourlySum - totalTarget).toFixed(4)}), initialSoC=${sim.initialBatterySocPct}%, finalSoC=${sim.finalBatterySocPct}%, surplus=${sim.totalSurplus24hKwh} kWh`
+      loadConservationOk && socReported && grossSurplusReported && polarNightOk,
+      `hourlySum=${hourlySum.toFixed(4)} kWh vs target=${totalTarget} kWh (diff=${Math.abs(hourlySum - totalTarget).toFixed(4)}), initialSoC=${sim.initialBatterySocPct}%, finalSoC=${sim.finalBatterySocPct}%, surplus=${sim.totalSurplus24hKwh} kWh, polarNight=${polarNightOk}`
     );
   }
 
@@ -5208,11 +5214,29 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     const fullCoverageOk = (fullBank.nightCoveragePct ?? 0) >= 100;
 
+    // On-grid case: 6h outage in Tehran (outage need = 4.99 kWh, usable = 8.2 kWh -> 164% coverage, NO false warning!)
+    const onGridBank = sizeBatteryBank(
+      4.99,
+      1.0,
+      'lifepo4',
+      48,
+      5000,
+      3000,
+      15.0,
+      100,
+      12.0, // 12 kWh total night load
+      'ongrid',
+      6,    // 6h outage window
+      14.42 // 14.42h night window
+    );
+    const onGridNoFalseDeficit = (onGridBank.nightCoveragePct ?? 0) >= 100 &&
+      !onGridBank.warnings.some(w => w.includes('پوشش ناکافی'));
+
     assert(
       'E25-BESS-NIGHT-COVERAGE-AND-OFFGRID-WARNING',
       'Evaluates usable battery energy against longest winter-night requirement and issues Persian/English deficit warnings',
-      deficitDetected && fullCoverageOk,
-      `deficitCoverage=${deficitBank.nightCoveragePct}%, fullCoverage=${fullBank.nightCoveragePct}%, warningsCount=${deficitBank.warnings.length}`
+      deficitDetected && fullCoverageOk && onGridNoFalseDeficit,
+      `deficitCoverage=${deficitBank.nightCoveragePct}%, fullCoverage=${fullBank.nightCoveragePct}%, onGridCoverage=${onGridBank.nightCoveragePct}%`
     );
   }
 

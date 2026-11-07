@@ -1,5 +1,7 @@
 // Battery Energy Storage System (BESS) & Degradation Life-Cycle Engine
 
+export type SystemMode = 'powerplant' | 'ongrid' | 'offgrid';
+
 export type BatteryChemistry = 'lifepo4' | 'gel_deep_cycle' | 'agm_flooded' | 'ternary_ncm' | 'LiFePO4' | string;
 
 export interface BatteryChemistryProfile {
@@ -111,7 +113,10 @@ export interface BatteryBankSizingResult {
   estimatedLifespanYears: number;
   expectedTotalCycles: number;
   warnings: string[];
-  nightCoveragePct?: number; // Off-grid design night coverage ratio (%)
+  nightCoveragePct?: number; // Off-grid design night or On-grid outage coverage ratio (%)
+  coverageTargetKwh?: number;
+  coverageLabelFa?: string;
+  coverageLabelEn?: string;
 }
 
 const FALLBACK_BATTERY_PROFILE: BatteryChemistryProfile = {
@@ -169,7 +174,10 @@ export function sizeBatteryBank(
   inverterContinuousWatts: number = 3000,
   minAmbientTempC: number = 15.0,
   unitBatteryAh: number = 100, // standard 100Ah or 200Ah unit block
-  designNighttimeKwh?: number // Design night energy requirement for off-grid night coverage verification
+  designNighttimeKwh?: number, // Design night energy requirement for coverage verification
+  systemMode: SystemMode = 'offgrid',
+  outageHours?: number,
+  designNightHours?: number
 ): BatteryBankSizingResult {
   // Normalize chemistry key safely
   const rawKey = typeof chemistryType === 'string' ? chemistryType : (chemistryType as any)?.id || 'lifepo4';
@@ -263,14 +271,41 @@ export function sizeBatteryBank(
     );
   }
 
-  // Off-grid Design Night Coverage evaluation (Longest night energy sufficiency)
+  // Coverage evaluation:
+  // For On-Grid: target is the backup energy for the requested outage window
+  // For Off-Grid: target is the design night requirement for the longest winter night
   let nightCoveragePct = 100.0;
-  if (designNighttimeKwh && designNighttimeKwh > 0.001) {
-    nightCoveragePct = Number(((actualUsableKwh / designNighttimeKwh) * 100).toFixed(1));
-    if (actualUsableKwh < designNighttimeKwh) {
-      warnings.push(
-        `پوشش ناکافی بار شب: ظرفیت قابل‌استفاده بانک (${actualUsableKwh.toFixed(1)} kWh) کمتر از نیاز شبِ طراحی (${designNighttimeKwh.toFixed(1)} kWh، پوشش ${nightCoveragePct}٪) است!`
-      );
+  let coverageTargetKwh = 0;
+  let coverageLabelFa = 'پوشش شبِ طراحی';
+  let coverageLabelEn = 'Design Night Coverage';
+
+  const isOnGrid = systemMode === 'ongrid';
+
+  if (isOnGrid) {
+    coverageLabelFa = 'پوشش دوره خاموشی';
+    coverageLabelEn = 'Outage Window Coverage';
+    const effectiveOutage = Math.max(0, outageHours ?? 6);
+    const nightDesignH = Math.max(1, designNightHours ?? 12.0);
+    const nightScale = Math.min(1.0, effectiveOutage / nightDesignH);
+    coverageTargetKwh = Number(((designNighttimeKwh ?? dailyEnergyForAutonomyKwh) * nightScale).toFixed(2));
+    if (coverageTargetKwh > 0.001) {
+      nightCoveragePct = Number(((actualUsableKwh / coverageTargetKwh) * 100).toFixed(1));
+      if (actualUsableKwh < coverageTargetKwh) {
+        warnings.push(
+          `پوشش ناکافی دوره خاموشی: ظرفیت قابل‌استفاده بانک (${actualUsableKwh.toFixed(1)} kWh) کمتر از نیاز دوره خاموشی (${coverageTargetKwh.toFixed(1)} kWh، پوشش ${nightCoveragePct}٪) است!`
+        );
+      }
+    }
+  } else {
+    // Off-grid mode
+    coverageTargetKwh = Number((designNighttimeKwh ?? dailyEnergyForAutonomyKwh).toFixed(2));
+    if (coverageTargetKwh > 0.001) {
+      nightCoveragePct = Number(((actualUsableKwh / coverageTargetKwh) * 100).toFixed(1));
+      if (actualUsableKwh < coverageTargetKwh) {
+        warnings.push(
+          `پوشش ناکافی بار شب: ظرفیت قابل‌استفاده بانک (${actualUsableKwh.toFixed(1)} kWh) کمتر از نیاز شبِ طراحی (${coverageTargetKwh.toFixed(1)} kWh، پوشش ${nightCoveragePct}٪) است!`
+        );
+      }
     }
   }
 

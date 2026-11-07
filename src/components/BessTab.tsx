@@ -62,6 +62,7 @@ export const BessTab: React.FC<BessTabProps> = ({
   const totalFootprintM2 = Number((calculatedTotalUnits * 0.18).toFixed(2)); // approx 0.18m² per unit with rack clearance
 
   const isNightCoverageDeficit = batterySizing.nightCoveragePct !== undefined && batterySizing.nightCoveragePct < 100;
+  const isOnGrid = systemTopology === 'on_grid' || systemTopology === 'hybrid';
 
   return (
     <div className="space-y-6">
@@ -272,18 +273,24 @@ export const BessTab: React.FC<BessTabProps> = ({
             : 'Battery Sizing Matrix & Physical Quantity:'}
         </h3>
 
-        {/* Night Coverage Deficit Warning Banner */}
+        {/* Coverage Deficit Warning Banner */}
         {isNightCoverageDeficit && (
           <div className="p-3 bg-red-950/40 border border-red-800 rounded-lg text-xs text-red-200 mb-4 flex items-center gap-2.5">
             <AlertTriangle className="w-5 h-5 text-industrial-error shrink-0" />
             <div>
               <strong className="block font-bold">
-                {lang === 'fa' ? 'هشدار مهندسی کسری پوشش شب (Night Coverage Deficit):' : 'Design Night Coverage Deficit Warning:'}
+                {lang === 'fa'
+                  ? (isOnGrid ? 'هشدار مهندسی کسری پوشش خاموشی (Outage Coverage Deficit):' : 'هشدار مهندسی کسری پوشش شب (Night Coverage Deficit):')
+                  : (isOnGrid ? 'Outage Window Coverage Deficit Warning:' : 'Design Night Coverage Deficit Warning:')}
               </strong>
               <span>
                 {lang === 'fa'
-                  ? `ظرفیت قابل‌استفاده بانک باتری (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) کمتر از انرژی مورد نیاز طولانی‌ترین شب سال (${nightHoursDesign ?? 14} ساعته: ${nighttimeKwh?.toFixed(1) ?? '...'} kWh) است (پوشش: ${batterySizing.nightCoveragePct}%). لطفاً ظرفیت باتری یا روزهای خودمختاری را افزایش دهید.`
-                  : `Usable battery capacity (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) is below the winter solstice night load (${nightHoursDesign ?? 14}h: ${nighttimeKwh?.toFixed(1) ?? '...'} kWh), covering only ${batterySizing.nightCoveragePct}%. Increase battery capacity or autonomy.`}
+                  ? (isOnGrid
+                      ? `ظرفیت قابل‌استفاده بانک باتری (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) کمتر از انرژی مورد نیاز دوره خاموشی (${outageHours ?? 6} ساعته: ${batterySizing.coverageTargetKwh?.toFixed(1) ?? '...'} kWh) است (پوشش: ${batterySizing.nightCoveragePct}%). لطفاً ظرفیت باتری یا ساعت پشتیبانی را تنظیم کنید.`
+                      : `ظرفیت قابل‌استفاده بانک باتری (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) کمتر از انرژی مورد نیاز طولانی‌ترین شب سال (${nightHoursDesign ?? 14} ساعته: ${nighttimeKwh?.toFixed(1) ?? '...'} kWh) است (پوشش: ${batterySizing.nightCoveragePct}%). لطفاً ظرفیت باتری یا روزهای خودمختاری را افزایش دهید.`)
+                  : (isOnGrid
+                      ? `Usable battery capacity (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) is below outage window load (${outageHours ?? 6}h: ${batterySizing.coverageTargetKwh?.toFixed(1) ?? '...'} kWh), covering only ${batterySizing.nightCoveragePct}%. Increase battery capacity.`
+                      : `Usable battery capacity (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) is below winter solstice night load (${nightHoursDesign ?? 14}h: ${nighttimeKwh?.toFixed(1) ?? '...'} kWh), covering only ${batterySizing.nightCoveragePct}%. Increase battery capacity or autonomy.`)}
               </span>
             </div>
           </div>
@@ -311,7 +318,11 @@ export const BessTab: React.FC<BessTabProps> = ({
           </div>
 
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'پوشش شبِ طراحی' : 'Night Coverage'}</span>
+            <span className="text-slate-400 block mb-0.5">
+              {lang === 'fa'
+                ? (batterySizing.coverageLabelFa || (isOnGrid ? 'پوشش خاموشی' : 'پوشش شبِ طراحی'))
+                : (batterySizing.coverageLabelEn || (isOnGrid ? 'Outage Coverage' : 'Night Coverage'))}
+            </span>
             <span className={`text-lg font-bold font-mono ${
               (batterySizing.nightCoveragePct ?? 100) >= 100 ? 'text-industrial-success' : 'text-industrial-error'
             }`}>
@@ -319,8 +330,8 @@ export const BessTab: React.FC<BessTabProps> = ({
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
               {(batterySizing.nightCoveragePct ?? 100) >= 100
-                ? (lang === 'fa' ? '✓ پوشش کامل شب' : '✓ Full night covered')
-                : (lang === 'fa' ? '⚠ کسری انرژی شب' : '⚠ Deficit')}
+                ? (lang === 'fa' ? (isOnGrid ? '✓ پوشش کامل خاموشی' : '✓ پوشش کامل شب') : '✓ Fully covered')
+                : (lang === 'fa' ? '⚠ کسری انرژی' : '⚠ Deficit')}
             </span>
           </div>
 
