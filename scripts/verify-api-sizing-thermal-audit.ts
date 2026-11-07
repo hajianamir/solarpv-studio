@@ -65,6 +65,29 @@ async function runProbe() {
     `LCOE = $${resQuick.lcoeUsdPerKwh.toFixed(4)}/kWh (Capacity: ${resQuick.systemCapacityKwp} kWp)`
   );
 
+  // Canonical Audit Case: 20 kWh/day, 1.5 days autonomy (storage requirement ≈ 33.3 kWh)
+  const canonQuick = performQuickSizing({
+    projectName: 'Residential Canonical Audit Case 1.5d',
+    latitude: 35.6895,
+    longitude: 51.389,
+    dailyKwh: 20,
+    autonomyDays: 1.5,
+  }, db);
+  const canonProject = db.projects.get(canonQuick.projectId)!;
+  const canonInverter = db.inverters.get(canonProject.inverterId!)!;
+  const canonBattery = db.batteries.get(canonProject.batteryId!)!;
+
+  check(
+    'F-01: Canonical scenario (20 kWh/day, 1.5d auto -> 33.3 kWh) selects residential battery (<= 30 kWh, NOT 200 kWh)',
+    canonBattery.capacityKwh <= 30 && canonBattery.capacityKwh >= 2.0,
+    `selected ${canonBattery.modelName} (${canonBattery.capacityKwh} kWh)`
+  );
+  check(
+    'F-01: Canonical scenario LCOE satisfies bankable threshold (< $0.25/kWh, NOT $0.84)',
+    canonQuick.lcoeUsdPerKwh < 0.25 && canonQuick.lcoeUsdPerKwh > 0.10,
+    `LCOE = $${canonQuick.lcoeUsdPerKwh.toFixed(4)}/kWh (Capacity: ${canonQuick.systemCapacityKwp} kWp, Units: ${canonQuick.batteryCount})`
+  );
+
   // Commercial Case: 400 kWh/day, 0.5 day autonomy -> ~100 kWp
   const comQuick = performQuickSizing({
     projectName: 'Commercial Warehouse 100kWp',
@@ -296,6 +319,19 @@ async function runProbe() {
     'F-01: Route POST /api/v1/projects/quick-size returns HTTP 200 and realistic residential LCOE (< $0.25/kWh)',
     qsStatus === 200 && qsBody.lcoeUsdPerKwh < 0.25 && qsBody.lcoeUsdPerKwh > 0.10,
     `status=${qsStatus}, LCOE=$${qsBody?.lcoeUsdPerKwh?.toFixed(4)}/kWh, cap=${qsBody?.systemCapacityKwp} kWp`
+  );
+
+  // 2b. Canonical residential quick sizing via live API endpoint (20 kWh/day, 1.5d autonomy)
+  qsStatus = 200;
+  qsBody = null;
+  await quickSizeRoute({
+    body: { dailyKwh: 20, autonomyDays: 1.5, latitude: 35.6895, longitude: 51.389, projectName: 'Live Canonical Test 1.5d' },
+  }, mockQsRes);
+
+  check(
+    'F-01: Route POST /api/v1/projects/quick-size for canonical scenario (1.5d auto) yields LCOE < $0.25/kWh (NOT $0.84)',
+    qsStatus === 200 && qsBody.lcoeUsdPerKwh < 0.25 && qsBody.lcoeUsdPerKwh > 0.10,
+    `status=${qsStatus}, LCOE=$${qsBody?.lcoeUsdPerKwh?.toFixed(4)}/kWh, batteryCount=${qsBody?.batteryCount}`
   );
 
   // 3. String sizing endpoint with ambient temp

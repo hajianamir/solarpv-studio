@@ -784,26 +784,51 @@ export function performQuickSizing(
     const allBatteries = Array.from(db.batteries.values());
     if (allBatteries.length === 0) {
       battery = DEFAULT_BATTERIES[0];
-    } else if (estimatedStorageKwh <= 0) {
-      battery = allBatteries.find((b) => b.capacityKwh <= 15) || allBatteries[0];
-    } else if (estimatedStorageKwh <= 30) {
-      // Residential scale (<= 30 kWh storage): pick residential battery (<= 15 kWh, e.g. 4.8 - 10.2 kWh)
-      const candidates = allBatteries.filter((b) => b.capacityKwh <= 15 && b.capacityKwh >= 2.0);
-      candidates.sort((a, b) => Math.abs(a.capacityKwh - 5.12) - Math.abs(b.capacityKwh - 5.12));
-      battery = candidates[0] || allBatteries[0];
-    } else if (estimatedStorageKwh <= 500) {
-      // Commercial scale (30 to 500 kWh storage): pick commercial battery (20 to 200 kWh)
-      const candidates = allBatteries.filter((b) => b.capacityKwh >= 20 && b.capacityKwh <= 200);
-      candidates.sort((a, b) => {
-        const countA = Math.ceil(estimatedStorageKwh / a.capacityKwh);
-        const countB = Math.ceil(estimatedStorageKwh / b.capacityKwh);
-        return Math.abs(countA - 3) - Math.abs(countB - 3);
-      });
-      battery = candidates[0] || allBatteries[0];
     } else {
-      // Utility scale (> 500 kWh storage): pick modular utility BESS container (>= 300 kWh, e.g. CATL EnerOne 372.7 kWh)
-      const candidates = allBatteries.filter((b) => b.capacityKwh >= 300);
-      candidates.sort((a, b) => Math.abs(a.capacityKwh - 372.7) - Math.abs(b.capacityKwh - 372.7));
+      let candidates: Battery[];
+      if (actualCapacityKwp <= 20) {
+        // Residential scale (<= 20 kWp): strictly limit candidate batteries to residential units (<= 30 kWh, e.g. 2.4 - 15 kWh)
+        candidates = allBatteries.filter((b) => b.capacityKwh <= 30 && b.capacityKwh >= 2.0);
+      } else if (actualCapacityKwp <= 250) {
+        // Commercial scale (20 to 250 kWp): commercial rack/cabinet units (20 to 150 kWh)
+        candidates = allBatteries.filter((b) => b.capacityKwh >= 15 && b.capacityKwh <= 150);
+      } else {
+        // Utility scale (> 250 kWp): modular utility container BESS (>= 150 kWh)
+        candidates = allBatteries.filter((b) => b.capacityKwh >= 150);
+      }
+
+      if (!candidates || candidates.length === 0) {
+        candidates = allBatteries;
+      }
+
+      const targetUnits = actualCapacityKwp <= 20 ? 4 : actualCapacityKwp <= 250 ? 3 : 8;
+      const targetUnitKwh = actualCapacityKwp <= 20 ? 5.12 : actualCapacityKwp <= 250 ? 100 : 372.7;
+
+      candidates.sort((a, b) => {
+        const unitsA = Math.max(1, Math.ceil(estimatedStorageKwh / a.capacityKwh));
+        const unitsB = Math.max(1, Math.ceil(estimatedStorageKwh / b.capacityKwh));
+        const excessA = (unitsA * a.capacityKwh) - estimatedStorageKwh;
+        const excessB = (unitsB * b.capacityKwh) - estimatedStorageKwh;
+
+        // Primary: minimize excess capacity
+        if (Math.abs(excessA - excessB) > 1.0) {
+          return excessA - excessB;
+        }
+        // Secondary: unit count reasonableness
+        const penaltyA = Math.abs(unitsA - targetUnits);
+        const penaltyB = Math.abs(unitsB - targetUnits);
+        if (penaltyA !== penaltyB) {
+          return penaltyA - penaltyB;
+        }
+        // Tertiary: closeness to standard reference unit
+        const refDiff = Math.abs(a.capacityKwh - targetUnitKwh) - Math.abs(b.capacityKwh - targetUnitKwh);
+        if (Math.abs(refDiff) > 0.1) {
+          return refDiff;
+        }
+        // Quaternary: deterministic ID tie-breaker
+        return a.id.localeCompare(b.id);
+      });
+
       battery = candidates[0] || allBatteries[0];
     }
   }
