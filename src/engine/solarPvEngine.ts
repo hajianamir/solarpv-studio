@@ -17,7 +17,9 @@ export interface Triangle {
 // and re-exported here for backward compatibility.
 export type { PvModule, Inverter, Battery } from './types/equipmentTypes';
 import type { PvModule, Inverter, Battery } from './types/equipmentTypes';
+import type { InstallationEnvironment } from './types/climateTypes';
 import { getClimateData } from './climaticData';
+import { calculateThermalDerate } from './core/thermalDerate';
 
 export interface Project {
   id: string;
@@ -67,6 +69,10 @@ export interface StringSizingRequest {
   panelVmp: number;
   tempMinC: number;
   tempMaxC: number;
+  cellTempMaxC?: number; // Explicit hot cell temperature (°C) per IEC 62548 §7.2
+  noctC?: number; // Module NOCT (°C) for unified thermal cell temperature derivation
+  installationEnvironment?: InstallationEnvironment;
+  useCellTemp?: boolean; // When true or when noctC/cellTempMaxC provided, use cell temperature for Vmp_min hot
   betaVocPerC: number;
   betaPmpPerC?: number;   // NEW (BUG-6) — temperature coefficient of Pmp, fraction/°C, negative
                           //       e.g. -0.0030 means -0.30 %/°C
@@ -80,6 +86,7 @@ export interface StringSizingResponse {
   maxModules: number;
   hasWarning: boolean;
   warnings?: string[];
+  effectiveCellTempMaxC?: number;
 }
 
 export interface LcoeRequest {
@@ -257,11 +264,24 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
       : safeBetaVocPerC;
 
   const vocMaxTemp = panelVoc * (1.0 + safeBetaVocPerC * (tempMinC - 25.0));
-  // IEC 62548 §7.2: hot-case MPPT floor uses the Pmp temperature
-  // coefficient (typically steeper than Voc). Fall back to Voc when
-  // betaPmpPerC is absent (conservative approximation).
+
+  // IEC 62548 §7.2: hot-case MPPT floor uses operating cell temperature and
+  // the Pmp temperature coefficient (typically steeper than Voc).
+  // Single source of truth: unified thermal model (calculateThermalDerate).
+  let effectiveHotCellTempC = tempMaxC;
+  if (req.cellTempMaxC !== undefined && Number.isFinite(req.cellTempMaxC)) {
+    effectiveHotCellTempC = req.cellTempMaxC;
+  } else if (req.noctC !== undefined || req.useCellTemp === true) {
+    const thermal = calculateThermalDerate({
+      module: { noctC: req.noctC ?? 45.0, tempCoeffPmpPct: safeBetaPmpPerC * 100 },
+      ambientTempMaxC: tempMaxC,
+      installationEnvironment: req.installationEnvironment,
+    });
+    effectiveHotCellTempC = thermal.cellTempHotC;
+  }
+
   const vmpHotCoeff = safeBetaPmpPerC;
-  const vmpMinTemp = panelVmp * (1.0 + vmpHotCoeff * (tempMaxC - 25.0));
+  const vmpMinTemp = panelVmp * (1.0 + vmpHotCoeff * (effectiveHotCellTempC - 25.0));
 
   const maxModulesVmax = Math.floor(inverterVdcMax / vocMaxTemp);
   // Per IEC 62548 §7.2 the MPPT upper-bound is governed by the HIGHEST Vmp,
@@ -284,6 +304,7 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
     maxModules: Math.max(1, maxModules),
     hasWarning: warnings.length > 0,
     warnings,
+    effectiveCellTempMaxC: Number(effectiveHotCellTempC.toFixed(2)),
   };
 }
 
@@ -691,9 +712,14 @@ export function performQuickSizing(
   req: QuickSizingRequest,
   db: InMemorySolarDatabase
 ): QuickSizingResponse {
-  const module = (req.moduleId ? db.pvModules.get(req.moduleId) : undefined) || DEFAULT_MODULES[0];
-  const inverter = (req.inverterId ? db.inverters.get(req.inverterId) : undefined) || DEFAULT_INVERTERS[0];
-  const battery = (req.batteryId ? db.batteries.get(req.batteryId) : undefined) || DEFAULT_BATTERIES[0];
+  if (typeof req.latitude !== 'number' || !Number.isFinite(req.latitude) || req.latitude < -90 || req.latitude > 90) {
+    throw new Error(`Invalid latitude: must be a finite number between -90 and 90, got ${req.latitude}`);
+  }
+  if (typeof req.dailyKwh !== 'number' || !Number.isFinite(req.dailyKwh) || req.dailyKwh <= 0) {
+    throw new Error(`dailyKwh must be a positive finite number, got ${req.dailyKwh}`);
+  }
+
+  const autonomyDays = typeof req.autonomyDays === 'number' && Number.isFinite(req.autonomyDays) ? Math.max(0, req.autonomyDays) : 0;
 
   let peakSunHours: number;
   try {
@@ -704,13 +730,87 @@ export function performQuickSizing(
   }
   const requiredArrayKwp = req.dailyKwh / (peakSunHours * 0.75);
 
+  const module = (req.moduleId ? db.pvModules.get(req.moduleId) : undefined) || DEFAULT_MODULES[0];
   const panelCount = Math.ceil((requiredArrayKwp * 1000.0) / module.pmpWatts);
   const actualCapacityKwp = (panelCount * module.pmpWatts) / 1000.0;
 
-  const inverterCount = Math.ceil(actualCapacityKwp / inverter.pnomAcKw);
+  // Scale-matched inverter selection (F-01)
+  let inverter: Inverter;
+  if (req.inverterId && db.inverters.has(req.inverterId)) {
+    inverter = db.inverters.get(req.inverterId)!;
+  } else {
+    const allInverters = Array.from(db.inverters.values());
+    if (allInverters.length === 0) {
+      inverter = DEFAULT_INVERTERS[0];
+    } else if (actualCapacityKwp <= 20) {
+      // Residential scale (<= 20 kWp): pick inverter with pnomAcKw <= 25 kW closest to capacity
+      const candidates = allInverters.filter((i) => i.pnomAcKw <= 25);
+      candidates.sort((a, b) => Math.abs(a.pnomAcKw - actualCapacityKwp) - Math.abs(b.pnomAcKw - actualCapacityKwp));
+      inverter = candidates[0] || allInverters[0];
+    } else if (actualCapacityKwp <= 250) {
+      // Commercial scale (20 to 250 kWp): pick commercial string inverter (25kW to 150kW)
+      const candidates = allInverters.filter((i) => i.pnomAcKw >= 25 && i.pnomAcKw <= 150);
+      candidates.sort((a, b) => {
+        const countA = Math.ceil(actualCapacityKwp / a.pnomAcKw);
+        const countB = Math.ceil(actualCapacityKwp / b.pnomAcKw);
+        return Math.abs(countA - 2) - Math.abs(countB - 2);
+      });
+      inverter = candidates[0] || allInverters[0];
+    } else if (actualCapacityKwp <= 2500) {
+      // Large commercial / small utility (250 to 2500 kWp): pick utility string inverter (~250kW - 350kW, e.g. 330 kW)
+      const candidates = allInverters.filter((i) => i.pnomAcKw >= 150 && i.pnomAcKw <= 400);
+      candidates.sort((a, b) => Math.abs(a.pnomAcKw - 330) - Math.abs(b.pnomAcKw - 330));
+      inverter = candidates[0] || allInverters[0];
+    } else {
+      // Multi-MW utility (> 2.5 MW): pick central / turnkey station (>= 1000 kW)
+      const candidates = allInverters.filter((i) => i.pnomAcKw >= 1000);
+      candidates.sort((a, b) => {
+        const countA = Math.ceil(actualCapacityKwp / a.pnomAcKw);
+        const countB = Math.ceil(actualCapacityKwp / b.pnomAcKw);
+        return Math.abs(countA - 2) - Math.abs(countB - 2);
+      });
+      inverter = candidates[0] || allInverters[0];
+    }
+  }
 
-  const requiredBatteryStorageKwh = (req.dailyKwh * req.autonomyDays) / battery.depthOfDischargeMax;
-  const batteryCount = Math.ceil(requiredBatteryStorageKwh / battery.capacityKwh);
+  const inverterCount = Math.max(1, Math.ceil(actualCapacityKwp / inverter.pnomAcKw));
+
+  // Scale-matched battery selection (F-01)
+  const estimatedStorageKwh = autonomyDays > 0 ? (req.dailyKwh * autonomyDays) / 0.9 : 0;
+  let battery: Battery;
+  if (req.batteryId && db.batteries.has(req.batteryId)) {
+    battery = db.batteries.get(req.batteryId)!;
+  } else {
+    const allBatteries = Array.from(db.batteries.values());
+    if (allBatteries.length === 0) {
+      battery = DEFAULT_BATTERIES[0];
+    } else if (estimatedStorageKwh <= 0) {
+      battery = allBatteries.find((b) => b.capacityKwh <= 15) || allBatteries[0];
+    } else if (estimatedStorageKwh <= 30) {
+      // Residential scale (<= 30 kWh storage): pick residential battery (<= 15 kWh, e.g. 4.8 - 10.2 kWh)
+      const candidates = allBatteries.filter((b) => b.capacityKwh <= 15 && b.capacityKwh >= 2.0);
+      candidates.sort((a, b) => Math.abs(a.capacityKwh - 5.12) - Math.abs(b.capacityKwh - 5.12));
+      battery = candidates[0] || allBatteries[0];
+    } else if (estimatedStorageKwh <= 500) {
+      // Commercial scale (30 to 500 kWh storage): pick commercial battery (20 to 200 kWh)
+      const candidates = allBatteries.filter((b) => b.capacityKwh >= 20 && b.capacityKwh <= 200);
+      candidates.sort((a, b) => {
+        const countA = Math.ceil(estimatedStorageKwh / a.capacityKwh);
+        const countB = Math.ceil(estimatedStorageKwh / b.capacityKwh);
+        return Math.abs(countA - 3) - Math.abs(countB - 3);
+      });
+      battery = candidates[0] || allBatteries[0];
+    } else {
+      // Utility scale (> 500 kWh storage): pick modular utility BESS container (>= 300 kWh, e.g. CATL EnerOne 372.7 kWh)
+      const candidates = allBatteries.filter((b) => b.capacityKwh >= 300);
+      candidates.sort((a, b) => Math.abs(a.capacityKwh - 372.7) - Math.abs(b.capacityKwh - 372.7));
+      battery = candidates[0] || allBatteries[0];
+    }
+  }
+
+  const dod = typeof battery.depthOfDischargeMax === 'number' && battery.depthOfDischargeMax > 0 ? battery.depthOfDischargeMax : 0.9;
+  const requiredBatteryStorageKwh = autonomyDays > 0 ? (req.dailyKwh * autonomyDays) / dod : 0;
+  const batteryCount = requiredBatteryStorageKwh > 0 ? Math.ceil(requiredBatteryStorageKwh / battery.capacityKwh) : 0;
 
   const annualYieldKwh = actualCapacityKwp * peakSunHours * 365.0 * 0.78;
 
@@ -727,7 +827,7 @@ export function performQuickSizing(
     latitude: req.latitude,
     longitude: req.longitude,
     dailyLoadKwh: req.dailyKwh,
-    autonomyDays: req.autonomyDays,
+    autonomyDays,
     systemCapacityKwp: actualCapacityKwp,
     panelCount,
     inverterCount,

@@ -7,7 +7,7 @@
 import type { InstallationEnvironment } from '../types/climateTypes';
 
 export interface ThermalDerateInput {
-  module: { noctC: number; tempCoeffPmpPct: number };
+  module: { noctC?: number; tempCoeffPmpPct: number };
   ambientTempMaxC: number;
   irradianceWm2?: number; // default 1000
   installationEnvironment?: InstallationEnvironment;
@@ -29,8 +29,9 @@ export function calculateThermalDerate(input: ThermalDerateInput): ThermalDerate
   // Industrial Shed = +14°C (trapped air layer under sheet roof)
   // Rooftop Flat Concrete = +6.5°C (re-radiation from concrete slab)
   const mountingDeltaTC = env === 'industrial_shed' ? 14.0 : env === 'rooftop_flat_concrete' ? 6.5 : 0.0;
+  const noct = typeof input.module?.noctC === 'number' && Number.isFinite(input.module.noctC) ? input.module.noctC : 45.0;
   
-  const cellTempHotC = input.ambientTempMaxC + mountingDeltaTC + (input.module.noctC - 20) * (G / 800);
+  const cellTempHotC = input.ambientTempMaxC + mountingDeltaTC + (noct - 20) * (G / 800);
   const deltaT = Math.max(0, cellTempHotC - 25);
   const deratePct = Math.abs(input.module.tempCoeffPmpPct) * deltaT;
   return {

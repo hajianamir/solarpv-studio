@@ -227,13 +227,18 @@ export function simulate24hEnergyBalance(
   const reliesOnInitialCharge = hasBattery && totalDeficit < 0.1 && currentBatteryWh < initialWh * 0.98;
   const isSelfSufficient = totalDeficit < 0.1 && (!hasBattery || !reliesOnInitialCharge);
 
+  const sumGenKwh = Number(steps.reduce((sum, s) => sum + s.solarGenKwh, 0).toFixed(2));
+  const sumSurplusKwh = Number(steps.reduce((sum, s) => sum + s.surplusKwh, 0).toFixed(2));
+  const sumDeficitKwh = Number(steps.reduce((sum, s) => sum + s.deficitKwh, 0).toFixed(2));
+  const sumConsumptionKwh = Number(steps.reduce((sum, s) => sum + s.loadDemandKwh, 0).toFixed(2));
+
   return {
     hourlySteps: steps,
-    totalGeneration24hKwh: Math.round(totalGen * 10) / 10,
-    totalConsumption24hKwh: Math.round((daytimeKwh + nighttimeKwh) * 10) / 10,
-    totalSurplus24hKwh: Math.round(totalSurplus * 10) / 10,
-    totalDeficit24hKwh: Math.round(totalDeficit * 10) / 10,
-    energyNotServedKwh: Math.round(totalDeficit * 10) / 10,
+    totalGeneration24hKwh: sumGenKwh,
+    totalConsumption24hKwh: sumConsumptionKwh,
+    totalSurplus24hKwh: sumSurplusKwh,
+    totalDeficit24hKwh: sumDeficitKwh,
+    energyNotServedKwh: sumDeficitKwh,
     lossOfPowerSupplyProbabilityPct: lpspPct,
     minBatterySocPct: hasBattery ? minSoc : 100,
     maxBatterySocPct: hasBattery ? maxSoc : 100,

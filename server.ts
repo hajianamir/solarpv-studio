@@ -19,6 +19,7 @@ import {
   DEFAULT_BATTERIES,
   type Project,
 } from './src/engine/solarPvEngine.js';
+import { calculateThermalDerate } from './src/engine/core/thermalDerate.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -313,10 +314,27 @@ app.post('/api/v1/electrical/string-sizing', (req: Request, res: Response) => {
       rawBetaPmp = tempCoeffPmpPct / 100.0;
     }
 
+    // F-02: Hot-case operating cell temperature per IEC 62548 §7.2:
+    // When caller passes ambient temperature (tempMaxC <= 55°C) and hasn't explicitly disabled NOCT derating or supplied cellTempMaxC,
+    // evaluate minimum string length at cell operating temperature derived via unified calculateThermalDerate model.
+    let resolvedCellTempMaxC = req.body.cellTempMaxC !== undefined ? Number(req.body.cellTempMaxC) : undefined;
+    if (resolvedCellTempMaxC === undefined && req.body.isCellTemp !== true && req.body.useCellTemp !== false) {
+      if (tempMaxC <= 55 || req.body.noctC !== undefined) {
+        const noct = req.body.noctC !== undefined && Number.isFinite(Number(req.body.noctC)) ? Number(req.body.noctC) : 45.0;
+        const thermal = calculateThermalDerate({
+          module: { noctC: noct, tempCoeffPmpPct: (rawBetaPmp ?? rawBeta) * 100 },
+          ambientTempMaxC: tempMaxC,
+          installationEnvironment: req.body.installationEnvironment,
+        });
+        resolvedCellTempMaxC = thermal.cellTempHotC;
+      }
+    }
+
     const result = calculateStringSizing({
       ...req.body,
       betaVocPerC: rawBeta,
       betaPmpPerC: rawBetaPmp,
+      cellTempMaxC: resolvedCellTempMaxC,
     });
 
     if (
@@ -669,8 +687,8 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
     if (autonomyDays !== undefined && (typeof autonomyDays !== 'number' || !Number.isFinite(autonomyDays) || autonomyDays < 0)) {
       return res.status(400).json({ error: `autonomyDays must be a non-negative finite number, got ${autonomyDays}` });
     }
-    if (latitude !== undefined && (typeof latitude !== 'number' || !Number.isFinite(latitude) || latitude < -90 || latitude > 90)) {
-      return res.status(400).json({ error: `latitude must be between -90 and 90, got ${latitude}` });
+    if (latitude === undefined || typeof latitude !== 'number' || !Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+      return res.status(400).json({ error: `latitude is required and must be between -90 and 90, got ${latitude}` });
     }
     if (longitude !== undefined && (typeof longitude !== 'number' || !Number.isFinite(longitude) || longitude < -180 || longitude > 180)) {
       return res.status(400).json({ error: `longitude must be between -180 and 180, got ${longitude}` });
