@@ -21,9 +21,28 @@ export interface ElectricalLoadItem {
   ratedWatts: number;
   surgeMultiplier: number; // e.g. 1.0 for LED, 3.0-6.5 for motors
   quantity: number;
-  dayHours: number;   // 0 to 12 hours
-  nightHours: number; // 0 to 12 hours
+  dayHours: number;   // 0 to site daylightHoursDesign
+  nightHours: number; // 0 to site nightHoursDesign
   isDc: boolean;      // AC vs DC load
+}
+
+export interface ClimateDayNightWindow {
+  dayCapHours?: number;
+  nightCapHours?: number;
+  daylightHoursDesign?: number;
+  nightHoursDesign?: number;
+}
+
+export interface LoadItemAnalysis {
+  itemId: string;
+  dayHours: number;
+  nightHours: number;
+  daytimeEnergyWh: number;
+  nighttimeEnergyWh: number;
+  totalDailyEnergyWh: number;
+  continuousPowerWatts: number;
+  surgePowerWatts: number;
+  isDc: boolean;
 }
 
 export interface LoadAnalysisResult {
@@ -35,6 +54,29 @@ export interface LoadAnalysisResult {
   maxSurgePeakPowerWatts: number;
   recommendedInverterContinuousWatts: number;
   recommendedInverterPeakSurgeWatts: number;
+
+  // Granular per-item output (ensuring UI table and cards match 100%)
+  itemBreakdown: Record<string, LoadItemAnalysis>;
+  items: LoadItemAnalysis[];
+
+  // AC vs DC breakdown
+  acContinuousActivePowerWatts: number;
+  dcContinuousActivePowerWatts: number;
+  acMaxSurgePeakPowerWatts: number;
+  dcMaxSurgePeakPowerWatts: number;
+
+  // Periodic powers (daytime vs nighttime vs coincident worst-case)
+  daytimeContinuousWatts: number;
+  nighttimeContinuousWatts: number;
+  daytimeSurgeWatts: number;
+  nighttimeSurgeWatts: number;
+  governingContinuousWatts: number;
+  governingSurgeWatts: number;
+  coincidentWorstCaseContinuousWatts: number;
+  coincidentWorstCaseSurgeWatts: number;
+
+  // Warnings produced during clamping / normalization
+  warnings: string[];
 }
 
 export interface LoadPreset {
@@ -88,7 +130,7 @@ export const STANDARD_APPLIANCE_LIBRARY: StandardApplianceDefinition[] = [
   { nameFa: 'ماشین ظرفشویی ۱۴ نفره', nameEn: 'Dishwasher 14-Place', category: 'washing', ratedWatts: 1500, surgeMultiplier: 1.5, typicalDayHours: 1.5, typicalNightHours: 0 },
   { nameFa: 'تلویزیون ۵۵ اینچ و سینمای خانگی', nameEn: 'Smart TV 55" & Audio', category: 'entertainment', ratedWatts: 140, surgeMultiplier: 1.1, typicalDayHours: 3, typicalNightHours: 5 },
   { nameFa: 'شارژر خودرو برقی تک‌فاز ۷ کیلووات (EVSE)', nameEn: 'EV Charger Level 2 (7 kW)', category: 'other', ratedWatts: 7000, surgeMultiplier: 1.0, typicalDayHours: 4, typicalNightHours: 2 },
-  { nameFa: 'پکیج مداربسته و دزدگیر ویلا (۱۲ ولت DC)', nameEn: 'CCTV & Security NVR (12V DC)', category: 'it_server', ratedWatts: 50, surgeMultiplier: 1.0, typicalDayHours: 12, typicalNightHours: 12, isDc: true },
+  { nameFa: 'پکیج مداربسته و دزدگیر ویلا (۱۲ ولت DC)', nameEn: 'CCTV & Security NVR (12V DC)', category: 'it_server', ratedWatts: 50, surgeMultiplier: 1.0, typicalDayHours: 9.5, typicalNightHours: 14.5, isDc: true },
 
   // --- Industrial & Commercial ---
   { nameFa: 'الکتروموتور سه فاز ۵.۵ کیلووات (راه‌اندازی مستقیم DOL)', nameEn: '3-Phase Motor 5.5 kW (DOL 6.0x Surge)', category: 'industrial_motor', ratedWatts: 5500, surgeMultiplier: 6.0, typicalDayHours: 7, typicalNightHours: 1 },
@@ -98,7 +140,7 @@ export const STANDARD_APPLIANCE_LIBRARY: StandardApplianceDefinition[] = [
   { nameFa: 'کمپرسور باد اسکرو صنعتی ۲۲ کیلووات', nameEn: 'Rotary Screw Compressor 22 kW', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.5, typicalDayHours: 8, typicalNightHours: 0 },
   { nameFa: 'کمپرسور باد پیستونی ۳۵۰ لیتری (۳ اسب)', nameEn: 'Piston Air Compressor 3 HP', category: 'industrial_motor', ratedWatts: 2200, surgeMultiplier: 4.5, typicalDayHours: 4, typicalNightHours: 0 },
   { nameFa: 'دستگاه تراشکاری CNC سه محوره', nameEn: 'CNC Lathe / Milling 3-Axis 15 kW', category: 'industrial_motor', ratedWatts: 15000, surgeMultiplier: 1.5, typicalDayHours: 8, typicalNightHours: 0 },
-  { nameFa: 'دستگاه تزریق پلاستیک ۳۰ کیلووات', nameEn: 'Plastic Injection Molding 30 kW', category: 'industrial_motor', ratedWatts: 30000, surgeMultiplier: 2.5, typicalDayHours: 10, typicalNightHours: 6 },
+  { nameFa: 'دستگاه تزریق پلاستیک ۳۰ کیلووات', nameEn: 'Plastic Injection Molding 30 kW', category: 'industrial_motor', ratedWatts: 30000, surgeMultiplier: 2.5, typicalDayHours: 9.5, typicalNightHours: 6.5 },
   { nameFa: 'دستگاه جوشکاری اینورتری صنعتی ۲۵۰ آمپر', nameEn: 'Industrial Inverter Welder 250A', category: 'industrial_heating_welding', ratedWatts: 6000, surgeMultiplier: 1.4, typicalDayHours: 4, typicalNightHours: 0 },
   { nameFa: 'ترانس جوش نقطه‌ای صنعتی (مقاومتی)', nameEn: 'Resistance Spot Welder 18 kW', category: 'industrial_heating_welding', ratedWatts: 18000, surgeMultiplier: 3.8, typicalDayHours: 2, typicalNightHours: 0 },
   { nameFa: 'کوره عملیات حرارتی المنتی ۲۵ کیلووات', nameEn: 'Electric Resistance Furnace 25 kW', category: 'industrial_heating_welding', ratedWatts: 25000, surgeMultiplier: 1.0, typicalDayHours: 6, typicalNightHours: 2 },
@@ -107,8 +149,8 @@ export const STANDARD_APPLIANCE_LIBRARY: StandardApplianceDefinition[] = [
   { nameFa: 'پمپ شناور چاه عمیق با درایو خورشیدی (۵۰ اسب)', nameEn: 'Solar VFD Deep-Well Pump 50 HP (37 kW)', category: 'pumping', ratedWatts: 37000, surgeMultiplier: 1.2, typicalDayHours: 7, typicalNightHours: 0 },
   { nameFa: 'جرثقیل سقفی کارگاهی ۵ تن', nameEn: 'Overhead Bridge Crane 5-Ton (7.5 kW)', category: 'industrial_motor', ratedWatts: 7500, surgeMultiplier: 3.0, typicalDayHours: 2, typicalNightHours: 0 },
   { nameFa: 'فن اگزاست صنعتی سوله و آلودگی‌زدا', nameEn: 'Industrial Exhaust Blower 4 kW', category: 'industrial_motor', ratedWatts: 4000, surgeMultiplier: 2.5, typicalDayHours: 9, typicalNightHours: 2 },
-  { nameFa: 'ماینر بیت‌کوین Whatsminer M30S / Antminer S19 (۳.۴ کیلووات)', nameEn: 'Bitcoin ASIC Miner (3.4 kW 24/7)', category: 'mining_datacenter', ratedWatts: 3400, surgeMultiplier: 1.0, typicalDayHours: 12, typicalNightHours: 12 },
-  { nameFa: 'رک سرور دیتاسنتر و یوپی‌اس ۵ کیلووات دائم', nameEn: 'Server Rack & Online UPS 5 kW (24/7)', category: 'it_server', ratedWatts: 5000, surgeMultiplier: 1.0, typicalDayHours: 12, typicalNightHours: 12 },
+  { nameFa: 'ماینر بیت‌کوین Whatsminer M30S / Antminer S19 (۳.۴ کیلووات)', nameEn: 'Bitcoin ASIC Miner (3.4 kW 24/7)', category: 'mining_datacenter', ratedWatts: 3400, surgeMultiplier: 1.0, typicalDayHours: 9.5, typicalNightHours: 14.5 },
+  { nameFa: 'رک سرور دیتاسنتر و یوپی‌اس ۵ کیلووات دائم', nameEn: 'Server Rack & Online UPS 5 kW (24/7)', category: 'it_server', ratedWatts: 5000, surgeMultiplier: 1.0, typicalDayHours: 9.5, typicalNightHours: 14.5 },
   { nameFa: 'برج روشنایی کارگاهی ۴×۱۰۰۰ وات متال هالید', nameEn: 'Workshop Light Tower 4x1000W Metal Halide', category: 'lighting', ratedWatts: 4400, surgeMultiplier: 1.8, typicalDayHours: 0, typicalNightHours: 10 },
 ];
 
@@ -168,7 +210,7 @@ export const LOAD_PRESETS: LoadPreset[] = [
       { id: '3', name: 'پمپ سیرکولاتور تصفیه استخر (۱ اسب)', category: 'pumping', ratedWatts: 750, surgeMultiplier: 3.5, quantity: 1, dayHours: 4, nightHours: 2, isDc: false },
       { id: '4', name: 'اسپلیت ۲۴۰۰۰ اینورتر سالن', category: 'hvac', ratedWatts: 2200, surgeMultiplier: 2.2, quantity: 1, dayHours: 5, nightHours: 4, isDc: false },
       { id: '5', name: 'یخچال بزرگ و باربیکیو برقی', category: 'refrigeration', ratedWatts: 220, surgeMultiplier: 3.5, quantity: 1, dayHours: 6, nightHours: 6, isDc: false },
-      { id: '6', name: 'دوربین‌های مداربسته و دزدگیر ویلا', category: 'it_server', ratedWatts: 60, surgeMultiplier: 1.0, quantity: 1, dayHours: 12, nightHours: 12, isDc: true },
+      { id: '6', name: 'دوربین‌های مداربسته و دزدگیر ویلا (۲۴ ساعته)', category: 'it_server', ratedWatts: 60, surgeMultiplier: 1.0, quantity: 1, dayHours: 9.5, nightHours: 14.5, isDc: true },
     ]
   },
   {
@@ -192,11 +234,11 @@ export const LOAD_PRESETS: LoadPreset[] = [
     descriptionFa: 'شامل دستگاه‌های هیدرولیک تزریق، خنک‌کننده چیلر، آسیاب و کمپرسور باد ۲۴ ساعته',
     descriptionEn: 'Plastic manufacturing facility with hydraulic presses, industrial chiller, and resin dryers.',
     items: [
-      { id: '1', name: 'دستگاه تزریق پلاستیک ۱۸۰ تن (موتور اصلی)', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.5, quantity: 2, dayHours: 10, nightHours: 6, isDc: false },
-      { id: '2', name: 'چیلر تراکمی خنک‌کاری قالب‌ها', category: 'hvac', ratedWatts: 15000, surgeMultiplier: 3.0, quantity: 1, dayHours: 10, nightHours: 6, isDc: false },
-      { id: '3', name: 'کمپرسور باد اسکرو ۲۲ کیلووات', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.2, quantity: 1, dayHours: 10, nightHours: 4, isDc: false },
+      { id: '1', name: 'دستگاه تزریق پلاستیک ۱۸۰ تن (موتور اصلی)', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.5, quantity: 2, dayHours: 9.5, nightHours: 6.5, isDc: false },
+      { id: '2', name: 'چیلر تراکمی خنک‌کاری قالب‌ها', category: 'hvac', ratedWatts: 15000, surgeMultiplier: 3.0, quantity: 1, dayHours: 9.5, nightHours: 6.5, isDc: false },
+      { id: '3', name: 'کمپرسور باد اسکرو ۲۲ کیلووات', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.2, quantity: 1, dayHours: 9.5, nightHours: 4.5, isDc: false },
       { id: '4', name: 'آسیاب پلاستیک بازیافتی ۷.۵ کیلووات', category: 'industrial_motor', ratedWatts: 7500, surgeMultiplier: 3.5, quantity: 1, dayHours: 4, nightHours: 0, isDc: false },
-      { id: '5', name: 'روشنایی سالن و فن‌های خروجی', category: 'lighting', ratedWatts: 100, surgeMultiplier: 1.0, quantity: 20, dayHours: 12, nightHours: 8, isDc: false },
+      { id: '5', name: 'روشنایی سالن و فن‌های خروجی', category: 'lighting', ratedWatts: 100, surgeMultiplier: 1.0, quantity: 20, dayHours: 9.5, nightHours: 8, isDc: false },
     ]
   },
   {
@@ -224,80 +266,277 @@ export const LOAD_PRESETS: LoadPreset[] = [
       { id: '2', name: 'پمپ مهپاش و سرمایش پد سلولزی', category: 'pumping', ratedWatts: 1500, surgeMultiplier: 4.0, quantity: 1, dayHours: 6, nightHours: 0, isDc: false },
       { id: '3', name: 'موتور گیربکس خطوط دانخوری اتوماتیک', category: 'industrial_motor', ratedWatts: 750, surgeMultiplier: 3.0, quantity: 3, dayHours: 3, nightHours: 1, isDc: false },
       { id: '4', name: 'روشنایی دیمردار سالن‌های پرورش', category: 'lighting', ratedWatts: 18, surgeMultiplier: 1.0, quantity: 40, dayHours: 6, nightHours: 8, isDc: false },
-      { id: '5', name: 'سیستم اتوماسیون و مانیتورینگ اقلیمی', category: 'it_server', ratedWatts: 120, surgeMultiplier: 1.0, quantity: 1, dayHours: 12, nightHours: 12, isDc: false },
+      { id: '5', name: 'سیستم اتوماسیون و مانیتورینگ اقلیمی (۲۴ ساعته)', category: 'it_server', ratedWatts: 120, surgeMultiplier: 1.0, quantity: 1, dayHours: 9.5, nightHours: 14.5, isDc: false },
     ]
   },
   {
     id: 'preset_mining_datacenter',
-    nameFa: 'فارم استخراج رمزارز / دیتاسنتر',
-    nameEn: 'Crypto Mining Farm & Datacenter',
-    descriptionFa: 'بارهای دائم ۲۴ ساعته شامل دستگاه‌های ماینر اسیک و تهویه صنعتی فن حلزونی',
-    descriptionEn: 'Continuous 24/7 high-density compute loads with ASIC miners and active ventilation.',
+    nameFa: 'فارم استخراج رمزارز / دیتاسنتر (۲۴ ساعته)',
+    nameEn: 'Crypto Mining Farm & Datacenter (24/7)',
+    descriptionFa: 'بارهای دائم ۲۴ ساعته شامل دستگاه‌های ماینر اسیک و تهویه صنعتی فن حلزونی (منطبق بر پنجره اقلیمی سایت)',
+    descriptionEn: 'Continuous 24/7 high-density compute loads with ASIC miners and active ventilation (normalized to climate window).',
     items: [
-      { id: '1', name: 'ماینرهای اسیک ۳.۴ کیلووات (ASIC Miners)', category: 'mining_datacenter', ratedWatts: 3400, surgeMultiplier: 1.0, quantity: 15, dayHours: 12, nightHours: 12, isDc: false },
-      { id: '2', name: 'فن‌های حلزونی تخلیه حرارت سوله', category: 'industrial_motor', ratedWatts: 1100, surgeMultiplier: 2.5, quantity: 4, dayHours: 12, nightHours: 12, isDc: false },
-      { id: '3', name: 'روتربرد شبکه سیسکو و سوییچ‌های گیگابیت', category: 'it_server', ratedWatts: 350, surgeMultiplier: 1.0, quantity: 1, dayHours: 12, nightHours: 12, isDc: false },
-      { id: '4', name: 'سیستم اطفا حریق و دوربین‌های امنیتی', category: 'it_server', ratedWatts: 120, surgeMultiplier: 1.0, quantity: 1, dayHours: 12, nightHours: 12, isDc: true },
+      { id: '1', name: 'ماینرهای اسیک ۳.۴ کیلووات (ASIC Miners)', category: 'mining_datacenter', ratedWatts: 3400, surgeMultiplier: 1.0, quantity: 15, dayHours: 9.5, nightHours: 14.5, isDc: false },
+      { id: '2', name: 'فن‌های حلزونی تخلیه حرارت سوله', category: 'industrial_motor', ratedWatts: 1100, surgeMultiplier: 2.5, quantity: 4, dayHours: 9.5, nightHours: 14.5, isDc: false },
+      { id: '3', name: 'روتربرد شبکه سیسکو و سوییچ‌های گیگابیت', category: 'it_server', ratedWatts: 350, surgeMultiplier: 1.0, quantity: 1, dayHours: 9.5, nightHours: 14.5, isDc: false },
+      { id: '4', name: 'سیستم اطفا حریق و دوربین‌های امنیتی (DC)', category: 'it_server', ratedWatts: 120, surgeMultiplier: 1.0, quantity: 1, dayHours: 9.5, nightHours: 14.5, isDc: true },
     ]
   }
 ];
 
-export function analyzeLoadProfile(items: ElectricalLoadItem[]): LoadAnalysisResult {
+/**
+ * Normalizes an electrical load item against the site's active climate day/night window.
+ *
+ * Governing Principle: Conservation of total daily energy!
+ * If dayHours exceeds dayCapHours, dayHours is capped and the excess hours are transferred
+ * to nightHours (up to nightCapHours). Any remaining excess beyond nightCap is dropped with warning.
+ */
+export function normalizeLoadItemToWindow(
+  item: ElectricalLoadItem,
+  window: ClimateDayNightWindow
+): { normalized: ElectricalLoadItem; warning?: string } {
+  const dayCap = Math.max(0, Math.min(24, window.dayCapHours ?? window.daylightHoursDesign ?? 12.0));
+  const nightCap = Math.max(0, Math.min(24, window.nightCapHours ?? window.nightHoursDesign ?? 12.0));
+
+  let dayHours = Math.max(0, Number(item.dayHours) || 0);
+  let nightHours = Math.max(0, Number(item.nightHours) || 0);
+  let warning: string | undefined;
+
+  if (dayHours > dayCap) {
+    const excess = dayHours - dayCap;
+    dayHours = dayCap;
+    const spaceInNight = Math.max(0, nightCap - nightHours);
+    const transferred = Math.min(excess, spaceInNight);
+    nightHours = Number((nightHours + transferred).toFixed(2));
+    const dropped = excess - transferred;
+    warning = `بار "${item.name}": ساعات روز از سقف اقلیمی (${dayCap.toFixed(1)}h) بریده شد و ${transferred.toFixed(1)}h به شب منتقل گردید${dropped > 0.01 ? ` (${dropped.toFixed(1)}h مازاد حذف شد)` : ''}.`;
+  }
+
+  if (nightHours > nightCap) {
+    const droppedNight = nightHours - nightCap;
+    nightHours = nightCap;
+    warning = (warning ? warning + ' ' : '') + `بار "${item.name}": ساعات شب به سقف اقلیمی (${nightCap.toFixed(1)}h) محدود شد (${droppedNight.toFixed(1)}h حذف شد).`;
+  }
+
+  return {
+    normalized: {
+      ...item,
+      dayHours: Number(dayHours.toFixed(2)),
+      nightHours: Number(nightHours.toFixed(2)),
+    },
+    warning,
+  };
+}
+
+/**
+ * Normalizes an array of load items to the active site climate window,
+ * logging any clamping or energy re-allocation warnings.
+ */
+export function normalizeLoadsToWindow(
+  items: ElectricalLoadItem[],
+  window: ClimateDayNightWindow
+): { items: ElectricalLoadItem[]; warnings: string[] } {
+  const normalizedItems: ElectricalLoadItem[] = [];
+  const warnings: string[] = [];
+
+  for (const item of items) {
+    const res = normalizeLoadItemToWindow(item, window);
+    normalizedItems.push(res.normalized);
+    if (res.warning) {
+      warnings.push(res.warning);
+    }
+  }
+
+  return { items: normalizedItems, warnings };
+}
+
+/**
+ * Rigorous load profile analysis adhering to the dynamic site climate window.
+ *
+ * - Hardcoded 12h assumptions are completely eliminated.
+ * - Both day and night hours are clamped to [0, cap] at the function boundary.
+ * - Sizing powers are broken down into periodic (day, night, 24h, governing) and coincident worst-case.
+ * - DC loads are segregated from AC inverter continuous & surge sizing.
+ */
+export function analyzeLoadProfile(
+  items: ElectricalLoadItem[],
+  window?: ClimateDayNightWindow
+): LoadAnalysisResult {
+  const dayCap = window ? Math.max(0, Math.min(24, window.dayCapHours ?? window.daylightHoursDesign ?? 12.0)) : 12.0;
+  const nightCap = window ? Math.max(0, Math.min(24, window.nightCapHours ?? window.nightHoursDesign ?? 12.0)) : 12.0;
+
   let daytimeEnergyWh = 0;
   let nighttimeEnergyWh = 0;
-  let continuousActivePowerWatts = 0;
+  const warnings: string[] = [];
 
-  // Track motor loads for realistic surge concurrency
-  const motorLoads: { name: string; basePower: number; surgePower: number }[] = [];
-  let nonMotorPeak = 0;
+  const itemBreakdown: Record<string, LoadItemAnalysis> = {};
+  const itemAnalysisList: LoadItemAnalysis[] = [];
+
+  let acContinuousActivePowerWatts = 0;
+  let dcContinuousActivePowerWatts = 0;
+  let daytimeContinuousWatts = 0;
+  let nighttimeContinuousWatts = 0;
+
+  interface MotorEntry {
+    name: string;
+    basePower: number;
+    surgePower: number;
+    isDay: boolean;
+    isNight: boolean;
+    isDc: boolean;
+  }
+  const motorLoads: MotorEntry[] = [];
+  let nonMotorDaytimeWatts = 0;
+  let nonMotorNighttimeWatts = 0;
+  let nonMotorCoincidentWatts = 0;
+  let nonMotorAcCoincidentWatts = 0;
+  let nonMotorDcCoincidentWatts = 0;
 
   for (const item of items) {
     const totalWatts = item.ratedWatts * item.quantity;
-    daytimeEnergyWh += totalWatts * Math.min(12, item.dayHours);
-    nighttimeEnergyWh += totalWatts * Math.min(12, item.nightHours);
+    const clampedDay = Math.max(0, Math.min(dayCap, item.dayHours));
+    const clampedNight = Math.max(0, Math.min(nightCap, item.nightHours));
 
-    // Sum running power
-    if (item.dayHours > 0 || item.nightHours > 0) {
-      continuousActivePowerWatts += totalWatts;
+    if (
+      item.dayHours > dayCap ||
+      item.dayHours < 0 ||
+      item.nightHours > nightCap ||
+      item.nightHours < 0
+    ) {
+      warnings.push(
+        `بار "${item.name}": ساعات روز/شب خارج از محدوده اقلیمی [0, ${dayCap.toFixed(1)}] و [0, ${nightCap.toFixed(1)}] بود و به مرزهای مجاز محدود شد.`
+      );
     }
 
-    if (item.surgeMultiplier > 1.2) {
+    const itemDayWh = totalWatts * clampedDay;
+    const itemNightWh = totalWatts * clampedNight;
+    const itemTotalWh = itemDayWh + itemNightWh;
+
+    daytimeEnergyWh += itemDayWh;
+    nighttimeEnergyWh += itemNightWh;
+
+    const isActive = clampedDay > 0 || clampedNight > 0;
+    const isDay = clampedDay > 0;
+    const isNight = clampedNight > 0;
+
+    if (isActive) {
+      if (item.isDc) {
+        dcContinuousActivePowerWatts += totalWatts;
+      } else {
+        acContinuousActivePowerWatts += totalWatts;
+      }
+    }
+
+    if (isDay) {
+      daytimeContinuousWatts += totalWatts;
+    }
+    if (isNight) {
+      nighttimeContinuousWatts += totalWatts;
+    }
+
+    const surgePower = totalWatts * item.surgeMultiplier;
+    if (item.surgeMultiplier > 1.2 && isActive) {
       motorLoads.push({
         name: item.name,
         basePower: totalWatts,
-        surgePower: totalWatts * item.surgeMultiplier,
+        surgePower,
+        isDay,
+        isNight,
+        isDc: Boolean(item.isDc),
       });
-    } else {
-      nonMotorPeak += totalWatts;
+    } else if (isActive) {
+      nonMotorCoincidentWatts += totalWatts;
+      if (item.isDc) nonMotorDcCoincidentWatts += totalWatts;
+      else nonMotorAcCoincidentWatts += totalWatts;
+
+      if (isDay) nonMotorDaytimeWatts += totalWatts;
+      if (isNight) nonMotorNighttimeWatts += totalWatts;
     }
+
+    const itemAnalysis: LoadItemAnalysis = {
+      itemId: item.id,
+      dayHours: clampedDay,
+      nightHours: clampedNight,
+      daytimeEnergyWh: itemDayWh,
+      nighttimeEnergyWh: itemNightWh,
+      totalDailyEnergyWh: itemTotalWh,
+      continuousPowerWatts: totalWatts,
+      surgePowerWatts: surgePower,
+      isDc: Boolean(item.isDc),
+    };
+    itemBreakdown[item.id] = itemAnalysis;
+    itemAnalysisList.push(itemAnalysis);
   }
 
-  // Calculate realistic simultaneous peak surge:
-  // IEC / IEEE standard concurrency: The largest motor starts while other running motors operate at base power
-  let maxSurgePeakPowerWatts = continuousActivePowerWatts;
-  if (motorLoads.length > 0) {
-    // Sort descending by surge delta
-    motorLoads.sort((a, b) => (b.surgePower - b.basePower) - (a.surgePower - a.basePower));
-    const largestMotor = motorLoads[0];
-    const otherMotorsBase = motorLoads.slice(1).reduce((sum, m) => sum + m.basePower, 0);
-    maxSurgePeakPowerWatts = largestMotor.surgePower + otherMotorsBase + nonMotorPeak;
+  // Calculate Surge Peaks for various scopes:
+  // IEC/IEEE concurrency: Largest motor starts while all other motors run at nominal base power
+  function calcSurge(motors: MotorEntry[], nonMotorBase: number, totalBase: number): number {
+    if (motors.length === 0) return totalBase;
+    const sorted = [...motors].sort((a, b) => (b.surgePower - b.basePower) - (a.surgePower - a.basePower));
+    const largest = sorted[0];
+    const othersBase = sorted.slice(1).reduce((s, m) => s + m.basePower, 0);
+    return largest.surgePower + othersBase + nonMotorBase;
   }
+
+  const coincidentWorstCaseContinuousWatts = acContinuousActivePowerWatts + dcContinuousActivePowerWatts;
+  const governingContinuousWatts = Math.max(daytimeContinuousWatts, nighttimeContinuousWatts);
+
+  // Coincident worst-case surge (all active loads)
+  const coincidentWorstCaseSurgeWatts = calcSurge(
+    motorLoads,
+    nonMotorCoincidentWatts,
+    coincidentWorstCaseContinuousWatts
+  );
+
+  // Daytime surge
+  const dayMotors = motorLoads.filter((m) => m.isDay);
+  const daytimeSurgeWatts = calcSurge(dayMotors, nonMotorDaytimeWatts, daytimeContinuousWatts);
+
+  // Nighttime surge
+  const nightMotors = motorLoads.filter((m) => m.isNight);
+  const nighttimeSurgeWatts = calcSurge(nightMotors, nonMotorNighttimeWatts, nighttimeContinuousWatts);
+
+  // Governing periodic surge
+  const governingSurgeWatts = Math.max(daytimeSurgeWatts, nighttimeSurgeWatts);
+
+  // AC-only surge for Inverter sizing
+  const acMotors = motorLoads.filter((m) => !m.isDc);
+  const acMaxSurgePeakPowerWatts = calcSurge(acMotors, nonMotorAcCoincidentWatts, acContinuousActivePowerWatts);
+
+  // DC-only surge
+  const dcMotors = motorLoads.filter((m) => m.isDc);
+  const dcMaxSurgePeakPowerWatts = calcSurge(dcMotors, nonMotorDcCoincidentWatts, dcContinuousActivePowerWatts);
 
   const totalDailyEnergyWh = daytimeEnergyWh + nighttimeEnergyWh;
   const totalDailyEnergyKwh = totalDailyEnergyWh / 1000.0;
 
-  // Inverter selection rule of thumb with 25% safety margin
-  const recommendedInverterContinuousWatts = Math.ceil((continuousActivePowerWatts * 1.25) / 100) * 100;
-  const recommendedInverterPeakSurgeWatts = Math.ceil((maxSurgePeakPowerWatts * 1.2) / 100) * 100;
+  // Inverter selection: Sized for AC loads (with 25% safety margin for continuous, 20% for surge)
+  const recommendedInverterContinuousWatts = Math.ceil((acContinuousActivePowerWatts * 1.25) / 100) * 100;
+  const recommendedInverterPeakSurgeWatts = Math.ceil((acMaxSurgePeakPowerWatts * 1.2) / 100) * 100;
 
   return {
     daytimeEnergyWh,
     nighttimeEnergyWh,
     totalDailyEnergyWh,
     totalDailyEnergyKwh,
-    continuousActivePowerWatts,
-    maxSurgePeakPowerWatts,
+    continuousActivePowerWatts: coincidentWorstCaseContinuousWatts,
+    maxSurgePeakPowerWatts: coincidentWorstCaseSurgeWatts,
     recommendedInverterContinuousWatts,
     recommendedInverterPeakSurgeWatts,
+    itemBreakdown,
+    items: itemAnalysisList,
+    acContinuousActivePowerWatts,
+    dcContinuousActivePowerWatts,
+    acMaxSurgePeakPowerWatts,
+    dcMaxSurgePeakPowerWatts,
+    daytimeContinuousWatts,
+    nighttimeContinuousWatts,
+    daytimeSurgeWatts,
+    nighttimeSurgeWatts,
+    governingContinuousWatts,
+    governingSurgeWatts,
+    coincidentWorstCaseContinuousWatts,
+    coincidentWorstCaseSurgeWatts,
+    warnings,
   };
 }

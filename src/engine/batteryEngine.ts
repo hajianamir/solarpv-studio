@@ -111,6 +111,7 @@ export interface BatteryBankSizingResult {
   estimatedLifespanYears: number;
   expectedTotalCycles: number;
   warnings: string[];
+  nightCoveragePct?: number; // Off-grid design night coverage ratio (%)
 }
 
 const FALLBACK_BATTERY_PROFILE: BatteryChemistryProfile = {
@@ -148,11 +149,11 @@ export function computeAutonomyEnergyRequirement(
   totalDailyKwh: number,
   nighttimeKwh: number,
   outageHours: number,
-  nominalNightHours: number = 12,
+  nominalNightHours: number = 12.0,
 ): number {
   if (systemMode === 'powerplant') return 0;
   if (systemMode === 'ongrid') {
-    const safeNight = Math.max(1, nominalNightHours);
+    const safeNight = Math.max(1, Number(nominalNightHours) || 12.0);
     const fraction = Math.min(1, Math.max(0, outageHours) / safeNight);
     return nighttimeKwh * fraction;
   }
@@ -167,7 +168,8 @@ export function sizeBatteryBank(
   inverterPeakWatts: number = 5000,
   inverterContinuousWatts: number = 3000,
   minAmbientTempC: number = 15.0,
-  unitBatteryAh: number = 100 // standard 100Ah or 200Ah unit block
+  unitBatteryAh: number = 100, // standard 100Ah or 200Ah unit block
+  designNighttimeKwh?: number // Design night energy requirement for off-grid night coverage verification
 ): BatteryBankSizingResult {
   // Normalize chemistry key safely
   const rawKey = typeof chemistryType === 'string' ? chemistryType : (chemistryType as any)?.id || 'lifepo4';
@@ -261,6 +263,17 @@ export function sizeBatteryBank(
     );
   }
 
+  // Off-grid Design Night Coverage evaluation (Longest night energy sufficiency)
+  let nightCoveragePct = 100.0;
+  if (designNighttimeKwh && designNighttimeKwh > 0.001) {
+    nightCoveragePct = Number(((actualUsableKwh / designNighttimeKwh) * 100).toFixed(1));
+    if (actualUsableKwh < designNighttimeKwh) {
+      warnings.push(
+        `پوشش ناکافی بار شب: ظرفیت قابل‌استفاده بانک (${actualUsableKwh.toFixed(1)} kWh) کمتر از نیاز شبِ طراحی (${designNighttimeKwh.toFixed(1)} kWh، پوشش ${nightCoveragePct}٪) است!`
+      );
+    }
+  }
+
   // Lifespan estimation based on cycles and DoD
   const cycleLifeAtActualDoD = (profile.standardCycleLifeAt80DoD || 3000) * (0.80 / Math.max(0.1, dodFraction));
   const cyclesPerYear = 365;
@@ -286,5 +299,6 @@ export function sizeBatteryBank(
     estimatedLifespanYears,
     expectedTotalCycles: Math.round(cycleLifeAtActualDoD),
     warnings,
+    nightCoveragePct,
   };
 }

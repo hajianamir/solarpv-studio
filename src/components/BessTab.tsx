@@ -28,6 +28,9 @@ interface BessTabProps {
   batterySizing: BatteryBankSizingResult;
   systemTopology?: 'on_grid' | 'off_grid' | 'hybrid';
   onTopologyChange?: (topology: 'on_grid' | 'off_grid' | 'hybrid') => void;
+  nighttimeKwh?: number;
+  outageHours?: number;
+  nightHoursDesign?: number;
   lang?: 'fa' | 'en';
 }
 
@@ -39,6 +42,9 @@ export const BessTab: React.FC<BessTabProps> = ({
   batterySizing,
   systemTopology = 'off_grid',
   onTopologyChange,
+  nighttimeKwh,
+  outageHours,
+  nightHoursDesign,
   lang = 'fa',
 }) => {
   // Customizable unit battery model selection
@@ -55,6 +61,8 @@ export const BessTab: React.FC<BessTabProps> = ({
   const totalWeightKg = calculatedTotalUnits * unitWeightKg;
   const totalFootprintM2 = Number((calculatedTotalUnits * 0.18).toFixed(2)); // approx 0.18m² per unit with rack clearance
 
+  const isNightCoverageDeficit = batterySizing.nightCoveragePct !== undefined && batterySizing.nightCoveragePct < 100;
+
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -70,6 +78,21 @@ export const BessTab: React.FC<BessTabProps> = ({
             ? 'محاسبه دقیق ظرفیت بانک باتری (Ah & kWh)، تعداد باتری سری و موازی، نرخ دشارژ C-Rate، وزن و فضای فیزیکی مورد نیاز در اتاق باتری'
             : 'Precise battery bank sizing (Ah & kWh), series & parallel unit calculations, C-Rate discharge safety, and physical footprint.'}
         </p>
+      </div>
+
+      {/* Earthing & Bonding Advisory Note (B2 requirement) */}
+      <div className="p-3 bg-sky-950/40 border border-sky-800/80 rounded-lg text-xs flex items-start gap-2.5">
+        <Shield className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+        <div className="text-slate-300">
+          <strong className="text-sky-300 block mb-0.5 font-bold">
+            {lang === 'fa' ? 'یادداشت مهندسی سیستم زمین و هم‌بندی رک باتری (IEC 60364-5-54 / IEC 62485-2):' : 'BESS Earthing & Protective Bonding Mandate:'}
+          </strong>
+          <span>
+            {lang === 'fa'
+              ? 'رک/کابینت باتری به ارت اصلی سیستم هم‌بند می‌شود؛ قطب‌های DC باتری شناورند و ارت جداگانه اجرا نمی‌شود.'
+              : 'Battery racks and metal enclosures must be equipotentially bonded to the Main Earthing Terminal (MET); DC battery poles remain floating, and separate isolated earthing is prohibited.'}
+          </span>
+        </div>
       </div>
 
       {/* On-Grid / Powerplant Notice */}
@@ -161,7 +184,9 @@ export const BessTab: React.FC<BessTabProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div>
             <label htmlFor="bess-autonomy-days-range" className="block text-slate-300 font-semibold mb-1">
-              {lang === 'fa' ? 'روزهای خودمختاری (Autonomy Days):' : 'Days of Autonomy:'}
+              {systemTopology === 'hybrid'
+                ? (lang === 'fa' ? 'ضریب استمرار خاموشی (Outage Multiplier):' : 'Outage Multiplier Days:')
+                : (lang === 'fa' ? 'روزهای خودمختاری آف‌گرید (Autonomy Days):' : 'Days of Autonomy:')}
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -178,7 +203,11 @@ export const BessTab: React.FC<BessTabProps> = ({
                 {autonomyDays} روز
               </span>
             </div>
-            <span className="text-[10px] text-slate-400">تعداد روزهای بدون تابش تحت بار شب</span>
+            <span className="text-[10px] text-slate-400">
+              {systemTopology === 'hybrid'
+                ? (lang === 'fa' ? `ضریب اعمال‌شده در نیاز خاموشی (${autonomyDays} روز)` : `Multiplier on blackout requirement (${autonomyDays}d)`)
+                : (lang === 'fa' ? 'تعداد روزهای بدون تابش تحت بار شب' : 'Consecutive sunless days covered')}
+            </span>
           </div>
 
           <div>
@@ -243,44 +272,75 @@ export const BessTab: React.FC<BessTabProps> = ({
             : 'Battery Sizing Matrix & Physical Quantity:'}
         </h3>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-4">
+        {/* Night Coverage Deficit Warning Banner */}
+        {isNightCoverageDeficit && (
+          <div className="p-3 bg-red-950/40 border border-red-800 rounded-lg text-xs text-red-200 mb-4 flex items-center gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-industrial-error shrink-0" />
+            <div>
+              <strong className="block font-bold">
+                {lang === 'fa' ? 'هشدار مهندسی کسری پوشش شب (Night Coverage Deficit):' : 'Design Night Coverage Deficit Warning:'}
+              </strong>
+              <span>
+                {lang === 'fa'
+                  ? `ظرفیت قابل‌استفاده بانک باتری (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) کمتر از انرژی مورد نیاز طولانی‌ترین شب سال (${nightHoursDesign ?? 14} ساعته: ${nighttimeKwh?.toFixed(1) ?? '...'} kWh) است (پوشش: ${batterySizing.nightCoveragePct}%). لطفاً ظرفیت باتری یا روزهای خودمختاری را افزایش دهید.`
+                  : `Usable battery capacity (${batterySizing.usableCapacityKwh.toFixed(1)} kWh) is below the winter solstice night load (${nightHoursDesign ?? 14}h: ${nighttimeKwh?.toFixed(1) ?? '...'} kWh), covering only ${batterySizing.nightCoveragePct}%. Increase battery capacity or autonomy.`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs mb-4">
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">ظرفیت کل ناخالص</span>
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'ظرفیت کل ناخالص' : 'Gross Capacity'}</span>
             <span className="text-lg font-bold font-mono text-indigo-400">
               {batterySizing.grossCapacityKwh.toFixed(1)} kWh
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-              {batterySizing.totalCapacityAh} Ah در ولتاژ {batterySizing.systemVoltageVdc}V DC
+              {batterySizing.totalCapacityAh} Ah ({batterySizing.systemVoltageVdc}V)
             </span>
           </div>
 
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">ظرفیت قابل استفاده (Net Usable)</span>
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'ظرفیت قابل استفاده' : 'Net Usable'}</span>
             <span className="text-lg font-bold font-mono text-industrial-success">
               {batterySizing.usableCapacityKwh.toFixed(1)} kWh
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              با DoD مجاز {batterySizing.chemistry.recommendedDoDPct}%
+              DoD: {batterySizing.chemistry.recommendedDoDPct}%
             </span>
           </div>
 
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">تعداد کل باتری‌های مورد نیاز</span>
-            <span className="text-lg font-bold font-mono text-industrial-accent">
-              {calculatedTotalUnits} عدد باتری
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'پوشش شبِ طراحی' : 'Night Coverage'}</span>
+            <span className={`text-lg font-bold font-mono ${
+              (batterySizing.nightCoveragePct ?? 100) >= 100 ? 'text-industrial-success' : 'text-industrial-error'
+            }`}>
+              {batterySizing.nightCoveragePct !== undefined ? `${batterySizing.nightCoveragePct}%` : '100%'}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              {calculatedParallel} استرینگ موازی × {calculatedSeries} باتری سری
+              {(batterySizing.nightCoveragePct ?? 100) >= 100
+                ? (lang === 'fa' ? '✓ پوشش کامل شب' : '✓ Full night covered')
+                : (lang === 'fa' ? '⚠ کسری انرژی شب' : '⚠ Deficit')}
             </span>
           </div>
 
           <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
-            <span className="text-slate-400 block mb-0.5">وزن و مساحت اتاق باتری</span>
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'تعداد کل باتری‌ها' : 'Total Units'}</span>
+            <span className="text-lg font-bold font-mono text-industrial-accent">
+              {calculatedTotalUnits} عدد
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              {calculatedParallel}P × {calculatedSeries}S
+            </span>
+          </div>
+
+          <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
+            <span className="text-slate-400 block mb-0.5">{lang === 'fa' ? 'وزن و مساحت رک' : 'Weight & Area'}</span>
             <span className="text-lg font-bold font-mono text-purple-400">
               {totalWeightKg.toLocaleString()} kg
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              مساحت اشغال رک: ~{totalFootprintM2} m²
+              ~{totalFootprintM2} m²
             </span>
           </div>
         </div>

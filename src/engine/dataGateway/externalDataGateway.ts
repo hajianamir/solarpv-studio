@@ -7,7 +7,7 @@ import { ClimateDataProvider } from './climateDataProvider';
 import { SoilDataProvider } from './soilDataProvider';
 import { StructuralHazardProvider } from './structuralHazardProvider';
 import { type ClimateResourceData, type SoilPropertiesData, type StructuralHazardData } from './types';
-import type { ClimateCity, SoilClassification } from '../types/climateTypes';
+import { type ClimateCity, type SoilClassification, calculateDesignDaylightHours } from '../types/climateTypes';
 import { estimateGeodesicDistanceToCoastKm } from '../corrosion/coastlineModel';
 
 export interface ComprehensiveSiteData {
@@ -61,6 +61,8 @@ export class ExternalDataGateway {
       longitude: lng,
       elevationM: climateResource.elevationM,
       peakSunHours: climateResource.peakSunHours,
+      daylightHoursDesign: calculateDesignDaylightHours(lat).daylightHoursDesign,
+      nightHoursDesign: calculateDesignDaylightHours(lat).nightHoursDesign,
       tempMinC: climateResource.tempMinC,
       tempMaxC: climateResource.tempMaxC,
       albedo: climateResource.albedo,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Zap, Clock, ShieldAlert, Sparkles, Check, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Zap, Clock, ShieldAlert, Sparkles, Check, RotateCcw, AlertTriangle } from 'lucide-react';
 import {
   type ElectricalLoadItem,
   type LoadCategory,
@@ -8,12 +8,20 @@ import {
   STANDARD_APPLIANCE_LIBRARY,
   analyzeLoadProfile,
   type LoadAnalysisResult,
+  type ClimateDayNightWindow,
+  normalizeLoadsToWindow,
 } from '../engine/loadProfiles';
 
 interface LoadProfilingTabProps {
   loads: ElectricalLoadItem[];
   onLoadsChange: (loads: ElectricalLoadItem[]) => void;
   analysisResult: LoadAnalysisResult;
+  climateWindow?: ClimateDayNightWindow;
+  dayCapHours?: number;
+  nightCapHours?: number;
+  systemMode?: 'powerplant' | 'ongrid' | 'offgrid';
+  outageHours?: number;
+  peakSunHours?: number;
   lang?: 'fa' | 'en';
 }
 
@@ -21,9 +29,19 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
   loads,
   onLoadsChange,
   analysisResult,
+  climateWindow,
+  dayCapHours = 9.58,
+  nightCapHours = 14.42,
+  systemMode = 'ongrid',
+  outageHours = 6,
+  peakSunHours = 5.35,
   lang = 'fa',
 }) => {
   const isFa = lang === 'fa';
+  const resolvedDay = climateWindow?.dayCapHours ?? climateWindow?.daylightHoursDesign ?? dayCapHours;
+  const resolvedNight = climateWindow?.nightCapHours ?? climateWindow?.nightHoursDesign ?? nightCapHours;
+  const dayCap = Number(resolvedDay.toFixed(1));
+  const nightCap = Number(resolvedNight.toFixed(1));
   const [selectedPresetId, setSelectedPresetId] = useState<string>('');
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -33,29 +51,33 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
   const [ratedWatts, setRatedWatts] = useState(100);
   const [surgeMultiplier, setSurgeMultiplier] = useState(1.0);
   const [quantity, setQuantity] = useState(1);
-  const [dayHours, setDayHours] = useState(4);
-  const [nightHours, setNightHours] = useState(4);
+  const [dayHours, setDayHours] = useState(Math.min(dayCap, 4));
+  const [nightHours, setNightHours] = useState(Math.min(nightCap, 4));
   const [isDc, setIsDc] = useState(false);
 
   const handleApplyPreset = (presetId: string) => {
     setSelectedPresetId(presetId);
     const found = LOAD_PRESETS.find((p) => p.id === presetId);
     if (found) {
-      onLoadsChange(JSON.parse(JSON.stringify(found.items)));
+      const cloned = JSON.parse(JSON.stringify(found.items));
+      const normalized = normalizeLoadsToWindow(cloned, { dayCapHours: dayCap, nightCapHours: nightCap });
+      onLoadsChange(normalized.items);
     }
   };
 
   const handleAddLoad = (e: React.FormEvent) => {
     e.preventDefault();
+    const clampedDay = Math.max(0, Math.min(dayCap, Number(dayHours) || 0));
+    const clampedNight = Math.max(0, Math.min(nightCap, Number(nightHours) || 0));
     const newItem: ElectricalLoadItem = {
       id: `load-${Date.now()}`,
       name: name.trim() || (isFa ? 'بار جدید' : 'New Appliance'),
       category,
-      ratedWatts: Number(ratedWatts),
-      surgeMultiplier: Number(surgeMultiplier),
-      quantity: Number(quantity),
-      dayHours: Number(dayHours),
-      nightHours: Number(nightHours),
+      ratedWatts: Math.max(1, Number(ratedWatts) || 100),
+      surgeMultiplier: Math.max(1.0, Number(surgeMultiplier) || 1.0),
+      quantity: Math.max(1, Number(quantity) || 1),
+      dayHours: clampedDay,
+      nightHours: clampedNight,
       isDc: Boolean(isDc),
     };
     onLoadsChange([...loads, newItem]);
@@ -71,7 +93,19 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
     onLoadsChange(
       loads.map((item) => {
         if (item.id === id) {
-          return { ...item, [field]: val };
+          let updatedVal = val;
+          if (field === 'dayHours') {
+            updatedVal = Math.max(0, Math.min(dayCap, parseFloat(val) || 0));
+          } else if (field === 'nightHours') {
+            updatedVal = Math.max(0, Math.min(nightCap, parseFloat(val) || 0));
+          } else if (field === 'ratedWatts') {
+            updatedVal = Math.max(0, parseFloat(val) || 0);
+          } else if (field === 'quantity') {
+            updatedVal = Math.max(1, parseInt(val) || 1);
+          } else if (field === 'surgeMultiplier') {
+            updatedVal = Math.max(1, parseFloat(val) || 1);
+          }
+          return { ...item, [field]: updatedVal };
         }
         return item;
       })
@@ -80,6 +114,21 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Warnings Banner */}
+      {analysisResult.warnings && analysisResult.warnings.length > 0 && (
+        <div className="p-3 bg-amber-950/40 border border-amber-600/40 rounded-lg text-xs space-y-1">
+          <div className="flex items-center gap-2 font-bold text-amber-300">
+            <AlertTriangle className="w-4 h-4 text-industrial-warning shrink-0" />
+            <span>{isFa ? 'هشدار انطباق با پنجره اقلیمی سایت:' : 'Site Climate Window Alignment Notices:'}</span>
+          </div>
+          <ul className="list-disc list-inside text-amber-200/90 text-[11px] space-y-0.5">
+            {analysisResult.warnings.slice(0, 4).map((w, idx) => (
+              <li key={idx}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
@@ -92,6 +141,9 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
           <div className="text-[10px] text-slate-400 mt-0.5">
             {Math.round(analysisResult.totalDailyEnergyWh).toLocaleString()} Wh/{isFa ? 'روز' : 'day'}
           </div>
+          <div className="text-[10px] text-sky-400/90 font-mono mt-1">
+            {isFa ? `پنجره سایت: روز ${dayCap}h / شب ${nightCap}h` : `Site Window: Day ${dayCap}h / Night ${nightCap}h`}
+          </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
@@ -103,31 +155,46 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
             <span className="text-indigo-400 font-bold">{(analysisResult.nighttimeEnergyWh / 1000).toFixed(1)}k</span> Wh
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? 'بار شب جهت سایزینگ بانک باتری' : 'Nighttime load drives battery sizing'}
+            {systemMode === 'ongrid'
+              ? (isFa ? `در On-Grid: بار شب مبنای باتری خاموشی (${outageHours}h)` : `On-Grid: Night load drives ${outageHours}h outage BESS`)
+              : (isFa ? 'در Off-Grid: کل ۲۴h مبناست؛ شب برای «پوشش شب»' : 'Off-Grid: 24h total sizes BESS; night for Night Coverage')}
+          </div>
+          <div className="text-[10px] text-amber-400/90 font-mono mt-1">
+            {isFa ? `PSH سایت: ${peakSunHours} kWh/m²/day (مختص PV)` : `Site PSH: ${peakSunHours} kWh/m²/day (PV Sizing only)`}
           </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
-            {isFa ? 'توان پیوسته اکتیو' : 'Continuous Active Power'}
+            {isFa ? 'توان پیوسته (Worst-case / حاکم)' : 'Continuous Power (Worst-Case / Governing)'}
           </div>
           <div className="text-xl font-bold font-mono text-industrial-success mt-1">
             {Math.round(analysisResult.continuousActivePowerWatts).toLocaleString()} <span className="text-xs font-normal text-slate-300">W</span>
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? 'مجموع توان همزمان تجهیزات' : 'Coincident base load power'}
+          <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+            {isFa
+              ? `AC: ${Math.round(analysisResult.acContinuousActivePowerWatts)}W | DC: ${Math.round(analysisResult.dcContinuousActivePowerWatts)}W`
+              : `AC: ${Math.round(analysisResult.acContinuousActivePowerWatts)}W | DC: ${Math.round(analysisResult.dcContinuousActivePowerWatts)}W`}
+          </div>
+          <div className="text-[10px] text-emerald-400/90 font-mono mt-1">
+            {isFa ? `توان حاکم دوره‌ای: ${Math.round(analysisResult.governingContinuousWatts || analysisResult.continuousActivePowerWatts)}W` : `Governing Period: ${Math.round(analysisResult.governingContinuousWatts || analysisResult.continuousActivePowerWatts)}W`}
           </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
-            {isFa ? 'حداکثر توان هجومی (Surge)' : 'Peak Inrush Surge Power'}
+            {isFa ? 'توان هجومی (Worst-case Coincident)' : 'Peak Inrush Surge (Worst-Case Coincident)'}
           </div>
           <div className="text-xl font-bold font-mono text-industrial-error mt-1">
             {Math.round(analysisResult.maxSurgePeakPowerWatts).toLocaleString()} <span className="text-xs font-normal text-slate-300">W</span>
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? 'بر مبنای ضریب همزمانی موتورها' : 'Inductive motor start tolerance'}
+          <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+            {isFa
+              ? `اینورتر AC پیشنهادی: ${Math.round(analysisResult.recommendedInverterPeakSurgeWatts)}W`
+              : `Rec. AC Inverter Surge: ${Math.round(analysisResult.recommendedInverterPeakSurgeWatts)}W`}
+          </div>
+          <div className="text-[10px] text-red-400/90 font-mono mt-1">
+            {isFa ? `هجومی حاکم: ${Math.round(analysisResult.governingSurgeWatts || analysisResult.maxSurgePeakPowerWatts)}W` : `Governing Surge: ${Math.round(analysisResult.governingSurgeWatts || analysisResult.maxSurgePeakPowerWatts)}W`}
           </div>
         </div>
       </div>
@@ -188,23 +255,30 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
           </div>
         ) : (
           <div className="overflow-x-auto -mx-3 sm:mx-0">
-            <table className={`w-full text-xs text-slate-300 min-w-[700px] ${isFa ? 'text-right' : 'text-left'}`}>
+            <table className={`w-full text-xs text-slate-300 min-w-[750px] ${isFa ? 'text-right' : 'text-left'}`}>
               <thead className="bg-industrial-surface/90 text-slate-400 border-b border-industrial-border">
                 <tr>
                   <th className="p-2.5">{isFa ? 'نام وسیله برقی' : 'Appliance Name'}</th>
                   <th className="p-2.5">{isFa ? 'دسته‌بندی' : 'Category'}</th>
+                  <th className="p-2.5">{isFa ? 'تغذیه (AC/DC)' : 'Bus (AC/DC)'}</th>
                   <th className="p-2.5">{isFa ? 'توان (Watt)' : 'Power (W)'}</th>
                   <th className="p-2.5">{isFa ? 'ضریب هجومی' : 'Surge Multiplier'}</th>
                   <th className="p-2.5">{isFa ? 'تعداد' : 'Qty'}</th>
-                  <th className="p-2.5">{isFa ? 'ساعات روز' : 'Day (hrs)'}</th>
-                  <th className="p-2.5">{isFa ? 'ساعات شب' : 'Night (hrs)'}</th>
+                  <th className="p-2.5">{isFa ? `ساعات روز (۰ تا ${dayCap})` : `Day (0-${dayCap}h)`}</th>
+                  <th className="p-2.5">{isFa ? `ساعات شب (۰ تا ${nightCap})` : `Night (0-${nightCap}h)`}</th>
                   <th className="p-2.5">{isFa ? 'انرژی روزانه (Wh)' : 'Daily Wh'}</th>
                   <th className="p-2.5 text-center">{isFa ? 'عملیات' : 'Action'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {loads.map((item) => {
-                  const itemDailyWh = item.ratedWatts * item.quantity * (item.dayHours + item.nightHours);
+                  const itemAnalysis =
+                    analysisResult.itemBreakdown?.[item.id] ||
+                    analysisResult.items?.find((i) => i.itemId === item.id);
+                  const itemDailyWh =
+                    itemAnalysis?.totalDailyEnergyWh ??
+                    item.ratedWatts * item.quantity * (item.dayHours + item.nightHours);
+
                   return (
                     <tr key={item.id} className="hover:bg-slate-850/60 transition-colors">
                       <td className="p-2.5 font-medium text-white">
@@ -219,6 +293,20 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                         <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                           {isFa ? (LOAD_CATEGORY_LABELS[item.category]?.fa || item.category) : (LOAD_CATEGORY_LABELS[item.category]?.en || item.category)}
                         </span>
+                      </td>
+                      <td className="p-2.5">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateItem(item.id, 'isDc', !item.isDc)}
+                          className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold transition-colors ${
+                            item.isDc
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                              : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                          }`}
+                          title={isFa ? 'کلیک جهت تغییر بین AC و DC' : 'Click to toggle AC / DC'}
+                        >
+                          {item.isDc ? (isFa ? 'باتری DC' : 'DC Bus') : (isFa ? 'اینورتر AC' : 'AC Inverter')}
+                        </button>
                       </td>
                       <td className="p-2.5">
                         <input
@@ -254,7 +342,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           type="number"
                           step="0.5"
                           min="0"
-                          max="12"
+                          max={dayCap}
                           value={item.dayHours}
                           onChange={(e) => handleUpdateItem(item.id, 'dayHours', parseFloat(e.target.value) || 0)}
                           className="w-14 bg-industrial-surface border border-industrial-border rounded px-1.5 py-0.5 text-xs text-industrial-accent font-mono"
@@ -265,7 +353,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                           type="number"
                           step="0.5"
                           min="0"
-                          max="12"
+                          max={nightCap}
                           value={item.nightHours}
                           onChange={(e) => handleUpdateItem(item.id, 'nightHours', parseFloat(e.target.value) || 0)}
                           className="w-14 bg-industrial-surface border border-industrial-border rounded px-1.5 py-0.5 text-xs text-indigo-400 font-mono"
@@ -302,6 +390,38 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
             </h3>
 
             <form onSubmit={handleAddLoad} className="space-y-3 text-xs">
+              {/* Predefined Appliance Template Picker */}
+              <div>
+                <label htmlFor="load-standard-template-picker" className="block text-slate-300 font-semibold mb-1">
+                  {isFa ? 'انتخاب از تجهیزات استاندارد (الگوی آماده):' : 'Standard Appliance Template:'}
+                </label>
+                <select
+                  id="load-standard-template-picker"
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value);
+                    if (!isNaN(idx) && STANDARD_APPLIANCE_LIBRARY[idx]) {
+                      const app = STANDARD_APPLIANCE_LIBRARY[idx];
+                      setName(isFa ? app.nameFa : app.nameEn);
+                      setCategory(app.category);
+                      setRatedWatts(app.ratedWatts);
+                      setSurgeMultiplier(app.surgeMultiplier);
+                      setDayHours(Math.min(dayCap, app.typicalDayHours));
+                      setNightHours(Math.min(nightCap, app.typicalNightHours));
+                      setIsDc(Boolean(app.isDc));
+                    }
+                  }}
+                  className="studio-input"
+                  defaultValue=""
+                >
+                  <option value="">{isFa ? '-- بار سفارشی یا انتخاب از لیست --' : '-- Custom or Choose Template --'}</option>
+                  {STANDARD_APPLIANCE_LIBRARY.map((app, idx) => (
+                    <option key={idx} value={idx}>
+                      {isFa ? app.nameFa : app.nameEn} ({app.ratedWatts}W - {LOAD_CATEGORY_LABELS[app.category]?.fa || app.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label htmlFor="load-appliance-name" className="block text-slate-300 font-semibold mb-1">
                   {isFa ? 'نام وسیله برقی:' : 'Appliance Name:'}
@@ -328,13 +448,11 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                     onChange={(e) => setCategory(e.target.value as LoadCategory)}
                     className="studio-input"
                   >
-                    <option value="lighting">{isFa ? 'روشنایی' : 'Lighting'}</option>
-                    <option value="refrigeration">{isFa ? 'سرمایشی و یخچال' : 'Refrigeration'}</option>
-                    <option value="pump_motor">{isFa ? 'پمپ و الکتروموتور' : 'Pump / Motor'}</option>
-                    <option value="cooling_hvac">{isFa ? 'کولر و تهویه' : 'HVAC / Cooling'}</option>
-                    <option value="electronics_it">{isFa ? 'الکترونیک و IT' : 'Electronics / IT'}</option>
-                    <option value="heating">{isFa ? 'گرمایشی' : 'Heating'}</option>
-                    <option value="other">{isFa ? 'سایر' : 'Other'}</option>
+                    {(Object.keys(LOAD_CATEGORY_LABELS) as LoadCategory[]).map((cat) => (
+                      <option key={cat} value={cat}>
+                        {isFa ? LOAD_CATEGORY_LABELS[cat].fa : LOAD_CATEGORY_LABELS[cat].en}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -351,6 +469,22 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                     className="studio-input"
                   />
                 </div>
+              </div>
+
+              {/* DC Load Toggle */}
+              <div className="flex items-center gap-2 p-2 bg-slate-900/60 rounded border border-industrial-border">
+                <input
+                  id="load-is-dc-checkbox"
+                  type="checkbox"
+                  checked={isDc}
+                  onChange={(e) => setIsDc(e.target.checked)}
+                  className="w-4 h-4 rounded text-sky-500 accent-sky-500 cursor-pointer"
+                />
+                <label htmlFor="load-is-dc-checkbox" className="text-slate-200 text-xs font-semibold cursor-pointer">
+                  {isFa
+                    ? 'بار ولتاژ مستقیم DC (اتصال به باس باتری، بدون نیاز به اینورتر AC)'
+                    : 'DC Load (Direct Battery Bus, Bypasses AC Inverter)'}
+                </label>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -389,14 +523,14 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="load-day-hours-input" className="block text-slate-300 font-semibold mb-1">
-                    {isFa ? 'ساعات روز (۰ تا ۱۲):' : 'Day Operation (0-12h):'}
+                    {isFa ? `ساعات روز (۰ تا ${dayCap}):` : `Day Operation (0-${dayCap}h):`}
                   </label>
                   <input
                     id="load-day-hours-input"
                     type="number"
                     step="0.5"
                     min="0"
-                    max="12"
+                    max={dayCap}
                     value={dayHours}
                     onChange={(e) => setDayHours(parseFloat(e.target.value) || 0)}
                     className="studio-input"
@@ -404,19 +538,25 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                 </div>
                 <div>
                   <label htmlFor="load-night-hours-input" className="block text-slate-300 font-semibold mb-1">
-                    {isFa ? 'ساعات شب (۰ تا ۱۲):' : 'Night Operation (0-12h):'}
+                    {isFa ? `ساعات شب (۰ تا ${nightCap}):` : `Night Operation (0-${nightCap}h):`}
                   </label>
                   <input
                     id="load-night-hours-input"
                     type="number"
                     step="0.5"
                     min="0"
-                    max="12"
+                    max={nightCap}
                     value={nightHours}
                     onChange={(e) => setNightHours(parseFloat(e.target.value) || 0)}
                     className="studio-input"
                   />
                 </div>
+              </div>
+
+              <div className="text-[11px] text-sky-400 bg-sky-950/40 p-2 rounded border border-sky-800/40">
+                {isFa
+                  ? `طول روز خورشیدی سایت: ${dayCap} ساعت | طول شب: ${nightCap} ساعت | PSH اوج تابش: ${peakSunHours} kWh/m²/day (ساعات روز دیواری ≠ PSH)`
+                  : `Site Design Daylight: ${dayCap}h | Night: ${nightCap}h | Peak Sun Hours: ${peakSunHours} kWh/m²/day (Wall clock daylight ≠ PSH)`}
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-industrial-border">

@@ -3,7 +3,7 @@ import { Sun, Cpu, AlertTriangle, CheckCircle2, Layers, Zap, Eye, Search } from 
 import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
 import { type InverterClusteringResult } from '../engine/inverterClustering';
 import { CATALOG_MODULES, CATALOG_INVERTERS, type CatalogInverter } from '../engine/equipmentCatalogData';
-import { type ClimateCity } from '../engine/climaticData';
+import { type ClimateCity, getDefaultClimateCity } from '../engine/climaticData';
 import { ShadingAnalysisSubTab } from './ShadingAnalysisSubTab';
 import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
 import { type TrackerConfig, computeTrackerState } from '../engine/tracker/backtrackingEngine';
@@ -35,39 +35,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
   onInverterChange,
   arrayDesign,
   inverterClustering,
-  city = {
-    id: 'tehran',
-    nameFa: 'تهران',
-    nameEn: 'Tehran',
-    provinceFa: 'تهران',
-    provinceEn: 'Tehran',
-    latitude: 35.6892,
-    longitude: 51.389,
-    elevationM: 1190,
-    peakSunHours: 5.35,
-    tempMinC: -10,
-    tempMaxC: 42,
-    albedo: 0.2,
-    soilingLossPct: 4.5,
-    optimalTiltAnnualDeg: 32,
-    optimalTiltWinterDeg: 47,
-    optimalTiltSummerDeg: 17,
-    descriptionFa: '',
-    descriptionEn: '',
-    basicWindSpeedKmh: 130,
-    groundSnowLoadKgM2: 100,
-    annualRainfallMm: 230,
-    soilType: 'dense_sand_gravel',
-    soilBearingCapacityKpa: 250,
-    soilInternalFrictionAngleDeg: 34,
-    soilCohesionKpa: 15,
-    soilDensityKnM3: 18.5,
-    frostDepthCm: 40,
-    seismicZoneCoefficientA: 0.35,
-    dataSourceFa: '',
-    dataSourceEn: '',
-    dataRetrievalDate: '2024-06-15',
-  },
+  city = getDefaultClimateCity(),
   systemMode = 'powerplant',
   targetPowerplantCapacityKw = 1000,
   annualYieldMwh,

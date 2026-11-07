@@ -60,6 +60,8 @@ export interface CableRunResult {
   troubleshootingGuideEn?: string;
 }
 
+export type DcSystemEarthingType = 'floating' | 'functional_negative' | 'functional_positive';
+
 export interface EarthingAnalysisResult {
   soilResistivityOhmM: number;
   targetGroundResistanceOhms: number;
@@ -91,6 +93,19 @@ export interface EarthingAnalysisResult {
   bentoniteApplied?: boolean;
   earthingExecutionStepsFa: string[];
   earthingExecutionStepsEn: string[];
+
+  // Section B: Protective equipotential bonding & DC earthing architecture
+  pvFrameStructureBondingMm2: number;
+  pvFrameStructureBondingBasisFa: string;
+  pvFrameStructureBondingBasisEn: string;
+  batteryRackBondingBasisFa: string;
+  batteryRackBondingBasisEn: string;
+  inverterEnclosureBondingMm2: number;
+  inverterEnclosureBondingBasisFa: string;
+  inverterEnclosureBondingBasisEn: string;
+  dcSystemEarthing: DcSystemEarthingType;
+  requiresInsulationMonitoring: boolean;
+  requiresGfdiRcu: boolean;
 }
 
 export interface LightningProtectionResult {
@@ -476,7 +491,8 @@ export function calculateEarthingSystem(
   soilResistivityOhmM: number = 100, // standard soil in Iran: 50-200 Ω·m
   upstreamSystem: UpstreamGroundingSystem = 'solidly_grounded',
   isUtilityPowerplant: boolean = false,
-  applyBentoniteEnhancement: boolean = false
+  applyBentoniteEnhancement: boolean = false,
+  dcSystemEarthing: DcSystemEarthingType = 'floating'
 ): EarthingAnalysisResult {
   const rho = Math.max(10, soilResistivityOhmM || 100);
   const targetResistance = isUtilityPowerplant ? 1.0 : 4.0; // IEEE 80 requires <= 1.0 ohm for utility substations, <= 4-5 ohms for solar arrays
@@ -512,12 +528,58 @@ export function calculateEarthingSystem(
   const bentoniteEnhancedResistance = Number((calculatedRg * 0.55).toFixed(2));
   const effectiveRg = applyBentoniteEnhancement ? bentoniteEnhancedResistance : calculatedRg;
 
-  // Conductor cross-section based on adiabatic fault current equation:
-  // S = sqrt(I_sc^2 * t) / k (IEC 60364-5-54)
+  // Conductor cross-section based on adiabatic fault current equation & standard minimum mechanical rules:
+  // IEC 60364-5-54 & IEC 62548
   const buriedConductorMm2 = isUtilityPowerplant ? 95.0 : 35.0; // 95 mm² bare copper tape for powerplant
-  const equipmentBondingMm2 = isUtilityPowerplant ? 25.0 : 16.0;
-  const inverterGroundingMm2 = isUtilityPowerplant ? 70.0 : 25.0;
-  const batteryRackBondingMm2 = 35.0;
+
+  // PV Module Frame & Metallic Structure Protective Bonding (IEC 62548 & IEC 60364-5-54):
+  // Minimum mechanical cross-section without mechanical protection is 6 mm² Cu.
+  // When exposed outdoors or coordinated with external lightning protection, 16 mm² Cu is required.
+  // For utility-scale megawatt arrays, 25 mm² Cu is used for inter-table bonding.
+  const pvFrameStructureBondingMm2 = isUtilityPowerplant ? 25.0 : (systemCapacityKw > 50 ? 16.0 : 6.0);
+  const pvFrameStructureBondingBasisFa = isUtilityPowerplant
+    ? 'استاندارد IEC 62548 و IEC 60364-5-54 (سایز ۲۵mm² مس جهت هم‌بندی پایه‌های سازه خورشیدی نیروگاهی)'
+    : systemCapacityKw > 50
+    ? 'استاندارد IEC 62548 و IEC 60364-5-54 (سایز ۱۶mm² مس برای استراکچر فضای باز و هماهنگی صاعقه‌گیر)'
+    : 'استاندارد IEC 62548 و IEC 60364-5-54 (حداقل ۶mm² مس جهت حفاظت مکانیکی فریم و سازه)';
+  const pvFrameStructureBondingBasisEn = isUtilityPowerplant
+    ? 'IEC 62548 & IEC 60364-5-54 (25 mm² Cu for utility PV table structure bonding)'
+    : systemCapacityKw > 50
+    ? 'IEC 62548 & IEC 60364-5-54 (16 mm² Cu for outdoor structural bonding & LPS integration)'
+    : 'IEC 62548 & IEC 60364-5-54 (Min 6 mm² Cu mechanical robustness for PV frames & racking)';
+
+  // BESS Battery Rack & Enclosure Protective Bonding (IEC 60364-5-54 & IEC 62485-2 / IEC 62933):
+  // Metal racks and battery cabinets must be bonded directly to the site Main Earthing Terminal (MET).
+  // 16 mm² Cu minimum for stationary battery racks; 35 mm² Cu for utility/industrial containerized BESS.
+  const batteryRackBondingConductorMm2 = isUtilityPowerplant || systemCapacityKw > 100 ? 35.0 : 16.0;
+  const batteryRackBondingBasisFa = isUtilityPowerplant || systemCapacityKw > 100
+    ? 'استاندارد IEC 60364-5-54 و IEC 62485-2 (کابل ۳۵mm² مس جهت هم‌بندی رک‌های کانتینر BESS صنعتی به MET)'
+    : 'استاندارد IEC 60364-5-54 و IEC 62485-2 (کابل ۱۶mm² مس جهت هم‌بندی رک و کابینت فلزی باتری به MET)';
+  const batteryRackBondingBasisEn = isUtilityPowerplant || systemCapacityKw > 100
+    ? 'IEC 60364-5-54 & IEC 62485-2 (35 mm² Cu for utility/containerized BESS rack bonding to MET)'
+    : 'IEC 60364-5-54 & IEC 62485-2 (16 mm² Cu for stationary battery enclosure bonding to MET)';
+
+  // Inverter Enclosure Protective Bonding (IEC 60364-5-54):
+  const inverterEnclosureBondingMm2 = isUtilityPowerplant ? 70.0 : (systemCapacityKw > 50 ? 25.0 : 16.0);
+  const inverterGroundingMm2 = inverterEnclosureBondingMm2;
+  const inverterEnclosureBondingBasisFa = isUtilityPowerplant
+    ? 'استاندارد IEC 60364-5-54 (۷۰mm² مس برای بدنه اینورتر مرکزی نیروگاهی)'
+    : systemCapacityKw > 50
+    ? 'استاندارد IEC 60364-5-54 (۲۵mm² مس برای اینورتر استرینگ تجاری)'
+    : 'استاندارد IEC 60364-5-54 (۱۶mm² مس برای اینورتر استرینگ توزیع)';
+  const inverterEnclosureBondingBasisEn = isUtilityPowerplant
+    ? 'IEC 60364-5-54 (70 mm² Cu for central utility inverter chassis)'
+    : systemCapacityKw > 50
+    ? 'IEC 60364-5-54 (25 mm² Cu for commercial string inverter)'
+    : 'IEC 60364-5-54 (16 mm² Cu for standard string inverter chassis)';
+
+  const equipmentBondingMm2 = pvFrameStructureBondingMm2;
+
+  // DC System Earthing & Monitoring Architecture (IEC 62548 / IEC 62109-2 / IEC 61557-8):
+  // Default is 'floating' (isolated IT DC circuit). Requires Insulation Monitoring Device (IMD).
+  // Functional earthing is permitted ONLY upon manufacturer authorization and mandates automatic GFDI/RCMU.
+  const requiresInsulationMonitoring = dcSystemEarthing === 'floating';
+  const requiresGfdiRcu = dcSystemEarthing !== 'floating';
 
   // IEEE 80 Tolerable Touch & Step Voltages (50kg body, crushed rock layer rho_s = 3000 ohm-m, fault t_f = 0.2s)
   const hs = 0.10; // 10cm crushed rock layer
@@ -549,26 +611,40 @@ export function calculateEarthingSystem(
   const isStepVoltageSafe = actualStepVoltageVolts <= maxStep;
 
   const earthingExecutionStepsFa = [
-    '۱. حفر رینگ ارت پیرامونی: حفر کانال به عمق حداقل ۸۰ سانتی‌متر دور تا دور محوطه آرایه‌ها و پست برق.',
-    `۲. کوبش الکترودهای میله‌ای: کوبیدن ${estimatedRods} عدد راد ارت مسی ۳ متری با فاصله حداقل ۶ متر از یکدیگر (دو برابر طول راد) جهت جلوگیری از تداخل حوزه‌های پتانسیل.`,
-    '۳. اتصالات جوش احتراقی (کدولد): اتصال کلیه سر میله‌ها به تسمه/سیم لخت مسی با جوش کدولد (Cadweld) گرافیتی استاندارد جهت جلوگیری از خوردگی گالوانیک.',
-    '۴. هم‌بندی سازه‌ها و پنل‌ها: نصب گیره‌های ارت دندانه‌دار (Grounding Clips) در زیر فریم هر ماژول خورشیدی و هم‌بندی پایه‌های استراکچر با کابل مسی ۱۶ میلی‌متر مربع.',
-    '۵. حوضچه ارت و شینه اصلی اتصال زمین (MET): تعبیه دریچه بازدید تست ارت مجهز به شینه شمش مسی و پیت ارت در ورودی پست و اتاق اینورتر.',
-    `۶. هماهنگی با شبکه بالادست (${upstreamSystem === 'solidly_grounded' ? 'زمین مستقیم TN-S' : upstreamSystem === 'impedance_grounded' ? 'مقاومت زمین NGR' : 'ایزوله IT'}): اتصال نقطه نوترال به رله‌های خطای زمین 50N/51N و تنظیم زمان قطع زیر ۰.۲ ثانیه.`,
+    '۱. اتصال فریم ماژول‌ها: نصب گیره‌های ارت دندانه‌دار یا لَگ استاندارد (Serrated Grounding Clips / Lugs) در زیر فریم تک‌تک ماژول‌های PV جهت سوراخ کردن لایه اکسید آلومینیوم و تضمین پیوستگی الکتریکی.',
+    `۲. هم‌بندی حفاظتی استراکچر: اتصال پایه‌ها و استراکچر فلزی با هادی مسی ${pvFrameStructureBondingMm2} میلی‌متر مربع به شینه اصلی ارت (MET) و رینگ پیرامونی.`,
+    `۳. هم‌بندی رک و کابینت باتری (BESS): اتصال شاسی و رک فلزی باتری‌ها با کابل مسی ${batteryRackBondingConductorMm2} میلی‌متر مربع به همان شینه اصلی ارت (MET) سیستم.`,
+    '۴. ممنوعیت ارت مجزا و ایزوله: طبق استاندارد، اجرای سیستم ارت مستقل و جداگانه برای بخش DC کاملاً ممنوع است؛ کلیه هادی‌های حفاظتی باید به یک شبکه هم‌پتانسیل واحد و یکپارچه وصل شوند.',
+    `۵. وضعیت قطب‌های DC و مانیتورینگ: ${
+      dcSystemEarthing === 'floating'
+        ? 'قطب‌های مثبت و منفی حامل جریان DC شناور (Floating) هستند و نباید زمین شوند. نصب دستگاه پایش پیوسته مقاومت عایقی (IMD طبق IEC 61557-8) الزامی است.'
+        : `ارت عملکردی قطب DC (${dcSystemEarthing === 'functional_negative' ? 'منفی' : 'مثبت'}) تنها با الزام و تاییدیه سازنده اینورتر مجاز است؛ فعال‌سازی رله آشکارسازی و قطع خطای زمین (GFDI/RCMU طبق IEC 62109-2) الزامی می‌باشد.`
+    }`,
+    `۶. حفر کانال و کوبش الکترودها: حفر کانال به عمق حداقل ۸۰ سانتی‌متر و کوبیدن ${estimatedRods} عدد راد ارت مسی ۳ متری با فاصله حداقل ۶ متر جهت جلوگیری از تداخل حوزه‌های پتانسیل.`,
+    '۷. جوش احتراقی کدولد (Cadweld): اتصال کلیه سر میله‌ها به تسمه/سیم لخت مسی با جوش احتراقی استاندارد جهت ممانعت از خوردگی گالوانیک.',
+    '۸. حوضچه بازدید و شینه اصلی اتصال زمین (MET): تعبیه دریچه بازدید تست ارت مجهز به شینه شمش مسی و پیت ارت در ورودی پست و اتاق اینورتر.',
+    `۹. هماهنگی با شبکه بالادست (${upstreamSystem === 'solidly_grounded' ? 'زمین مستقیم TN-S' : upstreamSystem === 'impedance_grounded' ? 'مقاومت زمین NGR' : 'ایزوله IT'}): تنظیم رله‌های خطای زمین 50N/51N جهت قطع در زمان کمتر از ۰.۲ ثانیه.`,
     ...(rho > 150
-      ? ['۷. بهسازی خاک با بنتونیت/مواد کاهنده LOM: در خاک‌های خشک و با مقاومت بالا، تزریق دوغاب بنتونیت اکتیو در اطراف میله‌ها مقاومت زمین را تا ۴۵٪ کاهش می‌دهد.']
+      ? ['۱۰. بهسازی خاک با بنتونیت/مواد کاهنده LOM: در خاک‌های خشک و با مقاومت بالا، تزریق دوغاب بنتونیت اکتیو در اطراف میله‌ها مقاومت زمین را تا ۴۵٪ کاهش می‌دهد.']
       : []),
   ];
 
   const earthingExecutionStepsEn = [
-    '1. Perimeter Ground Ring: Excavate an 80cm deep trench around the array boundary and substation perimeter.',
-    `2. Copper-Bonded Ground Rods: Drive ${estimatedRods} x 3m rods spaced at least 6m apart to prevent sphere-of-influence overlap.`,
-    '3. Exothermic Cadweld Connections: Connect rods to buried copper conductor using molecular exothermic welding.',
-    '4. Module Frame & Structure Bonding: Install certified serrated grounding clips on all module frames and 16 mm² bonding jumpers on all steel tables.',
-    '5. Earth Test Wells & Main Earthing Terminal (MET): Install inspectable earth pits with test disconnect links at the substation and inverter skids.',
-    `6. Upstream Grid Coordination (${upstreamSystem}): Coordinate with upstream utility protection relays (50N/51N) for clearance under 0.2s.`,
+    '1. PV Module Frame Grounding: Install certified serrated grounding clips or lugs under each PV module frame to pierce anodization and ensure equipotential bonding.',
+    `2. Metallic Structure Bonding: Bond all steel/aluminum mounting tables with ${pvFrameStructureBondingMm2} mm² copper conductor to the perimeter ground ring / MET.`,
+    `3. BESS Battery Rack & Enclosure Bonding: Bond battery cabinets and metallic racks with ${batteryRackBondingConductorMm2} mm² copper conductor to the same Main Earthing Terminal (MET).`,
+    '4. Prohibition of Isolated Earth: Separate or isolated grounding systems for the DC side are strictly forbidden; all metallic enclosures must connect to a single unified equipotential earthing network.',
+    `5. DC Current-Carrying Conductors & Monitoring: ${
+      dcSystemEarthing === 'floating'
+        ? 'Positive and negative DC poles are Floating (IT system). Continuous Insulation Monitoring Device (IMD per IEC 61557-8) is mandatory.'
+        : `Functional DC earthing (${dcSystemEarthing === 'functional_negative' ? 'Negative' : 'Positive'} pole) is permitted only with manufacturer mandate; automatic GFDI/RCMU ground fault interruption (IEC 62109-2) is mandatory.`
+    }`,
+    `6. Perimeter Trench & Ground Rods: Excavate an 80cm deep trench and drive ${estimatedRods} x 3m copper rods spaced at least 6m apart to prevent sphere-of-influence overlap.`,
+    '7. Exothermic Cadweld Connections: Connect all buried junctions using graphite-mold molecular exothermic welding to eliminate galvanic corrosion.',
+    '8. Earth Test Wells & Main Earthing Terminal (MET): Install inspectable earth pits with test disconnect links at the substation and inverter skids.',
+    `9. Upstream Grid Coordination (${upstreamSystem}): Coordinate with upstream utility protection relays (50N/51N) for clearance under 0.2s.`,
     ...(rho > 150
-      ? ['7. Soil Enhancement Material: In high-resistivity arid soils, bentonite/GEM slurry reduces earth resistance by ~45%.']
+      ? ['10. Soil Enhancement Material: In high-resistivity arid soils, bentonite/GEM slurry reduces earth resistance by ~45%.']
       : []),
   ];
 
@@ -583,7 +659,7 @@ export function calculateEarthingSystem(
     buriedConductorCrossSectionMm2: buriedConductorMm2,
     equipmentBondingConductorMm2: equipmentBondingMm2,
     inverterGroundingConductorMm2: inverterGroundingMm2,
-    batteryRackBondingConductorMm2: batteryRackBondingMm2,
+    batteryRackBondingConductorMm2: batteryRackBondingConductorMm2,
     upstreamSystemType: upstreamSystem,
     maxTouchVoltageVolts: maxTouch,
     maxStepVoltageVolts: maxStep,
@@ -597,13 +673,24 @@ export function calculateEarthingSystem(
     isEarthingSafe: effectiveRg <= targetResistance && isTouchVoltageSafe && isStepVoltageSafe,
     isPreliminaryEstimate: true,
     disclaimerFa:
-      'توجه: محاسبات مقاومت زمین و ولتاژهای تماس و گام صرفاً ارزیابی اولیه غربالگری بر پایه مدل خاک یکنواخت و حدود فرضی پیش‌فرض (مانند سقف فرضی ولتاژ تماس ۱۲۰ ولت برای سیستم زمین‌شده از طریق امپدانس یا ۵۰ ولت برای IT) است. این حدود فرضی برای کلیه حوزه‌ها الزام‌آور نبوده و حد واقعی به زمان قطع حفاظت، رطوبت محیط و مقررات محلی وابسته است. طراحی اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر و مدل‌سازی تفصیلی شبکه مش است.',
+      'توجه: محاسبات مقاومت زمین و ولتاژهای تماس و گام صرفاً ارزیابی اولیه غربالگری بر پایه مدل خاک یکنواخت و حدود فرضی پیش‌فرض است. سیستم هم‌بندی حفاظتی سازه‌ها و باتری باید به یک شینه اصلی ارت (MET) متصل گردد و اجرای ارت جداگانه ممنوع است. طراحی اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر است.',
     disclaimerEn:
-      'Notice: Ground resistance and touch/step potential verifications are preliminary screening estimates using uniform soil assumptions and indicative default regulatory ceilings (e.g. 120V touch voltage limit for impedance-grounded systems, 50V for IT). Actual limits depend on fault duration, environmental wetness, and local utility interconnection codes. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing and site-specific grid modeling.',
+      'Notice: Ground resistance and touch/step potential verifications are preliminary screening estimates using uniform soil assumptions. Protective bonding of structures and BESS racks must terminate at a single Main Earthing Terminal (MET); isolated DC earthing is strictly prohibited. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing.',
     bentoniteEnhancedResistanceOhms: bentoniteEnhancedResistance,
     bentoniteApplied: applyBentoniteEnhancement,
     earthingExecutionStepsFa,
     earthingExecutionStepsEn,
+    pvFrameStructureBondingMm2,
+    pvFrameStructureBondingBasisFa,
+    pvFrameStructureBondingBasisEn,
+    batteryRackBondingBasisFa,
+    batteryRackBondingBasisEn,
+    inverterEnclosureBondingMm2,
+    inverterEnclosureBondingBasisFa,
+    inverterEnclosureBondingBasisEn,
+    dcSystemEarthing,
+    requiresInsulationMonitoring,
+    requiresGfdiRcu,
   };
 }
 

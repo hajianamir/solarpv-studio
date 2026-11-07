@@ -78,6 +78,7 @@ import {
   calculateLightningProtection,
   type CompleteProtectionSystemResult,
   type ProtectionBomItem,
+  type DcSystemEarthingType,
 } from './engine/protectionBomEngine';
 import { simulate24hEnergyBalance, sizeDieselGenerator } from './engine/simulation24hEngine';
 import {
@@ -242,6 +243,7 @@ export const App: React.FC = () => {
   const [selectedChemistry, setSelectedChemistry] = useState<BatteryChemistry>('lifepo4');
   const [autonomyDays, setAutonomyDays] = useState<number>(1.5);
   const [outageHours, setOutageHours] = useState<number>(6); // For ongrid mode blackout calculation
+  const [dcSystemEarthing, setDcSystemEarthing] = useState<DcSystemEarthingType>('floating');
   const [targetPowerplantCapacityKw, setTargetPowerplantCapacityKw] = useState<number>(1000); // 1MW default
   const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
   // PR-2a-7: single-axis tracker config (null = fixed tilt)
@@ -501,7 +503,14 @@ export const App: React.FC = () => {
   };
 
   // 1. Analyze Loads
-  const loadAnalysis = useMemo(() => analyzeLoadProfile(loads), [loads]);
+  const loadAnalysis = useMemo(
+    () =>
+      analyzeLoadProfile(loads, {
+        daylightHoursDesign: city.daylightHoursDesign,
+        nightHoursDesign: city.nightHoursDesign,
+      }),
+    [loads, city.daylightHoursDesign, city.nightHoursDesign]
+  );
 
   // 2. Compute Target Energy Demand Based on System Mode
   // ============================================================================
@@ -687,6 +696,7 @@ export const App: React.FC = () => {
       loadAnalysis.totalDailyEnergyKwh,
       loadAnalysis.nighttimeEnergyWh / 1000.0,
       outageHours || 6,
+      city.nightHoursDesign
     );
 
     return sizeBatteryBank(
@@ -696,7 +706,9 @@ export const App: React.FC = () => {
       inverterClustering.recommendedDcVoltageVdc || 48,
       loadAnalysis.maxSurgePeakPowerWatts,
       loadAnalysis.continuousActivePowerWatts,
-      city.tempMinC
+      city.tempMinC,
+      100,
+      loadAnalysis.nighttimeEnergyWh / 1000.0
     );
   }, [systemMode, loadAnalysis, outageHours, autonomyDays, selectedChemistry, inverterClustering, city]);
 
@@ -776,7 +788,9 @@ export const App: React.FC = () => {
       capacityKw,
       100,
       'solidly_grounded',
-      isUtil
+      isUtil,
+      false,
+      dcSystemEarthing
     );
 
     const lightning = calculateLightningProtection(
@@ -790,7 +804,7 @@ export const App: React.FC = () => {
       lightning,
       protectionBom: [] as ProtectionBomItem[],
     };
-  }, [arrayDesign, selectedModule, selectedInverter, inverterClustering, systemMode, targetPowerplantCapacityKw, city]);
+  }, [arrayDesign, selectedModule, selectedInverter, inverterClustering, systemMode, targetPowerplantCapacityKw, city, dcSystemEarthing]);
 
   // 8. 24-Hour Balance Simulation
   const simulationResult = useMemo(() => {
@@ -800,7 +814,9 @@ export const App: React.FC = () => {
       loadAnalysis.daytimeEnergyWh / 1000.0,
       loadAnalysis.nighttimeEnergyWh / 1000.0,
       batterySizing.usableCapacityKwh,
-      batterySizing.grossCapacityKwh
+      batterySizing.grossCapacityKwh,
+      50.0,
+      city.daylightHoursDesign
     );
   }, [arrayDesign, city, loadAnalysis, batterySizing]);
 
@@ -2305,6 +2321,10 @@ export const App: React.FC = () => {
               loads={loads}
               onLoadsChange={setLoads}
               analysisResult={loadAnalysis}
+              climateWindow={{
+                daylightHoursDesign: city.daylightHoursDesign,
+                nightHoursDesign: city.nightHoursDesign,
+              }}
               lang={lang}
             />
           )}
@@ -2340,6 +2360,9 @@ export const App: React.FC = () => {
               batterySizing={batterySizing}
               systemTopology={systemMode === 'ongrid' ? 'hybrid' : 'off_grid'}
               onTopologyChange={(top) => setSystemMode(top === 'hybrid' ? 'ongrid' : 'offgrid')}
+              nighttimeKwh={loadAnalysis.nighttimeEnergyWh / 1000.0}
+              outageHours={outageHours}
+              nightHoursDesign={city.nightHoursDesign}
               lang={lang}
             />
           )}
@@ -2382,6 +2405,9 @@ export const App: React.FC = () => {
               systemDcVoltage={inverterClustering.recommendedDcVoltageVdc || 48}
               isThreePhase={selectedInverter.isThreePhase}
               ambientTempC={city.tempMaxC}
+              totalModulesCount={arrayDesign.totalModulesCount}
+              dcSystemEarthing={dcSystemEarthing}
+              onDcSystemEarthingChange={setDcSystemEarthing}
               installationEnvironment={siteOverrides?.installationEnvironment || 'ground_mount'}
               lang={lang}
             />
@@ -2485,6 +2511,9 @@ export const App: React.FC = () => {
               dcCableMm2={protectionSystem.cableRuns[0]?.totalEffectiveCrossSectionMm2 || 6}
               batCableMm2={protectionSystem.cableRuns[1]?.totalEffectiveCrossSectionMm2 || 35}
               acCableMm2={protectionSystem.cableRuns[2]?.totalEffectiveCrossSectionMm2 || 50}
+              isUtilityPowerplant={systemMode === 'powerplant'}
+              targetGroundResistanceOhms={protectionSystem.earthing.targetGroundResistanceOhms}
+              batteryRackBondingMm2={protectionSystem.earthing.batteryRackBondingConductorMm2}
               lang={lang}
             />
           )}
