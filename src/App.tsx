@@ -687,11 +687,15 @@ export const App: React.FC = () => {
     const contWatts =
       systemMode === 'powerplant'
         ? (targetPowerplantCapacityKw || 1000) * 1000
-        : (loadAnalysis.acGoverningContinuousWatts || loadAnalysis.governingContinuousWatts || loadAnalysis.continuousActivePowerWatts);
+        : (typeof loadAnalysis.acGoverningContinuousWatts === 'number'
+            ? loadAnalysis.acGoverningContinuousWatts
+            : (loadAnalysis.continuousActivePowerWatts || 0));
     const peakWatts =
       systemMode === 'powerplant'
         ? (targetPowerplantCapacityKw || 1000) * 1100
-        : (loadAnalysis.acGoverningSurgeWatts || loadAnalysis.governingSurgeWatts || loadAnalysis.maxSurgePeakPowerWatts);
+        : (typeof loadAnalysis.acGoverningSurgeWatts === 'number'
+            ? loadAnalysis.acGoverningSurgeWatts
+            : (loadAnalysis.maxSurgePeakPowerWatts || 0));
 
     return evaluateInverterClustering(
       contWatts,
@@ -840,11 +844,15 @@ export const App: React.FC = () => {
     const contWatts =
       systemMode === 'powerplant'
         ? Math.max(15000, (targetPowerplantCapacityKw || 1000) * 15) // Substation auxiliary power (~1.5%)
-        : (loadAnalysis.acGoverningContinuousWatts || loadAnalysis.governingContinuousWatts || loadAnalysis.continuousActivePowerWatts);
+        : (typeof loadAnalysis.acGoverningContinuousWatts === 'number'
+            ? loadAnalysis.acGoverningContinuousWatts
+            : (loadAnalysis.continuousActivePowerWatts || 0));
     const peakWatts =
       systemMode === 'powerplant'
         ? contWatts * 2.2
-        : (loadAnalysis.acGoverningSurgeWatts || loadAnalysis.governingSurgeWatts || loadAnalysis.maxSurgePeakPowerWatts);
+        : (typeof loadAnalysis.acGoverningSurgeWatts === 'number'
+            ? loadAnalysis.acGoverningSurgeWatts
+            : (loadAnalysis.maxSurgePeakPowerWatts || 0));
 
     return sizeDieselGenerator(
       contWatts,

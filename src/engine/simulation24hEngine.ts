@@ -121,15 +121,28 @@ export function simulate24hEnergyBalance(
   const dischargeEff = 0.95;
   const maxPcsPowerKw = batteryCapacityTotalKwh * 1.0;
 
+  // Pre-calculate hourly loads with exact rounding and distribute residual to noon hour (12)
+  // BEFORE the simulation loop, guaranteeing load and deficit equality in polar / deficit hours
+  const targetTotalLoad = Number((daytimeKwh + nighttimeKwh).toFixed(2));
+  const hourlyLoadsKwh: number[] = new Array(24).fill(0);
+  for (let h = 0; h < 24; h++) {
+    const loadDayKwh = sumDayLoadWeights > 0 ? (dayLoadWeights[h] / sumDayLoadWeights) * daytimeKwh : (daytimeKwh / 24.0);
+    const loadNightKwh = sumNightLoadWeights > 0 ? (nightLoadWeights[h] / sumNightLoadWeights) * nighttimeKwh : (nighttimeKwh / 24.0);
+    hourlyLoadsKwh[h] = Math.round((loadDayKwh + loadNightKwh) * 100) / 100;
+  }
+  const preSum = hourlyLoadsKwh.reduce((sum, v) => sum + v, 0);
+  const preResidual = Number((targetTotalLoad - preSum).toFixed(2));
+  if (Math.abs(preResidual) >= 0.005) {
+    hourlyLoadsKwh[12] = Number((hourlyLoadsKwh[12] + preResidual).toFixed(2));
+  }
+
   for (let h = 0; h < 24; h++) {
     const solarKwh = sumSolarWeights > 0
       ? (solarWeights[h] / sumSolarWeights) * totalDailyGenerationKwh
       : 0;
 
     // Load partition: exactly conserves daytimeKwh and nighttimeKwh
-    const loadDayKwh = sumDayLoadWeights > 0 ? (dayLoadWeights[h] / sumDayLoadWeights) * daytimeKwh : (daytimeKwh / 24.0);
-    const loadNightKwh = sumNightLoadWeights > 0 ? (nightLoadWeights[h] / sumNightLoadWeights) * nighttimeKwh : (nighttimeKwh / 24.0);
-    const loadKwh = loadDayKwh + loadNightKwh;
+    const loadKwh = hourlyLoadsKwh[h];
 
     const netKwh = solarKwh - loadKwh;
     let chargeKwh = 0;
@@ -191,15 +204,6 @@ export function simulate24hEnergyBalance(
       surplusKwh: Math.round(surplusKwh * 100) / 100,
       deficitKwh: Math.round(deficitKwh * 100) / 100,
     });
-  }
-
-  // Energy conservation residual check: ensure rounded load steps sum to daytimeKwh + nighttimeKwh within 0.01
-  const targetTotalLoad = Number((daytimeKwh + nighttimeKwh).toFixed(2));
-  const roundedSum = steps.reduce((sum, s) => sum + s.loadDemandKwh, 0);
-  const residual = Number((targetTotalLoad - roundedSum).toFixed(2));
-  if (Math.abs(residual) >= 0.01 && steps.length > 12) {
-    // Distribute residual to solar noon hour (hour 12)
-    steps[12].loadDemandKwh = Number((steps[12].loadDemandKwh + residual).toFixed(2));
   }
 
   const lpspPct = totalLoad > 0 ? Number(((totalDeficit / totalLoad) * 100).toFixed(2)) : 0;

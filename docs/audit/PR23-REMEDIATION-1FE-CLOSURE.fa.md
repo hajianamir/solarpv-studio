@@ -48,11 +48,13 @@ $$\text{در حالت On-Grid:} \quad E_{req,kWh} = E_{nighttime,kWh} \times \mi
 $$\text{در حالت Off-Grid:} \quad E_{req,kWh} = E_{daily,total,kWh}$$
 
 #### ب) ظرفیت نامی ناخالص بانک باتری (`sizeBatteryBank`):
-$$C_{gross,Wh} = \frac{E_{req,kWh} \times 1000 \times \text{AutonomyDays}}{\text{DoD} \times \eta_{inverter} \times f_{temp}}$$
+$$C_{gross,Wh} = \frac{E_{req,kWh} \times 1000 \times \max(0.2, \text{AutonomyDays})}{\text{DoD} \times \eta_{roundTrip} \times f_{temp}}$$
 که در آن:
-- $\text{DoD}$: عمق دشارژ مجاز شیمی باتری (مثلاً ۸۵٪ برای LiFePO4).
-- $\eta_{inverter}$: بازده اینورتر (۰٫۹۳).
-- $f_{temp}$: ضریب تصحیح دمای محیط در سردترین شرایط سایت.
+- $\text{DoD}$: عمق دشارژ مجاز شیمی باتری (`recommendedDoDPct / 100`، مثلاً ۰٫۸۵ برای LiFePO4).
+- $\eta_{roundTrip}$: بازدهی رفت‌وبرگشت الکتروشیمیایی باتری (`roundTripEfficiencyPct / 100`، مثلاً ۰٫۹۵ برای LiFePO4 یا ۰٫۹۰ برای ژل).
+- $f_{temp}$: ضریب تصحیح اثر دمای سرد محیط طبق رابطه آرنیوس/پوکرت ($f_{temp} \ge 0.65$).
+- *یادآوری فنی:* راندمان اینورتر ($\eta_{inverter} = 0.93$) منحصراً در مخرج روابط محاسبه جریان‌های دشارژ الکتریکی باتری اعمال می‌شود:
+  $$I_{discharge,cont} = \frac{P_{continuous}}{V_{dc} \times \eta_{inverter}}, \qquad I_{discharge,peak} = \frac{P_{surge}}{V_{dc} \times \eta_{inverter}}$$
 
 #### ج) شاخص پوشش انرژی (`nightCoveragePct`):
 $$\text{On-Grid:} \quad \text{Coverage\%} = \frac{C_{usable,kWh}}{E_{nighttime,kWh} \times \min\left(1.0, \frac{t_{outage}}{N_{design}}\right)} \times 100$$

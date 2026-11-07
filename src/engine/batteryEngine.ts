@@ -225,6 +225,10 @@ export function sizeBatteryBank(
       estimatedLifespanYears: profile.typicalLifespanYears,
       expectedTotalCycles: profile.standardCycleLifeAt80DoD,
       warnings: [],
+      nightCoveragePct: 100,
+      coverageTargetKwh: 0,
+      coverageLabelFa: systemMode === 'ongrid' ? 'پوشش دوره خاموشی' : 'پوشش شبِ طراحی',
+      coverageLabelEn: systemMode === 'ongrid' ? 'Outage Window Coverage' : 'Design Night Coverage',
     };
   }
 
@@ -335,5 +339,8 @@ export function sizeBatteryBank(
     expectedTotalCycles: Math.round(cycleLifeAtActualDoD),
     warnings,
     nightCoveragePct,
+    coverageTargetKwh,
+    coverageLabelFa,
+    coverageLabelEn,
   };
 }
