@@ -5354,6 +5354,90 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // ==========================================================================
+  // E27: Zero-Based Full Audit Remediations [Z-01 to Z-06]
+  // ==========================================================================
+  {
+    const { designPvArray } = await import('../../pvEngineAdvanced');
+    const { performFinancialAnalysis } = await import('../../financialEngine');
+    const { calculateLcoe, performQuickSizing, InMemorySolarDatabase } = await import('../../solarPvEngine');
+    const { generateScenarios } = await import('../../scenarioEngine');
+    const { migrateProjectToV3 } = await import('../projectMigration');
+
+    // 1. Z-01: designPvArray throws RangeError/TypeError on invalid inputs
+    let z01DemandThrew = false;
+    try {
+      designPvArray(0, 5.0, p0Module, p0Inverter, p0Deratings(45), 35.69);
+    } catch (e: unknown) {
+      z01DemandThrew = e instanceof RangeError;
+    }
+
+    let z01ModuleThrew = false;
+    try {
+      designPvArray(100, 5.0, null as unknown as typeof p0Module, p0Inverter, p0Deratings(45), 35.69);
+    } catch (e: unknown) {
+      z01ModuleThrew = e instanceof TypeError;
+    }
+
+    let z01PmpThrew = false;
+    try {
+      designPvArray(100, 5.0, { ...p0Module, pmpWatts: NaN }, p0Inverter, p0Deratings(45), 35.69);
+    } catch (e: unknown) {
+      z01PmpThrew = e instanceof RangeError;
+    }
+
+    // Z-01 Financial sanitization: negative tariff or NaN clamped without producing NaN
+    const finSanitized = performFinancialAnalysis(100, 0, 100, 150_000, {
+      gridTariffTomanPerKwh: -5000,
+      moduleUsdPerWp: NaN,
+      discountRatePct: NaN,
+    }, 25, 'ongrid');
+    const z01FinOk =
+      finSanitized.capexBreakdown.totalCapexUsd > 0 &&
+      Number.isFinite(finSanitized.annualRevenueToman) &&
+      finSanitized.annualRevenueToman === 0; // clamped to 0 tariff
+
+    // Z-01 calculateLcoe NaN safety
+    const lcoeNanCheck = calculateLcoe(NaN, 100, 1000, 0.05, 25);
+    const z01LcoeOk = lcoeNanCheck === 0.0;
+
+    // 2. Z-02: Scenario dynamic LCOE without legacy magic constant fallback
+    const zeroScenarios = generateScenarios(0, 0, 1.5, 18.0, 5.0);
+    const z02ScenariosOk = zeroScenarios.every(s => s.lcoeUsdPerKwh === 0.0);
+
+    // 3. Z-03: Quick sizing optional persistence
+    const testDb = new InMemorySolarDatabase();
+    performQuickSizing({
+      projectName: 'Ephemeral Quick Sizing',
+      latitude: 35.69,
+      longitude: 51.38,
+      dailyKwh: 20,
+      autonomyDays: 1,
+      persist: false,
+    }, testDb);
+    const z03NoPersistOk = testDb.projects.size === 0;
+
+    // 4. Z-06: Project migration preserves provenance and metadata
+    const testProjectWithProvenance = {
+      version: '3.0.0',
+      projectName: 'Provenance Preserved',
+      systemMode: 'powerplant',
+      provenance: { auditor: 'Arena Agent', verifiedAt: '2026-11-08' },
+      metadata: { department: 'Renewable Engineering' },
+    };
+    const migRes = migrateProjectToV3(testProjectWithProvenance);
+    const z06ProvenanceOk =
+      Boolean(migRes.project.provenance && (migRes.project.provenance as Record<string, unknown>).auditor === 'Arena Agent') &&
+      Boolean(migRes.project.metadata && (migRes.project.metadata as Record<string, unknown>).department === 'Renewable Engineering');
+
+    assert(
+      'E27-ZERO-AUDIT-REMEDIATION-Z01-TO-Z06',
+      'Engine input validation, negative tariff clamping, scenario zero-fallback, ephemeral sizing, and provenance preservation verified',
+      z01DemandThrew && z01ModuleThrew && z01PmpThrew && z01FinOk && z01LcoeOk && z02ScenariosOk && z03NoPersistOk && z06ProvenanceOk,
+      `z01Demand=${z01DemandThrew}, z01Module=${z01ModuleThrew}, z01Fin=${z01FinOk}, z02Scenarios=${z02ScenariosOk}, z03Ephemeral=${z03NoPersistOk}, z06Prov=${z06ProvenanceOk}`
+    );
+  }
+
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
 

@@ -206,6 +206,71 @@ export interface FinancialAnalysisResult {
   exportedYieldKwh: number;
 }
 
+export function sanitizeFinancialPricing(custom?: Partial<UserFinancialPricing>): UserFinancialPricing {
+  const base = { ...DEFAULT_FINANCIAL_PRICING };
+  if (!custom || typeof custom !== 'object') {
+    return base;
+  }
+
+  const cleanNum = (val: unknown, fallback: number, min = 0, max = Infinity): number => {
+    if (typeof val !== 'number' || !Number.isFinite(val)) return fallback;
+    return Math.max(min, Math.min(max, val));
+  };
+
+  return {
+    ...base,
+    moduleUsdPerWp: cleanNum(custom.moduleUsdPerWp, base.moduleUsdPerWp, 0),
+    inverterUsdPerKw: cleanNum(custom.inverterUsdPerKw, base.inverterUsdPerKw, 0),
+    batteryUsdPerKwh: cleanNum(custom.batteryUsdPerKwh, base.batteryUsdPerKwh, 0),
+    structureUsdPerWp: cleanNum(custom.structureUsdPerWp, base.structureUsdPerWp, 0),
+    cablingBopUsdPerWp: cleanNum(custom.cablingBopUsdPerWp, base.cablingBopUsdPerWp, 0),
+    substationUsdPerMva: cleanNum(custom.substationUsdPerMva, base.substationUsdPerMva, 0),
+    epcLaborUsdPerKw: cleanNum(custom.epcLaborUsdPerKw, base.epcLaborUsdPerKw, 0),
+    gridTariffTomanPerKwh: cleanNum(custom.gridTariffTomanPerKwh, base.gridTariffTomanPerKwh, 0),
+    usdToTomanRate: cleanNum(custom.usdToTomanRate, base.usdToTomanRate, 1),
+    annualOpexPctOfCapex: cleanNum(custom.annualOpexPctOfCapex, base.annualOpexPctOfCapex, 0, 100),
+    discountRatePct: cleanNum(custom.discountRatePct, base.discountRatePct, 0, 100),
+    tariffEscalationPct: cleanNum(custom.tariffEscalationPct, base.tariffEscalationPct, 0, 100),
+    includeDieselGenSet: custom.includeDieselGenSet !== undefined ? Boolean(custom.includeDieselGenSet) : base.includeDieselGenSet,
+    dieselGenSetCapexUsd: cleanNum(custom.dieselGenSetCapexUsd, base.dieselGenSetCapexUsd ?? 12000, 0),
+    dieselAnnualFuelLiters: cleanNum(custom.dieselAnnualFuelLiters, base.dieselAnnualFuelLiters ?? 0, 0),
+    dieselAnnualRunHours: cleanNum(custom.dieselAnnualRunHours, base.dieselAnnualRunHours ?? 250, 0),
+    dieselFuelConsumptionLitersPerHour: cleanNum(custom.dieselFuelConsumptionLitersPerHour, base.dieselFuelConsumptionLitersPerHour ?? 14, 0),
+    dieselFuelPriceTomanPerLiter: cleanNum(custom.dieselFuelPriceTomanPerLiter, base.dieselFuelPriceTomanPerLiter ?? 3500, 0),
+    dieselAnnualServiceOpexUsd: cleanNum(custom.dieselAnnualServiceOpexUsd, base.dieselAnnualServiceOpexUsd ?? 1800, 0),
+    hvConnectionUsdPerKva: cleanNum(custom.hvConnectionUsdPerKva, base.hvConnectionUsdPerKva, 0),
+    plantPowerFactor: cleanNum(custom.plantPowerFactor, base.plantPowerFactor ?? 0.95, 0.70, 1.0),
+    contingencyCapexPct: cleanNum(custom.contingencyCapexPct, base.contingencyCapexPct ?? 3.0, 0, 50),
+    ppaTariffTomanPerKwh: cleanNum(custom.ppaTariffTomanPerKwh, base.ppaTariffTomanPerKwh, 0),
+    offgridAvoidedCostTomanPerKwh: custom.offgridAvoidedCostTomanPerKwh !== undefined
+      ? cleanNum(custom.offgridAvoidedCostTomanPerKwh, 21600, 0)
+      : undefined,
+    landLeaseUsdPerKwpYear: cleanNum(custom.landLeaseUsdPerKwpYear, base.landLeaseUsdPerKwpYear, 0),
+    gridOperatorFeeUsdPerKwpYear: cleanNum(custom.gridOperatorFeeUsdPerKwpYear, base.gridOperatorFeeUsdPerKwpYear, 0),
+    annualDegradationRate: custom.annualDegradationRate !== undefined
+      ? cleanNum(custom.annualDegradationRate, 0.005, 0, 0.10)
+      : undefined,
+    inverterReplacementYear: custom.inverterReplacementYear,
+    inverterReplacementCostRatio: custom.inverterReplacementCostRatio !== undefined
+      ? cleanNum(custom.inverterReplacementCostRatio, 0.60, 0, 2.0)
+      : undefined,
+    batteryChemistry: custom.batteryChemistry || base.batteryChemistry,
+    batteryLifespanYears: custom.batteryLifespanYears !== undefined
+      ? cleanNum(custom.batteryLifespanYears, 12, 1, 50)
+      : undefined,
+    opexEscalationPct: cleanNum(custom.opexEscalationPct, base.opexEscalationPct ?? 8.0, 0, 100),
+    selfConsumptionRatioPct: custom.selfConsumptionRatioPct !== undefined
+      ? cleanNum(custom.selfConsumptionRatioPct, 70.0, 0, 100)
+      : undefined,
+    gridExportTariffTomanPerKwh: custom.gridExportTariffTomanPerKwh !== undefined
+      ? cleanNum(custom.gridExportTariffTomanPerKwh, 2200, 0)
+      : undefined,
+    customerType: custom.customerType || base.customerType || 'commercial',
+    offgridDailyLoadKwh: custom.offgridDailyLoadKwh !== undefined ? cleanNum(custom.offgridDailyLoadKwh, 0, 0) : undefined,
+    offgridServedLoadKwhAnnual: custom.offgridServedLoadKwhAnnual !== undefined ? cleanNum(custom.offgridServedLoadKwhAnnual, 0, 0) : undefined,
+  };
+}
+
 export function performFinancialAnalysis(
   totalPvCapacityKwp: number,
   batteryCapacityKwh: number,
@@ -215,10 +280,7 @@ export function performFinancialAnalysis(
   lifetimeYears: number = 25,
   systemMode: FinancialSystemMode = 'powerplant'
 ): FinancialAnalysisResult {
-  const p: UserFinancialPricing = {
-    ...DEFAULT_FINANCIAL_PRICING,
-    ...(customPricing || {}),
-  };
+  const p = sanitizeFinancialPricing(customPricing);
 
   const safePvKwp = Math.max(0, Number.isFinite(totalPvCapacityKwp) ? totalPvCapacityKwp : 0);
   const safeBatteryKwh = Math.max(0, Number.isFinite(batteryCapacityKwh) ? batteryCapacityKwh : 0);

@@ -81,6 +81,53 @@ export function designPvArray(
   deratings: SiteDeratings,
   latitudeDeg: number
 ): PvArrayDesignResult {
+  // Input Validation Layer (Z-01 remediation)
+  if (!Number.isFinite(requiredDailyKwh) || requiredDailyKwh <= 0) {
+    throw new RangeError(`Invalid requiredDailyKwh: value must be a strictly positive finite number, got ${requiredDailyKwh}`);
+  }
+  if (!Number.isFinite(peakSunHours) || peakSunHours <= 0) {
+    throw new RangeError(`Invalid peakSunHours: value must be strictly positive and finite, got ${peakSunHours}`);
+  }
+  if (!module || typeof module !== 'object') {
+    throw new TypeError('Invalid module: module specifications object is required');
+  }
+  if (!Number.isFinite(module.pmpWatts) || module.pmpWatts <= 0) {
+    throw new RangeError(`Invalid module pmpWatts: must be a positive finite number, got ${module?.pmpWatts}`);
+  }
+  if (!Number.isFinite(module.vocVolts) || module.vocVolts <= 0) {
+    throw new RangeError(`Invalid module vocVolts: must be a positive finite number, got ${module?.vocVolts}`);
+  }
+  if (!Number.isFinite(module.vmpVolts) || module.vmpVolts <= 0) {
+    throw new RangeError(`Invalid module vmpVolts: must be a positive finite number, got ${module?.vmpVolts}`);
+  }
+  if (!inverter || typeof inverter !== 'object') {
+    throw new TypeError('Invalid inverter: inverter specifications object is required');
+  }
+  if (!Number.isFinite(inverter.pnomAcKw) || inverter.pnomAcKw <= 0) {
+    throw new RangeError(`Invalid inverter pnomAcKw: must be a positive finite number, got ${inverter?.pnomAcKw}`);
+  }
+  if (!Number.isFinite(inverter.vdcMaxVolts) || inverter.vdcMaxVolts <= 0) {
+    throw new RangeError(`Invalid inverter vdcMaxVolts: must be a positive finite number, got ${inverter?.vdcMaxVolts}`);
+  }
+  if (!Number.isFinite(inverter.vmpptMinVolts) || inverter.vmpptMinVolts <= 0) {
+    throw new RangeError(`Invalid inverter vmpptMinVolts: must be a positive finite number, got ${inverter?.vmpptMinVolts}`);
+  }
+  if (!Number.isFinite(inverter.vmpptMaxVolts) || inverter.vmpptMaxVolts <= 0) {
+    throw new RangeError(`Invalid inverter vmpptMaxVolts: must be a positive finite number, got ${inverter?.vmpptMaxVolts}`);
+  }
+  if (!deratings || typeof deratings !== 'object') {
+    throw new TypeError('Invalid deratings: site deratings object is required');
+  }
+  if (!Number.isFinite(deratings.ambientTempMaxC)) {
+    throw new RangeError(`Invalid deratings ambientTempMaxC: must be a finite number, got ${deratings?.ambientTempMaxC}`);
+  }
+  if (!Number.isFinite(deratings.ambientTempMinC)) {
+    throw new RangeError(`Invalid deratings ambientTempMinC: must be a finite number, got ${deratings?.ambientTempMinC}`);
+  }
+  if (!Number.isFinite(latitudeDeg) || latitudeDeg < -90 || latitudeDeg > 90) {
+    throw new RangeError(`Invalid latitudeDeg: must be a finite number between -90 and 90, got ${latitudeDeg}`);
+  }
+
   const warnings: string[] = [];
 
   // 1. Cell temperature in hot design conditions — unified thermal model (PR-2a-7-P0)
@@ -109,9 +156,6 @@ export function designPvArray(
 
   // 4. Required DC Array power
   // Energy = P_dc * PSH * Deratings
-  if (peakSunHours <= 0) {
-    throw new Error("Invalid peakSunHours: value must be strictly positive and non-zero.");
-  }
   const psh = peakSunHours;
   const requiredArrayKwp = requiredDailyKwh / (psh * effectiveDeratingFactor);
 
@@ -202,15 +246,17 @@ export function designPvArray(
   }
 
   // 7. Area & Inter-row shading distance
-  const moduleAreaM2 = module.lengthM * module.widthM;
+  const modLength = (Number.isFinite(module.lengthM) && module.lengthM > 0) ? module.lengthM : 2.278;
+  const modWidth = (Number.isFinite(module.widthM) && module.widthM > 0) ? module.widthM : 1.134;
+  const moduleAreaM2 = modLength * modWidth;
   const netArrayAreaM2 = totalModulesCount * moduleAreaM2;
 
   // Inter-row pitch calculation for winter solstice noon:
   // Solar altitude angle at winter solstice: alpha = 90 - |latitude| - |delta|
   // Row spacing D = H * (cos(tilt) + sin(tilt) / tan(alpha))
   const tiltRad = (deratings.arrayTiltDeg * Math.PI) / 180.0;
-  const panelHeightProjectedM = module.lengthM * Math.sin(tiltRad);
-  const panelGroundDepthM = module.lengthM * Math.cos(tiltRad);
+  const panelHeightProjectedM = modLength * Math.sin(tiltRad);
+  const panelGroundDepthM = modLength * Math.cos(tiltRad);
 
   // Winter-solstice noon solar altitude from site latitude (PR-2a-7-P0):
   // alpha = 90° - |latitude| - |declination(-23.45°)|, floored at 5° to avoid
@@ -224,7 +270,7 @@ export function designPvArray(
   const interRowSpacingM = panelGroundDepthM + shadowLengthM;
 
   // Gross area incorporates maintenance walkways (+30%)
-  const grossRequiredLandAreaM2 = (totalModulesCount / chosenModulesPerString) * (module.widthM * chosenModulesPerString) * interRowSpacingM * 1.30;
+  const grossRequiredLandAreaM2 = (totalModulesCount / chosenModulesPerString) * (modWidth * chosenModulesPerString) * interRowSpacingM * 1.30;
 
   return {
     totalPvCapacityKwp,

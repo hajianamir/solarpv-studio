@@ -72,7 +72,7 @@ const BUILT_IN_CATALOG_IDS = new Set<string>([
   'bat-byd-lvs',
 ]);
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '2mb' }));
 
 // Robust JSON body parse error handler (P3-01 / MAIN-01)
 function jsonErrorHandler(err: any, req: Request, res: Response, next: (e?: any) => void): void {
@@ -196,22 +196,19 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // 1. Solar calculations
 app.post('/api/v1/solar/position', (req: Request, res: Response) => {
   try {
-    const { latitudeDeg = 35.6895, longitudeDeg = 51.389, utcTs = Math.floor(Date.now() / 1000) } = req.body;
-    const lat = Number(latitudeDeg);
-    const lng = Number(longitudeDeg);
-    const ts = Number(utcTs);
-
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
-      return res.status(400).json({ error: `Invalid latitude: must be between -90 and 90, got ${latitudeDeg}` });
+    const { latitudeDeg, longitudeDeg, utcTs } = req.body || {};
+    if (latitudeDeg === undefined || typeof latitudeDeg !== 'number' || !Number.isFinite(latitudeDeg) || latitudeDeg < -90 || latitudeDeg > 90) {
+      return res.status(400).json({ error: `latitudeDeg is required and must be a finite number between -90 and 90, got ${latitudeDeg}` });
     }
-    if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
-      return res.status(400).json({ error: `Invalid longitude: must be between -180 and 180, got ${longitudeDeg}` });
+    if (longitudeDeg === undefined || typeof longitudeDeg !== 'number' || !Number.isFinite(longitudeDeg) || longitudeDeg < -180 || longitudeDeg > 180) {
+      return res.status(400).json({ error: `longitudeDeg is required and must be a finite number between -180 and 180, got ${longitudeDeg}` });
     }
+    const ts = utcTs !== undefined ? Number(utcTs) : Math.floor(Date.now() / 1000);
     if (!Number.isFinite(ts) || ts <= 0) {
       return res.status(400).json({ error: `Invalid timestamp: must be a positive number, got ${utcTs}` });
     }
 
-    const result = calculateSolarPosition(lat, lng, ts);
+    const result = calculateSolarPosition(latitudeDeg, longitudeDeg, ts);
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -596,20 +593,30 @@ function resolveRequesterIdentity(req: Request): { userId?: string; authError?: 
           return { authError: 'Invalid bearer token: JWT authentication is not configured on this server' };
         }
 
+        // Validate header encoding and algorithm (Z-05)
+        let header: any;
+        try {
+          const headerJson = Buffer.from(parts[0], 'base64url').toString('utf-8');
+          header = JSON.parse(headerJson);
+        } catch {
+          return { authError: 'Invalid bearer token: malformed header encoding' };
+        }
+
+        if (!header || typeof header !== 'object' || header.alg !== 'HS256') {
+          return { authError: 'Invalid bearer token: unsupported or missing algorithm (only HS256 is supported)' };
+        }
+
         const expectedSig = crypto
           .createHmac('sha256', jwtSecret)
           .update(parts[0] + '.' + parts[1])
-          .digest('base64')
-          .replace(/=/g, '')
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_');
+          .digest('base64url');
 
         if (!constantTimeEqual(parts[2], expectedSig)) {
           return { authError: 'Invalid bearer token: signature verification failed' };
         }
 
         try {
-          const payloadJson = Buffer.from(parts[1], 'base64').toString('utf-8');
+          const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
           const payload = JSON.parse(payloadJson);
 
           // Expiration check (exp in seconds)
@@ -703,11 +710,14 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Authentication required: creating projects requires a verified identity.' });
     }
     const resolvedOwnerId = requesterOwnerId || ownerId;
-    const result = performQuickSizing({ ...req.body, ownerId: resolvedOwnerId }, db);
-    const persisted = saveDatabase();
-    if (!persisted) {
-      db.projects.delete(result.projectId);
-      return res.status(500).json({ error: 'Failed to persist created project to storage.' });
+    const shouldPersist = req.body.saveProject !== false && req.body.persist !== false && req.body.save !== false;
+    const result = performQuickSizing({ ...req.body, ownerId: resolvedOwnerId, persist: shouldPersist }, db);
+    if (shouldPersist) {
+      const persisted = saveDatabase();
+      if (!persisted) {
+        db.projects.delete(result.projectId);
+        return res.status(500).json({ error: 'Failed to persist created project to storage.' });
+      }
     }
     res.json(result);
   } catch (err: any) {

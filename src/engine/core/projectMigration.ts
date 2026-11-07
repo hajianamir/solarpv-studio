@@ -364,8 +364,10 @@ export const ProjectDataV3Schema = z.object({
 
   trackerConfig: TrackerConfigSchema.nullable().optional(),
 
-  // Traceability & Metadata
+  // Traceability & Metadata (Z-06)
   traceId: z.string().optional(),
+  provenance: z.record(z.string(), z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type ProjectDataV3 = z.infer<typeof ProjectDataV3Schema>;
@@ -619,6 +621,8 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     featureFlags,
     trackerConfig: raw.trackerConfig !== undefined ? raw.trackerConfig : null, // BUG-2: persist (null = fixed tilt)
     traceId: raw.traceId || traceId,
+    provenance: raw.provenance && typeof raw.provenance === 'object' ? raw.provenance : undefined,
+    metadata: raw.metadata && typeof raw.metadata === 'object' ? raw.metadata : undefined,
   };
 
   // Validate with Zod safeParse
@@ -647,6 +651,8 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     if (candidate.systemMode) recovered.systemMode = candidate.systemMode;
     if (candidate.targetPowerplantCapacityKw) recovered.targetPowerplantCapacityKw = candidate.targetPowerplantCapacityKw;
     recovered.featureFlags = candidate.featureFlags;
+    if (candidate.provenance) recovered.provenance = candidate.provenance;
+    if (candidate.metadata) recovered.metadata = candidate.metadata;
     // P1.2: preserve normalized pricing even when validation fails on a
     // NON-pricing field — otherwise user pricing is silently reset.
     if (candidate.userPricing) recovered.userPricing = candidate.userPricing as any;
