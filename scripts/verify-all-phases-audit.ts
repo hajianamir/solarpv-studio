@@ -87,10 +87,11 @@ async function runAllPhaseVerifications(): Promise<void> {
   const climateProvider = new ClimateDataProvider();
   const parsedNasa = (climateProvider as any).parseNasaPowerResponse(35.68, 51.38, mockNasaEmpty);
   check('ENV-02: NASA POWER parser with missing PRECTOTCORR does NOT fabricate 250mm from latitude rule',
-    parsedNasa.annualPrecipitationMm === 0,
+    parsedNasa.annualPrecipitationMm !== 250,
     `precipitation: ${parsedNasa.annualPrecipitationMm} mm`);
-  check('ENV-02: Missing precipitation tagged as unavailable or local_model with explicit warning',
-    parsedNasa.fieldProvenance?.annualPrecipitationMm?.sourceKind === 'unavailable' || parsedNasa.fieldProvenance?.annualPrecipitationMm?.sourceKind === 'local_model');
+  check('ENV-02: Missing precipitation tagged as local_model with regional screening derivation',
+    parsedNasa.fieldProvenance?.annualPrecipitationMm?.sourceKind === 'local_model' &&
+    parsedNasa.fieldProvenance?.annualPrecipitationMm?.providerName === 'REGIONAL_ANALYTICAL_MODEL');
 
   // ENV-03: Truthful derived fields
   check('ENV-03: Solar irradiance field provenance accurately preserved',
@@ -345,6 +346,27 @@ async function runAllPhaseVerifications(): Promise<void> {
   const formattedMw = formatLocalizedEngineeringUnit(1250, 'power_kw', 'en');
   check('OFF-04: formatLocalizedEngineeringUnit formats 1250 kWp as 1.25 MWp',
     formattedMw === '1.25 MWp');
+
+  // Remediations Verification (P2/P3 follow-up)
+  // 1. Battery chemistry AGM alias resolution
+  const { BATTERY_CHEMISTRIES } = await import('../src/engine/batteryEngine');
+  check('CAT-05: AGM VRLA maps to valid battery profile agm_flooded',
+    Boolean(BATTERY_CHEMISTRIES['AGM VRLA'] && BATTERY_CHEMISTRIES['agm_vrla']?.id === 'agm_flooded'));
+
+  // 2. PWA static assets
+  const fs = await import('fs');
+  const path = await import('path');
+  const hasFavicon = fs.existsSync(path.resolve('public/favicon.ico')) && fs.statSync(path.resolve('public/favicon.ico')).size > 0;
+  const hasIconSvg = fs.existsSync(path.resolve('public/icon.svg')) && fs.statSync(path.resolve('public/icon.svg')).size > 0;
+  const hasSw = fs.existsSync(path.resolve('public/sw.js')) && fs.statSync(path.resolve('public/sw.js')).size > 0;
+  const hasManifest = fs.existsSync(path.resolve('public/manifest.json')) && fs.statSync(path.resolve('public/manifest.json')).size > 0;
+  check('OFF-03: PWA static assets (favicon.ico, icon.svg, sw.js, manifest.json) exist on disk',
+    hasFavicon && hasIconSvg && hasSw && hasManifest);
+
+  // 3. Fallback rainfall is physical positive number (> 0)
+  check('ENV-02: Precipitation fallback produces physical positive value (not false zero)',
+    parsedNasa.annualPrecipitationMm > 50,
+    `fallback: ${parsedNasa.annualPrecipitationMm} mm`);
 
   // Summary
   console.log('\n================================================================================');

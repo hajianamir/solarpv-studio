@@ -80,10 +80,10 @@ export const BessTab: React.FC<BessTabProps> = ({
 
       // Map catalog chemistry to BatteryChemistry type
       let chem: BatteryChemistry = 'lifepo4';
-      if (model.chemistry === 'Gel Deep Cycle') chem = 'gel';
-      else if (model.chemistry === 'AGM VRLA') chem = 'agm_vrla';
+      if (model.chemistry === 'Gel Deep Cycle') chem = 'gel_deep_cycle';
+      else if (model.chemistry === 'AGM VRLA') chem = 'agm_flooded';
       else if (model.chemistry === 'Ternary NCM') chem = 'ternary_ncm';
-      else if (model.chemistry === 'OPzS Tubular') chem = 'opzs_tubular';
+      else if (model.chemistry === 'OPzS Tubular') chem = 'agm_flooded';
       onChemistryChange(chem);
     }
   };

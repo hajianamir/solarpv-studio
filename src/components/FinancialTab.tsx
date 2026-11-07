@@ -14,6 +14,7 @@ import {
   Play,
   RefreshCw,
   AlertTriangle,
+  Coins,
 } from 'lucide-react';
 import {
   type FinancialAnalysisResult,
@@ -22,6 +23,11 @@ import {
 import { type ClimateCity } from '../engine/climaticData';
 import { type FoundationType } from '../engine/structuralEngine';
 import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosion/saltCorrosionEngine';
+import {
+  type SupportedCurrency,
+  convertCurrency,
+  formatCurrencyAmount,
+} from '../engine/offlineTransferEngine';
 import {
   runFinancialUncertaintyPropagation,
   type FinancialUqResult,
@@ -151,6 +157,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     return min !== undefined ? Math.max(min, parsed) : parsed;
   };
 
+  const [activeCurrency, setActiveCurrency] = useState<SupportedCurrency>('TOMAN');
+
   const updateField = (field: keyof UserFinancialPricing, val: any) => {
     // Route through sanitizeNumericField for every numeric field.
     const currentVal = pricing[field];
@@ -166,17 +174,43 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     <div className="space-y-6">
       {/* Title */}
       <div className="studio-card">
-        <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-industrial-success" />
-          {lang === 'fa'
-            ? 'تحلیل جامع مالی، قیمت‌گذاری سفارشی، بازگشت سرمایه (IRR/NPV) و جریان نقدینگی ۲۵ ساله'
-            : 'Custom Pricing Financial Feasibility, IRR, NPV, LCOE & 25-Year Cash Flow Pro-Forma'}
-        </h1>
-        <p className="text-slate-400 text-xs">
-          {lang === 'fa'
-            ? 'امکان ورود قیمت‌های برآوردی تجهیزات توسط کاربر به دلار یا تومان، محاسبه دقیق CAPEX، دوره بازگشت سرمایه، نرخ بازده داخلی (IRR) و بهای تمام‌شده تراز شده انرژی (LCOE).'
-            : 'Custom user unit pricing for modules, inverters, batteries, BOS and civil works, calculating dynamic CAPEX, IRR, NPV, and 25-year cashflows.'}
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+          <div>
+            <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-industrial-success" />
+              {lang === 'fa'
+                ? 'تحلیل جامع مالی، قیمت‌گذاری سفارشی، بازگشت سرمایه (IRR/NPV) و جریان نقدینگی ۲۵ ساله'
+                : 'Custom Pricing Financial Feasibility, IRR, NPV, LCOE & 25-Year Cash Flow Pro-Forma'}
+            </h1>
+            <p className="text-slate-400 text-xs">
+              {lang === 'fa'
+                ? 'امکان ورود قیمت‌های برآوردی تجهیزات توسط کاربر به دلار یا تومان، محاسبه دقیق CAPEX، دوره بازگشت سرمایه، نرخ بازده داخلی (IRR) و بهای تمام‌شده تراز شده انرژی (LCOE).'
+                : 'Custom user unit pricing for modules, inverters, batteries, BOS and civil works, calculating dynamic CAPEX, IRR, NPV, and 25-year cashflows.'}
+            </p>
+          </div>
+
+          {/* Active Currency Selector Bar (OFF-04) */}
+          <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-lg border border-industrial-border shrink-0 self-start sm:self-auto">
+            <Coins className="w-3.5 h-3.5 text-industrial-warning ml-1" />
+            <span className="text-[11px] text-slate-400 mr-1 hidden sm:inline">
+              {lang === 'fa' ? 'ارز نمایش:' : 'Currency:'}
+            </span>
+            {(['TOMAN', 'USD', 'EUR'] as SupportedCurrency[]).map((cur) => (
+              <button
+                key={cur}
+                type="button"
+                onClick={() => setActiveCurrency(cur)}
+                className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors ${
+                  activeCurrency === cur
+                    ? 'bg-industrial-primary text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {cur === 'TOMAN' ? (lang === 'fa' ? 'تومان' : 'Toman') : cur === 'USD' ? '$ USD' : '€ EUR'}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Customizable Pricing Parameters Form */}
@@ -411,10 +445,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'کل سرمایه‌گذاری اولیه (CAPEX)' : 'Total Initial CAPEX'}</div>
           <div className="text-xl font-bold font-mono text-white mt-1">
-            ${financial.capexBreakdown.totalCapexUsd.toLocaleString()}
+            {formatCurrencyAmount(financial.capexBreakdown.totalCapexUsd, activeCurrency, pricing.usdToTomanRate, lang)}
           </div>
           <div className="text-xs font-mono text-industrial-warning mt-0.5">
-            {(financial.capexBreakdown.totalCapexToman / 1_000_000_000).toFixed(2)} میلیارد تومان
+            {activeCurrency === 'USD'
+              ? formatCurrencyAmount(financial.capexBreakdown.totalCapexUsd, 'TOMAN', pricing.usdToTomanRate, lang)
+              : formatCurrencyAmount(financial.capexBreakdown.totalCapexUsd, 'USD', pricing.usdToTomanRate, lang)}
           </div>
         </div>
 
@@ -436,7 +472,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               : (lang === 'fa' ? `تعریف‌نشده (${financial.irrStatus})` : `N/A (${financial.irrStatus})`)}
           </div>
           <div className="text-xs font-mono text-industrial-success mt-0.5">
-            NPV: {(financial.npvToman / 1_000_000_000).toFixed(2)} میلیارد تومان
+            NPV: {formatCurrencyAmount(financial.npvUsd, activeCurrency, pricing.usdToTomanRate, lang)}
           </div>
         </div>
 
@@ -444,12 +480,18 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'بهای تمام‌شده انرژی (LCOE)' : 'Levelized Cost of Energy (LCOE)'}</div>
           <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
             {financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null
-              ? `$${financial.lcoeUsdPerKwh.toFixed(4)}`
+              ? activeCurrency === 'TOMAN'
+                ? `${financial.lcoeTomanPerKwh?.toLocaleString()} تومان/kWh`
+                : activeCurrency === 'EUR'
+                ? `€${convertCurrency(financial.lcoeUsdPerKwh, 'USD', 'EUR').toFixed(4)}/kWh`
+                : `$${financial.lcoeUsdPerKwh.toFixed(4)}/kWh`
               : (lang === 'fa' ? 'نامعتبر (تولید صفر)' : 'N/A (Zero Energy)')}
           </div>
           <div className="text-xs font-mono text-slate-300 mt-0.5">
-            {financial.isLcoeDefined && financial.lcoeTomanPerKwh !== null
-              ? `${financial.lcoeTomanPerKwh.toLocaleString()} تومان / kWh`
+            {financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null
+              ? activeCurrency === 'USD'
+                ? `${financial.lcoeTomanPerKwh?.toLocaleString()} تومان / kWh`
+                : `$${financial.lcoeUsdPerKwh.toFixed(4)} / kWh`
               : '—'}
           </div>
         </div>

@@ -4,8 +4,13 @@
   "description": "Cross-platform solar PV engineering, sizing calculator, 3D shading ray-tracer, and EPC proposal engine.",
   "icons": [
     {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
       "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
+      "sizes": "16x16",
       "type": "image/x-icon"
     }
   ],

@@ -123,7 +123,7 @@ const Simulation24hTab = React.lazy(() => import('./components/Simulation24hTab'
 const OfficialReportModal = React.lazy(() => import('./components/OfficialReportModal').then((m) => ({ default: m.OfficialReportModal })));
 const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab').then((m) => ({ default: m.WaterfallLossTab })));
 import { migrateProjectToV3 } from './engine/core/projectMigration';
-import { restoreProjectTransferEnvelope } from './engine/offlineTransferEngine';
+import { createProjectTransferEnvelope, restoreProjectTransferEnvelope } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
 
 // Fallback component for lazy-loaded tabs (MAIN-05)
@@ -467,10 +467,10 @@ export const App: React.FC = () => {
     }
   };
 
-  // Export project to clean v3.0.0 JSON file
+  // Export project with full transfer envelope and custom equipment snapshots (OFF-01)
   const handleExportProjectJson = () => {
     const projectData = {
-      version: '3.0.0',
+      version: '3.1.0',
       savedAt: new Date().toISOString(),
       traceId: generateTraceId(),
       projectName,
@@ -491,12 +491,25 @@ export const App: React.FC = () => {
       userPricing,
       trackerConfig,
     };
-    const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+    const envelope = createProjectTransferEnvelope({
+      projectName,
+      projectData,
+      metadata: {
+        docVersion: '3.1.0',
+        companyName: 'SolarPV Studio Engineering Platform',
+        leadEngineer: 'Project Lead',
+      },
+      activeModule: selectedModule,
+      activeInverter: selectedInverter,
+    });
+    const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${projectName.replace(/\s+/g, '_')}_v3.json`;
+    a.download = `${projectName.replace(/\s+/g, '_')}.solarpv.json`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     setIsProjectJsonModalOpen(false);
   };
@@ -1600,8 +1613,8 @@ export const App: React.FC = () => {
 
             <p className="text-slate-300 leading-relaxed text-[11px]">
               {lang === 'fa'
-                ? 'می‌توانید کل پیکربندی پروژه را به صورت فایل استاندارد JSON نسخه v3.0.0 دانلود کرده و یا فایل پروژه قبلی را بارگذاری نمایید.'
-                : 'Export the complete project configuration as a validated v3.0.0 JSON file or restore an existing project file.'}
+                ? 'می‌توانید کل پیکربندی پروژه را به صورت پاکت استاندارد مهندسی JSON (نسخه v3.1.0 با اسنپ‌شات کامل تجهیزات سفارشی) دانلود کرده و یا فایل پروژه را بارگذاری نمایید.'
+                : 'Export complete project configuration as a validated v3.1.0 JSON transfer envelope with custom equipment snapshots or restore an existing project file.'}
             </p>
 
             <div className="grid grid-cols-2 gap-3 pt-2">
@@ -1610,8 +1623,8 @@ export const App: React.FC = () => {
                 className="p-3 bg-[#141C2E] hover:bg-[#1E293B] border border-sky-500/40 rounded-lg text-center space-y-1.5 transition text-sky-300 font-bold"
               >
                 <Download className="w-5 h-5 mx-auto text-sky-400" />
-                <span className="block text-xs">{lang === 'fa' ? 'دانلود فایل JSON' : 'Export JSON'}</span>
-                <span className="block text-[10px] text-slate-400 font-normal">v3.0.0 Compliant</span>
+                <span className="block text-xs">{lang === 'fa' ? 'دانلود پاکت JSON' : 'Export Envelope'}</span>
+                <span className="block text-[10px] text-slate-400 font-normal">v3.1.0 Envelope (OFF-01)</span>
               </button>
 
               <button

@@ -312,6 +312,7 @@ export class ClimateDataProvider {
 
     let precipMm: number;
     let precipProvenance: ParameterProvenance;
+    const absLat = Math.abs(lat);
     if (hasPrecip) {
       precipMm = Number((rawPrectotcorr * 365.25).toFixed(1));
       precipProvenance = createParameterProvenance('provider_value', 'NASA_POWER', {
@@ -322,18 +323,20 @@ export class ClimateDataProvider {
         derivationMethod: 'Annual sum: daily precipitation (mm/day) × 365.25',
       });
     } else {
-      // Honest fallback - not fabricated as NASA_POWER!
-      precipMm = 0;
-      precipProvenance = createParameterProvenance('unavailable', 'NASA_POWER', {
-        sourceDataset: 'NASA POWER Climatology',
-        sourceParameter: 'PRECTOTCORR',
+      // Missing from NASA payload -> Fallback to regional analytical climatology model (honest local_model)
+      // Never fabricate as NASA_POWER, and never inject a false literal 0 mm which distorts soiling/corrosion downstream
+      const isMENA = absLat < 40 && lng > 25 && lng < 65;
+      const analyticalPrecip = absLat > 45 ? 750 : (isMENA ? 180 : 450);
+      precipMm = analyticalPrecip;
+      precipProvenance = createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        sourceDataset: 'Regional Climatology Screening Model',
+        sourceParameter: 'PRECTOTCORR_FALLBACK',
         unit: 'mm/year',
-        value: null,
-        qualityNote: 'بارش در خروجی NASA POWER موجود نبود — به عنوان ناموجود یا برآورد محلی ثبت شد',
+        value: analyticalPrecip,
+        derivationMethod: 'Regional precipitation climatology (PRECTOTCORR missing from NASA payload; avoided false zero)',
+        qualityNote: 'بارش در خروجی NASA POWER موجود نبود — برآورد اقلیمی منطقه‌ای به عنوان مدل تحلیلی اعمال شد',
       });
     }
-
-    const absLat = Math.abs(lat);
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
     const dniVal = Number((psh * 0.72).toFixed(2));
     const dhiVal = Number((psh * 0.28).toFixed(2));
