@@ -475,8 +475,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               <form onSubmit={handleAddModule} className="space-y-3 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'نام سازنده (برند):' : 'Manufacturer (Brand):'}</label>
+                    <label htmlFor="cat-mod-manufacturer" className="text-slate-300 block mb-1">{isFa ? 'نام سازنده (برند):' : 'Manufacturer (Brand):'}</label>
                     <input
+                      id="cat-mod-manufacturer"
                       type="text"
                       required
                       placeholder="e.g. Trina Solar"
@@ -486,8 +487,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'نام مدل دقیق:' : 'Model Name:'}</label>
+                    <label htmlFor="cat-mod-model" className="text-slate-300 block mb-1">{isFa ? 'نام مدل دقیق:' : 'Model Name:'}</label>
                     <input
+                      id="cat-mod-model"
                       type="text"
                       required
                       placeholder="e.g. Vertex N 605W"
@@ -500,8 +502,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'توان (Wp):' : 'P_nom (Wp):'}</label>
+                    <label htmlFor="cat-mod-pmp" className="text-slate-300 block mb-1">{isFa ? 'توان (Wp):' : 'P_nom (Wp):'}</label>
                     <input
+                      id="cat-mod-pmp"
                       type="number"
                       required
                       value={modPmpWatts}
@@ -510,8 +513,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'Voc (ولت):' : 'Voc (V):'}</label>
+                    <label htmlFor="cat-mod-voc" className="text-slate-300 block mb-1">{isFa ? 'Voc (ولت):' : 'Voc (V):'}</label>
                     <input
+                      id="cat-mod-voc"
                       type="number"
                       step="0.01"
                       required
@@ -521,8 +525,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'Vmp (ولت):' : 'Vmp (V):'}</label>
+                    <label htmlFor="cat-mod-vmp" className="text-slate-300 block mb-1">{isFa ? 'Vmp (ولت):' : 'Vmp (V):'}</label>
                     <input
+                      id="cat-mod-vmp"
                       type="number"
                       step="0.01"
                       required
@@ -535,8 +540,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'Isc (آمپر):' : 'Isc (A):'}</label>
+                    <label htmlFor="cat-mod-isc" className="text-slate-300 block mb-1">{isFa ? 'Isc (آمپر):' : 'Isc (A):'}</label>
                     <input
+                      id="cat-mod-isc"
                       type="number"
                       step="0.01"
                       required
@@ -546,8 +552,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'Imp (آمپر):' : 'Imp (A):'}</label>
+                    <label htmlFor="cat-mod-imp" className="text-slate-300 block mb-1">{isFa ? 'Imp (آمپر):' : 'Imp (A):'}</label>
                     <input
+                      id="cat-mod-imp"
                       type="number"
                       step="0.01"
                       required
@@ -557,8 +564,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'فناوری سلول:' : 'Cell Type:'}</label>
+                    <label htmlFor="cat-mod-cell-type" className="text-slate-300 block mb-1">{isFa ? 'فناوری سلول:' : 'Cell Type:'}</label>
                     <select
+                      id="cat-mod-cell-type"
                       value={modCellType}
                       onChange={(e) => setModCellType(e.target.value as any)}
                       className="studio-input w-full"
@@ -590,8 +598,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               <form onSubmit={handleAddInverter} className="space-y-3 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'سازنده اینورتر:' : 'Manufacturer:'}</label>
+                    <label htmlFor="cat-inv-manufacturer" className="text-slate-300 block mb-1">{isFa ? 'سازنده اینورتر:' : 'Manufacturer:'}</label>
                     <input
+                      id="cat-inv-manufacturer"
                       type="text"
                       required
                       placeholder="e.g. Sungrow"
@@ -601,8 +610,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'مدل اینورتر:' : 'Inverter Model:'}</label>
+                    <label htmlFor="cat-inv-model" className="text-slate-300 block mb-1">{isFa ? 'مدل اینورتر:' : 'Inverter Model:'}</label>
                     <input
+                      id="cat-inv-model"
                       type="text"
                       required
                       placeholder="e.g. SG350HX"
@@ -615,8 +625,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'تکنولوژی اینورتر:' : 'Technology Type:'}</label>
+                    <label htmlFor="cat-inv-tech" className="text-slate-300 block mb-1">{isFa ? 'تکنولوژی اینورتر:' : 'Technology Type:'}</label>
                     <select
+                      id="cat-inv-tech"
                       value={invTech}
                       onChange={(e) => setInvTech(e.target.value as any)}
                       className="studio-input w-full"
@@ -628,8 +639,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'توان نامی AC (kW):' : 'Rated AC Power (kW):'}</label>
+                    <label htmlFor="cat-inv-pnom" className="text-slate-300 block mb-1">{isFa ? 'توان نامی AC (kW):' : 'Rated AC Power (kW):'}</label>
                     <input
+                      id="cat-inv-pnom"
                       type="number"
                       required
                       value={invPnomKw}
@@ -641,8 +653,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'حداکثر Vdc:' : 'Max Vdc:'}</label>
+                    <label htmlFor="cat-inv-vdc-max" className="text-slate-300 block mb-1">{isFa ? 'حداکثر Vdc:' : 'Max Vdc:'}</label>
                     <input
+                      id="cat-inv-vdc-max"
                       type="number"
                       required
                       value={invVdcMax}
@@ -651,8 +664,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'حداقل MPPT (V):' : 'Min MPPT (V):'}</label>
+                    <label htmlFor="cat-inv-vmppt-min" className="text-slate-300 block mb-1">{isFa ? 'حداقل MPPT (V):' : 'Min MPPT (V):'}</label>
                     <input
+                      id="cat-inv-vmppt-min"
                       type="number"
                       required
                       value={invVmpptMin}
@@ -661,8 +675,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'حداکثر MPPT (V):' : 'Max MPPT (V):'}</label>
+                    <label htmlFor="cat-inv-vmppt-max" className="text-slate-300 block mb-1">{isFa ? 'حداکثر MPPT (V):' : 'Max MPPT (V):'}</label>
                     <input
+                      id="cat-inv-vmppt-max"
                       type="number"
                       required
                       value={invVmpptMax}
@@ -674,8 +689,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
                 {invTech === 'mv_turnkey' && (
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'ولتاژ خروجی فشار متوسط (kV):' : 'MV Output Voltage (kV):'}</label>
+                    <label htmlFor="cat-inv-mv-kv" className="text-slate-300 block mb-1">{isFa ? 'ولتاژ خروجی فشار متوسط (kV):' : 'MV Output Voltage (kV):'}</label>
                     <input
+                      id="cat-inv-mv-kv"
                       type="number"
                       value={invMvKv}
                       onChange={(e) => setInvMvKv(Number(e.target.value))}
@@ -704,8 +720,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               <form onSubmit={handleAddBattery} className="space-y-3 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'برند باتری:' : 'Manufacturer (Brand):'}</label>
+                    <label htmlFor="cat-bat-manufacturer" className="text-slate-300 block mb-1">{isFa ? 'برند باتری:' : 'Manufacturer (Brand):'}</label>
                     <input
+                      id="cat-bat-manufacturer"
                       type="text"
                       required
                       placeholder="e.g. BYD / CATL"
@@ -715,8 +732,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'مدل باتری:' : 'Model Name:'}</label>
+                    <label htmlFor="cat-bat-model" className="text-slate-300 block mb-1">{isFa ? 'مدل باتری:' : 'Model Name:'}</label>
                     <input
+                      id="cat-bat-model"
                       type="text"
                       required
                       placeholder="e.g. MC Cube-T 5MWh"
@@ -729,8 +747,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'شیمی باتری:' : 'Battery Chemistry:'}</label>
+                    <label htmlFor="cat-bat-chemistry" className="text-slate-300 block mb-1">{isFa ? 'شیمی باتری:' : 'Battery Chemistry:'}</label>
                     <select
+                      id="cat-bat-chemistry"
                       value={batChemistry}
                       onChange={(e) => setBatChemistry(e.target.value as any)}
                       className="studio-input w-full"
@@ -742,8 +761,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'ظرفیت انرژی (kWh):' : 'Energy Capacity (kWh):'}</label>
+                    <label htmlFor="cat-bat-capacity-kwh" className="text-slate-300 block mb-1">{isFa ? 'ظرفیت انرژی (kWh):' : 'Energy Capacity (kWh):'}</label>
                     <input
+                      id="cat-bat-capacity-kwh"
                       type="number"
                       step="0.1"
                       required
@@ -756,8 +776,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'ولتاژ نامی (V):' : 'Nominal V (V):'}</label>
+                    <label htmlFor="cat-bat-nominal-voltage" className="text-slate-300 block mb-1">{isFa ? 'ولتاژ نامی (V):' : 'Nominal V (V):'}</label>
                     <input
+                      id="cat-bat-nominal-voltage"
                       type="number"
                       step="0.1"
                       required
@@ -767,8 +788,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'ظرفیت (Ah):' : 'Capacity (Ah):'}</label>
+                    <label htmlFor="cat-bat-nominal-ah" className="text-slate-300 block mb-1">{isFa ? 'ظرفیت (Ah):' : 'Capacity (Ah):'}</label>
                     <input
+                      id="cat-bat-nominal-ah"
                       type="number"
                       required
                       value={batNominalAh}
@@ -777,8 +799,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-slate-300 block mb-1">{isFa ? 'عمق دشارژ (%):' : 'DoD (%):'}</label>
+                    <label htmlFor="cat-bat-dod" className="text-slate-300 block mb-1">{isFa ? 'عمق دشارژ (%):' : 'DoD (%):'}</label>
                     <input
+                      id="cat-bat-dod"
                       type="number"
                       required
                       value={batDoDPct}

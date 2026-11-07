@@ -2121,10 +2121,11 @@ export const App: React.FC = () => {
                     {/* Capacity & Bay Settings */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
                       <div>
-                        <label className="text-slate-300 font-bold block mb-1">
+                        <label htmlFor="target-plant-capacity-input" className="text-slate-300 font-bold block mb-1">
                           {lang === 'fa' ? 'ظرفیت هدف نیروگاه (kW AC):' : 'Target Plant Capacity (kW AC):'}
                         </label>
                         <input
+                          id="target-plant-capacity-input"
                           type="number"
                           step="500"
                           value={targetPowerplantCapacityKw}
@@ -2139,10 +2140,11 @@ export const App: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="text-slate-300 font-bold block mb-1">
+                        <label htmlFor="custom-bays-count-input" className="text-slate-300 font-bold block mb-1">
                           {lang === 'fa' ? 'تعداد بی‌های خروجی MV (بهینه‌سازی نرم‌افزار):' : 'MV Output Bays Count (Optimized):'}
                         </label>
                         <input
+                          id="custom-bays-count-input"
                           type="number"
                           min="1"
                           max="20"
@@ -2158,10 +2160,11 @@ export const App: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="text-slate-300 font-bold block mb-1">
+                        <label htmlFor="mv-voltage-select" className="text-slate-300 font-bold block mb-1">
                           {lang === 'fa' ? 'سطح ولتاژ باسبار جمع‌آوری (MV Busbar):' : 'MV Collector Busbar Voltage Level:'}
                         </label>
                         <select
+                          id="mv-voltage-select"
                           value={mvVoltageKv}
                           onChange={(e) => setMvVoltageKv(Number(e.target.value))}
                           className="studio-input w-full font-mono font-bold text-emerald-300"
@@ -2216,12 +2219,13 @@ export const App: React.FC = () => {
                 {/* Specific Parameter Config for On-Grid / Off-Grid */}
                 {systemMode === 'ongrid' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                    <label className="text-xs font-bold text-sky-300 block">
+                    <label htmlFor="outage-hours-input" className="text-xs font-bold text-sky-300 block">
                       {lang === 'fa'
                         ? 'مدت زمان انتظار خاموشی و قطعی شبکه (ساعت در روز / Blackout Hours):'
                         : 'Grid Blackout & Outage Hours Per Day:'}
                     </label>
                     <input
+                      id="outage-hours-input"
                       type="number"
                       value={outageHours}
                       onChange={(e) => setOutageHours(Math.max(1, Math.min(24, Number(e.target.value))))}
@@ -2237,12 +2241,13 @@ export const App: React.FC = () => {
 
                 {systemMode === 'offgrid' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                    <label className="text-xs font-bold text-emerald-300 block">
+                    <label htmlFor="autonomy-days-input" className="text-xs font-bold text-emerald-300 block">
                       {lang === 'fa'
                         ? 'روزهای خودکفایی و پشتیبانی ابری (Autonomy Days):'
                         : 'Autonomy Days (Days without Sunshine):'}
                     </label>
                     <input
+                      id="autonomy-days-input"
                       type="number"
                       step="0.5"
                       value={autonomyDays}

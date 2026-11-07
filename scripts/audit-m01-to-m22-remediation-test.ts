@@ -2407,30 +2407,41 @@ async function runM01ToM22TestSuite(): Promise<void> {
     );
   }
 
-  // P3 Polish: Unknown /api/* Route 404 JSON Handler
+  // P3 Polish: Unknown /api and /api/* Route 404 JSON Handler (MAIN-01)
   {
     const api404Route = (app as any)._router.stack
-      .find((r: any) => r.route && r.route.path === '/api/*')
+      .find((r: any) => r.route && (r.route.path === '/api/*' || (Array.isArray(r.route.path) && r.route.path.includes('/api'))))
       ?.route.stack[0].handle;
 
-    let notFoundCode = 0;
-    let notFoundBody: any = null;
+    let notFoundCode1 = 0;
+    let notFoundBody1: any = null;
     await api404Route(
       { originalUrl: '/api/v1/nonexistent/service' },
       {
-        status(c: number) { notFoundCode = c; return this; },
-        json(d: any) { notFoundBody = d; return this; },
+        status(c: number) { notFoundCode1 = c; return this; },
+        json(d: any) { notFoundBody1 = d; return this; },
+      }
+    );
+
+    let notFoundCode2 = 0;
+    let notFoundBody2: any = null;
+    await api404Route(
+      { originalUrl: '/api' },
+      {
+        status(c: number) { notFoundCode2 = c; return this; },
+        json(d: any) { notFoundBody2 = d; return this; },
       }
     );
 
     assert(
-      notFoundCode === 404 && notFoundBody?.error === 'API endpoint not found',
-      'P3: Unknown /api/* route returns 404 JSON response instead of SPA HTML',
-      `code=${notFoundCode}, error=${notFoundBody?.error}`
+      notFoundCode1 === 404 && notFoundBody1?.error === 'API endpoint not found' &&
+      notFoundCode2 === 404 && notFoundBody2?.error === 'API endpoint not found',
+      'P3/MAIN-01: Both /api and /api/* routes return 404 JSON response instead of SPA HTML',
+      `code1=${notFoundCode1}, code2=${notFoundCode2}`
     );
   }
 
-  // P3 Polish: Global Security Headers Middleware
+  // P3 Polish: Global Security Headers Middleware with CSP (MAIN-02)
   {
     const secHeadersMiddleware = (app as any)._router.stack
       .find((r: any) => r.name === 'securityHeadersMiddleware')
@@ -2449,13 +2460,14 @@ async function runM01ToM22TestSuite(): Promise<void> {
       setHeaders['X-Content-Type-Options'] === 'nosniff' &&
       setHeaders['X-Frame-Options'] === 'SAMEORIGIN' &&
       setHeaders['Referrer-Policy'] === 'strict-origin-when-cross-origin' &&
+      Boolean(setHeaders['Content-Security-Policy'] && setHeaders['Content-Security-Policy'].includes("default-src 'self'")) &&
       nextCalled,
-      'P3: Global security headers middleware applies nosniff and SAMEORIGIN headers',
+      'P3/MAIN-02: Global security headers middleware applies nosniff, SAMEORIGIN, and functional Content-Security-Policy',
       `headers=${JSON.stringify(setHeaders)}`
     );
   }
 
-  // P3 Polish: JSON Body Parser SyntaxError Handler
+  // P3 Polish: JSON Body Parser SyntaxError & 413 Payload Too Large Handler (MAIN-01)
   {
     const jsonErrHandler = (app as any)._router.stack
       .find((r: any) => r.name === 'jsonErrorHandler')
@@ -2468,20 +2480,34 @@ async function runM01ToM22TestSuite(): Promise<void> {
     let jsonErrCode = 0;
     let jsonErrBody: any = null;
     if (jsonErrHandler) {
-      jsonErrHandler(synErr, {}, {
+      jsonErrHandler(synErr, { path: '/api/v1/projects' }, {
         status(c: number) { jsonErrCode = c; return this; },
         json(d: any) { jsonErrBody = d; return this; },
       }, () => {});
     }
 
+    const largeErr = new Error('Payload too large');
+    (largeErr as any).type = 'entity.too.large';
+    (largeErr as any).status = 413;
+
+    let largeErrCode = 0;
+    let largeErrBody: any = null;
+    if (jsonErrHandler) {
+      jsonErrHandler(largeErr, { path: '/api/v1/projects' }, {
+        status(c: number) { largeErrCode = c; return this; },
+        json(d: any) { largeErrBody = d; return this; },
+      }, () => {});
+    }
+
     assert(
-      jsonErrCode === 400 && jsonErrBody?.error?.includes('Invalid JSON payload'),
-      'P3: JSON body parse error handler intercepts SyntaxError and responds with 400 JSON',
-      `code=${jsonErrCode}, error=${jsonErrBody?.error}`
+      jsonErrCode === 400 && jsonErrBody?.error?.includes('Invalid JSON payload') &&
+      largeErrCode === 413 && largeErrBody?.error === 'Payload Too Large',
+      'P3/MAIN-01: JSON body parse error handler intercepts SyntaxError (400) and entity.too.large (413) as JSON',
+      `code400=${jsonErrCode}, code413=${largeErrCode}`
     );
   }
 
-  // P3 Polish: Report Baseline Missing Equipment Reference Check
+  // P3 Polish: Report Baseline Missing Equipment Reference Check (MAIN-06)
   {
     const reportRoute = (app as any)._router.stack
       .find((r: any) => r.route && r.route.path === '/api/v1/reports/generate' && r.route.methods.post)
@@ -2522,9 +2548,45 @@ async function runM01ToM22TestSuite(): Promise<void> {
       'P3: Report flags missing baseline moduleId in snapshot as reconciliation discrepancy',
       `isReconciled=${misRepRes?.isReconciledAgainstSnapshot}, discrepancies=${JSON.stringify(misRepRes?.discrepancies)}`
     );
+
+    // Dangling catalog reference in snapshot:
+    const danglingSnapId = 'proj-dangling-catalog-ref';
+    activeDb.projects.set(danglingSnapId, {
+      id: danglingSnapId,
+      name: 'Dangling Catalog Ref Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 10,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      estimatedAnnualYieldKwh: 15000,
+      lcoeUsdPerKwh: 0.05,
+      moduleId: 'mod-nonexistent-ghost-id',
+      createdAt: new Date().toISOString(),
+    } as any);
+
+    let dangRepRes: any = null;
+    await reportRoute({
+      body: {
+        projectId: danglingSnapId,
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { dangRepRes = d; return this; },
+    });
+
+    assert(
+      dangRepRes?.isReconciledAgainstSnapshot === false &&
+      dangRepRes?.discrepancies?.some((d: string) => d.includes('non-existent module ID')),
+      'P3/MAIN-06: Report rejects snapshot with dangling equipment catalog reference as unreconciled',
+      `isReconciled=${dangRepRes?.isReconciledAgainstSnapshot}, discrepancies=${JSON.stringify(dangRepRes?.discrepancies)}`
+    );
   }
 
-  // P3 Polish: Legacy Catalog Item Protected Against Anonymous Overwrites
+  // P3 Polish: Legacy Catalog Item Protected Against First-Claim Overwrite (MAIN-07)
   {
     const catModPost = (app as any)._router.stack
       .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.post)
@@ -2547,10 +2609,14 @@ async function runM01ToM22TestSuite(): Promise<void> {
     const origEnv = process.env.INTERNAL_GATEWAY_SECRET;
     process.env.INTERNAL_GATEWAY_SECRET = 'active-secret-auth';
 
+    // Authenticated user attempting first-claim overwrite on legacy item:
     let legStatus = 0;
     let legBody: any = null;
     await catModPost({
-      headers: {}, // anonymous request
+      headers: {
+        'x-user-id': 'charlie-claimant',
+        'x-gateway-secret': 'active-secret-auth',
+      },
       body: {
         id: legacyModId,
         pmpWatts: 450,
@@ -2567,8 +2633,8 @@ async function runM01ToM22TestSuite(): Promise<void> {
     process.env.INTERNAL_GATEWAY_SECRET = origEnv;
 
     assert(
-      legStatus === 401 && legBody?.error?.includes('Authentication required'),
-      'P3: Modifying existing legacy catalog item without ownerId requires authentication in secure mode',
+      legStatus === 403 && legBody?.error?.includes('legacy system catalog item and cannot be overwritten'),
+      'P3/MAIN-07: Authenticated user cannot first-claim or overwrite existing legacy catalog item (HTTP 403)',
       `status=${legStatus}, error=${legBody?.error}`
     );
   }

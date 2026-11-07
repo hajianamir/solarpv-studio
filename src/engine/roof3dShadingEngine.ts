@@ -599,39 +599,50 @@ export function testRayFacetIntersection(
   const py = origin.y + t * dir.y;
   const pz = origin.z + t * dir.z;
 
-  // Project onto dominant 2D coordinate plane for robust polygon test
+  // Project onto dominant 2D coordinate plane for robust polygon test without array allocations (MAIN-05)
   const absX = Math.abs(normal.x);
   const absY = Math.abs(normal.y);
   const absZ = Math.abs(normal.z);
 
-  let u = 0;
-  let v = 0;
-  let poly2D: Array<{ u: number; v: number }>;
+  const numVerts = vertices.length;
+  let inside = false;
 
   if (absZ >= absX && absZ >= absY) {
-    u = px;
-    v = py;
-    poly2D = vertices.map(vert => ({ u: vert.x, v: vert.y }));
+    for (let i = 0, j = numVerts - 1; i < numVerts; j = i++) {
+      const vi = vertices[i].y;
+      const vj = vertices[j].y;
+      if ((vi > py) !== (vj > py)) {
+        const ui = vertices[i].x;
+        const uj = vertices[j].x;
+        if (px < ((uj - ui) * (py - vi)) / (vj - vi) + ui) {
+          inside = !inside;
+        }
+      }
+    }
   } else if (absY >= absX) {
-    u = px;
-    v = pz;
-    poly2D = vertices.map(vert => ({ u: vert.x, v: vert.z }));
+    for (let i = 0, j = numVerts - 1; i < numVerts; j = i++) {
+      const vi = vertices[i].z;
+      const vj = vertices[j].z;
+      if ((vi > pz) !== (vj > pz)) {
+        const ui = vertices[i].x;
+        const uj = vertices[j].x;
+        if (px < ((uj - ui) * (pz - vi)) / (vj - vi) + ui) {
+          inside = !inside;
+        }
+      }
+    }
   } else {
-    u = py;
-    v = pz;
-    poly2D = vertices.map(vert => ({ u: vert.y, v: vert.z }));
-  }
-
-  // 2D Point-in-polygon ray casting
-  let inside = false;
-  for (let i = 0, j = poly2D.length - 1; i < poly2D.length; j = i++) {
-    const ui = poly2D[i].u;
-    const vi = poly2D[i].v;
-    const uj = poly2D[j].u;
-    const vj = poly2D[j].v;
-
-    const intersect = vi > v !== vj > v && u < ((uj - ui) * (v - vi)) / (vj - vi) + ui;
-    if (intersect) inside = !inside;
+    for (let i = 0, j = numVerts - 1; i < numVerts; j = i++) {
+      const vi = vertices[i].z;
+      const vj = vertices[j].z;
+      if ((vi > pz) !== (vj > pz)) {
+        const ui = vertices[i].y;
+        const uj = vertices[j].y;
+        if (py < ((uj - ui) * (pz - vi)) / (vj - vi) + ui) {
+          inside = !inside;
+        }
+      }
+    }
   }
 
   return inside;
@@ -671,6 +682,17 @@ export function computeTableShadingGeometricMesh(
   if (!sun.isDaylight || sun.altitudeDeg < 3.0) {
     return {
       beamCoveragePct: 0,
+      isDiodeTriggered: false,
+      electricalMismatchFactor: 1.0,
+      directBeamLossFraction: 0,
+      diodeMismatchLossFraction: 0,
+    };
+  }
+
+  // Fast-path: When there are zero occluding facets in the scene, table is 100% unshaded (MAIN-05)
+  if (allObstacleFacets.length === 0) {
+    return {
+      beamCoveragePct: 100,
       isDiodeTriggered: false,
       electricalMismatchFactor: 1.0,
       directBeamLossFraction: 0,

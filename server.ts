@@ -27,12 +27,27 @@ const isProduction = process.env.NODE_ENV === 'production';
 // Disable Express fingerprinting header (P3-02)
 app.disable('x-powered-by');
 
-// Global standard security headers (P3-02)
+// Global standard security headers (P3-02 / MAIN-02)
 function securityHeadersMiddleware(_req: Request, res: Response, next: (e?: any) => void): void {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob: https://*.tile.openstreetmap.org",
+      "connect-src 'self' https://developer.nrel.gov https://re.jrc.ec.europa.eu https://power.larc.nasa.gov ws: wss:",
+      "worker-src 'self' blob:",
+      "frame-ancestors 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+    ].join('; ')
+  );
   next();
 }
 app.use(securityHeadersMiddleware);
@@ -56,16 +71,32 @@ const BUILT_IN_CATALOG_IDS = new Set<string>([
   'bat-byd-lvs',
 ]);
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
-// Robust JSON body parse error handler (P3-01)
-function jsonErrorHandler(err: any, _req: Request, res: Response, next: (e?: any) => void): void {
-  if (err instanceof SyntaxError && 'status' in err && (err as any).status === 400 && 'body' in err) {
-    res.status(400).json({
-      error: 'Invalid JSON payload in request body.',
-      message: (err as any).message || 'Malformed JSON syntax',
-    });
-    return;
+// Robust JSON body parse error handler (P3-01 / MAIN-01)
+function jsonErrorHandler(err: any, req: Request, res: Response, next: (e?: any) => void): void {
+  if (err) {
+    if (err.type === 'entity.too.large' || err.status === 413) {
+      res.status(413).json({
+        error: 'Payload Too Large',
+        message: 'The request body exceeds the maximum permitted payload size.',
+      });
+      return;
+    }
+    if (err instanceof SyntaxError && (err as any).status === 400 && 'body' in err) {
+      res.status(400).json({
+        error: 'Invalid JSON payload in request body.',
+        message: (err as any).message || 'Malformed JSON syntax',
+      });
+      return;
+    }
+    if (typeof err.status === 'number' && (req.path?.startsWith('/api') || req.originalUrl?.startsWith('/api'))) {
+      res.status(err.status).json({
+        error: err.name || 'Bad Request',
+        message: err.message || 'Error processing request body',
+      });
+      return;
+    }
   }
   next(err);
 }
@@ -852,9 +883,10 @@ app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
           error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
         });
       }
-    } else if (isSecure && !requesterId) {
-      return res.status(401).json({
-        error: `Authentication required: cannot modify existing catalog item '${item.id}' without authentication.`,
+    } else if (isSecure) {
+      // Legacy catalog item without ownerId is an immutable system asset (MAIN-07)
+      return res.status(403).json({
+        error: `Access denied: '${item.id}' is a legacy system catalog item and cannot be overwritten. Create a new custom equipment item with a unique ID.`,
       });
     }
   }
@@ -947,9 +979,10 @@ app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
           error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
         });
       }
-    } else if (isSecure && !requesterId) {
-      return res.status(401).json({
-        error: `Authentication required: cannot modify existing catalog item '${item.id}' without authentication.`,
+    } else if (isSecure) {
+      // Legacy catalog item without ownerId is an immutable system asset (MAIN-07)
+      return res.status(403).json({
+        error: `Access denied: '${item.id}' is a legacy system catalog item and cannot be overwritten. Create a new custom equipment item with a unique ID.`,
       });
     }
   }
@@ -1036,9 +1069,10 @@ app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
           error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
         });
       }
-    } else if (isSecure && !requesterId) {
-      return res.status(401).json({
-        error: `Authentication required: cannot modify existing catalog item '${item.id}' without authentication.`,
+    } else if (isSecure) {
+      // Legacy catalog item without ownerId is an immutable system asset (MAIN-07)
+      return res.status(403).json({
+        error: `Access denied: '${item.id}' is a legacy system catalog item and cannot be overwritten. Create a new custom equipment item with a unique ID.`,
       });
     }
   }
@@ -1179,7 +1213,18 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
       }
     }
 
-    // Baseline completeness and validity checks on snapshot itself (R847-02)
+    // Dangling catalog reference checks on snapshot (MAIN-06)
+    if (projectSnapshot.moduleId && !db.pvModules.has(projectSnapshot.moduleId)) {
+      discrepancies.push(`Snapshot references non-existent module ID '${projectSnapshot.moduleId}' in catalog; cannot reconcile equipment.`);
+    }
+    if (projectSnapshot.inverterId && !db.inverters.has(projectSnapshot.inverterId)) {
+      discrepancies.push(`Snapshot references non-existent inverter ID '${projectSnapshot.inverterId}' in catalog; cannot reconcile equipment.`);
+    }
+    if (projectSnapshot.batteryId && !db.batteries.has(projectSnapshot.batteryId)) {
+      discrepancies.push(`Snapshot references non-existent battery ID '${projectSnapshot.batteryId}' in catalog; cannot reconcile equipment.`);
+    }
+
+    // Baseline completeness and validity checks on snapshot itself (R847-02, MAIN-06)
     const baselineCap = projectSnapshot.systemCapacityKwp;
     const baselinePanels = projectSnapshot.panelCount;
     const baselineYield = projectSnapshot.estimatedAnnualYieldKwh;
@@ -1193,13 +1238,17 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
     if (baselineYield === undefined || typeof baselineYield !== 'number' || !Number.isFinite(baselineYield) || baselineYield < 0) {
       discrepancies.push('Snapshot missing baseline estimatedAnnualYieldKwh; cannot reconcile report.');
     }
-    if (projectSnapshot.inverterCount !== undefined && (typeof projectSnapshot.inverterCount !== 'number' || !Number.isInteger(projectSnapshot.inverterCount) || projectSnapshot.inverterCount < 0)) {
+    if (projectSnapshot.inverterCount === undefined) {
+      discrepancies.push('Snapshot missing baseline inverterCount; cannot reconcile report.');
+    } else if (typeof projectSnapshot.inverterCount !== 'number' || !Number.isInteger(projectSnapshot.inverterCount) || projectSnapshot.inverterCount < 0) {
       discrepancies.push('Snapshot baseline contains invalid inverterCount; cannot reconcile report.');
     }
     if (projectSnapshot.batteryCount !== undefined && (typeof projectSnapshot.batteryCount !== 'number' || !Number.isInteger(projectSnapshot.batteryCount) || projectSnapshot.batteryCount < 0)) {
       discrepancies.push('Snapshot baseline contains invalid batteryCount; cannot reconcile report.');
     }
-    if (projectSnapshot.lcoeUsdPerKwh !== undefined && projectSnapshot.lcoeUsdPerKwh !== null && (typeof projectSnapshot.lcoeUsdPerKwh !== 'number' || !Number.isFinite(projectSnapshot.lcoeUsdPerKwh) || projectSnapshot.lcoeUsdPerKwh < 0)) {
+    if (projectSnapshot.lcoeUsdPerKwh === undefined || projectSnapshot.lcoeUsdPerKwh === null) {
+      discrepancies.push('Snapshot missing baseline lcoeUsdPerKwh; cannot reconcile report.');
+    } else if (typeof projectSnapshot.lcoeUsdPerKwh !== 'number' || !Number.isFinite(projectSnapshot.lcoeUsdPerKwh) || projectSnapshot.lcoeUsdPerKwh < 0) {
       discrepancies.push('Snapshot baseline contains invalid lcoeUsdPerKwh; cannot reconcile report.');
     }
     if (
@@ -1569,12 +1618,25 @@ app.get('/api/v1/sync/pull', (req: Request, res: Response) => {
   });
 });
 
-// 404 handler for unmatched API routes (P3-01)
-app.all('/api/*', (req: Request, res: Response) => {
+// 404 handler for unmatched API routes (P3-01 / MAIN-01)
+app.all(['/api', '/api/*'], (req: Request, res: Response) => {
   res.status(404).json({
     error: 'API endpoint not found',
     path: req.originalUrl || req.url,
   });
+});
+
+// Global API error handler ensuring JSON response for all /api errors (MAIN-01)
+app.use((err: any, req: Request, res: Response, next: (e?: any) => void) => {
+  if (req.path?.startsWith('/api') || req.originalUrl?.startsWith('/api')) {
+    const status = typeof err.status === 'number' && err.status >= 400 && err.status < 600 ? err.status : 500;
+    res.status(status).json({
+      error: err.name || 'Internal Server Error',
+      message: err.message || 'An unexpected error occurred processing the API request.',
+    });
+    return;
+  }
+  next(err);
 });
 
 // ----------------------------------------------------------------
