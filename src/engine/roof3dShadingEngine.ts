@@ -1714,7 +1714,8 @@ export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
 export function generateTableMeshSamplePoints(
   table: PvTable3D,
   lateralCount: number = 4,
-  slopedCount: number = 3
+  slopedCount: number = 3,
+  exactTargetCount?: number
 ): Vec3[] {
   const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
   const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
@@ -1730,9 +1731,21 @@ export function generateTableMeshSamplePoints(
   const normY = -Math.cos(tableAzRad) * Math.sin(tiltRad);
   const normZ = Math.cos(tiltRad);
 
+  const normalOffset = 0.05; // 5 cm above panel surface along normal vector to guard against numerical coplanar self-intersection
+
+  // Exact 1-point request: table centroid (R847-08)
+  if (exactTargetCount === 1) {
+    return [
+      {
+        x: table.positionEnu.x + normalOffset * normX,
+        y: table.positionEnu.y + normalOffset * normY,
+        z: table.positionEnu.z + normalOffset * normZ,
+      },
+    ];
+  }
+
   const subRects = getActiveTableSubRects(table);
   const points: Vec3[] = [];
-  const normalOffset = 0.05; // 5 cm above panel surface along normal vector to guard against numerical coplanar self-intersection
 
   if (subRects.length === 0) return points;
 
@@ -1798,6 +1811,24 @@ export function generateTableMeshSamplePoints(
           z: cz + sOffset * slopeUz + normalOffset * normZ,
         });
       }
+    }
+  }
+
+  // Exact target count post-processing (R847-08)
+  if (exactTargetCount !== undefined && exactTargetCount > 0 && points.length !== exactTargetCount) {
+    if (points.length > exactTargetCount) {
+      const step = points.length / exactTargetCount;
+      const sampled: Vec3[] = [];
+      for (let i = 0; i < exactTargetCount; i++) {
+        sampled.push(points[Math.min(points.length - 1, Math.floor(i * step))]);
+      }
+      return sampled;
+    } else if (points.length < exactTargetCount && points.length > 0) {
+      const res = [...points];
+      while (res.length < exactTargetCount) {
+        res.push(points[res.length % points.length]);
+      }
+      return res;
     }
   }
 
@@ -1983,13 +2014,36 @@ export function calculateRayTracedShadingFactor(
   let totalArrayWeight = 0;
 
   for (const table of scene.pvTables) {
-    const lateral = options?.samplePointsPerTable
-      ? Math.max(2, Math.round(Math.sqrt(options.samplePointsPerTable * (4 / 3))))
-      : 4;
-    const sloped = options?.samplePointsPerTable
-      ? Math.max(1, Math.round(options.samplePointsPerTable / lateral))
-      : 3;
-    const tablePoints = generateTableMeshSamplePoints(table, lateral, sloped);
+    let tablePoints: Vec3[];
+    if (options?.samplePointsPerTable) {
+      const target = Math.max(1, Math.round(options.samplePointsPerTable));
+      if (target === 1) {
+        tablePoints = generateTableMeshSamplePoints(table, 1, 1, 1);
+      } else {
+        // Optimal grid search for best aspect ratio (4/3) matching target (R847-08)
+        let bestL = 1;
+        let bestS = target;
+        let bestErr = Infinity;
+        let bestAspectDiff = Infinity;
+        const targetAspect = 4 / 3;
+
+        for (let l = 1; l <= target; l++) {
+          const s = Math.max(1, Math.round(target / l));
+          const prod = l * s;
+          const err = Math.abs(prod - target);
+          const aspectDiff = Math.abs(l / s - targetAspect);
+          if (err < bestErr || (err === bestErr && aspectDiff < bestAspectDiff)) {
+            bestErr = err;
+            bestAspectDiff = aspectDiff;
+            bestL = l;
+            bestS = s;
+          }
+        }
+        tablePoints = generateTableMeshSamplePoints(table, bestL, bestS, target);
+      }
+    } else {
+      tablePoints = generateTableMeshSamplePoints(table, 4, 3);
+    }
     allTargetPoints.push(...tablePoints);
 
     if (tablePoints.length > 0) {

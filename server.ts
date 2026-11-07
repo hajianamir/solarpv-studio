@@ -330,8 +330,8 @@ app.post('/api/v1/finance/lcoe', (req: Request, res: Response) => {
     if (!Number.isFinite(d) || d < 0) {
       return res.status(400).json({ error: `Discount rate must be a non-negative finite number, got ${discountRate}` });
     }
-    if (!Number.isFinite(lt) || lt < 1) {
-      return res.status(400).json({ error: `Lifetime years must be at least 1 year, got ${lifetimeYears}` });
+    if (!Number.isFinite(lt) || lt < 1 || lt > 100) {
+      return res.status(400).json({ error: `Lifetime years must be between 1 and 100 years, got ${lifetimeYears}` });
     }
 
     const val = calculateLcoe(c, o, energy, d, lt);
@@ -805,8 +805,26 @@ app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
     });
   }
 
-  const previousItem = db.pvModules.get(item.id);
-  db.pvModules.set(item.id, item);
+  const previousItem = db.pvModules.get(item.id) as any;
+  if (previousItem?.ownerId) {
+    if (!requesterId) {
+      return res.status(401).json({
+        error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
+      });
+    }
+    if (previousItem.ownerId !== requesterId) {
+      return res.status(403).json({
+        error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+      });
+    }
+  }
+
+  const itemToStore = {
+    ...item,
+    ownerId: previousItem?.ownerId || requesterId || undefined,
+  };
+
+  db.pvModules.set(item.id, itemToStore);
   const persisted = saveDatabase();
   if (!persisted) {
     if (previousItem !== undefined) {
@@ -816,7 +834,7 @@ app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
     }
     return res.status(500).json({ error: 'Failed to persist PV module to storage.' });
   }
-  res.status(201).json(item);
+  res.status(201).json(itemToStore);
 });
 
 app.get('/api/v1/catalog/inverters', (_req: Request, res: Response) => {
@@ -868,8 +886,26 @@ app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
     });
   }
 
-  const previousItem = db.inverters.get(item.id);
-  db.inverters.set(item.id, item);
+  const previousItem = db.inverters.get(item.id) as any;
+  if (previousItem?.ownerId) {
+    if (!requesterId) {
+      return res.status(401).json({
+        error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
+      });
+    }
+    if (previousItem.ownerId !== requesterId) {
+      return res.status(403).json({
+        error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+      });
+    }
+  }
+
+  const itemToStore = {
+    ...item,
+    ownerId: previousItem?.ownerId || requesterId || undefined,
+  };
+
+  db.inverters.set(item.id, itemToStore);
   const persisted = saveDatabase();
   if (!persisted) {
     if (previousItem !== undefined) {
@@ -879,7 +915,7 @@ app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
     }
     return res.status(500).json({ error: 'Failed to persist inverter to storage.' });
   }
-  res.status(201).json(item);
+  res.status(201).json(itemToStore);
 });
 
 app.get('/api/v1/catalog/batteries', (_req: Request, res: Response) => {
@@ -925,8 +961,26 @@ app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
     });
   }
 
-  const previousItem = db.batteries.get(item.id);
-  db.batteries.set(item.id, item);
+  const previousItem = db.batteries.get(item.id) as any;
+  if (previousItem?.ownerId) {
+    if (!requesterId) {
+      return res.status(401).json({
+        error: `Authentication required: equipment '${item.id}' is owned by '${previousItem.ownerId}'.`,
+      });
+    }
+    if (previousItem.ownerId !== requesterId) {
+      return res.status(403).json({
+        error: `Access denied: custom equipment '${item.id}' is owned by '${previousItem.ownerId}', requester is '${requesterId}'. Cannot modify.`,
+      });
+    }
+  }
+
+  const itemToStore = {
+    ...item,
+    ownerId: previousItem?.ownerId || requesterId || undefined,
+  };
+
+  db.batteries.set(item.id, itemToStore);
   const persisted = saveDatabase();
   if (!persisted) {
     if (previousItem !== undefined) {
@@ -936,7 +990,7 @@ app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
     }
     return res.status(500).json({ error: 'Failed to persist battery to storage.' });
   }
-  res.status(201).json(item);
+  res.status(201).json(itemToStore);
 });
 
 // 8. Reports Generation with Snapshot Reconciliation (M09, N01, N06)
@@ -1025,21 +1079,49 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
       if (bat) resolvedBatteryType = `${bat.manufacturer} ${bat.modelName} (${bat.nominalVoltageVolts}V ${bat.capacityKwh}kWh)`;
     }
 
+    // Baseline completeness and validity checks on snapshot itself (R847-02)
+    const baselineCap = projectSnapshot.systemCapacityKwp;
+    const baselinePanels = projectSnapshot.panelCount;
+    const baselineYield = projectSnapshot.estimatedAnnualYieldKwh;
+
+    if (baselineCap === undefined || typeof baselineCap !== 'number' || !Number.isFinite(baselineCap) || baselineCap <= 0) {
+      discrepancies.push('Snapshot missing valid baseline systemCapacityKwp (> 0 kWp); cannot reconcile report.');
+    }
+    if (baselinePanels === undefined || typeof baselinePanels !== 'number' || !Number.isInteger(baselinePanels) || baselinePanels <= 0) {
+      discrepancies.push('Snapshot missing valid baseline panelCount (> 0); cannot reconcile report.');
+    }
+    if (baselineYield === undefined || typeof baselineYield !== 'number' || !Number.isFinite(baselineYield) || baselineYield < 0) {
+      discrepancies.push('Snapshot missing baseline estimatedAnnualYieldKwh; cannot reconcile report.');
+    }
+    if (
+      typeof baselineCap === 'number' &&
+      typeof baselinePanels === 'number' &&
+      baselineCap > 0 &&
+      baselinePanels > 0
+    ) {
+      const impliedBaselineWp = (baselineCap * 1000.0) / baselinePanels;
+      if (impliedBaselineWp < 50 || impliedBaselineWp > 1000) {
+        discrepancies.push(
+          `Snapshot baseline contains physically inconsistent capacity and panel count (${baselinePanels} panels for ${baselineCap} kWp implies ${impliedBaselineWp.toFixed(0)}W/panel).`
+        );
+      }
+    }
+
     // Explicit discrepancy checks across physical metrics (M09, N06)
     if (systemCapacityKwp !== undefined) {
-      if (typeof projectSnapshot.systemCapacityKwp !== 'number') {
-        discrepancies.push('Snapshot missing baseline systemCapacityKwp; cannot reconcile capacity.');
-      } else if (
-        Math.abs(systemCapacityKwp - projectSnapshot.systemCapacityKwp) / Math.max(1, projectSnapshot.systemCapacityKwp) > 0.01
-      ) {
-        discrepancies.push(`Capacity mismatch: report=${systemCapacityKwp} kWp vs snapshot=${projectSnapshot.systemCapacityKwp} kWp`);
+      if (typeof projectSnapshot.systemCapacityKwp === 'number' && projectSnapshot.systemCapacityKwp > 0) {
+        if (
+          Math.abs(systemCapacityKwp - projectSnapshot.systemCapacityKwp) / Math.max(1, projectSnapshot.systemCapacityKwp) > 0.01
+        ) {
+          discrepancies.push(`Capacity mismatch: report=${systemCapacityKwp} kWp vs snapshot=${projectSnapshot.systemCapacityKwp} kWp`);
+        }
       }
     }
     if (panelCount !== undefined) {
-      if (typeof projectSnapshot.panelCount !== 'number') {
-        discrepancies.push('Snapshot missing baseline panelCount; cannot reconcile panel count.');
-      } else if (panelCount !== projectSnapshot.panelCount) {
-        discrepancies.push(`Panel count mismatch: report=${panelCount} vs snapshot=${projectSnapshot.panelCount}`);
+      if (typeof projectSnapshot.panelCount === 'number' && projectSnapshot.panelCount > 0) {
+        if (panelCount !== projectSnapshot.panelCount) {
+          discrepancies.push(`Panel count mismatch: report=${panelCount} vs snapshot=${projectSnapshot.panelCount}`);
+        }
       }
     }
     if (inverterCount !== undefined) {
@@ -1057,9 +1139,7 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
       }
     }
     if (annualYieldKwh !== undefined) {
-      if (typeof projectSnapshot.estimatedAnnualYieldKwh !== 'number') {
-        discrepancies.push('Snapshot missing baseline estimatedAnnualYieldKwh; cannot reconcile annual yield.');
-      } else {
+      if (typeof projectSnapshot.estimatedAnnualYieldKwh === 'number') {
         const snapYield = projectSnapshot.estimatedAnnualYieldKwh;
         if (snapYield === 0) {
           if (annualYieldKwh !== 0) {
@@ -1146,7 +1226,7 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
   const previousOutbox = [...db.outbox];
 
   for (const msg of messages) {
-    if (!msg || typeof msg !== 'object' || !msg.id) {
+    if (!msg || typeof msg !== 'object' || !msg.id || typeof msg.id !== 'string' || msg.id.trim().length === 0) {
       rejected.push({ id: msg?.id, reason: 'Missing message ID or malformed message structure' });
       continue;
     }
@@ -1188,32 +1268,44 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
       continue;
     }
 
-    // Check project reference ownership for all entity types if referenced
-    const refProjectId = payload.projectId || (normType === 'project' ? payload.id : undefined);
-    if (refProjectId && typeof refProjectId === 'string') {
-      const existingProject = db.projects.get(refProjectId);
+    // Validate payload.id when present: must be a non-empty string (R847-06)
+    if (payload.id !== undefined && (typeof payload.id !== 'string' || payload.id.trim().length === 0)) {
+      rejected.push({ id: msg.id, reason: 'Malformed payload: id must be a non-empty string' });
+      continue;
+    }
+
+    if (normType === 'project') {
+      const targetId = payload.id;
+      if (!targetId || typeof targetId !== 'string' || targetId.trim().length === 0) {
+        rejected.push({ id: msg.id, reason: 'Malformed project payload: missing valid string id' });
+        continue;
+      }
+      // Guard against ownership bypass by sending conflicting id and projectId (R847-01)
+      if (payload.projectId !== undefined && payload.projectId !== targetId) {
+        rejected.push({
+          id: msg.id,
+          reason: `Conflicting project identifiers: id ('${targetId}') does not match projectId ('${payload.projectId}')`,
+        });
+        continue;
+      }
+
+      // Check ownership on targetId (R847-01)
+      const existingProject = db.projects.get(targetId);
       if (existingProject?.ownerId) {
         if (!headerUserId) {
           rejected.push({
             id: msg.id,
-            reason: `Authentication required: project '${refProjectId}' is owned by '${existingProject.ownerId}'.`,
+            reason: `Authentication required: project '${targetId}' is owned by '${existingProject.ownerId}'.`,
           });
           continue;
         }
         if (existingProject.ownerId !== headerUserId) {
           rejected.push({
             id: msg.id,
-            reason: `Access denied: project '${refProjectId}' is owned by '${existingProject.ownerId}', requester is '${headerUserId}'. Cannot modify.`,
+            reason: `Access denied: project '${targetId}' is owned by '${existingProject.ownerId}', requester is '${headerUserId}'. Cannot modify.`,
           });
           continue;
         }
-      }
-    }
-
-    if (normType === 'project') {
-      if (!payload.id || typeof payload.id !== 'string') {
-        rejected.push({ id: msg.id, reason: 'Malformed project payload: missing id' });
-        continue;
       }
 
       // Schema validation (M06, N05)
@@ -1226,33 +1318,87 @@ app.post('/api/v1/sync/push', (req: Request, res: Response) => {
         continue;
       }
 
-      const existing = db.projects.get(payload.id);
       // Preserve existing ownerId; if unowned, bind strictly to authenticated requesterId (never trust payload ownerId)
       const projectToStore: Project = {
         ...payload,
-        ownerId: existing?.ownerId || headerUserId || undefined,
+        ownerId: existingProject?.ownerId || headerUserId || undefined,
       };
 
-      db.projects.set(payload.id, projectToStore);
-    } else if (normType === 'report') {
-      if (!payload.id && !payload.reportId && !payload.title && !payload.projectName) {
-        rejected.push({ id: msg.id, reason: 'Malformed report payload: missing report identifier or title' });
-        continue;
+      db.projects.set(targetId, projectToStore);
+    } else {
+      // Non-project entities: check referenced project ownership if specified
+      const refProjId = payload.projectId;
+      if (refProjId !== undefined) {
+        if (typeof refProjId !== 'string' || refProjId.trim().length === 0) {
+          rejected.push({ id: msg.id, reason: `Malformed ${normType} payload: projectId must be a non-empty string` });
+          continue;
+        }
+        const existingProject = db.projects.get(refProjId);
+        if (existingProject?.ownerId) {
+          if (!headerUserId) {
+            rejected.push({
+              id: msg.id,
+              reason: `Authentication required: referenced project '${refProjId}' is owned by '${existingProject.ownerId}'.`,
+            });
+            continue;
+          }
+          if (existingProject.ownerId !== headerUserId) {
+            rejected.push({
+              id: msg.id,
+              reason: `Access denied: referenced project '${refProjId}' is owned by '${existingProject.ownerId}', requester is '${headerUserId}'. Cannot attach entity.`,
+            });
+            continue;
+          }
+        }
       }
-    } else if (normType === 'shading_scene') {
-      if (!payload.id && !payload.sceneId && !payload.roofPlanes && !payload.pvTables) {
-        rejected.push({ id: msg.id, reason: 'Malformed shading_scene payload: missing scene identifier or geometry' });
-        continue;
-      }
-    } else if (normType === 'financial_model') {
-      if (!payload.id && !payload.modelId && !payload.framework && !payload.capacityKwp) {
-        rejected.push({ id: msg.id, reason: 'Malformed financial_model payload: missing model identifier or parameters' });
-        continue;
+
+      if (normType === 'report') {
+        if (payload.reportId !== undefined && (typeof payload.reportId !== 'string' || payload.reportId.trim().length === 0)) {
+          rejected.push({ id: msg.id, reason: 'Malformed report payload: reportId must be a non-empty string' });
+          continue;
+        }
+        const hasId = (typeof payload.id === 'string' && payload.id.trim().length > 0) ||
+                      (typeof payload.reportId === 'string' && payload.reportId.trim().length > 0);
+        const hasTitle = (typeof payload.title === 'string' && payload.title.trim().length > 0) ||
+                         (typeof payload.projectName === 'string' && payload.projectName.trim().length > 0);
+        if (!hasId && !hasTitle) {
+          rejected.push({ id: msg.id, reason: 'Malformed report payload: missing valid string identifier or title' });
+          continue;
+        }
+      } else if (normType === 'shading_scene') {
+        if (payload.sceneId !== undefined && (typeof payload.sceneId !== 'string' || payload.sceneId.trim().length === 0)) {
+          rejected.push({ id: msg.id, reason: 'Malformed shading_scene payload: sceneId must be a non-empty string' });
+          continue;
+        }
+        const hasId = (typeof payload.id === 'string' && payload.id.trim().length > 0) ||
+                      (typeof payload.sceneId === 'string' && payload.sceneId.trim().length > 0);
+        const hasGeometry = Array.isArray(payload.roofPlanes) || Array.isArray(payload.pvTables);
+        if (!hasId && !hasGeometry) {
+          rejected.push({ id: msg.id, reason: 'Malformed shading_scene payload: missing valid string identifier or geometry arrays' });
+          continue;
+        }
+      } else if (normType === 'financial_model') {
+        if (payload.modelId !== undefined && (typeof payload.modelId !== 'string' || payload.modelId.trim().length === 0)) {
+          rejected.push({ id: msg.id, reason: 'Malformed financial_model payload: modelId must be a non-empty string' });
+          continue;
+        }
+        const hasId = (typeof payload.id === 'string' && payload.id.trim().length > 0) ||
+                      (typeof payload.modelId === 'string' && payload.modelId.trim().length > 0);
+        const hasParams = (typeof payload.framework === 'string' && payload.framework.trim().length > 0) ||
+                          (typeof payload.capacityKwp === 'number' && Number.isFinite(payload.capacityKwp));
+        if (!hasId && !hasParams) {
+          rejected.push({ id: msg.id, reason: 'Malformed financial_model payload: missing valid string identifier or parameters' });
+          continue;
+        }
       }
     }
 
+    // Bind outbox record strictly to authenticated identity, preventing spoofed userId insertion (R847-06)
+    const sanitizedUserId = headerUserId || (isSecure ? undefined : (typeof msg.userId === 'string' && msg.userId.trim().length > 0 ? msg.userId.trim() : undefined));
+
     db.outbox.push({
       ...msg,
+      userId: sanitizedUserId,
       payloadJson: typeof msg.payloadJson === 'string' ? msg.payloadJson : JSON.stringify(msg.payloadJson),
       processed: true,
       processedAt: new Date().toISOString(),

@@ -321,11 +321,12 @@ export function calculateLcoe(
   lifetimeYears: number,
   degradationPct: number = 0   // NEW (BUG-7) — annual module degradation, %/year
 ): number {
-  if (energyAnnual <= 0 || lifetimeYears <= 0) {
+  if (energyAnnual <= 0 || !Number.isFinite(lifetimeYears) || lifetimeYears <= 0) {
     return 0.0;
   }
 
-  const effectiveYears = Math.max(1, Math.round(lifetimeYears));
+  // Bound lifetime to physically sensible range [1, 100] years to prevent CPU DoS / infinite loop freeze (R847-05)
+  const effectiveYears = Math.min(100, Math.max(1, Math.round(lifetimeYears)));
   let totalCostPv = capex;
   for (let t = 1; t <= effectiveYears; t++) {
     totalCostPv += opexAnnual / Math.pow(1.0 + discountRate, t);

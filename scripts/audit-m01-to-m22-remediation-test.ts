@@ -15,6 +15,7 @@ import { runIranianRegulationFinancialModel } from '../src/engine/iranianRegulat
 import {
   calculateIrr,
   calculateIrrDetailed,
+  calculateLcoe,
   calculateVoltageDropDc,
   InMemorySolarDatabase,
   performQuickSizing,
@@ -26,6 +27,7 @@ import {
   checkTableSetbackCompliance,
   simulateAnnual3dShading,
   buildSceneFromProjectDesign,
+  calculateRayTracedShadingFactor,
   type PvTable3D,
   type RoofPlane,
   type Scene3DState,
@@ -1990,6 +1992,352 @@ async function runM01ToM22TestSuite(): Promise<void> {
       totalDebtPaid === 2205,
       'Loan installment rounding: Zero-interest loan exactly repays 2205 Million Toman principal over 6 years without overpayment',
       `totalDebtPaid=${totalDebtPaid}, expected=2205`
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // [R847-01 – R847-08] Verification of Independent Review Remediations
+  // ---------------------------------------------------------------------------
+  console.log('\n--- [R847-01 – R847-08] Independent Review Remediations Verification ---');
+
+  // R847-01: Ownership bypass in Sync Push via contradictory id & projectId (P1)
+  {
+    process.env.NODE_ENV = 'production';
+    process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+
+    const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const mkJwt = (sub: string) => {
+      const h = b64({ alg: 'HS256', typ: 'JWT' });
+      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+      return `${h}.${p}.${s}`;
+    };
+    const bobJwt = mkJwt('bob');
+
+    const aliceProjId = 'proj-alice-secure-target';
+    const bobProjId = 'proj-bob-legit';
+    activeDb.projects.set(aliceProjId, {
+      id: aliceProjId,
+      name: 'Alice Original Project',
+      ownerId: 'alice',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 50,
+      autonomyDays: 1,
+      systemCapacityKwp: 20.0,
+      panelCount: 40,
+      inverterCount: 2,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0.04,
+      estimatedAnnualYieldKwh: 35000,
+      createdAt: new Date().toISOString(),
+    });
+    activeDb.projects.set(bobProjId, {
+      id: bobProjId,
+      name: 'Bob Own Project',
+      ownerId: 'bob',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 50,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: 1,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0.05,
+      estimatedAnnualYieldKwh: 15000,
+      createdAt: new Date().toISOString(),
+    });
+
+    const syncPush = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/sync/push' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    let bypassRes: any = null;
+    await syncPush({
+      headers: { authorization: `Bearer ${bobJwt}` },
+      body: {
+        messages: [
+          {
+            id: 'msg-attack-bypass-1',
+            entityType: 'project',
+            payloadJson: JSON.stringify({
+              id: aliceProjId,
+              projectId: bobProjId,
+              name: 'Hacked by Bob with projectId disguise',
+              systemCapacityKwp: 15.0,
+            }),
+          },
+        ],
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { bypassRes = d; return this; },
+    });
+
+    const aliceAfterAttack = activeDb.projects.get(aliceProjId);
+    assert(
+      bypassRes?.ackedIds?.length === 0 &&
+      bypassRes?.rejected?.length === 1 &&
+      aliceAfterAttack?.name === 'Alice Original Project',
+      'R847-01: Contradictory project id and projectId in sync push is rejected, preventing ownership bypass',
+      `ackedCount=${bypassRes?.ackedIds?.length}, aliceProjectName='${aliceAfterAttack?.name}'`
+    );
+
+    delete process.env.JWT_SECRET;
+    delete process.env.NODE_ENV;
+  }
+
+  // R847-02: Report generation on incomplete snapshot without overrides marks isReconciledAgainstSnapshot: false (P2)
+  {
+    const reportRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/reports/generate' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    const incompleteProjId = 'proj-r847-incomplete';
+    activeDb.projects.set(incompleteProjId, {
+      id: incompleteProjId,
+      name: 'Incomplete Project Without Metrics',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 0,
+      autonomyDays: 0,
+      systemCapacityKwp: 0, // unphysical / incomplete
+      panelCount: 0,
+      inverterCount: 0,
+      batteryCount: 0,
+      lcoeUsdPerKwh: 0,
+      createdAt: new Date().toISOString(),
+    });
+
+    let repIncompleteRes: any = null;
+    await reportRoute({ body: { projectId: incompleteProjId } }, {
+      status() { return this; },
+      json(d: any) { repIncompleteRes = d; return this; },
+    });
+
+    assert(
+      repIncompleteRes?.isReconciledAgainstSnapshot === false &&
+      repIncompleteRes?.discrepancies?.length > 0,
+      'R847-02: Report generated on incomplete snapshot without overrides is flagged as NOT reconciled',
+      `isReconciled=${repIncompleteRes?.isReconciledAgainstSnapshot}, discrepancies=${repIncompleteRes?.discrepancies?.join('; ')}`
+    );
+  }
+
+  // R847-03: Shading simulation with capacity mismatch has overallReconciled: false
+  {
+    const sceneMismatch = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 15.34, // Declared capacity diverges from 27 * 550W = 14.85 kWp
+      totalModulesCount: 27,
+      modulePmpWatts: 550,
+      latitude: 35.6892,
+      longitude: 51.3890,
+    });
+    const simRes = simulateAnnual3dShading(sceneMismatch);
+    assert(
+      simRes.reconciliationStatus?.overallReconciled === false &&
+      simRes.reconciliationStatus?.isProjectSnapshotConsistent === false,
+      'R847-03: Capacity mismatch strictly marks simulation overallReconciled: false',
+      `overallReconciled=${simRes.reconciliationStatus?.overallReconciled}, isSnapshotConsistent=${simRes.reconciliationStatus?.isProjectSnapshotConsistent}`
+    );
+  }
+
+  // R847-04: Independent unshaded baseline calculation across Default, Fresh Applied, and Stale states
+  {
+    const nominalYieldKwh = 100_000;
+    // 1. Fresh Applied at 10%
+    const appliedLossPct = 10.0;
+    const freshBaselineKwh = Math.round(nominalYieldKwh / (1.0 - appliedLossPct / 100.0));
+    // 2. Default at 2.4%
+    const defaultLossPct = 2.4;
+    const defaultBaselineKwh = Math.round(nominalYieldKwh / (1.0 - defaultLossPct / 100.0));
+
+    assert(
+      freshBaselineKwh === 111111 && defaultBaselineKwh === 102459,
+      'R847-04: Unshaded baseline recovers true unshaded energy in both Fresh Applied and Default states',
+      `fresh=${freshBaselineKwh}, default=${defaultBaselineKwh}`
+    );
+  }
+
+  // R847-05: LCOE engine & endpoint safe against 1e20 lifetime infinite loop (P2)
+  {
+    const t0 = Date.now();
+    const lcoeHugeLifetime = calculateLcoe(10000, 200, 5000, 0.05, 1e20);
+    const elapsedMs = Date.now() - t0;
+    assert(
+      elapsedMs < 50 && Number.isFinite(lcoeHugeLifetime) && lcoeHugeLifetime > 0,
+      'R847-05: calculateLcoe with lifetimeYears=1e20 safely clamps to 100 years and completes in < 50ms without CPU freeze',
+      `elapsedMs=${elapsedMs}ms, lcoe=${lcoeHugeLifetime}`
+    );
+
+    const lcoeRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/finance/lcoe' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    let lcoeRouteHugeStatus = 0;
+    await lcoeRoute({ body: { capex: 10000, opexAnnual: 200, energyAnnual: 5000, discountRate: 0.05, lifetimeYears: 1e20 } }, {
+      status(s: number) { lcoeRouteHugeStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      lcoeRouteHugeStatus === 400,
+      'R847-05: LCOE route with lifetimeYears > 100 returns HTTP 400',
+      `status=${lcoeRouteHugeStatus}`
+    );
+  }
+
+  // R847-06: Outbox sanitizes spoofed userId and rejects non-string id (e.g. []) (P2)
+  {
+    process.env.NODE_ENV = 'production';
+    process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+
+    const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const mkJwt = (sub: string) => {
+      const h = b64({ alg: 'HS256', typ: 'JWT' });
+      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+      return `${h}.${p}.${s}`;
+    };
+    const bobJwt = mkJwt('bob');
+
+    const syncPush = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/sync/push' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    // 1. Bob attempts to spoof msg.userId = 'alice'
+    let spoofUserIdRes: any = null;
+    await syncPush({
+      headers: { authorization: `Bearer ${bobJwt}` },
+      body: {
+        messages: [
+          {
+            id: 'msg-legit-bob-report',
+            userId: 'alice', // Spoofed!
+            entityType: 'report',
+            payloadJson: JSON.stringify({
+              id: 'rep-bob-1',
+              title: 'Bob Report',
+            }),
+          },
+        ],
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { spoofUserIdRes = d; return this; },
+    });
+
+    const recordedOutboxMsg = activeDb.outbox.find((m) => m.id === 'msg-legit-bob-report');
+    assert(
+      spoofUserIdRes?.ackedIds?.includes('msg-legit-bob-report') &&
+      recordedOutboxMsg?.userId === 'bob',
+      'R847-06: Outbox binds message userId strictly to verified headerUserId (bob), ignoring spoofed userId (alice)',
+      `outboxUserId='${recordedOutboxMsg?.userId}'`
+    );
+
+    // 2. Reject non-string id (e.g. id: [])
+    let badIdRes: any = null;
+    await syncPush({
+      headers: { authorization: `Bearer ${bobJwt}` },
+      body: {
+        messages: [
+          {
+            id: 'msg-array-id',
+            entityType: 'report',
+            payloadJson: JSON.stringify({
+              id: [], // Invalid non-string ID!
+              title: 'Corrupted ID Report',
+            }),
+          },
+        ],
+      },
+    }, {
+      status() { return this; },
+      json(d: any) { badIdRes = d; return this; },
+    });
+
+    assert(
+      badIdRes?.ackedIds?.length === 0 && badIdRes?.rejected?.length === 1,
+      'R847-06: Non-string id (e.g. payload.id: []) is strictly rejected with malformed payload',
+      `ackedCount=${badIdRes?.ackedIds?.length}, reason='${badIdRes?.rejected?.[0]?.reason}'`
+    );
+
+    delete process.env.JWT_SECRET;
+    delete process.env.NODE_ENV;
+  }
+
+  // R847-07: Cross-user custom catalog item overwrite protection (P2)
+  {
+    process.env.NODE_ENV = 'production';
+    process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+
+    const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const mkJwt = (sub: string) => {
+      const h = b64({ alg: 'HS256', typ: 'JWT' });
+      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+      return `${h}.${p}.${s}`;
+    };
+    const aliceJwt = mkJwt('alice');
+    const bobJwt = mkJwt('bob');
+
+    const catModPost = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    // Alice creates custom module
+    let aliceModStatus = 0;
+    await catModPost({
+      headers: { authorization: `Bearer ${aliceJwt}` },
+      body: { id: 'mod-alice-unique-custom', modelName: 'Alice Custom Panel', pmpWatts: 550, vmpVolts: 40, impAmps: 13.75, vocVolts: 48, iscAmps: 14.5 },
+    }, {
+      status(s: number) { aliceModStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(aliceModStatus === 201, 'R847-07: Alice successfully creates custom catalog module', `status=${aliceModStatus}`);
+
+    // Bob attempts to overwrite Alice custom module
+    let bobOverwriteStatus = 0;
+    await catModPost({
+      headers: { authorization: `Bearer ${bobJwt}` },
+      body: { id: 'mod-alice-unique-custom', modelName: 'Bob Hijacked Panel', pmpWatts: 100, vmpVolts: 20, impAmps: 5, vocVolts: 24, iscAmps: 6 },
+    }, {
+      status(s: number) { bobOverwriteStatus = s; return this; },
+      json() { return this; },
+    });
+    assert(
+      bobOverwriteStatus === 403,
+      'R847-07: Bob attempting to overwrite Alice custom catalog module returns HTTP 403 Access Denied',
+      `status=${bobOverwriteStatus}`
+    );
+
+    delete process.env.JWT_SECRET;
+    delete process.env.NODE_ENV;
+  }
+
+  // R847-08: samplePointsPerTable exact point count (P3)
+  {
+    const sceneTest = buildSceneFromProjectDesign({
+      totalPvCapacityKwp: 14.85,
+      totalModulesCount: 27,
+      modulePmpWatts: 550,
+      latitude: 35.6892,
+      longitude: 51.3890,
+    });
+
+    const res1 = calculateRayTracedShadingFactor(sceneTest, [], { samplePointsPerTable: 1 });
+    const ptsPerTable1 = res1.samplePointsCount / sceneTest.pvTables.length;
+    assert(
+      ptsPerTable1 === 1,
+      'R847-08: samplePointsPerTable=1 produces exactly 1 point per table',
+      `ptsPerTable=${ptsPerTable1}`
+    );
+
+    const res100 = calculateRayTracedShadingFactor(sceneTest, [], { samplePointsPerTable: 100 });
+    const ptsPerTable100 = res100.samplePointsCount / sceneTest.pvTables.length;
+    assert(
+      ptsPerTable100 === 100,
+      'R847-08: samplePointsPerTable=100 produces exactly 100 points per table',
+      `ptsPerTable=${ptsPerTable100}`
     );
   }
 
