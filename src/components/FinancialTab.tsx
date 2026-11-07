@@ -143,6 +143,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     offgridAvoidedCostTomanPerKwh: 0.01,
     hvConnectionUsdPerKva: 0.01,
     dieselFuelPriceTomanPerLiter: 100,
+    opexEscalationPct: 0,
+    selfConsumptionRatioPct: 0,
+    gridExportTariffTomanPerKwh: 0,
+    offgridDailyLoadKwh: 0,
+    offgridServedLoadKwhAnnual: 0,
   };
 
   const sanitizeNumericField = (
@@ -367,7 +372,184 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               className="studio-input w-full font-mono font-bold text-industrial-warning text-xs"
             />
           </div>
+
+          <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
+            <label htmlFor="fin-pricing-opex-escalation" className="text-slate-400 block mb-1">
+              {lang === 'fa' ? 'رشد سالانه OPEX (٪):' : 'Annual OPEX Growth (%):'}
+            </label>
+            <input
+              id="fin-pricing-opex-escalation"
+              type="number"
+              step="0.5"
+              value={pricing.opexEscalationPct !== undefined ? pricing.opexEscalationPct : 8.0}
+              onChange={(e) => updateField('opexEscalationPct', parseFloat(e.target.value) || 0)}
+              className="studio-input w-full font-mono font-bold text-sky-300 text-xs"
+            />
+            <span className="text-[10px] text-slate-500 block mt-0.5">
+              {lang === 'fa' ? 'نرخ تورم سالانه هزینه‌های O&M' : 'Annual O&M inflation escalation rate'}
+            </span>
+          </div>
         </div>
+
+        {/* On-Grid Adaptive Self-Consumption & Tariff Model */}
+        {financial.systemMode === 'ongrid' && (
+          <div className="p-3 bg-industrial-bg border border-sky-600/40 rounded-lg text-xs space-y-3 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-industrial-border pb-2">
+              <span className="font-bold text-sky-300 flex items-center gap-1.5">
+                <Sliders className="w-4 h-4 text-sky-400" />
+                {lang === 'fa'
+                  ? 'مدل انطباقی متصل به شبکه (On-Grid): تفکیک خودمصرفی و تزریق مازاد'
+                  : 'On-Grid Adaptive Self-Consumption & Export Valuation Model'}
+              </span>
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-slate-400">{lang === 'fa' ? 'پروفایل مصرف:' : 'Profile:'}</span>
+                {[
+                  { id: 'residential', labelFa: 'خانگی', labelEn: 'Residential', retail: 1800, exportT: 2200, selfC: 70 },
+                  { id: 'commercial', labelFa: 'تجاری', labelEn: 'Commercial', retail: 4200, exportT: 2200, selfC: 45 },
+                  { id: 'industrial', labelFa: 'صنعتی', labelEn: 'Industrial', retail: 5500, exportT: 2200, selfC: 80 },
+                ].map((prof) => (
+                  <button
+                    key={prof.id}
+                    type="button"
+                    onClick={() => {
+                      onPricingChange({
+                        ...pricing,
+                        customerType: prof.id as any,
+                        gridTariffTomanPerKwh: prof.retail,
+                        gridExportTariffTomanPerKwh: prof.exportT,
+                        selfConsumptionRatioPct: prof.selfC,
+                      });
+                    }}
+                    className={`px-2 py-0.5 rounded border transition-colors ${
+                      pricing.customerType === prof.id
+                        ? 'bg-sky-500/20 text-sky-200 border-sky-400 font-bold'
+                        : 'bg-industrial-surface text-slate-400 border-industrial-border hover:text-slate-200'
+                    }`}
+                  >
+                    {lang === 'fa' ? prof.labelFa : prof.labelEn}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label htmlFor="fin-self-consumption-slider" className="text-slate-300 font-medium">
+                    {lang === 'fa' ? 'نسبت خودمصرفی محلی (بار اضطراری تا کل مصرف):' : 'Local Self-Consumption Ratio:'}
+                  </label>
+                  <span className="font-mono font-bold text-industrial-warning">
+                    {pricing.selfConsumptionRatioPct !== undefined ? pricing.selfConsumptionRatioPct : 100}%
+                  </span>
+                </div>
+                <input
+                  id="fin-self-consumption-slider"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={pricing.selfConsumptionRatioPct !== undefined ? pricing.selfConsumptionRatioPct : 100}
+                  onChange={(e) => updateField('selfConsumptionRatioPct', parseFloat(e.target.value) || 0)}
+                  className="w-full h-2 bg-industrial-surface rounded-lg appearance-none cursor-pointer accent-industrial-accent"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                  <span>{lang === 'fa' ? '۰٪ (صرفاً تزریق ۱۰۰٪)' : '0% (100% Export)'}</span>
+                  <span>{lang === 'fa' ? 'پوشش بار اضطراری (~۳۰٪)' : 'Emergency (~30%)'}</span>
+                  <span>{lang === 'fa' ? '۱۰۰٪ (پوشش کامل مصرف)' : '100% (Full Net)'}</span>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="fin-pricing-export-tariff" className="text-slate-300 font-medium block mb-1">
+                  {lang === 'fa' ? 'تعرفه صادرات مازاد به شبکه (تومان/kWh):' : 'Grid Surplus Export Tariff (Toman/kWh):'}
+                </label>
+                <input
+                  id="fin-pricing-export-tariff"
+                  type="number"
+                  step="100"
+                  value={pricing.gridExportTariffTomanPerKwh !== undefined ? pricing.gridExportTariffTomanPerKwh : pricing.gridTariffTomanPerKwh}
+                  onChange={(e) => updateField('gridExportTariffTomanPerKwh', parseFloat(e.target.value) || 0)}
+                  className="studio-input w-full font-mono font-bold text-sky-300 text-xs"
+                />
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  {lang === 'fa' ? 'نرخ خرید تضمینی یا مبادله انرژی مازاد با شبکه' : 'Feed-in / Net-billing surplus tariff'}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-2 bg-industrial-surface/80 rounded border border-industrial-border/60 text-[11px] flex flex-wrap justify-between items-center gap-2">
+              <span className="text-slate-400">
+                {lang === 'fa' ? 'تفکیک ارزش انرژی تولیدی:' : 'Energy Value Split:'}
+              </span>
+              <span className="font-mono text-industrial-success">
+                {lang === 'fa' ? 'خودمصرفی: ' : 'Self-Consumed: '}
+                <strong>{(financial.selfConsumedYieldKwh ?? financial.annualEnergyYieldKwh).toLocaleString()} kWh/yr</strong> (~{pricing.selfConsumptionRatioPct ?? 100}%)
+              </span>
+              <span className="font-mono text-sky-300">
+                {lang === 'fa' ? 'صادرات به شبکه: ' : 'Grid Export: '}
+                <strong>{(financial.exportedYieldKwh ?? 0).toLocaleString()} kWh/yr</strong> (~{100 - (pricing.selfConsumptionRatioPct ?? 100)}%)
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Off-Grid Demand & Constrained Sizing Valuation */}
+        {financial.systemMode === 'offgrid' && (
+          <div className="p-3 bg-industrial-bg border border-amber-600/40 rounded-lg text-xs space-y-3 mb-4">
+            <div className="flex items-center justify-between border-b border-industrial-border pb-2">
+              <span className="font-bold text-industrial-warning flex items-center gap-1.5">
+                <Sliders className="w-4 h-4 text-industrial-warning" />
+                {lang === 'fa'
+                  ? 'مدل دیماند مستقل از شبکه (Off-Grid) و جلوگیری از تورم درآمد کاذب'
+                  : 'Off-Grid Consumer Load Demand & Constrained Valuation'}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                {pricing.offgridDailyLoadKwh ? (lang === 'fa' ? 'دیماند مقید' : 'Demand-Constrained') : (lang === 'fa' ? 'پروکسی غربالگری' : 'Screening Proxy')}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="fin-offgrid-daily-load" className="text-slate-300 font-medium block mb-1">
+                  {lang === 'fa' ? 'مصرف روزانه بار الکتریکی (kWh/day):' : 'Consumer Daily Load (kWh/day):'}
+                </label>
+                <input
+                  id="fin-offgrid-daily-load"
+                  type="number"
+                  step="1"
+                  placeholder="e.g. 20"
+                  value={pricing.offgridDailyLoadKwh || ''}
+                  onChange={(e) => updateField('offgridDailyLoadKwh', parseFloat(e.target.value) || 0)}
+                  className="studio-input w-full font-mono font-bold text-industrial-warning text-xs"
+                />
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  {lang === 'fa'
+                    ? 'تعیین مصرف واقعی بار برای حذف مازاد شارژ (Dump Load) از محاسبات صرفه‌جویی و IRR'
+                    : 'Constrains financial savings to actual served load, preventing unabsorbed dump load from inflating IRR'}
+                </span>
+              </div>
+
+              <div>
+                <label htmlFor="fin-pricing-avoided-cost" className="text-slate-300 font-medium block mb-1">
+                  {lang === 'fa' ? 'ارزش هر کیلووات‌ساعت برق جایگزین (تومان/kWh):' : 'Displaced Energy Value (Toman/kWh):'}
+                </label>
+                <input
+                  id="fin-pricing-avoided-cost"
+                  type="number"
+                  step="1000"
+                  value={pricing.offgridAvoidedCostTomanPerKwh ?? 21600}
+                  onChange={(e) => updateField('offgridAvoidedCostTomanPerKwh', parseFloat(e.target.value) || 0)}
+                  className="studio-input w-full font-mono font-bold text-industrial-success text-xs"
+                />
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  {pricing.includeDieselGenSet
+                    ? (lang === 'fa' ? 'پروکسی هزینه سوخت و استهلاک برق دیزلی برون‌شبکه‌ای' : 'Remote diesel displacement proxy')
+                    : (lang === 'fa' ? 'ارزش برق مستقل تأمین‌شده بدون دیزل' : 'Pure PV+BESS off-grid electricity valuation')}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Optional Diesel Generator Pricing Toggle */}
         <div className="p-3 bg-industrial-bg border border-industrial-border rounded-lg text-xs space-y-2">

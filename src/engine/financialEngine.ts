@@ -55,6 +55,14 @@ export interface UserFinancialPricing {
   inverterReplacementCostRatio?: number; // Cost ratio (learning curve reduction, default 0.60)
   batteryChemistry?: string; // e.g. 'lifepo4', 'gel_deep_cycle', 'agm_flooded'
   batteryLifespanYears?: number; // Chemistry-dependent battery calendar life (AGM ~3y, Gel ~4y, LFP ~12y)
+
+  // Dynamic Mode-Aware Extensions (LC-01, LC-02, LC-04)
+  opexEscalationPct?: number; // e.g. 8.0% annual OPEX inflation rate
+  selfConsumptionRatioPct?: number; // e.g. 10% emergency to 100% full coverage (On-Grid)
+  gridExportTariffTomanPerKwh?: number; // e.g. 2,200 Toman/kWh for surplus export (On-Grid)
+  customerType?: 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'custom';
+  offgridServedLoadKwhAnnual?: number; // Annual load demand served in offgrid
+  offgridDailyLoadKwh?: number; // Daily load demand in offgrid
 }
 
 export const DEFAULT_FINANCIAL_PRICING: UserFinancialPricing = {
@@ -166,7 +174,7 @@ export interface FinancialAnalysisResult {
   // Cost of energy served (proxy when dispatch is unsimulated)
   costOfEnergyServedUsdPerKwh: number | null;
   costOfEnergyServedProxyUsdPerKwh: number | null;
-  costOfEnergyServedStatus: 'DISPATCH_SIMULATED' | 'PROXY_UNCONSTRAINED_YIELD' | 'UNDEFINED';
+  costOfEnergyServedStatus: 'DISPATCH_SIMULATED' | 'PROXY_UNCONSTRAINED_YIELD' | 'UNDEFINED' | 'GRID_DELIVERED' | 'HOURLY_LOAD_CONSTRAINED';
   costOfEnergyServedNoteFa: string;
   costOfEnergyServedNoteEn: string;
   // Active tariff applied
@@ -188,6 +196,14 @@ export interface FinancialAnalysisResult {
   cashFlowWithYear0: YearCashFlowItem[];
   isCashFlowReconciled: boolean;
   assumptionsMetadata: FinancialAssumptionsMetadata;
+
+  // Mode-Aware Dynamic Financial Parameters
+  opexEscalationPct: number;
+  selfConsumptionRatioPct: number;
+  gridExportTariffTomanPerKwh: number;
+  customerType?: 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'custom';
+  selfConsumedYieldKwh: number;
+  exportedYieldKwh: number;
 }
 
 export function performFinancialAnalysis(
@@ -369,16 +385,33 @@ export function performFinancialAnalysis(
 
   switch (systemMode) {
     case 'offgrid': {
-      // Off-Grid: Avoided cost of remote diesel power displacement
+      // Off-Grid: Avoided cost of remote diesel power displacement or offgrid equivalent electricity value
       const avoidedDieselTariff = p.offgridAvoidedCostTomanPerKwh ?? 21600;
       activeModeTariffTomanPerKwh = avoidedDieselTariff;
-      year1RevenueToman = safeAnnualYieldKwh * avoidedDieselTariff;
+      // In off-grid, energy that can generate economic value is constrained by served load
+      const offgridServedKwh = p.offgridServedLoadKwhAnnual && p.offgridServedLoadKwhAnnual > 0
+        ? p.offgridServedLoadKwhAnnual
+        : (p.offgridDailyLoadKwh && p.offgridDailyLoadKwh > 0
+            ? Math.min(safeAnnualYieldKwh, p.offgridDailyLoadKwh * 365)
+            : safeAnnualYieldKwh);
+      year1RevenueToman = offgridServedKwh * avoidedDieselTariff;
       break;
     }
     case 'ongrid': {
-      // On-Grid: Net-metering retail utility tariff displacement
-      activeModeTariffTomanPerKwh = p.gridTariffTomanPerKwh;
-      year1RevenueToman = safeAnnualYieldKwh * p.gridTariffTomanPerKwh;
+      // On-Grid: Adaptive self-consumption displacement vs surplus grid export
+      const selfConsumeRatio = p.selfConsumptionRatioPct !== undefined && Number.isFinite(p.selfConsumptionRatioPct)
+        ? Math.max(0, Math.min(100, p.selfConsumptionRatioPct)) / 100.0
+        : 1.0;
+      const retailTariff = p.gridTariffTomanPerKwh;
+      const exportTariff = p.gridExportTariffTomanPerKwh !== undefined && Number.isFinite(p.gridExportTariffTomanPerKwh)
+        ? p.gridExportTariffTomanPerKwh
+        : retailTariff;
+
+      const selfConsumedKwh = safeAnnualYieldKwh * selfConsumeRatio;
+      const exportedKwh = safeAnnualYieldKwh * (1.0 - selfConsumeRatio);
+
+      activeModeTariffTomanPerKwh = (selfConsumeRatio * retailTariff) + ((1.0 - selfConsumeRatio) * exportTariff);
+      year1RevenueToman = (selfConsumedKwh * retailTariff) + (exportedKwh * exportTariff);
       break;
     }
     case 'powerplant':
@@ -397,6 +430,10 @@ export function performFinancialAnalysis(
   const degradationRate = p.annualDegradationRate !== undefined && p.annualDegradationRate >= 0
     ? p.annualDegradationRate
     : 0.005;
+
+  const opexEscalationRate = p.opexEscalationPct !== undefined && Number.isFinite(p.opexEscalationPct)
+    ? Math.max(0, p.opexEscalationPct / 100.0)
+    : 0.08;
 
   const batteryLifespanYears = (() => {
     if (p.batteryLifespanYears && p.batteryLifespanYears > 0) return p.batteryLifespanYears;
@@ -432,10 +469,38 @@ export function performFinancialAnalysis(
 
   for (let yr = 1; yr <= safeLifetimeYears; yr++) {
     const degradedGen = safeAnnualYieldKwh * Math.pow(Math.max(0, 1.0 - degradationRate), yr - 1);
-    const unitTariffEscalated = activeModeTariffTomanPerKwh * Math.pow(1.0 + p.tariffEscalationPct / 100.0, yr - 1);
-    const revenue = degradedGen * unitTariffEscalated;
-    const opex = baseAnnualOpexToman * Math.pow(1.08, yr - 1) + fixedAnnualChargesUsd * p.usdToTomanRate;
-    const fuel = annualDieselFuelCostToman * Math.pow(1.08, yr - 1);
+    
+    let revenue = 0;
+    if (systemMode === 'ongrid') {
+      const selfConsumeRatio = p.selfConsumptionRatioPct !== undefined && Number.isFinite(p.selfConsumptionRatioPct)
+        ? Math.max(0, Math.min(100, p.selfConsumptionRatioPct)) / 100.0
+        : 1.0;
+      const retailTariff = p.gridTariffTomanPerKwh;
+      const exportTariff = p.gridExportTariffTomanPerKwh !== undefined && Number.isFinite(p.gridExportTariffTomanPerKwh)
+        ? p.gridExportTariffTomanPerKwh
+        : retailTariff;
+      const tariffEscalationFactor = Math.pow(1.0 + p.tariffEscalationPct / 100.0, yr - 1);
+      const selfConsumedKwh = degradedGen * selfConsumeRatio;
+      const exportedKwh = degradedGen * (1.0 - selfConsumeRatio);
+      revenue = (selfConsumedKwh * retailTariff * tariffEscalationFactor) +
+                (exportedKwh * exportTariff * tariffEscalationFactor);
+    } else if (systemMode === 'offgrid') {
+      const offgridServedKwh = p.offgridServedLoadKwhAnnual && p.offgridServedLoadKwhAnnual > 0
+        ? p.offgridServedLoadKwhAnnual
+        : (p.offgridDailyLoadKwh && p.offgridDailyLoadKwh > 0
+            ? Math.min(safeAnnualYieldKwh, p.offgridDailyLoadKwh * 365)
+            : safeAnnualYieldKwh);
+      const degradedServedKwh = Math.min(degradedGen, offgridServedKwh);
+      const unitTariffEscalated = activeModeTariffTomanPerKwh * Math.pow(1.0 + p.tariffEscalationPct / 100.0, yr - 1);
+      revenue = degradedServedKwh * unitTariffEscalated;
+    } else {
+      const unitTariffEscalated = activeModeTariffTomanPerKwh * Math.pow(1.0 + p.tariffEscalationPct / 100.0, yr - 1);
+      revenue = degradedGen * unitTariffEscalated;
+    }
+
+    const opexGrowthFactor = Math.pow(1.0 + opexEscalationRate, yr - 1);
+    const opex = baseAnnualOpexToman * opexGrowthFactor + fixedAnnualChargesUsd * p.usdToTomanRate;
+    const fuel = annualDieselFuelCostToman * opexGrowthFactor;
 
     const isBatteryReplacementYr =
       batteriesUsd > 0 &&
@@ -636,18 +701,26 @@ export function performFinancialAnalysis(
     safeAnnualYieldKwh <= 0
       ? 'UNDEFINED'
       : systemMode === 'offgrid'
-        ? 'PROXY_UNCONSTRAINED_YIELD'
-        : 'DISPATCH_SIMULATED';
+        ? (p.offgridServedLoadKwhAnnual || p.offgridDailyLoadKwh ? 'HOURLY_LOAD_CONSTRAINED' : 'PROXY_UNCONSTRAINED_YIELD')
+        : 'GRID_DELIVERED';
 
   const costOfEnergyServedNoteFa =
     systemMode === 'offgrid'
-      ? 'شاخص هزینه انرژی تأمین‌شده در حالت آف‌گرید به‌عنوان پروکسی مبتنی بر کل تولید بدون شبیه‌سازی دیسپچ ساعتی محاسبه شده است؛ انرژی واقعی مصرف‌شده در بار نیازمند مدل تلفات تخلیه و مازاد شارژ (Dump Load) است.'
-      : 'محاسبه‌شده بر اساس تفکیک هزینه‌های سالانه‌شده سرمایه‌ای و جاری.';
+      ? (p.offgridServedLoadKwhAnnual || p.offgridDailyLoadKwh
+          ? 'شاخص بهای تمام‌شده انرژی تحویلی در حالت مستقل از شبکه بر مبنای بار واقعی تقاضای مصرف‌کننده و کسر انرژی مازاد شارژ محاسبه شده است.'
+          : 'شاخص هزینه انرژی در حالت آف‌گرید به‌عنوان پروکسی مبتنی بر کل تولید بدون محدودیت بار محاسبه شده است؛ برای ارزیابی بار واقعی، دیماند مصرف را وارد نمایید.')
+      : (systemMode === 'ongrid'
+          ? `محاسبه‌شده بر اساس نسبت خودمصرفی محلی (${p.selfConsumptionRatioPct ?? 100}٪) و تعرفه صادرات مازاد به شبکه.`
+          : 'محاسبه‌شده بر اساس تفکیک هزینه‌های سالانه‌شده سرمایه‌ای و جاری.');
 
   const costOfEnergyServedNoteEn =
     systemMode === 'offgrid'
-      ? 'Off-grid Cost of Energy Served represents an unconstrained annual yield proxy without 8760h dispatch; actual served energy requires hourly dump load and battery state-of-charge tracking.'
-      : 'Calculated from annualized capital recovery and recurring operational expenses.';
+      ? (p.offgridServedLoadKwhAnnual || p.offgridDailyLoadKwh
+          ? 'Off-grid Cost of Energy Served is constrained to consumer demand profile, excluding unabsorbed dump load.'
+          : 'Off-grid Cost of Energy Served represents an unconstrained annual yield proxy without 8760h dispatch; specify load demand for constrained appraisal.')
+      : (systemMode === 'ongrid'
+          ? `Calculated from local self-consumption coverage (${p.selfConsumptionRatioPct ?? 100}%) and surplus grid export tariff.`
+          : 'Calculated from annualized capital recovery and recurring operational expenses.');
 
   // 8. Environmental Metrics
   const annualCo2ReductionTons = safeAnnualYieldKwh * 0.00062;
@@ -715,5 +788,13 @@ export function performFinancialAnalysis(
     cashFlowWithYear0,
     isCashFlowReconciled: true,
     assumptionsMetadata,
+
+    // Mode-Aware Dynamic Financial Parameters
+    opexEscalationPct: p.opexEscalationPct !== undefined ? p.opexEscalationPct : 8.0,
+    selfConsumptionRatioPct: p.selfConsumptionRatioPct !== undefined ? p.selfConsumptionRatioPct : 100,
+    gridExportTariffTomanPerKwh: p.gridExportTariffTomanPerKwh !== undefined ? p.gridExportTariffTomanPerKwh : p.gridTariffTomanPerKwh,
+    customerType: p.customerType,
+    selfConsumedYieldKwh: Math.round(safeAnnualYieldKwh * ((p.selfConsumptionRatioPct ?? 100) / 100.0)),
+    exportedYieldKwh: Math.round(safeAnnualYieldKwh * (1.0 - ((p.selfConsumptionRatioPct ?? 100) / 100.0))),
   };
 }

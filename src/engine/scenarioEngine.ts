@@ -1,4 +1,5 @@
 // Scenario Comparison Engine: 3 Smart Engineering Alternatives
+import { calculateLcoe } from './solarPvEngine';
 
 export interface ScenarioDetails {
   id: 'optimized_lifepo4' | 'budget_gel' | 'industrial_redundant';
@@ -59,6 +60,38 @@ export function generateScenarios(
   const s3Tco25y = Math.round(s3CapexUsd + s3BatKwh * 160 + 2000);
   const s3Weight = Math.round(s3PvKwp * 40 + s3BatKwh * 11 + s3InvKw * 8 + 250);
 
+  // Dynamic LCOE Calculation (LC-07): Calculate real discounted 25-year LCOE based on scenario parameters
+  const discountRate = 0.08;
+  const lifetimeYears = 25;
+  const degradationPct = 0.5;
+
+  // Scenario 1: LiFePO4 (1 battery replacement at yr 12)
+  const s1AnnualGen = s1PvKwp * 4.5 * 365 * 0.78;
+  const s1AnnualOpex = s1CapexUsd * 0.012;
+  const s1BatRepPv = (s1BatKwh * 130) / Math.pow(1 + discountRate, 12);
+  const s1Lcoe = s1AnnualGen > 0
+    ? Number(calculateLcoe(s1CapexUsd + s1BatRepPv, s1AnnualOpex, s1AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
+    : 0.085;
+
+  // Scenario 2: Gel (battery replacement every 4 years)
+  const s2AnnualGen = s2PvKwp * 4.5 * 365 * 0.78;
+  const s2AnnualOpex = s2CapexUsd * 0.015;
+  let s2BatRepPv = 0;
+  for (let yr = 4; yr < 25; yr += 4) {
+    s2BatRepPv += (s2BatKwh * 115) / Math.pow(1 + discountRate, yr);
+  }
+  const s2Lcoe = s2AnnualGen > 0
+    ? Number(calculateLcoe(s2CapexUsd + s2BatRepPv, s2AnnualOpex, s2AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
+    : 0.125;
+
+  // Scenario 3: Industrial Redundant (battery replacement at yr 15)
+  const s3AnnualGen = s3PvKwp * 4.5 * 365 * 0.80;
+  const s3AnnualOpex = s3CapexUsd * 0.010;
+  const s3BatRepPv = (s3BatKwh * 160) / Math.pow(1 + discountRate, 15);
+  const s3Lcoe = s3AnnualGen > 0
+    ? Number(calculateLcoe(s3CapexUsd + s3BatRepPv, s3AnnualOpex, s3AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
+    : 0.098;
+
   return [
     {
       id: 'optimized_lifepo4',
@@ -79,7 +112,7 @@ export function generateScenarios(
       totalSystemWeightKg: s1Weight,
       cableVoltageDropPct: 1.2,
       reliabilityIndexPct: 98.5,
-      lcoeUsdPerKwh: 0.085,
+      lcoeUsdPerKwh: s1Lcoe,
       advantagesFa: [
         'طول عمر بالای باتری (بیش از ۱۰ الی ۱۲ سال)',
         'وزن سبک و اشغال فضای کم در موتورخانه/تابلو',
@@ -118,7 +151,7 @@ export function generateScenarios(
       totalSystemWeightKg: s2Weight,
       cableVoltageDropPct: 1.6,
       reliabilityIndexPct: 89.0,
-      lcoeUsdPerKwh: 0.125,
+      lcoeUsdPerKwh: s2Lcoe,
       advantagesFa: [
         'ارزان‌ترین سرمایه‌گذاری اولیه در فاز ساخت',
         'دسترسی و فراوانی بالا در بازار سنتی ایران',
@@ -159,7 +192,7 @@ export function generateScenarios(
       totalSystemWeightKg: s3Weight,
       cableVoltageDropPct: 0.8,
       reliabilityIndexPct: 99.9,
-      lcoeUsdPerKwh: 0.098,
+      lcoeUsdPerKwh: s3Lcoe,
       advantagesFa: [
         'پایداری دائمی بدون یک ثانیه خاموشی برای مراکز داده و بیمارستان',
         'افزونگی کامل N+1 (در صورت سوختن یک اینورتر بقیه کل بار را اداره می‌کنند)',

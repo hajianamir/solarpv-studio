@@ -3956,6 +3956,63 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   }
 
   // ==========================================================================
+  // [E10-FIN-DYNAMIC-LCOE-MODES] Dynamic LCOE, OPEX Escalation & Mode-Aware Self-Consumption / Diesel Decoupling
+  // ==========================================================================
+  {
+    const { performFinancialAnalysis } = await import('../../financialEngine');
+    const { generateScenarios } = await import('../../scenarioEngine');
+
+    // 1. Dynamic OPEX escalation rate propagates to cashflows and LCOE:
+    const finOpexLow = performFinancialAnalysis(100, 0, 100, 150_000, { opexEscalationPct: 2.0 }, 25, 'powerplant');
+    const finOpexHigh = performFinancialAnalysis(100, 0, 100, 150_000, { opexEscalationPct: 12.0 }, 25, 'powerplant');
+    const opexEscalationOk =
+      finOpexHigh.cashFlow25Years[24].opexToman > finOpexLow.cashFlow25Years[24].opexToman &&
+      (finOpexHigh.lcoeUsdPerKwh ?? 0) > (finOpexLow.lcoeUsdPerKwh ?? 0);
+
+    // 2. On-Grid: Adaptive self-consumption ratio & grid export valuation:
+    // With 40% self-consumption at 4000 Toman and 60% export at 2000 Toman:
+    // Blended effective tariff = (0.4 * 4000) + (0.6 * 2000) = 1600 + 1200 = 2800 Toman/kWh
+    const finOngridBlended = performFinancialAnalysis(100, 0, 100, 100_000, {
+      gridTariffTomanPerKwh: 4000,
+      gridExportTariffTomanPerKwh: 2000,
+      selfConsumptionRatioPct: 40,
+    }, 25, 'ongrid');
+    const expectedRev = 100_000 * 2800;
+    const ongridBlendOk =
+      finOngridBlended.annualRevenueToman === expectedRev &&
+      finOngridBlended.activeModeTariffTomanPerKwh === 2800 &&
+      finOngridBlended.selfConsumedYieldKwh === 40_000 &&
+      finOngridBlended.exportedYieldKwh === 60_000;
+
+    // 3. Off-Grid: Conditional Diesel decoupling & demand-constrained valuation:
+    const finOffgridNoDiesel = performFinancialAnalysis(50, 100, 50, 90_000, {
+      includeDieselGenSet: false,
+      offgridDailyLoadKwh: 20, // 20 kWh/day = 7,300 kWh/yr served demand
+      offgridAvoidedCostTomanPerKwh: 15_000,
+    }, 25, 'offgrid');
+    const offgridDemandOk =
+      finOffgridNoDiesel.capexBreakdown.dieselGenSetUsd === 0 &&
+      finOffgridNoDiesel.dieselFuelCostUsd === 0 &&
+      finOffgridNoDiesel.dieselOpexUsd === 0 &&
+      finOffgridNoDiesel.annualRevenueToman === 7_300 * 15_000 && // Bounded to 7,300 kWh served, not 90,000 kWh!
+      finOffgridNoDiesel.costOfEnergyServedStatus === 'HOURLY_LOAD_CONSTRAINED';
+
+    // 4. Scenarios Tab: Dynamic LCOE verification (non-hardcoded, realistic):
+    const dynamicScenarios = generateScenarios(10, 20, 1.5, 90_000);
+    const scenariosDynamicOk =
+      dynamicScenarios.length === 3 &&
+      dynamicScenarios.every(s => typeof s.lcoeUsdPerKwh === 'number' && s.lcoeUsdPerKwh > 0.04 && s.lcoeUsdPerKwh < 0.25) &&
+      dynamicScenarios[0].lcoeUsdPerKwh !== dynamicScenarios[1].lcoeUsdPerKwh;
+
+    assert(
+      'E10-FIN-DYNAMIC-LCOE-MODES',
+      'Dynamic OPEX escalation, on-grid self-consumption/export blend, off-grid diesel decoupling & scenario LCOE verified',
+      opexEscalationOk && ongridBlendOk && offgridDemandOk && scenariosDynamicOk,
+      `opex(low=${finOpexLow.lcoeUsdPerKwh}, high=${finOpexHigh.lcoeUsdPerKwh}), ongridBlend(rev=${finOngridBlended.annualRevenueToman}, exp=${expectedRev}), offgrid(dieselUsd=${finOffgridNoDiesel.capexBreakdown.dieselGenSetUsd}, rev=${finOffgridNoDiesel.annualRevenueToman}), scenariosLcoe=[${dynamicScenarios.map(s => s.lcoeUsdPerKwh).join(', ')}]`
+    );
+  }
+
+  // ==========================================================================
   // [E10-UQ-PIPELINE] Financial Uncertainty Quantification (UQ) Executable LHS
   // ==========================================================================
   {
