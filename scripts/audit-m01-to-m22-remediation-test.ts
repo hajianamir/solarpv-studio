@@ -28,6 +28,7 @@ import {
   simulateAnnual3dShading,
   buildSceneFromProjectDesign,
   calculateRayTracedShadingFactor,
+  generateTableMeshSamplePoints,
   type PvTable3D,
   type RoofPlane,
   type Scene3DState,
@@ -2338,6 +2339,71 @@ async function runM01ToM22TestSuite(): Promise<void> {
       ptsPerTable100 === 100,
       'R847-08: samplePointsPerTable=100 produces exactly 100 points per table',
       `ptsPerTable=${ptsPerTable100}`
+    );
+
+    // Multi-subrect unique coordinate verification (P3)
+    const ptsArray = generateTableMeshSamplePoints(sceneTest.pvTables[0], 4, 3, 100);
+    const uniqueCoords = new Set(ptsArray.map(p => `${p.x.toFixed(4)},${p.y.toFixed(4)},${p.z.toFixed(4)}`));
+    assert(
+      ptsArray.length === 100 && uniqueCoords.size === 100,
+      'P3: Multi-subrect table sample points generate 100% unique spatial coordinates without duplicate points',
+      `totalPoints=${ptsArray.length}, uniqueCoords=${uniqueCoords.size}`
+    );
+  }
+
+  // P3 Polish: Public Catalog GET ownerId sanitization
+  {
+    const catModGet = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.get)
+      ?.route.stack[0].handle;
+
+    let catListRes: any = null;
+    await catModGet({ headers: {} }, {
+      json(d: any) { catListRes = d; return this; },
+    });
+
+    const anyExposedOwner = Array.isArray(catListRes) && catListRes.some((m: any) => m.ownerId !== undefined);
+    assert(
+      !anyExposedOwner,
+      'P3: Anonymous GET /api/v1/catalog/modules sanitizes internal ownerId from public output',
+      `anyExposedOwner=${anyExposedOwner}`
+    );
+  }
+
+  // P3 Polish: Report Baseline Invalidation on Contradictory Inverter or LCOE
+  {
+    const reportRoute = (app as any)._router.stack
+      .find((r: any) => r.route && r.route.path === '/api/v1/reports/generate' && r.route.methods.post)
+      ?.route.stack[0].handle;
+
+    const invalidSnapId = 'proj-invalid-inv-baseline';
+    activeDb.projects.set(invalidSnapId, {
+      id: invalidSnapId,
+      name: 'Invalid Inverter Baseline Project',
+      latitude: 35.6,
+      longitude: 51.3,
+      dailyLoadKwh: 10,
+      autonomyDays: 1,
+      systemCapacityKwp: 10.0,
+      panelCount: 20,
+      inverterCount: -5, // Invalid!
+      batteryCount: 0,
+      estimatedAnnualYieldKwh: 15000,
+      lcoeUsdPerKwh: 0.05,
+      createdAt: new Date().toISOString(),
+    });
+
+    let invRepRes: any = null;
+    await reportRoute({ body: { projectId: invalidSnapId } }, {
+      status() { return this; },
+      json(d: any) { invRepRes = d; return this; },
+    });
+
+    assert(
+      invRepRes?.isReconciledAgainstSnapshot === false &&
+      invRepRes?.discrepancies?.some((d: string) => d.includes('invalid inverterCount')),
+      'P3: Report rejects snapshot containing invalid inverterCount as unreconciled',
+      `isReconciled=${invRepRes?.isReconciledAgainstSnapshot}`
     );
   }
 

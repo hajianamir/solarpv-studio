@@ -747,8 +747,16 @@ app.put('/api/v1/projects/:id', (req: Request, res: Response) => {
 });
 
 // 7. Catalog (Modules, Inverters, Batteries)
-app.get('/api/v1/catalog/modules', (_req: Request, res: Response) => {
-  res.json(Array.from(db.pvModules.values()));
+app.get('/api/v1/catalog/modules', (req: Request, res: Response) => {
+  const { userId: requesterId } = resolveRequesterIdentity(req);
+  const items = Array.from(db.pvModules.values()).map((item: any) => {
+    if (item.ownerId && item.ownerId !== requesterId) {
+      const { ownerId: _omit, ...rest } = item;
+      return rest;
+    }
+    return item;
+  });
+  res.json(items);
 });
 
 app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
@@ -837,8 +845,16 @@ app.post('/api/v1/catalog/modules', (req: Request, res: Response) => {
   res.status(201).json(itemToStore);
 });
 
-app.get('/api/v1/catalog/inverters', (_req: Request, res: Response) => {
-  res.json(Array.from(db.inverters.values()));
+app.get('/api/v1/catalog/inverters', (req: Request, res: Response) => {
+  const { userId: requesterId } = resolveRequesterIdentity(req);
+  const items = Array.from(db.inverters.values()).map((item: any) => {
+    if (item.ownerId && item.ownerId !== requesterId) {
+      const { ownerId: _omit, ...rest } = item;
+      return rest;
+    }
+    return item;
+  });
+  res.json(items);
 });
 
 app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
@@ -918,8 +934,16 @@ app.post('/api/v1/catalog/inverters', (req: Request, res: Response) => {
   res.status(201).json(itemToStore);
 });
 
-app.get('/api/v1/catalog/batteries', (_req: Request, res: Response) => {
-  res.json(Array.from(db.batteries.values()));
+app.get('/api/v1/catalog/batteries', (req: Request, res: Response) => {
+  const { userId: requesterId } = resolveRequesterIdentity(req);
+  const items = Array.from(db.batteries.values()).map((item: any) => {
+    if (item.ownerId && item.ownerId !== requesterId) {
+      const { ownerId: _omit, ...rest } = item;
+      return rest;
+    }
+    return item;
+  });
+  res.json(items);
 });
 
 app.post('/api/v1/catalog/batteries', (req: Request, res: Response) => {
@@ -1092,6 +1116,15 @@ app.post('/api/v1/reports/generate', (req: Request, res: Response) => {
     }
     if (baselineYield === undefined || typeof baselineYield !== 'number' || !Number.isFinite(baselineYield) || baselineYield < 0) {
       discrepancies.push('Snapshot missing baseline estimatedAnnualYieldKwh; cannot reconcile report.');
+    }
+    if (projectSnapshot.inverterCount !== undefined && (typeof projectSnapshot.inverterCount !== 'number' || !Number.isInteger(projectSnapshot.inverterCount) || projectSnapshot.inverterCount < 0)) {
+      discrepancies.push('Snapshot baseline contains invalid inverterCount; cannot reconcile report.');
+    }
+    if (projectSnapshot.batteryCount !== undefined && (typeof projectSnapshot.batteryCount !== 'number' || !Number.isInteger(projectSnapshot.batteryCount) || projectSnapshot.batteryCount < 0)) {
+      discrepancies.push('Snapshot baseline contains invalid batteryCount; cannot reconcile report.');
+    }
+    if (projectSnapshot.lcoeUsdPerKwh !== undefined && projectSnapshot.lcoeUsdPerKwh !== null && (typeof projectSnapshot.lcoeUsdPerKwh !== 'number' || !Number.isFinite(projectSnapshot.lcoeUsdPerKwh) || projectSnapshot.lcoeUsdPerKwh < 0)) {
+      discrepancies.push('Snapshot baseline contains invalid lcoeUsdPerKwh; cannot reconcile report.');
     }
     if (
       typeof baselineCap === 'number' &&

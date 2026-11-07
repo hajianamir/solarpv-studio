@@ -1707,6 +1707,86 @@ export function convertPvTablesToTriangles(tables: PvTable3D[]): Triangle[] {
   return triangles;
 }
 
+function generateSubRectGridPoints(
+  sr: ActiveTableSubRect,
+  targetCount: number,
+  table: PvTable3D,
+  latUx: number,
+  latUy: number,
+  slopeUx: number,
+  slopeUy: number,
+  slopeUz: number,
+  normX: number,
+  normY: number,
+  normZ: number,
+  normalOffset: number
+): Vec3[] {
+  if (targetCount <= 0) return [];
+  const cx = table.positionEnu.x + sr.centerOffsetLat * latUx + sr.centerOffsetSlope * slopeUx;
+  const cy = table.positionEnu.y + sr.centerOffsetLat * latUy + sr.centerOffsetSlope * slopeUy;
+  const cz = table.positionEnu.z + sr.centerOffsetSlope * slopeUz;
+
+  if (targetCount === 1) {
+    return [
+      {
+        x: cx + normalOffset * normX,
+        y: cy + normalOffset * normY,
+        z: cz + normalOffset * normZ,
+      },
+    ];
+  }
+
+  const hw = sr.width / 2;
+  const hl = sr.slopedLength / 2;
+  const aspect = Math.max(0.2, sr.width / sr.slopedLength);
+
+  let bestL = 1;
+  let bestS = targetCount;
+  let bestErr = Infinity;
+  let bestAspectDiff = Infinity;
+
+  for (let l = 1; l <= targetCount; l++) {
+    const s = Math.max(1, Math.ceil(targetCount / l));
+    const prod = l * s;
+    const err = prod - targetCount;
+    if (err < 0) continue;
+    const aspectDiff = Math.abs(l / s - aspect);
+    if (err < bestErr || (err === bestErr && aspectDiff < bestAspectDiff)) {
+      bestErr = err;
+      bestAspectDiff = aspectDiff;
+      bestL = l;
+      bestS = s;
+    }
+  }
+
+  const rawGrid: Vec3[] = [];
+  for (let r = 0; r < bestS; r++) {
+    const sFrac = bestS === 1 ? 0 : -0.5 + (r / (bestS - 1));
+    const sOffset = sFrac * hl * 2 * 0.9;
+    for (let c = 0; c < bestL; c++) {
+      const lFrac = bestL === 1 ? 0 : -0.5 + (c / (bestL - 1));
+      const lOffset = lFrac * hw * 2 * 0.9;
+      rawGrid.push({
+        x: cx + lOffset * latUx + sOffset * slopeUx + normalOffset * normX,
+        y: cy + lOffset * latUy + sOffset * slopeUy + normalOffset * normY,
+        z: cz + sOffset * slopeUz + normalOffset * normZ,
+      });
+    }
+  }
+
+  if (rawGrid.length === targetCount) {
+    return rawGrid;
+  }
+
+  // Sample evenly without duplicate coordinates (P3)
+  const sampled: Vec3[] = [];
+  const step = rawGrid.length / targetCount;
+  for (let i = 0; i < targetCount; i++) {
+    sampled.push(rawGrid[Math.min(rawGrid.length - 1, Math.floor(i * step))]);
+  }
+  return sampled;
+}
+
 /**
  * Generates sample target vertices across a PV table surface for ray-intersection evaluation.
  * Points are placed exclusively inside active module zones.
@@ -1748,6 +1828,41 @@ export function generateTableMeshSamplePoints(
   const points: Vec3[] = [];
 
   if (subRects.length === 0) return points;
+
+  // When exactTargetCount is supplied, distribute sample points continuously across sub-rects without duplicate points (P3)
+  if (exactTargetCount !== undefined && exactTargetCount > 0) {
+    const totalArea = subRects.reduce((sum, sr) => sum + sr.width * sr.slopedLength, 0);
+    let remainingPoints = exactTargetCount;
+    const subRectPoints: Vec3[] = [];
+
+    for (let i = 0; i < subRects.length; i++) {
+      const sr = subRects[i];
+      const area = sr.width * sr.slopedLength;
+      const isLast = i === subRects.length - 1;
+      const srTarget = isLast
+        ? remainingPoints
+        : Math.min(remainingPoints, Math.max(1, Math.round(exactTargetCount * (area / totalArea))));
+      remainingPoints -= srTarget;
+
+      const pts = generateSubRectGridPoints(
+        sr,
+        srTarget,
+        table,
+        latUx,
+        latUy,
+        slopeUx,
+        slopeUy,
+        slopeUz,
+        normX,
+        normY,
+        normZ,
+        normalOffset
+      );
+      subRectPoints.push(...pts);
+    }
+
+    return subRectPoints;
+  }
 
   // Single sub-rect (even module counts or single-module tables):
   // Generate lateralCount x slopedCount regular grid
