@@ -1,0 +1,259 @@
+{
+  "phase": "phase07",
+  "baselineCommit": "832805e",
+  "generatedFrom": {
+    "sourceCommit": "832805e8af4603bff38d91df2df3c13f7b2e7e96",
+    "harnessSha256": "d10e62da85d00b53953dc92ac00a199aabc046ef1d0476adb0e9f0e2922b96c1",
+    "contractSha256": "6fc16237ddeab92855eb6bd69877246ec73bad817ec29585cecece9450e4f9ee"
+  },
+  "quantities": [
+    {
+      "id": "P7-01",
+      "case": "S-1",
+      "unit": "Pa",
+      "before": 488,
+      "after": 487.99,
+      "delta": -0.01,
+      "beforeSource": "832805e:src/engine/structuralEngine.ts:303",
+      "producer": "src/engine/core/structuralContract.ts:calculateUnifiedWindPressureQz",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-01",
+      "pass": true,
+      "details": {
+        "structEngineBeforePa": 488,
+        "recEngineBeforePa": 487.99,
+        "unifiedQzPa": 487.99,
+        "pathDiscrepancyPa": 0,
+        "tolerancePa": 0.01
+      }
+    },
+    {
+      "id": "P7-02",
+      "case": "S-1-1.2V",
+      "unit": "Pa",
+      "before": 487.99,
+      "after": 702.71,
+      "delta": 214.72,
+      "beforeSource": "832805e:src/engine/structureRecommendationEngine.ts:241",
+      "producer": "src/engine/core/structuralContract.ts:calculateWindPressureSensitivity",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-02",
+      "pass": true,
+      "details": {
+        "baseSpeedKmh": 120,
+        "elevatedSpeedKmh": 144,
+        "baseQzPa": 487.9901155299233,
+        "elevatedQzPa": 702.7057663630894,
+        "analyticalRatio": 1.44,
+        "measuredRatio": 1.4399999999999997,
+        "ratioError": 2.220446049250313e-16
+      }
+    },
+    {
+      "id": "P7-03",
+      "case": "S-1",
+      "unit": "kN",
+      "before": 4.3,
+      "after": 4.26,
+      "delta": -0.04,
+      "beforeSource": "832805e:src/engine/structuralEngine.ts:365",
+      "producer": "src/engine/core/structuralContract.ts:calculateUnifiedLateralShearPerPost",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-03",
+      "pass": true,
+      "details": {
+        "structEngineBeforeKn": 4.3,
+        "recEngineBeforeKn": 5.11,
+        "unifiedShearPerPostKn": 4.26,
+        "hiddenMultiplierInLegacyRec": 1.2,
+        "hiddenMultiplierRemoved": true
+      }
+    },
+    {
+      "id": "P7-04",
+      "case": "S-1",
+      "unit": "kN",
+      "before": 18.41,
+      "after": 18.41,
+      "delta": 0,
+      "beforeSource": "832805e:src/engine/structuralEngine.ts:311",
+      "producer": "src/engine/core/structuralContract.ts:calculateUnifiedTableDeadLoad",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-04",
+      "pass": true,
+      "details": {
+        "structEngineBeforeKn": 18.41,
+        "recEngineLegacyKn": 16.06,
+        "unifiedDeadLoadKn": 18.41,
+        "modulesTotalKg": 798,
+        "rackingTotalKg": 1078.8000000000002
+      }
+    },
+    {
+      "id": "P7-05",
+      "case": "S-1",
+      "unit": "m",
+      "before": 1.6,
+      "after": 5,
+      "delta": 3.4,
+      "beforeSource": "832805e:src/engine/structuralEngine.ts:399",
+      "producer": "src/engine/core/structuralContract.ts:calculateGoverningPileDepth",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-05",
+      "pass": true,
+      "details": {
+        "lateralRequiredM": 1.6,
+        "frostRequiredM": 1.3,
+        "upliftRequiredM": 5,
+        "governingCalculatedM": 5,
+        "governingLimit": "uplift"
+      }
+    },
+    {
+      "id": "P7-06",
+      "case": "S-1",
+      "unit": "dimensionless",
+      "before": 0.2,
+      "after": 2,
+      "delta": 1.8,
+      "beforeSource": "832805e:src/engine/structuralEngine.ts:588",
+      "producer": "src/engine/core/structuralContract.ts:calculateGoverningPileDepth",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-06",
+      "pass": true,
+      "details": {
+        "demandUpliftKn": 26.5,
+        "capacityAt1_6mKn": 5.43,
+        "fosAt1_6m": 0.2,
+        "capacityAtGoverningKn": 53.01,
+        "fosAtGoverning": 2,
+        "threshold": 2
+      }
+    },
+    {
+      "id": "P7-07",
+      "case": "rooftop_anchor_bolted",
+      "unit": "status",
+      "before": "safe=true",
+      "after": "unassessed,safe=false",
+      "delta": "reclassified_to_unassessed",
+      "beforeSource": "832805e:src/engine/structuralEngine.ts:789",
+      "producer": "src/engine/core/structuralContract.ts:getStructuralHonestyDisclosures",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-07",
+      "pass": true,
+      "details": {
+        "status": "unassessed",
+        "safe": false,
+        "disclaimerFa": "توجه مهم مهندسی: ارزیابی سازه و فونداسیون در سطح غربالگری اولیه (Preliminary Screening) است. اتصالات مهاری سقف، ظرفیت پرلین‌های سوله، اثرات گردابه‌ای گوشه/لبه و تحلیل دینامیکی زلزله ارزیابی‌نشده (Unassessed) هستند و نیازمند بررسی نقشه‌های چون‌ساخت و تأیید مهندس محاسب ذی‌صلاح می‌باشند.",
+        "disclaimerEn": "CRITICAL ENGINEERING NOTICE: Structural checks are limited to preliminary screening. Rooftop concrete anchors, shed purlin gauge capacity, edge/corner aerodynamic vortices, and dynamic seismic analysis are UNASSESSED and require site pullout tests and licensed professional engineer verification."
+      }
+    },
+    {
+      "id": "P7-08",
+      "case": "UI-to-Report-Sync",
+      "unit": "difference",
+      "before": 1,
+      "after": 0,
+      "delta": -1,
+      "beforeSource": "832805e:src/components/OfficialReportModal.tsx:147",
+      "producer": "src/engine/core/structuralContract.ts:StructuralSnapshot",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-08",
+      "pass": true,
+      "details": {
+        "qzDiff": 0,
+        "upliftDiff": 0,
+        "depthDiff": 0,
+        "statusDiff": 0,
+        "staleBehavior": "explicitly_unavailable"
+      }
+    }
+  ],
+  "coherenceChecks": [
+    {
+      "id": "C7-01",
+      "lhs": 1.4399999999999997,
+      "rhs": 1.44,
+      "delta": 2.220446049250313e-16,
+      "pass": true,
+      "definition": "Wind pressure sensitivity qz(1.2V)/qz(V) == 1.44 ± 1e-6",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-01"
+    },
+    {
+      "id": "C7-02",
+      "lhs": 18.41,
+      "rhs": 18.41,
+      "delta": 0,
+      "pass": true,
+      "definition": "Dead load and load model consistency across consumers within 0.01 kN",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-02"
+    },
+    {
+      "id": "C7-03",
+      "lhs": 5,
+      "rhs": 5,
+      "delta": 0,
+      "pass": true,
+      "definition": "Governing depth satisfies max(lateral, frost, uplift) simultaneously",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-03"
+    },
+    {
+      "id": "C7-04",
+      "lhs": 1,
+      "rhs": 1,
+      "delta": 0,
+      "pass": true,
+      "definition": "Unassessed roof anchor, seismic, and edge vortices are explicitly unassessed",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-04"
+    },
+    {
+      "id": "C7-05",
+      "lhs": 0,
+      "rhs": 0,
+      "delta": 0,
+      "pass": true,
+      "definition": "Structural Tab to Report snapshot synchronization delta == 0",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-05"
+    },
+    {
+      "id": "C7-06",
+      "lhs": 0,
+      "rhs": 0,
+      "delta": 0,
+      "pass": true,
+      "definition": "Zero wind speed yields 0 pressure, no NaN/Infinity in calculations",
+      "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-06"
+    }
+  ],
+  "nonRegression": {
+    "M-A1": {
+      "expected": 1851400,
+      "actual": 1851400,
+      "delta": 0,
+      "pass": true
+    },
+    "M-A2": {
+      "expected": 1646827.145773,
+      "actual": 1646827.145773,
+      "delta": 0,
+      "pass": true
+    },
+    "M-C1": {
+      "expected": 13.1225,
+      "actual": 13.1225,
+      "delta": 0,
+      "pass": true
+    },
+    "M-D1": {
+      "expected": 2.74,
+      "actual": 2.74,
+      "delta": 0,
+      "pass": true
+    },
+    "M-F1": {
+      "expected": 499784,
+      "actual": 499784,
+      "delta": 0,
+      "pass": true
+    },
+    "M-F4": {
+      "expected": 310202,
+      "actual": 310202,
+      "delta": 0,
+      "pass": true
+    }
+  }
+}
