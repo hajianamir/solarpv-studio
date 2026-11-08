@@ -1,19 +1,18 @@
 {
-  "schemaVersion": "1.0.0",
-  "phase": "phase01",
-  "generatedAt": "2026-11-08T00:00:00.000Z",
-  "harnessSha256": "6764bb289d9ed89c7e5317182e4f6d5a096a1e36a4d39f80470a79d1bd751198",
+  "schema": "solarpv.audit.phase01.v1",
+  "generatedAtCommit": "201456802a9fcd3f7d80a9ebecd8d6ff7a2e4f35",
+  "harnessSha256": "732b1074b7436150b58e8054aac5cce2ddd28429f44515b0a1911e8aa58d0ab9",
   "filesCount": 9,
   "files": [
     {
       "path": "docs/audit/remediation/evidence/phase01/measurements.json",
-      "sha256": "166128a33553591588333bc5233388308dc9997a2fbde78ad9b6a07fca17de2e",
-      "sizeBytes": 43873
+      "sha256": "a991af24f6c1485a6510d47a48582c579b354b4ac684239c191ee103d7b1a313",
+      "sizeBytes": 104138
     },
     {
       "path": "docs/audit/remediation/phase01-formula-spec.fa.md",
-      "sha256": "9bf7eea97da5f2133dc188deed7a77cdbf7323080ce023c82c2d7bc62264f7df",
-      "sizeBytes": 46469
+      "sha256": "96a9e7f9f7d5158276d6dc11fcfb70115ffa0882c3225c87d85511719e907c80",
+      "sizeBytes": 53232
     },
     {
       "path": "scripts/remediation/fixtures/g1.json",
@@ -42,13 +41,13 @@
     },
     {
       "path": "scripts/remediation/measure.ts",
-      "sha256": "144bb6c08f71535f9526336fcd832ff10947b551869867c9c5ac724cd525da03",
-      "sizeBytes": 62996
+      "sha256": "08391dae9149ad5a1db1929e2d52e03e4d2b030a20c8569eabbe9fa8687788e5",
+      "sizeBytes": 73464
     },
     {
       "path": "scripts/remediation/run-phase01.ts",
-      "sha256": "cdf483263664a5cca2fd12fb1304470d3fca15e4d4fe7799492bc0da6f485f0b",
-      "sizeBytes": 6727
+      "sha256": "2d20dffb23c8c7105580f36476eb1f00f1baacedc7ea479bf66c2bf13a006433",
+      "sizeBytes": 7530
     }
   ]
 }

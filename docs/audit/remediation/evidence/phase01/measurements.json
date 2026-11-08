@@ -1,8 +1,25 @@
 {
-  "schemaVersion": "1.0.0",
-  "phase": "phase01",
-  "generatedAt": "2026-11-08T00:00:00.000Z",
-  "harnessSha256": "6764bb289d9ed89c7e5317182e4f6d5a096a1e36a4d39f80470a79d1bd751198",
+  "schema": "solarpv.audit.phase01.v1",
+  "generatedAtCommit": "201456802a9fcd3f7d80a9ebecd8d6ff7a2e4f35",
+  "harnessSha256": "732b1074b7436150b58e8054aac5cce2ddd28429f44515b0a1911e8aa58d0ab9",
+  "cases": [
+    {
+      "id": "G-1",
+      "fixtureSha256": "ac4f4aec607d7b09c5f60e1d50eca2ae4a583ea132c48d9b81942b2690b455a7"
+    },
+    {
+      "id": "G-2",
+      "fixtureSha256": "13e1ff7b3e3053d1f2428227ea271ee095c4d8ecb5128d27bbc653d15b1338e3"
+    },
+    {
+      "id": "G-3",
+      "fixtureSha256": "370251b80845084ea216e64491579e5a1880af8e49b3bb2d7853b05d0414ef61"
+    },
+    {
+      "id": "G-4",
+      "fixtureSha256": "4258e3eff781a6f610adbb0a42280e6f17c56f5b0b68e81d237fe0d67f4d052f"
+    }
+  ],
   "summary": {
     "totalQuantities": 45,
     "totalChecks": 10,
@@ -80,9 +97,9 @@
       "case": "G-1",
       "chain": [
         "simulation24hEngine.ts:50-250",
-        "solarPvEngine.ts:1450"
+        "solarPvEngine.ts:720-740"
       ],
-      "producer": "src/engine/solarPvEngine.ts:1450",
+      "producer": "src/engine/simulation24hEngine.ts:44",
       "formula": "E_annual = sum(hourly_generation) * 365",
       "assumptions": [
         "clear_sky_profile",
@@ -104,10 +121,10 @@
       "unit": "kWh",
       "case": "G-2",
       "chain": [
-        "server.ts:380-420",
-        "solarPvEngine.ts:1380-1440"
+        "server.ts:710-725",
+        "solarPvEngine.ts:727-750"
       ],
-      "producer": "server.ts:395",
+      "producer": "src/engine/solarPvEngine.ts:728",
       "formula": "P_req = E_daily / (PSH * 0.78); round to module blocks",
       "assumptions": [
         "derate=0.78",
@@ -130,9 +147,10 @@
       "unit": "kWh",
       "case": "G-1",
       "chain": [
-        "server.ts:400"
+        "server.ts:400",
+        "server.ts:714"
       ],
-      "producer": "server.ts:400",
+      "producer": "server.ts:714",
       "formula": "E = P_kw * PSH * 365 * 0.78",
       "assumptions": [
         "hardcoded 0.78 derate on targetPowerplantCapacityKw"
@@ -566,168 +584,227 @@
     },
     {
       "id": "M-E1",
-      "name": "Required Usable Battery Energy for Autonomy Window",
-      "value": 12.39,
+      "name": "Inverter Count and Total Power via Clustering (G-1, G-2, G-3)",
+      "value": 4,
       "details": {
-        "dailyConsumptionKwh": 8.26,
-        "autonomyDays": 1.5,
-        "requiredUsableKwh": 12.39
+        "G1": {
+          "parallelUnitsCount": 4,
+          "unitRatingKw": 330,
+          "totalInverterCapacityKw": 1320,
+          "engineeringClass": "Industrial & Utility (>30 kW)"
+        },
+        "G2": {
+          "parallelUnitsCount": 1,
+          "unitRatingKw": 5,
+          "totalInverterCapacityKw": 5,
+          "engineeringClass": "Residential Micro (<3 kW)"
+        },
+        "G3": {
+          "parallelUnitsCount": 1,
+          "unitRatingKw": 5,
+          "totalInverterCapacityKw": 5,
+          "engineeringClass": "Residential Micro (<3 kW)"
+        },
+        "totalInverterUnitsAcrossCases": 6
       },
-      "unit": "kWh",
-      "case": "G-3",
+      "unit": "units",
+      "case": "G-1, G-2, G-3",
       "chain": [
-        "batteryEngine.ts:158-172"
+        "inverterClustering.ts:77-140",
+        "pvEngineAdvanced.ts:40-100"
       ],
-      "producer": "src/engine/batteryEngine.ts:158",
-      "formula": "E_usable_req = E_daily * autonomyDays",
+      "producer": "src/engine/inverterClustering.ts:77",
+      "formula": "parallelUnitsCount = max(1, ceil(continuousKw / unitKw)); totalKw = parallelUnitsCount * unitKw",
       "assumptions": [
-        "offgrid mode: 100% daily load autonomy"
+        "preferred units: G-1=330kW, G-2=5kW, G-3=5kW"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E1",
       "verified": true
     },
     {
       "id": "M-E2",
-      "name": "Required Gross Battery Capacity with Thermal and DoD Deratings",
-      "value": 16,
+      "name": "Selected DC Bus Voltage and Selection Criteria",
+      "value": 1200,
       "details": {
-        "requiredUsableKwh": 12.39,
-        "recommendedDoDPct": 85,
-        "roundTripEfficiencyPct": 95,
-        "tempDeratingPerCBelow20": 0.5,
-        "grossCapacityKwh": 16
+        "G1_inverterDcBusNominalV": 1200,
+        "G2_inverterDcBusNominalV": 400,
+        "G3_inverterDcBusNominalV": 400,
+        "G3_batteryDcBusNominalV": 48,
+        "autoSteppingReasonFa": "توان بالای ۳ کیلووات؛ ارتقا خودکار به استاندارد ۴۸ ولت صنعتی جهت ممانعت از اتلاف حرارتی DC.",
+        "selectionCriteria": "Inverter DC bus nominal = 80% of MPPT ceiling; or class-inferred: <=10kW: 400V, <=100kW: 800V, >100kW: 1100V; BESS stepping: >120A triggers 12V->24V->48V"
       },
-      "unit": "kWh",
-      "case": "G-3",
+      "unit": "VDC",
+      "case": "G-1, G-2, G-3",
       "chain": [
-        "batteryEngine.ts:240-258"
+        "inverterClustering.ts:80-125"
       ],
-      "producer": "src/engine/batteryEngine.ts:251",
-      "formula": "E_gross = E_usable / (DoD * eta_rt * f_temp)",
+      "producer": "src/engine/inverterClustering.ts:88",
+      "formula": "V_dcBus = V_mpptMax * 0.8; auto-stepped battery voltage by current > 120A threshold",
       "assumptions": [
-        "min ambient temp 15°C",
-        "LiFePO4 profile"
+        "G-1 1500V MPPT ceiling gives 1200V / 1100V class bus",
+        "G-3 battery stepped to 48V"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E2",
       "verified": true
     },
     {
       "id": "M-E3",
-      "name": "Battery Bank Architecture and Physical Unit Counts",
-      "value": 16,
+      "name": "Required Operating Current per MPPT and Inverter Rating Margin",
+      "value": 233.07,
       "details": {
-        "unitBatteryCapacityAh": 78.125,
-        "systemVoltageVdc": 51.2,
-        "batteriesInSeries": 4,
-        "parallelStrings": 4,
-        "totalBatteryUnitsCount": 16,
-        "actualGrossKwh": 16,
-        "actualUsableKwh": 13.6,
-        "totalCapacityAh": 313
+        "stringsPerMppt": 17,
+        "moduleImpAmps": 13.71,
+        "moduleIscAmps": 14.42,
+        "requiredOperatingCurrentAmps": 233.07,
+        "inverterImppMaxAmpsPerMppt": 22,
+        "maxShortCircuitCurrentAmps": 306.42,
+        "inverterIscMaxAmpsPerMppt": 26,
+        "isMpptCurrentCompliant": false,
+        "enforcementMode": "warned-only",
+        "doesHaltExecution": false
       },
-      "unit": "units",
-      "case": "G-3",
+      "unit": "A",
+      "case": "G-1",
       "chain": [
-        "batteryEngine.ts:255-270"
+        "pvEngineAdvanced.ts:224-239"
       ],
-      "producer": "src/engine/batteryEngine.ts:266",
-      "formula": "N_series = V_dc / V_unit; N_parallel = ceil(Ah_req / Ah_unit); N_total = N_series * N_parallel",
+      "producer": "src/engine/pvEngineAdvanced.ts:224",
+      "formula": "I_mppt = stringsPerMppt * I_mp; warning emitted if I_mppt > inverter.imppMaxAmpsPerMppt",
       "assumptions": [
-        "BYD 4.0 kWh 51.2V modular unit blocks"
+        "stringsPerMppt = ceil(totalStrings / mpptChannels)",
+        "warned-only non-blocking enforcement"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E3",
       "verified": true
     },
     {
       "id": "M-E4",
-      "name": "Continuous and Surge Discharge Currents and C-Rate Evaluation",
-      "value": 63,
+      "name": "Battery Capacity Sizing and Longest Winter Night Coverage (G-3)",
+      "value": 19.2,
       "details": {
-        "continuousDischargeCurrentAmps": 63,
-        "peakSurgeDischargeCurrentAmps": 105,
-        "actualContinuousCRate": 0.2,
-        "maxContinuousCRate": 1,
-        "isCRateCompliant": true
+        "grossCapacityKwh": 19.2,
+        "usableCapacityKwh": 16.3,
+        "actualNeedKwh": 8.26,
+        "coverageTargetKwh": 8.26,
+        "coverageRatioPct": 197.6,
+        "nightCoveragePct": 197.6,
+        "batteryChemistry": "lifepo4",
+        "batteryUnitsCount": 4,
+        "hasDeficitWarning": false
       },
-      "unit": "A",
+      "unit": "kWh",
       "case": "G-3",
       "chain": [
-        "batteryEngine.ts:270-285"
+        "batteryEngine.ts:174-320"
       ],
-      "producer": "src/engine/batteryEngine.ts:271",
-      "formula": "I_dc = P_ac / (V_dc * eta_inv); C_rate = I_dc / Ah_bank",
+      "producer": "src/engine/batteryEngine.ts:251",
+      "formula": "E_gross = E_usable / (DoD * eta_rt * f_temp); Coverage_pct = (E_usable / E_night) * 100",
       "assumptions": [
-        "inverter continuous power 3000W",
-        "inverter efficiency 0.93"
+        "Tehran winter night 14.42h",
+        "LiFePO4 DoD=85%"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E4",
       "verified": true
     },
     {
       "id": "M-E5",
-      "name": "Design Night Energy Coverage and Winter Autonomy Margin",
-      "value": 274.2,
+      "name": "System Target Inverter Loading Ratio (ILR) vs Fleet ILR",
+      "value": 0.859773,
       "details": {
-        "coverageTargetKwh": 4.96,
-        "usableCapacityKwh": 13.6,
-        "nightCoveragePct": 274.2,
-        "coverageLabelEn": "Design Night Coverage",
-        "coverageLabelFa": "پوشش شبِ طراحی",
-        "hasDeficitWarning": false
+        "systemTargetIlr": 1.25,
+        "fleetTotalAcKw": 1320,
+        "totalPvCapacityKwp": 1134.9,
+        "fleetIlr": 0.859773,
+        "singleInverterDcAcRatio": 3.439091,
+        "ilrDelta": 0.390227
       },
-      "unit": "%",
-      "case": "G-3",
+      "unit": "ratio",
+      "case": "G-1",
       "chain": [
-        "batteryEngine.ts:290-320"
+        "waterfallLossEngine.ts:182-195",
+        "inverterClustering.ts:77-120"
       ],
-      "producer": "src/engine/batteryEngine.ts:299",
-      "formula": "Coverage_pct = (E_usable / E_night_winter) * 100",
+      "producer": "src/engine/waterfallLossEngine.ts:182",
+      "formula": "ILR_fleet = P_dc / (N_inv * P_ac_unit)",
       "assumptions": [
-        "longest winter night in Tehran = 14.42 hours"
+        "target ILR 1.25 vs 4 clustered 330kW inverters (1320kW total)"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E5",
       "verified": true
     },
     {
       "id": "M-F1",
-      "name": "Total Initial Powerplant CAPEX (G-1 Utility 1MW Scale)",
+      "name": "Initial Capital Expenditure (CAPEX) Breakdown for G-1 and G-2",
       "value": 499784,
       "details": {
-        "modulesUsd": 158886,
-        "invertersUsd": 72600,
-        "structuresUsd": 51071,
-        "cablesAndProtectionUsd": 39722,
-        "substationMvUsd": 48632,
-        "gridInterconnectionUsd": 33347,
-        "hvConnectionUsd": 62526,
-        "engineeringAndInstallationUsd": 33000,
-        "totalCapexUsd": 499784,
-        "totalCapexToman": 44980493684
+        "G1": {
+          "totalCapexUsd": 499784,
+          "totalCapexToman": 44980493684,
+          "components": {
+            "pvModulesUsd": 158886,
+            "invertersUsd": 72600,
+            "structuresUsd": 51071,
+            "cablesAndProtectionUsd": 39722,
+            "substationMvUsd": 48632,
+            "gridInterconnectionUsd": 33347,
+            "hvConnectionUsd": 62526,
+            "engineeringAndInstallationUsd": 33000
+          },
+          "percentages": {
+            "pvModulesPct": 31.79,
+            "invertersPct": 14.53,
+            "structuresPct": 10.22,
+            "cablingPct": 7.95,
+            "substationMvPct": 9.73,
+            "hvConnectionPct": 12.51,
+            "epcLaborPct": 6.6
+          }
+        },
+        "G2": {
+          "totalCapexUsd": 3475,
+          "totalCapexToman": 312660000,
+          "components": {
+            "pvModulesUsd": 1638,
+            "invertersUsd": 550,
+            "structuresUsd": 527,
+            "cablesAndProtectionUsd": 410,
+            "engineeringAndInstallationUsd": 250
+          },
+          "percentages": {
+            "pvModulesPct": 47.14,
+            "invertersPct": 15.83,
+            "structuresPct": 15.17,
+            "cablingPct": 11.8,
+            "epcLaborPct": 7.19
+          }
+        }
       },
       "unit": "USD",
-      "case": "G-1",
+      "case": "G-1, G-2",
       "chain": [
         "financialEngine.ts:300-385",
         "FinancialTab.tsx:120-200"
       ],
       "producer": "src/engine/financialEngine.ts:380",
-      "formula": "CAPEX = Modules + Inverters + Structures + Cables + Substation + Interconnect + Labor",
+      "formula": "CAPEX = Modules + Inverters + Structures + Cabling + Substation + Interconnect + Labor",
       "assumptions": [
-        "Utility Powerplant mode includes MV substation & HV interconnection"
+        "Utility powerplant has MV substation; ongrid residential omits MV"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F1",
       "verified": true
     },
     {
       "id": "M-F2",
-      "name": "Annual Base Operational Expenditure (OPEX)",
+      "name": "Year 1 Operational Expenditure (OPEX) for G-1",
       "value": 5997,
       "details": {
         "annualOpexUsd": 5997,
         "annualOpexToman": 539765924,
-        "opexPctOfCapex": 1.2
+        "opexPctOfCapex": 1.2,
+        "landLeaseAnnualUsd": 136.19,
+        "gridOperatorFeeAnnualUsd": 68.09
       },
-      "unit": "USD/year",
+      "unit": "USD",
       "case": "G-1",
       "chain": [
         "financialEngine.ts:390-415"
@@ -742,16 +819,22 @@
     },
     {
       "id": "M-F3",
-      "name": "Levelized Cost of Electricity (LCOE)",
+      "name": "Levelized Cost of Electricity (LCOE) for G-1 and G-2",
       "value": 0.0562,
       "details": {
-        "lcoeUsdPerKwh": 0.0562,
-        "lcoeTomanPerKwh": 5056,
+        "G1": {
+          "lcoeUsdPerKwh": 0.0562,
+          "lcoeTomanPerKwh": 5056
+        },
+        "G2": {
+          "lcoeUsdPerKwh": 0.0425,
+          "lcoeTomanPerKwh": 3825
+        },
         "discountRatePct": 18,
         "lifetimeYears": 25
       },
       "unit": "USD/kWh",
-      "case": "G-1",
+      "case": "G-1, G-2",
       "chain": [
         "financialEngine.ts:640-655"
       ],
@@ -767,68 +850,426 @@
     },
     {
       "id": "M-F4",
-      "name": "Net Present Value (NPV)",
+      "name": "Financial Indicators (NPV, IRR, Payback) for G-1 and G-2",
       "value": 310202,
       "details": {
-        "npvUsd": 310202,
-        "npvToman": 27918146128,
-        "discountRatePct": 18,
-        "ppaTariffTomanPerKwh": 2800
+        "G1": {
+          "npvUsd": 310202,
+          "npvToman": 27918146128,
+          "irrPct": 23.6,
+          "simplePaybackPeriodYears": 6.4,
+          "discountedPaybackPeriodYears": 13.3
+        },
+        "G2": {
+          "npvUsd": 6914,
+          "npvToman": 622243361,
+          "irrPct": 33.7,
+          "simplePaybackPeriodYears": 4.1,
+          "discountedPaybackPeriodYears": 6.5
+        },
+        "discountRatePct": 18
       },
       "unit": "USD",
-      "case": "G-1",
+      "case": "G-1, G-2",
       "chain": [
-        "financialEngine.ts:610-630"
+        "financialEngine.ts:610-675"
       ],
       "producer": "src/engine/financialEngine.ts:620",
-      "formula": "NPV = -CAPEX + sum(NetCashFlow_t / (1+r)^t)",
+      "formula": "NPV = sum(NetCashFlow_t / (1+r)^t); IRR solves NPV(r)=0; Payback = cumulative cash flow break-even",
       "assumptions": [
-        "SATBA PPA feed-in tariff 2800 Toman/kWh",
-        "tariff escalation 15%/yr"
+        "PPA tariff 2800 Toman/kWh (G-1); Retail tariff 3800 Toman/kWh (G-2); 15% escalation"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F4",
       "verified": true
     },
     {
       "id": "M-F5",
-      "name": "Internal Rate of Return (IRR)",
-      "value": 23.6,
+      "name": "Year-by-Year Cash Flow Table across 25 Years (G-1)",
+      "value": 128129928467,
       "details": {
-        "irrPct": 23.6,
-        "irrStatus": "DEFINED_SINGLE_ROOT",
-        "isIrrDefined": true,
-        "discountRatePct": 18
+        "totalYears": 25,
+        "year1NetCashFlowToman": 4625768696,
+        "year25NetCashFlowToman": 128129928467,
+        "cashFlowTable": [
+          {
+            "year": 1,
+            "capexToman": 0,
+            "generationKwh": 1851400,
+            "revenueToman": 5183920000,
+            "opexToman": 558151304,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 4625768696,
+            "cumulativeCashFlowToman": -40354724988,
+            "discountedCashFlowToman": 3920142963
+          },
+          {
+            "year": 2,
+            "capexToman": 0,
+            "generationKwh": 1842143,
+            "revenueToman": 5931700460,
+            "opexToman": 601332578,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 5330367882,
+            "cumulativeCashFlowToman": -35024357106,
+            "discountedCashFlowToman": 3828187218
+          },
+          {
+            "year": 3,
+            "capexToman": 0,
+            "generationKwh": 1832932,
+            "revenueToman": 6787348251,
+            "opexToman": 647968354,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 6139379897,
+            "cumulativeCashFlowToman": -28884977209,
+            "discountedCashFlowToman": 3736616145
+          },
+          {
+            "year": 4,
+            "capexToman": 0,
+            "generationKwh": 1823768,
+            "revenueToman": 7766423237,
+            "opexToman": 698334992,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 7068088245,
+            "cumulativeCashFlowToman": -21816888964,
+            "discountedCashFlowToman": 3645641285
+          },
+          {
+            "year": 5,
+            "capexToman": 0,
+            "generationKwh": 1814649,
+            "revenueToman": 8886729788,
+            "opexToman": 752730961,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 8133998828,
+            "cumulativeCashFlowToman": -13682890137,
+            "discountedCashFlowToman": 3555445852
+          },
+          {
+            "year": 6,
+            "capexToman": 0,
+            "generationKwh": 1805576,
+            "revenueToman": 10168640560,
+            "opexToman": 811478607,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 9357161953,
+            "cumulativeCashFlowToman": -4325728184,
+            "discountedCashFlowToman": 3466187905
+          },
+          {
+            "year": 7,
+            "capexToman": 0,
+            "generationKwh": 1796548,
+            "revenueToman": 11635466961,
+            "opexToman": 874926066,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 10760540896,
+            "cumulativeCashFlowToman": 6434812712,
+            "discountedCashFlowToman": 3378003158
+          },
+          {
+            "year": 8,
+            "capexToman": 0,
+            "generationKwh": 1787565,
+            "revenueToman": 13313883071,
+            "opexToman": 943449320,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 12370433750,
+            "cumulativeCashFlowToman": 18805246462,
+            "discountedCashFlowToman": 3291007479
+          },
+          {
+            "year": 9,
+            "capexToman": 0,
+            "generationKwh": 1778627,
+            "revenueToman": 15234410703,
+            "opexToman": 1017454436,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 14216956268,
+            "cumulativeCashFlowToman": 33022202730,
+            "discountedCashFlowToman": 3205299101
+          },
+          {
+            "year": 10,
+            "capexToman": 0,
+            "generationKwh": 1769734,
+            "revenueToman": 17431974447,
+            "opexToman": 1097379960,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 16334594487,
+            "cumulativeCashFlowToman": 49356797218,
+            "discountedCashFlowToman": 3120960588
+          },
+          {
+            "year": 11,
+            "capexToman": 0,
+            "generationKwh": 1760885,
+            "revenueToman": 19946536761,
+            "opexToman": 1183699526,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 18762837235,
+            "cumulativeCashFlowToman": 68119634453,
+            "discountedCashFlowToman": 3038060588
+          },
+          {
+            "year": 12,
+            "capexToman": 0,
+            "generationKwh": 1752081,
+            "revenueToman": 22823824689,
+            "opexToman": 1276924658,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 21546900031,
+            "cumulativeCashFlowToman": 89666534484,
+            "discountedCashFlowToman": 2956655392
+          },
+          {
+            "year": 13,
+            "capexToman": 0,
+            "generationKwh": 1743320,
+            "revenueToman": 26116161401,
+            "opexToman": 1377607800,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 24738553600,
+            "cumulativeCashFlowToman": 114405088084,
+            "discountedCashFlowToman": 2876790322
+          },
+          {
+            "year": 14,
+            "capexToman": 0,
+            "generationKwh": 1734604,
+            "revenueToman": 29883417683,
+            "opexToman": 1486345594,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 28397072089,
+            "cumulativeCashFlowToman": 142802160173,
+            "discountedCashFlowToman": 2798500969
+          },
+          {
+            "year": 15,
+            "capexToman": 0,
+            "generationKwh": 1725931,
+            "revenueToman": 34194100683,
+            "opexToman": 1603782411,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 32590318272,
+            "cumulativeCashFlowToman": 175392478445,
+            "discountedCashFlowToman": 2721814304
+          },
+          {
+            "year": 16,
+            "capexToman": 0,
+            "generationKwh": 1717301,
+            "revenueToman": 39126599707,
+            "opexToman": 1730614174,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 37395985533,
+            "cumulativeCashFlowToman": 212788463978,
+            "discountedCashFlowToman": 2646749661
+          },
+          {
+            "year": 17,
+            "capexToman": 0,
+            "generationKwh": 1708715,
+            "revenueToman": 44770611715,
+            "opexToman": 1867592477,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 42903019238,
+            "cumulativeCashFlowToman": 255691483216,
+            "discountedCashFlowToman": 2573319624
+          },
+          {
+            "year": 18,
+            "capexToman": 0,
+            "generationKwh": 1700171,
+            "revenueToman": 51228772455,
+            "opexToman": 2015529045,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 49213243410,
+            "cumulativeCashFlowToman": 304904726626,
+            "discountedCashFlowToman": 2501530813
+          },
+          {
+            "year": 19,
+            "capexToman": 0,
+            "generationKwh": 1691670,
+            "revenueToman": 58618522881,
+            "opexToman": 2175300538,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 56443222343,
+            "cumulativeCashFlowToman": 361347948969,
+            "discountedCashFlowToman": 2431384596
+          },
+          {
+            "year": 20,
+            "capexToman": 0,
+            "generationKwh": 1683212,
+            "revenueToman": 67074244807,
+            "opexToman": 2347853751,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 64726391056,
+            "cumulativeCashFlowToman": 426074340025,
+            "discountedCashFlowToman": 2362877717
+          },
+          {
+            "year": 21,
+            "capexToman": 0,
+            "generationKwh": 1674796,
+            "revenueToman": 76749704620,
+            "opexToman": 2534211220,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 74215493400,
+            "cumulativeCashFlowToman": 500289833425,
+            "discountedCashFlowToman": 2296002865
+          },
+          {
+            "year": 22,
+            "capexToman": 0,
+            "generationKwh": 1666422,
+            "revenueToman": 87820849512,
+            "opexToman": 2735477288,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 85085372224,
+            "cumulativeCashFlowToman": 585375205649,
+            "discountedCashFlowToman": 2230749182
+          },
+          {
+            "year": 23,
+            "capexToman": 0,
+            "generationKwh": 1658090,
+            "revenueToman": 100489007054,
+            "opexToman": 2952844640,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 97536162414,
+            "cumulativeCashFlowToman": 682911368062,
+            "discountedCashFlowToman": 2167102714
+          },
+          {
+            "year": 24,
+            "capexToman": 0,
+            "generationKwh": 1649799,
+            "revenueToman": 114984546321,
+            "opexToman": 3187601381,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 111796944940,
+            "cumulativeCashFlowToman": 794708313003,
+            "discountedCashFlowToman": 2105046823
+          },
+          {
+            "year": 25,
+            "capexToman": 0,
+            "generationKwh": 1641550,
+            "revenueToman": 131571067128,
+            "opexToman": 3441138661,
+            "fuelCostToman": 0,
+            "batteryReplacementToman": 0,
+            "inverterReplacementToman": 0,
+            "netCashFlowToman": 128129928467,
+            "cumulativeCashFlowToman": 922838241470,
+            "discountedCashFlowToman": 2044562547
+          }
+        ]
       },
-      "unit": "%",
+      "unit": "Toman",
       "case": "G-1",
       "chain": [
-        "financialEngine.ts:630-645"
+        "financialEngine.ts:500-600"
       ],
-      "producer": "src/engine/financialEngine.ts:635",
-      "formula": "NPV(IRR) = 0 solved via Brent / Newton-Raphson method",
+      "producer": "src/engine/financialEngine.ts:510",
+      "formula": "NetCashFlow_t = Revenue_t - OPEX_t - FuelCost_t - Replacements_t",
       "assumptions": [
-        "Conventional sign change pattern (- + + ...)"
+        "25-year full lifecycle projection with 0.5%/yr degradation and 15%/yr tariff escalation"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F5",
       "verified": true
     },
     {
       "id": "M-F6",
-      "name": "Simple Payback Period",
-      "value": 6.4,
+      "name": "Tariff Escalation Sensitivity Analysis for G-1 (15%, 5%, 0%)",
+      "value": 310202,
       "details": {
-        "simplePaybackPeriodYears": 6.4,
-        "discountedPaybackPeriodYears": 13.3
+        "escalation15Pct": {
+          "tariffEscalationPct": 15,
+          "npvUsd": 310202,
+          "npvToman": 27918146128,
+          "irrPct": 23.6,
+          "simplePaybackYears": 6.4,
+          "discountedPaybackYears": 13.3
+        },
+        "escalation5Pct": {
+          "tariffEscalationPct": 5,
+          "npvUsd": -148751,
+          "npvToman": -13387550710,
+          "irrPct": 13,
+          "simplePaybackYears": 8.4,
+          "discountedPaybackYears": null
+        },
+        "escalation0Pct": {
+          "tariffEscalationPct": 0,
+          "npvUsd": -247356,
+          "npvToman": -22262084049,
+          "irrPct": 6.6,
+          "simplePaybackYears": 10.6,
+          "discountedPaybackYears": null
+        }
       },
-      "unit": "years",
+      "unit": "USD",
       "case": "G-1",
       "chain": [
-        "financialEngine.ts:655-675"
+        "financialEngine.ts:600-675"
       ],
-      "producer": "src/engine/financialEngine.ts:660",
-      "formula": "Years until cumulative non-discounted cash flow becomes positive",
+      "producer": "src/engine/financialEngine.ts:620",
+      "formula": "Parametric sweep of tariffEscalationPct in [15, 5, 0] yielding NPV/IRR/Payback matrix",
       "assumptions": [
-        "nominal cash flows"
+        "discount rate held constant at 18%"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F6",
       "verified": true
@@ -971,119 +1412,843 @@
       "details": {
         "importedModulesCount": 2,
         "imports": [
-          "solarPvEngine",
-          "batteryEngine"
+          "./src/engine/solarPvEngine.js",
+          "./src/engine/core/thermalDerate.js"
         ]
       },
       "unit": "imports",
       "case": "Server",
       "chain": [
-        "server.ts:25-28"
+        "server.ts:20-21"
       ],
-      "producer": "server.ts:25",
+      "producer": "server.ts:20",
       "formula": "AST import statement count matching src/engine/*",
       "assumptions": [
-        "server.ts imports solarPvEngine and batteryEngine"
+        "server.ts directly imports solarPvEngine.js and thermalDerate.js"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-G5",
       "verified": true
     },
     {
       "id": "M-H1",
-      "name": "Catalog PV Modules Count and NOCT Completeness",
+      "name": "Equipment Catalog Size and NOCT Specification Completeness",
       "value": 25,
       "details": {
-        "totalModulesCount": 25,
-        "modulesWithExplicitNoctCount": 0,
-        "noctCompletenessPct": 0
+        "modulesCount": 25,
+        "invertersCount": 33,
+        "batteriesCount": 24,
+        "modulesWithNoctCount": 0,
+        "modulesWithNoctPct": 0
       },
       "unit": "modules",
       "case": "Catalog",
       "chain": [
-        "src/data/equipmentCatalogData.ts:1-180"
+        "equipmentCatalogData.ts:1-900"
       ],
-      "producer": "src/data/equipmentCatalogData.ts:1",
-      "formula": "count(DEFAULT_MODULES)",
+      "producer": "src/engine/equipmentCatalogData.ts:132",
+      "formula": "Count of items in CATALOG_MODULES, CATALOG_INVERTERS, CATALOG_BATTERIES and noct completeness",
       "assumptions": [
-        "Catalog records lack explicit noctC property"
+        "0% of catalog modules specify NOCT (all 25 modules lack noct field)"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H1",
       "verified": true
     },
     {
       "id": "M-H2",
-      "name": "Catalog Inverters Count and Parallel Sizing Capabilities",
-      "value": 33,
+      "name": "Full Engine Module Dependency and Import Graph",
+      "value": 71,
       "details": {
-        "totalInvertersCount": 33,
-        "parallelCapableCount": 33,
-        "threePhaseCount": 28
+        "totalEngineModules": 71,
+        "importGraph": {
+          "src/engine/batteryEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/BessTab.tsx",
+              "src/components/OfficialReportModal.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/bifacial/bifacial2dViewFactor.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/crossValidation.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/bifacialGain.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/engine/core/uncertaintyPropagation.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/bipv/bipvThermalEngine.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/crossValidation.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/optical/iamEngine.ts",
+              "src/engine/soiling/kimberSoilingEngine.ts"
+            ]
+          },
+          "src/engine/catalogAdapters.ts": {
+            "importedBy": [
+              "src/engine/solarPvEngine.ts"
+            ],
+            "imports": [
+              "src/engine/equipmentCatalogData.ts",
+              "src/engine/types/equipmentTypes.ts"
+            ]
+          },
+          "src/engine/catalogRepository.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/BessTab.tsx",
+              "src/components/CatalogTab.tsx",
+              "src/components/PvArrayEngineeringTab.tsx",
+              "src/engine/offlineTransferEngine.ts"
+            ],
+            "imports": [
+              "src/engine/equipmentCatalogData.ts"
+            ]
+          },
+          "src/engine/climaticData.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/ClimateTab.tsx",
+              "src/components/FinancialTab.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/components/PvArrayEngineeringTab.tsx",
+              "src/components/RFC3ReportsTab.tsx",
+              "src/components/ShadingAnalysisSubTab.tsx",
+              "src/components/SiteLocationMap.tsx",
+              "src/components/StructuralFoundationTab.tsx",
+              "src/components/ThreeJsViewer.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/core/projectMigration.ts",
+              "src/engine/solarPvEngine.ts"
+            ],
+            "imports": [
+              "src/engine/corrosion/saltCorrosionEngine.ts",
+              "src/engine/dataGateway/externalDataGateway.ts",
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/core/advancedInterfaces.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/optical/iamEngine.ts",
+              "src/engine/snow/marionSnowEngine.ts",
+              "src/engine/soiling/kimberSoilingEngine.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/core/benchmarks/crossValidation.ts": {
+            "importedBy": [
+              "src/components/RFC3ReportsTab.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/bifacial/bifacial2dViewFactor.ts",
+              "src/engine/bipv/bipvThermalEngine.ts",
+              "src/engine/core/benchmarks/goldenDatasets.ts",
+              "src/engine/core/modelRegistry.ts",
+              "src/engine/optical/iamEngine.ts",
+              "src/engine/singleDiodeModel.ts",
+              "src/engine/snow/marionSnowEngine.ts",
+              "src/engine/soiling/kimberSoilingEngine.ts"
+            ]
+          },
+          "src/engine/core/benchmarks/externalValidation.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/snow/marionSnowEngine.ts",
+              "src/engine/snow/marionSnowRecalibration.ts",
+              "src/engine/soiling/kimberSoilingEngine.ts"
+            ]
+          },
+          "src/engine/core/benchmarks/goldenDatasets.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/crossValidation.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/core/benchmarks/lhsBenchmark.ts": {
+            "importedBy": [
+              "src/components/RFC3ReportsTab.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/core/prng.ts"
+            ]
+          },
+          "src/engine/core/benchmarks/migrationTestVectors.ts": {
+            "importedBy": [
+              "src/components/RFC3ReportsTab.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/core/projectMigration.ts"
+            ]
+          },
+          "src/engine/core/benchmarks/sensitivityAnalysis.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/optical/iamEngine.ts",
+              "src/engine/snow/marionSnowEngine.ts",
+              "src/engine/soiling/kimberSoilingEngine.ts"
+            ]
+          },
+          "src/engine/core/benchmarks/trackerFixtures.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/core/benchmarks/unitTestsCore.ts": {
+            "importedBy": [],
+            "imports": [
+              "src/engine/bipv/bipvThermalEngine.ts",
+              "src/engine/climaticData.ts",
+              "src/engine/core/advancedInterfaces.ts",
+              "src/engine/core/benchmarks/crossValidation.ts",
+              "src/engine/core/benchmarks/externalValidation.ts",
+              "src/engine/core/benchmarks/lhsBenchmark.ts",
+              "src/engine/core/benchmarks/migrationTestVectors.ts",
+              "src/engine/core/benchmarks/sensitivityAnalysis.ts",
+              "src/engine/core/benchmarks/trackerFixtures.ts",
+              "src/engine/core/modelRegistry.ts",
+              "src/engine/core/prng.ts",
+              "src/engine/core/projectMigration.ts",
+              "src/engine/core/thermalDerate.ts",
+              "src/engine/corrosion/saltCorrosionEngine.ts",
+              "src/engine/dataGateway/index.ts",
+              "src/engine/env/runtimeEnv.ts",
+              "src/engine/financialEngine.ts",
+              "src/engine/geotech/foundationRecommendation.ts",
+              "src/engine/optical/iamEngine.ts",
+              "src/engine/pvEngineAdvanced.ts",
+              "src/engine/snow/marionSnowEngine.ts",
+              "src/engine/snow/marionSnowRecalibration.ts",
+              "src/engine/soiling/kimberSoilingEngine.ts",
+              "src/engine/structureRecommendationEngine.ts",
+              "src/engine/tracker/backtrackingEngine.ts",
+              "src/engine/waterfallLossEngine.ts"
+            ]
+          },
+          "src/engine/core/modelRegistry.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/RFC3ReportsTab.tsx",
+              "src/engine/core/benchmarks/crossValidation.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/core/projectMigration.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/core/prng.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/lhsBenchmark.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/core/projectMigration.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/engine/core/benchmarks/migrationTestVectors.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/offlineTransferEngine.ts"
+            ],
+            "imports": [
+              "src/engine/climaticData.ts",
+              "src/engine/core/modelRegistry.ts",
+              "src/engine/financialEngine.ts",
+              "src/engine/loadProfiles.ts"
+            ]
+          },
+          "src/engine/core/thermalDerate.ts": {
+            "importedBy": [
+              "server.ts",
+              "src/App.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/pvEngineAdvanced.ts",
+              "src/engine/solarPvEngine.ts",
+              "src/engine/waterfallLossEngine.ts"
+            ],
+            "imports": [
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/core/uncertaintyPropagation.ts": {
+            "importedBy": [
+              "src/components/FinancialTab.tsx"
+            ],
+            "imports": [
+              "src/engine/bifacialGain.ts",
+              "src/engine/financialEngine.ts"
+            ]
+          },
+          "src/engine/corrosion/coastlineModel.ts": {
+            "importedBy": [
+              "src/engine/corrosion/saltCorrosionEngine.ts",
+              "src/engine/dataGateway/externalDataGateway.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/corrosion/saltCorrosionEngine.ts": {
+            "importedBy": [
+              "src/components/FinancialTab.tsx",
+              "src/components/PvArrayEngineeringTab.tsx",
+              "src/components/StructuralFoundationTab.tsx",
+              "src/engine/climaticData.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/provenance/provenanceBuilder.ts"
+            ],
+            "imports": [
+              "src/engine/corrosion/coastlineModel.ts",
+              "src/engine/dataGateway/externalDataGateway.ts",
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/dataGateway/circuitBreaker.ts": {
+            "importedBy": [
+              "src/engine/dataGateway/climateDataProvider.ts",
+              "src/engine/dataGateway/index.ts",
+              "src/engine/dataGateway/soilDataProvider.ts",
+              "src/engine/dataGateway/structuralHazardProvider.ts"
+            ],
+            "imports": [
+              "src/engine/dataGateway/types.ts"
+            ]
+          },
+          "src/engine/dataGateway/climateDataProvider.ts": {
+            "importedBy": [
+              "src/engine/dataGateway/externalDataGateway.ts",
+              "src/engine/dataGateway/index.ts"
+            ],
+            "imports": [
+              "src/engine/dataGateway/circuitBreaker.ts",
+              "src/engine/dataGateway/types.ts",
+              "src/engine/env/runtimeEnv.ts"
+            ]
+          },
+          "src/engine/dataGateway/externalDataGateway.ts": {
+            "importedBy": [
+              "src/components/RFC3ReportsTab.tsx",
+              "src/components/SiteLocationMap.tsx",
+              "src/engine/climaticData.ts",
+              "src/engine/corrosion/saltCorrosionEngine.ts",
+              "src/engine/dataGateway/index.ts"
+            ],
+            "imports": [
+              "src/engine/corrosion/coastlineModel.ts",
+              "src/engine/dataGateway/climateDataProvider.ts",
+              "src/engine/dataGateway/soilDataProvider.ts",
+              "src/engine/dataGateway/structuralHazardProvider.ts",
+              "src/engine/dataGateway/types.ts",
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/dataGateway/index.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/dataGateway/circuitBreaker.ts",
+              "src/engine/dataGateway/climateDataProvider.ts",
+              "src/engine/dataGateway/externalDataGateway.ts",
+              "src/engine/dataGateway/soilDataProvider.ts",
+              "src/engine/dataGateway/structuralHazardProvider.ts",
+              "src/engine/dataGateway/types.ts"
+            ]
+          },
+          "src/engine/dataGateway/soilDataProvider.ts": {
+            "importedBy": [
+              "src/engine/dataGateway/externalDataGateway.ts",
+              "src/engine/dataGateway/index.ts"
+            ],
+            "imports": [
+              "src/engine/dataGateway/circuitBreaker.ts",
+              "src/engine/dataGateway/types.ts",
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/dataGateway/structuralHazardProvider.ts": {
+            "importedBy": [
+              "src/engine/dataGateway/externalDataGateway.ts",
+              "src/engine/dataGateway/index.ts"
+            ],
+            "imports": [
+              "src/engine/dataGateway/circuitBreaker.ts",
+              "src/engine/dataGateway/types.ts"
+            ]
+          },
+          "src/engine/dataGateway/types.ts": {
+            "importedBy": [
+              "src/engine/dataGateway/circuitBreaker.ts",
+              "src/engine/dataGateway/climateDataProvider.ts",
+              "src/engine/dataGateway/externalDataGateway.ts",
+              "src/engine/dataGateway/index.ts",
+              "src/engine/dataGateway/soilDataProvider.ts",
+              "src/engine/dataGateway/structuralHazardProvider.ts"
+            ],
+            "imports": [
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/env/runtimeEnv.ts": {
+            "importedBy": [
+              "src/components/RFC3ReportsTab.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/dataGateway/climateDataProvider.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/environmentalAgingEngine.ts": {
+            "importedBy": [
+              "src/components/OfficialReportModal.tsx",
+              "src/components/PvArrayEngineeringTab.tsx"
+            ],
+            "imports": [
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/equipmentCatalogData.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/CatalogTab.tsx",
+              "src/engine/catalogAdapters.ts",
+              "src/engine/catalogRepository.ts",
+              "src/engine/offlineTransferEngine.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/financialEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/FinancialTab.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/core/projectMigration.ts",
+              "src/engine/core/uncertaintyPropagation.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/geoCoordinates.ts": {
+            "importedBy": [
+              "src/components/ClimateTab.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/components/SiteLocationMap.tsx",
+              "src/components/ThreeJsViewer.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/geotech/bromsMethod.ts": {
+            "importedBy": [
+              "src/engine/geotech/foundationRecommendation.ts",
+              "src/engine/structuralEngine.ts"
+            ],
+            "imports": [
+              "src/engine/structuralEngine.ts"
+            ]
+          },
+          "src/engine/geotech/foundationRecommendation.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/provenance/provenanceBuilder.ts",
+              "src/engine/structureRecommendationEngine.ts"
+            ],
+            "imports": [
+              "src/engine/geotech/bromsMethod.ts",
+              "src/engine/structuralEngine.ts"
+            ]
+          },
+          "src/engine/harmonicsEngine.ts": {
+            "importedBy": [
+              "src/components/HarmonicsGridTab.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/inverterClustering.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/PvArrayEngineeringTab.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/iranianRegulationsFinancial.ts": {
+            "importedBy": [
+              "src/components/IranianRegulationsTab.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/loadProfiles.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/LoadProfilingTab.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/engine/core/projectMigration.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/mvSubstationEngine.ts": {
+            "importedBy": [
+              "src/components/MvSubstationTab.tsx",
+              "src/components/OfficialReportModal.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/offlineTransferEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/FinancialTab.tsx",
+              "src/components/OfficialReportModal.tsx"
+            ],
+            "imports": [
+              "src/engine/catalogRepository.ts",
+              "src/engine/core/projectMigration.ts",
+              "src/engine/equipmentCatalogData.ts",
+              "src/engine/pvEngineAdvanced.ts"
+            ]
+          },
+          "src/engine/optical/iamEngine.ts": {
+            "importedBy": [
+              "src/engine/bipv/bipvThermalEngine.ts",
+              "src/engine/core/benchmarks/crossValidation.ts",
+              "src/engine/core/benchmarks/sensitivityAnalysis.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/core/advancedInterfaces.ts"
+            ]
+          },
+          "src/engine/powerplantBayEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/OfficialReportModal.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/powerplantCadLayout.ts": {
+            "importedBy": [
+              "src/components/PowerplantCadLayoutTab.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/protectionBomEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/components/ProtectionBomTab.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/provenance/provenanceBuilder.ts": {
+            "importedBy": [
+              "src/components/RFC3ReportsTab.tsx"
+            ],
+            "imports": [
+              "src/engine/corrosion/saltCorrosionEngine.ts",
+              "src/engine/geotech/foundationRecommendation.ts",
+              "src/engine/structuralEngine.ts",
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/pvEngineAdvanced.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/components/PvArrayEngineeringTab.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/offlineTransferEngine.ts"
+            ],
+            "imports": [
+              "src/engine/core/thermalDerate.ts",
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/reportingEngine.ts": {
+            "importedBy": [
+              "src/components/OfficialReportModal.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/roof3dShadingEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/ThreeJsViewer.tsx",
+              "src/engine/shadingLifecycle.ts",
+              "src/engine/workers/shadingWorker.ts",
+              "src/engine/workers/shadingWorkerClient.ts"
+            ],
+            "imports": [
+              "src/engine/shadingSunPathEngine.ts",
+              "src/engine/solarPvEngine.ts",
+              "src/engine/waterfallArgs.ts",
+              "src/engine/waterfallLossEngine.ts"
+            ]
+          },
+          "src/engine/scenarioEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/ScenarioComparisonTab.tsx"
+            ],
+            "imports": [
+              "src/engine/solarPvEngine.ts"
+            ]
+          },
+          "src/engine/shadingLifecycle.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/FinancialTab.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/components/ThreeJsViewer.tsx",
+              "src/components/WaterfallLossTab.tsx"
+            ],
+            "imports": [
+              "src/engine/roof3dShadingEngine.ts"
+            ]
+          },
+          "src/engine/shadingSunPathEngine.ts": {
+            "importedBy": [
+              "src/components/ShadingAnalysisSubTab.tsx",
+              "src/engine/roof3dShadingEngine.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/simulation24hEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/components/Simulation24hTab.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/singleDiodeModel.ts": {
+            "importedBy": [
+              "src/components/IvCurveTracerTab.tsx",
+              "src/engine/core/benchmarks/crossValidation.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/snow/marionSnowEngine.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/crossValidation.ts",
+              "src/engine/core/benchmarks/externalValidation.ts",
+              "src/engine/core/benchmarks/sensitivityAnalysis.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/snow/marionSnowRecalibration.ts"
+            ],
+            "imports": [
+              "src/engine/core/advancedInterfaces.ts"
+            ]
+          },
+          "src/engine/snow/marionSnowRecalibration.ts": {
+            "importedBy": [
+              "src/engine/core/benchmarks/externalValidation.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/snow/marionSnowEngine.ts"
+            ]
+          },
+          "src/engine/soiling/kimberSoilingEngine.ts": {
+            "importedBy": [
+              "src/engine/bipv/bipvThermalEngine.ts",
+              "src/engine/core/benchmarks/crossValidation.ts",
+              "src/engine/core/benchmarks/externalValidation.ts",
+              "src/engine/core/benchmarks/sensitivityAnalysis.ts",
+              "src/engine/core/benchmarks/unitTestsCore.ts"
+            ],
+            "imports": [
+              "src/engine/core/advancedInterfaces.ts"
+            ]
+          },
+          "src/engine/solarPumpEngine.ts": {
+            "importedBy": [
+              "src/components/SolarPumpingTab.tsx"
+            ],
+            "imports": []
+          },
+          "src/engine/solarPvEngine.ts": {
+            "importedBy": [
+              "server.ts",
+              "src/engine/roof3dShadingEngine.ts",
+              "src/engine/scenarioEngine.ts"
+            ],
+            "imports": [
+              "src/engine/catalogAdapters.ts",
+              "src/engine/climaticData.ts",
+              "src/engine/core/thermalDerate.ts",
+              "src/engine/types/climateTypes.ts",
+              "src/engine/types/equipmentTypes.ts"
+            ]
+          },
+          "src/engine/structural/structureRecommendationEngine.ts": {
+            "importedBy": [],
+            "imports": [
+              "src/engine/structureRecommendationEngine.ts"
+            ]
+          },
+          "src/engine/structuralEngine.ts": {
+            "importedBy": [
+              "src/components/FinancialTab.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/components/RFC3ReportsTab.tsx",
+              "src/components/StructuralFoundationTab.tsx",
+              "src/engine/geotech/bromsMethod.ts",
+              "src/engine/geotech/foundationRecommendation.ts",
+              "src/engine/provenance/provenanceBuilder.ts",
+              "src/engine/structureRecommendationEngine.ts"
+            ],
+            "imports": [
+              "src/engine/geotech/bromsMethod.ts"
+            ]
+          },
+          "src/engine/structureRecommendationEngine.ts": {
+            "importedBy": [
+              "src/components/RFC3ReportsTab.tsx",
+              "src/components/StructuralFoundationTab.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/structural/structureRecommendationEngine.ts"
+            ],
+            "imports": [
+              "src/engine/geotech/foundationRecommendation.ts",
+              "src/engine/structuralEngine.ts"
+            ]
+          },
+          "src/engine/tracker/backtrackingEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/PvArrayEngineeringTab.tsx",
+              "src/components/WaterfallLossTab.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/waterfallArgs.ts",
+              "src/engine/waterfallLossEngine.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/types/climateTypes.ts": {
+            "importedBy": [
+              "src/components/ProtectionBomTab.tsx",
+              "src/components/PvArrayEngineeringTab.tsx",
+              "src/components/RFC3ReportsTab.tsx",
+              "src/components/StructuralFoundationTab.tsx",
+              "src/engine/climaticData.ts",
+              "src/engine/core/thermalDerate.ts",
+              "src/engine/corrosion/saltCorrosionEngine.ts",
+              "src/engine/dataGateway/externalDataGateway.ts",
+              "src/engine/dataGateway/soilDataProvider.ts",
+              "src/engine/dataGateway/types.ts",
+              "src/engine/environmentalAgingEngine.ts",
+              "src/engine/provenance/provenanceBuilder.ts",
+              "src/engine/pvEngineAdvanced.ts",
+              "src/engine/solarPvEngine.ts",
+              "src/engine/waterfallArgs.ts",
+              "src/engine/waterfallLossEngine.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/types/equipmentTypes.ts": {
+            "importedBy": [
+              "src/engine/catalogAdapters.ts",
+              "src/engine/solarPvEngine.ts"
+            ],
+            "imports": []
+          },
+          "src/engine/waterfallArgs.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/WaterfallLossTab.tsx",
+              "src/engine/roof3dShadingEngine.ts"
+            ],
+            "imports": [
+              "src/engine/tracker/backtrackingEngine.ts",
+              "src/engine/types/climateTypes.ts",
+              "src/engine/waterfallLossEngine.ts"
+            ]
+          },
+          "src/engine/waterfallLossEngine.ts": {
+            "importedBy": [
+              "src/App.tsx",
+              "src/components/OfficialReportModal.tsx",
+              "src/components/WaterfallLossTab.tsx",
+              "src/engine/core/benchmarks/unitTestsCore.ts",
+              "src/engine/roof3dShadingEngine.ts",
+              "src/engine/waterfallArgs.ts"
+            ],
+            "imports": [
+              "src/engine/core/thermalDerate.ts",
+              "src/engine/tracker/backtrackingEngine.ts",
+              "src/engine/types/climateTypes.ts"
+            ]
+          },
+          "src/engine/workers/shadingWorker.ts": {
+            "importedBy": [
+              "src/engine/workers/shadingWorkerClient.ts"
+            ],
+            "imports": [
+              "src/engine/roof3dShadingEngine.ts"
+            ]
+          },
+          "src/engine/workers/shadingWorkerClient.ts": {
+            "importedBy": [
+              "src/components/ThreeJsViewer.tsx"
+            ],
+            "imports": [
+              "src/engine/roof3dShadingEngine.ts",
+              "src/engine/workers/shadingWorker.ts"
+            ]
+          }
+        }
       },
-      "unit": "inverters",
-      "case": "Catalog",
+      "unit": "modules",
+      "case": "Architecture",
       "chain": [
-        "src/data/equipmentCatalogData.ts:181-370"
+        "import-map.ts:1-150"
       ],
-      "producer": "src/data/equipmentCatalogData.ts:181",
-      "formula": "count(DEFAULT_INVERTERS)",
+      "producer": "scripts/remediation/import-map.ts:75",
+      "formula": "Static dependency analysis of imports across src/engine/**",
       "assumptions": [
-        "All inverters support parallel clustering"
+        "71 TypeScript engine modules scanned"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H2",
       "verified": true
     },
     {
       "id": "M-H3",
-      "name": "Catalog Battery Profiles Count and Chemistries",
-      "value": 24,
-      "details": {
-        "totalBatteriesCount": 24,
-        "lifepo4Count": 14,
-        "leadAcidGelCount": 8,
-        "ncmCount": 2
-      },
-      "unit": "batteries",
-      "case": "Catalog",
-      "chain": [
-        "src/data/equipmentCatalogData.ts:371-550"
-      ],
-      "producer": "src/data/equipmentCatalogData.ts:371",
-      "formula": "count(DEFAULT_BATTERIES)",
-      "assumptions": [
-        "Covers LiFePO4, Gel, AGM, and ternary NCM"
-      ],
-      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H3",
-      "verified": true
-    },
-    {
-      "id": "M-H4",
-      "name": "Orphan Modules in Engine Directory",
+      "name": "Orphan Modules in Engine Directory without Consumers",
       "value": 1,
       "details": {
-        "orphanModuleCount": 1,
-        "orphanModules": [
+        "orphanCount": 1,
+        "orphans": [
           "src/engine/structural/structureRecommendationEngine.ts"
         ]
       },
       "unit": "modules",
       "case": "Architecture",
       "chain": [
-        "scripts/remediation/import-map.ts:80-140"
+        "import-map.ts:1-150"
       ],
-      "producer": "src/engine/structureRecommendationEngine.ts:1",
-      "formula": "Filter modules in src/engine/ with in-degree 0 from UI/server",
+      "producer": "src/engine/structural/structureRecommendationEngine.ts:1",
+      "formula": "Files in src/engine/** with importedBy.length === 0 and no external entry point",
       "assumptions": [
-        "structureRecommendationEngine.ts is bypassed in favor of structuralEngine.ts"
+        "structureRecommendationEngine.ts in structural subfolder is an unconsumed re-export orphan"
       ],
-      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H4",
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H3",
       "verified": true
     },
     {
-      "id": "M-H5",
-      "name": "Exported Engine Functions without Callers",
+      "id": "M-H4",
+      "name": "Exported Engine Functions without Call Sites",
       "value": 9,
       "details": {
-        "uncalledExportedFunctionsCount": 9,
+        "uncalledFunctionsCount": 9,
         "functions": [
           {
             "name": "calculateSampleKurtosis",
@@ -1126,212 +2291,475 @@
       "unit": "functions",
       "case": "Architecture",
       "chain": [
-        "scripts/remediation/import-map.ts:140-190"
+        "import-map.ts:1-150"
       ],
       "producer": "scripts/remediation/import-map.ts:100",
-      "formula": "AST exported functions without external call sites across repo",
+      "formula": "AST symbol export scan vs codebase reference identifier search",
       "assumptions": [
-        "Legacy/dead functions remaining in engine"
+        "Functions exported but never referenced anywhere in src/** or server.ts"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H4",
+      "verified": true
+    },
+    {
+      "id": "M-H5",
+      "name": "Modules Implementing Duplicated Physical Domains",
+      "value": 5,
+      "details": {
+        "duplicatedDomainsCount": 5,
+        "domains": [
+          {
+            "domain": "Thermal Derate Model",
+            "description": "Unified calculateThermalDerate vs legacy in-engine NOCT approximations",
+            "modules": [
+              "src/engine/core/thermalDerate.ts",
+              "src/engine/pvEngineAdvanced.ts",
+              "src/engine/waterfallLossEngine.ts"
+            ]
+          },
+          {
+            "domain": "Bifacial Gain Evaluation",
+            "description": "First-order proxy rearGainFraction vs 2D view-factor calculateBifacialViewFactor",
+            "modules": [
+              "src/engine/bifacialGain.ts",
+              "src/engine/bifacial/bifacial2dViewFactor.ts"
+            ]
+          },
+          {
+            "domain": "Solar Position & Sun Path",
+            "description": "Astronomical calculateSolarPosition vs shadingSunPathEngine vs buildClearSkySunPath",
+            "modules": [
+              "src/engine/solarPvEngine.ts",
+              "src/engine/shadingSunPathEngine.ts",
+              "src/engine/waterfallLossEngine.ts"
+            ]
+          },
+          {
+            "domain": "Annual Yield & Generation Estimation",
+            "description": "14-stage Waterfall model vs designPvArray PSH multiplication vs quick-sizing 0.78 derate",
+            "modules": [
+              "src/engine/waterfallLossEngine.ts",
+              "src/engine/pvEngineAdvanced.ts",
+              "src/engine/solarPvEngine.ts"
+            ]
+          },
+          {
+            "domain": "Foundation & Geotechnical Recommendation",
+            "description": "recommendFoundation vs recommendSharedFoundation dual dispatch",
+            "modules": [
+              "src/engine/geotech/foundationRecommendationEngine.ts",
+              "src/engine/structuralEngine.ts"
+            ]
+          }
+        ],
+        "g4ReferenceClimateCities": [
+          {
+            "id": "site_35.6892_51.3890",
+            "nameFa": "سایت مختصاتی (35.69°N, 51.39°E)",
+            "nameEn": "Coordinates Site (35.69°N, 51.39°E)",
+            "provinceFa": "خاورمیانه و شمال آفریقا (MENA / مبحث ۶)",
+            "provinceEn": "Middle East & North Africa (MENA / INBC Zone)",
+            "latitude": 35.6892,
+            "longitude": 51.389,
+            "elevationM": 436,
+            "peakSunHours": 5.17,
+            "daylightHoursDesign": 9.58,
+            "nightHoursDesign": 14.42,
+            "tempMinC": -15,
+            "tempMaxC": 39,
+            "albedo": 0.2,
+            "soilingLossPct": 5.5,
+            "optimalTiltAnnualDeg": 31,
+            "optimalTiltWinterDeg": 46,
+            "optimalTiltSummerDeg": 16,
+            "descriptionFa": "داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)",
+            "descriptionEn": "Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)",
+            "basicWindSpeedKmh": 130,
+            "groundSnowLoadKgM2": 50,
+            "annualRainfallMm": 180,
+            "soilType": "dense_sand_gravel",
+            "soilBearingCapacityKpa": 220,
+            "soilInternalFrictionAngleDeg": 32,
+            "soilCohesionKpa": 15,
+            "soilDensityKnM3": 18,
+            "frostDepthCm": 35,
+            "seismicZoneCoefficientA": 0.25,
+            "dataSourceFa": "پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)",
+            "dataSourceEn": "Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)",
+            "dataRetrievalDate": "2024-10-15",
+            "confidence": "analytical_estimate",
+            "distanceToCoastKm": 106.9,
+            "drainageCondition": "well_drained",
+            "groundwaterDepthM": 6
+          },
+          {
+            "id": "site_32.6546_51.6680",
+            "nameFa": "سایت مختصاتی (32.65°N, 51.67°E)",
+            "nameEn": "Coordinates Site (32.65°N, 51.67°E)",
+            "provinceFa": "خاورمیانه و شمال آفریقا (MENA / مبحث ۶)",
+            "provinceEn": "Middle East & North Africa (MENA / INBC Zone)",
+            "latitude": 32.6546,
+            "longitude": 51.668,
+            "elevationM": 497,
+            "peakSunHours": 6.61,
+            "daylightHoursDesign": 9.85,
+            "nightHoursDesign": 14.15,
+            "tempMinC": -6,
+            "tempMaxC": 46,
+            "albedo": 0.2,
+            "soilingLossPct": 5.5,
+            "optimalTiltAnnualDeg": 29,
+            "optimalTiltWinterDeg": 44,
+            "optimalTiltSummerDeg": 14,
+            "descriptionFa": "داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)",
+            "descriptionEn": "Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)",
+            "basicWindSpeedKmh": 130,
+            "groundSnowLoadKgM2": 0,
+            "annualRainfallMm": 180,
+            "soilType": "dense_sand_gravel",
+            "soilBearingCapacityKpa": 220,
+            "soilInternalFrictionAngleDeg": 32,
+            "soilCohesionKpa": 15,
+            "soilDensityKnM3": 18,
+            "frostDepthCm": 0,
+            "seismicZoneCoefficientA": 0.25,
+            "dataSourceFa": "پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)",
+            "dataSourceEn": "Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)",
+            "dataRetrievalDate": "2024-10-15",
+            "confidence": "analytical_estimate",
+            "distanceToCoastKm": 341.7,
+            "drainageCondition": "well_drained",
+            "groundwaterDepthM": 6
+          },
+          {
+            "id": "site_29.5918_52.5837",
+            "nameFa": "سایت مختصاتی (29.59°N, 52.58°E)",
+            "nameEn": "Coordinates Site (29.59°N, 52.58°E)",
+            "provinceFa": "خاورمیانه و شمال آفریقا (MENA / مبحث ۶)",
+            "provinceEn": "Middle East & North Africa (MENA / INBC Zone)",
+            "latitude": 29.5918,
+            "longitude": 52.5837,
+            "elevationM": 558,
+            "peakSunHours": 6.7,
+            "daylightHoursDesign": 10.1,
+            "nightHoursDesign": 13.9,
+            "tempMinC": 4,
+            "tempMaxC": 46,
+            "albedo": 0.2,
+            "soilingLossPct": 5.5,
+            "optimalTiltAnnualDeg": 26,
+            "optimalTiltWinterDeg": 41,
+            "optimalTiltSummerDeg": 11,
+            "descriptionFa": "داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)",
+            "descriptionEn": "Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)",
+            "basicWindSpeedKmh": 130,
+            "groundSnowLoadKgM2": 0,
+            "annualRainfallMm": 180,
+            "soilType": "loose_sand",
+            "soilBearingCapacityKpa": 180,
+            "soilInternalFrictionAngleDeg": 30,
+            "soilCohesionKpa": 0,
+            "soilDensityKnM3": 17,
+            "frostDepthCm": 0,
+            "seismicZoneCoefficientA": 0.25,
+            "dataSourceFa": "پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)",
+            "dataSourceEn": "Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)",
+            "dataRetrievalDate": "2024-10-15",
+            "confidence": "analytical_estimate",
+            "distanceToCoastKm": 176.5,
+            "drainageCondition": "well_drained",
+            "groundwaterDepthM": 6
+          },
+          {
+            "id": "site_38.0800_46.2919",
+            "nameFa": "سایت مختصاتی (38.08°N, 46.29°E)",
+            "nameEn": "Coordinates Site (38.08°N, 46.29°E)",
+            "provinceFa": "خاورمیانه و شمال آفریقا (MENA / مبحث ۶)",
+            "provinceEn": "Middle East & North Africa (MENA / INBC Zone)",
+            "latitude": 38.08,
+            "longitude": 46.2919,
+            "elevationM": 388,
+            "peakSunHours": 5.08,
+            "daylightHoursDesign": 9.35,
+            "nightHoursDesign": 14.65,
+            "tempMinC": -15,
+            "tempMaxC": 39,
+            "albedo": 0.2,
+            "soilingLossPct": 5.5,
+            "optimalTiltAnnualDeg": 34,
+            "optimalTiltWinterDeg": 49,
+            "optimalTiltSummerDeg": 19,
+            "descriptionFa": "داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)",
+            "descriptionEn": "Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)",
+            "basicWindSpeedKmh": 130,
+            "groundSnowLoadKgM2": 50,
+            "annualRainfallMm": 180,
+            "soilType": "dense_sand_gravel",
+            "soilBearingCapacityKpa": 220,
+            "soilInternalFrictionAngleDeg": 32,
+            "soilCohesionKpa": 15,
+            "soilDensityKnM3": 18,
+            "frostDepthCm": 35,
+            "seismicZoneCoefficientA": 0.25,
+            "dataSourceFa": "پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)",
+            "dataSourceEn": "Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)",
+            "dataRetrievalDate": "2024-10-15",
+            "confidence": "analytical_estimate",
+            "distanceToCoastKm": 228.4,
+            "drainageCondition": "well_drained",
+            "groundwaterDepthM": 6
+          },
+          {
+            "id": "site_36.2972_59.6067",
+            "nameFa": "سایت مختصاتی (36.30°N, 59.61°E)",
+            "nameEn": "Coordinates Site (36.30°N, 59.61°E)",
+            "provinceFa": "خاورمیانه و شمال آفریقا (MENA / مبحث ۶)",
+            "provinceEn": "Middle East & North Africa (MENA / INBC Zone)",
+            "latitude": 36.2972,
+            "longitude": 59.6067,
+            "elevationM": 424,
+            "peakSunHours": 5.15,
+            "daylightHoursDesign": 9.52,
+            "nightHoursDesign": 14.48,
+            "tempMinC": -15,
+            "tempMaxC": 39,
+            "albedo": 0.2,
+            "soilingLossPct": 5.5,
+            "optimalTiltAnnualDeg": 32,
+            "optimalTiltWinterDeg": 47,
+            "optimalTiltSummerDeg": 17,
+            "descriptionFa": "داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)",
+            "descriptionEn": "Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)",
+            "basicWindSpeedKmh": 130,
+            "groundSnowLoadKgM2": 50,
+            "annualRainfallMm": 180,
+            "soilType": "dense_sand_gravel",
+            "soilBearingCapacityKpa": 220,
+            "soilInternalFrictionAngleDeg": 32,
+            "soilCohesionKpa": 15,
+            "soilDensityKnM3": 18,
+            "frostDepthCm": 35,
+            "seismicZoneCoefficientA": 0.25,
+            "dataSourceFa": "پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)",
+            "dataSourceEn": "Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)",
+            "dataRetrievalDate": "2024-10-15",
+            "confidence": "analytical_estimate",
+            "distanceToCoastKm": 501.1,
+            "drainageCondition": "well_drained",
+            "groundwaterDepthM": 6
+          },
+          {
+            "id": "site_31.8974_54.3569",
+            "nameFa": "سایت مختصاتی (31.90°N, 54.36°E)",
+            "nameEn": "Coordinates Site (31.90°N, 54.36°E)",
+            "provinceFa": "خاورمیانه و شمال آفریقا (MENA / مبحث ۶)",
+            "provinceEn": "Middle East & North Africa (MENA / INBC Zone)",
+            "latitude": 31.8974,
+            "longitude": 54.3569,
+            "elevationM": 512,
+            "peakSunHours": 6.63,
+            "daylightHoursDesign": 9.91,
+            "nightHoursDesign": 14.09,
+            "tempMinC": 4,
+            "tempMaxC": 46,
+            "albedo": 0.2,
+            "soilingLossPct": 5.5,
+            "optimalTiltAnnualDeg": 28,
+            "optimalTiltWinterDeg": 43,
+            "optimalTiltSummerDeg": 13,
+            "descriptionFa": "داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)",
+            "descriptionEn": "Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)",
+            "basicWindSpeedKmh": 130,
+            "groundSnowLoadKgM2": 0,
+            "annualRainfallMm": 180,
+            "soilType": "dense_sand_gravel",
+            "soilBearingCapacityKpa": 220,
+            "soilInternalFrictionAngleDeg": 32,
+            "soilCohesionKpa": 15,
+            "soilDensityKnM3": 18,
+            "frostDepthCm": 0,
+            "seismicZoneCoefficientA": 0.25,
+            "dataSourceFa": "پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)",
+            "dataSourceEn": "Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)",
+            "dataRetrievalDate": "2024-10-15",
+            "confidence": "analytical_estimate",
+            "distanceToCoastKm": 448.9,
+            "drainageCondition": "well_drained",
+            "groundwaterDepthM": 6
+          },
+          {
+            "id": "site_27.1832_56.2666",
+            "nameFa": "سایت مختصاتی (27.18°N, 56.27°E)",
+            "nameEn": "Coordinates Site (27.18°N, 56.27°E)",
+            "provinceFa": "خاورمیانه و شمال آفریقا (MENA / مبحث ۶)",
+            "provinceEn": "Middle East & North Africa (MENA / INBC Zone)",
+            "latitude": 27.1832,
+            "longitude": 56.2666,
+            "elevationM": 606,
+            "peakSunHours": 6.73,
+            "daylightHoursDesign": 10.28,
+            "nightHoursDesign": 13.72,
+            "tempMinC": 4,
+            "tempMaxC": 46,
+            "albedo": 0.2,
+            "soilingLossPct": 5.5,
+            "optimalTiltAnnualDeg": 24,
+            "optimalTiltWinterDeg": 39,
+            "optimalTiltSummerDeg": 9,
+            "descriptionFa": "داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)",
+            "descriptionEn": "Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)",
+            "basicWindSpeedKmh": 130,
+            "groundSnowLoadKgM2": 0,
+            "annualRainfallMm": 180,
+            "soilType": "loose_sand",
+            "soilBearingCapacityKpa": 180,
+            "soilInternalFrictionAngleDeg": 30,
+            "soilCohesionKpa": 0,
+            "soilDensityKnM3": 17,
+            "frostDepthCm": 0,
+            "seismicZoneCoefficientA": 0.25,
+            "dataSourceFa": "پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)",
+            "dataSourceEn": "Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)",
+            "dataRetrievalDate": "2024-10-15",
+            "confidence": "analytical_estimate",
+            "distanceToCoastKm": 0.5,
+            "drainageCondition": "well_drained",
+            "groundwaterDepthM": 1.5
+          }
+        ]
+      },
+      "unit": "domains",
+      "case": "Architecture",
+      "chain": [
+        "import-map.ts:1-150"
+      ],
+      "producer": "src/engine/solarPvEngine.ts:1",
+      "formula": "Identification of fragmented parallel implementations across thermal, position, irradiance, battery, and finance",
+      "assumptions": [
+        "5 physical domains implemented in multiple conflicting engine files"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H5",
       "verified": true
     },
     {
       "id": "M-I1",
-      "name": "Peak Sun Hours (PSH) across Reference Climate Cities",
-      "value": 5.17,
+      "name": "Lint Quality Gate Results and Any-Warning Count",
+      "value": 93,
       "details": {
-        "tehran": 5.17,
-        "clifton": 4.97,
-        "munich": 3.89,
-        "phoenix": 5.6,
-        "singapore": 5.57,
-        "quito": 5.6,
-        "sydney": 5.6
+        "lintErrors": 0,
+        "anyWarnings": 93,
+        "eslintRule": "@typescript-eslint/no-explicit-any",
+        "maxAllowedWarnings": 93,
+        "status": "PASS"
       },
-      "unit": "PSH (kWh/m²/day)",
-      "case": "G-4",
+      "unit": "warnings",
+      "case": "Quality Gates",
       "chain": [
-        "climaticData.ts:90-130"
+        "package.json:20"
       ],
-      "producer": "src/engine/climaticData.ts:114",
-      "formula": "Continuous solar irradiance integration from latitude and clearness index",
+      "producer": "package.json:20",
+      "formula": "Count of any-warnings reported by eslint src/",
       "assumptions": [
-        "Analytical latitudinal solar model"
+        "Zero errors allowed; any-warnings capped strictly at 93"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I1",
       "verified": true
     },
     {
       "id": "M-I2",
-      "name": "Optimal Array Tilt Angle across Reference Climate Cities",
-      "value": 31,
+      "name": "Automated Benchmark Test Suite Execution Results",
+      "value": 196,
       "details": {
-        "tehran": 31,
-        "clifton": 36,
-        "munich": 42,
-        "phoenix": 29,
-        "singapore": 8,
-        "quito": 8,
-        "sydney": 30
+        "suites": 6,
+        "passed": 196,
+        "failed": 0,
+        "skipped": 0,
+        "benchmarksPassed": 6,
+        "status": "PASS"
       },
-      "unit": "degrees",
-      "case": "G-4",
+      "unit": "tests",
+      "case": "Quality Gates",
       "chain": [
-        "climaticData.ts:130-145"
+        "scripts/run-all-benchmarks.ts:1-250"
       ],
-      "producer": "src/engine/climaticData.ts:133",
-      "formula": "beta_opt = max(8, min(65, round(|lat| * 0.88)))",
+      "producer": "scripts/run-all-benchmarks.ts:1",
+      "formula": "Count of passing automated unit and benchmark test assertions",
       "assumptions": [
-        "Annual fixed tilt optimization for maximum annual yield"
+        "All 196 core tests and 6/6 benchmarks pass cleanly"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I2",
       "verified": true
     },
     {
       "id": "M-I3",
-      "name": "Extreme Design Maximum Temperature across Reference Climate Cities",
-      "value": 39,
+      "name": "Vite Production Build Compilation Exit Code",
+      "value": 0,
       "details": {
-        "tehran": {
-          "tMin": -15,
-          "tMax": 39
-        },
-        "clifton": {
-          "tMin": -15,
-          "tMax": 39
-        },
-        "munich": {
-          "tMin": -12,
-          "tMax": 36
-        },
-        "phoenix": {
-          "tMin": -5,
-          "tMax": 38
-        },
-        "singapore": {
-          "tMin": 18,
-          "tMax": 38
-        },
-        "quito": {
-          "tMin": 18,
-          "tMax": 38
-        },
-        "sydney": {
-          "tMin": -5,
-          "tMax": 38
-        }
+        "exitCode": 0,
+        "buildStatus": "success",
+        "distExists": true,
+        "distHtmlPath": "dist/index.html"
       },
-      "unit": "°C",
-      "case": "G-4",
+      "unit": "exitCode",
+      "case": "Quality Gates",
       "chain": [
-        "climaticData.ts:145-165"
+        "package.json:16"
       ],
-      "producer": "src/engine/climaticData.ts:150",
-      "formula": "ASHRAE extreme temperature climate zones",
+      "producer": "package.json:16",
+      "formula": "Exit code of vite build for production client bundle",
       "assumptions": [
-        "0.4% extreme design max conditions"
+        "Production bundle generated in dist/ without build errors"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I3",
       "verified": true
     },
     {
       "id": "M-I4",
-      "name": "Basic Structural Wind Speed across Reference Climate Cities",
-      "value": 130,
+      "name": "Remediation Harness Files Checksums and Verification",
+      "value": 7,
       "details": {
-        "tehran": {
-          "windKmh": 130,
-          "snowKgM2": 50
-        },
-        "clifton": {
-          "windKmh": 130,
-          "snowKgM2": 60
-        },
-        "munich": {
-          "windKmh": 140,
-          "snowKgM2": 81
-        },
-        "phoenix": {
-          "windKmh": 130,
-          "snowKgM2": 0
-        },
-        "singapore": {
-          "windKmh": 120,
-          "snowKgM2": 0
-        },
-        "quito": {
-          "windKmh": 120,
-          "snowKgM2": 0
-        },
-        "sydney": {
-          "windKmh": 130,
-          "snowKgM2": 0
+        "filesCount": 7,
+        "filesMap": {
+          "scripts/remediation/fixtures/g1.json": "ac4f4aec607d7b09c5f60e1d50eca2ae4a583ea132c48d9b81942b2690b455a7",
+          "scripts/remediation/fixtures/g2.json": "13e1ff7b3e3053d1f2428227ea271ee095c4d8ecb5128d27bbc653d15b1338e3",
+          "scripts/remediation/fixtures/g3.json": "370251b80845084ea216e64491579e5a1880af8e49b3bb2d7853b05d0414ef61",
+          "scripts/remediation/fixtures/g4.json": "4258e3eff781a6f610adbb0a42280e6f17c56f5b0b68e81d237fe0d67f4d052f",
+          "scripts/remediation/import-map.ts": "42ec72102e7817f5e8997123c350aecd3ab3f86151ff2d1618eccab2efc9687a",
+          "scripts/remediation/measure.ts": "08391dae9149ad5a1db1929e2d52e03e4d2b030a20c8569eabbe9fa8687788e5",
+          "scripts/remediation/run-phase01.ts": "2d20dffb23c8c7105580f36476eb1f00f1baacedc7ea479bf66c2bf13a006433"
         }
       },
-      "unit": "km/h",
-      "case": "G-4",
+      "unit": "files",
+      "case": "Environment",
       "chain": [
-        "climaticData.ts:165-185"
+        "scripts/remediation/run-phase01.ts:1-200"
       ],
-      "producer": "src/engine/climaticData.ts:168",
-      "formula": "ASCE 7-22 / INBC Part 6 basic wind speed mapping",
+      "producer": "scripts/remediation/run-phase01.ts:1",
+      "formula": "SHA-256 integrity calculation of all files inside scripts/remediation/**",
       "assumptions": [
-        "Standard 50-year return period structural gust"
+        "Deterministic byte-by-byte file hashing"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I4",
       "verified": true
     },
     {
       "id": "M-I5",
-      "name": "Annual Rainfall across Reference Climate Cities",
-      "value": 180,
+      "name": "Git Head Commit and Dependency Lockfile Integrity",
+      "value": 1,
       "details": {
-        "tehran": {
-          "rainMm": 180,
-          "soilingLossPct": 5.5,
-          "distanceToCoastKm": 106.9
-        },
-        "clifton": {
-          "rainMm": 450,
-          "soilingLossPct": 3,
-          "distanceToCoastKm": 21.5
-        },
-        "munich": {
-          "rainMm": 750,
-          "soilingLossPct": 3,
-          "distanceToCoastKm": 462.9
-        },
-        "phoenix": {
-          "rainMm": 450,
-          "soilingLossPct": 3,
-          "distanceToCoastKm": 480.9
-        },
-        "singapore": {
-          "rainMm": 450,
-          "soilingLossPct": 3,
-          "distanceToCoastKm": 0.2
-        },
-        "quito": {
-          "rainMm": 450,
-          "soilingLossPct": 3,
-          "distanceToCoastKm": 2890.4
-        },
-        "sydney": {
-          "rainMm": 450,
-          "soilingLossPct": 3,
-          "distanceToCoastKm": 1
-        }
+        "headCommit": "201456802a9fcd3f7d80a9ebecd8d6ff7a2e4f35",
+        "packageLockSha256": "b8ae256dbe8740078e9867ffec886e438bb0d85e76d8583e01f37f554020c4dd",
+        "isLockfileFrozen": true
       },
-      "unit": "mm/year",
-      "case": "G-4",
+      "unit": "integer",
+      "case": "Environment",
       "chain": [
-        "climaticData.ts:185-230"
+        "package-lock.json:1"
       ],
-      "producer": "src/engine/climaticData.ts:192",
-      "formula": "Global precipitation bands and Kimber soiling rainfall model",
+      "producer": "package-lock.json:1",
+      "formula": "Git SHA resolution and SHA-256 digest of package-lock.json",
       "assumptions": [
-        "Dry arid regions experience higher soiling and lower rain wash-off"
+        "Environment frozen at specific commit with zero lockfile drift"
       ],
       "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I5",
       "verified": true
@@ -1438,5 +2866,13 @@
       "definition": "LHS <= RHS",
       "notes": "17 strings/MPPT on single template inverter yields 233.07A > 22.0A; isMpptCurrentCompliant=false; execution continues with warned-only (FAIL)"
     }
-  ]
+  ],
+  "gates": {
+    "lintErrors": 0,
+    "anyWarnings": 93,
+    "testPass": 196,
+    "testFail": 0,
+    "testSkip": 0,
+    "buildExit": 0
+  }
 }

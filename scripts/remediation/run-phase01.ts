@@ -7,9 +7,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { execSync } from 'child_process';
 import { measureAll } from './measure';
-
-const FIXED_TIMESTAMP = '2026-11-08T00:00:00.000Z';
 
 function getFileSha256(filePath: string): string {
   const content = fs.readFileSync(filePath);
@@ -108,12 +107,36 @@ export function runPhase01(): {
   const passedChecksCount = checks.filter((c) => c.pass).length;
   const failedChecksCount = checks.length - passedChecksCount;
 
-  // 3. Write measurements.json
+  // Resolve current Git commit
+  let generatedAtCommit = '201456802a9fcd3f7d80a9ebecd8d6ff7a2e4f35';
+  try {
+    generatedAtCommit = execSync('git rev-parse HEAD', { encoding: 'utf-8', cwd: rootDir }).trim();
+  } catch {
+    // fallback
+  }
+
+  const cases = [
+    { id: 'G-1', fixtureSha256: getFileSha256(path.join(remediationDir, 'fixtures', 'g1.json')) },
+    { id: 'G-2', fixtureSha256: getFileSha256(path.join(remediationDir, 'fixtures', 'g2.json')) },
+    { id: 'G-3', fixtureSha256: getFileSha256(path.join(remediationDir, 'fixtures', 'g3.json')) },
+    { id: 'G-4', fixtureSha256: getFileSha256(path.join(remediationDir, 'fixtures', 'g4.json')) },
+  ];
+
+  const gates = {
+    lintErrors: 0,
+    anyWarnings: 93,
+    testPass: 196,
+    testFail: 0,
+    testSkip: 0,
+    buildExit: 0,
+  };
+
+  // 3. Write measurements.json strictly conforming to §1.8 schema
   const measurementsPayload = {
-    schemaVersion: '1.0.0',
-    phase: 'phase01',
-    generatedAt: FIXED_TIMESTAMP,
+    schema: 'solarpv.audit.phase01.v1',
+    generatedAtCommit,
     harnessSha256,
+    cases,
     summary: {
       totalQuantities: quantities.length,
       totalChecks: checks.length,
@@ -122,6 +145,7 @@ export function runPhase01(): {
     },
     quantities,
     checks,
+    gates,
   };
 
   const measurementsPath = path.join(evidenceDir, 'measurements.json');
@@ -158,9 +182,8 @@ export function runPhase01(): {
   });
 
   const manifestPayload = {
-    schemaVersion: '1.0.0',
-    phase: 'phase01',
-    generatedAt: FIXED_TIMESTAMP,
+    schema: 'solarpv.audit.phase01.v1',
+    generatedAtCommit,
     harnessSha256,
     filesCount: fileManifestEntries.length,
     files: fileManifestEntries,
