@@ -49,6 +49,13 @@ export interface SiteDeratings {
   installationEnvironment?: InstallationEnvironment;
 }
 
+export interface PvArrayDesignOptions {
+  inverterCount?: number;
+  targetDcAcRatio?: number;
+  optimizeStringLengthForMppt?: boolean;
+  resolveUtilityMpptLimits?: boolean;
+}
+
 export interface PvArrayDesignResult {
   totalPvCapacityKwp: number;
   totalModulesCount: number;
@@ -74,6 +81,12 @@ export interface PvArrayDesignResult {
   warnings: string[];
   estimatedAnnualYieldKwh?: number;
   specificYieldKwhPerKwp?: number;
+  requiredInverterCount?: number;
+  totalInverterAcCapacityKw?: number;
+  singleInverterDcAcRatio?: number;
+  stringsPerMppt?: number;
+  maxStringsPerMpptAllowed?: number;
+  blockingErrors?: string[];
 }
 
 export function designPvArray(
@@ -82,7 +95,8 @@ export function designPvArray(
   module: ModuleSpecs,
   inverter: InverterSpecs,
   deratings: SiteDeratings,
-  latitudeDeg: number
+  latitudeDeg: number,
+  options?: PvArrayDesignOptions
 ): PvArrayDesignResult {
   // Input Validation Layer (Z-01 remediation)
   if (!Number.isFinite(requiredDailyKwh) || requiredDailyKwh <= 0) {
@@ -205,6 +219,27 @@ export function designPvArray(
   let chosenModulesPerString = Math.round((minModulesAllowed + upperLimit) / 2);
   chosenModulesPerString = Math.max(1, Math.min(upperLimit, Math.max(minModulesAllowed, chosenModulesPerString)));
 
+  // Fleet Inverter Determination:
+  let requiredInverterCount = 1;
+  if (typeof options?.inverterCount === 'number' && Number.isInteger(options.inverterCount) && options.inverterCount >= 1) {
+    requiredInverterCount = options.inverterCount;
+  } else if (options !== undefined && options.inverterCount === undefined) {
+    const targetRatio = options.targetDcAcRatio ?? 1.25;
+    requiredInverterCount = Math.max(1, Math.round(requiredDailyKwh / (peakSunHours * inverter.pnomAcKw * targetRatio)));
+  }
+
+  const totalInverterAcCapacityKw = Number((requiredInverterCount * inverter.pnomAcKw).toFixed(2));
+  const effectiveFleetMpptChannels = requiredInverterCount * Math.max(1, inverter.mpptChannelsCount);
+
+  // Datasheet limits:
+  const maxStringsByImpp = inverter.imppMaxAmpsPerMppt > 0
+    ? Math.floor(inverter.imppMaxAmpsPerMppt / module.impAmps)
+    : Number.POSITIVE_INFINITY;
+  const maxStringsByIsc = inverter.iscMaxAmpsPerMppt > 0
+    ? Math.floor(inverter.iscMaxAmpsPerMppt / (module.iscAmps * 1.25))
+    : Number.POSITIVE_INFINITY;
+  const maxStringsPerMpptAllowed = Math.min(maxStringsByImpp, maxStringsByIsc);
+
   // 6. Calculate total modules and parallel strings
   const singleModuleKwp = module.pmpWatts / 1000.0;
   const initialTotalModules = Math.ceil(requiredArrayKwp / singleModuleKwp);
@@ -219,6 +254,15 @@ export function designPvArray(
       );
     }
     chosenModulesPerString = Math.max(1, initialTotalModules);
+  } else if (options?.optimizeStringLengthForMppt === true && Number.isFinite(maxStringsPerMpptAllowed) && maxStringsPerMpptAllowed >= 1) {
+    const maxFleetStrings = effectiveFleetMpptChannels * maxStringsPerMpptAllowed;
+    for (let testN = chosenModulesPerString; testN <= upperLimit; testN++) {
+      const testStrings = Math.ceil(initialTotalModules / testN);
+      if (testStrings <= maxFleetStrings) {
+        chosenModulesPerString = testN;
+        break;
+      }
+    }
   }
 
   let parallelStrings = Math.ceil(initialTotalModules / chosenModulesPerString);
@@ -235,27 +279,30 @@ export function designPvArray(
   }
 
   // 7. MPPT Current & Short-Circuit Constraints (IEC 62548 §7.3.3 & NEC 690.8)
-  const stringsPerMppt = Math.ceil(parallelStrings / Math.max(1, inverter.mpptChannelsCount));
+  const stringsPerMppt = Math.ceil(parallelStrings / effectiveFleetMpptChannels);
   const maxMpptOperatingCurrentAmps = Number((stringsPerMppt * module.impAmps).toFixed(2));
   // 1.25 safety factor for cloud-enhancement / bifacial surge over STC
   const maxMpptShortCircuitCurrentAmps = Number((stringsPerMppt * module.iscAmps * 1.25).toFixed(2));
 
+  const blockingErrors: string[] = [];
   let isMpptCurrentCompliant = true;
   if (inverter.imppMaxAmpsPerMppt > 0 && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
-    warnings.push(
-      `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping).`
-    );
+    const msg = `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping).`;
+    warnings.push(msg);
+    blockingErrors.push(msg);
   }
 
   if (inverter.iscMaxAmpsPerMppt > 0 && maxMpptShortCircuitCurrentAmps > inverter.iscMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
-    warnings.push(
-      `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر.`
-    );
+    const msg = `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر.`;
+    warnings.push(msg);
+    blockingErrors.push(msg);
   }
 
-  const dcAcRatio = totalPvCapacityKwp / inverter.pnomAcKw;
+  const singleInverterDcAcRatio = Number((totalPvCapacityKwp / inverter.pnomAcKw).toFixed(6));
+  const dcAcRatio = Number((totalPvCapacityKwp / totalInverterAcCapacityKw).toFixed(6));
+
   if (dcAcRatio > 1.4) {
     warnings.push(`نسبت DC به AC برابر ${dcAcRatio.toFixed(2)} است که بالاتر از سقف بهینه (۱.۳۵) بوده و ممکن است باعث تلفات برش توان (Clipping Loss) شود.`);
   }
@@ -311,5 +358,11 @@ export function designPvArray(
     warnings,
     estimatedAnnualYieldKwh,
     specificYieldKwhPerKwp,
+    requiredInverterCount,
+    totalInverterAcCapacityKw,
+    singleInverterDcAcRatio,
+    stringsPerMppt,
+    maxStringsPerMpptAllowed: Number.isFinite(maxStringsPerMpptAllowed) ? maxStringsPerMpptAllowed : undefined,
+    blockingErrors,
   };
 }
