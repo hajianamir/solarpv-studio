@@ -1,0 +1,1442 @@
+{
+  "schemaVersion": "1.0.0",
+  "phase": "phase01",
+  "generatedAt": "2026-11-08T00:00:00.000Z",
+  "harnessSha256": "6764bb289d9ed89c7e5317182e4f6d5a096a1e36a4d39f80470a79d1bd751198",
+  "summary": {
+    "totalQuantities": 45,
+    "totalChecks": 10,
+    "passedChecks": 3,
+    "failedChecks": 7
+  },
+  "quantities": [
+    {
+      "id": "M-A1",
+      "name": "Main Path Annual Yield (App.tsx -> Waterfall -> Financial)",
+      "value": 1851400,
+      "details": {
+        "step1Direct1000KwNoBifacialMwh": 1587.8,
+        "step1Direct1000KwWithBifacialMwh": 1631.3,
+        "effectiveDailyKwhDemand": 4469.315068,
+        "chainedDesignCapacityKwp": 1134.9,
+        "finalChainedWaterfallAnnualMwh": 1851.4,
+        "finalChainedWaterfallAnnualKwh": 1851400,
+        "performanceRatioPct": 73.7,
+        "specificYieldKwhPerKwp": 1631
+      },
+      "unit": "kWh",
+      "case": "G-1",
+      "chain": [
+        "App.tsx:568-633",
+        "App.tsx:706-723",
+        "App.tsx:885-915"
+      ],
+      "producer": "src/engine/waterfallLossEngine.ts:314",
+      "formula": "E_net = E_poa * prod(1 + p_i/100) on arrayDesign.totalPvCapacityKwp",
+      "assumptions": [
+        "bifacialGainPct=2.74%",
+        "dcAcRatio=1134.9/1320=0.8598"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-A1",
+      "verified": true
+    },
+    {
+      "id": "M-A2",
+      "name": "DesignPvArray Generation (G-1 Chained & G-2 Dual-Mount)",
+      "value": 1646827.145773,
+      "details": {
+        "G1_chained_kWh": 1646827.145773,
+        "G2_ground_mount_kWh": 16977.599441,
+        "G2_rooftop_flat_concrete_kWh": 16609.232776,
+        "derating_ground_mount": 0.768966,
+        "derating_rooftop_flat_concrete": 0.752281
+      },
+      "unit": "kWh",
+      "case": "G-1, G-2",
+      "chain": [
+        "App.tsx:618-634",
+        "pvEngineAdvanced.ts:40-300"
+      ],
+      "producer": "src/engine/pvEngineAdvanced.ts:159",
+      "formula": "E = P_dc * PSH * DeratingFactor * 365",
+      "assumptions": [
+        "ground_mount: mountingDeltaTC=0C; rooftop_flat_concrete: mountingDeltaTC=6.5C"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-A2",
+      "verified": true
+    },
+    {
+      "id": "M-A3",
+      "name": "Simulate24h Dynamic Generation (G-1 Chained)",
+      "value": 1670452,
+      "details": {
+        "chainedCapacityKwp": 1134.9,
+        "chainedDailyPvKwh": 4576.58,
+        "chainedAnnualPvKwh": 1670452,
+        "nominal1000KwDailyPvKwh": 4032.62,
+        "nominal1000KwAnnualPvKwh": 1471906
+      },
+      "unit": "kWh",
+      "case": "G-1",
+      "chain": [
+        "simulation24hEngine.ts:50-250",
+        "solarPvEngine.ts:1450"
+      ],
+      "producer": "src/engine/solarPvEngine.ts:1450",
+      "formula": "E_annual = sum(hourly_generation) * 365",
+      "assumptions": [
+        "clear_sky_profile",
+        "overall_derate=0.78"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-A3",
+      "verified": true
+    },
+    {
+      "id": "M-A4",
+      "name": "Server Quick Sizing Generation (G-2)",
+      "value": 1722.12,
+      "details": {
+        "dailyConsumptionKwh": 3,
+        "pvCapacityKwp": 1.17,
+        "moduleCount": 2,
+        "annualYieldKwh": 1722.12
+      },
+      "unit": "kWh",
+      "case": "G-2",
+      "chain": [
+        "server.ts:380-420",
+        "solarPvEngine.ts:1380-1440"
+      ],
+      "producer": "server.ts:395",
+      "formula": "P_req = E_daily / (PSH * 0.78); round to module blocks",
+      "assumptions": [
+        "derate=0.78",
+        "single module increments"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-A4",
+      "verified": true
+    },
+    {
+      "id": "M-A5",
+      "name": "Server Independent Powerplant Generation (G-1)",
+      "value": 1471899,
+      "details": {
+        "formula": "1000 * 5.17 * 365 * 0.78",
+        "psh": 5.17,
+        "derate": 0.78,
+        "capacityKw": 1000,
+        "annualKwh": 1471899
+      },
+      "unit": "kWh",
+      "case": "G-1",
+      "chain": [
+        "server.ts:400"
+      ],
+      "producer": "server.ts:400",
+      "formula": "E = P_kw * PSH * 365 * 0.78",
+      "assumptions": [
+        "hardcoded 0.78 derate on targetPowerplantCapacityKw"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-A5",
+      "verified": true
+    },
+    {
+      "id": "M-A6",
+      "name": "DC Installed Capacities and Module Counts",
+      "value": 1134.9,
+      "details": {
+        "G1_targetCapacityKwp": 1000,
+        "G1_chainedDesignCapacityKwp": 1134.9,
+        "G1_chainedModulesCount": 1940,
+        "G1_stringsCount": 97,
+        "G1_modulesPerString": 20,
+        "G2_designCapacityKwp": 11.7,
+        "G2_modulesCount": 20,
+        "G2_quickSizeCapacityKwp": 1.17,
+        "G2_quickSizeModulesCount": 2
+      },
+      "unit": "kWp",
+      "case": "G-1, G-2",
+      "chain": [
+        "pvEngineAdvanced.ts:120-150",
+        "server.ts:400"
+      ],
+      "producer": "src/engine/pvEngineAdvanced.ts:120",
+      "formula": "P_dc = modulesCount * P_mod_w / 1000",
+      "assumptions": [
+        "integer module count derived from string configuration"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-A6",
+      "verified": true
+    },
+    {
+      "id": "M-B1",
+      "name": "Detailed Stages Waterfall Losses Breakdown",
+      "value": 73.6804,
+      "details": {
+        "stages": [
+          {
+            "id": "bifacial_gain",
+            "nameEn": "Bifacial Rear Irradiance Gain (First-Order Proxy)",
+            "percentageLoss": 2.74,
+            "percentageLossRaw": 2.74
+          },
+          {
+            "id": "near_shading",
+            "nameEn": "Near Shading Loss (Row-to-Row)",
+            "percentageLoss": -2.4,
+            "percentageLossRaw": -2.4
+          },
+          {
+            "id": "iam",
+            "nameEn": "Incidence Angle Modifier (IAM)",
+            "percentageLoss": -2.2,
+            "percentageLossRaw": -2.2
+          },
+          {
+            "id": "soiling",
+            "nameEn": "Soiling & Environmental Dust Loss (Kimber)",
+            "percentageLoss": -5.5,
+            "percentageLossRaw": -5.5
+          },
+          {
+            "id": "snow",
+            "nameEn": "Snow Coverage & Shedding Loss (Marion)",
+            "percentageLoss": 0,
+            "percentageLossRaw": 0
+          },
+          {
+            "id": "thermal",
+            "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
+            "percentageLoss": -13.1,
+            "percentageLossRaw": -13.122499999999999
+          },
+          {
+            "id": "quality",
+            "nameEn": "Module Quality & Factory Flash Tolerance",
+            "percentageLoss": 0.4,
+            "percentageLossRaw": 0.4
+          },
+          {
+            "id": "lid",
+            "nameEn": "Light-Induced Degradation (LID & LeTID)",
+            "percentageLoss": -1.2,
+            "percentageLossRaw": -1.2
+          },
+          {
+            "id": "mismatch",
+            "nameEn": "String Module I-V Mismatch Loss",
+            "percentageLoss": -1.3,
+            "percentageLossRaw": -1.3
+          },
+          {
+            "id": "dc_cabling",
+            "nameEn": "DC Cabling Ohmic Loss (I²R)",
+            "percentageLoss": -1.4,
+            "percentageLossRaw": -1.4
+          },
+          {
+            "id": "mppt_tracking",
+            "nameEn": "Inverter Dynamic MPPT Tracking Loss",
+            "percentageLoss": -0.4,
+            "percentageLossRaw": -0.4
+          },
+          {
+            "id": "clipping",
+            "nameEn": "Inverter AC Power Clipping (DC/AC Over-paneling)",
+            "percentageLoss": -0.2,
+            "percentageLossRaw": -0.2
+          },
+          {
+            "id": "inverter_efficiency",
+            "nameEn": "Inverter DC-to-AC Conversion Loss",
+            "percentageLoss": -2.2,
+            "percentageLossRaw": -2.2
+          },
+          {
+            "id": "mv_transformer",
+            "nameEn": "AC Collector & MV Step-Up Transformer Loss",
+            "percentageLoss": -1.5,
+            "percentageLossRaw": -1.5
+          },
+          {
+            "id": "aux_unavailability",
+            "nameEn": "Substation Auxiliaries & Grid Availability",
+            "percentageLoss": -1,
+            "percentageLossRaw": -1
+          }
+        ],
+        "netAnnualEnergyExportMwh": 1851.4,
+        "finalEnergyKwh": 1851400,
+        "performanceRatioPct": 73.7
+      },
+      "unit": "%",
+      "case": "G-1",
+      "chain": [
+        "waterfallLossEngine.ts:60-140",
+        "App.tsx:885-915"
+      ],
+      "producer": "src/engine/waterfallLossEngine.ts:285",
+      "formula": "E_k = E_{k-1} * (1 + p_k / 100)",
+      "assumptions": [
+        "14 active loss stages in utility powerplant mode"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-B1",
+      "verified": true
+    },
+    {
+      "id": "M-B2",
+      "name": "Waterfall Losses Compound Product Performance Ratio",
+      "value": -29.3,
+      "details": {
+        "compoundProduct": 0.7368044532153977,
+        "compoundPrPct": 73.6804,
+        "reportedPrPct": 73.7,
+        "arithmeticSumLossPct": -29.3,
+        "arithmeticImpliedPrPct": 70.7
+      },
+      "unit": "%",
+      "case": "G-1",
+      "chain": [
+        "waterfallLossEngine.ts:250-295"
+      ],
+      "producer": "src/engine/waterfallLossEngine.ts:182",
+      "formula": "PR_compound = prod(1 + p_i/100) * 100",
+      "assumptions": [
+        "strictly multiplicative compound formulation"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-B2",
+      "verified": true
+    },
+    {
+      "id": "M-B3",
+      "name": "Inverter Clustering Capacity and Fleet Effective ILR",
+      "value": 0.859773,
+      "details": {
+        "parallelUnitsCount": 4,
+        "unitNominalKw": 330,
+        "totalInverterCapacityKw": 1320,
+        "dcCapacityKwp": 1134.9,
+        "effectiveFleetIlr": 0.859773
+      },
+      "unit": "ratio",
+      "case": "G-1",
+      "chain": [
+        "inverterClustering.ts:50-120",
+        "App.tsx:706-723"
+      ],
+      "producer": "src/engine/inverterClustering.ts:77",
+      "formula": "ILR_fleet = P_dc / (N_inv * P_inv_nom)",
+      "assumptions": [
+        "4 units of Huawei SUN2000-330KTL-H1 = 1320 kW AC"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-B3",
+      "verified": true
+    },
+    {
+      "id": "M-B4",
+      "name": "Waterfall Arithmetic Rounded Sum vs Exact Balance",
+      "value": 3,
+      "details": {
+        "arithmeticSumLossPct": -29.3,
+        "arithmeticImpliedPrPct": 70.7,
+        "reportedPrPct": 73.7,
+        "discrepancyPercentagePoints": 3
+      },
+      "unit": "percentage points",
+      "case": "G-1",
+      "chain": [
+        "waterfallLossEngine.ts:135-300"
+      ],
+      "producer": "src/engine/waterfallLossEngine.ts:135",
+      "formula": "Discrepancy = PR_reported - (100 + sum(rounded_losses))",
+      "assumptions": [
+        "rounding for UI cards produces non-additive residual"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-B4",
+      "verified": true
+    },
+    {
+      "id": "M-B5",
+      "name": "Input DC/AC Ratio vs Effective Clustered ILR",
+      "value": 0.390227,
+      "details": {
+        "inputDcAcRatio": 1.25,
+        "inverterCount": 4,
+        "totalInverterCapacityKw": 1320,
+        "effectiveIlr": 0.859773,
+        "delta": 0.390227
+      },
+      "unit": "ratio",
+      "case": "G-1",
+      "chain": [
+        "inverterClustering.ts:75-100",
+        "App.tsx:891"
+      ],
+      "producer": "src/App.tsx:891",
+      "formula": "ILR_eff = P_dc / (N_inv * P_inv_nom)",
+      "assumptions": [
+        "Huawei 330kW units (4 units = 1320 kW)"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-B5",
+      "verified": true
+    },
+    {
+      "id": "M-C1",
+      "name": "Thermal Derating at Extreme Design Maximum Temperature (39°C)",
+      "value": 13.1225,
+      "details": {
+        "ambientTempC": 39,
+        "cellTempC": 70.25,
+        "gammaPmpPct": -0.29,
+        "deratePct": 13.1225
+      },
+      "unit": "%",
+      "case": "G-1",
+      "chain": [
+        "thermalDerate.ts:15-40",
+        "solarPvEngine.ts:528"
+      ],
+      "producer": "src/engine/core/thermalDerate.ts:35",
+      "formula": "T_cell = T_amb + (NOCT - 20) * (800 / 800) + Delta_T; Loss = gamma * (T_cell - 25)",
+      "assumptions": [
+        "Irradiance=800W/m2",
+        "mountingDeltaTC=0 (ground mount)"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-C1",
+      "verified": true
+    },
+    {
+      "id": "M-C2",
+      "name": "Thermal Derating at Annual Mean Ambient Temperature (22°C)",
+      "value": 8.1925,
+      "details": {
+        "ambientTempC": 22,
+        "cellTempC": 53.25,
+        "gammaPmpPct": -0.29,
+        "deratePct": 8.1925
+      },
+      "unit": "%",
+      "case": "G-1",
+      "chain": [
+        "thermalDerate.ts:15-40",
+        "solarPvEngine.ts:528"
+      ],
+      "producer": "src/engine/core/thermalDerate.ts:35",
+      "formula": "T_cell = T_amb + (NOCT - 20) * (800 / 800) + Delta_T; Loss = gamma * (T_cell - 25)",
+      "assumptions": [
+        "Irradiance=800W/m2",
+        "mountingDeltaTC=0 (ground mount)"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-C2",
+      "verified": true
+    },
+    {
+      "id": "M-C3",
+      "name": "Module NOCT and Source Code Line Reference",
+      "value": 45,
+      "details": {
+        "noctC": 45,
+        "source": "App.tsx:234 (defaultMod.noctC ?? 45.0 fallback)"
+      },
+      "unit": "°C",
+      "case": "G-1",
+      "chain": [
+        "App.tsx:234",
+        "equipmentCatalogData.ts:127"
+      ],
+      "producer": "src/App.tsx:234",
+      "formula": "noct = module.noctC ?? 45.0",
+      "assumptions": [
+        "Catalog PvModule records in equipmentCatalogData.ts omit noctC property"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-C3",
+      "verified": true
+    },
+    {
+      "id": "M-C4",
+      "name": "Design Max vs Annual Mean Thermal Derate Divergence",
+      "value": 4.93,
+      "details": {
+        "derateMaxC": 13.1225,
+        "derateMeanC": 8.1925,
+        "absDeltaPercentagePoints": 4.93,
+        "relDeltaPct": 60.177
+      },
+      "unit": "percentage points",
+      "case": "G-1",
+      "chain": [
+        "thermalDerate.ts:35"
+      ],
+      "producer": "src/engine/core/thermalDerate.ts:35",
+      "formula": "Delta = Derate_39C - Derate_22C",
+      "assumptions": [
+        "Ground mount mountingDeltaTC=0"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-C4",
+      "verified": true
+    },
+    {
+      "id": "M-D1",
+      "name": "Wired Path Bifacial Rear Gain at Albedo 0.20",
+      "value": 2.74,
+      "details": {
+        "albedo": 0.2,
+        "bifacialityFactor": 0.8,
+        "gcr": 0.38,
+        "gainPct": 2.74
+      },
+      "unit": "%",
+      "case": "G-1",
+      "chain": [
+        "bifacialGain.ts:25-50"
+      ],
+      "producer": "src/engine/bifacialGain.ts:46",
+      "formula": "gain = 100 * min(0.15, max(0, bf * gcr * albedo * 0.45))",
+      "assumptions": [
+        "first-order empirical proxy multiplier 0.45"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-D1",
+      "verified": true
+    },
+    {
+      "id": "M-D2",
+      "name": "Rigorous 2D View-Factor Bifacial Rear Gain at Albedo 0.20",
+      "value": 8.31,
+      "details": {
+        "albedo": 0.2,
+        "bifacialityFactor": 0.8,
+        "gcr": 0.38,
+        "gainPct": 8.31
+      },
+      "unit": "%",
+      "case": "G-1",
+      "chain": [
+        "bifacial2dViewFactor.ts:100-240"
+      ],
+      "producer": "src/engine/bifacial/bifacial2dViewFactor.ts:220",
+      "formula": "Integral over 10 chord slices with ground & sky view factors",
+      "assumptions": [
+        "groundClearance=1.2m",
+        "rowLength=50m"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-D2",
+      "verified": true
+    },
+    {
+      "id": "M-D3",
+      "name": "Bifacial View-Factor vs Proxy Ratio at Albedo 0.20",
+      "value": 3.032847,
+      "details": {
+        "vfGainPct": 8.31,
+        "proxyGainPct": 2.74,
+        "ratio": 3.032847
+      },
+      "unit": "ratio",
+      "case": "G-1",
+      "chain": [
+        "bifacial2dViewFactor.ts vs bifacialGain.ts"
+      ],
+      "producer": "src/engine/bifacial/bifacial2dViewFactor.ts:220",
+      "formula": "Ratio = Gain_2D / Gain_proxy",
+      "assumptions": [],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-D3",
+      "verified": true
+    },
+    {
+      "id": "M-D4",
+      "name": "Bifacial View-Factor vs Proxy Ratio at Albedo 0.25",
+      "value": 2.979532,
+      "details": {
+        "albedo": 0.25,
+        "proxyGainPct": 3.42,
+        "viewFactorGainPct": 10.19,
+        "ratio": 2.979532
+      },
+      "unit": "ratio",
+      "case": "G-1",
+      "chain": [
+        "bifacial2dViewFactor.ts vs bifacialGain.ts"
+      ],
+      "producer": "src/engine/bifacial/bifacial2dViewFactor.ts:220",
+      "formula": "Ratio = Gain_2D / Gain_proxy at albedo 0.25",
+      "assumptions": [],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-D4",
+      "verified": true
+    },
+    {
+      "id": "M-E1",
+      "name": "Required Usable Battery Energy for Autonomy Window",
+      "value": 12.39,
+      "details": {
+        "dailyConsumptionKwh": 8.26,
+        "autonomyDays": 1.5,
+        "requiredUsableKwh": 12.39
+      },
+      "unit": "kWh",
+      "case": "G-3",
+      "chain": [
+        "batteryEngine.ts:158-172"
+      ],
+      "producer": "src/engine/batteryEngine.ts:158",
+      "formula": "E_usable_req = E_daily * autonomyDays",
+      "assumptions": [
+        "offgrid mode: 100% daily load autonomy"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E1",
+      "verified": true
+    },
+    {
+      "id": "M-E2",
+      "name": "Required Gross Battery Capacity with Thermal and DoD Deratings",
+      "value": 16,
+      "details": {
+        "requiredUsableKwh": 12.39,
+        "recommendedDoDPct": 85,
+        "roundTripEfficiencyPct": 95,
+        "tempDeratingPerCBelow20": 0.5,
+        "grossCapacityKwh": 16
+      },
+      "unit": "kWh",
+      "case": "G-3",
+      "chain": [
+        "batteryEngine.ts:240-258"
+      ],
+      "producer": "src/engine/batteryEngine.ts:251",
+      "formula": "E_gross = E_usable / (DoD * eta_rt * f_temp)",
+      "assumptions": [
+        "min ambient temp 15°C",
+        "LiFePO4 profile"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E2",
+      "verified": true
+    },
+    {
+      "id": "M-E3",
+      "name": "Battery Bank Architecture and Physical Unit Counts",
+      "value": 16,
+      "details": {
+        "unitBatteryCapacityAh": 78.125,
+        "systemVoltageVdc": 51.2,
+        "batteriesInSeries": 4,
+        "parallelStrings": 4,
+        "totalBatteryUnitsCount": 16,
+        "actualGrossKwh": 16,
+        "actualUsableKwh": 13.6,
+        "totalCapacityAh": 313
+      },
+      "unit": "units",
+      "case": "G-3",
+      "chain": [
+        "batteryEngine.ts:255-270"
+      ],
+      "producer": "src/engine/batteryEngine.ts:266",
+      "formula": "N_series = V_dc / V_unit; N_parallel = ceil(Ah_req / Ah_unit); N_total = N_series * N_parallel",
+      "assumptions": [
+        "BYD 4.0 kWh 51.2V modular unit blocks"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E3",
+      "verified": true
+    },
+    {
+      "id": "M-E4",
+      "name": "Continuous and Surge Discharge Currents and C-Rate Evaluation",
+      "value": 63,
+      "details": {
+        "continuousDischargeCurrentAmps": 63,
+        "peakSurgeDischargeCurrentAmps": 105,
+        "actualContinuousCRate": 0.2,
+        "maxContinuousCRate": 1,
+        "isCRateCompliant": true
+      },
+      "unit": "A",
+      "case": "G-3",
+      "chain": [
+        "batteryEngine.ts:270-285"
+      ],
+      "producer": "src/engine/batteryEngine.ts:271",
+      "formula": "I_dc = P_ac / (V_dc * eta_inv); C_rate = I_dc / Ah_bank",
+      "assumptions": [
+        "inverter continuous power 3000W",
+        "inverter efficiency 0.93"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E4",
+      "verified": true
+    },
+    {
+      "id": "M-E5",
+      "name": "Design Night Energy Coverage and Winter Autonomy Margin",
+      "value": 274.2,
+      "details": {
+        "coverageTargetKwh": 4.96,
+        "usableCapacityKwh": 13.6,
+        "nightCoveragePct": 274.2,
+        "coverageLabelEn": "Design Night Coverage",
+        "coverageLabelFa": "پوشش شبِ طراحی",
+        "hasDeficitWarning": false
+      },
+      "unit": "%",
+      "case": "G-3",
+      "chain": [
+        "batteryEngine.ts:290-320"
+      ],
+      "producer": "src/engine/batteryEngine.ts:299",
+      "formula": "Coverage_pct = (E_usable / E_night_winter) * 100",
+      "assumptions": [
+        "longest winter night in Tehran = 14.42 hours"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-E5",
+      "verified": true
+    },
+    {
+      "id": "M-F1",
+      "name": "Total Initial Powerplant CAPEX (G-1 Utility 1MW Scale)",
+      "value": 499784,
+      "details": {
+        "modulesUsd": 158886,
+        "invertersUsd": 72600,
+        "structuresUsd": 51071,
+        "cablesAndProtectionUsd": 39722,
+        "substationMvUsd": 48632,
+        "gridInterconnectionUsd": 33347,
+        "hvConnectionUsd": 62526,
+        "engineeringAndInstallationUsd": 33000,
+        "totalCapexUsd": 499784,
+        "totalCapexToman": 44980493684
+      },
+      "unit": "USD",
+      "case": "G-1",
+      "chain": [
+        "financialEngine.ts:300-385",
+        "FinancialTab.tsx:120-200"
+      ],
+      "producer": "src/engine/financialEngine.ts:380",
+      "formula": "CAPEX = Modules + Inverters + Structures + Cables + Substation + Interconnect + Labor",
+      "assumptions": [
+        "Utility Powerplant mode includes MV substation & HV interconnection"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F1",
+      "verified": true
+    },
+    {
+      "id": "M-F2",
+      "name": "Annual Base Operational Expenditure (OPEX)",
+      "value": 5997,
+      "details": {
+        "annualOpexUsd": 5997,
+        "annualOpexToman": 539765924,
+        "opexPctOfCapex": 1.2
+      },
+      "unit": "USD/year",
+      "case": "G-1",
+      "chain": [
+        "financialEngine.ts:390-415"
+      ],
+      "producer": "src/engine/financialEngine.ts:405",
+      "formula": "OPEX_annual = CAPEX * annualOpexPctOfCapex + LandLease + GridFee",
+      "assumptions": [
+        "1.2% annual maintenance allowance"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F2",
+      "verified": true
+    },
+    {
+      "id": "M-F3",
+      "name": "Levelized Cost of Electricity (LCOE)",
+      "value": 0.0562,
+      "details": {
+        "lcoeUsdPerKwh": 0.0562,
+        "lcoeTomanPerKwh": 5056,
+        "discountRatePct": 18,
+        "lifetimeYears": 25
+      },
+      "unit": "USD/kWh",
+      "case": "G-1",
+      "chain": [
+        "financialEngine.ts:640-655"
+      ],
+      "producer": "src/engine/financialEngine.ts:650",
+      "formula": "LCOE = sum((CAPEX_t + OPEX_t)/(1+r)^t) / sum(E_t/(1+r)^t)",
+      "assumptions": [
+        "NREL SAM LCOE discounted energy formulation",
+        "lifetime 25 years",
+        "discount rate 18%"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F3",
+      "verified": true
+    },
+    {
+      "id": "M-F4",
+      "name": "Net Present Value (NPV)",
+      "value": 310202,
+      "details": {
+        "npvUsd": 310202,
+        "npvToman": 27918146128,
+        "discountRatePct": 18,
+        "ppaTariffTomanPerKwh": 2800
+      },
+      "unit": "USD",
+      "case": "G-1",
+      "chain": [
+        "financialEngine.ts:610-630"
+      ],
+      "producer": "src/engine/financialEngine.ts:620",
+      "formula": "NPV = -CAPEX + sum(NetCashFlow_t / (1+r)^t)",
+      "assumptions": [
+        "SATBA PPA feed-in tariff 2800 Toman/kWh",
+        "tariff escalation 15%/yr"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F4",
+      "verified": true
+    },
+    {
+      "id": "M-F5",
+      "name": "Internal Rate of Return (IRR)",
+      "value": 23.6,
+      "details": {
+        "irrPct": 23.6,
+        "irrStatus": "DEFINED_SINGLE_ROOT",
+        "isIrrDefined": true,
+        "discountRatePct": 18
+      },
+      "unit": "%",
+      "case": "G-1",
+      "chain": [
+        "financialEngine.ts:630-645"
+      ],
+      "producer": "src/engine/financialEngine.ts:635",
+      "formula": "NPV(IRR) = 0 solved via Brent / Newton-Raphson method",
+      "assumptions": [
+        "Conventional sign change pattern (- + + ...)"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F5",
+      "verified": true
+    },
+    {
+      "id": "M-F6",
+      "name": "Simple Payback Period",
+      "value": 6.4,
+      "details": {
+        "simplePaybackPeriodYears": 6.4,
+        "discountedPaybackPeriodYears": 13.3
+      },
+      "unit": "years",
+      "case": "G-1",
+      "chain": [
+        "financialEngine.ts:655-675"
+      ],
+      "producer": "src/engine/financialEngine.ts:660",
+      "formula": "Years until cumulative non-discounted cash flow becomes positive",
+      "assumptions": [
+        "nominal cash flows"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-F6",
+      "verified": true
+    },
+    {
+      "id": "M-G1",
+      "name": "POST /api/v1/solar/position seconds vs milliseconds timestamp divergence",
+      "value": 45.4177,
+      "details": {
+        "secondsZenithDeg": 45.4177,
+        "secondsAzimuthDeg": 268.8356,
+        "msZenithDeg": 66.135,
+        "msAzimuthDeg": 65.7428,
+        "deltaZenithDeg": 20.7173
+      },
+      "unit": "degrees",
+      "case": "Server",
+      "chain": [
+        "server.ts:187-215"
+      ],
+      "producer": "server.ts:187",
+      "formula": "new Date(timestamp) in solar position handler",
+      "assumptions": [
+        "Unix timestamp in seconds produces epoch-start year 1970 instead of 2026"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-G1",
+      "verified": true
+    },
+    {
+      "id": "M-G2",
+      "name": "POST /api/v1/solar/poa documented API response and physical co-aligned value",
+      "value": 409.748443,
+      "details": {
+        "apiDefaultAntiAlignedWm2": 409.748443,
+        "physicalCoAlignedWm2": 891.120826,
+        "discrepancyWm2": 481.372383,
+        "explanation": "server.ts:224-226 defaults azimuthDeg=0 (rooftop South) while sunAzimuthDeg=180 (astronomical South); Delta-Az=180 causes panel to face away from sun."
+      },
+      "unit": "W/m²",
+      "case": "Server",
+      "chain": [
+        "server.ts:218-260",
+        "solarPvEngine.ts:580-615"
+      ],
+      "producer": "server.ts:224",
+      "formula": "POA = DNI*cos(AOI) + DHI_perez + GHI*albedo*(1-cos(tilt))/2",
+      "assumptions": [
+        "GHI=800, DNI=700, DHI=150, tilt=31, sunZenith=35"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-G2",
+      "verified": true
+    },
+    {
+      "id": "M-G3",
+      "name": "POST /api/v1/finance/lcoe consumed vs ignored parameters",
+      "value": 5,
+      "details": {
+        "acceptedParamsCount": 5,
+        "acceptedParams": [
+          "capex",
+          "opexAnnual",
+          "energyAnnual",
+          "discountRate",
+          "lifetimeYears"
+        ],
+        "ignoredParams": [
+          "degradationPct",
+          "inflation",
+          "taxes"
+        ]
+      },
+      "unit": "count",
+      "case": "Server",
+      "chain": [
+        "server.ts:310-345"
+      ],
+      "producer": "server.ts:310",
+      "formula": "LCOE = sum((C_t + O_t)/(1+d)^t) / sum(E_t/(1+d)^t)",
+      "assumptions": [
+        "server endpoint computes basic LCOE ignoring degradation, inflation, and tax schedules"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-G3",
+      "verified": true
+    },
+    {
+      "id": "M-G4",
+      "name": "Complete server.ts Endpoint Inventory and Auth Classification",
+      "value": 22,
+      "details": {
+        "totalEndpointsCount": 22,
+        "publicUnauthenticatedEndpointsCount": 13,
+        "conditionalAuthEndpointsCount": 1,
+        "strictlyAuthenticatedEndpointsCount": 8,
+        "publicEndpoints": [
+          "GET /api/health",
+          "POST /api/v1/solar/position",
+          "POST /api/v1/solar/poa",
+          "POST /api/v1/electrical/string-sizing",
+          "POST /api/v1/electrical/voltage-drop",
+          "POST /api/v1/finance/lcoe",
+          "POST /api/v1/finance/npv",
+          "POST /api/v1/finance/irr",
+          "POST /api/v1/shading/analyze",
+          "GET /api/v1/catalog/modules",
+          "GET /api/v1/catalog/inverters",
+          "GET /api/v1/catalog/batteries",
+          "POST /api/v1/reports/generate"
+        ],
+        "conditionalEndpoints": [
+          "POST /api/v1/projects/quick-size"
+        ],
+        "strictlyAuthenticatedEndpoints": [
+          "GET /api/v1/projects",
+          "GET /api/v1/projects/:id",
+          "PUT /api/v1/projects/:id",
+          "POST /api/v1/catalog/modules",
+          "POST /api/v1/catalog/inverters",
+          "POST /api/v1/catalog/batteries",
+          "POST /api/v1/sync/push",
+          "GET /api/v1/sync/pull"
+        ]
+      },
+      "unit": "endpoints",
+      "case": "Server",
+      "chain": [
+        "server.ts:187-1700"
+      ],
+      "producer": "server.ts:187",
+      "formula": "Express router inspection",
+      "assumptions": [
+        "GET /api/v1/catalog/* never issues 401/403 and serves public catalog"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-G4",
+      "verified": true
+    },
+    {
+      "id": "M-G5",
+      "name": "server.ts Engine Imports Count",
+      "value": 2,
+      "details": {
+        "importedModulesCount": 2,
+        "imports": [
+          "solarPvEngine",
+          "batteryEngine"
+        ]
+      },
+      "unit": "imports",
+      "case": "Server",
+      "chain": [
+        "server.ts:25-28"
+      ],
+      "producer": "server.ts:25",
+      "formula": "AST import statement count matching src/engine/*",
+      "assumptions": [
+        "server.ts imports solarPvEngine and batteryEngine"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-G5",
+      "verified": true
+    },
+    {
+      "id": "M-H1",
+      "name": "Catalog PV Modules Count and NOCT Completeness",
+      "value": 25,
+      "details": {
+        "totalModulesCount": 25,
+        "modulesWithExplicitNoctCount": 0,
+        "noctCompletenessPct": 0
+      },
+      "unit": "modules",
+      "case": "Catalog",
+      "chain": [
+        "src/data/equipmentCatalogData.ts:1-180"
+      ],
+      "producer": "src/data/equipmentCatalogData.ts:1",
+      "formula": "count(DEFAULT_MODULES)",
+      "assumptions": [
+        "Catalog records lack explicit noctC property"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H1",
+      "verified": true
+    },
+    {
+      "id": "M-H2",
+      "name": "Catalog Inverters Count and Parallel Sizing Capabilities",
+      "value": 33,
+      "details": {
+        "totalInvertersCount": 33,
+        "parallelCapableCount": 33,
+        "threePhaseCount": 28
+      },
+      "unit": "inverters",
+      "case": "Catalog",
+      "chain": [
+        "src/data/equipmentCatalogData.ts:181-370"
+      ],
+      "producer": "src/data/equipmentCatalogData.ts:181",
+      "formula": "count(DEFAULT_INVERTERS)",
+      "assumptions": [
+        "All inverters support parallel clustering"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H2",
+      "verified": true
+    },
+    {
+      "id": "M-H3",
+      "name": "Catalog Battery Profiles Count and Chemistries",
+      "value": 24,
+      "details": {
+        "totalBatteriesCount": 24,
+        "lifepo4Count": 14,
+        "leadAcidGelCount": 8,
+        "ncmCount": 2
+      },
+      "unit": "batteries",
+      "case": "Catalog",
+      "chain": [
+        "src/data/equipmentCatalogData.ts:371-550"
+      ],
+      "producer": "src/data/equipmentCatalogData.ts:371",
+      "formula": "count(DEFAULT_BATTERIES)",
+      "assumptions": [
+        "Covers LiFePO4, Gel, AGM, and ternary NCM"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H3",
+      "verified": true
+    },
+    {
+      "id": "M-H4",
+      "name": "Orphan Modules in Engine Directory",
+      "value": 1,
+      "details": {
+        "orphanModuleCount": 1,
+        "orphanModules": [
+          "src/engine/structural/structureRecommendationEngine.ts"
+        ]
+      },
+      "unit": "modules",
+      "case": "Architecture",
+      "chain": [
+        "scripts/remediation/import-map.ts:80-140"
+      ],
+      "producer": "src/engine/structureRecommendationEngine.ts:1",
+      "formula": "Filter modules in src/engine/ with in-degree 0 from UI/server",
+      "assumptions": [
+        "structureRecommendationEngine.ts is bypassed in favor of structuralEngine.ts"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H4",
+      "verified": true
+    },
+    {
+      "id": "M-H5",
+      "name": "Exported Engine Functions without Callers",
+      "value": 9,
+      "details": {
+        "uncalledExportedFunctionsCount": 9,
+        "functions": [
+          {
+            "name": "calculateSampleKurtosis",
+            "file": "src/engine/core/uncertaintyPropagation.ts"
+          },
+          {
+            "name": "getFullModulesCatalog",
+            "file": "src/engine/equipmentCatalogData.ts"
+          },
+          {
+            "name": "getFullInvertersCatalog",
+            "file": "src/engine/equipmentCatalogData.ts"
+          },
+          {
+            "name": "getFullBatteriesCatalog",
+            "file": "src/engine/equipmentCatalogData.ts"
+          },
+          {
+            "name": "validateCoordinates",
+            "file": "src/engine/geoCoordinates.ts"
+          },
+          {
+            "name": "formatLocalizedEngineeringUnit",
+            "file": "src/engine/offlineTransferEngine.ts"
+          },
+          {
+            "name": "buildExcelWorkbookXml",
+            "file": "src/engine/reportingEngine.ts"
+          },
+          {
+            "name": "detectTableObstacleCollision",
+            "file": "src/engine/roof3dShadingEngine.ts"
+          },
+          {
+            "name": "calculateTableActiveCollectorAreaM2",
+            "file": "src/engine/roof3dShadingEngine.ts"
+          }
+        ]
+      },
+      "unit": "functions",
+      "case": "Architecture",
+      "chain": [
+        "scripts/remediation/import-map.ts:140-190"
+      ],
+      "producer": "scripts/remediation/import-map.ts:100",
+      "formula": "AST exported functions without external call sites across repo",
+      "assumptions": [
+        "Legacy/dead functions remaining in engine"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-H5",
+      "verified": true
+    },
+    {
+      "id": "M-I1",
+      "name": "Peak Sun Hours (PSH) across Reference Climate Cities",
+      "value": 5.17,
+      "details": {
+        "tehran": 5.17,
+        "clifton": 4.97,
+        "munich": 3.89,
+        "phoenix": 5.6,
+        "singapore": 5.57,
+        "quito": 5.6,
+        "sydney": 5.6
+      },
+      "unit": "PSH (kWh/m²/day)",
+      "case": "G-4",
+      "chain": [
+        "climaticData.ts:90-130"
+      ],
+      "producer": "src/engine/climaticData.ts:114",
+      "formula": "Continuous solar irradiance integration from latitude and clearness index",
+      "assumptions": [
+        "Analytical latitudinal solar model"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I1",
+      "verified": true
+    },
+    {
+      "id": "M-I2",
+      "name": "Optimal Array Tilt Angle across Reference Climate Cities",
+      "value": 31,
+      "details": {
+        "tehran": 31,
+        "clifton": 36,
+        "munich": 42,
+        "phoenix": 29,
+        "singapore": 8,
+        "quito": 8,
+        "sydney": 30
+      },
+      "unit": "degrees",
+      "case": "G-4",
+      "chain": [
+        "climaticData.ts:130-145"
+      ],
+      "producer": "src/engine/climaticData.ts:133",
+      "formula": "beta_opt = max(8, min(65, round(|lat| * 0.88)))",
+      "assumptions": [
+        "Annual fixed tilt optimization for maximum annual yield"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I2",
+      "verified": true
+    },
+    {
+      "id": "M-I3",
+      "name": "Extreme Design Maximum Temperature across Reference Climate Cities",
+      "value": 39,
+      "details": {
+        "tehran": {
+          "tMin": -15,
+          "tMax": 39
+        },
+        "clifton": {
+          "tMin": -15,
+          "tMax": 39
+        },
+        "munich": {
+          "tMin": -12,
+          "tMax": 36
+        },
+        "phoenix": {
+          "tMin": -5,
+          "tMax": 38
+        },
+        "singapore": {
+          "tMin": 18,
+          "tMax": 38
+        },
+        "quito": {
+          "tMin": 18,
+          "tMax": 38
+        },
+        "sydney": {
+          "tMin": -5,
+          "tMax": 38
+        }
+      },
+      "unit": "°C",
+      "case": "G-4",
+      "chain": [
+        "climaticData.ts:145-165"
+      ],
+      "producer": "src/engine/climaticData.ts:150",
+      "formula": "ASHRAE extreme temperature climate zones",
+      "assumptions": [
+        "0.4% extreme design max conditions"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I3",
+      "verified": true
+    },
+    {
+      "id": "M-I4",
+      "name": "Basic Structural Wind Speed across Reference Climate Cities",
+      "value": 130,
+      "details": {
+        "tehran": {
+          "windKmh": 130,
+          "snowKgM2": 50
+        },
+        "clifton": {
+          "windKmh": 130,
+          "snowKgM2": 60
+        },
+        "munich": {
+          "windKmh": 140,
+          "snowKgM2": 81
+        },
+        "phoenix": {
+          "windKmh": 130,
+          "snowKgM2": 0
+        },
+        "singapore": {
+          "windKmh": 120,
+          "snowKgM2": 0
+        },
+        "quito": {
+          "windKmh": 120,
+          "snowKgM2": 0
+        },
+        "sydney": {
+          "windKmh": 130,
+          "snowKgM2": 0
+        }
+      },
+      "unit": "km/h",
+      "case": "G-4",
+      "chain": [
+        "climaticData.ts:165-185"
+      ],
+      "producer": "src/engine/climaticData.ts:168",
+      "formula": "ASCE 7-22 / INBC Part 6 basic wind speed mapping",
+      "assumptions": [
+        "Standard 50-year return period structural gust"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I4",
+      "verified": true
+    },
+    {
+      "id": "M-I5",
+      "name": "Annual Rainfall across Reference Climate Cities",
+      "value": 180,
+      "details": {
+        "tehran": {
+          "rainMm": 180,
+          "soilingLossPct": 5.5,
+          "distanceToCoastKm": 106.9
+        },
+        "clifton": {
+          "rainMm": 450,
+          "soilingLossPct": 3,
+          "distanceToCoastKm": 21.5
+        },
+        "munich": {
+          "rainMm": 750,
+          "soilingLossPct": 3,
+          "distanceToCoastKm": 462.9
+        },
+        "phoenix": {
+          "rainMm": 450,
+          "soilingLossPct": 3,
+          "distanceToCoastKm": 480.9
+        },
+        "singapore": {
+          "rainMm": 450,
+          "soilingLossPct": 3,
+          "distanceToCoastKm": 0.2
+        },
+        "quito": {
+          "rainMm": 450,
+          "soilingLossPct": 3,
+          "distanceToCoastKm": 2890.4
+        },
+        "sydney": {
+          "rainMm": 450,
+          "soilingLossPct": 3,
+          "distanceToCoastKm": 1
+        }
+      },
+      "unit": "mm/year",
+      "case": "G-4",
+      "chain": [
+        "climaticData.ts:185-230"
+      ],
+      "producer": "src/engine/climaticData.ts:192",
+      "formula": "Global precipitation bands and Kimber soiling rainfall model",
+      "assumptions": [
+        "Dry arid regions experience higher soiling and lower rain wash-off"
+      ],
+      "reproduce": "npx tsx scripts/remediation/measure.ts --id M-I5",
+      "verified": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "C-01",
+      "name": "Compound Waterfall Product vs Reported Performance Ratio",
+      "lhs": 73.6804,
+      "rhs": 73.7,
+      "delta": 0.0196,
+      "pass": true,
+      "definition": "Absolute difference <= 0.05 percentage points",
+      "notes": "Compound product matches reported PR within numerical precision"
+    },
+    {
+      "id": "C-02",
+      "name": "Designed Single-Inverter DC/AC Ratio vs Waterfall Input dcAcRatio",
+      "lhs": 3.439091,
+      "rhs": 1.25,
+      "delta": 2.189091,
+      "pass": false,
+      "definition": "Absolute difference <= 0.05",
+      "notes": "arrayDesign.dcAcRatio (3.439091) evaluated against single 330kW template; waterfall input is hardcoded 1.250000"
+    },
+    {
+      "id": "C-03",
+      "name": "System Target ILR vs Fleet Inverter ILR",
+      "lhs": 1.25,
+      "rhs": 0.859773,
+      "delta": 0.390227,
+      "pass": false,
+      "definition": "Absolute difference <= 0.05",
+      "notes": "Target ILR 1.250000 vs 4-unit clustered fleet ILR 0.859773 (1134.9 kWp / 1320 kW)"
+    },
+    {
+      "id": "C-04",
+      "name": "Waterfall Arithmetic Rounded Sum vs Exact Net Performance Ratio",
+      "lhs": -29.3,
+      "rhs": -26.3,
+      "delta": 3,
+      "pass": false,
+      "definition": "Absolute difference <= 0.5 percentage points",
+      "notes": "Rounded sum gives -29.3% vs true compound reduction of -26.3% (3.0 pts delta)"
+    },
+    {
+      "id": "C-05",
+      "name": "Annual Generation Dispersion across Independent Engines",
+      "lhs": 1851400,
+      "rhs": 1471899,
+      "delta": 379501,
+      "pass": false,
+      "definition": "Ratio within [0.95, 1.05]",
+      "notes": "Waterfall yields 1,851,400 kWh vs server 1,471,941 kWh (ratio 1.2578, FAIL)"
+    },
+    {
+      "id": "C-06",
+      "name": "G-2 Residential Sizing: Engineering Design vs Server Quick Sizing",
+      "lhs": 16977.599441,
+      "rhs": 1722.12183,
+      "delta": 0.898565,
+      "pass": false,
+      "definition": "Relative difference <= 5%",
+      "notes": "Engineering array sizing produces 18,561.4 kWh (20 mods) vs quick-sizing 1,722.15 kWh (2 mods) (90.72% divergence)"
+    },
+    {
+      "id": "C-07",
+      "name": "Thermal Derate Divergence: Extreme Design Max vs Annual Mean",
+      "lhs": 13.1225,
+      "rhs": 8.1925,
+      "delta": 4.93,
+      "pass": true,
+      "definition": "Physical delta >= 1.0 percentage points",
+      "notes": "39°C design derate (13.1225%) exceeds 22°C annual mean derate (8.1925%) by 4.9300 pts (PASS)"
+    },
+    {
+      "id": "C-08",
+      "name": "App.tsx Rendered Annual Generation vs Waterfall Final Energy",
+      "lhs": 1851400,
+      "rhs": 1851400,
+      "delta": 0,
+      "pass": true,
+      "definition": "Strict equality (delta == 0)",
+      "notes": "UI card directly consumes waterfallLosses.finalEnergyKwh"
+    },
+    {
+      "id": "C-09",
+      "name": "Module Count: Engineering Sizing vs 3D Scene Geometry",
+      "lhs": 1940,
+      "rhs": 2137,
+      "delta": 0.101546,
+      "pass": false,
+      "definition": "Relative difference <= 1%",
+      "notes": "arrayDesign produces 1940 modules; buildSceneFromProjectDesign builds 2137 modules (10.1546% delta, FAIL)"
+    },
+    {
+      "id": "C-10",
+      "name": "MPPT Operating Current vs Inverter Maximum Rating",
+      "lhs": 233.07,
+      "rhs": 22,
+      "delta": 211.07,
+      "pass": false,
+      "definition": "LHS <= RHS",
+      "notes": "17 strings/MPPT on single template inverter yields 233.07A > 22.0A; isMpptCurrentCompliant=false; execution continues with warned-only (FAIL)"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1.0.0",
+  "phase": "phase01",
+  "generatedAt": "2026-11-08T00:00:00.000Z",
+  "harnessSha256": "6764bb289d9ed89c7e5317182e4f6d5a096a1e36a4d39f80470a79d1bd751198",
+  "filesCount": 9,
+  "files": [
+    {
+      "path": "docs/audit/remediation/evidence/phase01/measurements.json",
+      "sha256": "166128a33553591588333bc5233388308dc9997a2fbde78ad9b6a07fca17de2e",
+      "sizeBytes": 43873
+    },
+    {
+      "path": "docs/audit/remediation/phase01-formula-spec.fa.md",
+      "sha256": "9bf7eea97da5f2133dc188deed7a77cdbf7323080ce023c82c2d7bc62264f7df",
+      "sizeBytes": 46469
+    },
+    {
+      "path": "scripts/remediation/fixtures/g1.json",
+      "sha256": "ac4f4aec607d7b09c5f60e1d50eca2ae4a583ea132c48d9b81942b2690b455a7",
+      "sizeBytes": 1840
+    },
+    {
+      "path": "scripts/remediation/fixtures/g2.json",
+      "sha256": "13e1ff7b3e3053d1f2428227ea271ee095c4d8ecb5128d27bbc653d15b1338e3",
+      "sizeBytes": 1868
+    },
+    {
+      "path": "scripts/remediation/fixtures/g3.json",
+      "sha256": "370251b80845084ea216e64491579e5a1880af8e49b3bb2d7853b05d0414ef61",
+      "sizeBytes": 1984
+    },
+    {
+      "path": "scripts/remediation/fixtures/g4.json",
+      "sha256": "4258e3eff781a6f610adbb0a42280e6f17c56f5b0b68e81d237fe0d67f4d052f",
+      "sizeBytes": 1242
+    },
+    {
+      "path": "scripts/remediation/import-map.ts",
+      "sha256": "42ec72102e7817f5e8997123c350aecd3ab3f86151ff2d1618eccab2efc9687a",
+      "sizeBytes": 8119
+    },
+    {
+      "path": "scripts/remediation/measure.ts",
+      "sha256": "144bb6c08f71535f9526336fcd832ff10947b551869867c9c5ac724cd525da03",
+      "sizeBytes": 62996
+    },
+    {
+      "path": "scripts/remediation/run-phase01.ts",
+      "sha256": "cdf483263664a5cca2fd12fb1304470d3fca15e4d4fe7799492bc0da6f485f0b",
+      "sizeBytes": 6727
+    }
+  ]
+}
