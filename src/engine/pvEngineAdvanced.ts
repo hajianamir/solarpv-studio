@@ -285,6 +285,12 @@ export function designPvArray(
   const maxMpptShortCircuitCurrentAmps = Number((stringsPerMppt * module.iscAmps * 1.25).toFixed(2));
 
   const blockingErrors: string[] = [];
+  if (!isVoltageFeasible) {
+    blockingErrors.push(
+      "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
+    );
+  }
+
   let isMpptCurrentCompliant = true;
   if (inverter.imppMaxAmpsPerMppt > 0 && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
@@ -305,6 +311,9 @@ export function designPvArray(
 
   if (dcAcRatio > 1.4) {
     warnings.push(`نسبت DC به AC برابر ${dcAcRatio.toFixed(2)} است که بالاتر از سقف بهینه (۱.۳۵) بوده و ممکن است باعث تلفات برش توان (Clipping Loss) شود.`);
+    if (options !== undefined && dcAcRatio > 1.5) {
+      blockingErrors.push(`نسبت DC به AC ناوگان (${dcAcRatio.toFixed(2)}) فراتر از سقف مجاز بهره‌برداری (۱.۵۰) است.`);
+    }
   }
 
   // 7. Area & Inter-row shading distance
@@ -346,7 +355,7 @@ export function designPvArray(
     maxMpptShortCircuitCurrentAmps,
     isMpptCurrentCompliant,
     isVoltageFeasible,
-    isDesignFeasible: isVoltageFeasible && isMpptCurrentCompliant,
+    isDesignFeasible: isVoltageFeasible && isMpptCurrentCompliant && (options === undefined || dcAcRatio <= 1.5),
     dcAcRatio,
     effectiveDeratingFactor,
     cellTempHotC,

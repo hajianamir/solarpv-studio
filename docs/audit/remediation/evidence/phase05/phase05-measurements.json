@@ -1,0 +1,191 @@
+{
+  "schema": "solarpv.audit.phase05.v1",
+  "phase": "05",
+  "generatedAtCommit": "03838460cfbaf89c27c5e0cf7746b51c5b6e94d3",
+  "phase01BaselineCommit": "91b9b3b",
+  "phase02BaselineCommit": "64e0ede",
+  "phase03BaselineCommit": "7c4d55c",
+  "phase04BaselineCommit": "bc1a978",
+  "phase01HarnessSha256": "732b1074b7436150b58e8054aac5cce2ddd28429f44515b0a1911e8aa58d0ab9",
+  "phase05VerifierSha256": "9ef7a4668252f1ecdbc89234732f046e81f9d6e83593bf4ec743ffcf025387b8",
+  "quantities": [
+    {
+      "id": "P5-01",
+      "name": "Residential Inverter Capacity Right-Sizing in G-2 with Utility 330kW Default Input",
+      "before": 330,
+      "after": 3,
+      "delta": -327,
+      "unit": "kW",
+      "producer": "src/engine/inverterClustering.ts:evaluateInverterClustering",
+      "reproduce": "evaluateInverterClustering(250, 450, 330.0, 1500).totalInverterCapacityKw",
+      "verified": true
+    },
+    {
+      "id": "P5-02",
+      "name": "Max MPPT Operating Current in 1MW Plant Array (Fleet vs Single-Inverter Assumption)",
+      "before": 233.07,
+      "after": 54.84,
+      "delta": -178.23,
+      "unit": "A",
+      "producer": "src/engine/pvEngineAdvanced.ts:designPvArray",
+      "reproduce": "designPvArray(requiredDailyKwhG1, 5.17, jinko585, resolvedHuawei330, deratingsG1, 35.6892, { inverterCount: 4, optimizeStringLengthForMppt: true }).maxMpptOperatingCurrentAmps",
+      "verified": true
+    },
+    {
+      "id": "P5-03",
+      "name": "Reported DC/AC Ratio in 1MW Plant Array Design with 4-Unit Fleet",
+      "before": 3.439091,
+      "after": 0.859773,
+      "delta": -2.579318,
+      "unit": "ratio",
+      "producer": "src/engine/pvEngineAdvanced.ts:designPvArray",
+      "reproduce": "designPvArray(requiredDailyKwhG1, 5.17, jinko585, resolvedHuawei330, deratingsG1, 35.6892, { inverterCount: 4 }).dcAcRatio",
+      "verified": true
+    },
+    {
+      "id": "P5-04",
+      "name": "Actual Delivered Usable Battery Capacity in G-3 Off-Grid (DoD, Round-Trip & Temp Derating)",
+      "before": 16.3,
+      "after": 15.2,
+      "delta": -1.1,
+      "unit": "kWh",
+      "producer": "src/engine/batteryEngine.ts:sizeBatteryBank",
+      "reproduce": "sizeBatteryBank(8.26, 1.5, 'lifepo4', 48, 450, 250, 15.0, 100, 8.26, 'offgrid').usableCapacityKwh",
+      "verified": true
+    },
+    {
+      "id": "P5-05",
+      "name": "Design Night Load Coverage Percentage in G-3 Off-Grid",
+      "before": 197.6,
+      "after": 184.4,
+      "delta": -13.2,
+      "unit": "%",
+      "producer": "src/engine/batteryEngine.ts:sizeBatteryBank",
+      "reproduce": "sizeBatteryBank(8.26, 1.5, 'lifepo4', 48, 450, 250, 15.0, 100, 8.26, 'offgrid').nightCoveragePct",
+      "verified": true
+    },
+    {
+      "id": "P5-06",
+      "name": "Total 330kW String Inverter Count in 10MW Powerplant Across 3 MV Bays",
+      "before": 33,
+      "after": 31,
+      "delta": -2,
+      "unit": "units",
+      "producer": "src/engine/powerplantBayEngine.ts:designPowerplantBays",
+      "reproduce": "designPowerplantBays(10.0, 12.5, 'string_inverter', 3, 20.0, 330.0).totalInverterCount",
+      "verified": true
+    },
+    {
+      "id": "P5-07",
+      "name": "Power Block MV Bay Transformer Rating in 1MW Powerplant",
+      "before": 1.15,
+      "after": 1.52,
+      "delta": 0.37,
+      "unit": "MVA",
+      "producer": "src/engine/powerplantBayEngine.ts:designPowerplantBays",
+      "reproduce": "designPowerplantBays(1.0, 1.135, 'string_inverter', 1, 20.0, 330.0).bays[0].transformerRatingMva",
+      "verified": true
+    },
+    {
+      "id": "P5-08",
+      "name": "Single-Diode Model STC Maximum Power Point (Pmp) for Jinko 585W Module",
+      "before": 589.2,
+      "after": 585,
+      "delta": -4.2,
+      "unit": "W",
+      "producer": "src/engine/singleDiodeModel.ts:calculateSingleDiodeCurve",
+      "reproduce": "calculateSingleDiodeCurve(51.25, 14.42, 42.68, 13.71, 585.0, -0.25, 0.045, -0.29, 1000.0, 25.0, 1).pmp",
+      "verified": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "C5-01",
+      "name": "تطابق نسبت DC/AC آرایه با نسبت DC/AC ناوگان اینورترهای نیروگاه ۱ مگاواتی",
+      "lhs": 0.859773,
+      "rhs": 0.859773,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C5-02",
+      "name": "انسجام نسبت DC/AC هدف (۱.۲۵) و محقق‌شده در سایزینگ هماهنگ نیروگاه (resolveElectricalSystemSizing)",
+      "lhs": 1.251315,
+      "rhs": 1.25,
+      "delta": 0.001315,
+      "pass": true
+    },
+    {
+      "id": "C5-03",
+      "name": "انطباق جریان کارکرد و اتصال کوتاه MPPT در ناوگان و اثبات عملکرد سد مسدودکننده (MPPT Hard-Blocking Gate)",
+      "lhs": 54.84,
+      "rhs": 65,
+      "delta": 10.16,
+      "pass": true
+    },
+    {
+      "id": "C5-04",
+      "name": "انطباق تعداد اینورترهای بی MV با کلاسترینگ ناوگان نیروگاه و کفایت توان نامی ترانسفورماتور",
+      "lhs": 31,
+      "rhs": 31,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C5-05",
+      "name": "پایستگی انرژی قابل‌استفادهٔ خالص بانک باتری با راندمان رفت‌وبرگشت و اصلاح ولتاژ رک لیتیومی",
+      "lhs": 15.2,
+      "rhs": 15.2,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C5-06",
+      "name": "کالیبراسیون نقطه کار بیشینه (Pmp) مدل تک‌دیود در شرایط STC و ریشه جریان صفر ولتاژ مدار باز",
+      "lhs": 585,
+      "rhs": 585,
+      "delta": 0,
+      "pass": true
+    }
+  ],
+  "nonRegression": {
+    "M-A1": {
+      "before": 1851400,
+      "after": 1851400,
+      "delta": 0
+    },
+    "M-A2": {
+      "before": 1646827.145773,
+      "after": 1646827.145773,
+      "delta": 0
+    },
+    "M-C1": {
+      "before": 13.1225,
+      "after": 13.1225,
+      "delta": 0
+    },
+    "M-D1": {
+      "before": 2.74,
+      "after": 2.74,
+      "delta": 0
+    },
+    "M-F1": {
+      "before": 499784,
+      "after": 499784,
+      "delta": 0
+    },
+    "M-F4": {
+      "before": 310202,
+      "after": 310202,
+      "delta": 0
+    }
+  },
+  "gates": {
+    "lintErrors": 0,
+    "anyWarnings": 93,
+    "testPass": 196,
+    "testFail": 0,
+    "testSkip": 0,
+    "buildExit": 0
+  }
+}

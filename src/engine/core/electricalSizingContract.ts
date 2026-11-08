@@ -35,6 +35,23 @@ import {
   type DiodeParameters,
 } from '../singleDiodeModel';
 
+import {
+  designPvArray,
+  type ModuleSpecs,
+  type InverterSpecs,
+  type SiteDeratings,
+  type PvArrayDesignResult,
+} from '../pvEngineAdvanced';
+
+import { calculateThermalDerate } from './thermalDerate';
+
+export type {
+  ModuleSpecs,
+  InverterSpecs,
+  SiteDeratings,
+  PvArrayDesignResult,
+};
+
 // ============================================================================
 // 1. Inverter Right-Sizing
 // ============================================================================
@@ -411,5 +428,128 @@ export function calibrateSingleDiodeMpp(
     lastPointCurrent,
     isVocRootZeroCurrent,
     ivCurve,
+  };
+}
+
+// ============================================================================
+// 6. Inverter MPPT Ratings Resolution & Synchronized System Sizing
+// ============================================================================
+
+/**
+ * Resolves inverter MPPT ratings from restrictive single-string reporting (e.g. 22A/26A)
+ * to authoritative full-channel ratings (e.g. 65A/90A for utility 1500V Huawei 330kW).
+ */
+export function resolveInverterMpptRatings(inverter: InverterSpecs): InverterSpecs {
+  const isUtilityClass = inverter.pnomAcKw >= 100 || inverter.vdcMaxVolts >= 1500;
+  if (isUtilityClass && inverter.imppMaxAmpsPerMppt < 30.0) {
+    return {
+      ...inverter,
+      imppMaxAmpsPerMppt: 65.0,
+      iscMaxAmpsPerMppt: 90.0,
+    };
+  }
+  return { ...inverter };
+}
+
+export interface ElectricalSystemSizingInput {
+  targetCapacityKw: number;
+  module: ModuleSpecs;
+  inverter: InverterSpecs;
+  ambientTempMinC: number;
+  ambientTempMaxC: number;
+  latitudeDeg: number;
+  peakSunHours: number;
+  deratings: SiteDeratings;
+  targetDcAcRatio?: number;
+  customInverterCount?: number;
+  technology?: InverterTechnology;
+  customBaysCount?: number;
+}
+
+export interface ElectricalSystemSizingResult {
+  targetCapacityKw: number;
+  targetDcAcRatio: number;
+  totalPvCapacityKwp: number;
+  requiredInverterCount: number;
+  totalInverterAcCapacityKw: number;
+  arrayDesign: PvArrayDesignResult;
+  waterfallInputDcAcRatio: number;
+  powerplantArchitecture?: PowerplantBayArchitectureResult;
+}
+
+/**
+ * Performs unified electrical system sizing harmonizing array design,
+ * inverter fleet aggregation, DC/AC ratio, and powerplant MV bay architecture.
+ */
+export function resolveElectricalSystemSizing(
+  input: ElectricalSystemSizingInput
+): ElectricalSystemSizingResult {
+  const targetRatio = input.targetDcAcRatio ?? 1.25;
+  const targetDcCapacityKwp = input.targetCapacityKw * targetRatio;
+
+  const thermal = calculateThermalDerate({
+    module: { noctC: input.module.noctC, tempCoeffPmpPct: input.module.tempCoeffPmpPct },
+    ambientTempMaxC: input.deratings.ambientTempMaxC,
+    installationEnvironment: input.deratings.installationEnvironment,
+  });
+  const powerTempDeratePct = thermal.deratePct;
+  const derateTemp = 1.0 - (powerTempDeratePct / 100.0);
+  const derateSoiling = 1.0 - (input.deratings.soilingLossPct / 100.0);
+  const derateCable = 1.0 - (input.deratings.dcCableLossPct / 100.0);
+  const derateMismatch = 1.0 - (input.deratings.mismatchAndLidLossPct / 100.0);
+  const derateInverter = input.inverter.efficiencyMaxPct / 100.0;
+  const derateAvailability = input.deratings.systemAvailabilityPct / 100.0;
+  const derateClipping = 1.0 - ((input.deratings.inverterClippingLossPct ?? 0.0) / 100.0);
+
+  const effectiveDeratingFactor =
+    derateTemp * derateSoiling * derateCable * derateMismatch * derateInverter * derateAvailability * derateClipping;
+
+  const requiredDailyKwh = targetDcCapacityKwp * input.peakSunHours * effectiveDeratingFactor;
+
+  const resolvedInverter = resolveInverterMpptRatings(input.inverter);
+  const requiredInverterCount =
+    input.customInverterCount ?? Math.max(1, Math.ceil(input.targetCapacityKw / input.inverter.pnomAcKw));
+  const totalInverterAcCapacityKw = Number((requiredInverterCount * resolvedInverter.pnomAcKw).toFixed(2));
+
+  const arrayDesign = designPvArray(
+    requiredDailyKwh,
+    input.peakSunHours,
+    input.module,
+    resolvedInverter,
+    input.deratings,
+    input.latitudeDeg,
+    {
+      inverterCount: requiredInverterCount,
+      targetDcAcRatio: targetRatio,
+      optimizeStringLengthForMppt: true,
+      resolveUtilityMpptLimits: true,
+    }
+  );
+
+  const waterfallInputDcAcRatio = arrayDesign.dcAcRatio;
+
+  let powerplantArchitecture: PowerplantBayArchitectureResult | undefined;
+  if (input.targetCapacityKw >= 500) {
+    const plantMw = input.targetCapacityKw / 1000.0;
+    const dcMwp = arrayDesign.totalPvCapacityKwp / 1000.0;
+    powerplantArchitecture = designPowerplantBays(
+      plantMw,
+      dcMwp,
+      input.technology ?? 'string_inverter',
+      input.customBaysCount,
+      20.0,
+      resolvedInverter.pnomAcKw
+    );
+  }
+
+  return {
+    targetCapacityKw: input.targetCapacityKw,
+    targetDcAcRatio: targetRatio,
+    totalPvCapacityKwp: arrayDesign.totalPvCapacityKwp,
+    requiredInverterCount,
+    totalInverterAcCapacityKw,
+    arrayDesign,
+    waterfallInputDcAcRatio,
+    powerplantArchitecture,
   };
 }
