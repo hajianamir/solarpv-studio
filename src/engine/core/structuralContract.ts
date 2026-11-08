@@ -10,13 +10,13 @@
  * - FHWA-NHI-16-009 / Broms (1964) (Lateral soil equilibrium)
  */
 
-import { type ExposureCategory } from '../structuralEngine';
+import { type ExposureCategory, type StructuralParametersInput } from '../structuralEngine';
 
 /**
  * Standard S-1 Synthetic Structural Benchmark Fixture
  * Defined in PHASE-07-PROMPT.fa.md Section 3.
  */
-export const FIXTURE_S1 = Object.freeze({
+export const FIXTURE_S1: StructuralParametersInput = Object.freeze({
   totalModulesCount: 140,
   moduleLengthM: 2.278,
   moduleWidthM: 1.134,
@@ -27,8 +27,8 @@ export const FIXTURE_S1 = Object.freeze({
   groundClearanceM: 0.9,
   basicWindSpeedKmh: 120,
   groundSnowLoadKgM2: 50,
-  foundationType: 'rammed_steel_pile' as const,
-  soilType: 'dense_sand_gravel' as const,
+  foundationType: 'rammed_steel_pile',
+  soilType: 'dense_sand_gravel',
   soilBearingCapacityKpa: 250,
   soilInternalFrictionAngleDeg: 34,
   soilCohesionKpa: 10,
@@ -37,6 +37,60 @@ export const FIXTURE_S1 = Object.freeze({
   frostDepthCm: 30,
   seismicZoneCoefficientA: 0.35,
   elevationM: 1190,
+});
+
+/**
+ * Additional Synthetic Benchmark Fixture S-2 (High wind, deeper frost, medium clay)
+ * Used for C7-02 load model equality verification across varied inputs.
+ */
+export const FIXTURE_S2: StructuralParametersInput = Object.freeze({
+  totalModulesCount: 200,
+  moduleLengthM: 2.278,
+  moduleWidthM: 1.134,
+  moduleWeightKg: 28.5,
+  tablesCount: 8,
+  modulesPerTable: 25,
+  arrayTiltDeg: 32,
+  groundClearanceM: 1.2,
+  basicWindSpeedKmh: 140,
+  groundSnowLoadKgM2: 100,
+  foundationType: 'rammed_steel_pile',
+  soilType: 'medium_clay',
+  soilBearingCapacityKpa: 180,
+  soilInternalFrictionAngleDeg: 24,
+  soilCohesionKpa: 35,
+  soilDensityKnM3: 18.5,
+  annualRainfallMm: 350,
+  frostDepthCm: 50,
+  seismicZoneCoefficientA: 0.30,
+  elevationM: 1400,
+});
+
+/**
+ * Additional Synthetic Benchmark Fixture S-3 (Low tilt, low wind, loose sand)
+ * Used for C7-02 load model equality verification across varied inputs.
+ */
+export const FIXTURE_S3: StructuralParametersInput = Object.freeze({
+  totalModulesCount: 112,
+  moduleLengthM: 2.278,
+  moduleWidthM: 1.134,
+  moduleWeightKg: 28.5,
+  tablesCount: 4,
+  modulesPerTable: 28,
+  arrayTiltDeg: 15,
+  groundClearanceM: 0.6,
+  basicWindSpeedKmh: 100,
+  groundSnowLoadKgM2: 20,
+  foundationType: 'rammed_steel_pile',
+  soilType: 'loose_sand',
+  soilBearingCapacityKpa: 140,
+  soilInternalFrictionAngleDeg: 28,
+  soilCohesionKpa: 10,
+  soilDensityKnM3: 17.0,
+  annualRainfallMm: 120,
+  frostDepthCm: 15,
+  seismicZoneCoefficientA: 0.25,
+  elevationM: 800,
 });
 
 export type S1FixtureType = typeof FIXTURE_S1;
@@ -253,7 +307,7 @@ export interface GoverningPileDepthResult {
   depthRequiredUpliftM: number;
   depthGoverningCalculatedM: number;
   effectiveRecommendedDepthM: number;
-  governingLimit: 'lateral' | 'frost' | 'uplift' | 'custom_insufficient' | 'custom_sufficient';
+  governingLimit: 'lateral' | 'frost' | 'uplift' | 'custom_insufficient' | 'custom_sufficient' | 'invalid_negative_depth';
   isDepthAdequate: boolean;
   notesFa: string;
   notesEn: string;
@@ -263,15 +317,17 @@ export interface GoverningPileDepthResult {
  * Sizing of governing pile embedment depth:
  * L_governing = max(L_lateral, L_frost, L_uplift)
  *
- * If a custom depth is applied that is less than L_governing, it is flagged as INSUFFICIENT
- * and never declared safe.
+ * Safety requirements:
+ * 1. Required limits are NOT rounded down before comparison (e.g. 1.234m is not truncated to 1.23m).
+ * 2. Negative, zero, or non-finite custom embedment depths are explicitly rejected as invalid (never declared safe).
+ * 3. Custom depth less than governing depth is explicitly flagged as insufficient (never declared safe).
  */
 export function calculateGoverningPileDepth(
   input: GoverningPileDepthInput
 ): GoverningPileDepthResult {
-  const depthRequiredLateralM = Number(input.lateralDepthM.toFixed(2));
-  const depthRequiredFrostM = Number((input.frostDepthM + 1.0).toFixed(2));
-  const depthRequiredUpliftM = Number(input.upliftRequiredDepthM.toFixed(2));
+  const depthRequiredLateralM = input.lateralDepthM;
+  const depthRequiredFrostM = input.frostDepthM + 1.0;
+  const depthRequiredUpliftM = input.upliftRequiredDepthM;
 
   const depthGoverningCalculatedM = Math.max(
     depthRequiredLateralM,
@@ -291,9 +347,12 @@ export function calculateGoverningPileDepth(
     governingLimit = 'lateral';
   }
 
-  if (input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0) {
-    effectiveRecommendedDepthM = Number(input.customEmbedmentDepthM.toFixed(2));
-    if (effectiveRecommendedDepthM < depthGoverningCalculatedM) {
+  if (input.customEmbedmentDepthM !== undefined) {
+    effectiveRecommendedDepthM = input.customEmbedmentDepthM;
+    if (!Number.isFinite(input.customEmbedmentDepthM) || input.customEmbedmentDepthM <= 0) {
+      isDepthAdequate = false;
+      governingLimit = 'invalid_negative_depth';
+    } else if (input.customEmbedmentDepthM < depthGoverningCalculatedM) {
       isDepthAdequate = false;
       governingLimit = 'custom_insufficient';
     } else {
@@ -301,13 +360,19 @@ export function calculateGoverningPileDepth(
     }
   }
 
-  const notesFa = isDepthAdequate
-    ? `عمق شمع (${effectiveRecommendedDepthM}m) الزامات سه‌گانه جانبی (${depthRequiredLateralM}m)، یخ‌زدگی (${depthRequiredFrostM}m) و کشش مکش باد (${depthRequiredUpliftM}m) را پوشش می‌دهد.`
-    : `هشدار: عمق دستی (${effectiveRecommendedDepthM}m) کمتر از حداقل حاکم محاسباتی (${depthGoverningCalculatedM}m) است و ضریب اطمینان کافی را تأمین نمی‌کند.`;
+  const notesFa =
+    governingLimit === 'invalid_negative_depth'
+      ? `خطای بحرانی ایمنی سازه: عمق وارد شده (${effectiveRecommendedDepthM}m) نامعتبر یا غیرمثبت است.`
+      : isDepthAdequate
+      ? `عمق شمع (${Number(effectiveRecommendedDepthM.toFixed(3))}m) الزامات سه‌گانه جانبی (${Number(depthRequiredLateralM.toFixed(3))}m)، یخ‌زدگی (${Number(depthRequiredFrostM.toFixed(3))}m) و کشش مکش باد (${Number(depthRequiredUpliftM.toFixed(3))}m) را پوشش می‌دهد.`
+      : `هشدار: عمق دستی (${Number(effectiveRecommendedDepthM.toFixed(3))}m) کمتر از حداقل حاکم محاسباتی (${Number(depthGoverningCalculatedM.toFixed(3))}m) است و ضریب اطمینان کافی را تأمین نمی‌کند.`;
 
-  const notesEn = isDepthAdequate
-    ? `Pile embedment (${effectiveRecommendedDepthM}m) satisfies lateral (${depthRequiredLateralM}m), frost (${depthRequiredFrostM}m), and uplift (${depthRequiredUpliftM}m) governing limits.`
-    : `WARNING: Custom embedment depth (${effectiveRecommendedDepthM}m) is less than required governing depth (${depthGoverningCalculatedM}m). Safety factor is insufficient.`;
+  const notesEn =
+    governingLimit === 'invalid_negative_depth'
+      ? `CRITICAL SAFETY ERROR: Custom embedment depth (${effectiveRecommendedDepthM}m) is non-positive or invalid.`
+      : isDepthAdequate
+      ? `Pile embedment (${Number(effectiveRecommendedDepthM.toFixed(3))}m) satisfies lateral (${Number(depthRequiredLateralM.toFixed(3))}m), frost (${Number(depthRequiredFrostM.toFixed(3))}m), and uplift (${Number(depthRequiredUpliftM.toFixed(3))}m) governing limits.`
+      : `WARNING: Custom embedment depth (${Number(effectiveRecommendedDepthM.toFixed(3))}m) is less than required governing depth (${Number(depthGoverningCalculatedM.toFixed(3))}m). Safety factor is insufficient.`;
 
   return {
     depthRequiredLateralM,
