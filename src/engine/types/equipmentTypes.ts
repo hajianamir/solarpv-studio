@@ -18,6 +18,8 @@ export interface PvModule {
   vocVolts: number;
   iscAmps: number;
   betaVocPerC: number;
+  noctC?: number;
+  tempCoeffPmpPct?: number;
 }
 
 export interface Inverter {

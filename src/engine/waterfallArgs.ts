@@ -1,6 +1,10 @@
 import { computeWaterfallLosses } from './waterfallLossEngine';
 import { type TrackerConfig } from './tracker/backtrackingEngine';
 import { type InstallationEnvironment } from './types/climateTypes';
+import {
+  type PhysicalLossEvaluationInput,
+  evaluatePhysicalLossModels,
+} from './core/physicalLossContract';
 
 /**
  * Named, typed, self-documenting input interface for the 16-stage PV loss waterfall.
@@ -70,6 +74,9 @@ export interface WaterfallArgsInput {
 
   /** First-order bifacial rear irradiance gain percentage (optional, e.g. 3.01%) */
   bifacialGainPct?: number;
+
+  /** Comprehensive physical loss configuration for 2D bifacial, angle-dependent IAM, snow & soiling */
+  physicalLossConfig?: PhysicalLossEvaluationInput;
 }
 
 /**
@@ -107,10 +114,12 @@ export const WATERFALL_ARG_COUNT: number = 16;
  * 15: bifacialGainPct (appended 16th slot)
  */
 export function buildWaterfallArgs(i: WaterfallArgsInput): Parameters<typeof computeWaterfallLosses> {
+  const phys = i.physicalLossConfig ? evaluatePhysicalLossModels(i.physicalLossConfig) : null;
+
   const capKwp = (i.installedCapacityKwp ?? i.dcCapacityKw) ?? 1000;
   const psh = i.peakSunHours;
   const tempMax = (i.ambientTempMaxC ?? i.ambientTempC) ?? 35.0;
-  const soiling = i.soilingLossPct ?? 4.5;
+  const soiling = i.soilingLossPct ?? phys?.soilingLossPct ?? 4.5;
   const dcAc = i.dcAcRatio ?? 1.25;
   const hasTracker =
     i.hasTracker !== undefined
@@ -118,16 +127,16 @@ export function buildWaterfallArgs(i: WaterfallArgsInput): Parameters<typeof com
       : i.isSingleAxisTracker !== undefined
       ? Boolean(i.isSingleAxisTracker)
       : Boolean(i.trackerConfig);
-  const snow = i.snowLossPct ?? 0.0;
-  const iam = i.iamLossPct ?? -2.2;
-  const noct = (i.noctC ?? i.moduleNoctC) ?? 45.0;
+  const snow = i.snowLossPct ?? phys?.snowLossPct ?? 0.0;
+  const iam = i.iamLossPct ?? phys?.iamLossPct ?? -2.2;
+  const noct = (i.noctC ?? i.moduleNoctC) ?? phys?.noctC ?? 45.0;
   const tempCoeff = i.tempCoeffPmpPct ?? -0.30;
   const trackerCfg = i.trackerConfig ?? undefined;
   const env = (i.installationEnv ?? i.installationEnvironment) ?? undefined;
   const tilt = (i.fixedTiltDeg ?? i.tiltDeg) ?? undefined;
   const lat = i.latitudeDeg ?? undefined;
   const shadingOverride = i.shadingLossOverridePct ?? i.shadingLoss3dPct ?? i.nearShadingLossPct;
-  const bifacialGain = i.bifacialGainPct !== undefined ? i.bifacialGainPct : undefined;
+  const bifacialGain = i.bifacialGainPct !== undefined ? i.bifacialGainPct : phys?.bifacialGainPct;
 
   const args: Parameters<typeof computeWaterfallLosses> = [
     capKwp,
