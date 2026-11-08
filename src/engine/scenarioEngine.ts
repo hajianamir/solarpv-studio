@@ -62,9 +62,11 @@ export function generateScenarios(
   const s3Tco25y = Math.round(s3CapexUsd + s3BatKwh * 160 + 2000);
   const s3Weight = Math.round(s3PvKwp * 40 + s3BatKwh * 11 + s3InvKw * 8 + 250);
 
-  // Dynamic LCOE Calculation (LC-07 / F-C): Calculate real discounted 25-year LCOE based on scenario parameters
-  const discountRate = Math.max(0.01, (discountRatePct ?? 18.0) / 100.0);
-  const effectivePsh = Math.max(1.0, peakSunHours ?? 5.17);
+  // Dynamic LCOE Calculation (LC-07 / F-C / Z-02): Calculate real discounted 25-year LCOE based on scenario parameters
+  const safeDiscountRatePct = typeof discountRatePct === 'number' && Number.isFinite(discountRatePct) ? discountRatePct : 18.0;
+  const discountRate = Math.max(0.01, safeDiscountRatePct / 100.0);
+  const safePsh = typeof peakSunHours === 'number' && Number.isFinite(peakSunHours) ? peakSunHours : 5.17;
+  const effectivePsh = Math.max(1.0, safePsh);
   const lifetimeYears = 25;
   const degradationPct = 0.5;
 
@@ -74,7 +76,7 @@ export function generateScenarios(
   const s1BatRepPv = (s1BatKwh * 130) / Math.pow(1 + discountRate, 12);
   const s1Lcoe = s1AnnualGen > 0
     ? Number(calculateLcoe(s1CapexUsd + s1BatRepPv, s1AnnualOpex, s1AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
-    : 0.085;
+    : 0.0;
 
   // Scenario 2: Gel (battery replacement every 4 years)
   const s2AnnualGen = s2PvKwp * effectivePsh * 365 * 0.78;
@@ -85,7 +87,7 @@ export function generateScenarios(
   }
   const s2Lcoe = s2AnnualGen > 0
     ? Number(calculateLcoe(s2CapexUsd + s2BatRepPv, s2AnnualOpex, s2AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
-    : 0.125;
+    : 0.0;
 
   // Scenario 3: Industrial Redundant (battery replacement at yr 15)
   const s3AnnualGen = s3PvKwp * effectivePsh * 365 * 0.80;
@@ -93,7 +95,7 @@ export function generateScenarios(
   const s3BatRepPv = (s3BatKwh * 160) / Math.pow(1 + discountRate, 15);
   const s3Lcoe = s3AnnualGen > 0
     ? Number(calculateLcoe(s3CapexUsd + s3BatRepPv, s3AnnualOpex, s3AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
-    : 0.098;
+    : 0.0;
 
   return [
     {

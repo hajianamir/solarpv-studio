@@ -51,6 +51,8 @@ export interface QuickSizingRequest {
   moduleId?: string;
   inverterId?: string;
   batteryId?: string;
+  persist?: boolean;
+  saveProject?: boolean;
 }
 
 export interface QuickSizingResponse {
@@ -342,25 +344,39 @@ export function calculateLcoe(
   lifetimeYears: number,
   degradationPct: number = 0   // NEW (BUG-7) — annual module degradation, %/year
 ): number {
-  if (energyAnnual <= 0 || !Number.isFinite(lifetimeYears) || lifetimeYears <= 0) {
+  if (
+    !Number.isFinite(capex) ||
+    !Number.isFinite(opexAnnual) ||
+    !Number.isFinite(energyAnnual) ||
+    energyAnnual <= 0 ||
+    !Number.isFinite(lifetimeYears) ||
+    lifetimeYears <= 0 ||
+    !Number.isFinite(discountRate) ||
+    discountRate <= -1.0
+  ) {
     return 0.0;
   }
 
+  const safeCapex = Math.max(0, capex);
+  const safeOpex = Math.max(0, opexAnnual);
+  const safeDegradation = Math.max(0, Math.min(10, Number.isFinite(degradationPct) ? degradationPct : 0));
+
   // Bound lifetime to physically sensible range [1, 100] years to prevent CPU DoS / infinite loop freeze (R847-05)
   const effectiveYears = Math.min(100, Math.max(1, Math.round(lifetimeYears)));
-  let totalCostPv = capex;
+  let totalCostPv = safeCapex;
   for (let t = 1; t <= effectiveYears; t++) {
-    totalCostPv += opexAnnual / Math.pow(1.0 + discountRate, t);
+    totalCostPv += safeOpex / Math.pow(1.0 + discountRate, t);
   }
 
   let totalEnergyPv = 0;
-  const dFrac = degradationPct / 100.0;
+  const dFrac = safeDegradation / 100.0;
   for (let t = 1; t <= effectiveYears; t++) {
     totalEnergyPv += (energyAnnual * Math.pow(1.0 - dFrac, t - 1)) / Math.pow(1.0 + discountRate, t);
   }
 
-  if (totalEnergyPv === 0) return 0.0;
-  return totalCostPv / totalEnergyPv;
+  if (totalEnergyPv <= 0 || !Number.isFinite(totalEnergyPv)) return 0.0;
+  const res = totalCostPv / totalEnergyPv;
+  return Number.isFinite(res) && res >= 0 ? res : 0.0;
 }
 
 export function calculateNpv(rate: number, cashflows: number[]): number {
@@ -846,6 +862,8 @@ export function performQuickSizing(
   const projectId = `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
   const projectName = req.projectName?.trim() || "Quick PV Project";
 
+  const shouldPersist = req.saveProject !== false && req.persist !== false;
+
   const project: Project = {
     id: projectId,
     name: projectName,
@@ -866,7 +884,19 @@ export function performQuickSizing(
     batteryId: battery.id,
   };
 
-  db.projects.set(projectId, project);
+  if (shouldPersist) {
+    // Memory leak guard: cap db.projects to prevent unbounded memory growth (Z-03)
+    const MAX_PROJECTS_CACHE = 1000;
+    if (db.projects.size >= MAX_PROJECTS_CACHE) {
+      for (const [id] of db.projects.entries()) {
+        if (id.startsWith('proj-')) {
+          db.projects.delete(id);
+          break;
+        }
+      }
+    }
+    db.projects.set(projectId, project);
+  }
 
   return {
     projectId,

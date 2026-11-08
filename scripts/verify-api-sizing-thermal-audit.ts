@@ -366,6 +366,62 @@ async function runProbe() {
     `status=${ssStatus}, minModules=${ssBody?.minModules}, cellTemp=${ssBody?.effectiveCellTempMaxC}°C`
   );
 
+  // 4. Zero-Based Audit Remediations Verification (Z-03, Z-04, Z-05)
+  const solarPosRoute = (app as any)._router.stack
+    .find((r: any) => r.route && r.route.path === '/api/v1/solar/position' && r.route.methods.post)
+    ?.route.stack[0].handle;
+
+  let spStatus = 200;
+  let spBody: any = null;
+  const mockSpRes: any = {
+    status(s: number) { spStatus = s; return this; },
+    json(d: any) { spBody = d; return this; },
+  };
+
+  // 4a. Missing latitudeDeg returns HTTP 400 (Z-04)
+  await solarPosRoute({ body: {} }, mockSpRes);
+  check(
+    'Z-04: Route POST /api/v1/solar/position without latitudeDeg returns HTTP 400 (no silent Tehran fallback)',
+    spStatus === 400 && spBody?.error?.includes('latitudeDeg is required'),
+    `status=${spStatus}, error="${spBody?.error}"`
+  );
+
+  // 4b. Quick-size with save: false does not persist to database (Z-03)
+  const initialDbProjectsCount = serverDb.projects.size;
+  await quickSizeRoute({
+    body: { dailyKwh: 20, autonomyDays: 1, latitude: 35.6895, longitude: 51.389, save: false },
+  }, mockQsRes);
+  check(
+    'Z-03: Route POST /api/v1/projects/quick-size with save: false does not persist project to server DB',
+    qsStatus === 200 && serverDb.projects.size === initialDbProjectsCount,
+    `initialCount=${initialDbProjectsCount}, currentCount=${serverDb.projects.size}`
+  );
+
+  // 4c. JWT with alg != HS256 is rejected (Z-05)
+  process.env.JWT_SECRET = 'test-audit-jwt-secret';
+  const badAlgHeader = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+  const badAlgPayload = Buffer.from(JSON.stringify({ sub: 'attacker', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url');
+  const badToken = `${badAlgHeader}.${badAlgPayload}.invalidsig`;
+  const projectsRoute = (app as any)._router.stack
+    .find((r: any) => r.route && r.route.path === '/api/v1/projects' && r.route.methods.get)
+    ?.route.stack[0].handle;
+
+  let projStatus = 200;
+  let projBody: any = null;
+  const mockProjRes: any = {
+    status(s: number) { projStatus = s; return this; },
+    json(d: any) { projBody = d; return this; },
+  };
+
+  await projectsRoute({
+    headers: { authorization: `Bearer ${badToken}` },
+  }, mockProjRes);
+  check(
+    'Z-05: Request with JWT alg: none is rejected with HTTP 401 (only HS256 permitted)',
+    projStatus === 401 && projBody?.error?.includes('unsupported or missing algorithm'),
+    `status=${projStatus}, error="${projBody?.error}"`
+  );
+
   console.log('\n================================================================================');
   console.log(` AUDIT PROBE COMPLETE: ${passedTests} / ${totalTests} TESTS PASSED`);
   console.log('================================================================================\n');
