@@ -163,8 +163,9 @@ git tag remediation/phase-01-approved
 | ۳ | ✅ `PHASE-03-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `7c4d55c` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۴ | ✅ `PHASE-04-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `bc1a978` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۵ | ✅ `PHASE-05-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `49b89cc` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
-| ۶ | ✅ `PHASE-06-PROMPT.fa.md` | ❌ دروازهٔ پایان `7afaae8`: `REJECTED` — هارنس برای چند خروجی تهی مقدار موفقیت را جایگزین می‌کند و گذر عددی Pها را اعمال نمی‌کند؛ به اصلاح و بازرسی مجدد نیاز است. |
-| ۷…۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
+| ۶ | ✅ `PHASE-06-PROMPT.fa.md` | ✅ دروازهٔ پایان `832805e`: `APPROVED` پس از اصلاح و بازتولید مستقل |
+| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | آمادهٔ تحویل — در انتظار اجرای دروازهٔ میانه |
+| ۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
 
 ### ثبت دلایل رد دروازهٔ پایان فاز ۶
 
