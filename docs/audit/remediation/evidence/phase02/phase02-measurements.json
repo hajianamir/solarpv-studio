@@ -1,9 +1,9 @@
 {
   "schema": "solarpv.audit.phase02.v1",
-  "generatedAtCommit": "b2cebf4d7e76d4128322420b4565c9d2ecdf04ed",
+  "generatedAtCommit": "74f3a8555ef0bb22504db28b760d7913be8b994b",
   "phase01BaselineCommit": "91b9b3b",
   "phase01HarnessSha256": "732b1074b7436150b58e8054aac5cce2ddd28429f44515b0a1911e8aa58d0ab9",
-  "phase02VerifierSha256": "f2677c588e075efe55452473993a366424fbaba9692677a233c2bde5e5d1955a",
+  "phase02VerifierSha256": "26485d60009b420fc9bc2ea9bb41c9e4e6c069448588904953a948cd7d85b272",
   "quantities": [
     {
       "id": "P2-01",
