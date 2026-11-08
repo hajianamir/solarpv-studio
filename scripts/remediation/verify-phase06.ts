@@ -97,6 +97,72 @@ export interface Phase06Evidence {
   nonRegression: Record<string, Phase06Anchor>;
 }
 
+/**
+ * Executes the legacy Phase 01–Phase 05 financial engine IRR solver (commit 49b89cc:src/engine/financialEngine.ts:695-723).
+ * The legacy solver evaluated Bolzano's Intermediate Value Theorem across search interval [-0.999, +5.0] (-99.9% to +500%).
+ * For non-conventional cash flows where npvLow and npvHigh share identical signs, Bolzano's condition fails (npvLow * npvHigh > 0),
+ * causing the solver to report `NO_ROOT_IN_RANGE` and return `irrPct: null`.
+ * Note: Failure of the legacy solver to find a root within its single-bisection pass does not imply no root exists
+ * (in fact, two roots [-12.5%, +5.4%] exist in this interval).
+ */
+export function solveLegacyBolzanoIrr(
+  capexToman: number,
+  cashFlow25Years: { netCashFlowToman: number }[]
+): {
+  irrPct: number | null;
+  irrStatus: 'DEFINED_SINGLE_ROOT' | 'NON_CONVENTIONAL_MULTIPLE_ROOTS' | 'NO_ROOT_IN_RANGE';
+  isIrrDefined: boolean;
+  searchInterval: [number, number];
+  npvLow: number;
+  npvHigh: number;
+} {
+  const lowBound = -0.999;
+  const highBound = 5.0;
+
+  const npvAt = (rate: number): number => {
+    let npv = -capexToman;
+    for (let yr = 1; yr <= cashFlow25Years.length; yr++) {
+      npv += cashFlow25Years[yr - 1].netCashFlowToman / Math.pow(1.0 + rate, yr);
+    }
+    return npv;
+  };
+
+  const npvLow = npvAt(lowBound);
+  const npvHigh = npvAt(highBound);
+
+  if (npvLow * npvHigh <= 0) {
+    let low = lowBound;
+    let high = highBound;
+    for (let iter = 0; iter < 70; iter++) {
+      const mid = (low + high) / 2.0;
+      const npvMid = npvAt(mid);
+      if (npvMid > 0) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+    const rootRate = (low + high) / 2.0;
+    return {
+      irrPct: Number((rootRate * 100.0).toFixed(1)),
+      irrStatus: 'DEFINED_SINGLE_ROOT',
+      isIrrDefined: true,
+      searchInterval: [lowBound, highBound],
+      npvLow,
+      npvHigh,
+    };
+  }
+
+  return {
+    irrPct: null,
+    irrStatus: 'NO_ROOT_IN_RANGE',
+    isIrrDefined: false,
+    searchInterval: [lowBound, highBound],
+    npvLow,
+    npvHigh,
+  };
+}
+
 export function runPhase06Verification(): Phase06Evidence {
   // -------------------------------------------------------------------------
   // 1. Load Baseline Fixtures and Historical Frozen Evidence
@@ -239,10 +305,13 @@ export function runPhase06Verification(): Phase06Evidence {
   // -------------------------------------------------------------------------
   // 5. Measure P6-04: Non-Conventional 2-Sign-Change Primary IRR Root & MIRR
   // -------------------------------------------------------------------------
-  // Before: Under standard bisection across [-0.5, 2.0], Bolzano sign-change condition fails
-  // because NPV(-0.5) and NPV(2.0) have identical signs. No root exists under legacy solver -> null.
-  // The absence of an IRR root is distinct from a zero return rate (0.0%), and the numerical delta is incomputable.
-  const p604Before: number | null = null;
+  // Before: Evaluated dynamically using the legacy Phase 01–Phase 05 solver (commit 49b89cc).
+  // The legacy solver evaluated Bolzano's condition across search interval [-0.999, +5.0].
+  // Because npvLow and npvHigh share identical signs (npvLow * npvHigh > 0), the legacy solver
+  // failed to detect any root and returned irrPct: null with irrStatus: 'NO_ROOT_IN_RANGE'.
+  // Note: Failure of the legacy solver to find a root within its single-bisection pass does not imply
+  // no root exists (in fact, roots [-12.5%, +5.4%] exist in this interval).
+  // The baseline value is null and its delta is incomputable.
   const g1P604Fin = performFinancialAnalysis(
     1134.9,
     0,
@@ -258,11 +327,16 @@ export function runPhase06Verification(): Phase06Evidence {
     25,
     'powerplant'
   );
+  const legacyP604Result = solveLegacyBolzanoIrr(
+    g1P604Fin.capexBreakdown.totalCapexToman,
+    g1P604Fin.cashFlow25Years
+  );
+  const p604Before: number | null = legacyP604Result.irrPct; // null (legacy solver failed to find root in range [-0.999, +5.0])
   if (typeof g1P604Fin.irrPct !== 'number' || !Number.isFinite(g1P604Fin.irrPct)) {
     throw new Error(`P6-04 calculation failure: irrPct is ${g1P604Fin.irrPct}`);
   }
   const p604After = g1P604Fin.irrPct; // 5.4%
-  const p604Delta: number | null = null; // Delta is mathematically incomputable when baseline root is non-existent
+  const p604Delta: number | null = null; // Delta is mathematically incomputable when baseline root was not found by legacy solver
 
   // -------------------------------------------------------------------------
   // 6. Measure P6-05: G-1 Year-1 Net Export Yield Coupled with Inverter Derate
@@ -426,18 +500,30 @@ export function runPhase06Verification(): Phase06Evidence {
       delta: p604Delta,
       producer: 'src/engine/financialEngine.ts:performFinancialAnalysis',
       formula:
-        'solveCashFlowIrrAndMirr([-CAPEX, CF_1, ..., CF_25]).irrPct (smallest positive root among [-12.5%, +5.4%]) vs legacy bisection which failed (null)',
+        'solveCashFlowIrrAndMirr([-CAPEX, CF_1, ..., CF_25]).irrPct (smallest positive root among [-12.5%, +5.4%]) vs legacy Bolzano bisection solver across [-0.999, 5.0] (commit 49b89cc) which returned irrPct: null (irrStatus: NO_ROOT_IN_RANGE)',
       reproduce: 'npx tsx scripts/remediation/verify-phase06.ts --id P6-04',
       details: {
         signChanges: 2,
-        legacyBisectionRoot: null,
-        irrStatus: g1P604Fin.irrStatus,
-        irrRootsPct: g1P604Fin.irrRootsPct,
-        mirrPct: g1P604Fin.mirrPct,
-        primaryPositiveRootPct: p604After,
+        legacySolver: {
+          searchInterval: legacyP604Result.searchInterval,
+          npvLow: legacyP604Result.npvLow,
+          npvHigh: legacyP604Result.npvHigh,
+          bolzanoSignChangeMet: false,
+          irrStatus: legacyP604Result.irrStatus,
+          irrPct: legacyP604Result.irrPct,
+          note: 'Legacy Bolzano bisection solver failed to find roots across [-0.999, 5.0] due to identical endpoint signs (npvLow * npvHigh > 0), even though two roots [-12.5%, +5.4%] exist in this interval.',
+        },
+        enhancedSolver: {
+          irrStatus: g1P604Fin.irrStatus,
+          irrRootsPct: g1P604Fin.irrRootsPct,
+          mirrPct: g1P604Fin.mirrPct,
+          primaryPositiveRootPct: p604After,
+        },
       },
       verified:
         p604Before === null &&
+        legacyP604Result.irrStatus === 'NO_ROOT_IN_RANGE' &&
+        legacyP604Result.isIrrDefined === false &&
         p604After === 5.4 &&
         p604Delta === null &&
         g1P604Fin.mirrPct === 14.8 &&
@@ -631,7 +717,11 @@ export function runPhase06Verification(): Phase06Evidence {
     c603RelErr <= 1e-6 &&
     g1P604Fin.irrStatus === 'NON_CONVENTIONAL_MULTIPLE_ROOTS' &&
     g1P604Fin.irrRootsPct?.length === 2 &&
-    g1P604Fin.mirrPct === 14.8;
+    g1P604Fin.mirrPct === 14.8 &&
+    p604Before === null &&
+    legacyP604Result.irrStatus === 'NO_ROOT_IN_RANGE' &&
+    legacyP604Result.isIrrDefined === false &&
+    p604Delta === null;
 
   // C6-04: Fisher Real-vs-Nominal Discounting Equivalence & Registry Coherence
   const c604Lhs = computeFisherRealDiscountRatePct(18.0, 15.0);
