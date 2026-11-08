@@ -60,9 +60,9 @@ export interface Phase06Quantity {
   name: string;
   unit: string;
   case: string;
-  before: number;
+  before: number | null;
   after: number;
-  delta: number;
+  delta: number | null;
   producer: string;
   formula: string;
   reproduce: string;
@@ -116,11 +116,26 @@ export function runPhase06Verification(): Phase06Evidence {
     return q;
   };
 
+  const p4Path = path.resolve(
+    process.cwd(),
+    'docs/audit/remediation/evidence/phase04/phase04-measurements.json'
+  );
+  if (!fs.existsSync(p4Path)) {
+    throw new Error(`Required Phase 04 baseline file not found: ${p4Path}`);
+  }
+  const p4Evidence = JSON.parse(fs.readFileSync(p4Path, 'utf8'));
+
+  const getP4Quantity = (id: string) => {
+    const q = p4Evidence.quantities.find((item: { id: string }) => item.id === id);
+    if (!q) throw new Error(`Phase 04 quantity ${id} not found in Phase 04 evidence`);
+    return q;
+  };
+
   // -------------------------------------------------------------------------
   // 2. Measure P6-01: G-1 Substation CAPEX with Coordinated 1.52 MVA Transformer
   // -------------------------------------------------------------------------
   // Before: Legacy inverter apparent power proxy: 1320 / 0.95 / 1000 = 1.389474 MVA * 35000 = 48632 USD
-  const p601Before = 48632;
+  // Evaluated dynamically via performFinancialAnalysis with DEFAULT_FINANCIAL_PRICING
   const g1DefaultFin = performFinancialAnalysis(
     1134.9,
     0,
@@ -130,6 +145,7 @@ export function runPhase06Verification(): Phase06Evidence {
     25,
     'powerplant'
   );
+  const p601Before = g1DefaultFin.capexBreakdown.substationMvUsd; // 48632 USD
 
   const g1P601Fin = performFinancialAnalysis(
     1134.9,
@@ -150,7 +166,8 @@ export function runPhase06Verification(): Phase06Evidence {
   // 3. Measure P6-02: G-1 Year-25 OPEX with Escalating Fixed Charges
   // -------------------------------------------------------------------------
   // Before: Land lease and grid operator fee frozen at Year 1 nominal Toman = 3441138661 Toman
-  const p602Before = 3441138661;
+  // Evaluated dynamically from g1DefaultFin cash flow Year 25 without fixed charge escalation
+  const p602Before = g1DefaultFin.cashFlow25Years[24].opexToman; // 3441138661 Toman
   const g1P602Fin = performFinancialAnalysis(
     1134.9,
     0,
@@ -170,7 +187,7 @@ export function runPhase06Verification(): Phase06Evidence {
   // 4. Measure P6-03: G-3 Off-Grid Demand-Constrained LCOE with Salvage Credit
   // -------------------------------------------------------------------------
   // Before: Year-24 battery replacement charged at 100% with 0 salvage credit at Y25 = 30643 Toman/kWh
-  const p603Before = 30643;
+  // Evaluated dynamically via performFinancialAnalysis without residual salvage credit
   const g3DefaultFin = performFinancialAnalysis(
     4.68,
     19.2,
@@ -185,6 +202,13 @@ export function runPhase06Verification(): Phase06Evidence {
     25,
     'offgrid'
   );
+  if (
+    typeof g3DefaultFin.lcoeTomanPerKwh !== 'number' ||
+    !Number.isFinite(g3DefaultFin.lcoeTomanPerKwh)
+  ) {
+    throw new Error('P6-03 baseline calculation failure: lcoeTomanPerKwh is null');
+  }
+  const p603Before = g3DefaultFin.lcoeTomanPerKwh; // 30643 Toman/kWh
 
   const g3P603Fin = performFinancialAnalysis(
     4.68,
@@ -215,8 +239,10 @@ export function runPhase06Verification(): Phase06Evidence {
   // -------------------------------------------------------------------------
   // 5. Measure P6-04: Non-Conventional 2-Sign-Change Primary IRR Root & MIRR
   // -------------------------------------------------------------------------
-  // Before: Bolzano boundary check failure -> null (0.0%)
-  const p604Before = 0.0;
+  // Before: Under standard bisection across [-0.5, 2.0], Bolzano sign-change condition fails
+  // because NPV(-0.5) and NPV(2.0) have identical signs. No root exists under legacy solver -> null.
+  // The absence of an IRR root is distinct from a zero return rate (0.0%), and the numerical delta is incomputable.
+  const p604Before: number | null = null;
   const g1P604Fin = performFinancialAnalysis(
     1134.9,
     0,
@@ -236,13 +262,13 @@ export function runPhase06Verification(): Phase06Evidence {
     throw new Error(`P6-04 calculation failure: irrPct is ${g1P604Fin.irrPct}`);
   }
   const p604After = g1P604Fin.irrPct; // 5.4%
-  const p604Delta = Number((p604After - p604Before).toFixed(1)); // +5.4%
+  const p604Delta: number | null = null; // Delta is mathematically incomputable when baseline root is non-existent
 
   // -------------------------------------------------------------------------
   // 6. Measure P6-05: G-1 Year-1 Net Export Yield Coupled with Inverter Derate
   // -------------------------------------------------------------------------
-  // Before: Physical net yield from Phase 04 without inverter thermal derating = 1816762 kWh
-  const p605Before = 1816762;
+  // Before: Physical net yield from frozen Phase 04 evidence P4-07 (1816762 kWh) without inverter derating
+  const p605Before = getP4Quantity('P4-07').after; // 1816762 kWh
   const agingG1 = calculateEnvironmentalAging({
     installationEnvironment: 'ground_mount',
     ambientTempMaxC: 39.0,
@@ -264,8 +290,13 @@ export function runPhase06Verification(): Phase06Evidence {
   // -------------------------------------------------------------------------
   // 7. Measure P6-06: Coastal Salt-Mist Accelerated PV Degradation (d = 0.5 km)
   // -------------------------------------------------------------------------
-  // Before: Standard inland degradation rate = 0.45 %/yr
-  const p606Before = 0.45;
+  // Before: Standard inland degradation rate evaluated dynamically without coastal distance parameter = 0.45 %/yr
+  const inlandAging = calculateEnvironmentalAging({
+    installationEnvironment: 'ground_mount',
+    ambientTempMaxC: 39.0,
+    elevationM: 1200,
+  });
+  const p606Before = inlandAging.pvImpact.annualDegradationPct; // 0.45 %/yr
   const agingCoastal = calculateEnvironmentalAging({
     installationEnvironment: 'ground_mount',
     ambientTempMaxC: 39.0,
@@ -278,8 +309,9 @@ export function runPhase06Verification(): Phase06Evidence {
   // -------------------------------------------------------------------------
   // 8. Measure P6-07: G-1 Zero-Escalation NPV under Fisher Real Discount Rate
   // -------------------------------------------------------------------------
-  // Before: Mixing 0% real tariff growth with 18% nominal discount in M-F6 = -247356 USD
-  const p607Before = -247356;
+  // Before: Extracted from frozen Phase 01 baseline M-F6 (0% tariff escalation sweep = -247356 USD)
+  // which mixed 0% real tariff growth with 18% nominal discount rate
+  const p607Before = getP1Quantity('M-F6').details.escalation0Pct.npvUsd; // -247356 USD
   const fisherDiscountRate = computeFisherRealDiscountRatePct(18.0, 15.0); // 2.6087%
   const g1FisherFin = performFinancialAnalysis(
     1134.9,
@@ -302,12 +334,13 @@ export function runPhase06Verification(): Phase06Evidence {
   // 9. Measure P6-08: G-1 Full-Chain Integrated LCOE with Overhaul & Salvage
   // -------------------------------------------------------------------------
   // Before: Legacy uncoupled Phase 01 baseline M-F3 = 5056 Toman/kWh
-  const p608Before = 5056;
+  // Extracted dynamically from g1DefaultFin (confirmed by frozen M-F3)
+  const p608Before = g1DefaultFin.lcoeTomanPerKwh!; // 5056 Toman/kWh
   const integratedG1 = resolveFinancialSystemAnalysis({
     totalPvCapacityKwp: 1134.9,
     inverterCapacityKw: 1320,
     batteryCapacityKwh: 0,
-    baseAnnualYieldKwh: 1816762,
+    baseAnnualYieldKwh: p605Before,
     substationTransformerMva: 1.52,
   });
   if (
@@ -340,7 +373,7 @@ export function runPhase06Verification(): Phase06Evidence {
         substationUsdPerMva: 35000,
         capexDiffUsd: p601Delta,
       },
-      verified: p601After === 53200 && p601Delta === 4568,
+      verified: p601Before === 48632 && p601After === 53200 && p601Delta === 4568,
     },
     {
       id: 'P6-02',
@@ -360,7 +393,7 @@ export function runPhase06Verification(): Phase06Evidence {
         fixedChargesYear25Toman: 116585018,
         escalationPct: 8.0,
       },
-      verified: p602After === 3539338299 && p602Delta === 98199638,
+      verified: p602Before === 3441138661 && p602After === 3539338299 && p602Delta === 98199638,
     },
     {
       id: 'P6-03',
@@ -381,7 +414,7 @@ export function runPhase06Verification(): Phase06Evidence {
         residualSalvageCreditToman: 544912886,
         residualSalvageUsd: 6055,
       },
-      verified: p603After === 30115 && p603Delta === -528,
+      verified: p603Before === 30643 && p603After === 30115 && p603Delta === -528,
     },
     {
       id: 'P6-04',
@@ -393,16 +426,23 @@ export function runPhase06Verification(): Phase06Evidence {
       delta: p604Delta,
       producer: 'src/engine/financialEngine.ts:performFinancialAnalysis',
       formula:
-        'solveCashFlowIrrAndMirr([-CAPEX, CF_1, ..., CF_25]).irrPct (smallest positive root among [-12.5%, +5.4%])',
+        'solveCashFlowIrrAndMirr([-CAPEX, CF_1, ..., CF_25]).irrPct (smallest positive root among [-12.5%, +5.4%]) vs legacy bisection which failed (null)',
       reproduce: 'npx tsx scripts/remediation/verify-phase06.ts --id P6-04',
       details: {
         signChanges: 2,
+        legacyBisectionRoot: null,
         irrStatus: g1P604Fin.irrStatus,
         irrRootsPct: g1P604Fin.irrRootsPct,
         mirrPct: g1P604Fin.mirrPct,
         primaryPositiveRootPct: p604After,
       },
-      verified: p604After === 5.4 && p604Delta === 5.4 && g1P604Fin.mirrPct === 14.8,
+      verified:
+        p604Before === null &&
+        p604After === 5.4 &&
+        p604Delta === null &&
+        g1P604Fin.mirrPct === 14.8 &&
+        Array.isArray(g1P604Fin.irrRootsPct) &&
+        g1P604Fin.irrRootsPct.length >= 2,
     },
     {
       id: 'P6-05',
@@ -423,7 +463,7 @@ export function runPhase06Verification(): Phase06Evidence {
         weightedInverterDeratePct: 1.05,
         lostGenerationKwh: Math.abs(p605Delta),
       },
-      verified: p605After === 1797686 && p605Delta === -19076,
+      verified: p605Before === 1816762 && p605After === 1797686 && p605Delta === -19076,
     },
     {
       id: 'P6-06',
@@ -444,7 +484,7 @@ export function runPhase06Verification(): Phase06Evidence {
         twentyFiveYearRetentionPct: agingCoastal.pvImpact.twentyFiveYearCapacityRetentionPct,
         expectedLifespanYears: agingCoastal.pvImpact.expectedUsefulLifespanYears,
       },
-      verified: p606After === 0.60 && p606Delta === 0.15,
+      verified: p606Before === 0.45 && p606After === 0.60 && p606Delta === 0.15,
     },
     {
       id: 'P6-07',
@@ -466,7 +506,7 @@ export function runPhase06Verification(): Phase06Evidence {
         opexEscalationPct: 0.0,
         lcoeUsdPerKwh: g1FisherFin.lcoeUsdPerKwh,
       },
-      verified: p607After === 381562 && p607Delta === 628918,
+      verified: p607Before === -247356 && p607After === 381562 && p607Delta === 628918,
     },
     {
       id: 'P6-08',
@@ -487,7 +527,7 @@ export function runPhase06Verification(): Phase06Evidence {
         totalCapexToman: integratedG1.financialResult.capexBreakdown.totalCapexToman,
         salvageCreditY25Toman: 894028589,
       },
-      verified: p608After === 5343 && p608Delta === 287,
+      verified: p608Before === 5056 && p608After === 5343 && p608Delta === 287,
     },
   ];
 
@@ -903,8 +943,10 @@ function main() {
   );
 
   for (const q of evidence.quantities) {
+    const beforeStr = q.before === null ? 'null' : q.before.toString();
+    const deltaStr = q.delta === null ? 'null' : q.delta.toString();
     console.log(
-      `  • [${q.id}] ${q.name}: ${q.before} -> ${q.after} ${q.unit} (delta: ${q.delta}) [${q.verified ? 'OK' : 'FAIL'}]`
+      `  • [${q.id}] ${q.name}: ${beforeStr} -> ${q.after} ${q.unit} (delta: ${deltaStr}) [${q.verified ? 'OK' : 'FAIL'}]`
     );
   }
 
