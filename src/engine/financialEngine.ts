@@ -240,7 +240,9 @@ export function sanitizeFinancialPricing(custom?: Partial<UserFinancialPricing>)
     dieselAnnualServiceOpexUsd: cleanNum(custom.dieselAnnualServiceOpexUsd, base.dieselAnnualServiceOpexUsd ?? 1800, 0),
     hvConnectionUsdPerKva: cleanNum(custom.hvConnectionUsdPerKva, base.hvConnectionUsdPerKva, 0),
     plantPowerFactor: cleanNum(custom.plantPowerFactor, base.plantPowerFactor ?? 0.95, 0.70, 1.0),
-    contingencyCapexPct: cleanNum(custom.contingencyCapexPct, base.contingencyCapexPct ?? 3.0, 0, 50),
+    contingencyCapexPct: custom.contingencyCapexPct !== undefined
+      ? cleanNum(custom.contingencyCapexPct, 0, 0, 50)
+      : base.contingencyCapexPct,
     ppaTariffTomanPerKwh: cleanNum(custom.ppaTariffTomanPerKwh, base.ppaTariffTomanPerKwh, 0),
     offgridAvoidedCostTomanPerKwh: custom.offgridAvoidedCostTomanPerKwh !== undefined
       ? cleanNum(custom.offgridAvoidedCostTomanPerKwh, 21600, 0)
