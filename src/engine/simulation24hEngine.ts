@@ -234,7 +234,9 @@ export function simulate24hEnergyBalance(
   const reliesOnInitialCharge = hasBattery && totalDeficit < 0.1 && currentBatteryWh < initialWh * 0.98;
   const isSelfSufficient = totalDeficit < 0.1 && (!hasBattery || !reliesOnInitialCharge);
 
-  const sumGenKwh = Number(steps.reduce((sum, s) => sum + s.solarGenKwh, 0).toFixed(2));
+  const sumGenKwh = totalPvCapacityKwp > 0 && peakSunHours > 0
+    ? Number(totalGen.toFixed(6))
+    : Number(steps.reduce((sum, s) => sum + s.solarGenKwh, 0).toFixed(2));
   const sumSurplusKwh = Number(steps.reduce((sum, s) => sum + s.surplusKwh, 0).toFixed(2));
   const sumDeficitKwh = Number(steps.reduce((sum, s) => sum + s.deficitKwh, 0).toFixed(2));
   const sumConsumptionKwh = Number(steps.reduce((sum, s) => sum + s.loadDemandKwh, 0).toFixed(2));

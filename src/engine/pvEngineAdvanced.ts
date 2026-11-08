@@ -72,6 +72,8 @@ export interface PvArrayDesignResult {
   grossRequiredLandAreaM2: number;
   winterSunAltitudeDeg: number;
   warnings: string[];
+  estimatedAnnualYieldKwh?: number;
+  specificYieldKwhPerKwp?: number;
 }
 
 export function designPvArray(
@@ -211,6 +213,11 @@ export function designPvArray(
   // When the required module count is smaller than the utility string length,
   // size the string to initialTotalModules to ensure strict sizing monotonicity.
   if (initialTotalModules < chosenModulesPerString) {
+    if (initialTotalModules < minModulesAllowed) {
+      warnings.push(
+        "تعداد ماژول‌های مورد نیاز بار کمتر از حداقل پنجره ولتاژ MPPT اینورتر است؛ سایزینگ بر اساس تعداد واقعی ماژول‌های بار انجام شد و استفاده از اینورتر متناسب یا میکرواینورتر توصیه می‌شود."
+      );
+    }
     chosenModulesPerString = Math.max(1, initialTotalModules);
   }
 
@@ -276,6 +283,9 @@ export function designPvArray(
   // Gross area incorporates maintenance walkways (+30%)
   const grossRequiredLandAreaM2 = (totalModulesCount / chosenModulesPerString) * (modWidth * chosenModulesPerString) * interRowSpacingM * 1.30;
 
+  const estimatedAnnualYieldKwh = Number((totalPvCapacityKwp * peakSunHours * effectiveDeratingFactor * 365.0).toFixed(2));
+  const specificYieldKwhPerKwp = totalPvCapacityKwp > 0 ? Number((peakSunHours * effectiveDeratingFactor * 365.0).toFixed(2)) : 0;
+
   return {
     totalPvCapacityKwp,
     totalModulesCount,
@@ -299,5 +309,7 @@ export function designPvArray(
     grossRequiredLandAreaM2,
     winterSunAltitudeDeg,
     warnings,
+    estimatedAnnualYieldKwh,
+    specificYieldKwhPerKwp,
   };
 }

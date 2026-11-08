@@ -35,6 +35,8 @@ export interface WaterfallLossReport {
   specificAnnualYieldKwhPerKwp: number;
   performanceRatioPct: number;
   finalEnergyKwh: number;
+  compoundPerformanceRatioPct?: number;
+  arithmeticSumLossPct?: number;
 }
 
 export function calculateFixedTiltTranspositionGain(
@@ -320,6 +322,17 @@ export function computeWaterfallLosses(
   const specificAnnualYieldKwhPerKwp = installedCapacityKwp > 0 ? Math.round(currentEnergy / installedCapacityKwp) : 0;
   const performanceRatioPct = effectivePoaEnergyKwh > 0 ? Math.round((currentEnergy / effectivePoaEnergyKwh) * 1000) / 10 : 0;
   const finalEnergyKwh = Math.round(currentEnergy);
+  const compoundPerformanceRatioPct = Number(
+    (
+      stages.reduce(
+        (acc, s) => acc * (1.0 + (s.percentageLossRaw ?? s.percentageLoss) / 100.0),
+        1.0
+      ) * 100.0
+    ).toFixed(4)
+  );
+  const arithmeticSumLossPct = Number(
+    stages.reduce((acc, s) => acc + s.percentageLoss, 0).toFixed(2)
+  );
 
   return {
     installedCapacityKwp,
@@ -331,6 +344,8 @@ export function computeWaterfallLosses(
     specificAnnualYieldKwhPerKwp,
     performanceRatioPct,
     finalEnergyKwh,
+    compoundPerformanceRatioPct,
+    arithmeticSumLossPct,
   };
 }
 

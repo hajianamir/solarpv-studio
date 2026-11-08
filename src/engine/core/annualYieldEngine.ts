@@ -1,16 +1,30 @@
 /**
  * SolarPV Studio v3.0 - Unified Annual Yield Engine
  * Single Source of Truth for annual energy yield estimation, Performance Ratio (PR),
- * specific annual yield, and dual-mode thermal derate evaluation (hot_design vs annual_energy).
+ * specific annual yield, canonical waterfall reconciliation, and dual-mode thermal derate evaluation.
  *
  * Leaf/core module in `src/engine/core/`: NO circular dependencies.
  */
 
 import {
   calculateThermalDerate,
+  calculateAnnualThermalDerate,
   type ThermalDerateResult,
+  type ThermalEvaluationMode,
 } from './thermalDerate';
+import {
+  computeWaterfallLosses,
+  type WaterfallLossReport,
+} from '../waterfallLossEngine';
+import { buildWaterfallArgs } from '../waterfallArgs';
 import type { InstallationEnvironment } from '../types/climateTypes';
+
+export {
+  calculateThermalDerate,
+  calculateAnnualThermalDerate,
+  type ThermalDerateResult,
+  type ThermalEvaluationMode,
+};
 
 export type AnnualYieldKwh = number & { readonly __brand: unique symbol };
 export type PerformanceRatioPct = number & { readonly __brand: unique symbol };
@@ -45,7 +59,7 @@ export interface AnnualYieldStageLoss {
   percentageLossRaw?: number;
 }
 
-export interface UnifiedAnnualYieldInput {
+export interface CanonicalAnnualYieldInput {
   installedCapacityKwp: number;
   peakSunHours: number;
   ambientTempMaxC: number;
@@ -58,29 +72,23 @@ export interface UnifiedAnnualYieldInput {
   noctC?: number;
   tempCoeffPmpPct?: number;
   bifacialGainPct?: number;
-  evaluationMode?: 'hot_design' | 'annual_energy';
+  evaluationMode?: ThermalEvaluationMode;
   installationEnvironment?: InstallationEnvironment;
-  nearShadingLossPct?: number;
-  qualityTolerancePct?: number;
-  lidLossPct?: number;
-  mismatchLossPct?: number;
-  dcCablingLossPct?: number;
-  mpptTrackingLossPct?: number;
-  inverterEfficiencyPct?: number;
-  transformerLossPct?: number;
-  auxUnavailabilityLossPct?: number;
+  tiltDeg?: number;
+  latitudeDeg?: number;
+  shadingLoss3dPct?: number;
 }
 
-export interface UnifiedAnnualYieldResult {
-  installedCapacityKwp: number;
-  annualYieldKwh: AnnualYieldKwh;
-  performanceRatioPct: PerformanceRatioPct;
-  specificYieldKwhPerKwp: SpecificYieldKwhPerKwp;
-  effectiveDeratingFactor: number;
-  evaluationMode: 'hot_design' | 'annual_energy';
-  thermalDerate: ThermalDerateResult;
-  clippingLossPct: number;
-  stages: AnnualYieldStageLoss[];
+export interface CanonicalAnnualYieldResult {
+  annualYieldKwh: number;
+  netAnnualEnergyExportMwh: number;
+  specificYieldKwhPerKwp: number;
+  effectiveYieldFactor: number;
+  performanceRatioPct: number;
+  compoundPerformanceRatioPct: number;
+  thermalDeratePctUsed: number;
+  clippingLossPctUsed: number;
+  waterfallReport: WaterfallLossReport;
 }
 
 /**
@@ -133,6 +141,110 @@ export function calculateStandardDeratingFactor(params: {
 }
 
 /**
+ * Computes canonical annual yield tightly coupled to the 16-stage waterfall loss engine.
+ * Eliminates transposition/bifacial/shading divergence between annualYieldEngine and waterfall.
+ */
+export function computeCanonicalAnnualYield(
+  input: CanonicalAnnualYieldInput
+): CanonicalAnnualYieldResult {
+  const evalMode: ThermalEvaluationMode = input.evaluationMode ?? 'annual_energy';
+  const effectiveTempC =
+    evalMode === 'annual_energy' && typeof input.ambientTempMeanC === 'number' && Number.isFinite(input.ambientTempMeanC)
+      ? input.ambientTempMeanC
+      : input.ambientTempMaxC;
+
+  const wfArgs = buildWaterfallArgs({
+    installedCapacityKwp: input.installedCapacityKwp,
+    peakSunHours: input.peakSunHours,
+    ambientTempMaxC: effectiveTempC,
+    soilingLossPct: input.soilingLossPct ?? 4.5,
+    dcAcRatio: input.dcAcRatio ?? 1.25,
+    hasTracker: input.hasTracker ?? false,
+    snowLossPct: input.snowLossPct ?? 0.0,
+    iamLossPct: input.iamLossPct ?? -2.2,
+    noctC: input.noctC ?? 45.0,
+    tempCoeffPmpPct: input.tempCoeffPmpPct ?? -0.30,
+    installationEnvironment: input.installationEnvironment ?? 'ground_mount',
+    tiltDeg: input.tiltDeg ?? 25.0,
+    latitudeDeg: input.latitudeDeg ?? 35.6892,
+    shadingLossOverridePct: input.shadingLoss3dPct,
+    bifacialGainPct: input.bifacialGainPct ?? 0.0,
+  });
+
+  const waterfallReport = computeWaterfallLosses(...wfArgs);
+  const annualYieldKwh = waterfallReport.finalEnergyKwh ?? Math.round(waterfallReport.netAnnualEnergyExportMwh * 1000.0);
+  const netAnnualEnergyExportMwh = waterfallReport.netAnnualEnergyExportMwh;
+  const specificYieldKwhPerKwp = waterfallReport.specificAnnualYieldKwhPerKwp;
+
+  const nominalAnnualWh = input.installedCapacityKwp * input.peakSunHours * 365.0;
+  const effectiveYieldFactor = nominalAnnualWh > 0 ? Number((annualYieldKwh / nominalAnnualWh).toFixed(6)) : 0;
+
+  const performanceRatioPct = waterfallReport.performanceRatioPct;
+  const compoundPerformanceRatioPct =
+    waterfallReport.compoundPerformanceRatioPct ?? waterfallReport.performanceRatioPct;
+
+  const thermalStage = waterfallReport.stages.find((s) => s.id === 'thermal');
+  const thermalDeratePctUsed = thermalStage
+    ? Math.abs(thermalStage.percentageLossRaw ?? thermalStage.percentageLoss)
+    : 0;
+
+  const clippingStage = waterfallReport.stages.find((s) => s.id === 'clipping');
+  const clippingLossPctUsed = clippingStage
+    ? Math.abs(clippingStage.percentageLossRaw ?? clippingStage.percentageLoss)
+    : 0;
+
+  return {
+    annualYieldKwh,
+    netAnnualEnergyExportMwh,
+    specificYieldKwhPerKwp,
+    effectiveYieldFactor,
+    performanceRatioPct,
+    compoundPerformanceRatioPct,
+    thermalDeratePctUsed,
+    clippingLossPctUsed,
+    waterfallReport,
+  };
+}
+
+export interface UnifiedAnnualYieldInput {
+  installedCapacityKwp: number;
+  peakSunHours: number;
+  ambientTempMaxC: number;
+  ambientTempMeanC?: number;
+  soilingLossPct?: number;
+  dcAcRatio?: number;
+  hasTracker?: boolean;
+  snowLossPct?: number;
+  iamLossPct?: number;
+  noctC?: number;
+  tempCoeffPmpPct?: number;
+  bifacialGainPct?: number;
+  evaluationMode?: ThermalEvaluationMode;
+  installationEnvironment?: InstallationEnvironment;
+  nearShadingLossPct?: number;
+  qualityTolerancePct?: number;
+  lidLossPct?: number;
+  mismatchLossPct?: number;
+  dcCablingLossPct?: number;
+  mpptTrackingLossPct?: number;
+  inverterEfficiencyPct?: number;
+  transformerLossPct?: number;
+  auxUnavailabilityLossPct?: number;
+}
+
+export interface UnifiedAnnualYieldResult {
+  installedCapacityKwp: number;
+  annualYieldKwh: AnnualYieldKwh;
+  performanceRatioPct: PerformanceRatioPct;
+  specificYieldKwhPerKwp: SpecificYieldKwhPerKwp;
+  effectiveDeratingFactor: number;
+  evaluationMode: ThermalEvaluationMode;
+  thermalDerate: ThermalDerateResult;
+  clippingLossPct: number;
+  stages: AnnualYieldStageLoss[];
+}
+
+/**
  * Calculates unified annual energy yield using single source of truth formulation.
  */
 export function calculateUnifiedAnnualYield(
@@ -169,7 +281,7 @@ export function calculateUnifiedAnnualYield(
     ambientTempMaxC,
     ambientTempMeanC,
     installationEnvironment,
-    mode: evaluationMode,
+    evaluationMode,
   });
 
   const { clippingLossPct } = calculatePhysicalClippingLossPct(dcAcRatio);
@@ -291,7 +403,6 @@ export function calculateUnifiedAnnualYield(
     percentageLossRaw: -Math.abs(auxUnavailabilityLossPct),
   });
 
-  // Transposition gain factor:
   const transpositionGain = hasTracker ? 1.25 : 1.168;
   const rawGhiEnergyKwh = installedCapacityKwp * peakSunHours * 365.0;
   const effectivePoaEnergyKwh = rawGhiEnergyKwh * transpositionGain;
@@ -347,14 +458,11 @@ export interface FivePathConvergenceReport {
   minKwh: number;
   maxKwh: number;
   spreadKwh: number;
-  dispersionRatio: number; // max / min
-  relativeSpreadPct: number; // spread / mean * 100
-  isConverged: boolean; // dispersionRatio <= 1.05
+  dispersionRatio: number;
+  relativeSpreadPct: number;
+  isConverged: boolean;
 }
 
-/**
- * Reconciles and analyzes convergence across the 5 independent generation paths.
- */
 export function reconcile5PathConvergence(paths: {
   mainWaterfallKwh: number;
   pvEngineAdvancedKwh: number;
