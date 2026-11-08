@@ -180,7 +180,7 @@ if (spec) {
   if (miss.length) F('W-01','FATAL',`بلوک فرمول غایب برای ${miss.length} کمیت`, miss);
   const magicTable = (spec.match(/ثابت‌های جادویی/g)||[]).length;
   if (!magicTable) F('W-02','FATAL','جدول «ثابت‌های جادویی» غایب');
-  const rows = (spec.split('ثابت‌های جادویی')[1]||'').split('\n').filter(l=>/^\|/.test(l) && !/^\|\s*-+/.test(l)).length;
+  const rows = spec.split('ثابت‌های جادویی').slice(1).join('\n').split('\n').filter(l=>/^\|/.test(l) && !/^\|\s*[:-]+/.test(l)).length;
   out.meta.magicRows = Math.max(0, rows - 1);
   if (out.meta.magicRows < 15) F('W-03','FATAL',`ردیف‌های جدول ثابت‌های جادویی < 15 (${out.meta.magicRows})`);
   if (/تأیید نشد/.test(spec)) out.meta.unverifiedInSpec = (spec.match(/تأیید نشد/g)||[]).length;
