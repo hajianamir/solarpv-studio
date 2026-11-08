@@ -201,7 +201,15 @@ export function runPhase06Verification(): Phase06Evidence {
     25,
     'offgrid'
   );
-  const p603After = g3P603Fin.lcoeTomanPerKwh ?? 30115; // 30115 Toman/kWh
+  if (
+    typeof g3P603Fin.lcoeTomanPerKwh !== 'number' ||
+    !Number.isFinite(g3P603Fin.lcoeTomanPerKwh)
+  ) {
+    throw new Error(
+      `P6-03 calculation failure: lcoeTomanPerKwh is ${g3P603Fin.lcoeTomanPerKwh}`
+    );
+  }
+  const p603After = g3P603Fin.lcoeTomanPerKwh; // 30115 Toman/kWh
   const p603Delta = p603After - p603Before; // -528 Toman/kWh
 
   // -------------------------------------------------------------------------
@@ -224,7 +232,10 @@ export function runPhase06Verification(): Phase06Evidence {
     25,
     'powerplant'
   );
-  const p604After = g1P604Fin.irrPct ?? 5.4; // 5.4%
+  if (typeof g1P604Fin.irrPct !== 'number' || !Number.isFinite(g1P604Fin.irrPct)) {
+    throw new Error(`P6-04 calculation failure: irrPct is ${g1P604Fin.irrPct}`);
+  }
+  const p604After = g1P604Fin.irrPct; // 5.4%
   const p604Delta = Number((p604After - p604Before).toFixed(1)); // +5.4%
 
   // -------------------------------------------------------------------------
@@ -238,7 +249,15 @@ export function runPhase06Verification(): Phase06Evidence {
     elevationM: 1200,
     siteTiltDeg: 31.0,
   });
-  const inverterDerateG1 = agingG1.inverterImpact.inverterAnnualEnergyDeratePct ?? 1.05; // 1.05%
+  if (
+    typeof agingG1.inverterImpact.inverterAnnualEnergyDeratePct !== 'number' ||
+    !Number.isFinite(agingG1.inverterImpact.inverterAnnualEnergyDeratePct)
+  ) {
+    throw new Error(
+      `P6-05 calculation failure: inverterAnnualEnergyDeratePct is ${agingG1.inverterImpact.inverterAnnualEnergyDeratePct}`
+    );
+  }
+  const inverterDerateG1 = agingG1.inverterImpact.inverterAnnualEnergyDeratePct; // 1.05%
   const p605After = Math.round(p605Before * (1.0 - inverterDerateG1 / 100.0)); // 1797686 kWh
   const p605Delta = p605After - p605Before; // -19076 kWh
 
@@ -291,7 +310,15 @@ export function runPhase06Verification(): Phase06Evidence {
     baseAnnualYieldKwh: 1816762,
     substationTransformerMva: 1.52,
   });
-  const p608After = integratedG1.financialResult.lcoeTomanPerKwh ?? 5343; // 5343 Toman/kWh
+  if (
+    typeof integratedG1.financialResult.lcoeTomanPerKwh !== 'number' ||
+    !Number.isFinite(integratedG1.financialResult.lcoeTomanPerKwh)
+  ) {
+    throw new Error(
+      `P6-08 calculation failure: lcoeTomanPerKwh is ${integratedG1.financialResult.lcoeTomanPerKwh}`
+    );
+  }
+  const p608After = integratedG1.financialResult.lcoeTomanPerKwh; // 5343 Toman/kWh
   const p608Delta = p608After - p608Before; // +287 Toman/kWh
 
   const quantities: Phase06Quantity[] = [
@@ -526,7 +553,7 @@ export function runPhase06Verification(): Phase06Evidence {
     g3SumEnergy += yrEnergy / div;
   }
   const g3ExpectedLcoe = Math.round(g3SumCosts / g3SumEnergy);
-  const c602Lhs = g3P603Fin.lcoeTomanPerKwh ?? 0;
+  const c602Lhs = p603After;
   const c602Rhs = g3ExpectedLcoe;
   const c602Delta = Math.abs(c602Lhs - c602Rhs);
   const c602Pass =
@@ -763,9 +790,13 @@ export function runPhase06Verification(): Phase06Evidence {
   // -------------------------------------------------------------------------
   // 12. Checksums & Commit Hashes
   // -------------------------------------------------------------------------
-  let generatedAtCommit = '5e42ae4ebfe70b8ddccfd5a46e115091e98d9ba8';
+  // Condition: Read generatedAtCommit from the latest commit that modified engine/server code
+  let generatedAtCommit = '5e42ae4bf62c88bf659968f6c624bf47f33323de';
   try {
-    const commitOutput = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+    const commitOutput = execSync('git log -n 1 --format=%H -- src/ server.ts', {
+      encoding: 'utf8',
+      cwd: process.cwd(),
+    }).trim();
     if (commitOutput && commitOutput.length === 40) {
       generatedAtCommit = commitOutput;
     }
@@ -808,19 +839,32 @@ function main() {
   const evidencePath = path.join(evidenceDir, 'phase06-measurements.json');
   fs.writeFileSync(evidencePath, JSON.stringify(evidence, null, 2) + '\n', 'utf8');
 
-  // Handle --id P6-XX
-  const idArg = args.find((a) => a.startsWith('--id=') || a === '--id');
+  // Handle --id P6-XX or --quantity P6-XX
+  const idArg = args.find(
+    (a) =>
+      a.startsWith('--id=') ||
+      a === '--id' ||
+      a.startsWith('--quantity=') ||
+      a === '--quantity'
+  );
   if (idArg) {
-    const targetId = idArg.startsWith('--id=')
-      ? idArg.split('=')[1]
-      : args[args.indexOf('--id') + 1];
+    let targetId: string;
+    if (idArg.startsWith('--id=')) {
+      targetId = idArg.split('=')[1];
+    } else if (idArg.startsWith('--quantity=')) {
+      targetId = idArg.split('=')[1];
+    } else if (idArg === '--id') {
+      targetId = args[args.indexOf('--id') + 1];
+    } else {
+      targetId = args[args.indexOf('--quantity') + 1];
+    }
     const foundQ = evidence.quantities.find((q) => q.id === targetId);
     if (!foundQ) {
       console.error(`[FAIL] Quantity ${targetId} not found in Phase 06 measurements`);
       process.exit(1);
     }
     console.log(JSON.stringify(foundQ, null, 2));
-    process.exit(0);
+    process.exit(foundQ.verified ? 0 : 1);
   }
 
   // Handle --check C6-XX
@@ -842,28 +886,42 @@ function main() {
   console.log(' SolarPV Studio - Phase 06 Automated Verifier');
   console.log('='.repeat(80));
   console.log(`[PASS] Evidence written to docs/audit/remediation/evidence/phase06/phase06-measurements.json`);
-  console.log(`[PASS] Quantities measured: ${evidence.quantities.length} / 8`);
+
+  const allQuantitiesVerified = evidence.quantities.every((q) => q.verified);
+  console.log(
+    `[PASS] Quantities verified: ${evidence.quantities.filter((q) => q.verified).length} / ${evidence.quantities.length} (All PASS: ${allQuantitiesVerified})`
+  );
 
   const allChecksPass = evidence.coherenceChecks.every((c) => c.pass);
-  console.log(`[PASS] Checks executed: ${evidence.coherenceChecks.length} / 6 (All PASS: ${allChecksPass})`);
+  console.log(
+    `[PASS] Checks executed: ${evidence.coherenceChecks.filter((c) => c.pass).length} / ${evidence.coherenceChecks.length} (All PASS: ${allChecksPass})`
+  );
 
   const allAnchorsZero = Object.values(evidence.nonRegression).every((a) => a.delta === 0);
-  console.log(`[PASS] Non-regression anchors verified: ${Object.keys(evidence.nonRegression).length} / 6 (All delta 0: ${allAnchorsZero})`);
+  console.log(
+    `[PASS] Non-regression anchors verified: ${Object.values(evidence.nonRegression).filter((a) => a.delta === 0).length} / ${Object.keys(evidence.nonRegression).length} (All delta 0: ${allAnchorsZero})`
+  );
 
   for (const q of evidence.quantities) {
-    console.log(`  • [${q.id}] ${q.name}: ${q.before} -> ${q.after} ${q.unit} (delta: ${q.delta}) [OK]`);
+    console.log(
+      `  • [${q.id}] ${q.name}: ${q.before} -> ${q.after} ${q.unit} (delta: ${q.delta}) [${q.verified ? 'OK' : 'FAIL'}]`
+    );
   }
 
   for (const c of evidence.coherenceChecks) {
-    console.log(`  • [${c.id}] ${c.name}: lhs=${c.lhs}, rhs=${c.rhs}, delta=${c.delta} [${c.pass ? 'PASS' : 'FAIL'}]`);
+    console.log(
+      `  • [${c.id}] ${c.name}: lhs=${c.lhs}, rhs=${c.rhs}, delta=${c.delta} [${c.pass ? 'PASS' : 'FAIL'}]`
+    );
   }
 
   for (const [k, v] of Object.entries(evidence.nonRegression)) {
-    console.log(`  • [ANCHOR ${k}] expected=${v.expected}, actual=${v.actual}, delta=${v.delta} [${v.pass ? 'PASS' : 'FAIL'}]`);
+    console.log(
+      `  • [ANCHOR ${k}] expected=${v.expected}, actual=${v.actual}, delta=${v.delta} [${v.pass ? 'PASS' : 'FAIL'}]`
+    );
   }
 
-  if (!allChecksPass || !allAnchorsZero) {
-    console.error('\n[FATAL] One or more coherence checks or non-regression anchors failed!');
+  if (!allQuantitiesVerified || !allChecksPass || !allAnchorsZero) {
+    console.error('\n[FATAL] One or more quantities, coherence checks, or non-regression anchors failed!');
     process.exit(1);
   }
 }
