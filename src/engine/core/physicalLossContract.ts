@@ -155,7 +155,7 @@ export function buildStandardWinterSnowProfile(params?: {
       const isStorm = (h % 96 === 1 || h % 96 === 2);
       profile.push({
         hourOfYear: h,
-        ambientTempC: Number(temp.toFixed(2)),
+        ambientTempC: temp,
         snowfallDepthCm: isStorm ? stormSnowfallCm : 0,
         accumulatedGroundSnowCm: winterGroundSnowCm,
       });
