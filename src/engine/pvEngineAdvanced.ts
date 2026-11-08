@@ -207,6 +207,13 @@ export function designPvArray(
   const singleModuleKwp = module.pmpWatts / 1000.0;
   const initialTotalModules = Math.ceil(requiredArrayKwp / singleModuleKwp);
 
+  // Eliminate false 20-module floor for small residential/commercial systems (e.g. G-2 with 3 kWh/day).
+  // When the required module count is smaller than the utility string length,
+  // size the string to initialTotalModules to ensure strict sizing monotonicity.
+  if (initialTotalModules < chosenModulesPerString) {
+    chosenModulesPerString = Math.max(1, initialTotalModules);
+  }
+
   let parallelStrings = Math.ceil(initialTotalModules / chosenModulesPerString);
   if (parallelStrings < 1) parallelStrings = 1;
 

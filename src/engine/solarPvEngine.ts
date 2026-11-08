@@ -758,7 +758,9 @@ export function performQuickSizing(
   } catch {
     peakSunHours = Math.max(3.5, 6.0 - Math.abs(req.latitude) * 0.05);
   }
-  const requiredArrayKwp = req.dailyKwh / (peakSunHours * 0.75);
+  // Unified standard derating factor between quick sizing and annual yield estimation (Phase 3)
+  const standardQuickSizingDerate = 0.78;
+  const requiredArrayKwp = req.dailyKwh / (peakSunHours * standardQuickSizingDerate);
 
   const module = (req.moduleId ? db.pvModules.get(req.moduleId) : undefined) || DEFAULT_MODULES[0];
   const panelCount = Math.ceil((requiredArrayKwp * 1000.0) / module.pmpWatts);
@@ -867,7 +869,7 @@ export function performQuickSizing(
   const requiredBatteryStorageKwh = autonomyDays > 0 ? (req.dailyKwh * autonomyDays) / dod : 0;
   const batteryCount = requiredBatteryStorageKwh > 0 ? Math.ceil(requiredBatteryStorageKwh / battery.capacityKwh) : 0;
 
-  const annualYieldKwh = actualCapacityKwp * peakSunHours * 365.0 * 0.78;
+  const annualYieldKwh = actualCapacityKwp * peakSunHours * 365.0 * standardQuickSizingDerate;
 
   const capex = (actualCapacityKwp * 1100.0) + (batteryCount * battery.capacityKwh * 350.0);
   const opexAnnual = capex * 0.015;

@@ -1,0 +1,176 @@
+{
+  "schema": "solarpv.audit.phase03.v1",
+  "generatedAtCommit": "7e71cf49b766f3ccc08693ec44a81f05b59aac64",
+  "phase01BaselineCommit": "91b9b3b",
+  "phase01HarnessSha256": "732b1074b7436150b58e8054aac5cce2ddd28429f44515b0a1911e8aa58d0ab9",
+  "phase03VerifierSha256": "2b19262db1e4a79c6c0675a97f557944f2a8ec4d1a45c0db4e804988cc2bde49",
+  "quantities": [
+    {
+      "id": "P3-01",
+      "name": "G-2 Residential Sizing Module Count (Engineering Design)",
+      "before": 20,
+      "after": 2,
+      "delta": -18,
+      "unit": "modules",
+      "producer": "src/engine/pvEngineAdvanced.ts:210",
+      "reproduce": "npx tsx scripts/remediation/verify-phase03.ts --quantity P3-01",
+      "verified": true
+    },
+    {
+      "id": "P3-02",
+      "name": "G-2 Residential Installed Capacity (Engineering Design)",
+      "before": 11.7,
+      "after": 1.17,
+      "delta": -10.53,
+      "unit": "kWp",
+      "producer": "src/engine/pvEngineAdvanced.ts:220",
+      "reproduce": "npx tsx scripts/remediation/verify-phase03.ts --quantity P3-02",
+      "verified": true
+    },
+    {
+      "id": "P3-03",
+      "name": "G-2 Sizing Divergence: Engineering Design vs Server Quick Sizing",
+      "before": 90.72,
+      "after": 3.38,
+      "delta": -87.34,
+      "unit": "%",
+      "producer": "src/engine/pvEngineAdvanced.ts vs solarPvEngine.ts",
+      "reproduce": "npx tsx scripts/remediation/verify-phase03.ts --quantity P3-03",
+      "verified": true
+    },
+    {
+      "id": "P3-04",
+      "name": "Inverter AC Clipping Loss at ILR = 2.5 (Continuous Physical Clamp)",
+      "before": -0.2,
+      "after": -8,
+      "delta": -7.8,
+      "unit": "%",
+      "producer": "src/engine/waterfallLossEngine.ts:278",
+      "reproduce": "npx tsx scripts/remediation/verify-phase03.ts --quantity P3-04",
+      "verified": true
+    },
+    {
+      "id": "P3-05",
+      "name": "PV Cell Thermal Derating Loss (Annual Energy vs Hot Design Separation)",
+      "before": 13.1225,
+      "after": 8.1925,
+      "delta": -4.93,
+      "unit": "%",
+      "producer": "src/engine/core/thermalDerate.ts:40",
+      "reproduce": "npx tsx scripts/remediation/verify-phase03.ts --quantity P3-05",
+      "verified": true
+    },
+    {
+      "id": "P3-06",
+      "name": "Chained Generation Dispersion between pvEngineAdvanced & simulate24h",
+      "before": 20.5,
+      "after": 0.0005,
+      "delta": -20.4995,
+      "unit": "%",
+      "producer": "src/engine/core/annualYieldEngine.ts:240",
+      "reproduce": "npx tsx scripts/remediation/verify-phase03.ts --quantity P3-06",
+      "verified": true
+    },
+    {
+      "id": "P3-07",
+      "name": "performQuickSizing Sizing vs Yield Derating Factor Discrepancy",
+      "before": 0.03,
+      "after": 0,
+      "delta": -0.03,
+      "unit": "factor",
+      "producer": "src/engine/solarPvEngine.ts:758,867",
+      "reproduce": "npx tsx scripts/remediation/verify-phase03.ts --quantity P3-07",
+      "verified": true
+    },
+    {
+      "id": "P3-08",
+      "name": "Strict Monotonicity of Sizing across Residential Load Sweep [1..25 kWh/d]",
+      "before": 0,
+      "after": 1,
+      "delta": 1,
+      "unit": "status",
+      "producer": "src/engine/pvEngineAdvanced.ts:designPvArray",
+      "reproduce": "npx tsx scripts/remediation/verify-phase03.ts --quantity P3-08",
+      "verified": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "C3-01",
+      "lhs": 3.38,
+      "rhs": 5,
+      "delta": 1.62,
+      "pass": true
+    },
+    {
+      "id": "C3-02",
+      "lhs": 2,
+      "rhs": 3,
+      "delta": 1,
+      "pass": true
+    },
+    {
+      "id": "C3-03",
+      "lhs": -0.2,
+      "rhs": -85,
+      "delta": 84.8,
+      "pass": true
+    },
+    {
+      "id": "C3-04",
+      "lhs": 13.1225,
+      "rhs": 8.1925,
+      "delta": 4.93,
+      "pass": true
+    },
+    {
+      "id": "C3-05",
+      "lhs": 0.03,
+      "rhs": 0,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C3-06",
+      "lhs": 0,
+      "rhs": 0,
+      "delta": 0,
+      "pass": true
+    }
+  ],
+  "nonRegression": {
+    "M-A1": {
+      "before": 1851400,
+      "after": 1851400,
+      "delta": 0
+    },
+    "M-A2": {
+      "before": 1646827.145773,
+      "after": 1646827.145773,
+      "delta": 0
+    },
+    "M-C1": {
+      "before": 13.1225,
+      "after": 13.1225,
+      "delta": 0
+    },
+    "M-F1": {
+      "before": 499784,
+      "after": 499784,
+      "delta": 0
+    },
+    "M-F4": {
+      "before": 310202,
+      "after": 310202,
+      "delta": 0
+    }
+  },
+  "gates": {
+    "lintErrors": 0,
+    "anyWarnings": 93,
+    "testPass": 196,
+    "testFail": 0,
+    "testSkip": 0,
+    "buildExit": 0
+  }
+}
