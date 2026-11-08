@@ -1,6 +1,14 @@
 // Advanced 3D Shading & Sun Path Geometry Engine
 // Conforming to IEC 62548, Sandia National Laboratories & NREL Sun Position Algorithms
 
+import {
+  type SouthAzimuthDeg,
+  asSouthAzimuthDeg,
+  calculateWinterSolsticeNoonAltitudeDeg,
+} from './core/solarGeometryContract';
+
+export type { SouthAzimuthDeg };
+
 export interface ShadingGeometryInput {
   latitude: number;           // Site latitude in degrees (e.g. 35.68 for Tehran)
   longitude: number;          // Site longitude in degrees
@@ -125,7 +133,7 @@ export function calculateSunPathPosition(
   return {
     hour,
     altitudeDeg: Number(altitudeDeg.toFixed(2)),
-    azimuthDeg: Number(azimuthDeg.toFixed(2)),
+    azimuthDeg: Number(asSouthAzimuthDeg(azimuthDeg).toFixed(2)),
     isDaylight: true,
   };
 }
@@ -161,14 +169,8 @@ export function analyze3dShadingAndSunPath(input: ShadingGeometryInput): Shading
     ((Math.atan(verticalHeightRiseM / clearGroundSpacingM) * 180.0) / Math.PI).toFixed(1)
   );
 
-  // Winter solstice solar noon altitude: alpha_noon = 90 - |lat| - |delta|
-  // Winter solstice is the worst-case shadow angle regardless of
-  // hemisphere. Solar declination at winter solstice is -23.45 deg in the
-  // Northern hemisphere (Dec 21) and +23.45 deg seen from the Southern
-  // hemisphere (Jun 21). Using |latitude| makes the formula
-  // hemisphere-agnostic: min noon altitude = 90 - |lat| - 23.45.
-  const absLatitude = Math.abs(latitude);
-  const winterSolsticeNoonAltitude = Math.max(5.0, 90.0 - absLatitude - 23.45);
+  // Winter solstice solar noon altitude via unified contract
+  const winterSolsticeNoonAltitude = calculateWinterSolsticeNoonAltitudeDeg(latitude).clampedAltitudeDeg;
   const winterNoonAltRad = (winterSolsticeNoonAltitude * Math.PI) / 180.0;
   const recommendedMinPitchM = Number(
     (horizontalTableWidthM + verticalHeightRiseM / Math.tan(winterNoonAltRad)).toFixed(2)

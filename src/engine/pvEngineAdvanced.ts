@@ -1,6 +1,7 @@
 // Advanced PV Array Engineering, String Sizing & Deratings (IEC 62548 / NEC 690.7)
 
 import { calculateThermalDerate } from './core/thermalDerate';
+import { calculateWinterSolsticeNoonAltitudeDeg } from './core/solarGeometryContract';
 import type { InstallationEnvironment } from './types/climateTypes';
 
 export interface ModuleSpecs {
@@ -258,13 +259,9 @@ export function designPvArray(
   const panelHeightProjectedM = modLength * Math.sin(tiltRad);
   const panelGroundDepthM = modLength * Math.cos(tiltRad);
 
-  // Winter-solstice noon solar altitude from site latitude (PR-2a-7-P0):
-  // alpha = 90° - |latitude| - |declination(-23.45°)|, floored at 5° to avoid
-  // infinite row spacing at extreme latitudes.
-  const winterSolsticeDeclinationDeg = -23.45;
-  const solarAltitudeWinterDeg =
-    90.0 - Math.abs(latitudeDeg) - Math.abs(winterSolsticeDeclinationDeg);
-  const winterSunAltitudeDeg = Math.max(5.0, solarAltitudeWinterDeg);
+  // Winter-solstice noon solar altitude from site latitude (unified solarGeometryContract):
+  const winterSolstice = calculateWinterSolsticeNoonAltitudeDeg(latitudeDeg);
+  const winterSunAltitudeDeg = winterSolstice.clampedAltitudeDeg;
   const sunElevationRad = (winterSunAltitudeDeg * Math.PI) / 180.0;
   const shadowLengthM = panelHeightProjectedM / Math.tan(sunElevationRad);
   const interRowSpacingM = panelGroundDepthM + shadowLengthM;

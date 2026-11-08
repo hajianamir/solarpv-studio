@@ -20,6 +20,11 @@ import type { PvModule, Inverter, Battery } from './types/equipmentTypes';
 import type { InstallationEnvironment } from './types/climateTypes';
 import { getClimateData } from './climaticData';
 import { calculateThermalDerate } from './core/thermalDerate';
+import {
+  normalizeUtcTimestampSeconds,
+  northToSouthAzimuth,
+  southToNorthAzimuth,
+} from './core/solarGeometryContract';
 
 export interface Project {
   id: string;
@@ -112,6 +117,8 @@ export interface SolarPositionRequest {
 export interface SolarPositionResponse {
   zenithDeg: number;
   azimuthDeg: number;
+  elevationDeg?: number;
+  azimuthSouthDeg?: number;
 }
 
 export interface PoaIrradianceRequest {
@@ -122,6 +129,7 @@ export interface PoaIrradianceRequest {
   azimuthDeg: number;
   sunZenithDeg: number;
   sunAzimuthDeg: number;
+  surfaceAzimuthConvention?: 'north_clockwise' | 'south_zero';
 }
 
 export interface PoaIrradianceResponse {
@@ -510,8 +518,9 @@ export function calculateSolarPosition(
   latitudeDeg: number,
   longitudeDeg: number,
   utcTs: number
-): { zenithDeg: number; azimuthDeg: number } {
-  const daysSince2000 = (utcTs - 946728000.0) / 86400.0;
+): SolarPositionResponse {
+  const normalizedTs = normalizeUtcTimestampSeconds(utcTs);
+  const daysSince2000 = (normalizedTs - 946728000.0) / 86400.0;
   const julianCentury = daysSince2000 / 36525.0;
 
   const toRad = (deg: number) => (deg * Math.PI) / 180.0;
@@ -545,7 +554,7 @@ export function calculateSolarPosition(
         1.25 * 0.016708634 * 0.016708634 * Math.sin(toRad(2.0 * geomMeanAnomSun))
     );
 
-  const secondsInDay = ((utcTs % 86400) + 86400) % 86400;
+  const secondsInDay = ((normalizedTs % 86400) + 86400) % 86400;
   const timeOffset = eqOfTime + 4.0 * longitudeDeg;
   const trueSolarTime = secondsInDay / 60.0 + timeOffset;
 
@@ -574,22 +583,27 @@ export function calculateSolarPosition(
     }
   }
   const azimuthDeg = (toDeg(azimuthRad) + 180.0) % 360.0;
+  const elevationDeg = Number((90.0 - zenithDeg).toFixed(6));
+  const azimuthSouthDeg = Number(northToSouthAzimuth(azimuthDeg).toFixed(6));
 
-  return { zenithDeg, azimuthDeg };
+  return { zenithDeg, azimuthDeg, elevationDeg, azimuthSouthDeg };
 }
 
 export function calculatePoaIrradiance(req: PoaIrradianceRequest): number {
-  const { ghi, dni, dhi, tiltDeg, azimuthDeg, sunZenithDeg, sunAzimuthDeg } = req;
+  const { ghi, dni, dhi, tiltDeg, azimuthDeg, sunZenithDeg, sunAzimuthDeg, surfaceAzimuthConvention } = req;
 
   if (sunZenithDeg >= 90.0) {
     return 0.0;
   }
 
+  const effectiveSurfaceAzimuth =
+    surfaceAzimuthConvention === 'south_zero' ? southToNorthAzimuth(azimuthDeg) : azimuthDeg;
+
   const toRad = (deg: number) => (deg * Math.PI) / 180.0;
   const tiltRad = toRad(tiltDeg);
   const zenithRad = toRad(sunZenithDeg);
   const sunAzRad = toRad(sunAzimuthDeg);
-  const surfaceAzRad = toRad(azimuthDeg);
+  const surfaceAzRad = toRad(effectiveSurfaceAzimuth);
 
   const cosInc =
     Math.cos(zenithRad) * Math.cos(tiltRad) +

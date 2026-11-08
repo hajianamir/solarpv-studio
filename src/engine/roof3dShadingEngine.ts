@@ -14,6 +14,11 @@ import { calculateSunPathPosition, type SunPosition } from './shadingSunPathEngi
 import { computeWaterfallLosses, type WaterfallLossReport } from './waterfallLossEngine';
 import { buildWaterfallArgs } from './waterfallArgs';
 import { calculateShadingFactor, type Triangle, type Vec3 } from './solarPvEngine';
+import {
+  sunVectorEnuFromNorthAzimuth,
+  sunVectorEnuFromSouthAzimuth,
+  type AzimuthConvention,
+} from './core/solarGeometryContract';
 
 // ============================================================================
 // 1. WGS84 <-> Local ENU Metric Coordinates Transform
@@ -563,20 +568,19 @@ export function buildObstacleFacets(obs: Obstacle3D): PlanarFacet3D[] {
 
 /**
  * Computes normalized solar directional ray vector in ENU coordinates from azimuth and elevation.
- * Azimuth: degrees clockwise from North (0° = N, 90° = E, 180° = S, 270° = W).
+ * By default, azimuth is degrees clockwise from North (0° = N, 90° = E, 180° = S, 270° = W).
+ * If convention is 'south_zero', azimuth is degrees from South (0° = S, -90° = E, +90° = W).
  * Elevation: degrees above local horizontal plane.
  */
 export function computeSunVectorEnu(
   azimuthDeg: number,
-  elevationDeg: number
+  elevationDeg: number,
+  convention: AzimuthConvention = 'north_clockwise'
 ): { x: number; y: number; z: number } {
-  const azRad = (azimuthDeg * Math.PI) / 180.0;
-  const elRad = (elevationDeg * Math.PI) / 180.0;
-  return {
-    x: Math.sin(azRad) * Math.cos(elRad),
-    y: Math.cos(azRad) * Math.cos(elRad),
-    z: Math.sin(elRad),
-  };
+  if (convention === 'south_zero') {
+    return sunVectorEnuFromSouthAzimuth(azimuthDeg, elevationDeg);
+  }
+  return sunVectorEnuFromNorthAzimuth(azimuthDeg, elevationDeg);
 }
 
 /**
@@ -826,15 +830,10 @@ export function computeTableShadingGeometricMesh(
     };
   }
 
-  const altRad = (sun.altitudeDeg * Math.PI) / 180.0;
-  const azRad = (sun.azimuthDeg * Math.PI) / 180.0;
-
   // In ENU: +X = East, +Y = North, +Z = Up.
   // Ray FROM table TO sun:
-  const dirX = -Math.sin(azRad) * Math.cos(altRad);
-  const dirY = -Math.cos(azRad) * Math.cos(altRad);
-  const dirZ = Math.sin(altRad);
-  const rayDir = { x: dirX, y: dirY, z: dirZ };
+  const rayDir = sunVectorEnuFromSouthAzimuth(sun.azimuthDeg, sun.altitudeDeg);
+  const { x: dirX, y: dirY, z: dirZ } = rayDir;
 
   const tiltRad = (table.tiltDeg * Math.PI) / 180.0;
   const tableAzRad = (table.azimuthDeg * Math.PI) / 180.0;
@@ -1147,15 +1146,10 @@ export function simulateAnnual3dShading(
       totalEvaluatedDaylightHours += weight;
 
       const altRad = (sun.altitudeDeg * Math.PI) / 180.0;
-      const azRad = (sun.azimuthDeg * Math.PI) / 180.0;
       const sinAlt = Math.sin(altRad);
 
       // Ray direction vector pointing TO the sun in ENU
-      const sunDir = {
-        x: -Math.sin(azRad) * Math.cos(altRad),
-        y: -Math.cos(azRad) * Math.cos(altRad),
-        z: sinAlt,
-      };
+      const sunDir = sunVectorEnuFromSouthAzimuth(sun.azimuthDeg, sun.altitudeDeg);
 
       // Rigorous PSH normalization: weighted integral of horizontal irradiance strictly equals target PSH * 365 * 1000 Wh/m²
       const ghiProxyWh =
@@ -2336,15 +2330,8 @@ export function generateDaylightSunDirections(
       const sun = calculateSunPathPosition(latitude, day, h);
       if (!sun.isDaylight || sun.altitudeDeg < 5.0) continue;
 
-      const altRad = (sun.altitudeDeg * Math.PI) / 180.0;
-      const azRad = (sun.azimuthDeg * Math.PI) / 180.0;
-
       // Unit vector FROM point TO sun in ENU:
-      directions.push({
-        x: -Math.sin(azRad) * Math.cos(altRad),
-        y: -Math.cos(azRad) * Math.cos(altRad),
-        z: Math.sin(altRad),
-      });
+      directions.push(sunVectorEnuFromSouthAzimuth(sun.azimuthDeg, sun.altitudeDeg));
     }
   }
 
