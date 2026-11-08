@@ -23,6 +23,7 @@ export interface EnvironmentalAgingInput {
   pvTechnology?: 'topcon' | 'perc' | 'hjt';
   dustDepositionRatePctPerDay?: number; // e.g. 0.20%/day in arid zones
   siteTiltDeg?: number;
+  distanceToCoastKm?: number;
 }
 
 export interface PvEnvironmentalImpact {
@@ -36,6 +37,8 @@ export interface PvEnvironmentalImpact {
   soilingWashOffEfficiencyPct: number; // lower at flat roof slopes
   environmentalRiskSummaryFa: string;
   environmentalRiskSummaryEn: string;
+  saltMistSeverity?: 'severe_coastal' | 'moderate_coastal' | 'inland_negligible';
+  saltMistPvDegradationAdderPct?: number;
 }
 
 export interface InverterEnvironmentalImpact {
@@ -51,6 +54,7 @@ export interface InverterEnvironmentalImpact {
   recommendedReplacementYear: number | null; // e.g. Year 10 for outdoor harsh desert, null if indoor
   inverterStatusSummaryFa: string;
   inverterStatusSummaryEn: string;
+  inverterAnnualEnergyDeratePct?: number;
 }
 
 export interface EnvironmentalAgingResult {
@@ -105,6 +109,29 @@ export function calculateEnvironmentalAging(input: EnvironmentalAgingInput): Env
     washOffEfficiency = 90.0;
   }
 
+  // Salt Mist Corrosion (IEC 61701) based on distance to coast
+  let saltMistSeverity: 'severe_coastal' | 'moderate_coastal' | 'inland_negligible' = 'inland_negligible';
+  let saltMistPvDegradationAdderPct = 0.0;
+  let coastalInverterLifespanReductionYears = 0;
+
+  if (typeof input.distanceToCoastKm === 'number' && Number.isFinite(input.distanceToCoastKm) && input.distanceToCoastKm >= 0) {
+    if (input.distanceToCoastKm <= 1.0) {
+      saltMistSeverity = 'severe_coastal';
+      saltMistPvDegradationAdderPct = 0.15;
+      coastalInverterLifespanReductionYears = 2;
+    } else if (input.distanceToCoastKm <= 5.0) {
+      saltMistSeverity = 'moderate_coastal';
+      saltMistPvDegradationAdderPct = 0.08;
+      coastalInverterLifespanReductionYears = 1;
+    } else {
+      saltMistSeverity = 'inland_negligible';
+      saltMistPvDegradationAdderPct = 0.0;
+      coastalInverterLifespanReductionYears = 0;
+    }
+  }
+
+  const effectiveDegradationPct = Number((baseDegradationPct + saltMistPvDegradationAdderPct).toFixed(2));
+
   // Operating cell temperature at peak noon (G = 1000 W/m²):
   // T_cell = T_amb + Delta_T_mount + (NOCT - 20) * (1000 / 800)
   const cellTempHotC = Number((tAmbMax + mountingDeltaT + (noct - 20.0) * (1000.0 / 800.0)).toFixed(1));
@@ -112,11 +139,11 @@ export function calculateEnvironmentalAging(input: EnvironmentalAgingInput): Env
   const pvThermalLossPct = Number((gammaPmp * deltaTFromStc).toFixed(2));
 
   // 25-Year capacity retention & useful life:
-  // Capacity(25y) = (1 - baseDegradationPct / 100)^25
-  const retention25y = Number((Math.pow(1.0 - baseDegradationPct / 100.0, 25) * 100.0).toFixed(1));
+  // Capacity(25y) = (1 - effectiveDegradationPct / 100)^25
+  const retention25y = Number((Math.pow(1.0 - effectiveDegradationPct / 100.0, 25) * 100.0).toFixed(1));
   // Lifespan until 80% remaining capacity:
   // 0.80 = (1 - D)^N => N = ln(0.80) / ln(1 - D)
-  const usefulLifespanYears = Math.min(35, Math.round(Math.log(0.80) / Math.log(1.0 - baseDegradationPct / 100.0)));
+  const usefulLifespanYears = Math.min(35, Math.round(Math.log(0.80) / Math.log(1.0 - effectiveDegradationPct / 100.0)));
 
   // Annual Soiling Loss Estimation
   // Kimber model base annual loss (~4.0% in Iran) scaled by dust rate & wash-off
@@ -180,7 +207,16 @@ export function calculateEnvironmentalAging(input: EnvironmentalAgingInput): Env
     // Base L0 = 15 years at internal capacitor temp 55°C
     const internalCapTemp = tAmbMax + 20.0 + (heatsinkFoulingPct > 0 ? 6.0 : 0.0);
     const lifeRatio = Math.pow(2.0, (55.0 - internalCapTemp) / 10.0);
-    inverterLifespan = Math.max(8, Math.min(15, Math.round(15.0 * lifeRatio)));
+    let rawInverterLifespan = Math.max(8, Math.min(15, Math.round(15.0 * lifeRatio)));
+
+    if (!isInstalledIndoors && coastalInverterLifespanReductionYears > 0) {
+      if (coastalInverterLifespanReductionYears === 2) {
+        rawInverterLifespan = Math.max(6, rawInverterLifespan - 2);
+      } else if (coastalInverterLifespanReductionYears === 1) {
+        rawInverterLifespan = Math.max(7, rawInverterLifespan - 1);
+      }
+    }
+    inverterLifespan = rawInverterLifespan;
 
     if (inverterLifespan <= 11) {
       recommendedReplacementYear = Math.max(9, inverterLifespan);
@@ -246,13 +282,15 @@ export function calculateEnvironmentalAging(input: EnvironmentalAgingInput): Env
       mountingThermalOffsetDeltaTC: mountingDeltaT,
       effectiveOperatingCellTempHotC: cellTempHotC,
       thermalPowerLossPct: pvThermalLossPct,
-      annualDegradationPct: baseDegradationPct,
+      annualDegradationPct: effectiveDegradationPct,
       twentyFiveYearCapacityRetentionPct: retention25y,
       expectedUsefulLifespanYears: usefulLifespanYears,
       soilingLossAnnualPct: pvSoilingLossAnnualPct,
       soilingWashOffEfficiencyPct: washOffEfficiency,
       environmentalRiskSummaryFa: pvRiskSummaryFa,
       environmentalRiskSummaryEn: pvRiskSummaryEn,
+      saltMistSeverity,
+      saltMistPvDegradationAdderPct,
     },
     inverterImpact: {
       isInstalledIndoors,
@@ -267,6 +305,7 @@ export function calculateEnvironmentalAging(input: EnvironmentalAgingInput): Env
       recommendedReplacementYear,
       inverterStatusSummaryFa: invStatusSummaryFa,
       inverterStatusSummaryEn: invStatusSummaryEn,
+      inverterAnnualEnergyDeratePct: Number((totalInverterDeratePct * 0.35).toFixed(2)),
     },
     combinedLifetimeEnergyPenaltyPct,
     mitigationRecommendationsFa,
