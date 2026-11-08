@@ -159,5 +159,6 @@ git tag remediation/phase-01-approved
 | فاز | پرامپت نوشته شد | وضعیت |
 |---|---|---|
 | ۱ | ✅ `PHASE-01-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `91b9b3b` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
-| ۲ | ✅ `PHASE-02-PROMPT.fa.md` | آمادهٔ تحویل — در انتظار اجرا |
-| ۳…۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
+| ۲ | ✅ `PHASE-02-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `64e0ede` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
+| ۳ | ✅ `PHASE-03-PROMPT.fa.md` | آمادهٔ تحویل — در انتظار اجرا |
+| ۴…۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
