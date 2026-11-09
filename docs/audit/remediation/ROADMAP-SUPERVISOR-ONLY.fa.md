@@ -164,7 +164,7 @@ git tag remediation/phase-01-approved
 | ۴ | ✅ `PHASE-04-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `bc1a978` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۵ | ✅ `PHASE-05-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `49b89cc` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۶ | ✅ `PHASE-06-PROMPT.fa.md` | ✅ دروازهٔ پایان `832805e`: `APPROVED` پس از اصلاح و بازتولید مستقل |
-| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `3d1406e`: `REJECTED`؛ یخبندان معلوم pier و exhaustion برمز اصلاح شد، اما شمع گروتی سنگی با یخبندان نامعلوم همچنان false/true و ظرفیت bond فرضی safe است |
+| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `810c122`: `REJECTED`؛ شرط fingerprint تست E8 در موتور تولید نبود frost را کاذب ایمن می‌کند؛ تعارض تست منجمد باید تشدید شود نه دور زده شود |
 | ۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
 
 ### ثبت دلایل رد دروازهٔ پایان فاز ۶
