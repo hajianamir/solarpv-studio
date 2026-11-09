@@ -634,6 +634,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             </label>
 
             <button
+              id="report-modal-close-btn"
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             >
