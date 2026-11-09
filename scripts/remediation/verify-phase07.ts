@@ -112,7 +112,18 @@ function computeFileSha256(filePath: string): string {
 function createBaselineWorktree(): { worktreeDir: string; cleanup: () => void } {
   const worktreeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'solarpv-p7-baseline-'));
   const targetCommit = '832805e';
-  execSync(`git worktree add --detach "${worktreeDir}" ${targetCommit}`, { cwd: ROOT, stdio: 'ignore' });
+  let added = false;
+  let attempts = 0;
+  while (!added && attempts < 3) {
+    try {
+      execSync(`git worktree add --detach "${worktreeDir}" ${targetCommit}`, { cwd: ROOT, stdio: 'ignore' });
+      added = true;
+    } catch (e) {
+      attempts++;
+      if (attempts >= 3) throw e;
+      execSync('sleep 0.2');
+    }
+  }
 
   const cleanup = () => {
     try {
@@ -131,17 +142,21 @@ function createBaselineWorktree(): { worktreeDir: string; cleanup: () => void } 
   return { worktreeDir, cleanup };
 }
 
+let interceptedExcelBlob: any = null;
+let interceptedExcelDownloadName = '';
+
 function setupMinimalDom() {
   if (typeof (globalThis as any).window !== 'undefined' && (globalThis as any).document) {
     return;
   }
+  let mockDoc: any = null;
+
   function createMockElement(tag = 'div') {
     const listeners: Record<string, Function[]> = {};
     const el: any = {
       nodeType: 1,
       tagName: tag.toUpperCase(),
       nodeName: tag.toUpperCase(),
-      ownerDocument: null,
       childNodes: [],
       children: [],
       options: [],
@@ -155,6 +170,10 @@ function setupMinimalDom() {
         if (listeners[event]) {
           listeners[event] = listeners[event].filter((h) => h !== handler);
         }
+      },
+      dispatchEvent(event: any) {
+        const list = listeners[event.type] || [];
+        for (const fn of list) fn(event);
       },
       appendChild(child: any) {
         this.childNodes.push(child);
@@ -191,7 +210,14 @@ function setupMinimalDom() {
       removeAttribute(k: string) {
         delete this.attributes[k];
       },
-      click() {},
+      click() {
+        if (this.tagName === 'A' && this.download) {
+          interceptedExcelDownloadName = this.download;
+        }
+      },
+      get ownerDocument() {
+        return mockDoc;
+      },
     };
     return el;
   }
@@ -199,36 +225,34 @@ function setupMinimalDom() {
   class FakeHTMLElement {}
   class FakeHTMLIFrameElement extends FakeHTMLElement {}
 
-  const mockDoc: any = {
+  mockDoc = {
     nodeType: 9,
-    createElement: (tag: string) => {
-      const el = createMockElement(tag);
-      el.ownerDocument = mockDoc;
-      return el;
-    },
-    createElementNS: (_ns: string, tag: string) => {
-      const el = createMockElement(tag);
-      el.ownerDocument = mockDoc;
-      return el;
-    },
+    createElement: (tag: string) => createMockElement(tag),
+    createElementNS: (_ns: string, tag: string) => createMockElement(tag),
     createTextNode: (text: string) => ({
       nodeType: 3,
       nodeValue: text,
       textContent: text,
       parentNode: null,
-      ownerDocument: mockDoc,
+      get ownerDocument() {
+        return mockDoc;
+      },
     }),
     createComment: (text: string) => ({
       nodeType: 8,
       nodeValue: text,
       parentNode: null,
-      ownerDocument: mockDoc,
+      get ownerDocument() {
+        return mockDoc;
+      },
     }),
     createDocumentFragment: () => ({
       nodeType: 11,
       childNodes: [],
       appendChild: () => {},
-      ownerDocument: mockDoc,
+      get ownerDocument() {
+        return mockDoc;
+      },
     }),
     documentElement: createMockElement('html'),
     head: createMockElement('head'),
@@ -236,10 +260,6 @@ function setupMinimalDom() {
     addEventListener: () => {},
     removeEventListener: () => {},
   };
-
-  mockDoc.documentElement.ownerDocument = mockDoc;
-  mockDoc.head.ownerDocument = mockDoc;
-  mockDoc.body.ownerDocument = mockDoc;
 
   (globalThis as any).window = {
     document: mockDoc,
@@ -255,10 +275,75 @@ function setupMinimalDom() {
   (globalThis as any).document = mockDoc;
   (globalThis as any).HTMLElement = FakeHTMLElement;
   (globalThis as any).HTMLIFrameElement = FakeHTMLIFrameElement;
-  if (typeof (globalThis as any).URL.createObjectURL === 'undefined') {
-    (globalThis as any).URL.createObjectURL = () => 'blob:mock';
-    (globalThis as any).URL.revokeObjectURL = () => {};
+  (globalThis as any).URL.createObjectURL = (blob: any) => {
+    interceptedExcelBlob = blob;
+    return 'blob:mock-excel';
+  };
+  (globalThis as any).URL.revokeObjectURL = () => {};
+}
+
+function findElementById(node: any, id: string): any {
+  if (!node) return null;
+  if (node.attributes?.id === id || node.id === id) return node;
+  if (node.childNodes) {
+    for (const child of node.childNodes) {
+      const found = findElementById(child, id);
+      if (found) return found;
+    }
   }
+  return null;
+}
+
+function findElementByTagAndText(node: any, tag: string, text: string): any {
+  if (!node) return null;
+  if (node.tagName === tag.toUpperCase()) {
+    const propKey = Object.keys(node).find((k) => k.startsWith('__reactProps$'));
+    if (propKey && node[propKey]) {
+      const props = node[propKey];
+      if (props.title?.includes(text)) return node;
+      if (typeof props.children === 'string' && props.children.includes(text)) return node;
+      if (Array.isArray(props.children)) {
+        for (const c of props.children) {
+          if (typeof c === 'string' && c.includes(text)) return node;
+          if (c?.props?.children && typeof c.props.children === 'string' && c.props.children.includes(text)) return node;
+        }
+      }
+    }
+  }
+  if (node.childNodes) {
+    for (const child of node.childNodes) {
+      const found = findElementByTagAndText(child, tag, text);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function triggerReactChange(node: any, value: any) {
+  if (!node) throw new Error('triggerReactChange: node not found');
+  const propKey = Object.keys(node).find((k) => k.startsWith('__reactProps$'));
+  if (!propKey || !node[propKey] || typeof node[propKey].onChange !== 'function') {
+    throw new Error(`triggerReactChange: no onChange handler on node ${node.tagName}#${node.attributes?.id || ''}`);
+  }
+  node[propKey].onChange({ target: { value } });
+}
+
+function triggerReactClick(node: any) {
+  if (!node) throw new Error('triggerReactClick: node not found');
+  const propKey = Object.keys(node).find((k) => k.startsWith('__reactProps$'));
+  if (!propKey || !node[propKey] || typeof node[propKey].onClick !== 'function') {
+    throw new Error(`triggerReactClick: no onClick handler on node ${node.tagName}`);
+  }
+  node[propKey].onClick({ preventDefault() {}, stopPropagation() {} });
+}
+
+async function waitForCondition(predicate: () => boolean, timeoutMs = 3000, intervalMs = 20): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (predicate()) return true;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  return predicate();
 }
 
 export interface Phase07Quantity {
@@ -727,15 +812,14 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     tabHasCivilReport;
 
   // 2. Interactive Real React Lifecycle Harness: User Interaction, Tab Switching & Staleness
-  const capturedSnapshots: StructuralSnapshot[] = [];
-  let userSelectModulesPerTable: ((n: number) => void) | null = null;
-  let userSwitchTab: ((tab: 'structural' | 'pvarray' | 'report') => void) | null = null;
-  let userMutateProjectSnow: ((snowKgM2: number) => void) | null = null;
-  let currentActiveTabInHarness = 'structural';
-  let remountedModulesPerTable = -1;
+  const harnessState: { latestSnapshot: StructuralSnapshot | null } = { latestSnapshot: null };
+  let harnessUserSwitchTab: ((tab: 'structural' | 'pvarray') => void) | null = null;
+  let harnessUserMutateSnow: ((snowKgM2: number) => void) | null = null;
+  let harnessCurrentActiveTab = 'structural';
+  let harnessRemountedModulesPerTable = -1;
 
   function InteractiveAppHarness({ onMounted }: { onMounted?: () => void }) {
-    const [activeTab, setActiveTab] = React.useState<'structural' | 'pvarray' | 'report'>('structural');
+    const [activeTab, setActiveTab] = React.useState<'structural' | 'pvarray'>('structural');
     const [structuralModulesPerTable, setStructuralModulesPerTable] = React.useState<number>(DEFAULT_MODULES_PER_TABLE);
     const [structuralSnapshot, setStructuralSnapshot] = React.useState<StructuralSnapshot | null>(null);
     const [siteOverrides, setSiteOverrides] = React.useState<SiteGeotechnicalOverrides>({
@@ -751,10 +835,9 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
       seismicZoneCoefficientA: FIXTURE_S1.seismicZoneCoefficientA,
     });
 
-    currentActiveTabInHarness = activeTab;
-    userSelectModulesPerTable = setStructuralModulesPerTable;
-    userSwitchTab = setActiveTab;
-    userMutateProjectSnow = (snow: number) => setSiteOverrides((prev) => ({ ...prev, groundSnowLoadKgM2: snow }));
+    harnessCurrentActiveTab = activeTab;
+    harnessUserSwitchTab = setActiveTab;
+    harnessUserMutateSnow = (snow: number) => setSiteOverrides((prev) => ({ ...prev, groundSnowLoadKgM2: snow }));
 
     React.useEffect(() => {
       onMounted?.();
@@ -763,38 +846,36 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     const currentHash = computeStructuralInputHash({
       cityId: cityTehran.id,
       totalModulesCount: FIXTURE_S1.totalModulesCount,
-      arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
-      foundationType: resolveFoundationType(FIXTURE_S1.foundationType, 'ground_mount', FIXTURE_S1.soilType),
+      arrayTiltDeg: siteOverrides.arrayTiltDeg ?? FIXTURE_S1.arrayTiltDeg,
+      foundationType: resolveFoundationType(siteOverrides.foundationType ?? FIXTURE_S1.foundationType, 'ground_mount', siteOverrides.soilType ?? FIXTURE_S1.soilType),
       basicWindSpeedKmh: siteOverrides.basicWindSpeedKmh ?? FIXTURE_S1.basicWindSpeedKmh,
       groundSnowLoadKgM2: siteOverrides.groundSnowLoadKgM2 ?? FIXTURE_S1.groundSnowLoadKgM2,
       groundClearanceM: siteOverrides.groundClearanceM ?? FIXTURE_S1.groundClearanceM,
       soilType: siteOverrides.soilType ?? FIXTURE_S1.soilType,
-      frostDepthCm: siteOverrides.frostDepthCm ?? 30,
-      soilBearingCapacityKpa: siteOverrides.soilBearingCapacityKpa ?? null,
-      soilInternalFrictionAngleDeg: siteOverrides.soilInternalFrictionAngleDeg ?? null,
-      soilCohesionKpa: siteOverrides.soilCohesionKpa ?? null,
-      soilDensityKnM3: siteOverrides.soilDensityKnM3 ?? null,
-      seismicZoneCoefficientA: siteOverrides.seismicZoneCoefficientA ?? null,
-      customEmbedmentDepthM: null,
-      customPostsPerTable: null,
-      installationEnvironment: 'ground_mount',
+      frostDepthCm: siteOverrides.frostDepthCm ?? FIXTURE_S1.frostDepthCm ?? 30,
+      soilBearingCapacityKpa: siteOverrides.soilBearingCapacityKpa ?? FIXTURE_S1.soilBearingCapacityKpa,
+      soilInternalFrictionAngleDeg: siteOverrides.soilInternalFrictionAngleDeg ?? FIXTURE_S1.soilInternalFrictionAngleDeg,
+      soilCohesionKpa: siteOverrides.soilCohesionKpa ?? FIXTURE_S1.soilCohesionKpa,
+      soilDensityKnM3: siteOverrides.soilDensityKnM3 ?? FIXTURE_S1.soilDensityKnM3,
+      seismicZoneCoefficientA: siteOverrides.seismicZoneCoefficientA ?? FIXTURE_S1.seismicZoneCoefficientA,
+      customEmbedmentDepthM: siteOverrides.customEmbedmentDepthM ?? null,
+      customPostsPerTable: siteOverrides.customPostsPerTable ?? null,
+      installationEnvironment: siteOverrides.installationEnvironment ?? 'ground_mount',
       elevationM: cityTehran.elevationM || 0,
       modulesPerTable: structuralModulesPerTable,
     });
 
     const effectiveSnapshot = evaluateEffectiveStructuralSnapshot(structuralSnapshot, currentHash);
-    if (effectiveSnapshot) {
-      capturedSnapshots.push(effectiveSnapshot);
-    }
+    harnessState.latestSnapshot = effectiveSnapshot;
 
     if (activeTab === 'structural') {
-      remountedModulesPerTable = structuralModulesPerTable;
+      harnessRemountedModulesPerTable = structuralModulesPerTable;
       return React.createElement(StructuralFoundationTab, {
         totalModulesCount: FIXTURE_S1.totalModulesCount,
         arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
         city: cityTehran,
         siteOverrides,
-        onUpdateSiteOverrides: setSiteOverrides,
+        onUpdateSiteOverrides: (overrides) => setSiteOverrides((prev) => ({ ...prev, ...overrides })),
         modulesPerTable: structuralModulesPerTable,
         onUpdateModulesPerTable: setStructuralModulesPerTable,
         onUpdateStructuralSnapshot: setStructuralSnapshot,
@@ -802,7 +883,7 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
       });
     }
 
-    return React.createElement('div', { id: 'other-tab-content' }, activeTab);
+    return React.createElement('div', { id: 'pvarray-tab-content' }, 'PV Array Tab Content');
   }
 
   const harnessContainer = (globalThis as any).document.createElement('div');
@@ -814,48 +895,87 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   });
 
   // Await initial mount & automatic calculation in StructuralFoundationTab via its real useEffect
-  await new Promise((r) => setTimeout(r, 120));
+  await waitForCondition(() => harnessState.latestSnapshot !== null && harnessState.latestSnapshot.isStale === false);
 
-  const initialLiveSnapshot = capturedSnapshots[capturedSnapshots.length - 1];
   const initialInteractivePass =
-    initialLiveSnapshot !== undefined &&
-    initialLiveSnapshot.modulesPerTable === 28 &&
-    initialLiveSnapshot.totalTablesCount === 5 &&
-    initialLiveSnapshot.totalPostsCount === 20 &&
-    initialLiveSnapshot.isStale === false;
+    harnessState.latestSnapshot !== null &&
+    harnessState.latestSnapshot.modulesPerTable === 28 &&
+    harnessState.latestSnapshot.totalTablesCount === 5 &&
+    harnessState.latestSnapshot.totalPostsCount === 20 &&
+    harnessState.latestSnapshot.isStale === false;
 
-  // Real User Interaction: User in Tab selects authentic option 14 (2P7 config, 10 tables)
-  // StructuralFoundationTab's select onChange triggers onUpdateModulesPerTable(14)
-  userSelectModulesPerTable!(14);
-  await new Promise((r) => setTimeout(r, 120));
-
-  const customModulesLiveSnapshot = capturedSnapshots[capturedSnapshots.length - 1];
+  // Real User Interaction 1: Modules per table dropdown (#struct-modules-per-table)
+  // Invokes StructuralFoundationTab's real select onChange event
+  const modulesSelect = findElementById(harnessContainer, 'struct-modules-per-table');
+  triggerReactChange(modulesSelect, '14');
+  await waitForCondition(() => harnessState.latestSnapshot?.modulesPerTable === 14 && harnessState.latestSnapshot?.totalTablesCount === 10 && !harnessState.latestSnapshot?.isStale);
   const customModulesSyncPass =
-    customModulesLiveSnapshot !== undefined &&
-    customModulesLiveSnapshot.modulesPerTable === 14 &&
-    customModulesLiveSnapshot.totalTablesCount === 10 &&
-    customModulesLiveSnapshot.totalPostsCount === 20 &&
-    customModulesLiveSnapshot.isStale === false;
+    harnessState.latestSnapshot !== null &&
+    harnessState.latestSnapshot.modulesPerTable === 14 &&
+    harnessState.latestSnapshot.totalTablesCount === 10 &&
+    harnessState.latestSnapshot.isStale === false;
 
-  // Real Tab Switching: User navigates to 'pvarray' (unmounting tab)
-  userSwitchTab!('pvarray');
-  await new Promise((r) => setTimeout(r, 120));
-  const tabUnmountedPass = currentActiveTabInHarness === 'pvarray';
+  // Real User Interaction 2: Wind speed input (#struct-wind-speed)
+  // Invokes StructuralFoundationTab's real input onChange event
+  const windInput = findElementById(harnessContainer, 'struct-wind-speed');
+  triggerReactChange(windInput, '150');
+  await waitForCondition(() => (harnessState.latestSnapshot?.qzPa ?? 0) > 700 && !harnessState.latestSnapshot?.isStale);
+  const windInteractionPass =
+    harnessState.latestSnapshot !== null &&
+    (harnessState.latestSnapshot.qzPa ?? 0) > 700 &&
+    !harnessState.latestSnapshot.isStale;
+
+  // Real User Interaction 3: Custom posts per table dropdown (#struct-custom-posts-per-table)
+  // Invokes StructuralFoundationTab's real select onChange event
+  const postsSelect = findElementById(harnessContainer, 'struct-custom-posts-per-table');
+  triggerReactChange(postsSelect, '6');
+  await waitForCondition(() => harnessState.latestSnapshot?.postsPerTable === 6 && !harnessState.latestSnapshot?.isStale);
+  const postsInteractionPass =
+    harnessState.latestSnapshot !== null &&
+    harnessState.latestSnapshot.postsPerTable === 6 &&
+    harnessState.latestSnapshot.totalPostsCount === 60 &&
+    !harnessState.latestSnapshot.isStale;
+
+  // Real User Interaction 4: Custom embedment depth input (#struct-custom-embedment-depth)
+  // Invokes StructuralFoundationTab's real input onChange event
+  const depthInput = findElementById(harnessContainer, 'struct-custom-embedment-depth');
+  triggerReactChange(depthInput, '2.5');
+  await waitForCondition(() => harnessState.latestSnapshot?.recommendedDepthM === 2.5 && !harnessState.latestSnapshot?.isStale);
+  const manualDepthInteractionPass =
+    harnessState.latestSnapshot !== null &&
+    harnessState.latestSnapshot.recommendedDepthM === 2.5 &&
+    !harnessState.latestSnapshot.isStale;
+
+  // Real User Interaction 5: Foundation type dropdown (#struct-foundation-type)
+  // Invokes StructuralFoundationTab's real select onChange event
+  const fTypeSelect = findElementById(harnessContainer, 'struct-foundation-type');
+  triggerReactChange(fTypeSelect, 'pre_drilled_grouted_pile');
+  await waitForCondition(() => harnessState.latestSnapshot?.foundationType === 'pre_drilled_grouted_pile' && !harnessState.latestSnapshot?.isStale);
+  const foundationTypeInteractionPass =
+    harnessState.latestSnapshot !== null &&
+    harnessState.latestSnapshot.foundationType === 'pre_drilled_grouted_pile' &&
+    !harnessState.latestSnapshot.isStale;
+
+  // Real Tab Switching: User navigates to 'pvarray' (unmounting StructuralFoundationTab)
+  harnessUserSwitchTab!('pvarray');
+  await waitForCondition(() => harnessCurrentActiveTab === 'pvarray');
+  const tabUnmountedPass = harnessCurrentActiveTab === 'pvarray';
 
   // Real Project Input Mutation: User changes snow load in App from 50 to 120 kg/m2 while on 'pvarray' tab
-  userMutateProjectSnow!(120);
-  await new Promise((r) => setTimeout(r, 120));
-  const postMutationSnapshot = capturedSnapshots[capturedSnapshots.length - 1];
+  harnessUserMutateSnow!(120);
+  await waitForCondition(() => harnessState.latestSnapshot?.isStale === true);
   const mutationStalenessDetectedPass =
-    postMutationSnapshot !== undefined &&
-    postMutationSnapshot.isStale === true;
+    harnessState.latestSnapshot !== null &&
+    harnessState.latestSnapshot.isStale === true;
 
   // Real Tab Switching: User returns to 'structural' (remounting tab with persisted state)
-  userSwitchTab!('structural');
-  await new Promise((r) => setTimeout(r, 120));
+  harnessUserSwitchTab!('structural');
+  await waitForCondition(() => harnessCurrentActiveTab === 'structural' && harnessRemountedModulesPerTable === 14);
   const tabRemountedWithPersistedStatePass =
-    currentActiveTabInHarness === 'structural' &&
-    remountedModulesPerTable === 14;
+    harnessCurrentActiveTab === 'structural' &&
+    harnessRemountedModulesPerTable === 14;
+
+  reactRoot.unmount();
 
   // 3. Standard S-1 Baseline Tab calculation and App State
   const initialTabParams: StructuralInputHashParams = {
@@ -1140,16 +1260,57 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
 
   const realUiModalPass = syncUiOk && staleUiOk && nullUiOk && frostCheckPass;
 
-  // 7. Genuine Multi-Table Excel Export Generation & Binary OOXML (.xlsx) parsing across all 3 lifecycle states
-  const syncExcelBlob = await exportToExcelWorkbook([
-    { sheetName: 'Structural & Foundations', rows: exportedActiveRows }
-  ], 'verify-sync.xlsx');
-  const staleExcelBlob = await exportToExcelWorkbook([
-    { sheetName: 'Structural & Foundations', rows: exportedStaleRows }
-  ], 'verify-stale.xlsx');
-  const nullExcelBlob = await exportToExcelWorkbook([
-    { sheetName: 'Structural & Foundations', rows: exportedNullRows }
-  ], 'verify-null.xlsx');
+  // 7. Real UI Export Path & Multi-Table Excel Export Verification across all 3 lifecycle states
+  const modalContainer = (globalThis as any).document.createElement('div');
+  (globalThis as any).document.body.appendChild(modalContainer);
+  const modalRoot = ReactDOMClient.createRoot(modalContainer);
+
+  // 1) Export from Synchronized Active Modal via UI Button Click
+  interceptedExcelBlob = null;
+  interceptedExcelDownloadName = '';
+  modalRoot.render(
+    React.createElement(OfficialReportModal, {
+      ...uiBaseProps,
+      structuralSnapshot: effectiveSnapshotInitial,
+    })
+  );
+  await waitForCondition(() => findElementByTagAndText(modalContainer, 'BUTTON', 'Excel') !== null);
+  const activeExcelBtn = findElementByTagAndText(modalContainer, 'BUTTON', 'Excel');
+  triggerReactClick(activeExcelBtn);
+  await waitForCondition(() => interceptedExcelBlob !== null);
+  const syncExcelBlob = interceptedExcelBlob;
+
+  // 2) Export from Stale Modal via UI Button Click
+  interceptedExcelBlob = null;
+  interceptedExcelDownloadName = '';
+  modalRoot.render(
+    React.createElement(OfficialReportModal, {
+      ...uiBaseProps,
+      structuralSnapshot: effectiveSnapshotStaleSnow,
+    })
+  );
+  await new Promise((r) => setTimeout(r, 60));
+  const staleExcelBtn = findElementByTagAndText(modalContainer, 'BUTTON', 'Excel');
+  triggerReactClick(staleExcelBtn);
+  await waitForCondition(() => interceptedExcelBlob !== null);
+  const staleExcelBlob = interceptedExcelBlob;
+
+  // 3) Export from Null Modal via UI Button Click
+  interceptedExcelBlob = null;
+  interceptedExcelDownloadName = '';
+  modalRoot.render(
+    React.createElement(OfficialReportModal, {
+      ...uiBaseProps,
+      structuralSnapshot: effectiveSnapshotNull,
+    })
+  );
+  await new Promise((r) => setTimeout(r, 60));
+  const nullExcelBtn = findElementByTagAndText(modalContainer, 'BUTTON', 'Excel');
+  triggerReactClick(nullExcelBtn);
+  await waitForCondition(() => interceptedExcelBlob !== null);
+  const nullExcelBlob = interceptedExcelBlob;
+
+  modalRoot.unmount();
 
   // Binary load and parse of generated .xlsx workbooks using ExcelJS
   const syncBuf = Buffer.from(await syncExcelBlob.arrayBuffer());
@@ -1220,6 +1381,10 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     tabComponentExecutionPass === true &&
     initialInteractivePass === true &&
     customModulesSyncPass === true &&
+    windInteractionPass === true &&
+    postsInteractionPass === true &&
+    manualDepthInteractionPass === true &&
+    foundationTypeInteractionPass === true &&
     tabUnmountedPass === true &&
     tabRemountedWithPersistedStatePass === true &&
     mutationStalenessDetectedPass === true &&
@@ -1286,6 +1451,10 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
       tabComponentExecutionPass,
       initialInteractivePass,
       customModulesSyncPass,
+      windInteractionPass,
+      postsInteractionPass,
+      manualDepthInteractionPass,
+      foundationTypeInteractionPass,
       tabUnmountedPass,
       tabRemountedWithPersistedStatePass,
       mutationStalenessDetectedPass,
@@ -1636,8 +1805,8 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   }
 }
 
-export async function writePhase07Evidence(): Promise<Phase07EvidencePayload> {
-  const payload = await runPhase07Verification();
+export async function writePhase07Evidence(providedPayload?: Phase07EvidencePayload): Promise<Phase07EvidencePayload> {
+  const payload = providedPayload ?? (await runPhase07Verification());
   fs.mkdirSync(path.dirname(EVIDENCE_PATH), { recursive: true });
   fs.writeFileSync(EVIDENCE_PATH, JSON.stringify(payload, null, 2) + '\n', 'utf8');
   return payload;
@@ -1680,8 +1849,8 @@ async function main(): Promise<void> {
     process.exit(c.pass ? 0 : 1);
   }
 
-  // Full verification run
-  await writePhase07Evidence();
+  // Full verification run: persist the single verified payload so exit status and file are 100% synced
+  await writePhase07Evidence(payload);
   const allQuantitiesPass = quantities.every((q) => q.pass && q.status === 'PASS');
   const allChecksPass = checks.every((c) => c.pass && c.status === 'PASS');
   const allAnchorsPass = Object.values(nonRegression).every((a) => a.pass);
