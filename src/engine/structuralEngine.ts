@@ -594,18 +594,7 @@ export function calculateStructuralAndFoundations(
     foundationType === 'rooftop_ballasted_block' ||
     foundationType === 'surface_ballasted_block';
 
-  // Benchmark legacy test E8-STRUCT-1 isolation:
-  // E8-STRUCT-1 exercises rock-socket compact depth (L<=1.1m) and bond pullout under 130 km/h wind & 25 deg tilt
-  // without specifying frost depth. For all standard project sites and missing-frost audits, missing frost depth
-  // on ground foundations must evaluate to unassessed (isFrostDepthRespected=false, isStructurallySafe=false).
-  const isBenchmarkE8 =
-    foundationType === 'pre_drilled_grouted_pile' &&
-    soilType === 'rocky_limestone' &&
-    input.basicWindSpeedKmh === 130 &&
-    input.arrayTiltDeg === 25 &&
-    !('frostDepthCm' in input);
-
-  const isFrostDepthRespected = isRooftopOrShed || isBenchmarkE8
+  const isFrostDepthRespected = isRooftopOrShed
     ? true
     : hasFrostData
     ? recommendedDepthM >= bromsResult.minDepthForFrostM
@@ -831,13 +820,10 @@ export function calculateStructuralAndFoundations(
         : `وزن بلوک سطحی در برابر باد ناکافی است. جرم بلوک بتنی را افزایش دهید.`;
       break;
     case 'pre_drilled_grouted_pile': {
-      if (isBenchmarkE8) {
-        isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe;
-        safetyReasonEn =
-          `Pre-drilled rock-socket grout bond capacity estimated per FHWA-NHI-05-039 (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Compact depth (${recommendedDepthM}m) reduces driving refusal; site-specific borehole cores and pullout verification recommended for detailed design.`;
-        safetyReasonFa =
-          `ظرفیت کشش شمع پیش‌حفاری با گروت بر اساس FHWA-NHI-05-039 تخمین زده شد (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). عمق بهینه ${recommendedDepthM} متر مانع پس‌زدگی می‌شود؛ تایید نهایی منوط به گمانه‌زنی است.`;
-      } else if (hasFrostData && !isFrostDepthRespected) {
+      const hasSiteSpecificPulloutData =
+        input.pileUpliftCapacityPerPostKn !== undefined && input.pileUpliftCapacityPerPostKn > 0;
+
+      if (hasFrostData && !isFrostDepthRespected) {
         isStructurallySafe = false;
         safetyReasonEn =
           `[UNASSESSED - Geotechnical Borehole Required] Pre-drilled rock-socket pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth). A soil classification alone does not establish bedrock depth or frost immunity; site-specific borehole logs are required.`;
@@ -849,18 +835,24 @@ export function calculateStructuralAndFoundations(
           `[UNASSESSED - Frost Depth & Geotechnical Borehole Required] Site frost depth is unspecified; pre-drilled rock-socket pile embedment and bond capacity cannot be certified safe against frost heave without site-specific borehole frost depth data.`;
         safetyReasonFa =
           `[ارزیابی‌نشده - نیازمند عمق یخبندان و گمانه ژئوتکنیک] عمق یخبندان ساختگاه نامشخص است؛ گیرداری و مقاومت چسبندگی شمع پیش‌حفاری در سنگ بدون داده‌های گمانه و عمق یخبندان قابل تأیید نیست.`;
+      } else if (!hasSiteSpecificPulloutData) {
+        isStructurallySafe = false;
+        safetyReasonEn =
+          `[UNASSESSED - Pullout Test & Borehole Rock Core Required] Rock-socket grout bond capacity (nominal screening FoS = ${fosUplift}, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post) relies on assumed nominal shear strength (tau_bond = 1.5 MPa per FHWA-NHI-05-039); in-situ borehole rock coring and pullout verification are required to certify structural safety.`;
+        safetyReasonFa =
+          `[ارزیابی‌نشده - نیازمند آزمون کشش درجا و مغزه‌گیری سنگ بستر] ظرفیت چسبندگی شمع پیش‌حفاری با گروت بر اساس تنش برشی فرضی FHWA-NHI-05-039 برآورد شده است (FoS اسمی = ${fosUplift})؛ تأیید نهایی ایمنی سازه منوط به آزمایش کشش درجا و داده‌های مغزه‌گیری سنگ است.`;
       } else {
         const isEmbedmentSufficient = input.customEmbedmentDepthM !== undefined
           ? (input.customEmbedmentDepthM > 0 && isFrostDepthRespected)
           : isFrostDepthRespected;
         isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isFrostDepthRespected && isEmbedmentSufficient;
         safetyReasonEn = isStructurallySafe
-          ? `Pre-drilled rock-socket grout bond capacity estimated per FHWA-NHI-05-039 (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Compact depth (${recommendedDepthM}m) reduces driving refusal; site-specific borehole cores and pullout verification recommended for detailed design.`
+          ? `Pre-drilled rock-socket grout bond capacity verified with site-specific pullout test data (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Frost depth respected and embedment sufficient.`
           : !isFrostDepthRespected
           ? `[UNASSESSED - Geotechnical Borehole Required] Pre-drilled rock-socket pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth).`
           : `Pre-drilled rock-socket grout bond capacity insufficient (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase borehole depth.`;
         safetyReasonFa = isStructurallySafe
-          ? `ظرفیت کشش شمع پیش‌حفاری با گروت بر اساس FHWA-NHI-05-039 تخمین زده شد (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). عمق بهینه ${recommendedDepthM} متر مانع پس‌زدگی می‌شود؛ تایید نهایی منوط به گمانه‌زنی است.`
+          ? `ظرفیت کشش شمع پیش‌حفاری با داده‌های آزمایش کشش درجا تأیید شد (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). عمق نفوذ یخبندان و گیرداری کافی است.`
           : !isFrostDepthRespected
           ? `عمق شمع پیش‌حفاری (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر) است.`
           : `ظرفیت کششی گروت در سنگ ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه یا قطر حفاری را افزایش دهید.`;
