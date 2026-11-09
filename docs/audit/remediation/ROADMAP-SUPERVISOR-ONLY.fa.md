@@ -164,7 +164,7 @@ git tag remediation/phase-01-approved
 | ۴ | ✅ `PHASE-04-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `bc1a978` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۵ | ✅ `PHASE-05-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `49b89cc` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۶ | ✅ `PHASE-06-PROMPT.fa.md` | ✅ دروازهٔ پایان `832805e`: `APPROVED` پس از اصلاح و بازتولید مستقل |
-| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `7d7e759`: `REJECTED`؛ App واقعی mount می‌شود اما C7-05 دو PASS ثابت دارد و جهش قطع پایه و تشخیص stale را نمی‌گیرد؛ جدول ارسالی با evidence مغایر است |
+| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `96279fd`: `REJECTED`؛ آزمون stale و پایه بهبود یافته، ولی P7-08 اختلاف ثابت دارد و جهش خروجی نادرست qz با C7-05 همچنان PASS می‌شود |
 | ۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
 
 ### ثبت دلایل رد دروازهٔ پایان فاز ۶
