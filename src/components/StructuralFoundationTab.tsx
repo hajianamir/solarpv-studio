@@ -50,6 +50,7 @@ import {
 } from '../engine/corrosion/saltCorrosionEngine';
 import {
   createStructuralSnapshot,
+  computeStructuralInputHash,
   type StructuralSnapshot,
 } from '../engine/core/structuralContract';
 
@@ -437,7 +438,22 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   // Synchronize live structural calculation snapshot with top-level state
   useEffect(() => {
     if (onUpdateStructuralSnapshot) {
-      const inputHash = `${city.id}_${modulesCount}_${tiltDeg}_${foundationType}_${basicWindSpeedKmh}_${soilType}_${frostDepthCm}_${customEmbedmentDepthM}`;
+      const inputHash = computeStructuralInputHash({
+        cityId: city.id,
+        totalModulesCount: modulesCount,
+        arrayTiltDeg: tiltDeg,
+        foundationType,
+        basicWindSpeedKmh,
+        groundSnowLoadKgM2,
+        groundClearanceM,
+        soilType,
+        frostDepthCm,
+        customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : null,
+        customPostsPerTable,
+        installationEnvironment,
+        elevationM: city.elevationM || 0,
+        modulesPerTable,
+      });
       const snapshot = createStructuralSnapshot(structResult, foundationType, inputHash);
       onUpdateStructuralSnapshot(snapshot);
     }
@@ -448,9 +464,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     modulesCount,
     tiltDeg,
     basicWindSpeedKmh,
+    groundSnowLoadKgM2,
+    groundClearanceM,
     soilType,
     frostDepthCm,
+    isManualDepth,
     customEmbedmentDepthM,
+    customPostsPerTable,
+    installationEnvironment,
+    city.elevationM,
+    modulesPerTable,
     onUpdateStructuralSnapshot,
   ]);
 

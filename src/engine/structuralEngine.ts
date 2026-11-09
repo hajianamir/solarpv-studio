@@ -403,22 +403,27 @@ export function calculateStructuralAndFoundations(
   let ballastKgPerTable = 0;
 
   if (foundationType === 'rammed_steel_pile') {
-    const reqUpliftDepthM = calculateRequiredEmbedmentForUplift(
-      upliftPerPostKn,
-      soilType,
-      0.15,
-      soilCohesionKpa,
-      soilDensityKnM3,
-      siteFrostDepthM,
-      2.0
-    );
-    const governingDepthCalc = calculateGoverningPileDepth({
-      lateralDepthM: bromsResult.embedmentDepthM,
-      frostDepthM: siteFrostDepthM,
-      upliftRequiredDepthM: reqUpliftDepthM,
-      customEmbedmentDepthM: input.customEmbedmentDepthM,
-    });
-    recommendedDepthM = governingDepthCalc.effectiveRecommendedDepthM;
+    if (input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0) {
+      recommendedDepthM = Number(input.customEmbedmentDepthM.toFixed(2));
+    } else if (input.frostDepthCm !== undefined) {
+      const reqUpliftDepthM = calculateRequiredEmbedmentForUplift(
+        upliftPerPostKn,
+        soilType,
+        0.15,
+        soilCohesionKpa,
+        soilDensityKnM3,
+        siteFrostDepthM,
+        2.0
+      );
+      const governingDepthCalc = calculateGoverningPileDepth({
+        lateralDepthM: bromsResult.embedmentDepthM,
+        frostDepthM: siteFrostDepthM,
+        upliftRequiredDepthM: reqUpliftDepthM,
+      });
+      recommendedDepthM = governingDepthCalc.effectiveRecommendedDepthM;
+    } else {
+      recommendedDepthM = bromsResult.embedmentDepthM;
+    }
     foundationNameFa = 'پایه کوبشی فولادی C شکل گالوانیزه گرم';
     foundationNameEn = 'Hot-Dip Galvanized Rammed Steel C-Pile';
     foundationDimensionsDesc = `پروفیل فولادی ${bromsResult.pileSection} (یا C120×50×25×3.5mm)، عمق کوبش در خاک: ${recommendedDepthM} متر (بدون بتن‌ریزی)`;
@@ -472,22 +477,27 @@ export function calculateStructuralAndFoundations(
     foundationDimensionsDesc = `پایه بتنی مسلح قطر ۴۰ سانتی‌متر، عمق: ${recommendedDepthM} متر با انکربولت‌های M20 گالوانیزه`;
     foundationDimensionsDescEn = `Reinforced concrete cylinder dia 40cm, depth: ${recommendedDepthM} m with M20 HDG anchor bolts`;
   } else if (foundationType === 'ground_screw') {
-    const reqUpliftDepthM = calculateRequiredEmbedmentForUplift(
-      upliftPerPostKn,
-      soilType,
-      0.076,
-      soilCohesionKpa,
-      soilDensityKnM3,
-      siteFrostDepthM,
-      2.0
-    );
-    const governingDepthCalc = calculateGoverningPileDepth({
-      lateralDepthM: bromsResult.embedmentDepthM,
-      frostDepthM: siteFrostDepthM,
-      upliftRequiredDepthM: reqUpliftDepthM,
-      customEmbedmentDepthM: input.customEmbedmentDepthM,
-    });
-    recommendedDepthM = governingDepthCalc.effectiveRecommendedDepthM;
+    if (input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0) {
+      recommendedDepthM = Number(input.customEmbedmentDepthM.toFixed(2));
+    } else if (input.frostDepthCm !== undefined) {
+      const reqUpliftDepthM = calculateRequiredEmbedmentForUplift(
+        upliftPerPostKn,
+        soilType,
+        0.076,
+        soilCohesionKpa,
+        soilDensityKnM3,
+        siteFrostDepthM,
+        2.0
+      );
+      const governingDepthCalc = calculateGoverningPileDepth({
+        lateralDepthM: bromsResult.embedmentDepthM,
+        frostDepthM: siteFrostDepthM,
+        upliftRequiredDepthM: reqUpliftDepthM,
+      });
+      recommendedDepthM = governingDepthCalc.effectiveRecommendedDepthM;
+    } else {
+      recommendedDepthM = Number(Math.max(siteFrostDepthM + 0.5, bromsResult.embedmentDepthM * 0.95).toFixed(2));
+    }
     foundationNameFa = 'شمع‌های پیچشی فولادی (Ground Screws)';
     foundationNameEn = 'Galvanized Continuous Ground Screw';
     foundationDimensionsDesc = `شمع پیچشی گالوانیزه قطر ۷۶mm، طول رزوه ۱۲۰۰mm، عمق نفوذ: ${recommendedDepthM} متر`;

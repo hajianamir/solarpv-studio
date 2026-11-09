@@ -6,8 +6,8 @@
   "codebaseCommit": "arena/f30efcdc-solarpv-studio",
   "baselineCommit": "832805e",
   "contractSource": "src/engine/core/structuralContract.ts",
-  "contractSha256": "cd9968e43cf6ac00b7c235f4a309f5d74a706a6851e9a24fbdc6ed19ab614e20",
-  "harnessSha256": "5e8a415dc8c902bd723265470fcc261fcc8bc2bdfed040d791d162b0c36f6ed8",
+  "contractSha256": "d6fb802800a5089783f746120f7b96c4783652583198de89f6f79aba7949bcc4",
+  "harnessSha256": "963cddcea494ee398a7643faf5feabe5523ae654763682abdb83690d6d0d12bc",
   "overallPass": true,
   "summary": {
     "totalQuantities": 8,
@@ -44,10 +44,10 @@
       "id": "P7-02",
       "case": "S-1-1.2V",
       "unit": "Pa",
-      "before": 833,
+      "before": 833.4,
       "after": 702.71,
-      "delta": -130.29,
-      "beforeSource": "832805e:src/engine/structureRecommendationEngine.ts:243",
+      "delta": -130.69,
+      "beforeSource": "832805e:src/engine/structureRecommendationEngine.ts:recS1Before.sensitivityPlus20Wind.lateralShearPerPostKn (8.49 kN -> 833.40 Pa)",
       "producer": "src/engine/core/structuralContract.ts:calculateWindPressureSensitivity",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-02",
       "pass": true,
@@ -55,7 +55,6 @@
       "details": {
         "elevatedSpeedKmh": 144,
         "baseSpeedKmh": 120,
-        "legacyRecSensFormulaPa": 833,
         "extractedFromBaselineRunPa": 833.4,
         "baselineExecutionShearKn": 8.49,
         "unifiedElevatedQzPa": 702.71,
@@ -174,7 +173,7 @@
       "pass": true,
       "status": "PASS",
       "details": {
-        "snapshotId": "SNAP-STR-S1_SNAPSHOT_HASH",
+        "snapshotId": "SNAP-STR-TEHRAN_140_28_RAMMED_STEEL_PILE_120_50_0_9_DENSE_SAND_GRAVEL_30_NULL_NULL_GROUND_MOUNT_1190_28",
         "isAvailable": true,
         "isStale": false,
         "tabQzPa": 488,
@@ -189,7 +188,7 @@
         "exportActiveCompliance": "SCREENING PASS (Preliminary — Unassessed Modes Excluded)",
         "exportNullStatus": "UNAVAILABLE",
         "exportStaleStatus": "STALE — Inputs Modified",
-        "exportPass": true
+        "lifecyclePass": true
       }
     }
   ],
@@ -241,7 +240,7 @@
       "delta": 0,
       "pass": true,
       "status": "PASS",
-      "definition": "Structural Tab to Report snapshot and live Excel export synchronization (delta == 0 and compliant rows)",
+      "definition": "Structural Tab -> App -> Report/Excel snapshot end-to-end lifecycle, mutation staleness tracking, and export synchronization",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-05"
     },
     {

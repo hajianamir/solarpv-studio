@@ -630,6 +630,46 @@ export function getStructuralHonestyDisclosures(): UnassessedDisclosures {
   };
 }
 
+export interface StructuralInputHashParams {
+  cityId: string;
+  totalModulesCount: number;
+  arrayTiltDeg: number;
+  foundationType: string;
+  basicWindSpeedKmh: number;
+  groundSnowLoadKgM2: number;
+  groundClearanceM: number;
+  soilType: string;
+  frostDepthCm: number;
+  customEmbedmentDepthM?: number | null;
+  customPostsPerTable?: number | null;
+  installationEnvironment?: string | null;
+  elevationM?: number | null;
+  modulesPerTable?: number | null;
+}
+
+/**
+ * Computes canonical input hash covering all structural & foundation design variables.
+ * Shared between StructuralFoundationTab, App, OfficialReportModal, and verification harness.
+ */
+export function computeStructuralInputHash(params: StructuralInputHashParams): string {
+  return [
+    params.cityId,
+    params.totalModulesCount,
+    params.arrayTiltDeg,
+    params.foundationType,
+    params.basicWindSpeedKmh,
+    params.groundSnowLoadKgM2,
+    params.groundClearanceM,
+    params.soilType,
+    params.frostDepthCm,
+    params.customEmbedmentDepthM ?? 'null',
+    params.customPostsPerTable ?? 'null',
+    params.installationEnvironment ?? 'ground_mount',
+    params.elevationM ?? 0,
+    params.modulesPerTable ?? 28,
+  ].join('_');
+}
+
 /**
  * Structural Tab Calculation Snapshot.
  * Carries exact state from StructuralFoundationTab to OfficialReportModal.

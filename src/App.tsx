@@ -56,7 +56,7 @@ import {
 import { type Language, translations } from './i18n';
 
 import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
-import { type StructuralSnapshot } from './engine/core/structuralContract';
+import { type StructuralSnapshot, computeStructuralInputHash } from './engine/core/structuralContract';
 import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoadsToWindow } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
@@ -1436,7 +1436,22 @@ export const App: React.FC = () => {
     ? isSidebarCollapsed ? 'lg:mr-[68px]' : 'lg:mr-[280px]'
     : isSidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-[280px]';
 
-  const currentStructuralInputHash = `${city.id}_${arrayDesign.totalModulesCount}_${siteOverrides.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28}_${siteOverrides.foundationType ?? 'rammed_steel_pile'}_${siteOverrides.basicWindSpeedKmh ?? city.basicWindSpeedKmh}_${siteOverrides.soilType ?? city.soilType}_${siteOverrides.frostDepthCm ?? city.frostDepthCm}_${siteOverrides.customEmbedmentDepthM ?? null}`;
+  const currentStructuralInputHash = computeStructuralInputHash({
+    cityId: city.id,
+    totalModulesCount: arrayDesign.totalModulesCount,
+    arrayTiltDeg: siteOverrides.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28,
+    foundationType: siteOverrides.foundationType ?? 'rammed_steel_pile',
+    basicWindSpeedKmh: siteOverrides.basicWindSpeedKmh ?? city.basicWindSpeedKmh,
+    groundSnowLoadKgM2: siteOverrides.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 0,
+    groundClearanceM: siteOverrides.groundClearanceM ?? 0.8,
+    soilType: siteOverrides.soilType ?? city.soilType,
+    frostDepthCm: siteOverrides.frostDepthCm ?? city.frostDepthCm,
+    customEmbedmentDepthM: siteOverrides.customEmbedmentDepthM ?? null,
+    customPostsPerTable: siteOverrides.customPostsPerTable ?? null,
+    installationEnvironment: siteOverrides.installationEnvironment ?? 'ground_mount',
+    elevationM: city.elevationM || 0,
+    modulesPerTable: 28,
+  });
 
   const effectiveStructuralSnapshot = useMemo(() => {
     if (!structuralSnapshot) return null;
