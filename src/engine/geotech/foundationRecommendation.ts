@@ -18,6 +18,11 @@
 
 import { calculateWindPressureQz, cpUpliftFor, cpDownforceFor, type FoundationType, type SoilType } from '../structuralEngine';
 import {
+  calculateUnifiedWindPressureQz,
+  calculateUnifiedLateralShearPerPost,
+  calculateUnifiedTableDeadLoad,
+} from '../core/structuralContract';
+import {
   calculateBromsPileSizing,
   calculateRequiredEmbedmentForUplift,
   type BromsPileSizingResult,
@@ -47,6 +52,9 @@ export interface FoundationRecommendationInput {
   clearanceHeightM: number;
   slopeDeg: number;
   elevationM?: number;
+  modulesPerTable?: number;
+  moduleWeightKg?: number;
+  rackingUnitWeightKgM2?: number;
   /** Sloped collector width (m) - the module dimension along the tilt
    *  direction. Default 4.6 (standard 2P14 table). Used for the moment
    *  arm and post-spacing computation. */
@@ -371,14 +379,24 @@ export function recommendSharedFoundation(
   } = input;
 
   // Environmental loads (ASCE 7-22 simplified)
-  // qz from the shared helper - identical to structuralEngine (E5 unification).
-  const qz = calculateWindPressureQz(basicWindSpeedKmh, input.elevationM ?? 0).qzKnM2; // kN/m²
+  // qz from unified contract - identical across all structural modules.
+  const qzCalc = calculateUnifiedWindPressureQz({
+    basicWindSpeedKmh,
+    elevationM: input.elevationM ?? 0,
+  });
+  const qz = qzCalc.qzKnM2; // kN/m²
   const sk = (groundSnowLoadKgM2 * 9.81) / 1000.0; // kN/m²
 
-  // Forces per table and post
+  // Forces per table and post via unified structural contract
   const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
-  const lateralWindForceTable = qz * tableAreaM2 * Math.sin(tiltRad) * 1.2; // kN
-  const lateralShearPerPost = lateralWindForceTable / postsPerTable;
+  const lateralShearResult = calculateUnifiedLateralShearPerPost({
+    qzN_M2: qzCalc.qzN_M2,
+    tableAreaM2,
+    arrayTiltDeg,
+    postsPerTable,
+  });
+  const lateralShearPerPost = Number(lateralShearResult.lateralShearPerPostKn.toFixed(3));
+
   // Match structuralEngine's uplift-per-post formula: average vertical
   // component (cos beta) + moment-induced reaction. Eliminates the 45%
   // divergence between the two engines' reported uplift.
@@ -386,7 +404,15 @@ export function recommendSharedFoundation(
   const cpUp = cpUpliftFor(arrayTiltDeg);
   const windNormalForceKn = qz * tableAreaM2 * cpUp;
   const verticalUpliftKn = windNormalForceKn * Math.cos(tiltRad);
-  const deadLoadKn = (tableAreaM2 * 22.0 * 9.81) / 1000.0;
+
+  const estimatedModules = input.modulesPerTable ?? Math.max(1, Math.round(tableAreaM2 / (2.278 * 1.134)));
+  const deadLoadResult = calculateUnifiedTableDeadLoad({
+    modulesPerTable: estimatedModules,
+    moduleWeightKg: input.moduleWeightKg ?? 28.5,
+    tableAreaM2,
+    rackingUnitWeightKgM2: input.rackingUnitWeightKgM2 ?? 14.5,
+  });
+  const deadLoadKn = deadLoadResult.deadLoadTableKn;
   const deadLoadPerPost = deadLoadKn / postsPerTable;
   const momentArmM = (slopedWidthM / 2.0) + (clearanceHeightM * Math.sin(tiltRad));
   const overturningMomentKnM = windNormalForceKn * momentArmM;

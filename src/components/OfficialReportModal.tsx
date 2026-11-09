@@ -63,6 +63,7 @@ import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../e
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
+import { type StructuralSnapshot } from '../engine/core/structuralContract';
 import { formatCoordinates, calculateSolsticeSolarGeometry } from '../engine/geoCoordinates';
 
 interface OfficialReportModalProps {
@@ -80,6 +81,7 @@ interface OfficialReportModalProps {
   financial: FinancialAnalysisResult;
   bayArchitecture?: PowerplantBayArchitectureResult;
   siteOverrides?: SiteGeotechnicalOverrides;
+  structuralSnapshot?: StructuralSnapshot | null;
   foundationType?: FoundationType;
   waterfallReport?: WaterfallLossReport;
   appliedShading?: AppliedShading3dRecord | null;
@@ -115,6 +117,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   financial,
   bayArchitecture,
   siteOverrides,
+  structuralSnapshot,
   foundationType: customFoundationType,
   waterfallReport,
   appliedShading,
@@ -169,6 +172,17 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       customPostsPerTable: siteOverrides?.customPostsPerTable,
     });
   }, [arrayDesign, module, effectiveCity, siteOverrides, customFoundationType]);
+
+  const effectiveQz = structuralSnapshot?.isAvailable ? structuralSnapshot.qzPa : structCalc.velocityWindPressureQzN_M2;
+  const effectiveFoundationName = structuralSnapshot?.isAvailable
+    ? (isEn ? structuralSnapshot.foundationNameEn : structuralSnapshot.foundationNameFa)
+    : (isEn ? structCalc.foundationNameEn : structCalc.foundationNameFa);
+  const effectiveDepth = structuralSnapshot?.isAvailable ? structuralSnapshot.recommendedDepthM : structCalc.recommendedDepthM;
+  const effectiveLateralShear = structuralSnapshot?.isAvailable ? structuralSnapshot.lateralShearPerPostKn : structCalc.lateralShearPerPostKn;
+  const effectiveFosUplift = structuralSnapshot?.isAvailable ? structuralSnapshot.fosUplift : structCalc.fosUplift;
+  const effectiveFosLateral = structuralSnapshot?.isAvailable ? structuralSnapshot.fosLateral : structCalc.fosLateral;
+  const effectiveFosOverturning = structuralSnapshot?.isAvailable ? structuralSnapshot.fosOverturning : structCalc.fosOverturningAnchored;
+  const effectiveSafe = structuralSnapshot?.isAvailable ? structuralSnapshot.isStructurallySafe : structCalc.isStructurallySafe;
 
   const envAging: EnvironmentalAgingResult = useMemo(() => {
     return calculateEnvironmentalAging({
@@ -402,22 +416,22 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     const structuralSheet = [
       ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', ''],
       ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
-      ['Velocity Wind Pressure (qz)', structCalc.velocityWindPressureQzN_M2, 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
+      ['Velocity Wind Pressure (qz)', effectiveQz, 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
       ['Wind Uplift Force per Table', structCalc.windUpliftForceKn, 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
       ['Wind Downforce per Table', structCalc.windDownforceKn, 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
       ['Overturning Moment per Table', structCalc.windOverturningMomentKnM, 'kN·m', 'Derived arm (W/2 + h*sin beta)'],
       ['Factored Snow Load per Table', structCalc.snowLoadTableKn, 'kN', 'INBC 6 / ASCE 7-22 §7.4'],
-      ['Foundation Technology', isEn ? structCalc.foundationNameEn : structCalc.foundationNameFa, '-', 'Eurocode 7 EN 1997-1'],
+      ['Foundation Technology', effectiveFoundationName, '-', 'Eurocode 7 EN 1997-1'],
       ['Pile Profile Section', structCalc.bromsPileSection, '-', 'Broms (1964) / ASTM A123'],
-      ['Embedment Depth in Ground', structCalc.recommendedDepthM, 'm', `L >= Frost Depth + 1.0m (${structCalc.minDepthForFrostM}m)`],
+      ['Embedment Depth in Ground', effectiveDepth, 'm', `L >= Frost Depth + 1.0m (${structCalc.minDepthForFrostM}m)`],
       ['Total Mounting Tables', structCalc.totalTablesCount, 'tables', `${structCalc.postsPerTable} posts per table`],
       ['Total Piles Count', structCalc.totalPostsCount, 'posts', 'Plant-wide structural posts'],
       ['Applied Post Bearing Pressure', structCalc.appliedPostBearingPressureKpa, 'kPa', `Allowable qa = ${structCalc.allowableSoilBearingKpa} kPa`],
       ['Ultimate Skin-Friction Uplift (T_ult)', structCalc.upliftCapacityPerPostKn, 'kN/post', 'Burland-Meyerhof Beta Method'],
-      ['Uplift Safety Factor (FoS_uplift)', structCalc.fosUplift, '-', 'Required >= 2.0 (Eurocode 7)'],
-      ['Broms Lateral Safety Factor (FoS_lateral)', structCalc.fosLateral, '-', 'Required >= 1.5 (Broms 1964)'],
-      ['Overturning Safety Factor (FoS_overturning)', structCalc.fosOverturningAnchored, '-', 'Required >= 1.5 (ASCE 7-22)'],
-      ['Structural Safety Compliance', structCalc.isStructurallySafe ? 'PASS / SAFE' : 'ACTION REQUIRED', '-', 'INBC Part 6 & ASCE 7-22'],
+      ['Uplift Safety Factor (FoS_uplift)', effectiveFosUplift, '-', 'Required >= 2.0 (Eurocode 7)'],
+      ['Broms Lateral Safety Factor (FoS_lateral)', effectiveFosLateral, '-', 'Required >= 1.5 (Broms 1964)'],
+      ['Overturning Safety Factor (FoS_overturning)', effectiveFosOverturning, '-', 'Required >= 1.5 (ASCE 7-22)'],
+      ['Structural Safety Compliance', effectiveSafe ? 'PASS / SAFE' : 'ACTION REQUIRED', '-', 'INBC Part 6 & ASCE 7-22'],
     ];
 
     exportToExcelWorkbook(
@@ -1711,12 +1725,23 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <span className="text-[10px] text-slate-400 font-mono">INBC 6 / ASCE 7-22 / Eurocode 7</span>
               </h3>
 
+              {structuralSnapshot?.isStale && (
+                <div className="p-2.5 bg-amber-900/30 border border-amber-500/40 rounded text-amber-300 text-xs">
+                  {isEn ? '⚠️ Warning: Project parameters changed after structural analysis. Open Structural Tab to refresh calculation.' : '⚠️ هشدار: پارامترهای پروژه پس از محاسبه سازه تغییر یافته‌اند. لطفاً زبانه سازه و فونداسیون را جهت به‌روزرسانی باز فرمایید.'}
+                </div>
+              )}
+              {!structuralSnapshot?.isAvailable && (
+                <div className="p-3 bg-slate-800/40 border border-industrial-border rounded text-center text-xs text-slate-400">
+                  {isEn ? 'Structural calculation snapshot unavailable. Navigate to Structural & Foundation Tab to compute.' : 'داده‌های سازه و فونداسیون در دسترس نیست. لطفاً به زبانه سازه و فونداسیون مراجعه کرده و محاسبات را اجرا فرمایید.'}
+                </div>
+              )}
+
               {/* Force Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Velocity Wind Pressure (q_z):' : 'فشار سرعتی مبنای باد (q_z):'}</span>
                   <span className="font-mono text-industrial-accent print:text-cyan-800 font-bold">
-                    {structCalc.velocityWindPressureQzN_M2} N/m²
+                    {effectiveQz} N/m²
                   </span>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
                     {isEn ? 'ASCE 7-22 with Ke elevation' : 'مبحث ۶ با ضریب ارتفاع Ke'}
@@ -1725,7 +1750,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Foundation Technology:' : 'سیستم فونداسیون سازه:'}</span>
                   <span className="font-mono text-white print:text-black font-semibold">
-                    {isEn ? structCalc.foundationNameEn : structCalc.foundationNameFa}
+                    {effectiveFoundationName}
                   </span>
                   <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
                     {structCalc.bromsPileSection}
@@ -1734,18 +1759,18 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Embedment Depth (L):' : 'عمق کوبش شمع در خاک:'}</span>
                   <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
-                    {structCalc.recommendedDepthM} m
+                    {effectiveDepth} m
                   </span>
                   <span className="text-[10px] text-industrial-success block mt-0.5">
-                    {structCalc.recommendedDepthM === 0
+                    {effectiveDepth === 0
                       ? (isEn ? 'Rooftop/Shed Mount — Zero Soil Driving ✓' : 'نصب روی سقف — بدون کوبش در خاک ✓')
                       : (isEn ? `Frost Depth: ${structCalc.frostDepthCm}cm ✓ (L >= ${structCalc.minDepthForFrostM}m)` : `کنترل یخبندان: ${structCalc.frostDepthCm}cm ✓`)}
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Uplift Tension FoS:' : 'ضریب اطمینان کشش شمع:'}</span>
-                  <span className={`font-mono font-bold ${structCalc.fosUplift >= 2.0 ? 'text-industrial-success print:text-emerald-800' : 'text-amber-400 print:text-amber-800'}`}>
-                    {structCalc.fosUplift} {isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}
+                  <span className={`font-mono font-bold ${effectiveFosUplift >= 2.0 ? 'text-industrial-success print:text-emerald-800' : 'text-amber-400 print:text-amber-800'}`}>
+                    {effectiveFosUplift} {isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}
                   </span>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
                     T_ult = {structCalc.upliftCapacityPerPostKn.toFixed(1)} kN/post
@@ -1779,9 +1804,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     </tr>
                     <tr>
                       <td className="p-2 font-medium">{isEn ? 'Broms Lateral Soil Resistance' : 'ظرفیت باربری جانبی خاک (روش برمز)'}</td>
-                      <td className="p-2 font-mono text-sky-300 font-bold">{structCalc.lateralShearPerPostKn} kN/post shear</td>
+                      <td className="p-2 font-mono text-sky-300 font-bold">{effectiveLateralShear} kN/post shear</td>
                       <td className="p-2 text-slate-400 print:text-slate-600">Broms (1964) short-pile lateral limit</td>
-                      <td className="p-2 font-mono text-industrial-success font-bold">FoS = {structCalc.fosLateral} (≥ 1.5 Req)</td>
+                      <td className="p-2 font-mono text-industrial-success font-bold">FoS = {effectiveFosLateral} (≥ 1.5 Req)</td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium">{isEn ? 'Soil Bearing Pressure under Post' : 'تنش فشاری وارده بر بستر خاک'}</td>
@@ -1796,12 +1821,12 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <td className="p-2 font-mono text-industrial-success font-bold">{structCalc.upliftCapacityPerPostKn.toFixed(1)} kN/post</td>
                       <td className="p-2 text-slate-400 print:text-slate-600">Eurocode 7 EN 1997-1 §7.6.2.3</td>
                       <td className="p-2 font-bold text-industrial-success">
-                        FoS = {structCalc.fosUplift} (≥ 2.0 Req)
+                        FoS = {effectiveFosUplift} (≥ 2.0 Req)
                       </td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium">{isEn ? 'Frost Heave Embedment Depth' : 'عمق کوبش جهت رفع خطر یخبندان'}</td>
-                      <td className="p-2 font-mono text-white print:text-black font-bold">{structCalc.recommendedDepthM} m</td>
+                      <td className="p-2 font-mono text-white print:text-black font-bold">{effectiveDepth} m</td>
                       <td className="p-2 text-slate-400 print:text-slate-600">L &gt;= Frost Depth + 1.0m ({structCalc.minDepthForFrostM} m)</td>
                       <td className="p-2 text-industrial-success font-bold">
                         {structCalc.isFrostDepthRespected ? '✓ PASS' : '✗ INSUFFICIENT'}

@@ -56,6 +56,7 @@ import {
 import { type Language, translations } from './i18n';
 
 import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
+import { type StructuralSnapshot } from './engine/core/structuralContract';
 import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoadsToWindow } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
@@ -215,6 +216,7 @@ export const App: React.FC = () => {
   }, [city]);
 
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
+  const [structuralSnapshot, setStructuralSnapshot] = useState<StructuralSnapshot | null>(null);
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
 
   const catalogRepo = CatalogRepository.getInstance();
@@ -2469,6 +2471,7 @@ export const App: React.FC = () => {
               city={city}
               siteOverrides={siteOverrides}
               onUpdateSiteOverrides={(overrides) => setSiteOverrides((prev) => ({ ...prev, ...overrides }))}
+              onUpdateStructuralSnapshot={setStructuralSnapshot}
               lang={lang}
             />
           )}
@@ -2731,6 +2734,7 @@ export const App: React.FC = () => {
             financial={financialResult}
             bayArchitecture={bayArchitecture}
             siteOverrides={siteOverrides}
+            structuralSnapshot={structuralSnapshot}
             waterfallReport={waterfallReport}
             appliedShading={appliedShadingRecord}
             isShadingStale={isShadingStale}

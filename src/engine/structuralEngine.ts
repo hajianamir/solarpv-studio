@@ -6,6 +6,11 @@ import {
   calculateRequiredEmbedmentForUplift,
   type BromsPileSizingResult,
 } from './geotech/bromsMethod';
+import {
+  calculateUnifiedWindPressureQz,
+  calculateUnifiedKz,
+  calculateUnifiedLateralShearPerPost,
+} from './core/structuralContract';
 
 export type FoundationType =
   | 'rammed_steel_pile'          // پایه‌های کوبشی فولادی C شکل (نیروگاه‌های مقیاس مگاواتی - کوبش مستقیم در خاک)
@@ -147,35 +152,7 @@ export function calculateKz(
   exposure: ExposureCategory = 'C',
   heightM?: number
 ): number {
-  if (heightM === undefined && exposure === 'C') {
-    return 0.88; // Default baseline for low ground-mount PV (ASCE 7-22 nominal)
-  }
-  const z = Math.max(0.5, heightM ?? 3.0);
-  let alpha: number;
-  let zg: number;
-  let zmin: number;
-
-  switch (exposure) {
-    case 'B':
-      alpha = 7.0;
-      zg = 365.76;
-      zmin = 9.14;
-      break;
-    case 'D':
-      alpha = 11.5;
-      zg = 213.36;
-      zmin = 2.13;
-      break;
-    case 'C':
-    default:
-      alpha = 9.5;
-      zg = 274.32;
-      zmin = 4.57;
-      break;
-  }
-
-  const effectiveZ = Math.max(z, zmin);
-  return Number((2.01 * Math.pow(effectiveZ / zg, 2.0 / alpha)).toFixed(3));
+  return calculateUnifiedKz(exposure, heightM);
 }
 
 /** Net uplift pressure coefficient for a tilted PV table:
@@ -204,24 +181,14 @@ export function calculateWindPressureQz(
   topographicFactorKzt: number = 1.0,
   windDirectionalityKd: number = 0.85
 ): WindPressureResult {
-  const vMs = Math.max(0, basicWindSpeedKmh) / 3.6;
-  const kz = (structureHeightM === undefined && exposureCategory === 'C')
-    ? 0.88
-    : calculateKz(exposureCategory, structureHeightM);
-  const kzt = Math.max(0.5, topographicFactorKzt);
-  const kd = Math.max(0.5, windDirectionalityKd);
-  // ASCE 7-22 §26.10.1 elevation factor. ke = 1.0 at sea level; drops
-  // ~0.362% per 100 m. Only applied when elevationM > 0.
-  const ke = elevationM > 0
-    ? Math.exp(-0.0000362 * elevationM)
-    : 1.0;
-  const qzN_M2 = 0.613 * kz * kzt * kd * ke * Math.pow(vMs, 2);
-  return {
-    qzN_M2,
-    qzKnM2: qzN_M2 / 1000,
-    vMs,
-    kz, kzt, kd, ke,
-  };
+  return calculateUnifiedWindPressureQz({
+    basicWindSpeedKmh,
+    elevationM,
+    exposureCategory,
+    structureHeightM,
+    topographicFactorKzt,
+    windDirectionalityKd,
+  });
 }
 
 export interface StructuralRemedialGuidance {
@@ -431,10 +398,14 @@ export function calculateStructuralAndFoundations(
     ((deadLoadTableKn + 1.2 * windDownforceKn + snowLoadTableKn) / postsPerTable).toFixed(1)
   );
 
-  // Lateral shear per post
-  const lateralShearPerPostKn = Number(
-    ((velocityWindPressureQzN_M2 * tableAreaM2 * Math.sin(tiltRad)) / (postsPerTable * 1000.0)).toFixed(1)
-  );
+  // Lateral shear per post via unified structural contract
+  const lateralShearResult = calculateUnifiedLateralShearPerPost({
+    qzN_M2: velocityWindPressureQzN_M2,
+    tableAreaM2,
+    arrayTiltDeg,
+    postsPerTable,
+  });
+  const lateralShearPerPostKn = Number(lateralShearResult.lateralShearPerPostKn.toFixed(3));
 
   // 5. Foundation Geometry & Soil Mechanics (Broms 1964 Lateral Equilibrium)
   const allowableSoilBearingKpa = input.soilBearingCapacityKpa || (soilType === 'dense_sand_gravel' ? 250 : soilType === 'medium_clay' ? 180 : soilType === 'loose_sand' ? 140 : 350);
@@ -784,15 +755,15 @@ export function calculateStructuralAndFoundations(
       break;
     }
     case 'rooftop_anchor_bolted': {
-      const anchorTensileCapacityKn = postsPerTable * 4 * 15.0; // 4x M12 anchors per baseplate, 15 kN each in sound concrete
+      const anchorTensileCapacityKn = postsPerTable * 4 * 15.0; // 4x M12 anchors per baseplate screening assumption
       const fosAnchorUplift = Number((anchorTensileCapacityKn / Math.max(0.1, windUpliftForceKn)).toFixed(2));
-      isStructurallySafe = fosAnchorUplift >= 2.0;
-      safetyReasonEn = isStructurallySafe
-        ? `[Preliminary Screening] Rooftop chemical anchor stanchions evaluated (Uplift FoS = ${fosAnchorUplift} >= 2.0 assuming sound concrete slab). Concrete thickness and tensile pullout must be verified on site.`
-        : `Rooftop anchor bolt capacity insufficient (FoS = ${fosAnchorUplift} < 2.0). Increase anchor diameter or post count.`;
-      safetyReasonFa = isStructurallySafe
-        ? `[غربالگری اولیه] مهار انکربولت در دال بتنی سقف ارزیابی شد (FoS کشش انکر = ${fosAnchorUplift} >= ۲.۰ با فرض دال بتنی سالم). ضخامت دال بتنی و مقاومت برشی پانچ باید در محل پروژه بررسی گردد.`
-        : `ظرفیت کشش انکربولت سقف ناکافی است (FoS = ${fosAnchorUplift} < ۲.۰). تعداد انکرها یا قطر بولت را افزایش دهید.`;
+      // Engineering Candor (P7-07 / C7-04): Without site-specific in-situ pullout data or
+      // concrete slab structural drawings, chemical anchors cannot be declared safe.
+      isStructurallySafe = false;
+      safetyReasonEn =
+        `[UNASSESSED - Pullout Data Required] Rooftop chemical anchor tensile capacity cannot be certified safe without site-specific in-situ pullout testing (ASTM E488) and structural concrete slab thickness verification. Nominal screening FoS = ${fosAnchorUplift}, but field verification by a licensed structural engineer is mandatory.`;
+      safetyReasonFa =
+        `[ارزیابی‌نشده - نیازمند آزمون کشش درجا] ظرفیت انکربولت دال بتنی سقف نیازمند آزمایش کشش درجا (Pullout Test) و نقشه‌های سازه است؛ تأیید ایمنی صادر نشد (ضریب اسمی = ${fosAnchorUplift}).`;
       break;
     }
     case 'rooftop_ballasted_block': {
@@ -826,15 +797,23 @@ export function calculateStructuralAndFoundations(
         : `ظرفیت کششی گروت در سنگ ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه یا قطر حفاری را افزایش دهید.`;
       break;
     case 'rammed_steel_pile':
-    case 'ground_screw':
-      isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe;
+    case 'ground_screw': {
+      const isEmbedmentSufficient = input.customEmbedmentDepthM !== undefined
+        ? (input.customEmbedmentDepthM > 0 && input.customEmbedmentDepthM >= bromsResult.embedmentDepthM && isFrostDepthRespected)
+        : isFrostDepthRespected;
+      isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isEmbedmentSufficient && fosLateral >= 1.5;
       safetyReasonEn = isStructurallySafe
         ? `Pile uplift capacity OK (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Broms lateral FoS >= 1.5 verified in foundation report.`
+        : !isEmbedmentSufficient
+        ? `Custom embedment depth (${recommendedDepthM}m) is insufficient for lateral/frost/uplift limits (FoS_uplift=${fosUplift}, FoS_lateral=${fosLateral}).`
         : `Pile uplift capacity INSUFFICIENT (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase embedment or add ballast.`;
       safetyReasonFa = isStructurallySafe
         ? `ظرفیت کشش شمع کافی است (FoS_uplift = ${fosUplift} >= ۲.۰).`
+        : !isEmbedmentSufficient
+        ? `عمق کوبش واردشده (${recommendedDepthM} متر) الزامات عمق یخبندان یا مقاومت جانبی را ارضا نمی‌کند.`
         : `ظرفیت کشش شمع کافی نیست (FoS_uplift = ${fosUplift} < ۲.۰). عمق کوبش را افزایش دهید.`;
       break;
+    }
     case 'concrete_pier':
       isStructurallySafe =
         fosUplift >= 2.0 && fosOverturning >= 1.5 && isBearingCapacitySafe;

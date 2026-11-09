@@ -171,7 +171,12 @@ export function calculateUnifiedWindPressureQz(
   } = input;
 
   if (!Number.isFinite(basicWindSpeedKmh) || basicWindSpeedKmh < 0) {
-    throw new RangeError(`Invalid basicWindSpeedKmh (${basicWindSpeedKmh}): wind speed must be a non-negative finite number`);
+    throw new RangeError(
+      `Invalid basicWindSpeedKmh (${basicWindSpeedKmh}): wind speed must be a non-negative finite number`
+    );
+  }
+  if (!Number.isFinite(elevationM)) {
+    throw new RangeError(`Invalid elevationM (${elevationM}): elevation must be a finite number`);
   }
 
   const vMs = basicWindSpeedKmh / 3.6;
@@ -204,6 +209,8 @@ export function calculateUnifiedWindPressureQz(
 /**
  * Calculates sensitivity ratio of wind pressure for a speed multiplier.
  * For multiplier 1.2, returns qz(1.2*V) / qz(V) which analytically equals 1.44.
+ *
+ * Strictly rejects zero or non-finite base wind speed (cannot compute ratio against zero pressure).
  */
 export function calculateWindPressureSensitivity(
   baseInput: UnifiedWindPressureInput,
@@ -214,6 +221,15 @@ export function calculateWindPressureSensitivity(
   ratio: number;
   elevatedSpeedKmh: number;
 } {
+  if (!Number.isFinite(baseInput.basicWindSpeedKmh) || baseInput.basicWindSpeedKmh <= 0) {
+    throw new RangeError(
+      `Invalid basicWindSpeedKmh (${baseInput.basicWindSpeedKmh}): cannot compute sensitivity ratio for non-positive or non-finite wind speed`
+    );
+  }
+  if (!Number.isFinite(multiplier) || multiplier <= 0) {
+    throw new RangeError(`Invalid multiplier (${multiplier}): multiplier must be a positive finite number`);
+  }
+
   const base = calculateUnifiedWindPressureQz(baseInput);
   const elevatedInput: UnifiedWindPressureInput = {
     ...baseInput,
@@ -257,14 +273,14 @@ export function calculateUnifiedTableDeadLoad(
     rackingUnitWeightKgM2 = 14.5,
   } = input;
 
-  if (!Number.isFinite(modulesPerTable) || modulesPerTable <= 0) {
-    throw new RangeError(`Invalid modulesPerTable (${modulesPerTable}): must be a positive integer`);
+  if (!Number.isInteger(modulesPerTable) || modulesPerTable < 1) {
+    throw new RangeError(`Invalid modulesPerTable (${modulesPerTable}): must be a positive integer >= 1`);
   }
   if (!Number.isFinite(moduleWeightKg) || moduleWeightKg <= 0) {
-    throw new RangeError(`Invalid moduleWeightKg (${moduleWeightKg}): must be a positive number`);
+    throw new RangeError(`Invalid moduleWeightKg (${moduleWeightKg}): must be a positive finite number`);
   }
   if (!Number.isFinite(tableAreaM2) || tableAreaM2 <= 0) {
-    throw new RangeError(`Invalid tableAreaM2 (${tableAreaM2}): must be a positive number`);
+    throw new RangeError(`Invalid tableAreaM2 (${tableAreaM2}): must be a positive finite number`);
   }
 
   const moduleTotalWeightPerTableKg = modulesPerTable * moduleWeightKg;
@@ -290,7 +306,10 @@ export interface LateralShearInput {
 /**
  * Single source of truth for lateral shear demand per post.
  * Eliminates artificial hidden multipliers (e.g. * 1.2 in legacy recommendation engine).
- * Strictly validates postsPerTable >= 1 (throws RangeError if <= 0 or non-finite).
+ *
+ * Input safety validations:
+ * - postsPerTable must be a positive integer >= 1 (strictly rejects 1.5, 0, -2, NaN).
+ * - arrayTiltDeg must be a finite number between 0 and 90 degrees (strictly rejects NaN, negative, >90).
  */
 export function calculateUnifiedLateralShearPerPost(
   input: LateralShearInput
@@ -300,9 +319,14 @@ export function calculateUnifiedLateralShearPerPost(
 } {
   const { qzN_M2, tableAreaM2, arrayTiltDeg, postsPerTable } = input;
 
-  if (!Number.isFinite(postsPerTable) || postsPerTable < 1) {
+  if (!Number.isInteger(postsPerTable) || postsPerTable < 1) {
     throw new RangeError(
-      `Invalid postsPerTable (${postsPerTable}): posts count per table must be a positive integer >= 1`
+      `Invalid postsPerTable (${postsPerTable}): posts count per table must be an integer >= 1`
+    );
+  }
+  if (!Number.isFinite(arrayTiltDeg) || arrayTiltDeg < 0 || arrayTiltDeg > 90) {
+    throw new RangeError(
+      `Invalid arrayTiltDeg (${arrayTiltDeg}): array tilt must be a finite number between 0 and 90 degrees`
     );
   }
   if (!Number.isFinite(qzN_M2) || qzN_M2 < 0) {
@@ -496,4 +520,59 @@ export interface StructuralSnapshot {
   isScreeningPreliminary: boolean;
   assessmentStatus: AssessmentStatus;
   disclosures: UnassessedDisclosures;
+}
+
+/**
+ * Generates a deterministic structural snapshot from analysis results and input hash.
+ */
+export function createStructuralSnapshot(
+  result: {
+    foundationNameFa: string;
+    foundationNameEn: string;
+    velocityWindPressureQzN_M2: number;
+    deadLoadTableKn: number;
+    lateralShearPerPostKn: number;
+    upliftPerPostKn: number;
+    compressionPerPostKn: number;
+    recommendedDepthM: number;
+    fosUplift: number;
+    fosLateral: number;
+    fosOverturning: number;
+    fosSliding: number;
+    isStructurallySafe: boolean;
+  },
+  foundationType: string,
+  inputHash: string,
+  isStale: boolean = false
+): StructuralSnapshot {
+  const disclosures = getStructuralHonestyDisclosures();
+  const isRooftopAnchor = foundationType === 'rooftop_anchor_bolted';
+  const assessmentStatus: AssessmentStatus = isRooftopAnchor ? 'unassessed' : 'assessed';
+
+  return {
+    snapshotId: `SNAP-STR-${inputHash.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`,
+    timestampMs: 0,
+    inputHash,
+    isAvailable: true,
+    isStale,
+    foundationType,
+    foundationNameFa: result.foundationNameFa,
+    foundationNameEn: result.foundationNameEn,
+    qzPa: result.velocityWindPressureQzN_M2,
+    qzKnM2: Number((result.velocityWindPressureQzN_M2 / 1000).toFixed(3)),
+    deadLoadTableKn: result.deadLoadTableKn,
+    lateralShearPerPostKn: result.lateralShearPerPostKn,
+    upliftPerPostKn: result.upliftPerPostKn,
+    compressionPerPostKn: result.compressionPerPostKn,
+    recommendedDepthM: result.recommendedDepthM,
+    governingLimit: 'governing_depth_verified',
+    fosUplift: result.fosUplift,
+    fosLateral: result.fosLateral,
+    fosOverturning: result.fosOverturning,
+    fosSliding: result.fosSliding,
+    isStructurallySafe: isRooftopAnchor ? false : result.isStructurallySafe,
+    isScreeningPreliminary: true,
+    assessmentStatus,
+    disclosures,
+  };
 }

@@ -48,6 +48,10 @@ import {
   type Iso9223Category,
   CATEGORY_META,
 } from '../engine/corrosion/saltCorrosionEngine';
+import {
+  createStructuralSnapshot,
+  type StructuralSnapshot,
+} from '../engine/core/structuralContract';
 
 interface StructuralFoundationTabProps {
   totalModulesCount?: number;
@@ -55,6 +59,7 @@ interface StructuralFoundationTabProps {
   city?: ClimateCity;
   siteOverrides?: SiteGeotechnicalOverrides;
   onUpdateSiteOverrides?: (overrides: SiteGeotechnicalOverrides) => void;
+  onUpdateStructuralSnapshot?: (snapshot: StructuralSnapshot) => void;
   lang?: 'fa' | 'en';
 }
 
@@ -96,6 +101,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   },
   siteOverrides,
   onUpdateSiteOverrides,
+  onUpdateStructuralSnapshot,
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
@@ -426,6 +432,26 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     isManualDepth,
     customEmbedmentDepthM,
     customPostsPerTable,
+  ]);
+
+  // Synchronize live structural calculation snapshot with top-level state
+  useEffect(() => {
+    if (onUpdateStructuralSnapshot) {
+      const inputHash = `${city.id}_${modulesCount}_${tiltDeg}_${foundationType}_${basicWindSpeedKmh}_${soilType}_${frostDepthCm}_${customEmbedmentDepthM}`;
+      const snapshot = createStructuralSnapshot(structResult, foundationType, inputHash);
+      onUpdateStructuralSnapshot(snapshot);
+    }
+  }, [
+    structResult,
+    foundationType,
+    city.id,
+    modulesCount,
+    tiltDeg,
+    basicWindSpeedKmh,
+    soilType,
+    frostDepthCm,
+    customEmbedmentDepthM,
+    onUpdateStructuralSnapshot,
   ]);
 
   const recResult: FoundationRecommendationResult = useMemo(() => {
