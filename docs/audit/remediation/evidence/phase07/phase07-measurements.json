@@ -6,8 +6,8 @@
   "codebaseCommit": "arena/f30efcdc-solarpv-studio",
   "baselineCommit": "832805e",
   "contractSource": "src/engine/core/structuralContract.ts",
-  "contractSha256": "b866d99640ea7308a0dadd4e7bd8045f34844178159cbbaae353916d43423bf7",
-  "harnessSha256": "9c32a9951dd3582ebc6269b6ba7d7a5a9b86ab7aa19c387331a610d8503009c8",
+  "contractSha256": "cd9968e43cf6ac00b7c235f4a309f5d74a706a6851e9a24fbdc6ed19ab614e20",
+  "harnessSha256": "5e8a415dc8c902bd723265470fcc261fcc8bc2bdfed040d791d162b0c36f6ed8",
   "overallPass": true,
   "summary": {
     "totalQuantities": 8,
@@ -78,8 +78,8 @@
       "status": "PASS",
       "details": {
         "structEngineLiveKn": 4.262,
-        "recEngineLiveKn": 4.261,
-        "consumerDiscrepancyKn": 0.0009999999999994458,
+        "recEngineLiveKn": 4.262,
+        "consumerDiscrepancyKn": 0,
         "toleranceKn": 0.01,
         "hidden1_2MultiplierEliminated": true
       }
@@ -98,8 +98,8 @@
       "status": "PASS",
       "details": {
         "moduleTotalWeightKg": 798,
-        "rackingWeightKg": 1078.8000000000002,
-        "totalDeadLoadKg": 1876.8000000000002,
+        "rackingWeightKg": 1078.945,
+        "totalDeadLoadKg": 1876.945,
         "totalDeadLoadKn": 18.41
       }
     },
@@ -111,7 +111,7 @@
       "after": 5,
       "delta": 3.4,
       "beforeSource": "832805e:src/engine/structuralEngine.ts:468",
-      "producer": "src/engine/core/structuralContract.ts:calculateGoverningPileDepth",
+      "producer": "src/engine/structuralEngine.ts:calculateStructuralAndFoundations",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-05",
       "pass": true,
       "status": "PASS",
@@ -125,19 +125,19 @@
     {
       "id": "P7-06",
       "case": "S-1-custom-0.8m",
-      "unit": "boolean",
-      "before": "insufficient_depth_accepted",
-      "after": "insufficient_depth_rejected",
-      "delta": "rejection_enforced",
+      "unit": "ratio",
+      "before": 0.2,
+      "after": 0.05,
+      "delta": -0.15,
       "beforeSource": "832805e:src/engine/structuralEngine.ts:468",
-      "producer": "src/engine/core/structuralContract.ts:calculateGoverningPileDepth",
+      "producer": "src/engine/structuralEngine.ts:calculateStructuralAndFoundations",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-06",
       "pass": true,
       "status": "PASS",
       "details": {
         "customDepthM": 0.8,
-        "requiredGoverningDepthM": 5,
-        "isDepthAdequate": false,
+        "standardFosUplift": 2,
+        "customFosUplift": 0.05,
         "isStructurallySafe": false,
         "safetyReasonFa": "عمق کوبش واردشده (0.8 متر) الزامات عمق یخبندان یا مقاومت جانبی را ارضا نمی‌کند."
       }
@@ -179,13 +179,17 @@
         "isStale": false,
         "tabQzPa": 488,
         "reportQzPa": 488,
-        "tabDepthM": 1.6,
-        "reportDepthM": 1.6,
-        "tabFosUplift": 0.2,
-        "reportFosUplift": 0.2,
+        "tabDepthM": 5,
+        "reportDepthM": 5,
+        "tabFosUplift": 2,
+        "reportFosUplift": 2,
         "tabLateralShearKn": 4.262,
         "reportLateralShearKn": 4.262,
-        "syncDelta": 0
+        "syncDelta": 0,
+        "exportActiveCompliance": "SCREENING PASS (Preliminary — Unassessed Modes Excluded)",
+        "exportNullStatus": "UNAVAILABLE",
+        "exportStaleStatus": "STALE — Inputs Modified",
+        "exportPass": true
       }
     }
   ],
@@ -202,12 +206,12 @@
     },
     {
       "id": "C7-02",
-      "lhs": 0.0029999999999992255,
+      "lhs": 0.00283045000000115,
       "rhs": 0.01,
-      "delta": 0.0029999999999992255,
+      "delta": 0.00283045000000115,
       "pass": true,
       "status": "PASS",
-      "definition": "Load model equality between structuralEngine and foundationRecommendation across S-1, S-2, S-3 (tolerance <= 0.01 kN)",
+      "definition": "Load model equality between structuralEngine and foundationRecommendation across S-1, S-2, S-3 for all 4 load components (shear, dead load, uplift, compression) within tolerance <= 0.01 kN",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-02"
     },
     {
@@ -237,7 +241,7 @@
       "delta": 0,
       "pass": true,
       "status": "PASS",
-      "definition": "Structural Tab to Report snapshot synchronization delta == 0",
+      "definition": "Structural Tab to Report snapshot and live Excel export synchronization (delta == 0 and compliant rows)",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-05"
     },
     {

@@ -35,6 +35,7 @@ import {
   calculateGoverningPileDepth,
   getStructuralHonestyDisclosures,
   createStructuralSnapshot,
+  exportStructuralSheetRows,
 } from '../../src/engine/core/structuralContract';
 
 import {
@@ -414,8 +415,9 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     upliftRequiredDepthM: reqUpliftDepthS1,
   });
 
-  const p705After = governingDepth.effectiveRecommendedDepthM;
-  const p705Pass = p705After >= bromsResultS1.embedmentDepthM &&
+  const p705After = structAfterS1.recommendedDepthM; // 5.0 m
+  const p705Pass = p705After === 5.0 &&
+                   p705After >= bromsResultS1.embedmentDepthM &&
                    p705After >= (frostDepthM_S1 + 1.0) &&
                    p705After >= reqUpliftDepthS1;
 
@@ -427,7 +429,7 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     after: p705After,
     delta: Number((p705After - p705Before).toFixed(2)),
     beforeSource: '832805e:src/engine/structuralEngine.ts:468',
-    producer: 'src/engine/core/structuralContract.ts:calculateGoverningPileDepth',
+    producer: 'src/engine/structuralEngine.ts:calculateStructuralAndFoundations',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --id P7-05',
     pass: p705Pass,
     status: 'PASS',
@@ -440,9 +442,9 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   });
 
   // -------------------------------------------------------------------------
-  // P7-06: Insufficient custom embedment depth safety rejection
+  // P7-06: Insufficient custom embedment depth safety rejection & FoS uplift ratio
   // -------------------------------------------------------------------------
-  const customInsufficientDepthM = 0.80; // 0.8m is strictly less than 1.3m frost depth and 1.54m lateral
+  const customInsufficientDepthM = 0.80; // 0.8m is strictly less than required governing depth (5.0m)
   const customDepthEval = calculateGoverningPileDepth({
     lateralDepthM: bromsResultS1.embedmentDepthM,
     frostDepthM: frostDepthM_S1,
@@ -455,26 +457,29 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     customEmbedmentDepthM: customInsufficientDepthM,
   });
 
-  const p706Pass = customDepthEval.isDepthAdequate === false &&
-                   customDepthEval.governingLimit === 'custom_insufficient' &&
-                   structCustomInsufficient.isStructurallySafe === false;
+  const p706Before = structS1Before.fosUplift;
+  const p706After = structCustomInsufficient.fosUplift;
+  const p706Pass = structAfterS1.fosUplift >= 2.0 &&
+                   structCustomInsufficient.fosUplift < 2.0 &&
+                   structCustomInsufficient.isStructurallySafe === false &&
+                   customDepthEval.isDepthAdequate === false;
 
   quantities.push({
     id: 'P7-06',
     case: 'S-1-custom-0.8m',
-    unit: 'boolean',
-    before: 'insufficient_depth_accepted',
-    after: 'insufficient_depth_rejected',
-    delta: 'rejection_enforced',
+    unit: 'ratio',
+    before: p706Before,
+    after: p706After,
+    delta: Number((p706After - p706Before).toFixed(2)),
     beforeSource: '832805e:src/engine/structuralEngine.ts:468',
-    producer: 'src/engine/core/structuralContract.ts:calculateGoverningPileDepth',
+    producer: 'src/engine/structuralEngine.ts:calculateStructuralAndFoundations',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --id P7-06',
     pass: p706Pass,
     status: 'PASS',
     details: {
       customDepthM: customInsufficientDepthM,
-      requiredGoverningDepthM: customDepthEval.depthGoverningCalculatedM,
-      isDepthAdequate: customDepthEval.isDepthAdequate,
+      standardFosUplift: structAfterS1.fosUplift,
+      customFosUplift: structCustomInsufficient.fosUplift,
       isStructurallySafe: structCustomInsufficient.isStructurallySafe,
       safetyReasonFa: structCustomInsufficient.safetyReasonFa,
     },
@@ -516,13 +521,26 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   });
 
   // -------------------------------------------------------------------------
-  // P7-08: Structural Tab to Report snapshot synchronization
+  // P7-08: Structural Tab to Report snapshot synchronization & live export path
   // -------------------------------------------------------------------------
   const liveSnapshot = createStructuralSnapshot(
     structAfterS1,
     FIXTURE_S1.foundationType,
     'S1_SNAPSHOT_HASH'
   );
+
+  const exportedActiveRows = exportStructuralSheetRows(liveSnapshot, true);
+  const exportedNullRows = exportStructuralSheetRows(null, true);
+  const exportedStaleRows = exportStructuralSheetRows({ ...liveSnapshot, isStale: true }, true);
+
+  const activeComplianceRow = exportedActiveRows.find((r) => r[0] === 'Structural Safety Compliance');
+  const nullStatusRow = exportedNullRows.find((r) => r[0] === 'Structural Analysis Status');
+  const staleStatusRow = exportedStaleRows.find((r) => r[0] === 'Structural Analysis Status');
+
+  const p708ExportPass =
+    activeComplianceRow?.[1] === 'SCREENING PASS (Preliminary — Unassessed Modes Excluded)' &&
+    nullStatusRow?.[1] === 'UNAVAILABLE' &&
+    staleStatusRow?.[1] === 'STALE — Inputs Modified';
 
   const reportQz = liveSnapshot.qzPa;
   const reportDepth = liveSnapshot.recommendedDepthM;
@@ -535,7 +553,7 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     Math.abs(liveSnapshot.fosUplift - structAfterS1.fosUplift) +
     Math.abs(liveSnapshot.lateralShearPerPostKn - structAfterS1.lateralShearPerPostKn);
 
-  const p708Pass = p708Delta === 0 && liveSnapshot.isAvailable === true && liveSnapshot.isStale === false;
+  const p708Pass = p708Delta === 0 && liveSnapshot.isAvailable === true && liveSnapshot.isStale === false && p708ExportPass;
 
   quantities.push({
     id: 'P7-08',
@@ -562,6 +580,10 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
       tabLateralShearKn: structAfterS1.lateralShearPerPostKn,
       reportLateralShearKn: reportShear,
       syncDelta: p708Delta,
+      exportActiveCompliance: activeComplianceRow?.[1],
+      exportNullStatus: nullStatusRow?.[1],
+      exportStaleStatus: staleStatusRow?.[1],
+      exportPass: p708ExportPass,
     },
   });
 
@@ -584,7 +606,7 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-01',
   });
 
-  // C7-02: Load model equality across S-1, S-2, and S-3 between consumers (tolerance <= 0.01 kN)
+  // C7-02: Load model equality across S-1, S-2, and S-3 between consumers (all 4 components tolerance <= 0.01 kN)
   const fixtureTriad = [
     { name: 'S-1', fix: FIXTURE_S1 },
     { name: 'S-2', fix: FIXTURE_S2 },
@@ -605,16 +627,21 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
       basicWindSpeedKmh: fix.basicWindSpeedKmh,
       groundSnowLoadKgM2: fix.groundSnowLoadKgM2,
       tableAreaM2: sRes.tableAreaM2,
+      tableSlopedWidthM: sRes.tableSlopedWidthM,
       arrayTiltDeg: fix.arrayTiltDeg,
-      postsPerTable: 4,
+      postsPerTable: sRes.postsPerTable,
       clearanceHeightM: fix.groundClearanceM,
       slopeDeg: 0,
       elevationM: fix.elevationM,
       modulesPerTable: fix.modulesPerTable,
       moduleWeightKg: fix.moduleWeightKg,
     });
-    const diff = Math.abs(sRes.lateralShearPerPostKn - rRes.lateralShearPerPostKn);
-    if (diff > maxConsumerDeltaKn) maxConsumerDeltaKn = diff;
+    const diffShear = Math.abs(sRes.lateralShearPerPostKn - rRes.lateralShearPerPostKn);
+    const diffDead = Math.abs(sRes.deadLoadTableKn - rRes.deadLoadTableKn);
+    const diffUplift = Math.abs(sRes.upliftPerPostKn - rRes.upliftPerPostKn);
+    const diffComp = Math.abs(sRes.compressionPerPostKn - rRes.compressionPerPostKn);
+    const maxDiff = Math.max(diffShear, diffDead, diffUplift, diffComp);
+    if (maxDiff > maxConsumerDeltaKn) maxConsumerDeltaKn = maxDiff;
   }
   const c702Pass = maxConsumerDeltaKn <= 0.01;
   checks.push({
@@ -624,7 +651,7 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     delta: maxConsumerDeltaKn,
     pass: c702Pass,
     status: 'PASS',
-    definition: 'Load model equality between structuralEngine and foundationRecommendation across S-1, S-2, S-3 (tolerance <= 0.01 kN)',
+    definition: 'Load model equality between structuralEngine and foundationRecommendation across S-1, S-2, S-3 for all 4 load components (shear, dead load, uplift, compression) within tolerance <= 0.01 kN',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-02',
   });
 
@@ -673,15 +700,15 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-04',
   });
 
-  // C7-05: Structural UI Tab to Report snapshot synchronization
+  // C7-05: Structural UI Tab to Report snapshot synchronization & Excel export verification
   checks.push({
     id: 'C7-05',
     lhs: reportQz,
     rhs: structAfterS1.velocityWindPressureQzN_M2,
     delta: p708Delta,
-    pass: p708Delta === 0 && liveSnapshot.isAvailable,
+    pass: p708Delta === 0 && liveSnapshot.isAvailable && p708ExportPass,
     status: 'PASS',
-    definition: 'Structural Tab to Report snapshot synchronization delta == 0',
+    definition: 'Structural Tab to Report snapshot and live Excel export synchronization (delta == 0 and compliant rows)',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-05',
   });
 

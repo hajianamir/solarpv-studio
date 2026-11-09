@@ -63,7 +63,7 @@ import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../e
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
-import { type StructuralSnapshot } from '../engine/core/structuralContract';
+import { type StructuralSnapshot, exportStructuralSheetRows } from '../engine/core/structuralContract';
 import { formatCoordinates, calculateSolsticeSolarGeometry } from '../engine/geoCoordinates';
 
 interface OfficialReportModalProps {
@@ -172,17 +172,6 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       customPostsPerTable: siteOverrides?.customPostsPerTable,
     });
   }, [arrayDesign, module, effectiveCity, siteOverrides, customFoundationType]);
-
-  const effectiveQz = structuralSnapshot?.isAvailable ? structuralSnapshot.qzPa : structCalc.velocityWindPressureQzN_M2;
-  const effectiveFoundationName = structuralSnapshot?.isAvailable
-    ? (isEn ? structuralSnapshot.foundationNameEn : structuralSnapshot.foundationNameFa)
-    : (isEn ? structCalc.foundationNameEn : structCalc.foundationNameFa);
-  const effectiveDepth = structuralSnapshot?.isAvailable ? structuralSnapshot.recommendedDepthM : structCalc.recommendedDepthM;
-  const effectiveLateralShear = structuralSnapshot?.isAvailable ? structuralSnapshot.lateralShearPerPostKn : structCalc.lateralShearPerPostKn;
-  const effectiveFosUplift = structuralSnapshot?.isAvailable ? structuralSnapshot.fosUplift : structCalc.fosUplift;
-  const effectiveFosLateral = structuralSnapshot?.isAvailable ? structuralSnapshot.fosLateral : structCalc.fosLateral;
-  const effectiveFosOverturning = structuralSnapshot?.isAvailable ? structuralSnapshot.fosOverturning : structCalc.fosOverturningAnchored;
-  const effectiveSafe = structuralSnapshot?.isAvailable ? structuralSnapshot.isStructurallySafe : structCalc.isStructurallySafe;
 
   const envAging: EnvironmentalAgingResult = useMemo(() => {
     return calculateEnvironmentalAging({
@@ -413,26 +402,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ]),
     ];
 
-    const structuralSheet = [
-      ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', ''],
-      ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
-      ['Velocity Wind Pressure (qz)', effectiveQz, 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
-      ['Wind Uplift Force per Table', structCalc.windUpliftForceKn, 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
-      ['Wind Downforce per Table', structCalc.windDownforceKn, 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
-      ['Overturning Moment per Table', structCalc.windOverturningMomentKnM, 'kN·m', 'Derived arm (W/2 + h*sin beta)'],
-      ['Factored Snow Load per Table', structCalc.snowLoadTableKn, 'kN', 'INBC 6 / ASCE 7-22 §7.4'],
-      ['Foundation Technology', effectiveFoundationName, '-', 'Eurocode 7 EN 1997-1'],
-      ['Pile Profile Section', structCalc.bromsPileSection, '-', 'Broms (1964) / ASTM A123'],
-      ['Embedment Depth in Ground', effectiveDepth, 'm', `L >= Frost Depth + 1.0m (${structCalc.minDepthForFrostM}m)`],
-      ['Total Mounting Tables', structCalc.totalTablesCount, 'tables', `${structCalc.postsPerTable} posts per table`],
-      ['Total Piles Count', structCalc.totalPostsCount, 'posts', 'Plant-wide structural posts'],
-      ['Applied Post Bearing Pressure', structCalc.appliedPostBearingPressureKpa, 'kPa', `Allowable qa = ${structCalc.allowableSoilBearingKpa} kPa`],
-      ['Ultimate Skin-Friction Uplift (T_ult)', structCalc.upliftCapacityPerPostKn, 'kN/post', 'Burland-Meyerhof Beta Method'],
-      ['Uplift Safety Factor (FoS_uplift)', effectiveFosUplift, '-', 'Required >= 2.0 (Eurocode 7)'],
-      ['Broms Lateral Safety Factor (FoS_lateral)', effectiveFosLateral, '-', 'Required >= 1.5 (Broms 1964)'],
-      ['Overturning Safety Factor (FoS_overturning)', effectiveFosOverturning, '-', 'Required >= 1.5 (ASCE 7-22)'],
-      ['Structural Safety Compliance', effectiveSafe ? 'PASS / SAFE' : 'ACTION REQUIRED', '-', 'INBC Part 6 & ASCE 7-22'],
-    ];
+    const structuralSheet = exportStructuralSheetRows(structuralSnapshot ?? null, isEn);
 
     exportToExcelWorkbook(
       [
@@ -1725,137 +1695,159 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <span className="text-[10px] text-slate-400 font-mono">INBC 6 / ASCE 7-22 / Eurocode 7</span>
               </h3>
 
-              {structuralSnapshot?.isStale && (
-                <div className="p-2.5 bg-amber-900/30 border border-amber-500/40 rounded text-amber-300 text-xs">
-                  {isEn ? '⚠️ Warning: Project parameters changed after structural analysis. Open Structural Tab to refresh calculation.' : '⚠️ هشدار: پارامترهای پروژه پس از محاسبه سازه تغییر یافته‌اند. لطفاً زبانه سازه و فونداسیون را جهت به‌روزرسانی باز فرمایید.'}
+              {!structuralSnapshot?.isAvailable ? (
+                <div className="p-6 bg-slate-800/40 border border-industrial-border rounded-lg text-center space-y-2">
+                  <div className="text-amber-400 font-bold text-sm">
+                    {isEn ? 'Structural & Foundation Sizing Unavailable' : 'محاسبات سازه و فونداسیون در دسترس نیست'}
+                  </div>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    {isEn
+                      ? 'No live structural calculation snapshot is available for this project. Please navigate to the Structural & Foundation Tab and compute the sizing to synchronize with this EPC report.'
+                      : 'اسنپ‌شات محاسبات سازه برای این پروژه موجود نیست. لطفاً به زبانه سازه و فونداسیون مراجعه کرده و پس از اجرای محاسبات، گزارش رسمی را مشاهده فرمایید.'}
+                  </p>
                 </div>
+              ) : (
+                <>
+                  {structuralSnapshot.isStale && (
+                    <div className="p-3 bg-amber-900/30 border border-amber-500/40 rounded text-amber-300 text-xs">
+                      {isEn
+                        ? '⚠️ Warning: Project parameters were modified after structural calculation. Open Structural & Foundation Tab to refresh.'
+                        : '⚠️ هشدار: پارامترهای پروژه پس از محاسبه سازه تغییر یافته‌اند. لطفاً جهت به‌روزرسانی به زبانه سازه و فونداسیون مراجعه فرمایید.'}
+                    </div>
+                  )}
+
+                  {/* Force Badges */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Velocity Wind Pressure (q_z):' : 'فشار سرعتی مبنای باد (q_z):'}</span>
+                      <span className="font-mono text-industrial-accent print:text-cyan-800 font-bold">
+                        {structuralSnapshot.qzPa} N/m²
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {isEn ? 'ASCE 7-22 with Ke elevation' : 'مبحث ۶ با ضریب ارتفاع Ke'}
+                      </span>
+                    </div>
+                    <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Foundation Technology:' : 'سیستم فونداسیون سازه:'}</span>
+                      <span className="font-mono text-white print:text-black font-semibold">
+                        {isEn ? structuralSnapshot.foundationNameEn : structuralSnapshot.foundationNameFa}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
+                        {structuralSnapshot.bromsPileSection}
+                      </span>
+                    </div>
+                    <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Embedment Depth (L):' : 'عمق کوبش شمع در خاک:'}</span>
+                      <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
+                        {structuralSnapshot.recommendedDepthM} m
+                      </span>
+                      <span className="text-[10px] text-industrial-success block mt-0.5">
+                        {structuralSnapshot.recommendedDepthM === 0
+                          ? (isEn ? 'Rooftop/Shed Mount — Zero Soil Driving ✓' : 'نصب روی سقف — بدون کوبش در خاک ✓')
+                          : (isEn ? `Frost Depth: ${structuralSnapshot.frostDepthCm}cm ✓ (L >= ${structuralSnapshot.minDepthForFrostM}m)` : `کنترل یخبندان: ${structuralSnapshot.frostDepthCm}cm ✓`)}
+                      </span>
+                    </div>
+                    <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
+                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Uplift Tension FoS:' : 'ضریب اطمینان کشش شمع:'}</span>
+                      <span className={`font-mono font-bold ${structuralSnapshot.fosUplift >= 2.0 ? 'text-industrial-success print:text-emerald-800' : 'text-amber-400 print:text-amber-800'}`}>
+                        {structuralSnapshot.fosUplift} {isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        T_ult = {structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Comprehensive Structural Loads & Geotechnical Safety Factors Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left print:text-black border-collapse">
+                      <thead>
+                        <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black text-[11px]">
+                          <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Engineering Parameter' : 'پارامتر محاسباتی مهندسی'}</th>
+                          <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Calculated Value' : 'مقدار محاسبه‌شده'}</th>
+                          <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Design Limit / Code Requirement' : 'حد مجاز آیین‌نامه'}</th>
+                          <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Safety Margin / Status' : 'حاشیه اطمینان / وضعیت'}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-industrial-border print:divide-slate-200 text-[11px]">
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Wind Uplift Force per Table' : 'نیروی مکش باد بر هر میز (Uplift)'}</td>
+                          <td className="p-2 font-mono text-rose-300 font-bold">{structuralSnapshot.windUpliftForceKn} kN</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">ASCE 7-22 Net Pressure</td>
+                          <td className="p-2 font-mono text-slate-300">{structuralSnapshot.upliftPerPostKn} kN/post demand</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Overturning Moment per Table' : 'لنگر واژگونی ناشی از باد (Overturning)'}</td>
+                          <td className="p-2 font-mono text-rose-300 font-bold">{structuralSnapshot.windOverturningMomentKnM} kN·m</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Arm = W/2 + h*sin(beta)</td>
+                          <td className="p-2 text-industrial-success font-bold">FoS = {structuralSnapshot.fosOverturning} (≥ 1.5 Req)</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Broms Lateral Soil Resistance' : 'ظرفیت باربری جانبی خاک (روش برمز)'}</td>
+                          <td className="p-2 font-mono text-sky-300 font-bold">{structuralSnapshot.lateralShearPerPostKn} kN/post shear</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Broms (1964) short-pile lateral limit</td>
+                          <td className="p-2 font-mono text-industrial-success font-bold">FoS = {structuralSnapshot.fosLateral} (≥ 1.5 Req)</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Soil Bearing Pressure under Post' : 'تنش فشاری وارده بر بستر خاک'}</td>
+                          <td className="p-2 font-mono text-white print:text-black font-bold">{structuralSnapshot.appliedPostBearingPressureKpa} kPa</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Allowable bearing qa = {structuralSnapshot.allowableSoilBearingKpa} kPa</td>
+                          <td className="p-2 text-industrial-success font-bold">
+                            {structuralSnapshot.isBearingCapacitySafe ? '✓ PASS (FoS = ' + structuralSnapshot.fosBearing + ')' : '✗ EXCEEDED'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Pile Skin-Friction Tension Resistance' : 'ظرفیت کشش اصطکاک جدار شمع (T_ult)'}</td>
+                          <td className="p-2 font-mono text-industrial-success font-bold">{structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">Eurocode 7 EN 1997-1 §7.6.2.3</td>
+                          <td className="p-2 font-bold text-industrial-success">
+                            FoS = {structuralSnapshot.fosUplift} (≥ 2.0 Req)
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Frost Heave Embedment Depth' : 'عمق کوبش جهت رفع خطر یخبندان'}</td>
+                          <td className="p-2 font-mono text-white print:text-black font-bold">{structuralSnapshot.recommendedDepthM} m</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">L &gt;= Frost Depth + 1.0m ({structuralSnapshot.minDepthForFrostM} m)</td>
+                          <td className="p-2 text-industrial-success font-bold">
+                            {structuralSnapshot.isFrostDepthRespected ? '✓ PASS' : '✗ INSUFFICIENT'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-medium">{isEn ? 'Structural Safety Verdict' : 'نتیجه ارزیابی ایمنی سازه'}</td>
+                          <td className="p-2 font-bold" colSpan={3}>
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400 font-bold">{isEn ? 'STALE (RECALCULATION REQUIRED)' : 'منقضی‌شده (نیازمند بازمحاسبه در زبانه سازه)'}</span>
+                            ) : structuralSnapshot.isStructurallySafe ? (
+                              <span className="text-industrial-success font-bold">{isEn ? 'SCREENING PASS (Preliminary — Unassessed Modes Excluded)' : 'تأیید ارزیابی اولیه غربالگری (حالت‌های ارزیابی‌نشده مستثنی هستند)'}</span>
+                            ) : (
+                              <span className="text-rose-400 font-bold">{isEn ? 'ACTION REQUIRED / UNASSESSED' : 'نیازمند اقدام / ارزیابی‌نشده'}</span>
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Geotechnical & Civil Engineering Explanations & Field Test Recommendations */}
+                  <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-2">
+                    <span className="font-bold text-white print:text-black flex items-center gap-1.5">
+                      <HardHat className="w-4 h-4 text-industrial-warning" />
+                      {isEn ? 'Geotechnical Soil-Structure Interaction & Engineering Disclosures:' : 'تحلیل تعامل خاک و سازه و الزامات صداقت مهندسی:'}
+                    </span>
+                    <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
+                      {isEn ? structuralSnapshot.disclosures.disclaimerEn : structuralSnapshot.disclosures.disclaimerFa}
+                    </p>
+                    <div className="pt-2 border-t border-industrial-border/40 text-[11px]">
+                      <strong className="text-industrial-warning">{isEn ? 'Civil Execution & Quality Assurance Checklist:' : 'چک‌لیست کنترل کیفی و آزمایش‌های میدانی:'}</strong>
+                      <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-300 print:text-slate-700">
+                        <li>{isEn ? 'Conduct ASTM D3689 static tensile pullout tests on 10 preliminary test piles across the field before mass driving.' : 'انجام آزمایش کشش استاتیکی شمع طبق ASTM D3689 روی حداقل ۱۰ پایه آزمایشی در نقاط مختلف سایت پیش از شروع کوبش انبوه.'}</li>
+                        <li>{isEn ? 'Execute ASTM D3966 lateral load tests to verify Broms horizontal deflection does not exceed 12mm under design lateral shear.' : 'انجام آزمایش بارگذاری جانبی طبق ASTM D3966 جهت تایید عدم تجاوز تغییرمکان جانبی سر شمع از ۱۲ میلی‌متر تحت بار طراحی.'}</li>
+                        <li>{isEn ? 'Driving verticality tolerance shall be strictly controlled within +/- 1.0 degree with post head elevation within +/- 10mm.' : 'رواداری شاقولی کوبش پایه‌ها حداکثر ۱.۰± درجه و رواداری تراز سر پایه‌ها حداکثر ۱۰± میلی‌متر رعایت گردد.'}</li>
+                      </ul>
+                    </div>
+                  </div>
+                </>
               )}
-              {!structuralSnapshot?.isAvailable && (
-                <div className="p-3 bg-slate-800/40 border border-industrial-border rounded text-center text-xs text-slate-400">
-                  {isEn ? 'Structural calculation snapshot unavailable. Navigate to Structural & Foundation Tab to compute.' : 'داده‌های سازه و فونداسیون در دسترس نیست. لطفاً به زبانه سازه و فونداسیون مراجعه کرده و محاسبات را اجرا فرمایید.'}
-                </div>
-              )}
-
-              {/* Force Badges */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Velocity Wind Pressure (q_z):' : 'فشار سرعتی مبنای باد (q_z):'}</span>
-                  <span className="font-mono text-industrial-accent print:text-cyan-800 font-bold">
-                    {effectiveQz} N/m²
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {isEn ? 'ASCE 7-22 with Ke elevation' : 'مبحث ۶ با ضریب ارتفاع Ke'}
-                  </span>
-                </div>
-                <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Foundation Technology:' : 'سیستم فونداسیون سازه:'}</span>
-                  <span className="font-mono text-white print:text-black font-semibold">
-                    {effectiveFoundationName}
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                    {structCalc.bromsPileSection}
-                  </span>
-                </div>
-                <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Embedment Depth (L):' : 'عمق کوبش شمع در خاک:'}</span>
-                  <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
-                    {effectiveDepth} m
-                  </span>
-                  <span className="text-[10px] text-industrial-success block mt-0.5">
-                    {effectiveDepth === 0
-                      ? (isEn ? 'Rooftop/Shed Mount — Zero Soil Driving ✓' : 'نصب روی سقف — بدون کوبش در خاک ✓')
-                      : (isEn ? `Frost Depth: ${structCalc.frostDepthCm}cm ✓ (L >= ${structCalc.minDepthForFrostM}m)` : `کنترل یخبندان: ${structCalc.frostDepthCm}cm ✓`)}
-                  </span>
-                </div>
-                <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Uplift Tension FoS:' : 'ضریب اطمینان کشش شمع:'}</span>
-                  <span className={`font-mono font-bold ${effectiveFosUplift >= 2.0 ? 'text-industrial-success print:text-emerald-800' : 'text-amber-400 print:text-amber-800'}`}>
-                    {effectiveFosUplift} {isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    T_ult = {structCalc.upliftCapacityPerPostKn.toFixed(1)} kN/post
-                  </span>
-                </div>
-              </div>
-
-              {/* Comprehensive Structural Loads & Geotechnical Safety Factors Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left print:text-black border-collapse">
-                  <thead>
-                    <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black text-[11px]">
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Engineering Parameter' : 'پارامتر محاسباتی مهندسی'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Calculated Value' : 'مقدار محاسبه‌شده'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Design Limit / Code Requirement' : 'حد مجاز آیین‌نامه'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Safety Margin / Status' : 'حاشیه اطمینان / وضعیت'}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-industrial-border print:divide-slate-200 text-[11px]">
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Wind Uplift Force per Table' : 'نیروی مکش باد بر هر میز (Uplift)'}</td>
-                      <td className="p-2 font-mono text-rose-300 font-bold">{structCalc.windUpliftForceKn} kN</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">ASCE 7-22 Net Pressure Cp={cpUpliftFor(effectiveCity.optimalTiltAnnualDeg || 28).toFixed(2)}</td>
-                      <td className="p-2 font-mono text-slate-300">{structCalc.upliftPerPostKn} kN/post demand</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Overturning Moment per Table' : 'لنگر واژگونی ناشی از باد (Overturning)'}</td>
-                      <td className="p-2 font-mono text-rose-300 font-bold">{structCalc.windOverturningMomentKnM} kN·m</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Arm = W/2 + h*sin(beta) = ~2.77 m</td>
-                      <td className="p-2 text-industrial-success font-bold">FoS = {structCalc.fosOverturningAnchored} (≥ 1.5 Req)</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Broms Lateral Soil Resistance' : 'ظرفیت باربری جانبی خاک (روش برمز)'}</td>
-                      <td className="p-2 font-mono text-sky-300 font-bold">{effectiveLateralShear} kN/post shear</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Broms (1964) short-pile lateral limit</td>
-                      <td className="p-2 font-mono text-industrial-success font-bold">FoS = {effectiveFosLateral} (≥ 1.5 Req)</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Soil Bearing Pressure under Post' : 'تنش فشاری وارده بر بستر خاک'}</td>
-                      <td className="p-2 font-mono text-white print:text-black font-bold">{structCalc.appliedPostBearingPressureKpa} kPa</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Allowable bearing qa = {structCalc.allowableSoilBearingKpa} kPa</td>
-                      <td className="p-2 text-industrial-success font-bold">
-                        {structCalc.isBearingCapacitySafe ? '✓ PASS (FoS = ' + structCalc.fosBearing + ')' : '✗ EXCEEDED'}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Pile Skin-Friction Tension Resistance' : 'ظرفیت کشش اصطکاک جدار شمع (T_ult)'}</td>
-                      <td className="p-2 font-mono text-industrial-success font-bold">{structCalc.upliftCapacityPerPostKn.toFixed(1)} kN/post</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">Eurocode 7 EN 1997-1 §7.6.2.3</td>
-                      <td className="p-2 font-bold text-industrial-success">
-                        FoS = {effectiveFosUplift} (≥ 2.0 Req)
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 font-medium">{isEn ? 'Frost Heave Embedment Depth' : 'عمق کوبش جهت رفع خطر یخبندان'}</td>
-                      <td className="p-2 font-mono text-white print:text-black font-bold">{effectiveDepth} m</td>
-                      <td className="p-2 text-slate-400 print:text-slate-600">L &gt;= Frost Depth + 1.0m ({structCalc.minDepthForFrostM} m)</td>
-                      <td className="p-2 text-industrial-success font-bold">
-                        {structCalc.isFrostDepthRespected ? '✓ PASS' : '✗ INSUFFICIENT'}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Geotechnical & Civil Engineering Explanations & Field Test Recommendations */}
-              <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-2">
-                <span className="font-bold text-white print:text-black flex items-center gap-1.5">
-                  <HardHat className="w-4 h-4 text-industrial-warning" />
-                  {isEn ? 'Geotechnical Soil-Structure Interaction & Construction Guidelines:' : 'تحلیل تعامل خاک و سازه و دستورالعمل‌های اجرایی کوبش شمع:'}
-                </span>
-                <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
-                  {isEn
-                    ? `Driven HDG steel C-piles (${structCalc.bromsPileSection}) provide structural stability through combined lateral passive earth resistance and vertical skin friction. Under governing 3-second gust wind speed of ${effectiveCity.basicWindSpeedKmh} km/h (qz = ${structCalc.velocityWindPressureQzN_M2} N/m²), the sloped PV table generates ${structCalc.windUpliftForceKn} kN of net wind uplift. At an embedment depth of ${structCalc.recommendedDepthM}m, ultimate skin friction tension capacity reaches ${structCalc.upliftCapacityPerPostKn.toFixed(1)} kN per pile, satisfying the Eurocode 7 factor of safety threshold (FoS = ${structCalc.fosUplift} >= 2.0). All steel profiles shall be hot-dip galvanized per ISO 1461 to a minimum thickness of 85 microns to guarantee corrosion protection against soil aggressive agents over the 30-year design life.`
-                    : `پایه‌های کوبشی فولادی گالوانیزه C شکل (${structCalc.bromsPileSection})، پایداری سازه را از طریق ترکیب مقاومت فشاری-جانبی خاک و اصطکاک جدار شمع تأمین می‌نمایند. تحت بار بحرانی باد ۳ ثانیه‌ای ${effectiveCity.basicWindSpeedKmh} کیلومتر بر ساعت (فشار سرعتی ${structCalc.velocityWindPressureQzN_M2} نیوتن بر مترمربع)، نیروی مکش خالص باد بر هر میز به ${structCalc.windUpliftForceKn} کیلووات می‌رسد. در عمق کوبش ${structCalc.recommendedDepthM} متر، ظرفیت باربری کششی خاک به ${structCalc.upliftCapacityPerPostKn.toFixed(1)} کیلووات به ازای هر پایه می‌رسد که ضریب اطمینان آیین‌نامه یوروکد ۷ (FoS = ${structCalc.fosUplift} >= ۲.۰) را تأمین می‌کند. کلیه قطعات فولادی با پوشش گالوانیزه گرم به ضخامت حداقل ۸۵ میکرون مطابق ISO 1461 محافظت می‌شوند تا طول عمر ۳۰ ساله تضمین گردد.`}
-                </p>
-                <div className="pt-2 border-t border-industrial-border/40 text-[11px]">
-                  <strong className="text-industrial-warning">{isEn ? 'Civil Execution & Quality Assurance Checklist:' : 'چک‌لیست کنترل کیفی و آزمایش‌های میدانی:'}</strong>
-                  <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-300 print:text-slate-700">
-                    <li>{isEn ? 'Conduct ASTM D3689 static tensile pullout tests on 10 preliminary test piles across the field before mass driving.' : 'انجام آزمایش کشش استاتیکی شمع طبق ASTM D3689 روی حداقل ۱۰ پایه آزمایشی در نقاط مختلف سایت پیش از شروع کوبش انبوه.'}</li>
-                    <li>{isEn ? 'Execute ASTM D3966 lateral load tests to verify Broms horizontal deflection does not exceed 12mm under design lateral shear.' : 'انجام آزمایش بارگذاری جانبی طبق ASTM D3966 جهت تایید عدم تجاوز تغییرمکان جانبی سر شمع از ۱۲ میلی‌متر تحت بار طراحی.'}</li>
-                    <li>{isEn ? 'Driving verticality tolerance shall be strictly controlled within +/- 1.0 degree with post head elevation within +/- 10mm.' : 'رواداری شاقولی کوبش پایه‌ها حداکثر ۱.۰± درجه و رواداری تراز سر پایه‌ها حداکثر ۱۰± میلی‌متر رعایت گردد.'}</li>
-                  </ul>
-                </div>
-              </div>
             </div>
           )}
 

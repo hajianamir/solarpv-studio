@@ -10,6 +10,8 @@ import {
   calculateUnifiedWindPressureQz,
   calculateUnifiedKz,
   calculateUnifiedLateralShearPerPost,
+  calculateUnifiedTableLoadsAndReactions,
+  calculateGoverningPileDepth,
 } from './core/structuralContract';
 
 export type FoundationType =
@@ -206,6 +208,7 @@ export interface StructuralRemedialGuidance {
 
 export interface StructuralAnalysisResult {
   tableAreaM2: number;
+  tableSlopedWidthM: number;
   totalArrayAreaM2: number;
   tableLengthM: number;
   tableHeightM: number;
@@ -316,7 +319,7 @@ export function calculateStructuralAndFoundations(
   // Table width = 2 modules in portrait, Table length = (modulesPerTable / 2) * moduleWidth
   const tableLengthM = (modulesPerTable / 2.0) * (moduleWidthM + 0.02);
   const tableSlopedWidthM = 2.0 * moduleLengthM + 0.05;
-  const tableAreaM2 = tableLengthM * tableSlopedWidthM;
+  const tableAreaM2 = Number((tableLengthM * tableSlopedWidthM).toFixed(2));
 
   const totalTablesCount = Math.ceil(totalModulesCount / modulesPerTable);
   const totalArrayAreaM2 = tableAreaM2 * totalTablesCount;
@@ -335,77 +338,40 @@ export function calculateStructuralAndFoundations(
   const windSpeedMs = windPressure.vMs;
 
   // 1. Dead Load Calculation
-  // Module weight + Aluminum purlins/clamps + Steel torque-tube/brackets (~18 kg/m² for racking)
+  // 2. Dead Load Calculation
   const moduleTotalWeightPerTable = modulesPerTable * moduleWeightKg;
   const rackingWeightPerTable = tableAreaM2 * 14.5; // kg of galvanized steel/aluminum
   const deadLoadTableKg = moduleTotalWeightPerTable + rackingWeightPerTable;
   const deadLoadTableKn = (deadLoadTableKg * 9.81) / 1000.0;
 
-  // 2. Wind Load Calculation (ASCE 7 & Iranian Code Part 6)
   // q_z from the shared calculateWindPressureQz helper (single source).
   const velocityWindPressureQzN_M2 = windPressure.qzN_M2;
 
-  // Aerodynamic coefficients per ASCE 7-22 §29.4.3 (ground-mount) & §29.4.4 / Ch 30 (rooftop)
-  const cpUplift = cpUpliftFor(arrayTiltDeg, isRooftop);
-  const cpDownforce = cpDownforceFor(arrayTiltDeg, isRooftop);
-
-  // Forces in kN
-  const windUpliftForceKn = (velocityWindPressureQzN_M2 * cpUplift * tableAreaM2) / 1000.0;
-  const windDownforceKn = (velocityWindPressureQzN_M2 * cpDownforce * tableAreaM2) / 1000.0;
-  // Overturning moment about the down-slope (south) post base.
-  // 2D cross-section, down-slope post at origin: panel CG at
-  // (W_sloped*cos(beta)/2, h_gc + W_sloped*sin(beta)/2); normal wind force
-  // F = qz*Cp*A with components (F*sin(beta), F*cos(beta)).
-  // Moment = x*F_y - y*F_x = F*(W_sloped/2 + h_gc*sin(beta)).
-  const overturningMomentArmM =
-    (tableSlopedWidthM / 2.0) + (groundClearanceM * Math.sin(tiltRad));
-  const windOverturningMomentKnM = windUpliftForceKn * overturningMomentArmM;
-
-  // 3. Snow Load Calculation
-  // ============================================================================
-  // Snow load - ASCE 7-22 §7.4.1 + §7.4.5 (Solar Panel Arrays)
-  // ============================================================================
-  // pf = pg * Cs * cos(beta) for ground-mount
-  // pf = 0.70 * pg * Cs * cos(beta) for rooftop/shed PV per ASCE 7-22 §7.4.1
-  //   pg        = ground snow load (site input, kg/m²)
-  //   Cs        = slope factor (1.0 for beta <= 30 deg, linear reduction above)
-  //   cos(beta) = vertical-to-sloped-area projection
-  // ============================================================================
-  const cs = arrayTiltDeg > 30 ? Math.max(0, 1 - (arrayTiltDeg - 30) / 40) : 1.0;
-  const roofSnowFactor = isRooftop ? 0.70 : 1.0;
-  const snowLoadTableKg = groundSnowLoadKgM2 * roofSnowFactor * cs * tableAreaM2 * Math.cos(tiltRad);
-  const snowLoadTableKn = (snowLoadTableKg * 9.81) / 1000.0;
-
-  // 4. Foundation Sizing per Table
+  // 3. Foundation Sizing per Table
   // Typically 4 posts per table (for 2P14 = 28 modules) or 6 posts for larger tables
   const postsPerTable = input.customPostsPerTable ?? (modulesPerTable > 20 ? 4 : 2);
   const totalPostsCount = totalTablesCount * postsPerTable;
 
-  // Net tension (uplift) per post = (Wind Uplift - 0.9 * Dead Load) / posts + Moment effect
-  // Vertical component of the normal wind force is F_normal * cos(beta).
-  // The moment term (M / post-spacing) already represents the vertical
-  // reaction induced by the moment, so cos(beta) is NOT applied to it.
-  const verticalUpliftForceKn = windUpliftForceKn * Math.cos(tiltRad);
-
-  const netUpliftPerPost = Math.max(
-    0,
-    (verticalUpliftForceKn - 0.9 * deadLoadTableKn) / postsPerTable + (windOverturningMomentKnM / (tableSlopedWidthM * postsPerTable / 2))
-  );
-  const upliftPerPostKn = Number(netUpliftPerPost.toFixed(1));
-
-  // Max compression per post = (Dead Load + 1.2 * Wind Downforce + Snow) / posts
-  const compressionPerPostKn = Number(
-    ((deadLoadTableKn + 1.2 * windDownforceKn + snowLoadTableKn) / postsPerTable).toFixed(1)
-  );
-
-  // Lateral shear per post via unified structural contract
-  const lateralShearResult = calculateUnifiedLateralShearPerPost({
+  // 4. Wind & Snow Loads and Post Reaction Forces via unified structural contract
+  const tableLoads = calculateUnifiedTableLoadsAndReactions({
     qzN_M2: velocityWindPressureQzN_M2,
+    groundSnowLoadKgM2,
     tableAreaM2,
+    tableSlopedWidthM,
+    groundClearanceM,
     arrayTiltDeg,
+    deadLoadTableKn,
     postsPerTable,
+    isRooftop,
   });
-  const lateralShearPerPostKn = Number(lateralShearResult.lateralShearPerPostKn.toFixed(3));
+
+  const windUpliftForceKn = tableLoads.windUpliftForceKn;
+  const windDownforceKn = tableLoads.windDownforceKn;
+  const windOverturningMomentKnM = tableLoads.windOverturningMomentKnM;
+  const snowLoadTableKn = tableLoads.snowLoadTableKn;
+  const upliftPerPostKn = tableLoads.upliftPerPostKn;
+  const compressionPerPostKn = tableLoads.compressionPerPostKn;
+  const lateralShearPerPostKn = tableLoads.lateralShearPerPostKn;
 
   // 5. Foundation Geometry & Soil Mechanics (Broms 1964 Lateral Equilibrium)
   const allowableSoilBearingKpa = input.soilBearingCapacityKpa || (soilType === 'dense_sand_gravel' ? 250 : soilType === 'medium_clay' ? 180 : soilType === 'loose_sand' ? 140 : 350);
@@ -437,9 +403,22 @@ export function calculateStructuralAndFoundations(
   let ballastKgPerTable = 0;
 
   if (foundationType === 'rammed_steel_pile') {
-    recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
-      ? Number(input.customEmbedmentDepthM.toFixed(2))
-      : bromsResult.embedmentDepthM;
+    const reqUpliftDepthM = calculateRequiredEmbedmentForUplift(
+      upliftPerPostKn,
+      soilType,
+      0.15,
+      soilCohesionKpa,
+      soilDensityKnM3,
+      siteFrostDepthM,
+      2.0
+    );
+    const governingDepthCalc = calculateGoverningPileDepth({
+      lateralDepthM: bromsResult.embedmentDepthM,
+      frostDepthM: siteFrostDepthM,
+      upliftRequiredDepthM: reqUpliftDepthM,
+      customEmbedmentDepthM: input.customEmbedmentDepthM,
+    });
+    recommendedDepthM = governingDepthCalc.effectiveRecommendedDepthM;
     foundationNameFa = 'پایه کوبشی فولادی C شکل گالوانیزه گرم';
     foundationNameEn = 'Hot-Dip Galvanized Rammed Steel C-Pile';
     foundationDimensionsDesc = `پروفیل فولادی ${bromsResult.pileSection} (یا C120×50×25×3.5mm)، عمق کوبش در خاک: ${recommendedDepthM} متر (بدون بتن‌ریزی)`;
@@ -493,9 +472,22 @@ export function calculateStructuralAndFoundations(
     foundationDimensionsDesc = `پایه بتنی مسلح قطر ۴۰ سانتی‌متر، عمق: ${recommendedDepthM} متر با انکربولت‌های M20 گالوانیزه`;
     foundationDimensionsDescEn = `Reinforced concrete cylinder dia 40cm, depth: ${recommendedDepthM} m with M20 HDG anchor bolts`;
   } else if (foundationType === 'ground_screw') {
-    recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
-      ? Number(input.customEmbedmentDepthM.toFixed(2))
-      : Number(Math.max(siteFrostDepthM + 0.5, bromsResult.embedmentDepthM * 0.95).toFixed(2));
+    const reqUpliftDepthM = calculateRequiredEmbedmentForUplift(
+      upliftPerPostKn,
+      soilType,
+      0.076,
+      soilCohesionKpa,
+      soilDensityKnM3,
+      siteFrostDepthM,
+      2.0
+    );
+    const governingDepthCalc = calculateGoverningPileDepth({
+      lateralDepthM: bromsResult.embedmentDepthM,
+      frostDepthM: siteFrostDepthM,
+      upliftRequiredDepthM: reqUpliftDepthM,
+      customEmbedmentDepthM: input.customEmbedmentDepthM,
+    });
+    recommendedDepthM = governingDepthCalc.effectiveRecommendedDepthM;
     foundationNameFa = 'شمع‌های پیچشی فولادی (Ground Screws)';
     foundationNameEn = 'Galvanized Continuous Ground Screw';
     foundationDimensionsDesc = `شمع پیچشی گالوانیزه قطر ۷۶mm، طول رزوه ۱۲۰۰mm، عمق نفوذ: ${recommendedDepthM} متر`;
@@ -843,7 +835,8 @@ export function calculateStructuralAndFoundations(
   }
 
   return {
-    tableAreaM2: Number(tableAreaM2.toFixed(1)),
+    tableAreaM2,
+    tableSlopedWidthM: Number(tableSlopedWidthM.toFixed(3)),
     totalArrayAreaM2: Number(totalArrayAreaM2.toFixed(0)),
     tableLengthM: Number(tableLengthM.toFixed(2)),
     tableHeightM: Number(tableSlopedWidthM.toFixed(2)),

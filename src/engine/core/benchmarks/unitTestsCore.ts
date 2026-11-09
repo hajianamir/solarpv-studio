@@ -2445,7 +2445,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   }
 
   // [E5.1-STRUCT-2] fosUplift must reflect pile tension capacity; the
-  // 28-module table at 130 km/h is genuinely uplift-undersized.
+  // 28-module table at 130 km/h with 1.3m depth is genuinely uplift-undersized.
   {
     const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
 
@@ -2455,6 +2455,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       arrayTiltDeg: 31, groundClearanceM: 0.9,
       basicWindSpeedKmh: 130, groundSnowLoadKgM2: 100,
       foundationType: 'rammed_steel_pile', soilType: 'dense_sand_gravel',
+      customEmbedmentDepthM: 1.3,
     });
 
     assert(

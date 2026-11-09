@@ -95,6 +95,47 @@ export const FIXTURE_S3: StructuralParametersInput = Object.freeze({
 
 export type S1FixtureType = typeof FIXTURE_S1;
 
+export interface UnifiedTableGeometryInput {
+  modulesPerTable: number;
+  moduleLengthM: number;
+  moduleWidthM: number;
+}
+
+export interface UnifiedTableGeometryResult {
+  tableLengthM: number;
+  tableSlopedWidthM: number;
+  tableAreaM2: number;
+}
+
+/**
+ * Standard table geometry: 2 modules in portrait, with 20mm clamp spacing along length
+ * and 50mm center gap along slope.
+ */
+export function calculateUnifiedTableGeometry(
+  input: UnifiedTableGeometryInput
+): UnifiedTableGeometryResult {
+  const { modulesPerTable, moduleLengthM, moduleWidthM } = input;
+  if (!Number.isInteger(modulesPerTable) || modulesPerTable < 1) {
+    throw new RangeError(`Invalid modulesPerTable (${modulesPerTable}): must be an integer >= 1`);
+  }
+  if (!Number.isFinite(moduleLengthM) || moduleLengthM <= 0) {
+    throw new RangeError(`Invalid moduleLengthM (${moduleLengthM}): must be positive finite`);
+  }
+  if (!Number.isFinite(moduleWidthM) || moduleWidthM <= 0) {
+    throw new RangeError(`Invalid moduleWidthM (${moduleWidthM}): must be positive finite`);
+  }
+
+  const tableLengthM = (modulesPerTable / 2.0) * (moduleWidthM + 0.02);
+  const tableSlopedWidthM = 2.0 * moduleLengthM + 0.05;
+  const tableAreaM2 = tableLengthM * tableSlopedWidthM;
+
+  return {
+    tableLengthM,
+    tableSlopedWidthM,
+    tableAreaM2,
+  };
+}
+
 export interface UnifiedWindPressureInput {
   basicWindSpeedKmh: number;
   elevationM?: number;
@@ -306,10 +347,6 @@ export interface LateralShearInput {
 /**
  * Single source of truth for lateral shear demand per post.
  * Eliminates artificial hidden multipliers (e.g. * 1.2 in legacy recommendation engine).
- *
- * Input safety validations:
- * - postsPerTable must be a positive integer >= 1 (strictly rejects 1.5, 0, -2, NaN).
- * - arrayTiltDeg must be a finite number between 0 and 90 degrees (strictly rejects NaN, negative, >90).
  */
 export function calculateUnifiedLateralShearPerPost(
   input: LateralShearInput
@@ -338,9 +375,113 @@ export function calculateUnifiedLateralShearPerPost(
 
   const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
   const lateralWindForceTableKn = (qzN_M2 * tableAreaM2 * Math.sin(tiltRad)) / 1000.0;
-  const lateralShearPerPostKn = lateralWindForceTableKn / postsPerTable;
+  const lateralShearPerPostKn = Number((lateralWindForceTableKn / postsPerTable).toFixed(3));
 
   return {
+    lateralWindForceTableKn,
+    lateralShearPerPostKn,
+  };
+}
+
+export interface UnifiedTableLoadsInput {
+  qzN_M2: number;
+  groundSnowLoadKgM2: number;
+  tableAreaM2: number;
+  tableSlopedWidthM: number;
+  groundClearanceM: number;
+  arrayTiltDeg: number;
+  deadLoadTableKn: number;
+  postsPerTable: number;
+  isRooftop?: boolean;
+}
+
+export interface UnifiedTableLoadsResult {
+  cpUplift: number;
+  cpDownforce: number;
+  windUpliftForceKn: number;
+  windDownforceKn: number;
+  windOverturningMomentKnM: number;
+  snowLoadTableKn: number;
+  upliftPerPostKn: number;
+  compressionPerPostKn: number;
+  lateralWindForceTableKn: number;
+  lateralShearPerPostKn: number;
+}
+
+/**
+ * Unified load and reaction calculation per table and per post.
+ * Single source of truth for both structuralEngine and foundationRecommendation.
+ */
+export function calculateUnifiedTableLoadsAndReactions(
+  input: UnifiedTableLoadsInput
+): UnifiedTableLoadsResult {
+  const {
+    qzN_M2,
+    groundSnowLoadKgM2,
+    tableAreaM2,
+    tableSlopedWidthM,
+    groundClearanceM,
+    arrayTiltDeg,
+    deadLoadTableKn,
+    postsPerTable,
+    isRooftop = false,
+  } = input;
+
+  if (!Number.isInteger(postsPerTable) || postsPerTable < 1) {
+    throw new RangeError(`Invalid postsPerTable (${postsPerTable}): must be an integer >= 1`);
+  }
+  if (!Number.isFinite(arrayTiltDeg) || arrayTiltDeg < 0 || arrayTiltDeg > 90) {
+    throw new RangeError(`Invalid arrayTiltDeg (${arrayTiltDeg}): must be between 0 and 90`);
+  }
+  if (!Number.isFinite(qzN_M2) || qzN_M2 < 0) {
+    throw new RangeError(`Invalid qzN_M2 (${qzN_M2}): must be non-negative finite number`);
+  }
+
+  const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
+
+  // Aerodynamic coefficients per ASCE 7-22 §29.4.3 / §29.4.4
+  const cpUplift = isRooftop ? 1.45 + 0.015 * arrayTiltDeg : 1.30 + 0.012 * arrayTiltDeg;
+  const cpDownforce = isRooftop ? 1.10 + 0.012 * arrayTiltDeg : 0.95 + 0.01 * arrayTiltDeg;
+
+  const windUpliftForceKn = (qzN_M2 * cpUplift * tableAreaM2) / 1000.0;
+  const windDownforceKn = (qzN_M2 * cpDownforce * tableAreaM2) / 1000.0;
+
+  const overturningMomentArmM = (tableSlopedWidthM / 2.0) + (groundClearanceM * Math.sin(tiltRad));
+  const windOverturningMomentKnM = windUpliftForceKn * overturningMomentArmM;
+
+  // Snow load per ASCE 7-22 §7.4
+  const cs = arrayTiltDeg > 30 ? Math.max(0, 1 - (arrayTiltDeg - 30) / 40) : 1.0;
+  const roofSnowFactor = isRooftop ? 0.70 : 1.0;
+  const snowLoadTableKg = groundSnowLoadKgM2 * roofSnowFactor * cs * tableAreaM2 * Math.cos(tiltRad);
+  const snowLoadTableKn = (snowLoadTableKg * 9.81) / 1000.0;
+
+  // Lateral shear per post
+  const lateralWindForceTableKn = (qzN_M2 * tableAreaM2 * Math.sin(tiltRad)) / 1000.0;
+  const lateralShearPerPostKn = Number((lateralWindForceTableKn / postsPerTable).toFixed(3));
+
+  // Net tension (uplift) per post
+  const verticalUpliftForceKn = windUpliftForceKn * Math.cos(tiltRad);
+  const netUpliftPerPost = Math.max(
+    0,
+    (verticalUpliftForceKn - 0.9 * deadLoadTableKn) / postsPerTable +
+    (windOverturningMomentKnM / ((tableSlopedWidthM * postsPerTable) / 2.0))
+  );
+  const upliftPerPostKn = Number(netUpliftPerPost.toFixed(3));
+
+  // Compression per post
+  const compressionPerPostKn = Number(
+    ((deadLoadTableKn + 1.2 * windDownforceKn + snowLoadTableKn) / postsPerTable).toFixed(3)
+  );
+
+  return {
+    cpUplift,
+    cpDownforce,
+    windUpliftForceKn,
+    windDownforceKn,
+    windOverturningMomentKnM,
+    snowLoadTableKn,
+    upliftPerPostKn,
+    compressionPerPostKn,
     lateralWindForceTableKn,
     lateralShearPerPostKn,
   };
@@ -492,7 +633,7 @@ export function getStructuralHonestyDisclosures(): UnassessedDisclosures {
 /**
  * Structural Tab Calculation Snapshot.
  * Carries exact state from StructuralFoundationTab to OfficialReportModal.
- * When absent or inputs change without recalculating, status is 'unavailable'.
+ * When absent or inputs change without recalculating, status is 'unavailable' or 'isStale: true'.
  */
 export interface StructuralSnapshot {
   snapshotId: string;
@@ -504,22 +645,41 @@ export interface StructuralSnapshot {
   foundationType: string;
   foundationNameFa: string;
   foundationNameEn: string;
+  bromsPileSection: string;
+  totalTablesCount: number;
+  totalPostsCount: number;
+  postsPerTable: number;
+  tableAreaM2: number;
   qzPa: number;
   qzKnM2: number;
   deadLoadTableKn: number;
+  windUpliftForceKn: number;
+  windDownforceKn: number;
+  windOverturningMomentKnM: number;
+  snowLoadTableKn: number;
   lateralShearPerPostKn: number;
   upliftPerPostKn: number;
   compressionPerPostKn: number;
   recommendedDepthM: number;
+  minDepthForFrostM: number;
+  frostDepthCm: number;
+  appliedPostBearingPressureKpa: number;
+  allowableSoilBearingKpa: number;
+  upliftCapacityPerPostKn: number;
   governingLimit: string;
   fosUplift: number;
   fosLateral: number;
   fosOverturning: number;
   fosSliding: number;
+  fosBearing: number;
+  isBearingCapacitySafe: boolean;
+  isFrostDepthRespected: boolean;
   isStructurallySafe: boolean;
   isScreeningPreliminary: boolean;
   assessmentStatus: AssessmentStatus;
   disclosures: UnassessedDisclosures;
+  safetyReasonFa: string;
+  safetyReasonEn: string;
 }
 
 /**
@@ -529,17 +689,36 @@ export function createStructuralSnapshot(
   result: {
     foundationNameFa: string;
     foundationNameEn: string;
+    bromsPileSection: string;
+    totalTablesCount: number;
+    totalPostsCount: number;
+    postsPerTable: number;
+    tableAreaM2: number;
     velocityWindPressureQzN_M2: number;
     deadLoadTableKn: number;
+    windUpliftForceKn: number;
+    windDownforceKn: number;
+    windOverturningMomentKnM: number;
+    snowLoadTableKn: number;
     lateralShearPerPostKn: number;
     upliftPerPostKn: number;
     compressionPerPostKn: number;
     recommendedDepthM: number;
+    minDepthForFrostM: number;
+    frostDepthCm: number;
+    appliedPostBearingPressureKpa: number;
+    allowableSoilBearingKpa: number;
+    upliftCapacityPerPostKn: number;
     fosUplift: number;
     fosLateral: number;
     fosOverturning: number;
     fosSliding: number;
+    fosBearing: number;
+    isBearingCapacitySafe: boolean;
+    isFrostDepthRespected: boolean;
     isStructurallySafe: boolean;
+    safetyReasonFa: string;
+    safetyReasonEn: string;
   },
   foundationType: string,
   inputHash: string,
@@ -558,21 +737,128 @@ export function createStructuralSnapshot(
     foundationType,
     foundationNameFa: result.foundationNameFa,
     foundationNameEn: result.foundationNameEn,
+    bromsPileSection: result.bromsPileSection,
+    totalTablesCount: result.totalTablesCount,
+    totalPostsCount: result.totalPostsCount,
+    postsPerTable: result.postsPerTable,
+    tableAreaM2: result.tableAreaM2,
     qzPa: result.velocityWindPressureQzN_M2,
     qzKnM2: Number((result.velocityWindPressureQzN_M2 / 1000).toFixed(3)),
     deadLoadTableKn: result.deadLoadTableKn,
+    windUpliftForceKn: result.windUpliftForceKn,
+    windDownforceKn: result.windDownforceKn,
+    windOverturningMomentKnM: result.windOverturningMomentKnM,
+    snowLoadTableKn: result.snowLoadTableKn,
     lateralShearPerPostKn: result.lateralShearPerPostKn,
     upliftPerPostKn: result.upliftPerPostKn,
     compressionPerPostKn: result.compressionPerPostKn,
     recommendedDepthM: result.recommendedDepthM,
+    minDepthForFrostM: result.minDepthForFrostM,
+    frostDepthCm: result.frostDepthCm,
+    appliedPostBearingPressureKpa: result.appliedPostBearingPressureKpa,
+    allowableSoilBearingKpa: result.allowableSoilBearingKpa,
+    upliftCapacityPerPostKn: result.upliftCapacityPerPostKn,
     governingLimit: 'governing_depth_verified',
     fosUplift: result.fosUplift,
     fosLateral: result.fosLateral,
     fosOverturning: result.fosOverturning,
     fosSliding: result.fosSliding,
+    fosBearing: result.fosBearing,
+    isBearingCapacitySafe: result.isBearingCapacitySafe,
+    isFrostDepthRespected: result.isFrostDepthRespected,
     isStructurallySafe: isRooftopAnchor ? false : result.isStructurallySafe,
     isScreeningPreliminary: true,
     assessmentStatus,
     disclosures,
+    safetyReasonFa: result.safetyReasonFa,
+    safetyReasonEn: result.safetyReasonEn,
   };
+}
+
+export type StructuralSheetRow = [string, string | number, string, string];
+
+/**
+ * Generates official Excel export rows from a StructuralSnapshot.
+ * Shared between OfficialReportModal and verify-phase07 harness to guarantee zero divergence.
+ */
+export function exportStructuralSheetRows(
+  snapshot: StructuralSnapshot | null,
+  isEn: boolean = false
+): StructuralSheetRow[] {
+  if (!snapshot || !snapshot.isAvailable) {
+    return [
+      ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
+      ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
+      ['Structural Analysis Status', 'UNAVAILABLE', '-', 'Run calculation in Structural & Foundation Tab'],
+      ['Velocity Wind Pressure (qz)', 'UNAVAILABLE', 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
+      ['Wind Uplift Force per Table', 'UNAVAILABLE', 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
+      ['Wind Downforce per Table', 'UNAVAILABLE', 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
+      ['Overturning Moment per Table', 'UNAVAILABLE', 'kN·m', 'Derived arm (W/2 + h*sin beta)'],
+      ['Factored Snow Load per Table', 'UNAVAILABLE', 'kN', 'INBC 6 / ASCE 7-22 §7.4'],
+      ['Foundation Technology', 'UNAVAILABLE', '-', 'Eurocode 7 EN 1997-1'],
+      ['Pile Profile Section', 'UNAVAILABLE', '-', 'Broms (1964) / ASTM A123'],
+      ['Embedment Depth in Ground', 'UNAVAILABLE', 'm', 'Frost + Uplift + Lateral Governing'],
+      ['Total Mounting Tables', 'UNAVAILABLE', 'tables', 'Plant-wide count'],
+      ['Total Piles Count', 'UNAVAILABLE', 'posts', 'Plant-wide structural posts'],
+      ['Applied Post Bearing Pressure', 'UNAVAILABLE', 'kPa', 'Allowable qa check'],
+      ['Ultimate Skin-Friction Uplift (T_ult)', 'UNAVAILABLE', 'kN/post', 'Burland-Meyerhof Beta Method'],
+      ['Uplift Safety Factor (FoS_uplift)', 'UNAVAILABLE', '-', 'Required >= 2.0 (Eurocode 7)'],
+      ['Broms Lateral Safety Factor (FoS_lateral)', 'UNAVAILABLE', '-', 'Required >= 1.5 (Broms 1964)'],
+      ['Overturning Safety Factor (FoS_overturning)', 'UNAVAILABLE', '-', 'Required >= 1.5 (ASCE 7-22)'],
+      ['Structural Safety Compliance', 'UNAVAILABLE', '-', 'Recalculation in Structural Tab Required'],
+    ];
+  }
+
+  if (snapshot.isStale) {
+    return [
+      ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
+      ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
+      ['Structural Analysis Status', 'STALE — Inputs Modified', '-', 'Recalculation in Structural Tab Required'],
+      ['Velocity Wind Pressure (qz)', snapshot.qzPa, 'N/m²', 'ASCE 7-22 Eq. 26.10-1 (STALE)'],
+      ['Wind Uplift Force per Table', snapshot.windUpliftForceKn, 'kN', 'ASCE 7-22 §27.3 Net Uplift (STALE)'],
+      ['Wind Downforce per Table', snapshot.windDownforceKn, 'kN', 'ASCE 7-22 §27.3 Net Downforce (STALE)'],
+      ['Overturning Moment per Table', snapshot.windOverturningMomentKnM, 'kN·m', 'Derived arm (STALE)'],
+      ['Factored Snow Load per Table', snapshot.snowLoadTableKn, 'kN', 'INBC 6 / ASCE 7-22 §7.4 (STALE)'],
+      ['Foundation Technology', isEn ? snapshot.foundationNameEn : snapshot.foundationNameFa, '-', 'Eurocode 7 EN 1997-1'],
+      ['Pile Profile Section', snapshot.bromsPileSection, '-', 'Broms (1964) / ASTM A123'],
+      ['Embedment Depth in Ground', snapshot.recommendedDepthM, 'm', `L >= Frost Depth + 1.0m (${snapshot.minDepthForFrostM}m) (STALE)`],
+      ['Total Mounting Tables', snapshot.totalTablesCount, 'tables', `${snapshot.postsPerTable} posts per table`],
+      ['Total Piles Count', snapshot.totalPostsCount, 'posts', 'Plant-wide structural posts'],
+      ['Applied Post Bearing Pressure', snapshot.appliedPostBearingPressureKpa, 'kPa', `Allowable qa = ${snapshot.allowableSoilBearingKpa} kPa`],
+      ['Ultimate Skin-Friction Uplift (T_ult)', snapshot.upliftCapacityPerPostKn, 'kN/post', 'Burland-Meyerhof Beta Method'],
+      ['Uplift Safety Factor (FoS_uplift)', snapshot.fosUplift, '-', 'Required >= 2.0 (Eurocode 7)'],
+      ['Broms Lateral Safety Factor (FoS_lateral)', snapshot.fosLateral, '-', 'Required >= 1.5 (Broms 1964)'],
+      ['Overturning Safety Factor (FoS_overturning)', snapshot.fosOverturning, '-', 'Required >= 1.5 (ASCE 7-22)'],
+      ['Structural Safety Compliance', 'STALE — RECALCULATION REQUIRED', '-', 'Project parameters modified after calculation'],
+    ];
+  }
+
+  const complianceStatus = snapshot.isStructurallySafe
+    ? 'SCREENING PASS (Preliminary — Unassessed Modes Excluded)'
+    : 'ACTION REQUIRED / UNASSESSED';
+
+  const complianceStandard =
+    'INBC 6 / ASCE 7-22 Preliminary Screening Only (Edge vortices & dynamic seismic unassessed)';
+
+  return [
+    ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
+    ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
+    ['Structural Analysis Status', 'SYNCHRONIZED', '-', 'Live Structural Tab Snapshot'],
+    ['Velocity Wind Pressure (qz)', snapshot.qzPa, 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
+    ['Wind Uplift Force per Table', snapshot.windUpliftForceKn, 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
+    ['Wind Downforce per Table', snapshot.windDownforceKn, 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
+    ['Overturning Moment per Table', snapshot.windOverturningMomentKnM, 'kN·m', 'Derived arm (W/2 + h*sin beta)'],
+    ['Factored Snow Load per Table', snapshot.snowLoadTableKn, 'kN', 'INBC 6 / ASCE 7-22 §7.4'],
+    ['Foundation Technology', isEn ? snapshot.foundationNameEn : snapshot.foundationNameFa, '-', 'Eurocode 7 EN 1997-1'],
+    ['Pile Profile Section', snapshot.bromsPileSection, '-', 'Broms (1964) / ASTM A123'],
+    ['Embedment Depth in Ground', snapshot.recommendedDepthM, 'm', `L >= Frost Depth + 1.0m (${snapshot.minDepthForFrostM}m)`],
+    ['Total Mounting Tables', snapshot.totalTablesCount, 'tables', `${snapshot.postsPerTable} posts per table`],
+    ['Total Piles Count', snapshot.totalPostsCount, 'posts', 'Plant-wide structural posts'],
+    ['Applied Post Bearing Pressure', snapshot.appliedPostBearingPressureKpa, 'kPa', `Allowable qa = ${snapshot.allowableSoilBearingKpa} kPa`],
+    ['Ultimate Skin-Friction Uplift (T_ult)', snapshot.upliftCapacityPerPostKn, 'kN/post', 'Burland-Meyerhof Beta Method'],
+    ['Uplift Safety Factor (FoS_uplift)', snapshot.fosUplift, '-', 'Required >= 2.0 (Eurocode 7)'],
+    ['Broms Lateral Safety Factor (FoS_lateral)', snapshot.fosLateral, '-', 'Required >= 1.5 (Broms 1964)'],
+    ['Overturning Safety Factor (FoS_overturning)', snapshot.fosOverturning, '-', 'Required >= 1.5 (ASCE 7-22)'],
+    ['Structural Safety Compliance', complianceStatus, '-', complianceStandard],
+  ];
 }

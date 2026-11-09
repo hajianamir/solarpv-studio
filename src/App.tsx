@@ -1436,6 +1436,14 @@ export const App: React.FC = () => {
     ? isSidebarCollapsed ? 'lg:mr-[68px]' : 'lg:mr-[280px]'
     : isSidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-[280px]';
 
+  const currentStructuralInputHash = `${city.id}_${arrayDesign.totalModulesCount}_${siteOverrides.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28}_${siteOverrides.foundationType ?? 'rammed_steel_pile'}_${siteOverrides.basicWindSpeedKmh ?? city.basicWindSpeedKmh}_${siteOverrides.soilType ?? city.soilType}_${siteOverrides.frostDepthCm ?? city.frostDepthCm}_${siteOverrides.customEmbedmentDepthM ?? null}`;
+
+  const effectiveStructuralSnapshot = useMemo(() => {
+    if (!structuralSnapshot) return null;
+    const isStale = structuralSnapshot.inputHash !== currentStructuralInputHash;
+    return isStale ? { ...structuralSnapshot, isStale: true } : structuralSnapshot;
+  }, [structuralSnapshot, currentStructuralInputHash]);
+
   return (
     <div
       className={`min-h-screen bg-[#080C14] text-slate-100 flex flex-col ${isRtl ? 'font-vazir' : 'font-sans'}`}
@@ -2734,7 +2742,7 @@ export const App: React.FC = () => {
             financial={financialResult}
             bayArchitecture={bayArchitecture}
             siteOverrides={siteOverrides}
-            structuralSnapshot={structuralSnapshot}
+            structuralSnapshot={effectiveStructuralSnapshot}
             waterfallReport={waterfallReport}
             appliedShading={appliedShadingRecord}
             isShadingStale={isShadingStale}
