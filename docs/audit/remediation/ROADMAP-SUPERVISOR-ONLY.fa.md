@@ -164,7 +164,7 @@ git tag remediation/phase-01-approved
 | ۴ | ✅ `PHASE-04-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `bc1a978` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۵ | ✅ `PHASE-05-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `49b89cc` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۶ | ✅ `PHASE-06-PROMPT.fa.md` | ✅ دروازهٔ پایان `832805e`: `APPROVED` پس از اصلاح و بازتولید مستقل |
-| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `810c122`: `REJECTED`؛ شرط fingerprint تست E8 در موتور تولید نبود frost را کاذب ایمن می‌کند؛ تعارض تست منجمد باید تشدید شود نه دور زده شود |
+| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ⏸️ تشدید `5370082`: مجوز محدود اصلاح بلوک E8 به گزینهٔ ۱ با شروط ثبت‌شده؛ test مستقل شکست خورد و پایان فاز تأیید نشده است |
 | ۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
 
 ### ثبت دلایل رد دروازهٔ پایان فاز ۶
