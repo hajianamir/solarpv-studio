@@ -164,7 +164,7 @@ git tag remediation/phase-01-approved
 | ۴ | ✅ `PHASE-04-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `bc1a978` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۵ | ✅ `PHASE-05-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `49b89cc` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۶ | ✅ `PHASE-06-PROMPT.fa.md` | ✅ دروازهٔ پایان `832805e`: `APPROVED` پس از اصلاح و بازتولید مستقل |
-| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ⚠️ بازرسی میانه `f9b74f0`: `PASS-WITH-CONDITIONS`؛ اصلاح مقدماتی اعتبار ورودی و صداقت هارنس و اثبات شروط در دروازهٔ پایان الزامی است |
+| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ دروازهٔ پایان `64c0836`: `REJECTED`؛ عمق حاکم به موتور وصل نیست، گزارش fallback و snapshot منقضی، بررسی‌های ناقص و خطای گزارش لنگرها |
 | ۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
 
 ### ثبت دلایل رد دروازهٔ پایان فاز ۶
