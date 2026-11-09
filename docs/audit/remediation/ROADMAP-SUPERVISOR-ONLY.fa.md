@@ -164,7 +164,7 @@ git tag remediation/phase-01-approved
 | ۴ | ✅ `PHASE-04-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `bc1a978` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۵ | ✅ `PHASE-05-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `49b89cc` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۶ | ✅ `PHASE-06-PROMPT.fa.md` | ✅ دروازهٔ پایان `832805e`: `APPROVED` پس از اصلاح و بازتولید مستقل |
-| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `fcc9c85`: `REJECTED`؛ lint و محدوده اصلاح شد، اما حاشیهٔ یخ‌زدگی غلط تأیید می‌شود، آزمون چرخهٔ واقعی ناقص و دادهٔ کهنه در بخش سازه نمایش داده می‌شود |
+| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `195f6fd`: `REJECTED`؛ حد یخ‌زدگی و بازخوانی XLSX بهبود یافت، اما چرخهٔ واقعی UI آزموده نشده، خروجی stale ناقص و منشأ baseline نامطمئن است |
 | ۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
 
 ### ثبت دلایل رد دروازهٔ پایان فاز ۶
