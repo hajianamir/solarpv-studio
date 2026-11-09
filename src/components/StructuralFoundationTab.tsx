@@ -51,6 +51,7 @@ import {
 import {
   createStructuralSnapshot,
   computeStructuralInputHash,
+  DEFAULT_GROUND_CLEARANCE_M,
   type StructuralSnapshot,
 } from '../engine/core/structuralContract';
 
@@ -111,7 +112,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   const [modulesCount, setModulesCount] = useState<number>(totalModulesCount || 140);
   const [tiltDeg, setTiltDeg] = useState<number>(siteOverrides?.arrayTiltDeg ?? arrayTiltDeg ?? 28);
   const [modulesPerTable, setModulesPerTable] = useState<number>(28);
-  const [groundClearanceM, setGroundClearanceM] = useState<number>(siteOverrides?.groundClearanceM ?? 0.9);
+  const [groundClearanceM, setGroundClearanceM] = useState<number>(siteOverrides?.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M);
   const [installationEnvironment, setInstallationEnvironment] = useState<InstallationEnvironment>(
     siteOverrides?.installationEnvironment || 'ground_mount'
   );
@@ -448,6 +449,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         groundClearanceM,
         soilType,
         frostDepthCm,
+        soilBearingCapacityKpa,
+        soilInternalFrictionAngleDeg: soilFrictionAngleDeg,
+        soilCohesionKpa,
+        soilDensityKnM3,
+        seismicZoneCoefficientA: seismicZoneA,
         customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : null,
         customPostsPerTable,
         installationEnvironment,
@@ -468,6 +474,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     groundClearanceM,
     soilType,
     frostDepthCm,
+    soilBearingCapacityKpa,
+    soilFrictionAngleDeg,
+    soilCohesionKpa,
+    soilDensityKnM3,
+    seismicZoneA,
     isManualDepth,
     customEmbedmentDepthM,
     customPostsPerTable,

@@ -56,7 +56,7 @@ import {
 import { type Language, translations } from './i18n';
 
 import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
-import { type StructuralSnapshot, computeStructuralInputHash } from './engine/core/structuralContract';
+import { type StructuralSnapshot, computeStructuralInputHash, DEFAULT_GROUND_CLEARANCE_M } from './engine/core/structuralContract';
 import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoadsToWindow } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
@@ -1443,9 +1443,14 @@ export const App: React.FC = () => {
     foundationType: siteOverrides.foundationType ?? 'rammed_steel_pile',
     basicWindSpeedKmh: siteOverrides.basicWindSpeedKmh ?? city.basicWindSpeedKmh,
     groundSnowLoadKgM2: siteOverrides.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 0,
-    groundClearanceM: siteOverrides.groundClearanceM ?? 0.8,
+    groundClearanceM: siteOverrides.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M,
     soilType: siteOverrides.soilType ?? city.soilType,
     frostDepthCm: siteOverrides.frostDepthCm ?? city.frostDepthCm,
+    soilBearingCapacityKpa: siteOverrides.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? null,
+    soilInternalFrictionAngleDeg: siteOverrides.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? null,
+    soilCohesionKpa: siteOverrides.soilCohesionKpa ?? city.soilCohesionKpa ?? null,
+    soilDensityKnM3: siteOverrides.soilDensityKnM3 ?? city.soilDensityKnM3 ?? null,
+    seismicZoneCoefficientA: siteOverrides.seismicZoneCoefficientA ?? city.seismicZoneCoefficientA ?? null,
     customEmbedmentDepthM: siteOverrides.customEmbedmentDepthM ?? null,
     customPostsPerTable: siteOverrides.customPostsPerTable ?? null,
     installationEnvironment: siteOverrides.installationEnvironment ?? 'ground_mount',

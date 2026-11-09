@@ -67,6 +67,21 @@ import {
   measureGroupF,
 } from './measure';
 
+import React from 'react';
+import ReactDOMServer from 'react-dom/server';
+import { OfficialReportModal } from '../../src/components/OfficialReportModal';
+import { getDefaultClimateCity } from '../../src/engine/climaticData';
+import { LOAD_PRESETS, analyzeLoadProfile } from '../../src/engine/loadProfiles';
+import { designPvArray } from '../../src/engine/pvEngineAdvanced';
+import { sizeBatteryBank } from '../../src/engine/batteryEngine';
+import {
+  calculateAdvancedCableRun,
+  calculateEarthingSystem,
+  calculateLightningProtection,
+} from '../../src/engine/protectionBomEngine';
+import { simulate24hEnergyBalance, sizeDieselGenerator } from '../../src/engine/simulation24hEngine';
+import { performFinancialAnalysis } from '../../src/engine/financialEngine';
+
 const ROOT = process.cwd();
 const EVIDENCE_PATH = path.join(
   ROOT,
@@ -554,18 +569,33 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   const activeComplianceRow = exportedActiveRows.find((r) => r[0] === 'Structural Safety Compliance');
   const activeStatusRow = exportedActiveRows.find((r) => r[0] === 'Structural Analysis Status');
 
-  // 3. Mutation in App: User modifies snow load or ground clearance or custom posts count
+  // 3. Mutation in App: User modifies snow load, ground clearance, custom posts, or geotechnical inputs
   const mutatedSnowParams = { ...initialTabParams, groundSnowLoadKgM2: 120 };
   const mutatedClearanceParams = { ...initialTabParams, groundClearanceM: 1.2 };
   const mutatedPostsParams = { ...initialTabParams, customPostsPerTable: 6 };
+  const mutatedBearingParams = { ...initialTabParams, soilBearingCapacityKpa: 180 };
+  const mutatedFrictionParams = { ...initialTabParams, soilInternalFrictionAngleDeg: 28 };
+  const mutatedCohesionParams = { ...initialTabParams, soilCohesionKpa: 25 };
+  const mutatedDensityParams = { ...initialTabParams, soilDensityKnM3: 20 };
+  const mutatedSeismicParams = { ...initialTabParams, seismicZoneCoefficientA: 0.35 };
 
   const mutatedSnowHash = computeStructuralInputHash(mutatedSnowParams);
   const mutatedClearanceHash = computeStructuralInputHash(mutatedClearanceParams);
   const mutatedPostsHash = computeStructuralInputHash(mutatedPostsParams);
+  const mutatedBearingHash = computeStructuralInputHash(mutatedBearingParams);
+  const mutatedFrictionHash = computeStructuralInputHash(mutatedFrictionParams);
+  const mutatedCohesionHash = computeStructuralInputHash(mutatedCohesionParams);
+  const mutatedDensityHash = computeStructuralInputHash(mutatedDensityParams);
+  const mutatedSeismicHash = computeStructuralInputHash(mutatedSeismicParams);
 
   const isStaleAfterSnowChange = liveSnapshot.inputHash !== mutatedSnowHash;
   const isStaleAfterClearanceChange = liveSnapshot.inputHash !== mutatedClearanceHash;
   const isStaleAfterPostsChange = liveSnapshot.inputHash !== mutatedPostsHash;
+  const isStaleAfterBearingChange = liveSnapshot.inputHash !== mutatedBearingHash;
+  const isStaleAfterFrictionChange = liveSnapshot.inputHash !== mutatedFrictionHash;
+  const isStaleAfterCohesionChange = liveSnapshot.inputHash !== mutatedCohesionHash;
+  const isStaleAfterDensityChange = liveSnapshot.inputHash !== mutatedDensityHash;
+  const isStaleAfterSeismicChange = liveSnapshot.inputHash !== mutatedSeismicHash;
 
   const effectiveSnapshotStale = { ...liveSnapshot, isStale: true };
   const exportedStaleRows = exportStructuralSheetRows(effectiveSnapshotStale, true);
@@ -577,17 +607,165 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   const nullStatusRow = exportedNullRows.find((r) => r[0] === 'Structural Analysis Status');
   const nullComplianceRow = exportedNullRows.find((r) => r[0] === 'Structural Safety Compliance');
 
+  // 5. Genuine UI Component Execution (OfficialReportModal across all 3 lifecycle states)
+  const cityUi = getDefaultClimateCity();
+  const moduleSpecUi = {
+    manufacturer: 'Jinko Solar',
+    modelName: 'Tiger Neo JKM550N-72HL4-BDV',
+    pmpWatts: 550,
+    vocVolts: 50.8,
+    vmpVolts: 41.28,
+    iscAmps: 13.99,
+    impAmps: 13.33,
+    tempCoeffVocPct: -0.25,
+    tempCoeffPmpPct: -0.30,
+    noctC: 45,
+    lengthM: 2.278,
+    widthM: 1.134,
+    bifacialityFactor: 0.80,
+  };
+  const inverterSpecUi = {
+    manufacturer: 'Huawei',
+    modelName: 'SUN2000-100KTL-M2',
+    pnomAcKw: 100,
+    vdcMaxVolts: 1100,
+    vmpptMinVolts: 200,
+    vmpptMaxVolts: 1000,
+    iscMaxAmpsPerMppt: 26,
+    imppMaxAmpsPerMppt: 22,
+    mpptChannelsCount: 10,
+    efficiencyMaxPct: 98.8,
+    isThreePhase: true,
+  };
+  const loadAnalysisUi = analyzeLoadProfile(LOAD_PRESETS[0].items);
+  const deratingsUi = {
+    ambientTempMinC: cityUi.tempMinC,
+    ambientTempMaxC: cityUi.tempMaxC,
+    soilingLossPct: 3.0,
+    dcCableLossPct: 1.5,
+    mismatchAndLidLossPct: 2.0,
+    inverterClippingLossPct: 1.0,
+    systemAvailabilityPct: 99.0,
+    groundAlbedo: 0.20,
+    arrayTiltDeg: 28,
+  };
+  const arrayDesignUi = designPvArray(
+    loadAnalysisUi.totalDailyEnergyKwh,
+    cityUi.peakSunHours,
+    moduleSpecUi,
+    inverterSpecUi,
+    deratingsUi,
+    cityUi.latitude,
+    { inverterCount: 1, targetDcAcRatio: 1.25 }
+  );
+  const batterySizingUi = sizeBatteryBank(loadAnalysisUi.totalDailyEnergyKwh, 1.0, 'lifepo4', 48);
+  const dcRunUi = calculateAdvancedCableRun({
+    id: 'dc-str',
+    sectionNameFa: 'کابل DC',
+    sectionNameEn: 'PV DC String Cable',
+    oneWayLengthM: 35,
+    designCurrentAmps: moduleSpecUi.iscAmps * 1.25,
+    nominalVoltageVolts: arrayDesignUi.stringVocMaxColdVolts * 0.85,
+    conductorMaterial: 'copper',
+    insulationType: 'xlpe',
+    allowableDropPct: 1.5,
+    isDc: true,
+    ambientTempC: cityUi.tempMaxC,
+  });
+  const protectionUi = {
+    cableRuns: [dcRunUi],
+    earthing: calculateEarthingSystem(77, 100, 'solidly_grounded', false, false, 'floating_unearthed'),
+    lightning: calculateLightningProtection(77, false),
+    protectionBom: [],
+  };
+  const simulationUi = simulate24hEnergyBalance(
+    Array(24).fill(loadAnalysisUi.totalDailyEnergyWh / 24),
+    arrayDesignUi.totalPvCapacityKwp,
+    batterySizingUi.usableCapacityKwh,
+    cityUi.peakSunHours,
+    Array(12).fill(150),
+    cityUi.tempMaxC
+  );
+  const generatorUi = sizeDieselGenerator(2000, 4000, 4);
+  const financialUi = performFinancialAnalysis(
+    arrayDesignUi.totalPvCapacityKwp,
+    batterySizingUi.grossCapacityKwh,
+    100,
+    arrayDesignUi.totalPvCapacityKwp * 1600,
+    {},
+    25,
+    'ongrid'
+  );
+
+  const uiBaseProps = {
+    projectName: 'Phase 07 Verification Plant',
+    systemMode: 'ongrid' as const,
+    city: cityUi,
+    loadAnalysis: loadAnalysisUi,
+    module: moduleSpecUi,
+    inverter: inverterSpecUi,
+    arrayDesign: arrayDesignUi,
+    batterySizing: batterySizingUi,
+    protection: protectionUi,
+    simulation: simulationUi,
+    generator: generatorUi,
+    financial: financialUi,
+    onClose: () => {},
+    lang: 'en' as const,
+  };
+
+  const htmlSync = ReactDOMServer.renderToString(
+    React.createElement(OfficialReportModal, {
+      ...uiBaseProps,
+      structuralSnapshot: effectiveSnapshotInitial,
+    })
+  );
+  const htmlStale = ReactDOMServer.renderToString(
+    React.createElement(OfficialReportModal, {
+      ...uiBaseProps,
+      structuralSnapshot: effectiveSnapshotStale,
+    })
+  );
+  const htmlNull = ReactDOMServer.renderToString(
+    React.createElement(OfficialReportModal, {
+      ...uiBaseProps,
+      structuralSnapshot: null,
+    })
+  );
+
+  const syncUiOk =
+    htmlSync.includes(`${effectiveSnapshotInitial.qzPa} N/m²`) &&
+    htmlSync.includes(`${effectiveSnapshotInitial.recommendedDepthM}m embedment`) &&
+    htmlSync.includes(`>${effectiveSnapshotInitial.totalPostsCount}<`) &&
+    htmlSync.includes(`>${effectiveSnapshotInitial.totalTablesCount}<`) &&
+    !htmlSync.includes('Warning: Project parameters were modified after structural calculation');
+
+  const staleUiOk = htmlStale.includes('Warning: Project parameters were modified after structural calculation');
+
+  const nullUiOk =
+    htmlNull.includes('pending calculation in Structural Tab') &&
+    htmlNull.includes('Pending Structural Tab Sizing') &&
+    htmlNull.includes('>—<');
+
+  const realUiModalPass = syncUiOk && staleUiOk && nullUiOk;
+
   const p708LifecyclePass =
     isStaleInitial === false &&
     isStaleAfterSnowChange === true &&
     isStaleAfterClearanceChange === true &&
     isStaleAfterPostsChange === true &&
+    isStaleAfterBearingChange === true &&
+    isStaleAfterFrictionChange === true &&
+    isStaleAfterCohesionChange === true &&
+    isStaleAfterDensityChange === true &&
+    isStaleAfterSeismicChange === true &&
     activeStatusRow?.[1] === 'SYNCHRONIZED' &&
     activeComplianceRow?.[1] === 'SCREENING PASS (Preliminary — Unassessed Modes Excluded)' &&
     staleStatusRow?.[1] === 'STALE — Inputs Modified' &&
     staleComplianceRow?.[1] === 'STALE — RECALCULATION REQUIRED' &&
     nullStatusRow?.[1] === 'UNAVAILABLE' &&
-    nullComplianceRow?.[1] === 'UNAVAILABLE';
+    nullComplianceRow?.[1] === 'UNAVAILABLE' &&
+    realUiModalPass;
 
   const reportQz = effectiveSnapshotInitial.qzPa;
   const reportDepth = effectiveSnapshotInitial.recommendedDepthM;

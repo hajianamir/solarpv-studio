@@ -58,7 +58,7 @@ import {
   createProjectTransferEnvelope,
   restoreProjectTransferEnvelope,
 } from '../engine/offlineTransferEngine';
-import { calculateStructuralAndFoundations, cpUpliftFor, type StructuralAnalysisResult, type FoundationType } from '../engine/structuralEngine';
+import { type FoundationType } from '../engine/structuralEngine';
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
@@ -130,48 +130,6 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const [reportLang, setReportLang] = useState<'fa' | 'en'>(defaultLang);
   const isEn = reportLang === 'en';
   const effectiveCity = getEffectiveClimateCity(city, siteOverrides);
-
-  // Dynamic Structural & Geotechnical Foundation Calculation
-  const structCalc: StructuralAnalysisResult = useMemo(() => {
-    const modulesPerTable = 28;
-    const tablesCount = Math.ceil(arrayDesign.totalModulesCount / modulesPerTable);
-    const moduleWeightKg = (module as { weightKg?: number }).weightKg || 28.5;
-    const resolvedFoundationType =
-      customFoundationType ??
-      (siteOverrides?.foundationType as FoundationType) ??
-      (siteOverrides?.installationEnvironment === 'industrial_shed'
-        ? 'shed_roof_clamp_rail'
-        : siteOverrides?.installationEnvironment === 'rooftop_flat_concrete'
-        ? 'rooftop_ballasted_block'
-        : siteOverrides?.soilType === 'rocky_limestone'
-        ? 'pre_drilled_grouted_pile'
-        : 'rammed_steel_pile');
-
-    return calculateStructuralAndFoundations({
-      totalModulesCount: arrayDesign.totalModulesCount,
-      moduleLengthM: module.lengthM || 2.278,
-      moduleWidthM: module.widthM || 1.134,
-      moduleWeightKg,
-      tablesCount,
-      modulesPerTable,
-      arrayTiltDeg: siteOverrides?.arrayTiltDeg ?? effectiveCity.optimalTiltAnnualDeg ?? 28,
-      groundClearanceM: siteOverrides?.groundClearanceM ?? 0.9,
-      basicWindSpeedKmh: siteOverrides?.basicWindSpeedKmh ?? effectiveCity.basicWindSpeedKmh ?? 120,
-      groundSnowLoadKgM2: siteOverrides?.groundSnowLoadKgM2 ?? effectiveCity.groundSnowLoadKgM2 ?? 50,
-      foundationType: resolvedFoundationType,
-      soilType: (siteOverrides?.soilType ?? effectiveCity.soilType ?? 'dense_sand_gravel') as any,
-      soilBearingCapacityKpa: siteOverrides?.soilBearingCapacityKpa ?? effectiveCity.soilBearingCapacityKpa ?? 220,
-      soilInternalFrictionAngleDeg: siteOverrides?.soilInternalFrictionAngleDeg ?? effectiveCity.soilInternalFrictionAngleDeg ?? 32,
-      soilCohesionKpa: siteOverrides?.soilCohesionKpa ?? effectiveCity.soilCohesionKpa ?? 15,
-      soilDensityKnM3: siteOverrides?.soilDensityKnM3 ?? effectiveCity.soilDensityKnM3 ?? 18.0,
-      annualRainfallMm: siteOverrides?.annualRainfallMm ?? effectiveCity.annualRainfallMm ?? 200,
-      frostDepthCm: siteOverrides?.frostDepthCm ?? effectiveCity.frostDepthCm ?? 30,
-      seismicZoneCoefficientA: siteOverrides?.seismicZoneCoefficientA ?? effectiveCity.seismicZoneCoefficientA ?? 0.30,
-      elevationM: effectiveCity.elevationM || 0,
-      customEmbedmentDepthM: siteOverrides?.customEmbedmentDepthM,
-      customPostsPerTable: siteOverrides?.customPostsPerTable,
-    });
-  }, [arrayDesign, module, effectiveCity, siteOverrides, customFoundationType]);
 
   const envAging: EnvironmentalAgingResult = useMemo(() => {
     return calculateEnvironmentalAging({
@@ -995,8 +953,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <p className="leading-relaxed text-[11px] text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `This EPC technical report presents the preliminary engineering screening design for ${projectName} with a nominal peak DC capacity of ${arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp. The system employs high-efficiency TOPCon bifacial modules coupled with industrial multi-MPPT string inverters at an optimized DC/AC ratio of ${arrayDesign.dcAcRatio.toFixed(2)}. Structural and civil foundation sizing follows preliminary screening methodologies per ASCE 7-22 and Eurocode 7 principles, accounting for site-specific wind velocity pressure (${structCalc.velocityWindPressureQzN_M2} N/m²) and frost penetration constraints (${structCalc.recommendedDepthM}m embedment), subject to definitive geotechnical borehole testing. Levelized Cost of Electricity (LCOE) is ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `estimated at $${financial.lcoeUsdPerKwh}/kWh` : 'not applicable (zero lifetime generation)'} with an internal rate of return (IRR) of ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'}, providing an indicative screening appraisal.`
-                    : `این گزارش فنی، مبانی طراحی و محاسبات اولیه امکان‌سنجی مهندسی نیروگاه خورشیدی ${projectName} را با ظرفیت نامی ${arrayDesign.totalPvCapacityKwp.toFixed(1)} کیلووات‌پیک ارائه می‌دهد. آرایه نیروگاه بر پایه ماژول‌های دوطرفه TOPCon و اینورترهای چند کاناله صنعتی با نسبت توان بهینه ${arrayDesign.dcAcRatio.toFixed(2)} مدل‌سازی گردیده است. محاسبات سازه و فونداسیون بر مبنای ارزیابی اولیه مهندسی با رویکرد مبحث ۶ و ۷ مقررات ملی ساختمان و اصول ASCE 7-22 و یوروکد ۷ تدوین گردیده که در آن فشار سرعتی باد منطقه (${structCalc.velocityWindPressureQzN_M2} نیوتن بر مترمربع) و عمق یخبندان ساختگاه (عمق کوبش ${structCalc.recommendedDepthM} متر) لحاظ شده و انطباق اجرایی آن منوط به نتایج گمانه‌زنی ژئوتکنیک محلی است. بهای تمام‌شده تولید برق ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `${financial.lcoeUsdPerKwh} دلار بر کیلووات‌ساعت` : 'تعریف‌نشده (تولید صفر)'} و نرخ بازده داخلی ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct} درصد` : 'تعریف‌نشده'} برآورد گردیده که ارائه‌دهنده غربالگری اولیه امکان‌سنجی پروژه است.`}
+                    ? `This EPC technical report presents the preliminary engineering screening design for ${projectName} with a nominal peak DC capacity of ${arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp. The system employs high-efficiency TOPCon bifacial modules coupled with industrial multi-MPPT string inverters at an optimized DC/AC ratio of ${arrayDesign.dcAcRatio.toFixed(2)}. Structural and civil foundation sizing follows preliminary screening methodologies per ASCE 7-22 and Eurocode 7 principles, accounting for site-specific wind velocity pressure (${structuralSnapshot ? `${structuralSnapshot.qzPa} N/m²` : 'pending calculation in Structural Tab'}) and frost penetration constraints (${structuralSnapshot ? `${structuralSnapshot.recommendedDepthM}m embedment` : 'pending calculation in Structural Tab'}), subject to definitive geotechnical borehole testing. Levelized Cost of Electricity (LCOE) is ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `estimated at $${financial.lcoeUsdPerKwh}/kWh` : 'not applicable (zero lifetime generation)'} with an internal rate of return (IRR) of ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'}, providing an indicative screening appraisal.`
+                    : `این گزارش فنی، مبانی طراحی و محاسبات اولیه امکان‌سنجی مهندسی نیروگاه خورشیدی ${projectName} را با ظرفیت نامی ${arrayDesign.totalPvCapacityKwp.toFixed(1)} کیلووات‌پیک ارائه می‌دهد. آرایه نیروگاه بر پایه ماژول‌های دوطرفه TOPCon و اینورترهای چند کاناله صنعتی با نسبت توان بهینه ${arrayDesign.dcAcRatio.toFixed(2)} مدل‌سازی گردیده است. محاسبات سازه و فونداسیون بر مبنای ارزیابی اولیه مهندسی با رویکرد مبحث ۶ و ۷ مقررات ملی ساختمان و اصول ASCE 7-22 و یوروکد ۷ تدوین گردیده که در آن فشار سرعتی باد منطقه (${structuralSnapshot ? `${structuralSnapshot.qzPa} نیوتن بر مترمربع` : 'در انتظار محاسبه در زبانه سازه'}) و عمق یخبندان ساختگاه (${structuralSnapshot ? `عمق کوبش ${structuralSnapshot.recommendedDepthM} متر` : 'در انتظار محاسبه در زبانه سازه'}) لحاظ شده و انطباق اجرایی آن منوط به نتایج گمانه‌زنی ژئوتکنیک محلی است. بهای تمام‌شده تولید برق ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `${financial.lcoeUsdPerKwh} دلار بر کیلووات‌ساعت` : 'تعریف‌نشده (تولید صفر)'} و نرخ بازده داخلی ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct} درصد` : 'تعریف‌نشده'} برآورد گردیده که ارائه‌دهنده غربالگری اولیه امکان‌سنجی پروژه است.`}
                 </p>
                 <div className="pt-2 border-t border-industrial-border/40 text-[11px]">
                   <strong className="text-industrial-warning">{isEn ? 'Key Actionable Recommendations:' : 'توصیه‌های کلیدی اجرایی:'}</strong>
@@ -1206,8 +1164,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `The project site features ${effectiveCity.soilType.replace(/_/g, ' ')} with an allowable soil bearing pressure of ${effectiveCity.soilBearingCapacityKpa} kPa. With an extreme minimum winter temperature of ${effectiveCity.tempMinC}°C and maximum summer ambient temperature of ${effectiveCity.tempMaxC}°C, electrical string sizing must account for cold-weather open-circuit voltage rise (+18.4% at Voc) and high-temperature thermal power degradation (-0.30%/°C). To protect against frost heave, all structural pile embedment depths are specified at ${structCalc.recommendedDepthM}m, satisfying the mandatory safety margin (L >= d_frost + 1.0m = ${structCalc.minDepthForFrostM}m).`
-                    : `بستر ژئوتکنیکی ساختگاه از نوع خاک ${effectiveCity.soilType === 'dense_sand_gravel' ? 'شن و ماسه متراکم' : effectiveCity.soilType === 'medium_clay' ? 'رس متوسط تا متراکم' : effectiveCity.soilType === 'loose_sand' ? 'ماسه سست' : 'بستر سنگ آهکی'} با ظرفیت باربری مجاز ${effectiveCity.soilBearingCapacityKpa} کیلوپاسکال شناسایی شده است. با توجه به دامنه دمایی طراحی محیط از ${effectiveCity.tempMinC} درجه سانتی‌گراد تا ${effectiveCity.tempMaxC} درجه سانتی‌گراد، اثر افزایش ولتاژ مدار باز در سرمای شدید و افت توان حرارتی ماژول‌ها لحاظ گردیده است. به منظور مصون‌سازی کامل سازه‌ها در برابر پدیده تورم یخبندان (Frost Heave)، عمق کوبش شمع‌ها حداقل ${structCalc.recommendedDepthM} متر در نظر گرفته شده که شرط آیین‌نامه‌ای (عمق کوبش بزرگتر از عمق یخبندان به علاوه ۱.۰ متر = ${structCalc.minDepthForFrostM} متر) را کاملاً ارضا می‌نماید.`}
+                    ? `The project site features ${effectiveCity.soilType.replace(/_/g, ' ')} with an allowable soil bearing pressure of ${effectiveCity.soilBearingCapacityKpa} kPa. With an extreme minimum winter temperature of ${effectiveCity.tempMinC}°C and maximum summer ambient temperature of ${effectiveCity.tempMaxC}°C, electrical string sizing must account for cold-weather open-circuit voltage rise (+18.4% at Voc) and high-temperature thermal power degradation (-0.30%/°C). To protect against frost heave, all structural pile embedment depths are specified at ${structuralSnapshot ? `${structuralSnapshot.recommendedDepthM}m, satisfying the mandatory safety margin (L >= d_frost + 1.0m = ${structuralSnapshot.minDepthForFrostM}m)` : 'pending structural calculation in Structural Tab'}.`
+                    : `بستر ژئوتکنیکی ساختگاه از نوع خاک ${effectiveCity.soilType === 'dense_sand_gravel' ? 'شن و ماسه متراکم' : effectiveCity.soilType === 'medium_clay' ? 'رس متوسط تا متراکم' : effectiveCity.soilType === 'loose_sand' ? 'ماسه سست' : 'بستر سنگ آهکی'} با ظرفیت باربری مجاز ${effectiveCity.soilBearingCapacityKpa} کیلوپاسکال شناسایی شده است. با توجه به دامنه دمایی طراحی محیط از ${effectiveCity.tempMinC} درجه سانتی‌گراد تا ${effectiveCity.tempMaxC} درجه سانتی‌گراد، اثر افزایش ولتاژ مدار باز در سرمای شدید و افت توان حرارتی ماژول‌ها لحاظ گردیده است. به منظور مصون‌سازی کامل سازه‌ها در برابر پدیده تورم یخبندان (Frost Heave)، عمق کوبش شمع‌ها ${structuralSnapshot ? `حداقل ${structuralSnapshot.recommendedDepthM} متر در نظر گرفته شده که شرط آیین‌نامه‌ای (عمق کوبش بزرگتر از عمق یخبندان به علاوه ۱.۰ متر = ${structuralSnapshot.minDepthForFrostM} متر) را کاملاً ارضا می‌نماید` : 'در زبانه سازه و فونداسیون محاسبه خواهد شد'}.`}
                 </p>
                 <div className="text-[11px] pt-1 text-slate-400 print:text-slate-600">
                   <strong>{isEn ? 'Site Drainage & Earthworks:' : 'هدایت آب‌های سطحی و خاک‌برداری:'}</strong>{' '}
@@ -1970,14 +1928,22 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <td className="p-2 font-mono">3</td>
                       <td className="p-2 font-semibold">{isEn ? 'Mounting Structure Racking' : 'استراکچر نگهدارنده پنل‌ها'}</td>
                       <td className="p-2 font-mono text-slate-400 print:text-slate-700">Hot-Dip Galvanized C-Steel, ASTM A123, 2P Configuration</td>
-                      <td className="p-2 font-mono font-bold text-white print:text-black">{structCalc.totalTablesCount}</td>
+                      <td className="p-2 font-mono font-bold text-white print:text-black">
+                        {structuralSnapshot ? structuralSnapshot.totalTablesCount : Math.ceil(arrayDesign.totalModulesCount / 28)}
+                      </td>
                       <td className="p-2">{isEn ? 'Tables' : 'میز'}</td>
                     </tr>
                     <tr className="border-b border-industrial-border print:border-slate-200">
                       <td className="p-2 font-mono">4</td>
                       <td className="p-2 font-semibold">{isEn ? 'Rammed Ground Piles' : 'شمع‌های کوبشی گالوانیزه'}</td>
-                      <td className="p-2 font-mono text-slate-400 print:text-slate-700">{structCalc.foundationDimensionsDescEn}</td>
-                      <td className="p-2 font-mono font-bold text-white print:text-black">{structCalc.totalPostsCount}</td>
+                      <td className="p-2 font-mono text-slate-400 print:text-slate-700">
+                        {structuralSnapshot
+                          ? `${structuralSnapshot.bromsPileSection || (isEn ? structuralSnapshot.foundationNameEn : structuralSnapshot.foundationNameFa)}, ${structuralSnapshot.recommendedDepthM}m embedment depth`
+                          : (isEn ? 'Pending Structural Tab Sizing' : 'در انتظار محاسبه در زبانه سازه')}
+                      </td>
+                      <td className="p-2 font-mono font-bold text-white print:text-black">
+                        {structuralSnapshot ? structuralSnapshot.totalPostsCount : '—'}
+                      </td>
                       <td className="p-2">{isEn ? 'Posts' : 'شاخه'}</td>
                     </tr>
                     {protection.cableRuns.map((c, i) => (

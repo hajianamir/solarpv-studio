@@ -6,8 +6,8 @@
   "codebaseCommit": "arena/f30efcdc-solarpv-studio",
   "baselineCommit": "832805e",
   "contractSource": "src/engine/core/structuralContract.ts",
-  "contractSha256": "d6fb802800a5089783f746120f7b96c4783652583198de89f6f79aba7949bcc4",
-  "harnessSha256": "963cddcea494ee398a7643faf5feabe5523ae654763682abdb83690d6d0d12bc",
+  "contractSha256": "a38c9e59c5eb43179e6f7b202c159daa1aa955732134fb1178b05f933575eff9",
+  "harnessSha256": "1a0ae02d4c557a9fc4ff5b224ec126865a3387c7e904e9dcf3a3b3a53afdfd72",
   "overallPass": true,
   "summary": {
     "totalQuantities": 8,
@@ -173,7 +173,7 @@
       "pass": true,
       "status": "PASS",
       "details": {
-        "snapshotId": "SNAP-STR-TEHRAN_140_28_RAMMED_STEEL_PILE_120_50_0_9_DENSE_SAND_GRAVEL_30_NULL_NULL_GROUND_MOUNT_1190_28",
+        "snapshotId": "SNAP-STR-TEHRAN_140_28_RAMMED_STEEL_PILE_120_50_0_9_DENSE_SAND_GRAVEL_30_DEFAULT_DEFAULT_DEFAULT_DEFAULT_DEFAULT_NULL_NULL_GROUND_MOUNT_1190_28",
         "isAvailable": true,
         "isStale": false,
         "tabQzPa": 488,

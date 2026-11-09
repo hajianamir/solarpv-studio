@@ -630,6 +630,8 @@ export function getStructuralHonestyDisclosures(): UnassessedDisclosures {
   };
 }
 
+export const DEFAULT_GROUND_CLEARANCE_M = 0.8;
+
 export interface StructuralInputHashParams {
   cityId: string;
   totalModulesCount: number;
@@ -640,6 +642,11 @@ export interface StructuralInputHashParams {
   groundClearanceM: number;
   soilType: string;
   frostDepthCm: number;
+  soilBearingCapacityKpa?: number | null;
+  soilInternalFrictionAngleDeg?: number | null;
+  soilCohesionKpa?: number | null;
+  soilDensityKnM3?: number | null;
+  seismicZoneCoefficientA?: number | null;
   customEmbedmentDepthM?: number | null;
   customPostsPerTable?: number | null;
   installationEnvironment?: string | null;
@@ -662,6 +669,11 @@ export function computeStructuralInputHash(params: StructuralInputHashParams): s
     params.groundClearanceM,
     params.soilType,
     params.frostDepthCm,
+    params.soilBearingCapacityKpa ?? 'default',
+    params.soilInternalFrictionAngleDeg ?? 'default',
+    params.soilCohesionKpa ?? 'default',
+    params.soilDensityKnM3 ?? 'default',
+    params.seismicZoneCoefficientA ?? 'default',
     params.customEmbedmentDepthM ?? 'null',
     params.customPostsPerTable ?? 'null',
     params.installationEnvironment ?? 'ground_mount',
@@ -706,6 +718,8 @@ export interface StructuralSnapshot {
   appliedPostBearingPressureKpa: number;
   allowableSoilBearingKpa: number;
   upliftCapacityPerPostKn: number;
+  concreteVolumeTotalM3?: number;
+  steelRebarWeightTotalKg?: number;
   governingLimit: string;
   fosUplift: number;
   fosLateral: number;
@@ -746,6 +760,8 @@ export function createStructuralSnapshot(
     recommendedDepthM: number;
     minDepthForFrostM: number;
     frostDepthCm: number;
+    concreteVolumeTotalM3?: number;
+    steelRebarWeightTotalKg?: number;
     appliedPostBearingPressureKpa: number;
     allowableSoilBearingKpa: number;
     upliftCapacityPerPostKn: number;
@@ -798,6 +814,8 @@ export function createStructuralSnapshot(
     appliedPostBearingPressureKpa: result.appliedPostBearingPressureKpa,
     allowableSoilBearingKpa: result.allowableSoilBearingKpa,
     upliftCapacityPerPostKn: result.upliftCapacityPerPostKn,
+    concreteVolumeTotalM3: result.concreteVolumeTotalM3,
+    steelRebarWeightTotalKg: result.steelRebarWeightTotalKg,
     governingLimit: 'governing_depth_verified',
     fosUplift: result.fosUplift,
     fosLateral: result.fosLateral,

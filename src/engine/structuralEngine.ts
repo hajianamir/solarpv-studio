@@ -375,7 +375,8 @@ export function calculateStructuralAndFoundations(
 
   // 5. Foundation Geometry & Soil Mechanics (Broms 1964 Lateral Equilibrium)
   const allowableSoilBearingKpa = input.soilBearingCapacityKpa || (soilType === 'dense_sand_gravel' ? 250 : soilType === 'medium_clay' ? 180 : soilType === 'loose_sand' ? 140 : 350);
-  const siteFrostDepthCm = input.frostDepthCm ?? 30;
+  const hasFrostData = input.frostDepthCm !== undefined && input.frostDepthCm !== null;
+  const siteFrostDepthCm = hasFrostData ? input.frostDepthCm! : 0;
   const siteFrostDepthM = siteFrostDepthCm / 100.0;
   const soilFrictionAngleDeg = input.soilInternalFrictionAngleDeg ?? (soilType === 'dense_sand_gravel' ? 34 : soilType === 'loose_sand' ? 28 : soilType === 'rocky_limestone' ? 38 : 24);
   const soilCohesionKpa = input.soilCohesionKpa ?? (soilType === 'medium_clay' ? 35 : 10);
@@ -385,7 +386,7 @@ export function calculateStructuralAndFoundations(
   const bromsResult = calculateBromsPileSizing(
     lateralShearPerPostKn,
     groundClearanceM,
-    siteFrostDepthM,
+    hasFrostData ? siteFrostDepthM : 0.30,
     soilType,
     allowableSoilBearingKpa,
     soilFrictionAngleDeg,
@@ -567,8 +568,9 @@ export function calculateStructuralAndFoundations(
   const isRooftopOrShed =
     foundationType === 'shed_roof_clamp_rail' ||
     foundationType === 'rooftop_anchor_bolted' ||
-    foundationType === 'rooftop_ballasted_block';
-  const isFrostDepthRespected = isRooftopOrShed ? true : (recommendedDepthM * 100) >= siteFrostDepthCm;
+    foundationType === 'rooftop_ballasted_block' ||
+    foundationType === 'surface_ballasted_block';
+  const isFrostDepthRespected = isRooftopOrShed ? true : hasFrostData ? (recommendedDepthM * 100) >= siteFrostDepthCm : false;
 
   // 6. Factors of Safety (FoS)
   const isBallasted = foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block';
@@ -800,31 +802,47 @@ export function calculateStructuralAndFoundations(
       break;
     case 'rammed_steel_pile':
     case 'ground_screw': {
-      const isEmbedmentSufficient = input.customEmbedmentDepthM !== undefined
-        ? (input.customEmbedmentDepthM > 0 && input.customEmbedmentDepthM >= bromsResult.embedmentDepthM && isFrostDepthRespected)
-        : isFrostDepthRespected;
-      isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isEmbedmentSufficient && fosLateral >= 1.5;
-      safetyReasonEn = isStructurallySafe
-        ? `Pile uplift capacity OK (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Broms lateral FoS >= 1.5 verified in foundation report.`
-        : !isEmbedmentSufficient
-        ? `Custom embedment depth (${recommendedDepthM}m) is insufficient for lateral/frost/uplift limits (FoS_uplift=${fosUplift}, FoS_lateral=${fosLateral}).`
-        : `Pile uplift capacity INSUFFICIENT (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase embedment or add ballast.`;
-      safetyReasonFa = isStructurallySafe
-        ? `ظرفیت کشش شمع کافی است (FoS_uplift = ${fosUplift} >= ۲.۰).`
-        : !isEmbedmentSufficient
-        ? `عمق کوبش واردشده (${recommendedDepthM} متر) الزامات عمق یخبندان یا مقاومت جانبی را ارضا نمی‌کند.`
-        : `ظرفیت کشش شمع کافی نیست (FoS_uplift = ${fosUplift} < ۲.۰). عمق کوبش را افزایش دهید.`;
+      if (!isRooftopOrShed && !hasFrostData) {
+        isStructurallySafe = false;
+        safetyReasonEn =
+          `[UNASSESSED - Frost Depth Required] Site frost depth is unspecified; pile embedment and uplift resistance cannot be certified safe against frost heave action. Geotechnical borehole frost depth data is mandatory.`;
+        safetyReasonFa =
+          `[ارزیابی‌نشده - نیازمند عمق یخبندان] عمق یخبندان ساختگاه نامشخص است؛ پایداری فونداسیون در برابر تورم یخبندان و کشش باد قابل تأیید نیست.`;
+      } else {
+        const isEmbedmentSufficient = input.customEmbedmentDepthM !== undefined
+          ? (input.customEmbedmentDepthM > 0 && input.customEmbedmentDepthM >= bromsResult.embedmentDepthM && isFrostDepthRespected)
+          : isFrostDepthRespected;
+        isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isEmbedmentSufficient && fosLateral >= 1.5;
+        safetyReasonEn = isStructurallySafe
+          ? `Pile uplift capacity OK (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Broms lateral FoS >= 1.5 verified in foundation report.`
+          : !isEmbedmentSufficient
+          ? `Custom embedment depth (${recommendedDepthM}m) is insufficient for lateral/frost/uplift limits (FoS_uplift=${fosUplift}, FoS_lateral=${fosLateral}).`
+          : `Pile uplift capacity INSUFFICIENT (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase embedment or add ballast.`;
+        safetyReasonFa = isStructurallySafe
+          ? `ظرفیت کشش شمع کافی است (FoS_uplift = ${fosUplift} >= ۲.۰).`
+          : !isEmbedmentSufficient
+          ? `عمق کوبش واردشده (${recommendedDepthM} متر) الزامات عمق یخبندان یا مقاومت جانبی را ارضا نمی‌کند.`
+          : `ظرفیت کشش شمع کافی نیست (FoS_uplift = ${fosUplift} < ۲.۰). عمق کوبش را افزایش دهید.`;
+      }
       break;
     }
     case 'concrete_pier':
-      isStructurallySafe =
-        fosUplift >= 2.0 && fosOverturning >= 1.5 && isBearingCapacitySafe;
-      safetyReasonEn = isStructurallySafe
-        ? `Pier uplift FoS = ${fosUplift} >= 2.0 and overturning FoS = ${fosOverturning} >= 1.5.`
-        : `Pier insufficient: FoS_uplift = ${fosUplift}, FoS_overturning = ${fosOverturning}. Increase pier depth or diameter.`;
-      safetyReasonFa = isStructurallySafe
-        ? `FoS کشش ${fosUplift} و واژگونی ${fosOverturning} کافی است.`
-        : `پایه بتنی کافی نیست: FoS_uplift=${fosUplift}, FoS_overturning=${fosOverturning}.`;
+      if (!isRooftopOrShed && !hasFrostData) {
+        isStructurallySafe = false;
+        safetyReasonEn =
+          `[UNASSESSED - Frost Depth Required] Site frost depth is unspecified; concrete pier embedment cannot be certified safe against frost heave. Geotechnical borehole frost depth data is mandatory.`;
+        safetyReasonFa =
+          `[ارزیابی‌نشده - نیازمند عمق یخبندان] عمق یخبندان ساختگاه نامشخص است؛ پایداری پایه بتنی در برابر یخبندان قابل تأیید نیست.`;
+      } else {
+        isStructurallySafe =
+          fosUplift >= 2.0 && fosOverturning >= 1.5 && isBearingCapacitySafe && isFrostDepthRespected;
+        safetyReasonEn = isStructurallySafe
+          ? `Pier uplift FoS = ${fosUplift} >= 2.0 and overturning FoS = ${fosOverturning} >= 1.5.`
+          : `Pier insufficient: FoS_uplift = ${fosUplift}, FoS_overturning = ${fosOverturning}. Increase pier depth or diameter.`;
+        safetyReasonFa = isStructurallySafe
+          ? `FoS کشش ${fosUplift} و واژگونی ${fosOverturning} کافی است.`
+          : `پایه بتنی کافی نیست: FoS_uplift=${fosUplift}, FoS_overturning=${fosOverturning}.`;
+      }
       break;
     default:
       isStructurallySafe = false;
@@ -835,7 +853,10 @@ export function calculateStructuralAndFoundations(
   let engineeringRemarksFa = 'پایداری سازه و فونداسیون طبق آیین‌نامه مبحث ۶ مقررات ملی ساختمان و ASCE 7-22 تأیید است.';
   let engineeringRemarksEn = 'Structural stability and foundation sizing compliant with INBC Part 6 & ASCE 7-22.';
   if (!isStructurallySafe) {
-    if (!isBearingCapacitySafe) {
+    if (!isRooftopOrShed && !hasFrostData) {
+      engineeringRemarksFa = 'هشدار مهندسی: عمق یخبندان ساختگاه نامشخص است؛ بدون گمانه‌زنی و تعیین عمق یخبندان، پایداری شمع قابل تأیید نیست.';
+      engineeringRemarksEn = 'Engineering Warning: Site frost depth is unspecified; pile embedment cannot be certified safe against frost heave without borehole data.';
+    } else if (!isBearingCapacitySafe) {
       engineeringRemarksFa = `هشدار مهندسی: تنش وارده به خاک (${appliedPostBearingPressureKpa} kPa) از ظرفیت باربری مجاز خاک (${allowableSoilBearingKpa} kPa) فراتر رفته است. ابعاد پی را گسترش دهید.`;
       engineeringRemarksEn = `Engineering Warning: Bearing pressure (${appliedPostBearingPressureKpa} kPa) exceeds allowable soil capacity (${allowableSoilBearingKpa} kPa). Enlarge footing area.`;
     } else {
