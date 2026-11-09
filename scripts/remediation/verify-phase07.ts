@@ -1843,7 +1843,7 @@ function getElementValue(node: any): string {
     structCustomInsufficient.isStructurallySafe === false &&
     customDepthEval.isDepthAdequate === false;
 
-  // 5) Live Engine Path - Pre-Drilled Grouted Pile Frost Depth Contract:
+  // 5) Live Engine Path - Pre-Drilled Grouted Pile Frost Depth Contract (supervisor rejection 69c3247):
   const groutedInsufficient = calculateStructuralAndFoundations({
     ...FIXTURE_S1,
     foundationType: 'pre_drilled_grouted_pile',
@@ -1857,10 +1857,23 @@ function getElementValue(node: any): string {
     basicWindSpeedKmh: 30,
     frostDepthCm: undefined,
   });
+  // Exact supervisor rejection case (69c3247): S-1 + pre_drilled_grouted_pile + rocky_limestone + wind 30 km/h + frostDepthCm: undefined
+  const groutedRockyMissingFrost = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
+    basicWindSpeedKmh: 30,
+    frostDepthCm: undefined,
+  });
   const groutedPileFrostSafetyPass =
     groutedInsufficient.isFrostDepthRespected === false &&
     groutedInsufficient.isStructurallySafe === false &&
-    groutedUnspecified.isStructurallySafe === false;
+    groutedUnspecified.isFrostDepthRespected === false &&
+    groutedUnspecified.isStructurallySafe === false &&
+    groutedRockyMissingFrost.recommendedDepthM === 0.75 &&
+    groutedRockyMissingFrost.isFrostDepthRespected === false &&
+    groutedRockyMissingFrost.isStructurallySafe === false &&
+    groutedRockyMissingFrost.safetyReasonEn.includes('[UNASSESSED - Frost Depth & Geotechnical Borehole Required]');
 
   // 5b) Live Engine Path - Concrete Pier & Rocky Limestone Frost Safety Contract (supervisor rejection a6d34b2):
   const concretePierRockyFrostInsufficient = calculateStructuralAndFoundations({
