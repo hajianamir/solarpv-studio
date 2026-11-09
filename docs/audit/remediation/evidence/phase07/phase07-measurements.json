@@ -7,7 +7,7 @@
   "baselineCommit": "832805e",
   "contractSource": "src/engine/core/structuralContract.ts",
   "contractSha256": "7507e77a8c0b4f66ebd285d9436edc28a6aa1901ad9d7ea41b1a5c86ede18db3",
-  "harnessSha256": "0babfb4605e8df8ff3cc28839ad127d788bb31731a2752afea3ee4dcda9caf2e",
+  "harnessSha256": "c8ba9da0a9d2ca6a341f024a7caa17e43969bb1541e105c643afced10fed8172",
   "overallPass": true,
   "summary": {
     "totalQuantities": 8,
@@ -44,10 +44,10 @@
       "id": "P7-02",
       "case": "S-1-1.2V",
       "unit": "Pa",
-      "before": null,
+      "before": 703,
       "after": 702.71,
-      "delta": null,
-      "beforeSource": "832805e:src/engine/structuralEngine.ts (API lacked dedicated wind pressure sensitivity qz(1.2V))",
+      "delta": -0.29,
+      "beforeSource": "832805e:src/engine/structuralEngine.ts:calculateStructuralAndFoundations (basicWindSpeedKmh=144 km/h returns Math.round(qz) = 703 Pa)",
       "producer": "src/engine/core/structuralContract.ts:calculateWindPressureSensitivity",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-02",
       "pass": true,
@@ -55,11 +55,12 @@
       "details": {
         "elevatedSpeedKmh": 144,
         "baseSpeedKmh": 120,
+        "baselineRoundedQzPa": 703,
         "unifiedElevatedQzPa": 702.71,
         "analyticalRatio": 1.44,
         "measuredRatio": 1.4399999999999997,
         "ratioError": 2.220446049250313e-16,
-        "beforeReason": "Baseline 832805e had no dedicated wind pressure sensitivity API qz(1.2V); recorded as null per Section 4 mandate"
+        "roundingLimitationNote": "Baseline 832805e calculateStructuralAndFoundations applied Math.round() yielding integer 703 Pa at line 874, whereas unified contract maintains full precision 702.71 Pa achieving exact ratio 1.44 ± 1e-6"
       }
     },
     {
