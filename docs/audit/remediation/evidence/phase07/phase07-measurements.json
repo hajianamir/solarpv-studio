@@ -6,8 +6,8 @@
   "codebaseCommit": "arena/f30efcdc-solarpv-studio",
   "baselineCommit": "832805e",
   "contractSource": "src/engine/core/structuralContract.ts",
-  "contractSha256": "a38c9e59c5eb43179e6f7b202c159daa1aa955732134fb1178b05f933575eff9",
-  "harnessSha256": "8d2feb23a9ae2c210f6ce4060a69abe37bbd33eab3285902097ad9a79d1923f7",
+  "contractSha256": "c2bba9d803b8e9903b0cf2bf3a8ef9f3db07c67b27168463ba8ee12000b0ccce",
+  "harnessSha256": "c8cdca74efbd50fa076eaf41263e67d0a635c4f16cd6288a9fc6303eb3fdc25c",
   "overallPass": true,
   "summary": {
     "totalQuantities": 8,
@@ -188,6 +188,11 @@
         "exportActiveCompliance": "SCREENING PASS (Preliminary — Unassessed Modes Excluded)",
         "exportNullStatus": "UNAVAILABLE",
         "exportStaleStatus": "STALE — Inputs Modified",
+        "parsedSyncStatus": "SYNCHRONIZED",
+        "parsedStaleStatus": "STALE — Inputs Modified",
+        "parsedNullStatus": "UNAVAILABLE",
+        "frostCheckPass": true,
+        "binaryExcelParsedPass": true,
         "lifecyclePass": true
       }
     }

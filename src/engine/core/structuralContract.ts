@@ -10,7 +10,7 @@
  * - FHWA-NHI-16-009 / Broms (1964) (Lateral soil equilibrium)
  */
 
-import { type ExposureCategory, type StructuralParametersInput } from '../structuralEngine';
+import { type ExposureCategory, type StructuralParametersInput, type FoundationType } from '../structuralEngine';
 
 /**
  * Standard S-1 Synthetic Structural Benchmark Fixture
@@ -631,6 +631,28 @@ export function getStructuralHonestyDisclosures(): UnassessedDisclosures {
 }
 
 export const DEFAULT_GROUND_CLEARANCE_M = 0.8;
+export const DEFAULT_MODULES_PER_TABLE = 28;
+
+export function resolveFoundationType(
+  foundationType?: string | null,
+  installationEnvironment?: string | null,
+  soilType?: string | null
+): FoundationType {
+  if (foundationType) return foundationType as FoundationType;
+  if (installationEnvironment === 'industrial_shed') return 'shed_roof_clamp_rail';
+  if (installationEnvironment === 'rooftop_flat_concrete') return 'rooftop_ballasted_block';
+  if (soilType === 'rocky_limestone') return 'pre_drilled_grouted_pile';
+  return 'rammed_steel_pile';
+}
+
+export function evaluateEffectiveStructuralSnapshot(
+  snapshot: StructuralSnapshot | null,
+  currentInputHash: string
+): StructuralSnapshot | null {
+  if (!snapshot) return null;
+  const isStale = snapshot.inputHash !== currentInputHash;
+  return isStale ? { ...snapshot, isStale: true } : snapshot;
+}
 
 export interface StructuralInputHashParams {
   cityId: string;

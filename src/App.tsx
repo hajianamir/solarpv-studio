@@ -56,7 +56,14 @@ import {
 import { type Language, translations } from './i18n';
 
 import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
-import { type StructuralSnapshot, computeStructuralInputHash, DEFAULT_GROUND_CLEARANCE_M } from './engine/core/structuralContract';
+import {
+  type StructuralSnapshot,
+  computeStructuralInputHash,
+  DEFAULT_GROUND_CLEARANCE_M,
+  DEFAULT_MODULES_PER_TABLE,
+  resolveFoundationType,
+  evaluateEffectiveStructuralSnapshot,
+} from './engine/core/structuralContract';
 import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoadsToWindow } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
@@ -1436,11 +1443,17 @@ export const App: React.FC = () => {
     ? isSidebarCollapsed ? 'lg:mr-[68px]' : 'lg:mr-[280px]'
     : isSidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-[280px]';
 
+  const resolvedFoundationType = resolveFoundationType(
+    siteOverrides.foundationType,
+    siteOverrides.installationEnvironment,
+    siteOverrides.soilType ?? city.soilType
+  );
+
   const currentStructuralInputHash = computeStructuralInputHash({
     cityId: city.id,
     totalModulesCount: arrayDesign.totalModulesCount,
     arrayTiltDeg: siteOverrides.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28,
-    foundationType: siteOverrides.foundationType ?? 'rammed_steel_pile',
+    foundationType: resolvedFoundationType,
     basicWindSpeedKmh: siteOverrides.basicWindSpeedKmh ?? city.basicWindSpeedKmh,
     groundSnowLoadKgM2: siteOverrides.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 0,
     groundClearanceM: siteOverrides.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M,
@@ -1455,13 +1468,11 @@ export const App: React.FC = () => {
     customPostsPerTable: siteOverrides.customPostsPerTable ?? null,
     installationEnvironment: siteOverrides.installationEnvironment ?? 'ground_mount',
     elevationM: city.elevationM || 0,
-    modulesPerTable: 28,
+    modulesPerTable: DEFAULT_MODULES_PER_TABLE,
   });
 
   const effectiveStructuralSnapshot = useMemo(() => {
-    if (!structuralSnapshot) return null;
-    const isStale = structuralSnapshot.inputHash !== currentStructuralInputHash;
-    return isStale ? { ...structuralSnapshot, isStale: true } : structuralSnapshot;
+    return evaluateEffectiveStructuralSnapshot(structuralSnapshot, currentStructuralInputHash);
   }, [structuralSnapshot, currentStructuralInputHash]);
 
   return (

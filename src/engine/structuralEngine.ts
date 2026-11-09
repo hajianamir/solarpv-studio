@@ -570,7 +570,7 @@ export function calculateStructuralAndFoundations(
     foundationType === 'rooftop_anchor_bolted' ||
     foundationType === 'rooftop_ballasted_block' ||
     foundationType === 'surface_ballasted_block';
-  const isFrostDepthRespected = isRooftopOrShed ? true : hasFrostData ? (recommendedDepthM * 100) >= siteFrostDepthCm : false;
+  const isFrostDepthRespected = isRooftopOrShed ? true : hasFrostData ? recommendedDepthM >= bromsResult.minDepthForFrostM : false;
 
   // 6. Factors of Safety (FoS)
   const isBallasted = foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block';

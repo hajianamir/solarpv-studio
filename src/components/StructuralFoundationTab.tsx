@@ -52,6 +52,8 @@ import {
   createStructuralSnapshot,
   computeStructuralInputHash,
   DEFAULT_GROUND_CLEARANCE_M,
+  DEFAULT_MODULES_PER_TABLE,
+  resolveFoundationType,
   type StructuralSnapshot,
 } from '../engine/core/structuralContract';
 
@@ -111,18 +113,17 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   // Geometry parameters
   const [modulesCount, setModulesCount] = useState<number>(totalModulesCount || 140);
   const [tiltDeg, setTiltDeg] = useState<number>(siteOverrides?.arrayTiltDeg ?? arrayTiltDeg ?? 28);
-  const [modulesPerTable, setModulesPerTable] = useState<number>(28);
+  const [modulesPerTable, setModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
   const [groundClearanceM, setGroundClearanceM] = useState<number>(siteOverrides?.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M);
   const [installationEnvironment, setInstallationEnvironment] = useState<InstallationEnvironment>(
     siteOverrides?.installationEnvironment || 'ground_mount'
   );
   const [foundationType, setFoundationType] = useState<FoundationType>(
-    (siteOverrides?.foundationType as FoundationType) ||
-      (siteOverrides?.installationEnvironment === 'industrial_shed'
-        ? 'shed_roof_clamp_rail'
-        : siteOverrides?.installationEnvironment === 'rooftop_flat_concrete'
-        ? 'rooftop_ballasted_block'
-        : 'rammed_steel_pile')
+    resolveFoundationType(
+      siteOverrides?.foundationType,
+      siteOverrides?.installationEnvironment,
+      siteOverrides?.soilType ?? city.soilType
+    )
   );
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);

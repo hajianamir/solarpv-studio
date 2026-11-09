@@ -37,7 +37,12 @@ import {
   createStructuralSnapshot,
   exportStructuralSheetRows,
   computeStructuralInputHash,
+  evaluateEffectiveStructuralSnapshot,
+  resolveFoundationType,
+  DEFAULT_MODULES_PER_TABLE,
+  type StructuralInputHashParams,
 } from '../../src/engine/core/structuralContract';
+import ExcelJS from 'exceljs';
 
 import {
   calculateStructuralAndFoundations,
@@ -536,12 +541,12 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   // -------------------------------------------------------------------------
   // P7-08: Structural Tab -> App -> Report/Excel snapshot lifecycle synchronization
   // -------------------------------------------------------------------------
-  // 1. Tab calculation: tab generates initial snapshot with full input hash
-  const initialTabParams = {
+  // 1. Tab calculation: tab generates initial snapshot with canonical input parameters and hash
+  const initialTabParams: StructuralInputHashParams = {
     cityId: 'tehran',
     totalModulesCount: FIXTURE_S1.totalModulesCount,
     arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
-    foundationType: FIXTURE_S1.foundationType,
+    foundationType: resolveFoundationType(FIXTURE_S1.foundationType, 'ground_mount', FIXTURE_S1.soilType),
     basicWindSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
     groundSnowLoadKgM2: FIXTURE_S1.groundSnowLoadKgM2,
     groundClearanceM: FIXTURE_S1.groundClearanceM,
@@ -551,19 +556,20 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     customPostsPerTable: null,
     installationEnvironment: 'ground_mount',
     elevationM: FIXTURE_S1.elevationM ?? 1190,
-    modulesPerTable: FIXTURE_S1.modulesPerTable,
+    modulesPerTable: DEFAULT_MODULES_PER_TABLE,
   };
   const initialHash = computeStructuralInputHash(initialTabParams);
   const liveSnapshot = createStructuralSnapshot(
     structAfterS1,
-    FIXTURE_S1.foundationType,
+    initialTabParams.foundationType,
     initialHash
   );
 
-  // 2. App State: App compares snapshot.inputHash against currentStructuralInputHash
+  // 2. App State: App evaluates effective snapshot via canonical evaluateEffectiveStructuralSnapshot
   const appCurrentHashInitial = computeStructuralInputHash(initialTabParams);
-  const isStaleInitial = liveSnapshot.inputHash !== appCurrentHashInitial;
-  const effectiveSnapshotInitial = isStaleInitial ? { ...liveSnapshot, isStale: true } : liveSnapshot;
+  const effectiveSnapshotInitial = evaluateEffectiveStructuralSnapshot(liveSnapshot, appCurrentHashInitial);
+  if (!effectiveSnapshotInitial) throw new Error('Expected initial effective snapshot to not be null');
+  const isStaleInitial = effectiveSnapshotInitial.isStale;
 
   // Report & Excel Export receive effectiveSnapshotInitial (synchronized)
   const exportedActiveRows = exportStructuralSheetRows(effectiveSnapshotInitial, true);
@@ -571,14 +577,14 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   const activeStatusRow = exportedActiveRows.find((r) => r[0] === 'Structural Analysis Status');
 
   // 3. Mutation in App: User modifies snow load, ground clearance, custom posts, or geotechnical inputs
-  const mutatedSnowParams = { ...initialTabParams, groundSnowLoadKgM2: 120 };
-  const mutatedClearanceParams = { ...initialTabParams, groundClearanceM: 1.2 };
-  const mutatedPostsParams = { ...initialTabParams, customPostsPerTable: 6 };
-  const mutatedBearingParams = { ...initialTabParams, soilBearingCapacityKpa: 180 };
-  const mutatedFrictionParams = { ...initialTabParams, soilInternalFrictionAngleDeg: 28 };
-  const mutatedCohesionParams = { ...initialTabParams, soilCohesionKpa: 25 };
-  const mutatedDensityParams = { ...initialTabParams, soilDensityKnM3: 20 };
-  const mutatedSeismicParams = { ...initialTabParams, seismicZoneCoefficientA: 0.35 };
+  const mutatedSnowParams: StructuralInputHashParams = { ...initialTabParams, groundSnowLoadKgM2: 120 };
+  const mutatedClearanceParams: StructuralInputHashParams = { ...initialTabParams, groundClearanceM: 1.2 };
+  const mutatedPostsParams: StructuralInputHashParams = { ...initialTabParams, customPostsPerTable: 6 };
+  const mutatedBearingParams: StructuralInputHashParams = { ...initialTabParams, soilBearingCapacityKpa: 180 };
+  const mutatedFrictionParams: StructuralInputHashParams = { ...initialTabParams, soilInternalFrictionAngleDeg: 28 };
+  const mutatedCohesionParams: StructuralInputHashParams = { ...initialTabParams, soilCohesionKpa: 25 };
+  const mutatedDensityParams: StructuralInputHashParams = { ...initialTabParams, soilDensityKnM3: 20 };
+  const mutatedSeismicParams: StructuralInputHashParams = { ...initialTabParams, seismicZoneCoefficientA: 0.35 };
 
   const mutatedSnowHash = computeStructuralInputHash(mutatedSnowParams);
   const mutatedClearanceHash = computeStructuralInputHash(mutatedClearanceParams);
@@ -589,26 +595,58 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   const mutatedDensityHash = computeStructuralInputHash(mutatedDensityParams);
   const mutatedSeismicHash = computeStructuralInputHash(mutatedSeismicParams);
 
-  const isStaleAfterSnowChange = liveSnapshot.inputHash !== mutatedSnowHash;
-  const isStaleAfterClearanceChange = liveSnapshot.inputHash !== mutatedClearanceHash;
-  const isStaleAfterPostsChange = liveSnapshot.inputHash !== mutatedPostsHash;
-  const isStaleAfterBearingChange = liveSnapshot.inputHash !== mutatedBearingHash;
-  const isStaleAfterFrictionChange = liveSnapshot.inputHash !== mutatedFrictionHash;
-  const isStaleAfterCohesionChange = liveSnapshot.inputHash !== mutatedCohesionHash;
-  const isStaleAfterDensityChange = liveSnapshot.inputHash !== mutatedDensityHash;
-  const isStaleAfterSeismicChange = liveSnapshot.inputHash !== mutatedSeismicHash;
+  // Evaluate stale snapshots through canonical evaluateEffectiveStructuralSnapshot (no synthetic mocks)
+  const effectiveSnapshotStaleSnow = evaluateEffectiveStructuralSnapshot(liveSnapshot, mutatedSnowHash)!;
+  const effectiveSnapshotStaleClearance = evaluateEffectiveStructuralSnapshot(liveSnapshot, mutatedClearanceHash)!;
+  const effectiveSnapshotStalePosts = evaluateEffectiveStructuralSnapshot(liveSnapshot, mutatedPostsHash)!;
+  const effectiveSnapshotStaleBearing = evaluateEffectiveStructuralSnapshot(liveSnapshot, mutatedBearingHash)!;
+  const effectiveSnapshotStaleFriction = evaluateEffectiveStructuralSnapshot(liveSnapshot, mutatedFrictionHash)!;
+  const effectiveSnapshotStaleCohesion = evaluateEffectiveStructuralSnapshot(liveSnapshot, mutatedCohesionHash)!;
+  const effectiveSnapshotStaleDensity = evaluateEffectiveStructuralSnapshot(liveSnapshot, mutatedDensityHash)!;
+  const effectiveSnapshotStaleSeismic = evaluateEffectiveStructuralSnapshot(liveSnapshot, mutatedSeismicHash)!;
 
-  const effectiveSnapshotStale = { ...liveSnapshot, isStale: true };
-  const exportedStaleRows = exportStructuralSheetRows(effectiveSnapshotStale, true);
+  const isStaleAfterSnowChange = effectiveSnapshotStaleSnow.isStale;
+  const isStaleAfterClearanceChange = effectiveSnapshotStaleClearance.isStale;
+  const isStaleAfterPostsChange = effectiveSnapshotStalePosts.isStale;
+  const isStaleAfterBearingChange = effectiveSnapshotStaleBearing.isStale;
+  const isStaleAfterFrictionChange = effectiveSnapshotStaleFriction.isStale;
+  const isStaleAfterCohesionChange = effectiveSnapshotStaleCohesion.isStale;
+  const isStaleAfterDensityChange = effectiveSnapshotStaleDensity.isStale;
+  const isStaleAfterSeismicChange = effectiveSnapshotStaleSeismic.isStale;
+
+  const exportedStaleRows = exportStructuralSheetRows(effectiveSnapshotStaleSnow, true);
   const staleStatusRow = exportedStaleRows.find((r) => r[0] === 'Structural Analysis Status');
   const staleComplianceRow = exportedStaleRows.find((r) => r[0] === 'Structural Safety Compliance');
 
   // 4. Unavailable state: User opens Report before computing Structural Tab
-  const exportedNullRows = exportStructuralSheetRows(null, true);
+  const effectiveSnapshotNull = evaluateEffectiveStructuralSnapshot(null, appCurrentHashInitial);
+  const exportedNullRows = exportStructuralSheetRows(effectiveSnapshotNull, true);
   const nullStatusRow = exportedNullRows.find((r) => r[0] === 'Structural Analysis Status');
   const nullComplianceRow = exportedNullRows.find((r) => r[0] === 'Structural Safety Compliance');
 
-  // 5. Genuine UI Component Execution (OfficialReportModal across all 3 lifecycle states)
+  // 5. Frost Depth Insufficient Case: Custom depth 1.0 m, frost depth 80 cm (minDepthForFrostM = 1.8 m)
+  const frostInsufficientParams: StructuralParametersInput = {
+    ...FIXTURE_S1,
+    frostDepthCm: 80,
+    customEmbedmentDepthM: 1.0,
+  };
+  const frostInsufficientResult = calculateStructuralAndFoundations(frostInsufficientParams);
+  const frostInsufficientHash = computeStructuralInputHash({
+    ...initialTabParams,
+    frostDepthCm: 80,
+    customEmbedmentDepthM: 1.0,
+  });
+  const frostInsufficientSnapshot = createStructuralSnapshot(
+    frostInsufficientResult,
+    initialTabParams.foundationType,
+    frostInsufficientHash
+  );
+  const effectiveFrostInsufficient = evaluateEffectiveStructuralSnapshot(
+    frostInsufficientSnapshot,
+    frostInsufficientHash
+  )!;
+
+  // 6. Genuine UI Component Execution (OfficialReportModal across all lifecycle states)
   const cityUi = getDefaultClimateCity();
   const moduleSpecUi = {
     manufacturer: 'Jinko Solar',
@@ -724,13 +762,19 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   const htmlStale = ReactDOMServer.renderToString(
     React.createElement(OfficialReportModal, {
       ...uiBaseProps,
-      structuralSnapshot: effectiveSnapshotStale,
+      structuralSnapshot: effectiveSnapshotStaleSnow,
     })
   );
   const htmlNull = ReactDOMServer.renderToString(
     React.createElement(OfficialReportModal, {
       ...uiBaseProps,
-      structuralSnapshot: null,
+      structuralSnapshot: effectiveSnapshotNull,
+    })
+  );
+  const htmlFrostInsufficient = ReactDOMServer.renderToString(
+    React.createElement(OfficialReportModal, {
+      ...uiBaseProps,
+      structuralSnapshot: effectiveFrostInsufficient,
     })
   );
 
@@ -740,14 +784,24 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     htmlSync.includes(`>${effectiveSnapshotInitial.totalPostsCount}<`) &&
     htmlSync.includes(`>${effectiveSnapshotInitial.totalTablesCount}<`) &&
     htmlSync.includes('satisfying the mandatory safety margin') &&
+    htmlSync.includes('✓ PASS') &&
     !htmlSync.includes('Warning: Project parameters were modified after structural calculation') &&
     !htmlSync.includes('[STALE');
+
+  const sec6StartStale = htmlStale.indexOf('6. Structural Sizing');
+  const sec6EndStale = htmlStale.indexOf('7. Financial Feasibility');
+  const sec6HtmlStale = sec6StartStale >= 0 && sec6EndStale > sec6StartStale
+    ? htmlStale.substring(sec6StartStale, sec6EndStale)
+    : htmlStale;
 
   const staleUiOk =
     htmlStale.includes('Warning: Project parameters were modified after structural calculation') &&
     htmlStale.includes('[STALE - Recalculation Required in Structural Tab]') &&
-    htmlStale.includes('>STALE<') &&
-    htmlStale.includes('embedment depth and frost heave safety margins are STALE and require re-execution');
+    htmlStale.includes('embedment depth and frost heave safety margins are STALE and require re-execution') &&
+    sec6HtmlStale.includes('>STALE<') &&
+    sec6HtmlStale.includes('STALE — RECALCULATION REQUIRED') &&
+    !sec6HtmlStale.includes('✓') &&
+    !sec6HtmlStale.includes('✓ PASS');
 
   const nullUiOk =
     htmlNull.includes('[PENDING - Awaiting Structural Tab Analysis]') &&
@@ -755,9 +809,20 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     htmlNull.includes('>—<') &&
     htmlNull.includes('pending calculation in the Structural');
 
-  const realUiModalPass = syncUiOk && staleUiOk && nullUiOk;
+  const frostCheckPass =
+    frostInsufficientResult.minDepthForFrostM === 1.8 &&
+    frostInsufficientResult.isFrostDepthRespected === false &&
+    frostInsufficientResult.isStructurallySafe === false &&
+    effectiveFrostInsufficient.isFrostDepthRespected === false &&
+    effectiveFrostInsufficient.isStructurallySafe === false &&
+    htmlFrostInsufficient.includes('Frost Depth Insufficient ✗') &&
+    htmlFrostInsufficient.includes('✗ INSUFFICIENT') &&
+    !htmlFrostInsufficient.includes('Frost Depth: 80cm ✓') &&
+    !htmlFrostInsufficient.includes('satisfying the mandatory safety margin');
 
-  // 6. Genuine Multi-Table Excel Export Generation across all 3 lifecycle states
+  const realUiModalPass = syncUiOk && staleUiOk && nullUiOk && frostCheckPass;
+
+  // 7. Genuine Multi-Table Excel Export Generation & Binary OOXML (.xlsx) parsing across all 3 lifecycle states
   const syncExcelBlob = await exportToExcelWorkbook([
     { sheetName: 'Structural & Foundations', rows: exportedActiveRows }
   ], 'verify-sync.xlsx');
@@ -768,10 +833,58 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     { sheetName: 'Structural & Foundations', rows: exportedNullRows }
   ], 'verify-null.xlsx');
 
-  const realExcelPass =
-    syncExcelBlob.size > 1000 &&
-    staleExcelBlob.size > 1000 &&
-    nullExcelBlob.size > 1000;
+  // Binary load and parse of generated .xlsx workbooks using ExcelJS
+  const syncBuf = Buffer.from(await syncExcelBlob.arrayBuffer());
+  const staleBuf = Buffer.from(await staleExcelBlob.arrayBuffer());
+  const nullBuf = Buffer.from(await nullExcelBlob.arrayBuffer());
+
+  const syncWb = new ExcelJS.Workbook();
+  await syncWb.xlsx.load(syncBuf as any);
+  const syncWs = syncWb.getWorksheet('Structural & Foundations');
+
+  const staleWb = new ExcelJS.Workbook();
+  await staleWb.xlsx.load(staleBuf as any);
+  const staleWs = staleWb.getWorksheet('Structural & Foundations');
+
+  const nullWb = new ExcelJS.Workbook();
+  await nullWb.xlsx.load(nullBuf as any);
+  const nullWs = nullWb.getWorksheet('Structural & Foundations');
+
+  const getCellValue = (ws: ExcelJS.Worksheet | undefined, paramName: string, colIndex: number = 2): string => {
+    if (!ws) return '';
+    for (let r = 1; r <= ws.rowCount; r++) {
+      const row = ws.getRow(r);
+      const cell1 = String(row.getCell(1).value ?? '').trim();
+      if (cell1 === paramName) {
+        return String(row.getCell(colIndex).value ?? '').trim();
+      }
+    }
+    return '';
+  };
+
+  const parsedSyncStatus = getCellValue(syncWs, 'Structural Analysis Status');
+  const parsedSyncCompliance = getCellValue(syncWs, 'Structural Safety Compliance');
+  const parsedSyncQz = getCellValue(syncWs, 'Velocity Wind Pressure (qz)');
+  const parsedSyncDepth = getCellValue(syncWs, 'Embedment Depth in Ground');
+
+  const parsedStaleStatus = getCellValue(staleWs, 'Structural Analysis Status');
+  const parsedStaleCompliance = getCellValue(staleWs, 'Structural Safety Compliance');
+
+  const parsedNullStatus = getCellValue(nullWs, 'Structural Analysis Status');
+  const parsedNullCompliance = getCellValue(nullWs, 'Structural Safety Compliance');
+
+  const binaryExcelParsedPass =
+    syncWs !== undefined &&
+    staleWs !== undefined &&
+    nullWs !== undefined &&
+    parsedSyncStatus === 'SYNCHRONIZED' &&
+    parsedSyncCompliance === 'SCREENING PASS (Preliminary — Unassessed Modes Excluded)' &&
+    parsedSyncQz === String(effectiveSnapshotInitial.qzPa) &&
+    parsedSyncDepth === String(effectiveSnapshotInitial.recommendedDepthM) &&
+    parsedStaleStatus === 'STALE — Inputs Modified' &&
+    parsedStaleCompliance === 'STALE — RECALCULATION REQUIRED' &&
+    parsedNullStatus === 'UNAVAILABLE' &&
+    parsedNullCompliance === 'UNAVAILABLE';
 
   const p708LifecyclePass =
     isStaleInitial === false &&
@@ -790,7 +903,7 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     nullStatusRow?.[1] === 'UNAVAILABLE' &&
     nullComplianceRow?.[1] === 'UNAVAILABLE' &&
     realUiModalPass &&
-    realExcelPass;
+    binaryExcelParsedPass;
 
   const reportQz = effectiveSnapshotInitial.qzPa;
   const reportDepth = effectiveSnapshotInitial.recommendedDepthM;
@@ -833,6 +946,11 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
       exportActiveCompliance: activeComplianceRow?.[1],
       exportNullStatus: nullStatusRow?.[1],
       exportStaleStatus: staleStatusRow?.[1],
+      parsedSyncStatus,
+      parsedStaleStatus,
+      parsedNullStatus,
+      frostCheckPass,
+      binaryExcelParsedPass,
       lifecyclePass: p708LifecyclePass,
     },
   });

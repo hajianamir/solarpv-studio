@@ -1682,8 +1682,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Velocity Wind Pressure (q_z):' : 'فشار سرعتی مبنای باد (q_z):'}</span>
-                      <span className="font-mono text-industrial-accent print:text-cyan-800 font-bold">
-                        {structuralSnapshot.qzPa} N/m²
+                      <span className={`font-mono font-bold ${structuralSnapshot.isStale ? 'text-amber-400 print:text-amber-800' : 'text-industrial-accent print:text-cyan-800'}`}>
+                        {structuralSnapshot.isStale ? (isEn ? 'STALE' : 'منقضی') : `${structuralSnapshot.qzPa} N/m²`}
                       </span>
                       <span className="text-[10px] text-slate-400 block mt-0.5">
                         {isEn ? 'ASCE 7-22 with Ke elevation' : 'مبحث ۶ با ضریب ارتفاع Ke'}
@@ -1700,22 +1700,26 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     </div>
                     <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Embedment Depth (L):' : 'عمق کوبش شمع در خاک:'}</span>
-                      <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
-                        {structuralSnapshot.recommendedDepthM} m
+                      <span className={`font-mono font-bold ${structuralSnapshot.isStale ? 'text-amber-400 print:text-amber-800' : 'text-industrial-warning print:text-amber-800'}`}>
+                        {structuralSnapshot.isStale ? (isEn ? 'STALE' : 'منقضی') : `${structuralSnapshot.recommendedDepthM} m`}
                       </span>
-                      <span className="text-[10px] text-industrial-success block mt-0.5">
-                        {structuralSnapshot.recommendedDepthM === 0
+                      <span className={`text-[10px] block mt-0.5 ${structuralSnapshot.isStale ? 'text-amber-400' : structuralSnapshot.recommendedDepthM === 0 || structuralSnapshot.isFrostDepthRespected ? 'text-industrial-success' : 'text-rose-400'}`}>
+                        {structuralSnapshot.isStale
+                          ? (isEn ? 'Inputs Modified — Recalculation Required' : 'پارامترها تغییر کرده‌اند — نیازمند بازمحاسبه')
+                          : structuralSnapshot.recommendedDepthM === 0
                           ? (isEn ? 'Rooftop/Shed Mount — Zero Soil Driving ✓' : 'نصب روی سقف — بدون کوبش در خاک ✓')
-                          : (isEn ? `Frost Depth: ${structuralSnapshot.frostDepthCm}cm ✓ (L >= ${structuralSnapshot.minDepthForFrostM}m)` : `کنترل یخبندان: ${structuralSnapshot.frostDepthCm}cm ✓`)}
+                          : structuralSnapshot.isFrostDepthRespected
+                          ? (isEn ? `Frost Depth: ${structuralSnapshot.frostDepthCm}cm ✓ (L >= ${structuralSnapshot.minDepthForFrostM}m)` : `کنترل یخبندان: ${structuralSnapshot.frostDepthCm}cm ✓`)
+                          : (isEn ? `Frost Depth Insufficient ✗ (L < ${structuralSnapshot.minDepthForFrostM}m)` : `عمق یخبندان ناکافی ✗`)}
                       </span>
                     </div>
                     <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Uplift Tension FoS:' : 'ضریب اطمینان کشش شمع:'}</span>
-                      <span className={`font-mono font-bold ${structuralSnapshot.fosUplift >= 2.0 ? 'text-industrial-success print:text-emerald-800' : 'text-amber-400 print:text-amber-800'}`}>
-                        {structuralSnapshot.fosUplift} {isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}
+                      <span className={`font-mono font-bold ${structuralSnapshot.isStale ? 'text-amber-400 print:text-amber-800' : structuralSnapshot.fosUplift >= 2.0 ? 'text-industrial-success print:text-emerald-800' : 'text-amber-400 print:text-amber-800'}`}>
+                        {structuralSnapshot.isStale ? (isEn ? 'STALE' : 'منقضی') : `${structuralSnapshot.fosUplift} ${isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}`}
                       </span>
                       <span className="text-[10px] text-slate-400 block mt-0.5">
-                        T_ult = {structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post
+                        {structuralSnapshot.isStale ? (isEn ? 'Recalculation Required' : 'نیازمند بازمحاسبه') : `T_ult = ${structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post`}
                       </span>
                     </div>
                   </div>
@@ -1734,51 +1738,121 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <tbody className="divide-y divide-industrial-border print:divide-slate-200 text-[11px]">
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Wind Uplift Force per Table' : 'نیروی مکش باد بر هر میز (Uplift)'}</td>
-                          <td className="p-2 font-mono text-rose-300 font-bold">{structuralSnapshot.windUpliftForceKn} kN</td>
+                          <td className="p-2 font-mono font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
+                            ) : (
+                              <span className="text-rose-300">{structuralSnapshot.windUpliftForceKn} kN</span>
+                            )}
+                          </td>
                           <td className="p-2 text-slate-400 print:text-slate-600">ASCE 7-22 Net Pressure</td>
-                          <td className="p-2 font-mono text-slate-300">{structuralSnapshot.upliftPerPostKn} kN/post demand</td>
+                          <td className="p-2 font-mono">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? '⚠️ STALE' : '⚠️ منقضی'}</span>
+                            ) : (
+                              <span className="text-slate-300">{structuralSnapshot.upliftPerPostKn} kN/post demand</span>
+                            )}
+                          </td>
                         </tr>
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Overturning Moment per Table' : 'لنگر واژگونی ناشی از باد (Overturning)'}</td>
-                          <td className="p-2 font-mono text-rose-300 font-bold">{structuralSnapshot.windOverturningMomentKnM} kN·m</td>
+                          <td className="p-2 font-mono font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
+                            ) : (
+                              <span className="text-rose-300">{structuralSnapshot.windOverturningMomentKnM} kN·m</span>
+                            )}
+                          </td>
                           <td className="p-2 text-slate-400 print:text-slate-600">Arm = W/2 + h*sin(beta)</td>
-                          <td className="p-2 text-industrial-success font-bold">FoS = {structuralSnapshot.fosOverturning} (≥ 1.5 Req)</td>
+                          <td className="p-2 font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
+                            ) : (
+                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosOverturning} (≥ 1.5 Req)</span>
+                            )}
+                          </td>
                         </tr>
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Broms Lateral Soil Resistance' : 'ظرفیت باربری جانبی خاک (روش برمز)'}</td>
-                          <td className="p-2 font-mono text-sky-300 font-bold">{structuralSnapshot.lateralShearPerPostKn} kN/post shear</td>
+                          <td className="p-2 font-mono font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
+                            ) : (
+                              <span className="text-sky-300">{structuralSnapshot.lateralShearPerPostKn} kN/post shear</span>
+                            )}
+                          </td>
                           <td className="p-2 text-slate-400 print:text-slate-600">Broms (1964) short-pile lateral limit</td>
-                          <td className="p-2 font-mono text-industrial-success font-bold">FoS = {structuralSnapshot.fosLateral} (≥ 1.5 Req)</td>
+                          <td className="p-2 font-mono font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
+                            ) : (
+                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosLateral} (≥ 1.5 Req)</span>
+                            )}
+                          </td>
                         </tr>
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Soil Bearing Pressure under Post' : 'تنش فشاری وارده بر بستر خاک'}</td>
-                          <td className="p-2 font-mono text-white print:text-black font-bold">{structuralSnapshot.appliedPostBearingPressureKpa} kPa</td>
+                          <td className="p-2 font-mono font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
+                            ) : (
+                              <span className="text-white print:text-black">{structuralSnapshot.appliedPostBearingPressureKpa} kPa</span>
+                            )}
+                          </td>
                           <td className="p-2 text-slate-400 print:text-slate-600">Allowable bearing qa = {structuralSnapshot.allowableSoilBearingKpa} kPa</td>
-                          <td className="p-2 text-industrial-success font-bold">
-                            {structuralSnapshot.isBearingCapacitySafe ? '✓ PASS (FoS = ' + structuralSnapshot.fosBearing + ')' : '✗ EXCEEDED'}
+                          <td className="p-2 font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
+                            ) : structuralSnapshot.isBearingCapacitySafe ? (
+                              <span className="text-industrial-success">✓ PASS (FoS = {structuralSnapshot.fosBearing})</span>
+                            ) : (
+                              <span className="text-rose-400">✗ EXCEEDED</span>
+                            )}
                           </td>
                         </tr>
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Pile Skin-Friction Tension Resistance' : 'ظرفیت کشش اصطکاک جدار شمع (T_ult)'}</td>
-                          <td className="p-2 font-mono text-industrial-success font-bold">{structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post</td>
+                          <td className="p-2 font-mono font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
+                            ) : (
+                              <span className="text-industrial-success">{structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post</span>
+                            )}
+                          </td>
                           <td className="p-2 text-slate-400 print:text-slate-600">Eurocode 7 EN 1997-1 §7.6.2.3</td>
-                          <td className="p-2 font-bold text-industrial-success">
-                            FoS = {structuralSnapshot.fosUplift} (≥ 2.0 Req)
+                          <td className="p-2 font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
+                            ) : (
+                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosUplift} (≥ 2.0 Req)</span>
+                            )}
                           </td>
                         </tr>
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Frost Heave Embedment Depth' : 'عمق کوبش جهت رفع خطر یخبندان'}</td>
-                          <td className="p-2 font-mono text-white print:text-black font-bold">{structuralSnapshot.recommendedDepthM} m</td>
+                          <td className="p-2 font-mono font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
+                            ) : (
+                              <span className="text-white print:text-black">{structuralSnapshot.recommendedDepthM} m</span>
+                            )}
+                          </td>
                           <td className="p-2 text-slate-400 print:text-slate-600">L &gt;= Frost Depth + 1.0m ({structuralSnapshot.minDepthForFrostM} m)</td>
-                          <td className="p-2 text-industrial-success font-bold">
-                            {structuralSnapshot.isFrostDepthRespected ? '✓ PASS' : '✗ INSUFFICIENT'}
+                          <td className="p-2 font-bold">
+                            {structuralSnapshot.isStale ? (
+                              <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
+                            ) : structuralSnapshot.isFrostDepthRespected ? (
+                              <span className="text-industrial-success">✓ PASS</span>
+                            ) : (
+                              <span className="text-rose-400">✗ INSUFFICIENT</span>
+                            )}
                           </td>
                         </tr>
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Structural Safety Verdict' : 'نتیجه ارزیابی ایمنی سازه'}</td>
                           <td className="p-2 font-bold" colSpan={3}>
                             {structuralSnapshot.isStale ? (
-                              <span className="text-amber-400 font-bold">{isEn ? 'STALE (RECALCULATION REQUIRED)' : 'منقضی‌شده (نیازمند بازمحاسبه در زبانه سازه)'}</span>
+                              <span className="text-amber-400 font-bold">{isEn ? 'STALE — RECALCULATION REQUIRED' : 'منقضی‌شده — نیازمند بازمحاسبه در زبانه سازه'}</span>
                             ) : structuralSnapshot.isStructurallySafe ? (
                               <span className="text-industrial-success font-bold">{isEn ? 'SCREENING PASS (Preliminary — Unassessed Modes Excluded)' : 'تأیید ارزیابی اولیه غربالگری (حالت‌های ارزیابی‌نشده مستثنی هستند)'}</span>
                             ) : (
