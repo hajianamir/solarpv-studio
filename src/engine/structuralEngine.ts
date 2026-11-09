@@ -213,6 +213,7 @@ export interface StructuralAnalysisResult {
   tableLengthM: number;
   tableHeightM: number;
   totalTablesCount: number;
+  modulesPerTable?: number;
 
   // Loads per Table (ASCE 7 & Iranian Code Part 6)
   deadLoadTableKg: number;
@@ -881,6 +882,7 @@ export function calculateStructuralAndFoundations(
     windDownforceKn: Number(windDownforceKn.toFixed(1)),
     windOverturningMomentKnM: Number(windOverturningMomentKnM.toFixed(1)),
     snowLoadTableKn: Number(snowLoadTableKn.toFixed(1)),
+    modulesPerTable,
     postsPerTable,
     totalPostsCount,
     upliftPerPostKn,

@@ -1691,11 +1691,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     </div>
                     <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Foundation Technology:' : 'سیستم فونداسیون سازه:'}</span>
-                      <span className="font-mono text-white print:text-black font-semibold">
-                        {isEn ? structuralSnapshot.foundationNameEn : structuralSnapshot.foundationNameFa}
+                      <span className={`font-mono font-semibold ${structuralSnapshot.isStale ? 'text-amber-400 print:text-amber-800' : 'text-white print:text-black'}`}>
+                        {structuralSnapshot.isStale ? (isEn ? 'STALE' : 'منقضی') : (isEn ? structuralSnapshot.foundationNameEn : structuralSnapshot.foundationNameFa)}
                       </span>
                       <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                        {structuralSnapshot.bromsPileSection}
+                        {structuralSnapshot.isStale ? (isEn ? 'Recalculation Required' : 'نیازمند بازمحاسبه') : structuralSnapshot.bromsPileSection}
                       </span>
                     </div>
                     <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
@@ -1799,7 +1799,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                               <span className="text-white print:text-black">{structuralSnapshot.appliedPostBearingPressureKpa} kPa</span>
                             )}
                           </td>
-                          <td className="p-2 text-slate-400 print:text-slate-600">Allowable bearing qa = {structuralSnapshot.allowableSoilBearingKpa} kPa</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">
+                            {structuralSnapshot.isStale
+                              ? (isEn ? 'Allowable bearing qa (Recalculation Required)' : 'ظرفیت باربری مجاز qa (نیازمند بازمحاسبه)')
+                              : `Allowable bearing qa = ${structuralSnapshot.allowableSoilBearingKpa} kPa`}
+                          </td>
                           <td className="p-2 font-bold">
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
@@ -1837,7 +1841,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                               <span className="text-white print:text-black">{structuralSnapshot.recommendedDepthM} m</span>
                             )}
                           </td>
-                          <td className="p-2 text-slate-400 print:text-slate-600">L &gt;= Frost Depth + 1.0m ({structuralSnapshot.minDepthForFrostM} m)</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">
+                            {structuralSnapshot.isStale
+                              ? (isEn ? 'L >= Frost Depth + 1.0m (Recalculation Required)' : 'عمق کوبش >= عمق یخبندان + ۱.۰ متر (نیازمند بازمحاسبه)')
+                              : `L >= Frost Depth + 1.0m (${structuralSnapshot.minDepthForFrostM} m)`}
+                          </td>
                           <td className="p-2 font-bold">
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
@@ -2010,8 +2018,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                         {isSnapshotValid
                           ? structuralSnapshot!.totalTablesCount
                           : structuralSnapshot?.isStale
-                          ? (isEn ? `STALE (${structuralSnapshot!.totalTablesCount})` : `منقضی (${structuralSnapshot!.totalTablesCount})`)
-                          : Math.ceil(arrayDesign.totalModulesCount / 28)}
+                          ? (isEn ? 'STALE' : 'منقضی')
+                          : '—'}
                       </td>
                       <td className="p-2">{isEn ? 'Tables' : 'میز'}</td>
                     </tr>

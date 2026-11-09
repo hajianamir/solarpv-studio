@@ -723,6 +723,7 @@ export interface StructuralSnapshot {
   totalTablesCount: number;
   totalPostsCount: number;
   postsPerTable: number;
+  modulesPerTable?: number;
   tableAreaM2: number;
   qzPa: number;
   qzKnM2: number;
@@ -769,6 +770,7 @@ export function createStructuralSnapshot(
     totalTablesCount: number;
     totalPostsCount: number;
     postsPerTable: number;
+    modulesPerTable?: number;
     tableAreaM2: number;
     velocityWindPressureQzN_M2: number;
     deadLoadTableKn: number;
@@ -819,6 +821,7 @@ export function createStructuralSnapshot(
     totalTablesCount: result.totalTablesCount,
     totalPostsCount: result.totalPostsCount,
     postsPerTable: result.postsPerTable,
+    modulesPerTable: result.modulesPerTable,
     tableAreaM2: result.tableAreaM2,
     qzPa: result.velocityWindPressureQzN_M2,
     qzKnM2: Number((result.velocityWindPressureQzN_M2 / 1000).toFixed(3)),
@@ -894,21 +897,21 @@ export function exportStructuralSheetRows(
       ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
       ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
       ['Structural Analysis Status', 'STALE — Inputs Modified', '-', 'Recalculation in Structural Tab Required'],
-      ['Velocity Wind Pressure (qz)', snapshot.qzPa, 'N/m²', 'ASCE 7-22 Eq. 26.10-1 (STALE)'],
-      ['Wind Uplift Force per Table', snapshot.windUpliftForceKn, 'kN', 'ASCE 7-22 §27.3 Net Uplift (STALE)'],
-      ['Wind Downforce per Table', snapshot.windDownforceKn, 'kN', 'ASCE 7-22 §27.3 Net Downforce (STALE)'],
-      ['Overturning Moment per Table', snapshot.windOverturningMomentKnM, 'kN·m', 'Derived arm (STALE)'],
-      ['Factored Snow Load per Table', snapshot.snowLoadTableKn, 'kN', 'INBC 6 / ASCE 7-22 §7.4 (STALE)'],
-      ['Foundation Technology', isEn ? snapshot.foundationNameEn : snapshot.foundationNameFa, '-', 'Eurocode 7 EN 1997-1'],
-      ['Pile Profile Section', snapshot.bromsPileSection, '-', 'Broms (1964) / ASTM A123'],
-      ['Embedment Depth in Ground', snapshot.recommendedDepthM, 'm', `L >= Frost Depth + 1.0m (${snapshot.minDepthForFrostM}m) (STALE)`],
-      ['Total Mounting Tables', snapshot.totalTablesCount, 'tables', `${snapshot.postsPerTable} posts per table`],
-      ['Total Piles Count', snapshot.totalPostsCount, 'posts', 'Plant-wide structural posts'],
-      ['Applied Post Bearing Pressure', snapshot.appliedPostBearingPressureKpa, 'kPa', `Allowable qa = ${snapshot.allowableSoilBearingKpa} kPa`],
-      ['Ultimate Skin-Friction Uplift (T_ult)', snapshot.upliftCapacityPerPostKn, 'kN/post', 'Burland-Meyerhof Beta Method'],
-      ['Uplift Safety Factor (FoS_uplift)', snapshot.fosUplift, '-', 'Required >= 2.0 (Eurocode 7)'],
-      ['Broms Lateral Safety Factor (FoS_lateral)', snapshot.fosLateral, '-', 'Required >= 1.5 (Broms 1964)'],
-      ['Overturning Safety Factor (FoS_overturning)', snapshot.fosOverturning, '-', 'Required >= 1.5 (ASCE 7-22)'],
+      ['Velocity Wind Pressure (qz)', 'STALE', 'N/m²', 'ASCE 7-22 Eq. 26.10-1 (Recalculation Required)'],
+      ['Wind Uplift Force per Table', 'STALE', 'kN', 'ASCE 7-22 §27.3 Net Uplift (Recalculation Required)'],
+      ['Wind Downforce per Table', 'STALE', 'kN', 'ASCE 7-22 §27.3 Net Downforce (Recalculation Required)'],
+      ['Overturning Moment per Table', 'STALE', 'kN·m', 'Derived arm (Recalculation Required)'],
+      ['Factored Snow Load per Table', 'STALE', 'kN', 'INBC 6 / ASCE 7-22 §7.4 (Recalculation Required)'],
+      ['Foundation Technology', 'STALE', '-', 'Eurocode 7 EN 1997-1 (Recalculation Required)'],
+      ['Pile Profile Section', 'STALE', '-', 'Broms (1964) / ASTM A123 (Recalculation Required)'],
+      ['Embedment Depth in Ground', 'STALE', 'm', 'Frost + Uplift + Lateral Governing (Recalculation Required)'],
+      ['Total Mounting Tables', 'STALE', 'tables', 'Recalculation in Structural Tab Required'],
+      ['Total Piles Count', 'STALE', 'posts', 'Plant-wide structural posts (Recalculation Required)'],
+      ['Applied Post Bearing Pressure', 'STALE', 'kPa', 'Allowable qa check (Recalculation Required)'],
+      ['Ultimate Skin-Friction Uplift (T_ult)', 'STALE', 'kN/post', 'Burland-Meyerhof Beta Method (Recalculation Required)'],
+      ['Uplift Safety Factor (FoS_uplift)', 'STALE', '-', 'Required >= 2.0 (Recalculation Required)'],
+      ['Broms Lateral Safety Factor (FoS_lateral)', 'STALE', '-', 'Required >= 1.5 (Recalculation Required)'],
+      ['Overturning Safety Factor (FoS_overturning)', 'STALE', '-', 'Required >= 1.5 (Recalculation Required)'],
       ['Structural Safety Compliance', 'STALE — RECALCULATION REQUIRED', '-', 'Project parameters modified after calculation'],
     ];
   }

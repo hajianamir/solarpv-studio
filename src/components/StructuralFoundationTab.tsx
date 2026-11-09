@@ -113,7 +113,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   // Geometry parameters
   const [modulesCount, setModulesCount] = useState<number>(totalModulesCount || 140);
   const [tiltDeg, setTiltDeg] = useState<number>(siteOverrides?.arrayTiltDeg ?? arrayTiltDeg ?? 28);
-  const [modulesPerTable, setModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
+  const [modulesPerTable, setModulesPerTable] = useState<number>(siteOverrides?.modulesPerTable ?? DEFAULT_MODULES_PER_TABLE);
   const [groundClearanceM, setGroundClearanceM] = useState<number>(siteOverrides?.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M);
   const [installationEnvironment, setInstallationEnvironment] = useState<InstallationEnvironment>(
     siteOverrides?.installationEnvironment || 'ground_mount'
@@ -320,6 +320,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       installationEnvironment,
       customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : undefined,
       customPostsPerTable: customPostsPerTable !== null ? customPostsPerTable : undefined,
+      modulesPerTable,
       groundClearanceM,
       arrayTiltDeg: tiltDeg,
       ...updated,
@@ -1849,7 +1850,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             <select
               id="struct-modules-per-table"
               value={modulesPerTable}
-              onChange={(e) => setModulesPerTable(parseInt(e.target.value) || 28)}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10) || DEFAULT_MODULES_PER_TABLE;
+                setModulesPerTable(val);
+                onUpdateSiteOverrides?.({ ...siteOverrides, modulesPerTable: val });
+              }}
               className="studio-input text-xs"
             >
               <option value="14">{isEn ? '14 Modules (2P7 config)' : '۱۴ پنل (۲ ردیف عمودی ۷ تایی)'}</option>

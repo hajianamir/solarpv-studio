@@ -153,6 +153,7 @@ export interface SiteGeotechnicalOverrides {
   installationEnvironment?: InstallationEnvironment;
   customEmbedmentDepthM?: number;
   customPostsPerTable?: number;
+  modulesPerTable?: number;
   groundClearanceM?: number;
   arrayTiltDeg?: number;
   customNotes?: string;

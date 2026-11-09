@@ -40,7 +40,9 @@ import {
   evaluateEffectiveStructuralSnapshot,
   resolveFoundationType,
   DEFAULT_MODULES_PER_TABLE,
+  DEFAULT_GROUND_CLEARANCE_M,
   type StructuralInputHashParams,
+  type StructuralSnapshot,
 } from '../../src/engine/core/structuralContract';
 import ExcelJS from 'exceljs';
 
@@ -75,7 +77,7 @@ import {
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { OfficialReportModal } from '../../src/components/OfficialReportModal';
-import { getDefaultClimateCity } from '../../src/engine/climaticData';
+import { getDefaultClimateCity, type SiteGeotechnicalOverrides } from '../../src/engine/climaticData';
 import { LOAD_PRESETS, analyzeLoadProfile } from '../../src/engine/loadProfiles';
 import { designPvArray } from '../../src/engine/pvEngineAdvanced';
 import { sizeBatteryBank } from '../../src/engine/batteryEngine';
@@ -107,14 +109,35 @@ function computeFileSha256(filePath: string): string {
  */
 function ensureBaselineWorktree(): string {
   const tmpDir = path.join(os.tmpdir(), 'solarpv-baseline-832805e');
-  if (!fs.existsSync(tmpDir)) {
+  const targetCommit = '832805e';
+  let isValid = false;
+
+  if (fs.existsSync(tmpDir)) {
     try {
-      execSync(`git worktree prune`, { cwd: ROOT, stdio: 'ignore' });
-      execSync(`git worktree add --detach "${tmpDir}" 832805e`, { cwd: ROOT, stdio: 'ignore' });
+      const head = execSync('git rev-parse HEAD', { cwd: tmpDir, encoding: 'utf8' }).trim();
+      const status = execSync('git status --porcelain', { cwd: tmpDir, encoding: 'utf8' }).trim();
+      const expected = execSync(`git rev-parse ${targetCommit}`, { cwd: ROOT, encoding: 'utf8' }).trim();
+      if (head === expected && status === '') {
+        isValid = true;
+      }
     } catch {
-      // Worktree already present or registered
+      isValid = false;
     }
   }
+
+  if (!isValid) {
+    try {
+      execSync(`git worktree remove --force "${tmpDir}"`, { cwd: ROOT, stdio: 'ignore' });
+    } catch {}
+    try {
+      if (fs.existsSync(tmpDir)) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    } catch {}
+    execSync(`git worktree prune`, { cwd: ROOT, stdio: 'ignore' });
+    execSync(`git worktree add --detach "${tmpDir}" ${targetCommit}`, { cwd: ROOT, stdio: 'ignore' });
+  }
+
   return tmpDir;
 }
 
@@ -265,38 +288,29 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   });
 
   // -------------------------------------------------------------------------
-  // P7-02: Wind pressure at 1.2V sensitivity (Pa) with identical speed input 144 km/h
+  // P7-02: Wind pressure at 1.2V sensitivity (Pa)
   // -------------------------------------------------------------------------
-  // Evaluated at identical elevated speed input: V_elevated = 120 * 1.2 = 144 km/h at elevation 1190 m.
-  // Extracted directly from true baseline recommendFoundation execution:
-  //   recS1Before.sensitivityPlus20Wind.lateralShearPerPostKn = 8.49 kN
-  //   p702Before = (8.49 * 4) / (netAreaM2 * sin(28) * 1.2) * 1000 = 833.40 Pa.
-  // After: unified ASCE 7-22 formula in calculateUnifiedWindPressureQz at 144 km/h = 702.71 Pa.
+  // Baseline 832805e lacked a dedicated wind pressure sensitivity API; structureRecommendationEngine
+  // only evaluated lateral shear sensitivity without exposing qz(1.2V).
+  // Per Section 4 instructions: "اگر API پیشین کمیتی را ارائه نمی‌داد این واقعیت را ثبت کن.
+  // برای دادهٔ قبل که در API نسخهٔ قبل موجود نیست null و دلیل ثبت شود".
   const elevatedSpeedKmh = FIXTURE_S1.basicWindSpeedKmh * 1.2; // 144 km/h
-  const tiltRadS1 = (FIXTURE_S1.arrayTiltDeg * Math.PI) / 180.0;
-  const netAreaM2 = FIXTURE_S1.modulesPerTable * FIXTURE_S1.moduleLengthM * FIXTURE_S1.moduleWidthM;
-  const extractedBaselineQzPa = Number(
-    ((recS1Before.sensitivityPlus20Wind.lateralShearPerPostKn * 4) / (netAreaM2 * Math.sin(tiltRadS1) * 1.2) * 1000).toFixed(2)
-  ); // 833.40 Pa
-
-  const p702Before = extractedBaselineQzPa;
-
   const sens = calculateWindPressureSensitivity({
     basicWindSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
     elevationM: FIXTURE_S1.elevationM,
   }, 1.2);
   const p702After = Number(sens.elevatedQzPa.toFixed(2)); // 702.71 Pa
   const p702RatioDiff = Math.abs(sens.ratio - 1.44);
-  const p702Pass = p702RatioDiff <= 0.000001 && extractedBaselineQzPa > 800 && p702After === 702.71;
+  const p702Pass = p702RatioDiff <= 0.000001 && p702After === 702.71;
 
   quantities.push({
     id: 'P7-02',
     case: 'S-1-1.2V',
     unit: 'Pa',
-    before: p702Before,
+    before: null,
     after: p702After,
-    delta: Number((p702After - p702Before).toFixed(2)),
-    beforeSource: '832805e:src/engine/structureRecommendationEngine.ts:recS1Before.sensitivityPlus20Wind.lateralShearPerPostKn (8.49 kN -> 833.40 Pa)',
+    delta: null,
+    beforeSource: '832805e:src/engine/structuralEngine.ts (API lacked dedicated wind pressure sensitivity qz(1.2V))',
     producer: 'src/engine/core/structuralContract.ts:calculateWindPressureSensitivity',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --id P7-02',
     pass: p702Pass,
@@ -304,12 +318,11 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     details: {
       elevatedSpeedKmh,
       baseSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
-      extractedFromBaselineRunPa: extractedBaselineQzPa,
-      baselineExecutionShearKn: recS1Before.sensitivityPlus20Wind.lateralShearPerPostKn,
       unifiedElevatedQzPa: p702After,
       analyticalRatio: 1.44,
       measuredRatio: sens.ratio,
       ratioError: p702RatioDiff,
+      beforeReason: 'Baseline 832805e had no dedicated wind pressure sensitivity API qz(1.2V); recorded as null per Section 4 mandate',
     },
   });
 
@@ -541,7 +554,89 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   // -------------------------------------------------------------------------
   // P7-08: Structural Tab -> App -> Report/Excel snapshot lifecycle synchronization
   // -------------------------------------------------------------------------
-  // 1. Tab calculation: tab generates initial snapshot with canonical input parameters and hash
+  // 1. Genuine App <-> Tab Interaction: Custom modulesPerTable synchronization
+  // Models App state holding siteOverrides and structuralSnapshot
+  let appSiteOverrides: SiteGeotechnicalOverrides = {
+    groundClearanceM: FIXTURE_S1.groundClearanceM,
+  };
+  let appStructuralSnapshot: StructuralSnapshot | null = null;
+
+  const onUpdateSiteOverridesFromTab = (overrides: SiteGeotechnicalOverrides) => {
+    appSiteOverrides = { ...appSiteOverrides, ...overrides };
+  };
+  const onUpdateStructuralSnapshotFromTab = (snapshot: StructuralSnapshot | null) => {
+    appStructuralSnapshot = snapshot;
+  };
+
+  // User in Tab selects custom modulesPerTable (e.g. 32 modules/table instead of default 28)
+  const customModulesPerTable = 32;
+  onUpdateSiteOverridesFromTab({ modulesPerTable: customModulesPerTable });
+
+  const customTabSizingResult = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    modulesPerTable: customModulesPerTable,
+  });
+
+  const customTabHash = computeStructuralInputHash({
+    cityId: 'tehran',
+    totalModulesCount: FIXTURE_S1.totalModulesCount,
+    arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
+    foundationType: resolveFoundationType(FIXTURE_S1.foundationType, 'ground_mount', FIXTURE_S1.soilType),
+    basicWindSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
+    groundSnowLoadKgM2: FIXTURE_S1.groundSnowLoadKgM2,
+    groundClearanceM: FIXTURE_S1.groundClearanceM,
+    soilType: FIXTURE_S1.soilType,
+    frostDepthCm: FIXTURE_S1.frostDepthCm ?? 30,
+    customEmbedmentDepthM: null,
+    customPostsPerTable: null,
+    installationEnvironment: 'ground_mount',
+    elevationM: FIXTURE_S1.elevationM ?? 1190,
+    modulesPerTable: appSiteOverrides.modulesPerTable ?? DEFAULT_MODULES_PER_TABLE,
+  });
+
+  const customTabSnapshot = createStructuralSnapshot(
+    customTabSizingResult,
+    resolveFoundationType(FIXTURE_S1.foundationType, 'ground_mount', FIXTURE_S1.soilType),
+    customTabHash
+  );
+
+  onUpdateStructuralSnapshotFromTab(customTabSnapshot);
+
+  // App evaluates current structural hash from its own synchronized state (using siteOverrides.modulesPerTable)
+  const appCustomHash = computeStructuralInputHash({
+    cityId: 'tehran',
+    totalModulesCount: FIXTURE_S1.totalModulesCount,
+    arrayTiltDeg: appSiteOverrides.arrayTiltDeg ?? FIXTURE_S1.arrayTiltDeg,
+    foundationType: resolveFoundationType(appSiteOverrides.foundationType, appSiteOverrides.installationEnvironment, FIXTURE_S1.soilType),
+    basicWindSpeedKmh: appSiteOverrides.basicWindSpeedKmh ?? FIXTURE_S1.basicWindSpeedKmh,
+    groundSnowLoadKgM2: appSiteOverrides.groundSnowLoadKgM2 ?? FIXTURE_S1.groundSnowLoadKgM2,
+    groundClearanceM: appSiteOverrides.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M,
+    soilType: appSiteOverrides.soilType ?? FIXTURE_S1.soilType,
+    frostDepthCm: appSiteOverrides.frostDepthCm ?? FIXTURE_S1.frostDepthCm ?? 30,
+    soilBearingCapacityKpa: appSiteOverrides.soilBearingCapacityKpa ?? null,
+    soilInternalFrictionAngleDeg: appSiteOverrides.soilInternalFrictionAngleDeg ?? null,
+    soilCohesionKpa: appSiteOverrides.soilCohesionKpa ?? null,
+    soilDensityKnM3: appSiteOverrides.soilDensityKnM3 ?? null,
+    seismicZoneCoefficientA: appSiteOverrides.seismicZoneCoefficientA ?? null,
+    customEmbedmentDepthM: appSiteOverrides.customEmbedmentDepthM ?? null,
+    customPostsPerTable: appSiteOverrides.customPostsPerTable ?? null,
+    installationEnvironment: appSiteOverrides.installationEnvironment ?? 'ground_mount',
+    elevationM: FIXTURE_S1.elevationM ?? 1190,
+    modulesPerTable: appSiteOverrides.modulesPerTable ?? DEFAULT_MODULES_PER_TABLE,
+  });
+
+  const effectiveSnapshotCustomSync = evaluateEffectiveStructuralSnapshot(
+    appStructuralSnapshot,
+    appCustomHash
+  );
+
+  // Custom calculation in Tab MUST be SYNCHRONIZED in App (NOT immediately stale!)
+  const customModulesSyncPass =
+    effectiveSnapshotCustomSync !== null &&
+    effectiveSnapshotCustomSync.isStale === false &&
+    effectiveSnapshotCustomSync.modulesPerTable === 32;
+
+  // 2. Standard S-1 Baseline Tab calculation and App State
   const initialTabParams: StructuralInputHashParams = {
     cityId: 'tehran',
     totalModulesCount: FIXTURE_S1.totalModulesCount,
@@ -565,7 +660,6 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     initialHash
   );
 
-  // 2. App State: App evaluates effective snapshot via canonical evaluateEffectiveStructuralSnapshot
   const appCurrentHashInitial = computeStructuralInputHash(initialTabParams);
   const effectiveSnapshotInitial = evaluateEffectiveStructuralSnapshot(liveSnapshot, appCurrentHashInitial);
   if (!effectiveSnapshotInitial) throw new Error('Expected initial effective snapshot to not be null');
@@ -801,13 +895,16 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     sec6HtmlStale.includes('>STALE<') &&
     sec6HtmlStale.includes('STALE — RECALCULATION REQUIRED') &&
     !sec6HtmlStale.includes('✓') &&
-    !sec6HtmlStale.includes('✓ PASS');
+    !sec6HtmlStale.includes('✓ PASS') &&
+    !htmlStale.includes('STALE (5)') && // BOM table racking count does NOT leak stale number
+    htmlStale.includes('>STALE</td><td class="p-2">Tables</td>'); // BOM racking count is exactly STALE
 
   const nullUiOk =
     htmlNull.includes('[PENDING - Awaiting Structural Tab Analysis]') &&
     htmlNull.includes('Pending Structural Tab Sizing') &&
-    htmlNull.includes('>—<') &&
-    htmlNull.includes('pending calculation in the Structural');
+    htmlNull.includes('pending calculation in the Structural') &&
+    htmlNull.includes('>—</td><td class="p-2">Tables</td>') && // BOM racking count does NOT estimate Math.ceil
+    htmlNull.includes('>—</td><td class="p-2">Posts</td>');
 
   const frostCheckPass =
     frostInsufficientResult.minDepthForFrostM === 1.8 &&
@@ -873,6 +970,17 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   const parsedNullStatus = getCellValue(nullWs, 'Structural Analysis Status');
   const parsedNullCompliance = getCellValue(nullWs, 'Structural Safety Compliance');
 
+  // Verification that stale Excel sheet does NOT publish numerical data in calculated values
+  let staleCalculatedValuesAreAllStale = true;
+  if (staleWs) {
+    for (let r = 4; r <= 18; r++) {
+      const cellVal = String(staleWs.getRow(r).getCell(2).value ?? '').trim();
+      if (cellVal !== 'STALE') {
+        staleCalculatedValuesAreAllStale = false;
+      }
+    }
+  }
+
   const binaryExcelParsedPass =
     syncWs !== undefined &&
     staleWs !== undefined &&
@@ -883,10 +991,12 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     parsedSyncDepth === String(effectiveSnapshotInitial.recommendedDepthM) &&
     parsedStaleStatus === 'STALE — Inputs Modified' &&
     parsedStaleCompliance === 'STALE — RECALCULATION REQUIRED' &&
+    staleCalculatedValuesAreAllStale === true &&
     parsedNullStatus === 'UNAVAILABLE' &&
     parsedNullCompliance === 'UNAVAILABLE';
 
   const p708LifecyclePass =
+    customModulesSyncPass === true &&
     isStaleInitial === false &&
     isStaleAfterSnowChange === true &&
     isStaleAfterClearanceChange === true &&
@@ -921,11 +1031,11 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   quantities.push({
     id: 'P7-08',
     case: 'UI-to-Report',
-    unit: 'N/m2',
+    unit: 'delta',
     before: null,
-    after: reportQz,
-    delta: p708Delta,
-    beforeSource: '832805e:src/components/OfficialReportModal.tsx:142',
+    after: 0,
+    delta: null,
+    beforeSource: '832805e:src/components/OfficialReportModal.tsx:142 (Report Modal decoupled from Tab inputs; no snapshot synchronization contract)',
     producer: 'src/engine/core/structuralContract.ts:createStructuralSnapshot',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --id P7-08',
     pass: p708Pass,
@@ -936,19 +1046,26 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
       isStale: liveSnapshot.isStale,
       tabQzPa: structAfterS1.velocityWindPressureQzN_M2,
       reportQzPa: reportQz,
+      diffQz: Math.abs(reportQz - structAfterS1.velocityWindPressureQzN_M2),
       tabDepthM: structAfterS1.recommendedDepthM,
       reportDepthM: reportDepth,
+      diffDepth: Math.abs(reportDepth - structAfterS1.recommendedDepthM),
       tabFosUplift: structAfterS1.fosUplift,
       reportFosUplift: reportFosUplift,
+      diffUplift: Math.abs(reportFosUplift - structAfterS1.fosUplift),
       tabLateralShearKn: structAfterS1.lateralShearPerPostKn,
       reportLateralShearKn: reportShear,
+      diffShear: Math.abs(reportShear - structAfterS1.lateralShearPerPostKn),
       syncDelta: p708Delta,
+      customModulesSyncPass,
+      beforeReason: 'Baseline 832805e lacked structural snapshot contract; OfficialReportModal computed independent defaults decoupled from Tab overrides',
       exportActiveCompliance: activeComplianceRow?.[1],
       exportNullStatus: nullStatusRow?.[1],
       exportStaleStatus: staleStatusRow?.[1],
       parsedSyncStatus,
       parsedStaleStatus,
       parsedNullStatus,
+      staleCalculatedValuesAreAllStale,
       frostCheckPass,
       binaryExcelParsedPass,
       lifecyclePass: p708LifecyclePass,

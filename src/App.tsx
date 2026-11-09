@@ -1468,7 +1468,7 @@ export const App: React.FC = () => {
     customPostsPerTable: siteOverrides.customPostsPerTable ?? null,
     installationEnvironment: siteOverrides.installationEnvironment ?? 'ground_mount',
     elevationM: city.elevationM || 0,
-    modulesPerTable: DEFAULT_MODULES_PER_TABLE,
+    modulesPerTable: siteOverrides.modulesPerTable ?? DEFAULT_MODULES_PER_TABLE,
   });
 
   const effectiveStructuralSnapshot = useMemo(() => {
