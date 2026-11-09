@@ -164,7 +164,7 @@ git tag remediation/phase-01-approved
 | ۴ | ✅ `PHASE-04-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `bc1a978` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۵ | ✅ `PHASE-05-PROMPT.fa.md` | ✅ تایید نهایی ناظر (`APPROVED` روی کامیت `49b89cc` در شاخهٔ `arena/f30efcdc-solarpv-studio`) |
 | ۶ | ✅ `PHASE-06-PROMPT.fa.md` | ✅ دروازهٔ پایان `832805e`: `APPROVED` پس از اصلاح و بازتولید مستقل |
-| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `54709f0`: `REJECTED`؛ دامنه، baseline و worktree اصلاح شدند اما آزمون تعامل واقعی C7-05 و منبع حقیقت پایدار تب/اپ برقرار نیست |
+| ۷ | ✅ `PHASE-07-PROMPT.fa.md` | ❌ بازرسی پایان `a01569e`: `REJECTED`؛ آزمون C7-05 قطع handler واقعی را تشخیص نمی‌دهد؛ هارنس ناپایدار و خروج با evidence اجرای دوم ناسازگار است |
 | ۸ | ❌ | فقط پس از تأیید فاز قبل نوشته می‌شود |
 
 ### ثبت دلایل رد دروازهٔ پایان فاز ۶
