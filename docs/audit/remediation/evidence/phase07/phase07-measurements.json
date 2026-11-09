@@ -7,7 +7,7 @@
   "baselineCommit": "832805e",
   "contractSource": "src/engine/core/structuralContract.ts",
   "contractSha256": "7507e77a8c0b4f66ebd285d9436edc28a6aa1901ad9d7ea41b1a5c86ede18db3",
-  "harnessSha256": "1f14aa310bc34399ba7b385c6515d8d7b33ea270aa405d4630cca96372e1cf6f",
+  "harnessSha256": "fe770f996c36a0f1d4f60acfae6f6d40c67ca786200caddfa73dedb58fe7b47c",
   "overallPass": true,
   "summary": {
     "totalQuantities": 8,

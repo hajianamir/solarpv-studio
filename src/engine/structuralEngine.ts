@@ -438,12 +438,13 @@ export function calculateStructuralAndFoundations(
     // with 35MPa non-shrink cementitious grout (FHWA-NHI-05-039).
     const isCompetentBedrock = soilType === 'rocky_limestone';
     if (isCompetentBedrock) {
-      // In competent bedrock, embedment depth is governed by rock socket bond length (0.75m - 1.05m),
-      // immune to soil frost heave jacking.
-      const baseRockSocketM = Math.max(0.70, Number((siteFrostDepthM + 0.15).toFixed(2)));
+      // In rock, compact rock-socket bond length applies (0.75m - 1.05m) when frost depth is absent/respected.
+      // When frost depth is specified, embedment must satisfy frost penetration depth unless confirmed by borehole.
+      const minFrostM = hasFrostData ? bromsResult.minDepthForFrostM : 0.75;
+      const baseRockSocketM = Math.max(minFrostM, Number((siteFrostDepthM + 0.15).toFixed(2)));
       recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
         ? Number(input.customEmbedmentDepthM.toFixed(2))
-        : Number(Math.min(1.05, Math.max(0.75, baseRockSocketM)).toFixed(2));
+        : Number(Math.min(hasFrostData ? Math.max(minFrostM, 1.05) : 1.05, Math.max(0.75, baseRockSocketM)).toFixed(2));
     } else {
       // In soil (sand, gravel, clay), pile must penetrate below frost heave depth unless verified by borehole
       const reqGroutedUpliftM = calculateRequiredEmbedmentForUplift(
@@ -592,9 +593,11 @@ export function calculateStructuralAndFoundations(
     foundationType === 'rooftop_anchor_bolted' ||
     foundationType === 'rooftop_ballasted_block' ||
     foundationType === 'surface_ballasted_block';
-  const isCompetentBedrock = soilType === 'rocky_limestone';
-  const isFrostDepthImmune = isRooftopOrShed || isCompetentBedrock;
-  const isFrostDepthRespected = isFrostDepthImmune ? true : hasFrostData ? recommendedDepthM >= bromsResult.minDepthForFrostM : false;
+  const isFrostDepthRespected = isRooftopOrShed
+    ? true
+    : hasFrostData
+    ? recommendedDepthM >= bromsResult.minDepthForFrostM
+    : false;
 
   // 6. Factors of Safety (FoS)
   const isBallasted = foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block';
@@ -816,8 +819,13 @@ export function calculateStructuralAndFoundations(
         : `وزن بلوک سطحی در برابر باد ناکافی است. جرم بلوک بتنی را افزایش دهید.`;
       break;
     case 'pre_drilled_grouted_pile': {
-      const isCompetentBedrock = soilType === 'rocky_limestone';
-      if (!isRooftopOrShed && !isCompetentBedrock && !hasFrostData) {
+      if (hasFrostData && !isFrostDepthRespected) {
+        isStructurallySafe = false;
+        safetyReasonEn =
+          `[UNASSESSED - Geotechnical Borehole Required] Pre-drilled rock-socket pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth). A soil classification alone does not establish bedrock depth or frost immunity; site-specific borehole logs are required.`;
+        safetyReasonFa =
+          `[ارزیابی‌نشده - نیازمند گمانه ژئوتکنیک] عمق شمع در سنگ (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر برای عمق یخبندان ${siteFrostDepthCm} سانتی‌متر) است؛ برچسب نوع خاک به‌تنهایی عمق سنگ بستر یا مصونیت از یخبندان را اثبات نمی‌کند.`;
+      } else if (!isRooftopOrShed && !hasFrostData && soilType !== 'rocky_limestone') {
         isStructurallySafe = false;
         safetyReasonEn =
           `[UNASSESSED - Frost Depth Required] Site frost depth is unspecified; pre-drilled grouted pile embedment in soil cannot be certified safe against frost heave. Geotechnical borehole frost depth data is mandatory.`;
@@ -825,22 +833,18 @@ export function calculateStructuralAndFoundations(
           `[ارزیابی‌نشده - نیازمند عمق یخبندان] عمق یخبندان ساختگاه نامشخص است؛ پایداری شمع پیش‌حفاری‌شده در خاک در برابر تورم یخبندان قابل تأیید نیست.`;
       } else {
         const isEmbedmentSufficient = input.customEmbedmentDepthM !== undefined
-          ? (input.customEmbedmentDepthM > 0 && isFrostDepthRespected)
-          : isFrostDepthRespected;
-        isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isFrostDepthRespected && isEmbedmentSufficient;
+          ? (input.customEmbedmentDepthM > 0 && (hasFrostData ? isFrostDepthRespected : true))
+          : (hasFrostData ? isFrostDepthRespected : true);
+        isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isEmbedmentSufficient;
         safetyReasonEn = isStructurallySafe
-          ? isCompetentBedrock
-            ? `Rock-socket grout bond capacity verified in competent bedrock (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Compact depth (${recommendedDepthM}m) eliminates refusal (FHWA-NHI-05-039).`
-            : `Rock-socket grout bond capacity verified (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Frost penetration depth respected (L = ${recommendedDepthM}m >= ${bromsResult.minDepthForFrostM}m).`
+          ? `Pre-drilled rock-socket grout bond capacity estimated per FHWA-NHI-05-039 (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Compact depth (${recommendedDepthM}m) reduces driving refusal; site-specific borehole cores and pullout verification recommended for detailed design.`
           : !isFrostDepthRespected
-          ? `Pre-drilled pile depth (${recommendedDepthM}m) does not satisfy required frost heave penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth). Pile embedment cannot be certified safe against frost heave without site-specific rock-head borehole verification.`
-          : `Rock-socket grout bond capacity insufficient (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase borehole depth.`;
+          ? `[UNASSESSED - Geotechnical Borehole Required] Pre-drilled rock-socket pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth).`
+          : `Pre-drilled rock-socket grout bond capacity insufficient (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase borehole depth.`;
         safetyReasonFa = isStructurallySafe
-          ? isCompetentBedrock
-            ? `ظرفیت چسبندگی گروت در سنگ بستر یکپارچه تأیید است (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). عمق بهینه ${recommendedDepthM} متر مانع پس‌زدگی کوبش می‌شود.`
-            : `ظرفیت چسبندگی گروت تأیید است (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه) و عمق نفوذ یخبندان رعایت شده است.`
+          ? `ظرفیت کشش شمع پیش‌حفاری با گروت بر اساس FHWA-NHI-05-039 تخمین زده شد (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). عمق بهینه ${recommendedDepthM} متر مانع پس‌زدگی می‌شود؛ تایید نهایی منوط به گمانه‌زنی است.`
           : !isFrostDepthRespected
-          ? `عمق شمع پیش‌حفاری (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر برای عمق یخبندان ${siteFrostDepthCm} سانتی‌متر) است؛ پایداری در برابر تورم یخبندان بدون گزارش ژئوتکنیکی سنگ بستر قابل تأیید نیست.`
+          ? `عمق شمع پیش‌حفاری (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر) است.`
           : `ظرفیت کششی گروت در سنگ ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه یا قطر حفاری را افزایش دهید.`;
       }
       break;
@@ -857,14 +861,25 @@ export function calculateStructuralAndFoundations(
         const isEmbedmentSufficient = input.customEmbedmentDepthM !== undefined
           ? (input.customEmbedmentDepthM > 0 && input.customEmbedmentDepthM >= bromsResult.embedmentDepthM && isFrostDepthRespected)
           : isFrostDepthRespected;
-        isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isEmbedmentSufficient && fosLateral >= 1.5;
+        isStructurallySafe =
+          fosUplift >= 2.0 &&
+          isBearingCapacitySafe &&
+          isEmbedmentSufficient &&
+          fosLateral >= 1.5 &&
+          bromsResult.isFosSafe;
         safetyReasonEn = isStructurallySafe
           ? `Pile uplift capacity OK (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Broms lateral FoS >= 1.5 verified in foundation report.`
+          : bromsResult.isSearchLimitExhausted
+          ? `[FAILED / UNASSESSED] Broms lateral capacity search limit (4.0m) exhausted: Applied lateral shear (${lateralShearPerPostKn.toFixed(2)} kN) exceeds allowable resistance at maximum depth (FoS = ${fosLateral} < 1.5). Pile lateral stability failed without larger pile section or anchors.`
           : !isEmbedmentSufficient
           ? `Custom embedment depth (${recommendedDepthM}m) is insufficient for lateral/frost/uplift limits (FoS_uplift=${fosUplift}, FoS_lateral=${fosLateral}).`
+          : fosLateral < 1.5
+          ? `Pile lateral resistance INSUFFICIENT (Broms FoS_lateral = ${fosLateral} < 1.5 vs demand ${lateralShearPerPostKn} kN/post). Increase pile section or embedment.`
           : `Pile uplift capacity INSUFFICIENT (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase embedment or add ballast.`;
         safetyReasonFa = isStructurallySafe
           ? `ظرفیت کشش شمع کافی است (FoS_uplift = ${fosUplift} >= ۲.۰).`
+          : bromsResult.isSearchLimitExhausted
+          ? `محدودیت عمق جستجوی برمز (۴.۰ متر) به پایان رسید؛ برش جانبی از مقاومت خاک در حداکثر عمق فراتر است.`
           : !isEmbedmentSufficient
           ? `عمق کوبش واردشده (${recommendedDepthM} متر) الزامات عمق یخبندان یا مقاومت جانبی را ارضا نمی‌کند.`
           : `ظرفیت کشش شمع کافی نیست (FoS_uplift = ${fosUplift} < ۲.۰). عمق کوبش را افزایش دهید.`;
@@ -883,9 +898,13 @@ export function calculateStructuralAndFoundations(
           fosUplift >= 2.0 && fosOverturning >= 1.5 && isBearingCapacitySafe && isFrostDepthRespected;
         safetyReasonEn = isStructurallySafe
           ? `Pier uplift FoS = ${fosUplift} >= 2.0 and overturning FoS = ${fosOverturning} >= 1.5.`
+          : !isFrostDepthRespected
+          ? `Concrete pier depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth). Insufficient against frost heave.`
           : `Pier insufficient: FoS_uplift = ${fosUplift}, FoS_overturning = ${fosOverturning}. Increase pier depth or diameter.`;
         safetyReasonFa = isStructurallySafe
           ? `FoS کشش ${fosUplift} و واژگونی ${fosOverturning} کافی است.`
+          : !isFrostDepthRespected
+          ? `عمق پایه بتنی (${recommendedDepthM} متر) کمتر از عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر برای عمق یخبندان ${siteFrostDepthCm} سانتی‌متر) است؛ پایداری در برابر تورم یخبندان قابل تأیید نیست.`
           : `پایه بتنی کافی نیست: FoS_uplift=${fosUplift}, FoS_overturning=${fosOverturning}.`;
       }
       break;

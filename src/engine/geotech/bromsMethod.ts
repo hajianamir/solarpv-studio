@@ -23,6 +23,7 @@ export interface BromsPileSizingResult {
   fosLateral: number;
   fosMoment: number;
   isFosSafe: boolean;
+  isSearchLimitExhausted?: boolean;
   notes: string;
 }
 
@@ -58,6 +59,8 @@ export function calculateBromsPileSizing(
   let ultimateLateralCapacityKn = 0;
   const leverArmM = Math.max(0.1, clearanceHeightM);
 
+  let searchExhausted = false;
+
   if (soilClass === 'medium_clay') {
     // FHWA-NHI-16-009 §10.4.4 (free-headed short pile, cohesive soil):
     //   Solve iteratively for f:  e + 1.5*D + f/2 = L
@@ -74,11 +77,13 @@ export function calculateBromsPileSizing(
         ultimateLateralCapacityKn = Number(cap.toFixed(1));
         break;
       }
-      testL += 0.1;
+      testL = Number((testL + 0.1).toFixed(2));
     }
     if (ultimateLateralCapacityKn === 0) {
-      requiredDepthM = 2.5;
-      ultimateLateralCapacityKn = Number(((9.0 * cu * pileWidthD * (2.5 - 1.5 * pileWidthD)) / 2.5).toFixed(1));
+      searchExhausted = true;
+      requiredDepthM = 4.0;
+      const f4 = Math.max(0, 2.0 * (4.0 - 1.5 * pileWidthD - leverArmM));
+      ultimateLateralCapacityKn = Number((9.0 * cu * pileWidthD * f4).toFixed(1));
     }
   } else {
     // Cohesionless Soil (Sand/Gravel): Broms short pile: Hu_ult = 0.5 * gamma * D * L^3 * Kp / (e + L)
@@ -94,11 +99,12 @@ export function calculateBromsPileSizing(
         ultimateLateralCapacityKn = Number(cap.toFixed(1));
         break;
       }
-      testL += 0.1;
+      testL = Number((testL + 0.1).toFixed(2));
     }
     if (ultimateLateralCapacityKn === 0) {
-      requiredDepthM = 2.2;
-      ultimateLateralCapacityKn = Number(((0.5 * gamma * pileWidthD * Math.pow(2.2, 3) * kp) / (leverArmM + 2.2)).toFixed(1));
+      searchExhausted = true;
+      requiredDepthM = 4.0;
+      ultimateLateralCapacityKn = Number(((0.5 * gamma * pileWidthD * Math.pow(4.0, 3) * kp) / (leverArmM + 4.0)).toFixed(1));
     }
   }
 
@@ -125,7 +131,13 @@ export function calculateBromsPileSizing(
 
   const fosLateral = Number((ultimateLateralCapacityKn / Math.max(0.1, lateralShearKn)).toFixed(2));
   const fosMoment = Number((allowableMomentKnM / Math.max(0.1, bendingMomentKnM)).toFixed(2));
-  const isSafe = fosLateral >= 1.5 && fosMoment >= 1.5 && effectiveEmbedmentDepthM >= minDepthForFrost;
+  const isSafe = !searchExhausted && fosLateral >= 1.5 && fosMoment >= 1.5 && effectiveEmbedmentDepthM >= minDepthForFrost;
+
+  const notes = searchExhausted
+    ? `[FAILED / UNASSESSED] Broms lateral capacity search limit (4.0m) exhausted: Applied lateral shear (${lateralShearKn.toFixed(2)} kN) exceeds soil capacity at maximum embedment (FoS_lateral = ${fosLateral} < 1.5). Pile lateral stability failed without larger pile section, ground anchors, or tiebacks.`
+    : !isSafe
+    ? `[INSUFFICIENT] Broms lateral capacity insufficient (FoS_lateral = ${fosLateral}, FoS_moment = ${fosMoment}, L = ${effectiveEmbedmentDepthM}m vs frost ${minDepthForFrost}m).`
+    : `Selected ${pileSection} satisfies Broms lateral equilibrium with FoS=${fosLateral} and frost heave embedment constraint (L=${effectiveEmbedmentDepthM}m >= ${minDepthForFrost}m).`;
 
   return {
     pileSection,
@@ -139,7 +151,8 @@ export function calculateBromsPileSizing(
     fosLateral,
     fosMoment,
     isFosSafe: isSafe,
-    notes: `Selected ${pileSection} satisfies Broms lateral equilibrium with FoS=${fosLateral} and frost heave embedment constraint (L=${effectiveEmbedmentDepthM}m >= ${minDepthForFrost}m).`,
+    isSearchLimitExhausted: searchExhausted,
+    notes,
   };
 }
 

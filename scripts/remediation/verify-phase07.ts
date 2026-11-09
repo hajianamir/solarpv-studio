@@ -1862,6 +1862,35 @@ function getElementValue(node: any): string {
     groutedInsufficient.isStructurallySafe === false &&
     groutedUnspecified.isStructurallySafe === false;
 
+  // 5b) Live Engine Path - Concrete Pier & Rocky Limestone Frost Safety Contract (supervisor rejection a6d34b2):
+  const concretePierRockyFrostInsufficient = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    soilType: 'rocky_limestone',
+    foundationType: 'concrete_pier',
+    basicWindSpeedKmh: 30,
+    frostDepthCm: 80,
+    customEmbedmentDepthM: 0.8,
+  });
+  const concretePierRockyFrostPass =
+    concretePierRockyFrostInsufficient.isFrostDepthRespected === false &&
+    concretePierRockyFrostInsufficient.isStructurallySafe === false;
+
+  // 5c) Broms lateral search limit exhausted test (supervisor rejection a6d34b2):
+  const bromsSearchExhaustedResult = calculateBromsPileSizing(
+    150, // 150 kN extreme shear per post
+    1.5,
+    0.3,
+    'loose_sand',
+    140,
+    28,
+    0,
+    16.5
+  );
+  const bromsSearchLimitPass =
+    bromsSearchExhaustedResult.isSearchLimitExhausted === true &&
+    bromsSearchExhaustedResult.isFosSafe === false &&
+    bromsSearchExhaustedResult.notes.includes('[FAILED / UNASSESSED]');
+
   // 6) Independent safety proof: verify that unrounded limit 1.234m is not satisfied by 1.23m
   const safetyLimitTest = calculateGoverningPileDepth({
     lateralDepthM: 1.234,
@@ -1877,6 +1906,8 @@ function getElementValue(node: any): string {
     lateralGovernsPass &&
     customInsufficientPass &&
     groutedPileFrostSafetyPass &&
+    concretePierRockyFrostPass &&
+    bromsSearchLimitPass &&
     safetyLimitTest.isDepthAdequate === false;
 
   checks.push({
