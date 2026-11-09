@@ -1943,7 +1943,7 @@ function getElementValue(node: any): string {
     inadequateFrostSuppliedCapacity.isStructurallySafe === false &&
     inadequateFrostSuppliedCapacity.safetyReasonEn.includes('[UNASSESSED - Geotechnical Borehole Required]');
 
-  // 5.8 Invalid pullout capacities: zero, negative, and NaN
+  // 5.8 Invalid pullout capacities: zero, negative, NaN, and Infinity (leak prevention)
   const invalidPulloutZero = calculateStructuralAndFoundations({
     ...FIXTURE_S1,
     foundationType: 'pre_drilled_grouted_pile',
@@ -1965,16 +1965,157 @@ function getElementValue(node: any): string {
     frostDepthCm: 30,
     pileUpliftCapacityPerPostKn: NaN,
   });
+  const invalidPulloutInf = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
+    frostDepthCm: 30,
+    pileUpliftCapacityPerPostKn: Infinity,
+  });
 
   const invalidCapacityPass =
     invalidPulloutZero.isStructurallySafe === false &&
+    invalidPulloutZero.upliftCapacityPerPostKn === 0 &&
+    invalidPulloutZero.fosUplift === 0 &&
     invalidPulloutZero.safetyReasonEn.includes('[FAILED - Invalid Geotechnical Input]') &&
     invalidPulloutNegative.isStructurallySafe === false &&
+    invalidPulloutNegative.upliftCapacityPerPostKn === 0 &&
+    invalidPulloutNegative.fosUplift === 0 &&
     invalidPulloutNegative.safetyReasonEn.includes('[FAILED - Invalid Geotechnical Input]') &&
     invalidPulloutNaN.isStructurallySafe === false &&
-    invalidPulloutNaN.safetyReasonEn.includes('[FAILED - Invalid Geotechnical Input]');
+    invalidPulloutNaN.upliftCapacityPerPostKn === 0 &&
+    invalidPulloutNaN.fosUplift === 0 &&
+    Number.isFinite(invalidPulloutNaN.upliftCapacityPerPostKn) &&
+    Number.isFinite(invalidPulloutNaN.fosUplift) &&
+    Number.isFinite(invalidPulloutNaN.fosOverturningAnchored) &&
+    invalidPulloutNaN.safetyReasonEn.includes('[FAILED - Invalid Geotechnical Input]') &&
+    invalidPulloutInf.isStructurallySafe === false &&
+    invalidPulloutInf.upliftCapacityPerPostKn === 0 &&
+    invalidPulloutInf.fosUplift === 0 &&
+    Number.isFinite(invalidPulloutInf.upliftCapacityPerPostKn) &&
+    Number.isFinite(invalidPulloutInf.fosUplift) &&
+    Number.isFinite(invalidPulloutInf.fosOverturningAnchored) &&
+    invalidPulloutInf.safetyReasonEn.includes('[FAILED - Invalid Geotechnical Input]');
 
-  // 5.9 Verdict propagation to Report snapshot and Excel export
+  // 5.9 Loose sand grouted pile unassessed capacity & provenance verification
+  const looseSandGroutedUnassessed = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'loose_sand',
+    frostDepthCm: 30,
+  });
+
+  const looseSandEnginePass =
+    looseSandGroutedUnassessed.isStructurallySafe === false &&
+    looseSandGroutedUnassessed.upliftCapacityProvenance === 'nominal_assumed' &&
+    looseSandGroutedUnassessed.assumedGroutBondKpa === 200 &&
+    looseSandGroutedUnassessed.safetyReasonEn.includes('tau_bond = 0.20 MPa per FHWA-NHI-05-039') &&
+    looseSandGroutedUnassessed.safetyReasonEn.includes('[UNASSESSED - Pullout Test & Borehole Rock Core Required]');
+
+  // Render StructuralFoundationTab with loose sand and verify soil-specific bond presentation
+  const looseSandTabHtml = ReactDOMServer.renderToStaticMarkup(
+    React.createElement(StructuralFoundationTab, {
+      totalModulesCount: FIXTURE_S1.totalModulesCount,
+      arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
+      city: cityTehran,
+      siteOverrides: {
+        foundationType: 'pre_drilled_grouted_pile',
+        soilType: 'loose_sand',
+        frostDepthCm: 30,
+      },
+      lang: 'en',
+    })
+  );
+
+  const looseSandTabPass =
+    looseSandTabHtml.includes('0.20 MPa') &&
+    !looseSandTabHtml.includes('1.50 MPa') &&
+    looseSandTabHtml.includes('UNASSESSED') &&
+    looseSandTabHtml.includes('pullout test required') &&
+    looseSandTabHtml.includes('text-rose-400');
+
+  // Excel export rows and binary Excel verification for loose sand grouted pile
+  const looseSandHash = computeStructuralInputHash({
+    cityId: 'tehran',
+    totalModulesCount: FIXTURE_S1.totalModulesCount,
+    arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
+    foundationType: 'pre_drilled_grouted_pile',
+    basicWindSpeedKmh: 30,
+    groundSnowLoadKgM2: 50,
+    groundClearanceM: 0.9,
+    soilType: 'loose_sand',
+    frostDepthCm: 30,
+  });
+  const looseSandSnapshot = createStructuralSnapshot(
+    looseSandGroutedUnassessed,
+    'pre_drilled_grouted_pile',
+    looseSandHash
+  );
+  const looseSandExcelRows = exportStructuralSheetRows(looseSandSnapshot, true);
+  const looseSandUpliftRow = looseSandExcelRows.find((r) => r[0].includes('Pre-Drilled Grout Bond Uplift'));
+  const looseSandFosRow = looseSandExcelRows.find((r) => r[0] === 'Uplift Safety Factor (FoS_uplift)');
+
+  // Verify binary Excel round-trip for loose sand
+  const looseSandWb = new ExcelJS.Workbook();
+  const looseSandWs = looseSandWb.addWorksheet('Structural & Foundations');
+  looseSandExcelRows.forEach((r) => looseSandWs.addRow(r));
+  const looseSandBuf = await looseSandWb.xlsx.writeBuffer();
+  const readLooseSandWb = new ExcelJS.Workbook();
+  await readLooseSandWb.xlsx.load(looseSandBuf as any);
+  const readLooseSandWs = readLooseSandWb.getWorksheet('Structural & Foundations');
+
+  let binaryLooseSandParam = '';
+  let binaryLooseSandLimit = '';
+  let binaryLooseSandFosLimit = '';
+  readLooseSandWs?.eachRow((row) => {
+    const pName = String(row.getCell(1).value || '');
+    if (pName.includes('Pre-Drilled Grout Bond Uplift')) {
+      binaryLooseSandParam = pName;
+      binaryLooseSandLimit = String(row.getCell(4).value);
+    }
+    if (pName === 'Uplift Safety Factor (FoS_uplift)') {
+      binaryLooseSandFosLimit = String(row.getCell(4).value);
+    }
+  });
+
+  const looseSandExcelPass =
+    looseSandUpliftRow !== undefined &&
+    looseSandUpliftRow[0] === 'Pre-Drilled Grout Bond Uplift (T_assumed - UNASSESSED)' &&
+    looseSandUpliftRow[3].toString().includes('FHWA-NHI-05-039 Nominal Assumption (τ_bond=200 kPa; Unverified — Pullout Test Required)') &&
+    !looseSandUpliftRow[0].includes('Ultimate Skin-Friction Uplift (T_ult)') &&
+    !looseSandUpliftRow[3].toString().includes('Burland-Meyerhof Beta Method') &&
+    looseSandFosRow !== undefined &&
+    looseSandFosRow[3].toString().includes('UNASSESSED (FoS >= 2.0 required with site pullout test)') &&
+    binaryLooseSandParam === 'Pre-Drilled Grout Bond Uplift (T_assumed - UNASSESSED)' &&
+    binaryLooseSandLimit.includes('τ_bond=200 kPa') &&
+    binaryLooseSandFosLimit.includes('UNASSESSED');
+
+  // Verify invalid numeric input export rows
+  const invalidSnapshot = createStructuralSnapshot(
+    invalidPulloutNaN,
+    'pre_drilled_grouted_pile',
+    looseSandHash
+  );
+  const invalidExcelRows = exportStructuralSheetRows(invalidSnapshot, true);
+  const invalidUpliftRow = invalidExcelRows.find((r) => r[0].includes('INVALID INPUT'));
+  const invalidFosRow = invalidExcelRows.find((r) => r[0] === 'Uplift Safety Factor (FoS_uplift)');
+
+  const invalidExcelPass =
+    invalidUpliftRow !== undefined &&
+    invalidUpliftRow[1] === 'INVALID' &&
+    invalidFosRow !== undefined &&
+    invalidFosRow[1] === 'INVALID' &&
+    invalidFosRow[3].toString().includes('FAILED (Invalid Input)');
+
+  // 5.10 Uplift-depth cap removal verification
+  const uncappedUpliftDepth = calculateRequiredEmbedmentForUplift(60, 'loose_sand', 0.15, 10, 18, 0.3, 2.0);
+  const baselineUpliftDepth = calculateRequiredEmbedmentForUplift(26.546, 'dense_sand_gravel', 0.15, 10, 18, 0.3, 2.0);
+  const upliftDepthCapRemovalPass =
+    uncappedUpliftDepth > 5.0 &&
+    uncappedUpliftDepth === 9.71 &&
+    baselineUpliftDepth === 5.0;
+
+  // 5.11 Verdict propagation to Report snapshot and Excel export
   const unassessedHash = computeStructuralInputHash({
     cityId: 'tehran',
     totalModulesCount: FIXTURE_S1.totalModulesCount,
@@ -2017,6 +2158,11 @@ function getElementValue(node: any): string {
     adequateFrostSuppliedPass &&
     inadequateFrostSuppliedPass &&
     invalidCapacityPass &&
+    looseSandEnginePass &&
+    looseSandTabPass &&
+    looseSandExcelPass &&
+    invalidExcelPass &&
+    upliftDepthCapRemovalPass &&
     verdictPropagationPass;
 
   // 5b) Live Engine Path - Concrete Pier & Rocky Limestone Frost Safety Contract (supervisor rejection a6d34b2):

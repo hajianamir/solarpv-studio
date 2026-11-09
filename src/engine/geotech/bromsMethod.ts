@@ -196,5 +196,5 @@ export function calculateRequiredEmbedmentForUplift(
     depthFromUplift = Math.sqrt(targetCapacityKn / coef);
   }
 
-  return Number(Math.min(5.0, Math.max(0.5, depthFromUplift)).toFixed(2));
+  return Number(Math.max(0.5, depthFromUplift).toFixed(2));
 }

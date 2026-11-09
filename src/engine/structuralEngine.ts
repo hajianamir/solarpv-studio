@@ -268,6 +268,10 @@ export interface StructuralAnalysisResult {
   fosUplift: number;
   /** Uplift capacity used (kN per post) - surfaced for transparency. */
   upliftCapacityPerPostKn: number;
+  /** Provenance of the uplift capacity value. */
+  upliftCapacityProvenance: 'user_supplied' | 'nominal_assumed' | 'calculated_soil' | 'invalid_input';
+  /** Assumed or evaluated grout bond shear strength (kPa) for grouted pile foundations. */
+  assumedGroutBondKpa?: number;
   /** Broms lateral soil resistance factor of safety (H_ult / H_applied). */
   fosLateral: number;
   /** Soil bearing capacity factor of safety (q_allow / q_applied). */
@@ -613,22 +617,69 @@ export function calculateStructuralAndFoundations(
   const fosSlidingApplicable = isBallasted;
 
   // Pile uplift (tension) capacity per post, after recommendedDepthM is final.
-  const upliftCapacityPerPostKn =
-    input.pileUpliftCapacityPerPostKn
-    ?? estimatePileUpliftCapacityKn(
-         soilType, recommendedDepthM, 0.15,
-         input.soilCohesionKpa ?? 10, input.soilDensityKnM3 ?? 18.0,
-         foundationType,
-       );
+  const hasSuppliedPulloutInput = input.pileUpliftCapacityPerPostKn !== undefined;
+  const hasValidSuppliedPulloutData =
+    hasSuppliedPulloutInput &&
+    typeof input.pileUpliftCapacityPerPostKn === 'number' &&
+    Number.isFinite(input.pileUpliftCapacityPerPostKn) &&
+    input.pileUpliftCapacityPerPostKn > 0;
 
-  const fosUplift = Number(
-    (upliftCapacityPerPostKn / Math.max(0.01, upliftPerPostKn)).toFixed(2)
-  );
+  let upliftCapacityProvenance: 'user_supplied' | 'nominal_assumed' | 'calculated_soil' | 'invalid_input';
+  let assumedGroutBondKpa: number | undefined;
+
+  let rawUpliftCapacityKn: number;
+  if (hasSuppliedPulloutInput && !hasValidSuppliedPulloutData) {
+    upliftCapacityProvenance = 'invalid_input';
+    rawUpliftCapacityKn = 0.0;
+    if (foundationType === 'pre_drilled_grouted_pile') {
+      assumedGroutBondKpa =
+        soilType === 'rocky_limestone' ? 1500
+        : soilType === 'dense_sand_gravel' ? 550
+        : soilType === 'medium_clay' ? 300
+        : 200;
+    }
+  } else if (hasValidSuppliedPulloutData) {
+    upliftCapacityProvenance = 'user_supplied';
+    rawUpliftCapacityKn = input.pileUpliftCapacityPerPostKn!;
+    if (foundationType === 'pre_drilled_grouted_pile') {
+      assumedGroutBondKpa =
+        soilType === 'rocky_limestone' ? 1500
+        : soilType === 'dense_sand_gravel' ? 550
+        : soilType === 'medium_clay' ? 300
+        : 200;
+    }
+  } else {
+    if (foundationType === 'pre_drilled_grouted_pile') {
+      upliftCapacityProvenance = 'nominal_assumed';
+      assumedGroutBondKpa =
+        soilType === 'rocky_limestone' ? 1500
+        : soilType === 'dense_sand_gravel' ? 550
+        : soilType === 'medium_clay' ? 300
+        : 200;
+    } else {
+      upliftCapacityProvenance = 'calculated_soil';
+    }
+    rawUpliftCapacityKn = estimatePileUpliftCapacityKn(
+      soilType,
+      recommendedDepthM,
+      0.15,
+      input.soilCohesionKpa ?? 10,
+      input.soilDensityKnM3 ?? 18.0,
+      foundationType,
+    );
+  }
+
+  const upliftCapacityPerPostKn = Number.isFinite(rawUpliftCapacityKn) ? rawUpliftCapacityKn : 0.0;
+
+  const fosUplift =
+    upliftCapacityProvenance === 'invalid_input'
+      ? 0.0
+      : Number((upliftCapacityPerPostKn / Math.max(0.01, upliftPerPostKn)).toFixed(2));
 
   // Overturning resisting moment including rear pile tension pullout capacity:
   const rearPostsCount = Math.max(1, Math.floor(postsPerTable / 2));
   const postSpacingM = tableSlopedWidthM * Math.cos(tiltRad);
-  const anchorResistingMomentKnM = rearPostsCount * upliftCapacityPerPostKn * postSpacingM;
+  const anchorResistingMomentKnM = rearPostsCount * (Number.isFinite(upliftCapacityPerPostKn) ? upliftCapacityPerPostKn : 0) * postSpacingM;
   const fosOverturningAnchored = Number(
     ((stabilizingMoment + anchorResistingMomentKnM) / Math.max(0.1, windOverturningMomentKnM)).toFixed(2)
   );
@@ -820,12 +871,12 @@ export function calculateStructuralAndFoundations(
         : `وزن بلوک سطحی در برابر باد ناکافی است. جرم بلوک بتنی را افزایش دهید.`;
       break;
     case 'pre_drilled_grouted_pile': {
-      const hasValidSuppliedPulloutData =
-        typeof input.pileUpliftCapacityPerPostKn === 'number' &&
-        Number.isFinite(input.pileUpliftCapacityPerPostKn) &&
-        input.pileUpliftCapacityPerPostKn > 0;
+      const isCompetentBedrock = soilType === 'rocky_limestone';
+      const assumedBondMpa = ((assumedGroutBondKpa ?? 1500) / 1000).toFixed(2);
+      const formationDescEn = isCompetentBedrock ? 'Pre-drilled rock-socket' : 'Pre-drilled grouted micro-pile';
+      const formationDescFa = isCompetentBedrock ? 'شمع در گمانه پیش‌حفاری در سنگ بستر' : 'شمع در گمانه پیش‌حفاری با تزریق گروت';
 
-      if (input.pileUpliftCapacityPerPostKn !== undefined && !hasValidSuppliedPulloutData) {
+      if (hasSuppliedPulloutInput && !hasValidSuppliedPulloutData) {
         isStructurallySafe = false;
         safetyReasonEn =
           `[FAILED - Invalid Geotechnical Input] Supplied pile uplift capacity (${input.pileUpliftCapacityPerPostKn}) is invalid (must be a positive finite number).`;
@@ -834,42 +885,48 @@ export function calculateStructuralAndFoundations(
       } else if (hasFrostData && !isFrostDepthRespected) {
         isStructurallySafe = false;
         safetyReasonEn =
-          `[UNASSESSED - Geotechnical Borehole Required] Pre-drilled rock-socket pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth). A soil classification alone does not establish bedrock depth or frost immunity; site-specific borehole logs are required.`;
+          `[UNASSESSED - Geotechnical Borehole Required] ${formationDescEn} pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth). A soil classification alone does not establish bedrock depth or frost immunity; site-specific borehole logs are required.`;
         safetyReasonFa =
-          `[ارزیابی‌نشده - نیازمند گمانه ژئوتکنیک] عمق شمع در سنگ (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر برای عمق یخبندان ${siteFrostDepthCm} سانتی‌متر) است؛ برچسب نوع خاک به‌تنهایی عمق سنگ بستر یا مصونیت از یخبندان را اثبات نمی‌کند.`;
+          `[ارزیابی‌نشده - نیازمند گمانه ژئوتکنیک] عمق ${formationDescFa} (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر برای عمق یخبندان ${siteFrostDepthCm} سانتی‌متر) است؛ برچسب نوع خاک به‌تنهایی عمق سنگ بستر یا مصونیت از یخبندان را اثبات نمی‌کند.`;
       } else if (!isRooftopOrShed && !hasFrostData) {
         isStructurallySafe = false;
         safetyReasonEn =
-          `[UNASSESSED - Frost Depth & Geotechnical Borehole Required] Site frost depth is unspecified; pre-drilled rock-socket pile embedment and bond capacity cannot be certified safe against frost heave without site-specific borehole frost depth data.`;
+          `[UNASSESSED - Frost Depth & Geotechnical Borehole Required] Site frost depth is unspecified; ${formationDescEn.toLowerCase()} pile embedment and bond capacity cannot be certified safe against frost heave without site-specific borehole frost depth data.`;
         safetyReasonFa =
-          `[ارزیابی‌نشده - نیازمند عمق یخبندان و گمانه ژئوتکنیک] عمق یخبندان ساختگاه نامشخص است؛ گیرداری و مقاومت چسبندگی شمع پیش‌حفاری در سنگ بدون داده‌های گمانه و عمق یخبندان قابل تأیید نیست.`;
+          `[ارزیابی‌نشده - نیازمند عمق یخبندان و گمانه ژئوتکنیک] عمق یخبندان ساختگاه نامشخص است؛ گیرداری و مقاومت چسبندگی ${formationDescFa} بدون داده‌های گمانه و عمق یخبندان قابل تأیید نیست.`;
       } else if (!hasValidSuppliedPulloutData) {
         isStructurallySafe = false;
         safetyReasonEn =
-          `[UNASSESSED - Pullout Test & Borehole Rock Core Required] Rock-socket grout bond capacity (nominal screening FoS = ${fosUplift}, T_assumed = ${upliftCapacityPerPostKn.toFixed(1)} kN/post) relies on assumed nominal shear strength (tau_bond = 1.5 MPa per FHWA-NHI-05-039); in-situ borehole rock coring and pullout testing are required to certify structural safety.`;
+          `[UNASSESSED - Pullout Test & Borehole Rock Core Required] ${formationDescEn} grout bond capacity (nominal screening FoS = ${fosUplift}, T_assumed = ${upliftCapacityPerPostKn.toFixed(1)} kN/post) relies on assumed nominal shear strength (tau_bond = ${assumedBondMpa} MPa per FHWA-NHI-05-039); in-situ borehole rock coring and pullout testing are required to certify structural safety.`;
         safetyReasonFa =
-          `[ارزیابی‌نشده - نیازمند آزمون کشش درجا و مغزه‌گیری سنگ بستر] ظرفیت چسبندگی شمع پیش‌حفاری با گروت بر اساس تنش برشی فرضی FHWA-NHI-05-039 برآورد شده است (FoS اسمی = ${fosUplift})؛ تأیید نهایی ایمنی سازه منوط به آزمایش کشش درجا و داده‌های مغزه‌گیری سنگ است.`;
+          `[ارزیابی‌نشده - نیازمند آزمون کشش درجا و مغزه‌گیری سنگ بستر] ظرفیت چسبندگی ${formationDescFa} با گروت بر اساس تنش برشی فرضی ${assumedBondMpa} مگاپاسکال FHWA-NHI-05-039 برآورد شده است (FoS اسمی = ${fosUplift})؛ تأیید نهایی ایمنی سازه منوط به آزمایش کشش درجا و داده‌های مغزه‌گیری سنگ است.`;
       } else {
         const isEmbedmentSufficient = input.customEmbedmentDepthM !== undefined
           ? (input.customEmbedmentDepthM > 0 && isFrostDepthRespected)
           : isFrostDepthRespected;
         isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isFrostDepthRespected && isEmbedmentSufficient;
         safetyReasonEn = isStructurallySafe
-          ? `[Screening Pass] Pre-drilled rock-socket grout bond capacity evaluated against user-specified pullout test input (FoS_uplift = ${fosUplift} >= 2.0, T_input = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Frost depth respected (${recommendedDepthM}m >= ${bromsResult.minDepthForFrostM}m); field verification by licensed geotechnical engineer required.`
+          ? `[Screening Pass] ${formationDescEn} grout bond capacity evaluated against user-specified pullout test input (FoS_uplift = ${fosUplift} >= 2.0, T_input = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Frost depth respected (${recommendedDepthM}m >= ${bromsResult.minDepthForFrostM}m); field verification by licensed geotechnical engineer required.`
           : !isFrostDepthRespected
-          ? `[UNASSESSED - Geotechnical Borehole Required] Pre-drilled rock-socket pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth).`
-          : `Pre-drilled rock-socket grout bond capacity insufficient for uplift demand (FoS_uplift = ${fosUplift} < 2.0, T_input = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn.toFixed(1)} kN/post). Increase borehole depth.`;
+          ? `[UNASSESSED - Geotechnical Borehole Required] ${formationDescEn} pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth).`
+          : `${formationDescEn} grout bond capacity insufficient for uplift demand (FoS_uplift = ${fosUplift} < 2.0, T_input = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn.toFixed(1)} kN/post). Increase borehole depth.`;
         safetyReasonFa = isStructurallySafe
-          ? `[قبولی غربالگری] ظرفیت چسبندگی شمع پیش‌حفاری با مقدار کشش واردشده ارزیابی شد (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه) و عمق یخبندان رعایت شده است؛ تایید نهایی منوط به گزارش گمانه است.`
+          ? `[قبولی غربالگری] ظرفیت چسبندگی ${formationDescFa} با مقدار کشش واردشده ارزیابی شد (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه) و عمق یخبندان رعایت شده است؛ تایید نهایی منوط به گزارش گمانه است.`
           : !isFrostDepthRespected
-          ? `عمق شمع پیش‌حفاری (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر) است.`
+          ? `عمق ${formationDescFa} (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر) است.`
           : `ظرفیت کشش شمع در برابر بار باد ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه را افزایش دهید.`;
       }
       break;
     }
     case 'rammed_steel_pile':
     case 'ground_screw': {
-      if (!isRooftopOrShed && !hasFrostData) {
+      if (hasSuppliedPulloutInput && !hasValidSuppliedPulloutData) {
+        isStructurallySafe = false;
+        safetyReasonEn =
+          `[FAILED - Invalid Geotechnical Input] Supplied pile uplift capacity (${input.pileUpliftCapacityPerPostKn}) is invalid (must be a positive finite number).`;
+        safetyReasonFa =
+          `[نامعتبر - داده ژئوتکنیکی ورودی] ظرفیت کششی وارد شده (${input.pileUpliftCapacityPerPostKn}) نامعتبر است (باید عددی مثبت و متناهی باشد).`;
+      } else if (!isRooftopOrShed && !hasFrostData) {
         isStructurallySafe = false;
         safetyReasonEn =
           `[UNASSESSED - Frost Depth Required] Site frost depth is unspecified; pile embedment and uplift resistance cannot be certified safe against frost heave action. Geotechnical borehole frost depth data is mandatory.`;
@@ -905,7 +962,13 @@ export function calculateStructuralAndFoundations(
       break;
     }
     case 'concrete_pier':
-      if (!isRooftopOrShed && !hasFrostData) {
+      if (hasSuppliedPulloutInput && !hasValidSuppliedPulloutData) {
+        isStructurallySafe = false;
+        safetyReasonEn =
+          `[FAILED - Invalid Geotechnical Input] Supplied pile uplift capacity (${input.pileUpliftCapacityPerPostKn}) is invalid (must be a positive finite number).`;
+        safetyReasonFa =
+          `[نامعتبر - داده ژئوتکنیکی ورودی] ظرفیت کششی وارد شده (${input.pileUpliftCapacityPerPostKn}) نامعتبر است (باید عددی مثبت و متناهی باشد).`;
+      } else if (!isRooftopOrShed && !hasFrostData) {
         isStructurallySafe = false;
         safetyReasonEn =
           `[UNASSESSED - Frost Depth Required] Site frost depth is unspecified; concrete pier embedment cannot be certified safe against frost heave. Geotechnical borehole frost depth data is mandatory.`;
@@ -950,45 +1013,47 @@ export function calculateStructuralAndFoundations(
   }
 
   return {
-    tableAreaM2,
-    tableSlopedWidthM: Number(tableSlopedWidthM.toFixed(3)),
-    totalArrayAreaM2: Number(totalArrayAreaM2.toFixed(0)),
-    tableLengthM: Number(tableLengthM.toFixed(2)),
-    tableHeightM: Number(tableSlopedWidthM.toFixed(2)),
-    totalTablesCount,
-    deadLoadTableKg: Math.round(deadLoadTableKg),
-    deadLoadTableKn: Number(deadLoadTableKn.toFixed(2)),
-    velocityWindPressureQzN_M2: Math.round(velocityWindPressureQzN_M2),
-    windUpliftForceKn: Number(windUpliftForceKn.toFixed(1)),
-    windDownforceKn: Number(windDownforceKn.toFixed(1)),
-    windOverturningMomentKnM: Number(windOverturningMomentKnM.toFixed(1)),
-    snowLoadTableKn: Number(snowLoadTableKn.toFixed(1)),
+    tableAreaM2: Number.isFinite(tableAreaM2) ? tableAreaM2 : 0,
+    tableSlopedWidthM: Number.isFinite(tableSlopedWidthM) ? Number(tableSlopedWidthM.toFixed(3)) : 0,
+    totalArrayAreaM2: Number.isFinite(totalArrayAreaM2) ? Number(totalArrayAreaM2.toFixed(0)) : 0,
+    tableLengthM: Number.isFinite(tableLengthM) ? Number(tableLengthM.toFixed(2)) : 0,
+    tableHeightM: Number.isFinite(tableSlopedWidthM) ? Number(tableSlopedWidthM.toFixed(2)) : 0,
+    totalTablesCount: Number.isFinite(totalTablesCount) ? totalTablesCount : 0,
+    deadLoadTableKg: Number.isFinite(deadLoadTableKg) ? Math.round(deadLoadTableKg) : 0,
+    deadLoadTableKn: Number.isFinite(deadLoadTableKn) ? Number(deadLoadTableKn.toFixed(2)) : 0,
+    velocityWindPressureQzN_M2: Number.isFinite(velocityWindPressureQzN_M2) ? Math.round(velocityWindPressureQzN_M2) : 0,
+    windUpliftForceKn: Number.isFinite(windUpliftForceKn) ? Number(windUpliftForceKn.toFixed(1)) : 0,
+    windDownforceKn: Number.isFinite(windDownforceKn) ? Number(windDownforceKn.toFixed(1)) : 0,
+    windOverturningMomentKnM: Number.isFinite(windOverturningMomentKnM) ? Number(windOverturningMomentKnM.toFixed(1)) : 0,
+    snowLoadTableKn: Number.isFinite(snowLoadTableKn) ? Number(snowLoadTableKn.toFixed(1)) : 0,
     modulesPerTable,
     postsPerTable,
     totalPostsCount,
-    upliftPerPostKn,
-    compressionPerPostKn,
-    lateralShearPerPostKn,
+    upliftPerPostKn: Number.isFinite(upliftPerPostKn) ? upliftPerPostKn : 0,
+    compressionPerPostKn: Number.isFinite(compressionPerPostKn) ? compressionPerPostKn : 0,
+    lateralShearPerPostKn: Number.isFinite(lateralShearPerPostKn) ? lateralShearPerPostKn : 0,
     foundationNameFa,
     foundationNameEn,
-    recommendedDepthM,
+    recommendedDepthM: Number.isFinite(recommendedDepthM) ? recommendedDepthM : 0,
     foundationDimensionsDesc,
     foundationDimensionsDescEn,
-    allowableSoilBearingKpa,
-    appliedPostBearingPressureKpa,
+    allowableSoilBearingKpa: Number.isFinite(allowableSoilBearingKpa) ? allowableSoilBearingKpa : 0,
+    appliedPostBearingPressureKpa: Number.isFinite(appliedPostBearingPressureKpa) ? appliedPostBearingPressureKpa : 0,
     isBearingCapacitySafe,
-    frostDepthCm: siteFrostDepthCm,
+    frostDepthCm: Number.isFinite(siteFrostDepthCm) ? siteFrostDepthCm : 0,
     isFrostDepthRespected,
-    concreteVolumeTotalM3,
-    steelRebarWeightTotalKg,
-    structuralSteelRackingWeightKg,
-    cementBagsCount,
-    sandGravelTon,
-    fosOverturning,
-    fosSliding,
+    concreteVolumeTotalM3: Number.isFinite(concreteVolumeTotalM3) ? concreteVolumeTotalM3 : 0,
+    steelRebarWeightTotalKg: Number.isFinite(steelRebarWeightTotalKg) ? steelRebarWeightTotalKg : 0,
+    structuralSteelRackingWeightKg: Number.isFinite(structuralSteelRackingWeightKg) ? structuralSteelRackingWeightKg : 0,
+    cementBagsCount: Number.isFinite(cementBagsCount) ? cementBagsCount : 0,
+    sandGravelTon: Number.isFinite(sandGravelTon) ? sandGravelTon : 0,
+    fosOverturning: Number.isFinite(fosOverturning) ? fosOverturning : 0,
+    fosSliding: Number.isFinite(fosSliding) ? fosSliding : 0,
     fosSlidingApplicable,
-    fosUplift,
-    upliftCapacityPerPostKn: Number(upliftCapacityPerPostKn.toFixed(2)),
+    fosUplift: Number.isFinite(fosUplift) ? fosUplift : 0,
+    upliftCapacityPerPostKn: Number.isFinite(upliftCapacityPerPostKn) ? Number(upliftCapacityPerPostKn.toFixed(2)) : 0,
+    upliftCapacityProvenance,
+    assumedGroutBondKpa,
     isStructurallySafe,
     isScreeningPreliminary: true,
     screeningDisclaimerFa,
@@ -997,11 +1062,11 @@ export function calculateStructuralAndFoundations(
     safetyReasonFa,
     engineeringRemarksFa,
     engineeringRemarksEn,
-    fosLateral,
-    fosBearing,
-    fosOverturningAnchored,
+    fosLateral: Number.isFinite(fosLateral) ? fosLateral : 0,
+    fosBearing: Number.isFinite(fosBearing) ? fosBearing : 0,
+    fosOverturningAnchored: Number.isFinite(fosOverturningAnchored) ? fosOverturningAnchored : 0,
     bromsPileSection: bromsResult.pileSection,
-    minDepthForFrostM: bromsResult.minDepthForFrostM,
+    minDepthForFrostM: Number.isFinite(bromsResult.minDepthForFrostM) ? bromsResult.minDepthForFrostM : 0,
     remedialGuidance,
   };
 }

@@ -1715,12 +1715,41 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       </span>
                     </div>
                     <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Uplift Tension FoS:' : 'ضریب اطمینان کشش شمع:'}</span>
-                      <span className={`font-mono font-bold ${structuralSnapshot.isStale ? 'text-amber-400 print:text-amber-800' : structuralSnapshot.fosUplift >= 2.0 ? 'text-industrial-success print:text-emerald-800' : 'text-amber-400 print:text-amber-800'}`}>
-                        {structuralSnapshot.isStale ? (isEn ? 'STALE' : 'منقضی') : `${structuralSnapshot.fosUplift} ${isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}`}
+                      <span className="text-slate-400 block text-[10px]">
+                        {structuralSnapshot.foundationType === 'pre_drilled_grouted_pile'
+                          ? (isEn ? 'Grout Bond FoS:' : 'ضریب اطمینان چسبندگی گروت:')
+                          : (isEn ? 'Uplift Tension FoS:' : 'ضریب اطمینان کشش شمع:')
+                        }
+                      </span>
+                      <span className={`font-mono font-bold ${
+                        structuralSnapshot.isStale
+                          ? 'text-amber-400 print:text-amber-800'
+                          : !structuralSnapshot.isStructurallySafe || structuralSnapshot.upliftCapacityProvenance === 'nominal_assumed' || structuralSnapshot.upliftCapacityProvenance === 'invalid_input'
+                          ? 'text-amber-400 print:text-amber-800'
+                          : structuralSnapshot.fosUplift >= 2.0
+                          ? 'text-industrial-success print:text-emerald-800'
+                          : 'text-amber-400 print:text-amber-800'
+                      }`}>
+                        {structuralSnapshot.isStale
+                          ? (isEn ? 'STALE' : 'منقضی')
+                          : structuralSnapshot.upliftCapacityProvenance === 'invalid_input'
+                          ? (isEn ? 'INVALID INPUT' : 'ورودی نامعتبر')
+                          : structuralSnapshot.upliftCapacityProvenance === 'nominal_assumed'
+                          ? `${structuralSnapshot.fosUplift} ${isEn ? '(Nominal — UNASSESSED)' : '(اسمی — ارزیابی‌نشده)'}`
+                          : structuralSnapshot.upliftCapacityProvenance === 'user_supplied'
+                          ? `${structuralSnapshot.fosUplift} ${isEn ? '(Screening ≥ 2.0)' : '(غربالگری حداقل ۲.۰)'}`
+                          : `${structuralSnapshot.fosUplift} ${isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}`}
                       </span>
                       <span className="text-[10px] text-slate-400 block mt-0.5">
-                        {structuralSnapshot.isStale ? (isEn ? 'Recalculation Required' : 'نیازمند بازمحاسبه') : `T_ult = ${structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post`}
+                        {structuralSnapshot.isStale
+                          ? (isEn ? 'Recalculation Required' : 'نیازمند بازمحاسبه')
+                          : structuralSnapshot.upliftCapacityProvenance === 'nominal_assumed'
+                          ? `T_assumed = ${structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post (Unverified)`
+                          : structuralSnapshot.upliftCapacityProvenance === 'user_supplied'
+                          ? `T_input = ${structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post (Screening)`
+                          : structuralSnapshot.upliftCapacityProvenance === 'invalid_input'
+                          ? (isEn ? 'Invalid input' : 'ورودی نامعتبر')
+                          : `T_ult = ${structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post`}
                       </span>
                     </div>
                   </div>
@@ -1816,18 +1845,52 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                           </td>
                         </tr>
                         <tr>
-                          <td className="p-2 font-medium">{isEn ? 'Pile Skin-Friction Tension Resistance' : 'ظرفیت کشش اصطکاک جدار شمع (T_ult)'}</td>
+                          <td className="p-2 font-medium">
+                            {structuralSnapshot.foundationType === 'pre_drilled_grouted_pile'
+                              ? structuralSnapshot.upliftCapacityProvenance === 'nominal_assumed'
+                                ? (isEn ? 'Pre-Drilled Grout Bond Resistance (T_assumed - UNASSESSED)' : 'ظرفیت کشش چسبندگی گروت (T_assumed - ارزیابی‌نشده)')
+                                : structuralSnapshot.upliftCapacityProvenance === 'user_supplied'
+                                ? (isEn ? 'Pre-Drilled Pile Uplift Resistance (T_input - Screening)' : 'ظرفیت کشش شمع پیش‌حفاری (T_input - غربالگری)')
+                                : (isEn ? 'Pre-Drilled Pile Grout Bond Resistance' : 'ظرفیت چسبندگی گروت شمع پیش‌حفاری')
+                              : (isEn ? 'Pile Skin-Friction Tension Resistance' : 'ظرفیت کشش اصطکاک جدار شمع (T_ult)')}
+                          </td>
                           <td className="p-2 font-mono font-bold">
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
+                            ) : structuralSnapshot.upliftCapacityProvenance === 'invalid_input' ? (
+                              <span className="text-rose-400">{isEn ? 'INVALID' : 'نامعتبر'}</span>
+                            ) : structuralSnapshot.upliftCapacityProvenance === 'nominal_assumed' ? (
+                              <span className="text-amber-400">
+                                {structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post{' '}
+                                <span className="text-[10px] font-normal text-amber-300">({isEn ? 'Assumed' : 'فرضی'})</span>
+                              </span>
+                            ) : !structuralSnapshot.isStructurallySafe ? (
+                              <span className="text-amber-400">{structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post</span>
                             ) : (
                               <span className="text-industrial-success">{structuralSnapshot.upliftCapacityPerPostKn.toFixed(1)} kN/post</span>
                             )}
                           </td>
-                          <td className="p-2 text-slate-400 print:text-slate-600">Eurocode 7 EN 1997-1 §7.6.2.3</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">
+                            {structuralSnapshot.foundationType === 'pre_drilled_grouted_pile'
+                              ? structuralSnapshot.upliftCapacityProvenance === 'nominal_assumed'
+                                ? `FHWA-NHI-05-039 (${structuralSnapshot.assumedGroutBondKpa ?? 1500} kPa bond assumed; Pullout Test Req.)`
+                                : structuralSnapshot.upliftCapacityProvenance === 'user_supplied'
+                                ? 'User Input for Screening (Field Verification Required)'
+                                : 'FHWA-NHI-05-039 / Eurocode 7'
+                              : 'Eurocode 7 EN 1997-1 §7.6.2.3'}
+                          </td>
                           <td className="p-2 font-bold">
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
+                            ) : structuralSnapshot.upliftCapacityProvenance === 'invalid_input' ? (
+                              <span className="text-rose-400">{isEn ? '✗ FAILED (Invalid Input)' : '✗ مردود (ورودی نامعتبر)'}</span>
+                            ) : structuralSnapshot.upliftCapacityProvenance === 'nominal_assumed' ? (
+                              <span className="text-amber-400">
+                                FoS = {structuralSnapshot.fosUplift}{' '}
+                                <span className="text-[10px] font-normal">({isEn ? 'UNASSESSED' : 'ارزیابی‌نشده'})</span>
+                              </span>
+                            ) : !structuralSnapshot.isStructurallySafe ? (
+                              <span className="text-amber-400">FoS = {structuralSnapshot.fosUplift} ({isEn ? 'Unassessed' : 'ارزیابی‌نشده'})</span>
                             ) : (
                               <span className="text-industrial-success">FoS = {structuralSnapshot.fosUplift} (≥ 2.0 Req)</span>
                             )}

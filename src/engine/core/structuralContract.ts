@@ -741,6 +741,8 @@ export interface StructuralSnapshot {
   appliedPostBearingPressureKpa: number;
   allowableSoilBearingKpa: number;
   upliftCapacityPerPostKn: number;
+  upliftCapacityProvenance?: 'user_supplied' | 'nominal_assumed' | 'calculated_soil' | 'invalid_input';
+  assumedGroutBondKpa?: number;
   concreteVolumeTotalM3?: number;
   steelRebarWeightTotalKg?: number;
   governingLimit: string;
@@ -789,6 +791,8 @@ export function createStructuralSnapshot(
     appliedPostBearingPressureKpa: number;
     allowableSoilBearingKpa: number;
     upliftCapacityPerPostKn: number;
+    upliftCapacityProvenance?: 'user_supplied' | 'nominal_assumed' | 'calculated_soil' | 'invalid_input';
+    assumedGroutBondKpa?: number;
     fosUplift: number;
     fosLateral: number;
     fosOverturning: number;
@@ -839,6 +843,8 @@ export function createStructuralSnapshot(
     appliedPostBearingPressureKpa: result.appliedPostBearingPressureKpa,
     allowableSoilBearingKpa: result.allowableSoilBearingKpa,
     upliftCapacityPerPostKn: result.upliftCapacityPerPostKn,
+    upliftCapacityProvenance: result.upliftCapacityProvenance,
+    assumedGroutBondKpa: result.assumedGroutBondKpa,
     concreteVolumeTotalM3: result.concreteVolumeTotalM3,
     steelRebarWeightTotalKg: result.steelRebarWeightTotalKg,
     governingLimit: 'governing_depth_verified',
@@ -923,6 +929,41 @@ export function exportStructuralSheetRows(
   const complianceStandard =
     'INBC 6 / ASCE 7-22 Preliminary Screening Only (Edge vortices & dynamic seismic unassessed)';
 
+  let upliftParamLabel = 'Ultimate Skin-Friction Uplift (T_ult)';
+  let upliftStandard = 'Burland-Meyerhof Beta Method';
+  let fosUpliftStandard = 'Required >= 2.0 (Eurocode 7)';
+  let upliftVal: string | number = snapshot.upliftCapacityPerPostKn;
+  let fosUpliftVal: string | number = snapshot.fosUplift;
+
+  if (snapshot.foundationType === 'pre_drilled_grouted_pile') {
+    if (snapshot.upliftCapacityProvenance === 'nominal_assumed') {
+      upliftParamLabel = 'Pre-Drilled Grout Bond Uplift (T_assumed - UNASSESSED)';
+      upliftStandard = `FHWA-NHI-05-039 Nominal Assumption (τ_bond=${snapshot.assumedGroutBondKpa ?? 1500} kPa; Unverified — Pullout Test Required)`;
+      fosUpliftStandard = 'UNASSESSED (FoS >= 2.0 required with site pullout test)';
+    } else if (snapshot.upliftCapacityProvenance === 'user_supplied') {
+      upliftParamLabel = 'Pre-Drilled Grout Uplift Capacity (T_input - Screening)';
+      upliftStandard = 'User-Supplied Input for Screening (Field Pullout Verification Required)';
+      fosUpliftStandard = 'Screening FoS >= 2.0 (Field Verification Required)';
+    } else if (snapshot.upliftCapacityProvenance === 'invalid_input') {
+      upliftParamLabel = 'Pre-Drilled Grout Uplift Capacity (INVALID INPUT)';
+      upliftStandard = 'Input must be a positive finite number';
+      upliftVal = 'INVALID';
+      fosUpliftVal = 'INVALID';
+      fosUpliftStandard = 'FAILED (Invalid Input)';
+    } else {
+      upliftParamLabel = 'Pre-Drilled Grout Bond Uplift (T_ult)';
+      upliftStandard = 'FHWA-NHI-05-039 / Eurocode 7';
+    }
+  } else if (snapshot.upliftCapacityProvenance === 'invalid_input') {
+    upliftParamLabel = 'Pile Uplift Capacity (INVALID INPUT)';
+    upliftStandard = 'Input must be a positive finite number';
+    upliftVal = 'INVALID';
+    fosUpliftVal = 'INVALID';
+    fosUpliftStandard = 'FAILED (Invalid Input)';
+  } else if (!snapshot.isStructurallySafe && !snapshot.isFrostDepthRespected) {
+    fosUpliftStandard = 'Eurocode 7 (Unassessed / Frost Inadequate)';
+  }
+
   return [
     ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
     ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
@@ -938,8 +979,8 @@ export function exportStructuralSheetRows(
     ['Total Mounting Tables', snapshot.totalTablesCount, 'tables', `${snapshot.postsPerTable} posts per table`],
     ['Total Piles Count', snapshot.totalPostsCount, 'posts', 'Plant-wide structural posts'],
     ['Applied Post Bearing Pressure', snapshot.appliedPostBearingPressureKpa, 'kPa', `Allowable qa = ${snapshot.allowableSoilBearingKpa} kPa`],
-    ['Ultimate Skin-Friction Uplift (T_ult)', snapshot.upliftCapacityPerPostKn, 'kN/post', 'Burland-Meyerhof Beta Method'],
-    ['Uplift Safety Factor (FoS_uplift)', snapshot.fosUplift, '-', 'Required >= 2.0 (Eurocode 7)'],
+    [upliftParamLabel, upliftVal, 'kN/post', upliftStandard],
+    ['Uplift Safety Factor (FoS_uplift)', fosUpliftVal, '-', fosUpliftStandard],
     ['Broms Lateral Safety Factor (FoS_lateral)', snapshot.fosLateral, '-', 'Required >= 1.5 (Broms 1964)'],
     ['Overturning Safety Factor (FoS_overturning)', snapshot.fosOverturning, '-', 'Required >= 1.5 (ASCE 7-22)'],
     ['Structural Safety Compliance', complianceStatus, '-', complianceStandard],

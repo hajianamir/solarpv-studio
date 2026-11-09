@@ -6,8 +6,8 @@
   "codebaseCommit": "arena/f30efcdc-solarpv-studio",
   "baselineCommit": "832805e",
   "contractSource": "src/engine/core/structuralContract.ts",
-  "contractSha256": "7507e77a8c0b4f66ebd285d9436edc28a6aa1901ad9d7ea41b1a5c86ede18db3",
-  "harnessSha256": "dcdb2591a7eb5e69c898e4e2d59186f6052831055400148402a682867b49028d",
+  "contractSha256": "cdc370445553ac6839c438a2a2a7f21ea3c3381c8fbe50ab9f51a163c3759271",
+  "harnessSha256": "13b16bb1304f85bf78f2103ef32814b5a6c5234897984841a26d535206a681b0",
   "overallPass": true,
   "summary": {
     "totalQuantities": 8,

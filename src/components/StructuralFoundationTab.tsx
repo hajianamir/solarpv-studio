@@ -1399,8 +1399,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               </strong>
               <p className="text-[11px] text-slate-300 mb-2.5 leading-relaxed">
                 {isEn
-                  ? 'Down-The-Hole (DTH) pneumatic rock drill creates a 120mm socket only 0.85m deep. Encasing the post in 35MPa non-shrink grout mobilizes huge rock bond shear (τ_bond ≥ 1.5 MPa), completely bypassing pile refusal.'
-                  : 'حفاری گمانه ۱۲۰mm به عمق تنها ۰.۸۵ متر در سنگ بستر + تزریق گروت ۳۵ مگاپاسکال. چسبندگی عالی گروت به سنگ (τ_bond ≥ ۱.۵ MPa) امتناع کوبش را کاملاً رفع کرده و عمق را ۵۵٪ کاهش می‌دهد.'}
+                  ? soilType === 'rocky_limestone'
+                    ? 'Down-The-Hole (DTH) pneumatic rock drill creates a 120mm socket into bedrock. Encasing the post in 35MPa non-shrink grout mobilizes high rock bond shear (τ_bond ≥ 1.5 MPa), completely bypassing pile refusal.'
+                    : `Pre-drilled 120mm micro-pile encased in 35MPa non-shrink grout mobilizes soil bond shear (assumed τ_bond ≈ ${((structResult.assumedGroutBondKpa ?? 200) / 1000).toFixed(2)} MPa; in-situ pullout test required).`
+                  : soilType === 'rocky_limestone'
+                  ? 'حفاری گمانه ۱۲۰mm در سنگ بستر + تزریق گروت ۳۵ مگاپاسکال. چسبندگی عالی گروت به سنگ (τ_bond ≥ ۱.۵ MPa) امتناع کوبش را کاملاً رفع می‌کند.'
+                  : `حفاری گمانه ۱۲۰mm با تزریق گروت در خاک (چسبندگی فرضی حدود ${((structResult.assumedGroutBondKpa ?? 200) / 1000).toFixed(2)} مگاپاسکال؛ نیازمند آزمایش کشش درجا).`}
               </p>
               <div className="space-y-1 text-[10px] text-slate-300 border-t border-industrial-border/60 pt-2 mb-3">
                 <div className="flex justify-between">
@@ -1409,7 +1413,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">{isEn ? 'Uplift Mechanism:' : 'مکانیزم مهار کشش:'}</span>
-                  <span className="text-emerald-300">{isEn ? 'Grout-Rock Bond (τ ≥ 1.5 MPa)' : 'چسبندگی برشی گروت-سنگ'}</span>
+                  <span className="text-emerald-300">
+                    {soilType === 'rocky_limestone'
+                      ? (isEn ? 'Grout-Rock Bond (τ ≥ 1.5 MPa)' : 'چسبندگی برشی گروت-سنگ')
+                      : (isEn ? `Grout Bond (τ ≈ ${((structResult.assumedGroutBondKpa ?? 200) / 1000).toFixed(2)} MPa)` : `چسبندگی گروت (${((structResult.assumedGroutBondKpa ?? 200) / 1000).toFixed(2)} MPa)`)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">{isEn ? 'Grout Volume / Post:' : 'مصرف گروت هر پایه:'}</span>
@@ -1505,9 +1513,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-300">
               <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'Rock Socket Depth:' : 'عمق گمانه در سنگ بستر:'}</span>
+                <span className="text-slate-400 block text-[10px]">
+                  {soilType === 'rocky_limestone'
+                    ? (isEn ? 'Rock Socket Depth:' : 'عمق گمانه در سنگ بستر:')
+                    : (isEn ? 'Grouted Pile Depth:' : 'عمق شمع پیش‌حفاری با گروت:')
+                  }
+                </span>
                 <span className="font-mono text-emerald-300 font-bold text-sm">{structResult.recommendedDepthM} m</span>
-                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'vs 1.9m for driven pile' : '۵۵٪ کاهش نسبت به شمع کوبشی'}</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'vs 1.9m for driven pile' : 'کاهش عمق نسبت به شمع کوبشی'}</span>
               </div>
               <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Borehole Diameter:' : 'قطر گمانه حفاری:'}</span>
@@ -1515,9 +1528,26 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Pneumatic down-hole hammer' : 'چکش بادی درون چاهی'}</span>
               </div>
               <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'Grout Bond Strength:' : 'تنش چسبندگی گروت-سنگ:'}</span>
-                <span className="font-mono text-emerald-300 font-bold text-sm">τ_bond ≥ 1.50 MPa</span>
-                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'FHWA-NHI-05-039 / EC7' : 'استاندارد میکروپایل FHWA'}</span>
+                <span className="text-slate-400 block text-[10px]">
+                  {structResult.upliftCapacityProvenance === 'user_supplied'
+                    ? (isEn ? 'User Pullout Capacity:' : 'ظرفیت کشش ورودی کاربر:')
+                    : (isEn ? 'Grout Bond Strength:' : 'تنش چسبندگی گروت-سنگ/خاک:')
+                  }
+                </span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">
+                  {structResult.upliftCapacityProvenance === 'user_supplied'
+                    ? `${structResult.upliftCapacityPerPostKn} kN`
+                    : `τ_bond ≈ ${((structResult.assumedGroutBondKpa ?? 1500) / 1000).toFixed(2)} MPa`
+                  }
+                </span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">
+                  {structResult.upliftCapacityProvenance === 'user_supplied'
+                    ? (isEn ? 'User Input (Field Verification Req.)' : 'ورودی کاربر (نیازمند آزمون درجا)')
+                    : structResult.upliftCapacityProvenance === 'nominal_assumed'
+                    ? (isEn ? 'FHWA-NHI-05-039 (Unverified Nominal)' : 'فرضی اسمی - نیازمند آزمون درجا')
+                    : (isEn ? 'FHWA-NHI-05-039 / EC7' : 'استاندارد میکروپایل FHWA')
+                  }
+                </span>
               </div>
               <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Total Grout Volume:' : 'حجم کل تزریق گروت ۳۵MPa:'}</span>
@@ -2091,8 +2121,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             {foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block'
               ? (isEn ? 'Required ≥ 1.5 (self-weight overturning)' : 'حداقل ۱.۵ (واژگونی وزن خود)')
               : foundationType === 'pre_drilled_grouted_pile'
-              ? (isEn ? `Eurocode 7 ≥ 2.0 (τ_bond ≥ 1.5 MPa, T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`
-                     : `یوروکد ۷ حداقل ۲.۰ (چسبندگی ۱.۵MPa، ظرفیت ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)
+              ? structResult.upliftCapacityProvenance === 'nominal_assumed'
+                ? (isEn
+                    ? `Nominal FoS = ${structResult.fosUplift} (UNASSESSED — τ_bond ≈ ${((structResult.assumedGroutBondKpa ?? 1500) / 1000).toFixed(2)} MPa, T_assumed = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN; pullout test required)`
+                    : `ضریب اسمی = ${structResult.fosUplift} (ارزیابی‌نشده — چسبندگی فرضی ${((structResult.assumedGroutBondKpa ?? 1500) / 1000).toFixed(2)} MPa، ظرفیت ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN؛ نیازمند آزمون درجا)`)
+                : structResult.upliftCapacityProvenance === 'user_supplied'
+                ? (isEn
+                    ? `Screening FoS = ${structResult.fosUplift} ≥ 2.0 (T_input = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN; field verification required)`
+                    : `ضریب غربالگری = ${structResult.fosUplift} ≥ ۲.۰ (ورودی ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN؛ نیازمند تایید درجا)`)
+                : (isEn ? `Eurocode 7 ≥ 2.0 (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`
+                       : `یوروکد ۷ حداقل ۲.۰ (ظرفیت ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)
               : (isEn ? `Eurocode 7 ≥ 2.0 (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post)`
                      : `یوروکد ۷ حداقل ۲.۰ (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)}
           </div>
@@ -2302,8 +2340,20 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             {foundationType === 'pre_drilled_grouted_pile' && (
               <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
-                <span className="text-slate-400">{isEn ? 'Rock-Socket Grout Bond Strength:' : 'تنش چسبندگی پیوند سنگ-گروت (τ_bond):'}</span>
-                <span className="font-mono text-emerald-300 font-bold">1500 kPa (1.50 MPa)</span>
+                <span className="text-slate-400">
+                  {soilType === 'rocky_limestone'
+                    ? (isEn ? 'Rock-Socket Grout Bond Strength (τ_bond):' : 'تنش چسبندگی پیوند سنگ-گروت (τ_bond):')
+                    : (isEn ? 'Grout-Soil Bond Strength (τ_bond):' : 'تنش چسبندگی پیوند خاک-گروت (τ_bond):')
+                  }
+                </span>
+                <span className={`font-mono font-bold ${
+                  structResult.upliftCapacityProvenance === 'nominal_assumed' ? 'text-amber-400' : 'text-emerald-300'
+                }`}>
+                  {structResult.assumedGroutBondKpa ?? (soilType === 'rocky_limestone' ? 1500 : soilType === 'dense_sand_gravel' ? 550 : soilType === 'medium_clay' ? 300 : 200)} kPa ({(((structResult.assumedGroutBondKpa ?? (soilType === 'rocky_limestone' ? 1500 : soilType === 'dense_sand_gravel' ? 550 : soilType === 'medium_clay' ? 300 : 200))) / 1000).toFixed(2)} MPa)
+                  {structResult.upliftCapacityProvenance === 'nominal_assumed' && (
+                    <span className="text-[10px] font-normal text-amber-300 ml-1">({isEn ? 'Assumed' : 'فرضی'})</span>
+                  )}
+                </span>
               </div>
             )}
             {foundationType === 'surface_ballasted_block' && (
@@ -2313,9 +2363,28 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               </div>
             )}
             <div className="flex justify-between items-center py-1.5">
-              <span className="text-slate-400">{isEn ? 'Ultimate Skin-Friction Uplift (T_ult):' : 'ظرفیت کشش نهایی جدار خاک (T_ult):'}</span>
-              <span className="font-mono text-industrial-success">
-                {structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post (FoS = {structResult.fosUplift})
+              <span className="text-slate-400">
+                {foundationType === 'pre_drilled_grouted_pile'
+                  ? structResult.upliftCapacityProvenance === 'nominal_assumed'
+                    ? (isEn ? 'Grout Bond Uplift Resistance (T_assumed - UNASSESSED):' : 'ظرفیت کشش چسبندگی گروت (T_assumed - ارزیابی‌نشده):')
+                    : structResult.upliftCapacityProvenance === 'user_supplied'
+                    ? (isEn ? 'Pre-Drilled Pile Uplift Resistance (T_input):' : 'ظرفیت کشش شمع پیش‌حفاری (T_input):')
+                    : (isEn ? 'Pre-Drilled Grout Uplift Capacity (T_ult):' : 'ظرفیت کشش شمع پیش‌حفاری (T_ult):')
+                  : (isEn ? 'Ultimate Skin-Friction Uplift (T_ult):' : 'ظرفیت کشش نهایی جدار خاک (T_ult):')}
+              </span>
+              <span className={`font-mono font-bold ${
+                structResult.upliftCapacityProvenance === 'invalid_input'
+                  ? 'text-rose-400'
+                  : structResult.upliftCapacityProvenance === 'nominal_assumed' || !structResult.isStructurallySafe
+                  ? 'text-amber-400'
+                  : 'text-industrial-success'
+              }`}>
+                {structResult.upliftCapacityProvenance === 'invalid_input'
+                  ? (isEn ? 'INVALID' : 'نامعتبر')
+                  : `${structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post (FoS = ${structResult.fosUplift})`}
+                {structResult.upliftCapacityProvenance === 'nominal_assumed' && (
+                  <span className="text-[10px] font-normal text-amber-300 ml-1">({isEn ? 'UNASSESSED' : 'ارزیابی‌نشده'})</span>
+                )}
               </span>
             </div>
           </div>
