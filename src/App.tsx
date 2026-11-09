@@ -223,6 +223,7 @@ export const App: React.FC = () => {
   }, [city]);
 
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
+  const [structuralModulesPerTable, setStructuralModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
   const [structuralSnapshot, setStructuralSnapshot] = useState<StructuralSnapshot | null>(null);
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
 
@@ -1468,7 +1469,7 @@ export const App: React.FC = () => {
     customPostsPerTable: siteOverrides.customPostsPerTable ?? null,
     installationEnvironment: siteOverrides.installationEnvironment ?? 'ground_mount',
     elevationM: city.elevationM || 0,
-    modulesPerTable: structuralSnapshot?.modulesPerTable ?? DEFAULT_MODULES_PER_TABLE,
+    modulesPerTable: structuralModulesPerTable,
   });
 
   const effectiveStructuralSnapshot = useMemo(() => {
@@ -2511,6 +2512,8 @@ export const App: React.FC = () => {
               siteOverrides={siteOverrides}
               onUpdateSiteOverrides={(overrides) => setSiteOverrides((prev) => ({ ...prev, ...overrides }))}
               onUpdateStructuralSnapshot={setStructuralSnapshot}
+              modulesPerTable={structuralModulesPerTable}
+              onUpdateModulesPerTable={setStructuralModulesPerTable}
               lang={lang}
             />
           )}

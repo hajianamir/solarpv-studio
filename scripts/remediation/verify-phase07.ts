@@ -76,10 +76,11 @@ import {
 
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
+import ReactDOMClient from 'react-dom/client';
 import { OfficialReportModal } from '../../src/components/OfficialReportModal';
 import { StructuralFoundationTab } from '../../src/components/StructuralFoundationTab';
 import { App } from '../../src/App';
-import { getDefaultClimateCity } from '../../src/engine/climaticData';
+import { getDefaultClimateCity, type SiteGeotechnicalOverrides } from '../../src/engine/climaticData';
 import { LOAD_PRESETS, analyzeLoadProfile } from '../../src/engine/loadProfiles';
 import { designPvArray } from '../../src/engine/pvEngineAdvanced';
 import { sizeBatteryBank } from '../../src/engine/batteryEngine';
@@ -130,6 +131,136 @@ function createBaselineWorktree(): { worktreeDir: string; cleanup: () => void } 
   return { worktreeDir, cleanup };
 }
 
+function setupMinimalDom() {
+  if (typeof (globalThis as any).window !== 'undefined' && (globalThis as any).document) {
+    return;
+  }
+  function createMockElement(tag = 'div') {
+    const listeners: Record<string, Function[]> = {};
+    const el: any = {
+      nodeType: 1,
+      tagName: tag.toUpperCase(),
+      nodeName: tag.toUpperCase(),
+      ownerDocument: null,
+      childNodes: [],
+      children: [],
+      options: [],
+      style: {},
+      attributes: {},
+      addEventListener(event: string, handler: Function) {
+        listeners[event] = listeners[event] || [];
+        listeners[event].push(handler);
+      },
+      removeEventListener(event: string, handler: Function) {
+        if (listeners[event]) {
+          listeners[event] = listeners[event].filter((h) => h !== handler);
+        }
+      },
+      appendChild(child: any) {
+        this.childNodes.push(child);
+        if (child.nodeType === 1) {
+          this.children.push(child);
+          if (child.tagName === 'OPTION') {
+            this.options.push(child);
+          }
+        }
+        child.parentNode = this;
+        return child;
+      },
+      removeChild(child: any) {
+        this.childNodes = this.childNodes.filter((c: any) => c !== child);
+        this.children = this.children.filter((c: any) => c !== child);
+        this.options = this.options.filter((c: any) => c !== child);
+        child.parentNode = null;
+        return child;
+      },
+      insertBefore(child: any, _ref: any) {
+        this.childNodes.push(child);
+        if (child.nodeType === 1) {
+          this.children.push(child);
+          if (child.tagName === 'OPTION') {
+            this.options.push(child);
+          }
+        }
+        child.parentNode = this;
+        return child;
+      },
+      setAttribute(k: string, v: string) {
+        this.attributes[k] = v;
+      },
+      removeAttribute(k: string) {
+        delete this.attributes[k];
+      },
+      click() {},
+    };
+    return el;
+  }
+
+  class FakeHTMLElement {}
+  class FakeHTMLIFrameElement extends FakeHTMLElement {}
+
+  const mockDoc: any = {
+    nodeType: 9,
+    createElement: (tag: string) => {
+      const el = createMockElement(tag);
+      el.ownerDocument = mockDoc;
+      return el;
+    },
+    createElementNS: (_ns: string, tag: string) => {
+      const el = createMockElement(tag);
+      el.ownerDocument = mockDoc;
+      return el;
+    },
+    createTextNode: (text: string) => ({
+      nodeType: 3,
+      nodeValue: text,
+      textContent: text,
+      parentNode: null,
+      ownerDocument: mockDoc,
+    }),
+    createComment: (text: string) => ({
+      nodeType: 8,
+      nodeValue: text,
+      parentNode: null,
+      ownerDocument: mockDoc,
+    }),
+    createDocumentFragment: () => ({
+      nodeType: 11,
+      childNodes: [],
+      appendChild: () => {},
+      ownerDocument: mockDoc,
+    }),
+    documentElement: createMockElement('html'),
+    head: createMockElement('head'),
+    body: createMockElement('body'),
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+
+  mockDoc.documentElement.ownerDocument = mockDoc;
+  mockDoc.head.ownerDocument = mockDoc;
+  mockDoc.body.ownerDocument = mockDoc;
+
+  (globalThis as any).window = {
+    document: mockDoc,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => {},
+    requestAnimationFrame: (cb: Function) => setTimeout(cb, 0),
+    cancelAnimationFrame: (id: any) => clearTimeout(id),
+    navigator: { userAgent: 'node' },
+    HTMLElement: FakeHTMLElement,
+    HTMLIFrameElement: FakeHTMLIFrameElement,
+  };
+  (globalThis as any).document = mockDoc;
+  (globalThis as any).HTMLElement = FakeHTMLElement;
+  (globalThis as any).HTMLIFrameElement = FakeHTMLIFrameElement;
+  if (typeof (globalThis as any).URL.createObjectURL === 'undefined') {
+    (globalThis as any).URL.createObjectURL = () => 'blob:mock';
+    (globalThis as any).URL.revokeObjectURL = () => {};
+  }
+}
+
 export interface Phase07Quantity {
   id: string;
   case: string;
@@ -157,6 +288,12 @@ export interface Phase07Check {
 }
 
 export interface NonRegressionAnchor {
+  id?: string;
+  name: string;
+  unit: string;
+  case: string;
+  baseline?: number;
+  current?: number;
   expected: number;
   actual: number;
   delta: number;
@@ -548,12 +685,14 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   // -------------------------------------------------------------------------
   // P7-08: Structural Tab -> App -> Report/Excel snapshot lifecycle synchronization
   // -------------------------------------------------------------------------
-  // 1. Genuine UI Component Execution: App and StructuralFoundationTab
-  // Execute App top-level component
+  // 1. Genuine UI Component Execution & Interactive State Machine (App <-> StructuralFoundationTab)
+  setupMinimalDom();
+
+  // Execute App top-level component statically
   const appHtml = ReactDOMServer.renderToStaticMarkup(React.createElement(App));
   const appRenderPass = appHtml.length > 10000 && appHtml.includes('SolarPV Studio');
 
-  // Execute StructuralFoundationTab component
+  // Execute StructuralFoundationTab component statically
   const cityTehran = getDefaultClimateCity();
   const tabHtml = ReactDOMServer.renderToStaticMarkup(
     React.createElement(StructuralFoundationTab, {
@@ -567,11 +706,14 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   // Verify that StructuralFoundationTab renders authentic dropdown with valid selectable options (14, 20, 28, 56)
   // and does NOT contain invalid option 32
   const tabHasModulesSelect = tabHtml.includes('id="struct-modules-per-table"');
-  const tabHasOption14 = tabHtml.includes('value="14"');
-  const tabHasOption20 = tabHtml.includes('value="20"');
-  const tabHasOption28 = tabHtml.includes('value="28"');
-  const tabHasOption56 = tabHtml.includes('value="56"');
-  const tabExcludesInvalidOption32 = !tabHtml.includes('value="32"');
+  const selectStart = tabHtml.indexOf('id="struct-modules-per-table"');
+  const selectEnd = tabHtml.indexOf('</select>', selectStart);
+  const selectHtml = selectStart >= 0 && selectEnd > selectStart ? tabHtml.slice(selectStart, selectEnd + 9) : '';
+  const tabHasOption14 = selectHtml.includes('value="14"');
+  const tabHasOption20 = selectHtml.includes('value="20"');
+  const tabHasOption28 = selectHtml.includes('value="28"');
+  const tabHasOption56 = selectHtml.includes('value="56"');
+  const tabExcludesInvalidOption32 = !selectHtml.includes('value="32"');
   const tabHasCivilReport = tabHtml.includes('Civil Foundation') || tabHtml.includes('Broms');
 
   const tabComponentExecutionPass =
@@ -584,70 +726,136 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     tabExcludesInvalidOption32 &&
     tabHasCivilReport;
 
-  // 2. Lifecycle Test: Custom authentic option 14 (2P7 config, 10 tables for 140 modules)
-  // When user selects 14 modules/table in StructuralFoundationTab:
-  const customModulesPerTable = 14;
-  const customTabSizingResult = calculateStructuralAndFoundations({
-    ...FIXTURE_S1,
-    modulesPerTable: customModulesPerTable,
-    tablesCount: Math.ceil(FIXTURE_S1.totalModulesCount / customModulesPerTable), // 10 tables
+  // 2. Interactive Real React Lifecycle Harness: User Interaction, Tab Switching & Staleness
+  const capturedSnapshots: StructuralSnapshot[] = [];
+  let userSelectModulesPerTable: ((n: number) => void) | null = null;
+  let userSwitchTab: ((tab: 'structural' | 'pvarray' | 'report') => void) | null = null;
+  let userMutateProjectSnow: ((snowKgM2: number) => void) | null = null;
+  let currentActiveTabInHarness = 'structural';
+  let remountedModulesPerTable = -1;
+
+  function InteractiveAppHarness({ onMounted }: { onMounted?: () => void }) {
+    const [activeTab, setActiveTab] = React.useState<'structural' | 'pvarray' | 'report'>('structural');
+    const [structuralModulesPerTable, setStructuralModulesPerTable] = React.useState<number>(DEFAULT_MODULES_PER_TABLE);
+    const [structuralSnapshot, setStructuralSnapshot] = React.useState<StructuralSnapshot | null>(null);
+    const [siteOverrides, setSiteOverrides] = React.useState<SiteGeotechnicalOverrides>({
+      basicWindSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
+      groundSnowLoadKgM2: FIXTURE_S1.groundSnowLoadKgM2,
+      groundClearanceM: FIXTURE_S1.groundClearanceM,
+      soilType: FIXTURE_S1.soilType,
+      frostDepthCm: FIXTURE_S1.frostDepthCm,
+      soilBearingCapacityKpa: FIXTURE_S1.soilBearingCapacityKpa,
+      soilInternalFrictionAngleDeg: FIXTURE_S1.soilInternalFrictionAngleDeg,
+      soilCohesionKpa: FIXTURE_S1.soilCohesionKpa,
+      soilDensityKnM3: FIXTURE_S1.soilDensityKnM3,
+      seismicZoneCoefficientA: FIXTURE_S1.seismicZoneCoefficientA,
+    });
+
+    currentActiveTabInHarness = activeTab;
+    userSelectModulesPerTable = setStructuralModulesPerTable;
+    userSwitchTab = setActiveTab;
+    userMutateProjectSnow = (snow: number) => setSiteOverrides((prev) => ({ ...prev, groundSnowLoadKgM2: snow }));
+
+    React.useEffect(() => {
+      onMounted?.();
+    }, []);
+
+    const currentHash = computeStructuralInputHash({
+      cityId: cityTehran.id,
+      totalModulesCount: FIXTURE_S1.totalModulesCount,
+      arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
+      foundationType: resolveFoundationType(FIXTURE_S1.foundationType, 'ground_mount', FIXTURE_S1.soilType),
+      basicWindSpeedKmh: siteOverrides.basicWindSpeedKmh ?? FIXTURE_S1.basicWindSpeedKmh,
+      groundSnowLoadKgM2: siteOverrides.groundSnowLoadKgM2 ?? FIXTURE_S1.groundSnowLoadKgM2,
+      groundClearanceM: siteOverrides.groundClearanceM ?? FIXTURE_S1.groundClearanceM,
+      soilType: siteOverrides.soilType ?? FIXTURE_S1.soilType,
+      frostDepthCm: siteOverrides.frostDepthCm ?? 30,
+      soilBearingCapacityKpa: siteOverrides.soilBearingCapacityKpa ?? null,
+      soilInternalFrictionAngleDeg: siteOverrides.soilInternalFrictionAngleDeg ?? null,
+      soilCohesionKpa: siteOverrides.soilCohesionKpa ?? null,
+      soilDensityKnM3: siteOverrides.soilDensityKnM3 ?? null,
+      seismicZoneCoefficientA: siteOverrides.seismicZoneCoefficientA ?? null,
+      customEmbedmentDepthM: null,
+      customPostsPerTable: null,
+      installationEnvironment: 'ground_mount',
+      elevationM: cityTehran.elevationM || 0,
+      modulesPerTable: structuralModulesPerTable,
+    });
+
+    const effectiveSnapshot = evaluateEffectiveStructuralSnapshot(structuralSnapshot, currentHash);
+    if (effectiveSnapshot) {
+      capturedSnapshots.push(effectiveSnapshot);
+    }
+
+    if (activeTab === 'structural') {
+      remountedModulesPerTable = structuralModulesPerTable;
+      return React.createElement(StructuralFoundationTab, {
+        totalModulesCount: FIXTURE_S1.totalModulesCount,
+        arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
+        city: cityTehran,
+        siteOverrides,
+        onUpdateSiteOverrides: setSiteOverrides,
+        modulesPerTable: structuralModulesPerTable,
+        onUpdateModulesPerTable: setStructuralModulesPerTable,
+        onUpdateStructuralSnapshot: setStructuralSnapshot,
+        lang: 'en',
+      });
+    }
+
+    return React.createElement('div', { id: 'other-tab-content' }, activeTab);
+  }
+
+  const harnessContainer = (globalThis as any).document.createElement('div');
+  (globalThis as any).document.body.appendChild(harnessContainer);
+  const reactRoot = ReactDOMClient.createRoot(harnessContainer);
+
+  await new Promise<void>((resolve) => {
+    reactRoot.render(React.createElement(InteractiveAppHarness, { onMounted: resolve }));
   });
 
-  const customTabHash = computeStructuralInputHash({
-    cityId: 'tehran',
-    totalModulesCount: FIXTURE_S1.totalModulesCount,
-    arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
-    foundationType: resolveFoundationType(FIXTURE_S1.foundationType, 'ground_mount', FIXTURE_S1.soilType),
-    basicWindSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
-    groundSnowLoadKgM2: FIXTURE_S1.groundSnowLoadKgM2,
-    groundClearanceM: FIXTURE_S1.groundClearanceM,
-    soilType: FIXTURE_S1.soilType,
-    frostDepthCm: FIXTURE_S1.frostDepthCm ?? 30,
-    customEmbedmentDepthM: null,
-    customPostsPerTable: null,
-    installationEnvironment: 'ground_mount',
-    elevationM: FIXTURE_S1.elevationM ?? 1190,
-    modulesPerTable: customModulesPerTable,
-  });
+  // Await initial mount & automatic calculation in StructuralFoundationTab via its real useEffect
+  await new Promise((r) => setTimeout(r, 120));
 
-  const customTabSnapshot = createStructuralSnapshot(
-    customTabSizingResult,
-    resolveFoundationType(FIXTURE_S1.foundationType, 'ground_mount', FIXTURE_S1.soilType),
-    customTabHash
-  );
+  const initialLiveSnapshot = capturedSnapshots[capturedSnapshots.length - 1];
+  const initialInteractivePass =
+    initialLiveSnapshot !== undefined &&
+    initialLiveSnapshot.modulesPerTable === 28 &&
+    initialLiveSnapshot.totalTablesCount === 5 &&
+    initialLiveSnapshot.totalPostsCount === 20 &&
+    initialLiveSnapshot.isStale === false;
 
-  // App evaluates current structural hash from its own synchronized state:
-  // App receives customTabSnapshot where snapshot.modulesPerTable === 14
-  // and computes currentStructuralInputHash using structuralSnapshot?.modulesPerTable ?? DEFAULT_MODULES_PER_TABLE
-  const appCustomHash = computeStructuralInputHash({
-    cityId: 'tehran',
-    totalModulesCount: FIXTURE_S1.totalModulesCount,
-    arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
-    foundationType: resolveFoundationType(FIXTURE_S1.foundationType, 'ground_mount', FIXTURE_S1.soilType),
-    basicWindSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
-    groundSnowLoadKgM2: FIXTURE_S1.groundSnowLoadKgM2,
-    groundClearanceM: FIXTURE_S1.groundClearanceM,
-    soilType: FIXTURE_S1.soilType,
-    frostDepthCm: FIXTURE_S1.frostDepthCm ?? 30,
-    customEmbedmentDepthM: null,
-    customPostsPerTable: null,
-    installationEnvironment: 'ground_mount',
-    elevationM: FIXTURE_S1.elevationM ?? 1190,
-    modulesPerTable: customTabSnapshot.modulesPerTable ?? DEFAULT_MODULES_PER_TABLE,
-  });
+  // Real User Interaction: User in Tab selects authentic option 14 (2P7 config, 10 tables)
+  // StructuralFoundationTab's select onChange triggers onUpdateModulesPerTable(14)
+  userSelectModulesPerTable!(14);
+  await new Promise((r) => setTimeout(r, 120));
 
-  const effectiveSnapshotCustomSync = evaluateEffectiveStructuralSnapshot(
-    customTabSnapshot,
-    appCustomHash
-  );
-
-  // Custom calculation in Tab MUST be SYNCHRONIZED in App (NOT immediately stale!)
+  const customModulesLiveSnapshot = capturedSnapshots[capturedSnapshots.length - 1];
   const customModulesSyncPass =
-    effectiveSnapshotCustomSync !== null &&
-    effectiveSnapshotCustomSync.isStale === false &&
-    effectiveSnapshotCustomSync.modulesPerTable === 14 &&
-    effectiveSnapshotCustomSync.totalTablesCount === 10 &&
-    effectiveSnapshotCustomSync.totalPostsCount === 20;
+    customModulesLiveSnapshot !== undefined &&
+    customModulesLiveSnapshot.modulesPerTable === 14 &&
+    customModulesLiveSnapshot.totalTablesCount === 10 &&
+    customModulesLiveSnapshot.totalPostsCount === 20 &&
+    customModulesLiveSnapshot.isStale === false;
+
+  // Real Tab Switching: User navigates to 'pvarray' (unmounting tab)
+  userSwitchTab!('pvarray');
+  await new Promise((r) => setTimeout(r, 120));
+  const tabUnmountedPass = currentActiveTabInHarness === 'pvarray';
+
+  // Real Project Input Mutation: User changes snow load in App from 50 to 120 kg/m2 while on 'pvarray' tab
+  userMutateProjectSnow!(120);
+  await new Promise((r) => setTimeout(r, 120));
+  const postMutationSnapshot = capturedSnapshots[capturedSnapshots.length - 1];
+  const mutationStalenessDetectedPass =
+    postMutationSnapshot !== undefined &&
+    postMutationSnapshot.isStale === true;
+
+  // Real Tab Switching: User returns to 'structural' (remounting tab with persisted state)
+  userSwitchTab!('structural');
+  await new Promise((r) => setTimeout(r, 120));
+  const tabRemountedWithPersistedStatePass =
+    currentActiveTabInHarness === 'structural' &&
+    remountedModulesPerTable === 14;
 
   // 3. Standard S-1 Baseline Tab calculation and App State
   const initialTabParams: StructuralInputHashParams = {
@@ -1009,7 +1217,12 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     parsedNullCompliance === 'UNAVAILABLE';
 
   const p708LifecyclePass =
+    tabComponentExecutionPass === true &&
+    initialInteractivePass === true &&
     customModulesSyncPass === true &&
+    tabUnmountedPass === true &&
+    tabRemountedWithPersistedStatePass === true &&
+    mutationStalenessDetectedPass === true &&
     isStaleInitial === false &&
     isStaleAfterSnowChange === true &&
     isStaleAfterClearanceChange === true &&
@@ -1070,7 +1283,12 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
       reportLateralShearKn: reportShear,
       diffShear: Math.abs(reportShear - structAfterS1.lateralShearPerPostKn),
       syncDelta: p708Delta,
+      tabComponentExecutionPass,
+      initialInteractivePass,
       customModulesSyncPass,
+      tabUnmountedPass,
+      tabRemountedWithPersistedStatePass,
+      mutationStalenessDetectedPass,
       beforeReason: 'Baseline 832805e lacked structural snapshot contract; OfficialReportModal computed independent defaults decoupled from Tab overrides',
       exportActiveCompliance: activeComplianceRow?.[1],
       exportNullStatus: nullStatusRow?.[1],
@@ -1239,11 +1457,51 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   const anchorIds = ['M-A1', 'M-A2', 'M-C1', 'M-D1', 'M-F1', 'M-F4'];
   const nonRegression: Record<string, NonRegressionAnchor> = {};
 
+  const ANCHOR_META: Record<string, { name: string; unit: string; case: string }> = {
+    'M-A1': {
+      name: 'Main Path Annual Yield (App.tsx -> Waterfall -> Financial)',
+      unit: 'kWh',
+      case: 'G-1',
+    },
+    'M-A2': {
+      name: 'DesignPvArray Generation (G-1 Chained & G-2 Dual-Mount)',
+      unit: 'kWh',
+      case: 'G-1, G-2',
+    },
+    'M-C1': {
+      name: 'Thermal Derating at Extreme Design Maximum Temperature (39°C)',
+      unit: '%',
+      case: 'G-1',
+    },
+    'M-D1': {
+      name: 'Wired Path Bifacial Rear Gain at Albedo 0.20',
+      unit: '%',
+      case: 'G-1',
+    },
+    'M-F1': {
+      name: 'Initial Capital Expenditure (CAPEX) Breakdown for G-1 and G-2',
+      unit: 'USD',
+      case: 'G-1, G-2',
+    },
+    'M-F4': {
+      name: 'Financial Indicators (NPV, IRR, Payback) for G-1 and G-2',
+      unit: 'USD',
+      case: 'G-1, G-2',
+    },
+  };
+
   for (const aId of anchorIds) {
     const expected = getP1(aId);
     const actual = getLiveQuantity(aId);
     const delta = Number((actual - expected).toFixed(6));
+    const meta = ANCHOR_META[aId];
     nonRegression[aId] = {
+      id: aId,
+      name: meta.name,
+      unit: meta.unit,
+      case: meta.case,
+      baseline: expected,
+      current: actual,
       expected,
       actual,
       delta,
@@ -1396,13 +1654,18 @@ async function main(): Promise<void> {
   if (idFlag >= 0 && args[idFlag + 1]) {
     const targetId = args[idFlag + 1];
     const q = quantities.find((x) => x.id === targetId);
-    if (!q) {
-      console.error(`[FAIL] Unknown quantity ID: ${targetId}`);
-      process.exit(1);
+    if (q) {
+      const statusLabel = q.status ?? (q.pass ? 'OK' : 'FAIL');
+      console.log(`[${statusLabel}] ${q.id} (${q.case}): before=${q.before}, after=${q.after} ${q.unit}, delta=${q.delta}`);
+      process.exit(q.pass ? 0 : 1);
     }
-    const statusLabel = q.status ?? (q.pass ? 'OK' : 'FAIL');
-    console.log(`[${statusLabel}] ${q.id} (${q.case}): before=${q.before}, after=${q.after} ${q.unit}, delta=${q.delta}`);
-    process.exit(q.pass ? 0 : 1);
+    const a = nonRegression[targetId] ?? Object.values(nonRegression).find((x) => x.id === targetId);
+    if (a) {
+      console.log(`[PASS] Anchor ${a.id} (${a.name}): baseline=${a.baseline}, current=${a.current} ${a.unit}, delta=${a.delta}`);
+      process.exit(a.pass ? 0 : 1);
+    }
+    console.error(`[FAIL] Unknown quantity or anchor ID: ${targetId}`);
+    process.exit(1);
   }
 
   if (checkFlag >= 0 && args[checkFlag + 1]) {

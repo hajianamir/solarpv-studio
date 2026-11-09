@@ -64,6 +64,8 @@ interface StructuralFoundationTabProps {
   siteOverrides?: SiteGeotechnicalOverrides;
   onUpdateSiteOverrides?: (overrides: SiteGeotechnicalOverrides) => void;
   onUpdateStructuralSnapshot?: (snapshot: StructuralSnapshot) => void;
+  modulesPerTable?: number;
+  onUpdateModulesPerTable?: (val: number) => void;
   lang?: 'fa' | 'en';
 }
 
@@ -106,6 +108,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   siteOverrides,
   onUpdateSiteOverrides,
   onUpdateStructuralSnapshot,
+  modulesPerTable: propModulesPerTable,
+  onUpdateModulesPerTable,
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
@@ -113,7 +117,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   // Geometry parameters
   const [modulesCount, setModulesCount] = useState<number>(totalModulesCount || 140);
   const [tiltDeg, setTiltDeg] = useState<number>(siteOverrides?.arrayTiltDeg ?? arrayTiltDeg ?? 28);
-  const [modulesPerTable, setModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
+  const [modulesPerTable, setModulesPerTable] = useState<number>(propModulesPerTable ?? DEFAULT_MODULES_PER_TABLE);
+
+  useEffect(() => {
+    if (propModulesPerTable !== undefined && propModulesPerTable !== modulesPerTable) {
+      setModulesPerTable(propModulesPerTable);
+    }
+  }, [propModulesPerTable, modulesPerTable]);
+
   const [groundClearanceM, setGroundClearanceM] = useState<number>(siteOverrides?.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M);
   const [installationEnvironment, setInstallationEnvironment] = useState<InstallationEnvironment>(
     siteOverrides?.installationEnvironment || 'ground_mount'
@@ -1849,7 +1860,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             <select
               id="struct-modules-per-table"
               value={modulesPerTable}
-              onChange={(e) => setModulesPerTable(parseInt(e.target.value, 10) || DEFAULT_MODULES_PER_TABLE)}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10) || DEFAULT_MODULES_PER_TABLE;
+                setModulesPerTable(val);
+                onUpdateModulesPerTable?.(val);
+              }}
               className="studio-input text-xs"
             >
               <option value="14">{isEn ? '14 Modules (2P7 config)' : '۱۴ پنل (۲ ردیف عمودی ۷ تایی)'}</option>
