@@ -820,10 +820,18 @@ export function calculateStructuralAndFoundations(
         : `وزن بلوک سطحی در برابر باد ناکافی است. جرم بلوک بتنی را افزایش دهید.`;
       break;
     case 'pre_drilled_grouted_pile': {
-      const hasSiteSpecificPulloutData =
-        input.pileUpliftCapacityPerPostKn !== undefined && input.pileUpliftCapacityPerPostKn > 0;
+      const hasValidSuppliedPulloutData =
+        typeof input.pileUpliftCapacityPerPostKn === 'number' &&
+        Number.isFinite(input.pileUpliftCapacityPerPostKn) &&
+        input.pileUpliftCapacityPerPostKn > 0;
 
-      if (hasFrostData && !isFrostDepthRespected) {
+      if (input.pileUpliftCapacityPerPostKn !== undefined && !hasValidSuppliedPulloutData) {
+        isStructurallySafe = false;
+        safetyReasonEn =
+          `[FAILED - Invalid Geotechnical Input] Supplied pile uplift capacity (${input.pileUpliftCapacityPerPostKn}) is invalid (must be a positive finite number).`;
+        safetyReasonFa =
+          `[نامعتبر - داده ژئوتکنیکی ورودی] ظرفیت کششی وارد شده (${input.pileUpliftCapacityPerPostKn}) نامعتبر است (باید عددی مثبت و متناهی باشد).`;
+      } else if (hasFrostData && !isFrostDepthRespected) {
         isStructurallySafe = false;
         safetyReasonEn =
           `[UNASSESSED - Geotechnical Borehole Required] Pre-drilled rock-socket pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth). A soil classification alone does not establish bedrock depth or frost immunity; site-specific borehole logs are required.`;
@@ -835,10 +843,10 @@ export function calculateStructuralAndFoundations(
           `[UNASSESSED - Frost Depth & Geotechnical Borehole Required] Site frost depth is unspecified; pre-drilled rock-socket pile embedment and bond capacity cannot be certified safe against frost heave without site-specific borehole frost depth data.`;
         safetyReasonFa =
           `[ارزیابی‌نشده - نیازمند عمق یخبندان و گمانه ژئوتکنیک] عمق یخبندان ساختگاه نامشخص است؛ گیرداری و مقاومت چسبندگی شمع پیش‌حفاری در سنگ بدون داده‌های گمانه و عمق یخبندان قابل تأیید نیست.`;
-      } else if (!hasSiteSpecificPulloutData) {
+      } else if (!hasValidSuppliedPulloutData) {
         isStructurallySafe = false;
         safetyReasonEn =
-          `[UNASSESSED - Pullout Test & Borehole Rock Core Required] Rock-socket grout bond capacity (nominal screening FoS = ${fosUplift}, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post) relies on assumed nominal shear strength (tau_bond = 1.5 MPa per FHWA-NHI-05-039); in-situ borehole rock coring and pullout verification are required to certify structural safety.`;
+          `[UNASSESSED - Pullout Test & Borehole Rock Core Required] Rock-socket grout bond capacity (nominal screening FoS = ${fosUplift}, T_assumed = ${upliftCapacityPerPostKn.toFixed(1)} kN/post) relies on assumed nominal shear strength (tau_bond = 1.5 MPa per FHWA-NHI-05-039); in-situ borehole rock coring and pullout testing are required to certify structural safety.`;
         safetyReasonFa =
           `[ارزیابی‌نشده - نیازمند آزمون کشش درجا و مغزه‌گیری سنگ بستر] ظرفیت چسبندگی شمع پیش‌حفاری با گروت بر اساس تنش برشی فرضی FHWA-NHI-05-039 برآورد شده است (FoS اسمی = ${fosUplift})؛ تأیید نهایی ایمنی سازه منوط به آزمایش کشش درجا و داده‌های مغزه‌گیری سنگ است.`;
       } else {
@@ -847,15 +855,15 @@ export function calculateStructuralAndFoundations(
           : isFrostDepthRespected;
         isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isFrostDepthRespected && isEmbedmentSufficient;
         safetyReasonEn = isStructurallySafe
-          ? `Pre-drilled rock-socket grout bond capacity verified with site-specific pullout test data (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Frost depth respected and embedment sufficient.`
+          ? `[Screening Pass] Pre-drilled rock-socket grout bond capacity evaluated against user-specified pullout test input (FoS_uplift = ${fosUplift} >= 2.0, T_input = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Frost depth respected (${recommendedDepthM}m >= ${bromsResult.minDepthForFrostM}m); field verification by licensed geotechnical engineer required.`
           : !isFrostDepthRespected
           ? `[UNASSESSED - Geotechnical Borehole Required] Pre-drilled rock-socket pile depth (${recommendedDepthM}m) does not satisfy required frost penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth).`
-          : `Pre-drilled rock-socket grout bond capacity insufficient (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase borehole depth.`;
+          : `Pre-drilled rock-socket grout bond capacity insufficient for uplift demand (FoS_uplift = ${fosUplift} < 2.0, T_input = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn.toFixed(1)} kN/post). Increase borehole depth.`;
         safetyReasonFa = isStructurallySafe
-          ? `ظرفیت کشش شمع پیش‌حفاری با داده‌های آزمایش کشش درجا تأیید شد (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). عمق نفوذ یخبندان و گیرداری کافی است.`
+          ? `[قبولی غربالگری] ظرفیت چسبندگی شمع پیش‌حفاری با مقدار کشش واردشده ارزیابی شد (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه) و عمق یخبندان رعایت شده است؛ تایید نهایی منوط به گزارش گمانه است.`
           : !isFrostDepthRespected
           ? `عمق شمع پیش‌حفاری (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر) است.`
-          : `ظرفیت کششی گروت در سنگ ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه یا قطر حفاری را افزایش دهید.`;
+          : `ظرفیت کشش شمع در برابر بار باد ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه را افزایش دهید.`;
       }
       break;
     }

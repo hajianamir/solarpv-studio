@@ -1843,37 +1843,181 @@ function getElementValue(node: any): string {
     structCustomInsufficient.isStructurallySafe === false &&
     customDepthEval.isDepthAdequate === false;
 
-  // 5) Live Engine Path - Pre-Drilled Grouted Pile Frost Depth Contract (supervisor rejection 69c3247):
-  const groutedInsufficient = calculateStructuralAndFoundations({
-    ...FIXTURE_S1,
+  // 5) Live Engine Path - Pre-Drilled Grouted Pile Frost Depth & Pullout Capacity Contract (supervisor rejections 69c3247 & 8a9a4f6):
+  // 5.1 Omitted frost on S-1 with grouted pile on limestone:
+  const { frostDepthCm: _s1FrostIgnored, ...s1WithoutFrost } = FIXTURE_S1;
+  const groutedFrostOmitted = calculateStructuralAndFoundations({
+    ...s1WithoutFrost,
     foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
     basicWindSpeedKmh: 30,
-    frostDepthCm: 80,
-    customEmbedmentDepthM: 0.95,
   });
-  const groutedUnspecified = calculateStructuralAndFoundations({
-    ...FIXTURE_S1,
-    foundationType: 'pre_drilled_grouted_pile',
-    basicWindSpeedKmh: 30,
-    frostDepthCm: undefined,
-  });
-  // Exact supervisor rejection case (69c3247): S-1 + pre_drilled_grouted_pile + rocky_limestone + wind 30 km/h + frostDepthCm: undefined
-  const groutedRockyMissingFrost = calculateStructuralAndFoundations({
+
+  // 5.2 Explicitly undefined frost on S-1 with grouted pile on limestone:
+  const groutedFrostExplicitUndefined = calculateStructuralAndFoundations({
     ...FIXTURE_S1,
     foundationType: 'pre_drilled_grouted_pile',
     soilType: 'rocky_limestone',
     basicWindSpeedKmh: 30,
     frostDepthCm: undefined,
   });
+
+  // Parity check: omitted vs explicitly undefined must produce identical unsafe/unassessed results
+  const frostOmittedVsUndefinedParity =
+    groutedFrostOmitted.isFrostDepthRespected === false &&
+    groutedFrostOmitted.isStructurallySafe === false &&
+    groutedFrostExplicitUndefined.isFrostDepthRespected === false &&
+    groutedFrostExplicitUndefined.isStructurallySafe === false &&
+    groutedFrostOmitted.recommendedDepthM === groutedFrostExplicitUndefined.recommendedDepthM &&
+    groutedFrostOmitted.safetyReasonEn.includes('[UNASSESSED - Frost Depth & Geotechnical Borehole Required]') &&
+    groutedFrostExplicitUndefined.safetyReasonEn.includes('[UNASSESSED - Frost Depth & Geotechnical Borehole Required]');
+
+  // 5.3 Former bypass inputs (130 km/h, 25° tilt, rocky limestone, grouted pile) with frost omitted:
+  const formerBypassOmitted = calculateStructuralAndFoundations({
+    totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+    moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+    arrayTiltDeg: 25, groundClearanceM: 0.9,
+    basicWindSpeedKmh: 130, groundSnowLoadKgM2: 50,
+    foundationType: 'pre_drilled_grouted_pile', soilType: 'rocky_limestone',
+  });
+
+  // 5.4 Former bypass inputs with frost explicitly undefined:
+  const formerBypassExplicitUndefined = calculateStructuralAndFoundations({
+    totalModulesCount: 140, moduleLengthM: 2.278, moduleWidthM: 1.134,
+    moduleWeightKg: 28.5, tablesCount: 5, modulesPerTable: 28,
+    arrayTiltDeg: 25, groundClearanceM: 0.9,
+    basicWindSpeedKmh: 130, groundSnowLoadKgM2: 50,
+    foundationType: 'pre_drilled_grouted_pile', soilType: 'rocky_limestone',
+    frostDepthCm: undefined,
+  });
+
+  const formerBypassEliminatedPass =
+    formerBypassOmitted.isFrostDepthRespected === false &&
+    formerBypassOmitted.isStructurallySafe === false &&
+    formerBypassExplicitUndefined.isFrostDepthRespected === false &&
+    formerBypassExplicitUndefined.isStructurallySafe === false &&
+    formerBypassOmitted.safetyReasonEn.includes('[UNASSESSED - Frost Depth & Geotechnical Borehole Required]') &&
+    formerBypassExplicitUndefined.safetyReasonEn.includes('[UNASSESSED - Frost Depth & Geotechnical Borehole Required]');
+
+  // 5.5 Missing pullout capacity with adequate frost depth (30cm frost, minDepth 1.3m satisfied by recommended 1.3m):
+  const missingPulloutWithAdequateFrost = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
+    frostDepthCm: 30,
+    // pileUpliftCapacityPerPostKn omitted
+  });
+
+  const missingPulloutPass =
+    missingPulloutWithAdequateFrost.isFrostDepthRespected === true &&
+    missingPulloutWithAdequateFrost.isStructurallySafe === false &&
+    missingPulloutWithAdequateFrost.safetyReasonEn.includes('[UNASSESSED - Pullout Test & Borehole Rock Core Required]');
+
+  // 5.6 Adequate frost with valid supplied pullout capacity (Option 2 synthetic scenario):
+  const adequateFrostSuppliedCapacity = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
+    frostDepthCm: 30,
+    pileUpliftCapacityPerPostKn: 500, // positive finite capacity
+  });
+
+  const adequateFrostSuppliedPass =
+    adequateFrostSuppliedCapacity.isFrostDepthRespected === true &&
+    adequateFrostSuppliedCapacity.isStructurallySafe === true &&
+    adequateFrostSuppliedCapacity.safetyReasonEn.includes('[Screening Pass]') &&
+    adequateFrostSuppliedCapacity.safetyReasonEn.includes('user-specified pullout test input');
+
+  // 5.7 Inadequate frost depth with valid supplied pullout capacity:
+  const inadequateFrostSuppliedCapacity = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
+    frostDepthCm: 80,
+    customEmbedmentDepthM: 0.95, // 0.95m < 1.80m min frost depth
+    pileUpliftCapacityPerPostKn: 500,
+  });
+
+  const inadequateFrostSuppliedPass =
+    inadequateFrostSuppliedCapacity.isFrostDepthRespected === false &&
+    inadequateFrostSuppliedCapacity.isStructurallySafe === false &&
+    inadequateFrostSuppliedCapacity.safetyReasonEn.includes('[UNASSESSED - Geotechnical Borehole Required]');
+
+  // 5.8 Invalid pullout capacities: zero, negative, and NaN
+  const invalidPulloutZero = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
+    frostDepthCm: 30,
+    pileUpliftCapacityPerPostKn: 0,
+  });
+  const invalidPulloutNegative = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
+    frostDepthCm: 30,
+    pileUpliftCapacityPerPostKn: -50,
+  });
+  const invalidPulloutNaN = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    soilType: 'rocky_limestone',
+    frostDepthCm: 30,
+    pileUpliftCapacityPerPostKn: NaN,
+  });
+
+  const invalidCapacityPass =
+    invalidPulloutZero.isStructurallySafe === false &&
+    invalidPulloutZero.safetyReasonEn.includes('[FAILED - Invalid Geotechnical Input]') &&
+    invalidPulloutNegative.isStructurallySafe === false &&
+    invalidPulloutNegative.safetyReasonEn.includes('[FAILED - Invalid Geotechnical Input]') &&
+    invalidPulloutNaN.isStructurallySafe === false &&
+    invalidPulloutNaN.safetyReasonEn.includes('[FAILED - Invalid Geotechnical Input]');
+
+  // 5.9 Verdict propagation to Report snapshot and Excel export
+  const unassessedHash = computeStructuralInputHash({
+    cityId: 'tehran',
+    totalModulesCount: FIXTURE_S1.totalModulesCount,
+    arrayTiltDeg: FIXTURE_S1.arrayTiltDeg,
+    foundationType: 'pre_drilled_grouted_pile',
+    basicWindSpeedKmh: 30,
+    groundSnowLoadKgM2: 50,
+    groundClearanceM: 0.9,
+    soilType: 'rocky_limestone',
+    frostDepthCm: 30,
+  });
+  const unassessedSnapshot = createStructuralSnapshot(
+    missingPulloutWithAdequateFrost,
+    'pre_drilled_grouted_pile',
+    unassessedHash
+  );
+  const unassessedExcelRows = exportStructuralSheetRows(unassessedSnapshot, true);
+  const unassessedComplianceRow = unassessedExcelRows.find((r) => r[0] === 'Structural Safety Compliance');
+
+  const screeningPassSnapshot = createStructuralSnapshot(
+    adequateFrostSuppliedCapacity,
+    'pre_drilled_grouted_pile',
+    unassessedHash
+  );
+  const screeningPassExcelRows = exportStructuralSheetRows(screeningPassSnapshot, true);
+  const screeningPassComplianceRow = screeningPassExcelRows.find((r) => r[0] === 'Structural Safety Compliance');
+
+  const verdictPropagationPass =
+    unassessedSnapshot.isStructurallySafe === false &&
+    unassessedComplianceRow !== undefined &&
+    unassessedComplianceRow[1].toString().includes('ACTION REQUIRED / UNASSESSED') &&
+    screeningPassSnapshot.isStructurallySafe === true &&
+    screeningPassComplianceRow !== undefined &&
+    screeningPassComplianceRow[1].toString().includes('SCREENING PASS');
+
   const groutedPileFrostSafetyPass =
-    groutedInsufficient.isFrostDepthRespected === false &&
-    groutedInsufficient.isStructurallySafe === false &&
-    groutedUnspecified.isFrostDepthRespected === false &&
-    groutedUnspecified.isStructurallySafe === false &&
-    groutedRockyMissingFrost.recommendedDepthM === 0.75 &&
-    groutedRockyMissingFrost.isFrostDepthRespected === false &&
-    groutedRockyMissingFrost.isStructurallySafe === false &&
-    groutedRockyMissingFrost.safetyReasonEn.includes('[UNASSESSED - Frost Depth & Geotechnical Borehole Required]');
+    frostOmittedVsUndefinedParity &&
+    formerBypassEliminatedPass &&
+    missingPulloutPass &&
+    adequateFrostSuppliedPass &&
+    inadequateFrostSuppliedPass &&
+    invalidCapacityPass &&
+    verdictPropagationPass;
 
   // 5b) Live Engine Path - Concrete Pier & Rocky Limestone Frost Safety Contract (supervisor rejection a6d34b2):
   const concretePierRockyFrostInsufficient = calculateStructuralAndFoundations({
