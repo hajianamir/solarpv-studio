@@ -551,8 +551,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         </h1>
         <p className="text-slate-400 text-xs">
           {isEn
-            ? 'Design conforming to INBC Part 6 & ASCE 7-22: Wind uplift forces, overturning moments, soil bearing capacity verification, rammed steel C-piles, and cast-in-place concrete piers.'
-            : 'طراحی سازه بر اساس مبحث ششم مقررات ملی ساختمان و ASCE 7-22، محاسبه نیروی مکش باد، لنگر واژگونی، تنش باربری مجاز خاک، سایزینگ پایه‌های کوبشی فولادی و فونداسیون‌های بتنی.'}
+            ? 'Preliminary screening estimation per ASCE 7-22 & INBC Part 6 principles: Evaluates baseline wind and geotechnical loads. Not detailed design certification or substitute for a licensed structural engineer.'
+            : 'ارزیابی و غربالگری اولیه مهندسی بر مبنای اصول مبحث ۶ و ASCE 7-22: تخمین اولیه بارهای باد و ژئوتکنیک؛ جایگزین طراحی تفصیلی یا تاییدیه مهندس محاسب ذی‌صلاح نمی‌باشد.'}
         </p>
       </div>
 
@@ -2033,7 +2033,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             {structResult.velocityWindPressureQzN_M2} <span className="text-xs font-normal">N/m²</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            {isEn ? 'Design wind pressure per INBC 6 / ASCE 7' : 'فشار طراحی باد طبق مبحث ۶ و ASCE 7'}
+            {isEn ? 'Screening wind pressure per INBC 6 / ASCE 7 principles' : 'فشار غربالگری باد بر اساس مبانی مبحث ۶ و ASCE 7'}
           </div>
         </div>
 
@@ -2111,14 +2111,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               </span>
             )}
           </div>
-          <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+          <div id="struct-display-safety-compliance" className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
             {structResult.isStructurallySafe ? (
               <span className="text-industrial-success flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Stable (Design Compliant)' : 'مجاز و ایمن (مطابق استاندارد)'}
+                <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Screening Pass (Evaluated Modes Safe)' : 'غربالگری اولیه تایید (مودهای ارزیابی‌شده ایمن)'}
               </span>
             ) : (
               <span className="text-rose-400 flex items-center gap-1 font-semibold">
-                <AlertTriangle className="w-3 h-3" /> {isEn ? 'Unstable (Remediation Needed)' : 'ناپایدار (نیازمند اصلاح)'}
+                <AlertTriangle className="w-3 h-3" /> {isEn ? 'Action Required / Unassessed' : 'نیازمند اقدام / ارزیابی‌نشده'}
               </span>
             )}
           </div>
@@ -2392,12 +2392,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       {/* Engineering Signoff Banner */}
       <div className="studio-card bg-industrial-surface/90 border border-industrial-border">
         <div className="flex items-start gap-3">
-          <div className="p-2 rounded bg-industrial-accent/10 border border-industrial-accent/30 text-industrial-accent mt-0.5">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className={`p-2 rounded border mt-0.5 ${
+            structResult.isStructurallySafe
+              ? 'bg-industrial-accent/10 border-industrial-accent/30 text-industrial-accent'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+          }`}>
+            {structResult.isStructurallySafe ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
           </div>
           <div>
             <h4 className="font-bold text-sm text-white mb-1">
-              {isEn ? 'Design Codes & Engineering Standards Compliance:' : 'تطابق با آیین‌نامه‌های طراحی سازه و فونداسیون:'}
+              {isEn ? 'Engineering Screening Scope & Standards Reference:' : 'محدوده غربالگری مهندسی و مراجع استاندارد:'}
             </h4>
             <p className="text-xs text-slate-300 leading-relaxed mb-2">
               {isEn ? structResult.engineeringRemarksEn : structResult.engineeringRemarksFa}

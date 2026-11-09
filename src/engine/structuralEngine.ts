@@ -418,7 +418,7 @@ export function calculateStructuralAndFoundations(
         2.0
       );
       const governingDepthCalc = calculateGoverningPileDepth({
-        lateralDepthM: bromsResult.embedmentDepthM,
+        lateralDepthM: bromsResult.lateralDepthM ?? bromsResult.embedmentDepthM,
         frostDepthM: siteFrostDepthM,
         upliftRequiredDepthM: reqUpliftDepthM,
       });
@@ -435,18 +435,39 @@ export function calculateStructuralAndFoundations(
   } else if (foundationType === 'pre_drilled_grouted_pile') {
     // Pre-drilled rock-socket grouted micro-pile: eliminates deep pile refusal in shallow rock,
     // caliche or cemented gravel by drilling a compact 120mm hole into rock and grouting
-    // with 35MPa non-shrink cementitious grout. Cuts depth by 50-60%!
-    const baseRockSocketM = Math.max(0.70, Number((siteFrostDepthM + 0.15).toFixed(2)));
-    recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
-      ? Number(input.customEmbedmentDepthM.toFixed(2))
-      : Number(Math.min(1.05, Math.max(0.75, baseRockSocketM)).toFixed(2));
+    // with 35MPa non-shrink cementitious grout (FHWA-NHI-05-039).
+    const isCompetentBedrock = soilType === 'rocky_limestone';
+    if (isCompetentBedrock) {
+      // In competent bedrock, embedment depth is governed by rock socket bond length (0.75m - 1.05m),
+      // immune to soil frost heave jacking.
+      const baseRockSocketM = Math.max(0.70, Number((siteFrostDepthM + 0.15).toFixed(2)));
+      recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
+        ? Number(input.customEmbedmentDepthM.toFixed(2))
+        : Number(Math.min(1.05, Math.max(0.75, baseRockSocketM)).toFixed(2));
+    } else {
+      // In soil (sand, gravel, clay), pile must penetrate below frost heave depth unless verified by borehole
+      const reqGroutedUpliftM = calculateRequiredEmbedmentForUplift(
+        upliftPerPostKn,
+        soilType,
+        0.15,
+        soilCohesionKpa,
+        soilDensityKnM3,
+        siteFrostDepthM,
+        2.0
+      );
+      const minGroutedFrostM = hasFrostData ? bromsResult.minDepthForFrostM : 1.20;
+      const autoGroutedDepthM = Math.max(minGroutedFrostM, reqGroutedUpliftM * 0.5, 0.80);
+      recommendedDepthM = input.customEmbedmentDepthM !== undefined && input.customEmbedmentDepthM > 0
+        ? Number(input.customEmbedmentDepthM.toFixed(2))
+        : Number(autoGroutedDepthM.toFixed(2));
+    }
     const drillDiaM = 0.12; // 120mm DTH drill diameter
     const volPerHoleM3 = Math.PI * Math.pow(drillDiaM / 2.0, 2) * recommendedDepthM;
     concreteVolumeTotalM3 = Number((volPerHoleM3 * totalPostsCount).toFixed(2));
     steelRebarWeightTotalKg = Number((totalPostsCount * 4.0).toFixed(0)); // steel post acts as core + centralizer spacers
     foundationNameFa = 'شمع در گمانه پیش‌حفاری با تزریق گروت پرمقاومت (Pre-Drilled Grouted Rock Socket)';
     foundationNameEn = 'Pre-Drilled Rock-Socket Grouted Micro-Pile (Drill & Grout)';
-    foundationDimensionsDesc = `گمانه پیش‌حفاری ۱۲۰mm به عمق ${recommendedDepthM} متر در سنگ بستر/کالیچ + پروفیل گالوانیزه و تزریق گروت ۳۵MPa (کاهش عمق کوبش تا ۵۵٪)`;
+    foundationDimensionsDesc = `گمانه پیش‌حفاری ۱۲۰mm به عمق ${recommendedDepthM} متر در سنگ بستر/کالیچ + پروفیل گالوانیزه و تزریق گروت ۳۵MPa`;
     foundationDimensionsDescEn = `Pre-drilled 120mm borehole, ${recommendedDepthM}m rock embedment with 35MPa non-shrink grout encasement`;
   } else if (foundationType === 'surface_ballasted_block') {
     // Ground-mounted surface precast concrete ballast block (Zero ground penetration / refusal mitigation)
@@ -492,7 +513,7 @@ export function calculateStructuralAndFoundations(
         2.0
       );
       const governingDepthCalc = calculateGoverningPileDepth({
-        lateralDepthM: bromsResult.embedmentDepthM,
+        lateralDepthM: bromsResult.lateralDepthM ?? bromsResult.embedmentDepthM,
         frostDepthM: siteFrostDepthM,
         upliftRequiredDepthM: reqUpliftDepthM,
       });
@@ -571,7 +592,9 @@ export function calculateStructuralAndFoundations(
     foundationType === 'rooftop_anchor_bolted' ||
     foundationType === 'rooftop_ballasted_block' ||
     foundationType === 'surface_ballasted_block';
-  const isFrostDepthRespected = isRooftopOrShed ? true : hasFrostData ? recommendedDepthM >= bromsResult.minDepthForFrostM : false;
+  const isCompetentBedrock = soilType === 'rocky_limestone';
+  const isFrostDepthImmune = isRooftopOrShed || isCompetentBedrock;
+  const isFrostDepthRespected = isFrostDepthImmune ? true : hasFrostData ? recommendedDepthM >= bromsResult.minDepthForFrostM : false;
 
   // 6. Factors of Safety (FoS)
   const isBallasted = foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block';
@@ -792,15 +815,36 @@ export function calculateStructuralAndFoundations(
         ? `بلوک بتنی پیش‌ساخته سطحی تأیید است (FoS واژگونی = ${fosOverturning} >= ۱.۵، FoS لغزش = ${fosSliding} >= ۱.۴). بدون نیاز به کوبش در خاک‌های سخت/سنگی.`
         : `وزن بلوک سطحی در برابر باد ناکافی است. جرم بلوک بتنی را افزایش دهید.`;
       break;
-    case 'pre_drilled_grouted_pile':
-      isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe;
-      safetyReasonEn = isStructurallySafe
-        ? `Rock-socket grout bond capacity verified (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). High pullout resistance at reduced depth (${recommendedDepthM}m) eliminates driving refusal.`
-        : `Rock-socket grout bond capacity insufficient (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase borehole depth.`;
-      safetyReasonFa = isStructurallySafe
-        ? `ظرفیت چسبندگی گروت به سنگ بستر تأیید است (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). کاهش عمق به ${recommendedDepthM} متر مانع پس‌زدگی می‌شود.`
-        : `ظرفیت کششی گروت در سنگ ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه یا قطر حفاری را افزایش دهید.`;
+    case 'pre_drilled_grouted_pile': {
+      const isCompetentBedrock = soilType === 'rocky_limestone';
+      if (!isRooftopOrShed && !isCompetentBedrock && !hasFrostData) {
+        isStructurallySafe = false;
+        safetyReasonEn =
+          `[UNASSESSED - Frost Depth Required] Site frost depth is unspecified; pre-drilled grouted pile embedment in soil cannot be certified safe against frost heave. Geotechnical borehole frost depth data is mandatory.`;
+        safetyReasonFa =
+          `[ارزیابی‌نشده - نیازمند عمق یخبندان] عمق یخبندان ساختگاه نامشخص است؛ پایداری شمع پیش‌حفاری‌شده در خاک در برابر تورم یخبندان قابل تأیید نیست.`;
+      } else {
+        const isEmbedmentSufficient = input.customEmbedmentDepthM !== undefined
+          ? (input.customEmbedmentDepthM > 0 && isFrostDepthRespected)
+          : isFrostDepthRespected;
+        isStructurallySafe = fosUplift >= 2.0 && isBearingCapacitySafe && isFrostDepthRespected && isEmbedmentSufficient;
+        safetyReasonEn = isStructurallySafe
+          ? isCompetentBedrock
+            ? `Rock-socket grout bond capacity verified in competent bedrock (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Compact depth (${recommendedDepthM}m) eliminates refusal (FHWA-NHI-05-039).`
+            : `Rock-socket grout bond capacity verified (FoS_uplift = ${fosUplift} >= 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post). Frost penetration depth respected (L = ${recommendedDepthM}m >= ${bromsResult.minDepthForFrostM}m).`
+          : !isFrostDepthRespected
+          ? `Pre-drilled pile depth (${recommendedDepthM}m) does not satisfy required frost heave penetration depth (${bromsResult.minDepthForFrostM}m for ${siteFrostDepthCm}cm frost depth). Pile embedment cannot be certified safe against frost heave without site-specific rock-head borehole verification.`
+          : `Rock-socket grout bond capacity insufficient (FoS_uplift = ${fosUplift} < 2.0, T_ult = ${upliftCapacityPerPostKn.toFixed(1)} kN/post vs demand ${upliftPerPostKn} kN/post). Increase borehole depth.`;
+        safetyReasonFa = isStructurallySafe
+          ? isCompetentBedrock
+            ? `ظرفیت چسبندگی گروت در سنگ بستر یکپارچه تأیید است (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه). عمق بهینه ${recommendedDepthM} متر مانع پس‌زدگی کوبش می‌شود.`
+            : `ظرفیت چسبندگی گروت تأیید است (FoS_uplift = ${fosUplift} >= ۲.۰، ظرفیت ${upliftCapacityPerPostKn.toFixed(1)} kN/پایه) و عمق نفوذ یخبندان رعایت شده است.`
+          : !isFrostDepthRespected
+          ? `عمق شمع پیش‌حفاری (${recommendedDepthM} متر) کمتر از حداقل عمق نفوذ یخبندان (${bromsResult.minDepthForFrostM} متر برای عمق یخبندان ${siteFrostDepthCm} سانتی‌متر) است؛ پایداری در برابر تورم یخبندان بدون گزارش ژئوتکنیکی سنگ بستر قابل تأیید نیست.`
+          : `ظرفیت کششی گروت در سنگ ناکافی است (FoS_uplift = ${fosUplift} < ۲.۰). عمق گمانه یا قطر حفاری را افزایش دهید.`;
+      }
       break;
+    }
     case 'rammed_steel_pile':
     case 'ground_screw': {
       if (!isRooftopOrShed && !hasFrostData) {

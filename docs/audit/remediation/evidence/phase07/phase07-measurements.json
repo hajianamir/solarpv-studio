@@ -7,7 +7,7 @@
   "baselineCommit": "832805e",
   "contractSource": "src/engine/core/structuralContract.ts",
   "contractSha256": "7507e77a8c0b4f66ebd285d9436edc28a6aa1901ad9d7ea41b1a5c86ede18db3",
-  "harnessSha256": "941299af656b892975518f283d10d379ab1226e99025926cc4391beeef080463",
+  "harnessSha256": "1f14aa310bc34399ba7b385c6515d8d7b33ea270aa405d4630cca96372e1cf6f",
   "overallPass": true,
   "summary": {
     "totalQuantities": 8,
@@ -246,7 +246,7 @@
       "delta": 0,
       "pass": true,
       "status": "PASS",
-      "definition": "Governing embedment depth satisfies max(L_lateral, L_frost, L_uplift) without downward limit rounding",
+      "definition": "Independent governing role of all three depth limits (uplift, lateral, frost) proven in live engine path plus insufficient custom & rock-socket limits",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-03"
     },
     {
@@ -266,7 +266,7 @@
       "delta": 0,
       "pass": true,
       "status": "PASS",
-      "definition": "Structural Tab -> App -> Report/Excel snapshot end-to-end lifecycle, mutation staleness tracking, and export synchronization",
+      "definition": "Structural Tab -> App -> Report/Excel snapshot lifecycle, mutation staleness tracking, export synchronization, and safety status equivalence",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-05"
     },
     {

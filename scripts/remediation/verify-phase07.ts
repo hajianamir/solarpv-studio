@@ -987,16 +987,19 @@ function getElementValue(node: any): string {
   const tabLiveDepthEl = findElementById(appContainer, 'struct-display-depth');
   const tabLiveTablesEl = findElementById(appContainer, 'struct-display-tables');
   const tabLivePostsEl = findElementById(appContainer, 'struct-display-posts');
+  const tabLiveSafetyEl = findElementById(appContainer, 'struct-display-safety-compliance');
 
   const tabLiveQz = parseFloat(getElementText(tabLiveQzEl)) || 0;
   const tabLiveUplift = parseFloat(getElementText(tabLiveUpliftEl)) || 0;
   const tabLiveDepth = parseFloat(getElementText(tabLiveDepthEl)) || 0;
   const tabLiveTables = parseInt(getElementText(tabLiveTablesEl)) || 0;
   const tabLivePosts = parseInt(getElementText(tabLivePostsEl)) || 0;
+  const tabLiveSafetyText = getElementText(tabLiveSafetyEl);
 
   let appExcelTablesCount = 0;
   let appExcelPostsCount = 0;
   let appExcelStatus = '';
+  let appExcelCompliance = '';
   let appExcelWindQz = 0;
   let appExcelDepth = 0;
   let appExcelUpliftForceKn = 0;
@@ -1031,6 +1034,9 @@ function getElementValue(node: any): string {
         }
         if (pName.includes('Structural Analysis Status') || pName.includes('وضعیت تحلیل سازه')) {
           appExcelStatus = String(pVal);
+        }
+        if (pName.includes('Structural Safety Compliance') || pName.includes('انطباق ایمنی سازه')) {
+          appExcelCompliance = String(pVal);
         }
         if (pName.includes('Velocity Wind Pressure') || pName.includes('فشار سرعتی باد')) {
           appExcelWindQz = Number(pVal);
@@ -1397,6 +1403,33 @@ function getElementValue(node: any): string {
 
   const realUiModalPass = syncUiOk && staleUiOk && nullUiOk && frostCheckPass;
 
+  // Explicit safety status comparison between Tab, Report Modal, and Excel Export across safe and insufficient states
+  const exportedFrostInsufficientRows = exportStructuralSheetRows(effectiveFrostInsufficient, true);
+  const frostInsufficientComplianceRow = exportedFrostInsufficientRows.find((r) => r[0] === 'Structural Safety Compliance');
+
+  // 1) Safe State: Report Modal and Excel agree on SCREENING PASS
+  const excelSafePass = activeComplianceRow?.[1] === 'SCREENING PASS (Preliminary — Unassessed Modes Excluded)';
+  const reportSafePass = htmlSync.includes('SCREENING PASS (Preliminary — Unassessed Modes Excluded)');
+
+  // 2) Insufficient State: Report Modal, Excel, and Engine agree on ACTION REQUIRED / UNASSESSED
+  const excelInsufficientPass = frostInsufficientComplianceRow?.[1] === 'ACTION REQUIRED / UNASSESSED';
+  const reportInsufficientPass = htmlFrostInsufficient.includes('ACTION REQUIRED / UNASSESSED');
+  const engineInsufficientPass = frostInsufficientResult.isStructurallySafe === false;
+
+  // 3) Interactive UI Consumer match: Tab and Excel agree on safety verdict
+  const interactiveSafetyMatch =
+    (tabLiveSafetyText.includes('Action Required') || tabLiveSafetyText.includes('نیازمند اقدام'))
+      ? appExcelCompliance === 'ACTION REQUIRED / UNASSESSED'
+      : appExcelCompliance === 'SCREENING PASS (Preliminary — Unassessed Modes Excluded)';
+
+  const safetyStatusComparisonPass =
+    excelSafePass &&
+    reportSafePass &&
+    excelInsufficientPass &&
+    reportInsufficientPass &&
+    engineInsufficientPass &&
+    interactiveSafetyMatch;
+
   // 7. Real UI Export Path & Multi-Table Excel Export Verification across all 3 lifecycle states
   const modalContainer = (globalThis as any).document.createElement('div');
   (globalThis as any).document.body.appendChild(modalContainer);
@@ -1691,7 +1724,7 @@ function getElementValue(node: any): string {
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-02',
   });
 
-  // C7-03: Pile limit state governing control (unrounded limits safety proof)
+  // C7-03: Pile limit state governing control (independent proof of all 3 depth limits in live engine path)
   const c703Lhs = governingDepth.depthGoverningCalculatedM;
   const c703Rhs = Math.max(
     governingDepth.depthRequiredLateralM,
@@ -1700,7 +1733,136 @@ function getElementValue(node: any): string {
   );
   const c703Delta = Math.abs(c703Lhs - c703Rhs);
 
-  // Independent safety proof: verify that unrounded limit 1.234m is not satisfied by 1.23m
+  // 1) Live Engine Path - Uplift Governs independently:
+  // S-1 baseline: L_uplift = 5.0m > L_lateral (1.6m) and L_frost (1.3m)
+  const liveUpliftResult = calculateStructuralAndFoundations(FIXTURE_S1);
+  const liveUpliftBroms = calculateBromsPileSizing(
+    liveUpliftResult.lateralShearPerPostKn,
+    FIXTURE_S1.groundClearanceM,
+    (FIXTURE_S1.frostDepthCm ?? 30) / 100,
+    FIXTURE_S1.soilType,
+    FIXTURE_S1.soilBearingCapacityKpa ?? 250,
+    FIXTURE_S1.soilInternalFrictionAngleDeg ?? 34,
+    FIXTURE_S1.soilCohesionKpa ?? 10,
+    FIXTURE_S1.soilDensityKnM3 ?? 18
+  );
+  const liveUpliftReq = calculateRequiredEmbedmentForUplift(
+    liveUpliftResult.upliftPerPostKn,
+    FIXTURE_S1.soilType,
+    0.15,
+    FIXTURE_S1.soilCohesionKpa ?? 10,
+    FIXTURE_S1.soilDensityKnM3 ?? 18,
+    (FIXTURE_S1.frostDepthCm ?? 30) / 100,
+    2.0
+  );
+  const liveUpliftFrost = ((FIXTURE_S1.frostDepthCm ?? 30) / 100) + 1.0;
+  const upliftGovernsPass =
+    liveUpliftReq > liveUpliftBroms.embedmentDepthM &&
+    liveUpliftReq > liveUpliftFrost &&
+    liveUpliftResult.recommendedDepthM === liveUpliftReq &&
+    liveUpliftResult.recommendedDepthM === 5.0;
+
+  // 2) Live Engine Path - Frost Depth Governs independently:
+  // Low wind (30 km/h) and deep frost (80 cm): L_frost = 1.8m > L_lateral (0.8m) and L_uplift (0.5m)
+  const frostGoverningInput: StructuralParametersInput = {
+    ...FIXTURE_S1,
+    basicWindSpeedKmh: 30,
+    frostDepthCm: 80,
+    groundClearanceM: 0.5,
+  };
+  const liveFrostResult = calculateStructuralAndFoundations(frostGoverningInput);
+  const liveFrostBroms = calculateBromsPileSizing(
+    liveFrostResult.lateralShearPerPostKn,
+    frostGoverningInput.groundClearanceM,
+    0.8,
+    frostGoverningInput.soilType,
+    frostGoverningInput.soilBearingCapacityKpa ?? 250,
+    frostGoverningInput.soilInternalFrictionAngleDeg ?? 34,
+    frostGoverningInput.soilCohesionKpa ?? 10,
+    frostGoverningInput.soilDensityKnM3 ?? 18
+  );
+  const liveFrostReqUplift = calculateRequiredEmbedmentForUplift(
+    liveFrostResult.upliftPerPostKn,
+    frostGoverningInput.soilType,
+    0.15,
+    frostGoverningInput.soilCohesionKpa ?? 10,
+    frostGoverningInput.soilDensityKnM3 ?? 18,
+    0.8,
+    2.0
+  );
+  const liveFrostLimit = 0.8 + 1.0; // 1.8m
+  const frostGovernsPass =
+    liveFrostLimit > (liveFrostBroms.lateralDepthM ?? liveFrostBroms.embedmentDepthM) &&
+    liveFrostLimit > liveFrostReqUplift &&
+    liveFrostResult.recommendedDepthM === liveFrostLimit &&
+    liveFrostResult.recommendedDepthM === 1.8;
+
+  // 3) Live Engine Path - Lateral Resistance Governs independently:
+  // Deep clearance (1.8m), high lateral shear, clay soil with low frost (10 cm):
+  // L_lateral (2.1m) > L_frost (1.1m) and L_uplift (1.83m)
+  const lateralGoverningInput: StructuralParametersInput = {
+    ...FIXTURE_S1,
+    soilType: 'medium_clay',
+    soilBearingCapacityKpa: 180,
+    soilCohesionKpa: 45,
+    soilInternalFrictionAngleDeg: 15,
+    groundClearanceM: 1.8,
+    basicWindSpeedKmh: 75,
+    arrayTiltDeg: 35,
+    frostDepthCm: 10,
+  };
+  const liveLateralResult = calculateStructuralAndFoundations(lateralGoverningInput);
+  const liveLateralBroms = calculateBromsPileSizing(
+    liveLateralResult.lateralShearPerPostKn,
+    lateralGoverningInput.groundClearanceM,
+    0.1,
+    lateralGoverningInput.soilType,
+    180,
+    15,
+    45,
+    18
+  );
+  const liveLateralReqUplift = calculateRequiredEmbedmentForUplift(
+    liveLateralResult.upliftPerPostKn,
+    lateralGoverningInput.soilType,
+    0.15,
+    45,
+    18,
+    0.1,
+    2.0
+  );
+  const liveLateralFrost = 0.1 + 1.0; // 1.1m
+  const lateralGovernsPass =
+    liveLateralBroms.embedmentDepthM > liveLateralFrost &&
+    liveLateralBroms.embedmentDepthM > liveLateralReqUplift &&
+    liveLateralResult.recommendedDepthM === liveLateralBroms.embedmentDepthM &&
+    liveLateralResult.recommendedDepthM === 2.1;
+
+  // 4) Live Engine Path - Custom Insufficient Depth Fails:
+  const customInsufficientPass =
+    structCustomInsufficient.isStructurallySafe === false &&
+    customDepthEval.isDepthAdequate === false;
+
+  // 5) Live Engine Path - Pre-Drilled Grouted Pile Frost Depth Contract:
+  const groutedInsufficient = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    basicWindSpeedKmh: 30,
+    frostDepthCm: 80,
+    customEmbedmentDepthM: 0.95,
+  });
+  const groutedUnspecified = calculateStructuralAndFoundations({
+    ...FIXTURE_S1,
+    foundationType: 'pre_drilled_grouted_pile',
+    basicWindSpeedKmh: 30,
+    frostDepthCm: undefined,
+  });
+  const groutedPileFrostSafetyPass =
+    groutedInsufficient.isFrostDepthRespected === false &&
+    groutedInsufficient.isStructurallySafe === false &&
+    groutedUnspecified.isStructurallySafe === false;
+
+  // 6) Independent safety proof: verify that unrounded limit 1.234m is not satisfied by 1.23m
   const safetyLimitTest = calculateGoverningPileDepth({
     lateralDepthM: 1.234,
     frostDepthM: 0.1,
@@ -1708,7 +1870,15 @@ function getElementValue(node: any): string {
     customEmbedmentDepthM: 1.23,
   });
 
-  const c703Pass = c703Delta <= 0.0001 && safetyLimitTest.isDepthAdequate === false;
+  const c703Pass =
+    c703Delta <= 0.0001 &&
+    upliftGovernsPass &&
+    frostGovernsPass &&
+    lateralGovernsPass &&
+    customInsufficientPass &&
+    groutedPileFrostSafetyPass &&
+    safetyLimitTest.isDepthAdequate === false;
+
   checks.push({
     id: 'C7-03',
     lhs: c703Lhs,
@@ -1716,7 +1886,7 @@ function getElementValue(node: any): string {
     delta: c703Delta,
     pass: c703Pass,
     status: c703Pass ? 'PASS' : 'FAIL',
-    definition: 'Governing embedment depth satisfies max(L_lateral, L_frost, L_uplift) without downward limit rounding',
+    definition: 'Independent governing role of all three depth limits (uplift, lateral, frost) proven in live engine path plus insufficient custom & rock-socket limits',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-03',
   });
 
@@ -1745,6 +1915,7 @@ function getElementValue(node: any): string {
     customModulesSyncPass &&
     postsInteractionPass &&
     mutationStalenessDetectedPass &&
+    safetyStatusComparisonPass &&
     p708LifecyclePass;
   checks.push({
     id: 'C7-05',
@@ -1753,7 +1924,7 @@ function getElementValue(node: any): string {
     delta: c705Delta,
     pass: c705Pass,
     status: c705Pass ? 'PASS' : 'FAIL',
-    definition: 'Structural Tab -> App -> Report/Excel snapshot end-to-end lifecycle, mutation staleness tracking, and export synchronization',
+    definition: 'Structural Tab -> App -> Report/Excel snapshot lifecycle, mutation staleness tracking, export synchronization, and safety status equivalence',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-05',
   });
 
