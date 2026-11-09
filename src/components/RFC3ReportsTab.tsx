@@ -34,7 +34,6 @@ import { getClimateData } from '../engine/climaticData';
 import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
 import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
 import { calculateStructuralAndFoundations, type FoundationType, type SoilType } from '../engine/structuralEngine';
-import { DEFAULT_GROUND_CLEARANCE_M } from '../engine/core/structuralContract';
 import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/types/climateTypes';
 import { buildProvenanceRows } from '../engine/provenance/provenanceBuilder';
 
@@ -194,7 +193,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       const basicWindSpeedKmh = siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 120;
       const groundSnowLoadKgM2 = siteOverrides?.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 50;
       const arrayTiltDeg = siteOverrides?.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28;
-      const groundClearanceM = siteOverrides?.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M;
+      const groundClearanceM = siteOverrides?.groundClearanceM ?? 0.9;
       const soilType = (siteOverrides?.soilType ?? city.soilType ?? 'dense_sand_gravel') as SoilType;
       const soilBearingCapacityKpa = siteOverrides?.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? 220;
       const soilInternalFrictionAngleDeg = siteOverrides?.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? 32;

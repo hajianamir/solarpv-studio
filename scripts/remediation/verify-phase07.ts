@@ -81,6 +81,7 @@ import {
 } from '../../src/engine/protectionBomEngine';
 import { simulate24hEnergyBalance, sizeDieselGenerator } from '../../src/engine/simulation24hEngine';
 import { performFinancialAnalysis } from '../../src/engine/financialEngine';
+import { exportToExcelWorkbook } from '../../src/engine/reportingEngine';
 
 const ROOT = process.cwd();
 const EVIDENCE_PATH = path.join(
@@ -674,17 +675,17 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   });
   const protectionUi = {
     cableRuns: [dcRunUi],
-    earthing: calculateEarthingSystem(77, 100, 'solidly_grounded', false, false, 'floating_unearthed'),
+    earthing: calculateEarthingSystem(77, 100, 'solidly_grounded', false, false, 'floating'),
     lightning: calculateLightningProtection(77, false),
     protectionBom: [],
   };
   const simulationUi = simulate24hEnergyBalance(
-    Array(24).fill(loadAnalysisUi.totalDailyEnergyWh / 24),
     arrayDesignUi.totalPvCapacityKwp,
-    batterySizingUi.usableCapacityKwh,
     cityUi.peakSunHours,
-    Array(12).fill(150),
-    cityUi.tempMaxC
+    loadAnalysisUi.daytimeEnergyWh / 1000.0,
+    loadAnalysisUi.nighttimeEnergyWh / 1000.0,
+    batterySizingUi.usableCapacityKwh,
+    batterySizingUi.grossCapacityKwh
   );
   const generatorUi = sizeDieselGenerator(2000, 4000, 4);
   const financialUi = performFinancialAnalysis(
@@ -738,16 +739,39 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     htmlSync.includes(`${effectiveSnapshotInitial.recommendedDepthM}m embedment`) &&
     htmlSync.includes(`>${effectiveSnapshotInitial.totalPostsCount}<`) &&
     htmlSync.includes(`>${effectiveSnapshotInitial.totalTablesCount}<`) &&
-    !htmlSync.includes('Warning: Project parameters were modified after structural calculation');
+    htmlSync.includes('satisfying the mandatory safety margin') &&
+    !htmlSync.includes('Warning: Project parameters were modified after structural calculation') &&
+    !htmlSync.includes('[STALE');
 
-  const staleUiOk = htmlStale.includes('Warning: Project parameters were modified after structural calculation');
+  const staleUiOk =
+    htmlStale.includes('Warning: Project parameters were modified after structural calculation') &&
+    htmlStale.includes('[STALE - Recalculation Required in Structural Tab]') &&
+    htmlStale.includes('>STALE<') &&
+    htmlStale.includes('embedment depth and frost heave safety margins are STALE and require re-execution');
 
   const nullUiOk =
-    htmlNull.includes('pending calculation in Structural Tab') &&
+    htmlNull.includes('[PENDING - Awaiting Structural Tab Analysis]') &&
     htmlNull.includes('Pending Structural Tab Sizing') &&
-    htmlNull.includes('>—<');
+    htmlNull.includes('>—<') &&
+    htmlNull.includes('pending calculation in the Structural');
 
   const realUiModalPass = syncUiOk && staleUiOk && nullUiOk;
+
+  // 6. Genuine Multi-Table Excel Export Generation across all 3 lifecycle states
+  const syncExcelBlob = await exportToExcelWorkbook([
+    { sheetName: 'Structural & Foundations', rows: exportedActiveRows }
+  ], 'verify-sync.xlsx');
+  const staleExcelBlob = await exportToExcelWorkbook([
+    { sheetName: 'Structural & Foundations', rows: exportedStaleRows }
+  ], 'verify-stale.xlsx');
+  const nullExcelBlob = await exportToExcelWorkbook([
+    { sheetName: 'Structural & Foundations', rows: exportedNullRows }
+  ], 'verify-null.xlsx');
+
+  const realExcelPass =
+    syncExcelBlob.size > 1000 &&
+    staleExcelBlob.size > 1000 &&
+    nullExcelBlob.size > 1000;
 
   const p708LifecyclePass =
     isStaleInitial === false &&
@@ -765,7 +789,8 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
     staleComplianceRow?.[1] === 'STALE — RECALCULATION REQUIRED' &&
     nullStatusRow?.[1] === 'UNAVAILABLE' &&
     nullComplianceRow?.[1] === 'UNAVAILABLE' &&
-    realUiModalPass;
+    realUiModalPass &&
+    realExcelPass;
 
   const reportQz = effectiveSnapshotInitial.qzPa;
   const reportDepth = effectiveSnapshotInitial.recommendedDepthM;

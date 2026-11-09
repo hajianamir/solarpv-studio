@@ -850,8 +850,10 @@ export function calculateStructuralAndFoundations(
       safetyReasonFa = 'نوع فونداسیون ناشناخته.';
   }
 
-  let engineeringRemarksFa = 'پایداری سازه و فونداسیون طبق آیین‌نامه مبحث ۶ مقررات ملی ساختمان و ASCE 7-22 تأیید است.';
-  let engineeringRemarksEn = 'Structural stability and foundation sizing compliant with INBC Part 6 & ASCE 7-22.';
+  let engineeringRemarksFa =
+    'ارزیابی اولیه پایداری سازه و فونداسیون در مودهای بررسی‌شده (کشش، باربری خاک و برش جانبی برمز) طبق مبحث ۶ و ۷ مقررات ملی و ASCE 7-22 ارضا شده است. مودهای ارزیابی‌نشده (اتصالات کلمپ، انکرهای شیمیایی، گردابه‌های گوشه و پاسخ لرزه‌ای) مستثنی بوده و انطباق اجرایی منوط به گمانه‌زنی ژئوتکنیک و طراحی تفصیلی است.';
+  let engineeringRemarksEn =
+    'Preliminary screening structural stability and foundation sizing compliant with INBC Part 6 & ASCE 7-22 for evaluated failure modes (uplift, bearing, Broms lateral). Unassessed modes (purlin clamps, chemical anchors, corner vortices, seismic dynamics) excluded; definitive certification subject to borehole testing and detailed engineering.';
   if (!isStructurallySafe) {
     if (!isRooftopOrShed && !hasFrostData) {
       engineeringRemarksFa = 'هشدار مهندسی: عمق یخبندان ساختگاه نامشخص است؛ بدون گمانه‌زنی و تعیین عمق یخبندان، پایداری شمع قابل تأیید نیست.';
