@@ -170,7 +170,11 @@ export function calculateUnifiedWindPressureQz(
     windDirectionalityKd = 0.85,
   } = input;
 
-  const vMs = Math.max(0, basicWindSpeedKmh) / 3.6;
+  if (!Number.isFinite(basicWindSpeedKmh) || basicWindSpeedKmh < 0) {
+    throw new RangeError(`Invalid basicWindSpeedKmh (${basicWindSpeedKmh}): wind speed must be a non-negative finite number`);
+  }
+
+  const vMs = basicWindSpeedKmh / 3.6;
   const kz = (structureHeightM === undefined && exposureCategory === 'C')
     ? 0.88
     : calculateUnifiedKz(exposureCategory, structureHeightM);
@@ -253,6 +257,16 @@ export function calculateUnifiedTableDeadLoad(
     rackingUnitWeightKgM2 = 14.5,
   } = input;
 
+  if (!Number.isFinite(modulesPerTable) || modulesPerTable <= 0) {
+    throw new RangeError(`Invalid modulesPerTable (${modulesPerTable}): must be a positive integer`);
+  }
+  if (!Number.isFinite(moduleWeightKg) || moduleWeightKg <= 0) {
+    throw new RangeError(`Invalid moduleWeightKg (${moduleWeightKg}): must be a positive number`);
+  }
+  if (!Number.isFinite(tableAreaM2) || tableAreaM2 <= 0) {
+    throw new RangeError(`Invalid tableAreaM2 (${tableAreaM2}): must be a positive number`);
+  }
+
   const moduleTotalWeightPerTableKg = modulesPerTable * moduleWeightKg;
   const rackingWeightPerTableKg = tableAreaM2 * rackingUnitWeightKgM2;
   const deadLoadTableKg = moduleTotalWeightPerTableKg + rackingWeightPerTableKg;
@@ -276,6 +290,7 @@ export interface LateralShearInput {
 /**
  * Single source of truth for lateral shear demand per post.
  * Eliminates artificial hidden multipliers (e.g. * 1.2 in legacy recommendation engine).
+ * Strictly validates postsPerTable >= 1 (throws RangeError if <= 0 or non-finite).
  */
 export function calculateUnifiedLateralShearPerPost(
   input: LateralShearInput
@@ -284,9 +299,22 @@ export function calculateUnifiedLateralShearPerPost(
   lateralShearPerPostKn: number;
 } {
   const { qzN_M2, tableAreaM2, arrayTiltDeg, postsPerTable } = input;
+
+  if (!Number.isFinite(postsPerTable) || postsPerTable < 1) {
+    throw new RangeError(
+      `Invalid postsPerTable (${postsPerTable}): posts count per table must be a positive integer >= 1`
+    );
+  }
+  if (!Number.isFinite(qzN_M2) || qzN_M2 < 0) {
+    throw new RangeError(`Invalid qzN_M2 (${qzN_M2}): wind velocity pressure must be a non-negative finite number`);
+  }
+  if (!Number.isFinite(tableAreaM2) || tableAreaM2 <= 0) {
+    throw new RangeError(`Invalid tableAreaM2 (${tableAreaM2}): table area must be a positive finite number`);
+  }
+
   const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
   const lateralWindForceTableKn = (qzN_M2 * tableAreaM2 * Math.sin(tiltRad)) / 1000.0;
-  const lateralShearPerPostKn = lateralWindForceTableKn / Math.max(1, postsPerTable);
+  const lateralShearPerPostKn = lateralWindForceTableKn / postsPerTable;
 
   return {
     lateralWindForceTableKn,
@@ -319,12 +347,32 @@ export interface GoverningPileDepthResult {
  *
  * Safety requirements:
  * 1. Required limits are NOT rounded down before comparison (e.g. 1.234m is not truncated to 1.23m).
- * 2. Negative, zero, or non-finite custom embedment depths are explicitly rejected as invalid (never declared safe).
- * 3. Custom depth less than governing depth is explicitly flagged as insufficient (never declared safe).
+ * 2. Non-finite or NaN depth inputs are explicitly rejected with isDepthAdequate=false.
+ * 3. Negative, zero, or non-finite custom embedment depths are explicitly rejected as invalid (never declared safe).
+ * 4. Custom depth less than governing depth is explicitly flagged as insufficient (never declared safe).
  */
 export function calculateGoverningPileDepth(
   input: GoverningPileDepthInput
 ): GoverningPileDepthResult {
+  const isInputValid =
+    Number.isFinite(input.lateralDepthM) && input.lateralDepthM >= 0 &&
+    Number.isFinite(input.frostDepthM) && input.frostDepthM >= 0 &&
+    Number.isFinite(input.upliftRequiredDepthM) && input.upliftRequiredDepthM >= 0;
+
+  if (!isInputValid) {
+    return {
+      depthRequiredLateralM: input.lateralDepthM,
+      depthRequiredFrostM: input.frostDepthM + 1.0,
+      depthRequiredUpliftM: input.upliftRequiredDepthM,
+      depthGoverningCalculatedM: NaN,
+      effectiveRecommendedDepthM: input.customEmbedmentDepthM ?? NaN,
+      governingLimit: 'invalid_negative_depth',
+      isDepthAdequate: false,
+      notesFa: 'خطای بحرانی ایمنی سازه: پارامترهای عمق نامتناهی، NaN یا منفی هستند.',
+      notesEn: 'CRITICAL SAFETY ERROR: Depth parameters are non-finite, NaN, or negative.',
+    };
+  }
+
   const depthRequiredLateralM = input.lateralDepthM;
   const depthRequiredFrostM = input.frostDepthM + 1.0;
   const depthRequiredUpliftM = input.upliftRequiredDepthM;

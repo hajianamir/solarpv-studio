@@ -18,8 +18,6 @@ import { execSync } from 'node:child_process';
 
 import {
   FIXTURE_S1,
-  FIXTURE_S2,
-  FIXTURE_S3,
   calculateUnifiedWindPressureQz,
   calculateWindPressureSensitivity,
   calculateUnifiedTableDeadLoad,
@@ -72,6 +70,7 @@ function ensureBaselineWorktree(): string {
   const tmpDir = path.join(os.tmpdir(), 'solarpv-baseline-832805e');
   if (!fs.existsSync(tmpDir)) {
     try {
+      execSync(`git worktree prune`, { cwd: ROOT, stdio: 'ignore' });
       execSync(`git worktree add --detach "${tmpDir}" 832805e`, { cwd: ROOT, stdio: 'ignore' });
     } catch {
       // Worktree already present or registered
@@ -91,7 +90,7 @@ export interface Phase07Quantity {
   producer: string;
   reproduce: string;
   pass: boolean;
-  status?: 'PASS' | 'PENDING_PART2';
+  status: 'PASS' | 'PENDING_PART2';
   details: Record<string, unknown>;
 }
 
@@ -101,7 +100,7 @@ export interface Phase07Check {
   rhs: number;
   delta: number;
   pass: boolean;
-  status?: 'PASS' | 'PENDING_PART2';
+  status: 'PASS' | 'PENDING_PART2';
   definition: string;
   reproduce: string;
 }
@@ -216,14 +215,20 @@ export async function runPhase07Measurements(): Promise<{
   });
 
   // -------------------------------------------------------------------------
-  // P7-02: Wind pressure at 1.2V sensitivity ratio
+  // P7-02: Wind pressure at 1.2V sensitivity (Pa) with identical speed input 144 km/h
   // -------------------------------------------------------------------------
+  // Evaluated at identical elevated speed input: V_elevated = 120 * 1.2 = 144 km/h at elevation 1190 m.
+  // Before: legacy structureRecommendationEngine:243 ad-hoc formula: 0.5 * 1.225 * (144/3.6)^2 * 0.85 = 833.00 Pa.
+  // After: unified ASCE 7-22 formula in calculateUnifiedWindPressureQz at 144 km/h = 702.71 Pa.
+  const elevatedSpeedKmh = FIXTURE_S1.basicWindSpeedKmh * 1.2; // 144 km/h
+  const vElevatedMs = elevatedSpeedKmh / 3.6;
+  const p702Before = Number((0.5 * 1.225 * Math.pow(vElevatedMs, 2) * 1.0 * 0.85).toFixed(2)); // 833.00 Pa
+
   const sens = calculateWindPressureSensitivity({
     basicWindSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
     elevationM: FIXTURE_S1.elevationM,
   }, 1.2);
-  const p702Before = Number((recS1Before.windPressureQzKnM2 * 1000).toFixed(2));
-  const p702After = Number(sens.elevatedQzPa.toFixed(2));
+  const p702After = Number(sens.elevatedQzPa.toFixed(2)); // 702.71 Pa
   const p702RatioDiff = Math.abs(sens.ratio - 1.44);
   const p702Pass = p702RatioDiff <= 0.000001;
 
@@ -234,16 +239,16 @@ export async function runPhase07Measurements(): Promise<{
     before: p702Before,
     after: p702After,
     delta: Number((p702After - p702Before).toFixed(2)),
-    beforeSource: '832805e:src/engine/structureRecommendationEngine.ts:241',
+    beforeSource: '832805e:src/engine/structureRecommendationEngine.ts:243',
     producer: 'src/engine/core/structuralContract.ts:calculateWindPressureSensitivity',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --id P7-02',
     pass: p702Pass,
     status: 'PASS',
     details: {
+      elevatedSpeedKmh,
       baseSpeedKmh: FIXTURE_S1.basicWindSpeedKmh,
-      elevatedSpeedKmh: sens.elevatedSpeedKmh,
-      baseQzPa: sens.baseQzPa,
-      elevatedQzPa: sens.elevatedQzPa,
+      legacyRecSensFormulaPa: p702Before,
+      unifiedElevatedQzPa: p702After,
       analyticalRatio: 1.44,
       measuredRatio: sens.ratio,
       ratioError: p702RatioDiff,
@@ -421,8 +426,6 @@ export async function runPhase07Measurements(): Promise<{
   const p707Before = anchoredBaseline.isStructurallySafe ? 'safe=true' : 'safe=false';
   const p707ContractTarget = disclosures.rooftopAnchorStatus === 'unassessed' ? 'unassessed,safe=false' : 'safe=true';
 
-  // In Mid-Phase, contract specification is ready, but live engine modification is reserved for Part 2.
-  // Reported truthfully as PENDING_PART2 (pass: false) until Part 2 engine integration completes.
   quantities.push({
     id: 'P7-07',
     case: 'rooftop_anchor_bolted',
@@ -447,8 +450,6 @@ export async function runPhase07Measurements(): Promise<{
   // -------------------------------------------------------------------------
   // P7-08: Structural Tab vs Report Discrepancy (Mid-Phase: Pending Part 2 UI Integration)
   // -------------------------------------------------------------------------
-  // In Mid-Phase, snapshot schema is designed in structuralContract; live transport via App.tsx
-  // and OfficialReportModal is reserved for Part 2. Reported as PENDING_PART2 (pass: false).
   quantities.push({
     id: 'P7-08',
     case: 'UI-to-Report-Sync',
@@ -486,49 +487,18 @@ export async function runPhase07Measurements(): Promise<{
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-01',
   });
 
-  // C7-02: Load model equality across S-1, S-2, and S-3
-  // S-1 comparison:
-  const s1DlExpected = p704After;
-  const s1DlActual = p704BeforeStruct;
-  const s1ShearUnified = p703After;
-  const s1ShearBaseline = p703BeforeStruct;
-
-  // S-2 comparison:
-  const s2Dl = calculateUnifiedTableDeadLoad({
-    modulesPerTable: FIXTURE_S2.modulesPerTable,
-    moduleWeightKg: FIXTURE_S2.moduleWeightKg,
-    tableAreaM2: (FIXTURE_S2.modulesPerTable / 2.0 * (FIXTURE_S2.moduleWidthM + 0.02)) * (2.0 * FIXTURE_S2.moduleLengthM + 0.05),
-  });
-  const s2Wind = calculateUnifiedWindPressureQz({
-    basicWindSpeedKmh: FIXTURE_S2.basicWindSpeedKmh,
-    elevationM: FIXTURE_S2.elevationM,
-  });
-  const s2Shear = calculateUnifiedLateralShearPerPost({
-    qzN_M2: s2Wind.qzN_M2,
-    tableAreaM2: (FIXTURE_S2.modulesPerTable / 2.0 * (FIXTURE_S2.moduleWidthM + 0.02)) * (2.0 * FIXTURE_S2.moduleLengthM + 0.05),
-    arrayTiltDeg: FIXTURE_S2.arrayTiltDeg,
-    postsPerTable: 4,
-  });
-
-  // S-3 comparison:
-  const s3Dl = calculateUnifiedTableDeadLoad({
-    modulesPerTable: FIXTURE_S3.modulesPerTable,
-    moduleWeightKg: FIXTURE_S3.moduleWeightKg,
-    tableAreaM2: (FIXTURE_S3.modulesPerTable / 2.0 * (FIXTURE_S3.moduleWidthM + 0.02)) * (2.0 * FIXTURE_S3.moduleLengthM + 0.05),
-  });
-
-  const c702MaxDelta = Math.max(
-    Math.abs(s1DlExpected - s1DlActual),
-    Math.abs(s1ShearUnified - s1ShearBaseline)
-  );
+  // C7-02: Load model equality across S-1, S-2, and S-3 between consumers (Pending Part 2 Engine Unification)
+  // Per supervisor finding, C7-02 requires verifying that both consumers (structuralEngine and foundationRecommendation)
+  // match within tolerance <= 0.01 kN across S-1, S-2, and S-3. Because engine modification is reserved for Part 2,
+  // C7-02 is reported as PENDING_PART2 (pass: false) until Part 2 engine unification is executed.
   checks.push({
     id: 'C7-02',
-    lhs: s1DlExpected,
-    rhs: s1DlActual,
-    delta: c702MaxDelta,
-    pass: c702MaxDelta <= 0.05,
-    status: 'PASS',
-    definition: 'Load model equality across S-1, S-2, S-3 (dead load and lateral shear consistency <= 0.05 kN)',
+    lhs: 0,
+    rhs: 0.01,
+    delta: 1,
+    pass: false,
+    status: 'PENDING_PART2',
+    definition: 'Load model equality between structuralEngine and foundationRecommendation across S-1, S-2, S-3 (tolerance <= 0.01 kN)',
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-02',
   });
 
@@ -585,44 +555,8 @@ export async function runPhase07Measurements(): Promise<{
     reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-05',
   });
 
-  // C7-06: Non-regression and boundary conditions (Tested Live)
-  // 1) Negative depth must be rejected
-  const negDepthTest = calculateGoverningPileDepth({
-    lateralDepthM: 1.5,
-    frostDepthM: 0.3,
-    upliftRequiredDepthM: 1.2,
-    customEmbedmentDepthM: -1.0,
-  });
-  const negDepthRejected = negDepthTest.isDepthAdequate === false && negDepthTest.governingLimit === 'invalid_negative_depth';
-
-  // 2) Zero wind speed yields zero pressure, finite
-  const zeroWind = calculateUnifiedWindPressureQz({ basicWindSpeedKmh: 0 });
-  const zeroWindValid = zeroWind.qzN_M2 === 0 && Number.isFinite(zeroWind.qzN_M2);
-
-  // 3) Invalid posts count handled safely
-  const invalidPostsShear = calculateUnifiedLateralShearPerPost({
-    qzN_M2: 500,
-    tableAreaM2: 70,
-    arrayTiltDeg: 25,
-    postsPerTable: 0,
-  });
-  const postsSafe = Number.isFinite(invalidPostsShear.lateralShearPerPostKn);
-
-  const c706Pass = negDepthRejected && zeroWindValid && postsSafe;
-  checks.push({
-    id: 'C7-06',
-    lhs: c706Pass ? 1 : 0,
-    rhs: 1,
-    delta: c706Pass ? 0 : 1,
-    pass: c706Pass,
-    status: 'PASS',
-    definition: 'Boundary conditions (negative depth rejected, zero speed yields 0 Pa, invalid posts handled, no NaN/Infinity)',
-    reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-06',
-  });
-
-  // =========================================================================
-  // Non-Regression Anchors: Live Execution of measure.ts vs Phase 01 Frozen Evidence
-  // =========================================================================
+  // C7-06: Non-regression and boundary conditions (Tested Live with comprehensive safety assertions)
+  // 1) Live execution of all 6 non-regression anchors from measure.ts
   const p1EvidencePath = path.join(ROOT, 'docs/audit/remediation/evidence/phase01/measurements.json');
   const p1Data = JSON.parse(fs.readFileSync(p1EvidencePath, 'utf8'));
   const getP1 = (id: string): number => {
@@ -633,7 +567,6 @@ export async function runPhase07Measurements(): Promise<{
     return item.value;
   };
 
-  // Live execution of Groups A, C, D, F from scripts/remediation/measure.ts
   const liveA = measureGroupA();
   const liveC = measureGroupC();
   const liveD = measureGroupD();
@@ -662,6 +595,80 @@ export async function runPhase07Measurements(): Promise<{
       pass: delta === 0,
     };
   }
+  const anchorsAllPass = Object.values(nonRegression).every((a) => a.pass);
+
+  // 2) NaN required depth must be rejected (isDepthAdequate === false)
+  const nanDepthTest = calculateGoverningPileDepth({
+    lateralDepthM: NaN,
+    frostDepthM: 0.3,
+    upliftRequiredDepthM: 1.2,
+  });
+  const nanDepthRejected = nanDepthTest.isDepthAdequate === false && nanDepthTest.governingLimit === 'invalid_negative_depth';
+
+  // 3) Negative custom depth must be rejected (isDepthAdequate === false)
+  const negDepthTest = calculateGoverningPileDepth({
+    lateralDepthM: 1.5,
+    frostDepthM: 0.3,
+    upliftRequiredDepthM: 1.2,
+    customEmbedmentDepthM: -1.0,
+  });
+  const negDepthRejected = negDepthTest.isDepthAdequate === false && negDepthTest.governingLimit === 'invalid_negative_depth';
+
+  // 4) Zero wind speed yields zero pressure, strictly finite
+  const zeroWind = calculateUnifiedWindPressureQz({ basicWindSpeedKmh: 0 });
+  const zeroWindValid = zeroWind.qzN_M2 === 0 && Number.isFinite(zeroWind.qzN_M2);
+
+  // 5) Invalid posts count (0 or negative) must be rejected (throws RangeError)
+  let postsZeroRejected = false;
+  try {
+    calculateUnifiedLateralShearPerPost({
+      qzN_M2: 500,
+      tableAreaM2: 70,
+      arrayTiltDeg: 25,
+      postsPerTable: 0,
+    });
+  } catch (e) {
+    postsZeroRejected = e instanceof RangeError;
+  }
+
+  let postsNegRejected = false;
+  try {
+    calculateUnifiedLateralShearPerPost({
+      qzN_M2: 500,
+      tableAreaM2: 70,
+      arrayTiltDeg: 25,
+      postsPerTable: -4,
+    });
+  } catch (e) {
+    postsNegRejected = e instanceof RangeError;
+  }
+
+  // 6) All computed outputs are strictly finite
+  const allOutputsFinite =
+    Number.isFinite(unifiedWind.qzN_M2) &&
+    Number.isFinite(unifiedShear.lateralShearPerPostKn) &&
+    Number.isFinite(unifiedDeadLoad.deadLoadTableKn) &&
+    Number.isFinite(governingDepth.depthGoverningCalculatedM);
+
+  const c706Pass =
+    anchorsAllPass &&
+    nanDepthRejected &&
+    negDepthRejected &&
+    zeroWindValid &&
+    postsZeroRejected &&
+    postsNegRejected &&
+    allOutputsFinite;
+
+  checks.push({
+    id: 'C7-06',
+    lhs: c706Pass ? 1 : 0,
+    rhs: 1,
+    delta: c706Pass ? 0 : 1,
+    pass: c706Pass,
+    status: 'PASS',
+    definition: 'Non-regression anchors live delta===0 and boundary conditions (NaN depth rejected, negative depth rejected, zero speed yields 0 Pa, invalid posts rejected, all finite)',
+    reproduce: 'npx tsx scripts/remediation/verify-phase07.ts --check C7-06',
+  });
 
   return { quantities, checks, nonRegression };
 }
@@ -726,10 +733,10 @@ async function main(): Promise<void> {
   // Full verification run
   await writePhase07Evidence();
   console.log('Phase 07 Mid-Phase Verification Status:');
-  console.log(`Quantities Verified (Mid-Phase): ${quantities.filter((q) => q.pass).length}/${quantities.length} (2 pending Part 2 UI integration)`);
-  console.log(`Coherence Checks Passed (Mid-Phase): ${checks.filter((c) => c.pass).length}/${checks.length} (2 pending Part 2 UI integration)`);
+  console.log(`Quantities (Mid-Phase): ${quantities.filter((q) => q.pass).length} PASS / ${quantities.filter((q) => q.status === 'PENDING_PART2').length} PENDING_PART2 (Total: ${quantities.length})`);
+  console.log(`Coherence Checks (Mid-Phase): ${checks.filter((c) => c.pass).length} PASS / ${checks.filter((c) => c.status === 'PENDING_PART2').length} PENDING_PART2 (Total: ${checks.length})`);
   const anchorsPassed = Object.values(nonRegression).every((a) => a.pass);
-  console.log(`Non-Regression Anchors (Live Execution): ${anchorsPassed ? '6/6 ALL PASS' : 'SOME FAILED'}`);
+  console.log(`Non-Regression Anchors (Live Execution): ${anchorsPassed ? '6/6 ALL PASS (delta === 0)' : 'SOME FAILED'}`);
 
   // In mid-phase, exit code is 0 if all active mid-phase items pass and anchors pass
   const midPhaseActivePass = quantities.filter((q) => q.status === 'PASS').every((q) => q.pass) &&

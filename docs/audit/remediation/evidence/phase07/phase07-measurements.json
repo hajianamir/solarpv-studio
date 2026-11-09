@@ -3,8 +3,8 @@
   "baselineCommit": "832805e",
   "generatedFrom": {
     "sourceCommit": "832805e8af4603bff38d91df2df3c13f7b2e7e96",
-    "harnessSha256": "0749251e5b2b70741d2fae3d0da8d0d52dd4e6316a1203606c31a033655dbaef",
-    "contractSha256": "97f20453e3490abf9e8d10560f91c7e3686843fddc58d87ccadc7b85f9ec8a46"
+    "harnessSha256": "ed9514c75a71eac43f4eee4af7c30d729086a9a3fd24fc0caf28c15d8da270c9",
+    "contractSha256": "1b78b076289ab37389f4c7650288c2c4b566d800334f645240adbdbf2cc14316"
   },
   "quantities": [
     {
@@ -31,19 +31,19 @@
       "id": "P7-02",
       "case": "S-1-1.2V",
       "unit": "Pa",
-      "before": 487.99,
+      "before": 833,
       "after": 702.71,
-      "delta": 214.72,
-      "beforeSource": "832805e:src/engine/structureRecommendationEngine.ts:241",
+      "delta": -130.29,
+      "beforeSource": "832805e:src/engine/structureRecommendationEngine.ts:243",
       "producer": "src/engine/core/structuralContract.ts:calculateWindPressureSensitivity",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --id P7-02",
       "pass": true,
       "status": "PASS",
       "details": {
-        "baseSpeedKmh": 120,
         "elevatedSpeedKmh": 144,
-        "baseQzPa": 487.9901155299233,
-        "elevatedQzPa": 702.7057663630894,
+        "baseSpeedKmh": 120,
+        "legacyRecSensFormulaPa": 833,
+        "unifiedElevatedQzPa": 702.71,
         "analyticalRatio": 1.44,
         "measuredRatio": 1.4399999999999997,
         "ratioError": 2.220446049250313e-16
@@ -181,12 +181,12 @@
     },
     {
       "id": "C7-02",
-      "lhs": 18.41,
-      "rhs": 18.41,
-      "delta": 0.040000000000000036,
-      "pass": true,
-      "status": "PASS",
-      "definition": "Load model equality across S-1, S-2, S-3 (dead load and lateral shear consistency <= 0.05 kN)",
+      "lhs": 0,
+      "rhs": 0.01,
+      "delta": 1,
+      "pass": false,
+      "status": "PENDING_PART2",
+      "definition": "Load model equality between structuralEngine and foundationRecommendation across S-1, S-2, S-3 (tolerance <= 0.01 kN)",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-02"
     },
     {
@@ -226,7 +226,7 @@
       "delta": 0,
       "pass": true,
       "status": "PASS",
-      "definition": "Boundary conditions (negative depth rejected, zero speed yields 0 Pa, invalid posts handled, no NaN/Infinity)",
+      "definition": "Non-regression anchors live delta===0 and boundary conditions (NaN depth rejected, negative depth rejected, zero speed yields 0 Pa, invalid posts rejected, all finite)",
       "reproduce": "npx tsx scripts/remediation/verify-phase07.ts --check C7-06"
     }
   ],
