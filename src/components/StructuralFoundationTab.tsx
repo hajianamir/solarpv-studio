@@ -1173,7 +1173,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               <span>{isEn ? 'View 6-Section Report' : 'گزارش ۶ بخشی مهندسی'}</span>
             </button>
             <button
-              onClick={() => setFoundationType(recResult.primaryRecommendation)}
+              id="struct-apply-recommended-foundation"
+              onClick={() => {
+                setFoundationType(recResult.primaryRecommendation);
+                handleUpdateParam({ foundationType: recResult.primaryRecommendation });
+              }}
               className="text-xs px-3.5 py-1.5 rounded-md bg-industrial-success hover:bg-industrial-success text-white font-bold flex items-center gap-1.5 transition"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
