@@ -1907,7 +1907,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   ? (isEn ? 'Soil Penetration Depth:' : 'عمق نفوذ / کوبش در خاک:')
                   : (isEn ? 'Pile Embedment Depth:' : 'عمق کوبش شمع در خاک:')}
               </label>
-              <span className="font-mono text-industrial-warning font-bold">
+              <span id="struct-display-depth" className="font-mono text-industrial-warning font-bold">
                 {structResult.recommendedDepthM} m
                 {!isManualDepth && <span className="text-[10px] text-slate-400 font-normal"> (Auto)</span>}
               </span>
@@ -2029,7 +2029,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Velocity Wind Pressure (q_z)' : 'فشار سرعتی باد (q_z)'}</div>
-          <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
+          <div id="struct-display-qz" className="text-xl font-bold font-mono text-industrial-accent mt-1">
             {structResult.velocityWindPressureQzN_M2} <span className="text-xs font-normal">N/m²</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
@@ -2039,7 +2039,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Table Wind Uplift Force' : 'نیروی مکش باد بر هر میز (Uplift)'}</div>
-          <div className="text-xl font-bold font-mono text-rose-400 mt-1">
+          <div id="struct-display-uplift" className="text-xl font-bold font-mono text-rose-400 mt-1">
             {structResult.windUpliftForceKn} <span className="text-xs font-normal">kN</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
@@ -2278,13 +2278,13 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Total Tables Count:' : 'تعداد کل میزهای سازه (Tables):'}</span>
-              <span className="font-mono text-sky-300">
+              <span id="struct-display-tables" className="font-mono text-sky-300">
                 {structResult.totalTablesCount} {isEn ? 'tables' : 'میز'} ({structResult.postsPerTable} {isEn ? 'posts/table' : 'پایه در هر میز'})
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Total Piles / Posts:' : 'تعداد کل پایه‌ها / شمع‌های کوبشی:'}</span>
-              <strong className="font-mono text-industrial-success">{structResult.totalPostsCount} {isEn ? 'posts' : 'پایه'}</strong>
+              <strong id="struct-display-posts" className="font-mono text-industrial-success">{structResult.totalPostsCount} {isEn ? 'posts' : 'پایه'}</strong>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Compression Load per Post:' : 'نیروی فشاری روی هر پایه (Compression):'}</span>

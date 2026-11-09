@@ -969,11 +969,37 @@ function getElementValue(node: any): string {
     remountedPostsSelect !== null &&
     remountedPostsVal === '6';
 
+  function getElementText(el: any): string {
+    if (!el) return '';
+    let txt = '';
+    if (el.nodeType === 3) return el.nodeValue || '';
+    if (el.childNodes) {
+      for (const c of el.childNodes) {
+        txt += getElementText(c);
+      }
+    }
+    return txt;
+  }
+
+  // Consumer 1: Live Structural Tab DOM Display Extraction
+  const tabLiveQzEl = findElementById(appContainer, 'struct-display-qz');
+  const tabLiveUpliftEl = findElementById(appContainer, 'struct-display-uplift');
+  const tabLiveDepthEl = findElementById(appContainer, 'struct-display-depth');
+  const tabLiveTablesEl = findElementById(appContainer, 'struct-display-tables');
+  const tabLivePostsEl = findElementById(appContainer, 'struct-display-posts');
+
+  const tabLiveQz = parseFloat(getElementText(tabLiveQzEl)) || 0;
+  const tabLiveUplift = parseFloat(getElementText(tabLiveUpliftEl)) || 0;
+  const tabLiveDepth = parseFloat(getElementText(tabLiveDepthEl)) || 0;
+  const tabLiveTables = parseInt(getElementText(tabLiveTablesEl)) || 0;
+  const tabLivePosts = parseInt(getElementText(tabLivePostsEl)) || 0;
+
   let appExcelTablesCount = 0;
   let appExcelPostsCount = 0;
   let appExcelStatus = '';
   let appExcelWindQz = 0;
   let appExcelDepth = 0;
+  let appExcelUpliftForceKn = 0;
 
   // Real UI Export Path: Open Official EPC Report Modal directly from real App's button
   const epcReportBtn =
@@ -1008,6 +1034,9 @@ function getElementValue(node: any): string {
         }
         if (pName.includes('Velocity Wind Pressure') || pName.includes('فشار سرعتی باد')) {
           appExcelWindQz = Number(pVal);
+        }
+        if (pName.includes('Wind Uplift Force per Table') || pName.includes('نیروی مکش باد')) {
+          appExcelUpliftForceKn = Number(pVal);
         }
         if (pName.includes('Embedment Depth in Ground') || pName.includes('عمق گیرداری')) {
           appExcelDepth = Number(pVal);
@@ -1515,8 +1544,16 @@ function getElementValue(node: any): string {
     realUiModalPass &&
     binaryExcelParsedPass;
 
-  const p708Delta = 0;
+  const diffQz = Math.abs(appExcelWindQz - tabLiveQz);
+  const diffUplift = Math.abs(appExcelUpliftForceKn - tabLiveUplift);
+  const diffDepth = Math.abs(appExcelDepth - tabLiveDepth);
+  const diffTables = Math.abs(appExcelTablesCount - tabLiveTables);
+  const diffPosts = Math.abs(appExcelPostsCount - tabLivePosts);
+
+  const p708Delta = Number((diffQz + diffUplift + diffDepth + diffTables + diffPosts).toFixed(4));
   const p708Pass =
+    p708Delta === 0 &&
+    tabLiveQz > 0 &&
     appExcelStatus.includes('SYNCHRONIZED') &&
     appExcelTablesCount === 139 &&
     appExcelPostsCount === 834 &&
@@ -1541,14 +1578,25 @@ function getElementValue(node: any): string {
     status: p708Pass ? 'PASS' : 'FAIL',
     details: {
       appExcelStatus,
-      appExcelWindQz,
-      appExcelDepthM: appExcelDepth,
-      appExcelTablesCount,
-      appExcelPostsCount,
       staleExcelStatus,
       staleExcelCompliance,
       staleExcelWindQz,
-      syncDelta: 0,
+      tabLiveQz,
+      reportExcelQz: appExcelWindQz,
+      diffQz,
+      tabLiveUplift,
+      reportExcelUplift: appExcelUpliftForceKn,
+      diffUplift,
+      tabLiveDepth,
+      reportExcelDepth: appExcelDepth,
+      diffDepth,
+      tabLiveTables,
+      reportExcelTables: appExcelTablesCount,
+      diffTables,
+      tabLivePosts,
+      reportExcelPosts: appExcelPostsCount,
+      diffPosts,
+      syncDelta: p708Delta,
       tabComponentExecutionPass,
       initialInteractivePass,
       customModulesSyncPass,
@@ -1690,7 +1738,9 @@ function getElementValue(node: any): string {
   });
 
   // C7-05: Structural UI Tab -> App -> Report/Excel end-to-end lifecycle & staleness invalidation
+  const c705Delta = diffQz;
   const c705Pass =
+    c705Delta === 0 &&
     p708Pass &&
     customModulesSyncPass &&
     postsInteractionPass &&
@@ -1699,8 +1749,8 @@ function getElementValue(node: any): string {
   checks.push({
     id: 'C7-05',
     lhs: appExcelWindQz,
-    rhs: appExcelWindQz,
-    delta: 0,
+    rhs: tabLiveQz,
+    delta: c705Delta,
     pass: c705Pass,
     status: c705Pass ? 'PASS' : 'FAIL',
     definition: 'Structural Tab -> App -> Report/Excel snapshot end-to-end lifecycle, mutation staleness tracking, and export synchronization',
