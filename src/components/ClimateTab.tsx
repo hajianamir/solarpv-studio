@@ -49,7 +49,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
 
           <div className="flex items-center gap-2 bg-industrial-surface/90 px-3 py-1.5 rounded-lg border border-industrial-border text-xs font-mono text-industrial-accent">
             <Globe className="w-4 h-4 text-industrial-success" />
-            <span>{isEn ? 'Provider: ' + (selectedCity.dataSourceEn || 'NASA POWER / PVGIS') : 'داده‌ی: ' + (selectedCity.dataSourceEn || 'ناسا POWER / PVGIS')}</span>
+            <span>{isEn ? 'Provider: ' + (selectedCity.dataSourceEn || 'Unknown — no provider resolved') : 'منبع داده: ' + (selectedCity.dataSourceFa || 'نامشخص — ارائه‌دهنده‌ای یافت نشد')}</span>
           </div>
         </div>
       </div>

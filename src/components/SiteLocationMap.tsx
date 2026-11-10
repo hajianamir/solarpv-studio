@@ -17,6 +17,7 @@ import {
   Compass,
   AlertTriangle,
   Box,
+  Loader2,
 } from 'lucide-react';
 import { type ClimateCity, getClimateData, fetchClimateData } from '../engine/climaticData';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
@@ -59,6 +60,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const [isSearchingOnline, setIsSearchingOnline] = useState(false);
   const [onlineResults, setOnlineResults] = useState<Array<{ lat: number; lon: number; display_name: string; type: string }>>([]);
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
+  const [liveStatus, setLiveStatus] = useState<'idle' | 'loading' | 'live' | 'offline'>('idle');
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Recent searches persisted in localStorage (client-side only, no API calls)
@@ -233,13 +235,16 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         onSelectLocation(locationData);
         updatePopup(lat, lng, locationData);
 
+        setLiveStatus('loading');
         fetchClimateData(lat, lng)
           .then((gwData) => {
             onSelectLocation(gwData);
             updatePopup(lat, lng, gwData);
+            setLiveStatus(gwData.confidence === 'analytical_estimate' ? 'offline' : 'live');
           })
-          .catch(() => {
-            // Instant geospatial data remains active
+          .catch((e) => {
+            console.warn('[climate] live fetch failed:', e);
+            setLiveStatus('offline');
           });
       });
 
@@ -254,13 +259,16 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         onSelectLocation(locationData);
         updatePopup(pos.lat, pos.lng, locationData);
 
+        setLiveStatus('loading');
         fetchClimateData(pos.lat, pos.lng)
           .then((gwData) => {
             onSelectLocation(gwData);
             updatePopup(pos.lat, pos.lng, gwData);
+            setLiveStatus(gwData.confidence === 'analytical_estimate' ? 'offline' : 'live');
           })
-          .catch(() => {
-            // Instant geospatial data remains active
+          .catch((e) => {
+            console.warn('[climate] live fetch failed:', e);
+            setLiveStatus('offline');
           });
       });
 
@@ -340,6 +348,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     setEstimatedPsh(locationData.peakSunHours);
     onSelectLocation(locationData);
 
+    setLiveStatus('loading');
     fetchClimateData(targetLat, targetLng)
       .then((gwData) => {
         if (labelName) {
@@ -347,8 +356,12 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           gwData.nameEn = labelName;
         }
         onSelectLocation(gwData);
+        setLiveStatus(gwData.confidence === 'analytical_estimate' ? 'offline' : 'live');
       })
-      .catch(() => {});
+      .catch((e) => {
+        console.warn('[climate] live fetch failed:', e);
+        setLiveStatus('offline');
+      });
   };
 
   // Browser geolocation — jump map to user's measured location
@@ -389,17 +402,21 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             </div>
           </div>
 
-          {/* Explicit Data Confidence Badge — climate hubs are deleted (ADR-005), so only
-               analytical_estimate (deterministic model) or measured (live API) remain. */}
-          {currentCity.confidence === 'measured' ? (
+          {/* Explicit Data Confidence Badge & Live Status Pill */}
+          {liveStatus === 'loading' ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[11px] font-bold animate-pulse">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>{isEn ? 'Fetching live data...' : 'در حال دریافت…'}</span>
+            </div>
+          ) : (liveStatus === 'live' || (liveStatus === 'idle' && currentCity.confidence === 'measured')) ? (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-industrial-success/20 border border-emerald-500/40 text-industrial-success text-[11px] font-bold">
               <Check className="w-3.5 h-3.5 text-industrial-success shrink-0" />
-              <span>{isEn ? 'Measured (live global API)' : 'اندازه‌گیری‌شده (API اقلیمی زنده)'}</span>
+              <span>{isEn ? 'Live Data (NASA/PVGIS)' : 'دادهٔ زنده'}</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-industrial-warning/20 border border-industrial-warning/40 text-industrial-warning text-[11px] font-bold">
               <AlertTriangle className="w-3.5 h-3.5 text-industrial-warning shrink-0" />
-              <span>{isEn ? 'Estimated Model (deterministic geospatial model)' : 'مدل تخمینی مهندسی (مدل جغروفازای محاسبه‌شده)'}</span>
+              <span>{isEn ? 'Analytical Model (Offline)' : 'مدل تحلیلی (بدون اینترنت)'}</span>
             </div>
           )}
         </div>

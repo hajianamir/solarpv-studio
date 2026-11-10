@@ -2742,8 +2742,10 @@ export const App: React.FC = () => {
           </div>
 
           <div className="hidden sm:flex items-center gap-3">
-            <span className="text-blue-400 font-bold">
-              GATEWAY: NASA POWER v2.0 / PVGIS (SARAH-2) ACTIVE
+            <span className={city.confidence === 'analytical_estimate' ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
+              {city.confidence === 'analytical_estimate'
+                ? 'GATEWAY: OFFLINE — REGIONAL ANALYTICAL MODEL'
+                : 'GATEWAY: LIVE — NASA POWER / PVGIS'}
             </span>
             <span className="text-slate-600">|</span>
             <span className="text-slate-300">
