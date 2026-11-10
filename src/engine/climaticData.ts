@@ -4,6 +4,7 @@
 
 import { ExternalDataGateway } from './dataGateway/externalDataGateway';
 import { estimateGeodesicDistanceToCoastKm } from './corrosion/saltCorrosionEngine';
+import { isRealInternetEnabled } from './env/runtimeEnv';
 
 import {
   calculateDesignDaylightHours,
@@ -249,7 +250,7 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
     frostDepthCm: frostDepthCm,
     seismicZoneCoefficientA: 0.25,
     dataSourceFa: 'مدل تحلیلی منطقه‌ای داخلی (REGIONAL_ANALYTICAL_MODEL)',
-    dataSourceEn: 'Internal Regional Analytical Model (REGIONAL_ANALYTICAL_MODEL; NASA POWER v2.0 / PVGIS Climatology Model)',
+    dataSourceEn: 'Internal Regional Analytical Model (REGIONAL_ANALYTICAL_MODEL)',
     dataRetrievalDate: '2024-10-15',
     confidence: 'analytical_estimate',
     distanceToCoastKm: estimateGeodesicDistanceToCoastKm(lat, lng),
@@ -293,16 +294,26 @@ export function getDefaultClimateCity(): ClimateCity {
  * is open (offline / rate-limited / air-gapped); the fallback keeps `confidence: 'analytical_estimate'`
  * so estimated data is never mistaken for measured API data.
  */
-export async function fetchClimateData(lat: number, lng: number): Promise<ClimateCity> {
+export async function fetchClimateData(
+  lat: number,
+  lng: number,
+  options?: { signal?: AbortSignal }
+): Promise<ClimateCity> {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
     throw new Error(`Invalid geographic coordinates: ${lat}, ${lng}`);
+  }
+
+  // If real internet is explicitly disabled, return the local model without network latency
+  if (!isRealInternetEnabled()) {
+    return getClimateData(lat, lng);
   }
 
   let result: ClimateCity | null = null;
   if (typeof window !== 'undefined') {
     try {
-      const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`,
-                            { signal: AbortSignal.timeout(30000) });
+      const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
+        signal: options?.signal ?? AbortSignal.timeout(35000),
+      });
       if (r.ok) {
         const payload = await r.json();
         if (payload?.ok && payload.climateCity) {
@@ -310,18 +321,16 @@ export async function fetchClimateData(lat: number, lng: number): Promise<Climat
         }
       }
     } catch (e) {
-      console.warn('[gateway] proxy failed, trying direct providers:', e);
+      if ((e as Error)?.name === 'AbortError') {
+        throw e;
+      }
+      console.warn('[gateway] proxy failed, trying direct gateway:', e);
     }
   }
 
   if (!result) {
     const { climateCity } = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng);
     result = climateCity;
-  }
-
-  if ((result as { confidence?: string }).confidence === 'analytical_estimate') {
-    const analytical = getClimateData(lat, lng);
-    return { ...analytical, id: result.id };
   }
 
   return result;

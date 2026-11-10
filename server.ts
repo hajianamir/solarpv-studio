@@ -1,4 +1,14 @@
-import 'dotenv/config';
+try {
+  // @ts-ignore
+  await import('dotenv/config');
+} catch {
+  try {
+    // Native Node 20.6+ fallback if dotenv package is not present in legacy node_modules
+    if (typeof (process as any).loadEnvFile === 'function' && fs.existsSync('.env')) {
+      (process as any).loadEnvFile('.env');
+    }
+  } catch {}
+}
 import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -201,24 +211,75 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // ---- External Data Gateway proxy (same-origin; removes browser CORS/CSP dependency) ----
+const inFlightSiteRequests = new Map<string, Promise<any>>();
+
 app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
-  const lat = Number(req.query.lat);
-  const lng = Number(req.query.lng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-    return res.status(400).json({ ok: false, error: 'Invalid latitude/longitude' });
+  const rawLat = req.query.lat;
+  const rawLng = req.query.lng;
+  if (
+    typeof rawLat !== 'string' ||
+    typeof rawLng !== 'string' ||
+    rawLat.trim() === '' ||
+    rawLng.trim() === ''
+  ) {
+    return res.status(400).json({ ok: false, error: 'Latitude and longitude query parameters are required and cannot be empty.' });
   }
+
+  const lat = Number(rawLat);
+  const lng = Number(rawLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return res.status(400).json({ ok: false, error: 'Invalid latitude/longitude: lat must be between -90 and 90, lng between -180 and 180.' });
+  }
+
+  const cacheKey = `${lat.toFixed(4)}_${lng.toFixed(4)}`;
   const t0 = Date.now();
+
   try {
-    const data = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng);
+    let promise = inFlightSiteRequests.get(cacheKey);
+    if (!promise) {
+      promise = ExternalDataGateway.getInstance()
+        .getComprehensiveSiteData(lat, lng)
+        .finally(() => {
+          inFlightSiteRequests.delete(cacheKey);
+        });
+      inFlightSiteRequests.set(cacheKey, promise);
+    }
+
+    const data = await promise;
     const meta = data.climateResource.metadata;
-    const live = !meta.isEstimatedFromGlobalModel;
+    const isSolarLive = meta.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL';
+    const isSoilLive = data.soilProperties.metadata.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL';
+    const live = isSolarLive;
+
     console.info(`[gateway] lat=${lat} lng=${lng} provider=${meta.sourceProvider} live=${live} ${Date.now() - t0}ms trace=${data.traceId}`);
-    res.setHeader('Cache-Control', 'public, max-age=1800');
-    res.json({ ok: true, live, ...data });
+
+    if (live) {
+      res.setHeader('Cache-Control', 'public, max-age=1800');
+    } else {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+
+    res.json({ ok: true, live, isSolarLive, isSoilLive, ...data });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[gateway] FAILED lat=${lat} lng=${lng}: ${msg}`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.status(502).json({ ok: false, error: msg });
+  }
+});
+
+// Nominatim geocoding proxy to prevent direct browser calls to external hosts
+app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
+  const rawQ = req.query.q;
+  if (typeof rawQ !== 'string' || rawQ.trim() === '') {
+    return res.json([]);
+  }
+  try {
+    const results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(rawQ.trim());
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json(results);
+  } catch {
+    res.json([]);
   }
 });
 

@@ -850,7 +850,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     berlinSite.latitude === 52.52 &&
     berlinSite.longitude === 13.405 &&
     berlinSite.provinceEn.includes('Europe') &&
-    berlinSite.dataSourceEn.includes('NASA POWER'),
+    berlinSite.dataSourceEn.includes('REGIONAL_ANALYTICAL_MODEL'),
     `Arbitrary coordinates (52.52, 13.405) routed through Global Geospatial Model: ${berlinSite.nameEn} (${berlinSite.dataSourceEn}).`
   );
 

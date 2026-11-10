@@ -12,12 +12,20 @@
 import type { SoilClassification } from '../types/climateTypes';
 import { type SoilPropertiesData, type ParameterProvenance, createParameterProvenance } from './types';
 import { CircuitBreaker } from './circuitBreaker';
+import { isRealInternetEnabled } from '../env/runtimeEnv';
 
-const PROVIDER_TIMEOUT_MS = 15000;
+const PROVIDER_TIMEOUT_MS = 12000;
+
+interface SoilCacheEntry {
+  data: SoilPropertiesData;
+  timestamp: number;
+  ttlMs: number;
+}
 
 export class SoilDataProvider {
-  private cache: Map<string, { data: SoilPropertiesData; timestamp: number }> = new Map();
-  private readonly cacheTtlMs: number = 30 * 24 * 60 * 60 * 1000; // 30 days TTL (soil is static)
+  private cache: Map<string, SoilCacheEntry> = new Map();
+  private readonly remoteCacheTtlMs: number = 30 * 24 * 60 * 60 * 1000; // 30 days TTL for verified satellite/measured soil data
+  private readonly fallbackCacheTtlMs: number = 30 * 1000; // 30 seconds TTL for analytical fallback
   private circuitBreaker = new CircuitBreaker();
 
   public generateTraceId(prefix: string = 'TRC-GW'): string {
@@ -30,7 +38,7 @@ export class SoilDataProvider {
   public async fetchSoilProperties(lat: number, lng: number): Promise<SoilPropertiesData> {
     const cacheKey = `soil_${lat.toFixed(3)}_${lng.toFixed(3)}`;
     const cached = this.cache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < this.cacheTtlMs) {
+    if (cached && (Date.now() - cached.timestamp) < cached.ttlMs) {
       return {
         ...cached.data,
         metadata: {
@@ -40,25 +48,34 @@ export class SoilDataProvider {
       };
     }
 
+    if (!isRealInternetEnabled()) {
+      const fallback = this.computeAnalyticalSoilProperties(lat, lng, true);
+      this.cache.set(cacheKey, { data: fallback, timestamp: Date.now(), ttlMs: this.fallbackCacheTtlMs });
+      return fallback;
+    }
+
     return this.circuitBreaker.execute(
       async () => {
-        // Attempt query to ISRIC SoilGrids REST API with short timeout
-        const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lat=${lat}&lon=${lng}&property=bdod&property=clay&property=sand&property=silt&property=phh2o&depth=0-30cm&value=mean`;
+        // Query ISRIC SoilGrids REST API across topsoil standard depths (0-5cm, 5-15cm, 15-30cm)
+        const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}&property=bdod&property=clay&property=sand&property=silt&property=phh2o&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=mean`;
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
 
         try {
           const resp = await fetch(url, { signal: controller.signal });
-          clearTimeout(timeoutId);
           if (!resp.ok) {
             throw new Error(`ISRIC SoilGrids returned HTTP ${resp.status}`);
           }
           const json = await resp.json();
           return this.parseSoilGridsResponse(lat, lng, json);
         } catch (fetchErr) {
-          clearTimeout(timeoutId);
+          if ((fetchErr as Error)?.name === 'AbortError') {
+            throw new Error(`ISRIC SoilGrids timeout after ${PROVIDER_TIMEOUT_MS} ms`);
+          }
           throw fetchErr;
+        } finally {
+          clearTimeout(timeoutId);
         }
       },
       () => {
@@ -66,12 +83,17 @@ export class SoilDataProvider {
         return this.computeAnalyticalSoilProperties(lat, lng, true);
       }
     ).then((result) => {
-      this.cache.set(cacheKey, { data: result, timestamp: Date.now() });
+      const isFallback = result.metadata.isEstimatedFromGlobalModel;
+      this.cache.set(cacheKey, {
+        data: result,
+        timestamp: Date.now(),
+        ttlMs: isFallback ? this.fallbackCacheTtlMs : this.remoteCacheTtlMs,
+      });
       return result;
     });
   }
 
-  private parseSoilGridsResponse(lat: number, lng: number, json: any): SoilPropertiesData {
+  public parseSoilGridsResponse(lat: number, lng: number, json: any): SoilPropertiesData {
     // SoilGrids units: clay/sand/silt in g/kg (divide by 10 to get %), bdod in cg/cm3 (divide by 100 for g/cm3)
     let clayPct = 25.0;
     let sandPct = 50.0;
@@ -88,8 +110,20 @@ export class SoilDataProvider {
     const layers = json?.properties?.layers;
     if (Array.isArray(layers) && layers.length > 0) {
       for (const layer of layers) {
-        const meanVal = layer?.depths?.[0]?.values?.mean;
-        if (typeof meanVal === 'number' && Number.isFinite(meanVal) && meanVal >= 0) {
+        const depths = layer?.depths;
+        let sum = 0;
+        let count = 0;
+        if (Array.isArray(depths) && depths.length > 0) {
+          for (const d of depths) {
+            const val = d?.values?.mean;
+            if (typeof val === 'number' && Number.isFinite(val) && val >= 0) {
+              sum += val;
+              count++;
+            }
+          }
+        }
+        if (count > 0) {
+          const meanVal = sum / count;
           if (layer.name === 'clay') { clayPct = meanVal / 10.0; hasClay = true; }
           if (layer.name === 'sand') { sandPct = meanVal / 10.0; hasSand = true; }
           if (layer.name === 'silt') { siltPct = meanVal / 10.0; hasSilt = true; }
@@ -232,14 +266,14 @@ export class SoilDataProvider {
       soilDensityKnM3: densityKnM3,
       frostDepthCm: frostDepth,
       phH2O: Number(ph.toFixed(1)),
-      estimatedFromGlobalModel: true,
+      estimatedFromGlobalModel: !isTextureFromProvider,
       geotechnicalDisclaimer: disclaimer,
       metadata: {
         traceId: this.generateTraceId('TRC-SOIL'),
         sourceProvider: isTextureFromProvider ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
-        isEstimatedFromGlobalModel: true,
+        isEstimatedFromGlobalModel: !isTextureFromProvider,
         geographicRegion: isTextureFromProvider ? 'Global Soil Grids 250m Resolution' : 'Geomorphic Analytical Model',
         governingStandards: ['ISRIC World Soil Information', 'ASTM D2487 (USCS)', 'Eurocode 7 (EN 1997-1)'],
       },

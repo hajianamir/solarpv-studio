@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import {
   MapPin,
@@ -62,6 +62,72 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
   const [liveStatus, setLiveStatus] = useState<'idle' | 'loading' | 'live' | 'offline'>('idle');
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeRequestIdRef = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Keep estimatedPsh strictly synchronized with external currentCity updates
+  useEffect(() => {
+    if (typeof currentCity.peakSunHours === 'number') {
+      setEstimatedPsh(currentCity.peakSunHours);
+    }
+  }, [currentCity.peakSunHours]);
+
+  // Cancel any in-flight geocode or climate requests on unmount
+  useEffect(() => {
+    const controllerRef = abortControllerRef;
+    return () => {
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Request sequencing and cancellation to prevent out-of-order race conditions
+  const requestClimateUpdate = useCallback(
+    (targetLat: number, targetLng: number, labelName?: string) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      const reqId = ++activeRequestIdRef.current;
+
+      setLiveStatus('loading');
+      fetchClimateData(targetLat, targetLng, { signal: controller.signal })
+        .then((gwData) => {
+          if (reqId !== activeRequestIdRef.current) {
+            return; // Discard superseded response
+          }
+          if (labelName) {
+            gwData.nameFa = labelName;
+            gwData.nameEn = labelName;
+          }
+          onSelectLocation(gwData);
+          setEstimatedPsh(gwData.peakSunHours);
+          if (markerRef.current) {
+            markerRef.current.getPopup()?.setContent(
+              `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
+                <strong style="color:#0f172a; font-size:13px;">${isEn ? gwData.nameEn : gwData.nameFa}</strong><br/>
+                <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${formatCoordinates(targetLat, targetLng, 4)}</span><br/>
+                <span style="color:#f59e0b; font-weight:bold;">${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${gwData.peakSunHours} PSH</span>
+              </div>`
+            );
+          }
+          setLiveStatus(gwData.confidence === 'analytical_estimate' ? 'offline' : 'live');
+        })
+        .catch((e) => {
+          if ((e as Error)?.name === 'AbortError') {
+            return; // Expected cancellation
+          }
+          if (reqId !== activeRequestIdRef.current) {
+            return;
+          }
+          console.warn('[climate] live fetch failed:', e);
+          setLiveStatus('offline');
+        });
+    },
+    [isEn, onSelectLocation]
+  );
 
   // Recent searches persisted in localStorage (client-side only, no API calls)
   const RECENT_SEARCHES_KEY = 'solarpv_recent_searches';
@@ -87,7 +153,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     });
   };
 
-  // Debounced Nominatim autocomplete (500ms) — city/place name → coordinates
+  // Debounced Nominatim autocomplete (600ms) — city/place name → coordinates
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     if (!searchQuery.trim()) {
@@ -98,14 +164,27 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     setIsSearchingOnline(true);
     debounceTimer.current = setTimeout(async () => {
       try {
-        const results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(searchQuery);
+        let results: Array<{ lat: number; lon: number; display_name: string; type: string }> = [];
+        if (typeof window !== 'undefined') {
+          try {
+            const r = await fetch(`/api/v1/gateway/geocode?q=${encodeURIComponent(searchQuery.trim())}`, {
+              signal: AbortSignal.timeout(6000),
+            });
+            if (r.ok) {
+              results = await r.json();
+            }
+          } catch {}
+        }
+        if (!results || results.length === 0) {
+          results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(searchQuery.trim());
+        }
         setOnlineResults(results);
       } catch {
         setOnlineResults([]);
       } finally {
         setIsSearchingOnline(false);
       }
-    }, 500);
+    }, 600);
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
@@ -235,17 +314,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         onSelectLocation(locationData);
         updatePopup(lat, lng, locationData);
 
-        setLiveStatus('loading');
-        fetchClimateData(lat, lng)
-          .then((gwData) => {
-            onSelectLocation(gwData);
-            updatePopup(lat, lng, gwData);
-            setLiveStatus(gwData.confidence === 'analytical_estimate' ? 'offline' : 'live');
-          })
-          .catch((e) => {
-            console.warn('[climate] live fetch failed:', e);
-            setLiveStatus('offline');
-          });
+        requestClimateUpdate(lat, lng);
       });
 
       // Handle marker drag end
@@ -259,17 +328,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         onSelectLocation(locationData);
         updatePopup(pos.lat, pos.lng, locationData);
 
-        setLiveStatus('loading');
-        fetchClimateData(pos.lat, pos.lng)
-          .then((gwData) => {
-            onSelectLocation(gwData);
-            updatePopup(pos.lat, pos.lng, gwData);
-            setLiveStatus(gwData.confidence === 'analytical_estimate' ? 'offline' : 'live');
-          })
-          .catch((e) => {
-            console.warn('[climate] live fetch failed:', e);
-            setLiveStatus('offline');
-          });
+        requestClimateUpdate(pos.lat, pos.lng);
       });
 
       mapInstanceRef.current = map;
@@ -286,7 +345,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       topoLayerRef.current = null;
       markerRef.current = null;
     };
-  }, [coords.lat, coords.lng, currentCity, isEn, onSelectLocation]); // exhaustive-deps fix (PR-2a-7-FOLLOWUP-2)
+  }, [coords.lat, coords.lng, currentCity, isEn, onSelectLocation, requestClimateUpdate]); // exhaustive-deps fix (PR-2a-7-FOLLOWUP-2)
 
   // Sync coords with external currentCity changes
   useEffect(() => {
@@ -348,20 +407,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     setEstimatedPsh(locationData.peakSunHours);
     onSelectLocation(locationData);
 
-    setLiveStatus('loading');
-    fetchClimateData(targetLat, targetLng)
-      .then((gwData) => {
-        if (labelName) {
-          gwData.nameFa = labelName;
-          gwData.nameEn = labelName;
-        }
-        onSelectLocation(gwData);
-        setLiveStatus(gwData.confidence === 'analytical_estimate' ? 'offline' : 'live');
-      })
-      .catch((e) => {
-        console.warn('[climate] live fetch failed:', e);
-        setLiveStatus('offline');
-      });
+    requestClimateUpdate(targetLat, targetLng, labelName);
   };
 
   // Browser geolocation — jump map to user's measured location

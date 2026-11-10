@@ -155,15 +155,24 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
   const handleFetchClimateApi = async (lat: number, lng: number) => {
     setIsFetchingClimate(true);
     try {
-      const gateway = ExternalDataGateway.getInstance();
-      const siteData = await gateway.getComprehensiveSiteData(lat, lng);
-      const isEstimated = siteData.climateResource.metadata?.isEstimatedFromGlobalModel;
-      const city = isEstimated
-        ? { ...getClimateData(lat, lng), id: siteData.climateCity.id }
-        : siteData.climateCity;
+      let siteData: any = null;
+      if (typeof window !== 'undefined') {
+        const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
+          signal: AbortSignal.timeout(35000),
+        });
+        if (r.ok) {
+          const payload = await r.json();
+          if (payload?.ok) {
+            siteData = payload;
+          }
+        }
+      }
+      if (!siteData) {
+        siteData = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng);
+      }
       setClimateApiData({
-        city,
-        raw: siteData.climateResource,      // real ClimateResourceData with metadata
+        city: siteData.climateCity,
+        raw: siteData.climateResource, // real ClimateResourceData with metadata
         traceId: siteData.traceId,
       });
     } catch (err) {
