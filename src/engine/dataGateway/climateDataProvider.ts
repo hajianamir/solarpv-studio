@@ -25,6 +25,10 @@ import {
 import { CircuitBreaker } from './circuitBreaker';
 import { isRealInternetEnabled } from '../env/runtimeEnv';
 
+/** External provider budget. NASA POWER climatology routinely takes 5–15 s. */
+const PROVIDER_TIMEOUT_MS = 15000;
+const OSM_TIMEOUT_MS = 6000;
+
 interface ClimateCacheEntry {
   data: ClimateResourceData;
   timestamp: number;
@@ -243,7 +247,7 @@ export class ClimateDataProvider {
   public async fetchNasaPowerResource(lat: number, lng: number): Promise<ClimateResourceData> {
     const url = `https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=ALLSKY_SFC_SW_DWN,T2M,T2M_MIN,T2M_MAX,WS10M,PRECTOTCORR&community=RE&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&format=JSON`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
 
     try {
       const resp = await fetch(url, { signal: controller.signal });
@@ -255,6 +259,9 @@ export class ClimateDataProvider {
       return this.parseNasaPowerResponse(lat, lng, data);
     } catch (err) {
       clearTimeout(timeout);
+      if ((err as Error)?.name === 'AbortError') {
+        throw new Error(`NASA POWER timeout after ${PROVIDER_TIMEOUT_MS} ms`);
+      }
       throw err;
     }
   }
@@ -470,7 +477,7 @@ export class ClimateDataProvider {
   public async fetchPvgisResource(lat: number, lng: number): Promise<ClimateResourceData> {
     const url = `https://re.jrc.ec.europa.eu/api/v5_2/MRcalc?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}&horirrad=1&outputformat=json`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
 
     try {
       const resp = await fetch(url, { signal: controller.signal });
@@ -482,6 +489,9 @@ export class ClimateDataProvider {
       return this.parsePvgisResponse(lat, lng, data);
     } catch (err) {
       clearTimeout(timeout);
+      if ((err as Error)?.name === 'AbortError') {
+        throw new Error(`PVGIS timeout after ${PROVIDER_TIMEOUT_MS} ms`);
+      }
       throw err;
     }
   }
@@ -624,7 +634,7 @@ export class ClimateDataProvider {
   public async reverseGeocodeNominatim(lat: number, lng: number): Promise<string> {
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}&zoom=10&accept-language=fa+en`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), OSM_TIMEOUT_MS);
 
     try {
       const resp = await fetch(url, { signal: controller.signal });
@@ -651,7 +661,7 @@ export class ClimateDataProvider {
     if (!query.trim()) return [];
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=5&accept-language=fa+en`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), OSM_TIMEOUT_MS);
 
     try {
       const resp = await fetch(url, { signal: controller.signal });
@@ -690,7 +700,7 @@ export class ClimateDataProvider {
     const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     try {
       const resp = await fetch(url, { signal: controller.signal });

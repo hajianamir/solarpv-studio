@@ -13,6 +13,8 @@ import type { SoilClassification } from '../types/climateTypes';
 import { type SoilPropertiesData, type ParameterProvenance, createParameterProvenance } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 
+const PROVIDER_TIMEOUT_MS = 15000;
+
 export class SoilDataProvider {
   private cache: Map<string, { data: SoilPropertiesData; timestamp: number }> = new Map();
   private readonly cacheTtlMs: number = 30 * 24 * 60 * 60 * 1000; // 30 days TTL (soil is static)
@@ -44,7 +46,7 @@ export class SoilDataProvider {
         const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lat=${lat}&lon=${lng}&property=bdod&property=clay&property=sand&property=silt&property=phh2o&depth=0-30cm&value=mean`;
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const timeoutId = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
 
         try {
           const resp = await fetch(url, { signal: controller.signal });
