@@ -3,11 +3,6 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  define: {
-    'import.meta.env.VITE_REAL_INTERNET': JSON.stringify(
-      process.env.REAL_INTERNET ?? 'true'
-    ),
-  },
   server: {
     host: '0.0.0.0',
     port: 3000,

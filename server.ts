@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -25,6 +26,7 @@ import {
   southToNorthAzimuth,
   asNorthAzimuthDeg,
 } from './src/engine/core/solarGeometryContract.js';
+import { ExternalDataGateway } from './src/engine/dataGateway/externalDataGateway.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -196,6 +198,28 @@ app.get('/api/health', (_req: Request, res: Response) => {
     projectsCount: db.projects.size,
     isPersistent: fs.existsSync(DB_PERSIST_PATH),
   });
+});
+
+// ---- External Data Gateway proxy (same-origin; removes browser CORS/CSP dependency) ----
+app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return res.status(400).json({ ok: false, error: 'Invalid latitude/longitude' });
+  }
+  const t0 = Date.now();
+  try {
+    const data = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng);
+    const meta = data.climateResource.metadata;
+    const live = !meta.isEstimatedFromGlobalModel;
+    console.info(`[gateway] lat=${lat} lng=${lng} provider=${meta.sourceProvider} live=${live} ${Date.now() - t0}ms trace=${data.traceId}`);
+    res.setHeader('Cache-Control', 'public, max-age=1800');
+    res.json({ ok: true, live, ...data });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[gateway] FAILED lat=${lat} lng=${lng}: ${msg}`);
+    res.status(502).json({ ok: false, error: msg });
+  }
 });
 
 // 1. Solar calculations
