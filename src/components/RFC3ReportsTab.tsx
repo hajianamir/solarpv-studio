@@ -157,8 +157,12 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     try {
       const gateway = ExternalDataGateway.getInstance();
       const siteData = await gateway.getComprehensiveSiteData(lat, lng);
+      const isEstimated = siteData.climateResource.metadata?.isEstimatedFromGlobalModel;
+      const city = isEstimated
+        ? { ...getClimateData(lat, lng), id: siteData.climateCity.id }
+        : siteData.climateCity;
       setClimateApiData({
-        city: siteData.climateCity,
+        city,
         raw: siteData.climateResource,      // real ClimateResourceData with metadata
         traceId: siteData.traceId,
       });

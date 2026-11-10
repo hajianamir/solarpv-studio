@@ -236,8 +236,8 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
     optimalTiltAnnualDeg: optTilt,
     optimalTiltWinterDeg: optTiltWinter,
     optimalTiltSummerDeg: optTiltSummer,
-    descriptionFa: `داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)`,
-    descriptionEn: `Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)`,
+    descriptionFa: 'تخمین مدل تحلیلی منطقه‌ای (بدون اتصال به API) — برای طراحی bankable نیازمند داده ماهواره‌ای است',
+    descriptionEn: 'Regional analytical model estimate (no API connection) — bankable design requires satellite data',
     basicWindSpeedKmh: windKmh,
     groundSnowLoadKgM2: snowKgM2,
     annualRainfallMm: absLat > 45 ? 750 : isMENA ? 180 : 450,
@@ -248,8 +248,8 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
     soilDensityKnM3: densityKnM3,
     frostDepthCm: frostDepthCm,
     seismicZoneCoefficientA: 0.25,
-    dataSourceFa: 'پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)',
-    dataSourceEn: 'Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)',
+    dataSourceFa: 'مدل تحلیلی منطقه‌ای داخلی (REGIONAL_ANALYTICAL_MODEL)',
+    dataSourceEn: 'Internal Regional Analytical Model (REGIONAL_ANALYTICAL_MODEL; NASA POWER v2.0 / PVGIS Climatology Model)',
     dataRetrievalDate: '2024-10-15',
     confidence: 'analytical_estimate',
     distanceToCoastKm: estimateGeodesicDistanceToCoastKm(lat, lng),
@@ -294,22 +294,35 @@ export function getDefaultClimateCity(): ClimateCity {
  * so estimated data is never mistaken for measured API data.
  */
 export async function fetchClimateData(lat: number, lng: number): Promise<ClimateCity> {
-  if (
-    typeof lat !== 'number' ||
-    typeof lng !== 'number' ||
-    isNaN(lat) ||
-    isNaN(lng) ||
-    lat < -90.0 ||
-    lat > 90.0 ||
-    lng < -180.0 ||
-    lng > 180.0
-  ) {
-    throw new Error(
-      `Invalid geographic coordinates: latitude ${lat} (must be in range [-90, +90]) and longitude ${lng} (must be in range [-180, +180]).`
-    );
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    throw new Error(`Invalid geographic coordinates: ${lat}, ${lng}`);
   }
 
-  const gateway = ExternalDataGateway.getInstance();
-  const { climateCity } = await gateway.getComprehensiveSiteData(lat, lng);
-  return climateCity;
+  let result: ClimateCity | null = null;
+  if (typeof window !== 'undefined') {
+    try {
+      const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`,
+                            { signal: AbortSignal.timeout(30000) });
+      if (r.ok) {
+        const payload = await r.json();
+        if (payload?.ok && payload.climateCity) {
+          result = payload.climateCity as ClimateCity;
+        }
+      }
+    } catch (e) {
+      console.warn('[gateway] proxy failed, trying direct providers:', e);
+    }
+  }
+
+  if (!result) {
+    const { climateCity } = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng);
+    result = climateCity;
+  }
+
+  if ((result as { confidence?: string }).confidence === 'analytical_estimate') {
+    const analytical = getClimateData(lat, lng);
+    return { ...analytical, id: result.id };
+  }
+
+  return result;
 }
