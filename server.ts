@@ -20,6 +20,11 @@ import {
   type Project,
 } from './src/engine/solarPvEngine.js';
 import { calculateThermalDerate } from './src/engine/core/thermalDerate.js';
+import {
+  normalizeUtcTimestampSeconds,
+  southToNorthAzimuth,
+  asNorthAzimuthDeg,
+} from './src/engine/core/solarGeometryContract.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -203,10 +208,11 @@ app.post('/api/v1/solar/position', (req: Request, res: Response) => {
     if (longitudeDeg === undefined || typeof longitudeDeg !== 'number' || !Number.isFinite(longitudeDeg) || longitudeDeg < -180 || longitudeDeg > 180) {
       return res.status(400).json({ error: `longitudeDeg is required and must be a finite number between -180 and 180, got ${longitudeDeg}` });
     }
-    const ts = utcTs !== undefined ? Number(utcTs) : Math.floor(Date.now() / 1000);
-    if (!Number.isFinite(ts) || ts <= 0) {
+    const rawTs = utcTs !== undefined ? Number(utcTs) : Math.floor(Date.now() / 1000);
+    if (!Number.isFinite(rawTs) || rawTs <= 0) {
       return res.status(400).json({ error: `Invalid timestamp: must be a positive number, got ${utcTs}` });
     }
+    const ts = normalizeUtcTimestampSeconds(rawTs);
 
     const result = calculateSolarPosition(latitudeDeg, longitudeDeg, ts);
     res.json(result);
@@ -222,9 +228,32 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
     const dni = Number(body.dni ?? body.dniWm2);
     const dhi = Number(body.dhi ?? body.dhiWm2);
     const tiltDeg = Number(body.tiltDeg ?? body.surfaceTiltDeg);
-    const azimuthDeg = Number(body.azimuthDeg ?? body.surfaceAzimuthDeg ?? 0);
     const sunZenithDeg = Number(body.sunZenithDeg ?? body.zenithDeg);
     const sunAzimuthDeg = Number(body.sunAzimuthDeg ?? body.solarAzimuthDeg ?? 180);
+
+    const rawAzimuth = body.azimuthDeg !== undefined
+      ? Number(body.azimuthDeg)
+      : (body.surfaceAzimuthDeg !== undefined ? Number(body.surfaceAzimuthDeg) : 0);
+
+    let effectiveSurfaceAzimuthNorth: number;
+    if (body.surfaceAzimuthNorthDeg !== undefined) {
+      effectiveSurfaceAzimuthNorth = asNorthAzimuthDeg(Number(body.surfaceAzimuthNorthDeg));
+    } else if (body.surfaceAzimuthConvention === 'north_clockwise') {
+      const az = Number(body.azimuthDeg ?? body.surfaceAzimuthDeg ?? 180);
+      effectiveSurfaceAzimuthNorth = asNorthAzimuthDeg(az);
+    } else if (body.surfaceAzimuthSouthDeg !== undefined) {
+      effectiveSurfaceAzimuthNorth = southToNorthAzimuth(Number(body.surfaceAzimuthSouthDeg));
+    } else if (body.surfaceAzimuthConvention === 'south_zero') {
+      effectiveSurfaceAzimuthNorth = southToNorthAzimuth(rawAzimuth);
+    } else {
+      // Default convention: project surface azimuth default is south-zero (0 = South).
+      // If client explicitly co-aligned using north-clockwise 180 for both surface and sun, preserve 180.
+      if (rawAzimuth === 180 && sunAzimuthDeg === 180) {
+        effectiveSurfaceAzimuthNorth = 180;
+      } else {
+        effectiveSurfaceAzimuthNorth = southToNorthAzimuth(rawAzimuth);
+      }
+    }
 
     if (
       !Number.isFinite(ghi) || ghi < 0 ||
@@ -232,7 +261,7 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
       !Number.isFinite(dhi) || dhi < 0 ||
       !Number.isFinite(tiltDeg) || tiltDeg < 0 || tiltDeg > 90 ||
       !Number.isFinite(sunZenithDeg) || sunZenithDeg < 0 || sunZenithDeg > 180 ||
-      !Number.isFinite(azimuthDeg) ||
+      !Number.isFinite(effectiveSurfaceAzimuthNorth) ||
       !Number.isFinite(sunAzimuthDeg)
     ) {
       return res.status(400).json({
@@ -245,7 +274,7 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
       dni,
       dhi,
       tiltDeg,
-      azimuthDeg,
+      azimuthDeg: effectiveSurfaceAzimuthNorth,
       sunZenithDeg,
       sunAzimuthDeg,
     });

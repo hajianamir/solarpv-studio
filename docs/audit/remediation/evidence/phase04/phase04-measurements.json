@@ -1,0 +1,189 @@
+{
+  "schema": "solarpv.audit.phase04.v1",
+  "generatedAtCommit": "89956f37659ae2a634a02ce87acd4c36623e2442",
+  "phase01BaselineCommit": "91b9b3b",
+  "phase02BaselineCommit": "64e0ede",
+  "phase03BaselineCommit": "7c4d55c",
+  "phase01HarnessSha256": "732b1074b7436150b58e8054aac5cce2ddd28429f44515b0a1911e8aa58d0ab9",
+  "phase04VerifierSha256": "dc29686c6c6f13511dff0ec27ce52735a5fba9e8a583d42c56bb6e5e65251d6a",
+  "quantities": [
+    {
+      "id": "P4-01",
+      "name": "G-1 Bifacial Rear Gain Upgrade from Linear Proxy to 2D View-Factor (albedo 0.20)",
+      "before": 2.74,
+      "after": 8.31,
+      "delta": 5.57,
+      "unit": "%",
+      "producer": "src/engine/bifacialGain.ts:rearGainPercent",
+      "reproduce": "npx tsx scripts/remediation/verify-phase04.ts --quantity P4-01",
+      "verified": true
+    },
+    {
+      "id": "P4-02",
+      "name": "Bifacial Rear Gain Upgrade from Linear Proxy to 2D View-Factor at Albedo 0.25",
+      "before": 3.42,
+      "after": 10.19,
+      "delta": 6.77,
+      "unit": "%",
+      "producer": "src/engine/bifacialGain.ts:rearGainPercent",
+      "reproduce": "npx tsx scripts/remediation/verify-phase04.ts --quantity P4-02",
+      "verified": true
+    },
+    {
+      "id": "P4-03",
+      "name": "Catalog Modules with Valid Explicit NOCT Field Coverage",
+      "before": 0,
+      "after": 25,
+      "delta": 25,
+      "unit": "modules",
+      "producer": "src/engine/equipmentCatalogData.ts:CATALOG_MODULES",
+      "reproduce": "npx tsx scripts/remediation/verify-phase04.ts --quantity P4-03",
+      "verified": true
+    },
+    {
+      "id": "P4-04",
+      "name": "Martin & Ruiz Temperature-Coupled Optical IAM Loss at Oblique Incidence (65°)",
+      "before": -2.2,
+      "after": -7.2,
+      "delta": -5,
+      "unit": "%",
+      "producer": "src/engine/core/physicalLossContract.ts:evaluatePhysicalIamLoss",
+      "reproduce": "npx tsx scripts/remediation/verify-phase04.ts --quantity P4-04",
+      "verified": true
+    },
+    {
+      "id": "P4-05",
+      "name": "Marion Annual Snow Shedding Loss for Low Tilt (10°) vs Hardcoded Zero",
+      "before": 0,
+      "after": 9.09,
+      "delta": 9.09,
+      "unit": "%",
+      "producer": "src/engine/core/physicalLossContract.ts:evaluatePhysicalSnowLoss",
+      "reproduce": "npx tsx scripts/remediation/verify-phase04.ts --quantity P4-05",
+      "verified": true
+    },
+    {
+      "id": "P4-06",
+      "name": "Kimber Annual Soiling Loss in Arid Regime with 30-Day Scheduled Washing vs Unwashed",
+      "before": 19.33,
+      "after": 2.15,
+      "delta": -17.18,
+      "unit": "%",
+      "producer": "src/engine/core/physicalLossContract.ts:evaluatePhysicalSoilingLoss",
+      "reproduce": "npx tsx scripts/remediation/verify-phase04.ts --quantity P4-06",
+      "verified": true
+    },
+    {
+      "id": "P4-07",
+      "name": "G-1 Canonical Annual Yield with 2D View-Factor Bifacial Gain (8.31%) vs Linear Proxy (2.74%)",
+      "before": 1723332,
+      "after": 1816762,
+      "delta": 93430,
+      "unit": "kWh",
+      "producer": "src/engine/core/annualYieldEngine.ts:computeCanonicalAnnualYield",
+      "reproduce": "npx tsx scripts/remediation/verify-phase04.ts --quantity P4-07",
+      "verified": true
+    },
+    {
+      "id": "P4-08",
+      "name": "Bifacial Gain 15% Cap Saturation Excess Clamped Percentage at Extreme Albedo 0.90",
+      "before": 0,
+      "after": 21.45,
+      "delta": 21.45,
+      "unit": "percentage points",
+      "producer": "src/engine/bifacialGain.ts:evaluateBifacialGainWithDiagnostics",
+      "reproduce": "npx tsx scripts/remediation/verify-phase04.ts --quantity P4-08",
+      "verified": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "C4-01",
+      "name": "2D View-Factor Bifacial Gain Alignment with Phase 1 Anchor M-D2",
+      "lhs": 8.31,
+      "rhs": 8.31,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C4-02",
+      "name": "100% Valid NOCT Field Coverage Across Equipment Catalog & Adapters",
+      "lhs": 25,
+      "rhs": 25,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C4-03",
+      "name": "Physical Monotonicity of Temperature-Coupled Optical IAM Loss (0° < 35° < 65°)",
+      "lhs": 5.2,
+      "rhs": 5.2,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C4-04",
+      "name": "Marion Physical Snow Shedding Sensitivity to Array Tilt (10° vs 30°)",
+      "lhs": 9.09,
+      "rhs": 0.56,
+      "delta": 8.53,
+      "pass": true
+    },
+    {
+      "id": "C4-05",
+      "name": "Preservation of 16-Argument Arity & Physical Injection in buildWaterfallArgs",
+      "lhs": 16,
+      "rhs": 16,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C4-06",
+      "name": "Preservation of Non-Regression Anchors (M-A1, M-A2, M-C1, M-D1, M-F1, M-F4)",
+      "lhs": 0,
+      "rhs": 0,
+      "delta": 0,
+      "pass": true
+    }
+  ],
+  "nonRegression": {
+    "M-A1": {
+      "before": 1851400,
+      "after": 1851400,
+      "delta": 0
+    },
+    "M-A2": {
+      "before": 1646827.145773,
+      "after": 1646827.145773,
+      "delta": 0
+    },
+    "M-C1": {
+      "before": 13.1225,
+      "after": 13.1225,
+      "delta": 0
+    },
+    "M-D1": {
+      "before": 2.74,
+      "after": 2.74,
+      "delta": 0
+    },
+    "M-F1": {
+      "before": 499784,
+      "after": 499784,
+      "delta": 0
+    },
+    "M-F4": {
+      "before": 310202,
+      "after": 310202,
+      "delta": 0
+    }
+  },
+  "gates": {
+    "lintErrors": 0,
+    "anyWarnings": 93,
+    "testPass": 196,
+    "testFail": 0,
+    "testSkip": 0,
+    "buildExit": 0
+  }
+}

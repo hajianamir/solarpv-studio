@@ -9,6 +9,8 @@ export interface DiodeParameters {
   rsh: number;       // Shunt resistance (Ohms)
   n: number;         // Diode ideality factor (typically 1.0 to 1.3 for modern TOPCon/PERC)
   vt: number;        // Thermal voltage (V) = (k * T) / q
+  cellsPerModule?: number;
+  moduleAreaM2?: number;
 }
 
 export interface IvPoint {
@@ -82,7 +84,16 @@ export function calculateSingleDiodeCurve(
   const tRefK = 298.15;
 
   // Cells in single module and series stack
-  const cellsPerModule = Math.round(stcVoc / 0.68);
+  let cellsPerModule: number;
+  if (customParams?.cellsPerModule && customParams.cellsPerModule > 0) {
+    cellsPerModule = Math.round(customParams.cellsPerModule);
+  } else {
+    const rawCells = stcVoc / 0.705;
+    const standardCellCounts = [36, 48, 54, 60, 66, 72, 78, 96];
+    cellsPerModule = standardCellCounts.reduce((prev, curr) =>
+      Math.abs(curr - rawCells) < Math.abs(prev - rawCells) ? curr : prev
+    );
+  }
   const cellsInSeries = cellsPerModule * nSeries;
 
   // Ideality factor n
@@ -97,8 +108,38 @@ export function calculateSingleDiodeCurve(
   const vt = (cellsInSeries * BOLTZMANN * tempK) / ELECTRON_CHARGE;
 
   // Reference Series and Shunt resistance per module (De Soto parameter extraction)
-  const rsRefModule = customParams?.rs !== undefined ? customParams.rs / nSeries : Math.max(0.01, ((stcVoc - stcVmp) / stcImp) * 0.235);
-  const rshRefModule = customParams?.rsh !== undefined ? customParams.rsh / nSeries : Math.max(50.0, (stcVoc / Math.max(1e-6, stcIsc - stcImp)) * 10.0);
+  const rshRefModule = customParams?.rsh !== undefined
+    ? customParams.rsh / nSeries
+    : Math.max(50.0, (stcVoc / Math.max(1e-6, stcIsc - stcImp)) * 10.0);
+
+  let rsRefModule = customParams?.rs !== undefined
+    ? customParams.rs / nSeries
+    : Math.max(0.01, ((stcVoc - stcVmp) / stcImp) * 0.235);
+
+  if (customParams?.rs === undefined) {
+    // Calibrate rsRefModule using Newton-Raphson so that STC MPP equation holds exactly:
+    for (let it = 0; it < 30; it++) {
+      const iphR = stcIsc * (1.0 + rsRefModule / rshRefModule);
+      const expVoc = Math.exp(Math.min(60.0, stcVoc / aRefModule));
+      const i0R = (iphR - stcVoc / rshRefModule) / Math.max(1e-12, expVoc - 1.0);
+
+      const vMppInternal = stcVmp + stcImp * rsRefModule;
+      const expMpp = Math.exp(Math.min(60.0, vMppInternal / aRefModule));
+      const currentAtMpp = iphR - i0R * (expMpp - 1.0) - vMppInternal / rshRefModule;
+      const f = currentAtMpp - stcImp;
+
+      const dV_dRs = stcImp;
+      const dIph_dRs = stcIsc / rshRefModule;
+      const di0_dRs = dIph_dRs / Math.max(1e-12, expVoc - 1.0);
+      const df_dRs = dIph_dRs - di0_dRs * (expMpp - 1.0) - i0R * expMpp * (dV_dRs / aRefModule) - dV_dRs / rshRefModule;
+
+      if (Math.abs(df_dRs) < 1e-12) break;
+      const deltaRs = f / df_dRs;
+      rsRefModule -= deltaRs;
+      rsRefModule = Math.max(0.001, Math.min(2.0, rsRefModule));
+      if (Math.abs(deltaRs) < 1e-6) break;
+    }
+  }
 
   // De Soto Irradiance-scaled shunt resistance & series resistance scaled to full series string
   const rsh = (rshRefModule / gRatio) * nSeries;
@@ -110,7 +151,8 @@ export function calculateSingleDiodeCurve(
 
   // Reference photocurrent & saturation current per module / series string
   const iphRef = customParams?.iph ?? (stcIsc * (1.0 + rsRefModule / rshRefModule));
-  const i0Ref = customParams?.i0 ?? ((iphRef - stcVoc / rshRefModule) / Math.max(1e-12, Math.exp(stcVoc / aRefModule) - 1.0));
+  const expVocRef = Math.exp(Math.min(60.0, stcVoc / aRefModule));
+  const i0Ref = customParams?.i0 ?? ((iphRef - stcVoc / rshRefModule) / Math.max(1e-12, expVocRef - 1.0));
 
   // De Soto Scaled photocurrent: Iph(G, T) = (G / Gref) * [Iph,ref + alpha_Isc * (T - Tref)]
   const iph = gRatio * (iphRef + (tempCoeffIscPct / 100.0) * stcIsc * deltaT);
@@ -122,11 +164,23 @@ export function calculateSingleDiodeCurve(
 
   // Scaled open-circuit and short-circuit estimates for curve bounds
   const isc = stcIsc * gRatio * (1.0 + (tempCoeffIscPct / 100.0) * deltaT);
-  const voc = Math.max(
+
+  // Exact Newton-Raphson root for Voc: I(Voc) = 0
+  let voc = Math.max(
     0.1,
     (stcVoc * nSeries + (tempCoeffVocPct / 100.0) * stcVoc * nSeries * deltaT) *
       (1.0 + 0.05 * Math.log(gRatio))
   );
+  for (let it = 0; it < 30; it++) {
+    const expVoc = Math.exp(Math.min(60.0, voc / aActual));
+    const fVoc = iph - i0 * (expVoc - 1.0) - voc / rsh;
+    const dfVoc = -i0 * expVoc * (1.0 / aActual) - 1.0 / rsh;
+    if (Math.abs(dfVoc) < 1e-12) break;
+    const dVoc = fVoc / dfVoc;
+    voc -= dVoc;
+    if (Math.abs(dVoc) < 1e-6) break;
+  }
+  voc = Math.max(0.1, voc);
 
   // Trace 80 points along the I-V curve using Newton-Raphson
   const points: IvPoint[] = [];
@@ -137,21 +191,23 @@ export function calculateSingleDiodeCurve(
 
   for (let step = 0; step <= numSteps; step++) {
     const v = (voc * step) / numSteps;
-    let i = iph * (1.0 - Math.pow(step / numSteps, 3.5)); // Initial guess
+    let i = step === numSteps ? 0.0 : iph * (1.0 - Math.pow(step / numSteps, 3.5)); // Initial guess
 
-    // Newton-Raphson iteration for transcendental diode equation:
-    // f(I) = I_ph - I_0 * [exp((V + I*Rs) / a) - 1] - (V + I*Rs)/Rsh - I = 0
-    for (let iter = 0; iter < 20; iter++) {
-      const expTerm = Math.exp(Math.min(60.0, (v + i * rs) / aActual));
-      const f = iph - i0 * (expTerm - 1.0) - (v + i * rs) / rsh - i;
-      const df = -i0 * expTerm * (rs / aActual) - rs / rsh - 1.0;
+    if (step < numSteps) {
+      // Newton-Raphson iteration for transcendental diode equation:
+      // f(I) = I_ph - I_0 * [exp((V + I*Rs) / a) - 1] - (V + I*Rs)/Rsh - I = 0
+      for (let iter = 0; iter < 25; iter++) {
+        const expTerm = Math.exp(Math.min(60.0, (v + i * rs) / aActual));
+        const f = iph - i0 * (expTerm - 1.0) - (v + i * rs) / rsh - i;
+        const df = -i0 * expTerm * (rs / aActual) - rs / rsh - 1.0;
 
-      const deltaI = f / df;
-      i -= deltaI;
-      if (Math.abs(deltaI) < 1e-6) break;
+        const deltaI = f / df;
+        i -= deltaI;
+        if (Math.abs(deltaI) < 1e-6) break;
+      }
     }
 
-    const currentClamped = Math.max(0.0, i);
+    const currentClamped = step === numSteps ? 0.0 : Math.max(0.0, i);
     const power = v * currentClamped;
 
     if (power > maxP) {
@@ -168,7 +224,10 @@ export function calculateSingleDiodeCurve(
   }
 
   const fillFactor = maxP > 0 ? maxP / (voc * isc) : 0;
-  const nominalArea = 2.5 * nSeries; // approx 2.5 m² per 580W panel
+  const singleModuleAreaM2 = (customParams?.moduleAreaM2 && customParams.moduleAreaM2 > 0)
+    ? customParams.moduleAreaM2
+    : (stcPmp > 0 ? stcPmp / (1000.0 * 0.2265) : 2.5);
+  const nominalArea = singleModuleAreaM2 * nSeries;
   const incidentSolarPower = irradianceWm2 * nominalArea;
   const efficiencyPct = incidentSolarPower > 0 ? (maxP / incidentSolarPower) * 100.0 : 0;
 
@@ -180,7 +239,7 @@ export function calculateSingleDiodeCurve(
     imp: Math.round(iAtMaxP * 100) / 100,
     pmp: Math.round(maxP * 10) / 10,
     fillFactor: Math.round(fillFactor * 1000) / 1000,
-    efficiencyPct: Math.round(efficiencyPct * 10) / 10,
+    efficiencyPct: Math.round(efficiencyPct * 100) / 100,
     irradianceWm2,
     cellTempC,
     extractedParameters: {
@@ -190,6 +249,8 @@ export function calculateSingleDiodeCurve(
       rsh,
       n,
       vt,
+      cellsPerModule,
+      moduleAreaM2: singleModuleAreaM2,
     },
   };
 }

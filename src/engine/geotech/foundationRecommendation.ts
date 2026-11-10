@@ -18,6 +18,12 @@
 
 import { calculateWindPressureQz, cpUpliftFor, cpDownforceFor, type FoundationType, type SoilType } from '../structuralEngine';
 import {
+  calculateUnifiedWindPressureQz,
+  calculateUnifiedLateralShearPerPost,
+  calculateUnifiedTableDeadLoad,
+  calculateUnifiedTableLoadsAndReactions,
+} from '../core/structuralContract';
+import {
   calculateBromsPileSizing,
   calculateRequiredEmbedmentForUplift,
   type BromsPileSizingResult,
@@ -47,6 +53,9 @@ export interface FoundationRecommendationInput {
   clearanceHeightM: number;
   slopeDeg: number;
   elevationM?: number;
+  modulesPerTable?: number;
+  moduleWeightKg?: number;
+  rackingUnitWeightKgM2?: number;
   /** Sloped collector width (m) - the module dimension along the tilt
    *  direction. Default 4.6 (standard 2P14 table). Used for the moment
    *  arm and post-spacing computation. */
@@ -68,6 +77,7 @@ export interface FoundationRecommendationOutput {
   rationale: string;
   windPressureQzKnM2: number;
   snowPressureSkKnM2: number;
+  deadLoadTableKn: number;
   lateralShearPerPostKn: number;
   upliftPerPostKn: number;
   compressionPerPostKn: number;
@@ -371,36 +381,41 @@ export function recommendSharedFoundation(
   } = input;
 
   // Environmental loads (ASCE 7-22 simplified)
-  // qz from the shared helper - identical to structuralEngine (E5 unification).
-  const qz = calculateWindPressureQz(basicWindSpeedKmh, input.elevationM ?? 0).qzKnM2; // kN/m²
+  // qz from unified contract - identical across all structural modules.
+  const qzCalc = calculateUnifiedWindPressureQz({
+    basicWindSpeedKmh,
+    elevationM: input.elevationM ?? 0,
+  });
+  const qz = qzCalc.qzKnM2; // kN/m²
   const sk = (groundSnowLoadKgM2 * 9.81) / 1000.0; // kN/m²
 
-  // Forces per table and post
-  const tiltRad = (arrayTiltDeg * Math.PI) / 180.0;
-  const lateralWindForceTable = qz * tableAreaM2 * Math.sin(tiltRad) * 1.2; // kN
-  const lateralShearPerPost = lateralWindForceTable / postsPerTable;
-  // Match structuralEngine's uplift-per-post formula: average vertical
-  // component (cos beta) + moment-induced reaction. Eliminates the 45%
-  // divergence between the two engines' reported uplift.
-  const slopedWidthM = input.tableSlopedWidthM ?? 4.6;
-  const cpUp = cpUpliftFor(arrayTiltDeg);
-  const windNormalForceKn = qz * tableAreaM2 * cpUp;
-  const verticalUpliftKn = windNormalForceKn * Math.cos(tiltRad);
-  const deadLoadKn = (tableAreaM2 * 22.0 * 9.81) / 1000.0;
-  const deadLoadPerPost = deadLoadKn / postsPerTable;
-  const momentArmM = (slopedWidthM / 2.0) + (clearanceHeightM * Math.sin(tiltRad));
-  const overturningMomentKnM = windNormalForceKn * momentArmM;
-  const upliftPerPost = Math.max(0,
-    (verticalUpliftKn - 0.9 * deadLoadKn) / postsPerTable +
-    (overturningMomentKnM / (slopedWidthM * postsPerTable / 2))
-  );
-  // Match structuralEngine's compression: dead + 1.2*wind_downforce + snow.
-  // The wind downforce term was previously omitted here, under-reporting
-  // compression by ~20-30% at high wind.
-  const cpDown = cpDownforceFor(arrayTiltDeg);
-  const windDownforceKn = qz * cpDown * tableAreaM2;
-  const compressionPerPost =
-    (deadLoadKn + 1.2 * windDownforceKn + sk * tableAreaM2 * Math.cos(tiltRad)) / postsPerTable;
+  const estimatedModules = input.modulesPerTable ?? Math.max(1, Math.round(tableAreaM2 / (2.278 * 1.134)));
+  const deadLoadResult = calculateUnifiedTableDeadLoad({
+    modulesPerTable: estimatedModules,
+    moduleWeightKg: input.moduleWeightKg ?? 28.5,
+    tableAreaM2,
+    rackingUnitWeightKgM2: input.rackingUnitWeightKgM2 ?? 14.5,
+  });
+  const deadLoadKn = deadLoadResult.deadLoadTableKn;
+
+  const slopedWidthM = input.tableSlopedWidthM ?? (2.0 * 2.278 + 0.05);
+
+  // Forces per table and post via unified structural contract (loads & reactions)
+  const tableLoads = calculateUnifiedTableLoadsAndReactions({
+    qzN_M2: qzCalc.qzN_M2,
+    groundSnowLoadKgM2,
+    tableAreaM2,
+    tableSlopedWidthM: slopedWidthM,
+    groundClearanceM: clearanceHeightM,
+    arrayTiltDeg,
+    deadLoadTableKn: deadLoadKn,
+    postsPerTable,
+    isRooftop: input.installationEnvironment === 'industrial_shed' || input.installationEnvironment === 'rooftop_flat_concrete',
+  });
+
+  const lateralShearPerPost = tableLoads.lateralShearPerPostKn;
+  const upliftPerPost = tableLoads.upliftPerPostKn;
+  const compressionPerPost = tableLoads.compressionPerPostKn;
 
   // Multi-criteria foundation scoring (shared scorer — same code path used by engine/UI)
   const scores = scoreFoundationOptions(input).sort((a, b) => b.score - a.score);
@@ -475,9 +490,10 @@ export function recommendSharedFoundation(
     rationale,
     windPressureQzKnM2: qz,
     snowPressureSkKnM2: sk,
+    deadLoadTableKn: deadLoadKn,
     lateralShearPerPostKn: lateralShearPerPost,
-    upliftPerPostKn: Number(upliftPerPost.toFixed(2)),
-    compressionPerPostKn: Number(compressionPerPost.toFixed(2)),
+    upliftPerPostKn: Number(upliftPerPost.toFixed(3)),
+    compressionPerPostKn: Number(compressionPerPost.toFixed(3)),
     traceId,
   };
 }

@@ -13,6 +13,10 @@
 
 import { type FoundationType, type SoilType } from './structuralEngine';
 import {
+  calculateUnifiedWindPressureQz,
+  calculateUnifiedLateralShearPerPost,
+} from './core/structuralContract';
+import {
   recommendSharedFoundation,
   scoreFoundationOptions,
   type FoundationRecommendationInput,
@@ -240,12 +244,19 @@ export function recommendFoundation(input: StructuralRecommendationInput): Found
     notes: shared.rationale,
   };
 
-  // Sensitivity to +20% wind gust
-  const tiltRad = (input.arrayTiltDeg * Math.PI) / 180.0;
+  // Sensitivity to +20% wind gust via unified structural contract (ASCE 7-22)
   const sensWindKmh = Math.round(input.basicWindSpeedKmh * 1.2);
-  const sensVms = sensWindKmh / 3.6;
-  const sensQz = 0.5 * 1.225 * Math.pow(sensVms, 2) * 1.0 * 0.85 / 1000.0;
-  const sensLateralShear = (sensQz * input.tableAreaM2 * Math.sin(tiltRad) * 1.2) / input.postsPerTable;
+  const sensWindPressure = calculateUnifiedWindPressureQz({
+    basicWindSpeedKmh: sensWindKmh,
+    elevationM: input.elevationM ?? 0,
+  });
+  const sensShearCalc = calculateUnifiedLateralShearPerPost({
+    qzN_M2: sensWindPressure.qzN_M2,
+    tableAreaM2: input.tableAreaM2,
+    arrayTiltDeg: input.arrayTiltDeg,
+    postsPerTable: input.postsPerTable,
+  });
+  const sensLateralShear = sensShearCalc.lateralShearPerPostKn;
   const sensFos = Number((bromsResult.lateralCapacityKn / Math.max(0.1, sensLateralShear)).toFixed(2));
 
   const upliftPerPost = (shared.windPressureQzKnM2 * input.tableAreaM2 * 1.15) / input.postsPerTable;

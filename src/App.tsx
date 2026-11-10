@@ -56,6 +56,14 @@ import {
 import { type Language, translations } from './i18n';
 
 import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
+import {
+  type StructuralSnapshot,
+  computeStructuralInputHash,
+  DEFAULT_GROUND_CLEARANCE_M,
+  DEFAULT_MODULES_PER_TABLE,
+  resolveFoundationType,
+  evaluateEffectiveStructuralSnapshot,
+} from './engine/core/structuralContract';
 import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoadsToWindow } from './engine/loadProfiles';
 import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
@@ -215,6 +223,8 @@ export const App: React.FC = () => {
   }, [city]);
 
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
+  const [structuralModulesPerTable, setStructuralModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
+  const [structuralSnapshot, setStructuralSnapshot] = useState<StructuralSnapshot | null>(null);
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
 
   const catalogRepo = CatalogRepository.getInstance();
@@ -1434,6 +1444,38 @@ export const App: React.FC = () => {
     ? isSidebarCollapsed ? 'lg:mr-[68px]' : 'lg:mr-[280px]'
     : isSidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-[280px]';
 
+  const resolvedFoundationType = resolveFoundationType(
+    siteOverrides.foundationType,
+    siteOverrides.installationEnvironment,
+    siteOverrides.soilType ?? city.soilType
+  );
+
+  const currentStructuralInputHash = computeStructuralInputHash({
+    cityId: city.id,
+    totalModulesCount: arrayDesign.totalModulesCount,
+    arrayTiltDeg: siteOverrides.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28,
+    foundationType: resolvedFoundationType,
+    basicWindSpeedKmh: siteOverrides.basicWindSpeedKmh ?? city.basicWindSpeedKmh,
+    groundSnowLoadKgM2: siteOverrides.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 0,
+    groundClearanceM: siteOverrides.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M,
+    soilType: siteOverrides.soilType ?? city.soilType,
+    frostDepthCm: siteOverrides.frostDepthCm ?? city.frostDepthCm,
+    soilBearingCapacityKpa: siteOverrides.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? null,
+    soilInternalFrictionAngleDeg: siteOverrides.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? null,
+    soilCohesionKpa: siteOverrides.soilCohesionKpa ?? city.soilCohesionKpa ?? null,
+    soilDensityKnM3: siteOverrides.soilDensityKnM3 ?? city.soilDensityKnM3 ?? null,
+    seismicZoneCoefficientA: siteOverrides.seismicZoneCoefficientA ?? city.seismicZoneCoefficientA ?? null,
+    customEmbedmentDepthM: siteOverrides.customEmbedmentDepthM ?? null,
+    customPostsPerTable: siteOverrides.customPostsPerTable ?? null,
+    installationEnvironment: siteOverrides.installationEnvironment ?? 'ground_mount',
+    elevationM: city.elevationM || 0,
+    modulesPerTable: structuralModulesPerTable,
+  });
+
+  const effectiveStructuralSnapshot = useMemo(() => {
+    return evaluateEffectiveStructuralSnapshot(structuralSnapshot, currentStructuralInputHash);
+  }, [structuralSnapshot, currentStructuralInputHash]);
+
   return (
     <div
       className={`min-h-screen bg-[#080C14] text-slate-100 flex flex-col ${isRtl ? 'font-vazir' : 'font-sans'}`}
@@ -2469,6 +2511,9 @@ export const App: React.FC = () => {
               city={city}
               siteOverrides={siteOverrides}
               onUpdateSiteOverrides={(overrides) => setSiteOverrides((prev) => ({ ...prev, ...overrides }))}
+              onUpdateStructuralSnapshot={setStructuralSnapshot}
+              modulesPerTable={structuralModulesPerTable}
+              onUpdateModulesPerTable={setStructuralModulesPerTable}
               lang={lang}
             />
           )}
@@ -2731,6 +2776,7 @@ export const App: React.FC = () => {
             financial={financialResult}
             bayArchitecture={bayArchitecture}
             siteOverrides={siteOverrides}
+            structuralSnapshot={effectiveStructuralSnapshot}
             waterfallReport={waterfallReport}
             appliedShading={appliedShadingRecord}
             isShadingStale={isShadingStale}

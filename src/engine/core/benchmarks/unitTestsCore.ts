@@ -2646,7 +2646,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
-  // [E8-STRUCT-1] Pre-Drilled Rock-Socket Grouted Micro-Pile (Refusal Mitigation)
+  // [E8-STRUCT-1] Pre-Drilled Rock-Socket Grouted Micro-Pile (Refusal Mitigation & Unassessed Safety Contract)
   {
     const { calculateStructuralAndFoundations } = await import('../../structuralEngine');
 
@@ -2658,18 +2658,21 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       foundationType: 'pre_drilled_grouted_pile', soilType: 'rocky_limestone',
     });
 
-    // Rock socket embedment depth is compact (0.75-1.05m), achieving high uplift via tau_bond >= 1500 kPa
+    // Rock socket embedment depth is compact (0.75-1.05m), achieving nominal assumed bond pullout via tau_bond >= 1500 kPa
     const depthReduced = grouted.recommendedDepthM <= 1.10 && grouted.recommendedDepthM >= 0.70;
-    const highPullout = grouted.upliftCapacityPerPostKn >= 400; // pi * 0.12 * 0.75 * 1500 = 424 kN
-    const safeFos = grouted.fosUplift >= 2.0 && grouted.isStructurallySafe;
+    const assumedPullout = grouted.upliftCapacityPerPostKn >= 400; // nominal assumed bond strength calculation: pi * 0.12 * 0.75 * 1500 = 424 kN (unverified assumption)
     const groutVolumePresent = grouted.concreteVolumeTotalM3 > 0 && grouted.cementBagsCount > 0;
-    const reasonValid = grouted.safetyReasonEn.toLowerCase().includes('rock-socket') || grouted.safetyReasonEn.toLowerCase().includes('grout');
+    const unassessedContract = grouted.isFrostDepthRespected === false && grouted.isStructurallySafe === false;
+    const reasonValid =
+      grouted.safetyReasonEn.includes('UNASSESSED') &&
+      grouted.safetyReasonEn.toLowerCase().includes('frost depth') &&
+      (grouted.safetyReasonEn.toLowerCase().includes('rock-socket') || grouted.safetyReasonEn.toLowerCase().includes('grout'));
 
     assert(
       'E8-STRUCT-1',
-      'Pre-drilled rock-socket grouted pile cuts depth (L<=1.1m) and mobilizes high bond pullout',
-      depthReduced && highPullout && safeFos && groutVolumePresent && reasonValid,
-      `depth=${grouted.recommendedDepthM}m, T_ult=${grouted.upliftCapacityPerPostKn} kN, FoS_uplift=${grouted.fosUplift}, groutVol=${grouted.concreteVolumeTotalM3}m3`
+      'Pre-drilled rock-socket grouted pile cuts depth (L<=1.1m) with assumed bond pullout, but remains UNASSESSED without frost depth & borehole data',
+      depthReduced && assumedPullout && unassessedContract && groutVolumePresent && reasonValid,
+      `depth=${grouted.recommendedDepthM}m, T_assumed=${grouted.upliftCapacityPerPostKn} kN, FoS_uplift=${grouted.fosUplift}, isFrostRespected=${grouted.isFrostDepthRespected}, isSafe=${grouted.isStructurallySafe}, groutVol=${grouted.concreteVolumeTotalM3}m3`
     );
   }
 

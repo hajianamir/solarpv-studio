@@ -1,6 +1,7 @@
 // Advanced PV Array Engineering, String Sizing & Deratings (IEC 62548 / NEC 690.7)
 
 import { calculateThermalDerate } from './core/thermalDerate';
+import { calculateWinterSolsticeNoonAltitudeDeg } from './core/solarGeometryContract';
 import type { InstallationEnvironment } from './types/climateTypes';
 
 export interface ModuleSpecs {
@@ -48,6 +49,13 @@ export interface SiteDeratings {
   installationEnvironment?: InstallationEnvironment;
 }
 
+export interface PvArrayDesignOptions {
+  inverterCount?: number;
+  targetDcAcRatio?: number;
+  optimizeStringLengthForMppt?: boolean;
+  resolveUtilityMpptLimits?: boolean;
+}
+
 export interface PvArrayDesignResult {
   totalPvCapacityKwp: number;
   totalModulesCount: number;
@@ -71,6 +79,14 @@ export interface PvArrayDesignResult {
   grossRequiredLandAreaM2: number;
   winterSunAltitudeDeg: number;
   warnings: string[];
+  estimatedAnnualYieldKwh?: number;
+  specificYieldKwhPerKwp?: number;
+  requiredInverterCount?: number;
+  totalInverterAcCapacityKw?: number;
+  singleInverterDcAcRatio?: number;
+  stringsPerMppt?: number;
+  maxStringsPerMpptAllowed?: number;
+  blockingErrors?: string[];
 }
 
 export function designPvArray(
@@ -79,7 +95,8 @@ export function designPvArray(
   module: ModuleSpecs,
   inverter: InverterSpecs,
   deratings: SiteDeratings,
-  latitudeDeg: number
+  latitudeDeg: number,
+  options?: PvArrayDesignOptions
 ): PvArrayDesignResult {
   // Input Validation Layer (Z-01 remediation)
   if (!Number.isFinite(requiredDailyKwh) || requiredDailyKwh <= 0) {
@@ -202,9 +219,51 @@ export function designPvArray(
   let chosenModulesPerString = Math.round((minModulesAllowed + upperLimit) / 2);
   chosenModulesPerString = Math.max(1, Math.min(upperLimit, Math.max(minModulesAllowed, chosenModulesPerString)));
 
+  // Fleet Inverter Determination:
+  let requiredInverterCount = 1;
+  if (typeof options?.inverterCount === 'number' && Number.isInteger(options.inverterCount) && options.inverterCount >= 1) {
+    requiredInverterCount = options.inverterCount;
+  } else if (options !== undefined && options.inverterCount === undefined) {
+    const targetRatio = options.targetDcAcRatio ?? 1.25;
+    requiredInverterCount = Math.max(1, Math.round(requiredDailyKwh / (peakSunHours * inverter.pnomAcKw * targetRatio)));
+  }
+
+  const totalInverterAcCapacityKw = Number((requiredInverterCount * inverter.pnomAcKw).toFixed(2));
+  const effectiveFleetMpptChannels = requiredInverterCount * Math.max(1, inverter.mpptChannelsCount);
+
+  // Datasheet limits:
+  const maxStringsByImpp = inverter.imppMaxAmpsPerMppt > 0
+    ? Math.floor(inverter.imppMaxAmpsPerMppt / module.impAmps)
+    : Number.POSITIVE_INFINITY;
+  const maxStringsByIsc = inverter.iscMaxAmpsPerMppt > 0
+    ? Math.floor(inverter.iscMaxAmpsPerMppt / (module.iscAmps * 1.25))
+    : Number.POSITIVE_INFINITY;
+  const maxStringsPerMpptAllowed = Math.min(maxStringsByImpp, maxStringsByIsc);
+
   // 6. Calculate total modules and parallel strings
   const singleModuleKwp = module.pmpWatts / 1000.0;
   const initialTotalModules = Math.ceil(requiredArrayKwp / singleModuleKwp);
+
+  // Eliminate false 20-module floor for small residential/commercial systems (e.g. G-2 with 3 kWh/day).
+  // When the required module count is smaller than the utility string length,
+  // size the string to initialTotalModules to ensure strict sizing monotonicity.
+  if (initialTotalModules < chosenModulesPerString) {
+    if (initialTotalModules < minModulesAllowed) {
+      warnings.push(
+        "تعداد ماژول‌های مورد نیاز بار کمتر از حداقل پنجره ولتاژ MPPT اینورتر است؛ سایزینگ بر اساس تعداد واقعی ماژول‌های بار انجام شد و استفاده از اینورتر متناسب یا میکرواینورتر توصیه می‌شود."
+      );
+    }
+    chosenModulesPerString = Math.max(1, initialTotalModules);
+  } else if (options?.optimizeStringLengthForMppt === true && Number.isFinite(maxStringsPerMpptAllowed) && maxStringsPerMpptAllowed >= 1) {
+    const maxFleetStrings = effectiveFleetMpptChannels * maxStringsPerMpptAllowed;
+    for (let testN = chosenModulesPerString; testN <= upperLimit; testN++) {
+      const testStrings = Math.ceil(initialTotalModules / testN);
+      if (testStrings <= maxFleetStrings) {
+        chosenModulesPerString = testN;
+        break;
+      }
+    }
+  }
 
   let parallelStrings = Math.ceil(initialTotalModules / chosenModulesPerString);
   if (parallelStrings < 1) parallelStrings = 1;
@@ -220,29 +279,41 @@ export function designPvArray(
   }
 
   // 7. MPPT Current & Short-Circuit Constraints (IEC 62548 §7.3.3 & NEC 690.8)
-  const stringsPerMppt = Math.ceil(parallelStrings / Math.max(1, inverter.mpptChannelsCount));
+  const stringsPerMppt = Math.ceil(parallelStrings / effectiveFleetMpptChannels);
   const maxMpptOperatingCurrentAmps = Number((stringsPerMppt * module.impAmps).toFixed(2));
   // 1.25 safety factor for cloud-enhancement / bifacial surge over STC
   const maxMpptShortCircuitCurrentAmps = Number((stringsPerMppt * module.iscAmps * 1.25).toFixed(2));
 
+  const blockingErrors: string[] = [];
+  if (!isVoltageFeasible) {
+    blockingErrors.push(
+      "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
+    );
+  }
+
   let isMpptCurrentCompliant = true;
   if (inverter.imppMaxAmpsPerMppt > 0 && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
-    warnings.push(
-      `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping).`
-    );
+    const msg = `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping).`;
+    warnings.push(msg);
+    blockingErrors.push(msg);
   }
 
   if (inverter.iscMaxAmpsPerMppt > 0 && maxMpptShortCircuitCurrentAmps > inverter.iscMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
-    warnings.push(
-      `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر.`
-    );
+    const msg = `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر.`;
+    warnings.push(msg);
+    blockingErrors.push(msg);
   }
 
-  const dcAcRatio = totalPvCapacityKwp / inverter.pnomAcKw;
+  const singleInverterDcAcRatio = Number((totalPvCapacityKwp / inverter.pnomAcKw).toFixed(6));
+  const dcAcRatio = Number((totalPvCapacityKwp / totalInverterAcCapacityKw).toFixed(6));
+
   if (dcAcRatio > 1.4) {
     warnings.push(`نسبت DC به AC برابر ${dcAcRatio.toFixed(2)} است که بالاتر از سقف بهینه (۱.۳۵) بوده و ممکن است باعث تلفات برش توان (Clipping Loss) شود.`);
+    if (options !== undefined && dcAcRatio > 1.5) {
+      blockingErrors.push(`نسبت DC به AC ناوگان (${dcAcRatio.toFixed(2)}) فراتر از سقف مجاز بهره‌برداری (۱.۵۰) است.`);
+    }
   }
 
   // 7. Area & Inter-row shading distance
@@ -258,19 +329,18 @@ export function designPvArray(
   const panelHeightProjectedM = modLength * Math.sin(tiltRad);
   const panelGroundDepthM = modLength * Math.cos(tiltRad);
 
-  // Winter-solstice noon solar altitude from site latitude (PR-2a-7-P0):
-  // alpha = 90° - |latitude| - |declination(-23.45°)|, floored at 5° to avoid
-  // infinite row spacing at extreme latitudes.
-  const winterSolsticeDeclinationDeg = -23.45;
-  const solarAltitudeWinterDeg =
-    90.0 - Math.abs(latitudeDeg) - Math.abs(winterSolsticeDeclinationDeg);
-  const winterSunAltitudeDeg = Math.max(5.0, solarAltitudeWinterDeg);
+  // Winter-solstice noon solar altitude from site latitude (unified solarGeometryContract):
+  const winterSolstice = calculateWinterSolsticeNoonAltitudeDeg(latitudeDeg);
+  const winterSunAltitudeDeg = winterSolstice.clampedAltitudeDeg;
   const sunElevationRad = (winterSunAltitudeDeg * Math.PI) / 180.0;
   const shadowLengthM = panelHeightProjectedM / Math.tan(sunElevationRad);
   const interRowSpacingM = panelGroundDepthM + shadowLengthM;
 
   // Gross area incorporates maintenance walkways (+30%)
   const grossRequiredLandAreaM2 = (totalModulesCount / chosenModulesPerString) * (modWidth * chosenModulesPerString) * interRowSpacingM * 1.30;
+
+  const estimatedAnnualYieldKwh = Number((totalPvCapacityKwp * peakSunHours * effectiveDeratingFactor * 365.0).toFixed(2));
+  const specificYieldKwhPerKwp = totalPvCapacityKwp > 0 ? Number((peakSunHours * effectiveDeratingFactor * 365.0).toFixed(2)) : 0;
 
   return {
     totalPvCapacityKwp,
@@ -285,7 +355,7 @@ export function designPvArray(
     maxMpptShortCircuitCurrentAmps,
     isMpptCurrentCompliant,
     isVoltageFeasible,
-    isDesignFeasible: isVoltageFeasible && isMpptCurrentCompliant,
+    isDesignFeasible: isVoltageFeasible && isMpptCurrentCompliant && (options === undefined || dcAcRatio <= 1.5),
     dcAcRatio,
     effectiveDeratingFactor,
     cellTempHotC,
@@ -295,5 +365,13 @@ export function designPvArray(
     grossRequiredLandAreaM2,
     winterSunAltitudeDeg,
     warnings,
+    estimatedAnnualYieldKwh,
+    specificYieldKwhPerKwp,
+    requiredInverterCount,
+    totalInverterAcCapacityKw,
+    singleInverterDcAcRatio,
+    stringsPerMppt,
+    maxStringsPerMpptAllowed: Number.isFinite(maxStringsPerMpptAllowed) ? maxStringsPerMpptAllowed : undefined,
+    blockingErrors,
   };
 }

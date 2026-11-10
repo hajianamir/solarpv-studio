@@ -49,7 +49,8 @@ export function simulate24hEnergyBalance(
   batteryUsableKwh: number,
   batteryCapacityTotalKwh: number,
   initialBatterySocPct: number = 50.0,
-  daylightHoursDesign?: number
+  daylightHoursDesign?: number,
+  effectiveSystemDeratingFactor?: number
 ): Simulation24hResult {
   const steps: HourlyEnergyStep[] = [];
   const maxBatteryWh = batteryCapacityTotalKwh * 1000.0;
@@ -87,7 +88,13 @@ export function simulate24hEnergyBalance(
   }
 
   const sumSolarWeights = solarWeights.reduce((a, b) => a + b, 0);
-  const totalDailyGenerationKwh = D > 0 ? totalPvCapacityKwp * peakSunHours * 0.78 : 0;
+  const derateFactor =
+    typeof effectiveSystemDeratingFactor === 'number' &&
+    Number.isFinite(effectiveSystemDeratingFactor) &&
+    effectiveSystemDeratingFactor > 0
+      ? effectiveSystemDeratingFactor
+      : 0.78;
+  const totalDailyGenerationKwh = D > 0 ? totalPvCapacityKwp * peakSunHours * derateFactor : 0;
 
   // Calculate day and night load hourly distributions with strict conservation:
   // Daytime load weights: midday peak (12:00-14:00) 1.3, standard 0.9
@@ -227,7 +234,9 @@ export function simulate24hEnergyBalance(
   const reliesOnInitialCharge = hasBattery && totalDeficit < 0.1 && currentBatteryWh < initialWh * 0.98;
   const isSelfSufficient = totalDeficit < 0.1 && (!hasBattery || !reliesOnInitialCharge);
 
-  const sumGenKwh = Number(steps.reduce((sum, s) => sum + s.solarGenKwh, 0).toFixed(2));
+  const sumGenKwh = totalPvCapacityKwp > 0 && peakSunHours > 0
+    ? Number(totalGen.toFixed(6))
+    : Number(steps.reduce((sum, s) => sum + s.solarGenKwh, 0).toFixed(2));
   const sumSurplusKwh = Number(steps.reduce((sum, s) => sum + s.surplusKwh, 0).toFixed(2));
   const sumDeficitKwh = Number(steps.reduce((sum, s) => sum + s.deficitKwh, 0).toFixed(2));
   const sumConsumptionKwh = Number(steps.reduce((sum, s) => sum + s.loadDemandKwh, 0).toFixed(2));

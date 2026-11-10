@@ -33,7 +33,7 @@ export const BATTERY_CHEMISTRIES: Record<string, BatteryChemistryProfile> = {
     standardCycleLifeAt80DoD: 5500,
     maxContinuousCRate: 1.0,
     maxSurgeCRate: 2.0,
-    tempDeratingPerCBelow20: 0.5,
+    tempDeratingPerCBelow20: 0.35,
     estimatedCostPerKwhUsd: 190,
     estimatedCostPerKwhToman: 17_000_000,
     typicalLifespanYears: 12,
@@ -108,6 +108,7 @@ export interface BatteryBankSizingResult {
   systemVoltageVdc: number; // 12, 24, or 48V
   grossCapacityKwh: number;
   usableCapacityKwh: number;
+  nominalDoDUsableCapacityKwh?: number;
   totalCapacityAh: number;
   unitBatteryCapacityAh: number;
   batteriesInSeries: number;
@@ -136,7 +137,7 @@ const FALLBACK_BATTERY_PROFILE: BatteryChemistryProfile = {
   standardCycleLifeAt80DoD: 5500,
   maxContinuousCRate: 1.0,
   maxSurgeCRate: 2.0,
-  tempDeratingPerCBelow20: 0.5,
+  tempDeratingPerCBelow20: 0.35,
   estimatedCostPerKwhUsd: 190,
   estimatedCostPerKwhToman: 17_000_000,
   typicalLifespanYears: 12,
@@ -258,15 +259,25 @@ export function sizeBatteryBank(
   // Capacity in Ampere-Hours at selected busbar DC voltage
   const totalCapacityAh = grossCapacityWh / vdc;
 
-  // Physical units arrangement (assuming 12V individual units for Lead/Gel or 48V/12V rack modules for LiFePO4)
-  const unitVoltage = profile.id === 'lifepo4' && vdc === 48 ? 48.0 : 12.0;
+  // Physical units arrangement (assuming 12V individual units for Lead/Gel or 48V/24V/12V rack modules for LiFePO4 / NCM)
+  let unitVoltage = 12.0;
+  if (profile.id === 'lifepo4' || profile.id === 'ternary_ncm') {
+    if (vdc >= 48) {
+      unitVoltage = 48.0;
+    } else if (vdc === 24) {
+      unitVoltage = 24.0;
+    } else {
+      unitVoltage = 12.0;
+    }
+  }
   const batteriesInSeries = Math.max(1, Math.round(vdc / unitVoltage));
 
   const parallelStrings = Math.max(1, Math.ceil(totalCapacityAh / unitAh));
   const totalBatteryUnitsCount = batteriesInSeries * parallelStrings;
   const actualBankAh = parallelStrings * unitAh;
   const actualGrossKwh = (actualBankAh * vdc) / 1000.0;
-  const actualUsableKwh = actualGrossKwh * dodFraction;
+  const nominalDoDUsableKwh = actualGrossKwh * dodFraction;
+  const actualUsableKwh = actualGrossKwh * dodFraction * roundTripFraction * tempCorrectionFactor;
 
   // Current draws from battery bank
   const inverterEff = 0.93;
@@ -333,6 +344,7 @@ export function sizeBatteryBank(
     systemVoltageVdc: vdc,
     grossCapacityKwh: Number(actualGrossKwh.toFixed(1)),
     usableCapacityKwh: Number(actualUsableKwh.toFixed(1)),
+    nominalDoDUsableCapacityKwh: Number(nominalDoDUsableKwh.toFixed(1)),
     totalCapacityAh: Math.round(actualBankAh),
     unitBatteryCapacityAh: unitAh,
     batteriesInSeries,

@@ -1,0 +1,55 @@
+{
+  "id": "G-4",
+  "name": "Climate Seven Global Cities",
+  "cities": [
+    {
+      "key": "tehran",
+      "name": "Tehran",
+      "latitude": 35.6892,
+      "longitude": 51.3890,
+      "notes": "Default engineering reference site"
+    },
+    {
+      "key": "clifton",
+      "name": "Clifton (NJ, USA)",
+      "latitude": 40.8584,
+      "longitude": -74.1638,
+      "notes": "Suburban North America"
+    },
+    {
+      "key": "munich",
+      "name": "Munich",
+      "latitude": 48.1351,
+      "longitude": 11.5820,
+      "notes": "Central Europe, moderate snow"
+    },
+    {
+      "key": "phoenix",
+      "name": "Phoenix",
+      "latitude": 33.4484,
+      "longitude": -112.0740,
+      "notes": "Sonoran Desert, high irradiance & heat"
+    },
+    {
+      "key": "singapore",
+      "name": "Singapore",
+      "latitude": 1.3521,
+      "longitude": 103.8198,
+      "notes": "Tropical equatorial, zero snow"
+    },
+    {
+      "key": "quito",
+      "name": "Quito",
+      "latitude": -0.1807,
+      "longitude": -78.4678,
+      "notes": "High-altitude equatorial Andes"
+    },
+    {
+      "key": "sydney",
+      "name": "Sydney",
+      "latitude": -33.8688,
+      "longitude": 151.2093,
+      "notes": "Southern Hemisphere coastal"
+    }
+  ]
+}

@@ -109,6 +109,9 @@ export interface PowerplantBayArchitectureResult {
   technology: InverterTechnology;
   totalPlantCapacityMw: number;
   totalPvCapacityMwp: number;
+  totalInverterCount?: number;
+  totalInstalledInverterAcMw?: number;
+  effectiveFleetDcAcRatio?: number;
   mvCollectorVoltageKv: number;
   optimalBaysCount: number;
   actualBaysCount: number;
@@ -141,8 +144,10 @@ export function designPowerplantBays(
   mvCollectorVoltageKv: number = 20, // 20 kV standard in Iran Tavanir/SATBA grid
   inverterUnitKw?: number
 ): PowerplantBayArchitectureResult {
-  const safeCapacityMw = Math.max(0.5, plantCapacityMw || 5.0);
-  const safeDcMwp = Math.max(safeCapacityMw * 1.05, pvDcCapacityMwp || safeCapacityMw * 1.25);
+  const safeCapacityMw = Math.max(0.1, plantCapacityMw || 5.0);
+  const safeDcMwp = (Number.isFinite(pvDcCapacityMwp) && pvDcCapacityMwp > 0)
+    ? pvDcCapacityMwp
+    : safeCapacityMw * 1.25;
   const mvKv = mvCollectorVoltageKv || 20;
 
   // 1. Inverter unit specs based on technology
@@ -174,16 +179,29 @@ export function designPowerplantBays(
   const bayCapacityMw = safeCapacityMw / actualBaysCount;
   const bayDcMwp = safeDcMwp / actualBaysCount;
 
+  // Total inverters for the whole plant to avoid double-ceiling overcounting per bay
+  const totalPlantInverterCount = technology === 'mv_turnkey'
+    ? actualBaysCount
+    : Math.max(actualBaysCount, Math.ceil((safeCapacityMw * 1000.0) / effectiveUnitKw));
+  const baseInvertersPerBay = Math.floor(totalPlantInverterCount / actualBaysCount);
+  const remainderInverters = totalPlantInverterCount % actualBaysCount;
+
   // 3. Build each Power Block MV Bay
   const bays: MvBayDefinition[] = [];
+  let totalInstalledInverterAcKw = 0;
+
   for (let i = 1; i <= actualBaysCount; i++) {
     const bayInverterCount = technology === 'mv_turnkey'
       ? 1
-      : Math.max(1, Math.ceil((bayCapacityMw * 1000.0) / effectiveUnitKw));
+      : baseInvertersPerBay + (i <= remainderInverters ? 1 : 0);
 
-    const transformerRatingMva = Number((bayCapacityMw * 1.15).toFixed(2)); // 15% margin
+    const bayInstalledAcMw = (bayInverterCount * effectiveUnitKw) / 1000.0;
+    totalInstalledInverterAcKw += bayInverterCount * effectiveUnitKw;
+    const effectiveBayAcMw = Math.max(bayCapacityMw, bayInstalledAcMw);
+
+    const transformerRatingMva = Number((effectiveBayAcMw * 1.15).toFixed(2)); // 15% margin
     const mvCurrentAmps = Number(
-      ((bayCapacityMw * 1000.0) / (Math.sqrt(3) * mvKv)).toFixed(1)
+      ((effectiveBayAcMw * 1000.0) / (Math.sqrt(3) * mvKv)).toFixed(1)
     );
 
     bays.push({
@@ -227,7 +245,7 @@ export function designPowerplantBays(
   // Substation cubicles count:
   // Strict formula: N_total = N_incomer + N_transformer + N_metering + N_spare + N_bus_tie + N_outgoing + N_aux
   const incomingBayFeedersCount = actualBaysCount;
-  const transformerBaysCount = 0; // In standard collector busbar, step-up occurs at incoming or outgoing
+  const transformerBaysCount = safeCapacityMw >= 25 ? 2 : 1;
   const auxiliaryTransformerBayCount = 1;
   const meteringBayCount = 1;
   const spareBaysCount = actualBaysCount >= 4 ? 1 : 0;
@@ -274,10 +292,18 @@ export function designPowerplantBays(
           'Exceptional grid code compliance (FRT, reactive power control, frequency response)',
         ];
 
+  const totalInstalledInverterAcMw = Number((totalInstalledInverterAcKw / 1000.0).toFixed(3));
+  const effectiveFleetDcAcRatio = totalInstalledInverterAcMw > 0
+    ? Number((safeDcMwp / totalInstalledInverterAcMw).toFixed(6))
+    : undefined;
+
   return {
     technology,
     totalPlantCapacityMw: safeCapacityMw,
     totalPvCapacityMwp: safeDcMwp,
+    totalInverterCount: totalPlantInverterCount,
+    totalInstalledInverterAcMw,
+    effectiveFleetDcAcRatio,
     mvCollectorVoltageKv: mvKv,
     optimalBaysCount: optimalBays,
     actualBaysCount,

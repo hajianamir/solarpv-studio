@@ -1,0 +1,176 @@
+{
+  "schema": "solarpv.audit.phase02.v1",
+  "generatedAtCommit": "74f3a8555ef0bb22504db28b760d7913be8b994b",
+  "phase01BaselineCommit": "91b9b3b",
+  "phase01HarnessSha256": "732b1074b7436150b58e8054aac5cce2ddd28429f44515b0a1911e8aa58d0ab9",
+  "phase02VerifierSha256": "26485d60009b420fc9bc2ea9bb41c9e4e6c069448588904953a948cd7d85b272",
+  "quantities": [
+    {
+      "id": "P2-01",
+      "name": "M-G1 Solar Position Zenith Timestamp Invariance (seconds vs milliseconds)",
+      "before": 20.7173,
+      "after": 0,
+      "delta": -20.7173,
+      "unit": "degrees",
+      "producer": "src/engine/solarPvEngine.ts:510",
+      "reproduce": "npx tsx scripts/remediation/verify-phase02.ts --quantity P2-01",
+      "verified": true
+    },
+    {
+      "id": "P2-02",
+      "name": "M-G1 Solar Position Azimuth Timestamp Invariance (seconds vs milliseconds)",
+      "before": 203.0928,
+      "after": 0,
+      "delta": -203.0928,
+      "unit": "degrees",
+      "producer": "src/engine/solarPvEngine.ts:510",
+      "reproduce": "npx tsx scripts/remediation/verify-phase02.ts --quantity P2-02",
+      "verified": true
+    },
+    {
+      "id": "P2-03",
+      "name": "M-G2 POST /api/v1/solar/poa Default Endpoint Co-Alignment to Physical Irradiance",
+      "before": 409.748443,
+      "after": 891.120826,
+      "delta": 481.372383,
+      "unit": "W/m²",
+      "producer": "server.ts:220",
+      "reproduce": "npx tsx scripts/remediation/verify-phase02.ts --quantity P2-03",
+      "verified": true
+    },
+    {
+      "id": "P2-04",
+      "name": "M-G2 POST /api/v1/solar/poa Backward Compatibility with Both North-Clockwise 180°",
+      "before": 891.120826,
+      "after": 891.120826,
+      "delta": 0,
+      "unit": "W/m²",
+      "producer": "server.ts:220",
+      "reproduce": "npx tsx scripts/remediation/verify-phase02.ts --quantity P2-04",
+      "verified": true
+    },
+    {
+      "id": "P2-05",
+      "name": "Max Euclidean Difference between North and South ENU Solar Vector Functions",
+      "before": 2,
+      "after": 6.00444906373e-16,
+      "delta": -2,
+      "unit": "dimensionless",
+      "producer": "src/engine/core/solarGeometryContract.ts:114",
+      "reproduce": "npx tsx scripts/remediation/verify-phase02.ts --quantity P2-05",
+      "verified": true
+    },
+    {
+      "id": "P2-06",
+      "name": "Morning Solar Directional Shading Asymmetry (East Obstacle vs West Obstacle at 09:00)",
+      "before": 0,
+      "after": 100,
+      "delta": 100,
+      "unit": "percent",
+      "producer": "src/engine/roof3dShadingEngine.ts:800",
+      "reproduce": "npx tsx scripts/remediation/verify-phase02.ts --quantity P2-06",
+      "verified": true
+    },
+    {
+      "id": "P2-07",
+      "name": "Afternoon Solar Directional Shading Asymmetry (West Obstacle vs East Obstacle at 15:00)",
+      "before": 0,
+      "after": 100,
+      "delta": 100,
+      "unit": "percent",
+      "producer": "src/engine/roof3dShadingEngine.ts:800",
+      "reproduce": "npx tsx scripts/remediation/verify-phase02.ts --quantity P2-07",
+      "verified": true
+    },
+    {
+      "id": "P2-08",
+      "name": "Non-Regression Anchor Delta (M-A1, M-A2, M-C1, M-F1, M-F4)",
+      "before": 0,
+      "after": 0,
+      "delta": 0,
+      "unit": "units",
+      "producer": "src/engine/core/solarGeometryContract.ts:1",
+      "reproduce": "npx tsx scripts/remediation/verify-phase02.ts --quantity P2-08",
+      "verified": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "C2-01",
+      "lhs": 0,
+      "rhs": 0,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C2-02",
+      "lhs": 6.00444906373e-16,
+      "rhs": 0,
+      "delta": 6.00444906373e-16,
+      "pass": true
+    },
+    {
+      "id": "C2-03",
+      "lhs": 100,
+      "rhs": 100,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C2-04",
+      "lhs": 0,
+      "rhs": 0,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C2-05",
+      "lhs": 43.791054,
+      "rhs": 43.791054,
+      "delta": 0,
+      "pass": true
+    },
+    {
+      "id": "C2-06",
+      "lhs": 891.120826,
+      "rhs": 891.120826,
+      "delta": 0,
+      "pass": true
+    }
+  ],
+  "nonRegression": {
+    "M-A1": {
+      "before": 1851400,
+      "after": 1851400,
+      "delta": 0
+    },
+    "M-A2": {
+      "before": 1646827.145773,
+      "after": 1646827.145773,
+      "delta": 0
+    },
+    "M-C1": {
+      "before": 13.1225,
+      "after": 13.1225,
+      "delta": 0
+    },
+    "M-F1": {
+      "before": 499784,
+      "after": 499784,
+      "delta": 0
+    },
+    "M-F4": {
+      "before": 310202,
+      "after": 310202,
+      "delta": 0
+    }
+  },
+  "gates": {
+    "lintErrors": 0,
+    "anyWarnings": 93,
+    "testPass": 196,
+    "testFail": 0,
+    "testSkip": 0,
+    "buildExit": 0
+  }
+}

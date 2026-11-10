@@ -14,6 +14,7 @@ import { type SoilType } from '../structuralEngine';
 export interface BromsPileSizingResult {
   pileSection: string;
   embedmentDepthM: number;
+  lateralDepthM: number;
   minDepthForFrostM: number;
   lateralCapacityKn: number;
   appliedLateralShearKn: number;
@@ -22,6 +23,7 @@ export interface BromsPileSizingResult {
   fosLateral: number;
   fosMoment: number;
   isFosSafe: boolean;
+  isSearchLimitExhausted?: boolean;
   notes: string;
 }
 
@@ -57,27 +59,31 @@ export function calculateBromsPileSizing(
   let ultimateLateralCapacityKn = 0;
   const leverArmM = Math.max(0.1, clearanceHeightM);
 
+  let searchExhausted = false;
+
   if (soilClass === 'medium_clay') {
     // FHWA-NHI-16-009 §10.4.4 (free-headed short pile, cohesive soil):
     //   Solve iteratively for f:  e + 1.5*D + f/2 = L
     //   Then Hu = 9 * su * D * f
     // where e = leverArmM (moment arm to ground), D = pileWidthD, L = testL.
     const cu = Math.max(25, cohesionKpa);
-    // Iteratively find depth L providing FoS >= targetFos
-    let testL = minDepthForFrost;
+    // Iteratively find depth L providing FoS >= targetFos for pure lateral equilibrium
+    let testL = 0.8;
     while (testL <= 4.0) {
-      const f = Math.max(0.1, 2.0 * (testL - 1.5 * pileWidthD - leverArmM));
-      const cap = 9.0 * cu * pileWidthD * f;
-      if (cap >= lateralShearKn * targetFos && testL >= minDepthForFrost) {
+      const f = 2.0 * (testL - 1.5 * pileWidthD - leverArmM);
+      const cap = f > 0 ? 9.0 * cu * pileWidthD * f : 0;
+      if (cap >= lateralShearKn * targetFos) {
         requiredDepthM = Number(testL.toFixed(2));
         ultimateLateralCapacityKn = Number(cap.toFixed(1));
         break;
       }
-      testL += 0.1;
+      testL = Number((testL + 0.1).toFixed(2));
     }
     if (ultimateLateralCapacityKn === 0) {
-      requiredDepthM = 2.5;
-      ultimateLateralCapacityKn = Number(((9.0 * cu * pileWidthD * (2.5 - 1.5 * pileWidthD)) / 2.5).toFixed(1));
+      searchExhausted = true;
+      requiredDepthM = 4.0;
+      const f4 = Math.max(0, 2.0 * (4.0 - 1.5 * pileWidthD - leverArmM));
+      ultimateLateralCapacityKn = Number((9.0 * cu * pileWidthD * f4).toFixed(1));
     }
   } else {
     // Cohesionless Soil (Sand/Gravel): Broms short pile: Hu_ult = 0.5 * gamma * D * L^3 * Kp / (e + L)
@@ -85,19 +91,20 @@ export function calculateBromsPileSizing(
     const kp = Math.pow(Math.tan(Math.PI / 4 + phiRad / 2), 2);
     const gamma = densityKnM3 > 0 ? densityKnM3 : 18.0;
 
-    let testL = minDepthForFrost;
+    let testL = 0.8;
     while (testL <= 4.0) {
       const cap = (0.5 * gamma * pileWidthD * Math.pow(testL, 3) * kp) / (leverArmM + testL);
-      if (cap >= lateralShearKn * (targetFos >= 1.8 ? targetFos : 1.8) && testL >= minDepthForFrost) {
+      if (cap >= lateralShearKn * (targetFos >= 1.8 ? targetFos : 1.8)) {
         requiredDepthM = Number(testL.toFixed(2));
         ultimateLateralCapacityKn = Number(cap.toFixed(1));
         break;
       }
-      testL += 0.1;
+      testL = Number((testL + 0.1).toFixed(2));
     }
     if (ultimateLateralCapacityKn === 0) {
-      requiredDepthM = 2.2;
-      ultimateLateralCapacityKn = Number(((0.5 * gamma * pileWidthD * Math.pow(2.2, 3) * kp) / (leverArmM + 2.2)).toFixed(1));
+      searchExhausted = true;
+      requiredDepthM = 4.0;
+      ultimateLateralCapacityKn = Number(((0.5 * gamma * pileWidthD * Math.pow(4.0, 3) * kp) / (leverArmM + 4.0)).toFixed(1));
     }
   }
 
@@ -119,13 +126,23 @@ export function calculateBromsPileSizing(
     allowableMomentKnM = 41.4;
   }
 
+  const lateralDepthM = requiredDepthM;
+  const effectiveEmbedmentDepthM = Math.max(requiredDepthM, minDepthForFrost);
+
   const fosLateral = Number((ultimateLateralCapacityKn / Math.max(0.1, lateralShearKn)).toFixed(2));
   const fosMoment = Number((allowableMomentKnM / Math.max(0.1, bendingMomentKnM)).toFixed(2));
-  const isSafe = fosLateral >= 1.5 && fosMoment >= 1.5 && requiredDepthM >= minDepthForFrost;
+  const isSafe = !searchExhausted && fosLateral >= 1.5 && fosMoment >= 1.5 && effectiveEmbedmentDepthM >= minDepthForFrost;
+
+  const notes = searchExhausted
+    ? `[FAILED / UNASSESSED] Broms lateral capacity search limit (4.0m) exhausted: Applied lateral shear (${lateralShearKn.toFixed(2)} kN) exceeds soil capacity at maximum embedment (FoS_lateral = ${fosLateral} < 1.5). Pile lateral stability failed without larger pile section, ground anchors, or tiebacks.`
+    : !isSafe
+    ? `[INSUFFICIENT] Broms lateral capacity insufficient (FoS_lateral = ${fosLateral}, FoS_moment = ${fosMoment}, L = ${effectiveEmbedmentDepthM}m vs frost ${minDepthForFrost}m).`
+    : `Selected ${pileSection} satisfies Broms lateral equilibrium with FoS=${fosLateral} and frost heave embedment constraint (L=${effectiveEmbedmentDepthM}m >= ${minDepthForFrost}m).`;
 
   return {
     pileSection,
-    embedmentDepthM: requiredDepthM,
+    embedmentDepthM: effectiveEmbedmentDepthM,
+    lateralDepthM,
     minDepthForFrostM: minDepthForFrost,
     lateralCapacityKn: ultimateLateralCapacityKn,
     appliedLateralShearKn: Number(lateralShearKn.toFixed(2)),
@@ -134,7 +151,8 @@ export function calculateBromsPileSizing(
     fosLateral,
     fosMoment,
     isFosSafe: isSafe,
-    notes: `Selected ${pileSection} satisfies Broms lateral equilibrium with FoS=${fosLateral} and frost heave embedment constraint (L=${requiredDepthM}m >= ${minDepthForFrost}m).`,
+    isSearchLimitExhausted: searchExhausted,
+    notes,
   };
 }
 
@@ -156,18 +174,17 @@ export function calculateRequiredEmbedmentForUplift(
   targetFos: number = 2.0
 ): number {
   if (upliftDemandPerPostKn <= 0) {
-    return Math.max(minFrostDepthM + 1.0, 1.2);
+    return 0.5;
   }
 
   const perimeterM = Math.PI * diameterM;
   const targetCapacityKn = upliftDemandPerPostKn * targetFos;
-  let requiredDepthM = minFrostDepthM + 1.0;
+  let depthFromUplift = 0.5;
 
   if (soilType === 'medium_clay') {
     const su = Math.max(25, cohesionKpa);
     const alpha = su < 50 ? 0.5 : 0.35;
-    const depthFromUplift = targetCapacityKn / (alpha * su * perimeterM);
-    requiredDepthM = Math.max(requiredDepthM, depthFromUplift);
+    depthFromUplift = targetCapacityKn / (alpha * su * perimeterM);
   } else {
     const beta =
       soilType === 'dense_sand_gravel' ? 0.5
@@ -176,9 +193,8 @@ export function calculateRequiredEmbedmentForUplift(
     const gamma = Math.max(14, densityKnM3);
     // T_ult = 0.5 * beta * gamma * perimeter * L^2
     const coef = 0.5 * beta * gamma * perimeterM;
-    const depthFromUplift = Math.sqrt(targetCapacityKn / coef);
-    requiredDepthM = Math.max(requiredDepthM, depthFromUplift);
+    depthFromUplift = Math.sqrt(targetCapacityKn / coef);
   }
 
-  return Number(Math.max(requiredDepthM, minFrostDepthM + 1.0).toFixed(2));
+  return Number(Math.max(0.5, depthFromUplift).toFixed(2));
 }

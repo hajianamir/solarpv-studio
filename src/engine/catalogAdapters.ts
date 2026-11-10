@@ -29,6 +29,8 @@ export function catalogModuleToEngine(m: CatalogPvModule): PvModule {
     // Catalog stores tempCoeffVocPct in %/°C (e.g. -0.25).
     // Engine expects betaVocPerC as fraction/°C (e.g. -0.0025).
     betaVocPerC: m.tempCoeffVocPct / 100.0,
+    noctC: m.noctC ?? 45.0,
+    tempCoeffPmpPct: m.tempCoeffPmpPct,
   };
 }
 

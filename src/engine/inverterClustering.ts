@@ -72,6 +72,8 @@ export interface InverterClusteringResult {
   healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested';
   healthStatusTextFa: string;
   recommendationFa: string;
+  isUnitRightSized?: boolean;
+  requestedUnitRatingKw?: number;
 }
 
 export function evaluateInverterClustering(
@@ -80,19 +82,6 @@ export function evaluateInverterClustering(
   preferredUnitKw: number = 5.0,
   inverterVmpptMaxV?: number   // NEW (BUG-5): MPPT ceiling of the selected inverter
 ): InverterClusteringResult {
-  // Inverter DC bus nominal = 80 % of the MPPT ceiling (operating midpoint).
-  // Fall back to class-inferred values when the caller does not supply VmpptMax.
-  let inverterDcBusNominalV: number;
-  if (typeof inverterVmpptMaxV === 'number' && inverterVmpptMaxV > 0) {
-    inverterDcBusNominalV = Math.round(inverterVmpptMaxV * 0.8);
-  } else if (preferredUnitKw <= 10) {
-    inverterDcBusNominalV = 400;   // residential hybrid inverter DC bus
-  } else if (preferredUnitKw <= 100) {
-    inverterDcBusNominalV = 800;   // C&I three-phase string inverter
-  } else {
-    inverterDcBusNominalV = 1100;  // utility 1500 V-class string inverter
-  }
-
   const continuousKw = continuousWatts / 1000.0;
   const peakKw = peakSurgeWatts / 1000.0;
 
@@ -106,6 +95,26 @@ export function evaluateInverterClustering(
     engineeringClass = INVERTER_CLASSES.commercial_light;
   } else {
     engineeringClass = INVERTER_CLASSES.industrial_utility;
+  }
+
+  // Right-size oversized units for residential/commercial loads (e.g. utility 330kW passed to residential load)
+  const isUnitRightSized =
+    engineeringClass.classType !== 'industrial_utility' &&
+    preferredUnitKw > engineeringClass.maxSingleUnitKw * 2;
+  const requestedUnitRatingKw = preferredUnitKw;
+  const effectiveUnitKw = isUnitRightSized ? engineeringClass.maxSingleUnitKw : preferredUnitKw;
+
+  // Inverter DC bus nominal = 80 % of the MPPT ceiling (operating midpoint).
+  // Fall back to class-inferred values when the caller does not supply VmpptMax or unit is right-sized.
+  let inverterDcBusNominalV: number;
+  if (!isUnitRightSized && typeof inverterVmpptMaxV === 'number' && inverterVmpptMaxV > 0) {
+    inverterDcBusNominalV = Math.round(inverterVmpptMaxV * 0.8);
+  } else if (effectiveUnitKw <= 10) {
+    inverterDcBusNominalV = 400;   // residential hybrid inverter DC bus
+  } else if (effectiveUnitKw <= 100) {
+    inverterDcBusNominalV = 800;   // C&I three-phase string inverter
+  } else {
+    inverterDcBusNominalV = 1100;  // utility 1500 V-class string inverter
   }
 
   // 2. Auto-Voltage Stepping Logic:
@@ -125,8 +134,13 @@ export function evaluateInverterClustering(
     autoSteppingReasonFa = "توان بالای ۳ کیلووات؛ ارتقا خودکار به استاندارد ۴۸ ولت صنعتی جهت ممانعت از اتلاف حرارتی DC.";
   }
 
+  if (isUnitRightSized && recommendedDcVoltageVdc < engineeringClass.recommendedDcVoltage) {
+    recommendedDcVoltageVdc = engineeringClass.recommendedDcVoltage;
+    autoSteppingReasonFa = `اصلاح ولتاژ باس باتری به ${recommendedDcVoltageVdc} ولت متناسب با کلاس ${engineeringClass.titleFa}.`;
+  }
+
   // 3. Paralleling calculation
-  const unitKw = Math.max(1.0, preferredUnitKw);
+  const unitKw = Math.max(1.0, effectiveUnitKw);
   let parallelUnitsCount = Math.max(1, Math.ceil(continuousKw / unitKw));
 
   // Check surge capability (typical off-grid hybrid inverters deliver 2x surge for 5-10s)
@@ -146,7 +160,11 @@ export function evaluateInverterClustering(
   let healthStatusTextFa = 'سازگار و بهینه';
   let recommendationFa = `تعداد ${parallelUnitsCount} دستگاه اینورتر ${unitKw} کیلووات با کابل پارالل سنکرون همگام‌سازی شوند.`;
 
-  if (totalInverterCapacityKw < continuousKw) {
+  if (isUnitRightSized) {
+    healthStatus = 'upgrade_suggested';
+    healthStatusTextFa = `اینورتر نامتناسب صنعتی (${preferredUnitKw} کیلووات) به واحد بهینهٔ ${unitKw} کیلووات اصلاح شد.`;
+    recommendationFa = `واحد اینورتر به ظرفیت استاندارد ${unitKw} کیلووات متناسب با کلاس ${engineeringClass.titleFa} اصلاح شد تا بهره‌وری بار سبک حفظ شود.`;
+  } else if (totalInverterCapacityKw < continuousKw) {
     healthStatus = 'power_deficit';
     healthStatusTextFa = 'کمبود توان اینورتر نسبت به بار پیوسته';
     recommendationFa = `نیاز به افزودن حداقل ۱ دستگاه اینورتر دیگر به باسبار مشترک.`;
@@ -171,5 +189,7 @@ export function evaluateInverterClustering(
     healthStatus,
     healthStatusTextFa,
     recommendationFa,
+    isUnitRightSized,
+    requestedUnitRatingKw,
   };
 }

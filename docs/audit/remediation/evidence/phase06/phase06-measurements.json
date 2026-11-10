@@ -1,0 +1,279 @@
+{
+  "phase": "phase06",
+  "generatedAtCommit": "5e42ae4bf62c88bf659968f6c624bf47f33323de",
+  "harnessSha256": "c1044bef2d3ba6ca65528b655ddf774cca079b5c279ee8dc5975c37627d13cf5",
+  "contractSha256": "fb50d5bc746429dc6818bb6f62195dd09b4a5ad2013ca7a52e3d6ada73ad6f91",
+  "quantities": [
+    {
+      "id": "P6-01",
+      "name": "G-1 MV Substation CAPEX with Coordinated 1.52 MVA Transformer",
+      "unit": "USD",
+      "case": "G-1",
+      "before": 48632,
+      "after": 53200,
+      "delta": 4568,
+      "producer": "src/engine/financialEngine.ts:performFinancialAnalysis",
+      "formula": "effectiveSubstationMva * substationUsdPerMva (1.52 MVA * 35000 $/MVA = 53200 USD vs legacy 1.389474 MVA * 35000 $/MVA = 48632 USD)",
+      "reproduce": "npx tsx scripts/remediation/verify-phase06.ts --id P6-01",
+      "details": {
+        "legacyPlantMva": 1.389474,
+        "coordinatedTransformerMva": 1.52,
+        "substationUsdPerMva": 35000,
+        "capexDiffUsd": 4568
+      },
+      "verified": true
+    },
+    {
+      "id": "P6-02",
+      "name": "G-1 Year-25 Total Annual OPEX with Escalating Fixed Charges",
+      "unit": "Toman",
+      "case": "G-1",
+      "before": 3441138661,
+      "after": 3539338299,
+      "delta": 98199638,
+      "producer": "src/engine/financialEngine.ts:performFinancialAnalysis",
+      "formula": "baseAnnualOpexToman * (1 + opexEscalationRate)^24 + fixedAnnualChargesToman * (1 + opexEscalationRate)^24",
+      "reproduce": "npx tsx scripts/remediation/verify-phase06.ts --id P6-02",
+      "details": {
+        "fixedChargesAnnualUsd": 204.282,
+        "fixedChargesYear1Toman": 18385380,
+        "fixedChargesYear25Toman": 116585018,
+        "escalationPct": 8
+      },
+      "verified": true
+    },
+    {
+      "id": "P6-03",
+      "name": "G-3 Off-Grid Demand-Constrained LCOE with Residual Battery Salvage Credit",
+      "unit": "Toman/kWh",
+      "case": "G-3",
+      "before": 30643,
+      "after": 30115,
+      "delta": -528,
+      "producer": "src/engine/financialEngine.ts:performFinancialAnalysis",
+      "formula": "sumDiscountedCostsWithResidualSalvage / sumDiscountedServedDemandEnergy",
+      "reproduce": "npx tsx scripts/remediation/verify-phase06.ts --id P6-03",
+      "details": {
+        "batteryCapacityKwh": 19.2,
+        "batteryLifespanYears": 12,
+        "lastReplacementYear": 24,
+        "remainingLifespanRatio": "11/12",
+        "residualSalvageCreditToman": 544912886,
+        "residualSalvageUsd": 6055
+      },
+      "verified": true
+    },
+    {
+      "id": "P6-04",
+      "name": "G-1 Non-Conventional 2-Sign-Change Primary IRR Root Detection",
+      "unit": "%",
+      "case": "G-1",
+      "before": null,
+      "after": 5.4,
+      "delta": null,
+      "producer": "src/engine/financialEngine.ts:performFinancialAnalysis",
+      "formula": "solveCashFlowIrrAndMirr([-CAPEX, CF_1, ..., CF_25]).irrPct (smallest positive root among [-12.5%, +5.4%]) vs legacy Bolzano bisection solver across [-0.999, 5.0] (commit 49b89cc) which returned irrPct: null (irrStatus: NO_ROOT_IN_RANGE)",
+      "reproduce": "npx tsx scripts/remediation/verify-phase06.ts --id P6-04",
+      "details": {
+        "signChanges": 2,
+        "legacySolver": {
+          "searchInterval": [
+            -0.999,
+            5
+          ],
+          "npvLow": -1.5701606692585317e+85,
+          "npvHigh": -44058131029.393684,
+          "bolzanoSignChangeMet": false,
+          "irrStatus": "NO_ROOT_IN_RANGE",
+          "irrPct": null,
+          "note": "Legacy Bolzano bisection solver failed to find roots across [-0.999, 5.0] due to identical endpoint signs (npvLow * npvHigh > 0), even though two roots [-12.5%, +5.4%] exist in this interval."
+        },
+        "enhancedSolver": {
+          "irrStatus": "NON_CONVENTIONAL_MULTIPLE_ROOTS",
+          "irrRootsPct": [
+            -12.5,
+            5.4
+          ],
+          "mirrPct": 14.8,
+          "primaryPositiveRootPct": 5.4
+        }
+      },
+      "verified": true
+    },
+    {
+      "id": "P6-05",
+      "name": "G-1 Year-1 Net Export Yield Coupled with Outdoor Inverter Thermal Derate",
+      "unit": "kWh",
+      "case": "G-1",
+      "before": 1816762,
+      "after": 1797686,
+      "delta": -19076,
+      "producer": "src/engine/core/financialContract.ts:resolveFinancialSystemAnalysis",
+      "formula": "round(baseAnnualYieldKwh * (1.0 - inverterAnnualEnergyDeratePct / 100.0)) with derate = 3.0% * 0.35 = 1.05%",
+      "reproduce": "npx tsx scripts/remediation/verify-phase06.ts --id P6-05",
+      "details": {
+        "baseAnnualYieldKwh": 1816762,
+        "ambientTempMaxC": 39,
+        "totalInverterDeratePct": 3,
+        "weightedInverterDeratePct": 1.05,
+        "lostGenerationKwh": 19076
+      },
+      "verified": true
+    },
+    {
+      "id": "P6-06",
+      "name": "Coastal Salt-Mist Accelerated PV Annual Degradation Rate at d = 0.5 km",
+      "unit": "%/yr",
+      "case": "G-1",
+      "before": 0.45,
+      "after": 0.6,
+      "delta": 0.15,
+      "producer": "src/engine/environmentalAgingEngine.ts:calculateEnvironmentalAging",
+      "formula": "baseDegradationPct + saltMistPvDegradationAdderPct (0.45% + 0.15% = 0.60%/yr per IEC 61701)",
+      "reproduce": "npx tsx scripts/remediation/verify-phase06.ts --id P6-06",
+      "details": {
+        "distanceToCoastKm": 0.5,
+        "saltMistSeverity": "severe_coastal",
+        "adderPct": 0.15,
+        "twentyFiveYearRetentionPct": 86,
+        "expectedLifespanYears": 35
+      },
+      "verified": true
+    },
+    {
+      "id": "P6-07",
+      "name": "G-1 Zero-Escalation NPV under Fisher-Consistent Real Discount Rate",
+      "unit": "USD",
+      "case": "G-1",
+      "before": -247356,
+      "after": 381562,
+      "delta": 628918,
+      "producer": "src/engine/core/financialContract.ts:COUNTRY_FINANCIAL_PROFILES",
+      "formula": "performFinancialAnalysis with r_real = computeFisherRealDiscountRatePct(18.0, 15.0) = 2.6087%, tariffEscalation = 0%, opexEscalation = 0%",
+      "reproduce": "npx tsx scripts/remediation/verify-phase06.ts --id P6-07",
+      "details": {
+        "nominalDiscountRatePct": 18,
+        "inflationRatePct": 15,
+        "realDiscountRatePct": 2.6087,
+        "tariffEscalationPct": 0,
+        "opexEscalationPct": 0,
+        "lcoeUsdPerKwh": 0.0192
+      },
+      "verified": true
+    },
+    {
+      "id": "P6-08",
+      "name": "G-1 Full-Chain Integrated LCOE with Aging Derate, 1.52 MVA Substation, Year-12 Inverter Overhaul & Salvage",
+      "unit": "Toman/kWh",
+      "case": "G-1",
+      "before": 5056,
+      "after": 5343,
+      "delta": 287,
+      "producer": "src/engine/core/financialContract.ts:resolveFinancialSystemAnalysis",
+      "formula": "LCOE of fully coupled system: yield = 1797686 kWh, transformer = 1.52 MVA, opex escalation active, Y12 inverter overhaul with 2/15 salvage credit at Y25",
+      "reproduce": "npx tsx scripts/remediation/verify-phase06.ts --id P6-08",
+      "details": {
+        "lcoeUsdPerKwh": 0.0594,
+        "year1GenerationKwh": 1797686,
+        "totalCapexUsd": 504352,
+        "totalCapexToman": 45391651579,
+        "salvageCreditY25Toman": 894028589
+      },
+      "verified": true
+    }
+  ],
+  "coherenceChecks": [
+    {
+      "id": "C6-01",
+      "name": "تراز دقیق جزء‌به‌کل CAPEX و انطباق هزینهٔ پست MV با ظرفیت ترانسفورماتور هماهنگ",
+      "lhs": 504352,
+      "rhs": 504352,
+      "delta": 0,
+      "pass": true,
+      "definition": "مجموع ۱۱ جزء دلاری و تومانی در capexBreakdown دقیقاً برابر totalCapexUsd (504352 USD) و totalCapexToman (45391651579 Toman) بوده و پست MV دقیقاً 53200 USD (1.52 MVA * 35000 $/MVA) است."
+    },
+    {
+      "id": "C6-02",
+      "name": "اتحاد پایستگی بهای تمام‌شدهٔ تنزیل‌شده منهای ارزش پسماند در LCOE",
+      "lhs": 30115,
+      "rhs": 30115,
+      "delta": 0,
+      "pass": true,
+      "definition": "تطابق دقیق بهای تمام‌شده LCOE در حالت آف‌گرید G-3 (30115 Toman/kWh) با بازمحاسبه مستقل مجموع هزینه‌ها منهای ارزش پسماند باتری سال ۲۴ (544912886 Toman) بر انرژی تقاضاشده، و برقراری LCOE نیروگاه یکپارچه G-1 برابر 5343 Toman/kWh."
+    },
+    {
+      "id": "C6-03",
+      "name": "صحت صفر شدن NPV در ریشه‌های چندگانهٔ IRR و یکتایی MIRR در جریان نقدی غیرمتعارف",
+      "lhs": 8.4808e-16,
+      "rhs": 0,
+      "delta": 8.4808e-16,
+      "pass": true,
+      "definition": "قدرمطلق خطای نسبی NPV در ریشه مثبت دقیق (0.05357860) کمتر از 1e-6 (معادل 8.4808e-16) بوده و هر دو ریشه [-12.5%, 5.4%] و MIRR برابر 14.8% شناسایی شدند."
+    },
+    {
+      "id": "C6-04",
+      "name": "هم‌سازگاری تنزیل اسمی و حقیقی فیشر و اعتبار رجیستری پروفایل‌های کشوری",
+      "lhs": 2.6087,
+      "rhs": 2.6087,
+      "delta": 0,
+      "pass": true,
+      "definition": "انطباق نرخ تنزیل حقیقی فیشر (2.6087%) با خطای کمتر از 1e-6، هم‌ارزی ارزش فعلی جریان‌های عملیاتی اسمی و حقیقی فیشر با خطای نسبی 4.8235e-7 (< 1e-4)، و اعتبار هر سه پروفایل کشوری."
+    },
+    {
+      "id": "C6-05",
+      "name": "یکنواختی اکید اقتصادی در ماتریس حساسیت سه‌محوری اجباری (۲۷ نقطه)",
+      "lhs": 27,
+      "rhs": 27,
+      "delta": 0,
+      "pass": true,
+      "definition": "برقراری کامل قوانین سه‌گانه یکنواختی اقتصادی (افزایش تعرفه -> افزایش NPV، افزایش تنزیل -> کاهش NPV و افزایش LCOE، افزایش CAPEX -> کاهش NPV و افزایش LCOE) در تمام ۲۷ نقطه ماتریس حساسیت."
+    },
+    {
+      "id": "C6-06",
+      "name": "یکنواختی فیزیکی فرسایش محیطی ساحلی و اتصال افت حرارتی اینورتر فضای باز",
+      "lhs": 0.6,
+      "rhs": 0.45,
+      "delta": 0.15,
+      "pass": true,
+      "definition": "یکنواختی اکید استهلاک سالانه پنل در فواصل ساحلی (0.60% > 0.53% > 0.45%/yr) طبق IEC 61701، و جریمه انرژی سالانه 1.05% برای اینورتر روباز در برابر 0.0% برای اینورتر سرپوشیده."
+    }
+  ],
+  "nonRegression": {
+    "M-A1": {
+      "expected": 1851400,
+      "actual": 1851400,
+      "delta": 0,
+      "pass": true
+    },
+    "M-A2": {
+      "expected": 1646827.145773,
+      "actual": 1646827.145773,
+      "delta": 0,
+      "pass": true
+    },
+    "M-C1": {
+      "expected": 13.1225,
+      "actual": 13.1225,
+      "delta": 0,
+      "pass": true
+    },
+    "M-D1": {
+      "expected": 2.74,
+      "actual": 2.74,
+      "delta": 0,
+      "pass": true
+    },
+    "M-F1": {
+      "expected": 499784,
+      "actual": 499784,
+      "delta": 0,
+      "pass": true
+    },
+    "M-F4": {
+      "expected": 310202,
+      "actual": 310202,
+      "delta": 0,
+      "pass": true
+    }
+  }
+}

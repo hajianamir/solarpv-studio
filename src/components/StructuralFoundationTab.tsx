@@ -48,6 +48,14 @@ import {
   type Iso9223Category,
   CATEGORY_META,
 } from '../engine/corrosion/saltCorrosionEngine';
+import {
+  createStructuralSnapshot,
+  computeStructuralInputHash,
+  DEFAULT_GROUND_CLEARANCE_M,
+  DEFAULT_MODULES_PER_TABLE,
+  resolveFoundationType,
+  type StructuralSnapshot,
+} from '../engine/core/structuralContract';
 
 interface StructuralFoundationTabProps {
   totalModulesCount?: number;
@@ -55,6 +63,9 @@ interface StructuralFoundationTabProps {
   city?: ClimateCity;
   siteOverrides?: SiteGeotechnicalOverrides;
   onUpdateSiteOverrides?: (overrides: SiteGeotechnicalOverrides) => void;
+  onUpdateStructuralSnapshot?: (snapshot: StructuralSnapshot) => void;
+  modulesPerTable?: number;
+  onUpdateModulesPerTable?: (val: number) => void;
   lang?: 'fa' | 'en';
 }
 
@@ -96,6 +107,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   },
   siteOverrides,
   onUpdateSiteOverrides,
+  onUpdateStructuralSnapshot,
+  modulesPerTable: propModulesPerTable,
+  onUpdateModulesPerTable,
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
@@ -103,18 +117,24 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   // Geometry parameters
   const [modulesCount, setModulesCount] = useState<number>(totalModulesCount || 140);
   const [tiltDeg, setTiltDeg] = useState<number>(siteOverrides?.arrayTiltDeg ?? arrayTiltDeg ?? 28);
-  const [modulesPerTable, setModulesPerTable] = useState<number>(28);
-  const [groundClearanceM, setGroundClearanceM] = useState<number>(siteOverrides?.groundClearanceM ?? 0.9);
+  const [modulesPerTable, setModulesPerTable] = useState<number>(propModulesPerTable ?? DEFAULT_MODULES_PER_TABLE);
+
+  useEffect(() => {
+    if (propModulesPerTable !== undefined && propModulesPerTable !== modulesPerTable) {
+      setModulesPerTable(propModulesPerTable);
+    }
+  }, [propModulesPerTable, modulesPerTable]);
+
+  const [groundClearanceM, setGroundClearanceM] = useState<number>(siteOverrides?.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M);
   const [installationEnvironment, setInstallationEnvironment] = useState<InstallationEnvironment>(
     siteOverrides?.installationEnvironment || 'ground_mount'
   );
   const [foundationType, setFoundationType] = useState<FoundationType>(
-    (siteOverrides?.foundationType as FoundationType) ||
-      (siteOverrides?.installationEnvironment === 'industrial_shed'
-        ? 'shed_roof_clamp_rail'
-        : siteOverrides?.installationEnvironment === 'rooftop_flat_concrete'
-        ? 'rooftop_ballasted_block'
-        : 'rammed_steel_pile')
+    resolveFoundationType(
+      siteOverrides?.foundationType,
+      siteOverrides?.installationEnvironment,
+      siteOverrides?.soilType ?? city.soilType
+    )
   );
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
@@ -428,6 +448,58 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     customPostsPerTable,
   ]);
 
+  // Synchronize live structural calculation snapshot with top-level state
+  useEffect(() => {
+    if (onUpdateStructuralSnapshot) {
+      const inputHash = computeStructuralInputHash({
+        cityId: city.id,
+        totalModulesCount: modulesCount,
+        arrayTiltDeg: tiltDeg,
+        foundationType,
+        basicWindSpeedKmh,
+        groundSnowLoadKgM2,
+        groundClearanceM,
+        soilType,
+        frostDepthCm,
+        soilBearingCapacityKpa,
+        soilInternalFrictionAngleDeg: soilFrictionAngleDeg,
+        soilCohesionKpa,
+        soilDensityKnM3,
+        seismicZoneCoefficientA: seismicZoneA,
+        customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : null,
+        customPostsPerTable,
+        installationEnvironment,
+        elevationM: city.elevationM || 0,
+        modulesPerTable,
+      });
+      const snapshot = createStructuralSnapshot(structResult, foundationType, inputHash);
+      onUpdateStructuralSnapshot(snapshot);
+    }
+  }, [
+    structResult,
+    foundationType,
+    city.id,
+    modulesCount,
+    tiltDeg,
+    basicWindSpeedKmh,
+    groundSnowLoadKgM2,
+    groundClearanceM,
+    soilType,
+    frostDepthCm,
+    soilBearingCapacityKpa,
+    soilFrictionAngleDeg,
+    soilCohesionKpa,
+    soilDensityKnM3,
+    seismicZoneA,
+    isManualDepth,
+    customEmbedmentDepthM,
+    customPostsPerTable,
+    installationEnvironment,
+    city.elevationM,
+    modulesPerTable,
+    onUpdateStructuralSnapshot,
+  ]);
+
   const recResult: FoundationRecommendationResult = useMemo(() => {
     return recommendFoundation({
       siteName: isEn ? city.nameEn : city.nameFa,
@@ -479,8 +551,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         </h1>
         <p className="text-slate-400 text-xs">
           {isEn
-            ? 'Design conforming to INBC Part 6 & ASCE 7-22: Wind uplift forces, overturning moments, soil bearing capacity verification, rammed steel C-piles, and cast-in-place concrete piers.'
-            : 'طراحی سازه بر اساس مبحث ششم مقررات ملی ساختمان و ASCE 7-22، محاسبه نیروی مکش باد، لنگر واژگونی، تنش باربری مجاز خاک، سایزینگ پایه‌های کوبشی فولادی و فونداسیون‌های بتنی.'}
+            ? 'Preliminary screening estimation per ASCE 7-22 & INBC Part 6 principles: Evaluates baseline wind and geotechnical loads. Not detailed design certification or substitute for a licensed structural engineer.'
+            : 'ارزیابی و غربالگری اولیه مهندسی بر مبنای اصول مبحث ۶ و ASCE 7-22: تخمین اولیه بارهای باد و ژئوتکنیک؛ جایگزین طراحی تفصیلی یا تاییدیه مهندس محاسب ذی‌صلاح نمی‌باشد.'}
         </p>
       </div>
 
@@ -1101,7 +1173,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               <span>{isEn ? 'View 6-Section Report' : 'گزارش ۶ بخشی مهندسی'}</span>
             </button>
             <button
-              onClick={() => setFoundationType(recResult.primaryRecommendation)}
+              id="struct-apply-recommended-foundation"
+              onClick={() => {
+                setFoundationType(recResult.primaryRecommendation);
+                handleUpdateParam({ foundationType: recResult.primaryRecommendation });
+              }}
               className="text-xs px-3.5 py-1.5 rounded-md bg-industrial-success hover:bg-industrial-success text-white font-bold flex items-center gap-1.5 transition"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1323,8 +1399,12 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               </strong>
               <p className="text-[11px] text-slate-300 mb-2.5 leading-relaxed">
                 {isEn
-                  ? 'Down-The-Hole (DTH) pneumatic rock drill creates a 120mm socket only 0.85m deep. Encasing the post in 35MPa non-shrink grout mobilizes huge rock bond shear (τ_bond ≥ 1.5 MPa), completely bypassing pile refusal.'
-                  : 'حفاری گمانه ۱۲۰mm به عمق تنها ۰.۸۵ متر در سنگ بستر + تزریق گروت ۳۵ مگاپاسکال. چسبندگی عالی گروت به سنگ (τ_bond ≥ ۱.۵ MPa) امتناع کوبش را کاملاً رفع کرده و عمق را ۵۵٪ کاهش می‌دهد.'}
+                  ? soilType === 'rocky_limestone'
+                    ? 'Down-The-Hole (DTH) pneumatic rock drill creates a 120mm socket into bedrock. Encasing the post in 35MPa non-shrink grout mobilizes high rock bond shear (τ_bond ≥ 1.5 MPa), completely bypassing pile refusal.'
+                    : `Pre-drilled 120mm micro-pile encased in 35MPa non-shrink grout mobilizes soil bond shear (assumed τ_bond ≈ ${((structResult.assumedGroutBondKpa ?? 200) / 1000).toFixed(2)} MPa; in-situ pullout test required).`
+                  : soilType === 'rocky_limestone'
+                  ? 'حفاری گمانه ۱۲۰mm در سنگ بستر + تزریق گروت ۳۵ مگاپاسکال. چسبندگی عالی گروت به سنگ (τ_bond ≥ ۱.۵ MPa) امتناع کوبش را کاملاً رفع می‌کند.'
+                  : `حفاری گمانه ۱۲۰mm با تزریق گروت در خاک (چسبندگی فرضی حدود ${((structResult.assumedGroutBondKpa ?? 200) / 1000).toFixed(2)} مگاپاسکال؛ نیازمند آزمایش کشش درجا).`}
               </p>
               <div className="space-y-1 text-[10px] text-slate-300 border-t border-industrial-border/60 pt-2 mb-3">
                 <div className="flex justify-between">
@@ -1333,7 +1413,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">{isEn ? 'Uplift Mechanism:' : 'مکانیزم مهار کشش:'}</span>
-                  <span className="text-emerald-300">{isEn ? 'Grout-Rock Bond (τ ≥ 1.5 MPa)' : 'چسبندگی برشی گروت-سنگ'}</span>
+                  <span className="text-emerald-300">
+                    {soilType === 'rocky_limestone'
+                      ? (isEn ? 'Grout-Rock Bond (τ ≥ 1.5 MPa)' : 'چسبندگی برشی گروت-سنگ')
+                      : (isEn ? `Grout Bond (τ ≈ ${((structResult.assumedGroutBondKpa ?? 200) / 1000).toFixed(2)} MPa)` : `چسبندگی گروت (${((structResult.assumedGroutBondKpa ?? 200) / 1000).toFixed(2)} MPa)`)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">{isEn ? 'Grout Volume / Post:' : 'مصرف گروت هر پایه:'}</span>
@@ -1429,9 +1513,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-300">
               <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'Rock Socket Depth:' : 'عمق گمانه در سنگ بستر:'}</span>
+                <span className="text-slate-400 block text-[10px]">
+                  {soilType === 'rocky_limestone'
+                    ? (isEn ? 'Rock Socket Depth:' : 'عمق گمانه در سنگ بستر:')
+                    : (isEn ? 'Grouted Pile Depth:' : 'عمق شمع پیش‌حفاری با گروت:')
+                  }
+                </span>
                 <span className="font-mono text-emerald-300 font-bold text-sm">{structResult.recommendedDepthM} m</span>
-                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'vs 1.9m for driven pile' : '۵۵٪ کاهش نسبت به شمع کوبشی'}</span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'vs 1.9m for driven pile' : 'کاهش عمق نسبت به شمع کوبشی'}</span>
               </div>
               <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Borehole Diameter:' : 'قطر گمانه حفاری:'}</span>
@@ -1439,9 +1528,26 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'Pneumatic down-hole hammer' : 'چکش بادی درون چاهی'}</span>
               </div>
               <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'Grout Bond Strength:' : 'تنش چسبندگی گروت-سنگ:'}</span>
-                <span className="font-mono text-emerald-300 font-bold text-sm">τ_bond ≥ 1.50 MPa</span>
-                <span className="text-[9px] text-slate-400 block mt-0.5">{isEn ? 'FHWA-NHI-05-039 / EC7' : 'استاندارد میکروپایل FHWA'}</span>
+                <span className="text-slate-400 block text-[10px]">
+                  {structResult.upliftCapacityProvenance === 'user_supplied'
+                    ? (isEn ? 'User Pullout Capacity:' : 'ظرفیت کشش ورودی کاربر:')
+                    : (isEn ? 'Grout Bond Strength:' : 'تنش چسبندگی گروت-سنگ/خاک:')
+                  }
+                </span>
+                <span className="font-mono text-emerald-300 font-bold text-sm">
+                  {structResult.upliftCapacityProvenance === 'user_supplied'
+                    ? `${structResult.upliftCapacityPerPostKn} kN`
+                    : `τ_bond ≈ ${((structResult.assumedGroutBondKpa ?? 1500) / 1000).toFixed(2)} MPa`
+                  }
+                </span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">
+                  {structResult.upliftCapacityProvenance === 'user_supplied'
+                    ? (isEn ? 'User Input (Field Verification Req.)' : 'ورودی کاربر (نیازمند آزمون درجا)')
+                    : structResult.upliftCapacityProvenance === 'nominal_assumed'
+                    ? (isEn ? 'FHWA-NHI-05-039 (Unverified Nominal)' : 'فرضی اسمی - نیازمند آزمون درجا')
+                    : (isEn ? 'FHWA-NHI-05-039 / EC7' : 'استاندارد میکروپایل FHWA')
+                  }
+                </span>
               </div>
               <div className="p-2 bg-slate-900/70 rounded border border-emerald-500/20">
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Total Grout Volume:' : 'حجم کل تزریق گروت ۳۵MPa:'}</span>
@@ -1788,7 +1894,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             <select
               id="struct-modules-per-table"
               value={modulesPerTable}
-              onChange={(e) => setModulesPerTable(parseInt(e.target.value) || 28)}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10) || DEFAULT_MODULES_PER_TABLE;
+                setModulesPerTable(val);
+                onUpdateModulesPerTable?.(val);
+              }}
               className="studio-input text-xs"
             >
               <option value="14">{isEn ? '14 Modules (2P7 config)' : '۱۴ پنل (۲ ردیف عمودی ۷ تایی)'}</option>
@@ -1827,7 +1937,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   ? (isEn ? 'Soil Penetration Depth:' : 'عمق نفوذ / کوبش در خاک:')
                   : (isEn ? 'Pile Embedment Depth:' : 'عمق کوبش شمع در خاک:')}
               </label>
-              <span className="font-mono text-industrial-warning font-bold">
+              <span id="struct-display-depth" className="font-mono text-industrial-warning font-bold">
                 {structResult.recommendedDepthM} m
                 {!isManualDepth && <span className="text-[10px] text-slate-400 font-normal"> (Auto)</span>}
               </span>
@@ -1949,17 +2059,17 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Velocity Wind Pressure (q_z)' : 'فشار سرعتی باد (q_z)'}</div>
-          <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
+          <div id="struct-display-qz" className="text-xl font-bold font-mono text-industrial-accent mt-1">
             {structResult.velocityWindPressureQzN_M2} <span className="text-xs font-normal">N/m²</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            {isEn ? 'Design wind pressure per INBC 6 / ASCE 7' : 'فشار طراحی باد طبق مبحث ۶ و ASCE 7'}
+            {isEn ? 'Screening wind pressure per INBC 6 / ASCE 7 principles' : 'فشار غربالگری باد بر اساس مبانی مبحث ۶ و ASCE 7'}
           </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? 'Table Wind Uplift Force' : 'نیروی مکش باد بر هر میز (Uplift)'}</div>
-          <div className="text-xl font-bold font-mono text-rose-400 mt-1">
+          <div id="struct-display-uplift" className="text-xl font-bold font-mono text-rose-400 mt-1">
             {structResult.windUpliftForceKn} <span className="text-xs font-normal">kN</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
@@ -2011,8 +2121,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             {foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block'
               ? (isEn ? 'Required ≥ 1.5 (self-weight overturning)' : 'حداقل ۱.۵ (واژگونی وزن خود)')
               : foundationType === 'pre_drilled_grouted_pile'
-              ? (isEn ? `Eurocode 7 ≥ 2.0 (τ_bond ≥ 1.5 MPa, T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`
-                     : `یوروکد ۷ حداقل ۲.۰ (چسبندگی ۱.۵MPa، ظرفیت ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)
+              ? structResult.upliftCapacityProvenance === 'nominal_assumed'
+                ? (isEn
+                    ? `Nominal FoS = ${structResult.fosUplift} (UNASSESSED — τ_bond ≈ ${((structResult.assumedGroutBondKpa ?? 1500) / 1000).toFixed(2)} MPa, T_assumed = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN; pullout test required)`
+                    : `ضریب اسمی = ${structResult.fosUplift} (ارزیابی‌نشده — چسبندگی فرضی ${((structResult.assumedGroutBondKpa ?? 1500) / 1000).toFixed(2)} MPa، ظرفیت ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN؛ نیازمند آزمون درجا)`)
+                : structResult.upliftCapacityProvenance === 'user_supplied'
+                ? (isEn
+                    ? `Screening FoS = ${structResult.fosUplift} ≥ 2.0 (T_input = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN; field verification required)`
+                    : `ضریب غربالگری = ${structResult.fosUplift} ≥ ۲.۰ (ورودی ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN؛ نیازمند تایید درجا)`)
+                : (isEn ? `Eurocode 7 ≥ 2.0 (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`
+                       : `یوروکد ۷ حداقل ۲.۰ (ظرفیت ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)
               : (isEn ? `Eurocode 7 ≥ 2.0 (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post)`
                      : `یوروکد ۷ حداقل ۲.۰ (T_ult = ${structResult.upliftCapacityPerPostKn.toFixed(1)} kN)`)}
           </div>
@@ -2031,14 +2149,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               </span>
             )}
           </div>
-          <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+          <div id="struct-display-safety-compliance" className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
             {structResult.isStructurallySafe ? (
               <span className="text-industrial-success flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Stable (Design Compliant)' : 'مجاز و ایمن (مطابق استاندارد)'}
+                <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Screening Pass (Evaluated Modes Safe)' : 'غربالگری اولیه تایید (مودهای ارزیابی‌شده ایمن)'}
               </span>
             ) : (
               <span className="text-rose-400 flex items-center gap-1 font-semibold">
-                <AlertTriangle className="w-3 h-3" /> {isEn ? 'Unstable (Remediation Needed)' : 'ناپایدار (نیازمند اصلاح)'}
+                <AlertTriangle className="w-3 h-3" /> {isEn ? 'Action Required / Unassessed' : 'نیازمند اقدام / ارزیابی‌نشده'}
               </span>
             )}
           </div>
@@ -2198,13 +2316,13 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Total Tables Count:' : 'تعداد کل میزهای سازه (Tables):'}</span>
-              <span className="font-mono text-sky-300">
+              <span id="struct-display-tables" className="font-mono text-sky-300">
                 {structResult.totalTablesCount} {isEn ? 'tables' : 'میز'} ({structResult.postsPerTable} {isEn ? 'posts/table' : 'پایه در هر میز'})
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Total Piles / Posts:' : 'تعداد کل پایه‌ها / شمع‌های کوبشی:'}</span>
-              <strong className="font-mono text-industrial-success">{structResult.totalPostsCount} {isEn ? 'posts' : 'پایه'}</strong>
+              <strong id="struct-display-posts" className="font-mono text-industrial-success">{structResult.totalPostsCount} {isEn ? 'posts' : 'پایه'}</strong>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Compression Load per Post:' : 'نیروی فشاری روی هر پایه (Compression):'}</span>
@@ -2222,8 +2340,20 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             {foundationType === 'pre_drilled_grouted_pile' && (
               <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
-                <span className="text-slate-400">{isEn ? 'Rock-Socket Grout Bond Strength:' : 'تنش چسبندگی پیوند سنگ-گروت (τ_bond):'}</span>
-                <span className="font-mono text-emerald-300 font-bold">1500 kPa (1.50 MPa)</span>
+                <span className="text-slate-400">
+                  {soilType === 'rocky_limestone'
+                    ? (isEn ? 'Rock-Socket Grout Bond Strength (τ_bond):' : 'تنش چسبندگی پیوند سنگ-گروت (τ_bond):')
+                    : (isEn ? 'Grout-Soil Bond Strength (τ_bond):' : 'تنش چسبندگی پیوند خاک-گروت (τ_bond):')
+                  }
+                </span>
+                <span className={`font-mono font-bold ${
+                  structResult.upliftCapacityProvenance === 'nominal_assumed' ? 'text-amber-400' : 'text-emerald-300'
+                }`}>
+                  {structResult.assumedGroutBondKpa ?? (soilType === 'rocky_limestone' ? 1500 : soilType === 'dense_sand_gravel' ? 550 : soilType === 'medium_clay' ? 300 : 200)} kPa ({(((structResult.assumedGroutBondKpa ?? (soilType === 'rocky_limestone' ? 1500 : soilType === 'dense_sand_gravel' ? 550 : soilType === 'medium_clay' ? 300 : 200))) / 1000).toFixed(2)} MPa)
+                  {structResult.upliftCapacityProvenance === 'nominal_assumed' && (
+                    <span className="text-[10px] font-normal text-amber-300 ml-1">({isEn ? 'Assumed' : 'فرضی'})</span>
+                  )}
+                </span>
               </div>
             )}
             {foundationType === 'surface_ballasted_block' && (
@@ -2233,9 +2363,28 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               </div>
             )}
             <div className="flex justify-between items-center py-1.5">
-              <span className="text-slate-400">{isEn ? 'Ultimate Skin-Friction Uplift (T_ult):' : 'ظرفیت کشش نهایی جدار خاک (T_ult):'}</span>
-              <span className="font-mono text-industrial-success">
-                {structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post (FoS = {structResult.fosUplift})
+              <span className="text-slate-400">
+                {foundationType === 'pre_drilled_grouted_pile'
+                  ? structResult.upliftCapacityProvenance === 'nominal_assumed'
+                    ? (isEn ? 'Grout Bond Uplift Resistance (T_assumed - UNASSESSED):' : 'ظرفیت کشش چسبندگی گروت (T_assumed - ارزیابی‌نشده):')
+                    : structResult.upliftCapacityProvenance === 'user_supplied'
+                    ? (isEn ? 'Pre-Drilled Pile Uplift Resistance (T_input):' : 'ظرفیت کشش شمع پیش‌حفاری (T_input):')
+                    : (isEn ? 'Pre-Drilled Grout Uplift Capacity (T_ult):' : 'ظرفیت کشش شمع پیش‌حفاری (T_ult):')
+                  : (isEn ? 'Ultimate Skin-Friction Uplift (T_ult):' : 'ظرفیت کشش نهایی جدار خاک (T_ult):')}
+              </span>
+              <span className={`font-mono font-bold ${
+                structResult.upliftCapacityProvenance === 'invalid_input'
+                  ? 'text-rose-400'
+                  : structResult.upliftCapacityProvenance === 'nominal_assumed' || !structResult.isStructurallySafe
+                  ? 'text-amber-400'
+                  : 'text-industrial-success'
+              }`}>
+                {structResult.upliftCapacityProvenance === 'invalid_input'
+                  ? (isEn ? 'INVALID' : 'نامعتبر')
+                  : `${structResult.upliftCapacityPerPostKn.toFixed(1)} kN/post (FoS = ${structResult.fosUplift})`}
+                {structResult.upliftCapacityProvenance === 'nominal_assumed' && (
+                  <span className="text-[10px] font-normal text-amber-300 ml-1">({isEn ? 'UNASSESSED' : 'ارزیابی‌نشده'})</span>
+                )}
               </span>
             </div>
           </div>
@@ -2312,12 +2461,16 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       {/* Engineering Signoff Banner */}
       <div className="studio-card bg-industrial-surface/90 border border-industrial-border">
         <div className="flex items-start gap-3">
-          <div className="p-2 rounded bg-industrial-accent/10 border border-industrial-accent/30 text-industrial-accent mt-0.5">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className={`p-2 rounded border mt-0.5 ${
+            structResult.isStructurallySafe
+              ? 'bg-industrial-accent/10 border-industrial-accent/30 text-industrial-accent'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+          }`}>
+            {structResult.isStructurallySafe ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
           </div>
           <div>
             <h4 className="font-bold text-sm text-white mb-1">
-              {isEn ? 'Design Codes & Engineering Standards Compliance:' : 'تطابق با آیین‌نامه‌های طراحی سازه و فونداسیون:'}
+              {isEn ? 'Engineering Screening Scope & Standards Reference:' : 'محدوده غربالگری مهندسی و مراجع استاندارد:'}
             </h4>
             <p className="text-xs text-slate-300 leading-relaxed mb-2">
               {isEn ? structResult.engineeringRemarksEn : structResult.engineeringRemarksFa}

@@ -63,6 +63,12 @@ export interface UserFinancialPricing {
   customerType?: 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'custom';
   offgridServedLoadKwhAnnual?: number; // Annual load demand served in offgrid
   offgridDailyLoadKwh?: number; // Daily load demand in offgrid
+
+  // Phase 6 Engine Integrity & Contract Extensions (P6-01 .. P6-04)
+  substationTransformerMva?: number; // Authoritative coordinated MV transformer rating from powerplant bay sizing (MVA)
+  escalateFixedChargesWithOpex?: boolean; // When true, escalates annual fixed land lease & grid operator charges with opexEscalationPct
+  includeResidualSalvageValue?: boolean; // When true, linear residual life of late-period battery/inverter replacements is credited in final year
+  inverterLifespanYears?: number; // Design lifespan of replacement inverter (default 15 years)
 }
 
 export const DEFAULT_FINANCIAL_PRICING: UserFinancialPricing = {
@@ -128,6 +134,7 @@ export interface YearCashFlowItem {
   fuelCostToman: number;
   batteryReplacementToman: number;
   inverterReplacementToman?: number;
+  salvageCreditToman?: number;
   netCashFlowToman: number;
   cumulativeCashFlowToman: number;
   discountedCashFlowToman: number;
@@ -189,6 +196,10 @@ export interface FinancialAnalysisResult {
   irrPct: number | null;
   irrStatus: IrrStatus;
   isIrrDefined: boolean;
+  irrRootsPct?: number[];
+  mirrPct?: number | null;
+  residualSalvageToman?: number;
+  residualSalvageUsd?: number;
   annualCo2ReductionTons: number;
   lifetime25yCo2ReductionTons: number;
   year0CashFlow: YearCashFlowItem;
@@ -270,6 +281,18 @@ export function sanitizeFinancialPricing(custom?: Partial<UserFinancialPricing>)
     customerType: custom.customerType || base.customerType || 'commercial',
     offgridDailyLoadKwh: custom.offgridDailyLoadKwh !== undefined ? cleanNum(custom.offgridDailyLoadKwh, 0, 0) : undefined,
     offgridServedLoadKwhAnnual: custom.offgridServedLoadKwhAnnual !== undefined ? cleanNum(custom.offgridServedLoadKwhAnnual, 0, 0) : undefined,
+    substationTransformerMva: custom.substationTransformerMva !== undefined
+      ? cleanNum(custom.substationTransformerMva, 0, 0)
+      : undefined,
+    escalateFixedChargesWithOpex: custom.escalateFixedChargesWithOpex !== undefined
+      ? Boolean(custom.escalateFixedChargesWithOpex)
+      : undefined,
+    includeResidualSalvageValue: custom.includeResidualSalvageValue !== undefined
+      ? Boolean(custom.includeResidualSalvageValue)
+      : undefined,
+    inverterLifespanYears: custom.inverterLifespanYears !== undefined
+      ? cleanNum(custom.inverterLifespanYears, 15, 1, 50)
+      : undefined,
   };
 }
 
@@ -295,6 +318,9 @@ export function performFinancialAnalysis(
   // Plant apparent power demand: S_kVA = P_kW / PF
   const plantApparentPowerKva = safeInverterKw > 0 ? safeInverterKw / powerFactor : 0;
   const plantMva = Math.max(0.0, plantApparentPowerKva / 1000.0);
+  const effectiveSubstationMva = (p.substationTransformerMva && p.substationTransformerMva > 0)
+    ? p.substationTransformerMva
+    : plantMva;
 
   // 1. System Mode-Aware CAPEX & Balance of Plant (BOP) Allocation
   const modulesUsd = pvWatts * p.moduleUsdPerWp;
@@ -324,7 +350,7 @@ export function performFinancialAnalysis(
       break;
 
     case 'ongrid':
-      substationUsd = safeInverterKw > 500 ? plantMva * p.substationUsdPerMva : 0;
+      substationUsd = safeInverterKw > 500 ? effectiveSubstationMva * p.substationUsdPerMva : 0;
       gridInterconnectionUsd = safeInverterKw * 10.0;
       hvConnectionUsd = 0;
       batteryReplacementYear12Usd = batteriesUsd > 0 ? batteriesUsd * 0.70 : 0;
@@ -332,7 +358,7 @@ export function performFinancialAnalysis(
 
     case 'powerplant':
     default:
-      substationUsd = plantMva * p.substationUsdPerMva;
+      substationUsd = effectiveSubstationMva * p.substationUsdPerMva;
       gridInterconnectionUsd = plantMva * 24000;
       // Rigorous apparent power unit consistency: $/kVA * kVA = $
       hvConnectionUsd = plantApparentPowerKva * p.hvConnectionUsdPerKva;
@@ -565,7 +591,8 @@ export function performFinancialAnalysis(
     }
 
     const opexGrowthFactor = Math.pow(1.0 + opexEscalationRate, yr - 1);
-    const opex = baseAnnualOpexToman * opexGrowthFactor + fixedAnnualChargesUsd * p.usdToTomanRate;
+    const fixedChargesGrowth = p.escalateFixedChargesWithOpex ? opexGrowthFactor : 1.0;
+    const opex = baseAnnualOpexToman * opexGrowthFactor + fixedAnnualChargesUsd * p.usdToTomanRate * fixedChargesGrowth;
     const fuel = annualDieselFuelCostToman * opexGrowthFactor;
 
     const isBatteryReplacementYr =
@@ -581,7 +608,35 @@ export function performFinancialAnalysis(
       ? invertersUsd * (p.inverterReplacementCostRatio ?? 0.60) * p.usdToTomanRate * Math.pow(1.05, yr - 1)
       : 0;
 
-    const netCashFlow = revenue - (opex + fuel + batteryReplacementToman + inverterReplacementToman);
+    let batterySalvageToman = 0;
+    let inverterSalvageToman = 0;
+    if (yr === safeLifetimeYears && p.includeResidualSalvageValue === true) {
+      if (batteriesUsd > 0 && batteryLifespanYears > 0) {
+        const lastBatteryRepYr = Math.floor((safeLifetimeYears - 1) / batteryLifespanYears) * batteryLifespanYears;
+        if (lastBatteryRepYr > 0) {
+          const usedBatYears = safeLifetimeYears - lastBatteryRepYr;
+          if (usedBatYears < batteryLifespanYears) {
+            batterySalvageToman = ((batteriesUsd * 0.70) * p.usdToTomanRate * Math.pow(1.05, lastBatteryRepYr - 1)) *
+              ((batteryLifespanYears - usedBatYears) / batteryLifespanYears);
+          }
+        }
+      }
+
+      if (p.inverterReplacementYear && p.inverterReplacementYear > 0 && p.inverterReplacementYear < safeLifetimeYears && invertersUsd > 0) {
+        const invLife = p.inverterLifespanYears && p.inverterLifespanYears > 0 ? p.inverterLifespanYears : 15;
+        const usedInvYears = safeLifetimeYears - p.inverterReplacementYear;
+        if (usedInvYears < invLife) {
+          inverterSalvageToman = (invertersUsd * (p.inverterReplacementCostRatio ?? 0.60) * p.usdToTomanRate * Math.pow(1.05, p.inverterReplacementYear - 1)) *
+            ((invLife - usedInvYears) / invLife);
+        }
+      }
+    }
+
+    const salvageCreditToman = (yr === safeLifetimeYears && p.includeResidualSalvageValue === true)
+      ? (batterySalvageToman + inverterSalvageToman)
+      : 0;
+
+    const netCashFlow = revenue + salvageCreditToman - (opex + fuel + batteryReplacementToman + inverterReplacementToman);
     const prevCumulative = cumulativeCashFlow;
     cumulativeCashFlow += netCashFlow;
 
@@ -619,6 +674,7 @@ export function performFinancialAnalysis(
       fuelCostToman: Math.round(fuel),
       batteryReplacementToman: Math.round(batteryReplacementToman),
       inverterReplacementToman: Math.round(inverterReplacementToman),
+      salvageCreditToman: Math.round(salvageCreditToman),
       netCashFlowToman: Math.round(netCashFlow),
       cumulativeCashFlowToman: Math.round(cumulativeCashFlow),
       discountedCashFlowToman: Math.round(discountedCashFlow),
@@ -675,6 +731,8 @@ export function performFinancialAnalysis(
   let calculatedIrrPct: number | null = null;
   let irrStatus: IrrStatus = 'NO_SIGN_CHANGE';
   let isIrrDefined = false;
+  let irrRootsPct: number[] | undefined;
+  let mirrPct: number | null = null;
 
   const npvAt = (rate: number): number => {
     let npv = -capexBreakdown.totalCapexToman;
@@ -698,8 +756,8 @@ export function performFinancialAnalysis(
     const npvLow = npvAt(lowBound);
     const npvHigh = npvAt(highBound);
 
-    // Bolzano's Intermediate Value Theorem check
-    if (npvLow * npvHigh <= 0) {
+    // Bolzano's Intermediate Value Theorem check for conventional single-root case
+    if (signChanges === 1 && npvLow * npvHigh <= 0) {
       let low = lowBound;
       let high = highBound;
       for (let iter = 0; iter < 70; iter++) {
@@ -714,11 +772,95 @@ export function performFinancialAnalysis(
       const rootRate = (low + high) / 2.0;
       calculatedIrrPct = Number((rootRate * 100.0).toFixed(1));
       isIrrDefined = true;
-      irrStatus = signChanges > 1 ? 'NON_CONVENTIONAL_MULTIPLE_ROOTS' : 'DEFINED_SINGLE_ROOT';
+      irrStatus = 'DEFINED_SINGLE_ROOT';
+      irrRootsPct = [calculatedIrrPct];
     } else {
-      irrStatus = 'NO_ROOT_IN_RANGE';
-      calculatedIrrPct = null;
-      isIrrDefined = false;
+      // Multi-sub-interval scanner for non-conventional cash flows (signChanges > 1 or npvLow * npvHigh > 0)
+      const scannedRoots: number[] = [];
+      const numIntervals = 600;
+      const scanA = -0.90;
+      const scanB = 5.0;
+      const step = (scanB - scanA) / numIntervals;
+
+      for (let i = 0; i < numIntervals; i++) {
+        const subA = scanA + i * step;
+        const subB = subA + step;
+        const npvA = npvAt(subA);
+        const npvB = npvAt(subB);
+
+        if (npvA * npvB <= 0) {
+          let low = subA;
+          let high = subB;
+          for (let iter = 0; iter < 60; iter++) {
+            const mid = (low + high) / 2.0;
+            const npvMid = npvAt(mid);
+            if (npvA <= 0) {
+              if (npvMid <= 0) low = mid;
+              else high = mid;
+            } else {
+              if (npvMid > 0) low = mid;
+              else high = mid;
+            }
+          }
+          const root = Number((((low + high) / 2.0) * 100.0).toFixed(1));
+          if (!scannedRoots.some(rVal => Math.abs(rVal - root) < 0.05)) {
+            scannedRoots.push(root);
+          }
+        }
+      }
+
+      if (scannedRoots.length > 0) {
+        irrRootsPct = scannedRoots.sort((a, b) => a - b);
+        const positiveRoots = irrRootsPct.filter(rVal => rVal > 0);
+        if (positiveRoots.length > 0) {
+          calculatedIrrPct = positiveRoots[0];
+        } else {
+          calculatedIrrPct = irrRootsPct[irrRootsPct.length - 1];
+        }
+        isIrrDefined = true;
+        irrStatus = (signChanges > 1 || irrRootsPct.length > 1)
+          ? 'NON_CONVENTIONAL_MULTIPLE_ROOTS'
+          : 'DEFINED_SINGLE_ROOT';
+      } else if (npvLow * npvHigh <= 0) {
+        let low = lowBound;
+        let high = highBound;
+        for (let iter = 0; iter < 70; iter++) {
+          const mid = (low + high) / 2.0;
+          const npvMid = npvAt(mid);
+          if (npvMid > 0) low = mid;
+          else high = mid;
+        }
+        calculatedIrrPct = Number((((low + high) / 2.0) * 100.0).toFixed(1));
+        isIrrDefined = true;
+        irrStatus = signChanges > 1 ? 'NON_CONVENTIONAL_MULTIPLE_ROOTS' : 'DEFINED_SINGLE_ROOT';
+        irrRootsPct = [calculatedIrrPct];
+      } else {
+        irrStatus = 'NO_ROOT_IN_RANGE';
+        calculatedIrrPct = null;
+        isIrrDefined = false;
+        irrRootsPct = [];
+      }
+    }
+
+    // Modified Internal Rate of Return (MIRR) calculation:
+    // With finance / reinvestment rate r = max(-0.99, p.discountRatePct / 100)
+    const discountRateDecimal = Math.max(-0.99, p.discountRatePct / 100.0);
+    let pvNegative = 0;
+    let fvPositive = 0;
+
+    for (let t = 0; t <= safeLifetimeYears; t++) {
+      const cf = cashFlowStream[t];
+      if (cf < 0) {
+        pvNegative += Math.abs(cf) / Math.pow(1.0 + discountRateDecimal, t);
+      } else if (cf > 0) {
+        fvPositive += cf * Math.pow(1.0 + discountRateDecimal, safeLifetimeYears - t);
+      }
+    }
+
+    if (pvNegative > 0 && fvPositive > 0 && safeLifetimeYears > 0) {
+      mirrPct = Number(((Math.pow(fvPositive / pvNegative, 1.0 / safeLifetimeYears) - 1.0) * 100.0).toFixed(1));
+    } else {
+      mirrPct = null;
     }
   }
 
@@ -738,7 +880,8 @@ export function performFinancialAnalysis(
       cashFlow25Years[yr - 1].opexToman +
       cashFlow25Years[yr - 1].fuelCostToman +
       cashFlow25Years[yr - 1].batteryReplacementToman +
-      (cashFlow25Years[yr - 1].inverterReplacementToman ?? 0);
+      (cashFlow25Years[yr - 1].inverterReplacementToman ?? 0) -
+      (cashFlow25Years[yr - 1].salvageCreditToman ?? 0);
     const discountDiv = Math.pow(1.0 + r, yr);
     sumDiscountedCostsToman += discountDiv > 0 ? yrCostToman / discountDiv : yrCostToman;
 
@@ -861,6 +1004,12 @@ export function performFinancialAnalysis(
     irrPct: calculatedIrrPct,
     irrStatus,
     isIrrDefined,
+    irrRootsPct,
+    mirrPct,
+    residualSalvageToman: p.includeResidualSalvageValue ? Math.round(cashFlow25Years[safeLifetimeYears - 1]?.salvageCreditToman ?? 0) : undefined,
+    residualSalvageUsd: (p.includeResidualSalvageValue && p.usdToTomanRate > 0)
+      ? Math.round((cashFlow25Years[safeLifetimeYears - 1]?.salvageCreditToman ?? 0) / p.usdToTomanRate)
+      : undefined,
     annualCo2ReductionTons: Math.round(annualCo2ReductionTons),
     lifetime25yCo2ReductionTons: Math.round(lifetime25yCo2ReductionTons),
     year0CashFlow,
