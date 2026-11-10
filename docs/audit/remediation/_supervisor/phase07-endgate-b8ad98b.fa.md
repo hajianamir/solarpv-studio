@@ -1,0 +1,12 @@
+# بازرسی مجدد دروازهٔ پایان فاز ۷ — `b8ad98b`
+
+نتیجه `REJECTED`. lint، test و build با کد صفر اجرا شدند؛ lint دارای ۹۳ هشدار است. تست منجمد `unitTestsCore.ts` نسبت به `832805e` صفر بایت دیف دارد. دو اجرای هارنس هش `8a04538de30db569b9d72b87c92378ce43afac0c173d1a04319e7ff1c6524ed4` را بازتولید کردند.
+
+1. هش یکسان نیست: `App.tsx:1446` ارتفاع پیش‌فرض `0.8` و `StructuralFoundationTab.tsx:114` مقدار `0.9` را می‌گیرد. با سایر ورودی‌های یکسان، دو هش مساوی نیستند؛ محاسبهٔ تازه می‌تواند فوراً stale شود. `App.tsx:1453` عدد ۲۸ را هم ثابت می‌گیرد ولی تب در `:113` متغیر `modulesPerTable` دارد.
+2. `StructuralFoundationTab.tsx:390-414` مقادیر `soilBearingCapacityKpa`, `soilInternalFrictionAngleDeg`, `soilCohesionKpa`, `soilDensityKnM3`, `annualRainfallMm`, `seismicZoneCoefficientA` را در موتور به کار می‌برد، ولی `StructuralInputHashParams` در `structuralContract.ts:633-670` آن‌ها را لحاظ نمی‌کند. آزمون مستقل S-1: تغییر ظرفیت خاک از ۲۵۰ به ۵۰ kPa، `isBearingCapacitySafe` را از true به false تبدیل کرد، اما ورودی تابع hash برای این تغییر یکسان است.
+3. `verify-phase07.ts:523-590,750-758` دو بار همان آبجکت مصنوعی را به تابع hash می‌دهد و پس از تغییر در آبجکت، `isStale` را دستی می‌سازد. React tab/App/Report و فایل اکسل واقعی اجرا نمی‌شوند؛ C7-05 شرایط صریح آزمون مسیر واقعی را ثابت نمی‌کند. `P7-08` در خطوط 605-611 با `before=null`، delta عددی می‌نویسد.
+4. `OfficialReportModal.tsx:998-999,1209-1210,1973-1980` هنوز در خلاصه و BOM از `structCalc` مستقل استفاده می‌کند، حتی بدون snapshot یا با snapshot منقضی. بخش‌های دیگر گزارش/اکسل نیز باید از همان snapshot معتبر استفاده کنند یا unavailable باشند.
+5. تعارض تست به‌صورت صریح تشدید شد و تست دست‌نخورده است، ولی `structuralEngine.ts:405-425,801-806` در فقدان frostDepth به عمق lateral/default برگشته و می‌تواند `isStructurallySafe=true` بدهد. اجرای مستقل S-1 بدون frostDepth و با باد ۳۰ km/h: `recommendedDepthM=1.3`, `isFrostDepthRespected=true`, `isStructurallySafe=true`. نبود دادهٔ یخ‌زدگی نباید به معنای ارزیابی معتبر یا انطباق کلی باشد؛ راهکار تفکیک غربالگری/دادهٔ ناموجود و تصمیم در مورد تست را با حفظ تست منجمد تشدید کن.
+6. `verify-phase07.ts:87-97` همچنان خطای worktree را با catch بی‌اثر پنهان می‌کند و مسیر ثابت را بدون بررسی اصالت و پاکی بازاستفاده می‌کند؛ شرط عددی P7-02 فقط `extractedBaselineQzPa > 800` است و عدم قطعیت گردشدن را مدل نمی‌کند.
+
+طبق سیاست رد مکرر (§۷)، به جای ادامهٔ تکراری همان دامنه، مرحلهٔ اصلاح به دو بخش مستقل «اعتبار وضعیت و مسیر گزارش» و «حدهای سازه/شواهد» شکسته شود؛ تغییر تست منجمد یا فایل ممنوع بدون تصمیم کتبی مجاز نیست. شروع فاز بعد یا ادغام مجاز نیست.
