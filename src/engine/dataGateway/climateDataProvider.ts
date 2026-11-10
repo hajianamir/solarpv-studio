@@ -498,8 +498,13 @@ export class ClimateDataProvider {
 
   public parsePvgisResponse(lat: number, lng: number, json: any): ClimateResourceData {
     const monthly = json?.outputs?.monthly;
-    if (!Array.isArray(monthly) || monthly.length === 0) {
-      throw new Error(`PVGIS response missing monthly irradiance outputs (got ${Array.isArray(monthly) ? 0 : 'non-array'})`);
+    if (!Array.isArray(monthly) || monthly.length < 12) {
+      throw new Error(`PVGIS response missing complete annual irradiance series (got ${Array.isArray(monthly) ? monthly.length : 0} months, minimum 12 required)`);
+    }
+
+    // A complete climatological annual series must represent full 12-month cycles
+    if (monthly.length % 12 !== 0) {
+      throw new Error(`PVGIS response contains incomplete year cycle (${monthly.length} months, must be a multiple of 12)`);
     }
 
     const getDaysInMonth = (year: number | undefined, month: number): number => {
@@ -563,11 +568,18 @@ export class ClimateDataProvider {
       }
     }
 
-    if (totalDays <= 0) {
-      throw new Error('PVGIS response contains no valid days in monthly series');
+    if (totalDays < 365) {
+      throw new Error(`PVGIS response covers fewer than 365 days (${totalDays} days), cannot represent annual climatology`);
+    }
+
+    if (totalIrradiationKwh <= 0) {
+      throw new Error('PVGIS response yielded zero annual horizontal irradiance; falling back to regional analytical model');
     }
 
     const psh = Number((totalIrradiationKwh / totalDays).toFixed(2));
+    if (!Number.isFinite(psh) || psh <= 0) {
+      throw new Error(`PVGIS response produced non-physical daily PSH (${psh})`);
+    }
     const absLat = Math.abs(lat);
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
 

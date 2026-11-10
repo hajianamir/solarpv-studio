@@ -37,6 +37,7 @@ import {
   asNorthAzimuthDeg,
 } from './src/engine/core/solarGeometryContract.js';
 import { ExternalDataGateway } from './src/engine/dataGateway/externalDataGateway.js';
+import { isRealInternetEnabled } from './src/engine/env/runtimeEnv.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -272,6 +273,9 @@ app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
 app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
   const rawQ = req.query.q;
   if (typeof rawQ !== 'string' || rawQ.trim() === '') {
+    return res.json([]);
+  }
+  if (!isRealInternetEnabled()) {
     return res.json([]);
   }
   try {

@@ -94,6 +94,22 @@ export class SoilDataProvider {
   }
 
   public parseSoilGridsResponse(lat: number, lng: number, json: any): SoilPropertiesData {
+    // Helper to calculate depth interval thickness in cm (e.g., 0-5cm -> 5cm, 5-15cm -> 10cm, 15-30cm -> 15cm)
+    const parseLayerThicknessCm = (depthObj: any): number => {
+      if (typeof depthObj?.range?.top_depth === 'number' && typeof depthObj?.range?.bottom_depth === 'number') {
+        const thickness = depthObj.range.bottom_depth - depthObj.range.top_depth;
+        if (thickness > 0) return thickness;
+      }
+      const label = String(depthObj?.label || '');
+      const match = label.match(/(\d+)-(\d+)\s*cm/i);
+      if (match) {
+        const top = parseInt(match[1], 10);
+        const bottom = parseInt(match[2], 10);
+        if (bottom > top) return bottom - top;
+      }
+      return 10;
+    };
+
     // SoilGrids units: clay/sand/silt in g/kg (divide by 10 to get %), bdod in cg/cm3 (divide by 100 for g/cm3)
     let clayPct = 25.0;
     let sandPct = 50.0;
@@ -111,19 +127,20 @@ export class SoilDataProvider {
     if (Array.isArray(layers) && layers.length > 0) {
       for (const layer of layers) {
         const depths = layer?.depths;
-        let sum = 0;
-        let count = 0;
+        let sumWeighted = 0;
+        let sumWeight = 0;
         if (Array.isArray(depths) && depths.length > 0) {
           for (const d of depths) {
             const val = d?.values?.mean;
             if (typeof val === 'number' && Number.isFinite(val) && val >= 0) {
-              sum += val;
-              count++;
+              const weight = parseLayerThicknessCm(d);
+              sumWeighted += val * weight;
+              sumWeight += weight;
             }
           }
         }
-        if (count > 0) {
-          const meanVal = sum / count;
+        if (sumWeight > 0) {
+          const meanVal = sumWeighted / sumWeight;
           if (layer.name === 'clay') { clayPct = meanVal / 10.0; hasClay = true; }
           if (layer.name === 'sand') { sandPct = meanVal / 10.0; hasSand = true; }
           if (layer.name === 'silt') { siltPct = meanVal / 10.0; hasSilt = true; }
@@ -133,11 +150,36 @@ export class SoilDataProvider {
       }
     }
 
+    // Only accept provider texture if ALL THREE primary fractions (clay, sand, silt) were returned by the API
+    let isTextureComplete = hasClay && hasSand && hasSilt;
+    if (isTextureComplete) {
+      const textureSum = clayPct + sandPct + siltPct;
+      if (textureSum > 0) {
+        // Normalize to strictly 100% so fractions never exceed physical boundary
+        clayPct = Number(((clayPct / textureSum) * 100).toFixed(1));
+        sandPct = Number(((sandPct / textureSum) * 100).toFixed(1));
+        siltPct = Number((100 - clayPct - sandPct).toFixed(1));
+      } else {
+        isTextureComplete = false;
+      }
+    }
+
+    // If any texture fraction is missing from provider, fall back to analytical geomorphic estimate
+    if (!isTextureComplete) {
+      const analytical = this.computeAnalyticalSoilProperties(lat, lng, true);
+      clayPct = analytical.clayFractionPercent;
+      sandPct = analytical.sandFractionPercent;
+      siltPct = analytical.siltFractionPercent;
+      hasClay = false;
+      hasSand = false;
+      hasSilt = false;
+    }
+
     const { classification, bearingKpa, phiDeg, bearingRangeKpa, frictionRangeDeg, cohesionKpa, densityKnM3, disclaimer } =
       this.mapTextureToGeotechnicalParams(clayPct, sandPct, siltPct, bdodGcm3);
 
     const frostDepth = Math.abs(lat) > 45 ? 60 : 20;
-    const isTextureFromProvider = hasClay || hasSand || hasSilt;
+    const isTextureFromProvider = isTextureComplete;
 
     const fieldProvenance: Record<string, ParameterProvenance> = {
       clayFractionPercent: hasClay

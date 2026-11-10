@@ -200,9 +200,94 @@ async function runAuditVerification() {
   assert(invalidCoordsThrew, 'Out-of-range coordinate check triggered');
 
   // --------------------------------------------------------------------------
-  // 5. Windows Launcher start.bat Contracts (Priority 3.1 & 3.2)
+  // 5. Soil Geotechnical Depth Weighting & Incomplete Texture Protection
   // --------------------------------------------------------------------------
-  console.log('\n[Group 5] Windows start.bat CRLF & Syntax Verification');
+  console.log('\n[Group 5] Soil Depth-Weighted Averaging & Incomplete Texture Protection');
+
+  // 5a. Depth-weighted thickness averaging (0-5cm @ 10%, 5-15cm @ 20%, 15-30cm @ 30%)
+  // Unweighted = (10+20+30)/3 = 20.00%
+  // Depth-weighted = (10*5 + 20*10 + 30*15) / 30 = 700 / 30 = 23.33%
+  const depthWeightedPayload = {
+    properties: {
+      layers: [
+        {
+          name: 'clay',
+          depths: [
+            { label: '0-5cm', range: { top_depth: 0, bottom_depth: 5 }, values: { mean: 100 } },
+            { label: '5-15cm', range: { top_depth: 5, bottom_depth: 15 }, values: { mean: 200 } },
+            { label: '15-30cm', range: { top_depth: 15, bottom_depth: 30 }, values: { mean: 300 } },
+          ],
+        },
+        {
+          name: 'sand',
+          depths: [
+            { label: '0-30cm', range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 400 } }, // 40%
+          ],
+        },
+        {
+          name: 'silt',
+          depths: [
+            { label: '0-30cm', range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 367 } }, // 36.7%
+          ],
+        },
+      ],
+    },
+  };
+  const depthWeightedSoil = soilProvider.parseSoilGridsResponse(35.0, 50.0, depthWeightedPayload);
+  assert(
+    depthWeightedSoil.clayFractionPercent === 23.3,
+    'Calculates depth-weighted layer average (23.3%), not unweighted arithmetic mean (20%)',
+    `clayPct = ${depthWeightedSoil.clayFractionPercent}%`
+  );
+
+  // 5b. Incomplete soil texture protection (missing silt layer)
+  const incompleteSoilPayload = {
+    properties: {
+      layers: [
+        { name: 'clay', depths: [{ label: '0-30cm', values: { mean: 600 } }] }, // 60%
+        { name: 'sand', depths: [{ label: '0-30cm', values: { mean: 500 } }] }, // 50%
+        // silt missing
+      ],
+    },
+  };
+  const incompleteSoil = soilProvider.parseSoilGridsResponse(35.0, 50.0, incompleteSoilPayload);
+  const textureSum = incompleteSoil.clayFractionPercent + incompleteSoil.sandFractionPercent + incompleteSoil.siltFractionPercent;
+  assert(
+    Math.abs(textureSum - 100) <= 0.5,
+    'Incomplete soil payload normalized to <=100% without fabricating impossible 135% texture',
+    `textureSum = ${textureSum}%`
+  );
+  assert(
+    incompleteSoil.metadata.isEstimatedFromGlobalModel === true,
+    'Incomplete soil marked as estimated from global model to prevent 30-day cache pollution'
+  );
+
+  // 5c. PVGIS single-month or all-zero rejection
+  let singleMonthThrew = false;
+  try {
+    climateProvider.parsePvgisResponse(35.0, 50.0, {
+      outputs: { monthly: [{ month: 1, 'H(h)_m': 100 }] },
+    });
+  } catch {
+    singleMonthThrew = true;
+  }
+  assert(singleMonthThrew, 'PVGIS parser rejects single-month series (minimum 12 required)');
+
+  let allZeroThrew = false;
+  try {
+    const allZero = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 'H(h)_m': 0.0 }));
+    climateProvider.parsePvgisResponse(35.0, 50.0, {
+      outputs: { monthly: allZero },
+    });
+  } catch {
+    allZeroThrew = true;
+  }
+  assert(allZeroThrew, 'PVGIS parser rejects all-zero year and falls back to analytical model without crashing');
+
+  // --------------------------------------------------------------------------
+  // 6. Windows Launcher start.bat Contracts (Priority 3.1 & 3.2)
+  // --------------------------------------------------------------------------
+  console.log('\n[Group 6] Windows start.bat CRLF & Syntax Verification');
 
   const batRaw = fs.readFileSync('start.bat');
   const hasCrlf = batRaw.includes(Buffer.from('\r\n'));

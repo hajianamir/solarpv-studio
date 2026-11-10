@@ -22,6 +22,17 @@ import {
 import { type ClimateCity, getClimateData, fetchClimateData } from '../engine/climaticData';
 import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 import { formatLatitude, formatLongitude, formatCoordinates } from '../engine/geoCoordinates';
+import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
+
+function escapeHtml(str: string | undefined | null): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 interface SiteLocationMapProps {
   currentCity: ClimateCity;
@@ -92,6 +103,31 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       abortControllerRef.current = controller;
       const reqId = ++activeRequestIdRef.current;
 
+      // In offline mode, resolve immediately using the local geospatial model without network requests
+      if (!isRealInternetEnabled()) {
+        const locationData = calculateGeospatialSolarResource(targetLat, targetLng);
+        if (labelName) {
+          locationData.nameFa = labelName;
+          locationData.nameEn = labelName;
+        }
+        onSelectLocation(locationData);
+        setEstimatedPsh(locationData.peakSunHours);
+        if (markerRef.current) {
+          const resTitle = escapeHtml(isEn ? locationData.nameEn : locationData.nameFa);
+          const resCoords = escapeHtml(formatCoordinates(targetLat, targetLng, 4));
+          const resPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(String(locationData.peakSunHours))} PSH`;
+          markerRef.current.getPopup()?.setContent(
+            `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
+              <strong style="color:#0f172a; font-size:13px;">${resTitle}</strong><br/>
+              <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${resCoords}</span><br/>
+              <span style="color:#f59e0b; font-weight:bold;">${resPsh}</span>
+            </div>`
+          );
+        }
+        setLiveStatus('offline');
+        return;
+      }
+
       setLiveStatus('loading');
       fetchClimateData(targetLat, targetLng, { signal: controller.signal })
         .then((gwData) => {
@@ -105,11 +141,14 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           onSelectLocation(gwData);
           setEstimatedPsh(gwData.peakSunHours);
           if (markerRef.current) {
+            const resTitle = escapeHtml(isEn ? gwData.nameEn : gwData.nameFa);
+            const resCoords = escapeHtml(formatCoordinates(targetLat, targetLng, 4));
+            const resPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(String(gwData.peakSunHours))} PSH`;
             markerRef.current.getPopup()?.setContent(
               `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
-                <strong style="color:#0f172a; font-size:13px;">${isEn ? gwData.nameEn : gwData.nameFa}</strong><br/>
-                <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${formatCoordinates(targetLat, targetLng, 4)}</span><br/>
-                <span style="color:#f59e0b; font-weight:bold;">${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${gwData.peakSunHours} PSH</span>
+                <strong style="color:#0f172a; font-size:13px;">${resTitle}</strong><br/>
+                <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${resCoords}</span><br/>
+                <span style="color:#f59e0b; font-weight:bold;">${resPsh}</span>
               </div>`
             );
           }
@@ -282,22 +321,28 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       }).addTo(map);
       markerRef.current = marker;
 
-      // Marker popup content updater
+      // Marker popup content updater with strict HTML escaping against XSS
       const updatePopup = (latVal: number, lngVal: number, cityData: ClimateCity) => {
+        const titleText = escapeHtml(isEn ? cityData.nameEn : cityData.nameFa);
+        const coordText = escapeHtml(formatCoordinates(latVal, lngVal, 4));
+        const pshText = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(String(cityData.peakSunHours))} PSH`;
         marker.getPopup()?.setContent(
           `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
-            <strong style="color:#0f172a; font-size:13px;">${isEn ? cityData.nameEn : cityData.nameFa}</strong><br/>
-            <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${formatCoordinates(latVal, lngVal, 4)}</span><br/>
-            <span style="color:#f59e0b; font-weight:bold;">${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${cityData.peakSunHours} PSH</span>
+            <strong style="color:#0f172a; font-size:13px;">${titleText}</strong><br/>
+            <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${coordText}</span><br/>
+            <span style="color:#f59e0b; font-weight:bold;">${pshText}</span>
           </div>`
         );
       };
 
+      const initialTitle = escapeHtml(isEn ? currentCity.nameEn : currentCity.nameFa);
+      const initialCoords = escapeHtml(formatCoordinates(coords.lat, coords.lng, 4));
+      const initialPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(String(currentCity.peakSunHours))} PSH`;
       marker.bindPopup(
         `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
-          <strong style="color:#0f172a; font-size:13px;">${isEn ? currentCity.nameEn : currentCity.nameFa}</strong><br/>
-          <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${formatCoordinates(coords.lat, coords.lng, 4)}</span><br/>
-          <span style="color:#f59e0b; font-weight:bold;">${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${currentCity.peakSunHours} PSH</span>
+          <strong style="color:#0f172a; font-size:13px;">${initialTitle}</strong><br/>
+          <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${initialCoords}</span><br/>
+          <span style="color:#f59e0b; font-weight:bold;">${initialPsh}</span>
         </div>`
       );
 
@@ -347,8 +392,15 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     };
   }, [coords.lat, coords.lng, currentCity, isEn, onSelectLocation, requestClimateUpdate]); // exhaustive-deps fix (PR-2a-7-FOLLOWUP-2)
 
-  // Sync coords with external currentCity changes
+  // Sync coords with external currentCity changes and cancel any in-flight map requests
   useEffect(() => {
+    // Abort and invalidate any pending map query when currentCity is modified from outside (e.g. manual edit)
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    activeRequestIdRef.current++;
+    setLiveStatus('idle');
+
     const currentLat = typeof currentCity.latitude === 'number' ? currentCity.latitude : 35.6892;
     const currentLng = typeof currentCity.longitude === 'number' ? currentCity.longitude : 51.3890;
     if (
@@ -362,7 +414,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       markerRef.current.setLatLng([currentLat, currentLng]);
       mapInstanceRef.current.panTo([currentLat, currentLng]);
     }
-  }, [currentCity, coords.lat, coords.lng, isEn, onSelectLocation]);
+  }, [currentCity, coords.lat, coords.lng]);
 
   // Layer Switcher Handler
   const handleSwitchLayer = (layer: 'hybrid' | 'satellite_pure' | 'streets' | 'topo') => {

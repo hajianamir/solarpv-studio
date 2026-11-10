@@ -24,7 +24,25 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
 
   const handleSaveCustom = () => {
-    onCityChange(customCity);
+    const updatedProv = { ...(customCity.fieldProvenance || {}) };
+    updatedProv.peakSunHours = {
+      sourceKind: 'local_model',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: isFa
+        ? 'کاربر به صورت دستی مقدار PSH را وارد کرده است (User Manual Input)'
+        : 'User manual input override',
+      unit: 'kWh/m²/day',
+      value: customCity.peakSunHours,
+      retrievedAt: new Date().toISOString(),
+    };
+    onCityChange({
+      ...customCity,
+      id: `custom_${customCity.latitude.toFixed(4)}_${customCity.longitude.toFixed(4)}_${Date.now()}`,
+      dataSourceEn: 'User Manual Specification (USER_OVERRIDE)',
+      dataSourceFa: 'مشخصات دستی کاربر (USER_OVERRIDE)',
+      confidence: 'analytical_estimate',
+      fieldProvenance: updatedProv,
+    });
     setIsEditing(false);
   };
 
@@ -388,14 +406,19 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
             <tbody className="divide-y divide-industrial-border/40 font-mono text-[11px]">
               {(() => {
                 const prov = selectedCity.fieldProvenance || {};
+                const isMeasuredSolar = selectedCity.confidence === 'measured' &&
+                  (prov.peakSunHours?.sourceKind === 'provider_derived' || prov.peakSunHours?.sourceKind === 'provider_value');
+                const isUserOverride = selectedCity.dataSourceEn?.includes('USER_OVERRIDE') ||
+                  prov.peakSunHours?.providerName === 'USER_OVERRIDE';
+
                 const rows = [
                   {
                     key: 'peakSunHours',
                     nameFa: 'ساعات اوج تابش (PSH)',
                     nameEn: 'Peak Sun Hours (PSH)',
                     val: `${selectedCity.peakSunHours} kWh/m²/day`,
-                    defaultKind: 'provider_value' as const,
-                    defaultSource: 'NASA_POWER / PVGIS',
+                    defaultKind: (isMeasuredSolar ? 'provider_derived' : 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: isUserOverride ? 'USER_OVERRIDE' : isMeasuredSolar ? 'PVGIS / NASA_POWER' : 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'daylightHoursDesign',
@@ -410,23 +433,23 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                     nameFa: 'حداقل دمای حدی طراحی (T_min)',
                     nameEn: 'Min Design Ambient Temp',
                     val: `${selectedCity.tempMinC} °C`,
-                    defaultKind: 'provider_value' as const,
-                    defaultSource: 'NASA_POWER (T2M_MIN)',
+                    defaultKind: (prov.tempMinC?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: prov.tempMinC?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'tempMaxC',
                     nameFa: 'حداکثر دمای حدی طراحی (T_max)',
                     nameEn: 'Max Design Ambient Temp',
                     val: `${selectedCity.tempMaxC} °C`,
-                    defaultKind: 'provider_value' as const,
-                    defaultSource: 'NASA_POWER (T2M_MAX)',
+                    defaultKind: (prov.tempMaxC?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: prov.tempMaxC?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'annualRainfallMm',
                     nameFa: 'بارش سالانه باران (Precipitation)',
                     nameEn: 'Annual Precipitation',
                     val: `${selectedCity.annualRainfallMm} mm`,
-                    defaultKind: prov.annualPrecipitationMm?.sourceKind || 'local_model',
+                    defaultKind: (prov.annualPrecipitationMm?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
                     defaultSource: prov.annualPrecipitationMm?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
@@ -450,16 +473,16 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                     nameFa: 'ظرفیت باربری مجاز خاک (q_a)',
                     nameEn: 'Allowable Soil Bearing Capacity',
                     val: `${selectedCity.soilBearingCapacityKpa} kPa`,
-                    defaultKind: prov.soilBearingCapacityKpa?.sourceKind || 'provider_derived',
-                    defaultSource: prov.soilBearingCapacityKpa?.providerName || 'ISRIC_SOILGRIDS / USCS',
+                    defaultKind: (prov.soilBearingCapacityKpa?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: prov.soilBearingCapacityKpa?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'soilInternalFrictionAngleDeg',
                     nameFa: 'زاویه اصطکاک داخلی خاک (φ)',
                     nameEn: 'Soil Internal Friction Angle',
                     val: `${selectedCity.soilInternalFrictionAngleDeg}°`,
-                    defaultKind: prov.soilInternalFrictionAngleDeg?.sourceKind || 'provider_derived',
-                    defaultSource: 'ISRIC_SOILGRIDS / USCS',
+                    defaultKind: (prov.soilInternalFrictionAngleDeg?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: prov.soilInternalFrictionAngleDeg?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'frostDepthCm',
@@ -508,13 +531,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                       case 'provider_derived':
                         return <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40">{isFa ? 'مشتق از منبع' : 'Provider Derived'}</span>;
                       case 'local_model':
-                        return <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">{isFa ? 'مدل غربالگری تحلیلی' : 'Local Screening Model'}</span>;
-                      case 'unavailable':
-                        return <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-bold border border-red-500/40">{isFa ? 'ناموجود در منبع' : 'Unavailable'}</span>;
-                      case 'user_input':
-                        return <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">{isFa ? 'ورودی دستی کاربر' : 'User Input'}</span>;
                       default:
-                        return <span className="px-2 py-0.5 rounded bg-slate-700 text-slate-300">{kind}</span>;
+                        if (source === 'USER_OVERRIDE') {
+                          return <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">{isFa ? 'ورودی دستی کاربر' : 'User Override'}</span>;
+                        }
+                        return <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">{isFa ? 'مدل تحلیلی داخلی' : 'Local Analytical Model'}</span>;
                     }
                   })();
 

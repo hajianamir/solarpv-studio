@@ -1062,14 +1062,21 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     <tbody className="divide-y divide-industrial-border/30 print:divide-slate-200 font-mono">
                       {(() => {
                         const prov = effectiveCity.fieldProvenance || {};
+                        const isMeasuredPsh = effectiveCity.confidence === 'measured' &&
+                          (prov.peakSunHours?.sourceKind === 'provider_derived' || prov.peakSunHours?.sourceKind === 'provider_value');
+                        const isUserOverridePsh = effectiveCity.dataSourceEn?.includes('USER_OVERRIDE') ||
+                          prov.peakSunHours?.providerName === 'USER_OVERRIDE';
+
                         const telemetryRows = [
                           {
                             k: 'peakSunHours',
                             name: isEn ? 'Peak Sun Hours (PSH)' : 'ساعات اوج تابش (PSH)',
                             val: `${effectiveCity.peakSunHours} kWh/m²/day`,
-                            src: prov.peakSunHours?.providerName || 'NASA_POWER / PVGIS',
-                            kind: prov.peakSunHours?.sourceKind || 'provider_value',
-                            note: isEn ? 'Satellite / Reanalysis data' : 'داده مستقیم ماهواره‌ای / بازتحلیل',
+                            src: prov.peakSunHours?.providerName || (isUserOverridePsh ? 'USER_OVERRIDE' : isMeasuredPsh ? 'PVGIS' : 'REGIONAL_ANALYTICAL_MODEL'),
+                            kind: prov.peakSunHours?.sourceKind || (isMeasuredPsh ? 'provider_derived' : 'local_model'),
+                            note: isEn
+                              ? (isUserOverridePsh ? 'User manual input specification' : isMeasuredPsh ? 'Satellite / Reanalysis data' : 'Regional analytical model screening estimate')
+                              : (isUserOverridePsh ? 'ورودی دستی کاربر' : isMeasuredPsh ? 'داده مستقیم ماهواره‌ای / بازتحلیل' : 'تخمین مدل تحلیلی منطقه‌ای غربالگری'),
                           },
                           {
                             k: 'daylightHoursDesign',
