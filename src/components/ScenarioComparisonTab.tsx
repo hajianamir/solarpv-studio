@@ -49,8 +49,8 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
         </div>
       )}
 
+      {/* 3 Scenario Cards */}
       {!isUnsizable && (
-      /* 3 Scenario Cards */
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {scenarios.map((sc, idx) => {
           const isOptimized = sc.id === 'optimized_lifepo4';
