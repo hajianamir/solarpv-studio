@@ -213,6 +213,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 // ---- External Data Gateway proxy (same-origin; removes browser CORS/CSP dependency) ----
 const inFlightSiteRequests = new Map<string, Promise<any>>();
+const inFlightGeocodes = new Map<string, Promise<any>>();
 let lastGeocodeTimestamp = 0;
 let geocodeQueueChain: Promise<any> = Promise.resolve();
 const geocodeCache = new Map<string, { data: any; expiresAt: number }>();
@@ -280,7 +281,7 @@ app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
   }
 });
 
-// Nominatim geocoding proxy with true sequential FIFO rate limiting (>=1050ms), limited caching, and offline enforcement
+// Nominatim geocoding proxy with true sequential FIFO rate limiting (>=1050ms), deduplication, and offline enforcement
 app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
   const rawQ = req.query.q;
   if (typeof rawQ !== 'string' || rawQ.trim() === '') {
@@ -299,9 +300,14 @@ app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
     return res.json(cached.data);
   }
 
-  try {
-    // Sequence requests one by one through geocodeQueueChain so concurrent queries never fire simultaneously
-    const results = await (geocodeQueueChain = geocodeQueueChain.then(async () => {
+  if (req.destroyed) {
+    return;
+  }
+
+  // Deduplicate in-flight requests for the exact same query
+  let queryPromise = inFlightGeocodes.get(qKey);
+  if (!queryPromise) {
+    queryPromise = (geocodeQueueChain = geocodeQueueChain.then(async () => {
       const now = Date.now();
       const wait = Math.max(0, 1050 - (now - lastGeocodeTimestamp));
       if (wait > 0) {
@@ -309,19 +315,30 @@ app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
       }
       lastGeocodeTimestamp = Date.now();
       return ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(rawQ.trim());
-    }));
+    })).finally(() => {
+      inFlightGeocodes.delete(qKey);
+    });
+    inFlightGeocodes.set(qKey, queryPromise);
+  }
+
+  try {
+    const results = await queryPromise;
+    if (req.destroyed) return;
 
     if (Array.isArray(results) && results.length > 0) {
       geocodeCache.set(qKey, { data: results, expiresAt: Date.now() + 1800000 });
       res.setHeader('Cache-Control', 'public, max-age=1800');
     } else {
-      // Do NOT cache empty or failed results for an hour!
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
     res.json(results || []);
-  } catch {
+  } catch (err: any) {
+    if (req.destroyed) return;
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.json([]);
+    res.status(502).json({
+      error: 'Upstream geocoding proxy error or network failure',
+      details: err?.message || 'Gateway connection failed',
+    });
   }
 });
 

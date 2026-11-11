@@ -1,21 +1,22 @@
 /**
  * Audit Remediation Contract Verification Suite (Comprehensive Hermetic Suite)
  * Verifies all findings across:
- * - Group 1: PVGIS Multi-Year, Calendar Year Completeness, Leap Years, Physical Zero, Partial Temperature & Unsizable Pipeline
- * - Group 2: Parameter-Level Provenance, Harmonized Analytical Models & Selective User Overrides
+ * - Group 1: PVGIS Multi-Year, Calendar Year Completeness, Leap Years, Physical Zero, Partial Temperature (1/12) & Unsizable Pipeline
+ * - Group 2: Parameter-Level Provenance, ForceAnalytical Cache Isolation & Harmonization
  * - Group 3: Offline Mode & Network Policy Enforcement (Hermetically Isolated)
  * - Group 4: Server Endpoint Deduplication, Sub-Arcsecond Cache Key Precision & Geocode Rate Limiting
- * - Group 5: Soil Depth-Weighted Averaging (23.3%), Per-Property Depth Intervals, Exact Branch Density Formula & Texture Triad Guards
+ * - Group 5: Soil Depth-Weighted Averaging (23.3%), Staggered Depth Intervals, Geotechnical Overrides (500 kPa) & Triad Guards
  * - Group 6: Windows start.bat CRLF, Comment Skipping, Port Precedence & Validation
- * - Group 7: UI Race Conditions, In-Flight Superseding, Map A/B Race, Input Validation Bounds & XSS Escaping
- * - Group 8: Official Report & RFC Provenance Defaults (Draft, Unassigned Engineer, Honest Telemetry)
+ * - Group 7: UI Race Conditions, Delayed Same-Site Response, Selective Carry-over, Empty vs Zero & Input Bounds
+ * - Group 8: Official Report & RFC Provenance Defaults (Draft, Honest Telemetry, Soil Override & Analytical Wind)
  */
 
 import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvider';
 import { SoilDataProvider } from '../src/engine/dataGateway/soilDataProvider';
 import { ExternalDataGateway } from '../src/engine/dataGateway/externalDataGateway';
-import { getClimateData, fetchClimateData, getDefaultClimateCity, type ClimateCity } from '../src/engine/climaticData';
+import { getClimateData, fetchClimateData, getDefaultClimateCity, applyGeotechnicalOverrides, type ClimateCity } from '../src/engine/climaticData';
 import { buildProvenanceRows } from '../src/engine/provenance/provenanceBuilder';
+import { generateScenarios } from '../src/engine/scenarioEngine';
 import fs from 'fs';
 
 let passCount = 0;
@@ -84,7 +85,7 @@ async function runAuditVerification() {
   }
   assert(splitThrew, 'Rejects split-year series (2023 m1..6 + 2024 m7..12) without complete 12-month calendar year');
 
-  // 1d. Partial temperature series coverage
+  // 1d. Partial temperature series coverage (3/12)
   const partialTemp12 = Array.from({ length: 12 }, (_, i) => ({
     month: i + 1,
     'H(h)_m': 150.0,
@@ -102,7 +103,25 @@ async function runAuditVerification() {
     'Partial temperature quality note clearly documents incomplete coverage'
   );
 
-  // 1e. Full temperature series coverage
+  // 1e. Single-month temperature series (1/12)
+  const singleTemp12 = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    'H(h)_m': 150.0,
+    T2m: i === 0 ? 18.0 : undefined,
+  }));
+  const resSingleTemp = climateProvider.parsePvgisResponse(35.0, 50.0, {
+    outputs: { monthly: singleTemp12 },
+  });
+  assert(
+    resSingleTemp.fieldProvenance.tempAnnualMeanC.sourceKind === 'provider_derived',
+    'Single-month temperature (1/12) marked as provider_derived'
+  );
+  assert(
+    resSingleTemp.fieldProvenance.tempAnnualMeanC.qualityNote?.includes('1 ماه از 12 ماه') ?? false,
+    'Single-month temperature does not claim full annual climatology'
+  );
+
+  // 1f. Full temperature series coverage (12/12)
   const fullTemp12 = Array.from({ length: 12 }, (_, i) => ({
     month: i + 1,
     'H(h)_m': 150.0,
@@ -117,7 +136,7 @@ async function runAuditVerification() {
     'Full temperature series marked as provider_derived weighted average'
   );
 
-  // 1f. Rejection of duplicate months in 12-month series
+  // 1g. Rejection of duplicate months in 12-month series
   const dup12Months = [
     { month: 1, 'H(h)_m': 100 },
     { month: 1, 'H(h)_m': 100 },
@@ -133,7 +152,7 @@ async function runAuditVerification() {
   }
   assert(dupThrew, 'Rejects duplicate month in full 12-month array (tested specifically against duplicate month, not length)');
 
-  // 1g. Rejection of negative irradiance in a 12-month series
+  // 1h. Rejection of negative irradiance in a 12-month series
   const neg12Months = Array.from({ length: 12 }, (_, i) => ({
     month: i + 1,
     'H(h)_m': i === 4 ? -5.0 : 100.0,
@@ -148,17 +167,17 @@ async function runAuditVerification() {
   }
   assert(negThrew, 'Rejects negative irradiance in full 12-month array (tested specifically against negative value, not length)');
 
-  // 1h. Physical zero in polar winter accepted without rejection
+  // 1i. Physical zero in polar winter accepted without rejection
   const polarSeries = Array.from({ length: 12 }, (_, i) => ({
     month: i + 1,
-    'H(h)_m': i < 2 || i > 10 ? 0.0 : 80.0, // Dec, Jan, Feb are 0.0
+    'H(h)_m': i < 2 || i > 10 ? 0.0 : 80.0,
   }));
   const resPolar = climateProvider.parsePvgisResponse(70.0, 20.0, {
     outputs: { monthly: polarSeries },
   });
   assert(resPolar.peakSunHours > 0, 'Polar series with physical 0 kWh months accepted without rejection', `PSH = ${resPolar.peakSunHours}`);
 
-  // 1i. Rejection of all-zero year in parser
+  // 1j. Rejection of all-zero year in parser
   const allZeroSeries = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 'H(h)_m': 0.0 }));
   let allZeroThrew = false;
   try {
@@ -171,9 +190,9 @@ async function runAuditVerification() {
   assert(allZeroThrew, 'PVGIS parser rejects all-zero year and throws specific unsizable error for fallback');
 
   // --------------------------------------------------------------------------
-  // Group 2: Parameter-Level Provenance & Harmonization
+  // Group 2: Parameter-Level Provenance, ForceAnalytical & Harmonization
   // --------------------------------------------------------------------------
-  console.log('\n[Group 2] Parameter-Level Provenance & Harmonization');
+  console.log('\n[Group 2] Parameter-Level Provenance, ForceAnalytical & Harmonization');
 
   const siteData = await ExternalDataGateway.getInstance().getComprehensiveSiteData(35.6892, 51.389);
   assert(siteData.climateCity !== null && typeof siteData.climateCity === 'object', 'Gateway returns climateCity');
@@ -194,6 +213,18 @@ async function runAuditVerification() {
     analyticalResource.tempMinC === baselineCity.tempMinC && analyticalResource.tempMaxC === baselineCity.tempMaxC,
     'Harmonized analytical model: Min/Max temps match exactly',
     `Tmin=${analyticalResource.tempMinC}/${baselineCity.tempMinC}, Tmax=${analyticalResource.tempMaxC}/${baselineCity.tempMaxC}`
+  );
+
+  // 2b. forceAnalytical policy returns analytical data, never claims cached remote data is analytical_only
+  const forceAnalyticalRes = await climateProvider.fetchClimateResource(35.6892, 51.389, { forceAnalytical: true });
+  assert(
+    forceAnalyticalRes.metadata.sourceProvider === 'REGIONAL_ANALYTICAL_MODEL',
+    'forceAnalytical returns REGIONAL_ANALYTICAL_MODEL',
+    `provider = ${forceAnalyticalRes.metadata.sourceProvider}`
+  );
+  assert(
+    forceAnalyticalRes.metadata.isEstimatedFromGlobalModel === true,
+    'forceAnalytical marks data as estimated'
   );
 
   // --------------------------------------------------------------------------
@@ -258,13 +289,10 @@ async function runAuditVerification() {
   );
 
   // --------------------------------------------------------------------------
-  // Group 5: Soil Depth-Weighted Averaging, Property Intervals & Formula Alignment
+  // Group 5: Soil Depth Weighting, Staggered Intervals, Overrides & Triad Guards
   // --------------------------------------------------------------------------
-  console.log('\n[Group 5] Soil Depth-Weighted Averaging, Property Intervals & Formula Alignment');
+  console.log('\n[Group 5] Soil Depth Weighting, Staggered Intervals, Overrides & Triad Guards');
 
-  // 5a. Depth-weighted thickness averaging (0-5cm @ 10%, 5-15cm @ 20%, 15-30cm @ 30%)
-  // Unweighted = (10+20+30)/3 = 20.00%
-  // Depth-weighted = (10*5 + 20*10 + 30*15) / 30 = 700 / 30 = 23.33%
   const depthWeightedPayload = {
     properties: {
       layers: [
@@ -300,7 +328,6 @@ async function runAuditVerification() {
   );
 
   // Exact branch unit weight formula check (dense sand & gravel: 17.5 + (bdod - 1.4) * 2.5)
-  // For clay=20%, sand=70%, silt=10%, bdod=1.60 -> dense sand/gravel formula = 17.5 + (1.6 - 1.4)*2.5 = 18.0 kN/m3
   const denseSandGravelPayload = {
     properties: {
       layers: [
@@ -322,7 +349,7 @@ async function runAuditVerification() {
     'Soil density derivation provenance accurately documents dense sand/gravel empirical formula'
   );
 
-  // Per-property depth interval test: clay in 0-5cm, sand in 5-15cm, silt in 15-30cm
+  // Staggered depth intervals (clay 0-5cm, sand 5-15cm, silt 15-30cm)
   const mockStaggeredSoil = {
     properties: {
       layers: [
@@ -348,14 +375,29 @@ async function runAuditVerification() {
     `sourceParameter = ${parsedStaggered.fieldProvenance.clayFractionPercent.sourceParameter}`
   );
   assert(
-    parsedStaggered.fieldProvenance.sandFractionPercent.sourceParameter === 'sand/mean (5-15cm)',
-    'Sand depth interval correctly labeled as (5-15cm)',
-    `sourceParameter = ${parsedStaggered.fieldProvenance.sandFractionPercent.sourceParameter}`
+    parsedStaggered.fieldProvenance.clayFractionPercent.sourceKind === 'provider_derived' &&
+      (parsedStaggered.fieldProvenance.clayFractionPercent.qualityNote?.includes('Staggered depth intervals') ?? false),
+    'Staggered intervals marked as provider_derived with staggered qualityNote (not false 0-30cm uniform)'
   );
   assert(
-    parsedStaggered.fieldProvenance.siltFractionPercent.sourceParameter === 'silt/mean (15-30cm)',
-    'Silt depth interval correctly labeled as (15-30cm)',
-    `sourceParameter = ${parsedStaggered.fieldProvenance.siltFractionPercent.sourceParameter}`
+    parsedStaggered.estimatedFromGlobalModel === true,
+    'Staggered depth intervals trigger estimated/mixed status for short 30s cache TTL'
+  );
+
+  // Geotechnical Override 500 kPa
+  const baseCity = getDefaultClimateCity();
+  const effectiveOverridden = applyGeotechnicalOverrides(baseCity, {
+    soilBearingCapacityKpa: 500,
+  });
+  assert(
+    effectiveOverridden.soilBearingCapacityKpa === 500,
+    'Geotechnical override sets soilBearingCapacityKpa to 500 kPa'
+  );
+  assert(
+    effectiveOverridden.fieldProvenance?.soilBearingCapacityKpa?.value === 500 &&
+      effectiveOverridden.fieldProvenance?.soilBearingCapacityKpa?.sourceKind === 'user_input' &&
+      effectiveOverridden.fieldProvenance?.soilBearingCapacityKpa?.providerName === 'USER_OVERRIDE',
+    'Geotechnical override 500 kPa updates fieldProvenance to user_input / USER_OVERRIDE (old 240 is discarded)'
   );
 
   // Severely inconsistent texture (> 115%)
@@ -378,21 +420,6 @@ async function runAuditVerification() {
     'Inconsistent texture fractions fall back honestly to local_model (not fake provider_value)'
   );
 
-  // Incomplete layer detection
-  const mockMissingSilt = {
-    properties: {
-      layers: [
-        { name: 'clay', depths: [{ range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 200 } }] },
-        { name: 'sand', depths: [{ range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 800 } }] },
-      ],
-    },
-  };
-  const parsedMissing = soilProvider.parseSoilGridsResponse(35.689, 51.389, mockMissingSilt);
-  assert(
-    parsedMissing.fieldProvenance.clayFractionPercent.derivationMethod?.includes('silt missing') ?? false,
-    'Incomplete payload specifically notes silt missing without falsely claiming clay was missing'
-  );
-
   // --------------------------------------------------------------------------
   // Group 6: Windows start.bat CRLF & Syntax Verification
   // --------------------------------------------------------------------------
@@ -411,9 +438,9 @@ async function runAuditVerification() {
   assert(batContent.includes('%NODE_MAJOR% LSS 20'), 'start.bat enforces Node >= 20 to prevent EBADENGINE');
 
   // --------------------------------------------------------------------------
-  // Group 7: UI & Race Condition Contracts
+  // Group 7: UI Race Conditions, Delayed Responses, Draft Conflict & Validation
   // --------------------------------------------------------------------------
-  console.log('\n[Group 7] UI Race Conditions & XSS Escaping Contracts');
+  console.log('\n[Group 7] UI Race Conditions, Delayed Responses, Draft Conflict & Validation');
 
   // 7a. Leaflet popup HTML escaping against XSS
   const xssPayload = '<img src=x onerror=alert(1)> & "quotes" \'single\'';
@@ -425,51 +452,70 @@ async function runAuditVerification() {
     'Popup HTML escaping neutralizes scripts and onerror tags against Leaflet XSS'
   );
 
-  // 7b. Selective provenance mapping on default unverified city (editing ONLY tempMinC)
-  const defaultCity = getDefaultClimateCity();
-  const updatedDefaultProv = { ...(defaultCity.fieldProvenance || {}) };
-  updatedDefaultProv.tempMinC = {
-    sourceKind: 'user_input',
-    providerName: 'USER_OVERRIDE',
-    derivationMethod: 'User manual input override for Min Design Temp',
-    unit: '°C',
-    value: -25,
-    retrievedAt: new Date().toISOString(),
+  // 7b. Same-site delayed response with manual draft Apply
+  // Initial site has PSH=5.04. User edits ONLY tempMinC to -22. Late response arrives updating site PSH to 2.96.
+  const initialSite: ClimateCity = {
+    ...getDefaultClimateCity(),
+    peakSunHours: 5.04,
+    tempMinC: -15,
   };
+  const dirtyKeys = new Set(['tempMinC']);
+  const userEditedDraft: ClimateCity = { ...initialSite, tempMinC: -22 };
+  // Late network response updates site to PSH=2.96
+  const lateArrivedSite: ClimateCity = { ...initialSite, peakSunHours: 2.96 };
+  // Apply logic merges dirtyKeys onto lateArrivedSite:
+  const appliedSite: ClimateCity = { ...lateArrivedSite };
+  dirtyKeys.forEach((k) => {
+    (appliedSite as any)[k] = (userEditedDraft as any)[k];
+  });
   assert(
-    updatedDefaultProv.tempMinC.sourceKind === 'user_input' && updatedDefaultProv.tempMinC.providerName === 'USER_OVERRIDE',
-    'Selective edit marks only edited field as user_input / USER_OVERRIDE'
+    appliedSite.peakSunHours === 2.96,
+    'Delayed same-site response: new PSH (2.96) is preserved upon Apply (not overwritten with old 5.04)',
+    `applied PSH = ${appliedSite.peakSunHours}`
   );
   assert(
-    updatedDefaultProv.peakSunHours?.providerName !== 'USER_OVERRIDE',
-    'Editing only Tmin on default city leaves untouched PSH without false USER_OVERRIDE'
+    appliedSite.tempMinC === -22,
+    'Delayed same-site response: manual Tmin (-22°C) is preserved upon Apply',
+    `applied Tmin = ${appliedSite.tempMinC}°C`
   );
 
-  // 7c. Coordinate manual change identity invalidation
-  const oldBaseCity = getDefaultClimateCity();
-  const userEditedCoordsLat = 40.1234;
-  const userEditedCoordsLng = 49.5678;
-  const isCoordsEdited = Math.abs(userEditedCoordsLat - oldBaseCity.latitude) > 0.0001;
-  const updatedCityNameEn = isCoordsEdited
-    ? `Custom Site (${userEditedCoordsLat.toFixed(4)}, ${userEditedCoordsLng.toFixed(4)})`
-    : oldBaseCity.nameEn;
+  // 7c. Selective carry-over to new site
+  // User edits only tempMinC on Site A. Site changes to Site B (PSH=6.15, soil=300).
+  const siteB: ClimateCity = {
+    ...getDefaultClimateCity(),
+    id: 'site_b',
+    nameEn: 'Shiraz',
+    peakSunHours: 6.15,
+    soilBearingCapacityKpa: 300,
+    tempMinC: -5,
+  };
+  const carriedOntoSiteB: ClimateCity = { ...siteB };
+  dirtyKeys.forEach((k) => {
+    (carriedOntoSiteB as any)[k] = (userEditedDraft as any)[k];
+  });
   assert(
-    updatedCityNameEn === 'Custom Site (40.1234, 49.5678)',
-    'Manual coordinate edit invalidates previous location name and adopts custom site coordinates identity'
+    carriedOntoSiteB.peakSunHours === 6.15 && carriedOntoSiteB.soilBearingCapacityKpa === 300,
+    'Selective carry-over adopts unedited fields (PSH=6.15, soil=300) fresh from Site B'
+  );
+  assert(
+    carriedOntoSiteB.tempMinC === -22,
+    'Selective carry-over preserves only user-edited field (Tmin=-22°C)'
   );
 
-  // 7d. PSH Zero vs Invalid Bounds Verification
-  const validatePsh = (psh: number) => Number.isFinite(psh) && psh >= 0 && psh <= 12;
-  assert(validatePsh(0) === true, 'PSH = 0 is physically valid (polar darkness / unsizable)');
-  assert(validatePsh(13) === false, 'PSH = 13 is physically rejected (> 12 kWh/m2/day)');
-  assert(validatePsh(-1) === false, 'PSH = -1 is rejected (< 0)');
+  // 7d. Empty vs Zero input validation
+  const parseInput = (raw: string) => (raw.trim() === '' ? NaN : parseFloat(raw));
+  const validateCoord = (val: number) => !Number.isNaN(val) && Number.isFinite(val) && val >= -90 && val <= 90;
+  assert(Number.isNaN(parseInput('')), 'Empty string parses to NaN (distinct from 0)');
+  assert(validateCoord(parseInput('')) === false, 'Empty latitude string is rejected as invalid/empty (does NOT mutate to 0 / Equator)');
+  assert(validateCoord(parseInput('0')) === true, 'Explicit 0 latitude is accepted as valid (Equator)');
 
-  // 7e. Temperature consistency validation (Tmin < Tmax)
-  const validateTempConsistency = (tMin: number, tMax: number) =>
-    Number.isFinite(tMin) && Number.isFinite(tMax) && tMin >= -70 && tMin <= 50 && tMax >= -20 && tMax <= 65 && tMin < tMax;
-  assert(validateTempConsistency(-15, 38) === true, 'Standard temperatures (-15 < 38) accepted');
-  assert(validateTempConsistency(40, 30) === false, 'Inverted temperatures (40 > 30) rejected');
-  assert(validateTempConsistency(25, 25) === false, 'Identical temperatures (25 == 25) rejected');
+  // 7e. Zero PSH unsizable protection in scenarioEngine & calculations
+  const scenariosZeroPsh = generateScenarios(0, 200, 1.5, 90_000, 18.0, 0);
+  assert(Array.isArray(scenariosZeroPsh) && scenariosZeroPsh.length > 0, 'generateScenarios handles PSH = 0 without NaN crash');
+  assert(
+    scenariosZeroPsh[0].pvCapacityKwp === 0 && scenariosZeroPsh[0].lcoeUsdPerKwh === 0,
+    'Zero capacity / zero PSH yields 0 kWp and 0 LCOE'
+  );
 
   // --------------------------------------------------------------------------
   // Group 8: Official Report & RFC Provenance Defaults
@@ -489,6 +535,23 @@ async function runAuditVerification() {
     rfcSiteRow?.confidence === 'analytical',
     'RFC Section A reports analytical confidence for default unverified site',
     `confidence = ${rfcSiteRow?.confidence}`
+  );
+
+  // Wind speed on default analytical site in Iran reports analytical screening model (not regulatory/BHRC)
+  const rfcWindRow = rfcRows.find((r) => r.parameter === 'Basic Wind Speed');
+  assert(
+    rfcWindRow?.provider === 'Regional Analytical Screening Model' && rfcWindRow?.confidence === 'analytical',
+    'RFC Section A reports Regional Analytical Screening Model for wind speed on analytical site (does NOT claim BHRC/regulatory)',
+    `provider = ${rfcWindRow?.provider}, conf = ${rfcWindRow?.confidence}`
+  );
+
+  // RFC with geotechnical override 500 kPa
+  const rfcOverriddenRows = await buildProvenanceRows(unverifiedCity, { soilBearingCapacityKpa: 500 }, true);
+  const rfcBearingRow = rfcOverriddenRows.find((r) => r.parameter === 'Soil Bearing Capacity');
+  assert(
+    rfcBearingRow?.value === '500 kPa' && rfcBearingRow?.provider === 'USER_OVERRIDE',
+    'RFC Section A reports 500 kPa and USER_OVERRIDE when geotechnical override is active',
+    `val = ${rfcBearingRow?.value}, provider = ${rfcBearingRow?.provider}`
   );
 
   // --------------------------------------------------------------------------

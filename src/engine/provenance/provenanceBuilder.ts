@@ -107,10 +107,39 @@ export async function buildProvenanceRows(
     : (isMeasuredSite ? 'NASA POWER / PVGIS (Satellite Reanalysis)' : 'REGIONAL_ANALYTICAL_MODEL');
 
   const isIran = city.latitude >= 25 && city.latitude <= 40 && city.longitude >= 44 && city.longitude <= 64;
-  const windSnowProvider = isIran
-    ? 'INBC Part 6 / BHRC (Iranian Building Code)'
-    : 'ASCE 7 / Eurocode 1 (Regional Code Screening Model)';
-  const windSnowConfidence = isIran ? 'regulatory' : 'analytical';
+
+  const windProv = city.fieldProvenance?.basicWindSpeedKmh;
+  const snowProv = city.fieldProvenance?.groundSnowLoadKgM2;
+  const bearingProv = city.fieldProvenance?.soilBearingCapacityKpa;
+
+  const isWindOverridden = siteOverrides?.basicWindSpeedKmh !== undefined || windProv?.sourceKind === 'user_input';
+  const isSnowOverridden = siteOverrides?.groundSnowLoadKgM2 !== undefined || snowProv?.sourceKind === 'user_input';
+  const isBearingOverridden = siteOverrides?.soilBearingCapacityKpa !== undefined || bearingProv?.sourceKind === 'user_input';
+
+  const windProvider = isWindOverridden
+    ? 'USER_OVERRIDE'
+    : windProv?.sourceKind === 'local_model' || !isMeasuredSite
+    ? 'Regional Analytical Screening Model'
+    : (isIran ? 'INBC Part 6 / BHRC (Iranian Building Code)' : 'ASCE 7 / Eurocode 1 (Regional Code)');
+
+  const windConfidence = (!isWindOverridden && isMeasuredSite && windProv?.sourceKind === 'provider_value')
+    ? 'regulatory'
+    : 'analytical';
+
+  const snowProvider = isSnowOverridden
+    ? 'USER_OVERRIDE'
+    : snowProv?.sourceKind === 'local_model' || !isMeasuredSite
+    ? 'Regional Analytical Screening Model'
+    : (isIran ? 'INBC Part 6 / BHRC (Iranian Building Code)' : 'ASCE 7 / Eurocode 1 (Regional Code)');
+
+  const snowConfidence = (!isSnowOverridden && isMeasuredSite && snowProv?.sourceKind === 'provider_value')
+    ? 'regulatory'
+    : 'analytical';
+
+  const soilBearingProvider = isBearingOverridden
+    ? 'USER_OVERRIDE'
+    : bearingProv?.providerName || (city.fieldProvenance?.clayFractionPercent?.providerName === 'ISRIC_SOILGRIDS' ? 'ISRIC SoilGrids Geotechnical Mapping' : 'Regional Geotechnical Screening Model');
+
   const soilMapProvider = isIran ? 'BHRC Geotechnical Map' : 'Global Digital Soil Map / Geomorphic Screening Model';
 
   return [
@@ -133,18 +162,26 @@ export async function buildProvenanceRows(
     {
       parameter: isEn ? 'Basic Wind Speed' : 'سرعت باد پایه',
       value: `${structInput.basicWindSpeedKmh} km/h`,
-      provider: windSnowProvider,
+      provider: windProvider,
       traceId: '—',
       timestamp: now,
-      confidence: windSnowConfidence,
+      confidence: windConfidence,
     },
     {
       parameter: isEn ? 'Ground Snow Load' : 'بار برف زمین',
       value: `${structInput.groundSnowLoadKgM2} kg/m²`,
-      provider: windSnowProvider,
+      provider: snowProvider,
       traceId: '—',
       timestamp: now,
-      confidence: windSnowConfidence,
+      confidence: snowConfidence,
+    },
+    {
+      parameter: isEn ? 'Soil Bearing Capacity' : 'ظرفیت باربری مجاز خاک',
+      value: `${structInput.soilBearingCapacityKpa} kPa`,
+      provider: soilBearingProvider,
+      traceId: '—',
+      timestamp: now,
+      confidence: 'analytical',
     },
     {
       parameter: isEn ? 'Soil Classification' : 'طبقه‌بندی خاک',

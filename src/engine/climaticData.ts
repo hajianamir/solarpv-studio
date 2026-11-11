@@ -31,6 +31,81 @@ export function applyGeotechnicalOverrides(
   overrides?: SiteGeotechnicalOverrides
 ): ClimateCity {
   if (!overrides) return baseCity;
+
+  const updatedProvenance = { ...(baseCity.fieldProvenance || {}) };
+  const now = new Date().toISOString();
+
+  if (overrides.soilBearingCapacityKpa !== undefined) {
+    updatedProvenance.soilBearingCapacityKpa = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User geotechnical override for allowable soil bearing capacity',
+      unit: 'kPa',
+      value: overrides.soilBearingCapacityKpa,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.soilInternalFrictionAngleDeg !== undefined) {
+    updatedProvenance.soilInternalFrictionAngleDeg = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User geotechnical override for soil internal friction angle',
+      unit: 'deg',
+      value: overrides.soilInternalFrictionAngleDeg,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.soilCohesionKpa !== undefined) {
+    updatedProvenance.soilCohesionKpa = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User geotechnical override for soil cohesion',
+      unit: 'kPa',
+      value: overrides.soilCohesionKpa,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.frostDepthCm !== undefined) {
+    updatedProvenance.frostDepthCm = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User geotechnical override for site frost depth',
+      unit: 'cm',
+      value: overrides.frostDepthCm,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.basicWindSpeedKmh !== undefined) {
+    updatedProvenance.basicWindSpeedKmh = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User site override for basic wind speed',
+      unit: 'km/h',
+      value: overrides.basicWindSpeedKmh,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.groundSnowLoadKgM2 !== undefined) {
+    updatedProvenance.groundSnowLoadKgM2 = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User site override for ground snow load',
+      unit: 'kg/m²',
+      value: overrides.groundSnowLoadKgM2,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.annualRainfallMm !== undefined) {
+    updatedProvenance.annualRainfallMm = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User site override for annual rainfall',
+      unit: 'mm',
+      value: overrides.annualRainfallMm,
+      retrievedAt: now,
+    };
+  }
+
   return {
     ...baseCity,
     basicWindSpeedKmh: overrides.basicWindSpeedKmh ?? baseCity.basicWindSpeedKmh,
@@ -46,6 +121,7 @@ export function applyGeotechnicalOverrides(
     distanceToCoastKm: overrides.distanceToCoastKm ?? baseCity.distanceToCoastKm,
     drainageCondition: overrides.drainageCondition ?? baseCity.drainageCondition,
     groundwaterDepthM: overrides.groundwaterDepthM ?? baseCity.groundwaterDepthM,
+    fieldProvenance: updatedProvenance,
   };
 }
 

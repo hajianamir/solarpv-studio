@@ -196,6 +196,11 @@ export class SoilDataProvider {
     const bdodDepth = depthByProperty.bdod || depthLabel;
     const phDepth = depthByProperty.phh2o || depthLabel;
 
+    const hasUniformDepth = clayDepth === sandDepth && sandDepth === siltDepth;
+    const depthOverlapNote = hasUniformDepth
+      ? undefined
+      : `Staggered depth intervals: clay (${clayDepth}), sand (${sandDepth}), silt (${siltDepth}). Texture triad computed across staggered depths.`;
+
     // Check individual fraction bounds (0 to 100%)
     if (hasClay && (clayPct < 0 || clayPct > 100)) hasClay = false;
     if (hasSand && (sandPct < 0 || sandPct > 100)) hasSand = false;
@@ -240,15 +245,17 @@ export class SoilDataProvider {
 
     const frostDepth = Math.abs(lat) > 45 ? 60 : 20;
     const isTextureFromProvider = isTextureComplete;
+    const isSoilFullyLive = isTextureFromProvider && hasBdod && hasUniformDepth;
 
     const fieldProvenance: Record<string, ParameterProvenance> = {
       clayFractionPercent: isTextureComplete
-        ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
+        ? createParameterProvenance((textureWasNormalized || !hasUniformDepth) ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
             sourceParameter: `clay/mean (${clayDepth})`,
             unit: '%',
             value: Number(clayPct.toFixed(1)),
             derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${clayDepth})` : undefined,
+            qualityNote: depthOverlapNote,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
@@ -257,12 +264,13 @@ export class SoilDataProvider {
             qualityNote: `لایه خاک در پاسخ ISRIC ناقص یا ناسازگار بود (${missingFractions.join(', ')}) — برآورد تحلیلی`,
           }),
       sandFractionPercent: isTextureComplete
-        ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
+        ? createParameterProvenance((textureWasNormalized || !hasUniformDepth) ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
             sourceParameter: `sand/mean (${sandDepth})`,
             unit: '%',
             value: Number(sandPct.toFixed(1)),
             derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${sandDepth})` : undefined,
+            qualityNote: depthOverlapNote,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
@@ -271,12 +279,13 @@ export class SoilDataProvider {
             qualityNote: `لایه خاک در پاسخ ISRIC ناقص یا ناسازگار بود (${missingFractions.join(', ')}) — برآورد تحلیلی`,
           }),
       siltFractionPercent: isTextureComplete
-        ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
+        ? createParameterProvenance((textureWasNormalized || !hasUniformDepth) ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
             sourceParameter: `silt/mean (${siltDepth})`,
             unit: '%',
             value: Number(siltPct.toFixed(1)),
             derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${siltDepth})` : undefined,
+            qualityNote: depthOverlapNote,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
@@ -374,14 +383,14 @@ export class SoilDataProvider {
       soilDensityKnM3: densityKnM3,
       frostDepthCm: frostDepth,
       phH2O: Number(ph.toFixed(1)),
-      estimatedFromGlobalModel: !isTextureFromProvider,
+      estimatedFromGlobalModel: !isSoilFullyLive,
       geotechnicalDisclaimer: disclaimer,
       metadata: {
         traceId: this.generateTraceId('TRC-SOIL'),
         sourceProvider: isTextureFromProvider ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
-        isEstimatedFromGlobalModel: !isTextureFromProvider,
+        isEstimatedFromGlobalModel: !isSoilFullyLive,
         geographicRegion: isTextureFromProvider ? 'Global Soil Grids 250m Resolution' : 'Geomorphic Analytical Model',
         governingStandards: ['ISRIC World Soil Information', 'ASTM D2487 (USCS)', 'Eurocode 7 (EN 1997-1)'],
       },

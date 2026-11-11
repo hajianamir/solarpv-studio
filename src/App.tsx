@@ -621,7 +621,57 @@ export const App: React.FC = () => {
   }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment, shadingLoss3dPct, bifacialGainPct]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
   // 3. Advanced PV Array Engineering Sizing
+  const isSiteUnsizable =
+    !Number.isFinite(city.peakSunHours) ||
+    city.peakSunHours <= 0 ||
+    !Number.isFinite(city.latitude) ||
+    Math.abs(city.latitude) > 90 ||
+    !Number.isFinite(city.longitude) ||
+    Math.abs(city.longitude) > 180;
+
   const arrayDesign = useMemo(() => {
+    if (isSiteUnsizable) {
+      return {
+        totalPvCapacityKwp: 0,
+        totalModulesCount: 0,
+        modulesPerString: 0,
+        parallelStringsCount: 0,
+        minModulesPerStringAllowed: 0,
+        maxModulesPerStringAllowed: 0,
+        stringVocMaxColdVolts: 0,
+        stringVmpMinHotVolts: 0,
+        maxMpptOperatingCurrentAmps: 0,
+        maxMpptShortCircuitCurrentAmps: 0,
+        isMpptCurrentCompliant: false,
+        isVoltageFeasible: false,
+        isDesignFeasible: false,
+        dcAcRatio: 0,
+        effectiveDeratingFactor: 0,
+        cellTempHotC: city.tempMaxC || 25,
+        powerTempDeratePct: 0,
+        netArrayAreaM2: 0,
+        interRowSpacingM: 0,
+        grossRequiredLandAreaM2: 0,
+        winterSunAltitudeDeg: 0,
+        warnings: [
+          city.peakSunHours === 0
+            ? 'Site peakSunHours is 0 (system unsizable: polar darkness / zero irradiance).'
+            : 'Site has invalid coordinates or non-positive solar irradiance.',
+        ],
+        blockingErrors: [
+          city.peakSunHours === 0
+            ? 'Site peakSunHours is 0 (system unsizable).'
+            : 'Invalid site parameters or coordinates.',
+        ],
+        estimatedAnnualYieldKwh: 0,
+        specificYieldKwhPerKwp: 0,
+        requiredInverterCount: 0,
+        totalInverterAcCapacityKw: 0,
+        singleInverterDcAcRatio: 0,
+        stringsPerMppt: 0,
+        maxStringsPerMpptAllowed: 0,
+      };
+    }
     return designPvArray(
       effectiveDailyKwhDemand,
       city.peakSunHours,
@@ -641,7 +691,7 @@ export const App: React.FC = () => {
       },
       city.latitude
     );
-  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment]);
+  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment, isSiteUnsizable]);
 
   // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
   const [shadingSimulationMode, setShadingSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
@@ -968,7 +1018,7 @@ export const App: React.FC = () => {
       autonomyDays,
       userPricing.usdToTomanRate,
       userPricing.discountRatePct,
-      city.peakSunHours || 5.17
+      city.peakSunHours
     );
   }, [arrayDesign.totalPvCapacityKwp, loadAnalysis.totalDailyEnergyKwh, autonomyDays, userPricing.usdToTomanRate, userPricing.discountRatePct, city.peakSunHours]);
 

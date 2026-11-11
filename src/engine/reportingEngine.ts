@@ -65,6 +65,19 @@ export function parseHtmlToDocxElements(html: string): (Paragraph | Table)[] {
     const container = doc.body.firstElementChild || doc.body;
 
     const walk = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text && text.length > 0) {
+          elements.push(
+            new Paragraph({
+              children: [new TextRun({ text, font: 'Segoe UI', size: 20 })],
+              spacing: { after: 60 },
+            })
+          );
+        }
+        return;
+      }
+
       if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
         const tag = el.tagName.toLowerCase();
@@ -144,6 +157,20 @@ export function parseHtmlToDocxElements(html: string): (Paragraph | Table)[] {
             );
           }
         } else {
+          // If leaf container (e.g. metadata-bar item with no nested block elements), capture as paragraph
+          const hasBlockChildren = Array.from(el.children).some((c) =>
+            ['h1', 'h2', 'h3', 'p', 'table', 'div'].includes(c.tagName.toLowerCase())
+          );
+          if (!hasBlockChildren && el.textContent?.trim()) {
+            elements.push(
+              new Paragraph({
+                children: [new TextRun({ text: el.textContent.trim(), font: 'Segoe UI', size: 20 })],
+                spacing: { after: 80 },
+              })
+            );
+            return;
+          }
+
           // Process child nodes
           for (let i = 0; i < el.childNodes.length; i++) {
             walk(el.childNodes[i]);

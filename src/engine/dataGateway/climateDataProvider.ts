@@ -99,15 +99,18 @@ export class ClimateDataProvider {
       const cached = this.cache.get(cacheKey);
       if (cached && (Date.now() - cached.timestamp) < cached.ttlMs) {
         if (policy === 'analytical_only') {
-          return {
-            ...cached.data,
-            metadata: {
-              ...cached.data.metadata,
-              isCached: true,
-              cacheStatus: 'hit',
-              fetchPolicy: policy,
-            },
-          };
+          // Analytical policy must ONLY return cached analytical/estimated responses, NEVER remote responses!
+          if (cached.isEstimated) {
+            return {
+              ...cached.data,
+              metadata: {
+                ...cached.data.metadata,
+                isCached: true,
+                cacheStatus: 'hit',
+                fetchPolicy: policy,
+              },
+            };
+          }
         }
         if (policy === 'remote_required') {
           // Analytical cached results are NOT eligible for remote_required

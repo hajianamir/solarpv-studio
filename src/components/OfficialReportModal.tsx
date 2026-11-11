@@ -846,9 +846,25 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   <Sun className="w-4 h-4 text-industrial-warning" />
                   {isEn ? '1. Executive Project Summary, Engineering Metrics & Standards Compliance' : '۱. خلاصه اجرایی پروژه، شاخص‌های کلیدی عملکرد و ماتریس تطابق با استانداردها'}
                 </span>
-                <span className="text-[10px] text-industrial-success font-mono font-bold flex items-center gap-1">
+                <span className={`text-[10px] font-mono font-bold flex items-center gap-1 ${
+                  Boolean(leadEngineer && leadEngineer.trim() !== '' && !leadEngineer.includes('Draft') && !leadEngineer.includes('تعیین‌نشده')) &&
+                  Boolean(companyName && companyName.trim() !== '') &&
+                  Boolean(clientName && clientName.trim() !== '') &&
+                  effectiveCity.confidence === 'measured' &&
+                  arrayDesign.totalPvCapacityKwp > 0 &&
+                  effectiveCity.peakSunHours > 0
+                    ? 'text-industrial-success'
+                    : 'text-amber-400'
+                }`}>
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  {isEn ? 'BANKABILITY: APPROVED' : 'تأییدیه توجیه‌پذیری بانکی'}
+                  {Boolean(leadEngineer && leadEngineer.trim() !== '' && !leadEngineer.includes('Draft') && !leadEngineer.includes('تعیین‌نشده')) &&
+                  Boolean(companyName && companyName.trim() !== '') &&
+                  Boolean(clientName && clientName.trim() !== '') &&
+                  effectiveCity.confidence === 'measured' &&
+                  arrayDesign.totalPvCapacityKwp > 0 &&
+                  effectiveCity.peakSunHours > 0
+                    ? (isEn ? 'BANKABILITY: VERIFIED' : 'تأییدیه توجیه‌پذیری بانکی')
+                    : (isEn ? 'STATUS: DRAFT / UNDER REVIEW' : 'وضعیت: پیش‌نویس اولیه / در حال بازبینی')}
                 </span>
               </h3>
 
