@@ -245,7 +245,7 @@ export class SoilDataProvider {
 
     const frostDepth = Math.abs(lat) > 45 ? 60 : 20;
     const isTextureFromProvider = isTextureComplete;
-    const isSoilFullyLive = isTextureFromProvider && hasBdod && hasUniformDepth;
+    const isSoilFullyLive = isTextureFromProvider && hasBdod && hasPh && hasUniformDepth;
 
     const fieldProvenance: Record<string, ParameterProvenance> = {
       clayFractionPercent: isTextureComplete

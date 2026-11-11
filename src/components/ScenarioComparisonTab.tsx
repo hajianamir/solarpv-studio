@@ -27,6 +27,18 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
         </p>
       </div>
 
+      {/* Unsizable Banner if pvCapacityKwp === 0 */}
+      {scenarios.every((s) => s.pvCapacityKwp === 0) && (
+        <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-lg text-amber-300 text-xs flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>
+            {isFa
+              ? 'سایت به دلیل تابش صفر یا مختصات نامعتبر غیرقابل طراحی (Unsizable) است. خروجی سناریوها روی صفر تنظیم شده است.'
+              : 'Site is physically unsizable due to non-positive solar irradiance (PSH ≤ 0) or invalid coordinates. Scenario capacities and yields default to zero.'}
+          </span>
+        </div>
+      )}
+
       {/* 3 Scenario Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {scenarios.map((sc, idx) => {
@@ -90,7 +102,11 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
 
                   <div className="flex justify-between">
                     <span className="text-slate-400">{isFa ? 'بهای تمام‌شده انرژی (LCOE):' : 'LCOE:'}</span>
-                    <strong className="text-industrial-warning font-mono">${sc.lcoeUsdPerKwh.toFixed(4)}/kWh</strong>
+                    <strong className="text-industrial-warning font-mono">
+                      {sc.pvCapacityKwp > 0 && sc.lcoeUsdPerKwh > 0
+                        ? `$${sc.lcoeUsdPerKwh.toFixed(4)}/kWh`
+                        : (isFa ? 'تعریف‌نشده (تولید صفر)' : 'N/A (Unsizable)')}
+                    </strong>
                   </div>
                 </div>
 

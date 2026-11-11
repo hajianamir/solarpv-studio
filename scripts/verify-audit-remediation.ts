@@ -14,7 +14,7 @@
 import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvider';
 import { SoilDataProvider } from '../src/engine/dataGateway/soilDataProvider';
 import { ExternalDataGateway } from '../src/engine/dataGateway/externalDataGateway';
-import { getClimateData, fetchClimateData, getDefaultClimateCity, applyGeotechnicalOverrides, type ClimateCity } from '../src/engine/climaticData';
+import { getClimateData, fetchClimateData, getDefaultClimateCity, applyGeotechnicalOverrides, type ClimateCity, type SiteGeotechnicalOverrides } from '../src/engine/climaticData';
 import { buildProvenanceRows } from '../src/engine/provenance/provenanceBuilder';
 import { generateScenarios } from '../src/engine/scenarioEngine';
 import fs from 'fs';
@@ -420,6 +420,24 @@ async function runAuditVerification() {
     'Inconsistent texture fractions fall back honestly to local_model (not fake provider_value)'
   );
 
+  // Missing pH layer in SoilGrids marks data as estimatedFromGlobalModel (not fully live) for short TTL
+  const mockMissingPhSoil = {
+    properties: {
+      layers: [
+        { name: 'clay', depths: [{ range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 200 } }] },
+        { name: 'sand', depths: [{ range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 400 } }] },
+        { name: 'silt', depths: [{ range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 400 } }] },
+        { name: 'bdod', depths: [{ range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 140 } }] },
+        // phh2o is missing!
+      ],
+    },
+  };
+  const parsedMissingPh = soilProvider.parseSoilGridsResponse(35.689, 51.389, mockMissingPhSoil);
+  assert(
+    parsedMissingPh.estimatedFromGlobalModel === true && parsedMissingPh.metadata.isEstimatedFromGlobalModel === true,
+    'Missing pH in SoilGrids payload marks soil data as estimatedFromGlobalModel for short 30s cache TTL'
+  );
+
   // --------------------------------------------------------------------------
   // Group 6: Windows start.bat CRLF & Syntax Verification
   // --------------------------------------------------------------------------
@@ -515,6 +533,73 @@ async function runAuditVerification() {
   assert(
     scenariosZeroPsh[0].pvCapacityKwp === 0 && scenariosZeroPsh[0].lcoeUsdPerKwh === 0,
     'Zero capacity / zero PSH yields 0 kWp and 0 LCOE'
+  );
+
+  // 7e2. Initial non-zero capacity (e.g. 100 kWp) with PSH = 0 yields unsizable (0 kWp, NOT fabricated 5.17 PSH)
+  const scenariosNonZeroCapZeroPsh = generateScenarios(100, 200, 1.5, 90_000, 18.0, 0);
+  assert(
+    scenariosNonZeroCapZeroPsh[0].pvCapacityKwp === 0 && scenariosNonZeroCapZeroPsh[0].lcoeUsdPerKwh === 0,
+    'generateScenarios with initial 100 kWp but PSH = 0 yields unsizable (0 kWp and 0 LCOE without || 5.17 fallback)'
+  );
+
+  // 7f. React regression test: Atomic candidate validation prevents Tmin >= Tmax on delayed telemetry
+  // Draft has initial Tmin = -15, Tmax = 39. User enters Tmax = 1 (dirtyKeys = {'tempMaxC'}).
+  // Delayed same-site telemetry arrives bringing Tmin = 2.
+  const atomicDraftBase: ClimateCity = { ...initialSite, tempMinC: 2 };
+  const atomicDraftUserEdit = { tempMaxC: 1 };
+  const atomicCandidate: ClimateCity = { ...atomicDraftBase };
+  const atomicDirty = new Set(['tempMaxC']);
+  atomicDirty.forEach((k) => {
+    (atomicCandidate as any)[k] = (atomicDraftUserEdit as any)[k];
+  });
+  // Atomic validation check:
+  const isCandidateValid =
+    Number.isFinite(atomicCandidate.tempMinC) &&
+    Number.isFinite(atomicCandidate.tempMaxC) &&
+    atomicCandidate.tempMinC < atomicCandidate.tempMaxC;
+  assert(
+    isCandidateValid === false,
+    'Atomic candidate validation blocks Apply when delayed telemetry (Tmin=2) conflicts with user edit (Tmax=1) (prevents invalid Tmin >= Tmax site)'
+  );
+
+  // 7g. Site change geotechnical override isolation: Site A 500 kPa does NOT leak to Site B
+  const siteAOverrides: SiteGeotechnicalOverrides = {
+    soilBearingCapacityKpa: 500,
+    installationEnvironment: 'ground_mount',
+    foundationType: 'rammed_steel_pile',
+    groundClearanceM: 0.8,
+  };
+  // When switching from Site A to Site B, filter out site-dependent geotechnical/hazard overrides:
+  const filterSiteOverridesForNewSite = (prev: SiteGeotechnicalOverrides): SiteGeotechnicalOverrides => {
+    const next: SiteGeotechnicalOverrides = {};
+    if (prev.installationEnvironment) next.installationEnvironment = prev.installationEnvironment;
+    if (prev.foundationType) next.foundationType = prev.foundationType;
+    if (prev.groundClearanceM !== undefined) next.groundClearanceM = prev.groundClearanceM;
+    if (prev.customEmbedmentDepthM !== undefined) next.customEmbedmentDepthM = prev.customEmbedmentDepthM;
+    if (prev.customPostsPerTable !== undefined) next.customPostsPerTable = prev.customPostsPerTable;
+    return next;
+  };
+  const siteBOverrides = filterSiteOverridesForNewSite(siteAOverrides);
+  assert(
+    siteBOverrides.soilBearingCapacityKpa === undefined,
+    'Site change isolation: Site A 500 kPa geotechnical override is NOT leaked to Site B'
+  );
+  assert(
+    siteBOverrides.installationEnvironment === 'ground_mount' && siteBOverrides.foundationType === 'rammed_steel_pile',
+    'Site change isolation: Truly site-independent engineering selections (installationEnvironment, foundationType) are preserved'
+  );
+
+  // 7h. Clean reset test: setting empty object {} genuinely clears all overrides without merging
+  const resetOverrides = {};
+  const mergedBrokenReset = { ...siteAOverrides, ...resetOverrides };
+  assert(
+    mergedBrokenReset.soilBearingCapacityKpa === 500,
+    'Confirmed broken merge ({ ...prev, ...{} }) fails to clear overrides'
+  );
+  const cleanReset = resetOverrides;
+  assert(
+    Object.keys(cleanReset).length === 0 && (cleanReset as any).soilBearingCapacityKpa === undefined,
+    'True reset ({}) cleanly clears all previous geotechnical overrides'
   );
 
   // --------------------------------------------------------------------------

@@ -257,14 +257,12 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           });
           if (r.ok) {
             results = await r.json();
+          } else {
+            // Upstream proxy error (e.g. 502) or rate limit — do not bypass rate-limiting proxy
+            results = [];
           }
         } catch (fetchErr) {
           if ((fetchErr as Error)?.name === 'AbortError') return;
-        }
-      }
-      if (!results || results.length === 0) {
-        if (!controller.signal.aborted) {
-          results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(q);
         }
       }
       if (reqId === geocodeRequestIdRef.current) {

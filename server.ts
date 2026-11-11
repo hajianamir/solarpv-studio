@@ -40,7 +40,8 @@ import { ExternalDataGateway } from './src/engine/dataGateway/externalDataGatewa
 import { isRealInternetEnabled } from './src/engine/env/runtimeEnv.js';
 
 const app = express();
-const PORT = Number(process.env.PORT) || Number(process.env.APP_PORT) || 3000;
+const rawPort = Number(process.env.PORT) || Number(process.env.APP_PORT);
+const PORT = Number.isInteger(rawPort) && rawPort >= 1 && rawPort <= 65535 ? rawPort : 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Disable Express fingerprinting header (P3-02)

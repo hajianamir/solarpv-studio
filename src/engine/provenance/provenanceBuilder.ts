@@ -116,25 +116,37 @@ export async function buildProvenanceRows(
   const isSnowOverridden = siteOverrides?.groundSnowLoadKgM2 !== undefined || snowProv?.sourceKind === 'user_input';
   const isBearingOverridden = siteOverrides?.soilBearingCapacityKpa !== undefined || bearingProv?.sourceKind === 'user_input';
 
+  const isExplicitWindRegulatory =
+    !isWindOverridden &&
+    Boolean(
+      windProv?.providerName?.includes('BHRC') ||
+      windProv?.providerName?.includes('INBC') ||
+      windProv?.providerName?.includes('ASCE')
+    );
+
   const windProvider = isWindOverridden
     ? 'USER_OVERRIDE'
-    : windProv?.sourceKind === 'local_model' || !isMeasuredSite
-    ? 'Regional Analytical Screening Model'
-    : (isIran ? 'INBC Part 6 / BHRC (Iranian Building Code)' : 'ASCE 7 / Eurocode 1 (Regional Code)');
+    : isExplicitWindRegulatory
+    ? windProv!.providerName
+    : 'Regional Analytical Screening Model';
 
-  const windConfidence = (!isWindOverridden && isMeasuredSite && windProv?.sourceKind === 'provider_value')
-    ? 'regulatory'
-    : 'analytical';
+  const windConfidence = isExplicitWindRegulatory ? 'regulatory' : 'analytical';
+
+  const isExplicitSnowRegulatory =
+    !isSnowOverridden &&
+    Boolean(
+      snowProv?.providerName?.includes('BHRC') ||
+      snowProv?.providerName?.includes('INBC') ||
+      snowProv?.providerName?.includes('ASCE')
+    );
 
   const snowProvider = isSnowOverridden
     ? 'USER_OVERRIDE'
-    : snowProv?.sourceKind === 'local_model' || !isMeasuredSite
-    ? 'Regional Analytical Screening Model'
-    : (isIran ? 'INBC Part 6 / BHRC (Iranian Building Code)' : 'ASCE 7 / Eurocode 1 (Regional Code)');
+    : isExplicitSnowRegulatory
+    ? snowProv!.providerName
+    : 'Regional Analytical Screening Model';
 
-  const snowConfidence = (!isSnowOverridden && isMeasuredSite && snowProv?.sourceKind === 'provider_value')
-    ? 'regulatory'
-    : 'analytical';
+  const snowConfidence = isExplicitSnowRegulatory ? 'regulatory' : 'analytical';
 
   const soilBearingProvider = isBearingOverridden
     ? 'USER_OVERRIDE'

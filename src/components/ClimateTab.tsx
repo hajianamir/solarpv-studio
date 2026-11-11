@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle, Loader2, Database, Info } from 'lucide-react';
 import { type ClimateCity } from '../engine/climaticData';
+import { type ParameterProvenance } from '../engine/types/climateTypes';
 import { formatCoordinates } from '../engine/geoCoordinates';
 
 const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
@@ -64,101 +65,20 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
   };
 
   const handleSaveCustom = () => {
-    // 1. Strict Validation before mutating project state
-    if (customCity.latitude === undefined || Number.isNaN(customCity.latitude)) {
-      setValidationError(isFa ? 'عرض جغرافیایی نمی‌تواند خالی باشد.' : 'Latitude cannot be empty.');
-      return;
-    }
-    if (!Number.isFinite(customCity.latitude) || customCity.latitude < -90 || customCity.latitude > 90) {
+    if (hasSiteConflict) {
       setValidationError(
         isFa
-          ? 'عرض جغرافیایی نامعتبر است: مقدار باید عددی بین -۹۰ و +۹۰ درجه باشد.'
-          : 'Invalid latitude: must be a finite number between -90 and +90 degrees.'
-      );
-      return;
-    }
-    if (customCity.longitude === undefined || Number.isNaN(customCity.longitude)) {
-      setValidationError(isFa ? 'طول جغرافیایی نمی‌تواند خالی باشد.' : 'Longitude cannot be empty.');
-      return;
-    }
-    if (!Number.isFinite(customCity.longitude) || customCity.longitude < -180 || customCity.longitude > 180) {
-      setValidationError(
-        isFa
-          ? 'طول جغرافیایی نامعتبر است: مقدار باید عددی بین -۱۸۰ و +۱۸۰ درجه باشد.'
-          : 'Invalid longitude: must be a finite number between -180 and +180 degrees.'
-      );
-      return;
-    }
-    if (customCity.peakSunHours === undefined || Number.isNaN(customCity.peakSunHours)) {
-      setValidationError(isFa ? 'ساعات اوج تابش (PSH) نمی‌تواند خالی باشد.' : 'Peak Sun Hours cannot be empty.');
-      return;
-    }
-    if (!Number.isFinite(customCity.peakSunHours) || customCity.peakSunHours < 0 || customCity.peakSunHours > 12) {
-      setValidationError(
-        isFa
-          ? 'ساعات اوج تابش (PSH) نامعتبر است: مقدار باید بین ۰ و ۱۲ ساعت در روز (kWh/m²/day) باشد.'
-          : 'Invalid Peak Sun Hours (PSH): must be a finite number between 0 and 12 kWh/m²/day.'
-      );
-      return;
-    }
-    if (customCity.tempMinC === undefined || Number.isNaN(customCity.tempMinC)) {
-      setValidationError(isFa ? 'حداقل دمای طراحی نمی‌تواند خالی باشد.' : 'Min design temperature cannot be empty.');
-      return;
-    }
-    if (!Number.isFinite(customCity.tempMinC) || customCity.tempMinC < -70 || customCity.tempMinC > 50) {
-      setValidationError(
-        isFa
-          ? 'حداقل دمای طراحی نامعتبر است (محدوده مجاز: -۷۰ تا +۵۰ درجه سانتی‌گراد).'
-          : 'Invalid min design temperature (allowed range: -70 to +50°C).'
-      );
-      return;
-    }
-    if (customCity.tempMaxC === undefined || Number.isNaN(customCity.tempMaxC)) {
-      setValidationError(isFa ? 'حداکثر دمای طراحی نمی‌تواند خالی باشد.' : 'Max design temperature cannot be empty.');
-      return;
-    }
-    if (!Number.isFinite(customCity.tempMaxC) || customCity.tempMaxC < -20 || customCity.tempMaxC > 65) {
-      setValidationError(
-        isFa
-          ? 'حداکثر دمای طراحی نامعتبر است (محدوده مجاز: -۲۰ تا +۶۵ درجه سانتی‌گراد).'
-          : 'Invalid max design temperature (allowed range: -20 to +65°C).'
-      );
-      return;
-    }
-    if (customCity.tempMinC >= customCity.tempMaxC) {
-      setValidationError(
-        isFa
-          ? 'ناسازگاری دما: حداقل دمای طراحی نمی‌تواند بزرگتر یا مساوی حداکثر دمای طراحی باشد.'
-          : 'Temperature consistency error: min design temp cannot be greater than or equal to max design temp.'
-      );
-      return;
-    }
-    if (!Number.isFinite(customCity.optimalTiltAnnualDeg) || customCity.optimalTiltAnnualDeg < 0 || customCity.optimalTiltAnnualDeg > 90) {
-      setValidationError(
-        isFa ? 'زاویه شیب بهینه باید عددی بین ۰ و ۹۰ درجه باشد.' : 'Optimal tilt angle must be between 0 and 90 degrees.'
-      );
-      return;
-    }
-    if (!Number.isFinite(customCity.soilingLossPct) || customCity.soilingLossPct < 0 || customCity.soilingLossPct > 100) {
-      setValidationError(
-        isFa ? 'درصد افت غبار باید بین ۰ و ۱۰۰ درصد باشد.' : 'Soiling loss must be between 0 and 100%.'
-      );
-      return;
-    }
-    if (!Number.isFinite(customCity.albedo) || customCity.albedo < 0 || customCity.albedo > 1.0) {
-      setValidationError(
-        isFa ? 'ضریب آلبیدو باید بین ۰ و ۱ باشد.' : 'Albedo factor must be between 0 and 1.'
+          ? 'برای اعمال، ابتدا تعارض سایت را از بنر بالا تعیین‌تکلیف نمایید.'
+          : 'Resolve the site location conflict above before applying custom parameters.'
       );
       return;
     }
 
-    setValidationError(null);
-
-    // 2. Base starts from selectedCity to absorb any delayed telemetry for unedited fields!
+    // 1. Construct Candidate from current selectedCity and ONLY dirty fields FIRST!
     const base = selectedCity;
-    const updatedProv = { ...(base.fieldProvenance || {}) };
+    const candidate: ClimateCity = { ...base };
+    const updatedProv: Record<string, ParameterProvenance> = { ...(base.fieldProvenance || {}) };
     let hasUserEdits = false;
-    const finalCity: ClimateCity = { ...base };
 
     const updateIfDirty = (
       key: keyof ClimateCity,
@@ -169,7 +89,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
     ) => {
       if (dirtyFieldKeys.has(key as string)) {
         hasUserEdits = true;
-        (finalCity as any)[key] = val;
+        (candidate as any)[key] = val;
         updatedProv[key as string] = {
           sourceKind: 'user_input',
           providerName: 'USER_OVERRIDE',
@@ -199,37 +119,133 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
     const coordsChanged =
       dirtyFieldKeys.has('latitude') ||
       dirtyFieldKeys.has('longitude') ||
-      Math.abs(customCity.latitude - base.latitude) > 0.0001 ||
-      Math.abs(customCity.longitude - base.longitude) > 0.0001;
+      Math.abs(candidate.latitude - base.latitude) > 0.0001 ||
+      Math.abs(candidate.longitude - base.longitude) > 0.0001;
 
     let updatedNameFa = base.nameFa;
     let updatedNameEn = base.nameEn;
     if (coordsChanged) {
       hasUserEdits = true;
-      updatedNameFa = `محل سفارشی (${customCity.latitude.toFixed(4)}, ${customCity.longitude.toFixed(4)})`;
-      updatedNameEn = `Custom Site (${customCity.latitude.toFixed(4)}, ${customCity.longitude.toFixed(4)})`;
+      updatedNameFa = `محل سفارشی (${candidate.latitude.toFixed(4)}, ${candidate.longitude.toFixed(4)})`;
+      updatedNameEn = `Custom Site (${candidate.latitude.toFixed(4)}, ${candidate.longitude.toFixed(4)})`;
 
-      // Invalidate location-dependent parameters that were not manually edited
-      const locationDependentKeys = [
+      // Invalidate location-dependent parameters from old site that were not explicitly edited by user
+      const locationDependentKeys: (keyof ClimateCity)[] = [
+        'peakSunHours',
+        'tempMinC',
+        'tempMaxC',
+        'optimalTiltAnnualDeg',
         'annualRainfallMm',
         'basicWindSpeedKmh',
         'groundSnowLoadKgM2',
         'soilBearingCapacityKpa',
+        'soilInternalFrictionAngleDeg',
         'frostDepthCm',
+        'elevationM',
       ];
       for (const k of locationDependentKeys) {
-        if (!dirtyFieldKeys.has(k) && updatedProv[k]) {
-          updatedProv[k] = {
-            ...updatedProv[k],
+        if (!dirtyFieldKeys.has(k as string) && updatedProv[k as string]) {
+          updatedProv[k as string] = {
+            ...updatedProv[k as string],
             sourceKind: 'default_unverified',
             providerName: 'REGIONAL_ANALYTICAL_MODEL',
             qualityNote: isFa
-              ? 'مختصات به صورت دستی تغییر کرده است؛ پارامتر نیازمند استعلام مجدد است.'
+              ? 'مختصات به صورت دستی تغییر کرده است؛ پارامتر نیازمند استعلام مجدد برای موقعیت جدید است.'
               : 'Coordinates modified manually; parameter requires re-fetching or verification for new location.',
           };
         }
       }
     }
+
+    // 2. Strict ATOMIC Validation on the constructed candidate
+    if (candidate.latitude === undefined || Number.isNaN(candidate.latitude)) {
+      setValidationError(isFa ? 'عرض جغرافیایی نمی‌تواند خالی باشد.' : 'Latitude cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.latitude) || candidate.latitude < -90 || candidate.latitude > 90) {
+      setValidationError(
+        isFa
+          ? 'عرض جغرافیایی نامعتبر است: مقدار باید عددی بین -۹۰ و +۹۰ درجه باشد.'
+          : 'Invalid latitude: must be a finite number between -90 and +90 degrees.'
+      );
+      return;
+    }
+    if (candidate.longitude === undefined || Number.isNaN(candidate.longitude)) {
+      setValidationError(isFa ? 'طول جغرافیایی نمی‌تواند خالی باشد.' : 'Longitude cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.longitude) || candidate.longitude < -180 || candidate.longitude > 180) {
+      setValidationError(
+        isFa
+          ? 'طول جغرافیایی نامعتبر است: مقدار باید عددی بین -۱۸۰ و +۱۸۰ درجه باشد.'
+          : 'Invalid longitude: must be a finite number between -180 and +180 degrees.'
+      );
+      return;
+    }
+    if (candidate.peakSunHours === undefined || Number.isNaN(candidate.peakSunHours)) {
+      setValidationError(isFa ? 'ساعات اوج تابش (PSH) نمی‌تواند خالی باشد.' : 'Peak Sun Hours cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.peakSunHours) || candidate.peakSunHours < 0 || candidate.peakSunHours > 12) {
+      setValidationError(
+        isFa
+          ? 'ساعات اوج تابش (PSH) نامعتبر است: مقدار باید بین ۰ و ۱۲ ساعت در روز (kWh/m²/day) باشد.'
+          : 'Invalid Peak Sun Hours (PSH): must be a finite number between 0 and 12 kWh/m²/day.'
+      );
+      return;
+    }
+    if (candidate.tempMinC === undefined || Number.isNaN(candidate.tempMinC)) {
+      setValidationError(isFa ? 'حداقل دمای طراحی نمی‌تواند خالی باشد.' : 'Min design temperature cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.tempMinC) || candidate.tempMinC < -70 || candidate.tempMinC > 50) {
+      setValidationError(
+        isFa
+          ? 'حداقل دمای طراحی نامعتبر است (محدوده مجاز: -۷۰ تا +۵۰ درجه سانتی‌گراد).'
+          : 'Invalid min design temperature (allowed range: -70 to +50°C).'
+      );
+      return;
+    }
+    if (candidate.tempMaxC === undefined || Number.isNaN(candidate.tempMaxC)) {
+      setValidationError(isFa ? 'حداکثر دمای طراحی نمی‌تواند خالی باشد.' : 'Max design temperature cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.tempMaxC) || candidate.tempMaxC < -20 || candidate.tempMaxC > 65) {
+      setValidationError(
+        isFa
+          ? 'حداکثر دمای طراحی نامعتبر است (محدوده مجاز: -۲۰ تا +۶۵ درجه سانتی‌گراد).'
+          : 'Invalid max design temperature (allowed range: -20 to +65°C).'
+      );
+      return;
+    }
+    if (candidate.tempMinC >= candidate.tempMaxC) {
+      setValidationError(
+        isFa
+          ? `ناسازگاری دما: حداقل دمای طراحی (${candidate.tempMinC}°C) نمی‌تواند بزرگتر یا مساوی حداکثر دمای طراحی (${candidate.tempMaxC}°C) باشد.`
+          : `Temperature consistency error: min design temp (${candidate.tempMinC}°C) must be strictly less than max design temp (${candidate.tempMaxC}°C).`
+      );
+      return;
+    }
+    if (!Number.isFinite(candidate.optimalTiltAnnualDeg) || candidate.optimalTiltAnnualDeg < 0 || candidate.optimalTiltAnnualDeg > 90) {
+      setValidationError(
+        isFa ? 'زاویه شیب بهینه باید عددی بین ۰ و ۹۰ درجه باشد.' : 'Optimal tilt angle must be between 0 and 90 degrees.'
+      );
+      return;
+    }
+    if (!Number.isFinite(candidate.soilingLossPct) || candidate.soilingLossPct < 0 || candidate.soilingLossPct > 100) {
+      setValidationError(
+        isFa ? 'درصد افت غبار باید بین ۰ و ۱۰۰ درصد باشد.' : 'Soiling loss must be between 0 and 100%.'
+      );
+      return;
+    }
+    if (!Number.isFinite(candidate.albedo) || candidate.albedo < 0 || candidate.albedo > 1.0) {
+      setValidationError(
+        isFa ? 'ضریب آلبیدو باید بین ۰ و ۱ باشد.' : 'Albedo factor must be between 0 and 1.'
+      );
+      return;
+    }
+
+    setValidationError(null);
 
     const dataSourceEn = hasUserEdits
       ? 'Custom Parameters (USER_OVERRIDE)'
@@ -239,15 +255,15 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
       : base.dataSourceFa;
 
     onCityChange({
-      ...finalCity,
+      ...candidate,
       nameFa: updatedNameFa,
       nameEn: updatedNameEn,
       id: hasUserEdits
-        ? `custom_${finalCity.latitude.toFixed(4)}_${finalCity.longitude.toFixed(4)}_${Date.now()}`
-        : finalCity.id,
+        ? `custom_${candidate.latitude.toFixed(4)}_${candidate.longitude.toFixed(4)}_${Date.now()}`
+        : candidate.id,
       dataSourceEn,
       dataSourceFa,
-      confidence: hasUserEdits ? 'analytical_estimate' : base.confidence,
+      confidence: coordsChanged ? 'analytical_estimate' : (hasUserEdits ? 'analytical_estimate' : base.confidence),
       fieldProvenance: updatedProv,
     });
     setDirtyFieldKeys(new Set());
@@ -260,6 +276,15 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
     isDirty &&
     (Math.abs(selectedCity.latitude - baselineCityRef.current.latitude) > 0.0001 ||
       Math.abs(selectedCity.longitude - baselineCityRef.current.longitude) > 0.0001);
+
+  const hasIncomingTelemetry =
+    !hasSiteConflict &&
+    isEditing &&
+    isDirty &&
+    (selectedCity.peakSunHours !== baselineCityRef.current.peakSunHours ||
+      selectedCity.tempMinC !== baselineCityRef.current.tempMinC ||
+      selectedCity.tempMaxC !== baselineCityRef.current.tempMaxC ||
+      selectedCity.soilBearingCapacityKpa !== baselineCityRef.current.soilBearingCapacityKpa);
 
   return (
     <div className="space-y-6">
@@ -519,6 +544,16 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                     {isEn ? 'Keep Old Site & Discard Map Change' : 'صرف‌نظر از تغییر نقشه و حفظ سایت قبلی'}
                   </button>
                 </div>
+              </div>
+            )}
+            {hasIncomingTelemetry && (
+              <div className="p-2.5 bg-sky-500/10 border border-sky-500/30 rounded-lg text-xs text-sky-300 flex items-start gap-2">
+                <Database className="w-4 h-4 shrink-0 mt-0.5 text-sky-400" />
+                <span>
+                  {isFa
+                    ? 'داده‌های تازه از حسگر یا پایگاه داده برای این ساختگاه دریافت شد. فیلدهای دست‌نخورده به‌صورت خودکار با داده‌های تازه به‌روز خواهند شد.'
+                    : 'Fresh telemetry received for this location. Untouched fields will automatically absorb verified measured data upon Apply.'}
+                </span>
               </div>
             )}
             {validationError && (

@@ -314,25 +314,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
   const handleUpdateParam = (updated: Partial<SiteGeotechnicalOverrides>) => {
     const newOverrides: SiteGeotechnicalOverrides = {
-      basicWindSpeedKmh,
-      groundSnowLoadKgM2,
-      annualRainfallMm,
-      soilType,
-      soilBearingCapacityKpa,
-      soilInternalFrictionAngleDeg: soilFrictionAngleDeg,
-      soilCohesionKpa,
-      soilDensityKnM3,
-      frostDepthCm,
-      seismicZoneCoefficientA: seismicZoneA,
-      distanceToCoastKm: distanceToSeaKm,
-      drainageCondition,
-      groundwaterDepthM,
-      foundationType,
-      installationEnvironment,
-      customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : undefined,
-      customPostsPerTable: customPostsPerTable !== null ? customPostsPerTable : undefined,
-      groundClearanceM,
-      arrayTiltDeg: tiltDeg,
+      ...(siteOverrides || {}),
       ...updated,
     };
     if (onUpdateSiteOverrides) {

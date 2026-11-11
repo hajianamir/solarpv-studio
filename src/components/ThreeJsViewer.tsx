@@ -139,9 +139,14 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const projectScene = useMemo<Scene3DState | null>(() => {
     if (!hasProjectData || !arrayDesign) return null;
 
+    const isZeroCap =
+      arrayDesign.totalPvCapacityKwp === 0 ||
+      arrayDesign.totalModulesCount === 0 ||
+      plantCapacityKw === 0;
+
     return buildSceneFromProjectDesign({
-      totalPvCapacityKwp: arrayDesign.totalPvCapacityKwp ?? plantCapacityKw ?? 55.2,
-      totalModulesCount: arrayDesign.totalModulesCount ?? 140,
+      totalPvCapacityKwp: isZeroCap ? 0 : (arrayDesign.totalPvCapacityKwp ?? plantCapacityKw ?? 55.2),
+      totalModulesCount: isZeroCap ? 0 : (arrayDesign.totalModulesCount ?? 140),
       interRowSpacingM: arrayDesign.interRowSpacingM ?? 5.0,
       tiltDeg,
       azimuthDeg: arrayDesign.azimuthDeg ?? 0,

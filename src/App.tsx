@@ -223,6 +223,23 @@ export const App: React.FC = () => {
   }, [city]);
 
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
+  const prevCityIdRef = useRef(city.id);
+  useEffect(() => {
+    if (prevCityIdRef.current !== city.id) {
+      prevCityIdRef.current = city.id;
+      // Reset site-dependent geotechnical and hazard overrides when site changes!
+      // Preserves truly site-independent engineering selections (installation environment, racking/foundation type preference, clearance)
+      setSiteOverrides((prev) => {
+        const next: SiteGeotechnicalOverrides = {};
+        if (prev.installationEnvironment) next.installationEnvironment = prev.installationEnvironment;
+        if (prev.foundationType) next.foundationType = prev.foundationType;
+        if (prev.groundClearanceM !== undefined) next.groundClearanceM = prev.groundClearanceM;
+        if (prev.customEmbedmentDepthM !== undefined) next.customEmbedmentDepthM = prev.customEmbedmentDepthM;
+        if (prev.customPostsPerTable !== undefined) next.customPostsPerTable = prev.customPostsPerTable;
+        return next;
+      });
+    }
+  }, [city.id]);
   const [structuralModulesPerTable, setStructuralModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
   const [structuralSnapshot, setStructuralSnapshot] = useState<StructuralSnapshot | null>(null);
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
@@ -697,12 +714,16 @@ export const App: React.FC = () => {
   const [shadingSimulationMode, setShadingSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
 
   const activePlantCapacityKwp =
-    systemMode === 'powerplant'
+    isSiteUnsizable
+      ? 0
+      : systemMode === 'powerplant'
       ? (targetPowerplantCapacityKw || 1000) * 1.25
       : arrayDesign.totalPvCapacityKwp;
 
   const activeModulesCount =
-    systemMode === 'powerplant'
+    isSiteUnsizable
+      ? 0
+      : systemMode === 'powerplant'
       ? Math.round((activePlantCapacityKwp * 1000) / (selectedModule.pmpWatts || 550))
       : arrayDesign.totalModulesCount;
 
@@ -2560,7 +2581,7 @@ export const App: React.FC = () => {
               arrayTiltDeg={city.optimalTiltAnnualDeg}
               city={city}
               siteOverrides={siteOverrides}
-              onUpdateSiteOverrides={(overrides) => setSiteOverrides((prev) => ({ ...prev, ...overrides }))}
+              onUpdateSiteOverrides={setSiteOverrides}
               onUpdateStructuralSnapshot={setStructuralSnapshot}
               modulesPerTable={structuralModulesPerTable}
               onUpdateModulesPerTable={setStructuralModulesPerTable}
@@ -2680,7 +2701,9 @@ export const App: React.FC = () => {
                 city={city}
                 site={selectedSite}
                 plantCapacityKw={
-                  systemMode === 'powerplant'
+                  isSiteUnsizable
+                    ? 0
+                    : systemMode === 'powerplant'
                     ? (targetPowerplantCapacityKw || 1000)
                     : activePlantCapacityKwp
                 }
