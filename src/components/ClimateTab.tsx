@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle, Loader2, Database, Info } from 'lucide-react';
 import { type ClimateCity } from '../engine/climaticData';
 import { formatCoordinates } from '../engine/geoCoordinates';
@@ -22,28 +22,165 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
   const isFa = lang === 'fa';
   const [isEditing, setIsEditing] = useState(false);
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const baselineCityRef = useRef<ClimateCity>(selectedCity);
+
+  // Sync draft customCity with selectedCity whenever external selection updates and editor is not dirty
+  useEffect(() => {
+    if (!isEditing || !isDirty) {
+      setCustomCity(selectedCity);
+      baselineCityRef.current = selectedCity;
+      setIsDirty(false);
+      setValidationError(null);
+    }
+  }, [selectedCity, isEditing, isDirty]);
+
+  const handleStartEditing = () => {
+    setCustomCity(selectedCity);
+    baselineCityRef.current = selectedCity;
+    setIsDirty(false);
+    setValidationError(null);
+    setIsEditing(true);
+  };
+
+  const handleCancelEditing = () => {
+    setCustomCity(selectedCity);
+    baselineCityRef.current = selectedCity;
+    setIsDirty(false);
+    setValidationError(null);
+    setIsEditing(false);
+  };
 
   const handleSaveCustom = () => {
-    const updatedProv = { ...(customCity.fieldProvenance || {}) };
-    updatedProv.peakSunHours = {
-      sourceKind: 'local_model',
-      providerName: 'USER_OVERRIDE',
-      derivationMethod: isFa
-        ? 'کاربر به صورت دستی مقدار PSH را وارد کرده است (User Manual Input)'
-        : 'User manual input override',
-      unit: 'kWh/m²/day',
-      value: customCity.peakSunHours,
-      retrievedAt: new Date().toISOString(),
+    // 1. Strict Validation before mutating project state
+    if (!Number.isFinite(customCity.latitude) || customCity.latitude < -90 || customCity.latitude > 90) {
+      setValidationError(
+        isFa
+          ? 'عرض جغرافیایی نامعتبر است: مقدار باید عددی بین -۹۰ و +۹۰ درجه باشد.'
+          : 'Invalid latitude: must be a finite number between -90 and +90 degrees.'
+      );
+      return;
+    }
+    if (!Number.isFinite(customCity.longitude) || customCity.longitude < -180 || customCity.longitude > 180) {
+      setValidationError(
+        isFa
+          ? 'طول جغرافیایی نامعتبر است: مقدار باید عددی بین -۱۸۰ و +۱۸۰ درجه باشد.'
+          : 'Invalid longitude: must be a finite number between -180 and +180 degrees.'
+      );
+      return;
+    }
+    if (!Number.isFinite(customCity.peakSunHours) || customCity.peakSunHours <= 0) {
+      setValidationError(
+        isFa
+          ? 'ساعات اوج تابش (PSH) نامعتبر است: مقدار باید بزرگتر از صفر باشد تا محاسبات سایزینگ قابل انجام باشد.'
+          : 'Invalid Peak Sun Hours (PSH): must be a positive number greater than 0 for array sizing.'
+      );
+      return;
+    }
+    if (!Number.isFinite(customCity.tempMinC) || customCity.tempMinC < -70 || customCity.tempMinC > 60) {
+      setValidationError(
+        isFa
+          ? 'حداقل دمای طراحی نامعتبر است (محدوده مجاز: -۷۰ تا +۶۰ درجه سانتی‌گراد).'
+          : 'Invalid min design temperature (allowed range: -70 to +60°C).'
+      );
+      return;
+    }
+    if (!Number.isFinite(customCity.tempMaxC) || customCity.tempMaxC < -50 || customCity.tempMaxC > 70) {
+      setValidationError(
+        isFa
+          ? 'حداکثر دمای طراحی نامعتبر است (محدوده مجاز: -۵۰ تا +۷۰ درجه سانتی‌گراد).'
+          : 'Invalid max design temperature (allowed range: -50 to +70°C).'
+      );
+      return;
+    }
+    if (customCity.tempMinC >= customCity.tempMaxC) {
+      setValidationError(
+        isFa
+          ? 'ناسازگاری دما: حداقل دمای طراحی نمی‌تواند بزرگتر یا مساوی حداکثر دمای طراحی باشد.'
+          : 'Temperature consistency error: min design temp cannot be greater than or equal to max design temp.'
+      );
+      return;
+    }
+    if (!Number.isFinite(customCity.optimalTiltAnnualDeg) || customCity.optimalTiltAnnualDeg < 0 || customCity.optimalTiltAnnualDeg > 90) {
+      setValidationError(
+        isFa ? 'زاویه شیب بهینه باید عددی بین ۰ و ۹۰ درجه باشد.' : 'Optimal tilt angle must be between 0 and 90 degrees.'
+      );
+      return;
+    }
+    if (!Number.isFinite(customCity.soilingLossPct) || customCity.soilingLossPct < 0 || customCity.soilingLossPct > 100) {
+      setValidationError(
+        isFa ? 'درصد افت غبار باید بین ۰ و ۱۰۰ درصد باشد.' : 'Soiling loss must be between 0 and 100%.'
+      );
+      return;
+    }
+    if (!Number.isFinite(customCity.albedo) || customCity.albedo < 0 || customCity.albedo > 1.0) {
+      setValidationError(
+        isFa ? 'ضریب آلبیدو باید بین ۰ و ۱ باشد.' : 'Albedo factor must be between 0 and 1.'
+      );
+      return;
+    }
+
+    setValidationError(null);
+
+    // 2. Selective parameter-level provenance update: ONLY update fields that were actually changed!
+    const base = baselineCityRef.current;
+    const updatedProv = { ...(base.fieldProvenance || {}) };
+    let hasUserEdits = false;
+
+    const checkAndUpdateField = (
+      key: string,
+      currentVal: any,
+      baseVal: any,
+      unit: string,
+      labelEn: string,
+      labelFa: string
+    ) => {
+      if (currentVal !== baseVal) {
+        hasUserEdits = true;
+        updatedProv[key] = {
+          sourceKind: 'user_input',
+          providerName: 'USER_OVERRIDE',
+          derivationMethod: isFa ? `ورودی دستی کاربر برای ${labelFa}` : `User manual input override for ${labelEn}`,
+          unit,
+          value: currentVal,
+          retrievedAt: new Date().toISOString(),
+        };
+      }
     };
+
+    checkAndUpdateField('peakSunHours', customCity.peakSunHours, base.peakSunHours, 'kWh/m²/day', 'Peak Sun Hours', 'ساعات اوج تابش');
+    checkAndUpdateField('tempMinC', customCity.tempMinC, base.tempMinC, '°C', 'Min Design Temp', 'حداقل دمای حدی طراحی');
+    checkAndUpdateField('tempMaxC', customCity.tempMaxC, base.tempMaxC, '°C', 'Max Design Temp', 'حداکثر دمای حدی طراحی');
+    checkAndUpdateField('optimalTiltAnnualDeg', customCity.optimalTiltAnnualDeg, base.optimalTiltAnnualDeg, 'deg', 'Optimal Tilt', 'زاویه شیب بهینه');
+    checkAndUpdateField('soilingLossPct', customCity.soilingLossPct, base.soilingLossPct, '%', 'Soiling Loss', 'افت گرد و غبار');
+    checkAndUpdateField('albedo', customCity.albedo, base.albedo, 'dimensionless', 'Albedo', 'آلبیدو');
+    checkAndUpdateField('annualRainfallMm', customCity.annualRainfallMm, base.annualRainfallMm, 'mm', 'Annual Rainfall', 'بارش سالانه');
+    checkAndUpdateField('basicWindSpeedKmh', customCity.basicWindSpeedKmh, base.basicWindSpeedKmh, 'km/h', 'Basic Wind Speed', 'سرعت مبنای باد');
+    checkAndUpdateField('groundSnowLoadKgM2', customCity.groundSnowLoadKgM2, base.groundSnowLoadKgM2, 'kg/m²', 'Ground Snow Load', 'بار برف زمین');
+    checkAndUpdateField('soilBearingCapacityKpa', customCity.soilBearingCapacityKpa, base.soilBearingCapacityKpa, 'kPa', 'Soil Bearing Capacity', 'ظرفیت باربری خاک');
+    checkAndUpdateField('soilInternalFrictionAngleDeg', customCity.soilInternalFrictionAngleDeg, base.soilInternalFrictionAngleDeg, 'deg', 'Friction Angle', 'زاویه اصطکاک داخلی خاک');
+    checkAndUpdateField('frostDepthCm', customCity.frostDepthCm, base.frostDepthCm, 'cm', 'Frost Depth', 'عمق یخبندان');
+
+    const dataSourceEn = hasUserEdits
+      ? 'Custom Parameters (USER_OVERRIDE)'
+      : base.dataSourceEn;
+    const dataSourceFa = hasUserEdits
+      ? 'پارامترهای سفارشی کاربر (USER_OVERRIDE)'
+      : base.dataSourceFa;
+
     onCityChange({
       ...customCity,
-      id: `custom_${customCity.latitude.toFixed(4)}_${customCity.longitude.toFixed(4)}_${Date.now()}`,
-      dataSourceEn: 'User Manual Specification (USER_OVERRIDE)',
-      dataSourceFa: 'مشخصات دستی کاربر (USER_OVERRIDE)',
-      confidence: 'analytical_estimate',
+      id: hasUserEdits
+        ? `custom_${customCity.latitude.toFixed(4)}_${customCity.longitude.toFixed(4)}_${Date.now()}`
+        : customCity.id,
+      dataSourceEn,
+      dataSourceFa,
+      confidence: hasUserEdits ? 'analytical_estimate' : base.confidence,
       fieldProvenance: updatedProv,
     });
     setIsEditing(false);
+    setIsDirty(false);
   };
 
   return (
@@ -116,7 +253,13 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
             </p>
           </div>
           <button
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => {
+              if (isEditing) {
+                handleCancelEditing();
+              } else {
+                handleStartEditing();
+              }
+            }}
             className="studio-btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -232,6 +375,12 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
         ) : (
           /* Custom Parameter Editor Form */
           <div className="space-y-4 text-xs">
+            {validationError && (
+              <div className="p-2.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{validationError}</span>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label htmlFor="climate-psh-input" className="block text-slate-300 mb-1">
@@ -243,7 +392,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   step="0.05"
                   className="studio-input"
                   value={customCity.peakSunHours}
-                  onChange={(e) => setCustomCity({ ...customCity, peakSunHours: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCustomCity({ ...customCity, peakSunHours: parseFloat(e.target.value) || 0 });
+                    setIsDirty(true);
+                  }}
                 />
               </div>
 
@@ -257,7 +409,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   step="1"
                   className="studio-input"
                   value={customCity.tempMinC}
-                  onChange={(e) => setCustomCity({ ...customCity, tempMinC: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCustomCity({ ...customCity, tempMinC: parseFloat(e.target.value) || 0 });
+                    setIsDirty(true);
+                  }}
                 />
               </div>
 
@@ -271,7 +426,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   step="1"
                   className="studio-input"
                   value={customCity.tempMaxC}
-                  onChange={(e) => setCustomCity({ ...customCity, tempMaxC: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCustomCity({ ...customCity, tempMaxC: parseFloat(e.target.value) || 0 });
+                    setIsDirty(true);
+                  }}
                 />
               </div>
 
@@ -285,7 +443,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   step="1"
                   className="studio-input"
                   value={customCity.optimalTiltAnnualDeg}
-                  onChange={(e) => setCustomCity({ ...customCity, optimalTiltAnnualDeg: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCustomCity({ ...customCity, optimalTiltAnnualDeg: parseInt(e.target.value) || 0 });
+                    setIsDirty(true);
+                  }}
                 />
               </div>
 
@@ -299,7 +460,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   step="0.5"
                   className="studio-input"
                   value={customCity.soilingLossPct}
-                  onChange={(e) => setCustomCity({ ...customCity, soilingLossPct: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCustomCity({ ...customCity, soilingLossPct: parseFloat(e.target.value) || 0 });
+                    setIsDirty(true);
+                  }}
                 />
               </div>
 
@@ -313,7 +477,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   step="0.02"
                   className="studio-input"
                   value={customCity.albedo}
-                  onChange={(e) => setCustomCity({ ...customCity, albedo: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCustomCity({ ...customCity, albedo: parseFloat(e.target.value) || 0 });
+                    setIsDirty(true);
+                  }}
                 />
               </div>
 
@@ -327,7 +494,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   step="0.0001"
                   className="studio-input"
                   value={customCity.latitude}
-                  onChange={(e) => setCustomCity({ ...customCity, latitude: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCustomCity({ ...customCity, latitude: parseFloat(e.target.value) || 0 });
+                    setIsDirty(true);
+                  }}
                 />
               </div>
 
@@ -341,7 +511,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   step="0.0001"
                   className="studio-input"
                   value={customCity.longitude}
-                  onChange={(e) => setCustomCity({ ...customCity, longitude: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCustomCity({ ...customCity, longitude: parseFloat(e.target.value) || 0 });
+                    setIsDirty(true);
+                  }}
                 />
               </div>
             </div>
@@ -349,7 +522,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
             <div className="flex justify-end gap-2 pt-2 border-t border-industrial-border">
               <button
                 type="button"
-                onClick={() => setIsEditing(false)}
+                onClick={handleCancelEditing}
                 className="studio-btn-secondary text-xs"
               >
                 {isEn ? 'Cancel' : 'انصراف'}

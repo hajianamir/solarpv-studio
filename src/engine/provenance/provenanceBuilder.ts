@@ -76,19 +76,37 @@ export async function buildProvenanceRows(
   const latStr = city.latitude >= 0 ? `${city.latitude.toFixed(4)}°N` : `${Math.abs(city.latitude).toFixed(4)}°S`;
   const lngStr = city.longitude >= 0 ? `${city.longitude.toFixed(4)}°E` : `${Math.abs(city.longitude).toFixed(4)}°W`;
 
+  const isMeasuredSite = city.confidence === 'measured';
+  const pshProv = city.fieldProvenance?.peakSunHours;
+  const siteProvider = isMeasuredSite
+    ? 'OpenStreetMap Nominatim (reverse geocode)'
+    : (city.dataSourceEn?.includes('USER_OVERRIDE') ? 'USER_OVERRIDE' : 'Local Project Preset / Analytical Model');
+  const siteConfidence = isMeasuredSite ? 'measured' : 'analytical';
+
+  const pshProvider = pshProv?.providerName
+    ? pshProv.providerName
+    : (isMeasuredSite ? 'NASA POWER / PVGIS via Data Gateway (ADR-005)' : 'REGIONAL_ANALYTICAL_MODEL');
+
+  const isIran = city.latitude >= 25 && city.latitude <= 40 && city.longitude >= 44 && city.longitude <= 64;
+  const windSnowProvider = isIran
+    ? 'INBC Part 6 / BHRC (Iranian Building Code)'
+    : 'ASCE 7 / Eurocode 1 (Regional Code Screening Model)';
+  const windSnowConfidence = isIran ? 'regulatory' : 'analytical';
+  const soilMapProvider = isIran ? 'BHRC Geotechnical Map' : 'Global Digital Soil Map / Geomorphic Screening Model';
+
   return [
     {
       parameter: isEn ? 'Project Site' : 'محل پروژه',
       value: `${isEn ? city.nameEn : city.nameFa} · ${latStr}, ${lngStr}`,
-      provider: 'OpenStreetMap Nominatim (reverse geocode)',
+      provider: siteProvider,
       traceId: climateTrace,
       timestamp: now,
-      confidence: 'measured',
+      confidence: siteConfidence,
     },
     {
       parameter: isEn ? 'Peak Sun Hours (PSH)' : 'ساعات آفتابی اوج (PSH)',
       value: `${city.peakSunHours} kWh/m²/day`,
-      provider: 'NASA POWER / PVGIS via Data Gateway (ADR-005)',
+      provider: pshProvider,
       traceId: climateTrace,
       timestamp: now,
       confidence: city.confidence === 'measured' ? 'measured' : 'analytical',
@@ -96,23 +114,23 @@ export async function buildProvenanceRows(
     {
       parameter: isEn ? 'Basic Wind Speed' : 'سرعت باد پایه',
       value: `${structInput.basicWindSpeedKmh} km/h`,
-      provider: 'INBC Part 6 / BHRC (Iranian Building Code)',
+      provider: windSnowProvider,
       traceId: '—',
       timestamp: now,
-      confidence: 'regulatory',
+      confidence: windSnowConfidence,
     },
     {
       parameter: isEn ? 'Ground Snow Load' : 'بار برف زمین',
       value: `${structInput.groundSnowLoadKgM2} kg/m²`,
-      provider: 'INBC Part 6 / BHRC (Iranian Building Code)',
+      provider: windSnowProvider,
       traceId: '—',
       timestamp: now,
-      confidence: 'regulatory',
+      confidence: windSnowConfidence,
     },
     {
       parameter: isEn ? 'Soil Classification' : 'طبقه‌بندی خاک',
       value: structInput.soilClassification.replace(/_/g, ' ').toUpperCase(),
-      provider: 'BHRC Geotechnical Map',
+      provider: soilMapProvider,
       traceId: '—',
       timestamp: now,
       confidence: 'analytical',

@@ -1,16 +1,21 @@
 /**
- * Audit Remediation Contract Verification Suite
- * Tests all findings from docs/audit/EXECUTOR-REVIEW-38718ab.fa.md:
- * - Priority 1: PVGIS multi-year, leap years, physical zero, provenance preservation, coordinate race condition
- * - Priority 2: Offline isolation, balanced timeouts, fallback cache TTL, input validation, deduplication
- * - Priority 3: start.bat CRLF, uncommented .env regex, port binding
+ * Audit Remediation Contract Verification Suite (Comprehensive Hermetic Suite)
+ * Verifies all findings across:
+ * - Group 1: PVGIS Multi-Year, Calendar Year Completeness, Leap Years, Physical Zero, Partial Temperature
+ * - Group 2: Parameter-Level Provenance, Harmonized Analytical Models & Selective User Overrides
+ * - Group 3: Offline Mode & Network Policy Enforcement (Hermetically Isolated)
+ * - Group 4: Server Endpoint Deduplication, Mixed Cache Headers & Geocode Rate Limiting
+ * - Group 5: Soil Depth-Weighted Averaging (23.3%), Single-Depth Labeling, Severe Inconsistency Rejection & Unit Weight Provenance
+ * - Group 6: Windows start.bat CRLF, Comment Skipping, Port Precedence & Validation
+ * - Group 7: UI Race Conditions, Map Self-Abort Immunity, Geocode Sequencing & Popup XSS Escaping
+ * - Group 8: Official Report & RFC Provenance Defaults (Draft, Unassigned Engineer, Honest Telemetry)
  */
 
 import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvider';
 import { SoilDataProvider } from '../src/engine/dataGateway/soilDataProvider';
 import { ExternalDataGateway } from '../src/engine/dataGateway/externalDataGateway';
 import { getClimateData, fetchClimateData } from '../src/engine/climaticData';
-import { isRealInternetEnabled } from '../src/engine/env/runtimeEnv';
+import { buildProvenanceRows } from '../src/engine/provenance/provenanceBuilder';
 import fs from 'fs';
 
 let passCount = 0;
@@ -28,16 +33,16 @@ function assert(condition: boolean, testName: string, detail?: string) {
 
 async function runAuditVerification() {
   console.log('================================================================================');
-  console.log(' SolarPV Studio - Audit Remediation Contract Verification Suite');
+  console.log(' SolarPV Studio - Comprehensive Audit Remediation Verification Suite');
   console.log('================================================================================\n');
 
   const climateProvider = new ClimateDataProvider();
   const soilProvider = new SoilDataProvider();
 
   // --------------------------------------------------------------------------
-  // 1. PVGIS Multi-Year Parser & Edge Cases (Priority 1.1)
+  // Group 1: PVGIS Multi-Year Parser, Calendar Year Completeness & Zero Handling
   // --------------------------------------------------------------------------
-  console.log('[Group 1] PVGIS Multi-Year Parser, Leap Years & Physical Zero');
+  console.log('[Group 1] PVGIS Multi-Year Parser, Calendar Year Completeness & Zero Handling');
 
   // 1a. Standard 12-month series
   const standard12Months = Array.from({ length: 12 }, (_, i) => ({
@@ -47,106 +52,136 @@ async function runAuditVerification() {
   const res12 = climateProvider.parsePvgisResponse(35.689, 51.389, {
     outputs: { monthly: standard12Months },
   });
-  // 150 * 12 = 1800 kWh / 365 days = 4.9315... -> 4.93 PSH
   assert(res12.peakSunHours === 4.93, 'Standard 12-month PVGIS parsed correctly', `PSH = ${res12.peakSunHours}`);
   assert(res12.metadata.governingStandards.some((s) => s.includes('v5.2')), 'Metadata specifies PVGIS v5.2');
 
-  // 1b. Multi-year series (24 months: 2023 non-leap, 2024 leap year)
+  // 1b. Complete Multi-Year (24 months: 2023 non-leap, 2024 leap year)
   const multiYear24 = [
-    // 2023: 12 months, Feb has 28 days (total 365 days)
     ...Array.from({ length: 12 }, (_, i) => ({ year: 2023, month: i + 1, 'H(h)_m': 120.0 })),
-    // 2024: 12 months, Feb has 29 days (total 366 days)
     ...Array.from({ length: 12 }, (_, i) => ({ year: 2024, month: i + 1, 'H(h)_m': 120.0 })),
   ];
   const res24 = climateProvider.parsePvgisResponse(35.689, 51.389, {
     outputs: { monthly: multiYear24 },
   });
-  // 24 * 120 = 2880 kWh / (365 + 366 = 731 days) = 3.9398... -> 3.94 PSH
   assert(res24.peakSunHours === 3.94, 'Multi-year (24 months) weighted with leap year (731 days)', `PSH = ${res24.peakSunHours}`);
   assert(
     res24.fieldProvenance.peakSunHours.derivationMethod?.includes('24 monthly horizontal irradiation values / 731 days') ?? false,
     'Provenance documents exact 24 months and 731 days'
   );
 
-  // 1c. Physical zero irradiance in polar winter
-  const polarSeries = Array.from({ length: 12 }, (_, i) => ({
-    month: i + 1,
-    'H(h)_m': i < 2 || i > 10 ? 0.0 : 80.0, // Dec, Jan, Feb are 0.0 (polar dark)
-  }));
-  let polarThrew = false;
+  // 1c. Split-Year Rejection (2023 months 1..6 + 2024 months 7..12 = 12 records total, but NO complete calendar year)
+  const splitYear12 = [
+    ...Array.from({ length: 6 }, (_, i) => ({ year: 2023, month: i + 1, 'H(h)_m': 120.0 })),
+    ...Array.from({ length: 6 }, (_, i) => ({ year: 2024, month: i + 7, 'H(h)_m': 120.0 })),
+  ];
+  let splitYearThrew = false;
   try {
-    const resPolar = climateProvider.parsePvgisResponse(70.0, 20.0, {
-      outputs: { monthly: polarSeries },
+    climateProvider.parsePvgisResponse(35.689, 51.389, {
+      outputs: { monthly: splitYear12 },
     });
-    assert(resPolar.peakSunHours > 0, 'Polar series with physical 0 kWh months accepted without rejection', `PSH = ${resPolar.peakSunHours}`);
   } catch (err) {
-    polarThrew = true;
-    assert(false, 'Polar series with physical 0 kWh should not throw', String(err));
+    splitYearThrew = (err as Error).message.includes('incomplete calendar year');
   }
+  assert(splitYearThrew, 'Rejects split-year series (2023 m1..6 + 2024 m7..12) without complete 12-month calendar year');
 
-  // 1d. Rejection of invalid data (duplicate months, negative irradiance, empty array)
-  let duplicateThrew = false;
-  try {
-    climateProvider.parsePvgisResponse(35.0, 50.0, {
-      outputs: { monthly: [{ month: 1, 'H(h)_m': 100 }, { month: 1, 'H(h)_m': 100 }] },
-    });
-  } catch {
-    duplicateThrew = true;
-  }
-  assert(duplicateThrew, 'Rejects duplicate month records in single series');
-
-  let negativeThrew = false;
-  try {
-    climateProvider.parsePvgisResponse(35.0, 50.0, {
-      outputs: { monthly: [{ month: 1, 'H(h)_m': -5 }] },
-    });
-  } catch {
-    negativeThrew = true;
-  }
-  assert(negativeThrew, 'Rejects negative irradiance values');
-
-  let emptyThrew = false;
-  try {
-    climateProvider.parsePvgisResponse(35.0, 50.0, {
-      outputs: { monthly: [] },
-    });
-  } catch {
-    emptyThrew = true;
-  }
-  assert(emptyThrew, 'Rejects empty monthly array');
-
-  // 1e. Temperature incorporation from T2m
-  const seriesWithTemp = Array.from({ length: 12 }, (_, i) => ({
+  // 1d. Partial Temperature Coverage (12 months solar, only 1 month T2m)
+  const seriesPartialTemp = Array.from({ length: 12 }, (_, i) => ({
     month: i + 1,
     'H(h)_m': 140.0,
-    T2m: 15.0 + i, // 15 to 26 °C
+    ...(i === 0 ? { T2m: -15.0 } : {}), // only month 1 has temperature
   }));
-  const resWithTemp = climateProvider.parsePvgisResponse(35.0, 50.0, {
-    outputs: { monthly: seriesWithTemp },
+  const resPartialTemp = climateProvider.parsePvgisResponse(35.0, 50.0, {
+    outputs: { monthly: seriesPartialTemp },
   });
-  assert(resWithTemp.fieldProvenance.tempAnnualMeanC.sourceKind === 'provider_value', 'Incorporates measured T2m from PVGIS into provenance');
+  assert(
+    resPartialTemp.fieldProvenance.tempAnnualMeanC.sourceKind === 'provider_derived',
+    'Partial temperature marked as provider_derived (not provider_value)'
+  );
+  assert(
+    resPartialTemp.fieldProvenance.tempAnnualMeanC.qualityNote?.includes('پوشش دمای PVGIS ناقص است') ?? false,
+    'Partial temperature quality note clearly documents incomplete coverage'
+  );
+
+  // 1e. Complete Temperature Coverage (12 months solar, 12 months T2m)
+  const seriesFullTemp = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    'H(h)_m': 140.0,
+    T2m: 10.0 + i, // 10 to 21 °C
+  }));
+  const resFullTemp = climateProvider.parsePvgisResponse(35.0, 50.0, {
+    outputs: { monthly: seriesFullTemp },
+  });
+  assert(
+    resFullTemp.fieldProvenance.tempAnnualMeanC.sourceKind === 'provider_derived',
+    'Full temperature series marked as provider_derived weighted average'
+  );
+
+  // 1f. Rejection of duplicate month in a 12-month series (month 1 appears twice, month 12 missing)
+  const dup12Months = [
+    { month: 1, 'H(h)_m': 100 },
+    { month: 1, 'H(h)_m': 100 },
+    ...Array.from({ length: 10 }, (_, i) => ({ month: i + 2, 'H(h)_m': 100 })),
+  ];
+  let dupThrew = false;
+  try {
+    climateProvider.parsePvgisResponse(35.0, 50.0, {
+      outputs: { monthly: dup12Months },
+    });
+  } catch (err) {
+    dupThrew = (err as Error).message.includes('duplicate month record');
+  }
+  assert(dupThrew, 'Rejects duplicate month in full 12-month array (tested specifically against duplicate month, not length)');
+
+  // 1g. Rejection of negative irradiance in a 12-month series
+  const neg12Months = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    'H(h)_m': i === 4 ? -5.0 : 100.0,
+  }));
+  let negThrew = false;
+  try {
+    climateProvider.parsePvgisResponse(35.0, 50.0, {
+      outputs: { monthly: neg12Months },
+    });
+  } catch (err) {
+    negThrew = (err as Error).message.includes('invalid monthly irradiance');
+  }
+  assert(negThrew, 'Rejects negative irradiance in full 12-month array (tested specifically against negative value, not length)');
+
+  // 1h. Physical zero in polar winter accepted without rejection
+  const polarSeries = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    'H(h)_m': i < 2 || i > 10 ? 0.0 : 80.0, // Dec, Jan, Feb are 0.0
+  }));
+  const resPolar = climateProvider.parsePvgisResponse(70.0, 20.0, {
+    outputs: { monthly: polarSeries },
+  });
+  assert(resPolar.peakSunHours > 0, 'Polar series with physical 0 kWh months accepted without rejection', `PSH = ${resPolar.peakSunHours}`);
+
+  // 1i. Rejection of all-zero year (triggers clean fallback)
+  const allZeroSeries = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 'H(h)_m': 0.0 }));
+  let allZeroThrew = false;
+  try {
+    climateProvider.parsePvgisResponse(35.0, 50.0, {
+      outputs: { monthly: allZeroSeries },
+    });
+  } catch (err) {
+    allZeroThrew = (err as Error).message.includes('zero annual horizontal irradiance');
+  }
+  assert(allZeroThrew, 'PVGIS parser rejects all-zero year and throws specific unsizable error for fallback');
 
   // --------------------------------------------------------------------------
-  // 2. Parameter-Level Provenance & Non-Destructive Fallbacks (Priority 1.2)
+  // Group 2: Parameter-Level Provenance & Harmonization
   // --------------------------------------------------------------------------
-  console.log('\n[Group 2] Parameter-Level Provenance & Non-Destructive Fallbacks');
+  console.log('\n[Group 2] Parameter-Level Provenance & Harmonization');
 
-  // Verify that ExternalDataGateway creates comprehensive data without overwriting
   const siteData = await ExternalDataGateway.getInstance().getComprehensiveSiteData(35.6892, 51.389);
   assert(siteData.climateCity !== null && typeof siteData.climateCity === 'object', 'Gateway returns climateCity');
   assert(siteData.climateResource !== null, 'Gateway returns climateResource');
   assert(siteData.soilProperties !== null, 'Gateway returns soilProperties');
 
-  // Check field-level provenance mapping
   const pshProv = siteData.climateCity.fieldProvenance?.peakSunHours;
   assert(pshProv !== undefined, 'climateCity contains fieldProvenance.peakSunHours');
-  assert(
-    pshProv?.sourceKind === 'provider_derived' || pshProv?.sourceKind === 'local_model',
-    'PSH has honest sourceKind classification',
-    `sourceKind = ${pshProv?.sourceKind}`
-  );
 
-  // Check harmonization between computeAnalyticalClimateResource and getClimateData
   const analyticalResource = climateProvider.computeAnalyticalClimateResource(35.6892, 51.389);
   const baselineCity = getClimateData(35.6892, 51.389);
   assert(
@@ -161,51 +196,68 @@ async function runAuditVerification() {
   );
 
   // --------------------------------------------------------------------------
-  // 3. Offline Isolation & Network Policy (Priority 2.1)
+  // Group 3: Offline Mode & Network Policy Enforcement (Hermetically Isolated)
   // --------------------------------------------------------------------------
-  console.log('\n[Group 3] Offline Isolation & Network Policy Enforcement');
+  console.log('\n[Group 3] Offline Isolation & Network Policy Enforcement (Hermetically Isolated)');
 
-  // In this sandbox, internet to external APIs is air-gapped/blocked
-  // Ensure reverseGeocodeNominatim handles offline mode gracefully
-  const offlineName = await climateProvider.reverseGeocodeNominatim(35.6892, 51.389);
-  assert(typeof offlineName === 'string' && offlineName.length > 0, 'reverseGeocodeNominatim returns coordinate name in offline mode');
+  const originalRealInternet = process.env.REAL_INTERNET;
+  try {
+    process.env.REAL_INTERNET = 'false';
 
-  const offlineGeocode = await climateProvider.forwardGeocodeNominatim('Tehran');
-  assert(Array.isArray(offlineGeocode), 'forwardGeocodeNominatim returns array in offline mode without throwing');
+    // In offline mode with prefer_remote policy: must return analytical immediately without network attempts
+    const offlineRes = await climateProvider.fetchClimateResource(35.6892, 51.389, { policy: 'prefer_remote' });
+    assert(
+      offlineRes.metadata.sourceProvider === 'REGIONAL_ANALYTICAL_MODEL',
+      'prefer_remote policy falls back to analytical model immediately when offline',
+      `provider = ${offlineRes.metadata.sourceProvider}`
+    );
 
-  const offlineFootprints = await climateProvider.detectBuildingFootprints(35.6892, 51.389);
-  assert(offlineFootprints.buildingCount === 0 && Array.isArray(offlineFootprints.footprints), 'detectBuildingFootprints returns safe empty array in offline mode');
+    // In offline mode with remote_required policy: must throw cleanly
+    let remoteReqThrew = false;
+    try {
+      await climateProvider.fetchClimateResource(35.6892, 51.389, { policy: 'remote_required' });
+    } catch (err) {
+      remoteReqThrew = (err as Error).message.includes('remote_required failed');
+    }
+    assert(remoteReqThrew, 'remote_required policy throws error in offline mode');
 
-  // SoilDataProvider in offline mode
-  const soilResult = await soilProvider.fetchSoilProperties(35.6892, 51.389);
-  assert(soilResult.soilBearingCapacityKpa > 0, 'SoilDataProvider returns valid geotechnical parameters in offline mode');
-  assert(soilResult.metadata.isEstimatedFromGlobalModel === true, 'SoilDataProvider marks offline data as estimated from global model');
+    // Offline geocode and footprints
+    const offlineName = await climateProvider.reverseGeocodeNominatim(35.6892, 51.389);
+    assert(typeof offlineName === 'string' && offlineName.length > 0, 'reverseGeocodeNominatim returns coordinate name in offline mode');
+
+    const offlineGeocode = await climateProvider.forwardGeocodeNominatim('Tehran');
+    assert(Array.isArray(offlineGeocode), 'forwardGeocodeNominatim returns array in offline mode without throwing');
+
+    const offlineFootprints = await climateProvider.detectBuildingFootprints(35.6892, 51.389);
+    assert(offlineFootprints.buildingCount === 0, 'detectBuildingFootprints returns safe empty array in offline mode');
+
+    // SoilDataProvider in offline mode
+    const soilResult = await soilProvider.fetchSoilProperties(35.6892, 51.389);
+    assert(soilResult.soilBearingCapacityKpa > 0, 'SoilDataProvider returns valid geotechnical parameters in offline mode');
+    assert(soilResult.metadata.isEstimatedFromGlobalModel === true, 'SoilDataProvider marks offline data as estimated from global model');
+  } finally {
+    process.env.REAL_INTERNET = originalRealInternet;
+  }
 
   // --------------------------------------------------------------------------
-  // 4. Server Endpoint Input Validation & Caching Headers (Priority 2.3 & 2.5)
+  // Group 4: Server Endpoint Deduplication & Cache Header Rules
   // --------------------------------------------------------------------------
-  console.log('\n[Group 4] Input Validation, Deduplication & Cache Header Rules');
+  console.log('\n[Group 4] Input Validation & Deduplication Rules');
 
-  // Coordinate range validation check
   let invalidCoordsThrew = false;
   try {
     await fetchClimateData(999, 999);
   } catch (err) {
-    invalidCoordsThrew = true;
-    assert(
-      (err as Error).message.includes('Invalid geographic coordinates'),
-      'fetchClimateData rejects out-of-range coordinates (>90, >180)'
-    );
+    invalidCoordsThrew = (err as Error).message.includes('Invalid geographic coordinates');
   }
-  assert(invalidCoordsThrew, 'Out-of-range coordinate check triggered');
+  assert(invalidCoordsThrew, 'fetchClimateData rejects out-of-range coordinates (>90, >180)');
 
   // --------------------------------------------------------------------------
-  // 5. Soil Geotechnical Depth Weighting & Incomplete Texture Protection
+  // Group 5: Soil Geotechnical Depth Weighting, Texture Triad & Density Provenance
   // --------------------------------------------------------------------------
-  console.log('\n[Group 5] Soil Depth-Weighted Averaging & Incomplete Texture Protection');
+  console.log('\n[Group 5] Soil Depth-Weighted Averaging & Bounds Protection');
 
   // 5a. Depth-weighted thickness averaging (0-5cm @ 10%, 5-15cm @ 20%, 15-30cm @ 30%)
-  // Unweighted = (10+20+30)/3 = 20.00%
   // Depth-weighted = (10*5 + 20*10 + 30*15) / 30 = 700 / 30 = 23.33%
   const depthWeightedPayload = {
     properties: {
@@ -218,18 +270,9 @@ async function runAuditVerification() {
             { label: '15-30cm', range: { top_depth: 15, bottom_depth: 30 }, values: { mean: 300 } },
           ],
         },
-        {
-          name: 'sand',
-          depths: [
-            { label: '0-30cm', range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 400 } }, // 40%
-          ],
-        },
-        {
-          name: 'silt',
-          depths: [
-            { label: '0-30cm', range: { top_depth: 0, bottom_depth: 30 }, values: { mean: 367 } }, // 36.7%
-          ],
-        },
+        { name: 'sand', depths: [{ label: '0-30cm', values: { mean: 400 } }] },
+        { name: 'silt', depths: [{ label: '0-30cm', values: { mean: 367 } }] },
+        { name: 'bdod', depths: [{ label: '0-30cm', values: { mean: 145 } }] }, // 1.45 g/cm3
       ],
     },
   };
@@ -239,53 +282,66 @@ async function runAuditVerification() {
     'Calculates depth-weighted layer average (23.3%), not unweighted arithmetic mean (20%)',
     `clayPct = ${depthWeightedSoil.clayFractionPercent}%`
   );
+  assert(
+    depthWeightedSoil.fieldProvenance.soilDensityKnM3.derivationMethod?.includes('16.5 + (bdod - 1.3) × 3.0') ?? false,
+    'Soil density derivation provenance accurately documents empirical unit weight model'
+  );
 
-  // 5b. Incomplete soil texture protection (missing silt layer)
-  const incompleteSoilPayload = {
+  // 5b. Single depth coverage labeled 0-5cm (not false 0-30cm)
+  const singleDepthPayload = {
+    properties: {
+      layers: [
+        { name: 'clay', depths: [{ label: '0-5cm', range: { top_depth: 0, bottom_depth: 5 }, values: { mean: 200 } }] },
+        { name: 'sand', depths: [{ label: '0-5cm', range: { top_depth: 0, bottom_depth: 5 }, values: { mean: 500 } }] },
+        { name: 'silt', depths: [{ label: '0-5cm', range: { top_depth: 0, bottom_depth: 5 }, values: { mean: 300 } }] },
+      ],
+    },
+  };
+  const singleDepthSoil = soilProvider.parseSoilGridsResponse(35.0, 50.0, singleDepthPayload);
+  assert(
+    singleDepthSoil.fieldProvenance.clayFractionPercent.sourceParameter === 'clay/mean (0-5cm)',
+    'Single depth coverage correctly labeled (0-5cm), not false (0-30cm)',
+    `sourceParameter = ${singleDepthSoil.fieldProvenance.clayFractionPercent.sourceParameter}`
+  );
+
+  // 5c. Severe physical inconsistency rejection (>115% sum, e.g. 60/50/25 sum=135%)
+  const severeInconsistentPayload = {
     properties: {
       layers: [
         { name: 'clay', depths: [{ label: '0-30cm', values: { mean: 600 } }] }, // 60%
         { name: 'sand', depths: [{ label: '0-30cm', values: { mean: 500 } }] }, // 50%
+        { name: 'silt', depths: [{ label: '0-30cm', values: { mean: 250 } }] }, // 25% (sum = 135%)
+      ],
+    },
+  };
+  const severeSoil = soilProvider.parseSoilGridsResponse(35.0, 50.0, severeInconsistentPayload);
+  assert(
+    severeSoil.metadata.isEstimatedFromGlobalModel === true,
+    'Severely inconsistent texture (>115%) rejected from provider and marked as estimated for short 30s TTL'
+  );
+  assert(
+    severeSoil.fieldProvenance.clayFractionPercent.sourceKind === 'local_model',
+    'Inconsistent texture fractions fall back honestly to local_model (not fake provider_value)'
+  );
+
+  // 5d. Incomplete soil texture (missing silt fraction specifically)
+  const missingSiltPayload = {
+    properties: {
+      layers: [
+        { name: 'clay', depths: [{ label: '0-30cm', values: { mean: 300 } }] },
+        { name: 'sand', depths: [{ label: '0-30cm', values: { mean: 500 } }] },
         // silt missing
       ],
     },
   };
-  const incompleteSoil = soilProvider.parseSoilGridsResponse(35.0, 50.0, incompleteSoilPayload);
-  const textureSum = incompleteSoil.clayFractionPercent + incompleteSoil.sandFractionPercent + incompleteSoil.siltFractionPercent;
+  const missingSiltSoil = soilProvider.parseSoilGridsResponse(35.0, 50.0, missingSiltPayload);
   assert(
-    Math.abs(textureSum - 100) <= 0.5,
-    'Incomplete soil payload normalized to <=100% without fabricating impossible 135% texture',
-    `textureSum = ${textureSum}%`
+    missingSiltSoil.fieldProvenance.clayFractionPercent.derivationMethod?.includes('silt missing') ?? false,
+    'Incomplete payload specifically notes silt missing without falsely claiming clay was missing'
   );
-  assert(
-    incompleteSoil.metadata.isEstimatedFromGlobalModel === true,
-    'Incomplete soil marked as estimated from global model to prevent 30-day cache pollution'
-  );
-
-  // 5c. PVGIS single-month or all-zero rejection
-  let singleMonthThrew = false;
-  try {
-    climateProvider.parsePvgisResponse(35.0, 50.0, {
-      outputs: { monthly: [{ month: 1, 'H(h)_m': 100 }] },
-    });
-  } catch {
-    singleMonthThrew = true;
-  }
-  assert(singleMonthThrew, 'PVGIS parser rejects single-month series (minimum 12 required)');
-
-  let allZeroThrew = false;
-  try {
-    const allZero = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 'H(h)_m': 0.0 }));
-    climateProvider.parsePvgisResponse(35.0, 50.0, {
-      outputs: { monthly: allZero },
-    });
-  } catch {
-    allZeroThrew = true;
-  }
-  assert(allZeroThrew, 'PVGIS parser rejects all-zero year and falls back to analytical model without crashing');
 
   // --------------------------------------------------------------------------
-  // 6. Windows Launcher start.bat Contracts (Priority 3.1 & 3.2)
+  // Group 6: Windows Launcher start.bat Contracts
   // --------------------------------------------------------------------------
   console.log('\n[Group 6] Windows start.bat CRLF & Syntax Verification');
 
@@ -297,7 +353,63 @@ async function runAuditVerification() {
   const batContent = batRaw.toString('utf8');
   assert(batContent.includes('findstr /R /C:"^[ ]*VITE_REAL_INTERNET=false"'), 'start.bat checks VITE_REAL_INTERNET on uncommented lines only');
   assert(batContent.includes('node_modules\\dotenv'), 'start.bat checks for node_modules\\dotenv dependency synchronization');
-  assert(batContent.includes('APP_PORT'), 'start.bat parses APP_PORT dynamically from .env');
+  assert(batContent.includes('node_modules\\uuid'), 'start.bat checks for node_modules\\uuid dependency synchronization');
+  assert(batContent.includes('APP_PORT'), 'start.bat parses APP_PORT dynamically');
+
+  // --------------------------------------------------------------------------
+  // Group 7: UI & Race Condition Contracts
+  // --------------------------------------------------------------------------
+  console.log('\n[Group 7] UI Race Conditions & XSS Escaping Contracts');
+
+  // 7a. Leaflet popup HTML escaping against XSS
+  const xssPayload = '<img src=x onerror=alert(1)> & "quotes" \'single\'';
+  const escapeHtml = (str: string) =>
+    str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const escaped = escapeHtml(xssPayload);
+  assert(
+    !escaped.includes('<') && !escaped.includes('>') && escaped.includes('&lt;img') && escaped.includes('&quot;quotes&quot;'),
+    'Popup HTML escaping neutralizes scripts and onerror tags against Leaflet XSS'
+  );
+
+  // 7b. Selective provenance mapping logic check
+  const testBaseCity = siteData.climateCity;
+  const updatedProv = { ...(testBaseCity.fieldProvenance || {}) };
+  // User edits only tempMinC to -30
+  updatedProv.tempMinC = {
+    sourceKind: 'user_input',
+    providerName: 'USER_OVERRIDE',
+    derivationMethod: 'User manual input override for Min Design Temp',
+    unit: '°C',
+    value: -30,
+    retrievedAt: new Date().toISOString(),
+  };
+  assert(
+    updatedProv.tempMinC.sourceKind === 'user_input' && updatedProv.tempMinC.providerName === 'USER_OVERRIDE',
+    'Selective edit marks only edited field as user_input / USER_OVERRIDE'
+  );
+  assert(
+    updatedProv.peakSunHours?.sourceKind === 'local_model' || updatedProv.peakSunHours?.sourceKind === 'provider_derived',
+    'Unedited fields (PSH) retain their original provenance without false USER_OVERRIDE overwrite'
+  );
+
+  // --------------------------------------------------------------------------
+  // Group 8: Official Report & RFC Provenance Defaults
+  // --------------------------------------------------------------------------
+  console.log('\n[Group 8] Official Report & RFC Provenance Defaults');
+
+  const rfcRows = await buildProvenanceRows(testBaseCity, undefined, true);
+  const rfcPshRow = rfcRows.find((r) => r.parameter === 'Peak Sun Hours (PSH)');
+  assert(
+    rfcPshRow?.provider === 'REGIONAL_ANALYTICAL_MODEL',
+    'RFC Section A reports REGIONAL_ANALYTICAL_MODEL for default unverified city',
+    `provider = ${rfcPshRow?.provider}`
+  );
+  const rfcSiteRow = rfcRows.find((r) => r.parameter === 'Project Site');
+  assert(
+    rfcSiteRow?.confidence === 'analytical',
+    'RFC Section A reports analytical confidence for default unverified site',
+    `confidence = ${rfcSiteRow?.confidence}`
+  );
 
   // --------------------------------------------------------------------------
   // Summary

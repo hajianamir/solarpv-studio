@@ -47,7 +47,10 @@ export class ExternalDataGateway {
   /**
    * Fetches full environmental, optical, and civil geotechnical telemetry for any coordinates worldwide.
    */
-  public async getComprehensiveSiteData(lat: number, lng: number): Promise<ComprehensiveSiteData> {
+  public async getComprehensiveSiteData(lat: number, lng: number, options?: { signal?: AbortSignal }): Promise<ComprehensiveSiteData> {
+    if (options?.signal?.aborted) {
+      throw new Error('Aborted');
+    }
     const traceId = `TRC-GW-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const [climateResource, soilProperties, structuralHazard, nominatimName] = await Promise.all([
@@ -56,6 +59,10 @@ export class ExternalDataGateway {
       this.structuralProvider.fetchStructuralHazard(lat, lng),
       this.climateProvider.reverseGeocodeNominatim(lat, lng),
     ]);
+
+    if (options?.signal?.aborted) {
+      throw new Error('Aborted');
+    }
 
     const distCoastKm = estimateGeodesicDistanceToCoastKm(lat, lng);
     const gwDepthM = distCoastKm <= 2.0 ? 1.5 : distCoastKm <= 10.0 ? 3.0 : 6.0;

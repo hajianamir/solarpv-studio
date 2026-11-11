@@ -24,6 +24,23 @@ import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 import { formatLatitude, formatLongitude, formatCoordinates } from '../engine/geoCoordinates';
 import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
 
+const OFFLINE_KNOWN_HUBS = [
+  { nameEn: 'Tehran', nameFa: 'تهران', lat: 35.6892, lng: 51.3890 },
+  { nameEn: 'Isfahan', nameFa: 'اصفهان', lat: 32.6546, lng: 51.6680 },
+  { nameEn: 'Shiraz', nameFa: 'شیراز', lat: 29.5926, lng: 52.5836 },
+  { nameEn: 'Tabriz', nameFa: 'تبریز', lat: 38.0800, lng: 46.2919 },
+  { nameEn: 'Mashhad', nameFa: 'مشهد', lat: 36.2605, lng: 59.6168 },
+  { nameEn: 'Ahvaz', nameFa: 'اهواز', lat: 31.3183, lng: 48.6706 },
+  { nameEn: 'Yazd', nameFa: 'یزد', lat: 31.8974, lng: 54.3569 },
+  { nameEn: 'Kerman', nameFa: 'کرمان', lat: 30.2839, lng: 57.0834 },
+  { nameEn: 'Bandar Abbas', nameFa: 'بندرعباس', lat: 27.1832, lng: 56.2666 },
+  { nameEn: 'Munich', nameFa: 'مونیخ', lat: 48.1351, lng: 11.5820 },
+  { nameEn: 'Madrid', nameFa: 'مادرید', lat: 40.4168, lng: -3.7038 },
+  { nameEn: 'Dubai', nameFa: 'دبی', lat: 25.2048, lng: 55.2708 },
+  { nameEn: 'Riyadh', nameFa: 'ریاض', lat: 24.7136, lng: 46.6753 },
+  { nameEn: 'Cairo', nameFa: 'قاهره', lat: 30.0444, lng: 31.2357 },
+];
+
 function escapeHtml(str: string | undefined | null): string {
   if (!str) return '';
   return String(str)
@@ -75,6 +92,10 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRequestIdRef = useRef<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastInternalCityIdRef = useRef<string | null>(null);
+  const lastInternalCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const geocodeRequestIdRef = useRef<number>(0);
+  const geocodeAbortControllerRef = useRef<AbortController | null>(null);
 
   // Keep estimatedPsh strictly synchronized with external currentCity updates
   useEffect(() => {
@@ -110,6 +131,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           locationData.nameFa = labelName;
           locationData.nameEn = labelName;
         }
+        lastInternalCityIdRef.current = locationData.id;
+        lastInternalCoordsRef.current = { lat: targetLat, lng: targetLng };
         onSelectLocation(locationData);
         setEstimatedPsh(locationData.peakSunHours);
         if (markerRef.current) {
@@ -138,6 +161,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             gwData.nameFa = labelName;
             gwData.nameEn = labelName;
           }
+          lastInternalCityIdRef.current = gwData.id;
+          lastInternalCoordsRef.current = { lat: gwData.latitude, lng: gwData.longitude };
           onSelectLocation(gwData);
           setEstimatedPsh(gwData.peakSunHours);
           if (markerRef.current) {
@@ -192,7 +217,76 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     });
   };
 
-  // Debounced Nominatim autocomplete (600ms) — city/place name → coordinates
+  // Safe sequenced geocode search handler with cancellation and offline isolation
+  const triggerGeocodeSearch = useCallback(async (query: string) => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    const q = query.trim();
+    if (!q) {
+      setOnlineResults([]);
+      setIsSearchingOnline(false);
+      return;
+    }
+
+    if (geocodeAbortControllerRef.current) {
+      geocodeAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    geocodeAbortControllerRef.current = controller;
+    const reqId = ++geocodeRequestIdRef.current;
+
+    setIsSearchingOnline(true);
+    try {
+      let results: Array<{ lat: number; lon: number; display_name: string; type: string }> = [];
+
+      // Offline mode: search local engineering city presets without hitting network
+      if (!isRealInternetEnabled()) {
+        const qLower = q.toLowerCase();
+        const localMatches = OFFLINE_KNOWN_HUBS
+          .filter((c) => c.nameEn.toLowerCase().includes(qLower) || c.nameFa.includes(q))
+          .map((c) => ({
+            lat: c.lat,
+            lon: c.lng,
+            display_name: `${c.nameEn} (${c.nameFa})`,
+            type: 'city',
+          }));
+        if (reqId === geocodeRequestIdRef.current) {
+          setOnlineResults(localMatches);
+        }
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        try {
+          const r = await fetch(`/api/v1/gateway/geocode?q=${encodeURIComponent(q)}`, {
+            signal: controller.signal,
+          });
+          if (r.ok) {
+            results = await r.json();
+          }
+        } catch (fetchErr) {
+          if ((fetchErr as Error)?.name === 'AbortError') return;
+        }
+      }
+      if (!results || results.length === 0) {
+        if (!controller.signal.aborted) {
+          results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(q);
+        }
+      }
+      if (reqId === geocodeRequestIdRef.current) {
+        setOnlineResults(results || []);
+      }
+    } catch (err) {
+      if ((err as Error)?.name !== 'AbortError' && reqId === geocodeRequestIdRef.current) {
+        setOnlineResults([]);
+      }
+    } finally {
+      if (reqId === geocodeRequestIdRef.current) {
+        setIsSearchingOnline(false);
+      }
+    }
+  }, []);
+
+  // Debounced search trigger (750ms)
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     if (!searchQuery.trim()) {
@@ -200,34 +294,28 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       setIsSearchingOnline(false);
       return;
     }
-    setIsSearchingOnline(true);
-    debounceTimer.current = setTimeout(async () => {
-      try {
-        let results: Array<{ lat: number; lon: number; display_name: string; type: string }> = [];
-        if (typeof window !== 'undefined') {
-          try {
-            const r = await fetch(`/api/v1/gateway/geocode?q=${encodeURIComponent(searchQuery.trim())}`, {
-              signal: AbortSignal.timeout(6000),
-            });
-            if (r.ok) {
-              results = await r.json();
-            }
-          } catch {}
-        }
-        if (!results || results.length === 0) {
-          results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(searchQuery.trim());
-        }
-        setOnlineResults(results);
-      } catch {
-        setOnlineResults([]);
-      } finally {
-        setIsSearchingOnline(false);
-      }
-    }, 600);
+    debounceTimer.current = setTimeout(() => {
+      triggerGeocodeSearch(searchQuery);
+    }, 750);
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [searchQuery]);
+  }, [searchQuery, triggerGeocodeSearch]);
+
+  // Cancel any in-flight geocode or climate requests on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (geocodeAbortControllerRef.current) {
+        geocodeAbortControllerRef.current.abort();
+      }
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
 
   // Layer references
   const hybridLayerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -356,6 +444,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
         const locationData = calculateGeospatialSolarResource(lat, lng);
         setEstimatedPsh(locationData.peakSunHours);
+        lastInternalCityIdRef.current = locationData.id;
+        lastInternalCoordsRef.current = { lat, lng };
         onSelectLocation(locationData);
         updatePopup(lat, lng, locationData);
 
@@ -370,6 +460,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         setInputLng(pos.lng.toFixed(4));
         const locationData = calculateGeospatialSolarResource(pos.lat, pos.lng);
         setEstimatedPsh(locationData.peakSunHours);
+        lastInternalCityIdRef.current = locationData.id;
+        lastInternalCoordsRef.current = { lat: pos.lat, lng: pos.lng };
         onSelectLocation(locationData);
         updatePopup(pos.lat, pos.lng, locationData);
 
@@ -394,15 +486,29 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
   // Sync coords with external currentCity changes and cancel any in-flight map requests
   useEffect(() => {
-    // Abort and invalidate any pending map query when currentCity is modified from outside (e.g. manual edit)
+    const currentLat = typeof currentCity.latitude === 'number' ? currentCity.latitude : 35.6892;
+    const currentLng = typeof currentCity.longitude === 'number' ? currentCity.longitude : 51.3890;
+
+    // Check if this currentCity change originated from the map's own internal selection
+    const isInternal =
+      (lastInternalCityIdRef.current !== null && currentCity.id === lastInternalCityIdRef.current) ||
+      (lastInternalCoordsRef.current !== null &&
+        Math.abs(currentLat - lastInternalCoordsRef.current.lat) < 0.0001 &&
+        Math.abs(currentLng - lastInternalCoordsRef.current.lng) < 0.0001);
+
+    if (isInternal) {
+      // Internal change: do NOT abort in-flight requests or invalidate requestId!
+      return;
+    }
+
+    // Truly EXTERNAL change (e.g. manual edit in ClimateTab, project load, import, preset change):
+    // Invalidate and cancel any in-flight map requests for the old location
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     activeRequestIdRef.current++;
-    setLiveStatus('idle');
+    setLiveStatus(currentCity.confidence === 'measured' ? 'live' : 'idle');
 
-    const currentLat = typeof currentCity.latitude === 'number' ? currentCity.latitude : 35.6892;
-    const currentLng = typeof currentCity.longitude === 'number' ? currentCity.longitude : 51.3890;
     if (
       mapInstanceRef.current &&
       markerRef.current &&
@@ -414,7 +520,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       markerRef.current.setLatLng([currentLat, currentLng]);
       mapInstanceRef.current.panTo([currentLat, currentLng]);
     }
-  }, [currentCity, coords.lat, coords.lng]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- coords is internal state synced only on external currentCity changes
+  }, [currentCity]);
 
   // Layer Switcher Handler
   const handleSwitchLayer = (layer: 'hybrid' | 'satellite_pure' | 'streets' | 'topo') => {
@@ -457,6 +564,8 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       locationData.nameEn = labelName;
     }
     setEstimatedPsh(locationData.peakSunHours);
+    lastInternalCityIdRef.current = locationData.id;
+    lastInternalCoordsRef.current = { lat: targetLat, lng: targetLng };
     onSelectLocation(locationData);
 
     requestClimateUpdate(targetLat, targetLng, labelName);
@@ -655,7 +764,13 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
               {/* Tab 1: Search by Location Name */}
               {searchTab === 'name' && (
                 <div className="space-y-2">
-                  <form onSubmit={(e) => e.preventDefault()} className="flex gap-1.5">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      triggerGeocodeSearch(searchQuery);
+                    }}
+                    className="flex gap-1.5"
+                  >
                     <input
                       type="text"
                       placeholder={isEn ? 'City, town, industrial zone...' : 'نام شهر، شهرک صنعتی یا منطقه...'}
@@ -664,15 +779,26 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                       className="studio-input text-xs flex-1 py-1.5"
                     />
                     <button
+                      type="submit"
+                      disabled={isSearchingOnline}
+                      className="studio-btn-primary px-2.5 py-1.5 text-xs flex items-center gap-1"
+                      title={isEn ? 'Search place name' : 'جستجوی نام مکان'}
+                    >
+                      {isSearchingOnline ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
                       type="button"
                       onClick={handleGeolocate}
                       disabled={isSearchingOnline}
-                      className="studio-btn-primary px-3 py-1.5 text-xs flex items-center gap-1"
+                      className="studio-btn-secondary px-2.5 py-1.5 text-xs flex items-center gap-1"
                       title={isEn ? 'Use browser geolocation (My Location)' : 'استفاده از مکان‌یابی مرورگر (محل من)'}
                     >
-                      {isSearchingOnline ? '...' : <Crosshair className="w-3.5 h-3.5" />}
+                      <Crosshair className="w-3.5 h-3.5" />
                     </button>
                   </form>
+                  <div className="text-[9px] text-slate-500 font-sans">
+                    {isEn ? 'Geocoding data: © OpenStreetMap contributors (ODbL)' : 'داده‌های موقعیت‌یابی: © همکاران OpenStreetMap'}
+                  </div>
 
                   {/* Recent Searches (localStorage) */}
                   {recentSearches.length > 0 && (

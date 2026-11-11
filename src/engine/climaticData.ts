@@ -308,30 +308,60 @@ export async function fetchClimateData(
     return getClimateData(lat, lng);
   }
 
-  let result: ClimateCity | null = null;
-  if (typeof window !== 'undefined') {
-    try {
-      const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
-        signal: options?.signal ?? AbortSignal.timeout(35000),
-      });
-      if (r.ok) {
-        const payload = await r.json();
-        if (payload?.ok && payload.climateCity) {
-          result = payload.climateCity as ClimateCity;
-        }
-      }
-    } catch (e) {
-      if ((e as Error)?.name === 'AbortError') {
-        throw e;
-      }
-      console.warn('[gateway] proxy failed, trying direct gateway:', e);
+  // Combine caller signal with a 35-second overall deadline
+  const timeoutController = new AbortController();
+  const timer = setTimeout(() => timeoutController.abort(new Error('Gateway request timed out after 35000ms')), 35000);
+
+  let combinedSignal: AbortSignal;
+  if (!options?.signal) {
+    combinedSignal = timeoutController.signal;
+  } else if (typeof AbortSignal.any === 'function') {
+    combinedSignal = AbortSignal.any([options.signal, timeoutController.signal]);
+  } else {
+    const combined = new AbortController();
+    const abortCombined = () => combined.abort(options.signal?.reason || timeoutController.signal.reason);
+    if (options.signal.aborted) {
+      combined.abort(options.signal.reason);
+    } else {
+      options.signal.addEventListener('abort', abortCombined, { once: true });
+      timeoutController.signal.addEventListener('abort', abortCombined, { once: true });
     }
+    combinedSignal = combined.signal;
   }
 
-  if (!result) {
-    const { climateCity } = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng);
-    result = climateCity;
-  }
+  try {
+    let result: ClimateCity | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
+          signal: combinedSignal,
+        });
+        if (r.ok) {
+          const payload = await r.json();
+          if (payload?.ok && payload.climateCity) {
+            result = payload.climateCity as ClimateCity;
+          }
+        }
+      } catch (e) {
+        if ((e as Error)?.name === 'AbortError' || combinedSignal.aborted) {
+          throw e;
+        }
+        console.warn('[gateway] proxy failed, trying direct gateway:', e);
+      }
+    }
 
-  return result;
+    if (!result) {
+      if (combinedSignal.aborted) {
+        throw new Error('Aborted');
+      }
+      const { climateCity } = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng, {
+        signal: combinedSignal,
+      });
+      result = climateCity;
+    }
+
+    return result;
+  } finally {
+    clearTimeout(timer);
+  }
 }

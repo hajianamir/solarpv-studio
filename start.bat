@@ -25,18 +25,29 @@ if not exist ".env" if exist ".env.example" (
 )
 
 set "APP_PORT=3000"
+if defined PORT set "APP_PORT=%PORT%"
 if exist ".env" (
-    for /f "usebackq tokens=1,2 delims==" %%A in (".env") do (
+    for /f "usebackq eol=# tokens=1,2 delims==" %%A in (".env") do (
         set "LINE_KEY=%%A"
         set "LINE_VAL=%%B"
         for /f "tokens=* delims= " %%K in ("!LINE_KEY!") do set "LINE_KEY=%%K"
         for /f "tokens=* delims= " %%V in ("!LINE_VAL!") do set "LINE_VAL=%%V"
-        if /i "!LINE_KEY!"=="PORT" if defined LINE_VAL set "APP_PORT=!LINE_VAL!"
+        if /i "!LINE_KEY!"=="PORT" if defined LINE_VAL (
+            set "LINE_VAL=!LINE_VAL:"=!"
+            set "LINE_VAL=!LINE_VAL:'=!"
+            set "APP_PORT=!LINE_VAL!"
+        )
     )
     findstr /R /C:"^[ ]*VITE_REAL_INTERNET=false" ".env" >nul 2>&1 && (
         echo [WARN] .env disables live internet data ^(VITE_REAL_INTERNET=false^).
     )
 )
+
+set "PORT_VALID=1"
+for /f "delims=0123456789" %%X in ("!APP_PORT!") do set "PORT_VALID=0"
+if "!PORT_VALID!"=="0" set "APP_PORT=3000"
+if !APP_PORT! LSS 1 set "APP_PORT=3000"
+if !APP_PORT! GTR 65535 set "APP_PORT=3000"
 
 netstat -ano | findstr LISTENING | findstr /R /C:":!APP_PORT![ ]" >nul 2>&1 && (
     echo [ERROR] Port !APP_PORT! is already in use. Close the other instance first.
@@ -45,10 +56,12 @@ netstat -ano | findstr LISTENING | findstr /R /C:":!APP_PORT![ ]" >nul 2>&1 && (
 )
 
 set "NEEDS_INSTALL=0"
+if not exist "node_modules" set "NEEDS_INSTALL=1"
 if not exist "node_modules\.bin\tsx.cmd" set "NEEDS_INSTALL=1"
 if not exist "node_modules\esbuild" set "NEEDS_INSTALL=1"
 if not exist "node_modules\dotenv" set "NEEDS_INSTALL=1"
 if not exist "node_modules\exceljs" set "NEEDS_INSTALL=1"
+if not exist "node_modules\uuid" set "NEEDS_INSTALL=1"
 if !NEEDS_INSTALL! EQU 1 goto :InstallDeps
 goto :ReadyToLaunch
 

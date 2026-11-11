@@ -122,6 +122,8 @@ export class SoilDataProvider {
     let hasSilt = false;
     let hasBdod = false;
     let hasPh = false;
+    let minTopDepth = Infinity;
+    let maxBottomDepth = -Infinity;
 
     const layers = json?.properties?.layers;
     if (Array.isArray(layers) && layers.length > 0) {
@@ -136,6 +138,17 @@ export class SoilDataProvider {
               const weight = parseLayerThicknessCm(d);
               sumWeighted += val * weight;
               sumWeight += weight;
+
+              if (typeof d?.range?.top_depth === 'number' && typeof d?.range?.bottom_depth === 'number') {
+                minTopDepth = Math.min(minTopDepth, d.range.top_depth);
+                maxBottomDepth = Math.max(maxBottomDepth, d.range.bottom_depth);
+              } else if (typeof d?.label === 'string') {
+                const m = d.label.match(/(\d+)-(\d+)/);
+                if (m) {
+                  minTopDepth = Math.min(minTopDepth, parseInt(m[1], 10));
+                  maxBottomDepth = Math.max(maxBottomDepth, parseInt(m[2], 10));
+                }
+              }
             }
           }
         }
@@ -150,29 +163,47 @@ export class SoilDataProvider {
       }
     }
 
-    // Only accept provider texture if ALL THREE primary fractions (clay, sand, silt) were returned by the API
+    const depthLabel = Number.isFinite(minTopDepth) && Number.isFinite(maxBottomDepth)
+      ? `${minTopDepth}-${maxBottomDepth}cm`
+      : '0-30cm';
+
+    // Check individual fraction bounds (0 to 100%)
+    if (hasClay && (clayPct < 0 || clayPct > 100)) hasClay = false;
+    if (hasSand && (sandPct < 0 || sandPct > 100)) hasSand = false;
+    if (hasSilt && (siltPct < 0 || siltPct > 100)) hasSilt = false;
+
+    // Identify specifically which fractions are missing
+    const missingFractions: string[] = [];
+    if (!hasClay) missingFractions.push('clay');
+    if (!hasSand) missingFractions.push('sand');
+    if (!hasSilt) missingFractions.push('silt');
+
     let isTextureComplete = hasClay && hasSand && hasSilt;
+    let textureWasNormalized = false;
+
     if (isTextureComplete) {
       const textureSum = clayPct + sandPct + siltPct;
-      if (textureSum > 0) {
-        // Normalize to strictly 100% so fractions never exceed physical boundary
+      // In USDA soil mechanics, sum of clay + sand + silt is 100%.
+      // Due to independent depth-spline fits, minor deviation within [85%, 115%] is normal.
+      // Deviations outside [85%, 115%] indicate severely inconsistent / corrupted provider data.
+      if (textureSum >= 85 && textureSum <= 115) {
         clayPct = Number(((clayPct / textureSum) * 100).toFixed(1));
         sandPct = Number(((sandPct / textureSum) * 100).toFixed(1));
         siltPct = Number((100 - clayPct - sandPct).toFixed(1));
+        textureWasNormalized = Math.abs(textureSum - 100) > 0.1;
       } else {
+        // Severe physical inconsistency (e.g. 135% or 150%) — reject provider texture!
         isTextureComplete = false;
+        missingFractions.push(`texture triad sum non-physical (${textureSum.toFixed(1)}%, expected 100% ±15%)`);
       }
     }
 
-    // If any texture fraction is missing from provider, fall back to analytical geomorphic estimate
+    // If texture is incomplete or inconsistent, fall back to analytical geomorphic estimate
     if (!isTextureComplete) {
       const analytical = this.computeAnalyticalSoilProperties(lat, lng, true);
       clayPct = analytical.clayFractionPercent;
       sandPct = analytical.sandFractionPercent;
       siltPct = analytical.siltFractionPercent;
-      hasClay = false;
-      hasSand = false;
-      hasSilt = false;
     }
 
     const { classification, bearingKpa, phiDeg, bearingRangeKpa, frictionRangeDeg, cohesionKpa, densityKnM3, disclaimer } =
@@ -182,61 +213,65 @@ export class SoilDataProvider {
     const isTextureFromProvider = isTextureComplete;
 
     const fieldProvenance: Record<string, ParameterProvenance> = {
-      clayFractionPercent: hasClay
-        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
+      clayFractionPercent: isTextureComplete
+        ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: 'clay/mean (0-30cm)',
+            sourceParameter: `clay/mean (${depthLabel})`,
             unit: '%',
             value: Number(clayPct.toFixed(1)),
+            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${depthLabel})` : undefined,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
             value: Number(clayPct.toFixed(1)),
-            derivationMethod: 'Geomorphic zonal texture estimate (clay missing from ISRIC payload)',
-            qualityNote: 'لایه رس در پاسخ ISRIC وجود نداشت — برآورد تحلیلی',
+            derivationMethod: `Geomorphic zonal texture estimate (${missingFractions.join(', ')} missing or inconsistent in ISRIC payload)`,
+            qualityNote: `لایه خاک در پاسخ ISRIC ناقص یا ناسازگار بود (${missingFractions.join(', ')}) — برآورد تحلیلی`,
           }),
-      sandFractionPercent: hasSand
-        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
+      sandFractionPercent: isTextureComplete
+        ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: 'sand/mean (0-30cm)',
+            sourceParameter: `sand/mean (${depthLabel})`,
             unit: '%',
             value: Number(sandPct.toFixed(1)),
+            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${depthLabel})` : undefined,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
             value: Number(sandPct.toFixed(1)),
-            derivationMethod: 'Geomorphic zonal texture estimate (sand missing from ISRIC payload)',
-            qualityNote: 'لایه ماسه در پاسخ ISRIC وجود نداشت — برآورد تحلیلی',
+            derivationMethod: `Geomorphic zonal texture estimate (${missingFractions.join(', ')} missing or inconsistent in ISRIC payload)`,
+            qualityNote: `لایه خاک در پاسخ ISRIC ناقص یا ناسازگار بود (${missingFractions.join(', ')}) — برآورد تحلیلی`,
           }),
-      siltFractionPercent: hasSilt
-        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
+      siltFractionPercent: isTextureComplete
+        ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: 'silt/mean (0-30cm)',
+            sourceParameter: `silt/mean (${depthLabel})`,
             unit: '%',
             value: Number(siltPct.toFixed(1)),
+            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${depthLabel})` : undefined,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
             value: Number(siltPct.toFixed(1)),
-            derivationMethod: 'Geomorphic zonal texture estimate (silt missing from ISRIC payload)',
-            qualityNote: 'لایه لای در پاسخ ISRIC وجود نداشت — برآورد تحلیلی',
+            derivationMethod: `Geomorphic zonal texture estimate (${missingFractions.join(', ')} missing or inconsistent in ISRIC payload)`,
+            qualityNote: `لایه خاک در پاسخ ISRIC ناقص یا ناسازگار بود (${missingFractions.join(', ')}) — برآورد تحلیلی`,
           }),
       bulkDensityGPerCm3: hasBdod
         ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: 'bdod/mean (0-30cm)',
+            sourceParameter: `bdod/mean (${depthLabel})`,
             unit: 'g/cm³',
             value: Number(bdodGcm3.toFixed(2)),
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: 'g/cm³',
             value: Number(bdodGcm3.toFixed(2)),
-            derivationMethod: 'Standard dry bulk density default (1.45 g/cm³)',
+            derivationMethod: 'Geomorphic zonal dry bulk density estimate (bdod missing from ISRIC payload)',
+            qualityNote: 'چگالی ظاهری خاک در پاسخ ISRIC وجود نداشت — برآورد تحلیلی',
           }),
       phH2O: hasPh
         ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: 'phh2o/mean (0-30cm)',
+            sourceParameter: `phh2o/mean (${depthLabel})`,
             unit: 'pH',
             value: Number(ph.toFixed(1)),
           })
@@ -276,12 +311,14 @@ export class SoilDataProvider {
         }
       ),
       soilDensityKnM3: createParameterProvenance(
-        isTextureFromProvider ? 'provider_derived' : 'local_model',
-        isTextureFromProvider ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
+        hasBdod ? 'provider_derived' : 'local_model',
+        hasBdod ? 'ISRIC_SOILGRIDS' : 'REGIONAL_ANALYTICAL_MODEL',
         {
           unit: 'kN/m³',
           value: densityKnM3,
-          derivationMethod: 'Calculated from bulk density: bdod (g/cm³) × 9.81',
+          derivationMethod: hasBdod
+            ? 'Empirical soil unit weight correlation from SoilGrids bulk density: 16.5 + (bdod - 1.3) × 3.0 kN/m³'
+            : 'Empirical soil unit weight correlation from regional analytical bulk density estimate: 16.5 + (bdod - 1.3) × 3.0 kN/m³',
         }
       ),
       frostDepthCm: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {

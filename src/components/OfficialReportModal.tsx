@@ -190,9 +190,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const [docId, setDocId] = useState<string>('EPC-PV-2026-0891');
   const [docVersion, setDocVersion] = useState<string>('Rev 2.4');
   const [companyName, setCompanyName] = useState<string>('Solar Engineering & EPC Consortium');
-  const [leadEngineer, setLeadEngineer] = useState<string>('Senior PV Design Engineer, P.E.');
+  const [leadEngineer, setLeadEngineer] = useState<string>('');
   const [clientName, setClientName] = useState<string>('Renewable Energy Investor Corp.');
-  const [approvalStatus, setApprovalStatus] = useState<'Draft' | 'Under Review' | 'Approved' | 'As-Built'>('Approved');
+  const [approvalStatus, setApprovalStatus] = useState<'Draft' | 'Under Review' | 'Approved' | 'As-Built'>('Draft');
   const [detailLevel, setDetailLevel] = useState<'summary' | 'standard' | 'detailed'>('detailed');
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [customFileName, setCustomFileName] = useState<string>(
@@ -1090,16 +1090,16 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             k: 'tempMinC',
                             name: isEn ? 'Min Design Ambient Temp' : 'حداقل دمای حدی محیط',
                             val: `${effectiveCity.tempMinC} °C`,
-                            src: prov.tempMinC?.providerName || 'NASA_POWER',
-                            kind: prov.tempMinC?.sourceKind || 'provider_value',
+                            src: prov.tempMinC?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
+                            kind: prov.tempMinC?.sourceKind || 'local_model',
                             note: isEn ? 'Extreme minimum design temperature' : 'حداقل دمای سرد زمستان',
                           },
                           {
                             k: 'tempMaxC',
                             name: isEn ? 'Max Design Ambient Temp' : 'حداکثر دمای حدی محیط',
                             val: `${effectiveCity.tempMaxC} °C`,
-                            src: prov.tempMaxC?.providerName || 'NASA_POWER',
-                            kind: prov.tempMaxC?.sourceKind || 'provider_value',
+                            src: prov.tempMaxC?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
+                            kind: prov.tempMaxC?.sourceKind || 'local_model',
                             note: isEn ? 'Extreme maximum design temperature' : 'حداکثر دمای گرم تابستان',
                           },
                           {
@@ -1130,8 +1130,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             k: 'soilBearingCapacityKpa',
                             name: isEn ? 'Soil Bearing Capacity (q_a)' : 'ظرفیت باربری خاک',
                             val: `${effectiveCity.soilBearingCapacityKpa} kPa`,
-                            src: prov.soilBearingCapacityKpa?.providerName || 'ISRIC_SOILGRIDS',
-                            kind: prov.soilBearingCapacityKpa?.sourceKind || 'provider_derived',
+                            src: prov.soilBearingCapacityKpa?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
+                            kind: prov.soilBearingCapacityKpa?.sourceKind || 'local_model',
                             note: isEn ? 'Texture correlation (Requires borehole investigation)' : 'برآورد ژئوتکنیکی غربالگری — جایگزین آزمایش مکانیک خاک نیست',
                           },
                           {

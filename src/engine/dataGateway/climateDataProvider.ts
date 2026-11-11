@@ -151,7 +151,10 @@ export class ClimateDataProvider {
       }
     }
 
-    if (policy === 'analytical_only') {
+    if (policy === 'analytical_only' || !realInternet) {
+      if (policy === 'remote_required' && !realInternet) {
+        throw new Error('remote_required failed: Internet connection is disabled or unavailable and policy is remote_required');
+      }
       const analyticalResult = this.computeAnalyticalClimateResource(lat, lng, true);
       analyticalResult.metadata.fetchPolicy = policy;
       analyticalResult.metadata.cacheStatus = options?.bypassCache ? 'bypassed' : 'miss';
@@ -507,6 +510,39 @@ export class ClimateDataProvider {
       throw new Error(`PVGIS response contains incomplete year cycle (${monthly.length} months, must be a multiple of 12)`);
     }
 
+    // Check completeness of calendar years:
+    // If records carry 'year', each calendar year present must have all 12 calendar months (1..12).
+    // If records do not carry 'year' (climatology averages), there must be months 1..12 without missing months.
+    const monthsByYear = new Map<number | 'climatology', Set<number>>();
+    for (const m of monthly) {
+      const yr = m && typeof m === 'object' && m.year !== undefined && m.year !== null ? m.year : 'climatology';
+      if (!monthsByYear.has(yr)) {
+        monthsByYear.set(yr, new Set());
+      }
+      if (typeof m?.month === 'number') {
+        const set = monthsByYear.get(yr)!;
+        if (set.has(m.month)) {
+          throw new Error(`PVGIS response contains duplicate month record: year ${yr === 'climatology' ? 'N/A' : yr}, month ${m.month}`);
+        }
+        set.add(m.month);
+      }
+    }
+
+    for (const [yr, months] of monthsByYear.entries()) {
+      if (months.size < 12) {
+        throw new Error(
+          `PVGIS response contains incomplete calendar year: ${yr === 'climatology' ? 'Climatological series' : `Year ${yr}`} has only ${months.size} months (complete 12-month calendar year required, months 1-12)`
+        );
+      }
+      for (let m = 1; m <= 12; m++) {
+        if (!months.has(m)) {
+          throw new Error(
+            `PVGIS response missing month ${m} in ${yr === 'climatology' ? 'climatological series' : `year ${yr}`}`
+          );
+        }
+      }
+    }
+
     const getDaysInMonth = (year: number | undefined, month: number): number => {
       if (month === 2) {
         if (year !== undefined) {
@@ -523,6 +559,7 @@ export class ClimateDataProvider {
     let totalDays = 0;
     let sumWeightedTemp = 0;
     let totalTempDays = 0;
+    let tempCount = 0;
     const seenYearMonths = new Set<string>();
 
     for (let i = 0; i < monthly.length; i++) {
@@ -565,6 +602,7 @@ export class ClimateDataProvider {
       if (typeof t2m === 'number' && Number.isFinite(t2m) && t2m >= -70 && t2m <= 65) {
         sumWeightedTemp += t2m * days;
         totalTempDays += days;
+        tempCount++;
       }
     }
 
@@ -583,14 +621,41 @@ export class ClimateDataProvider {
     const absLat = Math.abs(lat);
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
 
-    const hasProviderTemp = totalTempDays > 0;
-    const providerMeanTemp = hasProviderTemp ? Number((sumWeightedTemp / totalTempDays).toFixed(1)) : null;
+    const hasCompleteTemp = tempCount === monthly.length && totalTempDays > 0;
+    const hasPartialTemp = tempCount > 0 && tempCount < monthly.length;
+    const hasProviderTemp = hasCompleteTemp || hasPartialTemp;
+    const providerMeanTemp = totalTempDays > 0 ? Number((sumWeightedTemp / totalTempDays).toFixed(1)) : null;
     const estimatedMeanTempC = providerMeanTemp ?? (absLat > 45 ? 10.5 : 22.0);
     const tMin = absLat > 45 ? -15 : 2;
     const tMax = absLat > 45 ? 32 : 40;
     const dniVal = Number((psh * 0.70).toFixed(2));
     const dhiVal = Number((psh * 0.30).toFixed(2));
     const soilingVal = absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0;
+
+    let tempProv: ParameterProvenance;
+    if (hasCompleteTemp) {
+      tempProv = createParameterProvenance('provider_derived', 'PVGIS', {
+        sourceDataset: 'PVGIS 5.2 (T2m)',
+        unit: '°C',
+        value: estimatedMeanTempC,
+        derivationMethod: `Weighted average from ${tempCount} monthly T2m values / ${totalTempDays} days`,
+      });
+    } else if (hasPartialTemp) {
+      tempProv = createParameterProvenance('provider_derived', 'PVGIS', {
+        sourceDataset: 'PVGIS 5.2 (T2m)',
+        unit: '°C',
+        value: estimatedMeanTempC,
+        derivationMethod: `Weighted average from partial temperature data: ${tempCount} of ${monthly.length} months (${totalTempDays} days)`,
+        qualityNote: `پوشش دمای PVGIS ناقص است (${tempCount} ماه از ${monthly.length} ماه موجود بود)؛ میانگین ماهانه دمای حدی طراحی نیست`,
+      });
+    } else {
+      tempProv = createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '°C',
+        value: estimatedMeanTempC,
+        derivationMethod: 'Regional latitude temperature model (PVGIS MRcalc did not provide temperature)',
+        qualityNote: 'PVGIS دمای هوا برنمی‌گرداند؛ برآورد مدل تحلیلی اقلیمی است',
+      });
+    }
 
     const fieldProvenance: Record<string, ParameterProvenance> = {
       peakSunHours: createParameterProvenance('provider_derived', 'PVGIS', {
@@ -614,28 +679,18 @@ export class ClimateDataProvider {
         value: dhiVal,
         derivationMethod: 'Diffuse partition proxy: GHI × 0.30',
       }),
-      tempAnnualMeanC: hasProviderTemp
-        ? createParameterProvenance('provider_value', 'PVGIS', {
-            sourceDataset: 'PVGIS 5.2 (T2m)',
-            unit: '°C',
-            value: estimatedMeanTempC,
-            derivationMethod: `Weighted average from ${monthly.length} monthly T2m values / ${totalTempDays} days`,
-          })
-        : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
-            unit: '°C',
-            value: estimatedMeanTempC,
-            derivationMethod: 'Regional latitude temperature model (PVGIS MRcalc did not provide temperature)',
-            qualityNote: 'PVGIS دمای هوا برنمی‌گرداند؛ برآورد مدل تحلیلی اقلیمی است',
-          }),
+      tempAnnualMeanC: tempProv,
       tempMinC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: '°C',
         value: tMin,
-        derivationMethod: 'Regional latitude temperature model',
+        derivationMethod: 'Regional latitude extreme temperature model (Not from monthly average)',
+        qualityNote: 'میانگین ماهانه دمای حدی طراحی نیست؛ نیازمند داده‌های حدی ایستگاه هواشناسی یا آیین‌نامه محلی',
       }),
       tempMaxC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: '°C',
         value: tMax,
-        derivationMethod: 'Regional latitude temperature model',
+        derivationMethod: 'Regional latitude extreme temperature model (Not from monthly average)',
+        qualityNote: 'میانگین ماهانه دمای حدی طراحی نیست؛ نیازمند داده‌های حدی ایستگاه هواشناسی یا آیین‌نامه محلی',
       }),
       albedo: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: 'dimensionless',

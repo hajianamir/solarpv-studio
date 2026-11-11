@@ -213,6 +213,8 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 // ---- External Data Gateway proxy (same-origin; removes browser CORS/CSP dependency) ----
 const inFlightSiteRequests = new Map<string, Promise<any>>();
+let lastGeocodeTimestamp = 0;
+const geocodeCache = new Map<string, { data: any; expiresAt: number }>();
 
 app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
   const rawLat = req.query.lat;
@@ -232,7 +234,8 @@ app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
     return res.status(400).json({ ok: false, error: 'Invalid latitude/longitude: lat must be between -90 and 90, lng between -180 and 180.' });
   }
 
-  const cacheKey = `${lat.toFixed(4)}_${lng.toFixed(4)}`;
+  // Exact coordinate key to preserve distinct sub-arcsecond coordinate precision
+  const cacheKey = `${lat}_${lng}`;
   const t0 = Date.now();
 
   try {
@@ -250,11 +253,12 @@ app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
     const meta = data.climateResource.metadata;
     const isSolarLive = meta.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL';
     const isSoilLive = data.soilProperties.metadata.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL';
-    const live = isSolarLive;
+    const live = isSolarLive && isSoilLive;
 
-    console.info(`[gateway] lat=${lat} lng=${lng} provider=${meta.sourceProvider} live=${live} ${Date.now() - t0}ms trace=${data.traceId}`);
+    console.info(`[gateway] lat=${lat} lng=${lng} solarLive=${isSolarLive} soilLive=${isSoilLive} ${Date.now() - t0}ms trace=${data.traceId}`);
 
-    if (live) {
+    // Set 1800s public cache ONLY when all components are live provider data; mixed or fallback gets no-store
+    if (isSolarLive && isSoilLive) {
       res.setHeader('Cache-Control', 'public, max-age=1800');
     } else {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -269,7 +273,7 @@ app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
   }
 });
 
-// Nominatim geocoding proxy to prevent direct browser calls to external hosts
+// Nominatim geocoding proxy with rate limit (1 req/sec), caching, and offline enforcement
 app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
   const rawQ = req.query.q;
   if (typeof rawQ !== 'string' || rawQ.trim() === '') {
@@ -278,8 +282,25 @@ app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
   if (!isRealInternetEnabled()) {
     return res.json([]);
   }
+
+  const qKey = rawQ.trim().toLowerCase();
+  const cached = geocodeCache.get(qKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    return res.json(cached.data);
+  }
+
+  // Comply with Nominatim policy: enforce at least 1000ms delay between consecutive outbound queries
+  const now = Date.now();
+  const timeSinceLast = now - lastGeocodeTimestamp;
+  if (timeSinceLast < 1000) {
+    await new Promise((resolve) => setTimeout(resolve, 1000 - timeSinceLast));
+  }
+  lastGeocodeTimestamp = Date.now();
+
   try {
     const results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(rawQ.trim());
+    geocodeCache.set(qKey, { data: results, expiresAt: Date.now() + 3600000 });
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.json(results);
   } catch {
