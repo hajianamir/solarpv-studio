@@ -89,11 +89,9 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const [onlineResults, setOnlineResults] = useState<Array<{ lat: number; lon: number; display_name: string; type: string }>>([]);
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
   const [liveStatus, setLiveStatus] = useState<'idle' | 'loading' | 'live' | 'offline'>('idle');
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRequestIdRef = useRef<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const lastInternalCityIdRef = useRef<string | null>(null);
-  const lastInternalCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastEmittedCityRef = useRef<ClimateCity | null>(null);
   const geocodeRequestIdRef = useRef<number>(0);
   const geocodeAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -131,8 +129,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           locationData.nameFa = labelName;
           locationData.nameEn = labelName;
         }
-        lastInternalCityIdRef.current = locationData.id;
-        lastInternalCoordsRef.current = { lat: targetLat, lng: targetLng };
+        lastEmittedCityRef.current = locationData;
         onSelectLocation(locationData);
         setEstimatedPsh(locationData.peakSunHours);
         if (markerRef.current) {
@@ -161,8 +158,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             gwData.nameFa = labelName;
             gwData.nameEn = labelName;
           }
-          lastInternalCityIdRef.current = gwData.id;
-          lastInternalCoordsRef.current = { lat: gwData.latitude, lng: gwData.longitude };
+          lastEmittedCityRef.current = gwData;
           onSelectLocation(gwData);
           setEstimatedPsh(gwData.peakSunHours);
           if (markerRef.current) {
@@ -219,7 +215,6 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
   // Safe sequenced geocode search handler with cancellation and offline isolation
   const triggerGeocodeSearch = useCallback(async (query: string) => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     const q = query.trim();
     if (!q) {
       setOnlineResults([]);
@@ -286,22 +281,6 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     }
   }, []);
 
-  // Debounced search trigger (750ms)
-  useEffect(() => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    if (!searchQuery.trim()) {
-      setOnlineResults([]);
-      setIsSearchingOnline(false);
-      return;
-    }
-    debounceTimer.current = setTimeout(() => {
-      triggerGeocodeSearch(searchQuery);
-    }, 750);
-    return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    };
-  }, [searchQuery, triggerGeocodeSearch]);
-
   // Cancel any in-flight geocode or climate requests on unmount
   useEffect(() => {
     return () => {
@@ -310,9 +289,6 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       }
       if (geocodeAbortControllerRef.current) {
         geocodeAbortControllerRef.current.abort();
-      }
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
       }
     };
   }, []);
@@ -444,8 +420,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
         const locationData = calculateGeospatialSolarResource(lat, lng);
         setEstimatedPsh(locationData.peakSunHours);
-        lastInternalCityIdRef.current = locationData.id;
-        lastInternalCoordsRef.current = { lat, lng };
+        lastEmittedCityRef.current = locationData;
         onSelectLocation(locationData);
         updatePopup(lat, lng, locationData);
 
@@ -460,8 +435,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         setInputLng(pos.lng.toFixed(4));
         const locationData = calculateGeospatialSolarResource(pos.lat, pos.lng);
         setEstimatedPsh(locationData.peakSunHours);
-        lastInternalCityIdRef.current = locationData.id;
-        lastInternalCoordsRef.current = { lat: pos.lat, lng: pos.lng };
+        lastEmittedCityRef.current = locationData;
         onSelectLocation(locationData);
         updatePopup(pos.lat, pos.lng, locationData);
 
@@ -490,11 +464,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     const currentLng = typeof currentCity.longitude === 'number' ? currentCity.longitude : 51.3890;
 
     // Check if this currentCity change originated from the map's own internal selection
-    const isInternal =
-      (lastInternalCityIdRef.current !== null && currentCity.id === lastInternalCityIdRef.current) ||
-      (lastInternalCoordsRef.current !== null &&
-        Math.abs(currentLat - lastInternalCoordsRef.current.lat) < 0.0001 &&
-        Math.abs(currentLng - lastInternalCoordsRef.current.lng) < 0.0001);
+    const isInternal = currentCity === lastEmittedCityRef.current;
 
     if (isInternal) {
       // Internal change: do NOT abort in-flight requests or invalidate requestId!
@@ -505,22 +475,18 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     // Invalidate and cancel any in-flight map requests for the old location
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
     activeRequestIdRef.current++;
     setLiveStatus(currentCity.confidence === 'measured' ? 'live' : 'idle');
 
-    if (
-      mapInstanceRef.current &&
-      markerRef.current &&
-      (Math.abs(currentLat - coords.lat) > 0.0001 || Math.abs(currentLng - coords.lng) > 0.0001)
-    ) {
-      setCoords({ lat: currentLat, lng: currentLng });
-      setInputLat(currentLat.toFixed(4));
-      setInputLng(currentLng.toFixed(4));
+    setCoords({ lat: currentLat, lng: currentLng });
+    setInputLat(currentLat.toFixed(4));
+    setInputLng(currentLng.toFixed(4));
+    if (mapInstanceRef.current && markerRef.current) {
       markerRef.current.setLatLng([currentLat, currentLng]);
       mapInstanceRef.current.panTo([currentLat, currentLng]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- coords is internal state synced only on external currentCity changes
   }, [currentCity]);
 
   // Layer Switcher Handler
@@ -564,8 +530,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       locationData.nameEn = labelName;
     }
     setEstimatedPsh(locationData.peakSunHours);
-    lastInternalCityIdRef.current = locationData.id;
-    lastInternalCoordsRef.current = { lat: targetLat, lng: targetLng };
+    lastEmittedCityRef.current = locationData;
     onSelectLocation(locationData);
 
     requestClimateUpdate(targetLat, targetLng, labelName);
@@ -775,7 +740,17 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                       type="text"
                       placeholder={isEn ? 'City, town, industrial zone...' : 'نام شهر، شهرک صنعتی یا منطقه...'}
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSearchQuery(val);
+                        // Instant cancellation and hiding of old results
+                        if (geocodeAbortControllerRef.current) {
+                          geocodeAbortControllerRef.current.abort();
+                          geocodeAbortControllerRef.current = null;
+                        }
+                        setOnlineResults([]);
+                        setIsSearchingOnline(false);
+                      }}
                       className="studio-input text-xs flex-1 py-1.5"
                     />
                     <button

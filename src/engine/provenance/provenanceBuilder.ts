@@ -78,14 +78,33 @@ export async function buildProvenanceRows(
 
   const isMeasuredSite = city.confidence === 'measured';
   const pshProv = city.fieldProvenance?.peakSunHours;
-  const siteProvider = isMeasuredSite
+
+  const hasNominatimName =
+    city.fieldProvenance?.locationName?.providerName === 'OpenStreetMap Nominatim' ||
+    (Boolean(city.nameEn) &&
+      !city.nameEn.startsWith('Coordinates Site') &&
+      !city.nameEn.startsWith('Custom Site') &&
+      !city.nameEn.includes('Default Engineering Site') &&
+      !city.nameEn.includes('Analytical Model') &&
+      city.id.startsWith('gateway_'));
+
+  const isUserOverrideSite = city.dataSourceEn?.includes('USER_OVERRIDE');
+
+  const siteProvider = isUserOverrideSite
+    ? 'USER_OVERRIDE'
+    : hasNominatimName
     ? 'OpenStreetMap Nominatim (reverse geocode)'
-    : (city.dataSourceEn?.includes('USER_OVERRIDE') ? 'USER_OVERRIDE' : 'Local Project Preset / Analytical Model');
-  const siteConfidence = isMeasuredSite ? 'measured' : 'analytical';
+    : 'Local Project Preset / Geodesic Coordinate Pin';
+
+  const siteConfidence = isUserOverrideSite
+    ? 'analytical'
+    : hasNominatimName
+    ? 'measured'
+    : 'analytical';
 
   const pshProvider = pshProv?.providerName
     ? pshProv.providerName
-    : (isMeasuredSite ? 'NASA POWER / PVGIS via Data Gateway (ADR-005)' : 'REGIONAL_ANALYTICAL_MODEL');
+    : (isMeasuredSite ? 'NASA POWER / PVGIS (Satellite Reanalysis)' : 'REGIONAL_ANALYTICAL_MODEL');
 
   const isIran = city.latitude >= 25 && city.latitude <= 40 && city.longitude >= 44 && city.longitude <= 64;
   const windSnowProvider = isIran

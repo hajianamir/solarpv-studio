@@ -54,8 +54,8 @@ export class ExternalDataGateway {
     const traceId = `TRC-GW-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const [climateResource, soilProperties, structuralHazard, nominatimName] = await Promise.all([
-      this.climateProvider.fetchClimateResource(lat, lng),
-      this.soilProvider.fetchSoilProperties(lat, lng),
+      this.climateProvider.fetchClimateResource(lat, lng, { signal: options?.signal }),
+      this.soilProvider.fetchSoilProperties(lat, lng, { signal: options?.signal }),
       this.structuralProvider.fetchStructuralHazard(lat, lng),
       this.climateProvider.reverseGeocodeNominatim(lat, lng),
     ]);
@@ -103,7 +103,7 @@ export class ExternalDataGateway {
     };
 
     const climateCity: ClimateCity = {
-      id: `gateway_${lat.toFixed(3)}_${lng.toFixed(3)}`,
+      id: `gateway_${lat}_${lng}`,
       nameFa: nominatimName,
       nameEn: nominatimName,
       provinceFa: climateResource.metadata.geographicRegion,

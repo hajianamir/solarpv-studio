@@ -35,8 +35,15 @@ export class SoilDataProvider {
     return `${prefix}-${dateStr}-${randHex}`;
   }
 
-  public async fetchSoilProperties(lat: number, lng: number): Promise<SoilPropertiesData> {
-    const cacheKey = `soil_${lat.toFixed(3)}_${lng.toFixed(3)}`;
+  public async fetchSoilProperties(
+    lat: number,
+    lng: number,
+    options?: { signal?: AbortSignal }
+  ): Promise<SoilPropertiesData> {
+    const cacheKey = `soil_${lat}_${lng}`;
+    if (options?.signal?.aborted) {
+      throw new DOMException('Soil property query aborted by caller', 'AbortError');
+    }
     const cached = this.cache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < cached.ttlMs) {
       return {
@@ -124,6 +131,7 @@ export class SoilDataProvider {
     let hasPh = false;
     let minTopDepth = Infinity;
     let maxBottomDepth = -Infinity;
+    const depthByProperty: Record<string, string> = {};
 
     const layers = json?.properties?.layers;
     if (Array.isArray(layers) && layers.length > 0) {
@@ -131,29 +139,44 @@ export class SoilDataProvider {
         const depths = layer?.depths;
         let sumWeighted = 0;
         let sumWeight = 0;
+        let propMinTop = Infinity;
+        let propMaxBottom = -Infinity;
         if (Array.isArray(depths) && depths.length > 0) {
           for (const d of depths) {
             const val = d?.values?.mean;
+            // Filter out negative sentinels (e.g. -999)
             if (typeof val === 'number' && Number.isFinite(val) && val >= 0) {
               const weight = parseLayerThicknessCm(d);
               sumWeighted += val * weight;
               sumWeight += weight;
 
+              let top = Infinity;
+              let bottom = -Infinity;
               if (typeof d?.range?.top_depth === 'number' && typeof d?.range?.bottom_depth === 'number') {
-                minTopDepth = Math.min(minTopDepth, d.range.top_depth);
-                maxBottomDepth = Math.max(maxBottomDepth, d.range.bottom_depth);
+                top = d.range.top_depth;
+                bottom = d.range.bottom_depth;
               } else if (typeof d?.label === 'string') {
                 const m = d.label.match(/(\d+)-(\d+)/);
                 if (m) {
-                  minTopDepth = Math.min(minTopDepth, parseInt(m[1], 10));
-                  maxBottomDepth = Math.max(maxBottomDepth, parseInt(m[2], 10));
+                  top = parseInt(m[1], 10);
+                  bottom = parseInt(m[2], 10);
                 }
+              }
+              if (Number.isFinite(top) && Number.isFinite(bottom) && top >= 0 && bottom > top) {
+                propMinTop = Math.min(propMinTop, top);
+                propMaxBottom = Math.max(propMaxBottom, bottom);
+                minTopDepth = Math.min(minTopDepth, top);
+                maxBottomDepth = Math.max(maxBottomDepth, bottom);
               }
             }
           }
         }
         if (sumWeight > 0) {
           const meanVal = sumWeighted / sumWeight;
+          const propLabel = Number.isFinite(propMinTop) && Number.isFinite(propMaxBottom)
+            ? `${propMinTop}-${propMaxBottom}cm`
+            : '0-30cm';
+          depthByProperty[layer.name] = propLabel;
           if (layer.name === 'clay') { clayPct = meanVal / 10.0; hasClay = true; }
           if (layer.name === 'sand') { sandPct = meanVal / 10.0; hasSand = true; }
           if (layer.name === 'silt') { siltPct = meanVal / 10.0; hasSilt = true; }
@@ -166,6 +189,12 @@ export class SoilDataProvider {
     const depthLabel = Number.isFinite(minTopDepth) && Number.isFinite(maxBottomDepth)
       ? `${minTopDepth}-${maxBottomDepth}cm`
       : '0-30cm';
+
+    const clayDepth = depthByProperty.clay || depthLabel;
+    const sandDepth = depthByProperty.sand || depthLabel;
+    const siltDepth = depthByProperty.silt || depthLabel;
+    const bdodDepth = depthByProperty.bdod || depthLabel;
+    const phDepth = depthByProperty.phh2o || depthLabel;
 
     // Check individual fraction bounds (0 to 100%)
     if (hasClay && (clayPct < 0 || clayPct > 100)) hasClay = false;
@@ -206,7 +235,7 @@ export class SoilDataProvider {
       siltPct = analytical.siltFractionPercent;
     }
 
-    const { classification, bearingKpa, phiDeg, bearingRangeKpa, frictionRangeDeg, cohesionKpa, densityKnM3, disclaimer } =
+    const { classification, bearingKpa, phiDeg, bearingRangeKpa, frictionRangeDeg, cohesionKpa, densityKnM3, densityDerivationMethod, disclaimer } =
       this.mapTextureToGeotechnicalParams(clayPct, sandPct, siltPct, bdodGcm3);
 
     const frostDepth = Math.abs(lat) > 45 ? 60 : 20;
@@ -216,10 +245,10 @@ export class SoilDataProvider {
       clayFractionPercent: isTextureComplete
         ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: `clay/mean (${depthLabel})`,
+            sourceParameter: `clay/mean (${clayDepth})`,
             unit: '%',
             value: Number(clayPct.toFixed(1)),
-            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${depthLabel})` : undefined,
+            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${clayDepth})` : undefined,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
@@ -230,10 +259,10 @@ export class SoilDataProvider {
       sandFractionPercent: isTextureComplete
         ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: `sand/mean (${depthLabel})`,
+            sourceParameter: `sand/mean (${sandDepth})`,
             unit: '%',
             value: Number(sandPct.toFixed(1)),
-            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${depthLabel})` : undefined,
+            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${sandDepth})` : undefined,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
@@ -244,10 +273,10 @@ export class SoilDataProvider {
       siltFractionPercent: isTextureComplete
         ? createParameterProvenance(textureWasNormalized ? 'provider_derived' : 'provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: `silt/mean (${depthLabel})`,
+            sourceParameter: `silt/mean (${siltDepth})`,
             unit: '%',
             value: Number(siltPct.toFixed(1)),
-            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${depthLabel})` : undefined,
+            derivationMethod: textureWasNormalized ? `Normalized to 100% USDA triad from SoilGrids layer means (${siltDepth})` : undefined,
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '%',
@@ -258,7 +287,7 @@ export class SoilDataProvider {
       bulkDensityGPerCm3: hasBdod
         ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: `bdod/mean (${depthLabel})`,
+            sourceParameter: `bdod/mean (${bdodDepth})`,
             unit: 'g/cm³',
             value: Number(bdodGcm3.toFixed(2)),
           })
@@ -271,7 +300,7 @@ export class SoilDataProvider {
       phH2O: hasPh
         ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
             sourceDataset: 'SoilGrids 250m v2.0',
-            sourceParameter: `phh2o/mean (${depthLabel})`,
+            sourceParameter: `phh2o/mean (${phDepth})`,
             unit: 'pH',
             value: Number(ph.toFixed(1)),
           })
@@ -317,8 +346,8 @@ export class SoilDataProvider {
           unit: 'kN/m³',
           value: densityKnM3,
           derivationMethod: hasBdod
-            ? 'Empirical soil unit weight correlation from SoilGrids bulk density: 16.5 + (bdod - 1.3) × 3.0 kN/m³'
-            : 'Empirical soil unit weight correlation from regional analytical bulk density estimate: 16.5 + (bdod - 1.3) × 3.0 kN/m³',
+            ? densityDerivationMethod
+            : `Analytical estimate: ${densityDerivationMethod}`,
         }
       ),
       frostDepthCm: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
@@ -383,7 +412,7 @@ export class SoilDataProvider {
       bdod = 1.40;
     }
 
-    const { bearingKpa, phiDeg, bearingRangeKpa, frictionRangeDeg, cohesionKpa, densityKnM3, disclaimer } =
+    const { bearingKpa, phiDeg, bearingRangeKpa, frictionRangeDeg, cohesionKpa, densityKnM3, densityDerivationMethod, disclaimer } =
       this.mapTextureToGeotechnicalParams(clayPct, sandPct, siltPct, bdod);
 
     const frostDepth = absLat > 45 ? 70 : 15;
@@ -433,7 +462,7 @@ export class SoilDataProvider {
       soilDensityKnM3: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: 'kN/m³',
         value: densityKnM3,
-        derivationMethod: 'Calculated from bulk density: bdod (g/cm³) × 9.81',
+        derivationMethod: `Analytical estimate: ${densityDerivationMethod}`,
       }),
       frostDepthCm: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: 'cm',
@@ -493,6 +522,7 @@ export class SoilDataProvider {
     frictionRangeDeg: { min: number; nominal: number; max: number };
     cohesionKpa: number;
     densityKnM3: number;
+    densityDerivationMethod: string;
     disclaimer: string;
   } {
     const disclaimer =
@@ -513,6 +543,7 @@ export class SoilDataProvider {
         frictionRangeDeg: { min: nominalPhi - 3, nominal: nominalPhi, max: nominalPhi + 3 },
         cohesionKpa: nominalC,
         densityKnM3: gamma,
+        densityDerivationMethod: 'Empirical soil unit weight correlation for cohesive clay: 16.5 + (bdod - 1.3) × 3.0 kN/m³',
         disclaimer,
       };
     } else if (sand >= 70.0 && bdod < 1.50) {
@@ -529,6 +560,7 @@ export class SoilDataProvider {
         frictionRangeDeg: { min: nominalPhi - 2, nominal: nominalPhi, max: nominalPhi + 2 },
         cohesionKpa: 0,
         densityKnM3: gamma,
+        densityDerivationMethod: 'Empirical soil unit weight correlation for loose granular sand: 16.0 + (bdod - 1.3) × 2.5 kN/m³',
         disclaimer,
       };
     } else if (sand >= 45.0 && bdod >= 1.50) {
@@ -545,6 +577,7 @@ export class SoilDataProvider {
         frictionRangeDeg: { min: nominalPhi - 3, nominal: nominalPhi, max: nominalPhi + 3 },
         cohesionKpa: 12,
         densityKnM3: gamma,
+        densityDerivationMethod: 'Empirical soil unit weight correlation for dense sand/gravel: 17.5 + (bdod - 1.4) × 2.5 kN/m³',
         disclaimer,
       };
     } else {
@@ -560,6 +593,7 @@ export class SoilDataProvider {
         frictionRangeDeg: { min: 35, nominal: nominalPhi, max: 42 },
         cohesionKpa: 45,
         densityKnM3: 20.0,
+        densityDerivationMethod: 'Standard engineering unit weight for weathered rock / limestone hardpan: 20.0 kN/m³',
         disclaimer,
       };
     }

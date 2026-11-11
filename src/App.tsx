@@ -2742,11 +2742,35 @@ export const App: React.FC = () => {
           </div>
 
           <div className="hidden sm:flex items-center gap-3">
-            <span className={city.confidence === 'analytical_estimate' ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
-              {city.confidence === 'analytical_estimate'
-                ? 'GATEWAY: OFFLINE — REGIONAL ANALYTICAL MODEL'
-                : 'GATEWAY: LIVE — NASA POWER / PVGIS'}
-            </span>
+            {(() => {
+              const isSolarLive =
+                city.confidence === 'measured' &&
+                (city.fieldProvenance?.peakSunHours?.sourceKind === 'provider_derived' ||
+                  city.fieldProvenance?.peakSunHours?.sourceKind === 'provider_value');
+              const isSoilLive =
+                city.fieldProvenance?.clayFractionPercent?.sourceKind === 'provider_value' ||
+                city.fieldProvenance?.clayFractionPercent?.sourceKind === 'provider_derived';
+              const isBothLive = isSolarLive && isSoilLive;
+              const isMixed = (isSolarLive && !isSoilLive) || (!isSolarLive && isSoilLive);
+
+              return (
+                <span
+                  className={
+                    isBothLive
+                      ? 'text-emerald-400 font-bold'
+                      : isMixed
+                      ? 'text-sky-400 font-bold'
+                      : 'text-amber-400 font-bold'
+                  }
+                >
+                  {isBothLive
+                    ? 'GATEWAY: LIVE — NASA POWER / PVGIS & SOILGRIDS'
+                    : isMixed
+                    ? `GATEWAY: MIXED — ${isSolarLive ? 'SOLAR LIVE, SOIL ANALYTICAL' : 'SOIL LIVE, SOLAR ANALYTICAL'}`
+                    : 'GATEWAY: OFFLINE — REGIONAL ANALYTICAL MODEL'}
+                </span>
+              );
+            })()}
             <span className="text-slate-600">|</span>
             <span className="text-slate-300">
               RFC 3.0.0

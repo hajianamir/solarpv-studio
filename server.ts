@@ -40,7 +40,7 @@ import { ExternalDataGateway } from './src/engine/dataGateway/externalDataGatewa
 import { isRealInternetEnabled } from './src/engine/env/runtimeEnv.js';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || Number(process.env.APP_PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Disable Express fingerprinting header (P3-02)
@@ -214,6 +214,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // ---- External Data Gateway proxy (same-origin; removes browser CORS/CSP dependency) ----
 const inFlightSiteRequests = new Map<string, Promise<any>>();
 let lastGeocodeTimestamp = 0;
+let geocodeQueueChain: Promise<any> = Promise.resolve();
 const geocodeCache = new Map<string, { data: any; expiresAt: number }>();
 
 app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
@@ -250,10 +251,16 @@ app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
     }
 
     const data = await promise;
-    const meta = data.climateResource.metadata;
-    const isSolarLive = meta.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL';
-    const isSoilLive = data.soilProperties.metadata.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL';
-    const live = isSolarLive && isSoilLive;
+    const meta = data.climateResource?.metadata;
+    const isSolarLive =
+      Boolean(meta) &&
+      meta.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL' &&
+      !meta.isEstimatedFallback &&
+      data.climateResource.peakSunHours > 0;
+    const isSoilLive =
+      data.soilProperties?.metadata?.sourceProvider === 'ISRIC_SOILGRIDS' &&
+      !data.soilProperties.estimatedFromGlobalModel;
+    const live = Boolean(isSolarLive && isSoilLive);
 
     console.info(`[gateway] lat=${lat} lng=${lng} solarLive=${isSolarLive} soilLive=${isSoilLive} ${Date.now() - t0}ms trace=${data.traceId}`);
 
@@ -273,37 +280,47 @@ app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
   }
 });
 
-// Nominatim geocoding proxy with rate limit (1 req/sec), caching, and offline enforcement
+// Nominatim geocoding proxy with true sequential FIFO rate limiting (>=1050ms), limited caching, and offline enforcement
 app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
   const rawQ = req.query.q;
   if (typeof rawQ !== 'string' || rawQ.trim() === '') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.json([]);
   }
   if (!isRealInternetEnabled()) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.json([]);
   }
 
   const qKey = rawQ.trim().toLowerCase();
   const cached = geocodeCache.get(qKey);
   if (cached && cached.expiresAt > Date.now()) {
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=1800');
     return res.json(cached.data);
   }
 
-  // Comply with Nominatim policy: enforce at least 1000ms delay between consecutive outbound queries
-  const now = Date.now();
-  const timeSinceLast = now - lastGeocodeTimestamp;
-  if (timeSinceLast < 1000) {
-    await new Promise((resolve) => setTimeout(resolve, 1000 - timeSinceLast));
-  }
-  lastGeocodeTimestamp = Date.now();
-
   try {
-    const results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(rawQ.trim());
-    geocodeCache.set(qKey, { data: results, expiresAt: Date.now() + 3600000 });
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.json(results);
+    // Sequence requests one by one through geocodeQueueChain so concurrent queries never fire simultaneously
+    const results = await (geocodeQueueChain = geocodeQueueChain.then(async () => {
+      const now = Date.now();
+      const wait = Math.max(0, 1050 - (now - lastGeocodeTimestamp));
+      if (wait > 0) {
+        await new Promise((resolve) => setTimeout(resolve, wait));
+      }
+      lastGeocodeTimestamp = Date.now();
+      return ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(rawQ.trim());
+    }));
+
+    if (Array.isArray(results) && results.length > 0) {
+      geocodeCache.set(qKey, { data: results, expiresAt: Date.now() + 1800000 });
+      res.setHeader('Cache-Control', 'public, max-age=1800');
+    } else {
+      // Do NOT cache empty or failed results for an hour!
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+    res.json(results || []);
   } catch {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json([]);
   }
 });

@@ -11,9 +11,10 @@ echo.
 node -v >nul 2>&1 || goto :NoNode
 for /f "tokens=1 delims=v." %%v in ('node -v') do set "NODE_MAJOR=%%v"
 if not defined NODE_MAJOR goto :NoNode
-if %NODE_MAJOR% LSS 18 (
-    echo [ERROR] Node.js v%NODE_MAJOR% is too old. Version 18 or newer is required.
-    echo [ERROR] نسخه Node.js قدیمی است. حداقل نسخه 18 لازم است.
+if %NODE_MAJOR% LSS 20 (
+    echo [ERROR] Node.js v%NODE_MAJOR% is not supported. Node.js v20.x or v22.x LTS is required.
+    echo [ERROR] Modern tooling requires Node.js ^>= 20 (Node 18 results in EBADENGINE).
+    echo [ERROR] نسخه Node.js باید حداقل 20 باشد (نسخه 18 پشتیبانی نمی شود).
     goto :PauseExit
 )
 
@@ -24,9 +25,9 @@ if not exist ".env" if exist ".env.example" (
     copy /y ".env.example" ".env" >nul
 )
 
-set "APP_PORT=3000"
+set "APP_PORT="
 if defined PORT set "APP_PORT=%PORT%"
-if exist ".env" (
+if not defined APP_PORT if exist ".env" (
     for /f "usebackq eol=# tokens=1,2 delims==" %%A in (".env") do (
         set "LINE_KEY=%%A"
         set "LINE_VAL=%%B"
@@ -37,11 +38,17 @@ if exist ".env" (
             set "LINE_VAL=!LINE_VAL:'=!"
             set "APP_PORT=!LINE_VAL!"
         )
+        if /i "!LINE_KEY!"=="APP_PORT" if not defined APP_PORT if defined LINE_VAL (
+            set "LINE_VAL=!LINE_VAL:"=!"
+            set "LINE_VAL=!LINE_VAL:'=!"
+            set "APP_PORT=!LINE_VAL!"
+        )
     )
     findstr /R /C:"^[ ]*VITE_REAL_INTERNET=false" ".env" >nul 2>&1 && (
         echo [WARN] .env disables live internet data ^(VITE_REAL_INTERNET=false^).
     )
 )
+if not defined APP_PORT set "APP_PORT=3000"
 
 set "PORT_VALID=1"
 for /f "delims=0123456789" %%X in ("!APP_PORT!") do set "PORT_VALID=0"
@@ -86,7 +93,7 @@ if errorlevel 1 (
 goto :End
 
 :NoNode
-echo [ERROR] Node.js is NOT installed. Download LTS from https://nodejs.org
+echo [ERROR] Node.js is NOT installed. Download Node.js 20 LTS or 22 from https://nodejs.org
 goto :PauseExit
 
 :NoNpm

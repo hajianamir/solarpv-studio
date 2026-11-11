@@ -187,11 +187,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const effectiveShadingDerate = Number((1.0 - effectiveShadingLossPct / 100).toFixed(4));
 
   // Customization & Metadata State
-  const [docId, setDocId] = useState<string>('EPC-PV-2026-0891');
-  const [docVersion, setDocVersion] = useState<string>('Rev 2.4');
-  const [companyName, setCompanyName] = useState<string>('Solar Engineering & EPC Consortium');
+  const [docId, setDocId] = useState<string>('');
+  const [docVersion, setDocVersion] = useState<string>('Rev 1.0 (Draft)');
+  const [companyName, setCompanyName] = useState<string>('');
   const [leadEngineer, setLeadEngineer] = useState<string>('');
-  const [clientName, setClientName] = useState<string>('Renewable Energy Investor Corp.');
+  const [clientName, setClientName] = useState<string>('');
   const [approvalStatus, setApprovalStatus] = useState<'Draft' | 'Under Review' | 'Approved' | 'As-Built'>('Draft');
   const [detailLevel, setDetailLevel] = useState<'summary' | 'standard' | 'detailed'>('detailed');
   const [logoUrl, setLogoUrl] = useState<string>('');
@@ -821,15 +821,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300 print:text-black bg-slate-800/60 print:bg-slate-100 p-2.5 rounded-lg mt-4 border border-industrial-border/60 print:border-slate-300">
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Client:' : 'کارفرما:'}</span>
-                <strong>{clientName}</strong>
+                <strong>{clientName || (isEn ? '(Unassigned Client)' : '(کارفرمای نامشخص)')}</strong>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Consultant:' : 'مشاور مهندسی:'}</span>
-                <strong>{companyName}</strong>
+                <strong>{companyName || (isEn ? '(Unassigned Firm)' : '(شرکت نامشخص)')}</strong>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Lead Engineer:' : 'مدیر پروژه:'}</span>
-                <strong>{leadEngineer}</strong>
+                <strong>{leadEngineer || (isEn ? '(Unassigned / Draft)' : '(تعیین‌نشده)')}</strong>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Operating Mode:' : 'حالت کاری سیستم:'}</span>
@@ -2132,15 +2132,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           <div className="pt-6 mt-6 border-t border-industrial-border/80 print:border-slate-400 grid grid-cols-3 gap-4 text-xs text-center">
             <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
               <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'PREPARED BY (DESIGN ENGINEER)' : 'تهیه‌کننده (مهندس طراح)'}</span>
-              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{leadEngineer}</div>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{leadEngineer || (isEn ? '(Unassigned)' : '(تعیین‌نشده)')}</div>
             </div>
             <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
               <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'CHECKED & VERIFIED BY (P.E.)' : 'کنترل و بازبینی مهندسی'}</span>
-              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{companyName}</div>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{companyName || (isEn ? '(Unassigned)' : '(تعیین‌نشده)')}</div>
             </div>
             <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
               <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'CLIENT ACCEPTANCE & APPROVAL' : 'تأیید کارفرما و سرمایه‌گذار'}</span>
-              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{clientName}</div>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{clientName || (isEn ? '(Unassigned)' : '(تعیین‌نشده)')}</div>
             </div>
           </div>
         </div>

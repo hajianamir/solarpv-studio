@@ -156,7 +156,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     setIsFetchingClimate(true);
     try {
       let siteData: any = null;
-      if (typeof window !== 'undefined') {
+      if (isRealInternetEnabled() && typeof window !== 'undefined') {
         const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
           signal: AbortSignal.timeout(35000),
         });

@@ -74,7 +74,7 @@ export class ClimateDataProvider {
   public async fetchClimateResource(
     lat: number,
     lng: number,
-    options?: { forceAnalytical?: boolean; bypassCache?: boolean; policy?: DataFetchPolicy }
+    options?: { forceAnalytical?: boolean; bypassCache?: boolean; policy?: DataFetchPolicy; signal?: AbortSignal }
   ): Promise<ClimateResourceData> {
     const realInternet = isRealInternetEnabled();
     const requestedPolicy = options?.policy;
@@ -92,7 +92,7 @@ export class ClimateDataProvider {
       policy = requestedPolicy ?? 'prefer_remote';
     }
 
-    const cacheKey = `clim_${lat.toFixed(3)}_${lng.toFixed(3)}`;
+    const cacheKey = `clim_${lat}_${lng}`;
 
     // Policy-aware Cache Lookup (Checked before any network action)
     if (!options?.bypassCache) {
@@ -226,9 +226,21 @@ export class ClimateDataProvider {
         policy,
       });
       return remoteData;
-    } catch {
+    } catch (err) {
       // Graceful fallback to regional analytical model with explicit estimated provenance
+      const isZeroIrradiance = (err as Error)?.message?.includes('zero annual horizontal irradiance');
       const fallbackResult = this.computeAnalyticalClimateResource(lat, lng, true);
+      if (isZeroIrradiance) {
+        fallbackResult.peakSunHours = 0;
+        fallbackResult.dniKwhM2Day = 0;
+        fallbackResult.dhiKwhM2Day = 0;
+        fallbackResult.fieldProvenance.peakSunHours = createParameterProvenance('provider_derived', 'PVGIS', {
+          sourceDataset: 'PVGIS 5.2 SARAH-2',
+          unit: 'kWh/m²/day',
+          value: 0,
+          qualityNote: 'PVGIS horizontal irradiance is 0 kWh/m²/day (system unsizable: perpetual darkness / polar night)',
+        });
+      }
       fallbackResult.metadata.fetchPolicy = policy;
       fallbackResult.metadata.cacheStatus = options?.bypassCache ? 'bypassed' : 'miss';
       fallbackResult.metadata.circuitBreakerStatus =
@@ -774,7 +786,12 @@ export class ClimateDataProvider {
     const timeout = setTimeout(() => controller.abort(), OSM_TIMEOUT_MS);
 
     try {
-      const resp = await fetch(url, { signal: controller.signal });
+      const resp = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'SolarPV-Studio/3.0 (https://github.com/hajianamir/solarpv-studio; engineering-compliance)',
+        },
+      });
       if (!resp.ok) {
         throw new Error(`Nominatim HTTP ${resp.status}`);
       }
@@ -801,7 +818,12 @@ export class ClimateDataProvider {
     const timeout = setTimeout(() => controller.abort(), OSM_TIMEOUT_MS);
 
     try {
-      const resp = await fetch(url, { signal: controller.signal });
+      const resp = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'SolarPV-Studio/3.0 (https://github.com/hajianamir/solarpv-studio; engineering-compliance)',
+        },
+      });
       if (!resp.ok) throw new Error(`Nominatim HTTP ${resp.status}`);
       const data = await resp.json();
       if (!Array.isArray(data)) return [];
