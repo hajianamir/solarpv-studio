@@ -10,7 +10,7 @@ import {
 } from './catalogRepository';
 import { type ModuleSpecs, type InverterSpecs } from './pvEngineAdvanced';
 import { type CatalogBattery } from './equipmentCatalogData';
-import { migrateProjectToV3, type MigrationResult } from './core/projectMigration';
+import { migrateProjectToV3, type MigrationResult, type MigrationSafetyStatus } from './core/projectMigration';
 
 export type SupportedCurrency = 'USD' | 'EUR' | 'TOMAN' | 'IRR';
 
@@ -67,15 +67,24 @@ export interface CreateEnvelopeParams {
   activeInverter?: InverterSpecs;
 }
 
+export interface PendingCustomEquipmentSnapshots {
+  modules: unknown[];
+  inverters: unknown[];
+  batteries: unknown[];
+}
+
 export interface RestoreEnvelopeResult {
   success: boolean;
+  migrationStatus: MigrationSafetyStatus;
   project: any;
   migrationResult: MigrationResult;
+  pendingCustomEquipmentSnapshots: PendingCustomEquipmentSnapshots;
   restoredCustomEquipment: {
     modulesCount: number;
     invertersCount: number;
     batteriesCount: number;
   };
+  metadata: Record<string, unknown>;
   envelopeSchemaVersion: string;
   warnings: string[];
 }
@@ -123,10 +132,6 @@ export function createProjectTransferEnvelope(params: CreateEnvelopeParams): Pro
     metadata: {
       docId: params.metadata?.docId || `DOC-${Date.now().toString(36).toUpperCase()}`,
       docVersion: params.metadata?.docVersion || '3.1.0',
-      companyName: params.metadata?.companyName || 'SolarPV Engineering Studio',
-      leadEngineer: params.metadata?.leadEngineer || 'Senior PV Engineer',
-      clientName: params.metadata?.clientName || 'Valued Client',
-      approvalStatus: params.metadata?.approvalStatus || 'Draft',
       ...params.metadata,
     },
     projectData: params.projectData,
@@ -143,78 +148,114 @@ export function createProjectTransferEnvelope(params: CreateEnvelopeParams): Pro
 }
 
 /**
- * Restores project from JSON, handling envelope extraction, custom equipment registration,
- * and deterministic migration across legacy schema versions (OFF-01, OFF-02).
+ * Parse and migrate an import without mutating the catalog or project state.
+ * Equipment snapshots are staged until the caller has accepted any warnings.
  */
 export function restoreProjectTransferEnvelope(rawInput: unknown): RestoreEnvelopeResult {
   const warnings: string[] = [];
-  let restoredModules = 0;
-  let restoredInverters = 0;
-  let restoredBatteries = 0;
   let envelopeVersion = 'legacy-unknown';
+  let metadata: Record<string, unknown> = {};
+  let pendingCustomEquipmentSnapshots: PendingCustomEquipmentSnapshots = {
+    modules: [], inverters: [], batteries: [],
+  };
+  let rawProjectPayload: unknown = rawInput;
 
-  let rawProjectPayload: any = rawInput;
-
-  if (rawInput && typeof rawInput === 'object') {
-    const obj = rawInput as Record<string, any>;
-
-    // Case 1: Standard Versioned Envelope (OFF-01)
-    if (obj.format === 'solarpv_project_envelope' && obj.projectData) {
-      envelopeVersion = obj.schemaVersion || '3.1.0';
-      rawProjectPayload = obj.projectData;
-
-      // Restore custom equipment snapshots into unified CatalogRepository
-      if (obj.customEquipmentSnapshots) {
-        const snapshots = obj.customEquipmentSnapshots;
-        if (Array.isArray(snapshots.modules)) {
-          for (const mod of snapshots.modules) {
-            if (mod && mod.id) {
-              CatalogRepository.saveCustomModule(mod);
-              restoredModules++;
-            }
-          }
-        }
-        if (Array.isArray(snapshots.inverters)) {
-          for (const inv of snapshots.inverters) {
-            if (inv && inv.id) {
-              CatalogRepository.saveCustomInverter(inv);
-              restoredInverters++;
-            }
-          }
-        }
-        if (Array.isArray(snapshots.batteries)) {
-          for (const bat of snapshots.batteries) {
-            if (bat && bat.id) {
-              CatalogRepository.saveCustomBattery(bat);
-              restoredBatteries++;
-            }
-          }
+  if (rawInput && typeof rawInput === 'object' && !Array.isArray(rawInput)) {
+    const obj = rawInput as Record<string, unknown>;
+    if (obj.format === 'solarpv_project_envelope') {
+      envelopeVersion = typeof obj.schemaVersion === 'string' ? obj.schemaVersion : 'unknown';
+      metadata = obj.metadata && typeof obj.metadata === 'object' && !Array.isArray(obj.metadata)
+        ? { ...(obj.metadata as Record<string, unknown>) }
+        : {};
+      rawProjectPayload = obj.projectData && typeof obj.projectData === 'object' && !Array.isArray(obj.projectData)
+        ? obj.projectData
+        : null;
+      const snapshots = obj.customEquipmentSnapshots;
+      if (snapshots && typeof snapshots === 'object' && !Array.isArray(snapshots)) {
+        const source = snapshots as Record<string, unknown>;
+        const invalidFields = ['modules', 'inverters', 'batteries'].filter(
+          (key) => source[key] !== undefined && !Array.isArray(source[key]),
+        );
+        if (invalidFields.length) {
+          warnings.push(`Invalid custom equipment snapshot arrays: ${invalidFields.join(', ')}.`);
+          rawProjectPayload = null;
+        } else {
+          pendingCustomEquipmentSnapshots = {
+            modules: (source.modules as unknown[] | undefined) ?? [],
+            inverters: (source.inverters as unknown[] | undefined) ?? [],
+            batteries: (source.batteries as unknown[] | undefined) ?? [],
+          };
         }
       }
-    } else if (obj.version) {
-      envelopeVersion = String(obj.version);
+    } else if (typeof obj.version === 'string') {
+      envelopeVersion = obj.version;
     }
   }
 
-  // Deterministic Project Migration via core projectMigration (OFF-02)
-  const migrationResult = migrateProjectToV3(rawProjectPayload);
-
-  if (migrationResult.warnings.length > 0) {
-    warnings.push(...migrationResult.warnings);
+  if (Object.keys(metadata).length === 0 && rawInput && typeof rawInput === 'object' && !Array.isArray(rawInput)) {
+    const rawMetadata = (rawInput as Record<string, unknown>).metadata;
+    if (rawMetadata && typeof rawMetadata === 'object' && !Array.isArray(rawMetadata)) {
+      metadata = { ...(rawMetadata as Record<string, unknown>) };
+    }
   }
+  const migrationResult = migrateProjectToV3(rawProjectPayload);
+  if (warnings.length) {
+    migrationResult.warnings.push(...warnings);
+    if (migrationResult.migrationStatus !== 'BLOCKED_INCONSISTENT') {
+      migrationResult.migrationStatus = 'RECOVERED_WITH_WARNINGS';
+      migrationResult.requiresUserConfirmation = true;
+    }
+  }
+  if (envelopeVersion !== 'legacy-unknown' && envelopeVersion !== '3.1.0') {
+    migrationResult.warnings.push(`Envelope schema [${envelopeVersion}] is not the current 3.1.0 format; review the migration before applying.`);
+    if (migrationResult.migrationStatus !== 'BLOCKED_INCONSISTENT') {
+      migrationResult.migrationStatus = 'RECOVERED_WITH_WARNINGS';
+      migrationResult.requiresUserConfirmation = true;
+    }
+  }
+  if (migrationResult.success && migrationResult.migrationStatus !== 'BLOCKED_INCONSISTENT') {
+    const equipmentValidation = CatalogRepository.getInstance().restoreCustomEquipmentSnapshots(
+      pendingCustomEquipmentSnapshots,
+      { persist: false },
+    );
+    if (!equipmentValidation.success) {
+      migrationResult.blockerReasons.push(...equipmentValidation.errors);
+      migrationResult.warnings.push(...equipmentValidation.errors.map((error) => `Custom equipment import blocked: ${error}`));
+      migrationResult.migrationStatus = 'BLOCKED_INCONSISTENT';
+      migrationResult.requiresUserConfirmation = false;
+    }
+  }
+  const blocked = !migrationResult.success || migrationResult.migrationStatus === 'BLOCKED_INCONSISTENT';
 
   return {
-    success: migrationResult.success,
+    success: !blocked,
+    migrationStatus: migrationResult.migrationStatus,
     project: migrationResult.project,
     migrationResult,
-    restoredCustomEquipment: {
-      modulesCount: restoredModules,
-      invertersCount: restoredInverters,
-      batteriesCount: restoredBatteries,
-    },
+    pendingCustomEquipmentSnapshots: blocked
+      ? { modules: [], inverters: [], batteries: [] }
+      : pendingCustomEquipmentSnapshots,
+    restoredCustomEquipment: { modulesCount: 0, invertersCount: 0, batteriesCount: 0 },
+    metadata,
     envelopeSchemaVersion: envelopeVersion,
-    warnings,
+    warnings: [...migrationResult.warnings],
   };
+}
+
+/** Persist staged custom equipment only after the caller accepts the migrated project. */
+export function commitRestoredCustomEquipment(result: RestoreEnvelopeResult): {
+  success: boolean;
+  counts: { modules: number; inverters: number; batteries: number };
+  errors: string[];
+} {
+  if (!result.success || result.migrationStatus === 'BLOCKED_INCONSISTENT') {
+    return { success: false, counts: { modules: 0, inverters: 0, batteries: 0 }, errors: ['Blocked imports cannot restore equipment.'] };
+  }
+  const snapshots = result.pendingCustomEquipmentSnapshots;
+  if (!snapshots.modules.length && !snapshots.inverters.length && !snapshots.batteries.length) {
+    return { success: true, counts: { modules: 0, inverters: 0, batteries: 0 }, errors: [] };
+  }
+  return CatalogRepository.getInstance().restoreCustomEquipmentSnapshots(snapshots);
 }
 
 // ----------------------------------------------------

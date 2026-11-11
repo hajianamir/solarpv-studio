@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3, Check, Globe, Layers, ShieldCheck, AlertTriangle, Loader2, Database, Info } from 'lucide-react';
-import { type ClimateCity } from '../engine/climaticData';
+import { fetchClimateData, type ClimateCity } from '../engine/climaticData';
+import { type ParameterProvenance } from '../engine/types/climateTypes';
 import { formatCoordinates } from '../engine/geoCoordinates';
 
 const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
@@ -22,11 +23,287 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
   const isFa = lang === 'fa';
   const [isEditing, setIsEditing] = useState(false);
   const [customCity, setCustomCity] = useState<ClimateCity>(selectedCity);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [dirtyFieldKeys, setDirtyFieldKeys] = useState<Set<string>>(new Set());
+  const baselineCityRef = useRef<ClimateCity>(selectedCity);
+  const activeCityRef = useRef<ClimateCity>(selectedCity);
+  const saveRequestIdRef = useRef(0);
+  useEffect(() => {
+    activeCityRef.current = selectedCity;
+    saveRequestIdRef.current += 1;
+  }, [selectedCity]);
 
-  const handleSaveCustom = () => {
-    onCityChange(customCity);
+  // Sync draft customCity with selectedCity whenever external selection updates and editor is not dirty
+  useEffect(() => {
+    if (!isEditing || !isDirty) {
+      setCustomCity(selectedCity);
+      baselineCityRef.current = selectedCity;
+      setDirtyFieldKeys(new Set());
+      setIsDirty(false);
+      setValidationError(null);
+    }
+  }, [selectedCity, isEditing, isDirty]);
+
+  const markFieldDirty = (key: string, val: any) => {
+    setCustomCity((prev) => ({ ...prev, [key]: val }));
+    setDirtyFieldKeys((prev) => new Set(prev).add(key));
+    setIsDirty(true);
+    setValidationError(null);
+  };
+
+  const handleStartEditing = () => {
+    setCustomCity(selectedCity);
+    baselineCityRef.current = selectedCity;
+    setDirtyFieldKeys(new Set());
+    setIsDirty(false);
+    setValidationError(null);
+    setIsEditing(true);
+  };
+
+  const handleCancelEditing = () => {
+    setCustomCity(selectedCity);
+    baselineCityRef.current = selectedCity;
+    setDirtyFieldKeys(new Set());
+    setIsDirty(false);
+    setValidationError(null);
     setIsEditing(false);
   };
+
+  const handleSaveCustom = async () => {
+    if (hasSiteConflict) {
+      setValidationError(
+        isFa
+          ? 'برای اعمال، ابتدا تعارض سایت را از بنر بالا تعیین‌تکلیف نمایید.'
+          : 'Resolve the site location conflict above before applying custom parameters.'
+      );
+      return;
+    }
+
+    // 1. Construct Candidate from current selectedCity and ONLY dirty fields FIRST!
+    const base = selectedCity;
+    let candidate: ClimateCity = { ...base };
+    let updatedProv: Record<string, ParameterProvenance> = { ...(base.fieldProvenance || {}) };
+    let hasUserEdits = false;
+
+    const updateIfDirty = (
+      key: keyof ClimateCity,
+      val: any,
+      unit: string,
+      labelEn: string,
+      labelFa: string
+    ) => {
+      if (dirtyFieldKeys.has(key as string)) {
+        hasUserEdits = true;
+        (candidate as any)[key] = val;
+        updatedProv[key as string] = {
+          sourceKind: 'user_input',
+          providerName: 'USER_OVERRIDE',
+          derivationMethod: isFa ? `ورودی دستی کاربر برای ${labelFa}` : `User manual input override for ${labelEn}`,
+          unit,
+          value: val,
+          retrievedAt: new Date().toISOString(),
+        };
+      }
+    };
+
+    updateIfDirty('peakSunHours', customCity.peakSunHours, 'kWh/m²/day', 'Peak Sun Hours', 'ساعات اوج تابش');
+    updateIfDirty('tempMinC', customCity.tempMinC, '°C', 'Min Design Temp', 'حداقل دمای حدی طراحی');
+    updateIfDirty('tempMaxC', customCity.tempMaxC, '°C', 'Max Design Temp', 'حداکثر دمای حدی طراحی');
+    updateIfDirty('optimalTiltAnnualDeg', customCity.optimalTiltAnnualDeg, 'deg', 'Optimal Tilt', 'زاویه شیب بهینه');
+    updateIfDirty('soilingLossPct', customCity.soilingLossPct, '%', 'Soiling Loss', 'افت گرد و غبار');
+    updateIfDirty('albedo', customCity.albedo, 'dimensionless', 'Albedo', 'آلبیدو');
+    updateIfDirty('annualRainfallMm', customCity.annualRainfallMm, 'mm', 'Annual Rainfall', 'بارش سالانه');
+    updateIfDirty('basicWindSpeedKmh', customCity.basicWindSpeedKmh, 'km/h', 'Basic Wind Speed', 'سرعت مبنای باد');
+    updateIfDirty('groundSnowLoadKgM2', customCity.groundSnowLoadKgM2, 'kg/m²', 'Ground Snow Load', 'بار برف زمین');
+    updateIfDirty('soilBearingCapacityKpa', customCity.soilBearingCapacityKpa, 'kPa', 'Soil Bearing Capacity', 'ظرفیت باربری خاک');
+    updateIfDirty('soilInternalFrictionAngleDeg', customCity.soilInternalFrictionAngleDeg, 'deg', 'Friction Angle', 'زاویه اصطکاک داخلی خاک');
+    updateIfDirty('frostDepthCm', customCity.frostDepthCm, 'cm', 'Frost Depth', 'عمق یخبندان');
+    updateIfDirty('latitude', customCity.latitude, 'deg', 'Latitude', 'عرض جغرافیایی');
+    updateIfDirty('longitude', customCity.longitude, 'deg', 'Longitude', 'طول جغرافیایی');
+
+    const coordsChanged =
+      dirtyFieldKeys.has('latitude') ||
+      dirtyFieldKeys.has('longitude') ||
+      Math.abs(candidate.latitude - base.latitude) > 0.0001 ||
+      Math.abs(candidate.longitude - base.longitude) > 0.0001;
+
+    let updatedNameFa = base.nameFa;
+    let updatedNameEn = base.nameEn;
+    if (coordsChanged) {
+      hasUserEdits = true;
+      updatedNameFa = `محل سفارشی (${candidate.latitude.toFixed(4)}, ${candidate.longitude.toFixed(4)})`;
+      updatedNameEn = `Custom Site (${candidate.latitude.toFixed(4)}, ${candidate.longitude.toFixed(4)})`;
+
+      // Location-dependent values are replaced with a fresh model/provider response below;
+      // changing the site label or relabeling old values is not considered a refresh.
+    }
+
+    // 2. Strict ATOMIC Validation on the constructed candidate
+    if (candidate.latitude === undefined || Number.isNaN(candidate.latitude)) {
+      setValidationError(isFa ? 'عرض جغرافیایی نمی‌تواند خالی باشد.' : 'Latitude cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.latitude) || candidate.latitude < -90 || candidate.latitude > 90) {
+      setValidationError(
+        isFa
+          ? 'عرض جغرافیایی نامعتبر است: مقدار باید عددی بین -۹۰ و +۹۰ درجه باشد.'
+          : 'Invalid latitude: must be a finite number between -90 and +90 degrees.'
+      );
+      return;
+    }
+    if (candidate.longitude === undefined || Number.isNaN(candidate.longitude)) {
+      setValidationError(isFa ? 'طول جغرافیایی نمی‌تواند خالی باشد.' : 'Longitude cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.longitude) || candidate.longitude < -180 || candidate.longitude > 180) {
+      setValidationError(
+        isFa
+          ? 'طول جغرافیایی نامعتبر است: مقدار باید عددی بین -۱۸۰ و +۱۸۰ درجه باشد.'
+          : 'Invalid longitude: must be a finite number between -180 and +180 degrees.'
+      );
+      return;
+    }
+    if (candidate.peakSunHours === undefined || Number.isNaN(candidate.peakSunHours)) {
+      setValidationError(isFa ? 'ساعات اوج تابش (PSH) نمی‌تواند خالی باشد.' : 'Peak Sun Hours cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.peakSunHours) || candidate.peakSunHours < 0 || candidate.peakSunHours > 12) {
+      setValidationError(
+        isFa
+          ? 'ساعات اوج تابش (PSH) نامعتبر است: مقدار باید بین ۰ و ۱۲ ساعت در روز (kWh/m²/day) باشد.'
+          : 'Invalid Peak Sun Hours (PSH): must be a finite number between 0 and 12 kWh/m²/day.'
+      );
+      return;
+    }
+    if (candidate.tempMinC === undefined || Number.isNaN(candidate.tempMinC)) {
+      setValidationError(isFa ? 'حداقل دمای طراحی نمی‌تواند خالی باشد.' : 'Min design temperature cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.tempMinC) || candidate.tempMinC < -70 || candidate.tempMinC > 50) {
+      setValidationError(
+        isFa
+          ? 'حداقل دمای طراحی نامعتبر است (محدوده مجاز: -۷۰ تا +۵۰ درجه سانتی‌گراد).'
+          : 'Invalid min design temperature (allowed range: -70 to +50°C).'
+      );
+      return;
+    }
+    if (candidate.tempMaxC === undefined || Number.isNaN(candidate.tempMaxC)) {
+      setValidationError(isFa ? 'حداکثر دمای طراحی نمی‌تواند خالی باشد.' : 'Max design temperature cannot be empty.');
+      return;
+    }
+    if (!Number.isFinite(candidate.tempMaxC) || candidate.tempMaxC < -20 || candidate.tempMaxC > 65) {
+      setValidationError(
+        isFa
+          ? 'حداکثر دمای طراحی نامعتبر است (محدوده مجاز: -۲۰ تا +۶۵ درجه سانتی‌گراد).'
+          : 'Invalid max design temperature (allowed range: -20 to +65°C).'
+      );
+      return;
+    }
+    if (candidate.tempMinC >= candidate.tempMaxC) {
+      setValidationError(
+        isFa
+          ? `ناسازگاری دما: حداقل دمای طراحی (${candidate.tempMinC}°C) نمی‌تواند بزرگتر یا مساوی حداکثر دمای طراحی (${candidate.tempMaxC}°C) باشد.`
+          : `Temperature consistency error: min design temp (${candidate.tempMinC}°C) must be strictly less than max design temp (${candidate.tempMaxC}°C).`
+      );
+      return;
+    }
+    if (!Number.isFinite(candidate.optimalTiltAnnualDeg) || candidate.optimalTiltAnnualDeg < 0 || candidate.optimalTiltAnnualDeg > 90) {
+      setValidationError(
+        isFa ? 'زاویه شیب بهینه باید عددی بین ۰ و ۹۰ درجه باشد.' : 'Optimal tilt angle must be between 0 and 90 degrees.'
+      );
+      return;
+    }
+    if (!Number.isFinite(candidate.soilingLossPct) || candidate.soilingLossPct < 0 || candidate.soilingLossPct > 100) {
+      setValidationError(
+        isFa ? 'درصد افت غبار باید بین ۰ و ۱۰۰ درصد باشد.' : 'Soiling loss must be between 0 and 100%.'
+      );
+      return;
+    }
+    if (!Number.isFinite(candidate.albedo) || candidate.albedo < 0 || candidate.albedo > 1.0) {
+      setValidationError(
+        isFa ? 'ضریب آلبیدو باید بین ۰ و ۱ باشد.' : 'Albedo factor must be between 0 and 1.'
+      );
+      return;
+    }
+
+    if (coordsChanged) {
+      const requestId = ++saveRequestIdRef.current;
+      try {
+        const refreshed = await fetchClimateData(candidate.latitude, candidate.longitude);
+        if (requestId !== saveRequestIdRef.current) return;
+        const latest = activeCityRef.current;
+        if (latest.id !== base.id || latest.latitude !== base.latitude || latest.longitude !== base.longitude) {
+          setValidationError(
+            isFa
+              ? 'هنگام دریافت داده، سایت فعال تغییر کرد؛ پیش‌نویس اعمال نشد. دوباره بررسی کنید.'
+              : 'The active site changed while location data was loading. Draft not applied; review and retry.'
+          );
+          return;
+        }
+
+        // Use newly resolved location data as the base; only retain fields the user
+        // explicitly changed in this draft. This prevents old-site values leaking
+        // through under a new coordinate label.
+        const explicitValues = candidate;
+        const explicitProvenance = updatedProv;
+        candidate = { ...refreshed, latitude: explicitValues.latitude, longitude: explicitValues.longitude };
+        updatedProv = { ...(refreshed.fieldProvenance || {}) };
+        for (const key of dirtyFieldKeys) {
+          (candidate as any)[key] = (explicitValues as any)[key];
+          if (explicitProvenance[key]) updatedProv[key] = explicitProvenance[key];
+        }
+      } catch (error) {
+        if (requestId !== saveRequestIdRef.current) return;
+        setValidationError(
+          isFa
+            ? `محاسبه مجدد داده‌های مکان جدید ناموفق بود؛ تغییر اعمال نشد: ${String(error)}`
+            : `Could not refresh location-dependent data; site change was not applied: ${String(error)}`
+        );
+        return;
+      }
+    }
+
+    setValidationError(null);
+
+    const dataSourceEn = hasUserEdits
+      ? 'Custom Parameters (USER_OVERRIDE)'
+      : base.dataSourceEn;
+    const dataSourceFa = hasUserEdits
+      ? 'پارامترهای سفارشی کاربر (USER_OVERRIDE)'
+      : base.dataSourceFa;
+
+    onCityChange({
+      ...candidate,
+      nameFa: updatedNameFa,
+      nameEn: updatedNameEn,
+      id: hasUserEdits
+        ? `custom_${candidate.latitude.toFixed(4)}_${candidate.longitude.toFixed(4)}_${Date.now()}`
+        : candidate.id,
+      dataSourceEn,
+      dataSourceFa,
+      confidence: coordsChanged ? 'analytical_estimate' : (hasUserEdits ? 'analytical_estimate' : base.confidence),
+      fieldProvenance: updatedProv,
+    });
+    setDirtyFieldKeys(new Set());
+    setIsEditing(false);
+    setIsDirty(false);
+  };
+
+  const hasSiteConflict =
+    isEditing &&
+    isDirty &&
+    (Math.abs(selectedCity.latitude - baselineCityRef.current.latitude) > 0.0001 ||
+      Math.abs(selectedCity.longitude - baselineCityRef.current.longitude) > 0.0001);
+
+  const hasIncomingTelemetry =
+    !hasSiteConflict &&
+    isEditing &&
+    isDirty &&
+    (selectedCity.peakSunHours !== baselineCityRef.current.peakSunHours ||
+      selectedCity.tempMinC !== baselineCityRef.current.tempMinC ||
+      selectedCity.tempMaxC !== baselineCityRef.current.tempMaxC ||
+      selectedCity.soilBearingCapacityKpa !== baselineCityRef.current.soilBearingCapacityKpa);
 
   return (
     <div className="space-y-6">
@@ -49,7 +326,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
 
           <div className="flex items-center gap-2 bg-industrial-surface/90 px-3 py-1.5 rounded-lg border border-industrial-border text-xs font-mono text-industrial-accent">
             <Globe className="w-4 h-4 text-industrial-success" />
-            <span>{isEn ? 'Provider: ' + (selectedCity.dataSourceEn || 'NASA POWER / PVGIS') : 'داده‌ی: ' + (selectedCity.dataSourceEn || 'ناسا POWER / PVGIS')}</span>
+            <span>{isEn ? 'Provider: ' + (selectedCity.dataSourceEn || 'Unknown — no provider resolved') : 'منبع داده: ' + (selectedCity.dataSourceFa || 'نامشخص — ارائه‌دهنده‌ای یافت نشد')}</span>
           </div>
         </div>
       </div>
@@ -65,6 +342,29 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               ? 'This location is estimated from a regional analytical model, not measured provider data. Confidence: LOW. Real NASA POWER / PVGIS data requires outbound internet access.'
               : 'این محل از مدل تحلیلی منطقه‌ای تخمین گرفته شده است، نه داده‌های اندازه‌گیری شده. اطمینان: پایین. داده‌های واقعی ناسا و PVGIS نیاز به دسترسی به اینترنت دارد.'}
           </div>
+        </div>
+      )}
+
+      {/* Zero PSH Physical Unsizable Banner */}
+      {selectedCity.peakSunHours === 0 && (
+        <div className="p-3 bg-red-500/15 border border-red-500/40 rounded-lg flex items-start gap-3 text-xs">
+          <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <div className="text-red-200 leading-relaxed">
+            <strong className="text-red-400 font-bold">
+              {isEn ? '⚠ Zero Solar Irradiance — System Unsizable' : '⚠ تابش خورشیدی صفر — سیستم غیرقابل سایزینگ'}
+            </strong>{' '}
+            {isEn
+              ? 'Peak Sun Hours is 0 kWh/m²/day (perpetual darkness / polar night). PV generation is physically zero and array capacity cannot be sized.'
+              : 'ساعات اوج آفتابی صفر است (شب قطبی یا تاریکی مطلق). تولید فتوولتائیک از نظر فیزیکی صفر بوده و آرایه خورشیدی قابل سایزینگ نمی‌باشد.'}
+          </div>
+        </div>
+      )}
+
+      {selectedCity.peakSunHours > 0 && selectedCity.peakSunHours < 1 && (
+        <div role="note" className="p-3 bg-amber-500/10 border border-amber-500/35 rounded-lg text-xs text-amber-200">
+          {isEn
+            ? 'Low-PSH model limitation: array sizing uses the supplied positive PSH value, while scenario comparison currently applies a 1.0 kWh/m²/day minimum. Scenario yields are therefore not directly comparable with the array sizing until that contract is revised.'
+            : 'محدودیت مدل PSH پایین: سایزینگ آرایه از مقدار مثبت واقعی استفاده می‌کند، اما مقایسه سناریوها فعلاً حداقل ۱٫۰ kWh/m²/day اعمال می‌کند. بنابراین تا زمان بازنگری قرارداد، تولید سناریوها مستقیماً با سایزینگ آرایه قابل‌مقایسه نیست.'}
         </div>
       )}
 
@@ -98,7 +398,13 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
             </p>
           </div>
           <button
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => {
+              if (isEditing) {
+                handleCancelEditing();
+              } else {
+                handleStartEditing();
+              }
+            }}
             className="studio-btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -214,6 +520,75 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
         ) : (
           /* Custom Parameter Editor Form */
           <div className="space-y-4 text-xs">
+            {hasSiteConflict && (
+              <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-lg space-y-2 text-xs">
+                <div className="flex items-start gap-2 text-amber-300 font-bold">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    {isEn
+                      ? `Site Location Conflict: You have unsaved custom edits from previous location (${baselineCityRef.current.latitude.toFixed(4)}, ${baselineCityRef.current.longitude.toFixed(4)}), but the active site has changed to ${selectedCity.nameEn} (${selectedCity.latitude.toFixed(4)}, ${selectedCity.longitude.toFixed(4)}).`
+                      : `تعارض در پیش‌نویس محل سایت: شما ویرایش‌های ذخیره‌نشده از محل قبلی (${baselineCityRef.current.latitude.toFixed(4)}, ${baselineCityRef.current.longitude.toFixed(4)}) دارید، در حالی که سایت فعال پروژه به ${selectedCity.nameFa} (${selectedCity.latitude.toFixed(4)}, ${selectedCity.longitude.toFixed(4)}) تغییر یافته است.`}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomCity(selectedCity);
+                      baselineCityRef.current = selectedCity;
+                      setDirtyFieldKeys(new Set());
+                      setIsDirty(false);
+                      setValidationError(null);
+                    }}
+                    className="studio-btn-secondary text-[11px] py-1 px-2.5"
+                  >
+                    {isEn ? 'Reset Draft to Active Site' : 'بازنشانی پیش‌نویس به سایت فعال جاری'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Carry over ONLY dirty fields onto the new selectedCity
+                      setCustomCity((prev) => {
+                        const merged = { ...selectedCity };
+                        dirtyFieldKeys.forEach((k) => {
+                          (merged as any)[k] = (prev as any)[k];
+                        });
+                        return merged;
+                      });
+                      baselineCityRef.current = selectedCity;
+                    }}
+                    className="studio-btn-primary text-[11px] py-1 px-2.5"
+                  >
+                    {isEn ? 'Carry User Edits onto New Site' : 'انتقال فقط ویرایش‌های دستی به سایت جدید'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onCityChange(baselineCityRef.current);
+                    }}
+                    className="studio-btn-secondary text-[11px] py-1 px-2.5"
+                  >
+                    {isEn ? 'Keep Old Site & Discard Map Change' : 'صرف‌نظر از تغییر نقشه و حفظ سایت قبلی'}
+                  </button>
+                </div>
+              </div>
+            )}
+            {hasIncomingTelemetry && (
+              <div className="p-2.5 bg-sky-500/10 border border-sky-500/30 rounded-lg text-xs text-sky-300 flex items-start gap-2">
+                <Database className="w-4 h-4 shrink-0 mt-0.5 text-sky-400" />
+                <span>
+                  {isFa
+                    ? 'داده‌های تازه از حسگر یا پایگاه داده برای این ساختگاه دریافت شد. فیلدهای دست‌نخورده به‌صورت خودکار با داده‌های تازه به‌روز خواهند شد.'
+                    : 'Fresh telemetry received for this location. Untouched fields will automatically absorb verified measured data upon Apply.'}
+                </span>
+              </div>
+            )}
+            {validationError && (
+              <div className="p-2.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{validationError}</span>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label htmlFor="climate-psh-input" className="block text-slate-300 mb-1">
@@ -224,8 +599,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   type="number"
                   step="0.05"
                   className="studio-input"
-                  value={customCity.peakSunHours}
-                  onChange={(e) => setCustomCity({ ...customCity, peakSunHours: parseFloat(e.target.value) || 0 })}
+                  value={customCity.peakSunHours === undefined || Number.isNaN(customCity.peakSunHours) ? '' : customCity.peakSunHours}
+                  onChange={(e) => {
+                    const val = e.target.value.trim() === '' ? NaN : parseFloat(e.target.value);
+                    markFieldDirty('peakSunHours', val);
+                  }}
                 />
               </div>
 
@@ -238,8 +616,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   type="number"
                   step="1"
                   className="studio-input"
-                  value={customCity.tempMinC}
-                  onChange={(e) => setCustomCity({ ...customCity, tempMinC: parseFloat(e.target.value) || 0 })}
+                  value={customCity.tempMinC === undefined || Number.isNaN(customCity.tempMinC) ? '' : customCity.tempMinC}
+                  onChange={(e) => {
+                    const val = e.target.value.trim() === '' ? NaN : parseFloat(e.target.value);
+                    markFieldDirty('tempMinC', val);
+                  }}
                 />
               </div>
 
@@ -252,8 +633,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   type="number"
                   step="1"
                   className="studio-input"
-                  value={customCity.tempMaxC}
-                  onChange={(e) => setCustomCity({ ...customCity, tempMaxC: parseFloat(e.target.value) || 0 })}
+                  value={customCity.tempMaxC === undefined || Number.isNaN(customCity.tempMaxC) ? '' : customCity.tempMaxC}
+                  onChange={(e) => {
+                    const val = e.target.value.trim() === '' ? NaN : parseFloat(e.target.value);
+                    markFieldDirty('tempMaxC', val);
+                  }}
                 />
               </div>
 
@@ -266,8 +650,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   type="number"
                   step="1"
                   className="studio-input"
-                  value={customCity.optimalTiltAnnualDeg}
-                  onChange={(e) => setCustomCity({ ...customCity, optimalTiltAnnualDeg: parseInt(e.target.value) || 0 })}
+                  value={customCity.optimalTiltAnnualDeg === undefined || Number.isNaN(customCity.optimalTiltAnnualDeg) ? '' : customCity.optimalTiltAnnualDeg}
+                  onChange={(e) => {
+                    const val = e.target.value.trim() === '' ? NaN : parseInt(e.target.value, 10);
+                    markFieldDirty('optimalTiltAnnualDeg', val);
+                  }}
                 />
               </div>
 
@@ -280,8 +667,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   type="number"
                   step="0.5"
                   className="studio-input"
-                  value={customCity.soilingLossPct}
-                  onChange={(e) => setCustomCity({ ...customCity, soilingLossPct: parseFloat(e.target.value) || 0 })}
+                  value={customCity.soilingLossPct === undefined || Number.isNaN(customCity.soilingLossPct) ? '' : customCity.soilingLossPct}
+                  onChange={(e) => {
+                    const val = e.target.value.trim() === '' ? NaN : parseFloat(e.target.value);
+                    markFieldDirty('soilingLossPct', val);
+                  }}
                 />
               </div>
 
@@ -294,8 +684,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   type="number"
                   step="0.02"
                   className="studio-input"
-                  value={customCity.albedo}
-                  onChange={(e) => setCustomCity({ ...customCity, albedo: parseFloat(e.target.value) || 0 })}
+                  value={customCity.albedo === undefined || Number.isNaN(customCity.albedo) ? '' : customCity.albedo}
+                  onChange={(e) => {
+                    const val = e.target.value.trim() === '' ? NaN : parseFloat(e.target.value);
+                    markFieldDirty('albedo', val);
+                  }}
                 />
               </div>
 
@@ -308,8 +701,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   type="number"
                   step="0.0001"
                   className="studio-input"
-                  value={customCity.latitude}
-                  onChange={(e) => setCustomCity({ ...customCity, latitude: parseFloat(e.target.value) || 0 })}
+                  value={customCity.latitude === undefined || Number.isNaN(customCity.latitude) ? '' : customCity.latitude}
+                  onChange={(e) => {
+                    const val = e.target.value.trim() === '' ? NaN : parseFloat(e.target.value);
+                    markFieldDirty('latitude', val);
+                  }}
                 />
               </div>
 
@@ -322,28 +718,43 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   type="number"
                   step="0.0001"
                   className="studio-input"
-                  value={customCity.longitude}
-                  onChange={(e) => setCustomCity({ ...customCity, longitude: parseFloat(e.target.value) || 0 })}
+                  value={customCity.longitude === undefined || Number.isNaN(customCity.longitude) ? '' : customCity.longitude}
+                  onChange={(e) => {
+                    const val = e.target.value.trim() === '' ? NaN : parseFloat(e.target.value);
+                    markFieldDirty('longitude', val);
+                  }}
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-industrial-border">
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="studio-btn-secondary text-xs"
-              >
-                {isEn ? 'Cancel' : 'انصراف'}
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveCustom}
-                className="studio-btn-primary text-xs flex items-center gap-1.5"
-              >
-                <Check className="w-3.5 h-3.5" />
-                {isEn ? 'Apply Custom Parameters' : 'اعمال پارامترهای سفارشی'}
-              </button>
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-industrial-border">
+              <div>
+                {hasSiteConflict && (
+                  <span className="text-amber-400 text-xs">
+                    {isFa ? 'برای اعمال، ابتدا تعارض سایت را از بنر بالا تعیین‌تکلیف نمایید.' : 'Resolve the site conflict above before applying.'}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCancelEditing}
+                  className="studio-btn-secondary text-xs"
+                >
+                  {isEn ? 'Cancel' : 'انصراف'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveCustom}
+                  disabled={hasSiteConflict}
+                  className={`studio-btn-primary text-xs flex items-center gap-1.5 ${
+                    hasSiteConflict ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {isEn ? 'Apply Custom Parameters' : 'اعمال پارامترهای سفارشی'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -388,14 +799,17 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
             <tbody className="divide-y divide-industrial-border/40 font-mono text-[11px]">
               {(() => {
                 const prov = selectedCity.fieldProvenance || {};
+                const isMeasuredSolar = selectedCity.confidence === 'measured' &&
+                  (prov.peakSunHours?.sourceKind === 'provider_derived' || prov.peakSunHours?.sourceKind === 'provider_value');
+
                 const rows = [
                   {
                     key: 'peakSunHours',
                     nameFa: 'ساعات اوج تابش (PSH)',
                     nameEn: 'Peak Sun Hours (PSH)',
                     val: `${selectedCity.peakSunHours} kWh/m²/day`,
-                    defaultKind: 'provider_value' as const,
-                    defaultSource: 'NASA_POWER / PVGIS',
+                    defaultKind: (isMeasuredSolar ? 'provider_derived' : 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: isMeasuredSolar ? 'PVGIS / NASA_POWER' : 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'daylightHoursDesign',
@@ -410,23 +824,23 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                     nameFa: 'حداقل دمای حدی طراحی (T_min)',
                     nameEn: 'Min Design Ambient Temp',
                     val: `${selectedCity.tempMinC} °C`,
-                    defaultKind: 'provider_value' as const,
-                    defaultSource: 'NASA_POWER (T2M_MIN)',
+                    defaultKind: (prov.tempMinC?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: prov.tempMinC?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'tempMaxC',
                     nameFa: 'حداکثر دمای حدی طراحی (T_max)',
                     nameEn: 'Max Design Ambient Temp',
                     val: `${selectedCity.tempMaxC} °C`,
-                    defaultKind: 'provider_value' as const,
-                    defaultSource: 'NASA_POWER (T2M_MAX)',
+                    defaultKind: (prov.tempMaxC?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: prov.tempMaxC?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'annualRainfallMm',
                     nameFa: 'بارش سالانه باران (Precipitation)',
                     nameEn: 'Annual Precipitation',
                     val: `${selectedCity.annualRainfallMm} mm`,
-                    defaultKind: prov.annualPrecipitationMm?.sourceKind || 'local_model',
+                    defaultKind: (prov.annualPrecipitationMm?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
                     defaultSource: prov.annualPrecipitationMm?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
@@ -450,16 +864,16 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                     nameFa: 'ظرفیت باربری مجاز خاک (q_a)',
                     nameEn: 'Allowable Soil Bearing Capacity',
                     val: `${selectedCity.soilBearingCapacityKpa} kPa`,
-                    defaultKind: prov.soilBearingCapacityKpa?.sourceKind || 'provider_derived',
-                    defaultSource: prov.soilBearingCapacityKpa?.providerName || 'ISRIC_SOILGRIDS / USCS',
+                    defaultKind: (prov.soilBearingCapacityKpa?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: prov.soilBearingCapacityKpa?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'soilInternalFrictionAngleDeg',
                     nameFa: 'زاویه اصطکاک داخلی خاک (φ)',
                     nameEn: 'Soil Internal Friction Angle',
                     val: `${selectedCity.soilInternalFrictionAngleDeg}°`,
-                    defaultKind: prov.soilInternalFrictionAngleDeg?.sourceKind || 'provider_derived',
-                    defaultSource: 'ISRIC_SOILGRIDS / USCS',
+                    defaultKind: (prov.soilInternalFrictionAngleDeg?.sourceKind || 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
+                    defaultSource: prov.soilInternalFrictionAngleDeg?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
                   },
                   {
                     key: 'frostDepthCm',
@@ -497,24 +911,26 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
 
                 return rows.map((r) => {
                   const p = prov[r.key];
-                  const kind = p?.sourceKind || r.defaultKind;
-                  const source = p?.providerName || r.defaultSource;
+                  const isOverridden = p?.sourceKind === 'user_input' || p?.providerName === 'USER_OVERRIDE';
+                  const kind = isOverridden ? 'user_input' : (p?.sourceKind || r.defaultKind);
+                  const source = isOverridden ? 'USER_OVERRIDE' : (p?.providerName || r.defaultSource);
                   const note = p?.qualityNote || p?.derivationMethod || (kind === 'local_model' ? (isFa ? 'مدل تحلیلی غربالگری منطقه‌ای — نیازمند مطالعه میدانی سایت' : 'Regional screening model — requires site geotechnical investigation') : (isFa ? 'داده مستقیم اندازه‌گیری / ماهواره‌ای' : 'Satellite / direct provider data'));
 
                   const kindBadge = (() => {
                     switch (kind) {
+                      case 'user_input':
+                        return <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">{isFa ? 'ورودی دستی کاربر' : 'User Input'}</span>;
                       case 'provider_value':
                         return <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">{isFa ? 'داده مستقیم منبع' : 'Provider Value'}</span>;
                       case 'provider_derived':
                         return <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40">{isFa ? 'مشتق از منبع' : 'Provider Derived'}</span>;
-                      case 'local_model':
-                        return <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">{isFa ? 'مدل غربالگری تحلیلی' : 'Local Screening Model'}</span>;
                       case 'unavailable':
-                        return <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-bold border border-red-500/40">{isFa ? 'ناموجود در منبع' : 'Unavailable'}</span>;
-                      case 'user_input':
-                        return <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">{isFa ? 'ورودی دستی کاربر' : 'User Input'}</span>;
+                        return <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40">{isFa ? 'ناموجود' : 'Unavailable'}</span>;
+                      case 'default_unverified':
+                        return <span className="px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 font-bold border border-slate-500/40">{isFa ? 'پیش‌فرض ثبت‌نشده' : 'Default Unverified'}</span>;
+                      case 'local_model':
                       default:
-                        return <span className="px-2 py-0.5 rounded bg-slate-700 text-slate-300">{kind}</span>;
+                        return <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">{isFa ? 'مدل تحلیلی داخلی' : 'Local Analytical Model'}</span>;
                     }
                   })();
 

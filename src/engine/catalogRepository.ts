@@ -579,6 +579,125 @@ export class CatalogRepository {
     return { importedModules, importedInverters, importedBatteries };
   }
 
+  /** Validate and persist all imported equipment as one batch. No memory/storage mutation occurs on validation or persistence failure. */
+  public restoreCustomEquipmentSnapshots(snapshots: {
+    modules?: unknown[];
+    inverters?: unknown[];
+    batteries?: unknown[];
+  }, options: { persist?: boolean } = {}): { success: boolean; counts: { modules: number; inverters: number; batteries: number }; errors: string[] } {
+    const errors: string[] = [];
+    const modules: EnhancedCatalogModule[] = [];
+    const inverters: EnhancedCatalogInverter[] = [];
+    const batteries: EnhancedCatalogBattery[] = [];
+    const ids = new Set<string>();
+    const validateSnapshotId = (rawId: unknown, prefix: string, group: string, index: number): string => {
+      if (typeof rawId !== 'string' || !rawId.startsWith(prefix)) {
+        errors.push(`${group} snapshot ${index + 1} has no valid custom catalog ID.`);
+        return '';
+      }
+      if (ids.has(`${group}:${rawId}`)) errors.push(`Duplicate ${group} snapshot ID: ${rawId}`);
+      ids.add(`${group}:${rawId}`);
+      return rawId;
+    };
+
+    for (const [index, raw] of (snapshots.modules ?? []).entries()) {
+      if (!raw || typeof raw !== 'object') { errors.push(`Module snapshot ${index + 1} is not an object.`); continue; }
+      const item = raw as CatalogPvModule;
+      const validation = this.validateModule(item);
+      const id = validateSnapshotId(item.id, 'custom-mod-', 'module', index);
+      if (!item.id || !validation.isValid) { errors.push(`Invalid module snapshot ${index + 1}: ${(validation.errorsEn ?? []).join('; ')}`); continue; }
+      if (id) modules.push({ ...item, id, origin: 'custom', schemaVersion: 3, noctC: (item as any).noctC ?? 45 });
+    }
+    for (const [index, raw] of (snapshots.inverters ?? []).entries()) {
+      if (!raw || typeof raw !== 'object') { errors.push(`Inverter snapshot ${index + 1} is not an object.`); continue; }
+      const item = raw as CatalogInverter;
+      const validation = this.validateInverter(item);
+      const id = validateSnapshotId(item.id, 'custom-inv-', 'inverter', index);
+      if (!item.id || !validation.isValid) { errors.push(`Invalid inverter snapshot ${index + 1}: ${(validation.errorsEn ?? []).join('; ')}`); continue; }
+      if (id) inverters.push({ ...item, id, origin: 'custom', schemaVersion: 3 });
+    }
+    for (const [index, raw] of (snapshots.batteries ?? []).entries()) {
+      if (!raw || typeof raw !== 'object') { errors.push(`Battery snapshot ${index + 1} is not an object.`); continue; }
+      const item = raw as CatalogBattery;
+      const validation = this.validateBattery(item);
+      const id = validateSnapshotId(item.id, 'custom-bat-', 'battery', index);
+      if (!item.id || !validation.isValid) { errors.push(`Invalid battery snapshot ${index + 1}: ${(validation.errorsEn ?? []).join('; ')}`); continue; }
+      if (id) batteries.push({ ...item, id, origin: 'custom', schemaVersion: 3 });
+    }
+    const sameCatalogRecord = (left: Record<string, unknown>, right: Record<string, unknown>): boolean => {
+      const normalize = (record: Record<string, unknown>) => Object.fromEntries(
+        Object.entries(record)
+          .filter(([key]) => key !== 'origin' && key !== 'schemaVersion')
+          .sort(([a], [b]) => a.localeCompare(b)),
+      );
+      return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
+    };
+    const rejectConflictingIds = <T extends { id: string }>(current: T[], incoming: T[], group: string) => {
+      const existingById = new Map(current.map((item) => [item.id, item]));
+      for (const item of incoming) {
+        const existing = existingById.get(item.id);
+        if (existing && !sameCatalogRecord(existing as Record<string, unknown>, item as Record<string, unknown>)) {
+          errors.push(`${group} snapshot ID ${item.id} conflicts with an existing catalog record.`);
+        }
+      }
+    };
+    rejectConflictingIds(this.customModules, modules, 'Module');
+    rejectConflictingIds(this.customInverters, inverters, 'Inverter');
+    rejectConflictingIds(this.customBatteries, batteries, 'Battery');
+    if (errors.length) return { success: false, counts: { modules: 0, inverters: 0, batteries: 0 }, errors };
+    if (options.persist === false) {
+      return { success: true, counts: { modules: modules.length, inverters: inverters.length, batteries: batteries.length }, errors: [] };
+    }
+
+    const mergeById = <T extends { id: string }>(current: T[], incoming: T[]) => {
+      const merged = new Map(current.map((item) => [item.id, item]));
+      for (const item of incoming) merged.set(item.id, item);
+      return Array.from(merged.values());
+    };
+    const nextModules = mergeById(this.customModules, modules);
+    const nextInverters = mergeById(this.customInverters, inverters);
+    const nextBatteries = mergeById(this.customBatteries, batteries);
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const storage = window.localStorage;
+      const keys = [LS_CUSTOM_MODULES, LS_CUSTOM_INVERTERS, LS_CUSTOM_BATTERIES];
+      let prior: Array<string | null> = [];
+      try {
+        prior = keys.map((key) => storage.getItem(key));
+        storage.setItem(keys[0], JSON.stringify(nextModules));
+        storage.setItem(keys[1], JSON.stringify(nextInverters));
+        storage.setItem(keys[2], JSON.stringify(nextBatteries));
+      } catch (error) {
+        const rollbackErrors: string[] = [];
+        // A failed read means no writes were attempted; never delete keys when the
+        // rollback snapshot itself was incomplete. Restore every key independently
+        // so one rollback error does not prevent attempts on the remaining keys.
+        if (prior.length === keys.length) {
+          for (let i = 0; i < keys.length; i++) {
+            try {
+              if (prior[i] == null) storage.removeItem(keys[i]);
+              else storage.setItem(keys[i], prior[i]!);
+            } catch (rollbackError) {
+              rollbackErrors.push(`${keys[i]}: ${String(rollbackError)}`);
+            }
+          }
+        }
+        const errors = [`Could not persist imported equipment atomically: ${String(error)}`];
+        if (rollbackErrors.length) {
+          errors.push(`Catalog storage rollback was incomplete; manual recovery may be required: ${rollbackErrors.join(' | ')}`);
+          console.error('Catalog import rollback could not restore every storage key:', rollbackErrors);
+        }
+        return { success: false, counts: { modules: 0, inverters: 0, batteries: 0 }, errors };
+      }
+    }
+
+    this.customModules = nextModules;
+    this.customInverters = nextInverters;
+    this.customBatteries = nextBatteries;
+    this.notify();
+    return { success: true, counts: { modules: modules.length, inverters: inverters.length, batteries: batteries.length }, errors: [] };
+  }
+
   /**
    * Clears custom equipment (useful for testing or full reset).
    */

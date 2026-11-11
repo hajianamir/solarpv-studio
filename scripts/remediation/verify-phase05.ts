@@ -379,12 +379,15 @@ export function runPhase05Verification(): Phase05Evidence {
   // 8. Coherence Checks C5-01 through C5-06
   // -------------------------------------------------------------------------
 
-  // C5-01: Array DC/AC Ratio vs Fleet DC/AC Ratio (0.859773 vs 0.859773)
-  const c501Lhs = fleetDesignG1.dcAcRatio; // 0.859773
-  const c501Rhs = fleetDesignG1.dcAcRatio;
+  // C5-01: independently reconstruct fleet DC/AC ratio from physical capacities.
+  // Compare this derived contract with the API field (avoid a tautological self-comparison).
+  const c501Lhs = fleetDesignG1.dcAcRatio;
+  const c501Rhs = Number((fleetDesignG1.totalPvCapacityKwp / fleetDesignG1.totalInverterAcCapacityKw!).toFixed(6));
+  const expectedFleetAcCapacityKw = 4 * resolvedInverterG1.pnomAcKw;
   const c501Delta = Number(Math.abs(c501Lhs - c501Rhs).toFixed(6));
   const c501Pass =
     Math.abs(c501Lhs - c501Rhs) < 1e-6 &&
+    Math.abs(fleetDesignG1.totalInverterAcCapacityKw! - expectedFleetAcCapacityKw) < 1e-6 &&
     c501Lhs === 0.859773 &&
     fleetDesignG1.singleInverterDcAcRatio === 3.439091;
 

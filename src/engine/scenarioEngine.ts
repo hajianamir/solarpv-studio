@@ -35,32 +35,35 @@ export function generateScenarios(
   discountRatePct: number = 18.0,
   peakSunHours: number = 5.17
 ): ScenarioDetails[] {
+  const isUnsizablePsh = typeof peakSunHours === 'number' && Number.isFinite(peakSunHours) && peakSunHours <= 0;
+  const effectiveBaseKwp = isUnsizablePsh ? 0 : basePvCapacityKwp;
+
   // Scenario 1: Standard Optimized LiFePO4
-  const s1PvKwp = Math.round(basePvCapacityKwp * 10) / 10;
+  const s1PvKwp = Math.round(effectiveBaseKwp * 10) / 10;
   const s1BatKwh = Math.round((baseDailyKwh * baseAutonomyDays / 0.85) * 10) / 10;
   const s1InvKw = Math.max(5.0, Math.ceil(s1PvKwp / 5.0) * 5.0);
-  const s1CapexUsd = Math.round(s1PvKwp * 300 + s1BatKwh * 210 + s1InvKw * 130 + 1500);
+  const s1CapexUsd = Math.round(s1PvKwp * 300 + s1BatKwh * 210 + s1InvKw * 130 + (isUnsizablePsh ? 0 : 1500));
   const s1Tco25y = Math.round(s1CapexUsd + s1BatKwh * 150); // One bat replacement at yr 13
-  const s1Weight = Math.round(s1PvKwp * 35 + s1BatKwh * 10 + s1InvKw * 6 + 100);
+  const s1Weight = Math.round(s1PvKwp * 35 + s1BatKwh * 10 + s1InvKw * 6 + (isUnsizablePsh ? 0 : 100));
 
   // Scenario 2: Budget Gel Deep-Cycle
-  const s2PvKwp = Math.round(basePvCapacityKwp * 0.95 * 10) / 10;
+  const s2PvKwp = Math.round(effectiveBaseKwp * 0.95 * 10) / 10;
   // Needs 2x capacity because DoD is 50% vs 85%
   const s2BatKwh = Math.round((baseDailyKwh * baseAutonomyDays / 0.50) * 10) / 10;
   const s2InvKw = s1InvKw;
-  const s2CapexUsd = Math.round(s2PvKwp * 270 + s2BatKwh * 115 + s2InvKw * 100 + 1200);
+  const s2CapexUsd = Math.round(s2PvKwp * 270 + s2BatKwh * 115 + s2InvKw * 100 + (isUnsizablePsh ? 0 : 1200));
   // Gel requires replacement every 3.5-4 years (approx 6 replacements over 25 years!)
   const s2Tco25y = Math.round(s2CapexUsd + s2BatKwh * 115 * 5);
-  const s2Weight = Math.round(s2PvKwp * 35 + s2BatKwh * 32 + s2InvKw * 6 + 100); // Lead is very heavy!
+  const s2Weight = Math.round(s2PvKwp * 35 + s2BatKwh * 32 + s2InvKw * 6 + (isUnsizablePsh ? 0 : 100)); // Lead is very heavy!
 
   // Scenario 3: High-Reliability Industrial Redundant
   // +25% PV capacity, N+1 parallel inverters, ruggedized LiFePO4
-  const s3PvKwp = Math.round(basePvCapacityKwp * 1.25 * 10) / 10;
+  const s3PvKwp = Math.round(effectiveBaseKwp * 1.25 * 10) / 10;
   const s3BatKwh = Math.round((baseDailyKwh * (baseAutonomyDays + 0.5) / 0.80) * 10) / 10;
   const s3InvKw = s1InvKw * 2; // Redundant parallel
-  const s3CapexUsd = Math.round(s3PvKwp * 340 + s3BatKwh * 230 + s3InvKw * 140 + 3500);
-  const s3Tco25y = Math.round(s3CapexUsd + s3BatKwh * 160 + 2000);
-  const s3Weight = Math.round(s3PvKwp * 40 + s3BatKwh * 11 + s3InvKw * 8 + 250);
+  const s3CapexUsd = Math.round(s3PvKwp * 340 + s3BatKwh * 230 + s3InvKw * 140 + (isUnsizablePsh ? 0 : 3500));
+  const s3Tco25y = Math.round(s3CapexUsd + s3BatKwh * 160 + (isUnsizablePsh ? 0 : 2000));
+  const s3Weight = Math.round(s3PvKwp * 40 + s3BatKwh * 11 + s3InvKw * 8 + (isUnsizablePsh ? 0 : 250));
 
   // Dynamic LCOE Calculation (LC-07 / F-C / Z-02): Calculate real discounted 25-year LCOE based on scenario parameters
   const safeDiscountRatePct = typeof discountRatePct === 'number' && Number.isFinite(discountRatePct) ? discountRatePct : 18.0;
@@ -71,7 +74,7 @@ export function generateScenarios(
   const degradationPct = 0.5;
 
   // Scenario 1: LiFePO4 (1 battery replacement at yr 12)
-  const s1AnnualGen = s1PvKwp * effectivePsh * 365 * 0.78;
+  const s1AnnualGen = isUnsizablePsh ? 0 : s1PvKwp * effectivePsh * 365 * 0.78;
   const s1AnnualOpex = s1CapexUsd * 0.012;
   const s1BatRepPv = (s1BatKwh * 130) / Math.pow(1 + discountRate, 12);
   const s1Lcoe = s1AnnualGen > 0
@@ -79,7 +82,7 @@ export function generateScenarios(
     : 0.0;
 
   // Scenario 2: Gel (battery replacement every 4 years)
-  const s2AnnualGen = s2PvKwp * effectivePsh * 365 * 0.78;
+  const s2AnnualGen = isUnsizablePsh ? 0 : s2PvKwp * effectivePsh * 365 * 0.78;
   const s2AnnualOpex = s2CapexUsd * 0.015;
   let s2BatRepPv = 0;
   for (let yr = 4; yr < 25; yr += 4) {
@@ -90,7 +93,7 @@ export function generateScenarios(
     : 0.0;
 
   // Scenario 3: Industrial Redundant (battery replacement at yr 15)
-  const s3AnnualGen = s3PvKwp * effectivePsh * 365 * 0.80;
+  const s3AnnualGen = isUnsizablePsh ? 0 : s3PvKwp * effectivePsh * 365 * 0.80;
   const s3AnnualOpex = s3CapexUsd * 0.010;
   const s3BatRepPv = (s3BatKwh * 160) / Math.pow(1 + discountRate, 15);
   const s3Lcoe = s3AnnualGen > 0

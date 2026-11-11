@@ -35,7 +35,7 @@ import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
 import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
 import { calculateStructuralAndFoundations, type FoundationType, type SoilType } from '../engine/structuralEngine';
 import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/types/climateTypes';
-import { buildProvenanceRows } from '../engine/provenance/provenanceBuilder';
+import { buildProjectProvenanceSnapshot } from '../engine/provenance/projectProvenance';
 
 interface RFC3ReportsTabProps {
   lang: 'fa' | 'en';
@@ -105,13 +105,16 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once validation runner
   }, []);
 
-  // Section A: project data provenance — captured once at mount / city update
+  // Section A: same value-bound projection used by Official Report and all exports.
   useEffect(() => {
-    let mounted = true;
-    buildProvenanceRows(city, siteOverrides, isEn)
-      .then((rows) => { if (mounted) setProvenanceRows(rows); })
-      .catch(() => { if (mounted) setProvenanceRows([]); });
-    return () => { mounted = false; };
+    setProvenanceRows(buildProjectProvenanceSnapshot(city, siteOverrides).map((row) => ({
+      parameter: isEn ? row.parameter : row.parameterFa,
+      value: `${row.value} ${row.unit}`,
+      provider: row.provider,
+      traceId: row.retrievedAt ? city.id : '—',
+      timestamp: row.retrievedAt || '—',
+      confidence: row.confidence,
+    })));
   }, [city, siteOverrides, isEn]);
 
   const handleRunValidation = async () => {
@@ -155,11 +158,24 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
   const handleFetchClimateApi = async (lat: number, lng: number) => {
     setIsFetchingClimate(true);
     try {
-      const gateway = ExternalDataGateway.getInstance();
-      const siteData = await gateway.getComprehensiveSiteData(lat, lng);
+      let siteData: any = null;
+      if (isRealInternetEnabled() && typeof window !== 'undefined') {
+        const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
+          signal: AbortSignal.timeout(35000),
+        });
+        if (r.ok) {
+          const payload = await r.json();
+          if (payload?.ok) {
+            siteData = payload;
+          }
+        }
+      }
+      if (!siteData) {
+        siteData = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng);
+      }
       setClimateApiData({
         city: siteData.climateCity,
-        raw: siteData.climateResource,      // real ClimateResourceData with metadata
+        raw: siteData.climateResource, // real ClimateResourceData with metadata
         traceId: siteData.traceId,
       });
     } catch (err) {

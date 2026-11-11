@@ -66,6 +66,9 @@ interface StructuralFoundationTabProps {
   onUpdateStructuralSnapshot?: (snapshot: StructuralSnapshot) => void;
   modulesPerTable?: number;
   onUpdateModulesPerTable?: (val: number) => void;
+  pendingImportedEmbedmentDepthM?: number | null;
+  onConfirmImportedEmbedmentDepth?: () => void;
+  onDiscardImportedEmbedmentDepth?: () => void;
   lang?: 'fa' | 'en';
 }
 
@@ -110,6 +113,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   onUpdateStructuralSnapshot,
   modulesPerTable: propModulesPerTable,
   onUpdateModulesPerTable,
+  pendingImportedEmbedmentDepthM = null,
+  onConfirmImportedEmbedmentDepth,
+  onDiscardImportedEmbedmentDepth,
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
@@ -209,24 +215,33 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
     if (isNewLocation) {
       lastLocationRef.current = { id: city.id, lat: city.latitude, lng: city.longitude };
-      setBasicWindSpeedKmh(city.basicWindSpeedKmh ?? 120);
-      setGroundSnowLoadKgM2(city.groundSnowLoadKgM2 ?? 50);
-      setAnnualRainfallMm(city.annualRainfallMm ?? 200);
-      setSoilType((city.soilType ?? 'dense_sand_gravel') as SoilType);
-      setSoilBearingCapacityKpa(city.soilBearingCapacityKpa ?? 220);
-      setSoilFrictionAngleDeg(city.soilInternalFrictionAngleDeg ?? 32);
-      setSoilCohesionKpa(city.soilCohesionKpa ?? 15);
-      setSoilDensityKnM3(city.soilDensityKnM3 ?? 18.0);
-      setFrostDepthCm(city.frostDepthCm ?? 30);
-      setSeismicZoneA(city.seismicZoneCoefficientA ?? 0.30);
-      setDistanceToSeaKm(city.distanceToCoastKm);
-      setDrainageCondition(city.drainageCondition ?? 'well_drained');
-      setGroundwaterDepthM(city.groundwaterDepthM ?? 5.0);
+      // A new physical site resets only values that were not explicitly imported or
+      // retained by the parent. Never clear a freshly committed site's overrides here.
+      setBasicWindSpeedKmh(siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 120);
+      setGroundSnowLoadKgM2(siteOverrides?.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 50);
+      setAnnualRainfallMm(siteOverrides?.annualRainfallMm ?? city.annualRainfallMm ?? 200);
+      setSoilType((siteOverrides?.soilType ?? city.soilType ?? 'dense_sand_gravel') as SoilType);
+      setSoilBearingCapacityKpa(siteOverrides?.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? 220);
+      setSoilFrictionAngleDeg(siteOverrides?.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? 32);
+      setSoilCohesionKpa(siteOverrides?.soilCohesionKpa ?? city.soilCohesionKpa ?? 15);
+      setSoilDensityKnM3(siteOverrides?.soilDensityKnM3 ?? city.soilDensityKnM3 ?? 18.0);
+      setFrostDepthCm(siteOverrides?.frostDepthCm ?? city.frostDepthCm ?? 30);
+      setSeismicZoneA(siteOverrides?.seismicZoneCoefficientA ?? city.seismicZoneCoefficientA ?? 0.30);
+      setDistanceToSeaKm(siteOverrides?.distanceToCoastKm ?? city.distanceToCoastKm);
+      setDrainageCondition(siteOverrides?.drainageCondition ?? city.drainageCondition ?? 'well_drained');
+      setGroundwaterDepthM(siteOverrides?.groundwaterDepthM ?? city.groundwaterDepthM ?? 5.0);
+      setFoundationType(resolveFoundationType(
+        siteOverrides?.foundationType,
+        siteOverrides?.installationEnvironment,
+        siteOverrides?.soilType ?? city.soilType,
+      ));
+      setInstallationEnvironment(siteOverrides?.installationEnvironment ?? 'ground_mount');
+      setGroundClearanceM(siteOverrides?.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M);
+      setTiltDeg(siteOverrides?.arrayTiltDeg ?? arrayTiltDeg);
+      setCustomEmbedmentDepthM(siteOverrides?.customEmbedmentDepthM ?? null);
+      setCustomPostsPerTable(siteOverrides?.customPostsPerTable ?? null);
+      setIsManualDepth(siteOverrides?.customEmbedmentDepthM != null);
       setManualCorrosionCategory('auto');
-      setCustomEmbedmentDepthM(null);
-      setCustomPostsPerTable(null);
-      setIsManualDepth(false);
-      onUpdateSiteOverrides?.({});
     } else if (siteOverrides && Object.keys(siteOverrides).length > 0) {
       if (siteOverrides.basicWindSpeedKmh !== undefined) setBasicWindSpeedKmh(siteOverrides.basicWindSpeedKmh);
       if (siteOverrides.groundSnowLoadKgM2 !== undefined) setGroundSnowLoadKgM2(siteOverrides.groundSnowLoadKgM2);
@@ -251,7 +266,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       if (siteOverrides.groundClearanceM !== undefined) setGroundClearanceM(siteOverrides.groundClearanceM);
       if (siteOverrides.arrayTiltDeg !== undefined) setTiltDeg(siteOverrides.arrayTiltDeg);
     }
-  }, [city, siteOverrides, onUpdateSiteOverrides]);
+  }, [city, siteOverrides, onUpdateSiteOverrides, arrayTiltDeg]);
 
   // Salt corrosion / ISO 9223 & Drainage categorization
   useEffect(() => {
@@ -314,25 +329,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
   const handleUpdateParam = (updated: Partial<SiteGeotechnicalOverrides>) => {
     const newOverrides: SiteGeotechnicalOverrides = {
-      basicWindSpeedKmh,
-      groundSnowLoadKgM2,
-      annualRainfallMm,
-      soilType,
-      soilBearingCapacityKpa,
-      soilInternalFrictionAngleDeg: soilFrictionAngleDeg,
-      soilCohesionKpa,
-      soilDensityKnM3,
-      frostDepthCm,
-      seismicZoneCoefficientA: seismicZoneA,
-      distanceToCoastKm: distanceToSeaKm,
-      drainageCondition,
-      groundwaterDepthM,
-      foundationType,
-      installationEnvironment,
-      customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : undefined,
-      customPostsPerTable: customPostsPerTable !== null ? customPostsPerTable : undefined,
-      groundClearanceM,
-      arrayTiltDeg: tiltDeg,
+      ...(siteOverrides || {}),
       ...updated,
     };
     if (onUpdateSiteOverrides) {
@@ -541,6 +538,24 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
   return (
     <div className="space-y-6">
+      {pendingImportedEmbedmentDepthM !== null && (
+        <div role="alert" className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <strong>{isEn ? 'Imported manual embedment is pending confirmation' : 'عمق دستی واردشده در انتظار تأیید مجدد است'}</strong>
+          <p className="mt-1 text-xs">
+            {isEn
+              ? `Previous value: ${pendingImportedEmbedmentDepthM} m. It is not active for this site until you confirm it.`
+              : `مقدار قبلی: ${pendingImportedEmbedmentDepthM} متر. تا تأیید شما برای این سایت فعال نیست.`}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button type="button" className="studio-btn-primary text-xs" onClick={onConfirmImportedEmbedmentDepth}>
+              {isEn ? 'Confirm for this site' : 'تأیید برای این سایت'}
+            </button>
+            <button type="button" className="studio-btn-secondary text-xs" onClick={onDiscardImportedEmbedmentDepth}>
+              {isEn ? 'Discard pending value' : 'حذف مقدار در انتظار'}
+            </button>
+          </div>
+        </div>
+      )}
       {/* Title */}
       <div className="studio-card">
         <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">

@@ -107,6 +107,7 @@ export const ClimateCitySchema = z.object({
   dataSourceEn: z.string().optional().default('Iran Meteorological Organization (IRIMO)'),
   dataRetrievalDate: z.string().optional().default('2026-01-01'),
   confidence: z.enum(['measured', 'analytical_estimate', 'hub_calibrated']).optional(),
+  fieldProvenance: z.record(z.string(), z.unknown()).optional(),
   distanceToCoastKm: z.number().nonnegative().optional(),
   drainageCondition: z.enum(['well_drained', 'moderate', 'poor_flood_prone']).optional(),
   groundwaterDepthM: z.number().nonnegative().optional(),
@@ -126,6 +127,12 @@ export const SiteGeotechnicalOverridesSchema = z.object({
   distanceToCoastKm: z.number().nonnegative().optional(),
   drainageCondition: z.enum(['well_drained', 'moderate', 'poor_flood_prone']).optional(),
   groundwaterDepthM: z.number().nonnegative().optional(),
+  foundationType: z.string().optional(),
+  installationEnvironment: z.enum(['ground_mount', 'industrial_shed', 'rooftop_flat_concrete']).optional(),
+  customEmbedmentDepthM: z.number().nonnegative().optional(),
+  customPostsPerTable: z.number().int().positive().optional(),
+  groundClearanceM: z.number().nonnegative().optional(),
+  arrayTiltDeg: z.number().min(0).max(90).optional(),
   customNotes: z.string().optional(),
 }).default({});
 
@@ -363,6 +370,9 @@ export const ProjectDataV3Schema = z.object({
   featureFlags: FeatureFlagsSchema.default(DEFAULT_FEATURE_FLAGS),
 
   trackerConfig: TrackerConfigSchema.nullable().optional(),
+  // Manual foundation depth imported from another site remains explicitly pending
+  // until the user confirms or discards it for the current physical location.
+  pendingImportedEmbedmentDepthM: z.number().nonnegative().nullable().optional(),
 
   // Traceability & Metadata (Z-06)
   traceId: z.string().optional(),
@@ -620,6 +630,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
 
     featureFlags,
     trackerConfig: raw.trackerConfig !== undefined ? raw.trackerConfig : null, // BUG-2: persist (null = fixed tilt)
+    pendingImportedEmbedmentDepthM: raw.pendingImportedEmbedmentDepthM,
     traceId: raw.traceId || traceId,
     provenance: raw.provenance && typeof raw.provenance === 'object' ? raw.provenance : undefined,
     metadata: raw.metadata && typeof raw.metadata === 'object' ? raw.metadata : undefined,

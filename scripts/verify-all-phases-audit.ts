@@ -10,6 +10,7 @@ import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvid
 import { SoilDataProvider } from '../src/engine/dataGateway/soilDataProvider';
 import { StructuralHazardProvider } from '../src/engine/dataGateway/structuralHazardProvider';
 import { CatalogRepository } from '../src/engine/catalogRepository';
+import { createDefaultProjectV3 } from '../src/engine/core/projectMigration';
 import {
   formatCoordinates,
   formatLatitude,
@@ -33,6 +34,7 @@ import {
 import {
   createProjectTransferEnvelope,
   restoreProjectTransferEnvelope,
+  commitRestoredCustomEquipment,
   convertCurrency,
   formatCurrencyAmount,
   formatLocalizedEngineeringUnit,
@@ -321,12 +323,67 @@ async function runAllPhaseVerifications(): Promise<void> {
   check('OFF-01: Envelope embeds snapshot of custom equipment',
     envelope.customEquipmentSnapshots.modules.some((m: any) => m.id === customModId));
 
-  // OFF-02: Deterministic Restoration & Migration
+  // OFF-02: Pure stage first; catalog changes only after explicit caller acceptance.
+  repo.deleteCustomModule(customModId);
+  const invalidEquipmentEnvelope = structuredClone(envelope) as any;
+  invalidEquipmentEnvelope.customEquipmentSnapshots.modules[0] = {
+    ...invalidEquipmentEnvelope.customEquipmentSnapshots.modules[0],
+    vmpVolts: invalidEquipmentEnvelope.customEquipmentSnapshots.modules[0].vocVolts,
+  };
+  const invalidEquipmentRestore = restoreProjectTransferEnvelope(invalidEquipmentEnvelope);
+  check('OFF-02: Physically invalid staged equipment is BLOCKED during validation',
+    !invalidEquipmentRestore.success && invalidEquipmentRestore.migrationStatus === 'BLOCKED_INCONSISTENT');
+  check('OFF-02: Blocked equipment validation leaves catalog unchanged',
+    !repo.getModuleById(customModId));
+
   const restoreRes = restoreProjectTransferEnvelope(envelope);
-  check('OFF-02: restoreProjectTransferEnvelope successfully restores project',
+  check('OFF-02: restoreProjectTransferEnvelope stages a valid project without failing',
     restoreRes.success);
-  check('OFF-02: Restores custom equipment into repository upon import',
-    restoreRes.restoredCustomEquipment.modulesCount >= 1);
+  check('OFF-02: Parsing/migration alone does not mutate the custom catalog',
+    !repo.getModuleById(customModId));
+  check('OFF-02: Imported report metadata survives envelope restoration',
+    restoreRes.metadata.docId === 'DOC-AUDIT-2026' && restoreRes.metadata.leadEngineer === 'Chief PV Engineer');
+  const pendingDepthEnvelope = structuredClone(envelope) as any;
+  pendingDepthEnvelope.projectData = { ...createDefaultProjectV3(), pendingImportedEmbedmentDepthM: 1.25 };
+  const pendingDepthRestore = restoreProjectTransferEnvelope(pendingDepthEnvelope);
+  check('OFF-02: Pending manual embedment survives project migration for later user confirmation',
+    pendingDepthRestore.project.pendingImportedEmbedmentDepthM === 1.25,
+    `status=${pendingDepthRestore.migrationStatus}, value=${String(pendingDepthRestore.project.pendingImportedEmbedmentDepthM)}, warnings=${pendingDepthRestore.warnings.join(' | ')}`);
+  const originalWindow = (globalThis as any).window;
+  const failedStorageData = new Map<string, string>();
+  let setAttempts = 0;
+  (globalThis as any).window = {
+    localStorage: {
+      getItem: (key: string) => failedStorageData.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        setAttempts++;
+        if (setAttempts === 2) throw new Error('simulated quota failure');
+        failedStorageData.set(key, value);
+      },
+      removeItem: (key: string) => { failedStorageData.delete(key); },
+    },
+  };
+  const failedStorageCommit = commitRestoredCustomEquipment(restoreRes);
+  if (originalWindow === undefined) delete (globalThis as any).window;
+  else (globalThis as any).window = originalWindow;
+  check('OFF-02: Storage failure rolls back staged equipment without changing memory or keys',
+    !failedStorageCommit.success && !repo.getModuleById(customModId) && failedStorageData.size === 0);
+
+  const equipmentCommit = commitRestoredCustomEquipment(restoreRes);
+  check('OFF-02: Confirmed batch commit restores staged custom equipment',
+    equipmentCommit.success && equipmentCommit.counts.modules >= 1 && Boolean(repo.getModuleById(customModId)));
+
+  const committedModule = repo.getModuleById(customModId)!;
+  const conflictingEnvelope = structuredClone(envelope) as any;
+  conflictingEnvelope.customEquipmentSnapshots.modules[0] = {
+    ...conflictingEnvelope.customEquipmentSnapshots.modules[0],
+    modelName: `${conflictingEnvelope.customEquipmentSnapshots.modules[0].modelName} conflict`,
+  };
+  const conflictingRestore = restoreProjectTransferEnvelope(conflictingEnvelope);
+  check('OFF-02: Conflicting existing equipment IDs block import instead of overwriting catalog data',
+    !conflictingRestore.success && conflictingRestore.migrationStatus === 'BLOCKED_INCONSISTENT' &&
+      repo.getModuleById(customModId)?.modelName === committedModule.modelName);
+  repo.deleteCustomModule(customModId);
 
   // OFF-04: Multi-Currency & Locale Support
   const costUsd = 100000;

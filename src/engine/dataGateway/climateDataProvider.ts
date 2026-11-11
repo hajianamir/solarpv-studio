@@ -24,6 +24,11 @@ import {
 } from './types';
 import { CircuitBreaker } from './circuitBreaker';
 import { isRealInternetEnabled } from '../env/runtimeEnv';
+import { combineProviderSignals, fetchProvider } from './providerRequestLimiter';
+
+/** External provider budget. NASA POWER climatology routinely takes 5–15 s. */
+const PROVIDER_TIMEOUT_MS = 12000;
+const OSM_TIMEOUT_MS = 5000;
 
 interface ClimateCacheEntry {
   data: ClimateResourceData;
@@ -70,8 +75,13 @@ export class ClimateDataProvider {
   public async fetchClimateResource(
     lat: number,
     lng: number,
-    options?: { forceAnalytical?: boolean; bypassCache?: boolean; policy?: DataFetchPolicy }
+    options?: { forceAnalytical?: boolean; bypassCache?: boolean; policy?: DataFetchPolicy; signal?: AbortSignal }
   ): Promise<ClimateResourceData> {
+    if (options?.signal?.aborted) {
+      const error = new Error('Climate provider request aborted by caller');
+      error.name = 'AbortError';
+      throw error;
+    }
     const realInternet = isRealInternetEnabled();
     const requestedPolicy = options?.policy;
 
@@ -88,22 +98,25 @@ export class ClimateDataProvider {
       policy = requestedPolicy ?? 'prefer_remote';
     }
 
-    const cacheKey = `clim_${lat.toFixed(3)}_${lng.toFixed(3)}`;
+    const cacheKey = `clim_${lat}_${lng}`;
 
     // Policy-aware Cache Lookup (Checked before any network action)
     if (!options?.bypassCache) {
       const cached = this.cache.get(cacheKey);
       if (cached && (Date.now() - cached.timestamp) < cached.ttlMs) {
         if (policy === 'analytical_only') {
-          return {
-            ...cached.data,
-            metadata: {
-              ...cached.data.metadata,
-              isCached: true,
-              cacheStatus: 'hit',
-              fetchPolicy: policy,
-            },
-          };
+          // Analytical policy must ONLY return cached analytical/estimated responses, NEVER remote responses!
+          if (cached.isEstimated) {
+            return {
+              ...cached.data,
+              metadata: {
+                ...cached.data.metadata,
+                isCached: true,
+                cacheStatus: 'hit',
+                fetchPolicy: policy,
+              },
+            };
+          }
         }
         if (policy === 'remote_required') {
           // Analytical cached results are NOT eligible for remote_required
@@ -147,7 +160,10 @@ export class ClimateDataProvider {
       }
     }
 
-    if (policy === 'analytical_only') {
+    if (policy === 'analytical_only' || !realInternet) {
+      if (policy === 'remote_required' && !realInternet) {
+        throw new Error('remote_required failed: Internet connection is disabled or unavailable and policy is remote_required');
+      }
       const analyticalResult = this.computeAnalyticalClimateResource(lat, lng, true);
       analyticalResult.metadata.fetchPolicy = policy;
       analyticalResult.metadata.cacheStatus = options?.bypassCache ? 'bypassed' : 'miss';
@@ -168,16 +184,22 @@ export class ClimateDataProvider {
     const executeRemoteChain = async (): Promise<ClimateResourceData> => {
       const pBreaker = primaryProvider === 'PVGIS' ? this.pvgisBreaker : this.nasaBreaker;
       const sBreaker = primaryProvider === 'PVGIS' ? this.nasaBreaker : this.pvgisBreaker;
-      const pFetch = primaryProvider === 'PVGIS' ? () => this.fetchPvgisResource(lat, lng) : () => this.fetchNasaPowerResource(lat, lng);
-      const sFetch = primaryProvider === 'PVGIS' ? () => this.fetchNasaPowerResource(lat, lng) : () => this.fetchPvgisResource(lat, lng);
+      const pFetch = primaryProvider === 'PVGIS'
+        ? () => this.fetchPvgisResource(lat, lng, { signal: options?.signal })
+        : () => this.fetchNasaPowerResource(lat, lng, { signal: options?.signal });
+      const sFetch = primaryProvider === 'PVGIS'
+        ? () => this.fetchNasaPowerResource(lat, lng, { signal: options?.signal })
+        : () => this.fetchPvgisResource(lat, lng, { signal: options?.signal });
 
       try {
         return await pBreaker.execute(pFetch);
       } catch (pErr) {
+        if (options?.signal?.aborted) throw pErr;
         // Failover to secondary provider
         try {
           return await sBreaker.execute(sFetch);
         } catch (sErr) {
+          if (options?.signal?.aborted) throw sErr;
           throw new Error(
             `All remote providers failed. Primary (${primaryProvider}): ${(pErr as Error).message}; Secondary: ${(sErr as Error).message}`
           );
@@ -202,6 +224,7 @@ export class ClimateDataProvider {
         });
         return remoteData;
       } catch (remoteErr) {
+        if (options?.signal?.aborted || (remoteErr as Error)?.name === 'AbortError') throw remoteErr;
         throw new Error(`remote_required failed: ${(remoteErr as Error).message}`);
       }
     }
@@ -219,9 +242,24 @@ export class ClimateDataProvider {
         policy,
       });
       return remoteData;
-    } catch {
+    } catch (err) {
+      if (options?.signal?.aborted || (err as Error)?.name === 'AbortError') {
+        throw err;
+      }
       // Graceful fallback to regional analytical model with explicit estimated provenance
+      const isZeroIrradiance = (err as Error)?.message?.includes('zero annual horizontal irradiance');
       const fallbackResult = this.computeAnalyticalClimateResource(lat, lng, true);
+      if (isZeroIrradiance) {
+        fallbackResult.peakSunHours = 0;
+        fallbackResult.dniKwhM2Day = 0;
+        fallbackResult.dhiKwhM2Day = 0;
+        fallbackResult.fieldProvenance.peakSunHours = createParameterProvenance('provider_derived', 'PVGIS', {
+          sourceDataset: 'PVGIS 5.2 SARAH-2',
+          unit: 'kWh/m²/day',
+          value: 0,
+          qualityNote: 'PVGIS horizontal irradiance is 0 kWh/m²/day (system unsizable: perpetual darkness / polar night)',
+        });
+      }
       fallbackResult.metadata.fetchPolicy = policy;
       fallbackResult.metadata.cacheStatus = options?.bypassCache ? 'bypassed' : 'miss';
       fallbackResult.metadata.circuitBreakerStatus =
@@ -240,22 +278,31 @@ export class ClimateDataProvider {
   /**
    * Real HTTP Query to NASA POWER Climatology API (Free, no API key required)
    */
-  public async fetchNasaPowerResource(lat: number, lng: number): Promise<ClimateResourceData> {
+  public async fetchNasaPowerResource(lat: number, lng: number, options?: { signal?: AbortSignal }): Promise<ClimateResourceData> {
     const url = `https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=ALLSKY_SFC_SW_DWN,T2M,T2M_MIN,T2M_MAX,WS10M,PRECTOTCORR&community=RE&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&format=JSON`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(new Error('provider timeout')), PROVIDER_TIMEOUT_MS);
+    const signal = combineProviderSignals(options?.signal, controller.signal);
 
     try {
-      const resp = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
+      const resp = await fetchProvider('nasa_power', url, { signal });
       if (!resp.ok) {
         throw new Error(`NASA POWER HTTP ${resp.status}`);
       }
       const data = await resp.json();
       return this.parseNasaPowerResponse(lat, lng, data);
     } catch (err) {
-      clearTimeout(timeout);
+      if (options?.signal?.aborted) {
+        const abortError = new Error('NASA POWER request aborted by caller');
+        abortError.name = 'AbortError';
+        throw abortError;
+      }
+      if ((err as Error)?.name === 'AbortError') {
+        throw new Error(`NASA POWER timeout after ${PROVIDER_TIMEOUT_MS} ms`);
+      }
       throw err;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -465,88 +512,228 @@ export class ClimateDataProvider {
   }
 
   /**
-   * Real HTTP Query to PVGIS 5.3 EU Science Hub API (Free, no API key required)
+   * Real HTTP Query to PVGIS 5.2 EU Science Hub API (Free, no API key required)
    */
-  public async fetchPvgisResource(lat: number, lng: number): Promise<ClimateResourceData> {
-    const url = `https://re.jrc.ec.europa.eu/api/v5_2/MRcalc?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}&horirrad=1&outputformat=json`;
+  public async fetchPvgisResource(lat: number, lng: number, options?: { signal?: AbortSignal }): Promise<ClimateResourceData> {
+    const url = `https://re.jrc.ec.europa.eu/api/v5_2/MRcalc?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}&horirrad=1&avtemp=1&outputformat=json`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(new Error('provider timeout')), PROVIDER_TIMEOUT_MS);
+    const signal = combineProviderSignals(options?.signal, controller.signal);
 
     try {
-      const resp = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
+      const resp = await fetchProvider('pvgis', url, { signal });
       if (!resp.ok) {
         throw new Error(`PVGIS HTTP ${resp.status}`);
       }
       const data = await resp.json();
       return this.parsePvgisResponse(lat, lng, data);
     } catch (err) {
-      clearTimeout(timeout);
+      if (options?.signal?.aborted) {
+        const abortError = new Error('PVGIS request aborted by caller');
+        abortError.name = 'AbortError';
+        throw abortError;
+      }
+      if ((err as Error)?.name === 'AbortError') {
+        throw new Error(`PVGIS timeout after ${PROVIDER_TIMEOUT_MS} ms`);
+      }
       throw err;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
-  private parsePvgisResponse(lat: number, lng: number, json: any): ClimateResourceData {
+  public parsePvgisResponse(lat: number, lng: number, json: any): ClimateResourceData {
     const monthly = json?.outputs?.monthly;
-    if (!Array.isArray(monthly) || monthly.length !== 12) {
-      throw new Error(`PVGIS response missing complete 12-month irradiance outputs (got ${Array.isArray(monthly) ? monthly.length : 0} months)`);
+    if (!Array.isArray(monthly) || monthly.length < 12) {
+      throw new Error(`PVGIS response missing complete annual irradiance series (got ${Array.isArray(monthly) ? monthly.length : 0} months, minimum 12 required)`);
     }
-    let annualKwh = 0;
+
+    // A complete climatological annual series must represent full 12-month cycles
+    if (monthly.length % 12 !== 0) {
+      throw new Error(`PVGIS response contains incomplete year cycle (${monthly.length} months, must be a multiple of 12)`);
+    }
+
+    // Check completeness of calendar years:
+    // If records carry 'year', each calendar year present must have all 12 calendar months (1..12).
+    // If records do not carry 'year' (climatology averages), there must be months 1..12 without missing months.
+    const monthsByYear = new Map<number | 'climatology', Set<number>>();
+    for (const m of monthly) {
+      const yr = m && typeof m === 'object' && m.year !== undefined && m.year !== null ? m.year : 'climatology';
+      if (!monthsByYear.has(yr)) {
+        monthsByYear.set(yr, new Set());
+      }
+      if (typeof m?.month === 'number') {
+        const set = monthsByYear.get(yr)!;
+        if (set.has(m.month)) {
+          throw new Error(`PVGIS response contains duplicate month record: year ${yr === 'climatology' ? 'N/A' : yr}, month ${m.month}`);
+        }
+        set.add(m.month);
+      }
+    }
+
+    for (const [yr, months] of monthsByYear.entries()) {
+      if (months.size < 12) {
+        throw new Error(
+          `PVGIS response contains incomplete calendar year: ${yr === 'climatology' ? 'Climatological series' : `Year ${yr}`} has only ${months.size} months (complete 12-month calendar year required, months 1-12)`
+        );
+      }
+      for (let m = 1; m <= 12; m++) {
+        if (!months.has(m)) {
+          throw new Error(
+            `PVGIS response missing month ${m} in ${yr === 'climatology' ? 'climatological series' : `year ${yr}`}`
+          );
+        }
+      }
+    }
+
+    const getDaysInMonth = (year: number | undefined, month: number): number => {
+      if (month === 2) {
+        if (year !== undefined) {
+          const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+          return isLeap ? 29 : 28;
+        }
+        return 28.25;
+      }
+      const days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      return days[month - 1];
+    };
+
+    let totalIrradiationKwh = 0;
+    let totalDays = 0;
+    let sumWeightedTemp = 0;
+    let totalTempDays = 0;
+    let tempCount = 0;
+    const seenYearMonths = new Set<string>();
+
     for (let i = 0; i < monthly.length; i++) {
       const m = monthly[i];
-      const hMonth = m?.['H(h)_m'];
-      if (typeof hMonth !== 'number' || !Number.isFinite(hMonth) || hMonth <= 0 || hMonth > 450) {
-        throw new Error(`PVGIS response contains invalid monthly irradiance in month ${i + 1} (got ${hMonth})`);
+      if (!m || typeof m !== 'object') {
+        throw new Error(`PVGIS response contains malformed record at index ${i}`);
       }
-      annualKwh += hMonth;
+
+      const month = m.month;
+      if (typeof month !== 'number' || !Number.isInteger(month) || month < 1 || month > 12) {
+        throw new Error(`PVGIS response contains invalid month at index ${i} (got ${month})`);
+      }
+
+      const rawYear = m.year;
+      let year: number | undefined = undefined;
+      if (rawYear !== undefined && rawYear !== null) {
+        if (typeof rawYear !== 'number' || !Number.isInteger(rawYear) || rawYear < 1950 || rawYear > 2100) {
+          throw new Error(`PVGIS response contains invalid year at index ${i} (got ${rawYear})`);
+        }
+        year = rawYear;
+      }
+
+      const key = `${year ?? 'any'}_${month}`;
+      if (seenYearMonths.has(key)) {
+        throw new Error(`PVGIS response contains duplicate month record: year ${year ?? 'N/A'}, month ${month}`);
+      }
+      seenYearMonths.add(key);
+
+      const hMonth = m['H(h)_m'];
+      // Accept valid physical zero (e.g. polar winter) up to extreme physical maximum (500 kWh/m2/month)
+      if (typeof hMonth !== 'number' || !Number.isFinite(hMonth) || hMonth < 0 || hMonth > 500) {
+        throw new Error(`PVGIS response contains invalid monthly irradiance in month ${month} (got ${hMonth})`);
+      }
+
+      const days = getDaysInMonth(year, month);
+      totalIrradiationKwh += hMonth;
+      totalDays += days;
+
+      const t2m = m['T2m'] ?? m['T_2m'];
+      if (typeof t2m === 'number' && Number.isFinite(t2m) && t2m >= -70 && t2m <= 65) {
+        sumWeightedTemp += t2m * days;
+        totalTempDays += days;
+        tempCount++;
+      }
     }
-    const psh = Number((annualKwh / 365).toFixed(2));
+
+    if (totalDays < 365) {
+      throw new Error(`PVGIS response covers fewer than 365 days (${totalDays} days), cannot represent annual climatology`);
+    }
+
+    if (totalIrradiationKwh <= 0) {
+      throw new Error('PVGIS response yielded zero annual horizontal irradiance; falling back to regional analytical model');
+    }
+
+    const psh = Number((totalIrradiationKwh / totalDays).toFixed(2));
+    if (!Number.isFinite(psh) || psh <= 0) {
+      throw new Error(`PVGIS response produced non-physical daily PSH (${psh})`);
+    }
     const absLat = Math.abs(lat);
     const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
-    const estimatedMeanTempC = absLat > 45 ? 10.5 : 22.0;
+
+    const hasCompleteTemp = tempCount === monthly.length && totalTempDays > 0;
+    const hasPartialTemp = tempCount > 0 && tempCount < monthly.length;
+    const hasProviderTemp = hasCompleteTemp || hasPartialTemp;
+    const providerMeanTemp = totalTempDays > 0 ? Number((sumWeightedTemp / totalTempDays).toFixed(1)) : null;
+    const estimatedMeanTempC = providerMeanTemp ?? (absLat > 45 ? 10.5 : 22.0);
     const tMin = absLat > 45 ? -15 : 2;
     const tMax = absLat > 45 ? 32 : 40;
     const dniVal = Number((psh * 0.70).toFixed(2));
     const dhiVal = Number((psh * 0.30).toFixed(2));
     const soilingVal = absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0;
 
+    let tempProv: ParameterProvenance;
+    if (hasCompleteTemp) {
+      tempProv = createParameterProvenance('provider_derived', 'PVGIS', {
+        sourceDataset: 'PVGIS 5.2 (T2m)',
+        unit: '°C',
+        value: estimatedMeanTempC,
+        derivationMethod: `Weighted average from ${tempCount} monthly T2m values / ${totalTempDays} days`,
+      });
+    } else if (hasPartialTemp) {
+      tempProv = createParameterProvenance('provider_derived', 'PVGIS', {
+        sourceDataset: 'PVGIS 5.2 (T2m)',
+        unit: '°C',
+        value: estimatedMeanTempC,
+        derivationMethod: `Weighted average from partial temperature data: ${tempCount} of ${monthly.length} months (${totalTempDays} days)`,
+        qualityNote: `پوشش دمای PVGIS ناقص است (${tempCount} ماه از ${monthly.length} ماه موجود بود)؛ میانگین ماهانه دمای حدی طراحی نیست`,
+      });
+    } else {
+      tempProv = createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+        unit: '°C',
+        value: estimatedMeanTempC,
+        derivationMethod: 'Regional latitude temperature model (PVGIS MRcalc did not provide temperature)',
+        qualityNote: 'PVGIS دمای هوا برنمی‌گرداند؛ برآورد مدل تحلیلی اقلیمی است',
+      });
+    }
+
     const fieldProvenance: Record<string, ParameterProvenance> = {
       peakSunHours: createParameterProvenance('provider_derived', 'PVGIS', {
-        sourceDataset: 'PVGIS 5.3 SARAH-2 / ERA5',
-        sourceParameter: 'H(h)_m annual sum / 365',
+        sourceDataset: 'PVGIS 5.2 SARAH-2 / ERA5',
+        sourceParameter: `H(h)_m sum (${monthly.length} months) / ${totalDays} days`,
         unit: 'kWh/m²/day',
         value: psh,
-        derivationMethod: 'Derived from sum of 12 monthly horizontal irradiation values / 365',
+        derivationMethod: `Derived from sum of ${monthly.length} monthly horizontal irradiation values / ${totalDays} days`,
       }),
       dniKwhM2Day: createParameterProvenance('provider_derived', 'PVGIS', {
-        sourceDataset: 'PVGIS 5.3',
+        sourceDataset: 'PVGIS 5.2',
         sourceParameter: 'H(h)_m',
         unit: 'kWh/m²/day',
         value: dniVal,
         derivationMethod: 'Direct partition proxy: GHI × 0.70',
       }),
       dhiKwhM2Day: createParameterProvenance('provider_derived', 'PVGIS', {
-        sourceDataset: 'PVGIS 5.3',
+        sourceDataset: 'PVGIS 5.2',
         sourceParameter: 'H(h)_m',
         unit: 'kWh/m²/day',
         value: dhiVal,
         derivationMethod: 'Diffuse partition proxy: GHI × 0.30',
       }),
-      tempAnnualMeanC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
-        unit: '°C',
-        value: estimatedMeanTempC,
-        derivationMethod: 'Regional latitude temperature model (PVGIS MRcalc does not provide temperature)',
-        qualityNote: 'PVGIS MRcalc دمای هوا برنمی‌گرداند؛ برآورد مدل تحلیلی اقلیمی است',
-      }),
+      tempAnnualMeanC: tempProv,
       tempMinC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: '°C',
         value: tMin,
-        derivationMethod: 'Regional latitude temperature model',
+        derivationMethod: 'Regional latitude extreme temperature model (Not from monthly average)',
+        qualityNote: 'میانگین ماهانه دمای حدی طراحی نیست؛ نیازمند داده‌های حدی ایستگاه هواشناسی یا آیین‌نامه محلی',
       }),
       tempMaxC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: '°C',
         value: tMax,
-        derivationMethod: 'Regional latitude temperature model',
+        derivationMethod: 'Regional latitude extreme temperature model (Not from monthly average)',
+        qualityNote: 'میانگین ماهانه دمای حدی طراحی نیست؛ نیازمند داده‌های حدی ایستگاه هواشناسی یا آیین‌نامه محلی',
       }),
       albedo: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: 'dimensionless',
@@ -582,10 +769,10 @@ export class ClimateDataProvider {
     };
 
     const provenance = {
-      peakSunHours: createEngineeringDatum(psh, 'available', 'PVGIS', 'satellite_reanalysis', 3.0, 'PVGIS 5.3 monthly horizontal irradiance H(h)_m sum', 'kWh/m²/day'),
+      peakSunHours: createEngineeringDatum(psh, 'available', 'PVGIS', 'satellite_reanalysis', 3.0, `PVGIS 5.2 monthly horizontal irradiance H(h)_m sum (${monthly.length} mo, ${totalDays} days)`, 'kWh/m²/day'),
       dniKwhM2Day: createEngineeringDatum(dniVal, 'estimated', 'PVGIS', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
       dhiKwhM2Day: createEngineeringDatum(dhiVal, 'estimated', 'PVGIS', 'analytical_model', 8.0, 'Derived from GHI using standard partition', 'kWh/m²/day'),
-      tempAnnualMeanC: createEngineeringDatum(estimatedMeanTempC, 'estimated', 'PVGIS', 'rule_of_thumb_screening', 15.0, 'Regional latitude-based estimate (PVGIS MRcalc does not return temperature)', '°C'),
+      tempAnnualMeanC: createEngineeringDatum(estimatedMeanTempC, hasProviderTemp ? 'available' : 'estimated', 'PVGIS', hasProviderTemp ? 'satellite_reanalysis' : 'rule_of_thumb_screening', 15.0, hasProviderTemp ? 'PVGIS 5.2 2m temperature' : 'Regional latitude-based estimate', '°C'),
     };
 
     return {
@@ -607,9 +794,9 @@ export class ClimateDataProvider {
         sourceProvider: 'PVGIS',
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
-        isEstimatedFromGlobalModel: true, // Mark true because temperature and precipitation are local estimates!
-        geographicRegion: 'PVGIS 5.3 SARAH-2 / ERA5',
-        governingStandards: ['PVGIS v5.3 (European Commission JRC)', 'IEC 61724-1 Class A'],
+        isEstimatedFromGlobalModel: !hasProviderTemp,
+        geographicRegion: 'PVGIS 5.2 SARAH-2 / ERA5',
+        governingStandards: ['PVGIS v5.2 (European Commission JRC)', 'IEC 61724-1 Class A'],
       },
       fieldProvenance,
       provenance,
@@ -621,14 +808,22 @@ export class ClimateDataProvider {
    * human-readable city/place name (e.g. "München, Bavaria, Germany").
    * Falls back to generic "Coordinates Site" when the API is unreachable.
    */
-  public async reverseGeocodeNominatim(lat: number, lng: number): Promise<string> {
+  public async reverseGeocodeNominatim(lat: number, lng: number, options?: { signal?: AbortSignal }): Promise<string> {
+    if (!isRealInternetEnabled()) {
+      return `Coordinates Site (${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(2)}°${lng >= 0 ? 'E' : 'W'})`;
+    }
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}&zoom=10&accept-language=fa+en`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(new Error('Nominatim timeout')), OSM_TIMEOUT_MS);
+    const signal = combineProviderSignals(options?.signal, controller.signal);
 
     try {
-      const resp = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
+      const resp = await fetchProvider('nominatim', url, {
+        signal,
+        headers: {
+          'User-Agent': 'SolarPV-Studio/3.0 (https://github.com/hajianamir/solarpv-studio; engineering-compliance)',
+        },
+      }, { minIntervalMs: 1050 });
       if (!resp.ok) {
         throw new Error(`Nominatim HTTP ${resp.status}`);
       }
@@ -636,9 +831,11 @@ export class ClimateDataProvider {
       const name = data?.address?.city || data?.address?.town || data?.address?.village || data?.display_name;
       if (name) return String(name);
       throw new Error('Nominatim returned no place name');
-    } catch {
-      clearTimeout(timeout);
+    } catch (error) {
+      if (options?.signal?.aborted) throw error;
       return `Coordinates Site (${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(2)}°${lng >= 0 ? 'E' : 'W'})`;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -647,15 +844,20 @@ export class ClimateDataProvider {
    * to candidate coordinates (city search / autocomplete). Falls back to an empty
    * list when the API is unreachable (offline/sandbox environments).
    */
-  public async forwardGeocodeNominatim(query: string): Promise<Array<{ lat: number; lon: number; display_name: string; type: string }>> {
-    if (!query.trim()) return [];
+  public async forwardGeocodeNominatim(query: string, options?: { signal?: AbortSignal }): Promise<Array<{ lat: number; lon: number; display_name: string; type: string }>> {
+    if (!isRealInternetEnabled() || !query.trim()) return [];
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=5&accept-language=fa+en`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(new Error('Nominatim timeout')), OSM_TIMEOUT_MS);
+    const signal = combineProviderSignals(options?.signal, controller.signal);
 
     try {
-      const resp = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
+      const resp = await fetchProvider('nominatim', url, {
+        signal,
+        headers: {
+          'User-Agent': 'SolarPV-Studio/3.0 (https://github.com/hajianamir/solarpv-studio; engineering-compliance)',
+        },
+      }, { minIntervalMs: 1050 });
       if (!resp.ok) throw new Error(`Nominatim HTTP ${resp.status}`);
       const data = await resp.json();
       if (!Array.isArray(data)) return [];
@@ -665,9 +867,11 @@ export class ClimateDataProvider {
         display_name: String(item.display_name ?? item.lat + ', ' + item.lon),
         type: String(item.type ?? 'place'),
       }));
-    } catch {
-      clearTimeout(timeout);
+    } catch (error) {
+      if (options?.signal?.aborted) throw error;
       return [];
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -686,15 +890,22 @@ export class ClimateDataProvider {
     source: string;
   }> {
     const traceId = this.generateTraceId('TRC-GW');
+    if (!isRealInternetEnabled()) {
+      return {
+        buildingCount: 0,
+        footprints: [],
+        traceId,
+        source: 'OpenStreetMap Overpass API (Offline Mode)',
+      };
+    }
     const query = `[out:json][timeout:5];way["building"](around:${radiusM},${lat.toFixed(5)},${lng.toFixed(5)});out geom;`;
     const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     try {
-      const resp = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
+      const resp = await fetchProvider('overpass', url, { signal: controller.signal });
       if (!resp.ok) {
         throw new Error(`Overpass HTTP ${resp.status}`);
       }
@@ -713,7 +924,6 @@ export class ClimateDataProvider {
         source: 'OpenStreetMap Overpass API (Free)',
       };
     } catch {
-      clearTimeout(timeout);
       // Graceful empty fallback
       return {
         buildingCount: 0,
@@ -721,6 +931,8 @@ export class ClimateDataProvider {
         traceId,
         source: 'OpenStreetMap Overpass API (Fallback)',
       };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -734,36 +946,68 @@ export class ClimateDataProvider {
     const absLat = Math.abs(lat);
     const isSouth = lat < 0;
 
-    let psh = 5.2;
-    if (absLat < 20) {
-      psh = 5.9;
-    } else if (absLat < 35) {
-      psh = (lng > 40 && lng < 60) ? 6.2 : 5.8;
-    } else if (absLat < 50) {
-      psh = 4.3;
+    const isEurope = lat >= 35 && lat <= 70 && lng >= -10 && lng <= 40;
+    const isNorthAmerica = lat >= 15 && lat <= 70 && lng >= -160 && lng <= -50;
+    const isMENA = lat >= 12 && lat <= 42 && lng >= -15 && lng <= 65;
+    const isEastAsia = lat >= 10 && lat <= 55 && lng >= 70 && lng <= 145;
+    const isAustralia = lat >= -45 && lat <= -10 && lng >= 110 && lng <= 155;
+    const isSouthAmerica = lat <= 12 && lat >= -55 && lng >= -85 && lng <= -35;
+
+    let basePsh = 5.0;
+    if (absLat < 15.0) {
+      basePsh = 5.6 - absLat * 0.02;
+    } else if (absLat < 35.0) {
+      basePsh = isMENA ? 5.85 + (30 - Math.abs(absLat - 28)) * 0.03 : 5.6;
+      if (isSouthAmerica && absLat >= 18 && absLat <= 26 && lng >= -72 && lng <= -66) {
+        basePsh = 7.2;
+      }
+    } else if (absLat < 50.0) {
+      basePsh = isEurope ? 3.8 + (50 - absLat) * 0.05 : 4.6 + (50 - absLat) * 0.04;
     } else {
-      psh = Math.max(2.4, 3.8 - (absLat - 50) * 0.07);
+      basePsh = Math.max(1.8, 3.8 - (absLat - 50.0) * 0.07);
     }
+    const psh = Number(basePsh.toFixed(2));
 
     const dni = Number((psh * 0.72).toFixed(2));
     const dhi = Number((psh * 0.28).toFixed(2));
-    const optTilt = Math.max(10, Math.min(60, Math.round(absLat * 0.88)));
+    const optTilt = Math.max(8, Math.min(65, Math.round(absLat * 0.88)));
 
-    let tMin = -8.0;
+    let tMin = -5.0;
     let tMax = 38.0;
-    if (absLat > 45) {
-      tMin = -18.0;
+    if (absLat > 50.0) {
+      tMin = -22.0 - (absLat - 50.0) * 0.5;
       tMax = 32.0;
-    } else if (absLat < 25) {
-      tMin = 14.0;
-      tMax = 44.0;
+    } else if (absLat > 35.0) {
+      tMin = isEurope ? -12.0 : -15.0;
+      tMax = isEurope ? 36.0 : 39.0;
+    } else if (absLat < 20.0) {
+      tMin = 18.0;
+      tMax = 38.0;
+    } else if (isMENA) {
+      tMin = absLat > 32 ? -6.0 : 4.0;
+      tMax = 46.0;
     }
 
-    const region = absLat < 23.5 ? 'Tropical Belt' : isSouth ? 'Southern Temperate Zone' : 'Northern Temperate Zone';
-    const precipMm = absLat > 40 ? 800 : 250;
+    const region = isEurope
+      ? 'Europe (CEN / Eurocode Zone)'
+      : isNorthAmerica
+      ? 'North America (ASCE 7 Zone)'
+      : isMENA
+      ? 'Middle East & North Africa (MENA / INBC Zone)'
+      : isEastAsia
+      ? 'East Asia (GB / JIS Zone)'
+      : isAustralia
+      ? 'Australia (AS/NZS Zone)'
+      : isSouthAmerica
+      ? 'South America Zone'
+      : isSouth
+      ? 'Southern Hemisphere Global Zone'
+      : 'Northern Hemisphere Global Zone';
+
+    const precipMm = absLat > 45 ? 750 : isMENA ? 180 : 450;
     const tMean = Number(((tMin + tMax) / 2.0).toFixed(1));
-    const elevM = Math.round(Math.max(0, 450 + (35 - absLat) * 15));
-    const soilingVal = absLat < 35 && lng > 35 && lng < 65 ? 6.5 : 3.0;
+    const elevM = Math.round(Math.max(0, 450 + (35 - absLat) * 20));
+    const soilingVal = isMENA ? 5.5 : 3.0;
 
     const fieldProvenance: Record<string, ParameterProvenance> = {
       peakSunHours: createParameterProvenance('local_model', provider, {

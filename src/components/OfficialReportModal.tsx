@@ -54,10 +54,7 @@ import { type Simulation24hResult, type GeneratorSizingResult } from '../engine/
 import { type FinancialAnalysisResult } from '../engine/financialEngine';
 import { type PowerplantBayArchitectureResult } from '../engine/powerplantBayEngine';
 import { exportToWordDocument, exportToExcelWorkbook } from '../engine/reportingEngine';
-import {
-  createProjectTransferEnvelope,
-  restoreProjectTransferEnvelope,
-} from '../engine/offlineTransferEngine';
+import { createProjectTransferEnvelope } from '../engine/offlineTransferEngine';
 import { type FoundationType } from '../engine/structuralEngine';
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
 import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
@@ -65,6 +62,7 @@ import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 import { type StructuralSnapshot, exportStructuralSheetRows } from '../engine/core/structuralContract';
 import { formatCoordinates, calculateSolsticeSolarGeometry } from '../engine/geoCoordinates';
+import { buildProjectProvenanceSnapshot } from '../engine/provenance/projectProvenance';
 
 interface OfficialReportModalProps {
   projectName: string;
@@ -87,8 +85,10 @@ interface OfficialReportModalProps {
   appliedShading?: AppliedShading3dRecord | null;
   isShadingStale?: boolean;
   bifacialGainPct?: number;
+  reportMetadata?: Record<string, unknown>;
+  pendingImportedEmbedmentDepthM?: number | null;
   onClose: () => void;
-  onImportProject?: (projectData: any) => void;
+  onImportProject?: (projectData: unknown) => boolean | void;
   lang?: 'fa' | 'en';
 }
 
@@ -123,6 +123,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   appliedShading,
   isShadingStale = false,
   bifacialGainPct,
+  reportMetadata = {},
+  pendingImportedEmbedmentDepthM = null,
   onClose,
   onImportProject,
   lang: defaultLang = 'fa',
@@ -130,6 +132,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const [reportLang, setReportLang] = useState<'fa' | 'en'>(defaultLang);
   const isEn = reportLang === 'en';
   const effectiveCity = getEffectiveClimateCity(city, siteOverrides);
+  const dataProvenance = useMemo(
+    () => buildProjectProvenanceSnapshot(effectiveCity, siteOverrides),
+    [effectiveCity, siteOverrides]
+  );
 
   const isSnapshotValid = Boolean(
     structuralSnapshot && structuralSnapshot.isAvailable && !structuralSnapshot.isStale
@@ -186,13 +192,22 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const effectiveShadingLossPct = isAppliedShadingActive ? appliedShading!.lossPct : 2.4;
   const effectiveShadingDerate = Number((1.0 - effectiveShadingLossPct / 100).toFixed(4));
 
-  // Customization & Metadata State
-  const [docId, setDocId] = useState<string>('EPC-PV-2026-0891');
-  const [docVersion, setDocVersion] = useState<string>('Rev 2.4');
-  const [companyName, setCompanyName] = useState<string>('Solar Engineering & EPC Consortium');
-  const [leadEngineer, setLeadEngineer] = useState<string>('Senior PV Design Engineer, P.E.');
-  const [clientName, setClientName] = useState<string>('Renewable Energy Investor Corp.');
-  const [approvalStatus, setApprovalStatus] = useState<'Draft' | 'Under Review' | 'Approved' | 'As-Built'>('Approved');
+  // Customization & Metadata State. Imported values remain user-supplied; empty values
+  // stay empty rather than being replaced with fictional parties or approvals.
+  const metadataText = (key: string, fallback = '') => typeof reportMetadata[key] === 'string'
+    ? reportMetadata[key] as string
+    : fallback;
+  const metadataApproval = metadataText('approvalStatus', 'Draft');
+  const [docId, setDocId] = useState<string>(metadataText('docId'));
+  const [docVersion, setDocVersion] = useState<string>(metadataText('docVersion', 'Rev 1.0 (Draft)'));
+  const [companyName, setCompanyName] = useState<string>(metadataText('companyName'));
+  const [leadEngineer, setLeadEngineer] = useState<string>(metadataText('leadEngineer'));
+  const [clientName, setClientName] = useState<string>(metadataText('clientName'));
+  const [approvalStatus, setApprovalStatus] = useState<'Draft' | 'Under Review' | 'Approved' | 'As-Built'>(
+    ['Draft', 'Under Review', 'Approved', 'As-Built'].includes(metadataApproval)
+      ? metadataApproval as 'Draft' | 'Under Review' | 'Approved' | 'As-Built'
+      : 'Draft',
+  );
   const [detailLevel, setDetailLevel] = useState<'summary' | 'standard' | 'detailed'>('detailed');
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [customFileName, setCustomFileName] = useState<string>(
@@ -218,23 +233,26 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   // Custom Commentary Notes
   const [engineerNotes, setEngineerNotes] = useState<Record<string, string>>({
     summary: isEn
-      ? 'Preliminary system layout aligned with IEC 62548 engineering design guidelines for screening. Grid interconnection voltage coordinated with regional utility.'
-      : 'چیدمان اولیه سیستم بر اساس رهنمودهای طراحی استاندارد IEC 62548 جهت غربالگری مهندسی تنظیم گردیده و سطح ولتاژ اتصال با شبکه توزیع منطقه‌ای هماهنگ شده است.',
+      ? 'Preliminary engineering screening only. Verify assumptions and design inputs against project-specific evidence before issue.'
+      : 'صرفاً غربالگری مقدماتی مهندسی است. پیش از صدور، فرض‌ها و ورودی‌ها باید با شواهد مختص پروژه بررسی شوند.',
     climate: isEn
-      ? 'Geotechnical and wind data retrieved from official meteorological records and INBC Part 6 specifications.'
-      : 'داده‌های ژئوتکنیک و بار باد بر اساس استعلام رسمی مبحث ۶ مقررات ملی ساختمان و مرکز تحقیقات مسکن اخذ شده است.',
+      ? 'Climate and geotechnical values carry their recorded source and quality; no regulatory verification is implied unless documented per field.'
+      : 'منشأ و کیفیت هر مقدار باید جداگانه بررسی شود؛ این گزارش تأیید مقرراتی یا رسمی را القا نمی‌کند.',
     shading: isEn
-      ? 'Inter-row pitch distance configured for winter solstice screening window (10:00-14:00 true solar time).'
-      : 'فاصله بین‌ردیفی جهت پوشش پنجره غربالگری ظهر انقلاب زمستانی (۱۰ الی ۱۴ به وقت آفتابی) تنظیم شده است.',
+      ? 'Row-spacing configuration is a screening input; confirm the site survey, horizon and applicable design basis.'
+      : 'فاصله ردیف‌ها ورودی غربالگری است؛ برداشت سایت، افق و مبنای طراحی قابل اعمال را تأیید کنید.',
     electrical: isEn
-      ? 'Cable sizing incorporates multi-conductor parallel runs to limit voltage drop below 1.5% at nominal full load.'
-      : 'سایزینگ کابل‌ها به روش چند رشته موازی انجام شده تا افت ولتاژ در بار نامی کمتر از ۱.۵ درصد محدود گردد.',
+      ? 'Preliminary conductor schedule only; confirm ampacity, installation conditions and voltage drop for the as-built route.'
+      : 'جدول هادی‌ها مقدماتی است؛ ظرفیت جریان، شرایط نصب و افت ولتاژ مسیر نهایی را بررسی کنید.',
     structural: isEn
-      ? 'Hot-dip galvanized steel ramming piles sized with factor of safety FoS > 1.8 against wind overturning moments.'
-      : 'پایه‌های کوبشی فولادی گالوانیزه با ضریب اطمینان بیش از ۱.۸ در برابر لنگر واژگونی باد شدید طراحی شده‌اند.',
+      ? 'Foundation recommendation is not a stamped structural design; verify loads, soil evidence and required safety factors independently.'
+      : 'پیشنهاد فونداسیون نقشه سازه‌ای تأییدشده نیست؛ بارها، شواهد خاک و ضرایب اطمینان لازم باید مستقل بررسی شوند.',
     financial: isEn
-      ? 'Pro-forma cash flow incorporates 25-year feed-in tariff with inflation indexation and degradation derating.'
-      : 'جریان نقدینگی ۲۵ ساله بر مبنای تعرفه خرید تضمینی با اعمال نرخ تعدیل تورم و ضریب افت سالانه توان محاسبه شده است.',
+      ? 'Illustrative financial screening; tariff, escalation, degradation and financing assumptions require project-specific confirmation.'
+      : 'غربالگری مالی نمونه‌ای است؛ تعرفه، تورم، افت و فرض‌های تأمین مالی باید برای پروژه تأیید شوند.',
+    ...(reportMetadata.engineerNotes && typeof reportMetadata.engineerNotes === 'object'
+      ? reportMetadata.engineerNotes as Record<string, string>
+      : {}),
   });
 
   const reportContainerRef = useRef<HTMLDivElement>(null);
@@ -257,7 +275,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const handleExportExcel = () => {
     // Build structured sheets
     const summarySheet = [
-      ['SOLARPV STUDIO PRO — OFFICIAL EPC ENGINEERING REPORT', ''],
+      ['SOLARPV STUDIO PRO — PRELIMINARY SCREENING REPORT (NOT A COMPLIANCE CERTIFICATE)', ''],
       ['Project Title', projectName],
       ['Document ID', docId],
       ['Version / Revision', docVersion],
@@ -265,7 +283,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Date', new Date().toLocaleDateString()],
       ['Client Name', clientName],
       ['Lead Engineer', leadEngineer],
-      ['Approval Status', approvalStatus],
+      ['User-entered Approval Status (not authenticated)', approvalStatus],
       ['', ''],
       ['KEY PERFORMANCE INDICATORS', ''],
       ['Total PV Peak Capacity (kWp)', arrayDesign.totalPvCapacityKwp],
@@ -314,7 +332,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
         c.config.insulationType,
         isEn ? c.cableDesignationEn : c.cableDesignationFa,
         c.actualVoltageDropPct,
-        c.isCompliant ? 'PASS' : 'FAIL',
+        c.isCompliant ? 'INTERNAL SCREENING PASS (not compliance)' : 'INTERNAL SCREENING FAIL',
       ]),
     ];
 
@@ -333,11 +351,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
     const energySheet = [
       ['ENERGY YIELD SIMULATION & SENSITIVITY SCENARIOS (INDICATIVE)', ''],
-      ['Methodology Note', 'Primary annual yield metrics represent unified 14/15-stage waterfall loss modeling (IEC 61724-1 PR), supplemented by the 24h diurnal simulation profile as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles.'],
+      ['Methodology Note', 'Primary annual yield metrics are application model outputs from its waterfall loss calculation, with the 24h profile used only as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles. Applicable standards conformity has not been assessed.'],
       ['Metric', 'Value', 'Unit', 'Methodology / Standard'],
       ['Net AC Annual Generation (Primary)', primaryAnnualEnergyMwh.toFixed(1), 'MWh/yr', waterfallReport ? 'Unified Waterfall Loss Model' : 'Annualized 24h Baseline Profile'],
       ['Specific Annual Yield (Primary)', primarySpecificYieldKwhKwp.toString(), 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Primary Model)'],
-      ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'IEC 61724-1 Metric (Waterfall Loss Tree)'],
+      ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'Model-derived metric; standards conformity not assessed'],
       ['Diurnal Diagnostic Net AC Generation', diurnal24hAnnualMwh.toFixed(1), 'MWh/yr', 'Annualized 24h Diurnal Profile (Diagnostic)'],
       ['Gross DC Annual Generation (24h Extrapolated)', (diurnal24hAnnualMwh * 1.05).toFixed(1), 'MWh/yr', 'Sandia Array Model (Annualized 24h Diagnostic)'],
       ['Illustrative Downside Scenario (-5.5%)', p75Mwh.toFixed(1), 'MWh/yr', 'Illustrative 0.945x Sensitivity Factor (Not Probabilistic Exceedance)'],
@@ -370,6 +388,17 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       [
         { sheetName: 'Project Summary', rows: summarySheet },
         { sheetName: 'Climate & Geotechnical', rows: climateSheet },
+        {
+          sheetName: 'Data Provenance',
+          rows: [
+            ['Key', 'Parameter', 'Value', 'Unit', 'Source Kind', 'Provider', 'Dataset', 'Source Parameter', 'Retrieved At', 'Derivation', 'Quality Note', 'Confidence'],
+            ...dataProvenance.map((row) => [
+              row.key, row.parameter, row.value, row.unit, row.sourceKind, row.provider,
+              row.sourceDataset ?? '', row.sourceParameter ?? '', row.retrievedAt ?? '',
+              row.derivationMethod ?? '', row.qualityNote ?? '', row.confidence,
+            ]),
+          ],
+        },
         { sheetName: 'Energy Yield & PR', rows: energySheet },
         { sheetName: 'Electrical Schedule', rows: electricalSheet },
         { sheetName: 'Structural & Foundations', rows: structuralSheet },
@@ -399,6 +428,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       systemMode,
       city: effectiveCity,
       siteOverrides,
+      pendingImportedEmbedmentDepthM,
+      dataProvenance,
       loadAnalysis,
       module,
       inverter,
@@ -503,18 +534,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       reader.onload = (event) => {
         try {
           const parsed = JSON.parse(event.target?.result as string);
-          const restoreResult = restoreProjectTransferEnvelope(parsed);
-          onImportProject(restoreResult);
-          const equipCount =
-            restoreResult.restoredCustomEquipment.modulesCount +
-            restoreResult.restoredCustomEquipment.invertersCount +
-            restoreResult.restoredCustomEquipment.batteriesCount;
-          alert(
-            isEn
-              ? `Project state restored successfully (Schema: ${restoreResult.envelopeSchemaVersion}${equipCount > 0 ? `, Restored ${equipCount} custom equipment` : ''}).`
-              : `پروژه با موفقیت بازیابی شد (نسخه اسکیما: ${restoreResult.envelopeSchemaVersion}${equipCount > 0 ? `، بازیابی ${equipCount} تجهیز سفارشی` : ''}).`
-          );
-          onClose();
+          const applied = onImportProject(parsed);
+          if (applied !== false) onClose();
         } catch {
           alert(isEn ? 'Invalid JSON project file.' : 'فایل JSON پروژه نامعتبر است.');
         }
@@ -790,7 +811,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div>VER: {docVersion}</div>
               </div>
               <div className="inline-block px-3 py-1 bg-industrial-accent/10 border border-industrial-accent/30 rounded-md text-industrial-accent print:text-sky-800 text-[11px] font-bold tracking-wider uppercase">
-                {isEn ? 'EPC ENGINEERING TECHNICAL DOSSIER' : 'مستند فنی و مهندسی پروژه نیروگاه خورشیدی'}
+                {isEn ? 'PRELIMINARY EPC SCREENING — NOT CERTIFIED' : 'غربالگری مقدماتی EPC — فاقد گواهی انطباق'}
               </div>
               <div className="text-right text-[11px] text-slate-400 font-mono">
                 <div>{new Date().toISOString().split('T')[0]}</div>
@@ -807,6 +828,12 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 : `طرح توجیهی فنی، محاسبات الکتریکی، ژئوتکنیک، سازه و ارزیابی مالی برای ساختگاه ${effectiveCity.nameFa}`}
             </p>
 
+            <div role="note" className="my-2 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-left text-[11px] text-amber-100 print:border-amber-700 print:text-amber-900">
+              {isEn
+                ? 'UNVERIFIED SCREENING OUTPUT — Sources, credentials, signatures, approval status, standards editions, and regulatory conformity are not authenticated by this application. Do not use as a permit, stamped design, construction release, or financing certification.'
+                : 'خروجی غربالگری و تأییدنشده — این برنامه منشأ داده، صلاحیت اشخاص، امضا، وضعیت تأیید، ویرایش استانداردها یا انطباق مقرراتی را احراز نمی‌کند. برای مجوز، نقشه مهرشده، اجرا یا گواهی تأمین مالی استفاده نشود.'}
+            </div>
+
             {/* Conceptual Screening Maturity Level Badge (OUT-04) */}
             <div className="my-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 print:bg-amber-50 print:text-amber-900 text-[11px] font-medium">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -821,15 +848,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300 print:text-black bg-slate-800/60 print:bg-slate-100 p-2.5 rounded-lg mt-4 border border-industrial-border/60 print:border-slate-300">
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Client:' : 'کارفرما:'}</span>
-                <strong>{clientName}</strong>
+                <strong>{clientName || (isEn ? '(Unassigned Client)' : '(کارفرمای نامشخص)')}</strong>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'Consultant:' : 'مشاور مهندسی:'}</span>
-                <strong>{companyName}</strong>
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Company / consultant (user-entered):' : 'شرکت / مشاور (ورودی کاربر):'}</span>
+                <strong>{companyName || (isEn ? '(Unassigned Firm)' : '(شرکت نامشخص)')}</strong>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Lead Engineer:' : 'مدیر پروژه:'}</span>
-                <strong>{leadEngineer}</strong>
+                <strong>{leadEngineer || (isEn ? '(Unassigned / Draft)' : '(تعیین‌نشده)')}</strong>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{isEn ? 'Operating Mode:' : 'حالت کاری سیستم:'}</span>
@@ -844,11 +871,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <h3 className="text-sm font-bold text-industrial-accent print:text-sky-900 border-b border-industrial-border print:border-slate-300 pb-2 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Sun className="w-4 h-4 text-industrial-warning" />
-                  {isEn ? '1. Executive Project Summary, Engineering Metrics & Standards Compliance' : '۱. خلاصه اجرایی پروژه، شاخص‌های کلیدی عملکرد و ماتریس تطابق با استانداردها'}
+                  {isEn ? '1. Preliminary Project Summary, Model Outputs & Unassessed Standards References' : '۱. خلاصه مقدماتی پروژه، خروجی مدل و مراجع ارزیابی‌نشده استانداردها'}
                 </span>
-                <span className="text-[10px] text-industrial-success font-mono font-bold flex items-center gap-1">
+                <span className="text-[10px] text-amber-400 font-mono font-bold flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  {isEn ? 'BANKABILITY: APPROVED' : 'تأییدیه توجیه‌پذیری بانکی'}
+                  {isEn ? 'STATUS: DRAFT / PRELIMINARY SCREENING' : 'وضعیت: پیش‌نویس اولیه / غربالگری مهندسی'}
                 </span>
               </h3>
 
@@ -898,7 +925,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <div className="overflow-x-auto">
                 <span className="text-[11px] font-bold text-slate-300 block mb-1.5 flex items-center gap-1.5">
                   <FileCheck className="w-3.5 h-3.5 text-industrial-success" />
-                  {isEn ? 'Project Design Regulatory Codes & Standards Compliance Matrix:' : 'ماتریس انطباق طراحی با استانداردهای ملی و بین‌المللی:'}
+                  {isEn ? 'Standards References — Conformity Not Assessed:' : 'مراجع استاندارد — انطباق ارزیابی‌نشده:'}
                 </span>
                 <table className="w-full text-xs text-left print:text-black border-collapse">
                   <thead>
@@ -906,45 +933,45 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Standard Code' : 'کد استاندارد'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Scope / Domain' : 'حوزه شمول و دامنه کاربرد'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Engineering Design Criterion' : 'معیار طراحی مهندسی'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Compliance Status' : 'وضعیت انطباق'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Verification Status' : 'وضعیت ارزیابی'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-industrial-border print:divide-slate-200 text-[11px]">
                     <tr>
                       <td className="p-2 font-mono font-bold text-sky-300 print:text-sky-900">IEC 61215 / IEC 61730</td>
                       <td className="p-2">{isEn ? 'PV Module Quality & Safety Qualification' : 'کیفیت و ایمنی ماژول‌های فتوولتائیک'}</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Hail impact, 5400Pa mechanical load, PID resistance' : 'بار مکانیکی ۵۴۰۰ پاسکال، مقاومت PID و تگرگ'}</td>
-                      <td className="p-2 text-industrial-success font-bold">✓ COMPLIANT</td>
+                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Applicable edition, criteria, and project evidence not verified.' : 'ویرایش، معیارهای قابل‌اعمال و شواهد پروژه تأیید نشده‌اند.'}</td>
+                      <td className="p-2 text-industrial-warning font-bold">{isEn ? 'NOT ASSESSED' : 'ارزیابی‌نشده'}</td>
                     </tr>
                     <tr>
                       <td className="p-2 font-mono font-bold text-sky-300 print:text-sky-900">IEC 62109-1 / IEC 62109-2</td>
                       <td className="p-2">{isEn ? 'Inverter Safety & Grid-Tie Power Conversion' : 'ایمنی مبدل‌های الکترونیک قدرت و اینورتر'}</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Galvanic isolation, AFCI arc-fault, anti-islanding' : 'حفاظت جزیره‌ای، تشخیص قوس الکتریکی AFCI'}</td>
-                      <td className="p-2 text-industrial-success font-bold">✓ COMPLIANT</td>
+                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Applicable edition, criteria, and project evidence not verified.' : 'ویرایش، معیارهای قابل‌اعمال و شواهد پروژه تأیید نشده‌اند.'}</td>
+                      <td className="p-2 text-industrial-warning font-bold">{isEn ? 'NOT ASSESSED' : 'ارزیابی‌نشده'}</td>
                     </tr>
                     <tr>
                       <td className="p-2 font-mono font-bold text-sky-300 print:text-sky-900">IEC 60364-7-712 / INBC 13</td>
                       <td className="p-2">{isEn ? 'Low Voltage PV Electrical Installations' : 'تاسیسات الکتریکی فتوولتائیک (مبحث ۱۳)'}</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'DC cable sizing, voltage drop <= 1.5%, multi-run ampacity' : 'افت ولتاژ DC کمتر از ۱.۵ درصد، ظرفیت جریانی'}</td>
-                      <td className="p-2 text-industrial-success font-bold">✓ COMPLIANT</td>
+                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Applicable edition, criteria, and project evidence not verified.' : 'ویرایش، معیارهای قابل‌اعمال و شواهد پروژه تأیید نشده‌اند.'}</td>
+                      <td className="p-2 text-industrial-warning font-bold">{isEn ? 'NOT ASSESSED' : 'ارزیابی‌نشده'}</td>
                     </tr>
                     <tr>
                       <td className="p-2 font-mono font-bold text-sky-300 print:text-sky-900">ASCE 7-22 / INBC 6</td>
                       <td className="p-2">{isEn ? 'Structural Wind & Snow Loading Actions' : 'بارهای ثقلی، باد و برف سازه (مبحث ۶)'}</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Velocity pressure qz, uplift and downforce combinations' : 'فشار سرعتی باد، ترکیب بارهای مکش و فشار'}</td>
-                      <td className="p-2 text-industrial-success font-bold">✓ COMPLIANT</td>
+                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Applicable edition, criteria, and project evidence not verified.' : 'ویرایش، معیارهای قابل‌اعمال و شواهد پروژه تأیید نشده‌اند.'}</td>
+                      <td className="p-2 text-industrial-warning font-bold">{isEn ? 'NOT ASSESSED' : 'ارزیابی‌نشده'}</td>
                     </tr>
                     <tr>
                       <td className="p-2 font-mono font-bold text-sky-300 print:text-sky-900">Eurocode 7 / INBC 7</td>
                       <td className="p-2">{isEn ? 'Geotechnical Design & Driven Pile Resistance' : 'مهندسی ژئوتکنیک و فونداسیون (مبحث ۷)'}</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Broms lateral capacity, skin friction uplift FoS >= 2.0' : 'ظرفیت جانبی برمز، ضریب اطمینان کشش >= ۲.۰'}</td>
-                      <td className="p-2 text-industrial-success font-bold">✓ COMPLIANT</td>
+                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Applicable edition, criteria, and project evidence not verified.' : 'ویرایش، معیارهای قابل‌اعمال و شواهد پروژه تأیید نشده‌اند.'}</td>
+                      <td className="p-2 text-industrial-warning font-bold">{isEn ? 'NOT ASSESSED' : 'ارزیابی‌نشده'}</td>
                     </tr>
                     <tr>
                       <td className="p-2 font-mono font-bold text-sky-300 print:text-sky-900">IEEE 80 / IEC 62305</td>
                       <td className="p-2">{isEn ? 'Substation Earthing & Lightning Protection' : 'زمین کردن ایستگاهی و حفاظت صاعقه'}</td>
-                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Ground resistance <= 1.0 Ohm, step & touch potential' : 'مقاومت کل زمین کمتر از ۱ اهم، ولتاژ گام و تماس'}</td>
-                      <td className="p-2 text-industrial-success font-bold">✓ COMPLIANT</td>
+                      <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Applicable edition, criteria, and project evidence not verified.' : 'ویرایش، معیارهای قابل‌اعمال و شواهد پروژه تأیید نشده‌اند.'}</td>
+                      <td className="p-2 text-industrial-warning font-bold">{isEn ? 'NOT ASSESSED' : 'ارزیابی‌نشده'}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -954,19 +981,19 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-2">
                 <div className="font-bold text-white print:text-black flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-industrial-accent" />
-                  {isEn ? 'Executive Engineering Summary & Bankability Screening:' : 'دیدگاه مهندسی و ارزیابی توجیه‌پذیری سرمایه‌گذاری:'}
+                  {isEn ? 'Preliminary Screening Summary (Not a Bankability Assessment):' : 'خلاصه غربالگری اولیه (نه ارزیابی تأمین مالی‌پذیری):'}
                 </div>
                 <p className="leading-relaxed text-[11px] text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `This EPC technical report presents the preliminary engineering screening design for ${projectName} with a nominal peak DC capacity of ${arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp. The system employs high-efficiency TOPCon bifacial modules coupled with industrial multi-MPPT string inverters at an optimized DC/AC ratio of ${arrayDesign.dcAcRatio.toFixed(2)}. Structural and civil foundation sizing follows preliminary screening methodologies per ASCE 7-22 and Eurocode 7 principles, accounting for site-specific wind velocity pressure (${isSnapshotValid ? `${structuralSnapshot!.qzPa} N/m²` : structuralSnapshot?.isStale ? '[STALE - Recalculation Required in Structural Tab]' : '[PENDING - Awaiting Structural Tab Analysis]'}) and frost penetration constraints (${isSnapshotValid ? `${structuralSnapshot!.recommendedDepthM}m embedment` : structuralSnapshot?.isStale ? '[STALE - Recalculation Required in Structural Tab]' : '[PENDING - Awaiting Structural Tab Analysis]'}), subject to definitive geotechnical borehole testing. Levelized Cost of Electricity (LCOE) is ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `estimated at $${financial.lcoeUsdPerKwh}/kWh` : 'not applicable (zero lifetime generation)'} with an internal rate of return (IRR) of ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}%` : 'N/A'}, providing an indicative screening appraisal.`
-                    : `این گزارش فنی، مبانی طراحی و محاسبات اولیه امکان‌سنجی مهندسی نیروگاه خورشیدی ${projectName} را با ظرفیت نامی ${arrayDesign.totalPvCapacityKwp.toFixed(1)} کیلووات‌پیک ارائه می‌دهد. آرایه نیروگاه بر پایه ماژول‌های دوطرفه TOPCon و اینورترهای چند کاناله صنعتی با نسبت توان بهینه ${arrayDesign.dcAcRatio.toFixed(2)} مدل‌سازی گردیده است. محاسبات سازه و فونداسیون بر مبنای ارزیابی اولیه مهندسی با رویکرد مبحث ۶ و ۷ مقررات ملی ساختمان و اصول ASCE 7-22 و یوروکد ۷ تدوین گردیده که در آن فشار سرعتی باد منطقه (${isSnapshotValid ? `${structuralSnapshot!.qzPa} نیوتن بر مترمربع` : structuralSnapshot?.isStale ? '[منقضی - نیازمند محاسبه مجدد در زبانه سازه]' : '[در انتظار محاسبه در زبانه سازه]'}) و عمق یخبندان ساختگاه (${isSnapshotValid ? `عمق کوبش ${structuralSnapshot!.recommendedDepthM} متر` : structuralSnapshot?.isStale ? '[منقضی - نیازمند محاسبه مجدد در زبانه سازه]' : '[در انتظار محاسبه در زبانه سازه]'}) لحاظ شده و انطباق اجرایی آن منوط به نتایج گمانه‌زنی ژئوتکنیک محلی است. بهای تمام‌شده تولید برق ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `${financial.lcoeUsdPerKwh} دلار بر کیلووات‌ساعت` : 'تعریف‌نشده (تولید صفر)'} و نرخ بازده داخلی ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct} درصد` : 'تعریف‌نشده'} برآورد گردیده که ارائه‌دهنده غربالگری اولیه امکان‌سنجی پروژه است.`}
+                    ? `This preliminary screening report for ${projectName} displays a modeled PV capacity of ${arrayDesign.totalPvCapacityKwp.toFixed(1)} kWp and DC/AC ratio of ${arrayDesign.dcAcRatio.toFixed(2)}; these are model outputs, not verified installed capacities or an optimized design. Equipment characteristics depend on the selected catalog records and their stated provenance. Structural outputs (${isSnapshotValid ? `${structuralSnapshot!.qzPa} N/m² wind pressure; ${structuralSnapshot!.recommendedDepthM} m recommended embedment` : structuralSnapshot?.isStale ? "STALE — recalculation required" : "NOT ASSESSED — structural analysis pending"}) are screening results only. Referenced standards below have NOT been assessed for conformity; no regulatory approval, construction suitability, or bankability is established. LCOE is ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `an indicative model estimate of $${financial.lcoeUsdPerKwh}/kWh` : "undefined (zero lifetime generation)"} and IRR is ${financial.isIrrDefined && financial.irrPct !== null ? `${financial.irrPct}% as a model estimate` : "undefined"}; inputs and evidence require independent project-specific review.`
+                    : `این گزارش، غربالگری اولیه پروژه ${projectName} را با ظرفیت مدل‌شده ${arrayDesign.totalPvCapacityKwp.toFixed(1)} کیلووات‌پیک و نسبت DC/AC برابر ${arrayDesign.dcAcRatio.toFixed(2)} نمایش می‌دهد؛ این‌ها خروجی مدل‌اند و ظرفیت نصب‌شده تأییدشده یا طراحی بهینه محسوب نمی‌شوند. مشخصات تجهیزات تابع رکوردهای انتخاب‌شده در کاتالوگ و منشأ داده اعلام‌شده آن‌هاست. خروجی سازه (${isSnapshotValid ? `فشار باد ${structuralSnapshot!.qzPa} نیوتن بر مترمربع؛ عمق پیشنهادی ${structuralSnapshot!.recommendedDepthM} متر` : structuralSnapshot?.isStale ? "منقضی — محاسبه مجدد لازم است" : "ارزیابی‌نشده — تحلیل سازه در انتظار است"}) صرفاً غربالگری است. انطباق با استانداردهای فهرست‌شده در زیر ارزیابی‌نشده است؛ هیچ تأیید مقرراتی، قابلیت ساخت یا تأمین مالی‌پذیری اثبات نمی‌شود. LCOE برابر ${financial.isLcoeDefined && financial.lcoeUsdPerKwh !== null ? `برآورد مدل ${financial.lcoeUsdPerKwh} دلار بر کیلووات‌ساعت` : "تعریف‌نشده (تولید سالانه صفر)"} و IRR برابر ${financial.isIrrDefined && financial.irrPct !== null ? `برآورد مدل ${financial.irrPct} درصد` : "تعریف‌نشده"} است؛ ورودی‌ها و شواهد باید مستقل و برای پروژه مشخص بررسی شوند.`}
                 </p>
                 <div className="pt-2 border-t border-industrial-border/40 text-[11px]">
                   <strong className="text-industrial-warning">{isEn ? 'Key Actionable Recommendations:' : 'توصیه‌های کلیدی اجرایی:'}</strong>
                   <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-300 print:text-slate-700">
-                    <li>{isEn ? 'Perform ASTM D3689 static pile pullout testing on 10 test piles before mass ramming.' : 'انجام آزمایش‌های بارگذاری کشش شمع (ASTM D3689) روی ۱۰ شمع آزمایشی پیش از عملیات کوبش انبوه.'}</li>
-                    <li>{isEn ? 'Implement bi-weekly dry robotic cleaning to minimize Kimber soiling derate in arid climates.' : 'پیاده‌سازی برنامه شستشوی رباتیک دوهفتگی جهت به حداقل رساندن تلفات غبار در اقلیم‌های خشک.'}</li>
-                    <li>{isEn ? 'Verify string Voc polarity and insulation resistance (R_iso >= 1.0 MOhm) per IEC 62446-1.' : 'آزمون قطبیت و مقاومت عایقی تمامی استرینگ‌ها (R_iso >= ۱ مگااهم) مطابق رویه IEC 62446-1.'}</li>
+                    <li>{isEn ? 'Have a qualified local geotechnical engineer determine whether field testing is needed and specify methods and sampling.' : 'مهندس ژئوتکنیک واجد صلاحیت و محلی، ضرورت آزمایش میدانی، روش و تعداد نمونه‌ها را تعیین کند.'}</li>
+                    <li>{isEn ? 'Set any module cleaning plan from site-specific soiling measurements, water constraints, and equipment guidance.' : 'برنامه نظافت ماژول را بر پایه اندازه‌گیری آلودگی سایت، محدودیت آب و دستورالعمل تجهیزات تعیین کنید.'}</li>
+                    <li>{isEn ? 'Define commissioning tests and acceptance limits with the responsible electrical engineer and applicable authority; no compliance determination is made here.' : 'آزمون‌های راه‌اندازی و حدود پذیرش را با مهندس برق مسئول و مرجع ذی‌صلاح تعیین کنید؛ این گزارش انطباقی را احراز نمی‌کند.'}</li>
                   </ul>
                 </div>
               </div>
@@ -1060,103 +1087,25 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-industrial-border/30 print:divide-slate-200 font-mono">
-                      {(() => {
-                        const prov = effectiveCity.fieldProvenance || {};
-                        const telemetryRows = [
-                          {
-                            k: 'peakSunHours',
-                            name: isEn ? 'Peak Sun Hours (PSH)' : 'ساعات اوج تابش (PSH)',
-                            val: `${effectiveCity.peakSunHours} kWh/m²/day`,
-                            src: prov.peakSunHours?.providerName || 'NASA_POWER / PVGIS',
-                            kind: prov.peakSunHours?.sourceKind || 'provider_value',
-                            note: isEn ? 'Satellite / Reanalysis data' : 'داده مستقیم ماهواره‌ای / بازتحلیل',
-                          },
-                          {
-                            k: 'daylightHoursDesign',
-                            name: isEn ? 'Design Daylight Hours' : 'پنجره نجومی روز طراحی',
-                            val: `${effectiveCity.daylightHoursDesign} h`,
-                            src: 'ASTRONOMICAL_SPA_MODEL',
-                            kind: 'local_model',
-                            note: isEn ? 'Sunset hour angle formula at winter solstice' : 'محاسبه زاویه ساعت غروب خورشید در انقلاب زمستانی',
-                          },
-                          {
-                            k: 'tempMinC',
-                            name: isEn ? 'Min Design Ambient Temp' : 'حداقل دمای حدی محیط',
-                            val: `${effectiveCity.tempMinC} °C`,
-                            src: prov.tempMinC?.providerName || 'NASA_POWER',
-                            kind: prov.tempMinC?.sourceKind || 'provider_value',
-                            note: isEn ? 'Extreme minimum design temperature' : 'حداقل دمای سرد زمستان',
-                          },
-                          {
-                            k: 'tempMaxC',
-                            name: isEn ? 'Max Design Ambient Temp' : 'حداکثر دمای حدی محیط',
-                            val: `${effectiveCity.tempMaxC} °C`,
-                            src: prov.tempMaxC?.providerName || 'NASA_POWER',
-                            kind: prov.tempMaxC?.sourceKind || 'provider_value',
-                            note: isEn ? 'Extreme maximum design temperature' : 'حداکثر دمای گرم تابستان',
-                          },
-                          {
-                            k: 'annualRainfallMm',
-                            name: isEn ? 'Annual Precipitation' : 'بارش سالانه باران',
-                            val: `${effectiveCity.annualRainfallMm} mm`,
-                            src: prov.annualPrecipitationMm?.providerName || 'REGIONAL_ANALYTICAL_MODEL',
-                            kind: prov.annualPrecipitationMm?.sourceKind || 'local_model',
-                            note: prov.annualPrecipitationMm?.qualityNote || (isEn ? 'Regional climatology estimate' : 'برآورد اقلیمی منطقه‌ای'),
-                          },
-                          {
-                            k: 'basicWindSpeedKmh',
-                            name: isEn ? 'Basic Wind Speed (V_b)' : 'سرعت مبنای باد',
-                            val: `${effectiveCity.basicWindSpeedKmh} km/h`,
-                            src: 'REGIONAL_ANALYTICAL_MODEL',
-                            kind: 'local_model',
-                            note: isEn ? 'Regional code screening model (Not site anemometer)' : 'مدل غربالگری منطقه‌ای — جایگزین آیین‌نامه/مطالعهٔ سایت نیست',
-                          },
-                          {
-                            k: 'groundSnowLoadKgM2',
-                            name: isEn ? 'Ground Snow Load (S_k)' : 'بار برف مبنای زمین',
-                            val: `${effectiveCity.groundSnowLoadKgM2} kg/m²`,
-                            src: 'REGIONAL_ANALYTICAL_MODEL',
-                            kind: 'local_model',
-                            note: isEn ? 'Regional code screening model' : 'مدل غربالگری منطقه‌ای — جایگزین آیین‌نامه/مطالعهٔ سایت نیست',
-                          },
-                          {
-                            k: 'soilBearingCapacityKpa',
-                            name: isEn ? 'Soil Bearing Capacity (q_a)' : 'ظرفیت باربری خاک',
-                            val: `${effectiveCity.soilBearingCapacityKpa} kPa`,
-                            src: prov.soilBearingCapacityKpa?.providerName || 'ISRIC_SOILGRIDS',
-                            kind: prov.soilBearingCapacityKpa?.sourceKind || 'provider_derived',
-                            note: isEn ? 'Texture correlation (Requires borehole investigation)' : 'برآورد ژئوتکنیکی غربالگری — جایگزین آزمایش مکانیک خاک نیست',
-                          },
-                          {
-                            k: 'groundwaterDepthM',
-                            name: isEn ? 'Groundwater Table (GWL)' : 'تراز آب زیرزمینی',
-                            val: `${effectiveCity.groundwaterDepthM ?? 6.0} m`,
-                            src: 'REGIONAL_ANALYTICAL_MODEL',
-                            kind: 'local_model',
-                            note: isEn ? 'Coastal proximity rule (Site borehole required)' : 'برآورد هیدرولوژیکی غربالگری — نیازمند بررسی میدانی',
-                          },
-                        ];
-
-                        return telemetryRows.map((r) => (
-                          <tr key={r.k} className="hover:bg-slate-800/30 print:hover:bg-transparent">
-                            <td className="p-1 text-slate-200 print:text-black font-sans font-medium">{r.name}</td>
-                            <td className="p-1 text-center text-white print:text-black font-bold">{r.val}</td>
-                            <td className="p-1 text-center text-slate-300 print:text-slate-700">{r.src}</td>
-                            <td className="p-1 text-center">
-                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                                r.kind === 'provider_value'
-                                  ? 'bg-emerald-500/20 text-emerald-300 print:bg-emerald-100 print:text-emerald-800'
-                                  : r.kind === 'provider_derived'
-                                  ? 'bg-sky-500/20 text-sky-300 print:bg-sky-100 print:text-sky-800'
-                                  : 'bg-amber-500/20 text-amber-300 print:bg-amber-100 print:text-amber-800'
-                              }`}>
-                                {r.kind}
-                              </span>
-                            </td>
-                            <td className="p-1 text-slate-400 print:text-slate-600 font-sans text-[9px]">{r.note}</td>
-                          </tr>
-                        ));
-                      })()}
+                      {dataProvenance.map((row) => (
+                        <tr key={row.key} className="hover:bg-slate-800/30 print:hover:bg-transparent">
+                          <td className="p-1 text-slate-200 print:text-black font-sans font-medium">{row.parameter}</td>
+                          <td className="p-1 text-center text-white print:text-black font-bold">{row.value} {row.unit}</td>
+                          <td className="p-1 text-center text-slate-300 print:text-slate-700">{row.provider}</td>
+                          <td className="p-1 text-center">
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                              row.sourceKind === 'provider_value' ? 'bg-emerald-500/20 text-emerald-300 print:bg-emerald-100 print:text-emerald-800' :
+                              row.sourceKind === 'provider_derived' ? 'bg-sky-500/20 text-sky-300 print:bg-sky-100 print:text-sky-800' :
+                              'bg-amber-500/20 text-amber-300 print:bg-amber-100 print:text-amber-800'
+                            }`}>
+                              {row.sourceKind}
+                            </span>
+                          </td>
+                          <td className="p-1 text-slate-400 print:text-slate-600 font-sans text-[9px]">
+                            {[row.sourceDataset, row.sourceParameter, row.derivationMethod, row.qualityNote].filter(Boolean).join(' · ') || '—'}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -1169,8 +1118,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `The project site features ${effectiveCity.soilType.replace(/_/g, ' ')} with an allowable soil bearing pressure of ${effectiveCity.soilBearingCapacityKpa} kPa. With an extreme minimum winter temperature of ${effectiveCity.tempMinC}°C and maximum summer ambient temperature of ${effectiveCity.tempMaxC}°C, electrical string sizing must account for cold-weather open-circuit voltage rise (+18.4% at Voc) and high-temperature thermal power degradation (-0.30%/°C). To protect against frost heave, ${isSnapshotValid ? (structuralSnapshot!.recommendedDepthM === 0 ? 'all mounting structures utilize zero-penetration direct clamp or ballasted mounting, with no ground frost heave risk.' : structuralSnapshot!.isFrostDepthRespected ? `all structural pile embedment depths are specified at ${structuralSnapshot!.recommendedDepthM}m, satisfying the mandatory safety margin (L >= d_frost + 1.0m = ${structuralSnapshot!.minDepthForFrostM}m).` : `structural pile embedment depth (${structuralSnapshot!.recommendedDepthM}m) DOES NOT satisfy the site frost penetration requirement (${structuralSnapshot!.frostDepthCm}cm frost depth; L >= ${structuralSnapshot!.minDepthForFrostM}m required) or frost data is unassessed. Foundation cannot be certified safe against frost heave.`) : structuralSnapshot?.isStale ? 'structural sizing inputs have been modified since calculation; embedment depth and frost heave safety margins are STALE and require re-execution in the Structural & Foundation Tab.' : 'all structural pile embedment depths and frost heave safety margins are pending calculation in the Structural & Foundation Tab.'}`
-                    : `بستر ژئوتکنیکی ساختگاه از نوع خاک ${effectiveCity.soilType === 'dense_sand_gravel' ? 'شن و ماسه متراکم' : effectiveCity.soilType === 'medium_clay' ? 'رس متوسط تا متراکم' : effectiveCity.soilType === 'loose_sand' ? 'ماسه سست' : 'بستر سنگ آهکی'} با ظرفیت باربری مجاز ${effectiveCity.soilBearingCapacityKpa} کیلوپاسکال شناسایی شده است. با توجه به دامنه دمایی طراحی محیط از ${effectiveCity.tempMinC} درجه سانتی‌گراد تا ${effectiveCity.tempMaxC} درجه سانتی‌گراد، اثر افزایش ولتاژ مدار باز در سرمای شدید و افت توان حرارتی ماژول‌ها لحاظ گردیده است. به منظور مصون‌سازی کامل سازه‌ها در برابر پدیده تورم یخبندان (Frost Heave)، ${isSnapshotValid ? (structuralSnapshot!.recommendedDepthM === 0 ? 'سازه بر روی سقف یا سطح نصب شده و فاقد کوبش در خاک و ریسک تورم یخبندان است.' : structuralSnapshot!.isFrostDepthRespected ? `عمق کوبش شمع‌ها حداقل ${structuralSnapshot!.recommendedDepthM} متر در نظر گرفته شده که شرط آیین‌نامه‌ای (عمق کوبش بزرگتر از عمق یخبندان به علاوه ۱.۰ متر = ${structuralSnapshot!.minDepthForFrostM} متر) را کاملاً ارضا می‌نماید.` : `عمق کوبش شمع (${structuralSnapshot!.recommendedDepthM} متر) شرط عمق یخبندان ساختگاه (${structuralSnapshot!.frostDepthCm} سانتی‌متر؛ حداقل عمق مورد نیاز ${structuralSnapshot!.minDepthForFrostM} متر) را ارضا نمی‌کند یا داده یخبندان نامشخص است؛ پایداری در برابر تورم یخبندان مورد تأیید نیست.`) : structuralSnapshot?.isStale ? 'پارامترهای طراحی سازه پس از محاسبه تغییر یافته‌اند؛ ارزیابی عمق کوبش و حاشیه یخبندان منقضی بوده و نیازمند محاسبه مجدد در زبانه سازه است.' : 'تعیین عمق کوبش شمع‌ها و انطباق با عمق یخبندان در انتظار اجرا در زبانه سازه و فونداسیون است.'}`}
+                    ? `Recorded site inputs include soil type ${effectiveCity.soilType.replace(/_/g, ' ')}, bearing pressure ${effectiveCity.soilBearingCapacityKpa} kPa, minimum temperature ${effectiveCity.tempMinC}°C, and maximum temperature ${effectiveCity.tempMaxC}°C. Source and quality are shown in the provenance disclosures and are not independently authenticated. Cold-voltage and thermal checks are software screening outputs. Frost and foundation results (${isSnapshotValid ? `calculated screening embedment ${structuralSnapshot!.recommendedDepthM} m; frost depth input ${structuralSnapshot!.frostDepthCm} cm` : structuralSnapshot?.isStale ? 'STALE — recalculate' : 'NOT ASSESSED — no current structural result'}) do not establish code compliance, construction safety, or suitability; verify project loads, field conditions, and design criteria with responsible licensed professionals.`
+                    : `ورودی‌های ثبت‌شده سایت شامل نوع خاک ${effectiveCity.soilType === 'dense_sand_gravel' ? 'شن و ماسه متراکم' : effectiveCity.soilType === 'medium_clay' ? 'رس متوسط تا متراکم' : effectiveCity.soilType === 'loose_sand' ? 'ماسه سست' : 'بستر سنگ آهکی'}، ظرفیت باربری ${effectiveCity.soilBearingCapacityKpa} کیلوپاسکال، حداقل دما ${effectiveCity.tempMinC} درجه و حداکثر دما ${effectiveCity.tempMaxC} درجه سانتی‌گراد است. منشأ و کیفیت در بخش افشای داده آمده و مستقلاً احراز نشده است. بررسی ولتاژ سرما و افت حرارتی خروجی غربالگری نرم‌افزار است. نتایج یخبندان و فونداسیون (${isSnapshotValid ? `عمق غربالگری محاسبه‌شده ${structuralSnapshot!.recommendedDepthM} متر؛ ورودی عمق یخبندان ${structuralSnapshot!.frostDepthCm} سانتی‌متر` : structuralSnapshot?.isStale ? 'منقضی — محاسبه مجدد لازم است' : 'ارزیابی‌نشده — نتیجه سازه‌ای جاری وجود ندارد'}) انطباق آیین‌نامه‌ای، ایمنی اجرا یا مناسب‌بودن را اثبات نمی‌کند؛ بارها، شرایط میدانی و معیارهای طراحی باید توسط متخصصان مسئول بررسی شوند.`}
                 </p>
                 <div className="text-[11px] pt-1 text-slate-400 print:text-slate-600">
                   <strong>{isEn ? 'Site Drainage & Earthworks:' : 'هدایت آب‌های سطحی و خاک‌برداری:'}</strong>{' '}
@@ -1363,7 +1312,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeEn} The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) following IEC 62548 geometric guidance. Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (screening proxy: +${bifacialGainPct.toFixed(1)}%)` : ''}, which should be verified with detailed 3D/view-factor modeling.`
+                    ? `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeEn} The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) using an internal screening heuristic (not a standards conformity assessment). Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (screening proxy: +${bifacialGainPct.toFixed(1)}%)` : ''}, which should be verified with detailed 3D/view-factor modeling.`
                     : `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeFa} فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر جهت تامین فاصله هندسی نامی در بازه ۴ ساعته غربالگری (۱۰ الی ۱۴ ظهر آفتابی) بر اساس رهنمودهای هندسی IEC 62548 در نظر گرفته شده است. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (تخمین غربالگری: +${bifacialGainPct.toFixed(1)}٪)` : ''} که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
                 </p>
               </div>
@@ -1432,7 +1381,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   {isEn ? 'Methodology Note:' : 'یادداشت متدولوژی:'}
                 </span>{' '}
                 {isEn
-                  ? 'Primary annual yield metrics represent unified 14/15-stage waterfall loss modeling (IEC 61724-1 PR), supplemented by the 24-hour diurnal profile as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity scaling factors rather than formal probabilistic exceedance percentiles (which require multi-year TMY inter-annual dispersion modeling). They provide preliminary engineering screening estimates and should be supplemented by an 8760-hour hourly weather-year (TMY/PVSyst) bankable model for final financing.'
+                  ? 'Primary annual yield metrics are application model outputs from its waterfall loss calculation, with the 24-hour profile used only as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles. Obtain an independent, project-specific hourly yield assessment for financing decisions; no bankability or standards conformity is established here.'
                   : 'ارقام تولید سالانه انرژی بر پایه مدل‌سازی جامع ۱۴/۱۵ مرحله‌ای آبشار تلفات (ضریب عملکرد IEC 61724-1) محاسبه شده و پروفایل ۲۴ ساعته شبانه‌روزی به عنوان غربالگری تشخیصی مکمل عمل می‌کند. سناریوهای کاهشی (-۵.۵٪ و -۱۰.۲٪) صرفاً ضرایب حساسیت فرضی و نمایشی هستند نه صدک‌های آماری قطعی توزیع احتمالاتی سال‌های اقلیمی؛ این مقادیر به عنوان غربالگری اولیه مهندسی عمل نموده و برای تأمین مالی و تعیین ساختار بدهی بانکی باید با شبیه‌سازی کامل ۸۷۶۰ ساعته سال اقلیمی (TMY) تدقیق گردند.'}
               </div>
 
@@ -1563,7 +1512,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                         <td className="p-2 font-mono text-industrial-warning">{c.powerLossWatts ? `${c.powerLossWatts}W` : '-'}</td>
                         <td className="p-2">
                           <span className="text-industrial-success print:text-emerald-800 font-bold text-[10px]">
-                            {c.isCompliant ? (isEn ? '✓ Pass' : '✓ تایید') : (isEn ? '✗ Violation' : '✗ خطا')}
+                            {c.isCompliant ? (isEn ? '✓ SCREENING PASS (not compliance)' : '✓ غربالگری قبول (نه احراز انطباق)') : (isEn ? '✗ SCREENING LIMIT EXCEEDED' : '✗ حد غربالگری رد شده')}
                           </span>
                         </td>
                       </tr>
@@ -1738,7 +1687,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                           ? `${structuralSnapshot.fosUplift} ${isEn ? '(Nominal — UNASSESSED)' : '(اسمی — ارزیابی‌نشده)'}`
                           : structuralSnapshot.upliftCapacityProvenance === 'user_supplied'
                           ? `${structuralSnapshot.fosUplift} ${isEn ? '(Screening ≥ 2.0)' : '(غربالگری حداقل ۲.۰)'}`
-                          : `${structuralSnapshot.fosUplift} ${isEn ? '(≥ 2.0 Eurocode 7)' : '(حداقل ۲.۰)'}`}
+                          : `${structuralSnapshot.fosUplift} ${isEn ? '(software screening threshold; code basis unverified)' : '(آستانه غربالگری نرم‌افزار؛ مبنای آیین‌نامه‌ای تأییدنشده)'}`}
                       </span>
                       <span className="text-[10px] text-slate-400 block mt-0.5">
                         {structuralSnapshot.isStale
@@ -1761,8 +1710,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                         <tr className="bg-slate-800/80 print:bg-slate-100 text-slate-300 print:text-black text-[11px]">
                           <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Engineering Parameter' : 'پارامتر محاسباتی مهندسی'}</th>
                           <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Calculated Value' : 'مقدار محاسبه‌شده'}</th>
-                          <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Design Limit / Code Requirement' : 'حد مجاز آیین‌نامه'}</th>
-                          <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Safety Margin / Status' : 'حاشیه اطمینان / وضعیت'}</th>
+                          <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Screening Reference (not verified)' : 'مرجع غربالگری (تأییدنشده)'}</th>
+                          <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Software Screening Result (not compliance)' : 'نتیجه غربالگری نرم‌افزار (نه احراز انطباق)'}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-industrial-border print:divide-slate-200 text-[11px]">
@@ -1798,7 +1747,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
                             ) : (
-                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosOverturning} (≥ 1.5 Req)</span>
+                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosOverturning} (software threshold 1.5; code basis unverified)</span>
                             )}
                           </td>
                         </tr>
@@ -1816,7 +1765,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
                             ) : (
-                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosLateral} (≥ 1.5 Req)</span>
+                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosLateral} (software threshold 1.5; code basis unverified)</span>
                             )}
                           </td>
                         </tr>
@@ -1838,9 +1787,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
                             ) : structuralSnapshot.isBearingCapacitySafe ? (
-                              <span className="text-industrial-success">✓ PASS (FoS = {structuralSnapshot.fosBearing})</span>
+                              <span className="text-industrial-success">{isEn ? `SCREENING PASS (FoS = ${structuralSnapshot.fosBearing}; code basis unverified)` : `قبولی غربالگری (FoS = ${structuralSnapshot.fosBearing}؛ مبنای آیین‌نامه‌ای تأییدنشده)`}</span>
                             ) : (
-                              <span className="text-rose-400">✗ EXCEEDED</span>
+                              <span className="text-rose-400">{isEn ? 'SCREENING LIMIT EXCEEDED' : 'حد غربالگری رد شده'}</span>
                             )}
                           </td>
                         </tr>
@@ -1892,7 +1841,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             ) : !structuralSnapshot.isStructurallySafe ? (
                               <span className="text-amber-400">FoS = {structuralSnapshot.fosUplift} ({isEn ? 'Unassessed' : 'ارزیابی‌نشده'})</span>
                             ) : (
-                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosUplift} (≥ 2.0 Req)</span>
+                              <span className="text-industrial-success">FoS = {structuralSnapshot.fosUplift} (software threshold 2.0; code basis unverified)</span>
                             )}
                           </td>
                         </tr>
@@ -1914,7 +1863,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? '⚠️ STALE (Recalculation Required)' : '⚠️ منقضی (نیازمند بازمحاسبه)'}</span>
                             ) : structuralSnapshot.isFrostDepthRespected ? (
-                              <span className="text-industrial-success">✓ PASS</span>
+                              <span className="text-industrial-success">{isEn ? 'SCREENING PASS (not compliance)' : 'قبولی غربالگری (نه احراز انطباق)'}</span>
                             ) : (
                               <span className="text-rose-400">✗ INSUFFICIENT</span>
                             )}
@@ -1948,9 +1897,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     <div className="pt-2 border-t border-industrial-border/40 text-[11px]">
                       <strong className="text-industrial-warning">{isEn ? 'Civil Execution & Quality Assurance Checklist:' : 'چک‌لیست کنترل کیفی و آزمایش‌های میدانی:'}</strong>
                       <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-300 print:text-slate-700">
-                        <li>{isEn ? 'Conduct ASTM D3689 static tensile pullout tests on 10 preliminary test piles across the field before mass driving.' : 'انجام آزمایش کشش استاتیکی شمع طبق ASTM D3689 روی حداقل ۱۰ پایه آزمایشی در نقاط مختلف سایت پیش از شروع کوبش انبوه.'}</li>
-                        <li>{isEn ? 'Execute ASTM D3966 lateral load tests to verify Broms horizontal deflection does not exceed 12mm under design lateral shear.' : 'انجام آزمایش بارگذاری جانبی طبق ASTM D3966 جهت تایید عدم تجاوز تغییرمکان جانبی سر شمع از ۱۲ میلی‌متر تحت بار طراحی.'}</li>
-                        <li>{isEn ? 'Driving verticality tolerance shall be strictly controlled within +/- 1.0 degree with post head elevation within +/- 10mm.' : 'رواداری شاقولی کوبش پایه‌ها حداکثر ۱.۰± درجه و رواداری تراز سر پایه‌ها حداکثر ۱۰± میلی‌متر رعایت گردد.'}</li>
+                        <li>{isEn ? 'Have the project geotechnical engineer determine whether pile testing is required and establish test methods and sampling.' : 'مهندس ژئوتکنیک پروژه ضرورت آزمایش شمع، روش‌های آزمون و نمونه‌برداری را تعیین کند.'}</li>
+                        <li>{isEn ? 'Establish lateral resistance and deflection criteria from project-specific loads, ground investigation, and applicable design requirements.' : 'معیارهای مقاومت جانبی و تغییرمکان را بر پایه بارهای پروژه، مطالعات خاک و الزامات طراحی قابل‌اعمال تعیین کنید.'}</li>
+                        <li>{isEn ? 'Set installation tolerances from the approved project specifications and verified foundation design; none are established by this screening report.' : 'رواداری نصب را بر اساس مشخصات مصوب پروژه و طراحی تأییدشده فونداسیون تعیین کنید؛ این گزارش غربالگری مقداری را تعیین نمی‌کند.'}</li>
                       </ul>
                     </div>
                   </div>
@@ -2125,15 +2074,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           <div className="pt-6 mt-6 border-t border-industrial-border/80 print:border-slate-400 grid grid-cols-3 gap-4 text-xs text-center">
             <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
               <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'PREPARED BY (DESIGN ENGINEER)' : 'تهیه‌کننده (مهندس طراح)'}</span>
-              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{leadEngineer}</div>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{leadEngineer || (isEn ? '(Unassigned)' : '(تعیین‌نشده)')}</div>
             </div>
             <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
-              <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'CHECKED & VERIFIED BY (P.E.)' : 'کنترل و بازبینی مهندسی'}</span>
-              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{companyName}</div>
+              <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'REVIEWER (credentials not verified)' : 'بازبین (صلاحیت تأیید نشده)'}</span>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{companyName || (isEn ? '(Unassigned)' : '(تعیین‌نشده)')}</div>
             </div>
             <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
-              <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'CLIENT ACCEPTANCE & APPROVAL' : 'تأیید کارفرما و سرمایه‌گذار'}</span>
-              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{clientName}</div>
+              <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'CLIENT CONTACT (acceptance not authenticated)' : 'نماینده کارفرما (پذیرش احراز نشده)'}</span>
+              <div className="border-t border-industrial-border print:border-slate-300 pt-1 font-semibold">{clientName || (isEn ? '(Unassigned)' : '(تعیین‌نشده)')}</div>
             </div>
           </div>
         </div>

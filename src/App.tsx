@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useReducer } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useReducer, useCallback } from 'react';
 import {
   Sun,
   Zap,
@@ -131,7 +131,7 @@ const Simulation24hTab = React.lazy(() => import('./components/Simulation24hTab'
 const OfficialReportModal = React.lazy(() => import('./components/OfficialReportModal').then((m) => ({ default: m.OfficialReportModal })));
 const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab').then((m) => ({ default: m.WaterfallLossTab })));
 import { migrateProjectToV3 } from './engine/core/projectMigration';
-import { createProjectTransferEnvelope, restoreProjectTransferEnvelope } from './engine/offlineTransferEngine';
+import { createProjectTransferEnvelope, restoreProjectTransferEnvelope, commitRestoredCustomEquipment } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
 
 // Fallback component for lazy-loaded tabs (MAIN-05)
@@ -190,6 +190,7 @@ export const App: React.FC = () => {
   const [projectName, setProjectName] = useState(
     lang === 'fa' ? 'طرح مهندسی نیروگاه خورشیدی و EPC' : 'Solar PV Engineering & EPC Project'
   );
+  const [reportMetadata, setReportMetadata] = useState<Record<string, unknown>>({});
   const [city, setCity] = useState<ClimateCity>(getDefaultClimateCity());
   const [selectedSite, setSelectedSite] = useState<{
     lat: number;
@@ -223,6 +224,65 @@ export const App: React.FC = () => {
   }, [city]);
 
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
+  const [pendingImportedEmbedmentDepthM, setPendingImportedEmbedmentDepthM] = useState<number | null>(null);
+
+  const siteOverrideCacheRef = useRef(new Map<string, SiteGeotechnicalOverrides>());
+  const siteCacheKey = useCallback((siteCity: ClimateCity, forProjectName = projectName) =>
+    `${forProjectName.trim().toLowerCase()}|${siteCity.latitude.toFixed(5)}|${siteCity.longitude.toFixed(5)}`,
+  [projectName]);
+
+  // Keep exact overrides by project + physical coordinates. A pending map move can
+  // later be rejected with Keep Old Site; returning to that site restores its state.
+  useEffect(() => {
+    siteOverrideCacheRef.current.set(siteCacheKey(city), siteOverrides);
+  }, [city, siteOverrides, siteCacheKey]);
+
+  const transitionSite = (nextCity: ClimateCity) => {
+    siteOverrideCacheRef.current.set(siteCacheKey(city), siteOverrides);
+    const key = siteCacheKey(nextCity);
+    const samePhysicalSite =
+      Math.abs(city.latitude - nextCity.latitude) < 0.00001 &&
+      Math.abs(city.longitude - nextCity.longitude) < 0.00001;
+    const cached = siteOverrideCacheRef.current.get(key);
+    const nextOverrides = cached ?? (samePhysicalSite ? siteOverrides : {
+      // Keep only site-independent design preferences; geotechnical values and manual
+      // embedment must be rechecked at a new location.
+      installationEnvironment: siteOverrides.installationEnvironment,
+      foundationType: siteOverrides.foundationType,
+      groundClearanceM: siteOverrides.groundClearanceM,
+      customPostsPerTable: siteOverrides.customPostsPerTable,
+    });
+
+    setCity(nextCity);
+    setSelectedSite({ lat: nextCity.latitude, lng: nextCity.longitude, climateData: nextCity });
+    setSiteOverrides(nextOverrides);
+    if (!samePhysicalSite) setPendingImportedEmbedmentDepthM(null);
+    siteOverrideCacheRef.current.set(key, nextOverrides);
+  };
+
+  const transitionImportedSite = (
+    nextCity: ClimateCity | undefined,
+    importedOverrides: SiteGeotechnicalOverrides | undefined,
+    importedProjectName?: string,
+  ) => {
+    siteOverrideCacheRef.current.set(siteCacheKey(city), siteOverrides);
+    if (!nextCity) {
+      if (importedOverrides) {
+        const { customEmbedmentDepthM: pendingEmbedmentDepth, ...reviewedOverrides } = importedOverrides;
+        setSiteOverrides(reviewedOverrides);
+        setPendingImportedEmbedmentDepthM(typeof pendingEmbedmentDepth === 'number' ? pendingEmbedmentDepth : null);
+      }
+      return;
+    }
+    setCity(nextCity);
+    setSelectedSite({ lat: nextCity.latitude, lng: nextCity.longitude, climateData: nextCity });
+    // Imported project/site overrides travel atomically with their site, except manually
+    // authored pile embedment, which requires explicit re-entry/reconfirmation.
+    const { customEmbedmentDepthM: pendingEmbedmentDepth, ...reviewedOverrides } = importedOverrides ?? {};
+    setSiteOverrides(reviewedOverrides);
+    setPendingImportedEmbedmentDepthM(typeof pendingEmbedmentDepth === 'number' ? pendingEmbedmentDepth : null);
+    siteOverrideCacheRef.current.set(siteCacheKey(nextCity, importedProjectName || projectName), reviewedOverrides);
+  };
   const [structuralModulesPerTable, setStructuralModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
   const [structuralSnapshot, setStructuralSnapshot] = useState<StructuralSnapshot | null>(null);
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
@@ -420,6 +480,8 @@ export const App: React.FC = () => {
       enableDieselGenerator,
       userPricing,
       trackerConfig, // BUG-2: persist tracker config (null = fixed tilt)
+      metadata: reportMetadata,
+      pendingImportedEmbedmentDepthM,
     };
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projectData));
@@ -469,8 +531,6 @@ export const App: React.FC = () => {
       if (saved) {
         const data = JSON.parse(saved);
         handleImportProject(data);
-        setSaveToast(lang === 'fa' ? 'پروژه ذخیره‌شده بازیابی شد.' : 'Project successfully restored.');
-        setTimeout(() => setSaveToast(null), 3000);
       }
     } catch (e) {
       alert(lang === 'fa' ? 'خطا در بارگذاری پروژه ذخیره شده.' : 'Error loading project.');
@@ -500,15 +560,13 @@ export const App: React.FC = () => {
       enableDieselGenerator,
       userPricing,
       trackerConfig,
+      metadata: reportMetadata,
+      pendingImportedEmbedmentDepthM,
     };
     const envelope = createProjectTransferEnvelope({
       projectName,
       projectData,
-      metadata: {
-        docVersion: '3.1.0',
-        companyName: 'SolarPV Studio Engineering Platform',
-        leadEngineer: 'Project Lead',
-      },
+      metadata: { docVersion: '3.1.0', ...reportMetadata },
       activeModule: selectedModule,
       activeInverter: selectedInverter,
     });
@@ -621,7 +679,74 @@ export const App: React.FC = () => {
   }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment, shadingLoss3dPct, bifacialGainPct]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
   // 3. Advanced PV Array Engineering Sizing
+  const isSiteUnsizable =
+    !Number.isFinite(city.peakSunHours) ||
+    city.peakSunHours <= 0 ||
+    !Number.isFinite(city.latitude) ||
+    Math.abs(city.latitude) > 90 ||
+    !Number.isFinite(city.longitude) ||
+    Math.abs(city.longitude) > 180;
+
+  // Resolve the utility fleet count from the same bay-design contract used by the
+  // project architecture before calculating the array. This avoids a DC/AC ratio
+  // calculated against one inverter while the plant has several.
+  const sizingBayPlan = useMemo(() => {
+    if (systemMode !== 'powerplant' || isSiteUnsizable) return undefined;
+    const dcPlanningMwp = ((targetPowerplantCapacityKw || 1000) * 1.25) / 1000;
+    return designPowerplantBays(
+      (targetPowerplantCapacityKw || 1000) / 1000,
+      dcPlanningMwp,
+      inverterTech,
+      customBaysCount,
+      mvVoltageKv,
+      selectedInverter.pnomAcKw,
+    );
+  }, [systemMode, isSiteUnsizable, targetPowerplantCapacityKw, inverterTech, customBaysCount, mvVoltageKv, selectedInverter.pnomAcKw]);
+  const sizingFleetInverterCount = sizingBayPlan?.bays.reduce((count, bay) => count + bay.inverterCount, 0);
+
   const arrayDesign = useMemo(() => {
+    if (isSiteUnsizable) {
+      return {
+        totalPvCapacityKwp: 0,
+        totalModulesCount: 0,
+        modulesPerString: 0,
+        parallelStringsCount: 0,
+        minModulesPerStringAllowed: 0,
+        maxModulesPerStringAllowed: 0,
+        stringVocMaxColdVolts: 0,
+        stringVmpMinHotVolts: 0,
+        maxMpptOperatingCurrentAmps: 0,
+        maxMpptShortCircuitCurrentAmps: 0,
+        isMpptCurrentCompliant: false,
+        isVoltageFeasible: false,
+        isDesignFeasible: false,
+        dcAcRatio: 0,
+        effectiveDeratingFactor: 0,
+        cellTempHotC: city.tempMaxC || 25,
+        powerTempDeratePct: 0,
+        netArrayAreaM2: 0,
+        interRowSpacingM: 0,
+        grossRequiredLandAreaM2: 0,
+        winterSunAltitudeDeg: 0,
+        warnings: [
+          city.peakSunHours === 0
+            ? 'Site peakSunHours is 0 (system unsizable: polar darkness / zero irradiance).'
+            : 'Site has invalid coordinates or non-positive solar irradiance.',
+        ],
+        blockingErrors: [
+          city.peakSunHours === 0
+            ? 'Site peakSunHours is 0 (system unsizable).'
+            : 'Invalid site parameters or coordinates.',
+        ],
+        estimatedAnnualYieldKwh: 0,
+        specificYieldKwhPerKwp: 0,
+        requiredInverterCount: 0,
+        totalInverterAcCapacityKw: 0,
+        singleInverterDcAcRatio: 0,
+        stringsPerMppt: 0,
+        maxStringsPerMpptAllowed: 0,
+      };
+    }
     return designPvArray(
       effectiveDailyKwhDemand,
       city.peakSunHours,
@@ -639,22 +764,18 @@ export const App: React.FC = () => {
         arrayTiltDeg: city.optimalTiltAnnualDeg,
         installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
       },
-      city.latitude
+      city.latitude,
+      sizingFleetInverterCount ? { inverterCount: sizingFleetInverterCount } : undefined,
     );
-  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment]);
+  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment, isSiteUnsizable, sizingFleetInverterCount]);
 
   // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
   const [shadingSimulationMode, setShadingSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
 
-  const activePlantCapacityKwp =
-    systemMode === 'powerplant'
-      ? (targetPowerplantCapacityKw || 1000) * 1.25
-      : arrayDesign.totalPvCapacityKwp;
-
-  const activeModulesCount =
-    systemMode === 'powerplant'
-      ? Math.round((activePlantCapacityKwp * 1000) / (selectedModule.pmpWatts || 550))
-      : arrayDesign.totalModulesCount;
+  // All downstream consumers (3D scene, shading signature, and report inputs) use
+  // the actual sized array; never substitute the target/nominal DC planning factor.
+  const activePlantCapacityKwp = isSiteUnsizable ? 0 : arrayDesign.totalPvCapacityKwp;
+  const activeModulesCount = isSiteUnsizable ? 0 : arrayDesign.totalModulesCount;
 
   const currentShadingSignature = useMemo(() => {
     const scene = buildSceneFromProjectDesign({
@@ -968,70 +1089,88 @@ export const App: React.FC = () => {
       autonomyDays,
       userPricing.usdToTomanRate,
       userPricing.discountRatePct,
-      city.peakSunHours || 5.17
+      city.peakSunHours
     );
   }, [arrayDesign.totalPvCapacityKwp, loadAnalysis.totalDailyEnergyKwh, autonomyDays, userPricing.usdToTomanRate, userPricing.discountRatePct, city.peakSunHours]);
 
-  // Handler for restoring imported project from JSON with three-state safety model & custom equipment restoration (OFF-01, OFF-02)
-  const handleImportProject = (importedData: any) => {
+  // Parse/migrate once, require explicit acceptance of recoveries, then commit equipment
+  // and project state. BLOCKED or canceled imports do not mutate either store.
+  const handleImportProject = (importedData: unknown): boolean => {
     try {
-      const envelopeResult = importedData?.migrationStatus
-        ? importedData
-        : restoreProjectTransferEnvelope(importedData);
-      const migrationResult = envelopeResult.migrationResult || envelopeResult;
+      const restored = restoreProjectTransferEnvelope(importedData);
+      const migrationResult = restored.migrationResult;
+      if (!restored.success || restored.migrationStatus === 'BLOCKED_INCONSISTENT') {
+        const reasons = migrationResult.blockerReasons.join('\n') || migrationResult.warnings.join('\n');
+        setSaveToast(lang === 'fa' ? `بارگذاری مسدود شد: ${reasons}` : `Import blocked: ${reasons}`);
+        setTimeout(() => setSaveToast(null), 7000);
+        return false;
+      }
 
-      // State 3: BLOCKED INCONSISTENT
-      if (migrationResult.migrationStatus === 'BLOCKED_INCONSISTENT') {
-        const blockerMsg = migrationResult.blockerReasons[0] || 'Physical contradiction detected';
-        setSaveToast(
-          lang === 'fa'
-            ? `مهاجرت مسدود شد: ${blockerMsg} (کد: ${migrationResult.traceId.slice(0, 8)})`
-            : `Migration blocked: ${blockerMsg} (Trace: ${migrationResult.traceId.slice(0, 8)})`
-        );
-        setTimeout(() => setSaveToast(null), 5500);
-        return;
+      if (migrationResult.requiresUserConfirmation || restored.migrationStatus === 'RECOVERED_WITH_WARNINGS') {
+        const details = migrationResult.warnings.length ? migrationResult.warnings.join('\n') : 'Recovered fields require review.';
+        const accepted = window.confirm(lang === 'fa'
+          ? `پروژه با هشدار بازیابی شده است. پیش از اعمال، تغییرات زیر را بررسی کنید:\n\n${details}\n\nآیا با اعمال همین مقادیر بازیابی‌شده موافقید؟`
+          : `This project was recovered with warnings. Review before applying:\n\n${details}\n\nApply the recovered values?`);
+        if (!accepted) {
+          setSaveToast(lang === 'fa' ? 'بارگذاری لغو شد؛ پروژه و کاتالوگ تغییر نکردند.' : 'Import canceled; project and catalog were not changed.');
+          setTimeout(() => setSaveToast(null), 4500);
+          return false;
+        }
+      }
+
+      const equipmentCommit = commitRestoredCustomEquipment(restored);
+      if (!equipmentCommit.success) {
+        setSaveToast(lang === 'fa'
+          ? `بارگذاری به‌دلیل تجهیز نامعتبر انجام نشد؛ هیچ تغییری اعمال نشد: ${equipmentCommit.errors.join('؛ ')}`
+          : `Import rejected because custom equipment is invalid; nothing was applied: ${equipmentCommit.errors.join('; ')}`);
+        setTimeout(() => setSaveToast(null), 7000);
+        return false;
       }
 
       const clean = migrationResult.project;
-
-      if (clean.city) setCity(clean.city as unknown as ClimateCity);
-      if (clean.siteOverrides) setSiteOverrides(clean.siteOverrides);
+      transitionImportedSite(
+        clean.city as ClimateCity | undefined,
+        clean.siteOverrides as SiteGeotechnicalOverrides | undefined,
+        clean.projectName as string | undefined,
+      );
+      if (typeof clean.pendingImportedEmbedmentDepthM === 'number') {
+        setPendingImportedEmbedmentDepthM(clean.pendingImportedEmbedmentDepthM);
+      }
       if (clean.loads) setLoads(clean.loads as unknown as ElectricalLoadItem[]);
       if (clean.selectedModule) setSelectedModule(clean.selectedModule as ModuleSpecs);
       if (clean.selectedInverter) setSelectedInverter(clean.selectedInverter as InverterSpecs);
       if (clean.projectName) setProjectName(clean.projectName);
       if (clean.systemMode) setSystemMode(clean.systemMode as SystemMode);
       if (clean.inverterTech) setInverterTech(clean.inverterTech as InverterTechnology);
-      if (clean.customBaysCount) setCustomBaysCount(clean.customBaysCount);
-      if (clean.mvVoltageKv) setMvVoltageKv(clean.mvVoltageKv);
-      if (clean.targetPowerplantCapacityKw) setTargetPowerplantCapacityKw(clean.targetPowerplantCapacityKw);
+      if (clean.customBaysCount !== undefined) setCustomBaysCount(clean.customBaysCount);
+      if (clean.mvVoltageKv !== undefined) setMvVoltageKv(clean.mvVoltageKv);
+      if (clean.targetPowerplantCapacityKw !== undefined) setTargetPowerplantCapacityKw(clean.targetPowerplantCapacityKw);
       if (clean.enableDieselGenerator !== undefined) setEnableDieselGenerator(Boolean(clean.enableDieselGenerator));
       if (clean.userPricing) setUserPricing(clean.userPricing as unknown as UserFinancialPricing);
       if (clean.selectedChemistry) setSelectedChemistry(clean.selectedChemistry as BatteryChemistry);
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
       if (clean.outageHours !== undefined) setOutageHours(clean.outageHours);
-      // BUG-2: restore tracker config; legacy projects without the field -> null (fixed tilt)
       setTrackerConfig(clean.trackerConfig !== undefined ? clean.trackerConfig : null);
+      setReportMetadata(restored.metadata);
 
-      // State 2: RECOVERED WITH WARNINGS
-      if (migrationResult.migrationStatus === 'RECOVERED_WITH_WARNINGS') {
-        setSaveToast(
-          lang === 'fa'
-            ? `پروژه بازیابی شد (${migrationResult.warnings.length} هشدار فیلدهای مفقود). لطفاً پارامترها را بررسی و تأیید کنید.`
-            : `Project recovered with ${migrationResult.warnings.length} warning(s). Please review and confirm parameters.`
-        );
-        setTimeout(() => setSaveToast(null), 4500);
+      if (restored.migrationStatus === 'RECOVERED_WITH_WARNINGS') {
+        setSaveToast(lang === 'fa'
+          ? `پروژه با تأیید شما بازیابی شد؛ ${migrationResult.warnings.length} هشدار برای بازبینی ثبت شده است.`
+          : `Project applied after your confirmation; ${migrationResult.warnings.length} warning(s) remain for review.`);
       } else {
-        // State 1: VALID
-        setSaveToast(
-          lang === 'fa'
-            ? `پروژه نسخه 3.0.0 با کد ردگیری ${migrationResult.traceId.slice(0, 8)} با موفقیت بارگذاری شد.`
-            : `Project v3.0.0 loaded successfully (Trace: ${migrationResult.traceId.slice(0, 8)})`
-        );
-        setTimeout(() => setSaveToast(null), 3000);
+        setSaveToast(lang === 'fa'
+          ? `پروژه با موفقیت بارگذاری شد (کد: ${migrationResult.traceId.slice(0, 8)}).`
+          : `Project loaded successfully (trace: ${migrationResult.traceId.slice(0, 8)}).`);
       }
+      setTimeout(() => setSaveToast(null), 5500);
+      return true;
     } catch (err) {
       console.error('Project import migration error:', err);
+      setSaveToast(lang === 'fa'
+        ? `فایل پروژه اعمال نشد؛ state بدون تغییر ماند: ${String(err)}`
+        : `Project file was not applied; state remains unchanged: ${String(err)}`);
+      setTimeout(() => setSaveToast(null), 7000);
+      return false;
     }
   };
 
@@ -1950,6 +2089,7 @@ export const App: React.FC = () => {
                     return (
                       <button
                         key={tab.id}
+                        data-testid={`workflow-tab-${tab.id}`}
                         onClick={() => {
                           setActiveTab(tab.id);
                           setIsMobileMenuOpen(false);
@@ -2381,21 +2521,9 @@ export const App: React.FC = () => {
             {activeTab === 'climate' && (
             <ClimateTab
               selectedCity={city}
-              onCityChange={(newCity) => {
-                setCity(newCity);
-                setSelectedSite({
-                  lat: newCity.latitude,
-                  lng: newCity.longitude,
-                  climateData: newCity,
-                });
-              }}
+              onCityChange={transitionSite}
               onCreate3dRooftop={(newCity) => {
-                setCity(newCity);
-                setSelectedSite({
-                  lat: newCity.latitude,
-                  lng: newCity.longitude,
-                  climateData: newCity,
-                });
+                transitionSite(newCity);
                 setActiveTab('3d_viewer');
               }}
               lang={lang}
@@ -2504,19 +2632,36 @@ export const App: React.FC = () => {
           )}
 
           {/* STRUCTURAL & FOUNDATION TAB */}
-          {activeTab === 'structural' && (
+          {activeTab === 'structural' && isSiteUnsizable ? (
+            <div role="alert" className="studio-card border border-amber-500/40 text-amber-200">
+              <strong>{lang === 'fa' ? 'تحلیل سازه‌ای انجام نشد' : 'Structural analysis not assessed'}</strong>
+              <p className="mt-2 text-sm">
+                {lang === 'fa'
+                  ? 'این سایت در وضعیت غیرقابل سایزینگ است؛ هیچ میز یا نتیجه سازه‌ای نمونه/تأییدنشده‌ای برای پروژه صفر نمایش داده نمی‌شود.'
+                  : 'This site is unsizable. No sample tables or unverified structural result is shown for a zero-capacity project.'}
+              </p>
+            </div>
+          ) : activeTab === 'structural' ? (
             <StructuralFoundationTab
               totalModulesCount={arrayDesign.totalModulesCount}
               arrayTiltDeg={city.optimalTiltAnnualDeg}
               city={city}
               siteOverrides={siteOverrides}
-              onUpdateSiteOverrides={(overrides) => setSiteOverrides((prev) => ({ ...prev, ...overrides }))}
+              onUpdateSiteOverrides={setSiteOverrides}
               onUpdateStructuralSnapshot={setStructuralSnapshot}
               modulesPerTable={structuralModulesPerTable}
               onUpdateModulesPerTable={setStructuralModulesPerTable}
+              pendingImportedEmbedmentDepthM={pendingImportedEmbedmentDepthM}
+              onConfirmImportedEmbedmentDepth={() => {
+                if (pendingImportedEmbedmentDepthM !== null) {
+                  setSiteOverrides((prev) => ({ ...prev, customEmbedmentDepthM: pendingImportedEmbedmentDepthM }));
+                  setPendingImportedEmbedmentDepthM(null);
+                }
+              }}
+              onDiscardImportedEmbedmentDepth={() => setPendingImportedEmbedmentDepthM(null)}
               lang={lang}
             />
-          )}
+          ) : null}
 
           {/* 24-HOUR BALANCE SIMULATION */}
           {activeTab === 'sim24h' && systemMode !== 'powerplant' && (
@@ -2630,7 +2775,9 @@ export const App: React.FC = () => {
                 city={city}
                 site={selectedSite}
                 plantCapacityKw={
-                  systemMode === 'powerplant'
+                  isSiteUnsizable
+                    ? 0
+                    : systemMode === 'powerplant'
                     ? (targetPowerplantCapacityKw || 1000)
                     : activePlantCapacityKwp
                 }
@@ -2688,7 +2835,7 @@ export const App: React.FC = () => {
 
           {/* SCENARIOS COMPARISON TAB (Only for Battery modes) */}
           {activeTab === 'scenarios' && systemMode !== 'powerplant' && (
-            <ScenarioComparisonTab scenarios={scenarios} lang={lang} />
+            <ScenarioComparisonTab scenarios={scenarios} peakSunHours={city.peakSunHours} lang={lang} />
           )}
 
           {/* SOLAR WATER PUMPING TAB */}
@@ -2742,9 +2889,35 @@ export const App: React.FC = () => {
           </div>
 
           <div className="hidden sm:flex items-center gap-3">
-            <span className="text-blue-400 font-bold">
-              GATEWAY: NASA POWER v2.0 / PVGIS (SARAH-2) ACTIVE
-            </span>
+            {(() => {
+              const isSolarLive =
+                city.confidence === 'measured' &&
+                (city.fieldProvenance?.peakSunHours?.sourceKind === 'provider_derived' ||
+                  city.fieldProvenance?.peakSunHours?.sourceKind === 'provider_value');
+              const isSoilLive =
+                city.fieldProvenance?.clayFractionPercent?.sourceKind === 'provider_value' ||
+                city.fieldProvenance?.clayFractionPercent?.sourceKind === 'provider_derived';
+              const isBothLive = isSolarLive && isSoilLive;
+              const isMixed = (isSolarLive && !isSoilLive) || (!isSolarLive && isSoilLive);
+
+              return (
+                <span
+                  className={
+                    isBothLive
+                      ? 'text-emerald-400 font-bold'
+                      : isMixed
+                      ? 'text-sky-400 font-bold'
+                      : 'text-amber-400 font-bold'
+                  }
+                >
+                  {isBothLive
+                    ? 'GATEWAY: LIVE — NASA POWER / PVGIS & SOILGRIDS'
+                    : isMixed
+                    ? `GATEWAY: MIXED — ${isSolarLive ? 'SOLAR LIVE, SOIL ANALYTICAL' : 'SOIL LIVE, SOLAR ANALYTICAL'}`
+                    : 'GATEWAY: OFFLINE — REGIONAL ANALYTICAL MODEL'}
+                </span>
+              );
+            })()}
             <span className="text-slate-600">|</span>
             <span className="text-slate-300">
               RFC 3.0.0
@@ -2781,6 +2954,8 @@ export const App: React.FC = () => {
             appliedShading={appliedShadingRecord}
             isShadingStale={isShadingStale}
             bifacialGainPct={bifacialGainPct}
+            reportMetadata={reportMetadata}
+            pendingImportedEmbedmentDepthM={pendingImportedEmbedmentDepthM}
             onClose={() => setShowReportModal(false)}
             onImportProject={handleImportProject}
             lang={lang}
