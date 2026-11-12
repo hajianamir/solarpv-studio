@@ -1,0 +1,1736 @@
+diff --git a/scripts/remediation/verify-phase05.ts b/scripts/remediation/verify-phase05.ts
+index 7c1af20..91fbab8 100644
+--- a/scripts/remediation/verify-phase05.ts
++++ b/scripts/remediation/verify-phase05.ts
+@@ -85,7 +85,12 @@ export interface Phase05Anchor {
+ export interface Phase05Evidence {
+   schema: string;
+   phase: string;
+-  generatedAtCommit: string;
++  generatedAtCommit: string | null;
++  generatedAtTree: string | null;
++  sourceControlAvailable: boolean;
++  workingTreeDirty: boolean | null;
++  workingTreeDiffSha256: string | null;
++  untrackedPaths: string[] | null;
+   phase01BaselineCommit: string;
+   phase02BaselineCommit: string;
+   phase03BaselineCommit: string;
+@@ -96,12 +101,13 @@ export interface Phase05Evidence {
+   checks: Phase05Check[];
+   nonRegression: Record<string, Phase05Anchor>;
+   gates: {
+-    lintErrors: number;
+-    anyWarnings: number;
+-    testPass: number;
+-    testFail: number;
+-    testSkip: number;
+-    buildExit: number;
++    lintErrors: number | null;
++    anyWarnings: number | null;
++    testPass: number | null;
++    testFail: number | null;
++    testSkip: number | null;
++    buildExit: number | null;
++    status: 'not-measured-by-phase05-verifier';
+   };
+ }
+ 
+@@ -567,14 +573,24 @@ export function runPhase05Verification(): Phase05Evidence {
+   // -------------------------------------------------------------------------
+   // 10. Commit & Verification Meta
+   // -------------------------------------------------------------------------
+-  let generatedAtCommit = '0383846b489a7444c9b9195d564fa7847be668f4';
++  let generatedAtCommit: string | null = null;
++  let generatedAtTree: string | null = null;
++  let sourceControlAvailable = false;
++  let workingTreeDirty: boolean | null = null;
++  let workingTreeDiffSha256: string | null = null;
++  let untrackedPaths: string[] | null = null;
+   try {
+-    const commitOutput = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+-    if (commitOutput && commitOutput.length === 40) {
+-      generatedAtCommit = commitOutput;
+-    }
++    generatedAtCommit = execSync('git rev-parse HEAD', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
++    generatedAtTree = execSync('git rev-parse HEAD^{tree}', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
++    sourceControlAvailable = Boolean(generatedAtCommit && generatedAtTree);
++    const status = execSync('git status --porcelain', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
++    workingTreeDirty = status.trim().length > 0;
++    const diff = execSync('git diff --binary HEAD', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
++    workingTreeDiffSha256 = crypto.createHash('sha256').update(diff, 'utf8').digest('hex');
++    untrackedPaths = execSync('git ls-files --others --exclude-standard', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
++      .split(/\r?\n/).filter(Boolean);
+   } catch {
+-    // Fallback to active commit
++    // Archive or export without usable Git metadata: explicitly keep identity unknown.
+   }
+ 
+   const verifierContent = fs.readFileSync(__filename, 'utf8');
+@@ -584,6 +600,11 @@ export function runPhase05Verification(): Phase05Evidence {
+     schema: 'solarpv.audit.phase05.v1',
+     phase: '05',
+     generatedAtCommit,
++    generatedAtTree,
++    sourceControlAvailable,
++    workingTreeDirty,
++    workingTreeDiffSha256,
++    untrackedPaths,
+     phase01BaselineCommit: '91b9b3b',
+     phase02BaselineCommit: '64e0ede',
+     phase03BaselineCommit: '7c4d55c',
+@@ -594,12 +615,13 @@ export function runPhase05Verification(): Phase05Evidence {
+     checks,
+     nonRegression,
+     gates: {
+-      lintErrors: 0,
+-      anyWarnings: 93,
+-      testPass: 196,
+-      testFail: 0,
+-      testSkip: 0,
+-      buildExit: 0,
++      lintErrors: null,
++      anyWarnings: null,
++      testPass: null,
++      testFail: null,
++      testSkip: null,
++      buildExit: null,
++      status: 'not-measured-by-phase05-verifier',
+     },
+   };
+ 
+@@ -653,6 +675,8 @@ if (isMainModule) {
+   console.log(`[PASS] Quantities measured: ${evidence.quantities.length} / 8`);
+   const allChecksPass = evidence.checks.every((c) => c.pass);
+   console.log(`[PASS] Checks executed: ${evidence.checks.length} / 6 (All PASS: ${allChecksPass})`);
++  console.log(`[INFO] Git identity: ${evidence.generatedAtCommit ?? 'unknown'} / tree ${evidence.generatedAtTree ?? 'unknown'}; dirty=${evidence.workingTreeDirty ?? 'unknown'}`);
++  console.log('[INFO] Lint/test/build gate counts: not measured by this verifier (null, not a pass).');
+   const allAnchorsZero = Object.values(evidence.nonRegression).every((a) => a.delta === 0);
+   console.log(
+     `[PASS] Non-regression anchors verified: ${Object.keys(evidence.nonRegression).length} / 6 (All delta 0: ${allAnchorsZero})`
+diff --git a/scripts/remediation/verify-phase07.ts b/scripts/remediation/verify-phase07.ts
+index 123c747..4caafbb 100644
+--- a/scripts/remediation/verify-phase07.ts
++++ b/scripts/remediation/verify-phase07.ts
+@@ -1329,6 +1329,7 @@ function getElementValue(node: any): string {
+     financial: financialUi,
+     onClose: () => {},
+     lang: 'en' as const,
++    projectInputSnapshot: {},
+   };
+ 
+   const htmlSync = ReactDOMServer.renderToString(
+diff --git a/scripts/test-browser-regressions.ts b/scripts/test-browser-regressions.ts
+index abaa88b..a2ad1e6 100644
+--- a/scripts/test-browser-regressions.ts
++++ b/scripts/test-browser-regressions.ts
+@@ -45,7 +45,7 @@ async function main() {
+     args: sparticuzChromium.args,
+     headless: true,
+   });
+-  const context = await browser.newContext({ serviceWorkers: 'block' });
++  const context = await browser.newContext({ serviceWorkers: 'allow' });
+   const page = await context.newPage();
+   let gatewayRequests = 0;
+   await page.route('**/api/v1/gateway/**', async (route) => {
+@@ -54,6 +54,24 @@ async function main() {
+   });
+   await page.route('https://**/*', (route) => route.abort('internetdisconnected'));
+   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
++  await page.evaluate(() => new Promise<void>((resolve, reject) => {
++    if (!('serviceWorker' in navigator)) return reject(new Error('Service workers are unavailable in this browser context'));
++    navigator.serviceWorker.ready.then(() => resolve(), reject);
++  }));
++  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), undefined, { timeout: 15000 });
++  await page.reload({ waitUntil: 'domcontentloaded' });
++  await page.getByTestId('workflow-tab-climate').waitFor({ timeout: 15000 });
++  await page.waitForFunction(async () => {
++    const cache = await caches.open('solarpv-studio-v1');
++    const requests = await cache.keys();
++    return requests.some((request) => new URL(request.url).pathname.startsWith('/assets/'));
++  }, undefined, { timeout: 15000 });
++  await context.setOffline(true);
++  await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 });
++  await page.getByTestId('workflow-tab-climate').waitFor({ timeout: 15000 });
++  assert.equal(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)), true);
++  await context.setOffline(false);
++  console.log('[PASS] Real service worker controls the page and reloads the cached app shell with network offline');
+   artifactDir = await mkdtemp(path.join(os.tmpdir(), 'solarpv-ui-artifacts-'));
+ 
+   const clickTab = async (tab: string) => {
+diff --git a/scripts/test-data-gateway-regressions.ts b/scripts/test-data-gateway-regressions.ts
+index 53c5433..8d4843c 100644
+--- a/scripts/test-data-gateway-regressions.ts
++++ b/scripts/test-data-gateway-regressions.ts
+@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
+ import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvider';
+ import { SoilDataProvider } from '../src/engine/dataGateway/soilDataProvider';
+ import { CircuitBreaker } from '../src/engine/dataGateway/circuitBreaker';
+-import { fetchProvider, runProviderRequest } from '../src/engine/dataGateway/providerRequestLimiter';
++import { fetchProvider, runProviderRequest, runWithDistributedStartGate } from '../src/engine/dataGateway/providerRequestLimiter';
+ import { generateScenarios } from '../src/engine/scenarioEngine';
+ 
+ const originalFetch = globalThis.fetch;
+@@ -46,8 +46,8 @@ async function main() {
+     assert.equal(zeroTexture.sandFractionPercent, 100);
+     assert.equal(zeroTexture.siltFractionPercent, 0);
+     assert.equal(zeroTexture.phH2O, 0);
+-    assert.equal(zeroTexture.fieldProvenance.clayFractionPercent.sourceKind, 'provider_value');
+-    assert.equal(zeroTexture.fieldProvenance.phH2O.sourceKind, 'provider_value');
++    assert.notEqual(zeroTexture.fieldProvenance.clayFractionPercent.sourceKind, 'local_model');
++    assert.notEqual(zeroTexture.fieldProvenance.phH2O.sourceKind, 'local_model');
+   });
+   const partialSoil = soil.parseSoilGridsResponse(35, 51, {
+     properties: { layers: [{ name: 'clay', depths: [{ label: '0-5cm', values: { mean: 280 } }] }] },
+@@ -57,6 +57,32 @@ async function main() {
+     assert.equal(partialSoil.fieldProvenance.clayFractionPercent.sourceKind, 'local_model');
+     assert.match(partialSoil.fieldProvenance.clayFractionPercent.qualityNote ?? '', /ناقص|inconsistent|incomplete|missing/i);
+   });
++  const partialDepth = soil.parseSoilGridsResponse(35, 51, { properties: { layers: [
++    { name: 'clay', depths: [{ label: '0-5cm', values: { mean: 200 } }] },
++    { name: 'sand', depths: [{ label: '0-5cm', values: { mean: 500 } }] },
++    { name: 'silt', depths: [{ label: '0-5cm', values: { mean: 300 } }] },
++    { name: 'bdod', depths: [{ label: '0-5cm', values: { mean: 140 } }] },
++    { name: 'phh2o', depths: [{ label: '0-5cm', values: { mean: 70 } }] },
++  ] } });
++  check('Incomplete depth coverage is disclosed per property, including bulk density and pH', () => {
++    assert.equal(partialDepth.estimatedFromGlobalModel, true);
++    for (const key of ['clayFractionPercent', 'sandFractionPercent', 'siltFractionPercent', 'bulkDensityGPerCm3', 'phH2O'] as const) {
++      assert.equal(partialDepth.fieldProvenance[key].sourceKind, 'provider_derived', `${key} should not claim a complete provider value`);
++      assert.match(partialDepth.fieldProvenance[key].qualityNote ?? '', /Incomplete 0-30cm coverage/);
++    }
++  });
++  const overlappingSoil = soil.parseSoilGridsResponse(35, 51, { properties: { layers: [
++    { name: 'clay', depths: [
++      { label: '0-15cm', values: { mean: 200 } },
++      { label: '10-30cm', values: { mean: 250 } },
++    ] },
++    { name: 'sand', depths: [{ label: '0-30cm', values: { mean: 600 } }] },
++    { name: 'silt', depths: [{ label: '0-30cm', values: { mean: 200 } }] },
++  ] } });
++  check('Overlapping SoilGrids intervals are rejected rather than averaged as 0-30cm coverage', () => {
++    assert.equal(overlappingSoil.estimatedFromGlobalModel, true);
++    assert.equal(overlappingSoil.fieldProvenance.clayFractionPercent.sourceKind, 'local_model');
++  });
+ 
+   let soilCalls = 0;
+   globalThis.fetch = (async () => { soilCalls++; return mkResponse({ error: 'ISRIC unavailable' }, 503); }) as typeof fetch;
+@@ -105,17 +131,49 @@ async function main() {
+     assert.equal(failedResult.metadata.cacheStatus, 'miss');
+   });
+ 
++  let zeroPvgisCalls = 0;
++  let zeroNasaCalls = 0;
+   globalThis.fetch = (async (input: RequestInfo | URL) => {
+     if (String(input).includes('re.jrc')) {
+-      return mkResponse({ outputs: { monthly: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 'H(h)_m': 0 })) } });
++      zeroPvgisCalls++;
++      return mkResponse({ outputs: { monthly: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 'H(h)_m': 0, T2m: 20 })) } });
++    }
++    if (String(input).includes('power.larc')) {
++      zeroNasaCalls++;
++      return mkResponse({ properties: { parameter: { ALLSKY_SFC_SW_DWN: { ANN: 5.4 }, T2M: { ANN: 20 } } } });
+     }
+     return mkResponse({}, 503);
+   }) as typeof fetch;
+   const zeroClimate = await new ClimateDataProvider().fetchClimateResource(35.4, 51.5, { policy: 'prefer_remote' });
+-  check('Valid zero annual irradiance is preserved as zero, never replaced by a positive regional estimate', () => {
++  check('Complete primary-provider zero is preserved as unsizable and does not fall through to positive secondary data', () => {
+     assert.equal(zeroClimate.peakSunHours, 0);
++    assert.equal(zeroClimate.dniKwhM2Day, 0);
++    assert.equal(zeroClimate.dhiKwhM2Day, 0);
+     assert.equal(zeroClimate.fieldProvenance.peakSunHours.value, 0);
+     assert.equal(zeroClimate.fieldProvenance.peakSunHours.providerName, 'PVGIS');
++    assert.equal(zeroClimate.metadata.dataStatus, 'unsizable');
++    assert.equal(zeroPvgisCalls, 1);
++    assert.equal(zeroNasaCalls, 0);
++  });
++
++  let zeroNasaCallsPrimary = 0;
++  let pvgisAfterNasaZero = 0;
++  globalThis.fetch = (async (input: RequestInfo | URL) => {
++    if (String(input).includes('power.larc')) {
++      zeroNasaCallsPrimary++;
++      return mkResponse({ properties: { parameter: { ALLSKY_SFC_SW_DWN: { ANN: 0 }, T2M: { ANN: 20 } } } });
++    }
++    if (String(input).includes('re.jrc')) pvgisAfterNasaZero++;
++    return mkResponse({ outputs: { monthly: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 'H(h)_m': 180 })) } });
++  }) as typeof fetch;
++  const nasaZeroClimate = await new ClimateDataProvider().fetchClimateResource(35.4, -100, { policy: 'prefer_remote' });
++  check('NASA POWER primary zero is a valid unsizable value and does not trigger secondary substitution', () => {
++    assert.equal(nasaZeroClimate.peakSunHours, 0);
++    assert.equal(nasaZeroClimate.dniKwhM2Day, 0);
++    assert.equal(nasaZeroClimate.metadata.sourceProvider, 'NASA_POWER');
++    assert.equal(nasaZeroClimate.metadata.dataStatus, 'unsizable');
++    assert.equal(zeroNasaCallsPrimary, 1);
++    assert.equal(pvgisAfterNasaZero, 0);
+   });
+   const lowPsh = generateScenarios(100, 10, 1, 90000, 18, 0.5);
+   const onePsh = generateScenarios(100, 10, 1, 90000, 18, 1.0);
+@@ -192,22 +250,75 @@ async function main() {
+     assert.ok(maxActive > 1, 'limiter serialized all independent providers unexpectedly');
+   });
+ 
+-  // Cross-instance coordination contract: Redis REST EVAL obtains shared reservation.
+-  let redisReservations = 0;
++  // Cross-instance start-gate: delayed Redis claim responses must not let old slots
++  // bunch up. This is a shared-state REST mock (not a real Redis integration test).
++  let redisCommands = 0;
+   process.env.PROVIDER_LIMITER_REDIS_REST_URL = 'https://redis.example.test';
+   process.env.PROVIDER_LIMITER_REDIS_REST_TOKEN = 'test-token';
+   globalThis.fetch = (async (input: RequestInfo | URL) => {
+     if (String(input).includes('redis.example.test')) {
+-      redisReservations++;
++      redisCommands++;
+       return mkResponse({ result: 0 });
+     }
+     return mkResponse({ ok: true });
+   }) as typeof fetch;
+   await fetchProvider('nominatim', 'https://nominatim.example.test/search');
+-  check('Nominatim request reserves its shared Redis slot in multi-instance mode', () => {
+-    assert.equal(redisReservations, 1);
++  check('Nominatim request uses a distributed claim and post-start release', () => {
++    assert.equal(redisCommands, 2);
+   });
+ 
++  const mockRedis = { lock: '', lastStartMs: 0 };
++  let delayOneClaimResponse = true;
++  const providerStarts: number[] = [];
++  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
++    if (String(input).includes('redis.example.test')) {
++      const body = JSON.parse(String(init?.body)) as unknown[];
++      const script = String(body[1]);
++      const token = String(body[5]);
++      if (script.includes("local owner=redis.call('GET',KEYS[1])")) {
++        if (mockRedis.lock) return mkResponse({ result: -1 });
++        const delay = Math.max(0, mockRedis.lastStartMs + 1050 - Date.now());
++        if (delay > 0) return mkResponse({ result: delay });
++        mockRedis.lock = token;
++        if (delayOneClaimResponse) {
++          delayOneClaimResponse = false;
++          await new Promise((resolve) => setTimeout(resolve, 900));
++        }
++        return mkResponse({ result: 0 });
++      }
++      if (mockRedis.lock === token) {
++        mockRedis.lastStartMs = Date.now();
++        mockRedis.lock = '';
++      }
++      return mkResponse({ result: 1 });
++    }
++    providerStarts.push(Date.now());
++    return mkResponse({ ok: true });
++  }) as typeof fetch;
++  await Promise.all([
++    runWithDistributedStartGate('nominatim', 1050, undefined, async () => { providerStarts.push(Date.now()); return 'first'; }),
++    runWithDistributedStartGate('nominatim', 1050, undefined, async () => { providerStarts.push(Date.now()); return 'second'; }),
++  ]);
++  check('Distributed start gate rechecks after a 900ms asymmetric claim response (mocked Redis REST)', () => {
++    assert.equal(providerStarts.length, 2);
++    assert.ok(providerStarts[1] - providerStarts[0] >= 1040, `actual mocked start gap was ${providerStarts[1] - providerStarts[0]} ms`);
++  });
++
++  const priorNodeEnv = process.env.NODE_ENV;
++  delete process.env.PROVIDER_LIMITER_REDIS_REST_URL;
++  delete process.env.PROVIDER_LIMITER_REDIS_REST_TOKEN;
++  process.env.NODE_ENV = 'production';
++  let failsClosed = false;
++  try {
++    await runWithDistributedStartGate('nominatim', 1050, undefined, async () => 'should-not-start');
++  } catch (error) {
++    failsClosed = String(error).includes('Nominatim is disabled');
++  } finally {
++    if (priorNodeEnv === undefined) delete process.env.NODE_ENV;
++    else process.env.NODE_ENV = priorNodeEnv;
++  }
++  check('Production Nominatim fails closed without a shared coordinator', () => assert.equal(failsClosed, true));
++
+   // Cold offline path is separately guaranteed by the browser test / same-origin contract:
+   // direct browser provider fallback is intentionally absent from fetchClimateData.
+   console.log(`Data gateway regression checks: ${passed.length}/${passed.length} PASS`);
+diff --git a/scripts/verify-all-phases-audit.ts b/scripts/verify-all-phases-audit.ts
+index 1c2c254..bf6ab25 100644
+--- a/scripts/verify-all-phases-audit.ts
++++ b/scripts/verify-all-phases-audit.ts
+@@ -357,7 +357,7 @@ async function runAllPhaseVerifications(): Promise<void> {
+       getItem: (key: string) => failedStorageData.get(key) ?? null,
+       setItem: (key: string, value: string) => {
+         setAttempts++;
+-        if (setAttempts === 2) throw new Error('simulated quota failure');
++        if (setAttempts === 1) throw new Error('simulated quota failure');
+         failedStorageData.set(key, value);
+       },
+       removeItem: (key: string) => { failedStorageData.delete(key); },
+diff --git a/scripts/verify-audit-remediation.ts b/scripts/verify-audit-remediation.ts
+index 3719668..d3414bf 100644
+--- a/scripts/verify-audit-remediation.ts
++++ b/scripts/verify-audit-remediation.ts
+@@ -16,6 +16,7 @@ import { SoilDataProvider } from '../src/engine/dataGateway/soilDataProvider';
+ import { ExternalDataGateway } from '../src/engine/dataGateway/externalDataGateway';
+ import { getClimateData, fetchClimateData, getDefaultClimateCity, applyGeotechnicalOverrides, type ClimateCity, type SiteGeotechnicalOverrides } from '../src/engine/climaticData';
+ import { buildProvenanceRows } from '../src/engine/provenance/provenanceBuilder';
++import { migrateProjectToV3 } from '../src/engine/core/projectMigration';
+ import { generateScenarios } from '../src/engine/scenarioEngine';
+ import fs from 'fs';
+ 
+@@ -177,17 +178,16 @@ async function runAuditVerification() {
+   });
+   assert(resPolar.peakSunHours > 0, 'Polar series with physical 0 kWh months accepted without rejection', `PSH = ${resPolar.peakSunHours}`);
+ 
+-  // 1j. Rejection of all-zero year in parser
++  // 1j. Zero irradiance is valid provider information, not malformed data.
+   const allZeroSeries = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, 'H(h)_m': 0.0 }));
+-  let allZeroThrew = false;
+-  try {
+-    climateProvider.parsePvgisResponse(35.0, 50.0, {
+-      outputs: { monthly: allZeroSeries },
+-    });
+-  } catch (err) {
+-    allZeroThrew = (err as Error).message.includes('zero annual horizontal irradiance');
+-  }
+-  assert(allZeroThrew, 'PVGIS parser rejects all-zero year and throws specific unsizable error for fallback');
++  const allZeroParsed = climateProvider.parsePvgisResponse(35.0, 50.0, {
++    outputs: { monthly: allZeroSeries },
++  });
++  assert(
++    allZeroParsed.peakSunHours === 0 && allZeroParsed.fieldProvenance?.peakSunHours?.sourceKind !== 'local_model',
++    'PVGIS preserves a complete zero-irradiance year as provider data; sizing logic handles zero as unsizable',
++    `PSH=${allZeroParsed.peakSunHours}, source=${allZeroParsed.fieldProvenance?.peakSunHours?.sourceKind}`
++  );
+ 
+   // --------------------------------------------------------------------------
+   // Group 2: Parameter-Level Provenance, ForceAnalytical & Harmonization
+@@ -376,8 +376,8 @@ async function runAuditVerification() {
+   );
+   assert(
+     parsedStaggered.fieldProvenance.clayFractionPercent.sourceKind === 'provider_derived' &&
+-      (parsedStaggered.fieldProvenance.clayFractionPercent.qualityNote?.includes('Staggered depth intervals') ?? false),
+-    'Staggered intervals marked as provider_derived with staggered qualityNote (not false 0-30cm uniform)'
++      (parsedStaggered.fieldProvenance.clayFractionPercent.qualityNote?.includes('Incomplete 0-30cm coverage') ?? false),
++    'Staggered intervals are identified as incomplete 0-30cm provider coverage, not treated as a uniform profile'
+   );
+   assert(
+     parsedStaggered.estimatedFromGlobalModel === true,
+@@ -527,6 +527,25 @@ async function runAuditVerification() {
+   assert(validateCoord(parseInput('')) === false, 'Empty latitude string is rejected as invalid/empty (does NOT mutate to 0 / Equator)');
+   assert(validateCoord(parseInput('0')) === true, 'Explicit 0 latitude is accepted as valid (Equator)');
+ 
++  const lowSunSite = { ...getDefaultClimateCity(), latitude: 12, longitude: 101, peakSunHours: 0, albedo: 1 };
++  const zeroSunRestore = migrateProjectToV3({
++    version: '3.0.0', projectName: 'Zero-sun project', city: lowSunSite, siteOverrides: {}, loads: [],
++  });
++  assert(
++    zeroSunRestore.success && zeroSunRestore.project.city.latitude === 12 &&
++      zeroSunRestore.project.city.longitude === 101 && zeroSunRestore.project.city.peakSunHours === 0 &&
++      zeroSunRestore.project.city.albedo === 1,
++    'Import preserves valid PSH=0, albedo=1.0 and site coordinates without substitution'
++  );
++  const invalidSunRestore = migrateProjectToV3({
++    version: '3.0.0', projectName: 'Invalid site project',
++    city: { ...lowSunSite, peakSunHours: -0.1 }, siteOverrides: {}, loads: [],
++  });
++  assert(
++    !invalidSunRestore.success && invalidSunRestore.migrationStatus === 'BLOCKED_INCONSISTENT',
++    'Invalid site values block the entire import rather than silently replacing the site'
++  );
++
+   // 7e. Zero PSH unsizable protection in scenarioEngine & calculations
+   const scenariosZeroPsh = generateScenarios(0, 200, 1.5, 90_000, 18.0, 0);
+   assert(Array.isArray(scenariosZeroPsh) && scenariosZeroPsh.length > 0, 'generateScenarios handles PSH = 0 without NaN crash');
+@@ -668,11 +687,29 @@ async function runAuditVerification() {
+   const evidencedRows = await buildProvenanceRows(evidencedCity, undefined, true);
+   const evidencedPsh = evidencedRows.find((r) => r.parameter === 'Peak Sun Hours (PSH)');
+   assert(
+-    evidencedPsh?.confidence === 'regulatory',
+-    'Regulatory confidence requires complete, value-bound structured evidence fields',
++    evidencedPsh?.confidence === 'measured',
++    'Self-asserted structured evidence is not promoted to regulatory confidence without an independent trust anchor',
+     `provider = ${evidencedPsh?.provider}, confidence = ${evidencedPsh?.confidence}`
+   );
+ 
++  const malformedEvidenceCity = {
++    ...unverifiedCity,
++    fieldProvenance: {
++      ...unverifiedCity.fieldProvenance,
++      peakSunHours: {
++        ...valueBoundProvenance,
++        regulatoryEvidence: { status: 'verified' },
++      },
++    },
++  } as unknown as ClimateCity;
++  const malformedEvidenceRows = await buildProvenanceRows(malformedEvidenceCity, undefined, true);
++  const malformedEvidencePsh = malformedEvidenceRows.find((r) => r.parameter === 'Peak Sun Hours (PSH)');
++  assert(
++    malformedEvidencePsh?.confidence !== 'regulatory',
++    'Malformed imported regulatory evidence is handled defensively and remains non-regulatory',
++    `confidence = ${malformedEvidencePsh?.confidence}`
++  );
++
+   // Default wind has no field-level evidence; it must not be upgraded to a model/regulatory claim.
+   const rfcWindRow = rfcRows.find((r) => r.parameter === 'Basic Wind Speed');
+   assert(
+diff --git a/src/App.tsx b/src/App.tsx
+index 90198e9..402eb60 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -305,6 +305,7 @@ export const App: React.FC = () => {
+     noctC: defaultMod.noctC ?? 45.0,
+     lengthM: defaultMod.lengthMm / 1000.0,
+     widthM: defaultMod.widthMm / 1000.0,
++    weightKg: defaultMod.weightKg,
+     bifacialityFactor: defaultMod.bifacialityFactor,
+   });
+ 
+@@ -451,6 +452,33 @@ export const App: React.FC = () => {
+     }
+   }, []);
+ 
++  // Canonical project-input snapshot shared by local save, project export and report export.
++  // Report-derived values are kept separately and never replace base site inputs.
++  const buildProjectInputSnapshot = (savedAt = new Date().toISOString(), traceId = generateTraceId()) => ({
++    version: '3.0.0',
++    savedAt,
++    traceId,
++    projectName,
++    systemMode,
++    inverterTech,
++    customBaysCount,
++    mvVoltageKv,
++    city,
++    siteOverrides,
++    loads,
++    selectedModule,
++    selectedInverter,
++    selectedChemistry,
++    autonomyDays,
++    outageHours,
++    targetPowerplantCapacityKw,
++    enableDieselGenerator,
++    userPricing,
++    trackerConfig,
++    metadata: reportMetadata,
++    pendingImportedEmbedmentDepthM,
++  });
++
+   // Save Project to LocalStorage (v3.0.0 Compliant with Trace ID)
+   const handleSaveProject = () => {
+     const timeStr = new Date().toLocaleTimeString(lang === 'fa' ? 'fa-IR' : 'en-US', {
+@@ -459,30 +487,7 @@ export const App: React.FC = () => {
+       second: '2-digit',
+     });
+     const traceId = generateTraceId();
+-    const projectData = {
+-      version: '3.0.0',
+-      savedAt: timeStr,
+-      traceId,
+-      projectName,
+-      systemMode,
+-      inverterTech,
+-      customBaysCount,
+-      mvVoltageKv,
+-      city,
+-      siteOverrides,
+-      loads,
+-      selectedModule,
+-      selectedInverter,
+-      selectedChemistry,
+-      autonomyDays,
+-      outageHours,
+-      targetPowerplantCapacityKw,
+-      enableDieselGenerator,
+-      userPricing,
+-      trackerConfig, // BUG-2: persist tracker config (null = fixed tilt)
+-      metadata: reportMetadata,
+-      pendingImportedEmbedmentDepthM,
+-    };
++    const projectData = buildProjectInputSnapshot(timeStr, traceId);
+     try {
+       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projectData));
+       setLastSavedTime(timeStr);
+@@ -539,30 +544,7 @@ export const App: React.FC = () => {
+ 
+   // Export project with full transfer envelope and custom equipment snapshots (OFF-01)
+   const handleExportProjectJson = () => {
+-    const projectData = {
+-      version: '3.1.0',
+-      savedAt: new Date().toISOString(),
+-      traceId: generateTraceId(),
+-      projectName,
+-      systemMode,
+-      inverterTech,
+-      customBaysCount,
+-      mvVoltageKv,
+-      city,
+-      siteOverrides,
+-      loads,
+-      selectedModule,
+-      selectedInverter,
+-      selectedChemistry,
+-      autonomyDays,
+-      outageHours,
+-      targetPowerplantCapacityKw,
+-      enableDieselGenerator,
+-      userPricing,
+-      trackerConfig,
+-      metadata: reportMetadata,
+-      pendingImportedEmbedmentDepthM,
+-    };
++    const projectData = buildProjectInputSnapshot();
+     const envelope = createProjectTransferEnvelope({
+       projectName,
+       projectData,
+@@ -1591,6 +1573,9 @@ export const App: React.FC = () => {
+ 
+   const currentStructuralInputHash = computeStructuralInputHash({
+     cityId: city.id,
++    moduleLengthM: selectedModule.lengthM,
++    moduleWidthM: selectedModule.widthM,
++    moduleWeightKg: selectedModule.weightKg ?? null,
+     totalModulesCount: arrayDesign.totalModulesCount,
+     arrayTiltDeg: siteOverrides.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28,
+     foundationType: resolvedFoundationType,
+@@ -2644,6 +2629,7 @@ export const App: React.FC = () => {
+           ) : activeTab === 'structural' ? (
+             <StructuralFoundationTab
+               totalModulesCount={arrayDesign.totalModulesCount}
++              selectedModule={selectedModule}
+               arrayTiltDeg={city.optimalTiltAnnualDeg}
+               city={city}
+               siteOverrides={siteOverrides}
+@@ -2955,6 +2941,7 @@ export const App: React.FC = () => {
+             isShadingStale={isShadingStale}
+             bifacialGainPct={bifacialGainPct}
+             reportMetadata={reportMetadata}
++            projectInputSnapshot={buildProjectInputSnapshot()}
+             pendingImportedEmbedmentDepthM={pendingImportedEmbedmentDepthM}
+             onClose={() => setShowReportModal(false)}
+             onImportProject={handleImportProject}
+diff --git a/src/components/OfficialReportModal.tsx b/src/components/OfficialReportModal.tsx
+index 529a946..cf7bb57 100644
+--- a/src/components/OfficialReportModal.tsx
++++ b/src/components/OfficialReportModal.tsx
+@@ -86,6 +86,7 @@ interface OfficialReportModalProps {
+   isShadingStale?: boolean;
+   bifacialGainPct?: number;
+   reportMetadata?: Record<string, unknown>;
++  projectInputSnapshot: Record<string, unknown>;
+   pendingImportedEmbedmentDepthM?: number | null;
+   onClose: () => void;
+   onImportProject?: (projectData: unknown) => boolean | void;
+@@ -124,6 +125,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
+   isShadingStale = false,
+   bifacialGainPct,
+   reportMetadata = {},
++  projectInputSnapshot,
+   pendingImportedEmbedmentDepthM = null,
+   onClose,
+   onImportProject,
+@@ -410,11 +412,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
+ 
+   // Full Project JSON Export with Custom Filename & Custom Equipment Envelope (OFF-01)
+   const handleExportJson = () => {
++    const inputMetadata = projectInputSnapshot.metadata && typeof projectInputSnapshot.metadata === 'object'
++      ? projectInputSnapshot.metadata as Record<string, unknown>
++      : {};
+     const fullProjectState = {
+-      app: 'SolarPV Studio Engineering Platform',
+-      version: '3.1.0',
+-      exportedAt: new Date().toISOString(),
++      ...projectInputSnapshot,
+       metadata: {
++        ...inputMetadata,
+         docId,
+         docVersion,
+         companyName,
+@@ -424,25 +428,25 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
+         detailLevel,
+         engineerNotes,
+       },
+-      projectName,
+-      systemMode,
+-      city: effectiveCity,
+-      siteOverrides,
+-      pendingImportedEmbedmentDepthM,
+-      dataProvenance,
+-      loadAnalysis,
+-      module,
+-      inverter,
+-      selectedModule: module,
+-      selectedInverter: inverter,
+-      arrayDesign,
+-      batterySizing,
+-      protection,
+-      simulation,
+-      generator,
+-      financial,
+-      bayArchitecture,
+-      waterfallReport,
++      // Derived report values are supplemental evidence only. They do not overwrite
++      // the restorable base city, user inputs, or the separate site override layer.
++      reportSnapshot: {
++        app: 'SolarPV Studio Engineering Platform',
++        exportedAt: new Date().toISOString(),
++        effectiveSite: effectiveCity,
++        dataProvenance,
++        loadAnalysis,
++        module,
++        inverter,
++        arrayDesign,
++        batterySizing,
++        protection,
++        simulation,
++        generator,
++        financial,
++        bayArchitecture,
++        waterfallReport,
++      },
+     };
+ 
+     const envelope = createProjectTransferEnvelope({
+diff --git a/src/components/PvArrayEngineeringTab.tsx b/src/components/PvArrayEngineeringTab.tsx
+index 895e38c..1885fc8 100644
+--- a/src/components/PvArrayEngineeringTab.tsx
++++ b/src/components/PvArrayEngineeringTab.tsx
+@@ -344,6 +344,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
+                       noctC: found.noctC ?? 45.0,
+                       lengthM: found.lengthMm / 1000.0,
+                       widthM: found.widthMm / 1000.0,
++                      weightKg: found.weightKg,
+                       bifacialityFactor: found.bifacialityFactor,
+                     });
+                   }
+diff --git a/src/components/RFC3ReportsTab.tsx b/src/components/RFC3ReportsTab.tsx
+index a5779fa..6aebd9b 100644
+--- a/src/components/RFC3ReportsTab.tsx
++++ b/src/components/RFC3ReportsTab.tsx
+@@ -29,7 +29,6 @@ import { PHYSICS_MODEL_REGISTRY, type ModelSemverEntry } from '../engine/core/mo
+ import { generateTraceId } from '../engine/core/modelRegistry';
+ import { runLhsVsCmcBenchmark, type LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
+ import { runMigrationTestSuite, type MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
+-import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
+ import { getClimateData } from '../engine/climaticData';
+ import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
+ import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
+@@ -158,20 +157,16 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
+   const handleFetchClimateApi = async (lat: number, lng: number) => {
+     setIsFetchingClimate(true);
+     try {
+-      let siteData: any = null;
+-      if (isRealInternetEnabled() && typeof window !== 'undefined') {
+-        const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
+-          signal: AbortSignal.timeout(35000),
+-        });
+-        if (r.ok) {
+-          const payload = await r.json();
+-          if (payload?.ok) {
+-            siteData = payload;
+-          }
+-        }
++      if (!isRealInternetEnabled() || typeof window === 'undefined') {
++        throw new Error('Live gateway is disabled; showing local analytical estimate only.');
+       }
+-      if (!siteData) {
+-        siteData = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng);
++      const response = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
++        signal: AbortSignal.timeout(35000),
++      });
++      if (!response.ok) throw new Error(`Same-origin climate gateway returned HTTP ${response.status}`);
++      const siteData = await response.json();
++      if (!siteData?.ok || !siteData?.climateCity || !siteData?.climateResource) {
++        throw new Error('Same-origin climate gateway returned an invalid or incomplete response.');
+       }
+       setClimateApiData({
+         city: siteData.climateCity,
+@@ -181,10 +176,17 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
+     } catch (err) {
+       console.warn('Climate API fetch failed:', err);
+       const fallback = getClimateData(lat, lng);
++      const errorMessage = err instanceof Error ? err.message : String(err);
+       setClimateApiData({
+         city: { ...fallback, confidence: 'analytical_estimate' },
+-        raw: { error: err instanceof Error ? err.message : String(err), fallback: true, latitude: lat, longitude: lng },
+-        traceId: `${fallback.id}-ERROR_FALLBACK`,
++        raw: {
++          error: errorMessage,
++          fallback: true,
++          latitude: lat,
++          longitude: lng,
++          metadata: { sourceProvider: 'REGIONAL_ANALYTICAL_MODEL', isEstimatedFromGlobalModel: true, dataStatus: 'analytical' },
++        },
++        traceId: `${fallback.id}-ANALYTICAL_FALLBACK`,
+       });
+     } finally {
+       setIsFetchingClimate(false);
+@@ -297,6 +299,22 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
+   };
+ 
+ 
++  const climateSourceKinds: string[] = climateApiData?.city?.fieldProvenance
++    ? Object.values(climateApiData.city.fieldProvenance).map((item: any) => item?.sourceKind)
++    : [];
++  const hasUniformProviderProvenance = climateSourceKinds.length > 0 && climateSourceKinds.every(
++    (kind) => kind === 'provider_value' || kind === 'provider_derived'
++  );
++  const climateProvenanceLabel = !climateApiData
++    ? (isRealInternetEnabled() ? 'PROVENANCE: NOT FETCHED' : 'PROVENANCE: ANALYTICAL / OFFLINE')
++    : climateApiData.raw?.fallback
++      ? 'PROVENANCE: ANALYTICAL FALLBACK / GATEWAY ERROR'
++      : climateApiData.raw?.metadata?.dataStatus === 'unsizable'
++        ? 'PROVENANCE: PROVIDER ZERO / UNSIZABLE'
++        : hasUniformProviderProvenance && climateApiData.city?.confidence === 'measured'
++          ? 'PROVENANCE: PROVIDER DATA'
++          : 'PROVENANCE: MIXED / PARTIAL';
++
+   return (
+     <div className="space-y-6">
+       {/* Executive SCADA/CAD Banner */}
+@@ -1036,7 +1054,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
+ 
+           <div className="p-2.5 rounded bg-slate-900/60 border border-industrial-border text-[11px] text-slate-300 flex items-center justify-between gap-2">
+             <div className="flex items-center gap-2">
+-              <span className={`w-2 h-2 rounded-full ${isRealInternetEnabled() ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
++              <span className={`w-2 h-2 rounded-full ${climateProvenanceLabel === 'PROVENANCE: PROVIDER DATA' ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+               <span>
+                 {isRealInternetEnabled()
+                   ? (isEn
+@@ -1048,7 +1066,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
+               </span>
+             </div>
+             <span className="font-mono text-[10px] text-slate-400 shrink-0">
+-              {isRealInternetEnabled() ? 'PROVENANCE: MEASURED / LIVE' : 'PROVENANCE: ANALYTICAL'}
++              {climateProvenanceLabel}
+             </span>
+           </div>
+ 
+diff --git a/src/components/StructuralFoundationTab.tsx b/src/components/StructuralFoundationTab.tsx
+index eb6cc1b..31df53a 100644
+--- a/src/components/StructuralFoundationTab.tsx
++++ b/src/components/StructuralFoundationTab.tsx
+@@ -38,6 +38,7 @@ import {
+ } from '../engine/structuralEngine';
+ import { type ClimateCity, type SiteGeotechnicalOverrides, type SiteDrainageCondition } from '../engine/climaticData';
+ import { type InstallationEnvironment } from '../engine/types/climateTypes';
++import type { ModuleSpecs } from '../engine/pvEngineAdvanced';
+ import {
+   recommendFoundation,
+   type FoundationRecommendationResult,
+@@ -59,6 +60,7 @@ import {
+ 
+ interface StructuralFoundationTabProps {
+   totalModulesCount?: number;
++  selectedModule?: ModuleSpecs;
+   arrayTiltDeg?: number;
+   city?: ClimateCity;
+   siteOverrides?: SiteGeotechnicalOverrides;
+@@ -74,6 +76,7 @@ interface StructuralFoundationTabProps {
+ 
+ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = ({
+   totalModulesCount = 140,
++  selectedModule,
+   arrayTiltDeg = 28,
+   city = {
+     id: 'tehran',
+@@ -398,12 +401,20 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+     }
+   };
+ 
++  const hasValidSelectedModuleSpecs = Boolean(
++    selectedModule && Number.isFinite(selectedModule.lengthM) && selectedModule.lengthM > 0 &&
++    Number.isFinite(selectedModule.widthM) && selectedModule.widthM > 0 &&
++    Number.isFinite(selectedModule.weightKg) && (selectedModule.weightKg ?? 0) > 0
++  );
++
+   const structResult: StructuralAnalysisResult = useMemo(() => {
+     return calculateStructuralAndFoundations({
+       totalModulesCount: modulesCount,
+-      moduleLengthM: 2.278,
+-      moduleWidthM: 1.134,
+-      moduleWeightKg: 28.5,
++      moduleLengthM: selectedModule?.lengthM ?? 2.278,
++      moduleWidthM: selectedModule?.widthM ?? 1.134,
++      // Zero is deliberately used only to keep the diagnostic calculation finite;
++      // a missing mass disables PASS/snapshot publication below.
++      moduleWeightKg: selectedModule?.weightKg ?? 0,
+       tablesCount: Math.ceil(modulesCount / modulesPerTable),
+       modulesPerTable,
+       arrayTiltDeg: tiltDeg,
+@@ -425,6 +436,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+     });
+   }, [
+     modulesCount,
++    selectedModule?.lengthM,
++    selectedModule?.widthM,
++    selectedModule?.weightKg,
+     tiltDeg,
+     modulesPerTable,
+     basicWindSpeedKmh,
+@@ -445,11 +459,18 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+     customPostsPerTable,
+   ]);
+ 
++  const structuralAssessmentPass = hasValidSelectedModuleSpecs && structResult.isStructurallySafe;
++  const bearingAssessmentPass = hasValidSelectedModuleSpecs && structResult.isBearingCapacitySafe;
++
+   // Synchronize live structural calculation snapshot with top-level state
+   useEffect(() => {
++    if (!hasValidSelectedModuleSpecs) return;
+     if (onUpdateStructuralSnapshot) {
+       const inputHash = computeStructuralInputHash({
+         cityId: city.id,
++        moduleLengthM: selectedModule?.lengthM,
++        moduleWidthM: selectedModule?.widthM,
++        moduleWeightKg: selectedModule?.weightKg,
+         totalModulesCount: modulesCount,
+         arrayTiltDeg: tiltDeg,
+         foundationType,
+@@ -469,7 +490,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+         elevationM: city.elevationM || 0,
+         modulesPerTable,
+       });
+-      const snapshot = createStructuralSnapshot(structResult, foundationType, inputHash);
++      const snapshot = createStructuralSnapshot(structResult, foundationType, inputHash, false, selectedModule);
+       onUpdateStructuralSnapshot(snapshot);
+     }
+   }, [
+@@ -477,6 +498,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+     foundationType,
+     city.id,
+     modulesCount,
++    selectedModule?.lengthM,
++    selectedModule?.widthM,
++    selectedModule?.weightKg,
++    hasValidSelectedModuleSpecs,
+     tiltDeg,
+     basicWindSpeedKmh,
+     groundSnowLoadKgM2,
+@@ -538,6 +563,13 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+ 
+   return (
+     <div className="space-y-6">
++      {!hasValidSelectedModuleSpecs && (
++        <div role="alert" className="rounded-lg border border-rose-500/50 bg-rose-500/10 p-4 text-sm text-rose-100">
++          {isEn
++            ? 'UNASSESSED: selected module dimensions and positive mass are required. Diagnostic values below must not be treated as a structural pass; no current structural snapshot is published.'
++            : 'ارزیابی‌نشده: ابعاد و جرم مثبت پنل انتخاب‌شده لازم است. اعداد تشخیصی زیر تأیید سازه‌ای نیستند و snapshot جاری منتشر نمی‌شود.'}
++        </div>
++      )}
+       {pendingImportedEmbedmentDepthM !== null && (
+         <div role="alert" className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100">
+           <strong>{isEn ? 'Imported manual embedment is pending confirmation' : 'عمق دستی واردشده در انتظار تأیید مجدد است'}</strong>
+@@ -2098,14 +2130,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+           <div className="text-xs text-slate-400">{isEn ? 'Post Bearing Pressure' : 'تنش باربری اعمالی به خاک'}</div>
+           <div
+             className={`text-xl font-bold font-mono mt-1 ${
+-              structResult.isBearingCapacitySafe ? 'text-industrial-success' : 'text-rose-400'
++              bearingAssessmentPass ? 'text-industrial-success' : 'text-rose-400'
+             }`}
+           >
+             {structResult.appliedPostBearingPressureKpa} <span className="text-xs font-normal">kPa</span>
+           </div>
+           <div className="text-[10px] text-slate-400 mt-1">
+             {isEn ? 'Allowable:' : 'مجاز:'} {structResult.allowableSoilBearingKpa} kPa (
+-            {structResult.isBearingCapacitySafe ? (isEn ? '✓ OK' : '✓ ایمن') : (isEn ? '✗ Exceeded' : '✗ اضافه تنش')})
++            {bearingAssessmentPass ? (isEn ? '✓ OK' : '✓ ایمن') : (isEn ? '✗ Exceeded' : '✗ اضافه تنش')})
+           </div>
+         </div>
+ 
+@@ -2119,7 +2151,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+           </div>
+           <div
+             className={`text-xl font-bold font-mono mt-1 ${
+-              structResult.isStructurallySafe ? 'text-industrial-success' : 'text-rose-400'
++              structuralAssessmentPass ? 'text-industrial-success' : 'text-rose-400'
+             }`}
+           >
+             {foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block' ? (
+@@ -2165,7 +2197,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+             )}
+           </div>
+           <div id="struct-display-safety-compliance" className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+-            {structResult.isStructurallySafe ? (
++            {structuralAssessmentPass ? (
+               <span className="text-industrial-success flex items-center gap-1">
+                 <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Screening Pass (Evaluated Modes Safe)' : 'غربالگری اولیه تایید (مودهای ارزیابی‌شده ایمن)'}
+               </span>
+@@ -2390,7 +2422,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+               <span className={`font-mono font-bold ${
+                 structResult.upliftCapacityProvenance === 'invalid_input'
+                   ? 'text-rose-400'
+-                  : structResult.upliftCapacityProvenance === 'nominal_assumed' || !structResult.isStructurallySafe
++                  : structResult.upliftCapacityProvenance === 'nominal_assumed' || !structuralAssessmentPass
+                   ? 'text-amber-400'
+                   : 'text-industrial-success'
+               }`}>
+@@ -2477,11 +2509,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
+       <div className="studio-card bg-industrial-surface/90 border border-industrial-border">
+         <div className="flex items-start gap-3">
+           <div className={`p-2 rounded border mt-0.5 ${
+-            structResult.isStructurallySafe
++            structuralAssessmentPass
+               ? 'bg-industrial-accent/10 border-industrial-accent/30 text-industrial-accent'
+               : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+           }`}>
+-            {structResult.isStructurallySafe ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
++            {structuralAssessmentPass ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+           </div>
+           <div>
+             <h4 className="font-bold text-sm text-white mb-1">
+diff --git a/src/engine/catalogRepository.ts b/src/engine/catalogRepository.ts
+index da76a1d..35f78e3 100644
+--- a/src/engine/catalogRepository.ts
++++ b/src/engine/catalogRepository.ts
+@@ -46,6 +46,7 @@ export interface EnhancedCatalogBattery extends CatalogBattery {
+ const LS_CUSTOM_MODULES = 'solarpv_custom_modules_v3';
+ const LS_CUSTOM_INVERTERS = 'solarpv_custom_inverters_v3';
+ const LS_CUSTOM_BATTERIES = 'solarpv_custom_batteries_v3';
++const LS_CUSTOM_CATALOG_V4 = 'solarpv_custom_catalog_v4';
+ // Legacy v2 keys for backward compatibility migration
+ const LS_LEGACY_MODULES = 'solarpv_custom_modules';
+ const LS_LEGACY_INVERTERS = 'solarpv_custom_inverters';
+@@ -113,6 +114,18 @@ export class CatalogRepository {
+     }
+ 
+     try {
++      // Prefer a single versioned envelope. Legacy arrays remain readable for upgrades.
++      const catalogEnvelope = localStorage.getItem(LS_CUSTOM_CATALOG_V4);
++      if (catalogEnvelope) {
++        const parsed = JSON.parse(catalogEnvelope);
++        if (parsed?.version === 4 && parsed.custom && typeof parsed.custom === 'object') {
++          this.customModules = Array.isArray(parsed.custom.modules) ? parsed.custom.modules : [];
++          this.customInverters = Array.isArray(parsed.custom.inverters) ? parsed.custom.inverters : [];
++          this.customBatteries = Array.isArray(parsed.custom.batteries) ? parsed.custom.batteries : [];
++          return;
++        }
++      }
++
+       // 1. Modules
+       let rawMods = localStorage.getItem(LS_CUSTOM_MODULES);
+       if (!rawMods) {
+@@ -171,9 +184,14 @@ export class CatalogRepository {
+       return;
+     }
+     try {
+-      localStorage.setItem(LS_CUSTOM_MODULES, JSON.stringify(this.customModules));
+-      localStorage.setItem(LS_CUSTOM_INVERTERS, JSON.stringify(this.customInverters));
+-      localStorage.setItem(LS_CUSTOM_BATTERIES, JSON.stringify(this.customBatteries));
++      localStorage.setItem(LS_CUSTOM_CATALOG_V4, JSON.stringify({
++        version: 4,
++        custom: {
++          modules: this.customModules,
++          inverters: this.customInverters,
++          batteries: this.customBatteries,
++        },
++      }));
+     } catch (e) {
+       console.error('Failed to save custom catalog to localStorage:', e);
+     }
+@@ -660,26 +678,22 @@ export class CatalogRepository {
+ 
+     if (typeof window !== 'undefined' && window.localStorage) {
+       const storage = window.localStorage;
+-      const keys = [LS_CUSTOM_MODULES, LS_CUSTOM_INVERTERS, LS_CUSTOM_BATTERIES];
+-      let prior: Array<string | null> = [];
++      const key = LS_CUSTOM_CATALOG_V4;
++      let prior: string | null | undefined;
+       try {
+-        prior = keys.map((key) => storage.getItem(key));
+-        storage.setItem(keys[0], JSON.stringify(nextModules));
+-        storage.setItem(keys[1], JSON.stringify(nextInverters));
+-        storage.setItem(keys[2], JSON.stringify(nextBatteries));
++        prior = storage.getItem(key);
++        storage.setItem(key, JSON.stringify({
++          version: 4,
++          custom: { modules: nextModules, inverters: nextInverters, batteries: nextBatteries },
++        }));
+       } catch (error) {
+         const rollbackErrors: string[] = [];
+-        // A failed read means no writes were attempted; never delete keys when the
+-        // rollback snapshot itself was incomplete. Restore every key independently
+-        // so one rollback error does not prevent attempts on the remaining keys.
+-        if (prior.length === keys.length) {
+-          for (let i = 0; i < keys.length; i++) {
+-            try {
+-              if (prior[i] == null) storage.removeItem(keys[i]);
+-              else storage.setItem(keys[i], prior[i]!);
+-            } catch (rollbackError) {
+-              rollbackErrors.push(`${keys[i]}: ${String(rollbackError)}`);
+-            }
++        if (prior !== undefined) {
++          try {
++            if (prior == null) storage.removeItem(key);
++            else storage.setItem(key, prior);
++          } catch (rollbackError) {
++            rollbackErrors.push(`${key}: ${String(rollbackError)}`);
+           }
+         }
+         const errors = [`Could not persist imported equipment atomically: ${String(error)}`];
+diff --git a/src/engine/core/projectMigration.ts b/src/engine/core/projectMigration.ts
+index 54a503e..a5f7c8b 100644
+--- a/src/engine/core/projectMigration.ts
++++ b/src/engine/core/projectMigration.ts
+@@ -81,12 +81,12 @@ export const ClimateCitySchema = z.object({
+   latitude: z.number().min(-90).max(90),
+   longitude: z.number().min(-180).max(180),
+   elevationM: z.number().default(1000),
+-  peakSunHours: z.number().min(0.5).max(12),
++  peakSunHours: z.number().min(0).max(12),
+   daylightHoursDesign: z.number().min(0).max(24).optional().default(9.58),
+   nightHoursDesign: z.number().min(0).max(24).optional().default(14.42),
+   tempMinC: z.number().min(-60).max(50),
+   tempMaxC: z.number().min(-20).max(65),
+-  albedo: z.number().min(0.05).max(0.95).default(0.20),
++  albedo: z.number().min(0).max(1).default(0.20),
+   soilingLossPct: z.number().min(0).max(30).default(4.0),
+   optimalTiltAnnualDeg: z.number().min(0).max(90).default(30),
+   optimalTiltWinterDeg: z.number().min(0).max(90).default(45),
+@@ -284,8 +284,9 @@ export const ModuleSpecsSchema = z.object({
+   tempCoeffVocPct: z.number(),
+   tempCoeffPmpPct: z.number(),
+   noctC: z.number().default(45),
+-  lengthM: z.number().positive().default(2.278),
+-  widthM: z.number().positive().default(1.134),
++  lengthM: z.number().positive().optional(),
++  widthM: z.number().positive().optional(),
++  weightKg: z.number().positive().optional(),
+   bifacialityFactor: z.number().min(0).max(1).default(0.80),
+ });
+ 
+@@ -506,6 +507,39 @@ function normalizeLegacyPricing(raw: any): UserFinancialPricing {
+   return out;
+ }
+ 
++function sanitizeImportedFieldProvenance(raw: unknown, warnings: string[]): Record<string, unknown> | undefined {
++  if (raw === undefined) return undefined;
++  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
++    warnings.push('Imported fieldProvenance was not an object; it was discarded as untrusted metadata.');
++    return undefined;
++  }
++
++  const normalized: Record<string, unknown> = {};
++  for (const [key, entry] of Object.entries(raw as Record<string, unknown>)) {
++    const record = entry && typeof entry === 'object' && !Array.isArray(entry)
++      ? entry as Record<string, unknown>
++      : {};
++    const claimedProvider = typeof record.providerName === 'string' ? record.providerName : 'unknown provider';
++    const claimSummary = typeof record.qualityNote === 'string' && record.qualityNote.trim()
++      ? ` Imported note: ${record.qualityNote.trim()}`
++      : '';
++    normalized[key] = {
++      sourceKind: 'user_input',
++      providerName: 'IMPORTED_USER_DECLARED',
++      retrievedAt: '',
++      ...(typeof record.unit === 'string' ? { unit: record.unit } : {}),
++      ...((typeof record.value === 'number' && Number.isFinite(record.value)) || typeof record.value === 'string'
++        ? { value: record.value }
++        : {}),
++      qualityNote: `Imported provider claim (${claimedProvider}) is user-declared and not independently authenticated.${claimSummary}`,
++    };
++  }
++  if (Object.keys(normalized).length > 0) {
++    warnings.push('Imported field provenance was downgraded to user-declared; imported provider/regulatory claims are not authenticated.');
++  }
++  return normalized;
++}
++
+ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
+   const warnings: string[] = [];
+   const existingTrace = rawInput && typeof rawInput === 'object' && typeof (rawInput as any).traceId === 'string'
+@@ -600,8 +634,10 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
+       const baseCity = raw.city || getFallbackCity();
+       const cityLat = typeof baseCity.latitude === 'number' ? baseCity.latitude : 35.6892;
+       const designH = calculateDesignDaylightHours(cityLat);
++      const importedFieldProvenance = sanitizeImportedFieldProvenance(baseCity.fieldProvenance, warnings);
+       return {
+         ...baseCity,
++        ...(baseCity.fieldProvenance !== undefined ? { fieldProvenance: importedFieldProvenance ?? {} } : {}),
+         daylightHoursDesign: typeof baseCity.daylightHoursDesign === 'number' ? baseCity.daylightHoursDesign : designH.daylightHoursDesign,
+         nightHoursDesign: typeof baseCity.nightHoursDesign === 'number' ? baseCity.nightHoursDesign : designH.nightHoursDesign,
+       };
+@@ -652,6 +688,20 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
+       traceId,
+     };
+   } else {
++    const siteInputIssues = parsed.error.issues.filter((issue) => issue.path[0] === 'city');
++    if (raw.city && siteInputIssues.length > 0) {
++      const blockerReasons = siteInputIssues.map((issue) => `Site input [${issue.path.join('.')}]: ${issue.message}`);
++      return {
++        success: false,
++        migrationStatus: 'BLOCKED_INCONSISTENT',
++        project: createDefaultProjectV3(traceId),
++        migratedFromVersion: originalVersion,
++        requiresUserConfirmation: false,
++        warnings: ['Import blocked: one or more site inputs are invalid. No project or catalog state was applied.'],
++        blockerReasons,
++        traceId,
++      };
++    }
+     // Collect non-fatal field validation issues
+     for (const issue of parsed.error.issues) {
+       warnings.push(`Field [${issue.path.join('.')}]: ${issue.message}`);
+@@ -705,6 +755,7 @@ function getFallbackModule() {
+     noctC: 45,
+     lengthM: 2.278,
+     widthM: 1.134,
++    weightKg: 28.5,
+     bifacialityFactor: 0.80,
+   };
+ }
+diff --git a/src/engine/core/structuralContract.ts b/src/engine/core/structuralContract.ts
+index 620c403..5f613bf 100644
+--- a/src/engine/core/structuralContract.ts
++++ b/src/engine/core/structuralContract.ts
+@@ -656,6 +656,9 @@ export function evaluateEffectiveStructuralSnapshot(
+ 
+ export interface StructuralInputHashParams {
+   cityId: string;
++  moduleLengthM?: number | null;
++  moduleWidthM?: number | null;
++  moduleWeightKg?: number | null;
+   totalModulesCount: number;
+   arrayTiltDeg: number;
+   foundationType: string;
+@@ -683,6 +686,9 @@ export interface StructuralInputHashParams {
+ export function computeStructuralInputHash(params: StructuralInputHashParams): string {
+   return [
+     params.cityId,
++    params.moduleLengthM ?? 'unassessed-length',
++    params.moduleWidthM ?? 'unassessed-width',
++    params.moduleWeightKg ?? 'unassessed-weight',
+     params.totalModulesCount,
+     params.arrayTiltDeg,
+     params.foundationType,
+@@ -724,6 +730,9 @@ export interface StructuralSnapshot {
+   totalPostsCount: number;
+   postsPerTable: number;
+   modulesPerTable?: number;
++  moduleLengthM?: number;
++  moduleWidthM?: number;
++  moduleWeightKg?: number;
+   tableAreaM2: number;
+   qzPa: number;
+   qzKnM2: number;
+@@ -806,7 +815,8 @@ export function createStructuralSnapshot(
+   },
+   foundationType: string,
+   inputHash: string,
+-  isStale: boolean = false
++  isStale: boolean = false,
++  moduleSpecification?: { lengthM?: number; widthM?: number; weightKg?: number }
+ ): StructuralSnapshot {
+   const disclosures = getStructuralHonestyDisclosures();
+   const isRooftopAnchor = foundationType === 'rooftop_anchor_bolted';
+@@ -826,6 +836,9 @@ export function createStructuralSnapshot(
+     totalPostsCount: result.totalPostsCount,
+     postsPerTable: result.postsPerTable,
+     modulesPerTable: result.modulesPerTable,
++    moduleLengthM: moduleSpecification?.lengthM,
++    moduleWidthM: moduleSpecification?.widthM,
++    moduleWeightKg: moduleSpecification?.weightKg,
+     tableAreaM2: result.tableAreaM2,
+     qzPa: result.velocityWindPressureQzN_M2,
+     qzKnM2: Number((result.velocityWindPressureQzN_M2 / 1000).toFixed(3)),
+@@ -968,6 +981,9 @@ export function exportStructuralSheetRows(
+     ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
+     ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
+     ['Structural Analysis Status', 'SYNCHRONIZED', '-', 'Live Structural Tab Snapshot'],
++    ['Selected PV Module Length', snapshot.moduleLengthM ?? 'UNASSESSED', 'm', 'Selected catalog/user module specification'],
++    ['Selected PV Module Width', snapshot.moduleWidthM ?? 'UNASSESSED', 'm', 'Selected catalog/user module specification'],
++    ['Selected PV Module Mass', snapshot.moduleWeightKg ?? 'UNASSESSED', 'kg/module', 'Selected catalog/user module specification'],
+     ['Velocity Wind Pressure (qz)', snapshot.qzPa, 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
+     ['Wind Uplift Force per Table', snapshot.windUpliftForceKn, 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
+     ['Wind Downforce per Table', snapshot.windDownforceKn, 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
+diff --git a/src/engine/dataGateway/climateDataProvider.ts b/src/engine/dataGateway/climateDataProvider.ts
+index 0d8a635..cc8dd3d 100644
+--- a/src/engine/dataGateway/climateDataProvider.ts
++++ b/src/engine/dataGateway/climateDataProvider.ts
+@@ -314,7 +314,7 @@ export class ClimateDataProvider {
+       rawPsh === null ||
+       typeof rawPsh !== 'number' ||
+       !Number.isFinite(rawPsh) ||
+-      rawPsh < 0.1 ||
++      rawPsh < 0 ||
+       rawPsh > 12.0
+     ) {
+       throw new Error(`NASA POWER response missing valid solar irradiance parameter (got ${rawPsh})`);
+@@ -395,6 +395,7 @@ export class ClimateDataProvider {
+         sourceParameter: 'ALLSKY_SFC_SW_DWN',
+         unit: 'kWh/m²/day',
+         value: Number(psh.toFixed(2)),
++        ...(psh === 0 ? { qualityNote: 'Provider returned zero annual GHI; site is unsizable and zero was preserved without secondary-provider substitution.' } : {}),
+       }),
+       dniKwhM2Day: createParameterProvenance('provider_derived', 'NASA_POWER', {
+         sourceDataset: 'NASA POWER Climatology',
+@@ -503,6 +504,8 @@ export class ClimateDataProvider {
+         retrievalTimestamp: new Date().toISOString(),
+         isCached: false,
+         isEstimatedFromGlobalModel: !hasT2M,
++        dataStatus: psh === 0 ? 'unsizable' : 'measured',
++        ...(psh === 0 ? { qualityNotes: ['NASA POWER returned ANN=0; primary-provider zero is preserved and secondary providers are not queried.'] } : {}),
+         geographicRegion: 'NASA POWER Climatology (GEOS-5 FP-IT)',
+         governingStandards: ['NASA POWER Climatology v2.0', 'WMO Guide to Climatological Practices No. 100'],
+       },
+@@ -653,12 +656,12 @@ export class ClimateDataProvider {
+       throw new Error(`PVGIS response covers fewer than 365 days (${totalDays} days), cannot represent annual climatology`);
+     }
+ 
+-    if (totalIrradiationKwh <= 0) {
+-      throw new Error('PVGIS response yielded zero annual horizontal irradiance; falling back to regional analytical model');
++    if (totalIrradiationKwh < 0) {
++      throw new Error('PVGIS response yielded negative annual horizontal irradiance');
+     }
+ 
+     const psh = Number((totalIrradiationKwh / totalDays).toFixed(2));
+-    if (!Number.isFinite(psh) || psh <= 0) {
++    if (!Number.isFinite(psh) || psh < 0) {
+       throw new Error(`PVGIS response produced non-physical daily PSH (${psh})`);
+     }
+     const absLat = Math.abs(lat);
+@@ -707,6 +710,7 @@ export class ClimateDataProvider {
+         unit: 'kWh/m²/day',
+         value: psh,
+         derivationMethod: `Derived from sum of ${monthly.length} monthly horizontal irradiation values / ${totalDays} days`,
++        ...(psh === 0 ? { qualityNote: 'Complete provider year reports zero annual irradiation; preserved as unsizable, without secondary-provider substitution.' } : {}),
+       }),
+       dniKwhM2Day: createParameterProvenance('provider_derived', 'PVGIS', {
+         sourceDataset: 'PVGIS 5.2',
+@@ -795,6 +799,8 @@ export class ClimateDataProvider {
+         retrievalTimestamp: new Date().toISOString(),
+         isCached: false,
+         isEstimatedFromGlobalModel: !hasProviderTemp,
++        dataStatus: psh === 0 ? 'unsizable' : 'measured',
++        ...(psh === 0 ? { qualityNotes: ['PVGIS returned a complete annual zero-irradiation series; primary-provider zero is preserved and secondary providers are not queried.'] } : {}),
+         geographicRegion: 'PVGIS 5.2 SARAH-2 / ERA5',
+         governingStandards: ['PVGIS v5.2 (European Commission JRC)', 'IEC 61724-1 Class A'],
+       },
+diff --git a/src/engine/dataGateway/providerRequestLimiter.ts b/src/engine/dataGateway/providerRequestLimiter.ts
+index 9a203b0..1c2aa50 100644
+--- a/src/engine/dataGateway/providerRequestLimiter.ts
++++ b/src/engine/dataGateway/providerRequestLimiter.ts
+@@ -49,26 +49,78 @@ const wait = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, r
+   signal?.addEventListener('abort', onAbort, { once: true });
+ });
+ 
+-async function reserveDistributedSpacing(provider: string, minIntervalMs: number, signal?: AbortSignal): Promise<void> {
++export async function runWithDistributedStartGate<T>(
++  provider: string,
++  minIntervalMs: number,
++  signal: AbortSignal | undefined,
++  run: () => Promise<T>,
++): Promise<T> {
+   const url = typeof process !== 'undefined' ? process.env.PROVIDER_LIMITER_REDIS_REST_URL : undefined;
+   const token = typeof process !== 'undefined' ? process.env.PROVIDER_LIMITER_REDIS_REST_TOKEN : undefined;
+-  if (!url && !token) return;
++  const isProduction = typeof process !== 'undefined' && process.env.NODE_ENV === 'production';
++  if (!url && !token) {
++    if (provider === 'nominatim' && isProduction) {
++      throw new Error('Nominatim is disabled: configure the shared Redis REST limiter for multi-instance-safe request spacing.');
++    }
++    return run();
++  }
+   if (!url || !token) throw new Error('Both PROVIDER_LIMITER_REDIS_REST_URL and PROVIDER_LIMITER_REDIS_REST_TOKEN are required.');
+-  if (minIntervalMs <= 0) return;
+-
+-  // Redis atomic reservation makes Nominatim spacing safe across Node processes/replicas.
+-  const script = "local t=redis.call('TIME'); local now=t[1]*1000+math.floor(t[2]/1000); local n=tonumber(redis.call('GET',KEYS[1]) or '0'); local slot=math.max(now,n); redis.call('SET',KEYS[1],slot+tonumber(ARGV[1]),'PX',tonumber(ARGV[1])*20); return math.max(0,slot-now)";
+-  const response = await fetch(url, {
+-    method: 'POST',
+-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+-    body: JSON.stringify(['EVAL', script, '1', `solarpv:provider-gap:${provider}`, String(minIntervalMs)]),
+-    signal,
+-  });
+-  if (!response.ok) throw new Error(`Shared provider limiter returned HTTP ${response.status}`);
+-  const payload = await response.json() as { result?: unknown; error?: string };
+-  if (payload.error) throw new Error(`Shared provider limiter error: ${payload.error}`);
+-  const delayMs = Number(payload.result);
+-  if (Number.isFinite(delayMs) && delayMs > 0) await wait(delayMs, signal);
++  if (minIntervalMs <= 0) return run();
++
++  const leaseKey = `solarpv:provider-start-lease:${provider}`;
++  const startKey = `solarpv:provider-last-start:${provider}`;
++  const leaseMs = Math.max(30000, minIntervalMs * 4);
++  const leaseToken = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
++  const claimScript = "local t=redis.call('TIME'); local now=t[1]*1000+math.floor(t[2]/1000); local owner=redis.call('GET',KEYS[1]); if owner then return -1 end; local last=tonumber(redis.call('GET',KEYS[2]) or '0'); local delay=last+tonumber(ARGV[2])-now; if delay>0 then return delay end; redis.call('SET',KEYS[1],ARGV[1],'PX',ARGV[3],'NX'); return 0";
++  const finishScript = "local t=redis.call('TIME'); local now=t[1]*1000+math.floor(t[2]/1000); if redis.call('GET',KEYS[1])==ARGV[1] then redis.call('SET',KEYS[2],now,'PX',ARGV[2]); redis.call('DEL',KEYS[1]); return 1 end; return 0";
++
++  const redisEval = async (script: string, args: string[]) => {
++    throwIfAborted(signal);
++    const response = await fetch(url, {
++      method: 'POST',
++      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
++      body: JSON.stringify(['EVAL', script, '2', leaseKey, startKey, ...args]),
++      signal,
++    });
++    if (!response.ok) throw new Error(`Shared provider limiter returned HTTP ${response.status}`);
++    const payload = await response.json() as { result?: unknown; error?: string };
++    if (payload.error) throw new Error(`Shared provider limiter error: ${payload.error}`);
++    return Number(payload.result);
++  };
++
++  // Each delayed reservation is rechecked at Redis after waiting. A lease serializes
++  // the actual fetch invocation; the last-start timestamp is written after fetch() is
++  // invoked and before releasing the lease, so delayed Redis responses cannot make a
++  // subsequent process reuse an old relative slot. A crashed holder fails closed until
++  // the lease expires; its lease TTL exceeds the provider spacing interval.
++  while (true) {
++    throwIfAborted(signal);
++    const delayMs = await redisEval(claimScript, [leaseToken, String(minIntervalMs), String(leaseMs)]);
++    if (delayMs < 0) {
++      await wait(Math.min(100, minIntervalMs), signal);
++      continue;
++    }
++    if (delayMs > 0) {
++      await wait(delayMs, signal);
++      continue;
++    }
++
++    let providerPromise: Promise<T>;
++    try {
++      throwIfAborted(signal);
++      providerPromise = run();
++    } catch (error) {
++      providerPromise = Promise.reject(error);
++    }
++    try {
++      await redisEval(finishScript, [leaseToken, String(leaseMs * 20)]);
++    } catch (error) {
++      // The lease remains until expiry. Do not claim that the request never started;
++      // preserving the started request is safer than an immediate retry.
++      console.error('[provider-limiter] failed to release start lease; waiting for lease expiry', error);
++    }
++    return await providerPromise;
++  }
+ }
+ 
+ function pump(): void {
+@@ -101,9 +153,8 @@ function pump(): void {
+   state.nextStartByProvider.set(task.provider, Date.now() + task.minIntervalMs);
+   void (async () => {
+     try {
+-      await reserveDistributedSpacing(task.provider, task.minIntervalMs, task.signal);
+       throwIfAborted(task.signal);
+-      task.resolve(await task.run());
++      task.resolve(await runWithDistributedStartGate(task.provider, task.minIntervalMs, task.signal, task.run));
+     } catch (error) {
+       task.reject(error);
+     } finally {
+diff --git a/src/engine/dataGateway/soilDataProvider.ts b/src/engine/dataGateway/soilDataProvider.ts
+index 04e1c0c..2a5027f 100644
+--- a/src/engine/dataGateway/soilDataProvider.ts
++++ b/src/engine/dataGateway/soilDataProvider.ts
+@@ -108,105 +108,122 @@ export class SoilDataProvider {
+   }
+ 
+   public parseSoilGridsResponse(lat: number, lng: number, json: any): SoilPropertiesData {
+-    // Helper to calculate depth interval thickness in cm (e.g., 0-5cm -> 5cm, 5-15cm -> 10cm, 15-30cm -> 15cm)
+-    const parseLayerThicknessCm = (depthObj: any): number => {
++    // SoilGrids output is evaluated against its requested 0-30 cm domain. Unknown,
++    // duplicated or overlapping intervals are never converted into assumed thicknesses.
++    const parseDepthInterval = (depthObj: any): { top: number; bottom: number; label: string } | null => {
++      let top: number;
++      let bottom: number;
+       if (typeof depthObj?.range?.top_depth === 'number' && typeof depthObj?.range?.bottom_depth === 'number') {
+-        const thickness = depthObj.range.bottom_depth - depthObj.range.top_depth;
+-        if (thickness > 0) return thickness;
+-      }
+-      const label = String(depthObj?.label || '');
+-      const match = label.match(/(\d+)-(\d+)\s*cm/i);
+-      if (match) {
+-        const top = parseInt(match[1], 10);
+-        const bottom = parseInt(match[2], 10);
+-        if (bottom > top) return bottom - top;
++        top = depthObj.range.top_depth;
++        bottom = depthObj.range.bottom_depth;
++      } else if (typeof depthObj?.label === 'string') {
++        const match = depthObj.label.match(/(\d+)-(\d+)\s*cm/i);
++        if (!match) return null;
++        top = Number(match[1]);
++        bottom = Number(match[2]);
++      } else {
++        return null;
+       }
+-      return 10;
++      if (!Number.isFinite(top) || !Number.isFinite(bottom) || top < 0 || bottom <= top || bottom > 30) return null;
++      return { top, bottom, label: `${top}-${bottom}cm` };
+     };
+ 
+-    // SoilGrids units: clay/sand/silt in g/kg (divide by 10 to get %), bdod in cg/cm3 (divide by 100 for g/cm3)
+     let clayPct = 25.0;
+     let sandPct = 50.0;
+     let siltPct = 25.0;
+     let bdodGcm3 = 1.45;
+     let ph = 7.0;
+-
+     let hasClay = false;
+     let hasSand = false;
+     let hasSilt = false;
+     let hasBdod = false;
+     let hasPh = false;
+-    let minTopDepth = Infinity;
+-    let maxBottomDepth = -Infinity;
+     const depthByProperty: Record<string, string> = {};
++    const depthCoverageComplete: Record<string, boolean> = {};
++    const depthProblemByProperty: Record<string, string> = {};
++    const knownProperties = new Set(['clay', 'sand', 'silt', 'bdod', 'phh2o']);
++    const seenProperties = new Set<string>();
+ 
+     const layers = json?.properties?.layers;
+-    if (Array.isArray(layers) && layers.length > 0) {
++    if (Array.isArray(layers)) {
+       for (const layer of layers) {
++        const name = String(layer?.name ?? '');
++        if (!knownProperties.has(name)) continue;
++        if (seenProperties.has(name)) {
++          depthProblemByProperty[name] = 'duplicate property layer';
++          continue;
++        }
++        seenProperties.add(name);
+         const depths = layer?.depths;
+-        let sumWeighted = 0;
+-        let sumWeight = 0;
+-        let propMinTop = Infinity;
+-        let propMaxBottom = -Infinity;
+-        if (Array.isArray(depths) && depths.length > 0) {
+-          for (const d of depths) {
+-            const val = d?.values?.mean;
+-            // Filter out negative sentinels (e.g. -999)
+-            if (typeof val === 'number' && Number.isFinite(val) && val >= 0) {
+-              const weight = parseLayerThicknessCm(d);
+-              sumWeighted += val * weight;
+-              sumWeight += weight;
+-
+-              let top = Infinity;
+-              let bottom = -Infinity;
+-              if (typeof d?.range?.top_depth === 'number' && typeof d?.range?.bottom_depth === 'number') {
+-                top = d.range.top_depth;
+-                bottom = d.range.bottom_depth;
+-              } else if (typeof d?.label === 'string') {
+-                const m = d.label.match(/(\d+)-(\d+)/);
+-                if (m) {
+-                  top = parseInt(m[1], 10);
+-                  bottom = parseInt(m[2], 10);
+-                }
+-              }
+-              if (Number.isFinite(top) && Number.isFinite(bottom) && top >= 0 && bottom > top) {
+-                propMinTop = Math.min(propMinTop, top);
+-                propMaxBottom = Math.max(propMaxBottom, bottom);
+-                minTopDepth = Math.min(minTopDepth, top);
+-                maxBottomDepth = Math.max(maxBottomDepth, bottom);
+-              }
+-            }
++        if (!Array.isArray(depths) || depths.length === 0) {
++          depthProblemByProperty[name] = 'no depth records';
++          continue;
++        }
++        const samples: Array<{ top: number; bottom: number; label: string; value: number }> = [];
++        let invalidRecord = false;
++        for (const depth of depths) {
++          const interval = parseDepthInterval(depth);
++          const value = depth?.values?.mean;
++          if (!interval || typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
++            invalidRecord = true;
++            continue;
+           }
++          samples.push({ ...interval, value });
++        }
++        samples.sort((a, b) => a.top - b.top || a.bottom - b.bottom);
++        for (let i = 1; i < samples.length; i++) {
++          if (samples[i].top < samples[i - 1].bottom) invalidRecord = true;
+         }
+-        if (sumWeight > 0) {
+-          const meanVal = sumWeighted / sumWeight;
+-          const propLabel = Number.isFinite(propMinTop) && Number.isFinite(propMaxBottom)
+-            ? `${propMinTop}-${propMaxBottom}cm`
+-            : '0-30cm';
+-          depthByProperty[layer.name] = propLabel;
+-          if (layer.name === 'clay') { clayPct = meanVal / 10.0; hasClay = true; }
+-          if (layer.name === 'sand') { sandPct = meanVal / 10.0; hasSand = true; }
+-          if (layer.name === 'silt') { siltPct = meanVal / 10.0; hasSilt = true; }
+-          if (layer.name === 'bdod') { bdodGcm3 = meanVal / 100.0; hasBdod = true; }
+-          if (layer.name === 'phh2o') { ph = meanVal / 10.0; hasPh = true; }
++        if (invalidRecord || samples.length === 0) {
++          depthProblemByProperty[name] = invalidRecord ? 'invalid, duplicate or overlapping depth record' : 'no valid interval';
++          continue;
+         }
++
++        let coveredTo = 0;
++        let complete = samples[0].top === 0;
++        for (const sample of samples) {
++          if (sample.top !== coveredTo) complete = false;
++          coveredTo = sample.bottom;
++        }
++        complete = complete && coveredTo === 30;
++        const weighted = samples.reduce((sum, sample) => sum + sample.value * (sample.bottom - sample.top), 0);
++        const weight = samples.reduce((sum, sample) => sum + (sample.bottom - sample.top), 0);
++        const mean = weighted / weight;
++        const labels = samples.map((sample) => sample.label);
++        depthByProperty[name] = labels.join(' + ');
++        depthCoverageComplete[name] = complete;
++        if (!complete) {
++          const gaps: string[] = [];
++          let cursor = 0;
++          for (const sample of samples) {
++            if (sample.top > cursor) gaps.push(`${cursor}-${sample.top}cm missing`);
++            cursor = Math.max(cursor, sample.bottom);
++          }
++          if (cursor < 30) gaps.push(`${cursor}-30cm missing`);
++          depthProblemByProperty[name] = gaps.join(', ') || 'incomplete 0-30 cm coverage';
++        }
++        if (name === 'clay') { clayPct = mean / 10.0; hasClay = true; }
++        if (name === 'sand') { sandPct = mean / 10.0; hasSand = true; }
++        if (name === 'silt') { siltPct = mean / 10.0; hasSilt = true; }
++        if (name === 'bdod') { bdodGcm3 = mean / 100.0; hasBdod = true; }
++        if (name === 'phh2o') { ph = mean / 10.0; hasPh = true; }
+       }
+     }
+ 
+-    const depthLabel = Number.isFinite(minTopDepth) && Number.isFinite(maxBottomDepth)
+-      ? `${minTopDepth}-${maxBottomDepth}cm`
+-      : '0-30cm';
+-
++    const depthLabel = 'NO_VALID_INTERVAL';
+     const clayDepth = depthByProperty.clay || depthLabel;
+     const sandDepth = depthByProperty.sand || depthLabel;
+     const siltDepth = depthByProperty.silt || depthLabel;
+     const bdodDepth = depthByProperty.bdod || depthLabel;
+     const phDepth = depthByProperty.phh2o || depthLabel;
+-
+-    const hasUniformDepth = clayDepth === sandDepth && sandDepth === siltDepth;
++    const requiredDepthProperties = ['clay', 'sand', 'silt', 'bdod', 'phh2o'];
++    const hasUniformDepth = requiredDepthProperties.every((name) => depthCoverageComplete[name] === true);
++    const depthDescriptions = requiredDepthProperties.map((name) =>
++      `${name} (${depthByProperty[name] || 'unavailable'}${depthProblemByProperty[name] ? `; ${depthProblemByProperty[name]}` : ''})`
++    );
+     const depthOverlapNote = hasUniformDepth
+       ? undefined
+-      : `Staggered depth intervals: clay (${clayDepth}), sand (${sandDepth}), silt (${siltDepth}). Texture triad computed across staggered depths.`;
++      : `Incomplete 0-30cm coverage or inconsistent interval records: ${depthDescriptions.join('; ')}. Values use only valid listed intervals and are not a complete 0-30cm profile.`;
+ 
+     // Check individual fraction bounds (0 to 100%)
+     if (hasClay && (clayPct < 0 || clayPct > 100)) hasClay = false;
+@@ -301,11 +318,12 @@ export class SoilDataProvider {
+             qualityNote: `لایه خاک در پاسخ ISRIC ناقص یا ناسازگار بود (${missingFractions.join(', ')}) — برآورد تحلیلی`,
+           }),
+       bulkDensityGPerCm3: hasBdod
+-        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
++        ? createParameterProvenance(depthCoverageComplete.bdod ? 'provider_value' : 'provider_derived', 'ISRIC_SOILGRIDS', {
+             sourceDataset: 'SoilGrids 250m v2.0',
+             sourceParameter: `bdod/mean (${bdodDepth})`,
+             unit: 'g/cm³',
+             value: Number(bdodGcm3.toFixed(2)),
++            qualityNote: depthCoverageComplete.bdod ? undefined : depthOverlapNote,
+           })
+         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+             unit: 'g/cm³',
+@@ -314,11 +332,12 @@ export class SoilDataProvider {
+             qualityNote: 'چگالی ظاهری خاک در پاسخ ISRIC وجود نداشت — برآورد تحلیلی',
+           }),
+       phH2O: hasPh
+-        ? createParameterProvenance('provider_value', 'ISRIC_SOILGRIDS', {
++        ? createParameterProvenance(depthCoverageComplete.phh2o ? 'provider_value' : 'provider_derived', 'ISRIC_SOILGRIDS', {
+             sourceDataset: 'SoilGrids 250m v2.0',
+             sourceParameter: `phh2o/mean (${phDepth})`,
+             unit: 'pH',
+             value: Number(ph.toFixed(1)),
++            qualityNote: depthCoverageComplete.phh2o ? undefined : depthOverlapNote,
+           })
+         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
+             unit: 'pH',
+diff --git a/src/engine/dataGateway/types.ts b/src/engine/dataGateway/types.ts
+index 3b14f2b..a4f00f0 100644
+--- a/src/engine/dataGateway/types.ts
++++ b/src/engine/dataGateway/types.ts
+@@ -87,6 +87,8 @@ export interface DataProvenanceMetadata {
+   fetchPolicy?: DataFetchPolicy;
+   cacheStatus?: 'hit' | 'miss' | 'bypassed';
+   circuitBreakerStatus?: CircuitBreakerState;
++  dataStatus?: 'measured' | 'mixed' | 'analytical' | 'unsizable';
++  qualityNotes?: string[];
+   geographicRegion: string;
+   governingStandards: string[];
+ }
+diff --git a/src/engine/provenance/projectProvenance.ts b/src/engine/provenance/projectProvenance.ts
+index b9f8721..2ecb884 100644
+--- a/src/engine/provenance/projectProvenance.ts
++++ b/src/engine/provenance/projectProvenance.ts
+@@ -36,16 +36,18 @@ const FIELD_DEFINITIONS: Array<{ key: keyof ClimateCity; parameter: string; unit
+ ];
+ 
+ function evidenceIsValid(prov: ParameterProvenance | undefined, value: number, unit: string): boolean {
+-  const e = prov?.regulatoryEvidence;
+-  return Boolean(
+-    prov?.sourceKind === 'provider_value' &&
+-    e?.status === 'verified' &&
+-    e.authorityId.trim() && e.standardCode.trim() && e.edition.trim() &&
+-    e.datasetId.trim() && e.recordId.trim() &&
+-    e.authorityId === prov.providerName && e.datasetId === prov.sourceDataset &&
+-    e.value === value && e.unit === unit && prov.value === value && prov.unit === unit &&
+-    Number.isFinite(Date.parse(e.retrievedAt))
+-  );
++  const e = prov?.regulatoryEvidence as unknown;
++  if (!e || typeof e !== 'object' || Array.isArray(e)) return false;
++  const record = e as Record<string, unknown>;
++  const requiredStrings = ['authorityId', 'standardCode', 'edition', 'datasetId', 'recordId', 'unit', 'retrievedAt'];
++  if (requiredStrings.some((key) => typeof record[key] !== 'string' || !(record[key] as string).trim())) return false;
++  if (record.status !== 'verified' || typeof record.value !== 'number' || !Number.isFinite(record.value)) return false;
++  // No signature/key trust anchor is currently implemented. Structurally complete,
++  // value-bound evidence is still a claim, not independently authenticated evidence.
++  void prov;
++  void value;
++  void unit;
++  return false;
+ }
+ 
+ /** Single source of truth for value + unit + provenance shown/exported by all report surfaces. */
+diff --git a/src/engine/provenance/provenanceBuilder.ts b/src/engine/provenance/provenanceBuilder.ts
+index bdbf11d..0e4e147 100644
+--- a/src/engine/provenance/provenanceBuilder.ts
++++ b/src/engine/provenance/provenanceBuilder.ts
+@@ -22,23 +22,18 @@ function isVerifiedRegulatoryEvidence(
+   value: number,
+   unit: string,
+ ): boolean {
+-  const evidence = provenance?.regulatoryEvidence;
+-  return Boolean(
+-    provenance?.sourceKind === 'provider_value' &&
+-    evidence?.status === 'verified' &&
+-    evidence.authorityId.trim() &&
+-    evidence.standardCode.trim() &&
+-    evidence.edition.trim() &&
+-    evidence.datasetId.trim() &&
+-    evidence.recordId.trim() &&
+-    evidence.authorityId === provenance.providerName &&
+-    evidence.datasetId === provenance.sourceDataset &&
+-    evidence.value === value &&
+-    evidence.unit === unit &&
+-    provenance.value === value &&
+-    provenance.unit === unit &&
+-    Number.isFinite(Date.parse(evidence.retrievedAt))
+-  );
++  const evidence = provenance?.regulatoryEvidence as unknown;
++  if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) return false;
++  const record = evidence as Record<string, unknown>;
++  const requiredStrings = ['authorityId', 'standardCode', 'edition', 'datasetId', 'recordId', 'unit', 'retrievedAt'];
++  if (requiredStrings.some((key) => typeof record[key] !== 'string' || !(record[key] as string).trim())) return false;
++  if (record.status !== 'verified' || typeof record.value !== 'number' || !Number.isFinite(record.value)) return false;
++  // The app has no independent signature/key trust anchor; a complete assertion
++  // must not be promoted to regulatory confidence by matching its own fields.
++  void provenance;
++  void value;
++  void unit;
++  return false;
+ }
+ 
+ function makeFieldRow(
+diff --git a/src/engine/pvEngineAdvanced.ts b/src/engine/pvEngineAdvanced.ts
+index e7b7712..839e966 100644
+--- a/src/engine/pvEngineAdvanced.ts
++++ b/src/engine/pvEngineAdvanced.ts
+@@ -19,6 +19,8 @@ export interface ModuleSpecs {
+   noctC: number;            // e.g. 45 °C
+   lengthM: number;          // e.g. 2.278 m
+   widthM: number;           // e.g. 1.134 m
++  /** Catalog module mass; absent legacy/custom data leaves structural assessment unassessed. */
++  weightKg?: number;
+   bifacialityFactor?: number; // e.g. 0.70
+ }
+ 
