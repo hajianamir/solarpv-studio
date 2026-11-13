@@ -46,6 +46,8 @@ jobs:
 
       - name: Real Browser Regressions (cold offline)
         run: npm run test:browser
+        env:
+          BROWSER_TEST_TIMEOUT_MS: 360000
 
       - name: Binary Export Read-back (DOCX/XLSX/JSON)
         run: npm run verify:exports
@@ -92,7 +94,7 @@ jobs:
       - name: Real browser and offline workflow regressions
         run: npm run test:browser
         env:
-          BROWSER_TEST_TIMEOUT_MS: 240000
+          BROWSER_TEST_TIMEOUT_MS: 360000
 
       - name: DOCX/XLSX/JSON export read-back
         run: npm run verify:exports

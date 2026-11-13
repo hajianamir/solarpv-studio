@@ -715,8 +715,13 @@ const suiteTimeout = new Promise<never>((_resolve, reject) => {
     browserSuiteTimeoutMs,
   );
 });
-Promise.race([main(), suiteTimeout]).catch((error) => {
-  console.error('[FAIL] Browser regressions:', error);
+Promise.race([main(), suiteTimeout]).catch(async (error) => {
+  const failure = error instanceof Error ? (error.stack ?? error.message) : String(error);
+  console.error('[FAIL] Browser regressions:', failure);
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const { appendFile } = await import('node:fs/promises');
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, `\n### Browser regression failure\n\n\`\`\`text\n${failure}\n\`\`\`\n`, 'utf8').catch(() => undefined);
+  }
   process.exitCode = 1;
 }).finally(async () => {
   clearTimeout(suiteTimeoutHandle);
