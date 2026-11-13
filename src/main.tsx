@@ -44,10 +44,14 @@ if ('serviceWorker' in navigator && typeof window !== 'undefined') {
     // stale optimized modules until the controlled page is navigated away.
     const cleanupKey = 'solarpv-dev-sw-cleanup-reload';
     void navigator.serviceWorker.getRegistrations().then(async (registrations) => {
-      if (registrations.length > 0) {
-        await Promise.all(registrations.map((registration) => registration.unregister()));
+      const appRegistrations = registrations.filter((registration) =>
+        [registration.active, registration.waiting, registration.installing]
+          .some((worker) => worker && new URL(worker.scriptURL).pathname === '/sw.js'),
+      );
+      if (appRegistrations.length > 0) {
+        await Promise.all(appRegistrations.map((registration) => registration.unregister()));
       }
-      if (navigator.serviceWorker.controller && sessionStorage.getItem(cleanupKey) !== '1') {
+      if (appRegistrations.length > 0 && navigator.serviceWorker.controller && sessionStorage.getItem(cleanupKey) !== '1') {
         sessionStorage.setItem(cleanupKey, '1');
         window.location.reload();
       } else if (!navigator.serviceWorker.controller) {
