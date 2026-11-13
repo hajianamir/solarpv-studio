@@ -355,6 +355,7 @@ async function main() {
   await mapCanvas.scrollIntoViewIfNeeded();
   const mapBox = await mapCanvas.boundingBox();
   assert.ok(mapBox && mapBox.width > 100 && mapBox.height > 100, 'real Leaflet map canvas is not visible');
+  await page.getByRole('alert').getByText(/Map tiles could not be reached|کاشی‌های نقشه قابل دسترسی نیستند/).waitFor({ timeout: 15000 });
   await page.mouse.click(mapBox!.x + mapBox!.width * 0.78, mapBox!.y + mapBox!.height * 0.78);
   await page.waitForFunction(({ oldLat, oldLng }) => {
     const lat = (document.querySelector('#map-coord-latitude') as HTMLInputElement | null)?.value;
