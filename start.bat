@@ -9,8 +9,11 @@ echo ===========================================================================
 echo.
 
 node -v >nul 2>&1 || goto :NoNode
-for /f "tokens=1 delims=v." %%v in ('node -v') do set "NODE_MAJOR=%%v"
+rem Ask Node for the numeric major directly. Parsing human-readable v22.x.y output
+rem with FOR /F delimiters is fragile on some Windows command processors.
+for /f "delims=" %%v in ('node -p "process.versions.node.split('.')[0]" 2^>nul') do set "NODE_MAJOR=%%v"
 if not defined NODE_MAJOR goto :NoNode
+echo [INFO] Detected Node.js v%NODE_MAJOR%.
 if %NODE_MAJOR% LSS 20 (
     echo [ERROR] Node.js v%NODE_MAJOR% is not supported. Node.js v20.x or v22.x LTS is required.
     echo [ERROR] Modern tooling requires Node.js ^>= 20 (Node 18 results in EBADENGINE).
@@ -20,10 +23,13 @@ if %NODE_MAJOR% LSS 20 (
 
 call npm -v >nul 2>&1 || goto :NoNpm
 
-if not exist ".env" if exist ".env.example" (
-    echo [INFO] Creating .env from .env.example ...
-    copy /y ".env.example" ".env" >nul
-)
+rem Avoid a nested IF/parenthesized block here: cmd.exe can misparse it
+rem on some Windows installations before producing any useful diagnostic.
+if exist ".env" goto :EnvFileReady
+if not exist ".env.example" goto :EnvFileReady
+echo [INFO] Creating .env from .env.example ...
+copy /y ".env.example" ".env" >nul
+:EnvFileReady
 
 set "APP_PORT="
 if defined PORT set "APP_PORT=%PORT%"
