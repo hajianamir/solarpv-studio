@@ -1690,7 +1690,7 @@ export const App: React.FC = () => {
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       {updateWaiting && (
-        <div role="status" className="fixed top-0 inset-x-0 z-[70] bg-amber-900 text-amber-50 px-4 py-2 text-xs text-center">
+        <div role="status" className="fixed top-0 inset-x-0 z-[70] pointer-events-none bg-amber-900 text-amber-50 px-4 py-2 text-xs text-center">
           {lang === 'fa'
             ? 'نسخهٔ جدید آماده است. کار خود را در همهٔ زبانه‌ها ذخیره یا صادر کنید؛ نسخهٔ جدید پس از بستن زبانه‌های قدیمی فعال می‌شود. بارگذاری مجدد ممکن است تغییرات ذخیره‌نشده را از بین ببرد.'
             : 'An update is ready. Save or export work in every tab; it activates after the old tabs close. Reloading may discard unsaved edits.'}
