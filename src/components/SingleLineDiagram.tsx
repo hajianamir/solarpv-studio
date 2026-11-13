@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { AcConnectionRequirement, AcRequirements } from '../engine/acRequirements';
 import { Layers, Download, ZoomIn, ZoomOut, Info, Shield, Zap, Sun, Battery as BatteryIcon } from 'lucide-react';
 
 interface SldProps {
@@ -16,13 +17,17 @@ interface SldProps {
   batteryVoltageVdc: number;
   batteryAh: number;
   batteryFuseAmps: number;
-  acCurrentAmps: number;
-  dcCableMm2: number;
-  batCableMm2: number;
-  acCableMm2: number;
+  acCurrentAmps: number | null;
+  acOutputVoltageVolts: number | null;
+  acFrequencyHz: number | null;
+  acRequirements?: AcRequirements | null;
+  mvCollectorVoltageKv?: number | null;
+  dcCableMm2: number | null;
+  batCableMm2: number | null;
+  acCableMm2: number | null;
   isUtilityPowerplant?: boolean;
-  targetGroundResistanceOhms?: number;
-  batteryRackBondingMm2?: number;
+  targetGroundResistanceOhms?: number | null;
+  batteryRackBondingMm2?: number | null;
   dcSystemEarthing?: 'floating' | 'functional_negative' | 'functional_positive';
   lang?: 'fa' | 'en';
 }
@@ -43,6 +48,10 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
   batteryAh,
   batteryFuseAmps,
   acCurrentAmps,
+  acOutputVoltageVolts,
+  acFrequencyHz,
+  acRequirements,
+  mvCollectorVoltageKv,
   dcCableMm2,
   batCableMm2,
   acCableMm2,
@@ -56,8 +65,17 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
-  const targetResistance = targetGroundResistanceOhms ?? (isUtilityPowerplant ? 1.0 : 4.0);
-  const bessBondingMm2 = batteryRackBondingMm2 ?? 16;
+  const targetResistance = targetGroundResistanceOhms ?? null;
+  const bessBondingMm2 = batteryRackBondingMm2 ?? null;
+  const describeConnection = (connection?: AcConnectionRequirement) => {
+    if (!connection) return isEn ? 'unknown / not supplied' : 'نامشخص / وارد نشده';
+    const status = connection.confirmed ? (isEn ? 'user-confirmed' : 'تأیید کاربر') : (isEn ? 'UNCONFIRMED' : 'تأییدنشده');
+    return `${status}; ${connection.phase}; L-L ${connection.lineToLineVolts ?? 'unknown'} V; L-N ${connection.lineToNeutralVolts ?? 'unknown'} V; ${connection.frequencyHz ?? 'unknown'} Hz; PF ${connection.powerFactor ?? 'unknown'}; fault ${connection.availableFaultCurrentKa ?? 'unknown'} kA; clear ${connection.faultClearingTimeSec ?? 'unknown'} s`;
+  };
+  const injection = acRequirements?.injection;
+  const describeInjection = !injection || !injection.confirmed
+    ? `${injection?.level ?? 'unknown'}; ${injection?.nominalKv ?? 'unknown'} kV; ${isEn ? 'UNCONFIRMED' : 'تأییدنشده'}`
+    : `${injection.level}; ${injection.level === 'not_applicable' ? 'not applicable' : `${injection.nominalKv ?? 'unknown'} kV`}; ${isEn ? 'user-confirmed' : 'تأیید کاربر'}`;
 
   const elementDetails: Record<string, { title: string; specs: string[]; standard: string }> = {
     pv_array: {
@@ -76,7 +94,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
       specs: [
         isEn ? `Solar Fuses: ${parallelStrings * 2}× gPV Fuses rated ${Math.max(15, Math.ceil(stringIscAmps * 1.5))}A / 1000V` : `فیوزهای خورشیدی: ${parallelStrings * 2} عدد فیوز gPV با جریان ${Math.max(15, Math.ceil(stringIscAmps * 1.5))}A / 1000V`,
         isEn ? `2-Pole DC Isolator Switch: ${Math.max(25, Math.ceil(stringIscAmps * parallelStrings * 1.25))}A 1000VDC` : `کلید ایزولاتور DC دوپل: ${Math.max(25, Math.ceil(stringIscAmps * parallelStrings * 1.25))}A 1000VDC`,
-        isEn ? `DC Output Main Run: ${dcCableMm2} mm² Copper XLPE` : `کابل خروجی DC: سطح مقطع ${dcCableMm2} میلی‌متر مربع مس`,
+        isEn ? `DC Output Main Run: ${dcCableMm2 === null ? 'not assessed — measured route required' : `${dcCableMm2} mm² preliminary`}` : `کابل خروجی DC: ${dcCableMm2 === null ? 'بررسی‌نشده؛ مسیر اندازه‌گیری‌شده لازم است' : `${dcCableMm2} mm² مقدماتی`}`,
       ],
       standard: "IEC 60269-6 & IEC 60947-3",
     },
@@ -95,7 +113,10 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
       title: isEn ? "Solar Inverter / Power Conversion System (PCS)" : "اینورتر شارژر هیبرید خورشیدی (Solar Hybrid Inverter)",
       specs: [
         isEn ? `Nominal Rating: ${inverterKw * inverterCount} kW AC (${inverterCount > 1 ? `${inverterCount}× ${inverterKw}kW Units Paralleled` : `${inverterKw}kW`})` : `توان نامی: ${inverterKw * inverterCount} کیلووات (${inverterCount > 1 ? `${inverterCount} دستگاه ${inverterKw}kW موازی` : `${inverterKw}kW`})`,
-        isEn ? `Grid Phasing: ${isThreePhase ? "3-Phase 400V / 50 Hz" : "Single-Phase 230V / 50 Hz"}` : `سیستم فاز: ${isThreePhase ? "سه فاز ۴۰۰ ولت / ۵۰ هرتز" : "تکفاز ۲۳۰ ولت / ۵۰ هرتز"}`,
+        isEn ? `Inverter model phase: ${isThreePhase ? 'three-phase' : 'single-phase'}; confirmed inverter terminal: ${describeConnection(acRequirements?.inverterOutput)}` : `فاز مدل اینورتر: ${isThreePhase ? 'سه‌فاز' : 'تک‌فاز'}؛ رابط ترمینال تأییدشده: ${describeConnection(acRequirements?.inverterOutput)}`,
+        isEn ? `Customer load service: ${describeConnection(acRequirements?.loadService)}` : `سرویس بار مشتری: ${describeConnection(acRequirements?.loadService)}`,
+        isEn ? `LV grid interface: ${describeConnection(acRequirements?.lvGrid)}` : `رابط شبکه LV: ${describeConnection(acRequirements?.lvGrid)}`,
+        isEn ? `Post-transformer injection: ${describeInjection}; internal collector busbar: ${mvCollectorVoltageKv ?? 'unknown'} kV (separate input)` : `تزریق پس از ترانسفورماتور: ${describeInjection}؛ باسبار داخلی کلکتور: ${mvCollectorVoltageKv ?? 'نامشخص'} kV (ورودی مستقل)`,
         isEn ? `Max Conversion Efficiency: 98.6%` : `حداکثر بازدهی تبدیل: ۹۷.۶٪`,
         isEn ? `Battery Communication: Galvanically Isolated CAN Bus / RS485` : `پروتکل ارتباطی باتری: CAN Bus / RS485 با ایزولاسیون کامل`,
       ],
@@ -107,8 +128,8 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
         isEn ? `Gross Storage Capacity: ${batteryKwh.toFixed(1)} kWh` : `ظرفیت ناخالص کل: ${batteryKwh.toFixed(1)} کیلووات ساعت`,
         isEn ? `Battery Rating: ${batteryAh} Ah @ ${batteryVoltageVdc}V DC` : `ظرفیت آمپرساعت: ${batteryAh} Ah در ولتاژ ${batteryVoltageVdc}V DC`,
         isEn ? `Main Fast-Acting DC Fuse: ${batteryFuseAmps}A Mega DC Fuse` : `فیوز اصلی پرسرعت: فیوز مگا ${batteryFuseAmps}A DC با پایه نسوز`,
-        isEn ? `DC Battery Heavy Cables: ${batCableMm2} mm² Flexible Copper` : `کابل ارتباطی DC سنگین: سطح مقطع ${batCableMm2} میلی‌متر مربع مس دابل`,
-        isEn ? `Rack Protective Bonding: ${bessBondingMm2} mm² Cu to Main Grounding Busbar` : `هم‌بندی حفاظتی رک باتری: هادی مسی ${bessBondingMm2}mm² به شینه اصلی ارت`,
+        isEn ? `DC Battery Heavy Cables: ${batCableMm2 === null ? 'not assessed — measured route required' : `${batCableMm2} mm² preliminary`}` : `کابل باتری DC: ${batCableMm2 === null ? 'بررسی‌نشده؛ مسیر اندازه‌گیری‌شده لازم است' : `${batCableMm2} mm² مقدماتی`}`,
+        isEn ? `Rack bonding: ${bessBondingMm2 === null ? 'NOT ASSESSED — fault/device data required' : `${bessBondingMm2} mm² preliminary Cu`}` : `هم‌بندی رک: ${bessBondingMm2 === null ? 'بررسی‌نشده؛ داده خطا/تجهیز لازم است' : `${bessBondingMm2} mm² مس (مقدماتی)`}`,
         isEn
           ? (dcSystemEarthing === 'functional_negative'
               ? "DC Architecture: Functional Earth (- Pole Grounded via GFDI, single MET)"
@@ -126,18 +147,18 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
     ac_protection: {
       title: isEn ? "AC Distribution Board & Protection Switchgear" : "تابلوی توزیع و حفاظت خروجی AC (AC Distribution Panel)",
       specs: [
-        isEn ? `Output Miniature Circuit Breaker (MCB): ${Math.ceil(acCurrentAmps * 1.3)}A Curve C` : `کلید مینیاتوری خروجی (MCB): جریان نامی ${Math.ceil(acCurrentAmps * 1.3)}A تیپ C`,
-        isEn ? `Residual Current Device (RCD): Type B 30mA (DC leakage protected)` : `کلید محافظ جان خطای نشتی (RCD): نوع Type B با حساسیت 30mA`,
-        isEn ? `AC Surge Arrester (SPD): Type II 275V/400V (40kA)` : `سرج ارستر AC کلاس II: ولتاژ ۲۷۵V/۴۴۰V با جریان ۴۰kA`,
-        isEn ? `AC Feeder Cable: ${acCableMm2} mm² XLPE Copper` : `کابل توزیع AC: سطح مقطع ${acCableMm2} میلی‌متر مربع مس`,
+        isEn ? `AC breaker: ${acCurrentAmps === null ? 'not selected — fault/protection data required' : `preliminary ${Math.ceil(acCurrentAmps * 1.3)} A; coordination not assessed`}` : `کلید AC: ${acCurrentAmps === null ? 'انتخاب نشده؛ نیازمند داده اتصال کوتاه/حفاظت' : `مقدماتی ${Math.ceil(acCurrentAmps * 1.3)} آمپر؛ هماهنگی بررسی نشده`}`,
+        isEn ? 'RCD: selection requires inverter residual-current characteristics, earthing scheme, and local rules; not assessed' : 'RCD انتخاب نشده؛ مشخصات جریان نشتی اینورتر، آرایش زمین و مقررات محل لازم است',
+        isEn ? 'AC SPD: not selected; system voltage, earthing arrangement, exposure and coordination data required' : 'SPD سمت AC انتخاب نشده؛ ولتاژ سیستم، آرایش زمین، ارزیابی مواجهه و هماهنگی حفاظتی لازم است',
+        isEn ? `AC feeder cable: ${acCableMm2 === null ? 'not assessed; confirmed voltage/current and installation/fault data required' : `${acCableMm2} mm² preliminary only; fault/installation study required`}` : `کابل AC: ${acCableMm2 === null ? 'بررسی نشده؛ ولتاژ/جریان و داده نصب/اتصال کوتاه لازم است' : `${acCableMm2} mm² مقدماتی؛ بررسی نصب و اتصال کوتاه لازم است`}`,
       ],
       standard: "IEC 60364-5-53 & IEC 62477-1",
     },
     grounding: {
       title: isEn ? "Protective Earthing & Equipotential Bonding (PE)" : "سیستم زمین حفاظتی و هم‌پتانسیل‌سازی (PE / Earthing)",
       specs: [
-        isEn ? "3-Meter Pure Copper Clad Grounding Rods in Soil" : "میله ارت مسی به طول ۳ متر مدفون در چاه ارت",
-        isEn ? `Overall Earth Resistance: ≤ ${targetResistance} Ω (Target per IEEE 80 / IEC 60364)` : `مقاومت کل زمین: حداکثر ${targetResistance} اهم طبق استاندارد IEEE 80 و مقررات ملی`,
+        isEn ? "Ground electrode layout: not selected; site earthing study required" : "آرایش الکترود زمین انتخاب نشده؛ مطالعه زمین سایت لازم است",
+        isEn ? `Earthing study: ${targetResistance === null ? 'NOT ASSESSED — measured soil/ground-grid data required' : `target ≤ ${targetResistance} Ω (preliminary only)`}` : `مطالعه زمین: ${targetResistance === null ? 'بررسی‌نشده؛ داده اندازه‌گیری خاک/شبکه زمین لازم است' : `هدف ≤ ${targetResistance} Ω (مقدماتی)`}`,
         isEn ? "Full Equipotential Bonding of Racking, Frames, BESS Racks & Inverter Enclosure" : "هم‌پتانسیل‌سازی کامل استراکچر فلزی، قاب پنل‌ها، رک‌های باتری و بدنه اینورتر به شینه MET",
       ],
       standard: "IEC 60364-5-54 & IEEE 142",
@@ -301,7 +322,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
 
               {/* DC Bus Run: Combiner to Inverter */}
               <line x1="350" y1="147" x2="410" y2="147" stroke="#f59e0b" strokeWidth="3.5" markerEnd="url(#arrow)" />
-              <text x="380" y="138" textAnchor="middle" fill="#f59e0b" fontSize="8.5 font-mono">DC Run ({dcCableMm2}mm²)</text>
+              <text x="380" y="138" textAnchor="middle" fill="#f59e0b" fontSize="8.5 font-mono">DC Run ({dcCableMm2 === null ? (isEn ? 'not assessed' : 'بررسی‌نشده') : `${dcCableMm2}mm²`})</text>
 
               {/* SECTION 3: INVERTER UNIT */}
               <g
@@ -337,7 +358,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
                   {inverterKw * inverterCount} kW AC
                 </text>
                 <text x="492" y="215" textAnchor="middle" fill="#cbd5e1" fontSize="8.5">
-                  {isThreePhase ? '400V 3P+N 50Hz' : '230V 1P+N 50Hz'}
+                  {acOutputVoltageVolts === null ? (isEn ? 'AC voltage unconfirmed' : 'ولتاژ AC تأیید نشده') : `${acOutputVoltageVolts} V${isThreePhase ? ' 3P' : ' 1P'}${acFrequencyHz === null ? ' / ? Hz' : ` / ${acFrequencyHz} Hz`}`}
                 </text>
               </g>
 
@@ -374,7 +395,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
 
               {/* AC Run: Inverter to AC Distribution Board */}
               <line x1="575" y1="147" x2="650" y2="147" stroke="#34d399" strokeWidth="3" markerEnd="url(#arrow-green)" />
-              <text x="612" y="138" textAnchor="middle" fill="#34d399" fontSize="9 font-mono">AC Line ({acCableMm2}mm²)</text>
+              <text x="612" y="138" textAnchor="middle" fill="#34d399" fontSize="9 font-mono">AC Line ({acCableMm2 === null ? (isEn ? 'not assessed' : 'بررسی نشده') : `${acCableMm2}mm²*`})</text>
 
               {/* SECTION 5: AC DISTRIBUTION BOARD */}
               <g
@@ -392,22 +413,22 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
                 {/* AC MCB symbol */}
                 <rect x="670" y="118" width="100" height="22" rx="3" fill="#0f172a" stroke="#64748b" strokeWidth="1" />
                 <text x="720" y="133" textAnchor="middle" fill="#f1f5f9" fontSize="8.5">
-                  MCB {Math.ceil(acCurrentAmps * 1.3)}A ({isThreePhase ? '4P' : '2P'})
+                  {acCurrentAmps === null ? (isEn ? 'Protection data required' : 'داده حفاظت لازم') : `${isEn ? 'Prelim.' : 'مقدماتی'} ${Math.ceil(acCurrentAmps * 1.3)}A (${isThreePhase ? '4P?' : '2P?'})`}
                 </text>
 
                 {/* Type B RCD */}
                 <rect x="670" y="148" width="100" height="22" rx="3" fill="#0f172a" stroke="#64748b" strokeWidth="1" />
                 <text x="720" y="163" textAnchor="middle" fill="#38bdf8" fontSize="8.5">
-                  Type B RCD (30mA)
+                  {isEn ? 'RCD not assessed' : 'RCD بررسی نشده'}
                 </text>
 
                 {/* AC SPD */}
                 <rect x="670" y="178" width="100" height="22" rx="3" fill="#0f172a" stroke="#f59e0b" strokeWidth="1" />
                 <text x="720" y="193" textAnchor="middle" fill="#f59e0b" fontSize="8.5">
-                  AC SPD Type II (40kA)
+                  {isEn ? 'SPD not selected' : 'SPD انتخاب نشده'}
                 </text>
 
-                <text x="720" y="218" textAnchor="middle" fill="#34d399" fontSize="9 font-mono">Iac: {acCurrentAmps.toFixed(1)}A</text>
+                <text x="720" y="218" textAnchor="middle" fill="#34d399" fontSize="9 font-mono">Iac: {acCurrentAmps === null ? (isEn ? 'unknown' : 'نامشخص') : `${acCurrentAmps.toFixed(1)}A*`}</text>
               </g>
 
               {/* Earth connection from AC board to PE */}

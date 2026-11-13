@@ -43,6 +43,10 @@ export interface InverterSpecs {
   mpptChannelsCount: number;
   efficiencyMaxPct: number;
   isThreePhase: boolean;
+  /** Catalog nominal AC voltage; absent means unknown, not a regional default. */
+  acVoltageVac?: number;
+  /** Catalog nominal output frequency; absent means unknown. */
+  frequencyHz?: number;
 }
 
 export interface SiteDeratings {

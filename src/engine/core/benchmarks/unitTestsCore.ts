@@ -43,11 +43,20 @@ import { ElectricalLoadItemSchema } from '../projectMigration';
 import { UserFinancialPricingSchema } from '../projectMigration';
 import { DEFAULT_FINANCIAL_PRICING } from '../../financialEngine';
 import { getClimateData } from '../../climaticData';
+import { formatPsh } from '../../formatters';
+import { assessAcRequirements, createUnknownAcRequirements, evaluateLoadAcCurrents, isValidAcConnection, updateAcConnection } from '../../acRequirements';
+import { evaluateInverterClustering } from '../../inverterClustering';
+import { getContextualHelp } from '../../../helpContent';
 import { ExternalDataGateway, CircuitBreaker } from '../../dataGateway';
 import { recommendFoundation } from '../../structureRecommendationEngine';
 import { recommendSharedFoundation } from '../../geotech/foundationRecommendation';
 import { assessSaltCorrosion, classifyCorrosionCategory } from '../../corrosion/saltCorrosionEngine';
 import { performFinancialAnalysis } from '../../financialEngine';
+import {
+  resolveArrayAcReferenceKw,
+  calculateLoadModeDailySizingTargetKwh,
+  isUpstreamGridAnalysisAvailable,
+} from '../../systemModeCapacity';
 import { designPvArray } from '../../pvEngineAdvanced';
 import { calculateThermalDerate } from '../thermalDerate';
 import { isRealInternetEnabled } from '../../env/runtimeEnv';
@@ -824,6 +833,80 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     !munichSite.id.includes('tehran') &&
     munichSite.tempMinC < 0,
     `Munich coordinates (48.1351, 11.5820) resolved to ${munichSite.nameEn} (${munichSite.provinceEn}) without Iranian fallback.`
+  );
+
+  const twoDecimalPshFormatting =
+    formatPsh(0) === '0.00' && formatPsh(5.3) === '5.30' && formatPsh(5.236) === '5.24';
+  const fallbackSitePreservesModelPrecision = Math.abs(munichSite.peakSunHours - Number(munichSite.peakSunHours.toFixed(2))) > 0.001
+    && munichSite.fieldProvenance?.peakSunHours?.value === munichSite.peakSunHours;
+  const fallbackSiteHasExplicitClimateProvenance =
+    munichSite.fieldProvenance?.peakSunHours?.sourceKind === 'local_model' &&
+    munichSite.fieldProvenance?.tempMinC?.providerName === 'REGIONAL_ANALYTICAL_MODEL' &&
+    munichSite.fieldProvenance?.tempMaxC?.sourceKind === 'local_model' &&
+    munichSite.fieldProvenance?.albedo?.sourceKind === 'default_unverified' &&
+    munichSite.fieldProvenance?.albedo?.value === 0.20 &&
+    munichSite.albedo === 0.20;
+  assert(
+    'Climate',
+    'Presentation PSH precision and analytical/default field provenance',
+    twoDecimalPshFormatting && fallbackSitePreservesModelPrecision && fallbackSiteHasExplicitClimateProvenance,
+    `PSH display ${formatPsh(0)}/${formatPsh(5.3)}/${formatPsh(5.236)}; fallback fields explicitly identify modeled temperatures/PSH and fixed unverified albedo.`
+  );
+  let ac = createUnknownAcRequirements();
+  ac = updateAcConnection(ac, 'loadService', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: null, confirmed: true });
+  ac = updateAcConnection(ac, 'inverterOutput', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.92, availableFaultCurrentKa: 10, faultClearingTimeSec: 0.1, confirmed: true });
+  ac = updateAcConnection(ac, 'lvGrid', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: null, confirmed: true });
+  ac = { ...ac, injection: { level: 'not_applicable', nominalKv: null, confirmed: true }, inverterNameplate: { nominalFrequencyHz: 60, sourceUrl: 'https://vendor.example/exact-model-datasheet', userConfirmed: true } };
+  const acRequiresReconfirmation = updateAcConnection(ac, 'loadService', { frequencyHz: 50 });
+  ac = updateAcConnection(ac, 'loadService', { powerFactor: 0.9, confirmed: true });
+  ac = updateAcConnection(ac, 'load:single-load', { phase: 'single', lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.8, confirmed: true });
+  const loadAcCurrentResults = evaluateLoadAcCurrents([
+    { id: 'site-load', name: 'Three-phase site load', ratedWatts: 2000, quantity: 1, isDc: false },
+    { id: 'single-load', name: 'Explicit single-phase load', ratedWatts: 1000, quantity: 1, isDc: false },
+    { id: 'dc-load', name: 'DC load', ratedWatts: 500, quantity: 1, isDc: true },
+  ], ac);
+  const acCompatibleNorthAmerican = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid');
+  const acIncompatibleInverter = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 400 }, 'ongrid');
+  const clusterUnknownPhase = evaluateInverterClustering(5000, 7000, 5, 500).acPhaseType;
+  const clusterExplicitPhase = evaluateInverterClustering(5000, 7000, 5, 500, 'single').acPhaseType;
+  const acOldProjectMigration = migrateProjectToV3({ version: '3.0.0', projectName: 'Legacy AC unknown' });
+  const { inverterNameplate: _missingLegacyNameplate, ...legacyAcWithoutNameplate } = createUnknownAcRequirements();
+  const acPriorSchemaMigration = migrateProjectToV3({ ...REAL_WORLD_V2_TEST_VECTORS[0].rawPayload, acRequirements: legacyAcWithoutNameplate });
+  assert('AC REQUIREMENTS', 'Explicit phase/voltage/frequency, LV-vs-injection separation, mismatch and legacy unknown handling',
+    acCompatibleNorthAmerican.status === 'compatible' && acIncompatibleInverter.status === 'incompatible'
+      && acOldProjectMigration.project.acRequirements === null
+      && acOldProjectMigration.project.mvVoltageKv === null
+      && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.userConfirmed === false
+      && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.nominalFrequencyHz === null
+      && acPriorSchemaMigration.warnings.some((warning) => warning.includes('inverter nameplate evidence'))
+      && acOldProjectMigration.requiresUserConfirmation
+      && acOldProjectMigration.warnings.some((warning) => warning.includes('acRequirements'))
+      && clusterUnknownPhase === 'unknown' && clusterExplicitPhase === 'single'
+      && isValidAcConnection(ac.loadService)
+      && acRequiresReconfirmation.loadService.confirmed === false
+      && assessAcRequirements({ ...ac, inverterOutput: { ...ac.inverterOutput, lineToLineVolts: -208 } }, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid').status === 'incomplete'
+      && loadAcCurrentResults[0].status === 'assessed' && Math.abs((loadAcCurrentResults[0].currentAmps ?? 0) - 6.17) < 0.02
+      && loadAcCurrentResults[1].basis === 'per_load_override' && loadAcCurrentResults[1].status === 'assessed'
+      && loadAcCurrentResults[2].status === 'dc_not_applicable'
+      && !assessAcRequirements(createUnknownAcRequirements(), { isThreePhase: true }, 'powerplant').reasons.some((reason) => reason.includes('230')),
+    `208/120 V 60 Hz explicit on-grid=${acCompatibleNorthAmerican.status}; 400 V inverter mismatch=${acIncompatibleInverter.status}; legacy AC stays unknown=${acOldProjectMigration.project.acRequirements === null}.`);
+
+  const contextualHelpPages = [
+    'climate', 'loads', 'system_mode', 'array', 'harmonics_grid', 'mv_substation', 'bess',
+    'cables_bom', 'structural', 'sim24h', 'waterfall_loss', 'financial', 'sld', 'cad_layout',
+    '3d_viewer', 'scenarios', 'catalog', 'iran_regulations', 'solar_pumping', 'iv_curve', 'rfc3_reports',
+  ];
+  const contextualHelpContractOk = contextualHelpPages.every((page) => {
+    const en = getContextualHelp(page, 'powerplant', 'en');
+    const fa = getContextualHelp(page, 'powerplant', 'fa');
+    return en.inputs.length > 80 && en.method.length > 80 && en.limitations.length > 40 && Boolean(en.sources) &&
+      fa.inputs.length > 40 && fa.method.length > 40 && fa.limitations.length > 20 && Boolean(fa.sources);
+  });
+  assert(
+    'Help',
+    'Every main workflow page has bilingual input/method/limitation guidance with a code-source reference',
+    contextualHelpContractOk,
+    `Checked ${contextualHelpPages.length} workflow pages for bilingual substantive help and registered source references.`
   );
 
   // 13.2 Negative Regression Test: Invalid Out-of-Bounds Coordinates
@@ -3893,6 +3976,39 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   }
 
   // ==========================================================================
+  // [MODE-ISOLATION-AC-REFERENCE] Target AC capacity remains powerplant-only
+  // ==========================================================================
+  {
+    const powerplantRefSmall = resolveArrayAcReferenceKw('powerplant', 1000, 80);
+    const powerplantRefLarge = resolveArrayAcReferenceKw('powerplant', 2500, 80);
+    const ongridRefSmallTarget = resolveArrayAcReferenceKw('ongrid', 1000, 12.5);
+    const ongridRefLargeTarget = resolveArrayAcReferenceKw('ongrid', 2500, 12.5);
+    const offgridRefSmallTarget = resolveArrayAcReferenceKw('offgrid', 1000, 7.5);
+    const offgridRefLargeTarget = resolveArrayAcReferenceKw('offgrid', 2500, 7.5);
+    const loadSizingIsolated =
+      calculateLoadModeDailySizingTargetKwh('ongrid', 240, 6) === 60 &&
+      calculateLoadModeDailySizingTargetKwh('offgrid', 240, 6) === 240 &&
+      calculateLoadModeDailySizingTargetKwh('powerplant', 240, 6) === null;
+    const upstreamAnalysisAvailabilityOk =
+      isUpstreamGridAnalysisAvailable('powerplant') &&
+      isUpstreamGridAnalysisAvailable('ongrid') &&
+      !isUpstreamGridAnalysisAvailable('offgrid');
+    const acReferenceIsolationOk =
+      powerplantRefSmall === 1000 && powerplantRefLarge === 2500 &&
+      ongridRefSmallTarget === 12.5 && ongridRefLargeTarget === 12.5 &&
+      offgridRefSmallTarget === 7.5 && offgridRefLargeTarget === 7.5 &&
+      resolveArrayAcReferenceKw('ongrid', 9000, 0) === null && loadSizingIsolated &&
+      upstreamAnalysisAvailabilityOk;
+
+    assert(
+      'MODE-ISOLATION-AC-REFERENCE',
+      'Powerplant target AC remains plant-only; customer inverter AC and upstream-analysis availability are mode-isolated',
+      acReferenceIsolationOk,
+      `plant=${powerplantRefSmall}->${powerplantRefLarge}, ongrid=${ongridRefSmallTarget}->${ongridRefLargeTarget}, offgrid=${offgridRefSmallTarget}->${offgridRefLargeTarget}, loadSizing=${loadSizingIsolated}, upstreamAvailable=${upstreamAnalysisAvailabilityOk}`
+    );
+  }
+
+  // ==========================================================================
   // [E10-FIN-TARIFF-GENSET-RECONCILE] Mode-Aware Tariffs, Genset, CAPEX & Cashflow Reconcile
   // ==========================================================================
   {
@@ -3959,6 +4075,55 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Financial model implements mode-aware tariffs, genset inputs, exact CAPEX reconcile, and typed Payback/IRR statuses',
       ppaTariffOk && ongridTariffOk && offgridTariffOk && gensetOk && capexReconciledOk && year0Ok && rZeroNpvOk && paybackStatusOk,
       `genset(capex=${gensetRun.capexBreakdown.dieselGenSetUsd}, liters=${gensetRun.dieselEstimatedAnnualFuelLiters}, opex=${gensetRun.dieselOpexUsd}), year0(cf0=${cf0.netCashFlowToman}, b=${b.totalCapexToman})`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-FIN-NETWORK-COST-MODE-ISOLATION] MV / Grid / HV costs are plant-only
+  // ==========================================================================
+  {
+    const inflatedNetworkPrices = {
+      substationUsdPerMva: 1_000_000,
+      hvConnectionUsdPerKva: 1_000_000,
+    };
+    const zeroNetworkPrices = {
+      substationUsdPerMva: 0,
+      hvConnectionUsdPerKva: 0,
+    };
+    const ongridInflated = performFinancialAnalysis(1200, 100, 800, 1_500_000, inflatedNetworkPrices, 25, 'ongrid');
+    const ongridZero = performFinancialAnalysis(1200, 100, 800, 1_500_000, zeroNetworkPrices, 25, 'ongrid');
+    const offgridInflated = performFinancialAnalysis(1200, 100, 800, 1_500_000, inflatedNetworkPrices, 25, 'offgrid');
+    const offgridZero = performFinancialAnalysis(1200, 100, 800, 1_500_000, zeroNetworkPrices, 25, 'offgrid');
+    const customerNetworkCostsAreZero = [ongridInflated, offgridInflated].every((result) =>
+      result.capexBreakdown.substationMvUsd === 0 &&
+      result.capexBreakdown.gridInterconnectionUsd === 0 &&
+      result.capexBreakdown.hvConnectionUsd === 0 &&
+      result.capexBreakdown.substationMvToman === 0 &&
+      result.capexBreakdown.gridInterconnectionToman === 0 &&
+      result.capexBreakdown.hvConnectionToman === 0
+    );
+    const customerCapexIgnoresNetworkPrices =
+      ongridInflated.capexBreakdown.totalCapexUsd === ongridZero.capexBreakdown.totalCapexUsd &&
+      offgridInflated.capexBreakdown.totalCapexUsd === offgridZero.capexBreakdown.totalCapexUsd &&
+      ongridInflated.capexBreakdown.isReconciled && offgridInflated.capexBreakdown.isReconciled;
+
+    const powerplantNetwork = performFinancialAnalysis(1000, 0, 800, 1_500_000, {
+      substationTransformerMva: 1.5,
+      substationUsdPerMva: 40_000,
+      hvConnectionUsdPerKva: 55,
+      plantPowerFactor: 0.8,
+    }, 25, 'powerplant');
+    const powerplantNetworkPreserved =
+      powerplantNetwork.capexBreakdown.substationMvUsd === 60_000 &&
+      powerplantNetwork.capexBreakdown.gridInterconnectionUsd === 24_000 &&
+      powerplantNetwork.capexBreakdown.hvConnectionUsd === 55_000 &&
+      powerplantNetwork.capexBreakdown.isReconciled;
+
+    assert(
+      'E10-FIN-NETWORK-COST-MODE-ISOLATION',
+      'On-grid/off-grid ignore persisted MV/HV unit prices and report zero network CAPEX; powerplant network costs remain reconciled',
+      customerNetworkCostsAreZero && customerCapexIgnoresNetworkPrices && powerplantNetworkPreserved,
+      `ongrid=${ongridInflated.capexBreakdown.substationMvUsd}/${ongridInflated.capexBreakdown.gridInterconnectionUsd}/${ongridInflated.capexBreakdown.hvConnectionUsd}, offgrid=${offgridInflated.capexBreakdown.substationMvUsd}/${offgridInflated.capexBreakdown.gridInterconnectionUsd}/${offgridInflated.capexBreakdown.hvConnectionUsd}, plant=${powerplantNetwork.capexBreakdown.substationMvUsd}/${powerplantNetwork.capexBreakdown.gridInterconnectionUsd}/${powerplantNetwork.capexBreakdown.hvConnectionUsd}`
     );
   }
 

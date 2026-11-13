@@ -46,8 +46,11 @@ import {
   Database,
 } from 'lucide-react';
 import { type ClimateCity, type SiteGeotechnicalOverrides, getEffectiveClimateCity } from '../engine/climaticData';
-import { type LoadAnalysisResult } from '../engine/loadProfiles';
+import { formatPsh } from '../engine/formatters';
+import { type ElectricalLoadItem, type LoadAnalysisResult } from '../engine/loadProfiles';
+import { evaluateLoadAcCurrents } from '../engine/acRequirements';
 import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
+import type { AcRequirements } from '../engine/acRequirements';
 import { type BatteryBankSizingResult } from '../engine/batteryEngine';
 import { type CompleteProtectionSystemResult } from '../engine/protectionBomEngine';
 import { type Simulation24hResult, type GeneratorSizingResult } from '../engine/simulation24hEngine';
@@ -57,7 +60,6 @@ import { exportToWordDocument, exportToExcelWorkbook } from '../engine/reporting
 import { createProjectTransferEnvelope } from '../engine/offlineTransferEngine';
 import { type FoundationType } from '../engine/structuralEngine';
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
-import { designMvSubstation, type MvSubstationResult } from '../engine/mvSubstationEngine';
 import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 import { type StructuralSnapshot, exportStructuralSheetRows, isWeightOnlyOverturningApplicable } from '../engine/core/structuralContract';
@@ -69,8 +71,11 @@ interface OfficialReportModalProps {
   systemMode: 'powerplant' | 'ongrid' | 'offgrid';
   city: ClimateCity;
   loadAnalysis: LoadAnalysisResult;
+  loads?: ElectricalLoadItem[];
   module: ModuleSpecs;
   inverter: InverterSpecs;
+  acRequirements?: AcRequirements | null;
+  mvCollectorVoltageKv?: number | null;
   arrayDesign: PvArrayDesignResult;
   batterySizing: BatteryBankSizingResult;
   protection: CompleteProtectionSystemResult;
@@ -109,8 +114,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   systemMode,
   city,
   loadAnalysis,
+  loads = [],
   module,
   inverter,
+  acRequirements,
+  mvCollectorVoltageKv,
   arrayDesign,
   batterySizing,
   protection,
@@ -140,6 +148,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     () => buildProjectProvenanceSnapshot(effectiveCity, siteOverrides),
     [effectiveCity, siteOverrides]
   );
+  const loadAcCurrentSchedule = useMemo(() => evaluateLoadAcCurrents(loads, acRequirements), [loads, acRequirements]);
 
   const isSnapshotValid = Boolean(
     structuralSnapshot && structuralSnapshot.isAvailable && !structuralSnapshot.isStale
@@ -157,20 +166,6 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       siteTiltDeg: siteOverrides?.arrayTiltDeg ?? effectiveCity.optimalTiltAnnualDeg ?? 30,
     });
   }, [siteOverrides, effectiveCity, module, inverter]);
-
-  const mvSubResult: MvSubstationResult | null = useMemo(() => {
-    if (systemMode !== 'powerplant') return null;
-    const plantMw = bayArchitecture?.totalPlantCapacityMw || Math.max(0.5, arrayDesign.totalPvCapacityKwp / 1200.0);
-    return designMvSubstation({
-      plantCapacityAcMva: plantMw,
-      inverterOutputVoltageV: inverter.pnomAcKw >= 250 ? 800 : 400,
-      gridConnectionVoltageKv: 20,
-      soilResistivityOhmM: 80,
-      clearingTimeSec: 0.5,
-      ambientTempC: effectiveCity.tempMaxC,
-      elevationM: effectiveCity.elevationM,
-    });
-  }, [systemMode, bayArchitecture, arrayDesign, inverter, effectiveCity]);
 
   // Derived Energy Simulation Metrics:
   // Single-source primary annual energy and specific yield from unified waterfall loss report,
@@ -332,18 +327,36 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Retrieval Date', effectiveCity.dataRetrievalDate ?? ''],
     ];
 
+    const connectionRows = (label: string, connection: AcRequirements['loadService'] | undefined) => [
+      label, connection?.phase ?? 'unknown', connection?.lineToLineVolts ?? 'unknown',
+      connection?.lineToNeutralVolts ?? 'unknown', connection?.frequencyHz ?? 'unknown',
+      connection?.powerFactor ?? 'unknown', connection?.availableFaultCurrentKa ?? 'unknown',
+      connection?.faultClearingTimeSec ?? 'unknown', connection?.confirmed ? 'user confirmed' : 'UNCONFIRMED',
+    ];
     const electricalSheet = [
       ['ELECTRICAL SCHEDULE & CABLES', ''],
+      ['AC requirements: service and device interfaces are separate; missing values remain unknown.', ''],
+      ['Interface', 'Phase', 'Line-line V', 'Line-neutral V', 'Frequency Hz', 'PF', 'Fault kA', 'Clearing s', 'Status'],
+      connectionRows('Load service', acRequirements?.loadService),
+      connectionRows('Inverter output requirement', acRequirements?.inverterOutput),
+      ['Inverter nameplate frequency', acRequirements?.inverterNameplate.nominalFrequencyHz ?? 'unknown Hz', '', '', '', '', '', '', acRequirements?.inverterNameplate.userConfirmed ? `USER-ATTESTED (URL not authenticated): ${acRequirements.inverterNameplate.sourceUrl}` : 'UNVERIFIED'],
+      connectionRows('LV grid', acRequirements?.lvGrid),
+      ...Object.entries(acRequirements?.loadOverrides ?? {}).map(([id, connection]) => connectionRows(`Load-specific: ${id}`, connection)),
+      ['Grid injection point', acRequirements?.injection.level ?? 'unknown', acRequirements?.injection.nominalKv ?? 'unknown kV', '', '', '', '', '', acRequirements?.injection.confirmed ? 'user confirmed' : 'UNCONFIRMED'],
+      ['Internal MV collector busbar (separate design input)', '—', mvCollectorVoltageKv ?? 'unknown kV', '', '', '', '', '', mvCollectorVoltageKv === null || mvCollectorVoltageKv === undefined ? 'UNSPECIFIED' : 'user selected; not a utility authorization'],
+      ['MV substation protection/design', '—', '—', '—', '—', '—', '—', '—', 'NOT ASSESSED: transformer, utility fault study, earthing and protection coordination data missing'],
+      ['Load current screening (explicit phase/voltage/PF only)', 'Phase', 'Voltage V', 'Current A', 'Basis', 'Status'],
+      ...loadAcCurrentSchedule.map((load) => [load.name, load.phase, load.voltageVolts ?? 'unknown', load.currentAmps ?? 'not calculated', load.basis, load.status]),
       ['Conductor Run', 'Nominal Current (A)', 'Length (m)', 'Material', 'Insulation', 'Designation', 'Voltage Drop (%)', 'Status'],
       ...protection.cableRuns.map((c) => [
         isEn ? c.config.sectionNameEn : c.config.sectionNameFa,
-        c.config.designCurrentAmps,
-        c.config.oneWayLengthM,
+        c.isAssessed === false ? 'not assessed' : c.config.designCurrentAmps,
+        c.isAssessed === false ? 'unknown (measured route not entered)' : c.config.oneWayLengthM,
         c.config.conductorMaterial.toUpperCase(),
         c.config.insulationType,
-        isEn ? c.cableDesignationEn : c.cableDesignationFa,
-        c.actualVoltageDropPct,
-        c.isCompliant ? 'INTERNAL SCREENING PASS (not compliance)' : 'INTERNAL SCREENING FAIL',
+        c.isAssessed === false ? 'not assessed' : (isEn ? c.cableDesignationEn : c.cableDesignationFa),
+        c.isAssessed === false ? 'not assessed' : c.actualVoltageDropPct,
+        c.isAssessed === false ? `NOT ASSESSED: ${c.assessmentNote ?? ''}` : c.isCompliant ? 'INTERNAL SCREENING PASS (not compliance)' : 'INTERNAL SCREENING FAIL',
       ]),
     ];
 
@@ -603,7 +616,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <FileText className="w-5 h-5 text-industrial-accent" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-bold text-theme-strong flex items-center gap-2">
                 <span>{isEn ? 'Comprehensive EPC Engineering Dossier' : 'ماژول صدور گزارش‌های جامع و تخصصی EPC'}</span>
                 <span className="text-xs px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono border border-industrial-accent/30">
                   {docVersion}
@@ -622,7 +635,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             <button
               onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
               className={`studio-btn text-xs py-1.5 px-2.5 flex items-center gap-1 ${
-                showSettingsDrawer ? 'bg-sky-600 text-white' : ''
+                showSettingsDrawer ? 'bg-sky-600 text-theme-strong' : ''
               }`}
             >
               <Settings2 className="w-3.5 h-3.5 text-industrial-accent" />
@@ -694,7 +707,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
             <button
               id="report-modal-close-btn"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-1.5 text-slate-400 hover:text-theme-strong rounded-lg hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -714,7 +727,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <select
                   value={detailLevel}
                   onChange={(e) => { setDetailLevel(e.target.value as any); onReportMetadataChange?.({ detailLevel: e.target.value }); }}
-                  className="bg-industrial-surface border border-industrial-border rounded px-2 py-0.5 text-white"
+                  className="bg-industrial-surface border border-industrial-border rounded px-2 py-0.5 text-theme-strong"
                 >
                   <option value="summary">{isEn ? 'Executive Summary' : 'خلاصه مدیریتی'}</option>
                   <option value="standard">{isEn ? 'Standard Engineering' : 'مهندسی استاندارد'}</option>
@@ -731,7 +744,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={docId}
                   onChange={(e) => { setDocId(e.target.value); onReportMetadataChange?.({ docId: e.target.value }); }}
-                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white font-mono"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-theme-strong font-mono"
                 />
               </div>
               <div>
@@ -741,7 +754,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={docVersion}
                   onChange={(e) => { setDocVersion(e.target.value); onReportMetadataChange?.({ docVersion: e.target.value }); }}
-                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white font-mono"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-theme-strong font-mono"
                 />
               </div>
               <div>
@@ -751,7 +764,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={companyName}
                   onChange={(e) => { setCompanyName(e.target.value); onReportMetadataChange?.({ companyName: e.target.value }); }}
-                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-theme-strong"
                 />
               </div>
               <div>
@@ -761,7 +774,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={clientName}
                   onChange={(e) => { setClientName(e.target.value); onReportMetadataChange?.({ clientName: e.target.value }); }}
-                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-theme-strong"
                 />
               </div>
             </div>
@@ -774,7 +787,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={leadEngineer}
                   onChange={(e) => { setLeadEngineer(e.target.value); onReportMetadataChange?.({ leadEngineer: e.target.value }); }}
-                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-theme-strong"
                 />
               </div>
               <div>
@@ -783,7 +796,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   id="report-approval-status"
                   value={approvalStatus}
                   onChange={(e) => { setApprovalStatus(e.target.value as any); onReportMetadataChange?.({ approvalStatus: e.target.value }); }}
-                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-theme-strong"
                 >
                   <option value="Draft">{isEn ? 'Draft (پیش‌نویس)' : 'پیش‌نویس (Draft)'}</option>
                   <option value="Under Review">{isEn ? 'Under Review (در دست بررسی)' : 'در دست بررسی (Under Review)'}</option>
@@ -798,7 +811,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   type="text"
                   value={customFileName}
                   onChange={(e) => setCustomFileName(e.target.value)}
-                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-white font-mono"
+                  className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-theme-strong font-mono"
                 />
               </div>
             </div>
@@ -856,7 +869,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               </div>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-black text-white print:text-black mb-1">
+            <h1 className="text-xl sm:text-2xl font-black text-theme-strong print:text-black mb-1">
               {projectName}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 print:text-slate-700 max-w-2xl mx-auto">
@@ -1016,7 +1029,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
               {/* Executive Engineering Narrative & Strategic Recommendations */}
               <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-2">
-                <div className="font-bold text-white print:text-black flex items-center gap-1.5">
+                <div className="font-bold text-theme-strong print:text-black flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-industrial-accent" />
                   {isEn ? 'Preliminary Screening Summary (Not a Bankability Assessment):' : 'خلاصه غربالگری اولیه (نه ارزیابی تأمین مالی‌پذیری):'}
                 </div>
@@ -1053,14 +1066,14 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Coordinates & Elevation:' : 'مختصات و ارتفاع از دریا:'}</span>
-                  <span className="font-mono text-white print:text-black font-bold">
+                  <span className="font-mono text-theme-strong print:text-black font-bold">
                     {formatCoordinates(effectiveCity.latitude, effectiveCity.longitude)} ({effectiveCity.elevationM}m)
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Peak Sun Hours (PSH):' : 'ساعات اوج تابش (PSH):'}</span>
                   <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
-                    {effectiveCity.peakSunHours} kWh/m²/day
+                    {formatPsh(effectiveCity.peakSunHours)} kWh/m²/day
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
@@ -1071,13 +1084,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Basic Wind Speed (V_b):' : 'سرعت مبنای باد (V_b):'}</span>
-                  <span className="font-mono text-white print:text-black font-bold">
+                  <span className="font-mono text-theme-strong print:text-black font-bold">
                     {effectiveCity.basicWindSpeedKmh} km/h ({(effectiveCity.basicWindSpeedKmh / 3.6).toFixed(1)} m/s)
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Ground Snow Load (S_k):' : 'بار برف مبنای زمین (S_k):'}</span>
-                  <span className="font-mono text-white print:text-black">
+                  <span className="font-mono text-theme-strong print:text-black">
                     {effectiveCity.groundSnowLoadKgM2} kg/m²
                   </span>
                 </div>
@@ -1089,13 +1102,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Soil Friction Angle & Cohesion:' : 'زاویه اصطکاک و چسبندگی:'}</span>
-                  <span className="font-mono text-white print:text-black">
+                  <span className="font-mono text-theme-strong print:text-black">
                     φ = {effectiveCity.soilInternalFrictionAngleDeg}°, c = {effectiveCity.soilCohesionKpa} kPa
                   </span>
                 </div>
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Frost Penetration Depth:' : 'عمق یخبندان:'}</span>
-                  <span className="font-mono text-white print:text-black font-bold">
+                  <span className="font-mono text-theme-strong print:text-black font-bold">
                     {effectiveCity.frostDepthCm} cm
                   </span>
                 </div>
@@ -1104,7 +1117,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               {/* Data Provenance & Telemetry Integrity Audit Table (ENV-07) */}
               <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs space-y-1.5">
                 <div className="flex items-center justify-between border-b border-industrial-border/50 print:border-slate-300 pb-1">
-                  <span className="font-bold text-white print:text-black flex items-center gap-1.5">
+                  <span className="font-bold text-theme-strong print:text-black flex items-center gap-1.5">
                     <Database className="w-3.5 h-3.5 text-indigo-400" />
                     {isEn ? 'Site Environmental & Geotechnical Telemetry Provenance (ENV-01..07):' : 'جدول ردیابی منشأ و اصالت داده‌های محیطی و ژئوتکنیکی ساختگاه:'}
                   </span>
@@ -1128,7 +1141,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       {dataProvenance.map((row) => (
                         <tr key={row.key} className="hover:bg-slate-800/30 print:hover:bg-transparent">
                           <td className="p-1 text-slate-200 print:text-black font-sans font-medium">{row.parameter}</td>
-                          <td className="p-1 text-center text-white print:text-black font-bold">{row.value} {row.unit}</td>
+                          <td className="p-1 text-center text-theme-strong print:text-black font-bold">{row.value} {row.unit}</td>
                           <td className="p-1 text-center text-slate-300 print:text-slate-700">{row.provider}</td>
                           <td className="p-1 text-center">
                             <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
@@ -1152,7 +1165,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
               {/* Geotechnical Engineering Narrative & Civil Recommendations */}
               <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-1.5">
-                <span className="font-bold text-white print:text-black block">
+                <span className="font-bold text-theme-strong print:text-black block">
                   {isEn ? 'Geotechnical Risk Analysis & Civil Site Preparation Guidelines:' : 'تحلیل ریسک ژئوتکنیک و دستورالعمل‌های آماده‌سازی ساختگاه:'}
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
@@ -1186,7 +1199,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
                   <div className="p-2 rounded bg-slate-900/60 print:bg-white border border-industrial-border/40 print:border-slate-200">
-                    <strong className="text-white print:text-black block mb-1">
+                    <strong className="text-theme-strong print:text-black block mb-1">
                       {isEn ? 'PV Modules on Installation Bed:' : 'ماژول‌های خورشیدی روی بستر نصب:'}
                     </strong>
                     <div className="space-y-1 text-slate-300 print:text-slate-700">
@@ -1196,7 +1209,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       </div>
                       <div className="flex justify-between">
                         <span>{isEn ? 'Hot Cell Operating Temp:' : 'دمای داغ سلول در اوج تابش:'}</span>
-                        <span className="font-mono font-bold text-white print:text-black">{envAging.pvImpact.effectiveOperatingCellTempHotC}°C</span>
+                        <span className="font-mono font-bold text-theme-strong print:text-black">{envAging.pvImpact.effectiveOperatingCellTempHotC}°C</span>
                       </div>
                       <div className="flex justify-between">
                         <span>{isEn ? 'Instant Thermal Power Loss:' : 'افت راندمان حرارتی لحظه‌ای:'}</span>
@@ -1214,13 +1227,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   </div>
 
                   <div className="p-2 rounded bg-slate-900/60 print:bg-white border border-industrial-border/40 print:border-slate-200">
-                    <strong className="text-white print:text-black block mb-1">
+                    <strong className="text-theme-strong print:text-black block mb-1">
                       {isEn ? 'Inverter Operational Lifespan:' : 'طول عمر و راندمان اینورتر:'}
                     </strong>
                     <div className="space-y-1 text-slate-300 print:text-slate-700">
                       <div className="flex justify-between">
                         <span>{isEn ? 'Inverter Installation Siting:' : 'محل استقرار فیزیکی اینورتر:'}</span>
-                        <span className="font-mono font-bold text-white print:text-black">
+                        <span className="font-mono font-bold text-theme-strong print:text-black">
                           {envAging.inverterImpact.isInstalledIndoors
                             ? (isEn ? 'Indoors (Sheltered)' : 'داخلی/سرپوشیده سوله یا ساختمان')
                             : (isEn ? 'Outdoors (Open Field)' : 'محوطه باز نیروگاه')}
@@ -1228,7 +1241,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       </div>
                       <div className="flex justify-between">
                         <span>{isEn ? 'Climatic Thermal Derating:' : 'افت توان حرارتی اینورتر:'}</span>
-                        <span className="font-mono font-bold text-white print:text-black">
+                        <span className="font-mono font-bold text-theme-strong print:text-black">
                           {envAging.inverterImpact.totalInverterDeratePct > 0 ? `-${envAging.inverterImpact.totalInverterDeratePct}%` : '0% (حفظ ۱۰۰٪ توان)'}
                         </span>
                       </div>
@@ -1285,7 +1298,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 </div>
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Ground Cover Ratio (GCR)' : 'ضریب پوشش زمین (GCR)'}</span>
-                  <span className="font-mono font-bold text-white print:text-black text-sm">
+                  <span className="font-mono font-bold text-theme-strong print:text-black text-sm">
                     {((Math.cos((effectiveCity.optimalTiltAnnualDeg * Math.PI) / 180) * 4.6 / arrayDesign.interRowSpacingM) * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -1346,7 +1359,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               )}
 
               <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-1">
-                <span className="font-bold text-white print:text-black block">
+                <span className="font-bold text-theme-strong print:text-black block">
                   {isEn ? 'Sun Path Geometric Screening & Critical Solar Window:' : 'بررسی هندسی مسیر خورشید و پنجره غربالگری تابش:'}
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
@@ -1505,7 +1518,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       </>
                     )}
                     <tr className="font-bold bg-slate-800/40 print:bg-slate-100">
-                      <td className="p-2 text-white print:text-black">{isEn ? 'Net Delivered System PR' : 'ضریب عملکرد خالص تحویلی به شبکه (PR)'}</td>
+                      <td className="p-2 text-theme-strong print:text-black">{isEn ? 'Net Delivered System PR' : 'ضریب عملکرد خالص تحویلی به شبکه (PR)'}</td>
                       <td className="p-2 font-mono text-industrial-success print:text-emerald-800">{performanceRatioPct}%</td>
                       <td className="p-2 text-industrial-success" colSpan={2}>✓ IEC 61724-1 Performance Ratio Calculation</td>
                     </tr>
@@ -1526,6 +1539,15 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <span className="text-[10px] text-slate-400 font-mono">IEEE 80 / IEC 60364</span>
               </h3>
 
+              <div data-testid="report-ac-requirements" className="rounded border border-amber-600/40 bg-amber-950/10 p-3 text-xs space-y-2">
+                <strong>{isEn ? 'Explicit AC interfaces (unknown values remain unknown)' : 'رابط‌های AC صریح (مقدار نامعلوم، نامعلوم باقی می‌ماند)'}</strong>
+                <div>{isEn ? 'Load service' : 'سرویس بار'}: {acRequirements?.loadService.confirmed ? `${acRequirements.loadService.phase}, ${acRequirements.loadService.lineToLineVolts ?? '—'} V L-L, ${acRequirements.loadService.lineToNeutralVolts ?? '—'} V L-N, ${acRequirements.loadService.frequencyHz ?? '—'} Hz` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
+                <div>{isEn ? 'Inverter output requirement' : 'الزام خروجی اینورتر'}: {acRequirements?.inverterOutput.confirmed ? `${acRequirements.inverterOutput.phase}, ${acRequirements.inverterOutput.lineToLineVolts ?? '—'} V L-L, ${acRequirements.inverterOutput.lineToNeutralVolts ?? '—'} V L-N, ${acRequirements.inverterOutput.frequencyHz ?? '—'} Hz` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
+                <div>{isEn ? 'Inverter nameplate evidence' : 'شاهد دیتاشیت اینورتر'}: {acRequirements?.inverterNameplate.userConfirmed ? `${acRequirements.inverterNameplate.nominalFrequencyHz ?? 'unknown'} Hz; USER-ATTESTED URL (not authenticated): ${acRequirements.inverterNameplate.sourceUrl}` : (isEn ? 'UNVERIFIED' : 'احراز نشده')}</div>
+                <div>{isEn ? 'LV grid' : 'شبکه LV'}: {acRequirements?.lvGrid.confirmed ? `${acRequirements.lvGrid.phase}, ${acRequirements.lvGrid.lineToLineVolts ?? '—'} V L-L, ${acRequirements.lvGrid.lineToNeutralVolts ?? '—'} V L-N, ${acRequirements.lvGrid.frequencyHz ?? '—'} Hz` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
+                <div>{isEn ? 'Grid injection (not interchangeable with LV service)' : 'تزریق شبکه (متمایز از سرویس LV)'}: {acRequirements?.injection.confirmed ? `${acRequirements.injection.level}, ${acRequirements.injection.nominalKv ?? '—'} kV` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
+                <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr><th>{isEn ? 'Load' : 'بار'}</th><th>{isEn ? 'Phase/voltage' : 'فاز/ولتاژ'}</th><th>{isEn ? 'Calculated current' : 'جریان محاسباتی'}</th><th>{isEn ? 'Basis/status' : 'مبنا/وضعیت'}</th></tr></thead><tbody>{loadAcCurrentSchedule.map((load) => <tr key={load.id}><td>{load.name}</td><td>{load.phase} / {load.voltageVolts ?? 'unknown'} V</td><td>{load.currentAmps === null ? (isEn ? 'not calculated' : 'محاسبه نشده') : `${load.currentAmps.toFixed(2)} A`}</td><td>{load.basis} / {load.status}</td></tr>)}</tbody></table></div>
+              </div>
               {/* Cable Schedule Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left print:text-black border-collapse">
@@ -1546,20 +1568,19 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     {protection.cableRuns.map((c, idx) => (
                       <tr key={idx} className="border-b border-industrial-border print:border-slate-200">
                         <td className="p-2 font-medium">{isEn ? c.config.sectionNameEn : c.config.sectionNameFa}</td>
-                        <td className="p-2 font-mono">{c.config.designCurrentAmps.toFixed(1)}A</td>
-                        <td className="p-2 font-mono text-teal-300 print:text-teal-900">{c.totalThermalAmpacityAmps || '-'}A</td>
-                        <td className="p-2 font-mono">{c.config.oneWayLengthM}m</td>
-                        <td className="p-2 font-mono">{c.config.conductorMaterial.toUpperCase()} / {c.config.insulationType}</td>
-                        <td className="p-2 font-mono text-industrial-accent print:text-sky-900 font-bold">
-                          {isEn ? c.cableDesignationEn : c.cableDesignationFa}
-                        </td>
-                        <td className="p-2 font-mono">{c.actualVoltageDropPct}%</td>
-                        <td className="p-2 font-mono text-industrial-warning">{c.powerLossWatts ? `${c.powerLossWatts}W` : '-'}</td>
-                        <td className="p-2">
-                          <span className="text-industrial-success print:text-emerald-800 font-bold text-[10px]">
-                            {c.isCompliant ? (isEn ? '✓ SCREENING PASS (not compliance)' : '✓ غربالگری قبول (نه احراز انطباق)') : (isEn ? '✗ SCREENING LIMIT EXCEEDED' : '✗ حد غربالگری رد شده')}
-                          </span>
-                        </td>
+                        {c.isAssessed === false ? <>
+                          <td className="p-2" colSpan={7}>{isEn ? 'Not assessed' : 'بررسی نشده'} — {c.assessmentNote}</td>
+                          <td className="p-2 font-bold text-amber-700">{isEn ? 'DATA REQUIRED' : 'داده لازم است'}</td>
+                        </> : <>
+                          <td className="p-2 font-mono">{c.config.designCurrentAmps.toFixed(1)}A</td>
+                          <td className="p-2 font-mono text-teal-300 print:text-teal-900">{c.totalThermalAmpacityAmps || '-'}A</td>
+                          <td className="p-2 font-mono">{c.config.oneWayLengthM}m</td>
+                          <td className="p-2 font-mono">{c.config.conductorMaterial.toUpperCase()} / {c.config.insulationType}</td>
+                          <td className="p-2 font-mono text-industrial-accent print:text-sky-900 font-bold">{isEn ? c.cableDesignationEn : c.cableDesignationFa}</td>
+                          <td className="p-2 font-mono">{c.actualVoltageDropPct}%</td>
+                          <td className="p-2 font-mono text-industrial-warning">{c.powerLossWatts ? `${c.powerLossWatts}W` : '-'}</td>
+                          <td className="p-2"><span className="text-amber-700 font-bold text-[10px]">{c.isCompliant ? (isEn ? 'INTERNAL SCREENING PASS (not compliance)' : 'غربالگری داخلی (نه احراز انطباق)') : (isEn ? 'SCREENING LIMIT EXCEEDED' : 'حد غربالگری رد شده')}</span></td>
+                        </>}
                       </tr>
                     ))}
                   </tbody>
@@ -1571,73 +1592,34 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div>
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Target Ground Resistance:' : 'مقاومت هدف زمین:'}</span>
                   <span className="font-mono text-industrial-success print:text-emerald-800 font-bold">
-                    ≤ {protection.earthing.targetGroundResistanceOhms} Ω (Rg={protection.earthing.calculatedGroundResistanceOhms}Ω)
+                    {isEn ? 'NOT ASSESSED — project soil resistivity / grounding study absent' : 'بررسی‌نشده — داده خاک/زمین پروژه موجود نیست'}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Ground Rods Required:' : 'تعداد الکترودهای میله‌ای:'}</span>
-                  <span className="font-mono text-white print:text-black font-bold">
-                    {protection.earthing.groundRodsCount} {isEn ? 'Rods (3m Cu)' : 'میله مسی ۳ متری'}
+                  <span className="font-mono text-theme-strong print:text-black font-bold">
+                    {isEn ? 'Not selected — earthing inputs not assessed' : 'انتخاب نشده — ورودی‌های زمین بررسی نشده‌اند'}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Touch / Step Potentials:' : 'ولتاژ تماس و گام IEEE 80:'}</span>
                   <span className="font-mono text-sky-300 print:text-sky-800">
-                    Em={protection.earthing.actualMeshVoltageVolts || 185}V / Es={protection.earthing.actualStepVoltageVolts || 90}V (✓)
+                    {isEn ? 'Not assessed — fault current / clearing time / soil data required' : 'بررسی‌نشده — جریان خطا/زمان قطع/داده خاک لازم است'}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Lightning LPS & Separation:' : 'حفاظت صاعقه و فاصله s:'}</span>
                   <span className="font-mono text-industrial-warning print:text-amber-800 font-bold">
-                    {protection.lightning.lpsClass} (s = {protection.lightning.separationDistanceCm || 45} cm)
+                    {isEn ? 'Preliminary model only — not a site LPS assessment' : 'فقط مدل مقدماتی — ارزیابی سایت نیست'}
                   </span>
                 </div>
               </div>
 
-              {/* Medium-Voltage Collector Substation (For Powerplants) */}
-              {mvSubResult && (
-                <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs space-y-2">
-                  <span className="font-bold text-industrial-accent print:text-sky-900 block flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-industrial-warning" />
-                    {isEn
-                      ? 'Collector Substation, Step-Up Transformer & MV Switchgear (IEC 60076 / IEC 60909):'
-                      : 'مشخصات پست جمع‌آوری، ترانسفورماتور قدرت و تابلوی فشار متوسط (IEC 60076 / IEC 60909):'}
-                  </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                    <div className="p-2 bg-slate-900/60 print:bg-white rounded border border-industrial-border/40 print:border-slate-200">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Step-up Transformer:' : 'ترانسفورماتور افزاینده:'}</span>
-                      <strong className="font-mono text-white print:text-black">{mvSubResult.transformer.ratedPowerMva} MVA ({mvSubResult.transformer.vectorGroup})</strong>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        {isEn ? `Site Effective: ${mvSubResult.transformer.effectiveCapacityUnderSiteConditionsMva} MVA` : `ظرفیت در دمای سایت: ${mvSubResult.transformer.effectiveCapacityUnderSiteConditionsMva} MVA`}
-                      </span>
-                    </div>
-
-                    <div className="p-2 bg-slate-900/60 print:bg-white rounded border border-industrial-border/40 print:border-slate-200">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Short-Circuit Isc\'\' / ip:' : 'جریان اتصال کوتاه Isc/ip:'}</span>
-                      <strong className="font-mono text-industrial-error">{mvSubResult.shortCircuit.initialSymmetricalIscKa} kA / {mvSubResult.shortCircuit.peakDynamicIpKa} kA</strong>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        VCB Rating: {mvSubResult.shortCircuit.breakingCapacityKa} kA
-                      </span>
-                    </div>
-
-                    <div className="p-2 bg-slate-900/60 print:bg-white rounded border border-industrial-border/40 print:border-slate-200">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'Station Aux Transformer:' : 'ترانس مصارف داخلی:'}</span>
-                      <strong className="font-mono text-sky-300 print:text-sky-800">{mvSubResult.auxiliaryTransformer.ratedKva} kVA ({mvSubResult.auxiliaryTransformer.voltageRatio})</strong>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        SCADA & Trackers
-                      </span>
-                    </div>
-
-                    <div className="p-2 bg-slate-900/60 print:bg-white rounded border border-industrial-border/40 print:border-slate-200">
-                      <span className="text-slate-400 block text-[10px]">{isEn ? 'MV Surge Arrester:' : 'برقگیر فشار متوسط:'}</span>
-                      <strong className="font-mono text-purple-300 print:text-purple-800">{mvSubResult.surgeArrester.ratedVoltageUrKv} kV (Class 2)</strong>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        MCOV = {mvSubResult.surgeArrester.continuousOperatingVoltageMcovKv} kV
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {systemMode === 'powerplant' && <div data-testid="report-mv-not-assessed" role="status" className="rounded border border-amber-600/40 bg-amber-950/20 p-3 text-xs text-amber-800 print:text-black">
+                {isEn
+                  ? 'MV substation design is not assessed in this report: verified transformer nameplate, utility point-of-connection data, short-circuit study, soil resistivity, grounding arrangement and protection clearing-time inputs are not all available. No default 20 kV, fault level or breaker rating is substituted.'
+                  : 'طراحی پست MV در این گزارش بررسی/تأیید نشده است: دیتاشیت معتبر ترانس، داده نقطه اتصال شرکت برق، مطالعه اتصال کوتاه، مقاومت ویژه خاک، آرایش زمین و زمان قطع حفاظت کامل نیست. ولتاژ ۲۰ کیلوولت یا جریان خطا/کلید پیش‌فرض جایگزین نمی‌شود.'}
+              </div>}
             </div>
           )}
 
@@ -1702,7 +1684,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     </div>
                     <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                       <span className="text-slate-400 block text-[10px]">{isEn ? 'Foundation Technology:' : 'سیستم فونداسیون سازه:'}</span>
-                      <span className={`font-mono font-semibold ${structuralSnapshot.isStale ? 'text-amber-400 print:text-amber-800' : 'text-white print:text-black'}`}>
+                      <span className={`font-mono font-semibold ${structuralSnapshot.isStale ? 'text-amber-400 print:text-amber-800' : 'text-theme-strong print:text-black'}`}>
                         {structuralSnapshot.isStale ? (isEn ? 'STALE' : 'منقضی') : (isEn ? structuralSnapshot.foundationNameEn : structuralSnapshot.foundationNameFa)}
                       </span>
                       <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
@@ -1844,7 +1826,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
                             ) : (
-                              <span className="text-white print:text-black">{structuralSnapshot.appliedPostBearingPressureKpa} kPa</span>
+                              <span className="text-theme-strong print:text-black">{structuralSnapshot.appliedPostBearingPressureKpa} kPa</span>
                             )}
                           </td>
                           <td className="p-2 text-slate-400 print:text-slate-600">
@@ -1920,7 +1902,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                             {structuralSnapshot.isStale ? (
                               <span className="text-amber-400">{isEn ? 'STALE' : 'منقضی'}</span>
                             ) : (
-                              <span className="text-white print:text-black">{structuralSnapshot.recommendedDepthM} m</span>
+                              <span className="text-theme-strong print:text-black">{structuralSnapshot.recommendedDepthM} m</span>
                             )}
                           </td>
                           <td className="p-2 text-slate-400 print:text-slate-600">
@@ -1956,7 +1938,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
                   {/* Geotechnical & Civil Engineering Explanations & Field Test Recommendations */}
                   <div className="p-3 bg-slate-800/40 print:bg-slate-50 border border-industrial-border/60 print:border-slate-200 rounded text-xs text-slate-300 print:text-slate-800 space-y-2">
-                    <span className="font-bold text-white print:text-black flex items-center gap-1.5">
+                    <span className="font-bold text-theme-strong print:text-black flex items-center gap-1.5">
                       <HardHat className="w-4 h-4 text-industrial-warning" />
                       {isEn ? 'Geotechnical Soil-Structure Interaction & Engineering Disclosures:' : 'تحلیل تعامل خاک و سازه و الزامات صداقت مهندسی:'}
                     </span>
@@ -1993,7 +1975,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div className="p-2 bg-slate-800/50 print:bg-slate-50 rounded">
                   <span className="text-slate-400 block text-[10px]">{isEn ? 'Total Initial CAPEX:' : 'کل هزینه سرمایه‌گذاری (CAPEX):'}</span>
-                  <span className="font-mono font-bold text-white print:text-black text-sm">
+                  <span className="font-mono font-bold text-theme-strong print:text-black text-sm">
                     ${financial.capexBreakdown.totalCapexUsd.toLocaleString()}
                   </span>
                 </div>
@@ -2096,7 +2078,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <td className="p-2 font-mono">3</td>
                       <td className="p-2 font-semibold">{isEn ? 'Mounting Structure Racking' : 'استراکچر نگهدارنده پنل‌ها'}</td>
                       <td className="p-2 font-mono text-slate-400 print:text-slate-700">Hot-Dip Galvanized C-Steel, ASTM A123, 2P Configuration</td>
-                      <td className="p-2 font-mono font-bold text-white print:text-black">
+                      <td className="p-2 font-mono font-bold text-theme-strong print:text-black">
                         {isSnapshotValid
                           ? structuralSnapshot!.totalTablesCount
                           : structuralSnapshot?.isStale
@@ -2115,7 +2097,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                           ? (isEn ? 'STALE — Re-run Structural Tab' : 'منقضی — نیازمند اجرای مجدد در زبانه سازه')
                           : (isEn ? 'Pending Structural Tab Sizing' : 'در انتظار محاسبه در زبانه سازه')}
                       </td>
-                      <td className="p-2 font-mono font-bold text-white print:text-black">
+                      <td className="p-2 font-mono font-bold text-theme-strong print:text-black">
                         {isSnapshotValid
                           ? structuralSnapshot!.totalPostsCount
                           : structuralSnapshot?.isStale
@@ -2129,7 +2111,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                         <td className="p-2 font-mono">{5 + i}</td>
                         <td className="p-2 font-semibold">{isEn ? c.config.sectionNameEn : c.config.sectionNameFa}</td>
                         <td className="p-2 font-mono text-slate-400 print:text-slate-700">{isEn ? c.cableDesignationEn : c.cableDesignationFa}</td>
-                        <td className="p-2 font-mono font-bold text-white print:text-black">{c.config.oneWayLengthM * c.parallelRunsCount}</td>
+                        <td className="p-2 font-mono font-bold text-theme-strong print:text-black">{c.config.oneWayLengthM * c.parallelRunsCount}</td>
                         <td className="p-2">{isEn ? 'm' : 'متر'}</td>
                       </tr>
                     ))}

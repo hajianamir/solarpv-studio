@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Zap, Clock, ShieldAlert, Sparkles, Check, RotateCcw, AlertTriangle } from 'lucide-react';
+import { formatPsh } from '../engine/formatters';
 import {
   type ElectricalLoadItem,
   type LoadCategory,
@@ -162,7 +163,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
               : (isFa ? 'در Off-Grid: کل ۲۴h مبناست؛ شب برای «پوشش شب»' : 'Off-Grid: 24h total sizes BESS; night for Night Coverage')}
           </div>
           <div className="text-[10px] text-amber-400/90 font-mono mt-1">
-            {isFa ? `PSH سایت: ${peakSunHours} kWh/m²/day (مختص PV)` : `Site PSH: ${peakSunHours} kWh/m²/day (PV Sizing only)`}
+            {isFa ? `PSH سایت: ${formatPsh(peakSunHours)} kWh/m²/day (مختص PV)` : `Site PSH: ${formatPsh(peakSunHours)} kWh/m²/day (PV Sizing only)`}
           </div>
         </div>
 
@@ -283,12 +284,12 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
                   return (
                     <tr key={item.id} className="hover:bg-slate-850/60 transition-colors">
-                      <td className="p-2.5 font-medium text-white">
+                      <td className="p-2.5 font-medium text-theme-strong">
                         <input
                           type="text"
                           value={item.name}
                           onChange={(e) => handleUpdateItem(item.id, 'name', e.target.value)}
-                          className="bg-transparent border-b border-industrial-border focus:border-sky-400 outline-none w-full text-xs text-white"
+                          className="bg-transparent border-b border-industrial-border focus:border-sky-400 outline-none w-full text-xs text-theme-strong"
                         />
                       </td>
                       <td className="p-2.5">
@@ -557,8 +558,8 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
 
               <div className="text-[11px] text-sky-400 bg-sky-950/40 p-2 rounded border border-sky-800/40">
                 {isFa
-                  ? `طول روز خورشیدی سایت: ${dayCap} ساعت | طول شب: ${nightCap} ساعت | PSH اوج تابش: ${peakSunHours} kWh/m²/day (ساعات روز دیواری ≠ PSH)`
-                  : `Site Design Daylight: ${dayCap}h | Night: ${nightCap}h | Peak Sun Hours: ${peakSunHours} kWh/m²/day (Wall clock daylight ≠ PSH)`}
+                  ? `طول روز خورشیدی سایت: ${dayCap} ساعت | طول شب: ${nightCap} ساعت | PSH اوج تابش: ${formatPsh(peakSunHours)} kWh/m²/day (ساعات روز دیواری ≠ PSH)`
+                  : `Site Design Daylight: ${dayCap}h | Night: ${nightCap}h | Peak Sun Hours: ${formatPsh(peakSunHours)} kWh/m²/day (Wall clock daylight ≠ PSH)`}
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-industrial-border">

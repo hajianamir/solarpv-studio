@@ -207,7 +207,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 onClick={() => setActiveCurrency(cur)}
                 className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors ${
                   activeCurrency === cur
-                    ? 'bg-industrial-primary text-white shadow-sm'
+                    ? 'bg-industrial-primary text-theme-strong shadow-sm'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -305,19 +305,21 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             />
           </div>
 
-          <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label htmlFor="fin-pricing-substation" className="text-slate-400 block mb-1">
-              {lang === 'fa' ? 'پست MV و اتصال ($/MVA):' : 'MV Substation ($/MVA):'}
-            </label>
-            <input
-              id="fin-pricing-substation"
-              type="number"
-              step="5000"
-              value={pricing.substationUsdPerMva}
-              onChange={(e) => updateField('substationUsdPerMva', parseFloat(e.target.value) || 0)}
-              className="studio-input w-full font-mono font-bold text-industrial-warning text-xs"
-            />
-          </div>
+          {financial.systemMode === 'powerplant' && (
+            <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
+              <label htmlFor="fin-pricing-substation" className="text-slate-400 block mb-1">
+                {lang === 'fa' ? 'پست MV و اتصال ($/MVA):' : 'MV Substation ($/MVA):'}
+              </label>
+              <input
+                id="fin-pricing-substation"
+                type="number"
+                step="5000"
+                value={pricing.substationUsdPerMva}
+                onChange={(e) => updateField('substationUsdPerMva', parseFloat(e.target.value) || 0)}
+                className="studio-input w-full font-mono font-bold text-industrial-warning text-xs"
+              />
+            </div>
+          )}
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
             <label htmlFor="fin-pricing-tariff" className="text-slate-400 block mb-1">
@@ -644,7 +646,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{lang === 'fa' ? 'کل سرمایه‌گذاری اولیه (CAPEX)' : 'Total Initial CAPEX'}</div>
-          <div className="text-xl font-bold font-mono text-white mt-1">
+          <div className="text-xl font-bold font-mono text-theme-strong mt-1">
             {formatCurrencyAmount(financial.capexBreakdown.totalCapexUsd, activeCurrency, pricing.usdToTomanRate, lang)}
           </div>
           <div className="text-xs font-mono text-industrial-warning mt-0.5">
@@ -788,7 +790,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-800 font-mono">
               <tr>
-                <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'ماژول‌های فتوولتائیک (PV Modules)' : 'PV Modules'}</td>
+                <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'ماژول‌های فتوولتائیک (PV Modules)' : 'PV Modules'}</td>
                 <td className="p-2.5 text-industrial-success">${financial.capexBreakdown.pvModulesUsd.toLocaleString()}</td>
                 <td className="p-2.5">{(financial.capexBreakdown.pvModulesToman / 1_000_000).toLocaleString()} م.ت</td>
                 <td className="p-2.5 text-slate-400">
@@ -796,7 +798,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </td>
               </tr>
               <tr>
-                <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'اینورترها (Inverters / Turnkey)' : 'Inverters / Turnkey'}</td>
+                <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'اینورترها (Inverters / Turnkey)' : 'Inverters / Turnkey'}</td>
                 <td className="p-2.5 text-industrial-accent">${financial.capexBreakdown.invertersUsd.toLocaleString()}</td>
                 <td className="p-2.5">{(financial.capexBreakdown.invertersToman / 1_000_000).toLocaleString()} م.ت</td>
                 <td className="p-2.5 text-slate-400">
@@ -805,7 +807,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </tr>
               {financial.capexBreakdown.batteriesUsd > 0 && (
                 <tr>
-                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'بانک باتری ذخیره‌ساز (BESS)' : 'BESS Battery Bank'}</td>
+                  <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'بانک باتری ذخیره‌ساز (BESS)' : 'BESS Battery Bank'}</td>
                   <td className="p-2.5 text-industrial-warning">${financial.capexBreakdown.batteriesUsd.toLocaleString()}</td>
                   <td className="p-2.5">{(financial.capexBreakdown.batteriesToman / 1_000_000).toLocaleString()} م.ت</td>
                   <td className="p-2.5 text-slate-400">
@@ -814,7 +816,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </tr>
               )}
               <tr>
-                <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'استراکچر و سازه‌های فلزی' : 'Mounting Structures'}</td>
+                <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'استراکچر و سازه‌های فلزی' : 'Mounting Structures'}</td>
                 <td className="p-2.5">${financial.capexBreakdown.structuresUsd.toLocaleString()}</td>
                 <td className="p-2.5">{(financial.capexBreakdown.structuresToman / 1_000_000).toLocaleString()} م.ت</td>
                 <td className="p-2.5 text-slate-400">
@@ -822,7 +824,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </td>
               </tr>
               <tr>
-                <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'کابل‌کشی، تابلوها و حفاظت (BOP)' : 'BOP & Protection'}</td>
+                <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'کابل‌کشی، تابلوها و حفاظت (BOP)' : 'BOP & Protection'}</td>
                 <td className="p-2.5">${financial.capexBreakdown.cablesAndProtectionUsd.toLocaleString()}</td>
                 <td className="p-2.5">{(financial.capexBreakdown.cablesAndProtectionToman / 1_000_000).toLocaleString()} م.ت</td>
                 <td className="p-2.5 text-slate-400">
@@ -830,8 +832,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </td>
               </tr>
               {financial.capexBreakdown.substationMvUsd > 0 && (
-                <tr>
-                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'پست فشار متوسط و اتصال به شبکه' : 'MV Substation & Grid Connection'}</td>
+                <tr data-testid="capex-line-mv-substation">
+                  <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'پست فشار متوسط (MV)' : 'MV Substation'}</td>
                   <td className="p-2.5 text-purple-400">${financial.capexBreakdown.substationMvUsd.toLocaleString()}</td>
                   <td className="p-2.5">{(financial.capexBreakdown.substationMvToman / 1_000_000).toLocaleString()} م.ت</td>
                   <td className="p-2.5 text-slate-400">
@@ -839,9 +841,29 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   </td>
                 </tr>
               )}
+              {financial.capexBreakdown.gridInterconnectionUsd > 0 && (
+                <tr data-testid="capex-line-grid-interconnection">
+                  <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'اتصال به شبکه' : 'Grid Interconnection'}</td>
+                  <td className="p-2.5 text-purple-400">${financial.capexBreakdown.gridInterconnectionUsd.toLocaleString()}</td>
+                  <td className="p-2.5">{(financial.capexBreakdown.gridInterconnectionToman / 1_000_000).toLocaleString()} م.ت</td>
+                  <td className="p-2.5 text-slate-400">
+                    {((financial.capexBreakdown.gridInterconnectionUsd / Math.max(1, financial.capexBreakdown.totalCapexUsd)) * 100).toFixed(1)}%
+                  </td>
+                </tr>
+              )}
+              {financial.capexBreakdown.hvConnectionUsd > 0 && (
+                <tr data-testid="capex-line-hv-connection">
+                  <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'اتصال فشار قوی (HV)' : 'HV Connection'}</td>
+                  <td className="p-2.5 text-purple-400">${financial.capexBreakdown.hvConnectionUsd.toLocaleString()}</td>
+                  <td className="p-2.5">{(financial.capexBreakdown.hvConnectionToman / 1_000_000).toLocaleString()} م.ت</td>
+                  <td className="p-2.5 text-slate-400">
+                    {((financial.capexBreakdown.hvConnectionUsd / Math.max(1, financial.capexBreakdown.totalCapexUsd)) * 100).toFixed(1)}%
+                  </td>
+                </tr>
+              )}
               {financial.capexBreakdown.dieselGenSetUsd > 0 && (
                 <tr>
-                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'دیزل ژنراتور اضطراری' : 'Emergency Diesel GenSet'}</td>
+                  <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'دیزل ژنراتور اضطراری' : 'Emergency Diesel GenSet'}</td>
                   <td className="p-2.5 text-industrial-warning">${financial.capexBreakdown.dieselGenSetUsd.toLocaleString()}</td>
                   <td className="p-2.5">{(financial.capexBreakdown.dieselGenSetToman / 1_000_000).toLocaleString()} م.ت</td>
                   <td className="p-2.5 text-slate-400">
@@ -850,7 +872,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </tr>
               )}
               <tr>
-                <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'مهندسی، نصب و راه‌اندازی (EPC)' : 'EPC Labor & Commissioning'}</td>
+                <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'مهندسی، نصب و راه‌اندازی (EPC)' : 'EPC Labor & Commissioning'}</td>
                 <td className="p-2.5">${financial.capexBreakdown.engineeringAndInstallationUsd.toLocaleString()}</td>
                 <td className="p-2.5">{(financial.capexBreakdown.engineeringAndInstallationToman / 1_000_000).toLocaleString()} م.ت</td>
                 <td className="p-2.5 text-slate-400">
@@ -861,7 +883,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 <td className="p-2.5 font-sans text-industrial-accent">{lang === 'fa' ? 'مجموع کل سرمایه‌گذاری اولیه (Total CAPEX)' : 'Total Initial CAPEX'}</td>
                 <td className="p-2.5 text-industrial-success text-sm">${financial.capexBreakdown.totalCapexUsd.toLocaleString()}</td>
                 <td className="p-2.5 text-industrial-warning text-sm">{(financial.capexBreakdown.totalCapexToman / 1_000_000).toLocaleString()} م.ت</td>
-                <td className="p-2.5 text-white">100%</td>
+                <td className="p-2.5 text-theme-strong">100%</td>
               </tr>
             </tbody>
           </table>
@@ -896,7 +918,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               <tbody className="divide-y divide-slate-850 font-mono text-[11px]">
                 {(financial.cashFlowWithYear0 || financial.cashFlow25Years).map((row) => (
                   <tr key={row.year} className="hover:bg-slate-850/50">
-                    <td className="p-2 text-white font-bold">{row.year === 0 ? (lang === 'fa' ? 'سال ۰ (CAPEX)' : 'Year 0 (CAPEX)') : row.year}</td>
+                    <td className="p-2 text-theme-strong font-bold">{row.year === 0 ? (lang === 'fa' ? 'سال ۰ (CAPEX)' : 'Year 0 (CAPEX)') : row.year}</td>
                     <td className="p-2 text-industrial-accent">{row.generationKwh.toLocaleString()}</td>
                     <td className="p-2 text-industrial-success">{(row.revenueToman / 1_000_000).toFixed(1)} م.ت</td>
                     <td className="p-2 text-red-300">{((row.year === 0 ? row.capexToman : row.opexToman) / 1_000_000).toFixed(1)} م.ت</td>

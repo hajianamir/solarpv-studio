@@ -222,7 +222,7 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
         {/* Selected Hour Details Box */}
         {selectedHour !== null && (
           <div className="mt-3 p-3 bg-industrial-surface/90 rounded-lg border border-industrial-border flex flex-wrap items-center justify-between text-xs font-mono">
-            <span className="text-white font-bold">
+            <span className="text-theme-strong font-bold">
               {isEn ? 'Hour:' : 'ساعت:'} {selectedHour}:00
             </span>
             <span className="text-industrial-warning">
@@ -278,7 +278,7 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
               onChange={(e) => onToggleDieselGenerator && onToggleDieselGenerator(e.target.checked)}
               className="accent-amber-500 w-4 h-4 cursor-pointer"
             />
-            <span className="text-xs font-semibold text-white">
+            <span className="text-xs font-semibold text-theme-strong">
               {enableDieselGenerator
                 ? isEn
                   ? '✓ Generator Sizing Enabled'

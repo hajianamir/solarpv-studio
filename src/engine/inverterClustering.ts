@@ -1,5 +1,7 @@
 // Adaptive Power Inverter, Auto-Voltage Stepping & Paralleling Engine
 
+import type { AcPhase } from './acRequirements';
+
 export type InverterEngineeringClass =
   | 'residential_micro'
   | 'residential_standard'
@@ -12,7 +14,6 @@ export interface InverterClassDefinition {
   titleEn: string;
   powerRangeDesc: string;
   recommendedDcVoltage: number; // 12, 24, or 48V
-  recommendedAcPhase: 'single_phase_230v' | 'three_phase_400v';
   maxSingleUnitKw: number;
 }
 
@@ -21,36 +22,32 @@ export const INVERTER_CLASSES: Record<InverterEngineeringClass, InverterClassDef
     classType: 'residential_micro',
     titleFa: 'مسکونی کوچک (Residential Micro)',
     titleEn: 'Residential Micro (<3 kW)',
-    powerRangeDesc: 'کمتر از ۳ کیلووات، ولتاژ ۱۲ یا ۲۴ ولت تکفاز',
+    powerRangeDesc: 'کمتر از ۳ کیلووات؛ توصیف اندازه توان، نه الزام فاز/ولتاژ محلی',
     recommendedDcVoltage: 24,
-    recommendedAcPhase: 'single_phase_230v',
     maxSingleUnitKw: 3.0,
   },
   residential_standard: {
     classType: 'residential_standard',
     titleFa: 'مسکونی استاندارد (Residential Standard)',
     titleEn: 'Residential Standard (3–10 kW)',
-    powerRangeDesc: '۳ الی ۱۰ کیلووات، ولتاژ ۴۸ ولت استاندارد تکفاز/سهفاز',
+    powerRangeDesc: '۳ الی ۱۰ کیلووات؛ فاز و ولتاژ از الزام تأییدشده پروژه می‌آید',
     recommendedDcVoltage: 48,
-    recommendedAcPhase: 'single_phase_230v',
     maxSingleUnitKw: 6.0,
   },
   commercial_light: {
     classType: 'commercial_light',
     titleFa: 'تجاری سبک / کارگاهی (Commercial Light)',
     titleEn: 'Commercial Light (10–30 kW)',
-    powerRangeDesc: '۱۰ الی ۳۰ کیلووات، اینورترهای پارالل یا سهفاز سنکرون ۴۰۰ ولت',
+    powerRangeDesc: '۱۰ الی ۳۰ کیلووات؛ فاز و ولتاژ از الزام تأییدشده پروژه می‌آید',
     recommendedDcVoltage: 48,
-    recommendedAcPhase: 'three_phase_400v',
     maxSingleUnitKw: 12.0,
   },
   industrial_utility: {
     classType: 'industrial_utility',
     titleFa: 'صنعتی و مزارع خورشیدی (Industrial / Utility)',
     titleEn: 'Industrial & Utility (>30 kW)',
-    powerRangeDesc: 'بالای ۳۰ کیلووات، شبکه‌های استرینگ سنترال و تجمیع توان سهفاز',
+    powerRangeDesc: 'بالای ۳۰ کیلووات؛ توپولوژی و فاز نیازمند مشخصات پروژه است',
     recommendedDcVoltage: 48, // or high-voltage battery racks
-    recommendedAcPhase: 'three_phase_400v',
     maxSingleUnitKw: 30.0,
   },
 };
@@ -63,7 +60,8 @@ export interface InverterClusteringResult {
   /** Inverter input DC bus nominal operating voltage (from MPPT ceiling). */
   inverterDcBusNominalV: number;
   autoSteppingReasonFa: string;
-  acPhaseType: 'single_phase_230v' | 'three_phase_400v';
+  /** Only the explicitly supplied project requirement; unknown is never class-inferred. */
+  acPhaseType: AcPhase;
   parallelUnitsCount: number;
   unitRatingKw: number;
   totalInverterCapacityKw: number;
@@ -80,7 +78,8 @@ export function evaluateInverterClustering(
   continuousWatts: number,
   peakSurgeWatts: number,
   preferredUnitKw: number = 5.0,
-  inverterVmpptMaxV?: number   // NEW (BUG-5): MPPT ceiling of the selected inverter
+  inverterVmpptMaxV?: number,   // MPPT ceiling of the selected inverter
+  confirmedAcPhase: AcPhase = 'unknown',
 ): InverterClusteringResult {
   const continuousKw = continuousWatts / 1000.0;
   const peakKw = peakSurgeWatts / 1000.0;
@@ -180,7 +179,7 @@ export function evaluateInverterClustering(
     batteryDcBusNominalV: recommendedDcVoltageVdc,
     inverterDcBusNominalV,
     autoSteppingReasonFa,
-    acPhaseType: engineeringClass.recommendedAcPhase,
+    acPhaseType: confirmedAcPhase,
     parallelUnitsCount,
     unitRatingKw: unitKw,
     totalInverterCapacityKw,

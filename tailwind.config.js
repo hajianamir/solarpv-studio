@@ -20,15 +20,16 @@ export default {
           900: '#0f172a',
           950: '#080d1a',
         },
+        'theme-strong': 'var(--app-text-strong)',
         industrial: {
-          bg: '#0A0E1A',       // Background (replaces blue-tinged #0b0f17)
-          surface: '#121826',  // Surface / cards
-          border: '#1F2937',   // 1px borders, no shadows
-          primary: '#3B82F6',  // Engineering blue
-          success: '#10B981',  // Signal green
-          warning: '#F59E0B',  // Caution amber
-          error: '#EF4444',    // Alert red
-          accent: '#06B6D4',   // Data accent (monospace numbers/cells)
+          bg: 'rgb(var(--industrial-bg-rgb) / <alpha-value>)',       // Background (replaces blue-tinged #0b0f17)
+          surface: 'rgb(var(--industrial-surface-rgb) / <alpha-value>)',  // Surface / cards
+          border: 'rgb(var(--industrial-border-rgb) / <alpha-value>)',   // 1px borders, no shadows
+          primary: 'rgb(var(--industrial-primary-rgb) / <alpha-value>)',  // Engineering blue
+          success: 'rgb(var(--industrial-success-rgb) / <alpha-value>)',  // Signal green
+          warning: 'rgb(var(--industrial-warning-rgb) / <alpha-value>)',  // Caution amber
+          error: 'rgb(var(--industrial-error-rgb) / <alpha-value>)',    // Alert red
+          accent: 'rgb(var(--industrial-accent-rgb) / <alpha-value>)',   // Data accent (monospace numbers/cells)
         },
       },
       boxShadow: {

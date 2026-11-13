@@ -16,15 +16,16 @@ const sparticuzChromium = (await import('@sparticuz/chromium')).default;
 
 const port = 5187;
 const baseUrl = `http://127.0.0.1:${port}`;
-const previewEnv = { ...process.env, VITE_REAL_INTERNET: 'false', REAL_INTERNET: 'false' };
 let vite: ChildProcess | undefined;
+let onlineVite: ChildProcess | undefined;
 let viteLog = '';
 let browser: Awaited<ReturnType<typeof playwrightChromium.launch>> | undefined;
 
-function buildProductionBundle(): void {
+function buildProductionBundle(realInternet = false): void {
+  const testEnv = { ...process.env, VITE_REAL_INTERNET: String(realInternet), REAL_INTERNET: String(realInternet) };
   const build = spawnSync(process.execPath, ['node_modules/vite/bin/vite.js', 'build'], {
     cwd: process.cwd(),
-    env: previewEnv,
+    env: testEnv,
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,
   });
@@ -36,7 +37,7 @@ function buildProductionBundle(): void {
     'node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort',
   ], {
     cwd: process.cwd(),
-    env: previewEnv,
+    env: testEnv,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   vite.stdout?.on('data', (data) => { viteLog += String(data); });
@@ -63,12 +64,12 @@ function reportDecimalOracle(value: number): string {
   return sign && cents ? `-${result}` : result;
 }
 
-async function waitForVite() {
+async function waitForVite(targetUrl = baseUrl, processRef: ChildProcess | undefined = vite) {
   const deadline = Date.now() + 45000;
   while (Date.now() < deadline) {
-    if (!vite || vite.exitCode !== null) throw new Error(`Vite preview exited early or was not started:\n${viteLog}`);
+    if (!processRef || processRef.exitCode !== null) throw new Error(`Vite preview exited early or was not started:\n${viteLog}`);
     try {
-      const response = await fetch(baseUrl, { signal: AbortSignal.timeout(2000) });
+      const response = await fetch(targetUrl, { signal: AbortSignal.timeout(2000) });
       if (response.ok) return;
     } catch {
       // Wait for dev server startup.
@@ -179,17 +180,262 @@ async function main() {
   const clickTab = async (tab: string) => {
     await page.getByTestId(`workflow-tab-${tab}`).locator(':visible').first().click({ timeout: 15000 });
   };
+
+  // F1 is contextual, accessible, localized, and does not steal editor/dialog keys.
+  await page.keyboard.press('F1');
+  const helpDialog = page.getByTestId('context-help-dialog');
+  await helpDialog.waitFor({ timeout: 5000 });
+  await helpDialog.getByRole('heading', { name: /Structural & foundation|سازه و فونداسیون/ }).waitFor();
+  await helpDialog.getByRole('heading', { name: /Important inputs|ورودی‌های مهم/ }).waitFor();
+  await helpDialog.getByRole('heading', { name: /Implemented calculation method|روش محاسبهٔ پیاده‌سازی‌شده/ }).waitFor();
+  assert.match(await helpDialog.locator('#context-help-method').innerText(), /foundation|فونداسیون/);
+  assert.match(await helpDialog.locator('#context-help-sources').innerText(), /structuralEngine\.ts.*calculateStructuralAndFoundations/i);
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(() => (document.activeElement as HTMLElement | null)?.getAttribute('aria-label')), 'بستن راهنما', 'Tab escaped the contextual help dialog instead of cycling within it');
+  await page.keyboard.press('Escape');
+  await helpDialog.waitFor({ state: 'detached' });
+  await page.getByTitle('زبان / Language').click();
+  await page.keyboard.press('F1');
+  await helpDialog.getByRole('heading', { name: 'Structural & foundation' }).waitFor();
+  assert.match(await helpDialog.locator('#context-help-inputs').innerText(), /soil|geotechnical/i);
+  assert.match(await helpDialog.locator('#context-help-method').innerText(), /foundation recommendations/i);
+  assert.match(await helpDialog.locator('#context-help-limitations').innerText(), /not stamped construction design/i);
+  await page.keyboard.press('Escape');
+  await page.getByTitle('Language / زبان').click();
+  await page.evaluate(() => {
+    (window as Window & { __f1Prevented?: boolean }).__f1Prevented = false;
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'F1') (window as Window & { __f1Prevented?: boolean }).__f1Prevented = event.defaultPrevented;
+    });
+  });
+  await page.locator('header input').first().focus();
+  await page.keyboard.press('F1');
+  assert.equal(await page.evaluate(() => (window as Window & { __f1Prevented?: boolean }).__f1Prevented), true, 'F1 did not suppress browser default in a focused editor');
+  assert.equal(await helpDialog.count(), 0, 'F1 opened contextual help while an editor had focus');
+  await page.getByTestId('context-help-button').click();
+  await helpDialog.waitFor();
+  await page.keyboard.press('Escape');
+  await page.getByTestId('context-help-button').click();
+  await page.keyboard.press('F1');
+  assert.equal(await helpDialog.count(), 1, 'F1 nested a new help dialog while a dialog was already open');
+  await page.keyboard.press('Escape');
+  console.log('[PASS] F1 opens localized page help, prevents browser help, and respects focused editors/open dialogs');
+
+  // Global theme tokens, RTL controls, modal readability and persistence.
+  const themeToggle = page.getByTestId('theme-toggle');
+  await themeToggle.click();
+  assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme), 'light');
+  assert.match(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), /241, 245, 249/);
+  assert.equal(await page.evaluate(() => localStorage.getItem('solarpv_theme')), 'light');
+  assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'Light theme changed the Persian RTL layout direction');
+  await clickTab('system_mode');
+  const warningContrast = await page.getByTestId('ac-requirements-assessment').evaluate((el) => {
+    const style = getComputedStyle(el);
+    const colorRgb = style.color.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
+    const bgRgb = style.backgroundColor.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
+    const linear = [0.2126, 0.7152, 0.0722];
+    let textLum = 0; let bgLum = 0;
+    for (let i = 0; i < 3; i++) {
+      const c = colorRgb[i] / 255; const b = bgRgb[i] / 255;
+      textLum += (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4) * linear[i];
+      bgLum += (b <= 0.04045 ? b / 12.92 : ((b + 0.055) / 1.055) ** 2.4) * linear[i];
+    }
+    return (Math.max(textLum, bgLum) + 0.05) / (Math.min(textLum, bgLum) + 0.05);
+  });
+  assert.ok(warningContrast >= 4.5, `Light theme AC warning contrast is too low: ${warningContrast}`);
+  const invalidAcVoltage = page.getByTestId('ac-input-loadService-lineToLineVolts');
+  await invalidAcVoltage.focus();
+  const phaseFocusStyle = await invalidAcVoltage.evaluate((el) => ({ focused: document.activeElement === el, outline: getComputedStyle(el).outlineStyle, outlineColor: getComputedStyle(el).outlineColor }));
+  assert.ok(phaseFocusStyle.focused && phaseFocusStyle.outline === 'solid' && phaseFocusStyle.outlineColor === 'rgb(29, 78, 216)', `Light-theme focused-input indicator missing: ${JSON.stringify(phaseFocusStyle)}`);
+  await invalidAcVoltage.fill('-1');
+  const invalidAcAlert = page.locator('fieldset').filter({ has: invalidAcVoltage }).getByRole('alert');
+  await invalidAcAlert.waitFor();
+  const invalidTextContrast = await invalidAcAlert.evaluate((el) => {
+    const s = getComputedStyle(el);
+    const color = s.color.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
+    const bg = s.backgroundColor.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
+    const weights = [0.2126, 0.7152, 0.0722]; let a = 0; let b = 0;
+    for (let i = 0; i < 3; i++) {
+      const c = color[i] / 255; const d = bg[i] / 255;
+      a += (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4) * weights[i];
+      b += (d <= 0.04045 ? d / 12.92 : ((d + 0.055) / 1.055) ** 2.4) * weights[i];
+    }
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  });
+  assert.ok(invalidTextContrast >= 4.5, `Light-theme validation error contrast is too low: ${invalidTextContrast}`);
+  await invalidAcVoltage.fill('');
+  await page.getByTestId('context-help-button').click();
+  await helpDialog.waitFor();
+  assert.match(await helpDialog.evaluate((el) => getComputedStyle(el).backgroundColor), /255, 255, 255/);
+  await page.keyboard.press('Escape');
+  await page.reload();
+  await page.getByTestId('theme-toggle').waitFor();
+  assert.equal(await page.locator('html').getAttribute('data-theme'), 'light', 'light theme did not persist across reload');
+  await page.getByTestId('theme-toggle').click();
+  assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
+  console.log('[PASS] Light theme tokens, F1 dialog, RTL header toggle and localStorage reload persistence');
+
+  // Changing a stored plant target must not leak into either customer-mode AC
+  // reference or DC/AC denominator; switching back restores the plant target.
+  await clickTab('system_mode');
+  assert.equal(await page.getByTestId('ac-requirements-assessment').getAttribute('data-status'), 'incomplete', 'unknown AC requirements must never be presented as compatible');
+  const acField = async (target: string, field: string) => page.getByTestId(`ac-input-${target}-${field}`);
+  await page.getByTestId('ac-phase-loadService').selectOption('three');
+  await (await acField('loadService', 'lineToLineVolts')).fill('208');
+  await (await acField('loadService', 'lineToNeutralVolts')).fill('120');
+  await (await acField('loadService', 'frequencyHz')).fill('60');
+  await page.getByTestId('ac-confirmed-loadService').check();
+  await (await acField('loadService', 'frequencyHz')).fill('59');
+  assert.equal(await page.getByTestId('ac-confirmed-loadService').isChecked(), false, 'editing confirmed service data must require reconfirmation');
+  await (await acField('loadService', 'frequencyHz')).fill('60');
+  await page.getByTestId('ac-confirmed-loadService').check();
+  await page.getByTestId('ac-phase-inverterOutput').selectOption('three');
+  await (await acField('inverterOutput', 'lineToLineVolts')).fill('400');
+  await (await acField('inverterOutput', 'lineToNeutralVolts')).fill('230');
+  await (await acField('inverterOutput', 'frequencyHz')).fill('50');
+  await (await acField('inverterOutput', 'powerFactor')).fill('0.95');
+  await (await acField('inverterOutput', 'availableFaultCurrentKa')).fill('25');
+  await (await acField('inverterOutput', 'faultClearingTimeSec')).fill('0.1');
+  await page.getByTestId('ac-confirmed-inverterOutput').check();
+  await page.getByTestId('ac-inverter-nameplate-frequency').fill('50');
+  await page.getByTestId('ac-inverter-nameplate-url').fill('https://fixture.invalid/exact-model-datasheet.pdf');
+  await page.getByTestId('ac-inverter-nameplate-confirmed').check();
+  assert.equal(await page.getByTestId('ac-requirements-assessment').getAttribute('data-status'), 'incompatible', 'mismatch against an explicitly user-attested inverter nameplate must be rejected');
+  await page.getByTestId('ac-inverter-nameplate-url').fill('https://fixture.invalid/changed-datasheet.pdf');
+  assert.equal(await page.getByTestId('ac-inverter-nameplate-confirmed').isChecked(), false, 'editing the datasheet reference must clear its user-attestation');
+  await page.getByTestId('ac-inverter-nameplate-url').fill('https://fixture.invalid/exact-model-datasheet.pdf');
+  await page.getByTestId('ac-inverter-nameplate-confirmed').check();
+  await (await acField('inverterOutput', 'lineToLineVolts')).fill('800');
+  await (await acField('inverterOutput', 'lineToNeutralVolts')).fill('462');
+  await page.getByTestId('ac-confirmed-inverterOutput').check();
+  await page.getByTestId('ac-injection-level').selectOption('mv');
+  await page.getByTestId('ac-injection-voltage').fill('20');
+  await page.getByTestId('ac-injection-confirmed').check();
+  await page.locator('#mv-voltage-select').fill('20');
+  assert.equal(await page.getByTestId('ac-requirements-assessment').getAttribute('data-status'), 'compatible', 'explicit 800V/20kV project interfaces should pass input-compatibility screening only');
+  await clickTab('sld');
+  await page.locator('svg g.cursor-pointer').filter({ hasText: /DC \/ AC/ }).click({ force: true });
+  await page.getByText(/(Customer load service:|سرویس بار مشتری:).*?(user-confirmed|تأیید کاربر)/).waitFor();
+  await page.getByText(/(LV grid interface:|رابط شبکه LV:).*?(UNCONFIRMED|تأییدنشده)/).waitFor();
+  await page.getByText(/(Post-transformer injection:|تزریق پس از ترانسفورماتور:).*?mv; 20 kV; (user-confirmed|تأیید کاربر)/).waitFor();
+  await page.getByText(/(internal collector busbar:|باسبار داخلی کلکتور:) 20 kV/).waitFor();
+  await clickTab('system_mode');
+  await page.getByTitle('ذخیره پروژه (Ctrl+S)').click();
+  const savedAcProject = await page.evaluate(() => JSON.parse(localStorage.getItem('solarpv_project_save') ?? 'null'));
+  assert.equal(savedAcProject?.acRequirements?.inverterOutput?.lineToLineVolts, 800, 'project save omitted confirmed inverter AC interface');
+  assert.equal(savedAcProject?.acRequirements?.injection?.nominalKv, 20, 'project save omitted the separate injection interface');
+  assert.equal(savedAcProject?.mvVoltageKv, 20, 'project save omitted explicit MV busbar voltage');
+  await page.keyboard.press('Control+e');
+  await page.getByRole('button', { name: 'سفارشی‌سازی' }).click();
+  const acProjectDownloadPromise = page.waitForEvent('download');
+  await page.getByTitle('ذخیره محلی پروژه با نام دلخواه').click();
+  const acProjectDownload = await acProjectDownloadPromise;
+  const acProjectPath = path.join(artifactDir!, 'ac-requirements-project.solarpv.json');
+  await acProjectDownload.saveAs(acProjectPath);
+  const acExportEnvelope = JSON.parse(await readFile(acProjectPath, 'utf8'));
+  assert.equal(acExportEnvelope.projectData.acRequirements?.inverterOutput?.lineToLineVolts, 800, 'project export dropped explicit inverter voltage');
+  assert.equal(acExportEnvelope.projectData.acRequirements?.inverterNameplate?.nominalFrequencyHz, 50, 'project export dropped user-attested nameplate frequency');
+  assert.equal(acExportEnvelope.projectData.acRequirements?.inverterNameplate?.userConfirmed, true, 'project export dropped nameplate verification state');
+  assert.equal(acExportEnvelope.projectData.mvVoltageKv, 20, 'project export dropped separate collector busbar voltage');
+  await page.locator('#report-modal-close-btn').click();
+  await clickTab('cables_bom');
+  const unassessedCableRows = page.getByTestId('cable-run-unassessed');
+  await unassessedCableRows.first().waitFor({ timeout: 10000 });
+  assert.ok(await unassessedCableRows.count() >= 3, 'DC string, DC main and AC cables must remain unassessed without measured project routes');
+  assert.match(await unassessedCableRows.last().innerText(), /route length|measured length/i, 'AC cable must stay unassessed without a measured route and fault study');
+  await clickTab('system_mode');
+  const plantTargetInput = page.locator('#target-plant-capacity-input');
+  await plantTargetInput.fill('2000');
+  await clickTab('array');
+  assert.match(await page.getByTestId('array-ac-reference').innerText(), /2000[.]0/);
+  assert.ok(await page.getByTestId('workflow-tab-harmonics_grid').locator(':visible').count() > 0,
+    'Powerplant navigation does not expose the upstream-grid/harmonics tab');
+  await page.getByRole('button', { name: 'On-Grid' }).click();
+  await clickTab('array');
+  const ongridAcReference = await page.getByTestId('array-ac-reference').innerText();
+  assert.ok(!ongridAcReference.includes('2000.0'), `on-grid AC reference leaked the powerplant target: ${ongridAcReference}`);
+  const ongridDisplayedRatio = /DC\/AC = ([0-9.]+)/.exec(await page.getByTestId('array-dc-ac-ratio').innerText())?.[1];
+  assert.equal(ongridDisplayedRatio, await page.getByTestId('array-designed-dc-ac-ratio').innerText(), 'on-grid DC/AC denominator differs from the actual designed inverter capacity');
+
+  // Harmonics is deliberately available for utility plants and grid-tied
+  // customers, but is absent and unmounted for off-grid projects.
+  await clickTab('harmonics_grid');
+  await page.getByText(/Harmonics Analysis|تحلیل هارمونیک/).waitFor({ timeout: 10000 });
+  await page.keyboard.press('F1');
+  await helpDialog.waitFor();
+  assert.match(await helpDialog.locator('#context-help-inputs').innerText(), /short-circuit|اتصال کوتاه/i);
+  assert.match(await helpDialog.locator('#context-help-method').innerText(), /typical inverter spectrum|طیف ثابتِ نمونهٔ اینورتر/i);
+  assert.match(await helpDialog.locator('#context-help-limitations').innerText(), /screening estimates|غربالگری بدانید/i);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'On-Grid' }).click();
+  await page.getByTestId('workflow-tab-harmonics_grid').waitFor({ timeout: 10000 });
+  assert.ok(await page.getByTestId('workflow-tab-harmonics_grid').locator(':visible').count() > 0,
+    'On-grid navigation must expose upstream-grid/harmonics analysis');
+  await clickTab('financial');
+  await page.locator('#fin-pricing-tariff').waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('#fin-pricing-substation').count(), 0, 'on-grid still exposes plant-only substation unit pricing');
+  for (const testId of ['capex-line-mv-substation', 'capex-line-grid-interconnection', 'capex-line-hv-connection']) {
+    assert.equal(await page.getByTestId(testId).count(), 0, `on-grid exposes misleading ${testId} CAPEX row`);
+  }
+  await clickTab('harmonics_grid');
+  await page.getByText(/Harmonics Analysis|تحلیل هارمونیک/).waitFor({ timeout: 10000 });
+  await page.keyboard.press('F1');
+  await helpDialog.waitFor();
+  assert.match(await helpDialog.locator('#context-help-method').innerText(), /(SCR = upstream Ssc \/ plant MW|SCR = توان اتصال کوتاه بالادست)/i);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Off-Grid' }).click();
+  await page.getByTestId('workflow-tab-harmonics_grid').waitFor({ state: 'detached', timeout: 10000 });
+  assert.equal(await page.getByText(/Harmonics Analysis|تحلیل هارمونیک/).count(), 0, 'off-grid mode retained harmonic analysis rendering');
+  await clickTab('array');
+  const offgridAcReference = await page.getByTestId('array-ac-reference').innerText();
+  assert.ok(!offgridAcReference.includes('2000.0'), `off-grid AC reference leaked the powerplant target: ${offgridAcReference}`);
+  const offgridDisplayedRatio = /DC\/AC = ([0-9.]+)/.exec(await page.getByTestId('array-dc-ac-ratio').innerText())?.[1];
+  assert.equal(offgridDisplayedRatio, await page.getByTestId('array-designed-dc-ac-ratio').innerText(), 'off-grid DC/AC denominator differs from the actual designed inverter capacity');
+  await clickTab('financial');
+  await page.locator('#fin-pricing-tariff').waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('#fin-pricing-substation').count(), 0, 'off-grid still exposes plant-only substation unit pricing');
+  for (const testId of ['capex-line-mv-substation', 'capex-line-grid-interconnection', 'capex-line-hv-connection']) {
+    assert.equal(await page.getByTestId(testId).count(), 0, `off-grid exposes misleading ${testId} CAPEX row`);
+  }
+  await page.getByRole('button', { name: 'نیروگاهی' }).click();
+  await clickTab('system_mode');
+  await plantTargetInput.fill('1000');
+  await clickTab('financial');
+  await page.locator('#fin-pricing-substation').waitFor({ timeout: 10000 });
+  console.log('[PASS] Powerplant target/AC reference is isolated from customer modes; harmonics and financial controls are mode-scoped');
+
   await clickTab('climate');
   await page.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
   const originalPsh = await page.locator('#climate-psh-input').inputValue();
+  const originalMinTemp = await page.locator('#climate-temp-min-input').inputValue();
   await page.locator('#climate-latitude-input').fill('12');
   await page.locator('#climate-longitude-input').fill('101');
   await page.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
   assert.equal(gatewayRequests, 0, 'cold-offline browser unexpectedly called the data gateway');
+  assert.match(await page.getByTestId('climate-psh-display').innerText(), /^\d+\.\d{2}$/, 'PSH display must always use exactly two decimals');
   await page.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
   const refreshedPsh = await page.locator('#climate-psh-input').inputValue();
+  const refreshedMinTemp = await page.locator('#climate-temp-min-input').inputValue();
   assert.notEqual(refreshedPsh, originalPsh, 'coordinate change relabeled old PSH instead of recomputing it');
-  console.log('[PASS] Real browser coordinate edit recomputes PSH offline; no gateway/API server is available');
+  assert.notEqual(refreshedMinTemp, originalMinTemp, 'coordinate change retained old-site design temperatures');
+  assert.equal(await page.locator('#climate-albedo-input').inputValue(), '0.2', 'offline model albedo default changed or was not loaded');
+  const albedoProvenance = await page.locator('tr').filter({ hasText: 'STANDARD_GROUND_ALBEDO_DEFAULT' }).innerText();
+  assert.match(albedoProvenance, /Default Unverified|پیش‌فرض ثبت‌نشده/i);
+  assert.match(albedoProvenance, /User should confirm|تأیید/i);
+  await page.locator('#climate-albedo-input').fill('0.34');
+  await page.locator('#climate-latitude-input').fill('48.1351');
+  await page.locator('#climate-longitude-input').fill('11.5820');
+  await page.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
+  await page.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
+  assert.equal(await page.locator('#climate-albedo-input').inputValue(), '0.34', 'explicit albedo override was lost during coordinate refresh');
+  const overrideRow = await page.locator('tr').filter({ hasText: 'Albedo' }).innerText();
+  assert.match(overrideRow, /USER_OVERRIDE/);
+  await page.locator('#climate-latitude-input').fill('12');
+  await page.locator('#climate-longitude-input').fill('101');
+  await page.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
+  console.log('[PASS] Offline two-site climate refresh updates PSH/temperature provenance, preserves an explicit albedo override, and displays PSH to 2 decimals');
+  await page.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
 
   // Preserve existing PSH<1 behavior while making its caveat visible to the user.
   await page.locator('#climate-psh-input').fill('0.5');
@@ -395,6 +641,9 @@ async function main() {
   // inverter technology in the real system-mode UI, select that catalog record,
   // and ensure its stable identity survives the official project export.
   await clickTab('catalog');
+  await page.getByTestId('catalog-provenance-warning').waitFor();
+  assert.match(await page.getByTestId('catalog-provenance-warning').innerText(), /No built-in record has independently checked|برای هیچ رکورد داخلی.*تطبیق و ثبت نشده/i);
+  assert.match(await page.locator('.studio-card').first().innerText(), /25.*33|25.*پنل.*33/);
   await page.getByRole('button', { name: /Add Custom Equipment to Catalog|افزودن تجهیز دلخواه جدید به کاتالوگ/ }).click();
   await page.getByRole('button', { name: /^Inverter$|^اینورتر$/ }).click();
   await page.locator('#cat-inv-manufacturer').fill('Arena Browser Identity');
@@ -435,6 +684,12 @@ async function main() {
   assert.equal(await firstLoadPower.inputValue(), '1', 'negative rated load was not clamped to a schema-valid positive value');
   const loadPageText = await page.locator('body').innerText();
   assert.doesNotMatch(loadPageText, /bay count.*(invalid|error)|invalid.*bay count/i, 'negative load triggered an unrelated bay-count error');
+  const beforeEditorShortcut = await page.evaluate(() => localStorage.getItem('solarpv_project_save'));
+  await page.keyboard.press('Control+s');
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => localStorage.getItem('solarpv_project_save')), beforeEditorShortcut,
+    'Ctrl+S was captured by the application while an editor had focus');
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press('Control+s');
   await page.getByText(/در ساعت|Project v3 saved with trace/).waitFor({ timeout: 10000 });
   const savedNegativeLoad = await page.evaluate(() => JSON.parse(localStorage.getItem('solarpv_project_save') ?? 'null'));
@@ -525,6 +780,18 @@ async function main() {
   }
   await tabA.getByText(/پروژه با موفقیت بارگذاری شد|پروژه با تأیید شما بازیابی شد|Project loaded successfully|Project applied after your confirmation/).waitFor({ timeout: 15000 });
   await tabA.getByTestId('workflow-tab-catalog').waitFor({ timeout: 15000 });
+  await tabA.keyboard.press('Control+e');
+  await tabA.getByRole('button', { name: 'سفارشی‌سازی' }).click();
+  const acImportDialogPromise = tabA.waitForEvent('dialog', { timeout: 10000 }).catch(() => null);
+  await tabA.locator('#report-restore-file-input').setInputFiles(acProjectPath);
+  const acImportDialog = await acImportDialogPromise;
+  if (acImportDialog) await acImportDialog.accept();
+  await tabA.getByText(/Project applied after your confirmation|پروژه با تأیید شما بازیابی شد|Project loaded successfully|پروژه با موفقیت بارگذاری شد/).waitFor({ timeout: 15000 });
+  await tabA.getByTestId('workflow-tab-system_mode').locator(':visible').first().click();
+  assert.equal(await tabA.getByTestId('ac-phase-inverterOutput').inputValue(), 'three', 'import did not restore inverter phase requirement');
+  assert.equal(await tabA.getByTestId('ac-inverter-nameplate-frequency').inputValue(), '50', 'import did not restore inverter datasheet frequency');
+  assert.equal(await tabA.getByTestId('ac-injection-voltage').inputValue(), '20', 'import did not restore injection voltage independently');
+  assert.equal(await tabA.locator('#mv-voltage-select').inputValue(), '20', 'import did not restore separate collector busbar voltage');
   await clickTab('climate');
   await tabA.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
   assert.equal(await tabA.locator('#climate-latitude-input').inputValue(), String(catalogEnvelope.projectData.city.latitude), 'batch import did not restore project latitude');
@@ -590,12 +857,136 @@ async function main() {
   assert.equal(await failureTab.evaluate(() => localStorage.getItem('solarpv_project_save')), savedProjectBeforeFailure);
   console.log('[PASS] Injected pre-write quota/import failures report verified unchanged storage; no memory-only save is reported; preexisting catalog survives reload.');
   await context.close();
-  console.log('Browser regression checks: offline lazy route, waiting SW update, F-04 reports, metadata remount, UI export/import, multitab catalog persistence, injected pre-write failures, unsizable UI PASS');
+
+  // Separate online-configured production build. The same-origin gateway is
+  // stubbed with clearly identified synthetic contract fixtures (never real
+  // climate claims); a separate route abort exercises the actual offline fallback.
+  const onlineEnv = { ...process.env, VITE_REAL_INTERNET: 'true', REAL_INTERNET: 'true' };
+  const onlineBuild = spawnSync(process.execPath, ['node_modules/vite/bin/vite.js', 'build'], {
+    cwd: process.cwd(), env: onlineEnv, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
+  });
+  if (onlineBuild.status !== 0) throw new Error(`Online-configured test build failed:\n${onlineBuild.stdout}\n${onlineBuild.stderr}`);
+  const onlinePort = 5188;
+  const onlineUrl = `http://127.0.0.1:${onlinePort}`;
+  onlineVite = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(onlinePort), '--strictPort'], {
+    cwd: process.cwd(), env: onlineEnv, stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  onlineVite.stdout?.on('data', (data) => { viteLog += String(data); });
+  onlineVite.stderr?.on('data', (data) => { viteLog += String(data); });
+  await waitForVite(onlineUrl, onlineVite);
+  const onlineContext = await browser!.newContext({ serviceWorkers: 'block' });
+  const onlinePage = await onlineContext.newPage();
+  let forceClimateOffline = false;
+  let holdSiteAResponse = false;
+  let notifySiteARequest: (() => void) | undefined;
+  let releaseSiteAResponse: (() => void) | undefined;
+  let siteARequestSeen = new Promise<void>((resolve) => { notifySiteARequest = resolve; });
+  const onlineRequestCounts = new Map<string, number>();
+  const siteLabel = (lat: number, lng: number): 'Site-A' | 'Site-B' | 'Site-C' =>
+    Math.abs(lat - 48.1351) < 0.001 && Math.abs(lng - 11.582) < 0.001 ? 'Site-A'
+      : Math.abs(lat - 34) < 0.001 && Math.abs(lng + 118.2) < 0.001 ? 'Site-C' : 'Site-B';
+  const climateFixture = (lat: number, lng: number, label: 'Site-A' | 'Site-B' | 'Site-C') => {
+    const values = label === 'Site-A' ? { psh: 4.321, min: -11.2, max: 28.6, albedo: 0.27 }
+      : label === 'Site-B' ? { psh: 6.543, min: 12.4, max: 36.8, albedo: 0.22 }
+        : { psh: 5.678, min: 2.3, max: 31.7, albedo: 0.2 };
+    const fields = { peakSunHours: values.psh, tempMinC: values.min, tempMaxC: values.max, albedo: values.albedo };
+    return {
+      id: `synthetic-browser-test-${label}`, nameFa: label, nameEn: label, provinceFa: 'TEST FIXTURE', provinceEn: 'TEST FIXTURE',
+      latitude: lat, longitude: lng, elevationM: 510,
+      peakSunHours: values.psh, daylightHoursDesign: 10, nightHoursDesign: 14,
+      tempMinC: values.min, tempMaxC: values.max, albedo: values.albedo,
+      soilingLossPct: 4, optimalTiltAnnualDeg: 30, optimalTiltWinterDeg: 45, optimalTiltSummerDeg: 15,
+      descriptionFa: 'TEST FIXTURE ONLY؛ داده اقلیمی واقعی نیست', descriptionEn: 'SYNTHETIC TEST FIXTURE ONLY; not climate data',
+      basicWindSpeedKmh: 100, groundSnowLoadKgM2: 20, annualRainfallMm: 300, soilType: 'medium_clay',
+      soilBearingCapacityKpa: 150, soilInternalFrictionAngleDeg: 28, soilCohesionKpa: 12, soilDensityKnM3: 18,
+      frostDepthCm: 25, seismicZoneCoefficientA: 0.2,
+      dataSourceFa: 'TEST FIXTURE ONLY — داده اقلیمی واقعی نیست', dataSourceEn: 'SYNTHETIC TEST FIXTURE ONLY — not climate data',
+      dataRetrievalDate: '2026-11-03', confidence: 'analytical_estimate',
+      fieldProvenance: Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, {
+        sourceKind: 'provider_value', providerName: 'SYNTHETIC_BROWSER_TEST_FIXTURE', value,
+        unit: key === 'peakSunHours' ? 'kWh/m²/day' : key === 'albedo' ? '1' : '°C',
+        retrievedAt: '2026-11-03T00:00:00.000Z', qualityNote: 'Synthetic test-only API fixture, not an environmental observation or real provider dataset.',
+      }])),
+    };
+  };
+  await onlinePage.route('https://**/*', (route) => route.abort('internetdisconnected'));
+  await onlinePage.route('**/api/v1/gateway/site?**', async (route) => {
+    if (forceClimateOffline) return route.abort('internetdisconnected');
+    const parsed = new URL(route.request().url());
+    const lat = Number(parsed.searchParams.get('lat'));
+    const lng = Number(parsed.searchParams.get('lng'));
+    const label = siteLabel(lat, lng);
+    onlineRequestCounts.set(label, (onlineRequestCounts.get(label) ?? 0) + 1);
+    if (label === 'Site-A' && holdSiteAResponse) {
+      holdSiteAResponse = false;
+      notifySiteARequest?.();
+      await new Promise<void>((resolve) => { releaseSiteAResponse = resolve; });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, climateCity: climateFixture(lat, lng, label) }) });
+  });
+  await onlinePage.goto(onlineUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await onlinePage.getByTestId('workflow-tab-climate').waitFor();
+  await onlinePage.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
+  await onlinePage.locator('#climate-latitude-input').fill('48.1351');
+  await onlinePage.locator('#climate-longitude-input').fill('11.5820');
+  await onlinePage.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
+  await onlinePage.waitForTimeout(2000);
+  await onlinePage.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
+  assert.equal(await onlinePage.locator('#climate-psh-input').inputValue(), '4.321', `Site-A gateway fixture was not applied. Counts=${JSON.stringify([...onlineRequestCounts])}`);
+  const firstSiteTemperatures = [Number(await onlinePage.locator('#climate-temp-min-input').inputValue()), Number(await onlinePage.locator('#climate-temp-max-input').inputValue())];
+  assert.ok(firstSiteTemperatures.every(Number.isFinite) && firstSiteTemperatures[0] < firstSiteTemperatures[1], 'first site temperature design values are missing/invalid');
+  assert.equal(onlineRequestCounts.get('Site-A'), 1, 'online provider path did not call the mocked gateway at Site-A');
+  await onlinePage.locator('#climate-latitude-input').fill('12');
+  await onlinePage.locator('#climate-longitude-input').fill('101');
+  await onlinePage.locator('#climate-albedo-input').fill('0.33');
+  await onlinePage.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
+  await onlinePage.waitForTimeout(500);
+  await onlinePage.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
+  await onlinePage.waitForFunction(() => document.querySelector<HTMLInputElement>('#climate-psh-input')?.value === '6.543', undefined, { timeout: 10000 });
+  const secondSiteTemperatures = [Number(await onlinePage.locator('#climate-temp-min-input').inputValue()), Number(await onlinePage.locator('#climate-temp-max-input').inputValue())];
+  assert.ok(secondSiteTemperatures.every(Number.isFinite) && secondSiteTemperatures[0] < secondSiteTemperatures[1], 'second site temperature design values are missing/invalid');
+  assert.notDeepEqual(secondSiteTemperatures, firstSiteTemperatures, 'coordinate-specific provider refresh did not update temperature values');
+  assert.equal(await onlinePage.locator('#climate-albedo-input').inputValue(), '0.33', 'manual albedo override was lost during mocked online location refresh');
+  assert.equal(onlineRequestCounts.get('Site-B'), 1, 'online provider path did not call the mocked gateway at Site-B');
+  assert.ok(onlineRequestCounts.get('Site-A') === 1, 'PVGIS fixture should be requested exactly once for Site-A');
+  // Delay a response for a departed site, apply a new coordinate while the
+  // request is in flight, then release the stale response: it must not overwrite.
+  holdSiteAResponse = true;
+  siteARequestSeen = new Promise<void>((resolve) => { notifySiteARequest = resolve; });
+  await onlinePage.locator('#climate-latitude-input').fill('48.1351');
+  await onlinePage.locator('#climate-longitude-input').fill('11.5820');
+  const staleApplyClick = onlinePage.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
+  await siteARequestSeen;
+  await staleApplyClick;
+  await onlinePage.locator('#climate-latitude-input').fill('34');
+  await onlinePage.locator('#climate-longitude-input').fill('-118.2');
+  await onlinePage.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
+  await onlinePage.waitForTimeout(500);
+  await onlinePage.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
+  await onlinePage.waitForFunction(() => document.querySelector<HTMLInputElement>('#climate-psh-input')?.value === '5.678', undefined, { timeout: 10000 });
+  releaseSiteAResponse?.();
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  assert.equal(await onlinePage.locator('#climate-latitude-input').inputValue(), '34', 'late response from the departed site overwrote current coordinates');
+  assert.equal(await onlinePage.locator('#climate-psh-input').inputValue(), '5.678', 'late response from the departed site overwrote current PSH');
+  forceClimateOffline = true;
+  await onlinePage.locator('#climate-latitude-input').fill('29.76');
+  await onlinePage.locator('#climate-longitude-input').fill('-95.37');
+  await onlinePage.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
+  await onlinePage.waitForTimeout(500);
+  await onlinePage.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
+  await onlinePage.waitForFunction(() => document.querySelector<HTMLInputElement>('#climate-psh-input')?.value !== '5.678', undefined, { timeout: 10000 });
+  assert.ok((await onlinePage.locator('body').innerText()).includes('REGIONAL_ANALYTICAL_MODEL'), 'failed online gateway did not fall back with explicit analytical provenance');
+  assert.equal(await onlinePage.locator('#climate-albedo-input').inputValue(), '0.2', 'site-specific manual albedo must not leak from Site-B into a new offline location');
+  await onlineContext.close();
+  onlineVite.kill('SIGTERM');
+  console.log('[PASS] Online-configured browser path refreshed two coordinate-specific mocked gateway sites, retained manual albedo override, then used explicitly labelled offline analytical fallback; fixtures are clearly synthetic and are not climate claims.');
+
+  console.log('Browser regression checks: offline lazy route, waiting SW update, AC interfaces, F-04 reports, metadata remount, UI export/import, multitab catalog persistence, injected pre-write failures, unsizable UI and mocked online climate PASS');
 }
 
 let suiteTimeoutHandle: NodeJS.Timeout;
 const suiteTimeout = new Promise<never>((_resolve, reject) => {
-  suiteTimeoutHandle = setTimeout(() => reject(new Error('Browser regression suite exceeded its 90-second wall-clock limit')), 90000);
+  suiteTimeoutHandle = setTimeout(() => reject(new Error('Browser regression suite exceeded its 180-second wall-clock limit')), 180000);
 });
 Promise.race([main(), suiteTimeout]).catch((error) => {
   console.error('[FAIL] Browser regressions:', error);
@@ -614,4 +1005,5 @@ Promise.race([main(), suiteTimeout]).catch((error) => {
   if (artifactDir && (process.exitCode === undefined || process.exitCode === 0)) await rm(artifactDir, { recursive: true, force: true });
   else if (artifactDir) console.error(`[INFO] Preserving failed-run artifacts at ${artifactDir}`);
   vite?.kill('SIGTERM');
+  onlineVite?.kill('SIGTERM');
 });

@@ -303,7 +303,8 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
     latitude: Number(lat.toFixed(4)),
     longitude: Number(lng.toFixed(4)),
     elevationM: Math.round(Math.max(0, 450 + (35 - absLat) * 20)),
-    peakSunHours: Number(basePsh.toFixed(2)),
+    // Preserve full model precision for calculations; round only at presentation sites.
+    peakSunHours: basePsh,
     daylightHoursDesign: calculateDesignDaylightHours(lat).daylightHoursDesign,
     nightHoursDesign: calculateDesignDaylightHours(lat).nightHoursDesign,
     tempMinC: Number(tMin.toFixed(1)),
@@ -342,6 +343,29 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
         : estimateGeodesicDistanceToCoastKm(lat, lng) <= 10.0
         ? 3.0
         : 6.0,
+    fieldProvenance: {
+      peakSunHours: {
+        sourceKind: 'local_model', providerName: 'REGIONAL_ANALYTICAL_MODEL',
+        derivationMethod: 'Deterministic geospatial solar-resource estimate; not a measured/provider value.',
+        unit: 'kWh/m²/day', value: basePsh, retrievedAt: new Date().toISOString(),
+      },
+      tempMinC: {
+        sourceKind: 'local_model', providerName: 'REGIONAL_ANALYTICAL_MODEL',
+        derivationMethod: 'Regional latitude/climate-zone analytical design-temperature estimate; not a site weather extreme observation.',
+        unit: '°C', value: Number(tMin.toFixed(1)), retrievedAt: new Date().toISOString(),
+      },
+      tempMaxC: {
+        sourceKind: 'local_model', providerName: 'REGIONAL_ANALYTICAL_MODEL',
+        derivationMethod: 'Regional latitude/climate-zone analytical design-temperature estimate; not a site weather extreme observation.',
+        unit: '°C', value: Number(tMax.toFixed(1)), retrievedAt: new Date().toISOString(),
+      },
+      albedo: {
+        sourceKind: 'default_unverified', providerName: 'STANDARD_GROUND_ALBEDO_DEFAULT',
+        derivationMethod: 'Fixed standard default 0.20; not location-specific or measured. Verify or enter a site value.',
+        unit: 'dimensionless', value: 0.20, retrievedAt: new Date().toISOString(),
+        qualityNote: 'User should confirm ground surface reflectance for the project site.',
+      },
+    },
   };
 }
 

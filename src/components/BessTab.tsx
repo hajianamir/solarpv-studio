@@ -136,7 +136,7 @@ export const BessTab: React.FC<BessTabProps> = ({
           <div className="flex items-start gap-2.5">
             <Zap className="w-5 h-5 text-industrial-warning shrink-0 mt-0.5" />
             <div>
-              <strong className="text-white text-sm block mb-0.5">
+              <strong className="text-theme-strong text-sm block mb-0.5">
                 {lang === 'fa'
                   ? 'وضعیت اتصال به شبکه: نیروگاه خورشیدی آن‌گرید (On-Grid Utility Mode)'
                   : 'System Configuration: Grid-Tied On-Grid Mode'}
@@ -163,7 +163,7 @@ export const BessTab: React.FC<BessTabProps> = ({
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-industrial-border/60">
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <h3 className="text-sm font-bold text-theme-strong flex items-center gap-2">
               <Database className="w-4 h-4 text-indigo-400" />
               {lang === 'fa' ? 'انتخاب مدل تجاری باتری از کاتالوگ (BESS Model Selector):' : 'Select Battery Model from Equipment Catalog:'}
             </h3>
@@ -187,7 +187,7 @@ export const BessTab: React.FC<BessTabProps> = ({
               id="bess-catalog-model-select"
               value={selectedBatteryModelId}
               onChange={(e) => handleSelectBatteryModel(e.target.value)}
-              className="studio-input w-full text-xs font-mono py-2 bg-industrial-surface border-indigo-500/50 text-white"
+              className="studio-input w-full text-xs font-mono py-2 bg-industrial-surface border-indigo-500/50 text-theme-strong"
             >
               {availableBatteries.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -204,14 +204,14 @@ export const BessTab: React.FC<BessTabProps> = ({
               <div className="p-2.5 bg-slate-900/60 border border-indigo-500/30 rounded text-xs space-y-1">
                 <div className="flex justify-between text-slate-300">
                   <span>{lang === 'fa' ? 'سازنده و فناوری:' : 'Brand & Chem:'}</span>
-                  <strong className="text-white">{activeModel.manufacturer} ({activeModel.chemistry})</strong>
+                  <strong className="text-theme-strong">{activeModel.manufacturer} ({activeModel.chemistry})</strong>
                 </div>
                 <div className="grid grid-cols-3 gap-1 pt-1 text-[11px] font-mono text-slate-300">
                   <div>V: <strong className="text-sky-300">{activeModel.nominalVoltageVolts}V</strong></div>
                   <div>Cap: <strong className="text-industrial-accent">{activeModel.nominalCapacityAh}Ah</strong></div>
                   <div>DoD: <strong className="text-industrial-success">{activeModel.recommendedDoDPct}%</strong></div>
                   <div>Max I: <strong className="text-industrial-warning">{activeModel.maxContinuousDischargeA}A</strong></div>
-                  <div>Cycles: <strong className="text-white">{activeModel.cycleLifeAt80DoD}</strong></div>
+                  <div>Cycles: <strong className="text-theme-strong">{activeModel.cycleLifeAt80DoD}</strong></div>
                   <div>BMS: <strong className="text-indigo-300">{activeModel.hasIntegratedBms ? 'Yes' : 'External'}</strong></div>
                 </div>
               </div>
@@ -232,7 +232,7 @@ export const BessTab: React.FC<BessTabProps> = ({
               id="bess-selected-chemistry"
               value={selectedChemistry}
               onChange={(e) => onChemistryChange(e.target.value as BatteryChemistry)}
-              className="studio-input w-full text-xs font-bold py-2 bg-industrial-surface border-indigo-500/50 text-white focus:border-indigo-400"
+              className="studio-input w-full text-xs font-bold py-2 bg-industrial-surface border-indigo-500/50 text-theme-strong focus:border-indigo-400"
             >
               <option value="lifepo4">
                 {lang === 'fa' ? '۱. لیتیوم آهن فسفات (LiFePO4) — راندمان ۹۵٪، طول عمر ۵۵۰۰ سیکل' : '1. Lithium Iron Phosphate (LiFePO4) - 95% Eff, 5500 Cycles'}
@@ -272,7 +272,7 @@ export const BessTab: React.FC<BessTabProps> = ({
 
       {/* Autonomy Days Control & Unit Sizing */}
       <div className="studio-card">
-        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-bold text-theme-strong mb-3 flex items-center gap-2">
           <Sliders className="w-4 h-4 text-industrial-accent" />
           {lang === 'fa' ? 'تنظیم روزهای خودمختاری و مشخصات هر واحد باتری:' : 'Autonomy Days & Single Unit Battery Specifications:'}
         </h3>
@@ -456,7 +456,7 @@ export const BessTab: React.FC<BessTabProps> = ({
           <div className="flex items-center gap-3">
             <Boxes className="w-6 h-6 text-indigo-400" />
             <div>
-              <span className="font-bold text-white block">
+              <span className="font-bold text-theme-strong block">
                 {lang === 'fa' ? 'پیشنهاد جانمایی و استراکچر رک باتری:' : 'Battery Rack Layout Recommendation:'}
               </span>
               <span className="text-slate-400 text-[11px]">
@@ -475,7 +475,7 @@ export const BessTab: React.FC<BessTabProps> = ({
         <div className="mt-3 p-3 bg-industrial-surface/60 rounded-lg border border-industrial-border/60 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <span className="text-slate-400 block">جریان دشارژ پیوسته دائم:</span>
-            <span className="text-white font-mono font-bold text-sm">
+            <span className="text-theme-strong font-mono font-bold text-sm">
               {batterySizing.continuousDischargeCurrentAmps.toFixed(1)} آمپر
             </span>
             <span className="text-[10px] text-slate-400 block">

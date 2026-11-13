@@ -625,7 +625,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               <Database className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm font-bold text-theme-strong flex items-center gap-2">
                 <span>{isEn ? 'Site Geotechnical, Soil & Climatic Parameters' : 'اطلاعات ژئوتکنیک، خاک و اقلیم سایت پروژه:'}</span>
                 <span className="text-xs font-normal text-industrial-accent flex items-center gap-1 font-mono">
                   <MapPin className="w-3 h-3" />
@@ -646,7 +646,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
           <button
             onClick={handleResetToDefaults}
-            className="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-industrial-border flex items-center gap-1.5 self-start sm:self-auto"
+            className="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-theme-strong border border-industrial-border flex items-center gap-1.5 self-start sm:self-auto"
             title={isEn ? 'Reset to official weather station defaults' : 'بازنشانی مقادیر به داده‌های رسمی ایستگاه'}
           >
             <RotateCcw className="w-3.5 h-3.5 text-industrial-accent" />
@@ -675,7 +675,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setBasicWindSpeedKmh(val);
                   handleUpdateParam({ basicWindSpeedKmh: val });
                 }}
-                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">km/h</span>
             </div>
@@ -703,7 +703,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setGroundSnowLoadKgM2(val);
                   handleUpdateParam({ groundSnowLoadKgM2: val });
                 }}
-                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">kg/m²</span>
             </div>
@@ -757,7 +757,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSoilFrictionAngleDeg(val);
                   handleUpdateParam({ soilInternalFrictionAngleDeg: val });
                 }}
-                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">deg</span>
             </div>
@@ -784,7 +784,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setFrostDepthCm(val);
                   handleUpdateParam({ frostDepthCm: val });
                 }}
-                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">cm</span>
             </div>
@@ -811,7 +811,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSoilCohesionKpa(val);
                   handleUpdateParam({ soilCohesionKpa: val });
                 }}
-                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">kPa</span>
             </div>
@@ -835,7 +835,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSoilDensityKnM3(val);
                   handleUpdateParam({ soilDensityKnM3: val });
                 }}
-                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">kN/m³</span>
             </div>
@@ -860,7 +860,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setAnnualRainfallMm(val);
                   handleUpdateParam({ annualRainfallMm: val });
                 }}
-                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">mm/yr</span>
             </div>
@@ -884,7 +884,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   setSeismicZoneA(val);
                   handleUpdateParam({ seismicZoneCoefficientA: val });
                 }}
-                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white font-mono font-bold"
+                className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong font-mono font-bold"
               />
               <span className="text-slate-400 text-[10px]">g</span>
             </div>
@@ -903,7 +903,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 setSoilType(val);
                 handleUpdateParam({ soilType: val });
               }}
-              className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-white"
+              className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-theme-strong"
             >
               <option value="dense_sand_gravel">{isEn ? 'Dense Sand/Gravel' : 'شن و ماسه متراکم'}</option>
               <option value="medium_clay">{isEn ? 'Medium-Stiff Clay' : 'خاک رس متوسط تا سخت'}</option>
@@ -924,7 +924,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">
+                <h3 className="text-sm font-bold text-theme-strong">
                   {isEn
                     ? 'Atmospheric Corrosion, Coastal Salinity & Site Drainage Analysis'
                     : 'تحلیل خوردگی اتمسفری، شوری ساحلی و شرایط زهکشی ساختگاه'}
@@ -1026,7 +1026,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               id="struct-corrosion-category"
               value={manualCorrosionCategory}
               onChange={(e) => setManualCorrosionCategory(e.target.value as Iso9223Category | 'auto')}
-              className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white"
+              className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong"
             >
               <option value="auto">{isEn ? 'Auto (from distance to sea)' : 'محاسبه خودکار از فاصله ساحلی'}</option>
               <option value="C1">{isEn ? 'C1 - Very Low (Inland desert)' : 'C1 - بسیار کم (خشک / بیابانی)'}</option>
@@ -1054,7 +1054,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 setDrainageCondition(val);
                 handleUpdateParam({ drainageCondition: val });
               }}
-              className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-white"
+              className="w-full bg-industrial-surface border border-industrial-border rounded px-2 py-1 text-xs text-theme-strong"
             >
               <option value="well_drained">{isEn ? 'Well-Drained (Natural Runoff)' : 'زهکشی عالی و رواناب طبیعی (بدون مانداب)'}</option>
               <option value="moderate">{isEn ? 'Moderate (Typical Flat Runoff)' : 'زهکشی متوسط (رواناب فصلی ملایم)'}</option>
@@ -1210,7 +1210,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">
+                <h3 className="text-sm font-bold text-theme-strong">
                   {isEn ? 'Automated Foundation Recommendation Engine' : 'پیشنهاد هوشمند نوع فونداسیون و سایزینگ برومز'}
                 </h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-industrial-success/20 text-industrial-success border border-emerald-500/40">
@@ -1239,7 +1239,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 setFoundationType(recResult.primaryRecommendation);
                 handleUpdateParam({ foundationType: recResult.primaryRecommendation });
               }}
-              className="text-xs px-3.5 py-1.5 rounded-md bg-industrial-success hover:bg-industrial-success text-white font-bold flex items-center gap-1.5 transition"
+              className="text-xs px-3.5 py-1.5 rounded-md bg-industrial-success hover:bg-industrial-success text-theme-strong font-bold flex items-center gap-1.5 transition"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>{isEn ? '1-Click Apply Recommendation' : 'اعمال فونداسیون پیشنهادی (۱-کلیک)'}</span>
@@ -1266,7 +1266,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   {opt.suitabilityScore}/100
                 </span>
               </div>
-              <strong className="text-white block text-xs mt-1">
+              <strong className="text-theme-strong block text-xs mt-1">
                 {isEn ? opt.nameEn : opt.nameFa}
               </strong>
               <div className="text-[10px] text-slate-400 mt-2 space-y-1">
@@ -1329,11 +1329,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             <div className="px-5 py-3.5 bg-industrial-bg border-b border-industrial-border flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-industrial-accent" />
-                <h3 className="font-bold text-sm text-white">{isEn ? 'Civil Foundation Engineering Sizing Report' : 'گزارش محاسبات ژئوتکنیک و سایزینگ فونداسیون'}</h3>
+                <h3 className="font-bold text-sm text-theme-strong">{isEn ? 'Civil Foundation Engineering Sizing Report' : 'گزارش محاسبات ژئوتکنیک و سایزینگ فونداسیون'}</h3>
               </div>
               <button
                 onClick={() => setShowReportModal(false)}
-                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700"
+                className="text-slate-400 hover:text-theme-strong text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700"
               >
                 ✕ {isEn ? 'Close' : 'بستن'}
               </button>
@@ -1396,7 +1396,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   {isEn ? 'Depth: ~1.85m' : 'عمق: ~۱.۸۵ متر'}
                 </span>
               </div>
-              <strong className="text-white block text-xs mb-1.5">
+              <strong className="text-theme-strong block text-xs mb-1.5">
                 {isEn ? 'Direct Rammed Steel C-Pile' : 'شمع کوبشی مستقیم در خاک'}
               </strong>
               <p className="text-[11px] text-slate-400 mb-2.5 leading-relaxed">
@@ -1429,8 +1429,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               }}
               className={`w-full py-1.5 px-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 foundationType === 'rammed_steel_pile'
-                  ? 'bg-sky-600 text-white shadow-sm'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700'
+                  ? 'bg-sky-600 text-theme-strong shadow-sm'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-theme-strong border border-slate-700'
               }`}
             >
               {foundationType === 'rammed_steel_pile' ? <CheckCircle2 className="w-3.5 h-3.5" /> : null}
@@ -1455,7 +1455,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   {isEn ? 'Depth: 0.75–0.95m' : 'عمق: ۰.۷۵ الی ۰.۹۵ متر'}
                 </span>
               </div>
-              <strong className="text-white block text-xs mb-1.5">
+              <strong className="text-theme-strong block text-xs mb-1.5">
                 {isEn ? 'Pre-Drilled Rock-Socket Grouted Pile' : 'شمع در گمانه پیش‌حفاری با تزریق گروت پرمقاومت'}
               </strong>
               <p className="text-[11px] text-slate-300 mb-2.5 leading-relaxed">
@@ -1496,7 +1496,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               }}
               className={`w-full py-1.5 px-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 foundationType === 'pre_drilled_grouted_pile'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  ? 'bg-emerald-600 text-theme-strong shadow-md shadow-emerald-600/30'
                   : 'bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-200 border border-emerald-500/50'
               }`}
             >
@@ -1522,7 +1522,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   {isEn ? 'Surface Mount' : 'نصب سطحی زمینی'}
                 </span>
               </div>
-              <strong className="text-white block text-xs mb-1.5">
+              <strong className="text-theme-strong block text-xs mb-1.5">
                 {isEn ? 'Ground Surface Precast Ballast Blocks' : 'بلوک‌های بتنی مسلح سطحی زمینی'}
               </strong>
               <p className="text-[11px] text-slate-300 mb-2.5 leading-relaxed">
@@ -1555,7 +1555,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               }}
               className={`w-full py-1.5 px-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 foundationType === 'surface_ballasted_block'
-                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                  ? 'bg-purple-600 text-theme-strong shadow-md shadow-purple-600/30'
                   : 'bg-purple-950/60 hover:bg-purple-900/80 text-purple-200 border border-purple-500/50'
               }`}
             >
@@ -1657,7 +1657,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <div className="flex items-center gap-2">
             <Warehouse className="w-5 h-5 text-industrial-warning" />
             <div>
-              <h2 className="text-sm font-bold text-white">
+              <h2 className="text-sm font-bold text-theme-strong">
                 {isEn ? 'Installation Site Environment & Mounting Context' : 'محل و بستر نصب استراکچر خورشیدی (انتخاب سوله / پشت‌بام / زمینی):'}
               </h2>
               <p className="text-[11px] text-slate-300">
@@ -1679,7 +1679,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             onClick={() => handleSelectEnvironment('ground_mount')}
             className={`p-3 rounded-lg border text-left transition relative flex flex-col justify-between ${
               installationEnvironment === 'ground_mount'
-                ? 'bg-sky-500/20 border-sky-400 text-white shadow-md'
+                ? 'bg-sky-500/20 border-sky-400 text-theme-strong shadow-md'
                 : 'bg-slate-800/60 border-industrial-border text-slate-400 hover:border-slate-500 hover:text-slate-200'
             }`}
           >
@@ -1710,7 +1710,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             onClick={() => handleSelectEnvironment('industrial_shed')}
             className={`p-3 rounded-lg border text-left transition relative flex flex-col justify-between ${
               installationEnvironment === 'industrial_shed'
-                ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                ? 'bg-amber-500/20 border-amber-400 text-theme-strong shadow-md'
                 : 'bg-slate-800/60 border-industrial-border text-slate-400 hover:border-slate-500 hover:text-slate-200'
             }`}
           >
@@ -1741,7 +1741,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             onClick={() => handleSelectEnvironment('rooftop_flat_concrete')}
             className={`p-3 rounded-lg border text-left transition relative flex flex-col justify-between ${
               installationEnvironment === 'rooftop_flat_concrete'
-                ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-md'
+                ? 'bg-emerald-500/20 border-emerald-400 text-theme-strong shadow-md'
                 : 'bg-slate-800/60 border-industrial-border text-slate-400 hover:border-slate-500 hover:text-slate-200'
             }`}
           >
@@ -1855,7 +1855,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       {/* Structure & Foundation Configuration Controls */}
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-industrial-border/80 gap-2 mb-3">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <h3 className="text-sm font-bold text-theme-strong flex items-center gap-2">
             <Hammer className="w-4 h-4 text-industrial-accent" />
             <span>{isEn ? 'Mounting Table & Foundation Configuration:' : 'پیکربندی میز سازه و نوع فونداسیون:'}</span>
           </h3>
@@ -2041,7 +2041,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                     setCustomEmbedmentDepthM(val);
                     handleUpdateParam({ customEmbedmentDepthM: val });
                   }}
-                  className="w-16 bg-slate-900 border border-industrial-border rounded px-1.5 py-0.5 text-center font-mono text-white text-xs"
+                  className="w-16 bg-slate-900 border border-industrial-border rounded px-1.5 py-0.5 text-center font-mono text-theme-strong text-xs"
                 />
               </div>
             )}
@@ -2107,7 +2107,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 }}
                 className="w-full accent-purple-400"
               />
-              <span className="w-12 text-center font-mono text-white text-xs">{groundClearanceM}m</span>
+              <span className="w-12 text-center font-mono text-theme-strong text-xs">{groundClearanceM}m</span>
             </div>
             <span className="text-[10px] text-slate-400 block mt-0.5">
               {isEn ? 'Lower clearance reduces overturning moment arm' : 'کاهش ارتفاع آزاد بازوی لنگر واژگونی را کوتاه می‌کند'}
@@ -2259,7 +2259,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                   customPostsPerTable: structResult.remedialGuidance.targetPostsPerTable,
                 });
               }}
-              className="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-bold shadow-md flex items-center gap-1.5 transition self-start sm:self-center"
+              className="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-theme-strong rounded-lg text-xs font-bold shadow-md flex items-center gap-1.5 transition self-start sm:self-center"
             >
               <Sparkles className="w-4 h-4 text-emerald-200" />
               <span>{isEn ? 'One-Click Auto-Stabilize' : 'اعمال تنظیمات بهینه خودکار'}</span>
@@ -2298,7 +2298,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                     setCustomEmbedmentDepthM(structResult.remedialGuidance.targetEmbedmentDepthM);
                     handleUpdateParam({ customEmbedmentDepthM: structResult.remedialGuidance.targetEmbedmentDepthM });
                   }}
-                  className="text-[10px] text-sky-300 hover:text-white underline flex items-center gap-0.5"
+                  className="text-[10px] text-sky-300 hover:text-theme-strong underline flex items-center gap-0.5"
                 >
                   <ArrowUpRight className="w-3 h-3" />
                   {isEn ? `Apply ${structResult.remedialGuidance.targetEmbedmentDepthM}m` : `تنظیم روی ${structResult.remedialGuidance.targetEmbedmentDepthM} متر`}
@@ -2318,7 +2318,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                     setCustomPostsPerTable(structResult.remedialGuidance.targetPostsPerTable);
                     handleUpdateParam({ customPostsPerTable: structResult.remedialGuidance.targetPostsPerTable });
                   }}
-                  className="text-[10px] text-sky-300 hover:text-white underline flex items-center gap-0.5"
+                  className="text-[10px] text-sky-300 hover:text-theme-strong underline flex items-center gap-0.5"
                 >
                   <ArrowUpRight className="w-3 h-3" />
                   {isEn ? `Apply ${structResult.remedialGuidance.targetPostsPerTable} posts` : `تنظیم روی ${structResult.remedialGuidance.targetPostsPerTable} پایه`}
@@ -2358,7 +2358,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <div className="space-y-2.5 text-xs text-slate-300">
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Selected Foundation:' : 'نوع فونداسیون منتخب:'}</span>
-              <strong className="text-white">
+              <strong className="text-theme-strong">
                 {isEn ? structResult.foundationNameEn : structResult.foundationNameFa}
               </strong>
             </div>
@@ -2507,7 +2507,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             )}
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">{isEn ? 'Galvanized Racking Weight:' : 'وزن کل استراکچر فولادی گالوانیزه:'}</span>
-              <span className="font-mono font-bold text-white">
+              <span className="font-mono font-bold text-theme-strong">
                 {(structResult.structuralSteelRackingWeightKg / 1000).toFixed(1)} {isEn ? 'tons HDG Steel' : 'تن فولاد گالوانیزه گرم'}
               </span>
             </div>
@@ -2530,7 +2530,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             {structuralAssessmentPass ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
           </div>
           <div>
-            <h4 className="font-bold text-sm text-white mb-1">
+            <h4 className="font-bold text-sm text-theme-strong mb-1">
               {isEn ? 'Engineering Screening Scope & Standards Reference:' : 'محدوده غربالگری مهندسی و مراجع استاندارد:'}
             </h4>
             <p className="text-xs text-slate-300 leading-relaxed mb-2">
