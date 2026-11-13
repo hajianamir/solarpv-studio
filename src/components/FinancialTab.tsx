@@ -833,7 +833,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </tr>
               {financial.capexBreakdown.substationMvUsd > 0 && (
                 <tr data-testid="capex-line-mv-substation">
-                  <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'پست فشار متوسط (MV)' : 'MV Substation'}</td>
+                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'پست فشار متوسط (MV)' : 'MV Substation'}</td>
                   <td className="p-2.5 text-purple-400">${financial.capexBreakdown.substationMvUsd.toLocaleString()}</td>
                   <td className="p-2.5">{(financial.capexBreakdown.substationMvToman / 1_000_000).toLocaleString()} م.ت</td>
                   <td className="p-2.5 text-slate-400">
@@ -843,7 +843,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               )}
               {financial.capexBreakdown.gridInterconnectionUsd > 0 && (
                 <tr data-testid="capex-line-grid-interconnection">
-                  <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'اتصال به شبکه' : 'Grid Interconnection'}</td>
+                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'اتصال به شبکه' : 'Grid Interconnection'}</td>
                   <td className="p-2.5 text-purple-400">${financial.capexBreakdown.gridInterconnectionUsd.toLocaleString()}</td>
                   <td className="p-2.5">{(financial.capexBreakdown.gridInterconnectionToman / 1_000_000).toLocaleString()} م.ت</td>
                   <td className="p-2.5 text-slate-400">
@@ -853,7 +853,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               )}
               {financial.capexBreakdown.hvConnectionUsd > 0 && (
                 <tr data-testid="capex-line-hv-connection">
-                  <td className="p-2.5 font-sans font-bold text-theme-strong">{lang === 'fa' ? 'اتصال فشار قوی (HV)' : 'HV Connection'}</td>
+                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'اتصال فشار قوی (HV)' : 'HV Connection'}</td>
                   <td className="p-2.5 text-purple-400">${financial.capexBreakdown.hvConnectionUsd.toLocaleString()}</td>
                   <td className="p-2.5">{(financial.capexBreakdown.hvConnectionToman / 1_000_000).toLocaleString()} م.ت</td>
                   <td className="p-2.5 text-slate-400">

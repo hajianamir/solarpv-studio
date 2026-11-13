@@ -5,6 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -45,6 +46,8 @@ jobs:
 
       - name: Real Browser Regressions (cold offline)
         run: npm run test:browser
+        env:
+          BROWSER_TEST_TIMEOUT_MS: 360000
 
       - name: Binary Export Read-back (DOCX/XLSX/JSON)
         run: npm run verify:exports
@@ -54,3 +57,68 @@ jobs:
 
       - name: Run Engineering Audit Remediation Tests (R01-R07, R08-R13, Areas 1-10)
         run: npm run test:audit
+
+  windows-operational-validation:
+    name: Windows operational validation (Node 22)
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright-core install chromium
+
+      - name: Type checks and lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+      - name: Engineering calculations and core regressions
+        run: npm test
+
+      - name: User-flow smoke tests
+        run: npm run test:smoke
+
+      - name: Data gateway regressions
+        run: npm run test:gateway
+
+      - name: Real browser and offline workflow regressions
+        run: npm run test:browser
+        env:
+          BROWSER_TEST_TIMEOUT_MS: 360000
+
+      - name: DOCX/XLSX/JSON export read-back
+        run: npm run verify:exports
+
+      - name: Audit remediation verification
+        run: npm run test:remediation
+
+      - name: Engineering audit R01-R07
+        run: npx tsx scripts/audit-r1-to-r7-remediation-test.ts
+
+      - name: Engineering audit Areas 1-10
+        run: npx tsx scripts/engineering-audit-remediation-test.ts
+
+      - name: Engineering audit M01-M22
+        run: npx tsx scripts/audit-m01-to-m22-remediation-test.ts
+
+      - name: Engineering phase audit
+        run: npx tsx scripts/verify-all-phases-audit.ts
+
+      - name: API sizing and thermal audit
+        run: npx tsx scripts/verify-api-sizing-thermal-audit.ts
+
+      - name: F-04 energy contract
+        run: npm run verify:f04
+
+      - name: Geocode cache regressions
+        run: npx tsx scripts/test-geocode-cache.ts

@@ -76,6 +76,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
   // Layer state: 'hybrid' (satellite + labels/roads), 'satellite_pure', 'streets', 'topo' (topography & contours)
   const [activeLayer, setActiveLayer] = useState<'hybrid' | 'satellite_pure' | 'streets' | 'topo'>('hybrid');
+  const [mapTileStatus, setMapTileStatus] = useState<'loading' | 'loaded' | 'street-fallback' | 'unavailable'>('loading');
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({
     lat: initialLat,
     lng: initialLng,
@@ -328,6 +329,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return; // StrictMode idempotency guard
+    let fallbackTimer: number | undefined;
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
@@ -366,6 +368,37 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       const hybridGroup = L.layerGroup([satelliteBase, labelsOverlay, roadsOverlay]);
       hybridLayerGroupRef.current = hybridGroup;
 
+      // Some desktop networks allow the app's data gateway but block the Esri
+      // tile host. Detect failed satellite tiles and fall back to OSM streets.
+      let hybridTileLoaded = false;
+      let hybridTileErrors = 0;
+      let streetTileErrors = 0;
+      const clearFallbackTimer = () => {
+        if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
+        fallbackTimer = undefined;
+      };
+      const fallbackToStreets = () => {
+        if (!map.hasLayer(hybridGroup)) return;
+        hybridGroup.removeFrom(map);
+        streetLayer.addTo(map);
+        setActiveLayer('streets');
+        setMapTileStatus('street-fallback');
+      };
+      satelliteBase.on('tileload', () => {
+        hybridTileLoaded = true;
+        clearFallbackTimer();
+        setMapTileStatus('loaded');
+      });
+      satelliteBase.on('tileerror', () => {
+        hybridTileErrors += 1;
+        if (hybridTileErrors >= 3 && !hybridTileLoaded) fallbackToStreets();
+      });
+      streetLayer.on('tileload', () => setMapTileStatus('loaded'));
+      streetLayer.on('tileerror', () => {
+        streetTileErrors += 1;
+        if (streetTileErrors >= 3) setMapTileStatus('unavailable');
+      });
+
       // 4. OpenTopoMap Topographic & Elevation Contours
       const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 17,
@@ -373,8 +406,12 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       });
       topoLayerRef.current = topoLayer;
 
-      // Add default hybrid layer to map
+      // Add default hybrid layer to map. If no Esri tile succeeds soon, switch
+      // to streets so a blocked satellite provider does not leave a gray canvas.
       hybridGroup.addTo(map);
+      fallbackTimer = window.setTimeout(() => {
+        if (!hybridTileLoaded) fallbackToStreets();
+      }, 7000);
 
       // Custom Glowing Solar Pin Icon
       const customIcon = L.divIcon({
@@ -455,6 +492,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     }
 
     return () => {
+      if (typeof fallbackTimer !== 'undefined') window.clearTimeout(fallbackTimer);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -502,6 +540,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
   const handleSwitchLayer = (layer: 'hybrid' | 'satellite_pure' | 'streets' | 'topo') => {
     if (!mapInstanceRef.current) return;
     setActiveLayer(layer);
+    setMapTileStatus('loading');
 
     // Remove existing
     if (hybridLayerGroupRef.current) mapInstanceRef.current.removeLayer(hybridLayerGroupRef.current);
@@ -693,6 +732,18 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       <div className="relative rounded-lg overflow-hidden border border-industrial-border h-[360px] sm:h-[460px] md:h-[520px]">
         {/* Leaflet Map Canvas */}
         <div ref={mapContainerRef} className="w-full h-full z-10" />
+        {mapTileStatus === 'street-fallback' && (
+          <div role="status" className="absolute bottom-3 right-3 z-20 max-w-xs rounded bg-slate-900/90 px-3 py-2 text-xs text-amber-200 shadow">
+            {isEn ? 'Satellite tiles are unavailable; trying the street map.' : 'تصاویر ماهواره‌ای در دسترس نیست؛ نقشه خیابانی در حال بارگذاری است.'}
+          </div>
+        )}
+        {mapTileStatus === 'unavailable' && (
+          <div role="alert" className="absolute bottom-3 right-3 z-20 max-w-sm rounded bg-slate-900/95 px-3 py-2 text-xs text-amber-100 shadow">
+            {isEn
+              ? 'Map tiles could not be reached. Coordinates and live solar data still work; allow access to OpenStreetMap or Esri map tiles.'
+              : 'کاشی‌های نقشه قابل دسترسی نیستند. مختصات و داده زنده خورشیدی فعال‌اند؛ دسترسی به نقشه OpenStreetMap یا Esri را بررسی کنید.'}
+          </div>
+        )}
 
         {/* FLOATING SEARCH & COORDINATES WINDOW (پنجره تعبیه شده جستجوی مکان و مختصات) */}
         <div className="absolute top-3 left-3 z-20 max-w-sm w-[92%] sm:w-80 bg-industrial-surface/95 rounded-xl border border-industrial-border/90 overflow-hidden transition-all duration-150">

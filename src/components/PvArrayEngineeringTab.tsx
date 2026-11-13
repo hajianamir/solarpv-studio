@@ -172,7 +172,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
               ? (lang === 'fa' ? 'ظرفیت هدف نیروگاه (AC اسمی)' : 'Powerplant Target (AC nameplate)')
               : (lang === 'fa' ? 'ظرفیت طراحی‌شده اینورتر (AC)' : 'Designed Inverter Capacity (AC)')}
           </div>
-          <div className="text-xl font-bold font-mono text-theme-strong mt-1" data-testid="array-ac-reference">
+          <div className="text-xl font-bold font-mono text-white mt-1" data-testid="array-ac-reference">
             {arrayAcReferenceKw !== null
               ? <>{arrayAcReferenceKw.toFixed(1)} <span className="text-xs">kW AC</span></>
               : (lang === 'fa' ? 'ناموجود' : 'N/A')}

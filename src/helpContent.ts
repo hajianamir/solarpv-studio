@@ -6,22 +6,21 @@ export interface HelpCopy {
   inputs: string;
   method: string;
   limitations: string;
-  sources?: string;
 }
 
 const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
   climate: {
     en: {
       title: 'Site & climate',
-      inputs: 'Latitude and longitude are decimal degrees (valid ranges −90…90 and −180…180). PSH is daily irradiation in kWh/m²/day (UI display is rounded to 2 decimals; calculation/persistence keep the raw number; editable range 0…12). T_min/T_max are ambient design limits in °C (−70…50 and −20…65, respectively, with T_min < T_max). Albedo is a dimensionless ground-reflection factor 0…1; tilt is degrees; soiling is percent 0…100. Map/provider values are source data when provenance says provider; offline values are local analytical estimates; overrides are user input.',
-      method: 'Provider climate records are used when available; otherwise getClimateData() (src/engine/climaticData.ts) validates coordinates, classifies macro-regions, estimates PSH with latitude/region piecewise rules while preserving full precision for calculations (the UI displays two decimals); temperatures use latitude/region branches and round to 0.1°C. Design daylight is calculateDesignDaylightHours(latitude) (winter-solstice solar geometry); annual tilt is clamp(round(|latitude|×0.88), 8, 65)°, with winter/summer ±15° rules. PV sizing consumes PSH and T_min/T_max; the thermal derate and water pumping consume T_max/PSH; albedo feeds bifacial irradiance. Data editing on a changed coordinate fetches fresh location fields first, then reapplies only explicitly dirty fields.',
-      limitations: 'Offline PSH and temperature are regional screening estimates, not measured weather design extremes. Offline albedo is deliberately fixed at 0.20 with default_unverified provenance—not location-specific—and must be verified/overridden via Edit Climate Parameters. Zero PSH is preserved and makes PV sizing unsizable. Scenario comparison has its own positive-PSH floor; do not equate clock daylight hours with PSH.'
+      inputs: 'Choose a place on the map or enter coordinates, then review/edit the climate fields shown here: peak sun hours (PSH), design temperatures, albedo, tilt and related site values. Keep their source/provenance in view when overriding them.',
+      method: 'The selected city/climate values are passed into load-window normalization, PV-array design and annual-yield calculations. The app does not derive a new weather resource from a manually typed coordinate alone; use the page’s location/data flow and verify custom values.',
+      limitations: 'PSH is daily solar resource (kWh/m²/day), not daylight-clock hours. A value below 1 has a displayed model limitation in some scenario calculations; zero/invalid solar resource makes PV sizing unassessable.',
     },
     fa: {
       title: 'مکان و اقلیم',
-      inputs: 'عرض جغرافیایی و طول جغرافیایی بر حسب درجهٔ ده‌دهی‌اند (محدودهٔ معتبر −۹۰…۹۰ و −۱۸۰…۱۸۰). PSH انرژی تابش روزانه با واحد kWh/m²/day است (نمایش UI تا ۲ رقم اعشار گرد می‌شود؛ محاسبه/ذخیره مقدار خام را نگه می‌دارند؛ دامنهٔ ورودی ۰…۱۲). دماهای حدی T_min/T_max بر حسب °C هستند (به‌ترتیب −۷۰…۵۰ و −۲۰…۶۵ و باید T_min < T_max باشد). آلبیدو ضریب بی‌بعد بازتاب زمین در بازهٔ ۰…۱ است؛ شیب درجه و گردوغبار درصد است. مقدار ارائه‌دهنده فقط با منشأ provider دادهٔ منبع است؛ حالت آفلاین مدل تحلیلی محلی است و اصلاح دستی ورودی کاربر محسوب می‌شود.',
-      method: 'در صورت وجود از رکورد اقلیمی provider استفاده می‌شود؛ در غیر این صورت getClimateData() در src/engine/climaticData.ts مختصات را اعتبارسنجی و ناحیه را طبقه‌بندی می‌کند، PSH را با قواعد قطعه‌ای عرض/منطقه با حفظ دقت کامل برای محاسبات تخمین می‌زند (فقط UI دو رقم اعشار نشان می‌دهد)؛ دماها از شاخه‌های عرض/منطقه می‌آیند و تا ۰٫۱°C گرد می‌شوند. طول روز طراحی از calculateDesignDaylightHours(latitude) و هندسهٔ انقلاب زمستانی می‌آید؛ شیب سالانه clamp(round(|latitude|×۰٫۸۸), ۸, ۶۵) درجه است و قواعد زمستان/تابستان ±۱۵ درجه‌اند. سایزینگ PV از PSH و T_min/T_max استفاده می‌کند؛ derate حرارتی و پمپاژ از T_max/PSH و تابش bifacial از آلبیدو اثر می‌گیرد. هنگام تغییر مختصات، دادهٔ تازه دریافت و فقط فیلدهای صریحاً ویرایش‌شده دوباره اعمال می‌شوند.',
-      limitations: 'PSH و دمای آفلاین تخمین غربالگری منطقه‌ای‌اند، نه دادهٔ هواشناسی اندازه‌گیری‌شده یا حد طراحی میدانی. آلبیدوی آفلاین عمداً مقدار ثابت ۰٫۲۰ با منشأ default_unverified است، نه مقدار مختص مکان؛ از بخش ویرایش پارامترها آن را تأیید/اصلاح کنید. PSH صفر حفظ می‌شود و سایزینگ PV را غیرقابل طراحی می‌کند. مقایسهٔ سناریو کف PSH مثبت جداگانه دارد؛ طول روز نجومی با PSH یکی نیست.'
+      inputs: 'مکان را از نقشه انتخاب کنید یا مختصات را وارد کنید؛ سپس ساعات اوج تابش (PSH)، دماهای طراحی، آلبدو، شیب و سایر مقادیر نمایش‌داده‌شده را بازبینی/ویرایش کنید. هنگام اصلاح دستی، منشأ داده را نیز بررسی کنید.',
+      method: 'مقادیر شهر و اقلیم انتخاب‌شده به نرمال‌سازی پنجرهٔ بار، طراحی آرایهٔ PV و محاسبهٔ تولید سالانه داده می‌شوند. صرف واردکردن مختصات، منبع هواشناسی تازه‌ای محاسبه نمی‌کند؛ مسیر انتخاب مکان/داده را به‌کار ببرید و مقادیر سفارشی را تأیید کنید.',
+      limitations: 'PSH منبع خورشیدی روزانه با واحد kWh/m²/day است، نه طول روزِ ساعت‌محور. برای PSH کمتر از ۱ در برخی محاسبات سناریو محدودیت مدل نمایش داده می‌شود؛ منبع صفر/نامعتبر، سایزینگ PV را غیرقابل ارزیابی می‌کند.',
     },
   },
   loads: {
@@ -41,15 +40,15 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
   system_mode: {
     en: {
       title: 'System mode',
-      inputs: 'Select Powerplant, On-grid customer, or Off-grid customer. In AC electrical requirements, enter and confirm load-service phase, line-line and/or line-neutral voltage, frequency and power factor; separately enter inverter output, LV grid interface, post-transformer injection level/nominal kV, and optional per-load overrides. Enter MV collector busbar kV separately. Unknown is a valid state; no 230/400 V or 50 Hz default is implied.',
-      method: 'Mode is handled in src/App.tsx; calculateLoadModeDailySizingTargetKwh()/resolveArrayAcReferenceKw() in src/engine/systemModeCapacity.ts scope energy/AC capacity. assessAcRequirements() checks confirmed output phase and catalog voltage and keeps service/LV/MV/HV distinctions; evaluateLoadAcCurrents() converts explicit per-load real watts to current using its specified phase, voltage and power factor. AC cable screening requires declared voltage, frequency, PF, fault current, clearing time and a user-entered route in Protection. Unknown AC protection outputs remain UNASSESSED.',
-      limitations: 'Compatibility of entered fields is not utility approval or a protection study. Cable route, fault-level provenance, earthing, breaker coordination, device curves, neutral/PE, transformer impedance, injection rules and local code must be verified by project engineering. MV substation report calculations are withheld until required source data is part of the project inputs.',
+      inputs: 'Select Powerplant, On-grid customer, or Off-grid customer in the mode controls. Then review the mode-specific inputs on this page, such as plant AC target, inverter strategy, outage/autonomy and equipment choices when shown.',
+      method: 'This selector changes which calculations and workflow modules are active. Powerplant sizing uses the explicit plant AC target; customer PV sizing uses load/outage demand. Off-grid has no upstream utility-grid/harmonic analysis.',
+      limitations: 'Changing mode does not validate a utility agreement, protection study, equipment choice or site design. Existing project inputs can remain stored when a mode hides their controls; hidden values are not automatically evidence of applicability.',
     },
     fa: {
       title: 'حالت سیستم',
-      inputs: 'نیروگاه، مصرف‌کنندهٔ متصل به شبکه یا مستقل را انتخاب کنید. در الزامات AC فاز، ولتاژ فاز-فاز و/یا فاز-نول، فرکانس و ضریب توان سرویس بار را صریحاً وارد و تأیید کنید؛ خروجی اینورتر، رابط شبکهٔ LV، نقطه تزریق پس از ترانس و ولتاژ باسبار جمع‌آوری MV جدا هستند. اصلاح هر بار به‌صورت شناسه‌محور ثبت می‌شود. Unknown معتبر است؛ هیچ مقدار ۲۳۰/۴۰۰ ولت یا ۵۰ هرتز پیش‌فرض نیست.',
-      method: 'کنترل حالت در src/App.tsx است؛ calculateLoadModeDailySizingTargetKwh()/resolveArrayAcReferenceKw() در src/engine/systemModeCapacity.ts دامنه انرژی/ظرفیت AC را تعیین می‌کنند. assessAcRequirements() فاز و ولتاژ خروجی تأییدشده را با اینورتر می‌سنجد و سرویس، شبکه LV و تزریق MV/HV را جدا نگه می‌دارد؛ evaluateLoadAcCurrents() جریان بار فعال را فقط از فاز، ولتاژ و ضریب توان صریح آن محاسبه می‌کند. غربالگری کابل AC به ولتاژ، فرکانس، ضریب توان، جریان خطا، زمان قطع و طول مسیر واردشده در صفحه حفاظت نیاز دارد؛ خروجی ناقص UNASSESSED می‌ماند.',
-      limitations: 'سازگاری ورودی‌ها مجوز شرکت برق یا مطالعه حفاظت نیست. مسیر کابل، منشأ جریان خطا، زمین، هماهنگی کلید، منحنی تجهیزات، نول/PE، امپدانس ترانس، قواعد تزریق و مقررات محل نیازمند داده و بازبینی مهندسی است. محاسبات پست MV در گزارش تا زمان وجود داده‌های منبع لازم مسدودند.',
+      inputs: 'از کنترل حالت، نیروگاه، مصرف‌کنندهٔ متصل به شبکه یا مصرف‌کنندهٔ مستقل را انتخاب کنید. سپس ورودی‌های همان حالت را که در صفحه دیده می‌شوند—مانند هدف AC نیروگاه، راهبرد اینورتر، خاموشی/خودمختاری و تجهیزات—بازبینی کنید.',
+      method: 'این انتخاب محاسبات و ماژول‌های گردش‌کار فعال را تغییر می‌دهد. سایزینگ نیروگاه از هدف صریح AC استفاده می‌کند؛ سایزینگ PV مصرف‌کننده از بار/خاموشی پیروی می‌کند. در حالت مستقل، تحلیل شبکهٔ بالادست و هارمونیک کاربرد ندارد.',
+      limitations: 'تغییر حالت، قرارداد اتصال، مطالعهٔ حفاظت، انتخاب تجهیز یا طراحی محل را تأیید نمی‌کند. ورودی‌های پروژه ممکن است هنگام پنهان‌شدن کنترل‌ها ذخیره بمانند؛ باقی‌ماندن مقدار به‌معنای کاربرد آن در حالت جاری نیست.',
     },
   },
   array: {
@@ -83,15 +82,15 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
   mv_substation: {
     en: {
       title: 'MV substation',
-      inputs: 'This page currently requests verified transformer nameplate, utility point-of-connection voltage/fault/X-R, site soil resistivity, earthing topology and protection clearing/co-ordination data; these fields are not yet represented in the project AC contract.',
-      method: 'No transformer, breaker or fault-current calculation is run or displayed. `designMvSubstation()` remains in src/engine/mvSubstationEngine.ts but the UI/report intentionally withhold its outputs rather than apply former fixed 20/400/800 V, soil or fault defaults.',
-      limitations: 'No MV substation result, rating, compliance, grounding safety or protection selection is provided. A utility study and qualified project-specific engineering remain mandatory.',
+      inputs: 'Review the plant AC target, MV/HV voltage, upstream fault level and X/R, transformer/site conditions, cable and breaker selections shown in the substation screen. Replace screening defaults with utility and equipment data when available.',
+      method: 'The page calls the MV substation design engine for transformer rating/derating, upstream-plus-transformer short-circuit quantities, breaker checks and earthing outputs. Each result and warning is based on the entered/default network and site parameters.',
+      limitations: 'Default upstream fault level and network values are preliminary. Final transformer, relay, breaker, grounding and transient studies require project-specific utility data and qualified engineering review.',
     },
     fa: {
       title: 'پست MV',
-      inputs: 'این صفحه به دیتاشیت تأییدشده ترانس، ولتاژ/اتصال کوتاه/X-R نقطه اتصال شرکت برق، مقاومت ویژه خاک، آرایش زمین و داده زمان قطع/هماهنگی حفاظت نیاز دارد؛ این فیلدها هنوز در قرارداد AC پروژه ثبت نمی‌شوند.',
-      method: 'هیچ محاسبه یا خروجی ترانس، کلید یا جریان خطا اجرا/نمایش نمی‌شود. تابع designMvSubstation() در src/engine/mvSubstationEngine.ts باقی است، اما UI و گزارش عمداً خروجی آن را مسدود می‌کنند تا پیش‌فرض‌های ثابت ۲۰/۴۰۰/۸۰۰ ولت، خاک یا خطا اعمال نشود.',
-      limitations: 'نتیجه پست MV، ریتینگ، انطباق، ایمنی زمین یا انتخاب حفاظت ارائه نمی‌شود. مطالعه شرکت برق و طراحی مهندسی واجد صلاحیت و مختص پروژه الزامی است.',
+      inputs: 'هدف AC نیروگاه، ولتاژ MV/HV، سطح اتصال کوتاه و X/R بالادست، شرایط محل/ترانسفورماتور، کابل و کلیدهای نمایش‌داده‌شده را بازبینی کنید. در صورت دسترسی، دادهٔ واقعی شرکت برق و تجهیزات را جایگزین پیش‌فرض غربالگری کنید.',
+      method: 'صفحه موتور طراحی پست MV را برای ریتینگ/افت ظرفیت ترانس، مقادیر اتصال کوتاهِ شبکه و ترانس، کنترل کلید و خروجی‌های زمین فراخوانی می‌کند. هر نتیجه و هشدار به پارامترهای شبکه و محلِ واردشده یا پیش‌فرض وابسته است.',
+      limitations: 'سطح اتصال کوتاه و مقادیر پیش‌فرض شبکه مقدماتی‌اند. طراحی نهایی ترانس، رله، کلید، زمین و مطالعات گذرا به دادهٔ اختصاصی شرکت برق و بازبینی مهندسی واجد صلاحیت نیاز دارد.',
     },
   },
   bess: {
@@ -321,38 +320,7 @@ const GENERIC: Record<HelpLanguage, HelpCopy> = {
   },
 };
 
-export const HELP_SOURCE_REFERENCES: Record<string, string> = {
-  climate: 'src/engine/climaticData.ts — getClimateData(), fetchClimateData(); src/engine/types/climateTypes.ts — calculateDesignDaylightHours().',
-  loads: 'src/engine/loadProfiles.ts — analyzeLoadProfile(), normalizeLoadItemToWindow().',
-  system_mode: 'src/engine/systemModeCapacity.ts — calculateLoadModeDailySizingTargetKwh(), resolveArrayAcReferenceKw(), isUpstreamGridAnalysisAvailable(); src/engine/acRequirements.ts — assessAcRequirements(), evaluateLoadAcCurrents(); src/engine/core/projectMigration.ts — AcRequirementsSchema; src/App.tsx — explicit local AC interface editor and mode flow.',
-  array: 'src/engine/pvEngineAdvanced.ts — designPvArray(); src/engine/core/thermalDerate.ts — calculateThermalDerate().',
-  harmonics_grid: 'src/engine/harmonicsEngine.ts — analyzePowerplantHarmonics(), analyzeUpstreamGridConditions().',
-  mv_substation: 'src/engine/mvSubstationEngine.ts — designMvSubstation().',
-  bess: 'src/engine/batteryEngine.ts — computeAutonomyEnergyRequirement(), sizeBatteryBank().',
-  cables_bom: 'src/engine/protectionBomEngine.ts — calculateAdvancedCableRun(), createUnassessedCableRun(), calculateEarthingSystem(), calculateLightningProtection(); src/engine/acRequirements.ts — assessed interface inputs.',
-  structural: 'src/engine/structuralEngine.ts — calculateStructuralAndFoundations(); src/engine/structureRecommendationEngine.ts — recommendFoundation().',
-  sim24h: 'src/engine/simulation24hEngine.ts — simulate24hEnergyBalance(), sizeDieselGenerator().',
-  waterfall_loss: 'src/engine/waterfallLossEngine.ts — computeWaterfallLosses().',
-  financial: 'src/engine/financialEngine.ts — performFinancialAnalysis(), sanitizeFinancialPricing().',
-  sld: 'src/components/SingleLineDiagram.tsx — generated visualization; no separate network solver.',
-  cad_layout: 'src/engine/powerplantCadLayout.ts — generatePowerplantLayout(), generatePowerplantDxf().',
-  '3d_viewer': 'src/components/ThreeJsViewer.tsx — scene controls; src/engine/shadingSunPathEngine.ts — annual shading calculations; src/engine/shadingLifecycle.ts — applied-result provenance and staleness.',
-  scenarios: 'src/engine/scenarioEngine.ts — generateScenarios().',
-  catalog: 'src/engine/catalogRepository.ts — CatalogRepository; src/engine/equipmentCatalogData.ts — built-in records.',
-  iran_regulations: 'src/components/IranianRegulationsTab.tsx — reference display; no authority query/certification function.',
-  solar_pumping: 'src/engine/solarPumpEngine.ts — calculateSolarPump().',
-  iv_curve: 'src/engine/singleDiodeModel.ts — calculateSingleDiodeCurve().',
-  rfc3_reports: 'src/components/RFC3ReportsTab.tsx — report composition and displayed checks; each check links to its engine module.',
-};
-
 export function getContextualHelp(tab: string, mode: HelpSystemMode, language: HelpLanguage): HelpCopy {
-  const copy = tab === 'harmonics_grid' && mode === 'offgrid'
-    ? GENERIC[language]
-    : (COPY[tab] ?? GENERIC)[language];
-  return {
-    ...copy,
-    sources: HELP_SOURCE_REFERENCES[tab] ?? (language === 'fa'
-      ? 'منبع محاسبهٔ اختصاصی برای این صفحه تعریف نشده است؛ خروجی را به‌عنوان محاسبهٔ مستقل تلقی نکنید.'
-      : 'No dedicated calculation source is registered for this page; do not treat its display as an independent calculation.'),
-  };
+  if (tab === 'harmonics_grid' && mode === 'offgrid') return GENERIC[language];
+  return (COPY[tab] ?? GENERIC)[language];
 }
