@@ -74,7 +74,6 @@ export async function runEnvironmentCatalogGeoProbe(): Promise<ProbeResult[]> {
 
   // Test SoilGrids empty payload handling
   const mockSoilEmpty = { properties: { layers: [] } };
-  // @ts-expect-error accessing private method for probe
   const parsedSoil = soilProvider.parseSoilGridsResponse(35.689, 51.389, mockSoilEmpty);
   console.log(`• SoilGrids empty layers:`);
   console.log(`  - Default clay/sand/silt: ${parsedSoil.clayFractionPercent}/${parsedSoil.sandFractionPercent}/${parsedSoil.siltFractionPercent}`);

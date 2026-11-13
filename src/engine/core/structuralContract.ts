@@ -656,6 +656,15 @@ export function evaluateEffectiveStructuralSnapshot(
 
 export interface StructuralInputHashParams {
   cityId: string;
+  // Legacy callers may lack coordinates. Those snapshots cannot match a current
+  // UI hash that includes them, so they are stale until recalculated.
+  latitude?: number | null;
+  longitude?: number | null;
+  moduleId?: string | null;
+  moduleOrigin?: string | null;
+  moduleLengthM?: number | null;
+  moduleWidthM?: number | null;
+  moduleWeightKg?: number | null;
   totalModulesCount: number;
   arrayTiltDeg: number;
   foundationType: string;
@@ -683,6 +692,13 @@ export interface StructuralInputHashParams {
 export function computeStructuralInputHash(params: StructuralInputHashParams): string {
   return [
     params.cityId,
+    params.latitude ?? 'legacy-no-latitude',
+    params.longitude ?? 'legacy-no-longitude',
+    params.moduleId ?? 'legacy-no-module-id',
+    params.moduleOrigin ?? 'legacy-origin-unknown',
+    params.moduleLengthM ?? 'unassessed-length',
+    params.moduleWidthM ?? 'unassessed-width',
+    params.moduleWeightKg ?? 'unassessed-weight',
     params.totalModulesCount,
     params.arrayTiltDeg,
     params.foundationType,
@@ -714,6 +730,8 @@ export interface StructuralSnapshot {
   calculatedAtCommit?: string;
   timestampMs: number;
   inputHash: string;
+  moduleId?: string;
+  moduleOrigin?: string;
   isAvailable: boolean;
   isStale: boolean;
   foundationType: string;
@@ -724,6 +742,9 @@ export interface StructuralSnapshot {
   totalPostsCount: number;
   postsPerTable: number;
   modulesPerTable?: number;
+  moduleLengthM?: number;
+  moduleWidthM?: number;
+  moduleWeightKg?: number;
   tableAreaM2: number;
   qzPa: number;
   qzKnM2: number;
@@ -806,7 +827,8 @@ export function createStructuralSnapshot(
   },
   foundationType: string,
   inputHash: string,
-  isStale: boolean = false
+  isStale: boolean = false,
+  moduleSpecification?: { id?: string; origin?: string; lengthM?: number; widthM?: number; weightKg?: number }
 ): StructuralSnapshot {
   const disclosures = getStructuralHonestyDisclosures();
   const isRooftopAnchor = foundationType === 'rooftop_anchor_bolted';
@@ -816,6 +838,8 @@ export function createStructuralSnapshot(
     snapshotId: `SNAP-STR-${inputHash.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`,
     timestampMs: 0,
     inputHash,
+    moduleId: moduleSpecification?.id,
+    moduleOrigin: moduleSpecification?.origin,
     isAvailable: true,
     isStale,
     foundationType,
@@ -826,6 +850,9 @@ export function createStructuralSnapshot(
     totalPostsCount: result.totalPostsCount,
     postsPerTable: result.postsPerTable,
     modulesPerTable: result.modulesPerTable,
+    moduleLengthM: moduleSpecification?.lengthM,
+    moduleWidthM: moduleSpecification?.widthM,
+    moduleWeightKg: moduleSpecification?.weightKg,
     tableAreaM2: result.tableAreaM2,
     qzPa: result.velocityWindPressureQzN_M2,
     qzKnM2: Number((result.velocityWindPressureQzN_M2 / 1000).toFixed(3)),
@@ -866,6 +893,12 @@ export function createStructuralSnapshot(
 
 export type StructuralSheetRow = [string, string | number, string, string];
 
+/** The model includes the weight-only overturning check in its verdict only for these foundations. */
+export function isWeightOnlyOverturningApplicable(foundationType: string): boolean {
+  return foundationType === 'rooftop_ballasted_block' ||
+    foundationType === 'surface_ballasted_block' || foundationType === 'concrete_pier';
+}
+
 /**
  * Generates official Excel export rows from a StructuralSnapshot.
  * Shared between OfficialReportModal and verify-phase07 harness to guarantee zero divergence.
@@ -879,6 +912,7 @@ export function exportStructuralSheetRows(
       ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
       ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
       ['Structural Analysis Status', 'UNAVAILABLE', '-', 'Run calculation in Structural & Foundation Tab'],
+      ['Structural Assessment', 'UNASSESSED', '-', 'No current valid snapshot; provide valid selected-module dimensions and mass, then recalculate.'],
       ['Velocity Wind Pressure (qz)', 'UNAVAILABLE', 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
       ['Wind Uplift Force per Table', 'UNAVAILABLE', 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
       ['Wind Downforce per Table', 'UNAVAILABLE', 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
@@ -903,6 +937,7 @@ export function exportStructuralSheetRows(
       ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
       ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
       ['Structural Analysis Status', 'STALE — Inputs Modified', '-', 'Recalculation in Structural Tab Required'],
+      ['Structural Assessment', 'UNASSESSED', '-', 'The snapshot is stale; provide valid current inputs and recalculate.'],
       ['Velocity Wind Pressure (qz)', 'STALE', 'N/m²', 'ASCE 7-22 Eq. 26.10-1 (Recalculation Required)'],
       ['Wind Uplift Force per Table', 'STALE', 'kN', 'ASCE 7-22 §27.3 Net Uplift (Recalculation Required)'],
       ['Wind Downforce per Table', 'STALE', 'kN', 'ASCE 7-22 §27.3 Net Downforce (Recalculation Required)'],
@@ -968,6 +1003,11 @@ export function exportStructuralSheetRows(
     ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
     ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
     ['Structural Analysis Status', 'SYNCHRONIZED', '-', 'Live Structural Tab Snapshot'],
+    ['Selected PV Module Catalog ID', snapshot.moduleId ?? 'LEGACY / NO ID', '-', snapshot.moduleOrigin ?? 'Origin unverified; exact input dimensions/mass retained in snapshot'],
+    ['Structural Input Hash', snapshot.inputHash, '-', 'Includes selected module ID/origin, dimensions, and mass'],
+    ['Selected PV Module Length', snapshot.moduleLengthM ?? 'UNASSESSED', 'm', 'Selected catalog/user module specification'],
+    ['Selected PV Module Width', snapshot.moduleWidthM ?? 'UNASSESSED', 'm', 'Selected catalog/user module specification'],
+    ['Selected PV Module Mass', snapshot.moduleWeightKg ?? 'UNASSESSED', 'kg/module', 'Selected catalog/user module specification'],
     ['Velocity Wind Pressure (qz)', snapshot.qzPa, 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
     ['Wind Uplift Force per Table', snapshot.windUpliftForceKn, 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
     ['Wind Downforce per Table', snapshot.windDownforceKn, 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
@@ -982,7 +1022,10 @@ export function exportStructuralSheetRows(
     [upliftParamLabel, upliftVal, 'kN/post', upliftStandard],
     ['Uplift Safety Factor (FoS_uplift)', fosUpliftVal, '-', fosUpliftStandard],
     ['Broms Lateral Safety Factor (FoS_lateral)', snapshot.fosLateral, '-', 'Required >= 1.5 (Broms 1964)'],
-    ['Overturning Safety Factor (FoS_overturning)', snapshot.fosOverturning, '-', 'Required >= 1.5 (ASCE 7-22)'],
+    ['Weight-only Overturning Safety Factor (FoS_overturning)', snapshot.fosOverturning, '-',
+      isWeightOnlyOverturningApplicable(snapshot.foundationType)
+        ? 'Screening criterion >= 1.5; code basis unverified'
+        : 'DIAGNOSTIC ONLY — not included in this foundation type’s screening criterion; anchorage is not represented'],
     ['Structural Safety Compliance', complianceStatus, '-', complianceStandard],
   ];
 }

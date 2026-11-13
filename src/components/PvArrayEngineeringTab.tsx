@@ -10,6 +10,34 @@ import { type TrackerConfig, computeTrackerState } from '../engine/tracker/backt
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
 import type { InstallationEnvironment } from '../engine/types/climateTypes';
 
+// A selected project snapshot is authoritative; a reused catalog ID alone does
+// not establish that its physical/electrical specifications still match.
+function moduleFromCatalog(found: EnhancedCatalogModule): ModuleSpecs {
+  return {
+    id: found.id, origin: found.origin, manufacturer: found.manufacturer, modelName: found.modelName,
+    pmpWatts: found.pmpWatts, vocVolts: found.vocVolts, vmpVolts: found.vmpVolts,
+    iscAmps: found.iscAmps, impAmps: found.impAmps, tempCoeffVocPct: found.tempCoeffVocPct,
+    tempCoeffPmpPct: found.tempCoeffPmpPct, noctC: found.noctC ?? 45,
+    lengthM: found.lengthMm / 1000, widthM: found.widthMm / 1000,
+    weightKg: found.weightKg, bifacialityFactor: found.bifacialityFactor,
+  };
+}
+
+function inverterFromCatalog(found: EnhancedCatalogInverter): InverterSpecs {
+  return {
+    id: found.id, origin: found.origin, manufacturer: found.manufacturer, modelName: found.modelName,
+    pnomAcKw: found.pnomKw, vdcMaxVolts: found.vdcMaxVolts, vmpptMinVolts: found.vmpptMinVolts,
+    vmpptMaxVolts: found.vmpptMaxVolts, iscMaxAmpsPerMppt: found.technology === 'mv_turnkey' ? 120 : 26,
+    imppMaxAmpsPerMppt: found.technology === 'mv_turnkey' ? 100 : 22, mpptChannelsCount: found.mpptCount,
+    efficiencyMaxPct: found.efficiencyMaxPct, isThreePhase: found.isThreePhase,
+  };
+}
+
+function matchesCatalogProjection(snapshot: object, projection: object): boolean {
+  const actual = snapshot as Record<string, unknown>;
+  return Object.entries(projection).every(([key, value]) => Object.is(actual[key], value));
+}
+
 interface PvArrayEngineeringTabProps {
   selectedModule: ModuleSpecs;
   onModuleChange: (mod: ModuleSpecs) => void;
@@ -83,6 +111,13 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
     void catalogVersion;
     return CatalogRepository.getInstance().getInverters();
   }, [catalogVersion]);
+  const matchingModule = allModules.find((item) => item.id === selectedModule.id &&
+    matchesCatalogProjection(selectedModule, moduleFromCatalog(item)) &&
+    selectedModule.tempCoeffIscPct === undefined && selectedModule.tempCoeffVmpPct === undefined);
+  const matchingInverter = allInverters.find((item) => item.id === selectedInverter.id &&
+    matchesCatalogProjection(selectedInverter, inverterFromCatalog(item)));
+  const selectedModulePickerValue = matchingModule?.id ?? '__selected_module_snapshot__';
+  const selectedInverterPickerValue = matchingInverter?.id ?? '__selected_inverter_snapshot__';
 
   // Filtered Modules
   const filteredModules = useMemo(() => {
@@ -327,32 +362,25 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
 
               <select
                 id="pv-module-picker-select"
-                value={selectedModule.modelName}
+                value={selectedModulePickerValue}
                 onChange={(e) => {
-                  const found = allModules.find((m) => m.modelName === e.target.value);
-                  if (found) {
-                    onModuleChange({
-                      manufacturer: found.manufacturer,
-                      modelName: found.modelName,
-                      pmpWatts: found.pmpWatts,
-                      vocVolts: found.vocVolts,
-                      vmpVolts: found.vmpVolts,
-                      iscAmps: found.iscAmps,
-                      impAmps: found.impAmps,
-                      tempCoeffVocPct: found.tempCoeffVocPct,
-                      tempCoeffPmpPct: found.tempCoeffPmpPct,
-                      noctC: found.noctC ?? 45.0,
-                      lengthM: found.lengthMm / 1000.0,
-                      widthM: found.widthMm / 1000.0,
-                      bifacialityFactor: found.bifacialityFactor,
-                    });
-                  }
+                  const found = allModules.find((m) => m.id === e.target.value);
+                  if (found) onModuleChange(moduleFromCatalog(found));
                 }}
                 className="studio-input text-xs w-full"
               >
+                {(!matchingModule || !filteredModules.some((item) => item.id === matchingModule.id)) && (
+                  <option value={selectedModulePickerValue}>
+                    {matchingModule
+                      ? (isEn ? 'Selected catalog record (filtered)' : 'رکورد انتخاب‌شده کاتالوگ (فیلترشده)')
+                      : (isEn ? 'Selected snapshot (not an exact catalog match)' : 'مشخصات انتخاب‌شده (مطابق کامل کاتالوگ نیست)')}
+                    {' — '}{selectedModule.id ?? (isEn ? 'legacy ID missing' : 'شناسه قدیمی/نامشخص')}: {selectedModule.manufacturer} {selectedModule.modelName}
+                    {'; '}{selectedModule.lengthM ?? '?'}×{selectedModule.widthM ?? '?'}m; {selectedModule.weightKg ?? '?'}kg
+                  </option>
+                )}
                 {filteredModules.map((m) => (
-                  <option key={m.id} value={m.modelName}>
-                    {m.manufacturer} {m.modelName} ({m.pmpWatts}W - {m.cellType})
+                  <option key={m.id} value={m.id}>
+                    {m.manufacturer} {m.modelName} ({m.pmpWatts}W - {m.cellType}; {m.lengthMm}×{m.widthMm}mm; {m.weightKg}kg; {m.origin}; ID {m.id})
                   </option>
                 ))}
               </select>
@@ -363,7 +391,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 <div>Isc: <strong className="font-mono text-industrial-success">{selectedModule.iscAmps}A</strong></div>
                 <div>{isEn ? 'Voc Temp Coeff:' : 'ضریب دما Voc:'} <span className="font-mono">{selectedModule.tempCoeffVocPct}%/°C</span></div>
                 <div>{isEn ? 'Pmp Temp Coeff:' : 'ضریب دما Pmp:'} <span className="font-mono">{selectedModule.tempCoeffPmpPct}%/°C</span></div>
-                <div>{isEn ? 'Dimensions:' : 'ابعاد:'} <span className="font-mono">{selectedModule.lengthM.toFixed(2)}×{selectedModule.widthM.toFixed(2)}m</span></div>
+                <div>{isEn ? 'Dimensions:' : 'ابعاد:'} <span className="font-mono">{typeof selectedModule.lengthM === 'number' && typeof selectedModule.widthM === 'number' && Number.isFinite(selectedModule.lengthM) && Number.isFinite(selectedModule.widthM) && selectedModule.lengthM > 0 && selectedModule.widthM > 0 ? `${selectedModule.lengthM.toFixed(2)}×${selectedModule.widthM.toFixed(2)}m` : (isEn ? 'UNASSESSED — dimensions unavailable' : 'ارزیابی‌نشده — ابعاد موجود نیست')}</span></div>
               </div>
             </div>
 
@@ -440,29 +468,23 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
 
               <select
                 id="pv-inverter-picker-select"
-                value={selectedInverter.modelName}
+                value={selectedInverterPickerValue}
                 onChange={(e) => {
-                  const found = allInverters.find((i) => i.modelName === e.target.value);
-                  if (found) {
-                    onInverterChange({
-                      manufacturer: found.manufacturer,
-                      modelName: found.modelName,
-                      pnomAcKw: found.pnomKw,
-                      vdcMaxVolts: found.vdcMaxVolts,
-                      vmpptMinVolts: found.vmpptMinVolts,
-                      vmpptMaxVolts: found.vmpptMaxVolts,
-                      iscMaxAmpsPerMppt: found.technology === 'mv_turnkey' ? 120.0 : 26.0,
-                      imppMaxAmpsPerMppt: found.technology === 'mv_turnkey' ? 100.0 : 22.0,
-                      mpptChannelsCount: found.mpptCount,
-                      efficiencyMaxPct: found.efficiencyMaxPct,
-                      isThreePhase: found.isThreePhase,
-                    });
-                  }
+                  const found = allInverters.find((i) => i.id === e.target.value);
+                  if (found) onInverterChange(inverterFromCatalog(found));
                 }}
                 className="studio-input text-xs w-full"
               >
+                {(!matchingInverter || !filteredInverters.some((item) => item.id === matchingInverter.id)) && (
+                  <option value={selectedInverterPickerValue}>
+                    {matchingInverter
+                      ? (isEn ? 'Selected catalog record (filtered)' : 'رکورد انتخاب‌شده کاتالوگ (فیلترشده)')
+                      : (isEn ? 'Selected snapshot (not an exact catalog match)' : 'مشخصات انتخاب‌شده (مطابق کامل کاتالوگ نیست)')}
+                    {' — '}{selectedInverter.id ?? (isEn ? 'legacy ID missing' : 'شناسه قدیمی/نامشخص')}: {selectedInverter.manufacturer} {selectedInverter.modelName}; {selectedInverter.pnomAcKw}kW
+                  </option>
+                )}
                 {filteredInverters.map((i) => (
-                  <option key={i.id} value={i.modelName}>
+                  <option key={i.id} value={i.id}>
                     {i.technology === 'mv_turnkey' ? '⚡ [MV Turnkey] ' : ''}
                     {i.manufacturer} {i.modelName} ({i.pnomKw >= 1000 ? `${(i.pnomKw / 1000).toFixed(2)}MW` : `${i.pnomKw}kW`} - {i.isThreePhase ? '3P' : '1P'})
                   </option>

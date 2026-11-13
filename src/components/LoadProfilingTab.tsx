@@ -99,7 +99,9 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
           } else if (field === 'nightHours') {
             updatedVal = Math.max(0, Math.min(nightCap, parseFloat(val) || 0));
           } else if (field === 'ratedWatts') {
-            updatedVal = Math.max(0, parseFloat(val) || 0);
+            // The project schema requires positive power. Keep edits saveable;
+            // users should remove a load rather than retain a zero-watt record.
+            updatedVal = Math.max(1, parseFloat(val) || 0);
           } else if (field === 'quantity') {
             updatedVal = Math.max(1, parseInt(val) || 1);
           } else if (field === 'surgeMultiplier') {

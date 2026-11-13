@@ -315,7 +315,7 @@ export function normalizeLoadItemToWindow(
     dayHours = dayCap;
     const spaceInNight = Math.max(0, nightCap - nightHours);
     const transferred = Math.min(excess, spaceInNight);
-    nightHours = Number((nightHours + transferred).toFixed(2));
+    nightHours += transferred;
     const dropped = excess - transferred;
     warning = `بار "${item.name}": ساعات روز از سقف اقلیمی (${dayCap.toFixed(1)}h) بریده شد و ${transferred.toFixed(1)}h به شب منتقل گردید${dropped > 0.01 ? ` (${dropped.toFixed(1)}h مازاد حذف شد)` : ''}.`;
   }
@@ -329,8 +329,10 @@ export function normalizeLoadItemToWindow(
   return {
     normalized: {
       ...item,
-      dayHours: Number(dayHours.toFixed(2)),
-      nightHours: Number(nightHours.toFixed(2)),
+      // Preserve input precision; rounding is a presentation concern and must
+      // not silently remove small but nonzero operating hours or energy.
+      dayHours,
+      nightHours,
     },
     warning,
   };

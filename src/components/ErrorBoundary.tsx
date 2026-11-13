@@ -27,15 +27,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.setState({ errorInfo });
   }
 
+  private confirmDiscardUnsaved = (): boolean => typeof window === 'undefined' || window.confirm(
+    'Resetting or reloading may discard unsaved project edits. Continue? / بازنشانی یا بارگذاری مجدد ممکن است تغییرات ذخیره‌نشده را از بین ببرد. ادامه می‌دهید؟'
+  );
+
   private handleReload = (): void => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
-    if (typeof window !== 'undefined') {
-      window.location.reload();
-    }
+    if (typeof window !== 'undefined' && this.confirmDiscardUnsaved()) window.location.reload();
   };
 
   private handleReset = (): void => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    if (this.confirmDiscardUnsaved()) this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
   render(): ReactNode {
@@ -54,13 +55,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed">
-            An unhandled error occurred. The UI is safe — no data was lost.
-            You can reset the component or reload the page. If the error
-            persists, please copy the diagnostics below.
+            An unhandled error occurred. Unsaved edits may be lost when the UI
+            is reset or the page is reloaded. Copy the diagnostics first and
+            recover from your most recent saved project if necessary.
           </p>
           <p className="text-xs text-slate-300 leading-relaxed" dir="rtl">
-            خطایی رخ داد. داده‌ها از دست نرفته‌اند. می‌توانید مولفه را بازنشانی
-            کنید یا صفحه را مجدداً بارگذاری نمایید.
+            خطایی رخ داد. بازنشانی یا بارگذاری مجدد ممکن است تغییرات ذخیره‌نشده را از بین ببرد.
+            ابتدا اطلاعات خطا را کپی و در صورت نیاز آخرین پروژهٔ ذخیره‌شده را بازیابی کنید.
           </p>
 
           <pre className="p-2.5 rounded bg-industrial-bg border border-industrial-border text-[10px] font-mono text-industrial-warning overflow-x-auto whitespace-pre-wrap max-h-40">

@@ -1,0 +1,141 @@
+import { chromium } from 'playwright-core';
+import ExcelJS from 'exceljs';
+import { unzipSync } from 'fflate';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+
+if (process.platform === 'linux') process.env.AWS_EXECUTION_ENV ??= 'AWS_Lambda_nodejs20.x';
+const sparticuz = (await import('@sparticuz/chromium')).default;
+const out = process.env.PR28_PROBE_OUTPUT || '/tmp/solarpv-pr28-review-ui';
+await mkdir(out, { recursive: true });
+const base = JSON.parse(await readFile(path.join(out, 'scenario.json'), 'utf8'));
+base.projectData.siteOverrides.customEmbedmentDepthM = 2.4;
+await writeFile(path.join(out, 'pending-a.json'), JSON.stringify(base));
+const next = structuredClone(base);
+next.projectData.siteOverrides = { customEmbedmentDepthM: 3 };
+await writeFile(path.join(out, 'pending-b.json'), JSON.stringify(next));
+const browser = await chromium.launch({ executablePath: await sparticuz.executablePath(), args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'], headless: true });
+const context = await browser.newContext({ serviceWorkers: 'block', acceptDownloads: true, viewport: { width: 1600, height: 1000 } });
+await context.route('https://**/*', (route) => route.abort());
+await context.route('**/api/v1/gateway/**', (route) => route.abort());
+const page = await context.newPage();
+const pageErrors = [];
+page.on('pageerror', (error) => pageErrors.push(error.message));
+page.on('dialog', (dialog) => dialog.accept());
+const tab = async (name) => page.getByTestId(`workflow-tab-${name}`).locator(':visible').first().click();
+const open = async () => { await page.keyboard.press('Control+e'); await page.locator('#report-modal-close-btn').waitFor(); };
+const importFile = async (file) => {
+  await open();
+  await page.locator('#report-restore-file-input').setInputFiles(path.join(out, file));
+  await page.locator('#report-modal-close-btn').waitFor({ state: 'detached', timeout: 15000 });
+};
+const capture = async (name, captureDocx = false) => {
+  await open();
+  const preview = await page.getByTestId('report-embedment-status').innerText();
+  let event = page.waitForEvent('download');
+  await page.getByTitle('ذخیره محلی پروژه با نام دلخواه').click();
+  const jsonPath = path.join(out, `${name}.json`);
+  await (await event).saveAs(jsonPath);
+  const json = JSON.parse(await readFile(jsonPath, 'utf8'));
+  event = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Excel (.xlsx)' }).click();
+  const xlsxPath = path.join(out, `${name}.xlsx`);
+  await (await event).saveAs(xlsxPath);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(xlsxPath);
+  const rows = {};
+  workbook.getWorksheet('Structural & Foundations').eachRow((row) => {
+    const values = row.values.slice(1);
+    if (values[0]) rows[values[0]] = values;
+  });
+  let docx = '';
+  if (captureDocx) {
+    event = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Word (.docx)' }).click();
+    const docxPath = path.join(out, `${name}.docx`);
+    await (await event).saveAs(docxPath);
+    docx = new TextDecoder().decode(unzipSync(await readFile(docxPath))['word/document.xml']);
+  }
+  await page.locator('#report-modal-close-btn').click();
+  return { preview, json, rows, docx };
+};
+try {
+  await page.goto(process.env.PR28_PROBE_URL || 'http://127.0.0.1:5190/', { waitUntil: 'domcontentloaded' });
+  await page.getByTestId('workflow-tab-climate').first().waitFor();
+  await importFile('pending-a.json');
+  await tab('structural');
+  await page.locator('#struct-custom-embedment-depth').waitFor();
+  assert.match(await page.getByRole('alert').first().innerText(), /2.4/);
+  assert.notEqual(await page.locator('#struct-custom-embedment-depth').inputValue(), '2.4');
+  const pending = await capture('pending-before-confirm', true);
+  assert.equal(pending.json.projectData.pendingImportedEmbedmentDepthM, 2.4);
+  assert.equal(pending.json.projectData.reportSnapshot.pendingImportedEmbedmentDepthM, 2.4);
+  assert.equal(pending.json.projectData.siteOverrides.customEmbedmentDepthM, undefined);
+  assert.notEqual(pending.json.projectData.reportSnapshot.structural.recommendedDepthM, 2.4);
+  assert.match(pending.preview, /2.4.*PENDING, NOT APPLIED/s);
+  assert.ok(pending.docx.includes('PENDING, NOT APPLIED'));
+  assert.equal(pending.rows['Pending Imported Manual Embedment'][1], 2.4);
+  assert.match(pending.rows['Pending Imported Manual Embedment'][3], /PENDING.*NOT APPLIED/);
+  assert.equal(pending.rows['Active Project Embedment Override'][1], 'NONE');
+
+  await page.getByRole('button', { name: 'تأیید برای این سایت' }).click();
+  await page.waitForTimeout(500);
+  assert.equal(await page.locator('#struct-bearing-capacity').inputValue(), '500');
+  assert.equal(await page.locator('#struct-custom-embedment-depth').inputValue(), '2.4');
+  const confirmed = await capture('pending-after-confirm');
+  assert.equal(confirmed.json.projectData.pendingImportedEmbedmentDepthM, null);
+  assert.equal(confirmed.json.projectData.siteOverrides.customEmbedmentDepthM, 2.4);
+  assert.equal(confirmed.json.projectData.reportSnapshot.structural.recommendedDepthM, 2.4);
+  assert.equal(confirmed.json.projectData.reportSnapshot.structural.isStale, false);
+  assert.equal(confirmed.rows['Pending Imported Manual Embedment'][1], 'NONE');
+  assert.equal(confirmed.rows['Active Project Embedment Override'][1], 2.4);
+  assert.match(confirmed.preview, /2.4/);
+
+  await importFile('pending-b.json');
+  await page.waitForTimeout(400);
+  assert.match(await page.getByRole('alert').first().innerText(), /3/);
+  assert.equal(await page.locator('#struct-bearing-capacity').inputValue(), '160');
+  assert.notEqual(await page.locator('#struct-custom-embedment-depth').inputValue(), '3');
+  const sameSite = await capture('pending-same-site');
+  assert.equal(sameSite.json.projectData.city.soilBearingCapacityKpa, 160);
+  assert.equal(sameSite.json.projectData.siteOverrides.soilBearingCapacityKpa, undefined);
+  assert.equal(sameSite.json.projectData.siteOverrides.customEmbedmentDepthM, undefined);
+  assert.equal(sameSite.json.projectData.pendingImportedEmbedmentDepthM, 3);
+  assert.equal(sameSite.rows['Pending Imported Manual Embedment'][1], 3);
+  assert.match(sameSite.rows['Pending Imported Manual Embedment'][3], /PENDING.*NOT APPLIED/);
+  assert.equal(sameSite.rows['Active Project Embedment Override'][1], 'NONE');
+  assert.match(sameSite.preview, /3.*PENDING, NOT APPLIED/s);
+  await tab('climate');
+  await tab('structural');
+  assert.equal(await page.locator('#struct-bearing-capacity').inputValue(), '160');
+  assert.match(await page.getByRole('alert').first().innerText(), /3/);
+  await page.getByRole('button', { name: 'حذف مقدار در انتظار' }).click();
+  assert.equal(await page.getByRole('button', { name: 'تأیید برای این سایت' }).count(), 0);
+  const discarded = await capture('pending-after-discard');
+  assert.equal(discarded.json.projectData.pendingImportedEmbedmentDepthM, null);
+  assert.equal(discarded.json.projectData.siteOverrides.customEmbedmentDepthM, undefined);
+  assert.equal(discarded.rows['Pending Imported Manual Embedment'][1], 'NONE');
+  assert.equal(discarded.rows['Active Project Embedment Override'][1], 'NONE');
+
+  // Restore the pending value again, then move to a physically different site.
+  await importFile('pending-b.json');
+  await page.getByRole('button', { name: 'تأیید برای این سایت' }).waitFor();
+  await tab('climate');
+  await page.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
+  await page.locator('#climate-latitude-input').fill('13');
+  await page.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
+  await page.getByText(/Custom Site \(13\.0000, 101\.0000\)|محل سفارشی/).first().waitFor({ timeout: 10000 });
+  await tab('structural');
+  assert.equal(await page.getByRole('button', { name: 'تأیید برای این سایت' }).count(), 0);
+  const changedSite = await capture('pending-after-site-change');
+  assert.equal(changedSite.json.projectData.city.latitude, 13);
+  assert.equal(changedSite.json.projectData.pendingImportedEmbedmentDepthM, null);
+  assert.equal(changedSite.json.projectData.siteOverrides.customEmbedmentDepthM, undefined);
+  assert.equal(changedSite.rows['Pending Imported Manual Embedment'][1], 'NONE');
+  assert.deepEqual(pageErrors, []);
+  console.log('[PASS] Same-site import clears stale controls; pending, confirmation, discard, remount and site change agree across UI, JSON snapshot, DOCX and XLSX.');
+} finally {
+  await context.close();
+  await browser.close();
+}

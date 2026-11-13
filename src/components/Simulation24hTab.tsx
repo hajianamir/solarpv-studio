@@ -4,6 +4,7 @@ import {
   type Simulation24hResult,
   type GeneratorSizingResult,
 } from '../engine/simulation24hEngine';
+import { formatEnergyKwh } from '../engine/energyFormatting';
 
 interface Simulation24hTabProps {
   simulationResult: Simulation24hResult;
@@ -57,28 +58,28 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? '24h Solar Generation' : 'تولید ۲۴ ساعته خورشیدی'}</div>
           <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
-            {simulationResult.totalGeneration24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
+            {formatEnergyKwh(simulationResult.totalGeneration24hKwh)} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? '24h Total Demand' : 'مصرف کل بار ۲۴ ساعته'}</div>
           <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
-            {simulationResult.totalConsumption24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
+            {formatEnergyKwh(simulationResult.totalConsumption24hKwh)} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? '24h Energy Surplus' : 'مازاد انرژی تزریق/اتلاف'}</div>
           <div className="text-xl font-bold font-mono text-industrial-success mt-1">
-            {simulationResult.totalSurplus24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
+            {formatEnergyKwh(simulationResult.totalSurplus24hKwh)} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">{isEn ? '24h Energy Deficit' : 'کسری انرژی (Deficit)'}</div>
           <div className="text-xl font-bold font-mono text-industrial-error mt-1">
-            {simulationResult.totalDeficit24hKwh} <span className="text-xs font-normal text-slate-300">kWh</span>
+            {formatEnergyKwh(simulationResult.totalDeficit24hKwh)} <span className="text-xs font-normal text-slate-300">kWh</span>
           </div>
         </div>
 
@@ -111,6 +112,12 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
             </span>
           </div>
         </div>
+
+        <p className="mb-3 text-xs text-slate-400" data-testid="energy-rounding-disclosure">
+          {isEn
+            ? 'Hourly energy and 24-hour figures are displayed rounded to 0.01 kWh. Daily totals are calculated from unrounded simulation values, not by adding the displayed hourly values.'
+            : 'مقادیر انرژی ساعتی و ۲۴ ساعته با گرد کردن تا ۰٫۰۱ کیلووات‌ساعت نمایش داده می‌شوند. مجموع روزانه از مقادیر گردنشدهٔ شبیه‌سازی محاسبه می‌شود، نه از جمع اعداد ساعتیِ نمایش‌داده‌شده.'}
+        </p>
 
         {/* SVG Bar & Line Chart with Touch-Friendly Horizontal Scroll */}
         <div className="bg-industrial-bg p-4 rounded-lg border border-industrial-border overflow-x-auto">
@@ -219,19 +226,25 @@ export const Simulation24hTab: React.FC<Simulation24hTabProps> = ({
               {isEn ? 'Hour:' : 'ساعت:'} {selectedHour}:00
             </span>
             <span className="text-industrial-warning">
-              {isEn ? 'Solar:' : 'تولید خورشیدی:'} {simulationResult.hourlySteps[selectedHour].solarGenKwh} kWh
+              {isEn ? 'Solar:' : 'تولید خورشیدی:'} {formatEnergyKwh(simulationResult.hourlySteps[selectedHour].solarGenKwh)} kWh
             </span>
             <span className="text-industrial-accent">
-              {isEn ? 'Demand:' : 'مصرف:'} {simulationResult.hourlySteps[selectedHour].loadDemandKwh} kWh
+              {isEn ? 'Demand:' : 'مصرف:'} {formatEnergyKwh(simulationResult.hourlySteps[selectedHour].loadDemandKwh)} kWh
             </span>
             <span className="text-purple-400">
               {isEn ? 'Battery SoC:' : 'سطح شارژ باتری:'} {simulationResult.hourlySteps[selectedHour].batterySocPct}%
             </span>
             <span className="text-industrial-success">
-              {isEn ? 'Charge:' : 'شارژ باتری:'} {simulationResult.hourlySteps[selectedHour].batteryChargeKwh} kWh
+              {isEn ? 'Charge:' : 'شارژ باتری:'} {formatEnergyKwh(simulationResult.hourlySteps[selectedHour].batteryChargeKwh)} kWh
             </span>
             <span className="text-indigo-400">
-              {isEn ? 'Discharge:' : 'دشارژ باتری:'} {simulationResult.hourlySteps[selectedHour].batteryDischargeKwh} kWh
+              {isEn ? 'Discharge:' : 'دشارژ باتری:'} {formatEnergyKwh(simulationResult.hourlySteps[selectedHour].batteryDischargeKwh)} kWh
+            </span>
+            <span className="text-industrial-success">
+              {isEn ? 'Surplus:' : 'مازاد:'} {formatEnergyKwh(simulationResult.hourlySteps[selectedHour].surplusKwh)} kWh
+            </span>
+            <span className="text-industrial-error">
+              {isEn ? 'Deficit:' : 'کسری:'} {formatEnergyKwh(simulationResult.hourlySteps[selectedHour].deficitKwh)} kWh
             </span>
           </div>
         )}

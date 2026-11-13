@@ -78,6 +78,9 @@ export class CircuitBreaker {
       return result;
     } catch (err: unknown) {
       const errorObj = err instanceof Error ? err : new Error(String(err));
+      // Caller cancellation is not a provider failure and must not poison the breaker
+      // or be converted into an analytical fallback response.
+      if (errorObj.name === 'AbortError') throw errorObj;
       this.recordFailure(errorObj);
       if (fallback) {
         this.fallbackServed++;

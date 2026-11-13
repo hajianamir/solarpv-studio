@@ -24,7 +24,7 @@ export class StructuralHazardProvider {
   }
 
   public async fetchStructuralHazard(lat: number, lng: number): Promise<StructuralHazardData> {
-    const cacheKey = `hazard_${lat.toFixed(3)}_${lng.toFixed(3)}`;
+    const cacheKey = `hazard_${lat}_${lng}`;
     const cached = this.cache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < this.cacheTtlMs) {
       return {

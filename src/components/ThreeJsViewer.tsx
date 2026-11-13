@@ -109,9 +109,16 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
   // Scene Selection: defaults to active project array design if available, else demo block fallback
   const hasProjectData = Boolean(arrayDesign && (arrayDesign.totalModulesCount || 0) > 0);
-  const [sceneMode, setSceneMode] = useState<'project_array' | 'demo_block'>(
-    hasProjectData ? 'project_array' : 'demo_block'
-  );
+  // Never auto-substitute a demonstration scene for a missing/zero project array.
+  // Demo mode is only entered through the explicit selector below.
+  const [sceneMode, setSceneMode] = useState<'project_array' | 'demo_block'>('project_array');
+  const isProjectUnsizable =
+    typeof plantCapacityKw !== 'number' ||
+    !Number.isFinite(plantCapacityKw) ||
+    plantCapacityKw <= 0 ||
+    !arrayDesign ||
+    (arrayDesign.totalModulesCount ?? 0) <= 0 ||
+    (arrayDesign.totalPvCapacityKwp ?? 0) <= 0;
 
   const initialTilt = arrayDesign?.tiltDeg ?? effectiveCity?.optimalTiltAnnualDeg ?? 15;
   const [tiltDeg, setTiltDeg] = useState<number>(initialTilt);
@@ -139,9 +146,14 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   const projectScene = useMemo<Scene3DState | null>(() => {
     if (!hasProjectData || !arrayDesign) return null;
 
+    const isZeroCap =
+      arrayDesign.totalPvCapacityKwp === 0 ||
+      arrayDesign.totalModulesCount === 0 ||
+      plantCapacityKw === 0;
+
     return buildSceneFromProjectDesign({
-      totalPvCapacityKwp: arrayDesign.totalPvCapacityKwp ?? plantCapacityKw ?? 55.2,
-      totalModulesCount: arrayDesign.totalModulesCount ?? 140,
+      totalPvCapacityKwp: isZeroCap ? 0 : (arrayDesign.totalPvCapacityKwp ?? plantCapacityKw ?? 55.2),
+      totalModulesCount: isZeroCap ? 0 : (arrayDesign.totalModulesCount ?? 140),
       interRowSpacingM: arrayDesign.interRowSpacingM ?? 5.0,
       tiltDeg,
       azimuthDeg: arrayDesign.azimuthDeg ?? 0,
@@ -173,6 +185,18 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   // OUT-03: Eliminate unsolicited fake obstacles when user input is empty
   const activeScene: Scene3DState = useMemo(() => {
     const userObstaclesProvided = Array.isArray(obstacles) && obstacles.length > 0;
+    if (sceneMode === 'project_array' && isProjectUnsizable) {
+      return {
+        ...DEFAULT_ROOFTOP_SCENE,
+        totalPvCapacityKwp: 0,
+        pvTables: [],
+        obstacles: [],
+        obstacleDataStatus: 'missing_unverified',
+        anchorLocation: { latitude: siteLat, longitude: siteLng, elevationM: siteElev },
+        tiltDeg,
+        albedo: effectiveAlbedo,
+      };
+    }
     if (sceneMode === 'project_array' && projectScene) {
       return {
         ...projectScene,
@@ -204,7 +228,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       tiltDeg,
       albedo: effectiveAlbedo,
     };
-  }, [sceneMode, projectScene, siteLat, siteLng, siteElev, tiltDeg, effectiveAlbedo, obstacles, showDemoObstacles]);
+  }, [sceneMode, isProjectUnsizable, projectScene, siteLat, siteLng, siteElev, tiltDeg, effectiveAlbedo, obstacles, showDemoObstacles]);
 
   // Scene capacity in kWp
   const activeSceneCapacityKwp = useMemo(() => {
@@ -280,6 +304,10 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
   // Initialize WebGL Scene
   useEffect(() => {
     if (!mountRef.current) return;
+    // An unsizable project has no representative array to render. Avoid making
+    // WebGL a prerequisite for the honest no-array/UNSIZABLE state (also keeps
+    // low-capability and offline browsers from replacing the status with a crash).
+    if (sceneMode === 'project_array' && isProjectUnsizable) return;
     if (sceneRef.current) return; // StrictMode idempotency guard
     const container = mountRef.current;
     let width = container.clientWidth || 600;
@@ -453,7 +481,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
       }
       renderer.dispose();
     };
-  }, []);
+  }, [sceneMode, isProjectUnsizable]);
 
   // Rebuild 3D Meshes whenever activeScene or tilt changes
   useEffect(() => {
@@ -689,6 +717,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
 
   // Execute Ray-Traced Shading & Annual Waterfall Simulation with Web Worker, progress, and cancellation (MAIN-05)
   const handleRunShadingAnalysis = async () => {
+    if (sceneMode === 'project_array' && isProjectUnsizable) return;
     const controller = new AbortController();
     abortControllerRef.current = controller;
     setLoading(true);
@@ -779,6 +808,14 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
           </div>
         </div>
 
+        {sceneMode === 'project_array' && isProjectUnsizable && (
+          <div role="alert" className="mt-3 rounded border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-200">
+            {isEn
+              ? 'The active project has zero/invalid sizing. No representative PV tables, shading reliability, or verified-unobstructed claim is being shown. Select Demo Block explicitly to inspect a labeled demonstration only.'
+              : 'سایزینگ پروژه صفر/نامعتبر است. میز نماینده، قابلیت اطمینان سایه‌اندازی یا ادعای «بدون مانعِ تأییدشده» نمایش داده نمی‌شود. برای مشاهده نمونه صرفاً نمایشی، بلوک Demo را صریحاً انتخاب کنید.'}
+          </div>
+        )}
+
         {/* Dynamic Status / Connection Badge */}
         <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-industrial-border/60 text-xs">
           <div className="flex items-center gap-2">
@@ -794,13 +831,17 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   sceneMode === 'project_array' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
                 }`}
               ></span>
-              {sceneMode === 'project_array'
+              {sceneMode === 'project_array' && isProjectUnsizable
                 ? isEn
-                  ? 'DYNAMICALLY COUPLED TO ACTIVE PROJECT'
-                  : 'همگام‌شده با طرح واقعی پروژه'
-                : isEn
-                  ? 'REPRESENTATIVE DEMO BLOCK (FALLBACK)'
-                  : 'بلوک نمونه نمایشی (پیش‌فرض ۵۵.۲ kWp)'}
+                  ? 'PROJECT UNSIZABLE — NO ARRAY / NO VERIFIED ANALYSIS'
+                  : 'پروژه غیرقابل سایزینگ — آرایه و تحلیل معتبر موجود نیست'
+                : sceneMode === 'project_array'
+                  ? isEn
+                    ? 'DYNAMICALLY COUPLED TO ACTIVE PROJECT'
+                    : 'همگام‌شده با طرح واقعی پروژه'
+                  : isEn
+                    ? 'EXPLICITLY SELECTED REPRESENTATIVE DEMO BLOCK — NOT PROJECT DATA'
+                    : 'بلوک نمایشی انتخاب‌شدهٔ صریح — دادهٔ پروژه نیست'}
             </span>
             <span className="text-slate-400 text-[11px] font-mono">
               {activeScene.pvTables.length} {isEn ? 'tables' : 'میز'} |{' '}
@@ -919,7 +960,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={handleRunShadingAnalysis}
-              disabled={loading}
+              disabled={loading || (isProjectUnsizable && sceneMode === 'project_array')}
               className="studio-btn-primary flex items-center gap-2 text-xs py-2 px-4 font-bold"
             >
               {loading ? (
@@ -1010,7 +1051,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
         </div>
 
         {/* Shading Results & Reconciled Waterfall Coupling */}
-        {annualResult && (
+        {annualResult && !(isProjectUnsizable && sceneMode === 'project_array') && (
           <div className="mt-6 space-y-4 animate-fadeIn">
             {/* Top KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">

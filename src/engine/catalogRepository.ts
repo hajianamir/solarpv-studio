@@ -6,8 +6,8 @@
  * - Single source of truth for modules, inverters, and batteries
  * - Stable ID assignment with schemaVersion and origin tracking ('builtin' | 'custom')
  * - Full engineering validation with bilingual error messages (FA / EN)
- * - Reactive store subscription pattern (cross-tab real-time sync without page reload)
- * - Safe localStorage persistence with in-memory fallback
+ * - Reactive store subscription pattern with cross-tab storage-event refresh
+ * - Persistence failures are returned to callers; browser writes do not claim success while memory-only
  */
 
 import {
@@ -46,14 +46,28 @@ export interface EnhancedCatalogBattery extends CatalogBattery {
 const LS_CUSTOM_MODULES = 'solarpv_custom_modules_v3';
 const LS_CUSTOM_INVERTERS = 'solarpv_custom_inverters_v3';
 const LS_CUSTOM_BATTERIES = 'solarpv_custom_batteries_v3';
+const LS_CUSTOM_CATALOG_V4 = 'solarpv_custom_catalog_v4';
 // Legacy v2 keys for backward compatibility migration
 const LS_LEGACY_MODULES = 'solarpv_custom_modules';
 const LS_LEGACY_INVERTERS = 'solarpv_custom_inverters';
 const LS_LEGACY_BATTERIES = 'solarpv_custom_batteries';
 
+// Ignore repository bookkeeping when comparing a caller's snapshot with the
+// latest durable record. Catalog records are flat engineering specifications.
+function sameCatalogRecord(left: object, right: object): boolean {
+  const normalize = (record: object) => Object.fromEntries(
+    Object.entries(record)
+      .filter(([key, value]) => key !== 'origin' && key !== 'schemaVersion' && value !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b)),
+  );
+  return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
+}
+
 export class CatalogRepository {
   private static instance: CatalogRepository | null = null;
   private listeners: Set<() => void> = new Set();
+  // A browser mutation must occur synchronously inside the cross-tab lock.
+  private writeLockHeld = false;
 
   private customModules: EnhancedCatalogModule[] = [];
   private customInverters: EnhancedCatalogInverter[] = [];
@@ -61,6 +75,13 @@ export class CatalogRepository {
 
   private constructor() {
     this.loadFromStorage();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (event) => {
+        if (event.key !== LS_CUSTOM_CATALOG_V4 && event.key !== null) return;
+        this.loadFromStorage();
+        this.notify();
+      });
+    }
   }
 
   public static getInstance(): CatalogRepository {
@@ -74,16 +95,16 @@ export class CatalogRepository {
     return CatalogRepository.getInstance().exportCustomCatalog();
   }
 
-  public static saveCustomModule(mod: CatalogPvModule) {
-    return CatalogRepository.getInstance().saveCustomModule(mod);
+  public static saveCustomModule(mod: CatalogPvModule, expected?: CatalogPvModule) {
+    return CatalogRepository.getInstance().saveCustomModule(mod, expected);
   }
 
-  public static saveCustomInverter(inv: CatalogInverter) {
-    return CatalogRepository.getInstance().saveCustomInverter(inv);
+  public static saveCustomInverter(inv: CatalogInverter, expected?: CatalogInverter) {
+    return CatalogRepository.getInstance().saveCustomInverter(inv, expected);
   }
 
-  public static saveCustomBattery(bat: CatalogBattery) {
-    return CatalogRepository.getInstance().saveCustomBattery(bat);
+  public static saveCustomBattery(bat: CatalogBattery, expected?: CatalogBattery) {
+    return CatalogRepository.getInstance().saveCustomBattery(bat, expected);
   }
 
   /**
@@ -97,6 +118,43 @@ export class CatalogRepository {
     };
   }
 
+  /** Serialize synchronous browser mutations across cooperating same-origin tabs. */
+  public async withCrossTabWriteLock<T>(operation: () => T): Promise<T> {
+    if (typeof window === 'undefined') return operation();
+    const lockManager = window.navigator?.locks;
+    if (!lockManager) {
+      throw new Error('This browser cannot safely serialize cross-tab catalog writes; no change was applied.');
+    }
+    return await lockManager.request('solarpv-custom-catalog-v4-write', () => {
+      if (!this.loadFromStorage()) {
+        throw new Error('The current catalog could not be read safely; no catalog write was attempted.');
+      }
+      this.notify();
+      this.writeLockHeld = true;
+      try {
+        // The callback must not await: only its synchronous portion holds the
+        // repository capability. Public mutations reject outside this scope.
+        return operation();
+      } finally {
+        this.writeLockHeld = false;
+      }
+    });
+  }
+
+  private writeRequiresLock(): boolean {
+    return typeof window !== 'undefined' && !this.writeLockHeld;
+  }
+
+  private nextCustomId(prefix: string, current: Array<{ id: string }>): string {
+    // Identifiers are not security tokens. Resolve collisions against the latest
+    // catalog while holding the lock; works even on non-secure HTTP origins.
+    let id: string;
+    do {
+      id = `${prefix}${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    } while (current.some((item) => item.id === id));
+    return id;
+  }
+
   private notify(): void {
     for (const listener of this.listeners) {
       try {
@@ -107,75 +165,70 @@ export class CatalogRepository {
     }
   }
 
-  private loadFromStorage(): void {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return;
-    }
-
+  private loadFromStorage(): boolean {
+    if (typeof window === 'undefined') return true;
     try {
-      // 1. Modules
-      let rawMods = localStorage.getItem(LS_CUSTOM_MODULES);
-      if (!rawMods) {
-        rawMods = localStorage.getItem(LS_LEGACY_MODULES);
-      }
-      if (rawMods) {
-        const parsed = JSON.parse(rawMods);
-        if (Array.isArray(parsed)) {
-          this.customModules = parsed.map((m) => ({
-            ...m,
-            origin: 'custom' as const,
-            schemaVersion: m.schemaVersion ?? 3,
-            noctC: m.noctC ?? 45,
-          }));
+      const storage = window.localStorage;
+      // Prefer one atomic v4 envelope. A malformed envelope is never treated as
+      // an empty catalog, because a subsequent write would destroy its contents.
+      const catalogEnvelope = storage.getItem(LS_CUSTOM_CATALOG_V4);
+      if (catalogEnvelope !== null) {
+        const parsed = JSON.parse(catalogEnvelope);
+        if (parsed?.version !== 4 || !parsed.custom || typeof parsed.custom !== 'object' ||
+            !Array.isArray(parsed.custom.modules) || !Array.isArray(parsed.custom.inverters) ||
+            !Array.isArray(parsed.custom.batteries)) {
+          throw new Error('Invalid v4 catalog envelope');
         }
+        this.customModules = parsed.custom.modules;
+        this.customInverters = parsed.custom.inverters;
+        this.customBatteries = parsed.custom.batteries;
+        return true;
       }
 
-      // 2. Inverters
-      let rawInvs = localStorage.getItem(LS_CUSTOM_INVERTERS);
-      if (!rawInvs) {
-        rawInvs = localStorage.getItem(LS_LEGACY_INVERTERS);
-      }
-      if (rawInvs) {
-        const parsed = JSON.parse(rawInvs);
-        if (Array.isArray(parsed)) {
-          this.customInverters = parsed.map((i) => ({
-            ...i,
-            origin: 'custom' as const,
-            schemaVersion: i.schemaVersion ?? 3,
-          }));
-        }
-      }
-
-      // 3. Batteries
-      let rawBats = localStorage.getItem(LS_CUSTOM_BATTERIES);
-      if (!rawBats) {
-        rawBats = localStorage.getItem(LS_LEGACY_BATTERIES);
-      }
-      if (rawBats) {
-        const parsed = JSON.parse(rawBats);
-        if (Array.isArray(parsed)) {
-          this.customBatteries = parsed.map((b) => ({
-            ...b,
-            origin: 'custom' as const,
-            schemaVersion: b.schemaVersion ?? 3,
-          }));
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to load custom catalog from localStorage:', e);
+      const readLegacy = (key: string, legacyKey: string): any[] => {
+        const raw = storage.getItem(key) ?? storage.getItem(legacyKey);
+        if (raw === null) return [];
+        const parsed: unknown = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error(`Invalid legacy catalog array: ${key}`);
+        return parsed;
+      };
+      // Read all arrays before replacing memory so a partial read cannot be saved.
+      const modules = readLegacy(LS_CUSTOM_MODULES, LS_LEGACY_MODULES).map((item) => ({
+        ...item, origin: 'custom' as const, schemaVersion: item.schemaVersion ?? 3, noctC: item.noctC ?? 45,
+      }));
+      const inverters = readLegacy(LS_CUSTOM_INVERTERS, LS_LEGACY_INVERTERS).map((item) => ({
+        ...item, origin: 'custom' as const, schemaVersion: item.schemaVersion ?? 3,
+      }));
+      const batteries = readLegacy(LS_CUSTOM_BATTERIES, LS_LEGACY_BATTERIES).map((item) => ({
+        ...item, origin: 'custom' as const, schemaVersion: item.schemaVersion ?? 3,
+      }));
+      this.customModules = modules;
+      this.customInverters = inverters;
+      this.customBatteries = batteries;
+      return true;
+    } catch (error) {
+      console.warn('Failed to load custom catalog from localStorage:', error);
+      return false;
     }
   }
 
-  private saveToStorage(): void {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return;
-    }
+  private saveToStorage(
+    modules: EnhancedCatalogModule[] = this.customModules,
+    inverters: EnhancedCatalogInverter[] = this.customInverters,
+    batteries: EnhancedCatalogBattery[] = this.customBatteries,
+  ): boolean {
+    // Non-browser tests and server-side import tools have no durable browser store.
+    // In a browser, inaccessible/quota-exceeded storage is a hard failure.
+    if (typeof window === 'undefined') return true;
     try {
-      localStorage.setItem(LS_CUSTOM_MODULES, JSON.stringify(this.customModules));
-      localStorage.setItem(LS_CUSTOM_INVERTERS, JSON.stringify(this.customInverters));
-      localStorage.setItem(LS_CUSTOM_BATTERIES, JSON.stringify(this.customBatteries));
-    } catch (e) {
-      console.error('Failed to save custom catalog to localStorage:', e);
+      window.localStorage.setItem(LS_CUSTOM_CATALOG_V4, JSON.stringify({
+        version: 4,
+        custom: { modules, inverters, batteries },
+      }));
+      return true;
+    } catch (error) {
+      console.error('Failed to persist custom catalog; catalog state was not committed:', error);
+      return false;
     }
   }
 
@@ -188,7 +241,7 @@ export class CatalogRepository {
       ...m,
       origin: 'builtin',
       schemaVersion: 3,
-      noctC: 45,
+      noctC: m.noctC ?? 45,
     }));
     return [...builtin, ...this.customModules];
   }
@@ -261,17 +314,24 @@ export class CatalogRepository {
     };
   }
 
-  public saveCustomModule(mod: CatalogPvModule): { success: boolean; errors?: string[] } {
+  public saveCustomModule(mod: CatalogPvModule, expected?: CatalogPvModule): { success: boolean; errors?: string[] } {
+    if (this.writeRequiresLock()) return { success: false, errors: ['Catalog write rejected: use withCrossTabWriteLock; no write was attempted.'] };
     const val = this.validateModule(mod);
     if (!val.isValid) {
       return { success: false, errors: val.errorsFa };
     }
 
+    // Supplying an expected snapshot means update, never insert. In particular,
+    // a record deleted by another tab must not be silently resurrected.
+    if (expected && (!mod.id?.startsWith('custom-mod-') || expected.id !== mod.id)) {
+      return { success: false, errors: ['Catalog module update has an invalid or mismatched expected ID; no write was attempted.'] };
+    }
     const id = mod.id && mod.id.startsWith('custom-mod-')
       ? mod.id
-      : `custom-mod-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`;
+      : this.nextCustomId('custom-mod-', this.customModules);
 
-    const existingIdx = this.customModules.findIndex((m) => m.id === id);
+    const nextModules = [...this.customModules];
+    const existingIdx = nextModules.findIndex((m) => m.id === id);
     const enhanced: EnhancedCatalogModule = {
       ...mod,
       id,
@@ -281,25 +341,40 @@ export class CatalogRepository {
     };
 
     if (existingIdx >= 0) {
-      this.customModules[existingIdx] = enhanced;
+      const current = nextModules[existingIdx];
+      const expectedRecord = expected && { ...expected, noctC: expected.noctC ?? 45 };
+      if (expectedRecord && !sameCatalogRecord(current, expectedRecord)) {
+        return { success: false, errors: ['Catalog module changed; reload before updating it.'] };
+      }
+      if (sameCatalogRecord(current, enhanced)) return { success: true };
+      if (!expectedRecord) {
+        return { success: false, errors: ['Catalog module ID already exists; reload and provide the expected current record before replacing it.'] };
+      }
+      nextModules[existingIdx] = enhanced;
     } else {
-      this.customModules.push(enhanced);
+      if (expected) return { success: false, errors: ['Catalog module was deleted or is missing; reload before updating it.'] };
+      nextModules.push(enhanced);
     }
 
-    this.saveToStorage();
+    if (!this.saveToStorage(nextModules, this.customInverters, this.customBatteries)) {
+      return { success: false, errors: ['Could not persist the custom module; the in-memory catalog was not committed; check durable storage before retrying.'] };
+    }
+    this.customModules = nextModules;
     this.notify();
     return { success: true };
   }
 
-  public deleteCustomModule(id: string): boolean {
-    const initialLen = this.customModules.length;
-    this.customModules = this.customModules.filter((m) => m.id !== id);
-    if (this.customModules.length !== initialLen) {
-      this.saveToStorage();
-      this.notify();
-      return true;
-    }
-    return false;
+  public deleteCustomModule(id: string, expected?: CatalogPvModule): boolean {
+    if (this.writeRequiresLock()) return false;
+    const current = this.customModules.find((item) => item.id === id);
+    if (typeof window !== 'undefined' && (!current || !expected || expected.id !== id ||
+      !sameCatalogRecord(current, { ...expected, noctC: expected.noctC ?? 45 }))) return false;
+    const nextModules = this.customModules.filter((m) => m.id !== id);
+    if (nextModules.length === this.customModules.length) return false;
+    if (!this.saveToStorage(nextModules, this.customInverters, this.customBatteries)) return false;
+    this.customModules = nextModules;
+    this.notify();
+    return true;
   }
 
   // --------------------------------------------------------------------------
@@ -373,17 +448,22 @@ export class CatalogRepository {
     };
   }
 
-  public saveCustomInverter(inv: CatalogInverter): { success: boolean; errors?: string[] } {
+  public saveCustomInverter(inv: CatalogInverter, expected?: CatalogInverter): { success: boolean; errors?: string[] } {
+    if (this.writeRequiresLock()) return { success: false, errors: ['Catalog write rejected: use withCrossTabWriteLock; no write was attempted.'] };
     const val = this.validateInverter(inv);
     if (!val.isValid) {
       return { success: false, errors: val.errorsFa };
     }
 
+    if (expected && (!inv.id?.startsWith('custom-inv-') || expected.id !== inv.id)) {
+      return { success: false, errors: ['Catalog inverter update has an invalid or mismatched expected ID; no write was attempted.'] };
+    }
     const id = inv.id && inv.id.startsWith('custom-inv-')
       ? inv.id
-      : `custom-inv-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`;
+      : this.nextCustomId('custom-inv-', this.customInverters);
 
-    const existingIdx = this.customInverters.findIndex((i) => i.id === id);
+    const nextInverters = [...this.customInverters];
+    const existingIdx = nextInverters.findIndex((i) => i.id === id);
     const enhanced: EnhancedCatalogInverter = {
       ...inv,
       id,
@@ -392,25 +472,38 @@ export class CatalogRepository {
     };
 
     if (existingIdx >= 0) {
-      this.customInverters[existingIdx] = enhanced;
+      const current = nextInverters[existingIdx];
+      if (expected && !sameCatalogRecord(current, expected)) {
+        return { success: false, errors: ['Catalog inverter changed; reload before updating it.'] };
+      }
+      if (sameCatalogRecord(current, enhanced)) return { success: true };
+      if (!expected) {
+        return { success: false, errors: ['Catalog inverter ID already exists; reload and provide the expected current record before replacing it.'] };
+      }
+      nextInverters[existingIdx] = enhanced;
     } else {
-      this.customInverters.push(enhanced);
+      if (expected) return { success: false, errors: ['Catalog inverter was deleted or is missing; reload before updating it.'] };
+      nextInverters.push(enhanced);
     }
 
-    this.saveToStorage();
+    if (!this.saveToStorage(this.customModules, nextInverters, this.customBatteries)) {
+      return { success: false, errors: ['Could not persist the custom inverter; the in-memory catalog was not committed; check durable storage before retrying.'] };
+    }
+    this.customInverters = nextInverters;
     this.notify();
     return { success: true };
   }
 
-  public deleteCustomInverter(id: string): boolean {
-    const initialLen = this.customInverters.length;
-    this.customInverters = this.customInverters.filter((i) => i.id !== id);
-    if (this.customInverters.length !== initialLen) {
-      this.saveToStorage();
-      this.notify();
-      return true;
-    }
-    return false;
+  public deleteCustomInverter(id: string, expected?: CatalogInverter): boolean {
+    if (this.writeRequiresLock()) return false;
+    const current = this.customInverters.find((item) => item.id === id);
+    if (typeof window !== 'undefined' && (!current || !expected || expected.id !== id || !sameCatalogRecord(current, expected))) return false;
+    const nextInverters = this.customInverters.filter((i) => i.id !== id);
+    if (nextInverters.length === this.customInverters.length) return false;
+    if (!this.saveToStorage(this.customModules, nextInverters, this.customBatteries)) return false;
+    this.customInverters = nextInverters;
+    this.notify();
+    return true;
   }
 
   // --------------------------------------------------------------------------
@@ -489,17 +582,22 @@ export class CatalogRepository {
     };
   }
 
-  public saveCustomBattery(bat: CatalogBattery): { success: boolean; errors?: string[] } {
+  public saveCustomBattery(bat: CatalogBattery, expected?: CatalogBattery): { success: boolean; errors?: string[] } {
+    if (this.writeRequiresLock()) return { success: false, errors: ['Catalog write rejected: use withCrossTabWriteLock; no write was attempted.'] };
     const val = this.validateBattery(bat);
     if (!val.isValid) {
       return { success: false, errors: val.errorsFa };
     }
 
+    if (expected && (!bat.id?.startsWith('custom-bat-') || expected.id !== bat.id)) {
+      return { success: false, errors: ['Catalog battery update has an invalid or mismatched expected ID; no write was attempted.'] };
+    }
     const id = bat.id && bat.id.startsWith('custom-bat-')
       ? bat.id
-      : `custom-bat-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`;
+      : this.nextCustomId('custom-bat-', this.customBatteries);
 
-    const existingIdx = this.customBatteries.findIndex((b) => b.id === id);
+    const nextBatteries = [...this.customBatteries];
+    const existingIdx = nextBatteries.findIndex((b) => b.id === id);
     const enhanced: EnhancedCatalogBattery = {
       ...bat,
       id,
@@ -508,25 +606,38 @@ export class CatalogRepository {
     };
 
     if (existingIdx >= 0) {
-      this.customBatteries[existingIdx] = enhanced;
+      const current = nextBatteries[existingIdx];
+      if (expected && !sameCatalogRecord(current, expected)) {
+        return { success: false, errors: ['Catalog battery changed; reload before updating it.'] };
+      }
+      if (sameCatalogRecord(current, enhanced)) return { success: true };
+      if (!expected) {
+        return { success: false, errors: ['Catalog battery ID already exists; reload and provide the expected current record before replacing it.'] };
+      }
+      nextBatteries[existingIdx] = enhanced;
     } else {
-      this.customBatteries.push(enhanced);
+      if (expected) return { success: false, errors: ['Catalog battery was deleted or is missing; reload before updating it.'] };
+      nextBatteries.push(enhanced);
     }
 
-    this.saveToStorage();
+    if (!this.saveToStorage(this.customModules, this.customInverters, nextBatteries)) {
+      return { success: false, errors: ['Could not persist the custom battery; the in-memory catalog was not committed; check durable storage before retrying.'] };
+    }
+    this.customBatteries = nextBatteries;
     this.notify();
     return { success: true };
   }
 
-  public deleteCustomBattery(id: string): boolean {
-    const initialLen = this.customBatteries.length;
-    this.customBatteries = this.customBatteries.filter((b) => b.id !== id);
-    if (this.customBatteries.length !== initialLen) {
-      this.saveToStorage();
-      this.notify();
-      return true;
-    }
-    return false;
+  public deleteCustomBattery(id: string, expected?: CatalogBattery): boolean {
+    if (this.writeRequiresLock()) return false;
+    const current = this.customBatteries.find((item) => item.id === id);
+    if (typeof window !== 'undefined' && (!current || !expected || expected.id !== id || !sameCatalogRecord(current, expected))) return false;
+    const nextBatteries = this.customBatteries.filter((b) => b.id !== id);
+    if (nextBatteries.length === this.customBatteries.length) return false;
+    if (!this.saveToStorage(this.customModules, this.customInverters, nextBatteries)) return false;
+    this.customBatteries = nextBatteries;
+    this.notify();
+    return true;
   }
 
   // --------------------------------------------------------------------------
@@ -549,44 +660,141 @@ export class CatalogRepository {
     modules?: CatalogPvModule[];
     inverters?: CatalogInverter[];
     batteries?: CatalogBattery[];
-  }): { importedModules: number; importedInverters: number; importedBatteries: number } {
-    let importedModules = 0;
-    let importedInverters = 0;
-    let importedBatteries = 0;
+  }): { importedModules: number; importedInverters: number; importedBatteries: number; errors: string[] } {
+    const result = this.restoreCustomEquipmentSnapshots(bundle ?? {});
+    return {
+      importedModules: result.counts.modules,
+      importedInverters: result.counts.inverters,
+      importedBatteries: result.counts.batteries,
+      errors: result.errors,
+    };
+  }
 
-    if (bundle?.modules && Array.isArray(bundle.modules)) {
-      for (const m of bundle.modules) {
-        if (this.saveCustomModule(m).success) {
-          importedModules++;
+  /** Validate and persist all imported equipment as one batch. No memory/storage mutation occurs on validation or persistence failure. */
+  public restoreCustomEquipmentSnapshots(snapshots: {
+    modules?: unknown[];
+    inverters?: unknown[];
+    batteries?: unknown[];
+  }, options: { persist?: boolean } = {}): { success: boolean; counts: { modules: number; inverters: number; batteries: number }; errors: string[] } {
+    const errors: string[] = [];
+    const modules: EnhancedCatalogModule[] = [];
+    const inverters: EnhancedCatalogInverter[] = [];
+    const batteries: EnhancedCatalogBattery[] = [];
+    const ids = new Set<string>();
+    const validateSnapshotId = (rawId: unknown, prefix: string, group: string, index: number): string => {
+      if (typeof rawId !== 'string' || !rawId.startsWith(prefix)) {
+        errors.push(`${group} snapshot ${index + 1} has no valid custom catalog ID.`);
+        return '';
+      }
+      if (ids.has(`${group}:${rawId}`)) errors.push(`Duplicate ${group} snapshot ID: ${rawId}`);
+      ids.add(`${group}:${rawId}`);
+      return rawId;
+    };
+
+    for (const [index, raw] of (snapshots.modules ?? []).entries()) {
+      if (!raw || typeof raw !== 'object') { errors.push(`Module snapshot ${index + 1} is not an object.`); continue; }
+      const item = raw as CatalogPvModule;
+      const validation = this.validateModule(item);
+      const id = validateSnapshotId(item.id, 'custom-mod-', 'module', index);
+      if (!item.id || !validation.isValid) { errors.push(`Invalid module snapshot ${index + 1}: ${(validation.errorsEn ?? []).join('; ')}`); continue; }
+      if (id) modules.push({ ...item, id, origin: 'custom', schemaVersion: 3, noctC: (item as any).noctC ?? 45 });
+    }
+    for (const [index, raw] of (snapshots.inverters ?? []).entries()) {
+      if (!raw || typeof raw !== 'object') { errors.push(`Inverter snapshot ${index + 1} is not an object.`); continue; }
+      const item = raw as CatalogInverter;
+      const validation = this.validateInverter(item);
+      const id = validateSnapshotId(item.id, 'custom-inv-', 'inverter', index);
+      if (!item.id || !validation.isValid) { errors.push(`Invalid inverter snapshot ${index + 1}: ${(validation.errorsEn ?? []).join('; ')}`); continue; }
+      if (id) inverters.push({ ...item, id, origin: 'custom', schemaVersion: 3 });
+    }
+    for (const [index, raw] of (snapshots.batteries ?? []).entries()) {
+      if (!raw || typeof raw !== 'object') { errors.push(`Battery snapshot ${index + 1} is not an object.`); continue; }
+      const item = raw as CatalogBattery;
+      const validation = this.validateBattery(item);
+      const id = validateSnapshotId(item.id, 'custom-bat-', 'battery', index);
+      if (!item.id || !validation.isValid) { errors.push(`Invalid battery snapshot ${index + 1}: ${(validation.errorsEn ?? []).join('; ')}`); continue; }
+      if (id) batteries.push({ ...item, id, origin: 'custom', schemaVersion: 3 });
+    }
+    const rejectConflictingIds = <T extends { id: string }>(current: T[], incoming: T[], group: string) => {
+      const existingById = new Map(current.map((item) => [item.id, item]));
+      for (const item of incoming) {
+        const existing = existingById.get(item.id);
+        if (existing && !sameCatalogRecord(existing, item)) {
+          errors.push(`${group} snapshot ID ${item.id} conflicts with an existing catalog record.`);
         }
       }
+    };
+    rejectConflictingIds(this.customModules, modules, 'Module');
+    rejectConflictingIds(this.customInverters, inverters, 'Inverter');
+    rejectConflictingIds(this.customBatteries, batteries, 'Battery');
+    if (errors.length) return { success: false, counts: { modules: 0, inverters: 0, batteries: 0 }, errors };
+    if (options.persist === false) {
+      return { success: true, counts: { modules: modules.length, inverters: inverters.length, batteries: batteries.length }, errors: [] };
     }
-    if (bundle?.inverters && Array.isArray(bundle.inverters)) {
-      for (const i of bundle.inverters) {
-        if (this.saveCustomInverter(i).success) {
-          importedInverters++;
-        }
-      }
+    if (this.writeRequiresLock()) {
+      return { success: false, counts: { modules: 0, inverters: 0, batteries: 0 }, errors: ['Catalog write rejected: use withCrossTabWriteLock; no write was attempted.'] };
     }
-    if (bundle?.batteries && Array.isArray(bundle.batteries)) {
-      for (const b of bundle.batteries) {
-        if (this.saveCustomBattery(b).success) {
-          importedBatteries++;
+
+    const mergeById = <T extends { id: string }>(current: T[], incoming: T[]) => {
+      const merged = new Map(current.map((item) => [item.id, item]));
+      for (const item of incoming) merged.set(item.id, item);
+      return Array.from(merged.values());
+    };
+    const nextModules = mergeById(this.customModules, modules);
+    const nextInverters = mergeById(this.customInverters, inverters);
+    const nextBatteries = mergeById(this.customBatteries, batteries);
+
+    if (typeof window !== 'undefined') {
+      let storage: Storage | undefined;
+      const key = LS_CUSTOM_CATALOG_V4;
+      let prior: string | null | undefined;
+      try {
+        storage = window.localStorage;
+        prior = storage.getItem(key);
+        storage.setItem(key, JSON.stringify({
+          version: 4,
+          custom: { modules: nextModules, inverters: nextInverters, batteries: nextBatteries },
+        }));
+      } catch (error) {
+        const errors = [`Could not persist imported equipment atomically: ${String(error)}`];
+        // Native localStorage.setItem is atomic, but injected/nonconforming
+        // storage can throw after modifying the key. Check before attempting a
+        // rollback, and never claim success if that check or rollback fails.
+        if (prior === undefined || !storage) {
+          errors.push('Catalog storage outcome could not be verified; inspect durable storage before retrying.');
+        } else {
+          try {
+            if (storage.getItem(key) !== prior) {
+              if (prior === null) storage.removeItem(key);
+              else storage.setItem(key, prior);
+            }
+            if (storage.getItem(key) !== prior) throw new Error('rollback read-back differs from the prior value');
+            errors.push('Catalog storage was verified unchanged.');
+          } catch (rollbackError) {
+            errors.push(`Catalog storage rollback was incomplete or could not be verified; manual recovery may be required: ${String(rollbackError)}`);
+          }
         }
+        return { success: false, counts: { modules: 0, inverters: 0, batteries: 0 }, errors };
       }
     }
 
-    return { importedModules, importedInverters, importedBatteries };
+    this.customModules = nextModules;
+    this.customInverters = nextInverters;
+    this.customBatteries = nextBatteries;
+    this.notify();
+    return { success: true, counts: { modules: modules.length, inverters: inverters.length, batteries: batteries.length }, errors: [] };
   }
 
   /**
    * Clears custom equipment (useful for testing or full reset).
    */
-  public clearCustomEquipment(): void {
+  public clearCustomEquipment(): boolean {
+    if (this.writeRequiresLock()) return false;
+    if (!this.saveToStorage([], [], [])) return false;
     this.customModules = [];
     this.customInverters = [];
     this.customBatteries = [];
-    this.saveToStorage();
     this.notify();
+    return true;
   }
 }

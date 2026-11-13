@@ -29,13 +29,13 @@ import { PHYSICS_MODEL_REGISTRY, type ModelSemverEntry } from '../engine/core/mo
 import { generateTraceId } from '../engine/core/modelRegistry';
 import { runLhsVsCmcBenchmark, type LhsStatisticalBenchmarkResult } from '../engine/core/benchmarks/lhsBenchmark';
 import { runMigrationTestSuite, type MigrationTestSummary } from '../engine/core/benchmarks/migrationTestVectors';
-import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 import { getClimateData } from '../engine/climaticData';
 import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
 import { recommendFoundation, type StructuralRecommendationInput } from '../engine/structureRecommendationEngine';
 import { calculateStructuralAndFoundations, type FoundationType, type SoilType } from '../engine/structuralEngine';
 import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/types/climateTypes';
-import { buildProvenanceRows } from '../engine/provenance/provenanceBuilder';
+import { buildProjectProvenanceSnapshot } from '../engine/provenance/projectProvenance';
+import { gatewaySourceSummary } from '../engine/provenance/gatewayStatus';
 
 interface RFC3ReportsTabProps {
   lang: 'fa' | 'en';
@@ -105,13 +105,16 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once validation runner
   }, []);
 
-  // Section A: project data provenance — captured once at mount / city update
+  // Section A: same value-bound projection used by Official Report and all exports.
   useEffect(() => {
-    let mounted = true;
-    buildProvenanceRows(city, siteOverrides, isEn)
-      .then((rows) => { if (mounted) setProvenanceRows(rows); })
-      .catch(() => { if (mounted) setProvenanceRows([]); });
-    return () => { mounted = false; };
+    setProvenanceRows(buildProjectProvenanceSnapshot(city, siteOverrides).map((row) => ({
+      parameter: isEn ? row.parameter : row.parameterFa,
+      value: `${row.value} ${row.unit}`,
+      provider: row.provider,
+      traceId: row.retrievedAt ? city.id : '—',
+      timestamp: row.retrievedAt || '—',
+      confidence: row.confidence,
+    })));
   }, [city, siteOverrides, isEn]);
 
   const handleRunValidation = async () => {
@@ -155,20 +158,36 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
   const handleFetchClimateApi = async (lat: number, lng: number) => {
     setIsFetchingClimate(true);
     try {
-      const gateway = ExternalDataGateway.getInstance();
-      const siteData = await gateway.getComprehensiveSiteData(lat, lng);
+      if (!isRealInternetEnabled() || typeof window === 'undefined') {
+        throw new Error('Live gateway is disabled; showing local analytical estimate only.');
+      }
+      const response = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
+        signal: AbortSignal.timeout(35000),
+      });
+      if (!response.ok) throw new Error(`Same-origin climate gateway returned HTTP ${response.status}`);
+      const siteData = await response.json();
+      if (!siteData?.ok || !siteData?.climateCity || !siteData?.climateResource) {
+        throw new Error('Same-origin climate gateway returned an invalid or incomplete response.');
+      }
       setClimateApiData({
         city: siteData.climateCity,
-        raw: siteData.climateResource,      // real ClimateResourceData with metadata
+        raw: siteData.climateResource, // real ClimateResourceData with metadata
         traceId: siteData.traceId,
       });
     } catch (err) {
       console.warn('Climate API fetch failed:', err);
       const fallback = getClimateData(lat, lng);
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setClimateApiData({
         city: { ...fallback, confidence: 'analytical_estimate' },
-        raw: { error: err instanceof Error ? err.message : String(err), fallback: true, latitude: lat, longitude: lng },
-        traceId: `${fallback.id}-ERROR_FALLBACK`,
+        raw: {
+          error: errorMessage,
+          fallback: true,
+          latitude: lat,
+          longitude: lng,
+          metadata: { sourceProvider: 'REGIONAL_ANALYTICAL_MODEL', isEstimatedFromGlobalModel: true, dataStatus: 'analytical' },
+        },
+        traceId: `${fallback.id}-ANALYTICAL_FALLBACK`,
       });
     } finally {
       setIsFetchingClimate(false);
@@ -280,6 +299,22 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
     'Phase 3b': <Hammer className="w-4 h-4 text-indigo-400" />,
   };
 
+
+  const climateSourceKinds: string[] = climateApiData?.city?.fieldProvenance
+    ? Object.values(climateApiData.city.fieldProvenance).map((item: any) => item?.sourceKind)
+    : [];
+  const hasUniformProviderProvenance = climateSourceKinds.length > 0 && climateSourceKinds.every(
+    (kind) => kind === 'provider_value' || kind === 'provider_derived'
+  );
+  const climateProvenanceLabel = !climateApiData
+    ? (isRealInternetEnabled() ? 'PROVENANCE: NOT FETCHED' : 'PROVENANCE: ANALYTICAL / OFFLINE')
+    : climateApiData.raw?.fallback
+      ? 'PROVENANCE: ANALYTICAL FALLBACK / GATEWAY ERROR'
+      : climateApiData.raw?.metadata?.dataStatus === 'unsizable'
+        ? 'PROVENANCE: PROVIDER ZERO / UNSIZABLE'
+        : hasUniformProviderProvenance && climateApiData.city?.confidence === 'measured'
+          ? `PROVENANCE: PROVIDER DATA — ${gatewaySourceSummary(climateApiData.city)}`
+          : `PROVENANCE: MIXED / PARTIAL — ${gatewaySourceSummary(climateApiData.city)}`;
 
   return (
     <div className="space-y-6">
@@ -975,8 +1010,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             </div>
             <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
               <span className="text-slate-400 block mb-1">{isEn ? 'Circuit Breaker State' : 'وضعیت کلید مدارشکن'}</span>
-              <span className="text-industrial-success font-bold font-mono block">CLOSED (Healthy)</span>
-              <span className="text-[10px] text-slate-500">Cooldown: 30s | Max Trials: 1</span>
+              <span className="text-slate-400 font-bold font-mono block">NOT QUERIED</span>
+              <span className="text-[10px] text-slate-500">{isEn ? 'Runtime status is not measured here.' : 'وضعیت اجرایی در این صفحه اندازه‌گیری نشده است.'}</span>
             </div>
           </div>
         </div>
@@ -1020,7 +1055,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
 
           <div className="p-2.5 rounded bg-slate-900/60 border border-industrial-border text-[11px] text-slate-300 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${isRealInternetEnabled() ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+              <span className={`w-2 h-2 rounded-full ${climateProvenanceLabel.startsWith('PROVENANCE: PROVIDER DATA') ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
               <span>
                 {isRealInternetEnabled()
                   ? (isEn
@@ -1032,7 +1067,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               </span>
             </div>
             <span className="font-mono text-[10px] text-slate-400 shrink-0">
-              {isRealInternetEnabled() ? 'PROVENANCE: MEASURED / LIVE' : 'PROVENANCE: ANALYTICAL'}
+              {climateProvenanceLabel}
             </span>
           </div>
 
@@ -1052,7 +1087,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                   <span className="font-mono text-industrial-warning text-lg">{climateApiData.city.peakSunHours}</span>
                 </div>
                 <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
-                  <span className="text-slate-400 block mb-1">{isEn ? 'Confidence' : 'اعتماد'} </span>
+                  <span className="text-slate-400 block mb-1">{isEn ? 'Solar confidence' : 'اطمینان دادهٔ تابش'} </span>
                   <span className="font-bold text-industrial-success">{climateApiData.city.confidence ?? 'analytical_estimate'}</span>
                 </div>
               </div>
@@ -1075,7 +1110,9 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 </div>
               </div>
               <p className="text-[10px] text-slate-500">
-                {isEn ? 'Every coordinate resolves through the live API gateway (NASA POWER → PVGIS → NSRDB routing). No hard-coded hubs, no interpolation — raw JSON above includes trace_id and source provider.' : 'هر مختصات از طریق درگاه API زنده حل می‌گردد (روتینگ NASA POWER → PVGIS → NSRDB). هیچ هاب هاردکد و تخمین روی هاب نیست — JSON خام بالا شامل trace_id و منبع است.'}
+                {isEn
+                  ? 'The same-origin gateway is queried when available; failures are shown as analytical fallback. Individual fields may have provider or model sources: inspect their provenance above.'
+                  : 'در صورت دسترسی، درگاه همین سامانه پرس‌وجو می‌شود؛ خطاها با برچسب مدل تحلیلی نمایش داده می‌شوند. منشأ هر پارامتر ممکن است ارائه‌دهنده یا مدل باشد؛ جزئیات بالا را بررسی کنید.'}
               </p>
             </div>
           ) : (

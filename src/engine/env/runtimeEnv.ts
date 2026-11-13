@@ -12,17 +12,19 @@ export function isRealInternetEnabled(): boolean {
   // Explicit opt-out in Node / server context
   try {
     // @ts-ignore - `process` may not exist in the browser
-    if (typeof process !== 'undefined' && process?.env?.REAL_INTERNET === 'false') {
-      return false;
+    if (typeof process !== 'undefined') {
+      if (process?.env?.REAL_INTERNET === 'false' || process?.env?.VITE_REAL_INTERNET === 'false') {
+        return false;
+      }
     }
   } catch {
     /* ignore */
   }
   // Explicit opt-out in Browser / Vite context
   try {
-    // @ts-ignore - `import.meta.env` is Vite-specific and may be undefined
-    const meta = import.meta as { env?: Record<string, string | undefined> };
-    if (meta?.env?.VITE_REAL_INTERNET === 'false') {
+    // Direct property access so Vite statically replaces it during build
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_REAL_INTERNET === 'false') {
       return false;
     }
   } catch {

@@ -5,6 +5,9 @@ import { calculateWinterSolsticeNoonAltitudeDeg } from './core/solarGeometryCont
 import type { InstallationEnvironment } from './types/climateTypes';
 
 export interface ModuleSpecs {
+  /** Stable catalog identity; absent only for legacy/manual snapshots. */
+  id?: string;
+  origin?: 'builtin' | 'custom' | 'legacy' | 'user';
   modelName: string;
   manufacturer: string;
   pmpWatts: number;
@@ -17,12 +20,18 @@ export interface ModuleSpecs {
   tempCoeffIscPct?: number; // e.g. +0.045 %/°C (IEC 60891 semiconductor current coefficient)
   tempCoeffVmpPct?: number; // e.g. -0.36 %/°C (or derived gamma_Pmp - alpha_Isc)
   noctC: number;            // e.g. 45 °C
-  lengthM: number;          // e.g. 2.278 m
-  widthM: number;           // e.g. 1.134 m
+  /** Absent legacy dimensions are retained as unknown, not catalog facts. */
+  lengthM?: number;         // e.g. 2.278 m
+  widthM?: number;          // e.g. 1.134 m
+  /** Catalog module mass; absent legacy/custom data leaves structural assessment unassessed. */
+  weightKg?: number;
   bifacialityFactor?: number; // e.g. 0.70
 }
 
 export interface InverterSpecs {
+  /** Stable catalog identity; absent only for legacy/manual snapshots. */
+  id?: string;
+  origin?: 'builtin' | 'custom' | 'legacy' | 'user';
   modelName: string;
   manufacturer: string;
   pnomAcKw: number;
@@ -316,9 +325,15 @@ export function designPvArray(
     }
   }
 
-  // 7. Area & Inter-row shading distance
-  const modLength = (Number.isFinite(module.lengthM) && module.lengthM > 0) ? module.lengthM : 2.278;
-  const modWidth = (Number.isFinite(module.widthM) && module.widthM > 0) ? module.widthM : 1.134;
+  // 7. Area & Inter-row shading distance. Compatibility geometry keeps the
+  // diagnostic calculation finite, but is not an assessed equipment fact.
+  const hasModuleLength = typeof module.lengthM === 'number' && Number.isFinite(module.lengthM) && module.lengthM > 0;
+  const hasModuleWidth = typeof module.widthM === 'number' && Number.isFinite(module.widthM) && module.widthM > 0;
+  if (!hasModuleLength || !hasModuleWidth) {
+    warnings.push('ابعاد پنل موجود نیست؛ هندسه پیش‌فرض فقط برای محاسبات تشخیصی مساحت/سایه است و ارزیابی سازه معتبر نیست. Module dimensions missing: compatibility geometry is diagnostic only; structural assessment is UNASSESSED.');
+  }
+  const modLength = hasModuleLength ? module.lengthM! : 2.278;
+  const modWidth = hasModuleWidth ? module.widthM! : 1.134;
   const moduleAreaM2 = modLength * modWidth;
   const netArrayAreaM2 = totalModulesCount * moduleAreaM2;
 

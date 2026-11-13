@@ -38,6 +38,7 @@ import {
 } from '../engine/structuralEngine';
 import { type ClimateCity, type SiteGeotechnicalOverrides, type SiteDrainageCondition } from '../engine/climaticData';
 import { type InstallationEnvironment } from '../engine/types/climateTypes';
+import type { ModuleSpecs } from '../engine/pvEngineAdvanced';
 import {
   recommendFoundation,
   type FoundationRecommendationResult,
@@ -59,6 +60,7 @@ import {
 
 interface StructuralFoundationTabProps {
   totalModulesCount?: number;
+  selectedModule?: ModuleSpecs;
   arrayTiltDeg?: number;
   city?: ClimateCity;
   siteOverrides?: SiteGeotechnicalOverrides;
@@ -66,11 +68,16 @@ interface StructuralFoundationTabProps {
   onUpdateStructuralSnapshot?: (snapshot: StructuralSnapshot) => void;
   modulesPerTable?: number;
   onUpdateModulesPerTable?: (val: number) => void;
+  projectImportRevision?: number;
+  pendingImportedEmbedmentDepthM?: number | null;
+  onConfirmImportedEmbedmentDepth?: () => void;
+  onDiscardImportedEmbedmentDepth?: () => void;
   lang?: 'fa' | 'en';
 }
 
 export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = ({
   totalModulesCount = 140,
+  selectedModule,
   arrayTiltDeg = 28,
   city = {
     id: 'tehran',
@@ -110,6 +117,10 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
   onUpdateStructuralSnapshot,
   modulesPerTable: propModulesPerTable,
   onUpdateModulesPerTable,
+  projectImportRevision = 0,
+  pendingImportedEmbedmentDepthM = null,
+  onConfirmImportedEmbedmentDepth,
+  onDiscardImportedEmbedmentDepth,
   lang = 'fa',
 }) => {
   const isEn = lang === 'en';
@@ -199,34 +210,48 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     lat: city.latitude,
     lng: city.longitude,
   });
+  const lastImportRevisionRef = useRef(projectImportRevision);
 
-  // Sync when city or map location changes
+  // Sync when city changes or a project is imported. Import revision handles a
+  // same-coordinate import whose override object is empty, so stale local form state
+  // cannot survive merely because the physical site key is unchanged.
   useEffect(() => {
-    const isNewLocation =
+    const didImportProject = lastImportRevisionRef.current !== projectImportRevision;
+    lastImportRevisionRef.current = projectImportRevision;
+    const isNewLocation = didImportProject ||
       lastLocationRef.current.id !== city.id ||
       Math.abs(lastLocationRef.current.lat - city.latitude) > 0.0001 ||
       Math.abs(lastLocationRef.current.lng - city.longitude) > 0.0001;
 
     if (isNewLocation) {
       lastLocationRef.current = { id: city.id, lat: city.latitude, lng: city.longitude };
-      setBasicWindSpeedKmh(city.basicWindSpeedKmh ?? 120);
-      setGroundSnowLoadKgM2(city.groundSnowLoadKgM2 ?? 50);
-      setAnnualRainfallMm(city.annualRainfallMm ?? 200);
-      setSoilType((city.soilType ?? 'dense_sand_gravel') as SoilType);
-      setSoilBearingCapacityKpa(city.soilBearingCapacityKpa ?? 220);
-      setSoilFrictionAngleDeg(city.soilInternalFrictionAngleDeg ?? 32);
-      setSoilCohesionKpa(city.soilCohesionKpa ?? 15);
-      setSoilDensityKnM3(city.soilDensityKnM3 ?? 18.0);
-      setFrostDepthCm(city.frostDepthCm ?? 30);
-      setSeismicZoneA(city.seismicZoneCoefficientA ?? 0.30);
-      setDistanceToSeaKm(city.distanceToCoastKm);
-      setDrainageCondition(city.drainageCondition ?? 'well_drained');
-      setGroundwaterDepthM(city.groundwaterDepthM ?? 5.0);
+      // A new physical site resets only values that were not explicitly imported or
+      // retained by the parent. Never clear a freshly committed site's overrides here.
+      setBasicWindSpeedKmh(siteOverrides?.basicWindSpeedKmh ?? city.basicWindSpeedKmh ?? 120);
+      setGroundSnowLoadKgM2(siteOverrides?.groundSnowLoadKgM2 ?? city.groundSnowLoadKgM2 ?? 50);
+      setAnnualRainfallMm(siteOverrides?.annualRainfallMm ?? city.annualRainfallMm ?? 200);
+      setSoilType((siteOverrides?.soilType ?? city.soilType ?? 'dense_sand_gravel') as SoilType);
+      setSoilBearingCapacityKpa(siteOverrides?.soilBearingCapacityKpa ?? city.soilBearingCapacityKpa ?? 220);
+      setSoilFrictionAngleDeg(siteOverrides?.soilInternalFrictionAngleDeg ?? city.soilInternalFrictionAngleDeg ?? 32);
+      setSoilCohesionKpa(siteOverrides?.soilCohesionKpa ?? city.soilCohesionKpa ?? 15);
+      setSoilDensityKnM3(siteOverrides?.soilDensityKnM3 ?? city.soilDensityKnM3 ?? 18.0);
+      setFrostDepthCm(siteOverrides?.frostDepthCm ?? city.frostDepthCm ?? 30);
+      setSeismicZoneA(siteOverrides?.seismicZoneCoefficientA ?? city.seismicZoneCoefficientA ?? 0.30);
+      setDistanceToSeaKm(siteOverrides?.distanceToCoastKm ?? city.distanceToCoastKm);
+      setDrainageCondition(siteOverrides?.drainageCondition ?? city.drainageCondition ?? 'well_drained');
+      setGroundwaterDepthM(siteOverrides?.groundwaterDepthM ?? city.groundwaterDepthM ?? 5.0);
+      setFoundationType(resolveFoundationType(
+        siteOverrides?.foundationType,
+        siteOverrides?.installationEnvironment,
+        siteOverrides?.soilType ?? city.soilType,
+      ));
+      setInstallationEnvironment(siteOverrides?.installationEnvironment ?? 'ground_mount');
+      setGroundClearanceM(siteOverrides?.groundClearanceM ?? DEFAULT_GROUND_CLEARANCE_M);
+      setTiltDeg(siteOverrides?.arrayTiltDeg ?? arrayTiltDeg);
+      setCustomEmbedmentDepthM(siteOverrides?.customEmbedmentDepthM ?? null);
+      setCustomPostsPerTable(siteOverrides?.customPostsPerTable ?? null);
+      setIsManualDepth(siteOverrides?.customEmbedmentDepthM != null);
       setManualCorrosionCategory('auto');
-      setCustomEmbedmentDepthM(null);
-      setCustomPostsPerTable(null);
-      setIsManualDepth(false);
-      onUpdateSiteOverrides?.({});
     } else if (siteOverrides && Object.keys(siteOverrides).length > 0) {
       if (siteOverrides.basicWindSpeedKmh !== undefined) setBasicWindSpeedKmh(siteOverrides.basicWindSpeedKmh);
       if (siteOverrides.groundSnowLoadKgM2 !== undefined) setGroundSnowLoadKgM2(siteOverrides.groundSnowLoadKgM2);
@@ -251,7 +276,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       if (siteOverrides.groundClearanceM !== undefined) setGroundClearanceM(siteOverrides.groundClearanceM);
       if (siteOverrides.arrayTiltDeg !== undefined) setTiltDeg(siteOverrides.arrayTiltDeg);
     }
-  }, [city, siteOverrides, onUpdateSiteOverrides]);
+  }, [city, siteOverrides, onUpdateSiteOverrides, arrayTiltDeg, projectImportRevision]);
 
   // Salt corrosion / ISO 9223 & Drainage categorization
   useEffect(() => {
@@ -314,25 +339,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
   const handleUpdateParam = (updated: Partial<SiteGeotechnicalOverrides>) => {
     const newOverrides: SiteGeotechnicalOverrides = {
-      basicWindSpeedKmh,
-      groundSnowLoadKgM2,
-      annualRainfallMm,
-      soilType,
-      soilBearingCapacityKpa,
-      soilInternalFrictionAngleDeg: soilFrictionAngleDeg,
-      soilCohesionKpa,
-      soilDensityKnM3,
-      frostDepthCm,
-      seismicZoneCoefficientA: seismicZoneA,
-      distanceToCoastKm: distanceToSeaKm,
-      drainageCondition,
-      groundwaterDepthM,
-      foundationType,
-      installationEnvironment,
-      customEmbedmentDepthM: isManualDepth && customEmbedmentDepthM !== null ? customEmbedmentDepthM : undefined,
-      customPostsPerTable: customPostsPerTable !== null ? customPostsPerTable : undefined,
-      groundClearanceM,
-      arrayTiltDeg: tiltDeg,
+      ...(siteOverrides || {}),
       ...updated,
     };
     if (onUpdateSiteOverrides) {
@@ -401,12 +408,20 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     }
   };
 
+  const hasValidSelectedModuleSpecs = Boolean(
+    selectedModule && typeof selectedModule.lengthM === 'number' && Number.isFinite(selectedModule.lengthM) && selectedModule.lengthM > 0 &&
+    typeof selectedModule.widthM === 'number' && Number.isFinite(selectedModule.widthM) && selectedModule.widthM > 0 &&
+    Number.isFinite(selectedModule.weightKg) && (selectedModule.weightKg ?? 0) > 0
+  );
+
   const structResult: StructuralAnalysisResult = useMemo(() => {
     return calculateStructuralAndFoundations({
       totalModulesCount: modulesCount,
-      moduleLengthM: 2.278,
-      moduleWidthM: 1.134,
-      moduleWeightKg: 28.5,
+      moduleLengthM: selectedModule?.lengthM ?? 2.278,
+      moduleWidthM: selectedModule?.widthM ?? 1.134,
+      // Zero is deliberately used only to keep the diagnostic calculation finite;
+      // a missing mass disables PASS/snapshot publication below.
+      moduleWeightKg: selectedModule?.weightKg ?? 0,
       tablesCount: Math.ceil(modulesCount / modulesPerTable),
       modulesPerTable,
       arrayTiltDeg: tiltDeg,
@@ -428,6 +443,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     });
   }, [
     modulesCount,
+    selectedModule?.lengthM,
+    selectedModule?.widthM,
+    selectedModule?.weightKg,
     tiltDeg,
     modulesPerTable,
     basicWindSpeedKmh,
@@ -448,11 +466,22 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
     customPostsPerTable,
   ]);
 
+  const structuralAssessmentPass = hasValidSelectedModuleSpecs && structResult.isStructurallySafe;
+  const bearingAssessmentPass = hasValidSelectedModuleSpecs && structResult.isBearingCapacitySafe;
+
   // Synchronize live structural calculation snapshot with top-level state
   useEffect(() => {
+    if (!hasValidSelectedModuleSpecs) return;
     if (onUpdateStructuralSnapshot) {
       const inputHash = computeStructuralInputHash({
         cityId: city.id,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        moduleId: selectedModule?.id,
+        moduleOrigin: selectedModule?.origin,
+        moduleLengthM: selectedModule?.lengthM,
+        moduleWidthM: selectedModule?.widthM,
+        moduleWeightKg: selectedModule?.weightKg,
         totalModulesCount: modulesCount,
         arrayTiltDeg: tiltDeg,
         foundationType,
@@ -472,14 +501,21 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         elevationM: city.elevationM || 0,
         modulesPerTable,
       });
-      const snapshot = createStructuralSnapshot(structResult, foundationType, inputHash);
+      const snapshot = createStructuralSnapshot(structResult, foundationType, inputHash, false, selectedModule);
       onUpdateStructuralSnapshot(snapshot);
     }
   }, [
     structResult,
     foundationType,
     city.id,
+    city.latitude,
+    city.longitude,
     modulesCount,
+    selectedModule,
+    selectedModule?.lengthM,
+    selectedModule?.widthM,
+    selectedModule?.weightKg,
+    hasValidSelectedModuleSpecs,
     tiltDeg,
     basicWindSpeedKmh,
     groundSnowLoadKgM2,
@@ -541,6 +577,31 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
   return (
     <div className="space-y-6">
+      {!hasValidSelectedModuleSpecs && (
+        <div role="alert" className="rounded-lg border border-rose-500/50 bg-rose-500/10 p-4 text-sm text-rose-100">
+          {isEn
+            ? 'UNASSESSED: selected module dimensions and positive mass are required. Diagnostic values below must not be treated as a structural pass; no current structural snapshot is published.'
+            : 'ارزیابی‌نشده: ابعاد و جرم مثبت پنل انتخاب‌شده لازم است. اعداد تشخیصی زیر تأیید سازه‌ای نیستند و snapshot جاری منتشر نمی‌شود.'}
+        </div>
+      )}
+      {pendingImportedEmbedmentDepthM !== null && (
+        <div role="alert" className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <strong>{isEn ? 'Imported manual embedment is pending confirmation' : 'عمق دستی واردشده در انتظار تأیید مجدد است'}</strong>
+          <p className="mt-1 text-xs">
+            {isEn
+              ? `Previous value: ${pendingImportedEmbedmentDepthM} m. It is not active for this site until you confirm it.`
+              : `مقدار قبلی: ${pendingImportedEmbedmentDepthM} متر. تا تأیید شما برای این سایت فعال نیست.`}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button type="button" className="studio-btn-primary text-xs" onClick={onConfirmImportedEmbedmentDepth}>
+              {isEn ? 'Confirm for this site' : 'تأیید برای این سایت'}
+            </button>
+            <button type="button" className="studio-btn-secondary text-xs" onClick={onDiscardImportedEmbedmentDepth}>
+              {isEn ? 'Discard pending value' : 'حذف مقدار در انتظار'}
+            </button>
+          </div>
+        </div>
+      )}
       {/* Title */}
       <div className="studio-card">
         <h1 className="text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
@@ -2083,14 +2144,14 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <div className="text-xs text-slate-400">{isEn ? 'Post Bearing Pressure' : 'تنش باربری اعمالی به خاک'}</div>
           <div
             className={`text-xl font-bold font-mono mt-1 ${
-              structResult.isBearingCapacitySafe ? 'text-industrial-success' : 'text-rose-400'
+              bearingAssessmentPass ? 'text-industrial-success' : 'text-rose-400'
             }`}
           >
             {structResult.appliedPostBearingPressureKpa} <span className="text-xs font-normal">kPa</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
             {isEn ? 'Allowable:' : 'مجاز:'} {structResult.allowableSoilBearingKpa} kPa (
-            {structResult.isBearingCapacitySafe ? (isEn ? '✓ OK' : '✓ ایمن') : (isEn ? '✗ Exceeded' : '✗ اضافه تنش')})
+            {bearingAssessmentPass ? (isEn ? '✓ OK' : '✓ ایمن') : (isEn ? '✗ Exceeded' : '✗ اضافه تنش')})
           </div>
         </div>
 
@@ -2104,7 +2165,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           </div>
           <div
             className={`text-xl font-bold font-mono mt-1 ${
-              structResult.isStructurallySafe ? 'text-industrial-success' : 'text-rose-400'
+              structuralAssessmentPass ? 'text-industrial-success' : 'text-rose-400'
             }`}
           >
             {foundationType === 'rooftop_ballasted_block' || foundationType === 'surface_ballasted_block' ? (
@@ -2150,7 +2211,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             )}
           </div>
           <div id="struct-display-safety-compliance" className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-            {structResult.isStructurallySafe ? (
+            {structuralAssessmentPass ? (
               <span className="text-industrial-success flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Screening Pass (Evaluated Modes Safe)' : 'غربالگری اولیه تایید (مودهای ارزیابی‌شده ایمن)'}
               </span>
@@ -2375,7 +2436,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
               <span className={`font-mono font-bold ${
                 structResult.upliftCapacityProvenance === 'invalid_input'
                   ? 'text-rose-400'
-                  : structResult.upliftCapacityProvenance === 'nominal_assumed' || !structResult.isStructurallySafe
+                  : structResult.upliftCapacityProvenance === 'nominal_assumed' || !structuralAssessmentPass
                   ? 'text-amber-400'
                   : 'text-industrial-success'
               }`}>
@@ -2462,11 +2523,11 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
       <div className="studio-card bg-industrial-surface/90 border border-industrial-border">
         <div className="flex items-start gap-3">
           <div className={`p-2 rounded border mt-0.5 ${
-            structResult.isStructurallySafe
+            structuralAssessmentPass
               ? 'bg-industrial-accent/10 border-industrial-accent/30 text-industrial-accent'
               : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
           }`}>
-            {structResult.isStructurallySafe ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+            {structuralAssessmentPass ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
           </div>
           <div>
             <h4 className="font-bold text-sm text-white mb-1">

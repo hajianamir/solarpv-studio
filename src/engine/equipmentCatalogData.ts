@@ -1222,78 +1222,82 @@ export const CATALOG_BATTERIES: CatalogBattery[] = [
   },
 ];
 
-const LS_CUSTOM_MODULES = 'solarpv_custom_modules';
-const LS_CUSTOM_INVERTERS = 'solarpv_custom_inverters';
-const LS_CUSTOM_BATTERIES = 'solarpv_custom_batteries';
+// Deprecated compatibility helpers. Older releases wrote three independent v2
+// keys, which newer v4 catalog readers deliberately ignore once the atomic
+// envelope exists. Reads now follow v4 -> v3 -> v2, and writes go through the
+// same cross-tab lock and atomic repository used by the UI. Save helpers are
+// asynchronous and callers MUST await/check their { success, errors } result.
+type CustomCatalogKind = 'modules' | 'inverters' | 'batteries';
 
-export function getFullModulesCatalog(): CatalogPvModule[] {
+function readCustomCatalog<T>(kind: CustomCatalogKind): T[] {
+  if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(LS_CUSTOM_MODULES);
-    if (raw) {
-      const custom: CatalogPvModule[] = JSON.parse(raw);
-      return [...CATALOG_MODULES, ...custom];
+    const storage = window.localStorage;
+    const envelope = storage.getItem('solarpv_custom_catalog_v4');
+    if (envelope !== null) {
+      const parsed = JSON.parse(envelope);
+      if (parsed?.version !== 4 || !Array.isArray(parsed?.custom?.[kind])) {
+        throw new Error('Invalid custom catalog v4 envelope');
+      }
+      return parsed.custom[kind] as T[];
     }
-  } catch (e) {
-    // fallback
+    const raw = storage.getItem(`solarpv_custom_${kind}_v3`) ?? storage.getItem(`solarpv_custom_${kind}`);
+    if (raw === null) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error(`Invalid custom ${kind} catalog`);
+    return parsed as T[];
+  } catch (error) {
+    console.warn('Unable to read custom equipment catalog:', error);
+    return [];
   }
-  return CATALOG_MODULES;
 }
 
-export function saveCustomModule(mod: CatalogPvModule): void {
-  try {
-    const raw = localStorage.getItem(LS_CUSTOM_MODULES);
-    const existing: CatalogPvModule[] = raw ? JSON.parse(raw) : [];
-    existing.push(mod);
-    localStorage.setItem(LS_CUSTOM_MODULES, JSON.stringify(existing));
-  } catch (e) {
-    console.error('Failed to save module to localStorage', e);
-  }
+export function getFullModulesCatalog(): CatalogPvModule[] {
+  return [...CATALOG_MODULES, ...readCustomCatalog<CatalogPvModule>('modules')];
 }
 
 export function getFullInvertersCatalog(): CatalogInverter[] {
-  try {
-    const raw = localStorage.getItem(LS_CUSTOM_INVERTERS);
-    if (raw) {
-      const custom: CatalogInverter[] = JSON.parse(raw);
-      return [...CATALOG_INVERTERS, ...custom];
-    }
-  } catch (e) {
-    // fallback
-  }
-  return CATALOG_INVERTERS;
-}
-
-export function saveCustomInverter(inv: CatalogInverter): void {
-  try {
-    const raw = localStorage.getItem(LS_CUSTOM_INVERTERS);
-    const existing: CatalogInverter[] = raw ? JSON.parse(raw) : [];
-    existing.push(inv);
-    localStorage.setItem(LS_CUSTOM_INVERTERS, JSON.stringify(existing));
-  } catch (e) {
-    console.error('Failed to save inverter to localStorage', e);
-  }
+  return [...CATALOG_INVERTERS, ...readCustomCatalog<CatalogInverter>('inverters')];
 }
 
 export function getFullBatteriesCatalog(): CatalogBattery[] {
-  try {
-    const raw = localStorage.getItem(LS_CUSTOM_BATTERIES);
-    if (raw) {
-      const custom: CatalogBattery[] = JSON.parse(raw);
-      return [...CATALOG_BATTERIES, ...custom];
-    }
-  } catch (e) {
-    // fallback
-  }
-  return CATALOG_BATTERIES;
+  return [...CATALOG_BATTERIES, ...readCustomCatalog<CatalogBattery>('batteries')];
 }
 
-export function saveCustomBattery(bat: CatalogBattery): void {
-  try {
-    const raw = localStorage.getItem(LS_CUSTOM_BATTERIES);
-    const existing: CatalogBattery[] = raw ? JSON.parse(raw) : [];
-    existing.push(bat);
-    localStorage.setItem(LS_CUSTOM_BATTERIES, JSON.stringify(existing));
-  } catch (e) {
-    console.error('Failed to save battery to localStorage', e);
+type CatalogSaveResult = { success: boolean; errors?: string[] };
+async function saveThroughRepository(
+  kind: CustomCatalogKind,
+  item: CatalogPvModule | CatalogInverter | CatalogBattery,
+): Promise<CatalogSaveResult> {
+  if (typeof window === 'undefined') {
+    return { success: false, errors: ['Custom catalog storage is unavailable outside a browser.'] };
   }
+  try {
+    // Dynamic import avoids an initialization cycle: the repository uses the
+    // builtin catalog definitions in this module.
+    const { CatalogRepository } = await import('./catalogRepository');
+    const repo = CatalogRepository.getInstance();
+    return await repo.withCrossTabWriteLock(() => {
+      if (kind === 'modules') return repo.saveCustomModule(item as CatalogPvModule);
+      if (kind === 'inverters') return repo.saveCustomInverter(item as CatalogInverter);
+      return repo.saveCustomBattery(item as CatalogBattery);
+    });
+  } catch (error) {
+    return { success: false, errors: [error instanceof Error ? error.message : String(error)] };
+  }
+}
+
+/** @deprecated Await and check the result; prefer CatalogRepository with its cross-tab lock. */
+export function saveCustomModule(mod: CatalogPvModule): Promise<CatalogSaveResult> {
+  return saveThroughRepository('modules', mod);
+}
+
+/** @deprecated Await and check the result; prefer CatalogRepository with its cross-tab lock. */
+export function saveCustomInverter(inv: CatalogInverter): Promise<CatalogSaveResult> {
+  return saveThroughRepository('inverters', inv);
+}
+
+/** @deprecated Await and check the result; prefer CatalogRepository with its cross-tab lock. */
+export function saveCustomBattery(bat: CatalogBattery): Promise<CatalogSaveResult> {
+  return saveThroughRepository('batteries', bat);
 }

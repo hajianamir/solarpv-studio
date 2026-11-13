@@ -10,6 +10,7 @@ import { ClimateDataProvider } from '../src/engine/dataGateway/climateDataProvid
 import { SoilDataProvider } from '../src/engine/dataGateway/soilDataProvider';
 import { StructuralHazardProvider } from '../src/engine/dataGateway/structuralHazardProvider';
 import { CatalogRepository } from '../src/engine/catalogRepository';
+import { createDefaultProjectV3 } from '../src/engine/core/projectMigration';
 import {
   formatCoordinates,
   formatLatitude,
@@ -33,6 +34,7 @@ import {
 import {
   createProjectTransferEnvelope,
   restoreProjectTransferEnvelope,
+  commitRestoredCustomEquipment,
   convertCurrency,
   formatCurrencyAmount,
   formatLocalizedEngineeringUnit,
@@ -301,11 +303,42 @@ async function runAllPhaseVerifications(): Promise<void> {
   console.log('\n--- Phase 5: Offline Transfer & Multi-Currency Engine (OFF-01 .. OFF-04) ---');
 
   // OFF-01: Versioned Project Transfer Envelope with Custom Equipment
+  const baseProjectState = createDefaultProjectV3('TRC-OFFLINE-ROUNDTRIP');
+  const selectedCustomModule = repo.getModuleById(customModId)!;
   const projectState = {
+    ...baseProjectState,
     projectName: 'Bifacial Solar Farm v3.1',
-    systemMode: 'powerplant',
-    selectedModule: repo.getModuleById(customModId),
-    selectedInverter: initialInverters[0],
+    systemMode: 'powerplant' as const,
+    customBaysCount: 3,
+    structuralModulesPerTable: 56 as const,
+    dcSystemEarthing: 'functional_negative' as const,
+    trackerConfig: { gcr: 0.35, axisTiltDeg: 5, maxRotationDeg: 55, enableBacktracking: true, albedo: 0.22 },
+    city: { ...baseProjectState.city, latitude: 12, longitude: 101 },
+    siteOverrides: { soilBearingCapacityKpa: 350 },
+    loads: Array.from({ length: 6 }, (_, index) => ({
+      id: `roundtrip-load-${index + 1}`, name: `Roundtrip load ${index + 1}`,
+      ratedWatts: 100 + index, surgeMultiplier: 1, quantity: 1, dayHours: 1, nightHours: 0,
+      isDc: false, category: 'other' as const,
+    })),
+    selectedModule: {
+      id: selectedCustomModule.id,
+      origin: selectedCustomModule.origin,
+      manufacturer: selectedCustomModule.manufacturer,
+      modelName: selectedCustomModule.modelName,
+      pmpWatts: selectedCustomModule.pmpWatts,
+      vocVolts: selectedCustomModule.vocVolts,
+      vmpVolts: selectedCustomModule.vmpVolts,
+      iscAmps: selectedCustomModule.iscAmps,
+      impAmps: selectedCustomModule.impAmps,
+      tempCoeffVocPct: selectedCustomModule.tempCoeffVocPct,
+      tempCoeffPmpPct: selectedCustomModule.tempCoeffPmpPct,
+      noctC: selectedCustomModule.noctC ?? 45,
+      lengthM: selectedCustomModule.lengthMm / 1000,
+      widthM: selectedCustomModule.widthMm / 1000,
+      weightKg: selectedCustomModule.weightKg,
+      bifacialityFactor: selectedCustomModule.bifacialityFactor,
+    },
+    selectedInverter: { ...baseProjectState.selectedInverter, id: initialInverters[0].id, origin: initialInverters[0].origin },
   };
   const envelope = createProjectTransferEnvelope({
     projectName: 'Bifacial Solar Farm v3.1',
@@ -320,13 +353,88 @@ async function runAllPhaseVerifications(): Promise<void> {
     envelope.format === 'solarpv_project_envelope' && envelope.schemaVersion === '3.1.0');
   check('OFF-01: Envelope embeds snapshot of custom equipment',
     envelope.customEquipmentSnapshots.modules.some((m: any) => m.id === customModId));
+  const roundTrip = restoreProjectTransferEnvelope(envelope);
+  check('OFF-01: Full-project envelope preserves structural settings, site, overrides, six loads, and selected custom equipment identity',
+    roundTrip.success && roundTrip.project.structuralModulesPerTable === 56 &&
+      roundTrip.project.dcSystemEarthing === 'functional_negative' && roundTrip.project.customBaysCount === 3 &&
+      roundTrip.project.trackerConfig?.gcr === 0.35 && roundTrip.project.trackerConfig?.axisTiltDeg === 5 &&
+      roundTrip.project.city.latitude === 12 && roundTrip.project.city.longitude === 101 &&
+      roundTrip.project.siteOverrides.soilBearingCapacityKpa === 350 && roundTrip.project.loads.length === 6 &&
+      roundTrip.project.selectedModule.id === customModId && roundTrip.project.selectedModule.origin === 'custom',
+    `status=${roundTrip.migrationStatus}; bays=${roundTrip.project.customBaysCount}; loads=${roundTrip.project.loads.length}; module=${roundTrip.project.selectedModule.id}/${roundTrip.project.selectedModule.origin}`);
 
-  // OFF-02: Deterministic Restoration & Migration
+  // OFF-02: Pure stage first; catalog changes only after explicit caller acceptance.
+  repo.deleteCustomModule(customModId);
+  const invalidEquipmentEnvelope = structuredClone(envelope) as any;
+  invalidEquipmentEnvelope.customEquipmentSnapshots.modules[0] = {
+    ...invalidEquipmentEnvelope.customEquipmentSnapshots.modules[0],
+    vmpVolts: invalidEquipmentEnvelope.customEquipmentSnapshots.modules[0].vocVolts,
+  };
+  const invalidEquipmentRestore = restoreProjectTransferEnvelope(invalidEquipmentEnvelope);
+  check('OFF-02: Physically invalid staged equipment is BLOCKED during validation',
+    !invalidEquipmentRestore.success && invalidEquipmentRestore.migrationStatus === 'BLOCKED_INCONSISTENT');
+  check('OFF-02: Blocked equipment validation leaves catalog unchanged',
+    !repo.getModuleById(customModId));
+  const invalidSelectedMassEnvelope = structuredClone(envelope) as any;
+  invalidSelectedMassEnvelope.projectData.selectedModule.weightKg = -1;
+  const invalidSelectedMassRestore = restoreProjectTransferEnvelope(invalidSelectedMassEnvelope);
+  check('OFF-02: Negative selected panel mass blocks restoration before an applyable fallback is produced; catalog remains unchanged',
+    !invalidSelectedMassRestore.success && invalidSelectedMassRestore.migrationStatus === 'BLOCKED_INCONSISTENT' &&
+      !repo.getModuleById(customModId),
+    `blockers=${invalidSelectedMassRestore.migrationResult.blockerReasons.join(' | ')}`);
+
   const restoreRes = restoreProjectTransferEnvelope(envelope);
-  check('OFF-02: restoreProjectTransferEnvelope successfully restores project',
+  check('OFF-02: restoreProjectTransferEnvelope stages a valid project without failing',
     restoreRes.success);
-  check('OFF-02: Restores custom equipment into repository upon import',
-    restoreRes.restoredCustomEquipment.modulesCount >= 1);
+  check('OFF-02: Parsing/migration alone does not mutate the custom catalog',
+    !repo.getModuleById(customModId));
+  check('OFF-02: Imported report metadata survives envelope restoration',
+    restoreRes.metadata.docId === 'DOC-AUDIT-2026' && restoreRes.metadata.leadEngineer === 'Chief PV Engineer');
+  const pendingDepthEnvelope = structuredClone(envelope) as any;
+  pendingDepthEnvelope.projectData = { ...createDefaultProjectV3(), pendingImportedEmbedmentDepthM: 1.25 };
+  const pendingDepthRestore = restoreProjectTransferEnvelope(pendingDepthEnvelope);
+  check('OFF-02: Pending manual embedment survives project migration for later user confirmation',
+    pendingDepthRestore.project.pendingImportedEmbedmentDepthM === 1.25,
+    `status=${pendingDepthRestore.migrationStatus}, value=${String(pendingDepthRestore.project.pendingImportedEmbedmentDepthM)}, warnings=${pendingDepthRestore.warnings.join(' | ')}`);
+  const originalWindow = (globalThis as any).window;
+  const failedStorageData = new Map<string, string>();
+  let setAttempts = 0;
+  (globalThis as any).window = {
+    navigator: { locks: { request: async (_name: string, operation: () => unknown) => operation() } },
+    localStorage: {
+      getItem: (key: string) => failedStorageData.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        setAttempts++;
+        if (setAttempts === 1) throw new Error('simulated quota failure');
+        failedStorageData.set(key, value);
+      },
+      removeItem: (key: string) => { failedStorageData.delete(key); },
+    },
+  };
+  const failedStorageCommit = await repo.withCrossTabWriteLock(() => commitRestoredCustomEquipment(restoreRes));
+  if (originalWindow === undefined) delete (globalThis as any).window;
+  else (globalThis as any).window = originalWindow;
+  check('OFF-02: Storage failure rolls back staged equipment without changing memory or keys',
+    !failedStorageCommit.success && setAttempts === 1 && !repo.getModuleById(customModId) && failedStorageData.size === 0 &&
+      failedStorageCommit.errors.some((error) => error.includes('verified unchanged')));
+
+  const equipmentCommit = commitRestoredCustomEquipment(restoreRes);
+  check('OFF-02: Confirmed batch commit restores staged custom equipment',
+    equipmentCommit.success && equipmentCommit.counts.modules >= 1 && Boolean(repo.getModuleById(customModId)));
+
+  const committedModule = repo.getModuleById(customModId);
+  const conflictingEnvelope = structuredClone(envelope) as any;
+  conflictingEnvelope.customEquipmentSnapshots.modules[0] = {
+    ...conflictingEnvelope.customEquipmentSnapshots.modules[0],
+    modelName: `${conflictingEnvelope.customEquipmentSnapshots.modules[0].modelName} conflict`,
+  };
+  const conflictingRestore = restoreProjectTransferEnvelope(conflictingEnvelope);
+  const moduleAfterConflictingImport = repo.getModuleById(customModId);
+  check('OFF-02: Conflicting existing equipment IDs block import instead of overwriting catalog data',
+    !conflictingRestore.success && conflictingRestore.migrationStatus === 'BLOCKED_INCONSISTENT' &&
+      Boolean(committedModule) && moduleAfterConflictingImport?.modelName === committedModule?.modelName,
+    `initialCommit=${committedModule?.modelName ?? 'missing'}; afterConflict=${moduleAfterConflictingImport?.modelName ?? 'missing'}; status=${conflictingRestore.migrationStatus}`);
+  repo.deleteCustomModule(customModId);
 
   // OFF-04: Multi-Currency & Locale Support
   const costUsd = 100000;
