@@ -305,19 +305,21 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             />
           </div>
 
-          <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
-            <label htmlFor="fin-pricing-substation" className="text-slate-400 block mb-1">
-              {lang === 'fa' ? 'پست MV و اتصال ($/MVA):' : 'MV Substation ($/MVA):'}
-            </label>
-            <input
-              id="fin-pricing-substation"
-              type="number"
-              step="5000"
-              value={pricing.substationUsdPerMva}
-              onChange={(e) => updateField('substationUsdPerMva', parseFloat(e.target.value) || 0)}
-              className="studio-input w-full font-mono font-bold text-industrial-warning text-xs"
-            />
-          </div>
+          {financial.systemMode === 'powerplant' && (
+            <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
+              <label htmlFor="fin-pricing-substation" className="text-slate-400 block mb-1">
+                {lang === 'fa' ? 'پست MV و اتصال ($/MVA):' : 'MV Substation ($/MVA):'}
+              </label>
+              <input
+                id="fin-pricing-substation"
+                type="number"
+                step="5000"
+                value={pricing.substationUsdPerMva}
+                onChange={(e) => updateField('substationUsdPerMva', parseFloat(e.target.value) || 0)}
+                className="studio-input w-full font-mono font-bold text-industrial-warning text-xs"
+              />
+            </div>
+          )}
 
           <div className="p-2.5 bg-industrial-bg/70 border border-industrial-border rounded-lg">
             <label htmlFor="fin-pricing-tariff" className="text-slate-400 block mb-1">
@@ -830,12 +832,32 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </td>
               </tr>
               {financial.capexBreakdown.substationMvUsd > 0 && (
-                <tr>
-                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'پست فشار متوسط و اتصال به شبکه' : 'MV Substation & Grid Connection'}</td>
+                <tr data-testid="capex-line-mv-substation">
+                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'پست فشار متوسط (MV)' : 'MV Substation'}</td>
                   <td className="p-2.5 text-purple-400">${financial.capexBreakdown.substationMvUsd.toLocaleString()}</td>
                   <td className="p-2.5">{(financial.capexBreakdown.substationMvToman / 1_000_000).toLocaleString()} م.ت</td>
                   <td className="p-2.5 text-slate-400">
                     {((financial.capexBreakdown.substationMvUsd / Math.max(1, financial.capexBreakdown.totalCapexUsd)) * 100).toFixed(1)}%
+                  </td>
+                </tr>
+              )}
+              {financial.capexBreakdown.gridInterconnectionUsd > 0 && (
+                <tr data-testid="capex-line-grid-interconnection">
+                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'اتصال به شبکه' : 'Grid Interconnection'}</td>
+                  <td className="p-2.5 text-purple-400">${financial.capexBreakdown.gridInterconnectionUsd.toLocaleString()}</td>
+                  <td className="p-2.5">{(financial.capexBreakdown.gridInterconnectionToman / 1_000_000).toLocaleString()} م.ت</td>
+                  <td className="p-2.5 text-slate-400">
+                    {((financial.capexBreakdown.gridInterconnectionUsd / Math.max(1, financial.capexBreakdown.totalCapexUsd)) * 100).toFixed(1)}%
+                  </td>
+                </tr>
+              )}
+              {financial.capexBreakdown.hvConnectionUsd > 0 && (
+                <tr data-testid="capex-line-hv-connection">
+                  <td className="p-2.5 font-sans font-bold text-white">{lang === 'fa' ? 'اتصال فشار قوی (HV)' : 'HV Connection'}</td>
+                  <td className="p-2.5 text-purple-400">${financial.capexBreakdown.hvConnectionUsd.toLocaleString()}</td>
+                  <td className="p-2.5">{(financial.capexBreakdown.hvConnectionToman / 1_000_000).toLocaleString()} م.ت</td>
+                  <td className="p-2.5 text-slate-400">
+                    {((financial.capexBreakdown.hvConnectionUsd / Math.max(1, financial.capexBreakdown.totalCapexUsd)) * 100).toFixed(1)}%
                   </td>
                 </tr>
               )}

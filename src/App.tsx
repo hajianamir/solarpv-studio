@@ -95,6 +95,10 @@ import {
   type UserFinancialPricing,
   DEFAULT_FINANCIAL_PRICING,
 } from './engine/financialEngine';
+import {
+  calculateLoadModeDailySizingTargetKwh,
+  isUpstreamGridAnalysisAvailable,
+} from './engine/systemModeCapacity';
 import { generateScenarios } from './engine/scenarioEngine';
 import {
   isBifacialModule,
@@ -134,6 +138,7 @@ const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab'
 import { migrateProjectToV3 } from './engine/core/projectMigration';
 import { createProjectTransferEnvelope, restoreProjectTransferEnvelope, commitRestoredCustomEquipmentWithCrossTabLock } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
+import { getContextualHelp } from './helpContent';
 
 // Fallback component for lazy-loaded tabs (MAIN-05)
 const TabSuspenseFallback: React.FC<{ lang: string }> = ({ lang }) => (
@@ -179,8 +184,15 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveModuleTab>('climate');
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [updateWaiting, setUpdateWaiting] = useState(false);
+
+  // Off-grid projects have no upstream utility connection. Do not preserve a
+  // mounted/active harmonic screen when switching into that mode.
+  useEffect(() => {
+    if (systemMode === 'offgrid' && activeTab === 'harmonics_grid') setActiveTab('array');
+  }, [systemMode, activeTab]);
 
   useEffect(() => {
     const notify = () => setUpdateWaiting(true);
@@ -530,12 +542,37 @@ export const App: React.FC = () => {
     }
   };
 
-  // Global Keyboard Shortcuts (Ctrl+K, Ctrl+S, Ctrl+E, Ctrl+B, Esc)
+  // Global shortcuts avoid intercepting typing/editing and any open dialog.
   const handleSaveProjectRef = useRef(handleSaveProject);
   handleSaveProjectRef.current = handleSaveProject;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target;
+      const element = target instanceof Element ? target : null;
+      const isEditor = Boolean(element?.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]'));
+      const hasOpenDialog = Boolean(
+        showReportModal || isHelpModalOpen || isCommandPaletteOpen || isProjectJsonModalOpen ||
+        document.querySelector('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog[open]')
+      );
+
+      if (e.key === 'F1') {
+        // F1 normally opens browser help; suppress it even when focused in an editor.
+        e.preventDefault();
+        if (!isEditor && !hasOpenDialog) setIsHelpModalOpen(true);
+        return;
+      }
+      if (e.key === 'Escape' && (isHelpModalOpen || isCommandPaletteOpen || isProjectJsonModalOpen)) {
+        setIsCommandPaletteOpen(false);
+        setIsProjectJsonModalOpen(false);
+        setIsHelpModalOpen(false);
+        return;
+      }
+      if (hasOpenDialog || isEditor) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') e.preventDefault();
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
@@ -551,11 +588,12 @@ export const App: React.FC = () => {
       } else if (e.key === 'Escape') {
         setIsCommandPaletteOpen(false);
         setIsProjectJsonModalOpen(false);
+        setIsHelpModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [showReportModal, isHelpModalOpen, isCommandPaletteOpen, isProjectJsonModalOpen]);
 
   // Local saves are not auto-applied at startup: restoring one replaces the
   // current in-memory project, so ask first and use the same migration path as
@@ -688,11 +726,14 @@ export const App: React.FC = () => {
       });
       const wf = computeWaterfallLosses(...args);
       return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
-    } else if (systemMode === 'ongrid') {
-      const averagePowerKw = (loadAnalysis.totalDailyEnergyKwh || 20) / 24.0;
-      return Math.max(1, averagePowerKw * outageHours);
     } else {
-      return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
+      // Customer modes are sized solely from load/outage demand; the stored
+      // powerplant target is intentionally absent from this calculation.
+      return calculateLoadModeDailySizingTargetKwh(
+        systemMode,
+        loadAnalysis.totalDailyEnergyKwh,
+        outageHours
+      ) ?? 1;
     }
   }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment, shadingLoss3dPct, bifacialGainPct]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
@@ -1251,13 +1292,13 @@ export const App: React.FC = () => {
               code: 'Sandia 5-Par',
               badge: 'MPPT',
             },
-            {
+            ...(isUpstreamGridAnalysisAvailable(systemMode) ? [{
               id: 'harmonics_grid' as ActiveModuleTab,
               title: t.tabUpstreamGrid,
               icon: <Activity className="w-4 h-4 text-indigo-400" />,
               code: 'IEEE 519',
-              badge: 'THD < 3%',
-            },
+              badge: 'THD estimate',
+            }] : []),
           ],
         },
         {
@@ -1424,13 +1465,13 @@ export const App: React.FC = () => {
               code: 'Sandia 5-Par',
               badge: 'I-V Curve',
             },
-            {
+            ...(isUpstreamGridAnalysisAvailable(systemMode) ? [{
               id: 'harmonics_grid' as ActiveModuleTab,
               title: t.tabUpstreamGrid,
               icon: <Activity className="w-4 h-4 text-indigo-400" />,
               code: 'IEEE 519',
-              badge: 'THD < 3%',
-            },
+              badge: 'THD estimate',
+            }] : []),
           ],
         },
         {
@@ -1679,6 +1720,65 @@ export const App: React.FC = () => {
           className="fixed inset-0 bg-black/70 z-40 lg:hidden transition-opacity"
         />
       )}
+
+      {isHelpModalOpen && (() => {
+        const help = getContextualHelp(activeTab, systemMode, lang === 'fa' ? 'fa' : 'en');
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm" onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsHelpModalOpen(false);
+          }}>
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="context-help-title"
+              aria-describedby="context-help-inputs context-help-method context-help-limitations"
+              data-testid="context-help-dialog"
+              onKeyDown={(event) => {
+                if (event.key === 'Tab') {
+                  event.preventDefault();
+                  event.currentTarget.querySelector<HTMLElement>('button')?.focus();
+                }
+              }}
+              className="w-full max-w-xl rounded-xl border border-sky-500/40 bg-[#0E1422] p-5 shadow-2xl"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest text-sky-300">{lang === 'fa' ? 'راهنمای زمینه‌ای · F1' : 'Contextual help · F1'}</div>
+                  <h2 id="context-help-title" className="mt-1 text-lg font-bold text-white">{help.title}</h2>
+                </div>
+                <button
+                  type="button"
+                  autoFocus
+                  aria-label={lang === 'fa' ? 'بستن راهنما' : 'Close help'}
+                  onClick={() => setIsHelpModalOpen(false)}
+                  className="rounded p-1.5 text-slate-300 hover:bg-slate-800 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+                <section>
+                  <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-sky-300">{lang === 'fa' ? 'ورودی‌های مهم' : 'Important inputs'}</h3>
+                  <p id="context-help-inputs">{help.inputs}</p>
+                </section>
+                <section>
+                  <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-sky-300">{lang === 'fa' ? 'روش محاسبهٔ پیاده‌سازی‌شده' : 'Implemented calculation method'}</h3>
+                  <p id="context-help-method">{help.method}</p>
+                </section>
+                <section>
+                  <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-amber-300">{lang === 'fa' ? 'محدودیت‌ها' : 'Limitations'}</h3>
+                  <p id="context-help-limitations">{help.limitations}</p>
+                </section>
+              </div>
+              <p className="mt-4 border-t border-slate-700 pt-3 text-[11px] text-slate-500">
+                {lang === 'fa'
+                  ? 'مقادیر ورودی و هشدارهای همین صفحه را پیش از تصمیم مهندسی بررسی کنید.'
+                  : 'Review this page’s inputs and warnings before making engineering decisions.'}
+              </p>
+            </section>
+          </div>
+        );
+      })()}
 
       {/* COMMAND PALETTE DIALOG (Ctrl+K / Cmd+K) */}
       {isCommandPaletteOpen && (
@@ -1973,6 +2073,20 @@ export const App: React.FC = () => {
 
         {/* Right Side (or Left in RTL): Actions Cluster */}
         <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
+          <button
+            type="button"
+            data-testid="context-help-button"
+            aria-label={lang === 'fa' ? 'راهنمای این صفحه (F1)' : 'Help for this page (F1)'}
+            aria-keyshortcuts="F1"
+            onClick={() => setIsHelpModalOpen(true)}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-[#121A2B] hover:bg-[#1A253D] border border-[#283548] text-slate-300 hover:text-white transition"
+            title={lang === 'fa' ? 'راهنمای زمینه‌ای (F1)' : 'Contextual help (F1)'}
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden sm:inline">{lang === 'fa' ? 'راهنما' : 'Help'}</span>
+            <span className="hidden xl:inline font-mono text-[10px]">F1</span>
+          </button>
+
           {/* Quick Jump / Command Palette Trigger */}
           <button
             onClick={() => setIsCommandPaletteOpen(true)}
@@ -2633,7 +2747,7 @@ export const App: React.FC = () => {
           )}
 
           {/* HARMONICS & UPSTREAM GRID TAB */}
-          {activeTab === 'harmonics_grid' && (
+          {activeTab === 'harmonics_grid' && isUpstreamGridAnalysisAvailable(systemMode) && (
             <HarmonicsGridTab
               plantCapacityMw={
                 systemMode === 'powerplant'

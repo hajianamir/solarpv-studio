@@ -9,6 +9,7 @@ import { assessSaltCorrosion, type SaltCorrosionOutput } from '../engine/corrosi
 import { type TrackerConfig, computeTrackerState } from '../engine/tracker/backtrackingEngine';
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
 import type { InstallationEnvironment } from '../engine/types/climateTypes';
+import { resolveArrayAcReferenceKw } from '../engine/systemModeCapacity';
 
 // A selected project snapshot is authoritative; a reused catalog ID alone does
 // not establish that its physical/electrical specifications still match.
@@ -77,6 +78,12 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
   const [axisTiltInput, setAxisTiltInput] = useState(0);
   const [maxRotInput, setMaxRotInput] = useState(60);
   const isEn = lang === 'en';
+  const arrayAcReferenceKw = resolveArrayAcReferenceKw(
+    systemMode,
+    targetPowerplantCapacityKw,
+    arrayDesign.totalInverterAcCapacityKw ?? 0
+  );
+  const isUtilityPowerplant = systemMode === 'powerplant';
   const [activeSubTab, setActiveSubTab] = useState<'sizing' | 'shading'>('sizing');
 
   // Search & Filter state
@@ -159,15 +166,23 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
     <div className="space-y-6">
       {/* PR-2a-7-P0-FOLLOWUP (ISSUE-2b): Target vs Designed vs Expected — two-step sizing visibility */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
+        <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg" data-testid="array-ac-reference-card">
           <div className="text-xs text-slate-400">
-            {lang === 'fa' ? 'ظرفیت هدف (AC اسمی)' : 'Target Capacity (AC nameplate)'}
+            {isUtilityPowerplant
+              ? (lang === 'fa' ? 'ظرفیت هدف نیروگاه (AC اسمی)' : 'Powerplant Target (AC nameplate)')
+              : (lang === 'fa' ? 'ظرفیت طراحی‌شده اینورتر (AC)' : 'Designed Inverter Capacity (AC)')}
           </div>
-          <div className="text-xl font-bold font-mono text-white mt-1">
-            {targetPowerplantCapacityKw} <span className="text-xs">kW AC</span>
+          <div className="text-xl font-bold font-mono text-white mt-1" data-testid="array-ac-reference">
+            {arrayAcReferenceKw !== null
+              ? <>{arrayAcReferenceKw.toFixed(1)} <span className="text-xs">kW AC</span></>
+              : (lang === 'fa' ? 'ناموجود' : 'N/A')}
           </div>
           <div className="text-[10px] text-slate-500 mt-0.5">
-            {lang === 'fa' ? 'ورودی کاربر' : 'User input'}
+            {isUtilityPowerplant
+              ? (lang === 'fa' ? 'ورودی صریح کاربر' : 'Explicit user target')
+              : arrayAcReferenceKw !== null
+                ? (lang === 'fa' ? 'جمع ظرفیت AC اینورترهای سایزشده از بار' : 'Aggregate inverter AC capacity sized from loads')
+                : (lang === 'fa' ? 'ظرفیت اینورتر طراحی نشده است' : 'No inverter capacity is currently sized')}
           </div>
         </div>
 
@@ -175,11 +190,13 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
           <div className="text-xs text-slate-400">
             {lang === 'fa' ? 'ظرفیت طراحی‌شده (DC)' : 'Designed Array (DC)'}
           </div>
-          <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
+          <div className="text-xl font-bold font-mono text-industrial-accent mt-1" data-testid="array-dc-capacity">
             {arrayDesign.totalPvCapacityKwp.toFixed(1)} <span className="text-xs">kWp DC</span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">
-            DC/AC = {(arrayDesign.totalPvCapacityKwp / Math.max(0.1, targetPowerplantCapacityKw)).toFixed(2)}
+          <div className="text-[10px] text-slate-500 mt-0.5" data-testid="array-dc-ac-ratio">
+            {arrayAcReferenceKw !== null
+              ? `DC/AC = ${(arrayDesign.totalPvCapacityKwp / arrayAcReferenceKw).toFixed(2)}`
+              : (lang === 'fa' ? 'نسبت DC/AC نامرتبط: ظرفیت اینورتر ناموجود' : 'DC/AC N/A: inverter capacity unavailable')}
           </div>
         </div>
 
@@ -546,7 +563,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
 
               <div className="p-3 bg-industrial-surface/80 border border-industrial-border rounded-lg">
                 <span className="text-slate-400 block mb-0.5">{isEn ? 'DC-to-AC Ratio (ILR)' : 'نسبت DC به AC'}</span>
-                <span className="text-lg font-bold font-mono text-industrial-success">
+                <span data-testid="array-designed-dc-ac-ratio" className="text-lg font-bold font-mono text-industrial-success">
                   {arrayDesign.dcAcRatio.toFixed(2)}
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">

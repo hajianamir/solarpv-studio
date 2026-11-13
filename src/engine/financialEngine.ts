@@ -350,8 +350,10 @@ export function performFinancialAnalysis(
       break;
 
     case 'ongrid':
-      substationUsd = safeInverterKw > 500 ? effectiveSubstationMva * p.substationUsdPerMva : 0;
-      gridInterconnectionUsd = safeInverterKw * 10.0;
+      // Customer-scale grid-tied/hybrid systems do not include utility MV/HV
+      // substation or interconnection CAPEX. These line items are powerplant-only.
+      substationUsd = 0;
+      gridInterconnectionUsd = 0;
       hvConnectionUsd = 0;
       batteryReplacementYear12Usd = batteriesUsd > 0 ? batteriesUsd * 0.70 : 0;
       break;
