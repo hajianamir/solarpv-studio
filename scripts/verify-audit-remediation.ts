@@ -454,11 +454,13 @@ async function runAuditVerification() {
   assert(hasCrlf && !hasBareLf, 'start.bat uses strictly CRLF line endings without stray LFs');
 
   const batContent = batRaw.toString('utf8');
-  assert(batContent.includes('findstr /R /C:"^[ ]*VITE_REAL_INTERNET=false"'), 'start.bat checks VITE_REAL_INTERNET on uncommented lines only');
+  const pcLauncher = fs.readFileSync('scripts/run-pc.ts', 'utf8');
+  const appServer = fs.readFileSync('server.ts', 'utf8');
+  assert(batContent.includes('node -e') && batContent.includes('process.versions.node'), 'start.bat validates the installed Node major version before launching');
   assert(batContent.includes('node_modules\\dotenv'), 'start.bat checks for node_modules\\dotenv dependency synchronization');
   assert(batContent.includes('node_modules\\uuid'), 'start.bat checks for node_modules\\uuid dependency synchronization');
-  assert(batContent.includes('APP_PORT'), 'start.bat parses APP_PORT dynamically');
-  assert(batContent.includes('%NODE_MAJOR% LSS 20'), 'start.bat enforces Node >= 20 to prevent EBADENGINE');
+  assert(pcLauncher.includes('process.env.PORT || process.env.APP_PORT') && pcLauncher.includes("['.env', '.env.example']"), 'PC launcher resolves APP_PORT/PORT from environment files');
+  assert(appServer.includes("await import('dotenv/config')"), 'server loads .env configuration before resolving runtime settings');
 
   // --------------------------------------------------------------------------
   // Group 7: UI Race Conditions, Delayed Responses, Draft Conflict & Validation

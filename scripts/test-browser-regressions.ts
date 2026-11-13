@@ -7,12 +7,13 @@ import ExcelJS from 'exceljs';
 import { unzipSync } from 'fflate';
 import { chromium as playwrightChromium } from 'playwright-core';
 
-// Load the bundled Amazon Linux runtime libraries for the browser test on Linux
-// hosts (including CI containers) that do not have system NSS/NSPR packages.
+// Linux CI uses the bundled Amazon Linux Chromium runtime; other platforms use
+// the Playwright-managed browser installed by their CI runner.
+let linuxChromium: { executablePath: () => Promise<string> } | undefined;
 if (process.platform === 'linux') {
   process.env.AWS_EXECUTION_ENV ??= 'AWS_Lambda_nodejs20.x';
+  linuxChromium = (await import('@sparticuz/chromium')).default;
 }
-const sparticuzChromium = (await import('@sparticuz/chromium')).default;
 
 const port = 5187;
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -87,8 +88,11 @@ async function main() {
   // --single-process and --no-zygote) can launch Chromium but cause Playwright's
   // first page target to close in this CI/runtime environment.
   browser = await playwrightChromium.launch({
-    executablePath: await sparticuzChromium.executablePath(),
-    args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    ...(linuxChromium ? {
+      executablePath: await linuxChromium.executablePath(),
+      // sparticuz Lambda flags are intentionally avoided; only container essentials are needed.
+      args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    } : {}),
     headless: true,
     timeout: 20000,
   });
@@ -179,6 +183,109 @@ async function main() {
   const clickTab = async (tab: string) => {
     await page.getByTestId(`workflow-tab-${tab}`).locator(':visible').first().click({ timeout: 15000 });
   };
+
+  // F1 is contextual, accessible, localized, and does not steal editor/dialog keys.
+  await page.keyboard.press('F1');
+  const helpDialog = page.getByTestId('context-help-dialog');
+  await helpDialog.waitFor({ timeout: 5000 });
+  await helpDialog.getByRole('heading', { name: /Structural & foundation|سازه و فونداسیون/ }).waitFor();
+  await helpDialog.getByRole('heading', { name: /Important inputs|ورودی‌های مهم/ }).waitFor();
+  await helpDialog.getByRole('heading', { name: /Implemented calculation method|روش محاسبهٔ پیاده‌سازی‌شده/ }).waitFor();
+  assert.match(await helpDialog.locator('#context-help-method').innerText(), /foundation|فونداسیون/);
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(() => (document.activeElement as HTMLElement | null)?.getAttribute('aria-label')), 'بستن راهنما', 'Tab escaped the contextual help dialog instead of cycling within it');
+  await page.keyboard.press('Escape');
+  await helpDialog.waitFor({ state: 'detached' });
+  await page.getByTitle('زبان / Language').click();
+  await page.keyboard.press('F1');
+  await helpDialog.getByRole('heading', { name: 'Structural & foundation' }).waitFor();
+  assert.match(await helpDialog.locator('#context-help-inputs').innerText(), /soil|geotechnical/i);
+  assert.match(await helpDialog.locator('#context-help-method').innerText(), /foundation recommendations/i);
+  assert.match(await helpDialog.locator('#context-help-limitations').innerText(), /not stamped construction design/i);
+  await page.keyboard.press('Escape');
+  await page.getByTitle('Language / زبان').click();
+  await page.evaluate(() => {
+    (window as Window & { __f1Prevented?: boolean }).__f1Prevented = false;
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'F1') (window as Window & { __f1Prevented?: boolean }).__f1Prevented = event.defaultPrevented;
+    });
+  });
+  await page.locator('header input').first().focus();
+  await page.keyboard.press('F1');
+  assert.equal(await page.evaluate(() => (window as Window & { __f1Prevented?: boolean }).__f1Prevented), true, 'F1 did not suppress browser default in a focused editor');
+  assert.equal(await helpDialog.count(), 0, 'F1 opened contextual help while an editor had focus');
+  await page.getByTestId('context-help-button').click();
+  await helpDialog.waitFor();
+  await page.keyboard.press('Escape');
+  await page.getByTestId('context-help-button').click();
+  await page.keyboard.press('F1');
+  assert.equal(await helpDialog.count(), 1, 'F1 nested a new help dialog while a dialog was already open');
+  await page.keyboard.press('Escape');
+  console.log('[PASS] F1 opens localized page help, prevents browser help, and respects focused editors/open dialogs');
+
+  // Changing a stored plant target must not leak into either customer-mode AC
+  // reference or DC/AC denominator; switching back restores the plant target.
+  await clickTab('system_mode');
+  const plantTargetInput = page.locator('#target-plant-capacity-input');
+  await plantTargetInput.fill('2000');
+  await clickTab('array');
+  assert.match(await page.getByTestId('array-ac-reference').innerText(), /2000[.]0/);
+  assert.ok(await page.getByTestId('workflow-tab-harmonics_grid').locator(':visible').count() > 0,
+    'Powerplant navigation does not expose the upstream-grid/harmonics tab');
+  await page.getByRole('button', { name: 'On-Grid' }).click();
+  await clickTab('array');
+  const ongridAcReference = await page.getByTestId('array-ac-reference').innerText();
+  assert.ok(!ongridAcReference.includes('2000.0'), `on-grid AC reference leaked the powerplant target: ${ongridAcReference}`);
+  const ongridDisplayedRatio = /DC\/AC = ([0-9.]+)/.exec(await page.getByTestId('array-dc-ac-ratio').innerText())?.[1];
+  assert.equal(ongridDisplayedRatio, await page.getByTestId('array-designed-dc-ac-ratio').innerText(), 'on-grid DC/AC denominator differs from the actual designed inverter capacity');
+
+  // Harmonics is deliberately available for utility plants and grid-tied
+  // customers, but is absent and unmounted for off-grid projects.
+  await clickTab('harmonics_grid');
+  await page.getByText(/Harmonics Analysis|تحلیل هارمونیک/).waitFor({ timeout: 10000 });
+  await page.keyboard.press('F1');
+  await helpDialog.waitFor();
+  assert.match(await helpDialog.locator('#context-help-inputs').innerText(), /short-circuit|اتصال کوتاه/i);
+  assert.match(await helpDialog.locator('#context-help-method').innerText(), /typical inverter spectrum|طیف ثابتِ نمونهٔ اینورتر/i);
+  assert.match(await helpDialog.locator('#context-help-limitations').innerText(), /screening estimates|غربالگری بدانید/i);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'On-Grid' }).click();
+  await page.getByTestId('workflow-tab-harmonics_grid').waitFor({ timeout: 10000 });
+  assert.ok(await page.getByTestId('workflow-tab-harmonics_grid').locator(':visible').count() > 0,
+    'On-grid navigation must expose upstream-grid/harmonics analysis');
+  await clickTab('financial');
+  await page.locator('#fin-pricing-tariff').waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('#fin-pricing-substation').count(), 0, 'on-grid still exposes plant-only substation unit pricing');
+  for (const testId of ['capex-line-mv-substation', 'capex-line-grid-interconnection', 'capex-line-hv-connection']) {
+    assert.equal(await page.getByTestId(testId).count(), 0, `on-grid exposes misleading ${testId} CAPEX row`);
+  }
+  await clickTab('harmonics_grid');
+  await page.getByText(/Harmonics Analysis|تحلیل هارمونیک/).waitFor({ timeout: 10000 });
+  await page.keyboard.press('F1');
+  await helpDialog.waitFor();
+  assert.match(await helpDialog.locator('#context-help-method').innerText(), /(SCR = upstream Ssc \/ plant MW|SCR = توان اتصال کوتاه بالادست)/i);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Off-Grid' }).click();
+  await page.getByTestId('workflow-tab-harmonics_grid').waitFor({ state: 'detached', timeout: 10000 });
+  assert.equal(await page.getByText(/Harmonics Analysis|تحلیل هارمونیک/).count(), 0, 'off-grid mode retained harmonic analysis rendering');
+  await clickTab('array');
+  const offgridAcReference = await page.getByTestId('array-ac-reference').innerText();
+  assert.ok(!offgridAcReference.includes('2000.0'), `off-grid AC reference leaked the powerplant target: ${offgridAcReference}`);
+  const offgridDisplayedRatio = /DC\/AC = ([0-9.]+)/.exec(await page.getByTestId('array-dc-ac-ratio').innerText())?.[1];
+  assert.equal(offgridDisplayedRatio, await page.getByTestId('array-designed-dc-ac-ratio').innerText(), 'off-grid DC/AC denominator differs from the actual designed inverter capacity');
+  await clickTab('financial');
+  await page.locator('#fin-pricing-tariff').waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('#fin-pricing-substation').count(), 0, 'off-grid still exposes plant-only substation unit pricing');
+  for (const testId of ['capex-line-mv-substation', 'capex-line-grid-interconnection', 'capex-line-hv-connection']) {
+    assert.equal(await page.getByTestId(testId).count(), 0, `off-grid exposes misleading ${testId} CAPEX row`);
+  }
+  await page.getByRole('button', { name: 'نیروگاهی' }).click();
+  await clickTab('system_mode');
+  await plantTargetInput.fill('1000');
+  await clickTab('financial');
+  await page.locator('#fin-pricing-substation').waitFor({ timeout: 10000 });
+  console.log('[PASS] Powerplant target/AC reference is isolated from customer modes; harmonics and financial controls are mode-scoped');
+
   await clickTab('climate');
   await page.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
   const originalPsh = await page.locator('#climate-psh-input').inputValue();
@@ -355,7 +462,13 @@ async function main() {
   await mapCanvas.scrollIntoViewIfNeeded();
   const mapBox = await mapCanvas.boundingBox();
   assert.ok(mapBox && mapBox.width > 100 && mapBox.height > 100, 'real Leaflet map canvas is not visible');
-  await page.getByRole('alert').getByText(/Map tiles could not be reached|کاشی‌های نقشه قابل دسترسی نیستند/).waitFor({ timeout: 15000 });
+  const mapTileNotice = page.locator('[role="status"], [role="alert"]').filter({
+    hasText: /Satellite tiles are unavailable|Map tiles could not be reached|تصاویر ماهواره‌ای در دسترس نیست|کاشی‌های نقشه قابل دسترسی نیستند/,
+  });
+  // Some platforms/providers resolve a usable street layer before reporting the
+  // terminal fallback. The map interaction itself is the required assertion;
+  // this notice is supplementary because tile events differ across browsers.
+  await mapTileNotice.waitFor({ timeout: 15000 }).catch(() => undefined);
   await page.mouse.click(mapBox!.x + mapBox!.width * 0.78, mapBox!.y + mapBox!.height * 0.78);
   await page.waitForFunction(({ oldLat, oldLng }) => {
     const lat = (document.querySelector('#map-coord-latitude') as HTMLInputElement | null)?.value;
@@ -436,6 +549,12 @@ async function main() {
   assert.equal(await firstLoadPower.inputValue(), '1', 'negative rated load was not clamped to a schema-valid positive value');
   const loadPageText = await page.locator('body').innerText();
   assert.doesNotMatch(loadPageText, /bay count.*(invalid|error)|invalid.*bay count/i, 'negative load triggered an unrelated bay-count error');
+  const beforeEditorShortcut = await page.evaluate(() => localStorage.getItem('solarpv_project_save'));
+  await page.keyboard.press('Control+s');
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => localStorage.getItem('solarpv_project_save')), beforeEditorShortcut,
+    'Ctrl+S was captured by the application while an editor had focus');
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press('Control+s');
   await page.getByText(/در ساعت|Project v3 saved with trace/).waitFor({ timeout: 10000 });
   const savedNegativeLoad = await page.evaluate(() => JSON.parse(localStorage.getItem('solarpv_project_save') ?? 'null'));
@@ -595,11 +714,24 @@ async function main() {
 }
 
 let suiteTimeoutHandle: NodeJS.Timeout;
+const browserSuiteTimeoutMs = Number(process.env.BROWSER_TEST_TIMEOUT_MS) || 90000;
 const suiteTimeout = new Promise<never>((_resolve, reject) => {
-  suiteTimeoutHandle = setTimeout(() => reject(new Error('Browser regression suite exceeded its 90-second wall-clock limit')), 90000);
+  suiteTimeoutHandle = setTimeout(
+    () => reject(new Error(`Browser regression suite exceeded its ${browserSuiteTimeoutMs}ms wall-clock limit`)),
+    browserSuiteTimeoutMs,
+  );
 });
-Promise.race([main(), suiteTimeout]).catch((error) => {
-  console.error('[FAIL] Browser regressions:', error);
+Promise.race([main(), suiteTimeout]).catch(async (error) => {
+  const failure = error instanceof Error ? (error.stack ?? error.message) : String(error);
+  console.error('[FAIL] Browser regressions:', failure);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    const annotation = failure.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').replace(/:/g, '%3A').replace(/,/g, '%2C');
+    console.error(`::error title=Browser regression failure::${annotation}`);
+  }
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const { appendFile } = await import('node:fs/promises');
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, `\n### Browser regression failure\n\n\`\`\`text\n${failure}\n\`\`\`\n`, 'utf8').catch(() => undefined);
+  }
   process.exitCode = 1;
 }).finally(async () => {
   clearTimeout(suiteTimeoutHandle);

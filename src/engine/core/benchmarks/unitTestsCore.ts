@@ -48,6 +48,11 @@ import { recommendFoundation } from '../../structureRecommendationEngine';
 import { recommendSharedFoundation } from '../../geotech/foundationRecommendation';
 import { assessSaltCorrosion, classifyCorrosionCategory } from '../../corrosion/saltCorrosionEngine';
 import { performFinancialAnalysis } from '../../financialEngine';
+import {
+  resolveArrayAcReferenceKw,
+  calculateLoadModeDailySizingTargetKwh,
+  isUpstreamGridAnalysisAvailable,
+} from '../../systemModeCapacity';
 import { designPvArray } from '../../pvEngineAdvanced';
 import { calculateThermalDerate } from '../thermalDerate';
 import { isRealInternetEnabled } from '../../env/runtimeEnv';
@@ -3893,6 +3898,39 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   }
 
   // ==========================================================================
+  // [MODE-ISOLATION-AC-REFERENCE] Target AC capacity remains powerplant-only
+  // ==========================================================================
+  {
+    const powerplantRefSmall = resolveArrayAcReferenceKw('powerplant', 1000, 80);
+    const powerplantRefLarge = resolveArrayAcReferenceKw('powerplant', 2500, 80);
+    const ongridRefSmallTarget = resolveArrayAcReferenceKw('ongrid', 1000, 12.5);
+    const ongridRefLargeTarget = resolveArrayAcReferenceKw('ongrid', 2500, 12.5);
+    const offgridRefSmallTarget = resolveArrayAcReferenceKw('offgrid', 1000, 7.5);
+    const offgridRefLargeTarget = resolveArrayAcReferenceKw('offgrid', 2500, 7.5);
+    const loadSizingIsolated =
+      calculateLoadModeDailySizingTargetKwh('ongrid', 240, 6) === 60 &&
+      calculateLoadModeDailySizingTargetKwh('offgrid', 240, 6) === 240 &&
+      calculateLoadModeDailySizingTargetKwh('powerplant', 240, 6) === null;
+    const upstreamAnalysisAvailabilityOk =
+      isUpstreamGridAnalysisAvailable('powerplant') &&
+      isUpstreamGridAnalysisAvailable('ongrid') &&
+      !isUpstreamGridAnalysisAvailable('offgrid');
+    const acReferenceIsolationOk =
+      powerplantRefSmall === 1000 && powerplantRefLarge === 2500 &&
+      ongridRefSmallTarget === 12.5 && ongridRefLargeTarget === 12.5 &&
+      offgridRefSmallTarget === 7.5 && offgridRefLargeTarget === 7.5 &&
+      resolveArrayAcReferenceKw('ongrid', 9000, 0) === null && loadSizingIsolated &&
+      upstreamAnalysisAvailabilityOk;
+
+    assert(
+      'MODE-ISOLATION-AC-REFERENCE',
+      'Powerplant target AC remains plant-only; customer inverter AC and upstream-analysis availability are mode-isolated',
+      acReferenceIsolationOk,
+      `plant=${powerplantRefSmall}->${powerplantRefLarge}, ongrid=${ongridRefSmallTarget}->${ongridRefLargeTarget}, offgrid=${offgridRefSmallTarget}->${offgridRefLargeTarget}, loadSizing=${loadSizingIsolated}, upstreamAvailable=${upstreamAnalysisAvailabilityOk}`
+    );
+  }
+
+  // ==========================================================================
   // [E10-FIN-TARIFF-GENSET-RECONCILE] Mode-Aware Tariffs, Genset, CAPEX & Cashflow Reconcile
   // ==========================================================================
   {
@@ -3959,6 +3997,55 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Financial model implements mode-aware tariffs, genset inputs, exact CAPEX reconcile, and typed Payback/IRR statuses',
       ppaTariffOk && ongridTariffOk && offgridTariffOk && gensetOk && capexReconciledOk && year0Ok && rZeroNpvOk && paybackStatusOk,
       `genset(capex=${gensetRun.capexBreakdown.dieselGenSetUsd}, liters=${gensetRun.dieselEstimatedAnnualFuelLiters}, opex=${gensetRun.dieselOpexUsd}), year0(cf0=${cf0.netCashFlowToman}, b=${b.totalCapexToman})`
+    );
+  }
+
+  // ==========================================================================
+  // [E10-FIN-NETWORK-COST-MODE-ISOLATION] MV / Grid / HV costs are plant-only
+  // ==========================================================================
+  {
+    const inflatedNetworkPrices = {
+      substationUsdPerMva: 1_000_000,
+      hvConnectionUsdPerKva: 1_000_000,
+    };
+    const zeroNetworkPrices = {
+      substationUsdPerMva: 0,
+      hvConnectionUsdPerKva: 0,
+    };
+    const ongridInflated = performFinancialAnalysis(1200, 100, 800, 1_500_000, inflatedNetworkPrices, 25, 'ongrid');
+    const ongridZero = performFinancialAnalysis(1200, 100, 800, 1_500_000, zeroNetworkPrices, 25, 'ongrid');
+    const offgridInflated = performFinancialAnalysis(1200, 100, 800, 1_500_000, inflatedNetworkPrices, 25, 'offgrid');
+    const offgridZero = performFinancialAnalysis(1200, 100, 800, 1_500_000, zeroNetworkPrices, 25, 'offgrid');
+    const customerNetworkCostsAreZero = [ongridInflated, offgridInflated].every((result) =>
+      result.capexBreakdown.substationMvUsd === 0 &&
+      result.capexBreakdown.gridInterconnectionUsd === 0 &&
+      result.capexBreakdown.hvConnectionUsd === 0 &&
+      result.capexBreakdown.substationMvToman === 0 &&
+      result.capexBreakdown.gridInterconnectionToman === 0 &&
+      result.capexBreakdown.hvConnectionToman === 0
+    );
+    const customerCapexIgnoresNetworkPrices =
+      ongridInflated.capexBreakdown.totalCapexUsd === ongridZero.capexBreakdown.totalCapexUsd &&
+      offgridInflated.capexBreakdown.totalCapexUsd === offgridZero.capexBreakdown.totalCapexUsd &&
+      ongridInflated.capexBreakdown.isReconciled && offgridInflated.capexBreakdown.isReconciled;
+
+    const powerplantNetwork = performFinancialAnalysis(1000, 0, 800, 1_500_000, {
+      substationTransformerMva: 1.5,
+      substationUsdPerMva: 40_000,
+      hvConnectionUsdPerKva: 55,
+      plantPowerFactor: 0.8,
+    }, 25, 'powerplant');
+    const powerplantNetworkPreserved =
+      powerplantNetwork.capexBreakdown.substationMvUsd === 60_000 &&
+      powerplantNetwork.capexBreakdown.gridInterconnectionUsd === 24_000 &&
+      powerplantNetwork.capexBreakdown.hvConnectionUsd === 55_000 &&
+      powerplantNetwork.capexBreakdown.isReconciled;
+
+    assert(
+      'E10-FIN-NETWORK-COST-MODE-ISOLATION',
+      'On-grid/off-grid ignore persisted MV/HV unit prices and report zero network CAPEX; powerplant network costs remain reconciled',
+      customerNetworkCostsAreZero && customerCapexIgnoresNetworkPrices && powerplantNetworkPreserved,
+      `ongrid=${ongridInflated.capexBreakdown.substationMvUsd}/${ongridInflated.capexBreakdown.gridInterconnectionUsd}/${ongridInflated.capexBreakdown.hvConnectionUsd}, offgrid=${offgridInflated.capexBreakdown.substationMvUsd}/${offgridInflated.capexBreakdown.gridInterconnectionUsd}/${offgridInflated.capexBreakdown.hvConnectionUsd}, plant=${powerplantNetwork.capexBreakdown.substationMvUsd}/${powerplantNetwork.capexBreakdown.gridInterconnectionUsd}/${powerplantNetwork.capexBreakdown.hvConnectionUsd}`
     );
   }
 
