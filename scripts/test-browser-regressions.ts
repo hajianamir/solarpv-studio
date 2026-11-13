@@ -718,6 +718,10 @@ const suiteTimeout = new Promise<never>((_resolve, reject) => {
 Promise.race([main(), suiteTimeout]).catch(async (error) => {
   const failure = error instanceof Error ? (error.stack ?? error.message) : String(error);
   console.error('[FAIL] Browser regressions:', failure);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    const annotation = failure.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').replace(/:/g, '%3A').replace(/,/g, '%2C');
+    console.error(`::error title=Browser regression failure::${annotation}`);
+  }
   if (process.env.GITHUB_STEP_SUMMARY) {
     const { appendFile } = await import('node:fs/promises');
     await appendFile(process.env.GITHUB_STEP_SUMMARY, `\n### Browser regression failure\n\n\`\`\`text\n${failure}\n\`\`\`\n`, 'utf8').catch(() => undefined);
