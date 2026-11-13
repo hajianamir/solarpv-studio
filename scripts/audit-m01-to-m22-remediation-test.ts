@@ -42,6 +42,7 @@ import { buildExcelWorkbookXml, escapeXml } from '../src/engine/reportingEngine'
 import { app, setPersistPathForTesting, db as activeDb } from '../server';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import crypto from 'crypto';
 
 let passes = 0;
@@ -987,7 +988,12 @@ async function runM01ToM22TestSuite(): Promise<void> {
 
     // M07: Persistent disk failure returns HTTP 500 and 0 ackedIds
     const outboxCountBefore = activeDb.outbox.length;
-    setPersistPathForTesting('/root/nonexistent_forbidden_directory/snapshot.json');
+    // Make the would-be parent a regular file. Creating a child path beneath it
+    // deterministically fails on Windows and POSIX (unlike chmod/root paths).
+    const persistBlockerPath = path.join(os.tmpdir(), `solarpv-persist-blocker-${process.pid}`);
+    fs.rmSync(persistBlockerPath, { force: true });
+    fs.writeFileSync(persistBlockerPath, 'not a directory');
+    setPersistPathForTesting(path.join(persistBlockerPath, 'snapshot.json'));
     let failPushStatus = 0;
     let failPushBody: any = null;
     await syncPushRoute({
@@ -1068,8 +1074,9 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `status=${batOverwriteStatus}, restoredModel=${restoredBat?.modelName}`
     );
 
-    // Reset test path
+    // Reset the injected failure path and remove the cross-platform blocker.
     setPersistPathForTesting('./data/solar-db-snapshot.json');
+    fs.rmSync(persistBlockerPath, { force: true });
   }
 
   // ---------------------------------------------------------------------------

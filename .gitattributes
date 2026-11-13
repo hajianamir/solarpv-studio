@@ -1,0 +1,2 @@
+# These benchmark fixtures are validated by byte-level SHA-256 hashes.
+benchmarks/reference_files/*.sam -text
