@@ -1007,10 +1007,11 @@ export class ClimateDataProvider {
     } else {
       basePsh = Math.max(1.8, 3.8 - (absLat - 50.0) * 0.07);
     }
-    const psh = Number(basePsh.toFixed(2));
+    // Preserve model precision for calculations; display formatting is a UI concern.
+    const psh = basePsh;
 
-    const dni = Number((psh * 0.72).toFixed(2));
-    const dhi = Number((psh * 0.28).toFixed(2));
+    const dni = psh * 0.72;
+    const dhi = psh * 0.28;
     const optTilt = Math.max(8, Math.min(65, Math.round(absLat * 0.88)));
 
     let tMin = -5.0;
