@@ -38,6 +38,12 @@ import {
 } from './src/engine/core/solarGeometryContract.js';
 import { ExternalDataGateway } from './src/engine/dataGateway/externalDataGateway.js';
 import { GeocodingError } from './src/engine/dataGateway/climateDataProvider.js';
+import {
+  BoundedGeocodeCache,
+  MAX_GEOCODE_QUERY_BYTES,
+  isGeocodeQueryWithinLimit,
+  normalizeGeocodeQuery,
+} from './src/engine/dataGateway/geocodeCache.js';
 import { isRealInternetEnabled } from './src/engine/env/runtimeEnv.js';
 
 const app = express();
@@ -220,7 +226,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // ---- External Data Gateway proxy (same-origin; removes browser CORS/CSP dependency) ----
-const geocodeCache = new Map<string, { data: any; expiresAt: number }>();
+const geocodeCache = new BoundedGeocodeCache<any[]>();
 
 function requestAbortController(req: Request, res: Response): AbortController {
   const controller = new AbortController();
@@ -271,31 +277,45 @@ app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
 // configured, an atomic Redis REST reservation shared across service instances.
 app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
   const rawQ = req.query.q;
-  if (typeof rawQ !== 'string' || rawQ.trim() === '') {
+  if (typeof rawQ !== 'string') {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.status(400).json({ code: 'INVALID_QUERY', error: 'A non-empty geocoding query is required.' });
+  }
+  // Bound decoded input before normalization so very large or compatibility-
+  // normalized queries cannot consume unbounded CPU/memory or reach the provider.
+  if (!isGeocodeQueryWithinLimit(rawQ)) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(400).json({ code: 'INVALID_QUERY', error: `Geocoding query exceeds the ${MAX_GEOCODE_QUERY_BYTES}-byte limit.` });
+  }
+  const qKey = normalizeGeocodeQuery(rawQ);
+  if (!qKey) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(400).json({ code: 'INVALID_QUERY', error: 'A non-empty geocoding query is required.' });
+  }
+  if (!isGeocodeQueryWithinLimit(qKey)) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(400).json({ code: 'INVALID_QUERY', error: `Geocoding query exceeds the ${MAX_GEOCODE_QUERY_BYTES}-byte limit.` });
   }
   if (!isRealInternetEnabled()) {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.status(503).json({ code: 'DISABLED', error: 'Online geocoding is disabled.' });
   }
-  const qKey = rawQ.trim().toLowerCase();
   const cached = geocodeCache.get(qKey);
-  if (cached && cached.expiresAt > Date.now()) {
+  if (cached) {
     res.setHeader('Cache-Control', 'public, max-age=1800');
-    return res.json(cached.data);
+    return res.json(cached);
   }
 
   const controller = requestAbortController(req, res);
   try {
-    const results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(rawQ.trim(), {
+    const results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(qKey, {
       signal: controller.signal,
     });
     if (controller.signal.aborted || res.destroyed) return;
-    if (results.length > 0) {
-      geocodeCache.set(qKey, { data: results, expiresAt: Date.now() + 1800000 });
+    if (results.length > 0 && geocodeCache.set(qKey, results)) {
       res.setHeader('Cache-Control', 'public, max-age=1800');
     } else {
+      // Empty or oversized results are returned but not retained or client-cached.
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
     res.json(results);

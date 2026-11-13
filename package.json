@@ -20,7 +20,7 @@
     "lint": "npm run lint:types && npm run lint:eslint",
     "test": "tsx scripts/run-all-benchmarks.ts",
     "test:benchmark": "tsx scripts/run-all-benchmarks.ts",
-    "test:audit": "tsx scripts/audit-r1-to-r7-remediation-test.ts && tsx scripts/engineering-audit-remediation-test.ts && tsx scripts/audit-m01-to-m22-remediation-test.ts && tsx scripts/verify-all-phases-audit.ts && tsx scripts/verify-api-sizing-thermal-audit.ts && npm run verify:f04",
+    "test:audit": "tsx scripts/audit-r1-to-r7-remediation-test.ts && tsx scripts/engineering-audit-remediation-test.ts && tsx scripts/audit-m01-to-m22-remediation-test.ts && tsx scripts/verify-all-phases-audit.ts && tsx scripts/verify-api-sizing-thermal-audit.ts && npm run verify:f04 && tsx scripts/test-geocode-cache.ts",
     "test:all": "npm run test && npm run test:audit",
     "test:remediation": "tsx scripts/verify-audit-remediation.ts",
     "test:gateway": "tsx scripts/test-data-gateway-regressions.ts",
