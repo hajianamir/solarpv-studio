@@ -139,6 +139,8 @@ const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab'
 import { migrateProjectToV3 } from './engine/core/projectMigration';
 import { createProjectTransferEnvelope, restoreProjectTransferEnvelope, commitRestoredCustomEquipmentWithCrossTabLock } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
+import { formatPsh } from './engine/formatters';
+import { assessAcRequirements, createUnknownAcRequirements, isValidAcConnection, updateAcConnection, type AcConnectionRequirement, type AcRequirements } from './engine/acRequirements';
 import { getContextualHelp } from './helpContent';
 
 // Fallback component for lazy-loaded tabs (MAIN-05)
@@ -186,6 +188,13 @@ export const App: React.FC = () => {
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      return window.localStorage.getItem('solarpv_theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [updateWaiting, setUpdateWaiting] = useState(false);
 
@@ -204,12 +213,6 @@ export const App: React.FC = () => {
       // Theme remains available for this session when storage is unavailable.
     }
   }, [theme]);
-
-  // Off-grid projects have no upstream utility connection. Do not preserve a
-  // mounted/active harmonic screen when switching into that mode.
-  useEffect(() => {
-    if (systemMode === 'offgrid' && activeTab === 'harmonics_grid') setActiveTab('array');
-  }, [systemMode, activeTab]);
 
   useEffect(() => {
     const notify = () => setUpdateWaiting(true);
@@ -1780,7 +1783,7 @@ export const App: React.FC = () => {
               role="dialog"
               aria-modal="true"
               aria-labelledby="context-help-title"
-              aria-describedby="context-help-inputs context-help-method context-help-limitations"
+              aria-describedby="context-help-inputs context-help-method context-help-limitations context-help-sources"
               data-testid="context-help-dialog"
               onKeyDown={(event) => {
                 if (event.key === 'Tab') {
@@ -1788,19 +1791,19 @@ export const App: React.FC = () => {
                   event.currentTarget.querySelector<HTMLElement>('button')?.focus();
                 }
               }}
-              className="w-full max-w-xl rounded-xl border border-sky-500/40 bg-[#0E1422] p-5 shadow-2xl"
+              className="w-full max-w-xl rounded-xl border border-sky-500/40 bg-industrial-surface p-5 shadow-2xl"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-[10px] uppercase tracking-widest text-sky-300">{lang === 'fa' ? 'راهنمای زمینه‌ای · F1' : 'Contextual help · F1'}</div>
-                  <h2 id="context-help-title" className="mt-1 text-lg font-bold text-white">{help.title}</h2>
+                  <h2 id="context-help-title" className="mt-1 text-lg font-bold text-theme-strong">{help.title}</h2>
                 </div>
                 <button
                   type="button"
                   autoFocus
                   aria-label={lang === 'fa' ? 'بستن راهنما' : 'Close help'}
                   onClick={() => setIsHelpModalOpen(false)}
-                  className="rounded p-1.5 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  className="rounded p-1.5 text-slate-300 hover:bg-slate-800 hover:text-theme-strong"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -1817,6 +1820,10 @@ export const App: React.FC = () => {
                 <section>
                   <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-amber-300">{lang === 'fa' ? 'محدودیت‌ها' : 'Limitations'}</h3>
                   <p id="context-help-limitations">{help.limitations}</p>
+                </section>
+                <section className="border-t border-industrial-border pt-2">
+                  <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">{lang === 'fa' ? 'ارجاع کد' : 'Code reference'}</h3>
+                  <p id="context-help-sources" className="break-words font-mono text-[11px] text-slate-400">{help.sources}</p>
                 </section>
               </div>
               <p className="mt-4 border-t border-slate-700 pt-3 text-[11px] text-slate-500">
@@ -2134,6 +2141,21 @@ export const App: React.FC = () => {
             <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
             <span className="hidden sm:inline">{lang === 'fa' ? 'راهنما' : 'Help'}</span>
             <span className="hidden xl:inline font-mono text-[10px]">F1</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="theme-toggle"
+            aria-label={theme === 'dark'
+              ? (lang === 'fa' ? 'تغییر به پوستهٔ روشن' : 'Switch to light theme')
+              : (lang === 'fa' ? 'تغییر به پوستهٔ تیره' : 'Switch to dark theme')}
+            aria-pressed={theme === 'light'}
+            onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-industrial-surface border border-industrial-border text-slate-300 hover:text-theme-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+            title={lang === 'fa' ? 'تغییر پوستهٔ روشن/تیره' : 'Toggle light/dark theme'}
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            <span className="hidden md:inline">{theme === 'dark' ? (lang === 'fa' ? 'روشن' : 'Light') : (lang === 'fa' ? 'تیره' : 'Dark')}</span>
           </button>
 
           {/* Quick Jump / Command Palette Trigger */}
