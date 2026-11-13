@@ -102,5 +102,23 @@ jobs:
       - name: Audit remediation verification
         run: npm run test:remediation
 
-      - name: Engineering audit suites
-        run: npm run test:audit
+      - name: Engineering audit R01-R07
+        run: npx tsx scripts/audit-r1-to-r7-remediation-test.ts
+
+      - name: Engineering audit Areas 1-10
+        run: npx tsx scripts/engineering-audit-remediation-test.ts
+
+      - name: Engineering audit M01-M22
+        run: npx tsx scripts/audit-m01-to-m22-remediation-test.ts
+
+      - name: Engineering phase audit
+        run: npx tsx scripts/verify-all-phases-audit.ts
+
+      - name: API sizing and thermal audit
+        run: npx tsx scripts/verify-api-sizing-thermal-audit.ts
+
+      - name: F-04 energy contract
+        run: npm run verify:f04
+
+      - name: Geocode cache regressions
+        run: npx tsx scripts/test-geocode-cache.ts
