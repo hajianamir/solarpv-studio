@@ -86,8 +86,11 @@ export function assessAcRequirements(
     }
   }
   const injection = requirements.injection;
-  if (injection.level === 'unknown' || !injection.confirmed || (injection.level !== 'not_applicable' && injection.nominalKv === null)) {
-    reasons.push('Grid-injection voltage level is not confirmed; LV service must not be treated as MV/HV injection.');
+  const injectionVoltageValid = injection.level === 'not_applicable'
+    ? injection.nominalKv === null
+    : injection.nominalKv !== null && Number.isFinite(injection.nominalKv) && injection.nominalKv > 0;
+  if (injection.level === 'unknown' || !injection.confirmed || !injectionVoltageValid) {
+    reasons.push('Grid-injection voltage level is not confirmed or its nominal voltage is invalid; LV service must not be treated as MV/HV injection.');
   } else if (mode === 'powerplant' && injection.level !== 'mv' && injection.level !== 'hv') {
     reasons.push('Powerplant injection requires an explicitly declared MV/HV point of connection; LV is not equivalent.');
   } else if (mode === 'offgrid' && injection.level !== 'not_applicable') {
@@ -146,11 +149,15 @@ export function evaluateLoadAcCurrents(
     const override = requirements?.loadOverrides[load.id];
     const connection = override ?? requirements?.loadService;
     const basis = override ? 'per_load_override' : requirements ? 'site_load_service' : 'none';
-    if (!connection || !connection.confirmed || connection.phase === 'unknown' || connection.frequencyHz === null || !connection.powerFactor || connection.powerFactor <= 0 || connection.powerFactor > 1) {
+    if (!connection || !connection.confirmed || !isValidAcConnection(connection)
+      || connection.phase === 'unknown' || connection.frequencyHz === null
+      || connection.powerFactor === null || connection.powerFactor <= 0 || connection.powerFactor > 1
+      || !Number.isFinite(load.ratedWatts) || load.ratedWatts < 0
+      || !Number.isFinite(load.quantity) || load.quantity < 0) {
       return { id: load.id, name: load.name, phase: connection?.phase ?? 'unknown', voltageVolts: null, currentAmps: null, status: 'incomplete', basis };
     }
     const voltage = connection.phase === 'three' ? connection.lineToLineVolts : (connection.lineToNeutralVolts ?? connection.lineToLineVolts);
-    if (!voltage || voltage <= 0) return { id: load.id, name: load.name, phase: connection.phase, voltageVolts: null, currentAmps: null, status: 'incomplete', basis };
+    if (voltage === null || !Number.isFinite(voltage) || voltage <= 0) return { id: load.id, name: load.name, phase: connection.phase, voltageVolts: null, currentAmps: null, status: 'incomplete', basis };
     const current = load.ratedWatts * load.quantity / ((connection.phase === 'three' ? Math.sqrt(3) : 1) * voltage * connection.powerFactor);
     return { id: load.id, name: load.name, phase: connection.phase, voltageVolts: voltage, currentAmps: Number.isFinite(current) ? current : null, status: Number.isFinite(current) ? 'assessed' : 'incomplete', basis };
   });

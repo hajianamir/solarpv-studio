@@ -865,6 +865,15 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     { id: 'single-load', name: 'Explicit single-phase load', ratedWatts: 1000, quantity: 1, isDc: false },
     { id: 'dc-load', name: 'DC load', ratedWatts: 500, quantity: 1, isDc: true },
   ], ac);
+  const infiniteLoadVoltageResult = evaluateLoadAcCurrents(
+    [{ id: 'infinite-voltage', name: 'Invalid voltage load', ratedWatts: 1000, quantity: 1, isDc: false }],
+    { ...ac, loadService: { ...ac.loadService, lineToNeutralVolts: Infinity } },
+  )[0];
+  const infiniteInjectionAssessment = assessAcRequirements(
+    { ...ac, injection: { level: 'mv', nominalKv: Infinity, confirmed: true } },
+    { isThreePhase: true, acVoltageVac: 208 },
+    'powerplant',
+  );
   const acCompatibleNorthAmerican = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid');
   const acIncompatibleInverter = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 400 }, 'ongrid');
   const clusterUnknownPhase = evaluateInverterClustering(5000, 7000, 5, 500).acPhaseType;
@@ -888,8 +897,10 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       && loadAcCurrentResults[0].status === 'assessed' && Math.abs((loadAcCurrentResults[0].currentAmps ?? 0) - 6.17) < 0.02
       && loadAcCurrentResults[1].basis === 'per_load_override' && loadAcCurrentResults[1].status === 'assessed'
       && loadAcCurrentResults[2].status === 'dc_not_applicable'
+      && infiniteLoadVoltageResult.status === 'incomplete' && infiniteLoadVoltageResult.currentAmps === null
+      && infiniteInjectionAssessment.status === 'incomplete'
       && !assessAcRequirements(createUnknownAcRequirements(), { isThreePhase: true }, 'powerplant').reasons.some((reason) => reason.includes('230')),
-    `208/120 V 60 Hz explicit on-grid=${acCompatibleNorthAmerican.status}; 400 V inverter mismatch=${acIncompatibleInverter.status}; legacy AC stays unknown=${acOldProjectMigration.project.acRequirements === null}.`);
+    `208/120 V 60 Hz explicit on-grid=${acCompatibleNorthAmerican.status}; 400 V inverter mismatch=${acIncompatibleInverter.status}; legacy AC stays unknown=${acOldProjectMigration.project.acRequirements === null}; infinite load voltage/injection are incomplete.`);
 
   const contextualHelpPages = [
     'climate', 'loads', 'system_mode', 'array', 'harmonics_grid', 'mv_substation', 'bess',
