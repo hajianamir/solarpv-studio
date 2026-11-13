@@ -53,7 +53,12 @@ function assert(condition: boolean, testName: string, detail: string = ''): void
     console.log(`  [PASS] ${testName}${detail ? ' -> ' + detail : ''}`);
   } else {
     failures++;
-    console.error(`  [FAIL] ${testName}${detail ? ' -> ' + detail : ''}`);
+    const failure = `${testName}${detail ? ' -> ' + detail : ''}`;
+    console.error(`  [FAIL] ${failure}`);
+    if (process.env.GITHUB_ACTIONS === 'true') {
+      const annotation = failure.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').replace(/:/g, '%3A').replace(/,/g, '%2C');
+      console.error(`::error title=M01-M22 audit regression::${annotation}`);
+    }
   }
 }
 
