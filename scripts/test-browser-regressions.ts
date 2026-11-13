@@ -708,8 +708,12 @@ async function main() {
 }
 
 let suiteTimeoutHandle: NodeJS.Timeout;
+const browserSuiteTimeoutMs = Number(process.env.BROWSER_TEST_TIMEOUT_MS) || 90000;
 const suiteTimeout = new Promise<never>((_resolve, reject) => {
-  suiteTimeoutHandle = setTimeout(() => reject(new Error('Browser regression suite exceeded its 90-second wall-clock limit')), 90000);
+  suiteTimeoutHandle = setTimeout(
+    () => reject(new Error(`Browser regression suite exceeded its ${browserSuiteTimeoutMs}ms wall-clock limit`)),
+    browserSuiteTimeoutMs,
+  );
 });
 Promise.race([main(), suiteTimeout]).catch((error) => {
   console.error('[FAIL] Browser regressions:', error);

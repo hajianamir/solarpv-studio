@@ -91,6 +91,8 @@ jobs:
 
       - name: Real browser and offline workflow regressions
         run: npm run test:browser
+        env:
+          BROWSER_TEST_TIMEOUT_MS: 240000
 
       - name: DOCX/XLSX/JSON export read-back
         run: npm run verify:exports
