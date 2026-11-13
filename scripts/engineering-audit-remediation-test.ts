@@ -47,6 +47,25 @@ import { createEngineeringDatum } from '../src/engine/dataGateway/types';
 let failures = 0;
 let passes = 0;
 
+function compensatedEnergySum(values: number[]): number {
+  let sum = 0;
+  let correction = 0;
+  for (const value of values) {
+    const adjusted = value - correction;
+    const next = sum + adjusted;
+    correction = (next - sum) - adjusted;
+    sum = next;
+  }
+  return sum;
+}
+
+function energySummationBound(values: number[]): number {
+  const nEpsilon = values.length * Number.EPSILON;
+  const gamma = nEpsilon / (1 - nEpsilon);
+  return gamma * values.reduce((sum, value) => sum + Math.abs(value), 0)
+    + 4 * Number.EPSILON * Math.max(1, ...values.map(Math.abs));
+}
+
 function assert(condition: boolean, testName: string, detail: string = '') {
   if (condition) {
     passes++;
@@ -419,12 +438,13 @@ async function runAuditRemediationSuite() {
       50,   // usable 50 kWh
       60    // total 60 kWh
     );
-    const sumHourlyDemand = sim24.hourlySteps.reduce((s, h) => s + h.loadDemandKwh, 0);
-    const demandDelta = Math.abs(sumHourlyDemand - 240.0);
+    const hourlyDemandValues = sim24.hourlySteps.map((step) => step.loadDemandKwh);
+    const sumHourlyDemand = compensatedEnergySum(hourlyDemandValues);
     assert(
-      demandDelta < 0.5,
-      `24h load profile partition strictly sums to daytime + nighttime load (120+120=240 kWh)`,
-      `sumHourlyDemand=${sumHourlyDemand.toFixed(2)} kWh, totalConsumption24hKwh=${sim24.totalConsumption24hKwh} kWh`
+      Math.abs(sumHourlyDemand - sim24.totalConsumption24hKwh) <= energySummationBound(hourlyDemandValues)
+        && Math.abs(sumHourlyDemand - 240.0) <= energySummationBound(hourlyDemandValues),
+      '24h raw load profile and total conserve 120+120 kWh within the IEEE-754 summation bound',
+      `compensatedHourlyDemand=${sumHourlyDemand} kWh, totalConsumption24hKwh=${sim24.totalConsumption24hKwh} kWh, bound=${energySummationBound(hourlyDemandValues)} kWh`
     );
 
     // 6c. Zero-battery solar surplus conservation
@@ -436,13 +456,19 @@ async function runAuditRemediationSuite() {
       0,    // 0 battery
       0
     );
-    const genTotal = zeroBatSim.totalGeneration24hKwh;
-    const surplusTotal = zeroBatSim.totalSurplus24hKwh;
-    const surplusDelta = Math.abs(genTotal - surplusTotal);
+    const generationValues = zeroBatSim.hourlySteps.map((step) => step.solarGenKwh);
+    const surplusValues = zeroBatSim.hourlySteps.map((step) => step.surplusKwh);
+    const genTotal = compensatedEnergySum(generationValues);
+    const surplusTotal = compensatedEnergySum(surplusValues);
+    const generationBound = energySummationBound(generationValues);
+    const surplusBound = energySummationBound(surplusValues);
     assert(
-      surplusDelta < 0.2,
-      `Zero-battery system conserves 100% of solar generation as surplus without battery efficiency penalty`,
-      `generation=${genTotal} kWh, surplus=${surplusTotal} kWh`
+      Math.abs(genTotal - zeroBatSim.totalGeneration24hKwh) <= generationBound
+        && Math.abs(surplusTotal - zeroBatSim.totalSurplus24hKwh) <= surplusBound
+        && Math.abs(genTotal - surplusTotal) <= generationBound + surplusBound
+        && zeroBatSim.hourlySteps.every((step) => step.solarGenKwh === step.surplusKwh),
+      'Zero-battery, zero-load raw generation is conserved as surplus within the IEEE-754 summation bound',
+      `generation=${genTotal} kWh, surplus=${surplusTotal} kWh, bound=${generationBound + surplusBound} kWh`
     );
 
     // 6d. PV Array sizing: invalid PSH rejection & voltage feasibility

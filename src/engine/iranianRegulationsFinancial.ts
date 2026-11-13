@@ -262,7 +262,10 @@ export function runIranianRegulationFinancialModel(
     let discountedLifetimeEnergyKwh = 0;
     for (const cf of cashFlows) {
       discountedLifetimeCostMillion += cf.opexMillionToman / Math.pow(1.0 + discountRate, cf.year);
-      discountedLifetimeEnergyKwh += (cf.generationMwh * 1000) / Math.pow(1.0 + discountRate, cf.year);
+      // The cash-flow table retains its historical whole-MWh presentation.
+      // LCOE must use the unrounded modeled generation, not that displayed row.
+      const rawGenerationMwh = annualGenerationMwh * Math.pow(1.0 - degradationRate, cf.year - 1);
+      discountedLifetimeEnergyKwh += (rawGenerationMwh * 1000) / Math.pow(1.0 + discountRate, cf.year);
     }
     lcoeTomanPerKwh = discountedLifetimeEnergyKwh > 0
       ? Math.round((discountedLifetimeCostMillion * 1e6) / discountedLifetimeEnergyKwh)

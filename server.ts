@@ -1,3 +1,14 @@
+try {
+  // @ts-ignore
+  await import('dotenv/config');
+} catch {
+  try {
+    // Native Node 20.6+ fallback if dotenv package is not present in legacy node_modules
+    if (typeof (process as any).loadEnvFile === 'function' && fs.existsSync('.env')) {
+      (process as any).loadEnvFile('.env');
+    }
+  } catch {}
+}
 import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -25,10 +36,26 @@ import {
   southToNorthAzimuth,
   asNorthAzimuthDeg,
 } from './src/engine/core/solarGeometryContract.js';
+import { ExternalDataGateway } from './src/engine/dataGateway/externalDataGateway.js';
+import { GeocodingError } from './src/engine/dataGateway/climateDataProvider.js';
+import {
+  BoundedGeocodeCache,
+  MAX_GEOCODE_QUERY_BYTES,
+  isGeocodeQueryWithinLimit,
+  normalizeGeocodeQuery,
+} from './src/engine/dataGateway/geocodeCache.js';
+import { isRealInternetEnabled } from './src/engine/env/runtimeEnv.js';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const rawPort = Number(process.env.PORT) || Number(process.env.APP_PORT);
+const PORT = Number.isInteger(rawPort) && rawPort >= 1 && rawPort <= 65535 ? rawPort : 3000;
 const isProduction = process.env.NODE_ENV === 'production';
+const appInstanceCount = Number(process.env.APP_INSTANCE_COUNT ?? 1);
+if (appInstanceCount > 1 && (!process.env.PROVIDER_LIMITER_REDIS_REST_URL || !process.env.PROVIDER_LIMITER_REDIS_REST_TOKEN)) {
+  throw new Error(
+    'APP_INSTANCE_COUNT > 1 requires PROVIDER_LIMITER_REDIS_REST_URL and PROVIDER_LIMITER_REDIS_REST_TOKEN for cross-instance provider rate coordination.'
+  );
+}
 
 // Disable Express fingerprinting header (P3-02)
 app.disable('x-powered-by');
@@ -196,6 +223,112 @@ app.get('/api/health', (_req: Request, res: Response) => {
     projectsCount: db.projects.size,
     isPersistent: fs.existsSync(DB_PERSIST_PATH),
   });
+});
+
+// ---- External Data Gateway proxy (same-origin; removes browser CORS/CSP dependency) ----
+const geocodeCache = new BoundedGeocodeCache<any[]>();
+
+function requestAbortController(req: Request, res: Response): AbortController {
+  const controller = new AbortController();
+  const abortIfDisconnected = () => {
+    if (!res.writableEnded) controller.abort(new Error('HTTP client disconnected'));
+  };
+  req.once('aborted', abortIfDisconnected);
+  res.once('close', abortIfDisconnected);
+  return controller;
+}
+
+app.get('/api/v1/gateway/site', async (req: Request, res: Response) => {
+  const rawLat = req.query.lat;
+  const rawLng = req.query.lng;
+  if (typeof rawLat !== 'string' || typeof rawLng !== 'string' || rawLat.trim() === '' || rawLng.trim() === '') {
+    return res.status(400).json({ ok: false, error: 'Latitude and longitude query parameters are required and cannot be empty.' });
+  }
+  const lat = Number(rawLat);
+  const lng = Number(rawLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return res.status(400).json({ ok: false, error: 'Invalid latitude/longitude: lat must be between -90 and 90, lng between -180 and 180.' });
+  }
+
+  const startedAt = Date.now();
+  const controller = requestAbortController(req, res);
+  try {
+    const data = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng, { signal: controller.signal });
+    if (controller.signal.aborted || res.destroyed) return;
+
+    const meta = data.climateResource?.metadata;
+    const isSolarLive = Boolean(meta) &&
+      meta.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL' && !meta.isEstimatedFromGlobalModel && data.climateResource.peakSunHours > 0;
+    const isSoilLive = data.soilProperties?.metadata?.sourceProvider === 'ISRIC_SOILGRIDS' && !data.soilProperties.estimatedFromGlobalModel;
+    const live = Boolean(isSolarLive && isSoilLive);
+    console.info(`[gateway] lat=${lat} lng=${lng} solarLive=${isSolarLive} soilLive=${isSoilLive} ${Date.now() - startedAt}ms trace=${data.traceId}`);
+    res.setHeader('Cache-Control', live ? 'public, max-age=1800' : 'no-cache, no-store, must-revalidate');
+    res.json({ ok: true, live, isSolarLive, isSoilLive, ...data });
+  } catch (err) {
+    if (controller.signal.aborted || res.destroyed) return;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[gateway] FAILED lat=${lat} lng=${lng}: ${msg}`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.status(502).json({ ok: false, error: msg });
+  }
+});
+
+// Nominatim requests are rate-limited by the process-wide provider gate and, when
+// configured, an atomic Redis REST reservation shared across service instances.
+app.get('/api/v1/gateway/geocode', async (req: Request, res: Response) => {
+  const rawQ = req.query.q;
+  if (typeof rawQ !== 'string') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(400).json({ code: 'INVALID_QUERY', error: 'A non-empty geocoding query is required.' });
+  }
+  // Bound decoded input before normalization so very large or compatibility-
+  // normalized queries cannot consume unbounded CPU/memory or reach the provider.
+  if (!isGeocodeQueryWithinLimit(rawQ)) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(400).json({ code: 'INVALID_QUERY', error: `Geocoding query exceeds the ${MAX_GEOCODE_QUERY_BYTES}-byte limit.` });
+  }
+  const qKey = normalizeGeocodeQuery(rawQ);
+  if (!qKey) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(400).json({ code: 'INVALID_QUERY', error: 'A non-empty geocoding query is required.' });
+  }
+  if (!isGeocodeQueryWithinLimit(qKey)) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(400).json({ code: 'INVALID_QUERY', error: `Geocoding query exceeds the ${MAX_GEOCODE_QUERY_BYTES}-byte limit.` });
+  }
+  if (!isRealInternetEnabled()) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.status(503).json({ code: 'DISABLED', error: 'Online geocoding is disabled.' });
+  }
+  const cached = geocodeCache.get(qKey);
+  if (cached) {
+    res.setHeader('Cache-Control', 'public, max-age=1800');
+    return res.json(cached);
+  }
+
+  const controller = requestAbortController(req, res);
+  try {
+    const results = await ExternalDataGateway.getInstance().climateProvider.forwardGeocodeNominatim(qKey, {
+      signal: controller.signal,
+    });
+    if (controller.signal.aborted || res.destroyed) return;
+    if (results.length > 0 && geocodeCache.set(qKey, results)) {
+      res.setHeader('Cache-Control', 'public, max-age=1800');
+    } else {
+      // Empty or oversized results are returned but not retained or client-cached.
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+    res.json(results);
+  } catch (err) {
+    if (controller.signal.aborted || res.destroyed) return;
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    const code = err instanceof GeocodingError ? err.code : 'UPSTREAM_UNAVAILABLE';
+    const status = code === 'TIMEOUT' ? 504 : code === 'DISABLED' || code === 'COORDINATOR_UNAVAILABLE' ? 503 : 502;
+    res.status(status).json({
+      code,
+      error: err instanceof GeocodingError ? err.message : 'Geocoding service is unavailable.',
+    });
+  }
 });
 
 // 1. Solar calculations

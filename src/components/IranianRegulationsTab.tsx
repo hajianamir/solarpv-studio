@@ -238,6 +238,11 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
             : '25-Year Cash Flow Matrix & Debt Service Coverage Ratio (DSCR)'}
         </h3>
 
+        <p className="text-[10px] text-slate-400 mb-2" data-testid="f04-regulatory-annualization-disclosure">
+          {isFa
+            ? 'این برآورد صرفاً برون‌یابی مدل ۲۴ ساعته از جمع روزانه گردنشده است، نه پیش‌بینی ۸۷۶۰ ساعته. ردیف‌های تولید سالانه هرکدام مستقل به مگاوات‌ساعت صحیح گرد می‌شوند؛ LCOE از تولید سالانه گردنشده استفاده می‌کند. مدل درآمد و هزینه، مبالغ را به میلیون تومان گرد می‌کند.'
+            : 'This illustrative projection extrapolates the unrounded 24-hour daily total, not an 8,760-hour forecast. Annual generation rows are independently rounded to whole MWh; LCOE uses unrounded annual generation. The revenue and cost model rounds amounts to millions of Toman.'}
+        </p>
         <div className="overflow-x-auto max-h-[380px] -mx-3 sm:mx-0">
           <table className={`w-full text-xs text-slate-300 min-w-[700px] ${isFa ? 'text-right' : 'text-left'}`}>
             <thead className="bg-industrial-surface text-slate-400 sticky top-0 border-b border-industrial-border">
@@ -258,7 +263,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
                   <td className="p-2.5 font-bold text-white">
                     {isFa ? `سال ${cf.year}` : `Yr ${cf.year}`}
                   </td>
-                  <td className="p-2.5 text-slate-200">{cf.generationMwh.toLocaleString()}</td>
+                  <td className="p-2.5 text-slate-200" data-testid={`f04-regulatory-generation-year-${cf.year}`}>{cf.generationMwh.toLocaleString()}</td>
                   <td className="p-2.5 text-industrial-success font-bold">{cf.revenueMillionToman.toLocaleString()}</td>
                   <td className="p-2.5 text-slate-400">{cf.opexMillionToman.toLocaleString()}</td>
                   <td className="p-2.5 text-red-300">{cf.debtServiceMillionToman > 0 ? cf.debtServiceMillionToman.toLocaleString() : '-'}</td>

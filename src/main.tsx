@@ -18,6 +18,17 @@ if ('serviceWorker' in navigator && typeof window !== 'undefined') {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
+      .then((registration) => {
+        const notifyWaitingUpdate = () => {
+          if (registration.waiting && navigator.serviceWorker.controller) {
+            window.dispatchEvent(new Event('solarpv-update-waiting'));
+          }
+        };
+        notifyWaitingUpdate();
+        registration.addEventListener('updatefound', () => {
+          registration.installing?.addEventListener('statechange', notifyWaitingUpdate);
+        });
+      })
       .catch((err) => {
         // SW registration is non-blocking
         console.debug('[PWA] Service worker registration note:', err);

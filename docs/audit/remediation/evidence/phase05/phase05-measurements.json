@@ -1,13 +1,1410 @@
 {
-  "schema": "solarpv.audit.phase05.v1",
+  "schema": "solarpv.audit.phase05.v2",
   "phase": "05",
-  "generatedAtCommit": "4b347a935c7c8edd9bae804ad0ea0de3ca06ca98",
+  "generatedAtCommit": "35e9cfe686e6ac72a1c903452dee2cb1fd57868c",
+  "generatedAtTree": "35674f9727c0129a0fffe91d263e824fc9cc6b12",
+  "sourceControlAvailable": true,
+  "workingTreeDirty": true,
+  "workingTreeDiffSha256": "434a1ae2c7669bc5f110686b51fe1812a3f6c4f0c7f067e45ad1fcd9ad8f9721",
+  "workingTreeDiffScope": "SHA-256 of git diff --binary HEAD, captured before writing this phase05-measurements.json; includes tracked index/worktree changes relative to HEAD, excludes untracked file contents.",
+  "workingTreeIdentityCapturedAt": "2026-11-12T20:38:05.049Z",
+  "untrackedPaths": [
+    "docs/audit/F-04-red-status.md",
+    "docs/audit/PR28-F04-OWNER-DECISION-ADDENDUM.fa.md",
+    "docs/audit/PR28-followup-35e9cfe/F-04-contract.md",
+    "docs/audit/PR28-followup-35e9cfe/continuation-status.md",
+    "docs/audit/PR28-followup-35e9cfe/final-worktree-manifest.json",
+    "docs/audit/PR28-followup-35e9cfe/node20/audit-offline-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/audit-offline-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/audit-offline-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/audit-offline-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/audit-offline.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/audit-offline.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/browser-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/browser-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/browser-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/browser-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/browser.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/browser.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-offline-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-offline-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-offline-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-offline-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-offline.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-offline.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/build-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/build.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/build.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/exports-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/exports-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/exports-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/exports-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/exports.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/exports.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/f04-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/f04-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/f04-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/f04-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/f04.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/f04.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/gateway-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/gateway-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/gateway-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/gateway-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/gateway.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/gateway.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/lint-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/lint-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/lint-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/lint-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/lint.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/lint.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/npm-ci-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/npm-ci-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/npm-ci-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/npm-ci-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/npm-ci.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/npm-ci.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/phase05-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/phase05-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/phase05-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/phase05.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/phase05.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/remediation-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/remediation-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/remediation-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/remediation-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/remediation.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/remediation.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/runtime-final.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/runtime-report-final.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/runtime.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/smoke-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/smoke-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/smoke-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/smoke-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/smoke.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/smoke.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-default-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-default-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-default-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-default-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-default.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-default.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-offline-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-offline-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-offline-report-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-offline-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-offline.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node20/test-offline.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/audit-offline-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/audit-offline-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/audit-offline-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/audit-offline.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/audit-offline.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/browser-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/browser-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/browser-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/browser.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/browser.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/build-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/build-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/build-offline-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/build-offline-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/build-offline-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/build-offline.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/build-offline.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/build-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/build.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/build.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/exports-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/exports-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/exports-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/exports.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/exports.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/f04-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/f04-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/f04-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/f04.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/f04.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/gateway-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/gateway-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/gateway-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/gateway.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/gateway.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/lint-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/lint-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/lint-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/lint.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/lint.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/npm-ci-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/npm-ci-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/npm-ci.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/npm-ci.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/phase05-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/phase05-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/phase05-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/phase05.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/phase05.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/remediation-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/remediation-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/remediation-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/remediation.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/remediation.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/runtime-final.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/runtime.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/smoke-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/smoke-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/smoke-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/smoke.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/smoke.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-default-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-default-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-default-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-default.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-default.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-offline-final.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-offline-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-offline-report-final.exit",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-offline.command.txt",
+    "docs/audit/PR28-followup-35e9cfe/node22/test-offline.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe.md",
+    "docs/audit/PR28-local-evidence-35e9cfe/browser-regressions-node20.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/browser-regressions-node22.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/f04-api-probe-node20.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/f04-api-probe-node22.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-benchmark.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-build.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-engineering.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-eslint.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-exports.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-gateway.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-remediation.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-smoke.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node20-types.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-benchmark.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-build.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-engineering.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-eslint.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-exports.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-gateway.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-remediation.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-smoke.exit",
+    "docs/audit/PR28-local-evidence-35e9cfe/node22-types.exit",
+    "docs/audit/PR28-reviewable-worktree-35e9cfe.patch",
+    "docs/audit/PR28-worktree-manifest-35e9cfe.json",
+    "docs/operations/provider-rate-limiting.md",
+    "docs/operations/remediation-supervisor-review.patch",
+    "remediation-review.patch",
+    "scripts/test-browser-regressions.ts",
+    "scripts/test-data-gateway-regressions.ts",
+    "scripts/verify-audit-remediation.ts",
+    "scripts/verify-export-artifact-readback.ts",
+    "scripts/verify-f04-energy-contract.ts",
+    "src/engine/dataGateway/providerRequestLimiter.ts",
+    "src/engine/energyFormatting.ts",
+    "src/engine/provenance/projectProvenance.ts"
+  ],
+  "untrackedFiles": [
+    {
+      "path": "docs/audit/F-04-red-status.md",
+      "mode": "100644",
+      "bytes": 2146,
+      "sha256": "f93d6ec6b75badce4d97d55ee11c65a620f6b2d0f8fa7c716588e3befbb35e13"
+    },
+    {
+      "path": "docs/audit/PR28-F04-OWNER-DECISION-ADDENDUM.fa.md",
+      "mode": "100644",
+      "bytes": 1489,
+      "sha256": "a46be974e1dca7d8b61301ceefc89f34bb45cab233c3528cca11972790fe02d6"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/F-04-contract.md",
+      "mode": "100644",
+      "bytes": 2778,
+      "sha256": "82b629b79ec3d259592a4e7b43e27de424cad84bf36974e9a946c9743f5ba812"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/continuation-status.md",
+      "mode": "100644",
+      "bytes": 7196,
+      "sha256": "1647277cffc42f441af8acbdffe7a52f12118b926b43f1b48f8414bdef9fe8e0"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/final-worktree-manifest.json",
+      "mode": "100644",
+      "bytes": 46772,
+      "sha256": "5e38275a5543b90fdf409389a50ef2df3c021bfa9115b01beb7a32e45901013d"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/audit-offline-final.command.txt",
+      "mode": "100644",
+      "bytes": 90,
+      "sha256": "5923d60206a618a32cf4cdef35a089f5aa50f483479388911d4abf5eb326b269"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/audit-offline-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/audit-offline-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 90,
+      "sha256": "5923d60206a618a32cf4cdef35a089f5aa50f483479388911d4abf5eb326b269"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/audit-offline-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/audit-offline.command.txt",
+      "mode": "100644",
+      "bytes": 90,
+      "sha256": "5923d60206a618a32cf4cdef35a089f5aa50f483479388911d4abf5eb326b269"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/audit-offline.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/browser-final.command.txt",
+      "mode": "100644",
+      "bytes": 72,
+      "sha256": "007414caf0cd0768624b3398ffe1a8788d400e629fbc0b1cb8fb3f1744913c8e"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/browser-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/browser-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 72,
+      "sha256": "007414caf0cd0768624b3398ffe1a8788d400e629fbc0b1cb8fb3f1744913c8e"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/browser-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/browser.command.txt",
+      "mode": "100644",
+      "bytes": 72,
+      "sha256": "007414caf0cd0768624b3398ffe1a8788d400e629fbc0b1cb8fb3f1744913c8e"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/browser.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-final.command.txt",
+      "mode": "100644",
+      "bytes": 65,
+      "sha256": "dd0f09de1741b88e2b2830cbb6408224e8a185f3e42fb3613fc149fe13234eee"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-offline-final.command.txt",
+      "mode": "100644",
+      "bytes": 110,
+      "sha256": "6eb60198ff7b65ca5b2fd6cb6aaa299b3fc7397f7ee631257afec0a4e465d681"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-offline-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-offline-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 110,
+      "sha256": "6eb60198ff7b65ca5b2fd6cb6aaa299b3fc7397f7ee631257afec0a4e465d681"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-offline-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-offline.command.txt",
+      "mode": "100644",
+      "bytes": 110,
+      "sha256": "6eb60198ff7b65ca5b2fd6cb6aaa299b3fc7397f7ee631257afec0a4e465d681"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-offline.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 65,
+      "sha256": "dd0f09de1741b88e2b2830cbb6408224e8a185f3e42fb3613fc149fe13234eee"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build.command.txt",
+      "mode": "100644",
+      "bytes": 65,
+      "sha256": "dd0f09de1741b88e2b2830cbb6408224e8a185f3e42fb3613fc149fe13234eee"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/build.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/exports-final.command.txt",
+      "mode": "100644",
+      "bytes": 74,
+      "sha256": "547abda3e039f3637f6297ad7c00d46ab3ce02a9b10540497f04314343c719ae"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/exports-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/exports-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 74,
+      "sha256": "547abda3e039f3637f6297ad7c00d46ab3ce02a9b10540497f04314343c719ae"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/exports-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/exports.command.txt",
+      "mode": "100644",
+      "bytes": 74,
+      "sha256": "547abda3e039f3637f6297ad7c00d46ab3ce02a9b10540497f04314343c719ae"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/exports.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/f04-final.command.txt",
+      "mode": "100644",
+      "bytes": 70,
+      "sha256": "34c66ab37d9a8dd295a22c69fc3b815cb6e70f59da9258e537597fcf4722734a"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/f04-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/f04-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 70,
+      "sha256": "34c66ab37d9a8dd295a22c69fc3b815cb6e70f59da9258e537597fcf4722734a"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/f04-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/f04.command.txt",
+      "mode": "100644",
+      "bytes": 70,
+      "sha256": "34c66ab37d9a8dd295a22c69fc3b815cb6e70f59da9258e537597fcf4722734a"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/f04.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/gateway-final.command.txt",
+      "mode": "100644",
+      "bytes": 92,
+      "sha256": "eb54d1ab3255e676281da82bb425a01eb25b038f6ff1e33b75d12c094dc4dabf"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/gateway-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/gateway-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 92,
+      "sha256": "eb54d1ab3255e676281da82bb425a01eb25b038f6ff1e33b75d12c094dc4dabf"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/gateway-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/gateway.command.txt",
+      "mode": "100644",
+      "bytes": 92,
+      "sha256": "eb54d1ab3255e676281da82bb425a01eb25b038f6ff1e33b75d12c094dc4dabf"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/gateway.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/lint-final.command.txt",
+      "mode": "100644",
+      "bytes": 64,
+      "sha256": "f6a24b736645978a3864d59c84a76f1b355d5c4fb2cf37242fc59023236da79c"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/lint-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/lint-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 64,
+      "sha256": "f6a24b736645978a3864d59c84a76f1b355d5c4fb2cf37242fc59023236da79c"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/lint-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/lint.command.txt",
+      "mode": "100644",
+      "bytes": 64,
+      "sha256": "f6a24b736645978a3864d59c84a76f1b355d5c4fb2cf37242fc59023236da79c"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/lint.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/npm-ci-final.command.txt",
+      "mode": "100644",
+      "bytes": 74,
+      "sha256": "cd41ab5a4d7be3f371954aa22835a873c34a144d7a5c659741e9e91beedad139"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/npm-ci-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/npm-ci-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 74,
+      "sha256": "cd41ab5a4d7be3f371954aa22835a873c34a144d7a5c659741e9e91beedad139"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/npm-ci-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/npm-ci.command.txt",
+      "mode": "100644",
+      "bytes": 91,
+      "sha256": "375238dc8d39d0392c9d0c29d3364c3a38813a9b746e36ed9605ac16385633b7"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/npm-ci.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/phase05-final.command.txt",
+      "mode": "100644",
+      "bytes": 126,
+      "sha256": "671546ac346162e4cee9964461ac4b21119b5f69d1f2eb938f4c055ebbea0ec4"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/phase05-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/phase05-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 126,
+      "sha256": "671546ac346162e4cee9964461ac4b21119b5f69d1f2eb938f4c055ebbea0ec4"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/phase05.command.txt",
+      "mode": "100644",
+      "bytes": 126,
+      "sha256": "671546ac346162e4cee9964461ac4b21119b5f69d1f2eb938f4c055ebbea0ec4"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/phase05.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/remediation-final.command.txt",
+      "mode": "100644",
+      "bytes": 96,
+      "sha256": "cd9b538f2a89a1e24e2f760f657959113a79df0b485ec0136916fe65454cca70"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/remediation-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/remediation-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 96,
+      "sha256": "cd9b538f2a89a1e24e2f760f657959113a79df0b485ec0136916fe65454cca70"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/remediation-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/remediation.command.txt",
+      "mode": "100644",
+      "bytes": 96,
+      "sha256": "cd9b538f2a89a1e24e2f760f657959113a79df0b485ec0136916fe65454cca70"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/remediation.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/runtime-final.txt",
+      "mode": "100644",
+      "bytes": 80,
+      "sha256": "fd1c420ea7ea68f2e5be728ffd853258e7e928db6f37b58daa44e6258455f8e2"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/runtime-report-final.txt",
+      "mode": "100644",
+      "bytes": 111,
+      "sha256": "0d10ddb77c55762f713dbc46c1ea903c6ae8428c2e86296c5951dfa97dcb2495"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/runtime.txt",
+      "mode": "100644",
+      "bytes": 96,
+      "sha256": "316bfbf112a1e9bfdcffe83de13aa9bca6e5a7df042df2ef7bfd0e2a65946cbe"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/smoke-final.command.txt",
+      "mode": "100644",
+      "bytes": 90,
+      "sha256": "c11b86e59c45966c32cf87f5835889b055a8e6bb0ca233fadd098d497f9ce37e"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/smoke-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/smoke-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 90,
+      "sha256": "c11b86e59c45966c32cf87f5835889b055a8e6bb0ca233fadd098d497f9ce37e"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/smoke-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/smoke.command.txt",
+      "mode": "100644",
+      "bytes": 90,
+      "sha256": "c11b86e59c45966c32cf87f5835889b055a8e6bb0ca233fadd098d497f9ce37e"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/smoke.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-default-final.command.txt",
+      "mode": "100644",
+      "bytes": 60,
+      "sha256": "0cc2d5b59392b4e336089eeb5308c9f766d198e83c1dc60515b5fdcbc66d4d48"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-default-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-default-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 60,
+      "sha256": "0cc2d5b59392b4e336089eeb5308c9f766d198e83c1dc60515b5fdcbc66d4d48"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-default-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-default.command.txt",
+      "mode": "100644",
+      "bytes": 60,
+      "sha256": "0cc2d5b59392b4e336089eeb5308c9f766d198e83c1dc60515b5fdcbc66d4d48"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-default.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-offline-final.command.txt",
+      "mode": "100644",
+      "bytes": 80,
+      "sha256": "b4073429bb152b3eba077da6f4904a7b3270c97bd353d32d1c6edc7c4cdb34aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-offline-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-offline-report-final.command.txt",
+      "mode": "100644",
+      "bytes": 80,
+      "sha256": "b4073429bb152b3eba077da6f4904a7b3270c97bd353d32d1c6edc7c4cdb34aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-offline-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-offline.command.txt",
+      "mode": "100644",
+      "bytes": 80,
+      "sha256": "b4073429bb152b3eba077da6f4904a7b3270c97bd353d32d1c6edc7c4cdb34aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node20/test-offline.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/audit-offline-final.command.txt",
+      "mode": "100644",
+      "bytes": 57,
+      "sha256": "325d9f38f83bafbf0cea4db7cce6cfcf9e5b35263dce668c16f27ade481a67e8"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/audit-offline-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/audit-offline-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/audit-offline.command.txt",
+      "mode": "100644",
+      "bytes": 39,
+      "sha256": "a46287ff7541d67186f35b836646bc1b2415d9cd066f9f06c219a7df737c31b9"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/audit-offline.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/browser-final.command.txt",
+      "mode": "100644",
+      "bytes": 39,
+      "sha256": "63c3af6108d8b3df10634235feb6c4267def6ed5431cc955e2a30e9be74a5354"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/browser-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/browser-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/browser.command.txt",
+      "mode": "100644",
+      "bytes": 21,
+      "sha256": "1a6b22751e6ea60a82089c5cf6f44efe38eb14c93dd7825ca05d5b33cbdf2be7"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/browser.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build-final.command.txt",
+      "mode": "100644",
+      "bytes": 32,
+      "sha256": "097b5620de3a790079d18b5b766df1d3083854d9a536b15d3c98814f27653f51"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build-offline-final.command.txt",
+      "mode": "100644",
+      "bytes": 77,
+      "sha256": "293b5045a188d7362781b517c8675020abc6a515810bf869294dd2eeb49af313"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build-offline-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build-offline-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build-offline.command.txt",
+      "mode": "100644",
+      "bytes": 59,
+      "sha256": "18bf8a2d1404e857e19cae4dc568ed554721775f7086aeb14eec8e260893a95a"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build-offline.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build.command.txt",
+      "mode": "100644",
+      "bytes": 14,
+      "sha256": "dae58de3ddfde95b066b259e24d83e50d15aedeafb58b0b20d7b26dd324ef0ef"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/build.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/exports-final.command.txt",
+      "mode": "100644",
+      "bytes": 41,
+      "sha256": "dbe5e9962b1985b7669dc9896964a2cbbebe25492504320c0898e2f198d0cdc4"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/exports-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/exports-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/exports.command.txt",
+      "mode": "100644",
+      "bytes": 23,
+      "sha256": "fe4e0bfc3527105af9369be52446968c925540ac30534271cd2a4aacedf46971"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/exports.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/f04-final.command.txt",
+      "mode": "100644",
+      "bytes": 37,
+      "sha256": "4961dc5c607cccf04a8465447f1b450898e475baf1d76553084d5254663101a8"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/f04-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/f04-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/f04.command.txt",
+      "mode": "100644",
+      "bytes": 19,
+      "sha256": "3e6ea46cbaff073eea8917807caec12f76834aa072e0de0d94789a58ff759d01"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/f04.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/gateway-final.command.txt",
+      "mode": "100644",
+      "bytes": 59,
+      "sha256": "7bde7a405a6e33ed808f6b4de2814e96d2408f3f178ea328c68f47e081ec7252"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/gateway-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/gateway-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/gateway.command.txt",
+      "mode": "100644",
+      "bytes": 41,
+      "sha256": "e5ab18706a5309ceb1cf829846864386771fe043a31877c407b2359f81a479c7"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/gateway.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/lint-final.command.txt",
+      "mode": "100644",
+      "bytes": 31,
+      "sha256": "b908aca0744c2c0c6d3b0356e9be485f7010ce7caddd8f8e6e604546bc208008"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/lint-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/lint-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/lint.command.txt",
+      "mode": "100644",
+      "bytes": 13,
+      "sha256": "e0a1269b2e4d205c62633a290c1332cc527fb7923b1a83acfb61b5168be396ac"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/lint.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/npm-ci-final.command.txt",
+      "mode": "100644",
+      "bytes": 41,
+      "sha256": "fe7c63a1badd9a6299c2b1b4056726548c5870bc825e2d19ac67f5178b06d5af"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/npm-ci-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/npm-ci.command.txt",
+      "mode": "100644",
+      "bytes": 23,
+      "sha256": "9c87b1fb59a7e7e78be29d5cdf9b2fda2f79e8b43ba60fa41d8544dab6e04436"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/npm-ci.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/phase05-final.command.txt",
+      "mode": "100644",
+      "bytes": 93,
+      "sha256": "3ba64898f36ce2dba53b64bf218f429a19ecc1892ca51083516ecf70c7f53752"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/phase05-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/phase05-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/phase05.command.txt",
+      "mode": "100644",
+      "bytes": 75,
+      "sha256": "1ee1af0c161fcbda3d7098969efc1495444871bc2f21e4785ab1e48f595f4655"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/phase05.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/remediation-final.command.txt",
+      "mode": "100644",
+      "bytes": 63,
+      "sha256": "f78216173c09b00dcd50689c62d3a34bec16b6fdec13fa4d8aa12bda97f5a8c0"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/remediation-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/remediation-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/remediation.command.txt",
+      "mode": "100644",
+      "bytes": 45,
+      "sha256": "8db252563db8977ae030d96f69a9402fe161855ed50183408ef2321a9be2d08d"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/remediation.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/runtime-final.txt",
+      "mode": "100644",
+      "bytes": 71,
+      "sha256": "a2bed1d3843b7381703fbbae1ac3e185ac51aa9ea6b8d0e2dd5fec3479618a3d"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/runtime.txt",
+      "mode": "100644",
+      "bytes": 78,
+      "sha256": "8901d039614e11b00ba1c83fa7a0b4d49845939419e5eb320cbdefc90c75b894"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/smoke-final.command.txt",
+      "mode": "100644",
+      "bytes": 57,
+      "sha256": "57cd9791e8a0b447ec0c7ee346a9039c1cd86da9b68c1237133351f487d2fb4a"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/smoke-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/smoke-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/smoke.command.txt",
+      "mode": "100644",
+      "bytes": 39,
+      "sha256": "b8370bf734252486d370145a22a22f3e32056bcf65113785ba0eebff59c99f5c"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/smoke.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-default-final.command.txt",
+      "mode": "100644",
+      "bytes": 27,
+      "sha256": "31fdc9fb16b164967a37cc8921fd48766062c3f6a22deb09bee025fdbed0ee31"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-default-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-default-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-default.command.txt",
+      "mode": "100644",
+      "bytes": 9,
+      "sha256": "f135f9fa4f38fd0c92563221116e2f79df0838f5ff86440ae44d4b428576fc62"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-default.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-offline-final.command.txt",
+      "mode": "100644",
+      "bytes": 47,
+      "sha256": "4f85df9a7f2cca4dd10af93a92eea5ea10b1efca9be5841708e2906487b55273"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-offline-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-offline-report-final.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-offline.command.txt",
+      "mode": "100644",
+      "bytes": 29,
+      "sha256": "f9d4c0f57209f204103c973442664a3b57c68c7f1584cf5589bb65064fd2a54d"
+    },
+    {
+      "path": "docs/audit/PR28-followup-35e9cfe/node22/test-offline.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe.md",
+      "mode": "100644",
+      "bytes": 4800,
+      "sha256": "af5bb194720b9aaff19b68ecdbc5dbae9aa1dce4606f9de2e7f8b84269d96549"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/browser-regressions-node20.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/browser-regressions-node22.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/f04-api-probe-node20.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/f04-api-probe-node22.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-benchmark.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-build.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-engineering.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-eslint.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-exports.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-gateway.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-remediation.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-smoke.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node20-types.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-benchmark.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-build.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-engineering.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-eslint.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-exports.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-gateway.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-remediation.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-smoke.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-local-evidence-35e9cfe/node22-types.exit",
+      "mode": "100644",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/audit/PR28-reviewable-worktree-35e9cfe.patch",
+      "mode": "100644",
+      "bytes": 526658,
+      "sha256": "1e9d2886818757be4bcd0a9e771f314534eaa14775808127f212293effa41848"
+    },
+    {
+      "path": "docs/audit/PR28-worktree-manifest-35e9cfe.json",
+      "mode": "100644",
+      "bytes": 9548,
+      "sha256": "c895a0a1f07c4ab8276d54960a21287c69b9aca96bdcb566802d8dc7bbb36f1c"
+    },
+    {
+      "path": "docs/operations/provider-rate-limiting.md",
+      "mode": "100644",
+      "bytes": 2070,
+      "sha256": "eab7edbee7e20fff727501b6f4600aa63d3f014fb8b6d15568d16697baa254a9"
+    },
+    {
+      "path": "docs/operations/remediation-supervisor-review.patch",
+      "mode": "100644",
+      "bytes": 85604,
+      "sha256": "61046ce4626bdcaefb57732549cdb877cef7eb2e613833008f4f43c90070d5f9"
+    },
+    {
+      "path": "remediation-review.patch",
+      "mode": "100644",
+      "bytes": 323969,
+      "sha256": "0530c7b6b3b7b9a69d6b28cad3ba5c30c28977e4836125327922e465f0e4252a"
+    },
+    {
+      "path": "scripts/test-browser-regressions.ts",
+      "mode": "100644",
+      "bytes": 19313,
+      "sha256": "e3a7b8a0085680b30f2fa6ee7ca800291e2dab8e9c6b8bdb319e96db6bbf1d12"
+    },
+    {
+      "path": "scripts/test-data-gateway-regressions.ts",
+      "mode": "100644",
+      "bytes": 18862,
+      "sha256": "4bf2cc9d719695f8ca9d339638f00bee3226bb5960b91e7f24602b1fb41b93a0"
+    },
+    {
+      "path": "scripts/verify-audit-remediation.ts",
+      "mode": "100644",
+      "bytes": 36846,
+      "sha256": "597bc21a66651d735384c502cba59967a0f0cb1c11e794c6867bc8475c99e85e"
+    },
+    {
+      "path": "scripts/verify-export-artifact-readback.ts",
+      "mode": "100644",
+      "bytes": 9690,
+      "sha256": "55a3bb053cd2cd1f775a1f3efc37394b774fb2940bd7c8ac005d606acbb09e93"
+    },
+    {
+      "path": "scripts/verify-f04-energy-contract.ts",
+      "mode": "100644",
+      "bytes": 12234,
+      "sha256": "37c3b8eab302ef14c92a27853af535e81ff237ddb50f221a166c40fc6b978b81"
+    },
+    {
+      "path": "src/engine/dataGateway/providerRequestLimiter.ts",
+      "mode": "100644",
+      "bytes": 8938,
+      "sha256": "4811314d640c4957241fdecf54b08e7e4fd56c08316105559c8b26408f95a41b"
+    },
+    {
+      "path": "src/engine/energyFormatting.ts",
+      "mode": "100644",
+      "bytes": 1336,
+      "sha256": "ab8f973b30695d4e50ae0d4b3f2520fae0ac0516441a9af60027b0b9ff017ab2"
+    },
+    {
+      "path": "src/engine/provenance/projectProvenance.ts",
+      "mode": "100644",
+      "bytes": 4703,
+      "sha256": "2f860225d6d32126a1e0773b78e5d40b53de43d747a655e69f9d1cb0f607b027"
+    }
+  ],
+  "identityCaptureNote": "This verifier writes phase05-measurements.json after capturing identity, so captured HEAD/tree/diff are not a final checkout hash. Use the separate final worktree manifest for final identity.",
   "phase01BaselineCommit": "91b9b3b",
   "phase02BaselineCommit": "64e0ede",
   "phase03BaselineCommit": "7c4d55c",
   "phase04BaselineCommit": "bc1a978",
   "phase01HarnessSha256": "732b1074b7436150b58e8054aac5cce2ddd28429f44515b0a1911e8aa58d0ab9",
-  "phase05VerifierSha256": "9ef7a4668252f1ecdbc89234732f046e81f9d6e83593bf4ec743ffcf025387b8",
+  "phase05VerifierSha256": "f44100c82a63a16be3d0e679980b7cbacbf000e58c1e4673990cd5fff0ec29fe",
   "quantities": [
     {
       "id": "P5-01",
@@ -181,11 +1578,12 @@
     }
   },
   "gates": {
-    "lintErrors": 0,
-    "anyWarnings": 93,
-    "testPass": 196,
-    "testFail": 0,
-    "testSkip": 0,
-    "buildExit": 0
+    "lintErrors": null,
+    "anyWarnings": null,
+    "testPass": null,
+    "testFail": null,
+    "testSkip": null,
+    "buildExit": null,
+    "status": "not-measured-by-phase05-verifier"
   }
 }

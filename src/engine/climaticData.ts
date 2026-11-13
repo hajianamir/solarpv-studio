@@ -4,6 +4,7 @@
 
 import { ExternalDataGateway } from './dataGateway/externalDataGateway';
 import { estimateGeodesicDistanceToCoastKm } from './corrosion/saltCorrosionEngine';
+import { isRealInternetEnabled } from './env/runtimeEnv';
 
 import {
   calculateDesignDaylightHours,
@@ -30,6 +31,81 @@ export function applyGeotechnicalOverrides(
   overrides?: SiteGeotechnicalOverrides
 ): ClimateCity {
   if (!overrides) return baseCity;
+
+  const updatedProvenance = { ...(baseCity.fieldProvenance || {}) };
+  const now = new Date().toISOString();
+
+  if (overrides.soilBearingCapacityKpa !== undefined) {
+    updatedProvenance.soilBearingCapacityKpa = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User geotechnical override for allowable soil bearing capacity',
+      unit: 'kPa',
+      value: overrides.soilBearingCapacityKpa,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.soilInternalFrictionAngleDeg !== undefined) {
+    updatedProvenance.soilInternalFrictionAngleDeg = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User geotechnical override for soil internal friction angle',
+      unit: 'deg',
+      value: overrides.soilInternalFrictionAngleDeg,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.soilCohesionKpa !== undefined) {
+    updatedProvenance.soilCohesionKpa = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User geotechnical override for soil cohesion',
+      unit: 'kPa',
+      value: overrides.soilCohesionKpa,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.frostDepthCm !== undefined) {
+    updatedProvenance.frostDepthCm = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User geotechnical override for site frost depth',
+      unit: 'cm',
+      value: overrides.frostDepthCm,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.basicWindSpeedKmh !== undefined) {
+    updatedProvenance.basicWindSpeedKmh = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User site override for basic wind speed',
+      unit: 'km/h',
+      value: overrides.basicWindSpeedKmh,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.groundSnowLoadKgM2 !== undefined) {
+    updatedProvenance.groundSnowLoadKgM2 = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User site override for ground snow load',
+      unit: 'kg/m²',
+      value: overrides.groundSnowLoadKgM2,
+      retrievedAt: now,
+    };
+  }
+  if (overrides.annualRainfallMm !== undefined) {
+    updatedProvenance.annualRainfallMm = {
+      sourceKind: 'user_input',
+      providerName: 'USER_OVERRIDE',
+      derivationMethod: 'User site override for annual rainfall',
+      unit: 'mm',
+      value: overrides.annualRainfallMm,
+      retrievedAt: now,
+    };
+  }
+
   return {
     ...baseCity,
     basicWindSpeedKmh: overrides.basicWindSpeedKmh ?? baseCity.basicWindSpeedKmh,
@@ -45,6 +121,7 @@ export function applyGeotechnicalOverrides(
     distanceToCoastKm: overrides.distanceToCoastKm ?? baseCity.distanceToCoastKm,
     drainageCondition: overrides.drainageCondition ?? baseCity.drainageCondition,
     groundwaterDepthM: overrides.groundwaterDepthM ?? baseCity.groundwaterDepthM,
+    fieldProvenance: updatedProvenance,
   };
 }
 
@@ -236,8 +313,8 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
     optimalTiltAnnualDeg: optTilt,
     optimalTiltWinterDeg: optTiltWinter,
     optimalTiltSummerDeg: optTiltSummer,
-    descriptionFa: `داده‌های مکانی برخط استخراج‌شده از سامانه جهانی تابش خورشیدی و بارگذاری سازه‌ای (NASA POWER / PVGIS / NSRDB / مبحث ۶)`,
-    descriptionEn: `Geospatial solar and geotechnical parameters resolved dynamically via Global Climate API Gateway (NASA POWER / PVGIS / NSRDB)`,
+    descriptionFa: 'تخمین مدل تحلیلی منطقه‌ای (بدون اتصال به API) — برای طراحی bankable نیازمند داده ماهواره‌ای است',
+    descriptionEn: 'Regional analytical model estimate (no API connection) — bankable design requires satellite data',
     basicWindSpeedKmh: windKmh,
     groundSnowLoadKgM2: snowKgM2,
     annualRainfallMm: absLat > 45 ? 750 : isMENA ? 180 : 450,
@@ -248,8 +325,8 @@ export function getClimateData(lat: number, lng: number): ClimateCity {
     soilDensityKnM3: densityKnM3,
     frostDepthCm: frostDepthCm,
     seismicZoneCoefficientA: 0.25,
-    dataSourceFa: 'پایگاه داده برخط جهانی اقلیم و ژئوتکنیک (NASA POWER v2.0 / PVGIS / مبحث ۶)',
-    dataSourceEn: 'Global Climate & Geotechnical Gateway (NASA POWER v2.0 / PVGIS / ASCE 7-22)',
+    dataSourceFa: 'مدل تحلیلی منطقه‌ای داخلی (REGIONAL_ANALYTICAL_MODEL)',
+    dataSourceEn: 'Internal Regional Analytical Model (REGIONAL_ANALYTICAL_MODEL)',
     dataRetrievalDate: '2024-10-15',
     confidence: 'analytical_estimate',
     distanceToCoastKm: estimateGeodesicDistanceToCoastKm(lat, lng),
@@ -293,23 +370,76 @@ export function getDefaultClimateCity(): ClimateCity {
  * is open (offline / rate-limited / air-gapped); the fallback keeps `confidence: 'analytical_estimate'`
  * so estimated data is never mistaken for measured API data.
  */
-export async function fetchClimateData(lat: number, lng: number): Promise<ClimateCity> {
-  if (
-    typeof lat !== 'number' ||
-    typeof lng !== 'number' ||
-    isNaN(lat) ||
-    isNaN(lng) ||
-    lat < -90.0 ||
-    lat > 90.0 ||
-    lng < -180.0 ||
-    lng > 180.0
-  ) {
-    throw new Error(
-      `Invalid geographic coordinates: latitude ${lat} (must be in range [-90, +90]) and longitude ${lng} (must be in range [-180, +180]).`
-    );
+export async function fetchClimateData(
+  lat: number,
+  lng: number,
+  options?: { signal?: AbortSignal }
+): Promise<ClimateCity> {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    throw new Error(`Invalid geographic coordinates: ${lat}, ${lng}`);
   }
 
-  const gateway = ExternalDataGateway.getInstance();
-  const { climateCity } = await gateway.getComprehensiveSiteData(lat, lng);
-  return climateCity;
+  // If real internet is explicitly disabled, return the local model without network latency
+  if (!isRealInternetEnabled()) {
+    return getClimateData(lat, lng);
+  }
+
+  // Combine caller signal with a 35-second overall deadline
+  const timeoutController = new AbortController();
+  const timer = setTimeout(() => timeoutController.abort(new Error('Gateway request timed out after 35000ms')), 35000);
+
+  let combinedSignal: AbortSignal;
+  if (!options?.signal) {
+    combinedSignal = timeoutController.signal;
+  } else if (typeof AbortSignal.any === 'function') {
+    combinedSignal = AbortSignal.any([options.signal, timeoutController.signal]);
+  } else {
+    const combined = new AbortController();
+    const abortCombined = () => combined.abort(options.signal?.reason || timeoutController.signal.reason);
+    if (options.signal.aborted) {
+      combined.abort(options.signal.reason);
+    } else {
+      options.signal.addEventListener('abort', abortCombined, { once: true });
+      timeoutController.signal.addEventListener('abort', abortCombined, { once: true });
+    }
+    combinedSignal = combined.signal;
+  }
+
+  try {
+    let result: ClimateCity | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const r = await fetch(`/api/v1/gateway/site?lat=${lat}&lng=${lng}`, {
+          signal: combinedSignal,
+        });
+        if (r.ok) {
+          const payload = await r.json();
+          if (payload?.ok && payload.climateCity) {
+            result = payload.climateCity as ClimateCity;
+          }
+        }
+      } catch (e) {
+        if ((e as Error)?.name === 'AbortError' || combinedSignal.aborted) {
+          throw e;
+        }
+        console.warn('[gateway] proxy unavailable; keeping this browser request offline:', e);
+      }
+      // Browser-side direct provider calls bypass server-side shared rate control. If the
+      // same-origin gateway is offline/unavailable, return an explicitly analytical result.
+      if (!result) return getClimateData(lat, lng);
+      return result;
+    }
+
+    if (combinedSignal.aborted) {
+      const abortError = new Error('Climate request aborted');
+      abortError.name = 'AbortError';
+      throw abortError;
+    }
+    const { climateCity } = await ExternalDataGateway.getInstance().getComprehensiveSiteData(lat, lng, {
+      signal: combinedSignal,
+    });
+    return climateCity;
+  } finally {
+    clearTimeout(timer);
+  }
 }

@@ -40,6 +40,17 @@ export interface ParameterProvenance {
   qualityNote?: string;
   unit?: string;
   value?: number | string | null;
+  regulatoryEvidence?: {
+    status: 'verified';
+    authorityId: string;
+    standardCode: string;
+    edition: string;
+    datasetId: string;
+    recordId: string;
+    value: number;
+    unit: string;
+    retrievedAt: string;
+  };
 }
 
 export interface ClimateCity {

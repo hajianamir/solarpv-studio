@@ -79,7 +79,6 @@ import ReactDOMServer from 'react-dom/server';
 import ReactDOMClient from 'react-dom/client';
 import { OfficialReportModal } from '../../src/components/OfficialReportModal';
 import { StructuralFoundationTab } from '../../src/components/StructuralFoundationTab';
-import { App } from '../../src/App';
 import { getDefaultClimateCity, type SiteGeotechnicalOverrides } from '../../src/engine/climaticData';
 import { LOAD_PRESETS, analyzeLoadProfile } from '../../src/engine/loadProfiles';
 import { designPvArray } from '../../src/engine/pvEngineAdvanced';
@@ -274,7 +273,7 @@ function setupMinimalDom() {
     history: { pushState: () => {}, replaceState: () => {} },
     localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
     screen: { deviceXDPI: 0, logicalXDPI: 0 },
-    navigator: { userAgent: 'node' },
+    navigator: { userAgent: 'node', platform: process.platform === 'win32' ? 'Win32' : 'Linux x86_64' },
     getComputedStyle: () => ({
       getPropertyValue: () => '',
       position: 'static',
@@ -836,8 +835,11 @@ export async function runPhase07Verification(): Promise<Phase07EvidencePayload> 
   // -------------------------------------------------------------------------
   // 1. Genuine UI Component Execution & Interactive State Machine (App <-> StructuralFoundationTab)
   setupMinimalDom();
+  // Import App only after installing the minimal DOM globals. Node 20 does not
+  // expose navigator globally, while Node 22 does; App's lazy climate route
+  // eventually imports Leaflet, which reads navigator.platform at module load.
+  const { App } = await import('../../src/App');
 
-  // Execute App top-level component statically
   const appHtml = ReactDOMServer.renderToStaticMarkup(React.createElement(App));
   const appRenderPass = appHtml.length > 10000 && appHtml.includes('SolarPV Studio');
 
@@ -1329,6 +1331,7 @@ function getElementValue(node: any): string {
     financial: financialUi,
     onClose: () => {},
     lang: 'en' as const,
+    projectInputSnapshot: {},
   };
 
   const htmlSync = ReactDOMServer.renderToString(
@@ -1356,39 +1359,82 @@ function getElementValue(node: any): string {
     })
   );
 
-  const syncUiOk =
-    htmlSync.includes(`${effectiveSnapshotInitial.qzPa} N/m²`) &&
-    htmlSync.includes(`${effectiveSnapshotInitial.recommendedDepthM}m embedment`) &&
-    htmlSync.includes(`>${effectiveSnapshotInitial.totalPostsCount}<`) &&
-    htmlSync.includes(`>${effectiveSnapshotInitial.totalTablesCount}<`) &&
-    htmlSync.includes('satisfying the mandatory safety margin') &&
-    htmlSync.includes('✓ PASS') &&
-    !htmlSync.includes('Warning: Project parameters were modified after structural calculation') &&
-    !htmlSync.includes('[STALE');
-
   const sec6StartStale = htmlStale.indexOf('6. Structural Sizing');
   const sec6EndStale = htmlStale.indexOf('7. Financial Feasibility');
   const sec6HtmlStale = sec6StartStale >= 0 && sec6EndStale > sec6StartStale
     ? htmlStale.substring(sec6StartStale, sec6EndStale)
     : htmlStale;
 
+  const normalizeStructuralHtml = (source: string) => source
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&gt;/g, '>')
+    .replace(/&lt;/g, '<')
+    .replace(/&amp;/g, '&')
+    .replace(/&#x27;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ');
+  const structuralTextSync = normalizeStructuralHtml(htmlSync);
+  const structuralTextStale = normalizeStructuralHtml(sec6HtmlStale);
+  const sec6StartNull = htmlNull.indexOf('6. Structural Sizing');
+  const sec6EndNull = htmlNull.indexOf('7. Financial Feasibility');
+  const sec6HtmlNull = sec6StartNull >= 0 && sec6EndNull > sec6StartNull
+    ? htmlNull.substring(sec6StartNull, sec6EndNull)
+    : htmlNull;
+  const structuralTextNull = normalizeStructuralHtml(sec6HtmlNull);
+  const structuralTextNullFull = normalizeStructuralHtml(htmlNull);
+  const staleCalculatedRowLabels = [
+    'Wind Uplift Force per Table',
+    'Net Pressure',
+    'Overturning Moment per Table',
+    'Broms Lateral Soil Resistance',
+    'Soil Bearing Pressure under Post',
+    'Pile Skin-Friction Tension Resistance',
+    'Frost Heave Embedment Depth',
+  ];
+  const staleCalculatedRowsAreSuppressed = staleCalculatedRowLabels.every((label) => {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = new RegExp(`<tr\\b[^>]*>(?:(?!<\\/tr>)[\\s\\S])*${escaped}(?:(?!<\\/tr>)[\\s\\S])*<\\/tr>`, 'i').exec(sec6HtmlStale);
+    return Boolean(match && /STALE/i.test(normalizeStructuralHtml(match[0])));
+  });
+
+  // Assert the report's semantic status contract, not brittle legacy tag wording.
+  // A current result may show screening calculations; stale/unavailable results
+  // must disclose status and must not expose calculated values as current.
+  const syncUiOk =
+    structuralTextSync.includes(`${effectiveSnapshotInitial.qzPa} N/m²`) &&
+    structuralTextSync.includes(`${effectiveSnapshotInitial.recommendedDepthM} m`) &&
+    structuralTextSync.includes(`Frost Depth: ${effectiveSnapshotInitial.frostDepthCm}cm ✓`) &&
+    structuralTextSync.includes(`${effectiveSnapshotInitial.totalPostsCount} Posts`) &&
+    structuralTextSync.includes(`${effectiveSnapshotInitial.totalTablesCount} Tables`) &&
+    structuralTextSync.includes('L >= Frost Depth + 1.0m') &&
+    structuralTextSync.includes('SCREENING PASS (Preliminary — Unassessed Modes Excluded)') &&
+    !structuralTextSync.includes('Warning: Project parameters were modified after structural calculation') &&
+    !structuralTextSync.includes('[STALE');
+
   const staleUiOk =
     htmlStale.includes('Warning: Project parameters were modified after structural calculation') &&
-    htmlStale.includes('[STALE - Recalculation Required in Structural Tab]') &&
-    htmlStale.includes('embedment depth and frost heave safety margins are STALE and require re-execution') &&
-    sec6HtmlStale.includes('>STALE<') &&
-    sec6HtmlStale.includes('STALE — RECALCULATION REQUIRED') &&
-    !sec6HtmlStale.includes('✓') &&
-    !sec6HtmlStale.includes('✓ PASS') &&
+    structuralTextStale.includes('Velocity Wind Pressure (q_z): STALE') &&
+    structuralTextStale.includes('Foundation Technology: STALE Recalculation Required') &&
+    structuralTextStale.includes('Embedment Depth (L): STALE Inputs Modified — Recalculation Required') &&
+    structuralTextStale.includes('Structural Safety Verdict STALE — RECALCULATION REQUIRED') &&
+    staleCalculatedRowsAreSuppressed &&
+    !structuralTextStale.includes('✓') &&
+    !structuralTextStale.includes('SCREENING PASS') &&
+    !structuralTextStale.includes(`${effectiveSnapshotInitial.qzPa} N/m²`) &&
+    !structuralTextStale.includes(`${effectiveSnapshotInitial.recommendedDepthM} m`) &&
     !htmlStale.includes('STALE (5)') && // BOM table racking count does NOT leak stale number
     htmlStale.includes('>STALE</td><td class="p-2">Tables</td>'); // BOM racking count is exactly STALE
 
   const nullUiOk =
-    htmlNull.includes('[PENDING - Awaiting Structural Tab Analysis]') &&
-    htmlNull.includes('Pending Structural Tab Sizing') &&
-    htmlNull.includes('pending calculation in the Structural') &&
-    htmlNull.includes('>—</td><td class="p-2">Tables</td>') && // BOM racking count does NOT estimate Math.ceil
-    htmlNull.includes('>—</td><td class="p-2">Posts</td>');
+    structuralTextNull.includes('Structural & Foundation Sizing Unavailable') &&
+    structuralTextNull.includes('No live structural calculation snapshot is available for this project.') &&
+    structuralTextNull.includes('Please navigate to the Structural & Foundation Tab and compute the sizing') &&
+    structuralTextNullFull.includes('Pending Structural Tab Sizing') &&
+    structuralTextNullFull.includes('— Tables') &&
+    structuralTextNullFull.includes('— Posts') &&
+    !structuralTextNull.includes(`${effectiveSnapshotInitial.qzPa} N/m²`) &&
+    !structuralTextNull.includes(`${effectiveSnapshotInitial.recommendedDepthM} m`);
 
   const frostCheckPass =
     frostInsufficientResult.minDepthForFrostM === 1.8 &&
@@ -1525,12 +1571,20 @@ function getElementValue(node: any): string {
   // Verification that stale Excel sheet does NOT publish numerical data in calculated values
   let staleCalculatedValuesAreAllStale = true;
   if (staleWs) {
-    for (let r = 4; r <= 18; r++) {
-      const cellVal = String(staleWs.getRow(r).getCell(2).value ?? '').trim();
-      if (cellVal !== 'STALE') {
-        staleCalculatedValuesAreAllStale = false;
-      }
-    }
+    // Validate by parameter label, not worksheet row number: the report may
+    // include preceding sections and explicit UNASSESSED metadata rows.
+    const staleCalculatedLabels = [
+      'Velocity Wind Pressure (qz)', 'Wind Uplift Force per Table',
+      'Wind Downforce per Table', 'Overturning Moment per Table',
+      'Factored Snow Load per Table', 'Foundation Technology', 'Pile Profile Section',
+      'Embedment Depth in Ground', 'Total Mounting Tables', 'Total Piles Count',
+      'Applied Post Bearing Pressure', 'Ultimate Skin-Friction Uplift (T_ult)',
+      'Uplift Safety Factor (FoS_uplift)', 'Broms Lateral Safety Factor (FoS_lateral)',
+      'Overturning Safety Factor (FoS_overturning)',
+    ];
+    staleCalculatedValuesAreAllStale =
+      getCellValue(staleWs, 'Structural Assessment') === 'UNASSESSED' &&
+      staleCalculatedLabels.every((label) => getCellValue(staleWs, label) === 'STALE');
   }
 
   const binaryExcelParsedPass =
@@ -1641,6 +1695,11 @@ function getElementValue(node: any): string {
       tabUnmountedPass,
       tabRemountedWithPersistedStatePass,
       mutationStalenessDetectedPass,
+      structuralStalenessChecks: {
+        isStaleInitial, isStaleAfterSnowChange, isStaleAfterClearanceChange,
+        isStaleAfterPostsChange, isStaleAfterBearingChange, isStaleAfterFrictionChange,
+        isStaleAfterCohesionChange, isStaleAfterDensityChange, isStaleAfterSeismicChange,
+      },
       beforeReason: 'Baseline 832805e lacked structural snapshot contract; OfficialReportModal computed independent defaults decoupled from Tab overrides',
       exportActiveCompliance: activeComplianceRow?.[1],
       exportNullStatus: nullStatusRow?.[1],
@@ -1651,6 +1710,7 @@ function getElementValue(node: any): string {
       staleCalculatedValuesAreAllStale,
       frostCheckPass,
       binaryExcelParsedPass,
+      uiDisclosureChecks: { syncUiOk, staleUiOk, nullUiOk, frostCheckPass, realUiModalPass },
       lifecyclePass: p708LifecyclePass,
     },
   });

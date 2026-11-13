@@ -8,14 +8,18 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and Validate SolarPV Studio
+    name: Build and Validate SolarPV Studio (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20', '22']
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install Dependencies
@@ -32,6 +36,21 @@ jobs:
 
       - name: Smoke Test (5 end-to-end flows)
         run: npm run test:smoke
+
+      - name: Provider Gateway Regression Tests
+        run: npm run test:gateway
+
+      - name: Install Chromium Runtime Libraries
+        run: sudo apt-get update && sudo apt-get install -y libnspr4 libnss3
+
+      - name: Real Browser Regressions (cold offline)
+        run: npm run test:browser
+
+      - name: Binary Export Read-back (DOCX/XLSX/JSON)
+        run: npm run verify:exports
+
+      - name: Run Audit Remediation Verification Suite
+        run: npm run test:remediation
 
       - name: Run Engineering Audit Remediation Tests (R01-R07, R08-R13, Areas 1-10)
         run: npm run test:audit

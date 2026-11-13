@@ -4,11 +4,13 @@ import { type ScenarioDetails } from '../engine/scenarioEngine';
 
 interface ScenarioComparisonTabProps {
   scenarios: ScenarioDetails[];
+  peakSunHours?: number;
   lang?: 'fa' | 'en';
 }
 
-export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ scenarios, lang = 'fa' }) => {
+export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ scenarios, peakSunHours, lang = 'fa' }) => {
   const isFa = lang === 'fa';
+  const isUnsizable = scenarios.length === 0 || scenarios.every((s) => s.pvCapacityKwp <= 0);
 
   return (
     <div className="space-y-6">
@@ -27,7 +29,28 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
         </p>
       </div>
 
+      {/* Unsizable Banner if pvCapacityKwp === 0 */}
+      {isUnsizable && (
+        <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-lg text-amber-300 text-xs flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>
+            {isFa
+              ? 'سایت به دلیل تابش صفر یا مختصات نامعتبر غیرقابل طراحی (Unsizable) است. خروجی سناریوها روی صفر تنظیم شده است.'
+              : 'Site is physically unsizable due to non-positive solar irradiance (PSH ≤ 0) or invalid coordinates. Scenario capacities and yields default to zero.'}
+          </span>
+        </div>
+      )}
+
+      {peakSunHours !== undefined && peakSunHours > 0 && peakSunHours < 1 && (
+        <div role="note" className="p-3 bg-amber-500/10 border border-amber-500/35 rounded-lg text-xs text-amber-200">
+          {isFa
+            ? 'محدودیت PSH پایین: engine سناریو برای PSH مثبت کمتر از ۱، کف ۱٫۰ اعمال می‌کند؛ این رفتار فعلی حفظ شده و خروجی با سایزینگ آرایه که از PSH واقعی استفاده می‌کند یکسان نیست.'
+            : 'Low-PSH limitation: the scenario engine currently floors positive PSH below 1.0 to 1.0. This behavior is preserved; scenario yield does not match array sizing, which uses actual PSH.'}
+        </div>
+      )}
+
       {/* 3 Scenario Cards */}
+      {!isUnsizable && (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {scenarios.map((sc, idx) => {
           const isOptimized = sc.id === 'optimized_lifepo4';
@@ -85,12 +108,18 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
 
                   <div className="flex justify-between">
                     <span className="text-slate-400">{isFa ? 'ضریب اطمینان پایداری:' : 'Reliability Index:'}</span>
-                    <strong className="text-teal-400 font-mono">{sc.reliabilityIndexPct}%</strong>
+                    <strong className="text-teal-400 font-mono">
+                      {sc.pvCapacityKwp > 0 ? `${sc.reliabilityIndexPct}%` : (isFa ? 'ارزیابی‌نشده' : 'Not assessed')}
+                    </strong>
                   </div>
 
                   <div className="flex justify-between">
                     <span className="text-slate-400">{isFa ? 'بهای تمام‌شده انرژی (LCOE):' : 'LCOE:'}</span>
-                    <strong className="text-industrial-warning font-mono">${sc.lcoeUsdPerKwh.toFixed(4)}/kWh</strong>
+                    <strong className="text-industrial-warning font-mono">
+                      {sc.pvCapacityKwp > 0 && sc.lcoeUsdPerKwh > 0
+                        ? `$${sc.lcoeUsdPerKwh.toFixed(4)}/kWh`
+                        : (isFa ? 'تعریف‌نشده (تولید صفر)' : 'N/A (Unsizable)')}
+                    </strong>
                   </div>
                 </div>
 
@@ -128,6 +157,7 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
           );
         })}
       </div>
+      )}
     </div>
   );
 };

@@ -65,6 +65,19 @@ export function parseHtmlToDocxElements(html: string): (Paragraph | Table)[] {
     const container = doc.body.firstElementChild || doc.body;
 
     const walk = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text && text.length > 0) {
+          elements.push(
+            new Paragraph({
+              children: [new TextRun({ text, font: 'Segoe UI', size: 20 })],
+              spacing: { after: 60 },
+            })
+          );
+        }
+        return;
+      }
+
       if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
         const tag = el.tagName.toLowerCase();
@@ -144,6 +157,20 @@ export function parseHtmlToDocxElements(html: string): (Paragraph | Table)[] {
             );
           }
         } else {
+          // If leaf container (e.g. metadata-bar item with no nested block elements), capture as paragraph
+          const hasBlockChildren = Array.from(el.children).some((c) =>
+            ['h1', 'h2', 'h3', 'p', 'table', 'div'].includes(c.tagName.toLowerCase())
+          );
+          if (!hasBlockChildren && el.textContent?.trim()) {
+            elements.push(
+              new Paragraph({
+                children: [new TextRun({ text: el.textContent.trim(), font: 'Segoe UI', size: 20 })],
+                spacing: { after: 80 },
+              })
+            );
+            return;
+          }
+
           // Process child nodes
           for (let i = 0; i < el.childNodes.length; i++) {
             walk(el.childNodes[i]);
@@ -289,8 +316,11 @@ export async function exportToWordDocument(
 /**
  * Generates true OOXML (.xlsx) Blob using exceljs library (OUT-04).
  */
+export type WorkbookNumberFormats = Record<string, Record<string, { column: number; numFmt: string }>>;
+
 export async function generateXlsxBlob(
-  sheets: { sheetName: string; rows: (string | number | boolean | null | undefined)[][] }[]
+  sheets: { sheetName: string; rows: (string | number | boolean | null | undefined)[][] }[],
+  numberFormats: WorkbookNumberFormats = {},
 ): Promise<Blob> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'SolarPV Studio Engineering Platform';
@@ -303,6 +333,11 @@ export async function generateXlsxBlob(
     for (let rIdx = 0; rIdx < sheet.rows.length; rIdx++) {
       const rowData = sheet.rows[rIdx].map((cell) => (cell === null || cell === undefined ? '' : cell));
       const row = ws.addRow(rowData);
+      const rowLabel = String(rowData[0] ?? '');
+      const displayFormat = numberFormats[sheet.sheetName]?.[rowLabel];
+      if (displayFormat && Number.isInteger(displayFormat.column) && displayFormat.column > 0) {
+        row.getCell(displayFormat.column).numFmt = displayFormat.numFmt;
+      }
 
       if (rIdx === 0) {
         row.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -336,13 +371,14 @@ export async function generateXlsxBlob(
  */
 export async function exportToExcelWorkbook(
   sheets: { sheetName: string; rows: (string | number | boolean | null | undefined)[][] }[],
-  filename: string = 'SolarPV_EPC_Data.xlsx'
+  filename: string = 'SolarPV_EPC_Data.xlsx',
+  numberFormats: WorkbookNumberFormats = {},
 ): Promise<Blob> {
   const cleanName = filename.endsWith('.xlsx')
     ? filename
     : `${filename.replace(/\.[^/.]+$/, '')}.xlsx`;
 
-  const blob = await generateXlsxBlob(sheets);
+  const blob = await generateXlsxBlob(sheets, numberFormats);
 
   if (typeof document !== 'undefined') {
     const url = URL.createObjectURL(blob);

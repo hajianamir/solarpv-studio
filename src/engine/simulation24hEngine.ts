@@ -117,10 +117,6 @@ export function simulate24hEnergyBalance(
   }
   const sumNightLoadWeights = nightLoadWeights.reduce((a, b) => a + b, 0);
 
-  let totalGen = 0;
-  let totalLoad = 0;
-  let totalSurplus = 0;
-  let totalDeficit = 0;
   let minSoc = 100;
   let maxSoc = 0;
 
@@ -128,31 +124,31 @@ export function simulate24hEnergyBalance(
   const dischargeEff = 0.95;
   const maxPcsPowerKw = batteryCapacityTotalKwh * 1.0;
 
-  // Pre-calculate hourly loads with exact rounding and distribute residual without negative values
-  // BEFORE the simulation loop, guaranteeing load and deficit equality in polar / deficit hours
-  const targetTotalLoad = Number((daytimeKwh + nighttimeKwh).toFixed(2));
+  // Pre-calculate full-precision hourly loads and distribute any floating residual
+  // BEFORE the simulation loop, guaranteeing conservation without rounding published energy.
+  const targetTotalLoad = daytimeKwh + nighttimeKwh;
   const hourlyLoadsKwh: number[] = new Array(24).fill(0);
   for (let h = 0; h < 24; h++) {
     const loadDayKwh = sumDayLoadWeights > 0 ? (dayLoadWeights[h] / sumDayLoadWeights) * daytimeKwh : (daytimeKwh / 24.0);
     const loadNightKwh = sumNightLoadWeights > 0 ? (nightLoadWeights[h] / sumNightLoadWeights) * nighttimeKwh : (nighttimeKwh / 24.0);
-    hourlyLoadsKwh[h] = Math.round((loadDayKwh + loadNightKwh) * 100) / 100;
+    hourlyLoadsKwh[h] = loadDayKwh + loadNightKwh;
   }
   const preSum = hourlyLoadsKwh.reduce((sum, v) => sum + v, 0);
-  let preResidual = Number((targetTotalLoad - preSum).toFixed(2));
+  let preResidual = targetTotalLoad - preSum;
 
-  if (Math.abs(preResidual) >= 0.005) {
+  if (preResidual !== 0) {
     // Sort hours by load descending so the largest load absorbs the residual without turning negative
     const candidateIndices = Array.from({ length: 24 }, (_, i) => i)
       .sort((a, b) => hourlyLoadsKwh[b] - hourlyLoadsKwh[a]);
 
     for (const h of candidateIndices) {
       if (hourlyLoadsKwh[h] + preResidual >= 0) {
-        hourlyLoadsKwh[h] = Number((hourlyLoadsKwh[h] + preResidual).toFixed(2));
+        hourlyLoadsKwh[h] += preResidual;
         preResidual = 0;
         break;
       } else if (hourlyLoadsKwh[h] > 0) {
         const absorb = hourlyLoadsKwh[h];
-        preResidual = Number((preResidual + absorb).toFixed(2));
+        preResidual += absorb;
         hourlyLoadsKwh[h] = 0;
       }
     }
@@ -210,36 +206,33 @@ export function simulate24hEnergyBalance(
       if (socPct > maxSoc) maxSoc = socPct;
     }
 
-    totalGen += solarKwh;
-    totalLoad += loadKwh;
-    totalSurplus += surplusKwh;
-    totalDeficit += deficitKwh;
-
     steps.push({
       hour: h,
       timeLabel: `${h.toString().padStart(2, '0')}:00`,
-      solarGenKwh: Math.round(solarKwh * 100) / 100,
-      loadDemandKwh: Math.round(loadKwh * 100) / 100,
+      solarGenKwh: solarKwh,
+      loadDemandKwh: loadKwh,
       batterySocPct: socPct,
-      batteryChargeKwh: Math.round(chargeKwh * 100) / 100,
-      batteryDischargeKwh: Math.round(dischargeKwh * 100) / 100,
-      surplusKwh: Math.round(surplusKwh * 100) / 100,
-      deficitKwh: Math.round(deficitKwh * 100) / 100,
+      batteryChargeKwh: chargeKwh,
+      batteryDischargeKwh: dischargeKwh,
+      surplusKwh,
+      deficitKwh,
     });
   }
 
-  const lpspPct = totalLoad > 0 ? Number(((totalDeficit / totalLoad) * 100).toFixed(2)) : 0;
+  const sumGenKwh = steps.reduce((sum, step) => sum + step.solarGenKwh, 0);
+  const sumConsumptionKwh = steps.reduce((sum, step) => sum + step.loadDemandKwh, 0);
+  const sumSurplusKwh = steps.reduce((sum, step) => sum + step.surplusKwh, 0);
+  const sumDeficitKwh = steps.reduce((sum, step) => sum + step.deficitKwh, 0);
+  const lpspPct = sumConsumptionKwh > 0 ? Number(((sumDeficitKwh / sumConsumptionKwh) * 100).toFixed(2)) : 0;
   const initialWh = hasBattery ? maxBatteryWh * (initialBatterySocPct / 100.0) : 0;
   const finalSoc = hasBattery ? Math.round((currentBatteryWh / maxBatteryWh) * 100) : 100;
-  const reliesOnInitialCharge = hasBattery && totalDeficit < 0.1 && currentBatteryWh < initialWh * 0.98;
-  const isSelfSufficient = totalDeficit < 0.1 && (!hasBattery || !reliesOnInitialCharge);
-
-  const sumGenKwh = totalPvCapacityKwp > 0 && peakSunHours > 0
-    ? Number(totalGen.toFixed(6))
-    : Number(steps.reduce((sum, s) => sum + s.solarGenKwh, 0).toFixed(2));
-  const sumSurplusKwh = Number(steps.reduce((sum, s) => sum + s.surplusKwh, 0).toFixed(2));
-  const sumDeficitKwh = Number(steps.reduce((sum, s) => sum + s.deficitKwh, 0).toFixed(2));
-  const sumConsumptionKwh = Number(steps.reduce((sum, s) => sum + s.loadDemandKwh, 0).toFixed(2));
+  // A fixed 0.1 kWh tolerance incorrectly marked small, completely unserved
+  // loads as self-sufficient. Deficits are accumulated from non-negative flows;
+  // any positive unserved demand must prevent that claim.
+  const hasUnservedDemand = sumDeficitKwh > 0;
+  const batteryRoundoffWh = Number.EPSILON * Math.max(1, Math.abs(initialWh), Math.abs(currentBatteryWh)) * steps.length * 8;
+  const reliesOnInitialCharge = hasBattery && initialWh - currentBatteryWh > batteryRoundoffWh;
+  const isSelfSufficient = !hasUnservedDemand && !reliesOnInitialCharge;
 
   return {
     hourlySteps: steps,

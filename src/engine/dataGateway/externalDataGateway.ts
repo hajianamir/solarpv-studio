@@ -14,6 +14,13 @@ import {
   createParameterProvenance,
 } from './types';
 import { type ClimateCity, type SoilClassification, calculateDesignDaylightHours } from '../types/climateTypes';
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  const error = new Error('External data gateway request aborted');
+  error.name = 'AbortError';
+  throw error;
+}
 import { estimateGeodesicDistanceToCoastKm } from '../corrosion/coastlineModel';
 
 export interface ComprehensiveSiteData {
@@ -47,15 +54,18 @@ export class ExternalDataGateway {
   /**
    * Fetches full environmental, optical, and civil geotechnical telemetry for any coordinates worldwide.
    */
-  public async getComprehensiveSiteData(lat: number, lng: number): Promise<ComprehensiveSiteData> {
+  public async getComprehensiveSiteData(lat: number, lng: number, options?: { signal?: AbortSignal }): Promise<ComprehensiveSiteData> {
+    throwIfAborted(options?.signal);
     const traceId = `TRC-GW-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const [climateResource, soilProperties, structuralHazard, nominatimName] = await Promise.all([
-      this.climateProvider.fetchClimateResource(lat, lng),
-      this.soilProvider.fetchSoilProperties(lat, lng),
+      this.climateProvider.fetchClimateResource(lat, lng, { signal: options?.signal }),
+      this.soilProvider.fetchSoilProperties(lat, lng, { signal: options?.signal }),
       this.structuralProvider.fetchStructuralHazard(lat, lng),
-      this.climateProvider.reverseGeocodeNominatim(lat, lng),
+      this.climateProvider.reverseGeocodeNominatim(lat, lng, { signal: options?.signal }),
     ]);
+
+    throwIfAborted(options?.signal);
 
     const distCoastKm = estimateGeodesicDistanceToCoastKm(lat, lng);
     const gwDepthM = distCoastKm <= 2.0 ? 1.5 : distCoastKm <= 10.0 ? 3.0 : 6.0;
@@ -96,7 +106,7 @@ export class ExternalDataGateway {
     };
 
     const climateCity: ClimateCity = {
-      id: `gateway_${lat.toFixed(3)}_${lng.toFixed(3)}`,
+      id: `gateway_${lat}_${lng}`,
       nameFa: nominatimName,
       nameEn: nominatimName,
       provinceFa: climateResource.metadata.geographicRegion,
@@ -128,6 +138,7 @@ export class ExternalDataGateway {
       seismicZoneCoefficientA: structuralHazard.seismicAccelerationA,
       dataSourceFa: `درگاه یکپارچه جهانی (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
       dataSourceEn: `Unified External Gateway (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
+      confidence: climateResource.metadata.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL' ? 'measured' : 'analytical_estimate',
       dataRetrievalDate: (climateResource.metadata.retrievalTimestamp || new Date().toISOString()).slice(0, 10),
       distanceToCoastKm: distCoastKm,
       drainageCondition: drainage,

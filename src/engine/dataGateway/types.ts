@@ -87,6 +87,8 @@ export interface DataProvenanceMetadata {
   fetchPolicy?: DataFetchPolicy;
   cacheStatus?: 'hit' | 'miss' | 'bypassed';
   circuitBreakerStatus?: CircuitBreakerState;
+  dataStatus?: 'measured' | 'mixed' | 'analytical' | 'unsizable';
+  qualityNotes?: string[];
   geographicRegion: string;
   governingStandards: string[];
 }

@@ -85,7 +85,16 @@ export interface Phase05Anchor {
 export interface Phase05Evidence {
   schema: string;
   phase: string;
-  generatedAtCommit: string;
+  generatedAtCommit: string | null;
+  generatedAtTree: string | null;
+  sourceControlAvailable: boolean;
+  workingTreeDirty: boolean | null;
+  workingTreeDiffSha256: string | null;
+  workingTreeDiffScope: string;
+  workingTreeIdentityCapturedAt: string | null;
+  untrackedPaths: string[] | null;
+  untrackedFiles: Array<{ path: string; mode: string; bytes: number; sha256: string }> | null;
+  identityCaptureNote: string;
   phase01BaselineCommit: string;
   phase02BaselineCommit: string;
   phase03BaselineCommit: string;
@@ -96,12 +105,13 @@ export interface Phase05Evidence {
   checks: Phase05Check[];
   nonRegression: Record<string, Phase05Anchor>;
   gates: {
-    lintErrors: number;
-    anyWarnings: number;
-    testPass: number;
-    testFail: number;
-    testSkip: number;
-    buildExit: number;
+    lintErrors: number | null;
+    anyWarnings: number | null;
+    testPass: number | null;
+    testFail: number | null;
+    testSkip: number | null;
+    buildExit: number | null;
+    status: 'not-measured-by-phase05-verifier';
   };
 }
 
@@ -379,12 +389,15 @@ export function runPhase05Verification(): Phase05Evidence {
   // 8. Coherence Checks C5-01 through C5-06
   // -------------------------------------------------------------------------
 
-  // C5-01: Array DC/AC Ratio vs Fleet DC/AC Ratio (0.859773 vs 0.859773)
-  const c501Lhs = fleetDesignG1.dcAcRatio; // 0.859773
-  const c501Rhs = fleetDesignG1.dcAcRatio;
+  // C5-01: independently reconstruct fleet DC/AC ratio from physical capacities.
+  // Compare this derived contract with the API field (avoid a tautological self-comparison).
+  const c501Lhs = fleetDesignG1.dcAcRatio;
+  const c501Rhs = Number((fleetDesignG1.totalPvCapacityKwp / fleetDesignG1.totalInverterAcCapacityKw!).toFixed(6));
+  const expectedFleetAcCapacityKw = 4 * resolvedInverterG1.pnomAcKw;
   const c501Delta = Number(Math.abs(c501Lhs - c501Rhs).toFixed(6));
   const c501Pass =
     Math.abs(c501Lhs - c501Rhs) < 1e-6 &&
+    Math.abs(fleetDesignG1.totalInverterAcCapacityKw! - expectedFleetAcCapacityKw) < 1e-6 &&
     c501Lhs === 0.859773 &&
     fleetDesignG1.singleInverterDcAcRatio === 3.439091;
 
@@ -564,23 +577,58 @@ export function runPhase05Verification(): Phase05Evidence {
   // -------------------------------------------------------------------------
   // 10. Commit & Verification Meta
   // -------------------------------------------------------------------------
-  let generatedAtCommit = '0383846b489a7444c9b9195d564fa7847be668f4';
+  let generatedAtCommit: string | null = null;
+  let generatedAtTree: string | null = null;
+  let sourceControlAvailable = false;
+  let workingTreeDirty: boolean | null = null;
+  let workingTreeDiffSha256: string | null = null;
+  let workingTreeIdentityCapturedAt: string | null = null;
+  let untrackedPaths: string[] | null = null;
+  let untrackedFiles: Array<{ path: string; mode: string; bytes: number; sha256: string }> | null = null;
+  const workingTreeDiffScope = "SHA-256 of git diff --binary HEAD -- . ':(exclude)docs/audit/remediation/evidence/phase05/phase05-measurements.json'; excludes this generated evidence file and untracked content; captured before evidence write.";
+  const identityCaptureNote = 'HEAD/tree identify the baseline commit, not an uncommitted candidate. The tracked diff deliberately excludes this generated file to avoid self-reference; untracked file hashes are captured separately. This is a point-in-time scoped identity, not a final checkout hash. Use a separately generated final manifest for all deliverables.';
   try {
-    const commitOutput = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
-    if (commitOutput && commitOutput.length === 40) {
-      generatedAtCommit = commitOutput;
-    }
+    generatedAtCommit = execSync('git rev-parse HEAD', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
+    generatedAtTree = execSync('git rev-parse HEAD^{tree}', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
+    sourceControlAvailable = Boolean(generatedAtCommit && generatedAtTree);
+    const status = execSync('git status --porcelain', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    workingTreeDirty = status.trim().length > 0;
+    const diff = execSync("git diff --binary HEAD -- . ':(exclude)docs/audit/remediation/evidence/phase05/phase05-measurements.json'", { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    workingTreeDiffSha256 = crypto.createHash('sha256').update(diff, 'utf8').digest('hex');
+    untrackedPaths = execSync('git ls-files --others --exclude-standard -z', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\0').filter(Boolean);
+    untrackedFiles = untrackedPaths.map((relativePath) => {
+      const absolutePath = path.resolve(process.cwd(), relativePath);
+      const stat = fs.lstatSync(absolutePath);
+      const bytes = stat.isSymbolicLink() ? Buffer.from(fs.readlinkSync(absolutePath)) : fs.readFileSync(absolutePath);
+      return {
+        path: relativePath,
+        mode: stat.isSymbolicLink() ? '120000' : ((stat.mode & 0o111) !== 0 ? '100755' : '100644'),
+        bytes: bytes.length,
+        sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+      };
+    });
+    workingTreeIdentityCapturedAt = new Date().toISOString();
   } catch {
-    // Fallback to active commit
+    // Archive or export without usable Git metadata: explicitly keep identity unknown.
   }
 
   const verifierContent = fs.readFileSync(__filename, 'utf8');
   const verifierSha256 = crypto.createHash('sha256').update(verifierContent).digest('hex');
 
   const evidence: Phase05Evidence = {
-    schema: 'solarpv.audit.phase05.v1',
+    schema: 'solarpv.audit.phase05.v3',
     phase: '05',
     generatedAtCommit,
+    generatedAtTree,
+    sourceControlAvailable,
+    workingTreeDirty,
+    workingTreeDiffSha256,
+    workingTreeDiffScope,
+    workingTreeIdentityCapturedAt,
+    untrackedPaths,
+    untrackedFiles,
+    identityCaptureNote,
     phase01BaselineCommit: '91b9b3b',
     phase02BaselineCommit: '64e0ede',
     phase03BaselineCommit: '7c4d55c',
@@ -591,12 +639,13 @@ export function runPhase05Verification(): Phase05Evidence {
     checks,
     nonRegression,
     gates: {
-      lintErrors: 0,
-      anyWarnings: 93,
-      testPass: 196,
-      testFail: 0,
-      testSkip: 0,
-      buildExit: 0,
+      lintErrors: null,
+      anyWarnings: null,
+      testPass: null,
+      testFail: null,
+      testSkip: null,
+      buildExit: null,
+      status: 'not-measured-by-phase05-verifier',
     },
   };
 
@@ -650,6 +699,10 @@ if (isMainModule) {
   console.log(`[PASS] Quantities measured: ${evidence.quantities.length} / 8`);
   const allChecksPass = evidence.checks.every((c) => c.pass);
   console.log(`[PASS] Checks executed: ${evidence.checks.length} / 6 (All PASS: ${allChecksPass})`);
+  console.log(`[INFO] Git identity: ${evidence.generatedAtCommit ?? 'unknown'} / tree ${evidence.generatedAtTree ?? 'unknown'}; dirty=${evidence.workingTreeDirty ?? 'unknown'}`);
+  console.log(`[INFO] Pre-write tracked-diff SHA-256 (${evidence.workingTreeDiffScope}) at ${evidence.workingTreeIdentityCapturedAt ?? 'unknown'}: ${evidence.workingTreeDiffSha256 ?? 'unknown'}`);
+  console.log(`[INFO] Untracked files with content hashes: ${evidence.untrackedFiles?.length ?? 'unknown'}; final identity is in the separate manifest.`);
+  console.log('[INFO] Lint/test/build gate counts: not measured by this verifier (null, not a pass).');
   const allAnchorsZero = Object.values(evidence.nonRegression).every((a) => a.delta === 0);
   console.log(
     `[PASS] Non-regression anchors verified: ${Object.keys(evidence.nonRegression).length} / 6 (All delta 0: ${allAnchorsZero})`

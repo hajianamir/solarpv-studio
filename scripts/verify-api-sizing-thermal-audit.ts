@@ -251,36 +251,59 @@ async function runProbe() {
   check('F-03: performQuickSizing throws Error when latitude > 90', outOfBoundsLatThrew);
 
   // --------------------------------------------------------------------------
-  // Finding F-04: 24h Simulation Rounding Precision Unification (0.01 kWh)
+  // Finding F-04: raw energy remains full precision; human-facing display rounding
+  // and independent arithmetic are verified in verify-f04-energy-contract.ts.
   // --------------------------------------------------------------------------
-  console.log('\n--- [F-04] Simulation Summary & Hourly Rounding Unification ---');
-
-  const simResult = simulate24hEnergyBalance(
-    10.0,
-    5.2,
-    24.55,
-    18.25,
-    25.0,
-    30.0,
-    50.0,
-    9.58
-  );
-
-  const sumHourlyLoad = Number(simResult.hourlySteps.reduce((acc, s) => acc + s.loadDemandKwh, 0).toFixed(2));
-  const totalConsumption = simResult.totalConsumption24hKwh;
-
+  console.log('\n--- [F-04] Raw Energy Conservation and Display-Only Rounding ---');
+  const simResult = simulate24hEnergyBalance(10, 5.2, 24.55, 18.25, 25, 30, 50, 9.58);
+  const sumWithCompensation = (values: number[]) => {
+    let sum = 0;
+    let correction = 0;
+    for (const value of values) {
+      const adjusted = value - correction;
+      const next = sum + adjusted;
+      correction = (next - sum) - adjusted;
+      sum = next;
+    }
+    return sum;
+  };
+  const rawBounds = (values: number[]) => {
+    const nEpsilon = 24 * Number.EPSILON;
+    const gamma = nEpsilon / (1 - nEpsilon);
+    return gamma * values.reduce((sum, value) => sum + Math.abs(value), 0)
+      + 4 * Number.EPSILON * Math.max(1, ...values.map(Math.abs));
+  };
+  for (const [label, field, total] of [
+    ['generation', 'solarGenKwh', simResult.totalGeneration24hKwh],
+    ['consumption', 'loadDemandKwh', simResult.totalConsumption24hKwh],
+    ['surplus', 'surplusKwh', simResult.totalSurplus24hKwh],
+    ['deficit', 'deficitKwh', simResult.totalDeficit24hKwh],
+  ] as const) {
+    const hourly = simResult.hourlySteps.map((step) => step[field]);
+    const independent = sumWithCompensation(hourly);
+    check(
+      `F-04: raw ${label} total agrees with independently compensated hourly values within the 24-term IEEE-754 bound`,
+      Math.abs(total - independent) <= rawBounds(hourly),
+      `rawTotal=${total}; compensatedHourly=${independent}; bound=${rawBounds(hourly)}`,
+    );
+  }
+  const rawDemand = sumWithCompensation(simResult.hourlySteps.map((step) => step.loadDemandKwh));
+  const modeledDemand = 24.55 + 18.25;
   check(
-    'F-04: totalConsumption24hKwh matches exact centesimal sum of hourly loads (0.01 kWh precision)',
-    Math.abs(sumHourlyLoad - totalConsumption) <= 0.01,
-    `hourlySum = ${sumHourlyLoad.toFixed(2)} kWh, totalConsumption = ${totalConsumption.toFixed(2)} kWh`
+    'F-04: raw hourly demand conserves the independent daytime-plus-nighttime model input',
+    Math.abs(rawDemand - modeledDemand) <= rawBounds(simResult.hourlySteps.map((step) => step.loadDemandKwh)),
+    `rawHourlyDemand=${rawDemand}; modelInput=${modeledDemand}`,
   );
-
-  const sumHourlyGen = Number(simResult.hourlySteps.reduce((acc, s) => acc + s.solarGenKwh, 0).toFixed(2));
-  const totalGen = simResult.totalGeneration24hKwh;
+  const rawGeneration = sumWithCompensation(simResult.hourlySteps.map((step) => step.solarGenKwh));
+  const modeledGeneration = 10 * 5.2 * 0.78;
   check(
-    'F-04: totalGeneration24hKwh matches exact centesimal sum of hourly generation (0.01 kWh precision)',
-    Math.abs(sumHourlyGen - totalGen) <= 0.01,
-    `hourlyGenSum = ${sumHourlyGen.toFixed(2)} kWh, totalGeneration = ${totalGen.toFixed(2)} kWh`
+    'F-04: raw hourly generation conserves the independently calculated daily PV model input',
+    Math.abs(rawGeneration - modeledGeneration) <= rawBounds(simResult.hourlySteps.map((step) => step.solarGenKwh)),
+    `rawHourlyGeneration=${rawGeneration}; modelInput=${modeledGeneration}`,
+  );
+  check(
+    'F-04: sub-cent values remain unrounded in the simulation result',
+    simResult.hourlySteps.some((step) => step.solarGenKwh !== Math.round(step.solarGenKwh * 100) / 100),
   );
 
   // --------------------------------------------------------------------------

@@ -91,11 +91,11 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
   );
 
   // Add Handlers with Engineering Validation (CAT-04)
-  const handleAddModule = (e: React.FormEvent) => {
+  const handleAddModule = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormErrors([]);
     const newMod: CatalogPvModule = {
-      id: `custom-mod-${Date.now()}`,
+      id: '', // assigned against the latest catalog inside the cross-tab write lock
       manufacturer: modManufacturer.trim(),
       modelName: modModel.trim(),
       cellType: modCellType,
@@ -116,7 +116,13 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
     };
     (newMod as any).noctC = Number(modNoctC);
 
-    const res = repo.saveCustomModule(newMod);
+    let res: ReturnType<typeof repo.saveCustomModule>;
+    try {
+      res = await repo.withCrossTabWriteLock(() => repo.saveCustomModule(newMod));
+    } catch (error) {
+      setFormErrors([String(error)]);
+      return;
+    }
     if (!res.success) {
       setFormErrors(res.errors || ['خطا در اعتبارسنجی مشخصات پنل']);
       return;
@@ -124,11 +130,11 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
     setShowAddModal(false);
   };
 
-  const handleAddInverter = (e: React.FormEvent) => {
+  const handleAddInverter = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormErrors([]);
     const newInv: CatalogInverter = {
-      id: `custom-inv-${Date.now()}`,
+      id: '', // assigned against the latest catalog inside the cross-tab write lock
       manufacturer: invManufacturer.trim(),
       modelName: invModel.trim(),
       type: invTech === 'mv_turnkey' ? 'central' : 'grid_tied',
@@ -148,7 +154,13 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
       mvOutputVoltageKv: invTech === 'mv_turnkey' ? Number(invMvKv) : undefined,
     };
 
-    const res = repo.saveCustomInverter(newInv);
+    let res: ReturnType<typeof repo.saveCustomInverter>;
+    try {
+      res = await repo.withCrossTabWriteLock(() => repo.saveCustomInverter(newInv));
+    } catch (error) {
+      setFormErrors([String(error)]);
+      return;
+    }
     if (!res.success) {
       setFormErrors(res.errors || ['خطا در اعتبارسنجی مشخصات اینورتر']);
       return;
@@ -156,11 +168,11 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
     setShowAddModal(false);
   };
 
-  const handleAddBattery = (e: React.FormEvent) => {
+  const handleAddBattery = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormErrors([]);
     const newBat: CatalogBattery = {
-      id: `custom-bat-${Date.now()}`,
+      id: '', // assigned against the latest catalog inside the cross-tab write lock
       manufacturer: batManufacturer.trim(),
       modelName: batModel.trim(),
       chemistry: batChemistry,
@@ -174,7 +186,13 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
       hasIntegratedBms: batHasBms,
     };
 
-    const res = repo.saveCustomBattery(newBat);
+    let res: ReturnType<typeof repo.saveCustomBattery>;
+    try {
+      res = await repo.withCrossTabWriteLock(() => repo.saveCustomBattery(newBat));
+    } catch (error) {
+      setFormErrors([String(error)]);
+      return;
+    }
     if (!res.success) {
       setFormErrors(res.errors || ['خطا در اعتبارسنجی مشخصات باتری']);
       return;

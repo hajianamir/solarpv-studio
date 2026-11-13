@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useReducer } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useReducer, useCallback } from 'react';
 import {
   Sun,
   Zap,
@@ -56,6 +56,7 @@ import {
 import { type Language, translations } from './i18n';
 
 import { getDefaultClimateCity, type ClimateCity, type SiteGeotechnicalOverrides } from './engine/climaticData';
+import { gatewaySourceSummary } from './engine/provenance/gatewayStatus';
 import {
   type StructuralSnapshot,
   computeStructuralInputHash,
@@ -131,7 +132,7 @@ const Simulation24hTab = React.lazy(() => import('./components/Simulation24hTab'
 const OfficialReportModal = React.lazy(() => import('./components/OfficialReportModal').then((m) => ({ default: m.OfficialReportModal })));
 const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab').then((m) => ({ default: m.WaterfallLossTab })));
 import { migrateProjectToV3 } from './engine/core/projectMigration';
-import { createProjectTransferEnvelope, restoreProjectTransferEnvelope } from './engine/offlineTransferEngine';
+import { createProjectTransferEnvelope, restoreProjectTransferEnvelope, commitRestoredCustomEquipmentWithCrossTabLock } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
 
 // Fallback component for lazy-loaded tabs (MAIN-05)
@@ -179,6 +180,18 @@ export const App: React.FC = () => {
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [updateWaiting, setUpdateWaiting] = useState(false);
+
+  useEffect(() => {
+    const notify = () => setUpdateWaiting(true);
+    window.addEventListener('solarpv-update-waiting', notify);
+    if ('serviceWorker' in navigator) {
+      void navigator.serviceWorker.getRegistration().then((registration) => {
+        if (registration?.waiting && navigator.serviceWorker.controller) notify();
+      });
+    }
+    return () => window.removeEventListener('solarpv-update-waiting', notify);
+  }, []);
 
 
   // Inverter Technology & MV Bay Architecture (for Powerplant mode)
@@ -190,6 +203,7 @@ export const App: React.FC = () => {
   const [projectName, setProjectName] = useState(
     lang === 'fa' ? 'طرح مهندسی نیروگاه خورشیدی و EPC' : 'Solar PV Engineering & EPC Project'
   );
+  const [reportMetadata, setReportMetadata] = useState<Record<string, unknown>>({});
   const [city, setCity] = useState<ClimateCity>(getDefaultClimateCity());
   const [selectedSite, setSelectedSite] = useState<{
     lat: number;
@@ -223,6 +237,66 @@ export const App: React.FC = () => {
   }, [city]);
 
   const [siteOverrides, setSiteOverrides] = useState<SiteGeotechnicalOverrides>({});
+  const [pendingImportedEmbedmentDepthM, setPendingImportedEmbedmentDepthM] = useState<number | null>(null);
+  const [projectImportRevision, setProjectImportRevision] = useState(0);
+
+  const siteOverrideCacheRef = useRef(new Map<string, SiteGeotechnicalOverrides>());
+  const siteCacheKey = useCallback((siteCity: ClimateCity, forProjectName = projectName) =>
+    `${forProjectName.trim().toLowerCase()}|${siteCity.latitude.toFixed(5)}|${siteCity.longitude.toFixed(5)}`,
+  [projectName]);
+
+  // Keep exact overrides by project + physical coordinates. A pending map move can
+  // later be rejected with Keep Old Site; returning to that site restores its state.
+  useEffect(() => {
+    siteOverrideCacheRef.current.set(siteCacheKey(city), siteOverrides);
+  }, [city, siteOverrides, siteCacheKey]);
+
+  const transitionSite = (nextCity: ClimateCity) => {
+    siteOverrideCacheRef.current.set(siteCacheKey(city), siteOverrides);
+    const key = siteCacheKey(nextCity);
+    const samePhysicalSite =
+      Math.abs(city.latitude - nextCity.latitude) < 0.00001 &&
+      Math.abs(city.longitude - nextCity.longitude) < 0.00001;
+    const cached = siteOverrideCacheRef.current.get(key);
+    const nextOverrides = cached ?? (samePhysicalSite ? siteOverrides : {
+      // Keep only site-independent design preferences; geotechnical values and manual
+      // embedment must be rechecked at a new location.
+      installationEnvironment: siteOverrides.installationEnvironment,
+      foundationType: siteOverrides.foundationType,
+      groundClearanceM: siteOverrides.groundClearanceM,
+      customPostsPerTable: siteOverrides.customPostsPerTable,
+    });
+
+    setCity(nextCity);
+    setSelectedSite({ lat: nextCity.latitude, lng: nextCity.longitude, climateData: nextCity });
+    setSiteOverrides(nextOverrides);
+    if (!samePhysicalSite) setPendingImportedEmbedmentDepthM(null);
+    siteOverrideCacheRef.current.set(key, nextOverrides);
+  };
+
+  const transitionImportedSite = (
+    nextCity: ClimateCity | undefined,
+    importedOverrides: SiteGeotechnicalOverrides | undefined,
+    importedProjectName?: string,
+  ) => {
+    siteOverrideCacheRef.current.set(siteCacheKey(city), siteOverrides);
+    if (!nextCity) {
+      if (importedOverrides) {
+        const { customEmbedmentDepthM: pendingEmbedmentDepth, ...reviewedOverrides } = importedOverrides;
+        setSiteOverrides(reviewedOverrides);
+        setPendingImportedEmbedmentDepthM(typeof pendingEmbedmentDepth === 'number' ? pendingEmbedmentDepth : null);
+      }
+      return;
+    }
+    setCity(nextCity);
+    setSelectedSite({ lat: nextCity.latitude, lng: nextCity.longitude, climateData: nextCity });
+    // Imported project/site overrides travel atomically with their site, except manually
+    // authored pile embedment, which requires explicit re-entry/reconfirmation.
+    const { customEmbedmentDepthM: pendingEmbedmentDepth, ...reviewedOverrides } = importedOverrides ?? {};
+    setSiteOverrides(reviewedOverrides);
+    setPendingImportedEmbedmentDepthM(typeof pendingEmbedmentDepth === 'number' ? pendingEmbedmentDepth : null);
+    siteOverrideCacheRef.current.set(siteCacheKey(nextCity, importedProjectName || projectName), reviewedOverrides);
+  };
   const [structuralModulesPerTable, setStructuralModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
   const [structuralSnapshot, setStructuralSnapshot] = useState<StructuralSnapshot | null>(null);
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
@@ -233,6 +307,8 @@ export const App: React.FC = () => {
   const defaultMod = initialModules[0];
 
   const [selectedModule, setSelectedModule] = useState<ModuleSpecs>({
+    id: defaultMod.id,
+    origin: defaultMod.origin,
     manufacturer: defaultMod.manufacturer,
     modelName: defaultMod.modelName,
     pmpWatts: defaultMod.pmpWatts,
@@ -245,6 +321,7 @@ export const App: React.FC = () => {
     noctC: defaultMod.noctC ?? 45.0,
     lengthM: defaultMod.lengthMm / 1000.0,
     widthM: defaultMod.widthMm / 1000.0,
+    weightKg: defaultMod.weightKg,
     bifacialityFactor: defaultMod.bifacialityFactor,
   });
 
@@ -252,6 +329,8 @@ export const App: React.FC = () => {
   const defaultUtilInv = initialInverters.find((i) => i.id === 'inv-huawei-330ktl') || initialInverters[0];
 
   const [selectedInverter, setSelectedInverter] = useState<InverterSpecs>({
+    id: defaultUtilInv.id,
+    origin: defaultUtilInv.origin,
     manufacturer: defaultUtilInv.manufacturer,
     modelName: defaultUtilInv.modelName,
     pnomAcKw: defaultUtilInv.pnomKw,
@@ -328,6 +407,8 @@ export const App: React.FC = () => {
       const turnkey = inverters.find((i) => i.technology === 'mv_turnkey');
       if (turnkey) {
         setSelectedInverter({
+          id: turnkey.id,
+          origin: turnkey.origin,
           manufacturer: turnkey.manufacturer,
           modelName: turnkey.modelName,
           pnomAcKw: turnkey.pnomKw,
@@ -345,6 +426,8 @@ export const App: React.FC = () => {
       const stringInv = inverters.find((i) => i.technology === 'string_inverter');
       if (stringInv) {
         setSelectedInverter({
+          id: stringInv.id,
+          origin: stringInv.origin,
           manufacturer: stringInv.manufacturer,
           modelName: stringInv.modelName,
           pnomAcKw: stringInv.pnomKw,
@@ -391,6 +474,35 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Canonical project-input snapshot shared by local save, project export and report export.
+  // Report-derived values are kept separately and never replace base site inputs.
+  const buildProjectInputSnapshot = (savedAt = new Date().toISOString(), traceId = generateTraceId()) => ({
+    version: '3.0.0',
+    savedAt,
+    traceId,
+    projectName,
+    systemMode,
+    inverterTech,
+    structuralModulesPerTable,
+    dcSystemEarthing,
+    customBaysCount,
+    mvVoltageKv,
+    city,
+    siteOverrides,
+    loads,
+    selectedModule,
+    selectedInverter,
+    selectedChemistry,
+    autonomyDays,
+    outageHours,
+    targetPowerplantCapacityKw,
+    enableDieselGenerator,
+    userPricing,
+    trackerConfig,
+    metadata: reportMetadata,
+    pendingImportedEmbedmentDepthM,
+  });
+
   // Save Project to LocalStorage (v3.0.0 Compliant with Trace ID)
   const handleSaveProject = () => {
     const timeStr = new Date().toLocaleTimeString(lang === 'fa' ? 'fa-IR' : 'en-US', {
@@ -399,28 +511,7 @@ export const App: React.FC = () => {
       second: '2-digit',
     });
     const traceId = generateTraceId();
-    const projectData = {
-      version: '3.0.0',
-      savedAt: timeStr,
-      traceId,
-      projectName,
-      systemMode,
-      inverterTech,
-      customBaysCount,
-      mvVoltageKv,
-      city,
-      siteOverrides,
-      loads,
-      selectedModule,
-      selectedInverter,
-      selectedChemistry,
-      autonomyDays,
-      outageHours,
-      targetPowerplantCapacityKw,
-      enableDieselGenerator,
-      userPricing,
-      trackerConfig, // BUG-2: persist tracker config (null = fixed tilt)
-    };
+    const projectData = buildProjectInputSnapshot(timeStr, traceId);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projectData));
       setLastSavedTime(timeStr);
@@ -431,7 +522,11 @@ export const App: React.FC = () => {
       );
       setTimeout(() => setSaveToast(null), 3500);
     } catch (e) {
-      console.error(e);
+      console.error('Project save failed:', e);
+      setSaveToast(lang === 'fa'
+        ? 'ذخیره‌سازی در فضای محلی ناموفق بود؛ پیش از بارگذاری مجدد، فضای ذخیره‌سازی را بررسی و دوباره تلاش کنید. تغییرات فعلی فقط در حافظهٔ این صفحه هستند.'
+        : 'Project save failed in browser storage. Check available storage and retry before reloading; current edits remain only in this page memory.');
+      setTimeout(() => setSaveToast(null), 7000);
     }
   };
 
@@ -462,53 +557,34 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Load Project from LocalStorage
-  const handleLoadLastProject = () => {
+  // Local saves are not auto-applied at startup: restoring one replaces the
+  // current in-memory project, so ask first and use the same migration path as
+  // JSON import. This also gives users a way to recover after a PWA update.
+  const handleLoadLastProject = async () => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (saved) {
-        const data = JSON.parse(saved);
-        handleImportProject(data);
-        setSaveToast(lang === 'fa' ? 'پروژه ذخیره‌شده بازیابی شد.' : 'Project successfully restored.');
-        setTimeout(() => setSaveToast(null), 3000);
+      if (!saved) {
+        alert(lang === 'fa' ? 'پروژه‌ای در فضای محلی ذخیره نشده است.' : 'No locally saved project was found.');
+        return;
       }
+      const accepted = window.confirm(lang === 'fa'
+        ? 'بازیابی پروژهٔ ذخیره‌شده جایگزین تغییرات فعلی این صفحه می‌شود. ادامه می‌دهید؟'
+        : 'Restoring the local save replaces the current edits in this tab. Continue?');
+      if (!accepted) return;
+      const applied = await handleImportProject(JSON.parse(saved));
+      if (applied) setIsProjectJsonModalOpen(false);
     } catch (e) {
-      alert(lang === 'fa' ? 'خطا در بارگذاری پروژه ذخیره شده.' : 'Error loading project.');
+      alert(lang === 'fa' ? 'خطا در بارگذاری پروژه ذخیره شده.' : 'Could not read the locally saved project.');
     }
   };
 
   // Export project with full transfer envelope and custom equipment snapshots (OFF-01)
   const handleExportProjectJson = () => {
-    const projectData = {
-      version: '3.1.0',
-      savedAt: new Date().toISOString(),
-      traceId: generateTraceId(),
-      projectName,
-      systemMode,
-      inverterTech,
-      customBaysCount,
-      mvVoltageKv,
-      city,
-      siteOverrides,
-      loads,
-      selectedModule,
-      selectedInverter,
-      selectedChemistry,
-      autonomyDays,
-      outageHours,
-      targetPowerplantCapacityKw,
-      enableDieselGenerator,
-      userPricing,
-      trackerConfig,
-    };
+    const projectData = buildProjectInputSnapshot();
     const envelope = createProjectTransferEnvelope({
       projectName,
       projectData,
-      metadata: {
-        docVersion: '3.1.0',
-        companyName: 'SolarPV Studio Engineering Platform',
-        leadEngineer: 'Project Lead',
-      },
+      metadata: { docVersion: '3.1.0', ...reportMetadata, metadataTrust: 'user_entered_not_authenticated' },
       activeModule: selectedModule,
       activeInverter: selectedInverter,
     });
@@ -529,11 +605,11 @@ export const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
-        handleImportProject(json);
-        setIsProjectJsonModalOpen(false);
+        const applied = await handleImportProject(json);
+        if (applied) setIsProjectJsonModalOpen(false);
       } catch (err) {
         alert(lang === 'fa' ? 'فایل JSON نامعتبر است' : 'Invalid JSON file structure');
       }
@@ -614,14 +690,81 @@ export const App: React.FC = () => {
       return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
     } else if (systemMode === 'ongrid') {
       const averagePowerKw = (loadAnalysis.totalDailyEnergyKwh || 20) / 24.0;
-      return Math.max(1, averagePowerKw * (outageHours || 6));
+      return Math.max(1, averagePowerKw * outageHours);
     } else {
       return Math.max(1, loadAnalysis.totalDailyEnergyKwh || 20);
     }
   }, [systemMode, targetPowerplantCapacityKw, city, loadAnalysis.totalDailyEnergyKwh, outageHours, selectedModule, trackerConfig, siteOverrides?.installationEnvironment, shadingLoss3dPct, bifacialGainPct]); // BUG-1: trackerConfig dep (react-hooks/exhaustive-deps)
 
   // 3. Advanced PV Array Engineering Sizing
+  const isSiteUnsizable =
+    !Number.isFinite(city.peakSunHours) ||
+    city.peakSunHours <= 0 ||
+    !Number.isFinite(city.latitude) ||
+    Math.abs(city.latitude) > 90 ||
+    !Number.isFinite(city.longitude) ||
+    Math.abs(city.longitude) > 180;
+
+  // Resolve the utility fleet count from the same bay-design contract used by the
+  // project architecture before calculating the array. This avoids a DC/AC ratio
+  // calculated against one inverter while the plant has several.
+  const sizingBayPlan = useMemo(() => {
+    if (systemMode !== 'powerplant' || isSiteUnsizable) return undefined;
+    const dcPlanningMwp = ((targetPowerplantCapacityKw || 1000) * 1.25) / 1000;
+    return designPowerplantBays(
+      (targetPowerplantCapacityKw || 1000) / 1000,
+      dcPlanningMwp,
+      inverterTech,
+      customBaysCount,
+      mvVoltageKv,
+      selectedInverter.pnomAcKw,
+    );
+  }, [systemMode, isSiteUnsizable, targetPowerplantCapacityKw, inverterTech, customBaysCount, mvVoltageKv, selectedInverter.pnomAcKw]);
+  const sizingFleetInverterCount = sizingBayPlan?.bays.reduce((count, bay) => count + bay.inverterCount, 0);
+
   const arrayDesign = useMemo(() => {
+    if (isSiteUnsizable) {
+      return {
+        totalPvCapacityKwp: 0,
+        totalModulesCount: 0,
+        modulesPerString: 0,
+        parallelStringsCount: 0,
+        minModulesPerStringAllowed: 0,
+        maxModulesPerStringAllowed: 0,
+        stringVocMaxColdVolts: 0,
+        stringVmpMinHotVolts: 0,
+        maxMpptOperatingCurrentAmps: 0,
+        maxMpptShortCircuitCurrentAmps: 0,
+        isMpptCurrentCompliant: false,
+        isVoltageFeasible: false,
+        isDesignFeasible: false,
+        dcAcRatio: 0,
+        effectiveDeratingFactor: 0,
+        cellTempHotC: city.tempMaxC || 25,
+        powerTempDeratePct: 0,
+        netArrayAreaM2: 0,
+        interRowSpacingM: 0,
+        grossRequiredLandAreaM2: 0,
+        winterSunAltitudeDeg: 0,
+        warnings: [
+          city.peakSunHours === 0
+            ? 'Site peakSunHours is 0 (system unsizable: polar darkness / zero irradiance).'
+            : 'Site has invalid coordinates or non-positive solar irradiance.',
+        ],
+        blockingErrors: [
+          city.peakSunHours === 0
+            ? 'Site peakSunHours is 0 (system unsizable).'
+            : 'Invalid site parameters or coordinates.',
+        ],
+        estimatedAnnualYieldKwh: 0,
+        specificYieldKwhPerKwp: 0,
+        requiredInverterCount: 0,
+        totalInverterAcCapacityKw: 0,
+        singleInverterDcAcRatio: 0,
+        stringsPerMppt: 0,
+        maxStringsPerMpptAllowed: 0,
+      };
+    }
     return designPvArray(
       effectiveDailyKwhDemand,
       city.peakSunHours,
@@ -639,22 +782,18 @@ export const App: React.FC = () => {
         arrayTiltDeg: city.optimalTiltAnnualDeg,
         installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
       },
-      city.latitude
+      city.latitude,
+      sizingFleetInverterCount ? { inverterCount: sizingFleetInverterCount } : undefined,
     );
-  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment]);
+  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment, isSiteUnsizable, sizingFleetInverterCount]);
 
   // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
   const [shadingSimulationMode, setShadingSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
 
-  const activePlantCapacityKwp =
-    systemMode === 'powerplant'
-      ? (targetPowerplantCapacityKw || 1000) * 1.25
-      : arrayDesign.totalPvCapacityKwp;
-
-  const activeModulesCount =
-    systemMode === 'powerplant'
-      ? Math.round((activePlantCapacityKwp * 1000) / (selectedModule.pmpWatts || 550))
-      : arrayDesign.totalModulesCount;
+  // All downstream consumers (3D scene, shading signature, and report inputs) use
+  // the actual sized array; never substitute the target/nominal DC planning factor.
+  const activePlantCapacityKwp = isSiteUnsizable ? 0 : arrayDesign.totalPvCapacityKwp;
+  const activeModulesCount = isSiteUnsizable ? 0 : arrayDesign.totalModulesCount;
 
   const currentShadingSignature = useMemo(() => {
     const scene = buildSceneFromProjectDesign({
@@ -738,7 +877,7 @@ export const App: React.FC = () => {
       systemMode,
       loadAnalysis.totalDailyEnergyKwh,
       loadAnalysis.nighttimeEnergyWh / 1000.0,
-      outageHours || 6,
+      outageHours,
       city.nightHoursDesign
     );
 
@@ -753,7 +892,7 @@ export const App: React.FC = () => {
       100,
       loadAnalysis.nighttimeEnergyWh / 1000.0,
       systemMode,
-      outageHours || 6,
+      outageHours,
       city.nightHoursDesign
     );
   }, [systemMode, loadAnalysis, outageHours, autonomyDays, selectedChemistry, inverterClustering, city]);
@@ -968,70 +1107,91 @@ export const App: React.FC = () => {
       autonomyDays,
       userPricing.usdToTomanRate,
       userPricing.discountRatePct,
-      city.peakSunHours || 5.17
+      city.peakSunHours
     );
   }, [arrayDesign.totalPvCapacityKwp, loadAnalysis.totalDailyEnergyKwh, autonomyDays, userPricing.usdToTomanRate, userPricing.discountRatePct, city.peakSunHours]);
 
-  // Handler for restoring imported project from JSON with three-state safety model & custom equipment restoration (OFF-01, OFF-02)
-  const handleImportProject = (importedData: any) => {
+  // Parse/migrate once, require explicit acceptance of recoveries, then commit equipment
+  // and project state. BLOCKED or canceled imports do not mutate either store.
+  const handleImportProject = async (importedData: unknown): Promise<boolean> => {
     try {
-      const envelopeResult = importedData?.migrationStatus
-        ? importedData
-        : restoreProjectTransferEnvelope(importedData);
-      const migrationResult = envelopeResult.migrationResult || envelopeResult;
+      const restored = restoreProjectTransferEnvelope(importedData);
+      const migrationResult = restored.migrationResult;
+      if (!restored.success || restored.migrationStatus === 'BLOCKED_INCONSISTENT') {
+        const reasons = migrationResult.blockerReasons.join('\n') || migrationResult.warnings.join('\n');
+        setSaveToast(lang === 'fa' ? `بارگذاری مسدود شد: ${reasons}` : `Import blocked: ${reasons}`);
+        setTimeout(() => setSaveToast(null), 7000);
+        return false;
+      }
 
-      // State 3: BLOCKED INCONSISTENT
-      if (migrationResult.migrationStatus === 'BLOCKED_INCONSISTENT') {
-        const blockerMsg = migrationResult.blockerReasons[0] || 'Physical contradiction detected';
-        setSaveToast(
-          lang === 'fa'
-            ? `مهاجرت مسدود شد: ${blockerMsg} (کد: ${migrationResult.traceId.slice(0, 8)})`
-            : `Migration blocked: ${blockerMsg} (Trace: ${migrationResult.traceId.slice(0, 8)})`
-        );
-        setTimeout(() => setSaveToast(null), 5500);
-        return;
+      if (migrationResult.requiresUserConfirmation || restored.migrationStatus === 'RECOVERED_WITH_WARNINGS') {
+        const details = migrationResult.warnings.length ? migrationResult.warnings.join('\n') : 'Recovered fields require review.';
+        const accepted = window.confirm(lang === 'fa'
+          ? `پروژه با هشدار بازیابی شده است. پیش از اعمال، تغییرات زیر را بررسی کنید:\n\n${details}\n\nآیا با اعمال همین مقادیر بازیابی‌شده موافقید؟`
+          : `This project was recovered with warnings. Review before applying:\n\n${details}\n\nApply the recovered values?`);
+        if (!accepted) {
+          setSaveToast(lang === 'fa' ? 'بارگذاری لغو شد؛ پروژه و کاتالوگ تغییر نکردند.' : 'Import canceled; project and catalog were not changed.');
+          setTimeout(() => setSaveToast(null), 4500);
+          return false;
+        }
+      }
+
+      const equipmentCommit = await commitRestoredCustomEquipmentWithCrossTabLock(restored);
+      if (!equipmentCommit.success) {
+        setSaveToast(lang === 'fa'
+          ? `پروژه اعمال نشد؛ وضعیت کاتالوگ را بررسی کنید: ${equipmentCommit.errors.join('؛ ')}`
+          : `Project import was not applied; check catalog status: ${equipmentCommit.errors.join('; ')}`);
+        setTimeout(() => setSaveToast(null), 7000);
+        return false;
       }
 
       const clean = migrationResult.project;
-
-      if (clean.city) setCity(clean.city as unknown as ClimateCity);
-      if (clean.siteOverrides) setSiteOverrides(clean.siteOverrides);
+      transitionImportedSite(
+        clean.city as ClimateCity | undefined,
+        clean.siteOverrides as SiteGeotechnicalOverrides | undefined,
+        clean.projectName as string | undefined,
+      );
+      if (typeof clean.pendingImportedEmbedmentDepthM === 'number') {
+        setPendingImportedEmbedmentDepthM(clean.pendingImportedEmbedmentDepthM);
+      }
       if (clean.loads) setLoads(clean.loads as unknown as ElectricalLoadItem[]);
       if (clean.selectedModule) setSelectedModule(clean.selectedModule as ModuleSpecs);
       if (clean.selectedInverter) setSelectedInverter(clean.selectedInverter as InverterSpecs);
       if (clean.projectName) setProjectName(clean.projectName);
       if (clean.systemMode) setSystemMode(clean.systemMode as SystemMode);
       if (clean.inverterTech) setInverterTech(clean.inverterTech as InverterTechnology);
-      if (clean.customBaysCount) setCustomBaysCount(clean.customBaysCount);
-      if (clean.mvVoltageKv) setMvVoltageKv(clean.mvVoltageKv);
-      if (clean.targetPowerplantCapacityKw) setTargetPowerplantCapacityKw(clean.targetPowerplantCapacityKw);
+      if (clean.structuralModulesPerTable !== undefined) setStructuralModulesPerTable(clean.structuralModulesPerTable);
+      if (clean.dcSystemEarthing !== undefined) setDcSystemEarthing(clean.dcSystemEarthing);
+      if (clean.customBaysCount !== undefined) setCustomBaysCount(clean.customBaysCount);
+      if (clean.mvVoltageKv !== undefined) setMvVoltageKv(clean.mvVoltageKv);
+      if (clean.targetPowerplantCapacityKw !== undefined) setTargetPowerplantCapacityKw(clean.targetPowerplantCapacityKw);
       if (clean.enableDieselGenerator !== undefined) setEnableDieselGenerator(Boolean(clean.enableDieselGenerator));
       if (clean.userPricing) setUserPricing(clean.userPricing as unknown as UserFinancialPricing);
       if (clean.selectedChemistry) setSelectedChemistry(clean.selectedChemistry as BatteryChemistry);
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
       if (clean.outageHours !== undefined) setOutageHours(clean.outageHours);
-      // BUG-2: restore tracker config; legacy projects without the field -> null (fixed tilt)
       setTrackerConfig(clean.trackerConfig !== undefined ? clean.trackerConfig : null);
+      setReportMetadata(restored.metadata);
+      setProjectImportRevision((revision) => revision + 1);
 
-      // State 2: RECOVERED WITH WARNINGS
-      if (migrationResult.migrationStatus === 'RECOVERED_WITH_WARNINGS') {
-        setSaveToast(
-          lang === 'fa'
-            ? `پروژه بازیابی شد (${migrationResult.warnings.length} هشدار فیلدهای مفقود). لطفاً پارامترها را بررسی و تأیید کنید.`
-            : `Project recovered with ${migrationResult.warnings.length} warning(s). Please review and confirm parameters.`
-        );
-        setTimeout(() => setSaveToast(null), 4500);
+      if (restored.migrationStatus === 'RECOVERED_WITH_WARNINGS') {
+        setSaveToast(lang === 'fa'
+          ? `پروژه با تأیید شما بازیابی شد؛ ${migrationResult.warnings.length} هشدار برای بازبینی ثبت شده است.`
+          : `Project applied after your confirmation; ${migrationResult.warnings.length} warning(s) remain for review.`);
       } else {
-        // State 1: VALID
-        setSaveToast(
-          lang === 'fa'
-            ? `پروژه نسخه 3.0.0 با کد ردگیری ${migrationResult.traceId.slice(0, 8)} با موفقیت بارگذاری شد.`
-            : `Project v3.0.0 loaded successfully (Trace: ${migrationResult.traceId.slice(0, 8)})`
-        );
-        setTimeout(() => setSaveToast(null), 3000);
+        setSaveToast(lang === 'fa'
+          ? `پروژه با موفقیت بارگذاری شد (کد: ${migrationResult.traceId.slice(0, 8)}).`
+          : `Project loaded successfully (trace: ${migrationResult.traceId.slice(0, 8)}).`);
       }
+      setTimeout(() => setSaveToast(null), 5500);
+      return true;
     } catch (err) {
       console.error('Project import migration error:', err);
+      setSaveToast(lang === 'fa'
+        ? `بارگذاری ناموفق بود؛ پیش از تلاش مجدد وضعیت پروژه و کاتالوگ را بررسی کنید: ${String(err)}`
+        : `Project import failed; inspect project and catalog state before retrying: ${String(err)}`);
+      setTimeout(() => setSaveToast(null), 7000);
+      return false;
     }
   };
 
@@ -1452,6 +1612,13 @@ export const App: React.FC = () => {
 
   const currentStructuralInputHash = computeStructuralInputHash({
     cityId: city.id,
+    latitude: city.latitude,
+    longitude: city.longitude,
+    moduleId: selectedModule.id,
+    moduleOrigin: selectedModule.origin,
+    moduleLengthM: selectedModule.lengthM,
+    moduleWidthM: selectedModule.widthM,
+    moduleWeightKg: selectedModule.weightKg ?? null,
     totalModulesCount: arrayDesign.totalModulesCount,
     arrayTiltDeg: siteOverrides.arrayTiltDeg ?? city.optimalTiltAnnualDeg ?? 28,
     foundationType: resolvedFoundationType,
@@ -1481,6 +1648,13 @@ export const App: React.FC = () => {
       className={`min-h-screen bg-[#080C14] text-slate-100 flex flex-col ${isRtl ? 'font-vazir' : 'font-sans'}`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
+      {updateWaiting && (
+        <div role="status" className="fixed top-0 inset-x-0 z-[70] bg-amber-900 text-amber-50 px-4 py-2 text-xs text-center">
+          {lang === 'fa'
+            ? 'نسخهٔ جدید آماده است. کار خود را در همهٔ زبانه‌ها ذخیره یا صادر کنید؛ نسخهٔ جدید پس از بستن زبانه‌های قدیمی فعال می‌شود. بارگذاری مجدد ممکن است تغییرات ذخیره‌نشده را از بین ببرد.'
+            : 'An update is ready. Save or export work in every tab; it activates after the old tabs close. Reloading may discard unsaved edits.'}
+        </div>
+      )}
       {/* Toast Notification */}
       {saveToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-emerald-400 shadow-xl">
@@ -1681,6 +1855,18 @@ export const App: React.FC = () => {
               </button>
             </div>
 
+            <button
+              type="button"
+              onClick={() => void handleLoadLastProject()}
+              className="w-full p-2 bg-[#141C2E] hover:bg-[#1E293B] border border-amber-500/40 rounded-lg text-amber-300 font-bold"
+            >
+              {lang === 'fa' ? 'بازیابی آخرین ذخیرهٔ محلی' : 'Restore last local save'}
+            </button>
+            <p className="text-[10px] text-slate-400">
+              {lang === 'fa'
+                ? 'ذخیرهٔ محلی خودکار بارگذاری نمی‌شود. بازیابی، پس از تأیید، تغییرات فعلی این زبانه را جایگزین می‌کند.'
+                : 'Local saves are not loaded automatically. After confirmation, restore replaces the current edits in this tab.'}
+            </p>
             <div className="pt-2 text-[10px] text-slate-500 text-center font-mono">
               Trace ID: {generateTraceId().slice(0, 16)} · SolarPV Studio Pro v3.0.4
             </div>
@@ -1950,6 +2136,7 @@ export const App: React.FC = () => {
                     return (
                       <button
                         key={tab.id}
+                        data-testid={`workflow-tab-${tab.id}`}
                         onClick={() => {
                           setActiveTab(tab.id);
                           setIsMobileMenuOpen(false);
@@ -2381,21 +2568,9 @@ export const App: React.FC = () => {
             {activeTab === 'climate' && (
             <ClimateTab
               selectedCity={city}
-              onCityChange={(newCity) => {
-                setCity(newCity);
-                setSelectedSite({
-                  lat: newCity.latitude,
-                  lng: newCity.longitude,
-                  climateData: newCity,
-                });
-              }}
+              onCityChange={transitionSite}
               onCreate3dRooftop={(newCity) => {
-                setCity(newCity);
-                setSelectedSite({
-                  lat: newCity.latitude,
-                  lng: newCity.longitude,
-                  climateData: newCity,
-                });
+                transitionSite(newCity);
                 setActiveTab('3d_viewer');
               }}
               lang={lang}
@@ -2504,19 +2679,38 @@ export const App: React.FC = () => {
           )}
 
           {/* STRUCTURAL & FOUNDATION TAB */}
-          {activeTab === 'structural' && (
+          {activeTab === 'structural' && isSiteUnsizable ? (
+            <div role="alert" className="studio-card border border-amber-500/40 text-amber-200">
+              <strong>{lang === 'fa' ? 'تحلیل سازه‌ای انجام نشد' : 'Structural analysis not assessed'}</strong>
+              <p className="mt-2 text-sm">
+                {lang === 'fa'
+                  ? 'این سایت در وضعیت غیرقابل سایزینگ است؛ هیچ میز یا نتیجه سازه‌ای نمونه/تأییدنشده‌ای برای پروژه صفر نمایش داده نمی‌شود.'
+                  : 'This site is unsizable. No sample tables or unverified structural result is shown for a zero-capacity project.'}
+              </p>
+            </div>
+          ) : activeTab === 'structural' ? (
             <StructuralFoundationTab
               totalModulesCount={arrayDesign.totalModulesCount}
+              selectedModule={selectedModule}
               arrayTiltDeg={city.optimalTiltAnnualDeg}
               city={city}
               siteOverrides={siteOverrides}
-              onUpdateSiteOverrides={(overrides) => setSiteOverrides((prev) => ({ ...prev, ...overrides }))}
+              onUpdateSiteOverrides={setSiteOverrides}
               onUpdateStructuralSnapshot={setStructuralSnapshot}
               modulesPerTable={structuralModulesPerTable}
               onUpdateModulesPerTable={setStructuralModulesPerTable}
+              projectImportRevision={projectImportRevision}
+              pendingImportedEmbedmentDepthM={pendingImportedEmbedmentDepthM}
+              onConfirmImportedEmbedmentDepth={() => {
+                if (pendingImportedEmbedmentDepthM !== null) {
+                  setSiteOverrides((prev) => ({ ...prev, customEmbedmentDepthM: pendingImportedEmbedmentDepthM }));
+                  setPendingImportedEmbedmentDepthM(null);
+                }
+              }}
+              onDiscardImportedEmbedmentDepth={() => setPendingImportedEmbedmentDepthM(null)}
               lang={lang}
             />
-          )}
+          ) : null}
 
           {/* 24-HOUR BALANCE SIMULATION */}
           {activeTab === 'sim24h' && systemMode !== 'powerplant' && (
@@ -2630,7 +2824,9 @@ export const App: React.FC = () => {
                 city={city}
                 site={selectedSite}
                 plantCapacityKw={
-                  systemMode === 'powerplant'
+                  isSiteUnsizable
+                    ? 0
+                    : systemMode === 'powerplant'
                     ? (targetPowerplantCapacityKw || 1000)
                     : activePlantCapacityKwp
                 }
@@ -2688,7 +2884,7 @@ export const App: React.FC = () => {
 
           {/* SCENARIOS COMPARISON TAB (Only for Battery modes) */}
           {activeTab === 'scenarios' && systemMode !== 'powerplant' && (
-            <ScenarioComparisonTab scenarios={scenarios} lang={lang} />
+            <ScenarioComparisonTab scenarios={scenarios} peakSunHours={city.peakSunHours} lang={lang} />
           )}
 
           {/* SOLAR WATER PUMPING TAB */}
@@ -2742,16 +2938,16 @@ export const App: React.FC = () => {
           </div>
 
           <div className="hidden sm:flex items-center gap-3">
-            <span className="text-blue-400 font-bold">
-              GATEWAY: NASA POWER v2.0 / PVGIS (SARAH-2) ACTIVE
+            <span className="text-sky-400 font-bold" title="Soil describes requested provider properties, not certification of geotechnical design; other fields may be analytical.">
+              GATEWAY: {gatewaySourceSummary(city, siteOverrides)}
             </span>
             <span className="text-slate-600">|</span>
             <span className="text-slate-300">
               RFC 3.0.0
             </span>
             <span className="text-slate-600">|</span>
-            <span className="text-emerald-400 font-bold">
-              11/11 BENCHMARKS PASS
+            <span className="text-slate-400 font-bold" title="This screen does not execute or certify engineering benchmarks.">
+              SCREENING ONLY
             </span>
           </div>
         </footer>
@@ -2781,6 +2977,10 @@ export const App: React.FC = () => {
             appliedShading={appliedShadingRecord}
             isShadingStale={isShadingStale}
             bifacialGainPct={bifacialGainPct}
+            reportMetadata={reportMetadata}
+            onReportMetadataChange={(changes) => setReportMetadata((previous) => ({ ...previous, ...changes }))}
+            projectInputSnapshot={buildProjectInputSnapshot()}
+            pendingImportedEmbedmentDepthM={pendingImportedEmbedmentDepthM}
             onClose={() => setShowReportModal(false)}
             onImportProject={handleImportProject}
             lang={lang}
