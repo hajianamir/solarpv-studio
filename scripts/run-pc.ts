@@ -4,7 +4,7 @@
  * Cross-platform runner for Windows, macOS, and Linux PCs.
  *
  * Responsibilities:
- * 1. Checks Node.js runtime requirements (>= 18.0.0).
+ * 1. Checks Node.js runtime requirements (>= 20.0.0).
  * 2. Checks and initializes .env configuration if not present.
  * 3. Detects available TCP port (default: 3000, fallback: 3001-3010).
  * 4. Spawns the SolarPV Studio application server (server.ts).
@@ -19,9 +19,35 @@ import fs from 'fs';
 import http from 'http';
 import net from 'net';
 
-const MIN_NODE_MAJOR = 18;
-const DEFAULT_PORT = Number(process.env.PORT) || 3000;
+const MIN_NODE_MAJOR = 20;
 const ROOT_DIR = process.cwd();
+
+/** Read the port without depending on dotenv, which may not be installed yet. */
+function readConfiguredPort(): number {
+  const fromEnvironment = Number(process.env.PORT || process.env.APP_PORT);
+  if (Number.isInteger(fromEnvironment) && fromEnvironment >= 1 && fromEnvironment <= 65535) {
+    return fromEnvironment;
+  }
+
+  for (const fileName of ['.env', '.env.example']) {
+    const filePath = path.join(ROOT_DIR, fileName);
+    if (!fs.existsSync(filePath)) continue;
+    try {
+      const contents = fs.readFileSync(filePath, 'utf8');
+      for (const line of contents.split(/\r?\n/)) {
+        const match = /^\s*(?:export\s+)?(?:PORT|APP_PORT)\s*=\s*([^#\s]+)\s*$/.exec(line);
+        if (!match) continue;
+        const candidate = Number(match[1].replace(/^['\"]|['\"]$/g, ''));
+        if (Number.isInteger(candidate) && candidate >= 1 && candidate <= 65535) return candidate;
+      }
+    } catch {
+      // Keep the safe default if the optional env file cannot be read.
+    }
+  }
+  return 3000;
+}
+
+const DEFAULT_PORT = readConfiguredPort();
 
 // --- ANSI Colors ---
 const c = {
