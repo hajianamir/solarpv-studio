@@ -59,11 +59,20 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), buildServiceWorkerPrecache()],
     define: {
       'import.meta.env.VITE_REAL_INTERNET': JSON.stringify(realInternet),
+      __SOLARPV_PRODUCTION__: JSON.stringify(mode === 'production'),
     },
     server: {
       host: '0.0.0.0',
       port: 3000,
       allowedHosts: true,
+    },
+    optimizeDeps: {
+      // React's client entry is dynamically referenced by the browser bootstrap.
+      // Force a fresh, explicit prebundle on desktop launches to avoid Vite
+      // serving a stale/missing react-dom_client.js cache entry after npm install,
+      // observed with the Windows Node 22 desktop launcher.
+      include: ['react-dom/client'],
+      force: true,
     },
     build: {
       manifest: 'manifest.web.json',
