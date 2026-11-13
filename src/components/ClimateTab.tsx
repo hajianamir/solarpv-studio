@@ -3,6 +3,7 @@ import { MapPin, Sun, ThermometerSnowflake, ThermometerSun, Compass, Wind, Edit3
 import { fetchClimateData, type ClimateCity } from '../engine/climaticData';
 import { type ParameterProvenance } from '../engine/types/climateTypes';
 import { formatCoordinates } from '../engine/geoCoordinates';
+import { formatPsh } from '../engine/formatters';
 
 const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
 
@@ -267,11 +268,11 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
     setValidationError(null);
 
     const dataSourceEn = hasUserEdits
-      ? 'Custom Parameters (USER_OVERRIDE)'
-      : base.dataSourceEn;
+      ? `${candidate.dataSourceEn || base.dataSourceEn || 'Unknown source'}; USER_OVERRIDE applied to explicitly edited fields`
+      : (candidate.dataSourceEn || base.dataSourceEn);
     const dataSourceFa = hasUserEdits
-      ? 'پارامترهای سفارشی کاربر (USER_OVERRIDE)'
-      : base.dataSourceFa;
+      ? `${candidate.dataSourceFa || base.dataSourceFa || 'منبع نامشخص'}؛ USER_OVERRIDE روی فیلدهای صریحاً ویرایش‌شده اعمال شد`
+      : (candidate.dataSourceFa || base.dataSourceFa);
 
     onCityChange({
       ...candidate,
@@ -282,7 +283,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
         : candidate.id,
       dataSourceEn,
       dataSourceFa,
-      confidence: coordsChanged ? 'analytical_estimate' : (hasUserEdits ? 'analytical_estimate' : base.confidence),
+      confidence: hasUserEdits ? 'analytical_estimate' : (candidate.confidence ?? base.confidence),
       fieldProvenance: updatedProv,
     });
     setDirtyFieldKeys(new Set());
@@ -303,6 +304,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
     (selectedCity.peakSunHours !== baselineCityRef.current.peakSunHours ||
       selectedCity.tempMinC !== baselineCityRef.current.tempMinC ||
       selectedCity.tempMaxC !== baselineCityRef.current.tempMaxC ||
+      selectedCity.albedo !== baselineCityRef.current.albedo ||
       selectedCity.soilBearingCapacityKpa !== baselineCityRef.current.soilBearingCapacityKpa);
 
   return (
@@ -319,8 +321,8 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
             </h1>
             <p className="text-slate-400 text-xs">
               {isEn
-                ? 'Select project site on interactive hybrid satellite map. Environmental metrics, PSH, and geotechnical data are resolved dynamically via NASA POWER and PVGIS APIs (ADR-005).'
-                : 'انتخاب محل نصب از روی نقشه ماهواره‌ای تعاملی. پارامترهای تابش خورشیدی (PSH)، باد، برف و ژئوتکنیک به صورت پویا از پایگاه‌های داده جهانی ناسا و PVGIS استخراج می‌شوند.'}
+                ? 'Select the project site on the map. Provider data is used when available; offline values are explicitly identified as analytical estimates. Albedo is a fixed 0.20 standard default unless verified or overridden for this site.'
+                : 'محل پروژه را روی نقشه انتخاب کنید. در صورت دسترسی از دادهٔ منبع استفاده می‌شود؛ مقادیر آفلاین صریحاً تخمینی‌اند. آلبیدو تا زمان تأیید یا اصلاح محلی، پیش‌فرض استاندارد ثابت ۰٫۲۰ است.'}
             </p>
           </div>
 
@@ -389,7 +391,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
       <div className="studio-card">
         <div className="flex items-center justify-between border-b border-industrial-border/80 pb-3 mb-4">
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <h2 className="text-lg font-bold text-theme-strong flex items-center gap-2">
               <Sun className="w-5 h-5 text-industrial-warning" />
               {isEn ? 'Climate & Solar Metrics:' : 'اطلاعات اقلیمی:'} {isEn ? selectedCity.nameEn : selectedCity.nameFa}
             </h2>
@@ -425,8 +427,8 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Peak Sun Hours (PSH)' : 'میانگین ساعات آفتابی اوج (PSH)'}
               </span>
-              <span className="text-xl font-bold font-mono text-industrial-warning">
-                {selectedCity.peakSunHours}
+              <span data-testid="climate-psh-display" className="text-xl font-bold font-mono text-industrial-warning">
+                {formatPsh(selectedCity.peakSunHours)}
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
                 {isEn ? 'Hours/Day (kWh/m²/day)' : 'ساعت در روز (kWh/m²/day)'}
@@ -765,7 +767,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-industrial-border pb-2">
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4 text-indigo-400" />
-            <h3 className="text-sm font-bold text-white">
+            <h3 className="text-sm font-bold text-theme-strong">
               {isEn ? 'Environmental & Geotechnical Telemetry Provenance' : 'جدول ردیابی منشأ و اصالت داده‌های محیطی و ژئوتکنیکی (ENV-01..07)'}
             </h3>
           </div>
@@ -807,7 +809,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                     key: 'peakSunHours',
                     nameFa: 'ساعات اوج تابش (PSH)',
                     nameEn: 'Peak Sun Hours (PSH)',
-                    val: `${selectedCity.peakSunHours} kWh/m²/day`,
+                    val: `${formatPsh(selectedCity.peakSunHours)} kWh/m²/day`,
                     defaultKind: (isMeasuredSolar ? 'provider_derived' : 'local_model') as 'local_model' | 'provider_derived' | 'provider_value',
                     defaultSource: isMeasuredSolar ? 'PVGIS / NASA_POWER' : 'REGIONAL_ANALYTICAL_MODEL',
                   },
@@ -937,7 +939,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
                   return (
                     <tr key={r.key} className="hover:bg-slate-800/40 transition">
                       <td className="p-2 text-slate-200 font-sans font-medium">{isFa ? r.nameFa : r.nameEn}</td>
-                      <td className="p-2 text-center text-white font-bold">{r.val}</td>
+                      <td className="p-2 text-center text-theme-strong font-bold">{r.val}</td>
                       <td className="p-2 text-center text-slate-300">{source}</td>
                       <td className="p-2 text-center">{kindBadge}</td>
                       <td className="p-2 text-slate-400 font-sans text-[10px] leading-tight">{note}</td>

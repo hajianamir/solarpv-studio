@@ -21,6 +21,7 @@ import {
   type CableRunConfig,
   type CableRunResult,
   calculateAdvancedCableRun,
+  createUnassessedCableRun,
   calculateEarthingSystem,
   calculateLightningProtection,
   type ConductorMaterial,
@@ -31,6 +32,7 @@ import {
   type DcSystemEarthingType,
 } from '../engine/protectionBomEngine';
 import type { InstallationEnvironment } from '../engine/types/climateTypes';
+import type { AcConnectionRequirement } from '../engine/acRequirements';
 
 interface ProtectionBomTabProps {
   systemCapacityKw?: number;
@@ -41,6 +43,9 @@ interface ProtectionBomTabProps {
   inverterDcContinuousCurrentAmps?: number;
   systemDcVoltage?: number;
   isThreePhase?: boolean;
+  acOutputRequirement?: AcConnectionRequirement | null;
+  inverterAcVoltageVac?: number;
+  inverterNameplateAttested?: boolean;
   ambientTempC?: number;
   totalModulesCount?: number;
   dcSystemEarthing?: DcSystemEarthingType;
@@ -58,6 +63,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   inverterDcContinuousCurrentAmps = 250,
   systemDcVoltage = 48,
   isThreePhase = true,
+  acOutputRequirement = null,
+  inverterAcVoltageVac,
+  inverterNameplateAttested = false,
   ambientTempC = 42,
   totalModulesCount = 100,
   dcSystemEarthing = 'floating',
@@ -68,24 +76,27 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   // Cable Run User Inputs
   const [ambientTemp, setAmbientTemp] = useState<number>(ambientTempC);
   const [installationMethod, setInstallationMethod] = useState<InstallationMethod>('cable_tray');
-  const [dcStringLengthM, setDcStringLengthM] = useState<number>(35);
+  const [dcStringLengthM, setDcStringLengthM] = useState<number | null>(null);
   const [dcStringMaterial, setDcStringMaterial] = useState<ConductorMaterial>('copper');
   const [dcStringInsulation, setDcStringInsulation] = useState<InsulationType>('xlpe');
 
-  const [dcMainBusbarLengthM, setDcMainBusbarLengthM] = useState<number>(isUtilityPowerplant ? 80 : 15);
+  const [dcMainBusbarLengthM, setDcMainBusbarLengthM] = useState<number | null>(null);
   const [dcMainMaterial, setDcMainMaterial] = useState<ConductorMaterial>(isUtilityPowerplant ? 'aluminum' : 'copper');
   const [dcMainInsulation, setDcMainInsulation] = useState<InsulationType>('xlpe');
 
-  const [acOutputLengthM, setAcOutputLengthM] = useState<number>(isUtilityPowerplant ? 120 : 25);
+  const [acOutputLengthM, setAcOutputLengthM] = useState<number | null>(null);
   const [acMaterial, setAcMaterial] = useState<ConductorMaterial>(isUtilityPowerplant ? 'aluminum' : 'copper');
   const [acInsulation, setAcInsulation] = useState<InsulationType>('xlpe');
 
-  const [batteryCableLengthM, setBatteryCableLengthM] = useState<number>(3);
+  const [batteryCableLengthM, setBatteryCableLengthM] = useState<number | null>(null);
   const [batteryMaterial, setBatteryMaterial] = useState<ConductorMaterial>('copper');
 
   // Earthing & DC Grounding Inputs
-  const [soilResistivity, setSoilResistivity] = useState<number>(100);
+  const [soilResistivity, setSoilResistivity] = useState<number | null>(null);
   const [upstreamGrounding, setUpstreamGrounding] = useState<UpstreamGroundingSystem>('solidly_grounded');
+  // The current engine uses generic 2.5/6 kA faults and a fixed 0.2 s clearing time.
+  // No project-specific fault study is captured, so never surface its safety verdict.
+  const earthingInputsAssessed = false;
   const [applyBentonite, setApplyBentonite] = useState<boolean>(false);
   const [internalDcEarthing, setInternalDcEarthing] = useState<DcSystemEarthingType>(dcSystemEarthing);
   const currentDcEarthing = dcSystemEarthing ?? internalDcEarthing;
@@ -105,7 +116,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         id: 'dc-string',
         sectionNameFa: 'کابل DC استرینگ خورشیدی تا تابلوی تجمیع/اینورتر',
         sectionNameEn: 'PV DC String to Inverter / Combiner Box',
-        oneWayLengthM: dcStringLengthM,
+        oneWayLengthM: dcStringLengthM ?? 0,
         designCurrentAmps: stringIscAmps * 1.25,
         nominalVoltageVolts: stringVocMaxVolts * 0.85,
         conductorMaterial: dcStringMaterial,
@@ -119,30 +130,13 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         id: 'dc-main',
         sectionNameFa: 'کابل باسبار اصلی DC آرایه به اینورتر مرکزی/پست',
         sectionNameEn: 'Main DC Feeder Busbar to Inverter Skid',
-        oneWayLengthM: dcMainBusbarLengthM,
+        oneWayLengthM: dcMainBusbarLengthM ?? 0,
         designCurrentAmps: stringIscAmps * parallelStringsCount * 1.25,
         nominalVoltageVolts: stringVocMaxVolts * 0.85,
         conductorMaterial: dcMainMaterial,
         insulationType: dcMainInsulation,
         allowableDropPct: 1.5,
         isDc: true,
-        ambientTempC: ambientTemp,
-        installationMethod,
-      },
-      {
-        id: 'ac-output',
-        sectionNameFa: 'کابل AC خروجی اینورتر به ترانسفورماتور یا تابلوی اصلی',
-        sectionNameEn: 'Inverter AC Output to Transformer / Main Board',
-        oneWayLengthM: acOutputLengthM,
-        designCurrentAmps: isThreePhase
-          ? (systemCapacityKw * 1000.0) / (Math.sqrt(3) * (isUtilityPowerplant ? 800 : 400) * 0.95)
-          : (systemCapacityKw * 1000.0) / (230.0 * 0.95),
-        nominalVoltageVolts: isThreePhase ? (isUtilityPowerplant ? 800 : 400) : 230,
-        conductorMaterial: acMaterial,
-        insulationType: acInsulation,
-        allowableDropPct: 1.0,
-        isDc: false,
-        isThreePhase,
         ambientTempC: ambientTemp,
         installationMethod,
       },
@@ -153,7 +147,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         id: 'dc-battery',
         sectionNameFa: 'کابل قدرت باتری به اینورتر (Heavy DC Battery Run)',
         sectionNameEn: 'Battery Bank to Inverter DC Bus',
-        oneWayLengthM: batteryCableLengthM,
+        oneWayLengthM: batteryCableLengthM ?? 0,
         designCurrentAmps: inverterDcContinuousCurrentAmps * 1.25,
         nominalVoltageVolts: systemDcVoltage,
         conductorMaterial: batteryMaterial,
@@ -165,7 +159,41 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       });
     }
 
-    return runs.map(calculateAdvancedCableRun);
+    const calculatedNonAcRuns = runs.map((run) => run.oneWayLengthM > 0
+      ? calculateAdvancedCableRun(run)
+      : createUnassessedCableRun(run, 'Enter and verify the measured one-way cable route length; no default route length is assumed.'));
+    const ac = acOutputRequirement;
+    const acVoltage = ac?.phase === 'three' ? ac.lineToLineVolts : (ac?.lineToNeutralVolts ?? ac?.lineToLineVolts);
+    const phaseMatches = ac?.phase === (isThreePhase ? 'three' : 'single');
+    const acInputsConfirmed = Boolean(acOutputLengthM !== null && Number.isFinite(acOutputLengthM) && acOutputLengthM > 0
+      && ac?.confirmed && phaseMatches && acVoltage && acVoltage > 0
+      && ac.frequencyHz && ac.frequencyHz > 0
+      && ac.powerFactor && ac.powerFactor > 0 && ac.powerFactor <= 1
+      && ac.availableFaultCurrentKa && ac.availableFaultCurrentKa > 0
+      && ac.faultClearingTimeSec && ac.faultClearingTimeSec > 0
+      && inverterNameplateAttested
+      && !(inverterAcVoltageVac !== undefined && ac.lineToLineVolts !== null
+        && Math.abs(inverterAcVoltageVac - ac.lineToLineVolts) > Math.max(1, ac.lineToLineVolts * 0.01)));
+    const acBase = {
+      id: 'ac-output', sectionNameFa: 'کابل AC خروجی اینورتر به ترانسفورماتور یا تابلوی اصلی',
+      sectionNameEn: 'Inverter AC Output to Transformer / Main Board', oneWayLengthM: acOutputLengthM ?? 0,
+      conductorMaterial: acMaterial, insulationType: acInsulation, allowableDropPct: 1.0,
+      isDc: false, isThreePhase, ambientTempC: ambientTemp, installationMethod,
+    } as const;
+    const acRun = acInputsConfirmed
+      ? calculateAdvancedCableRun({
+          ...acBase,
+          designCurrentAmps: (systemCapacityKw * 1000) / ((isThreePhase ? Math.sqrt(3) : 1) * (acVoltage as number) * (ac?.powerFactor as number)),
+          nominalVoltageVolts: acVoltage as number,
+          expectedIscKa: ac?.availableFaultCurrentKa as number,
+          faultClearingTimeSec: ac?.faultClearingTimeSec as number,
+        })
+      : createUnassessedCableRun(acBase,
+          !ac?.confirmed ? 'AC connection requirements are not confirmed.'
+            : !phaseMatches ? 'Inverter phase does not match the confirmed requirement.'
+              : acOutputLengthM === null ? 'Enter and verify the measured one-way cable route length; no default route length is assumed.'
+            : 'Measured route, user-attested exact-model HTTPS datasheet, confirmed voltage/frequency/PF and fault current/clearing time, and matching catalog voltage are required.');
+    return [calculatedNonAcRuns[0], calculatedNonAcRuns[1], acRun, ...calculatedNonAcRuns.slice(2)];
   }, [
     dcStringLengthM,
     dcStringMaterial,
@@ -183,6 +211,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
     parallelStringsCount,
     systemCapacityKw,
     isThreePhase,
+    acOutputRequirement,
+    inverterAcVoltageVac,
+    inverterNameplateAttested,
     isUtilityPowerplant,
     inverterDcContinuousCurrentAmps,
     systemDcVoltage,
@@ -194,7 +225,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   const earthingResult = useMemo(() => {
     return calculateEarthingSystem(
       systemCapacityKw,
-      soilResistivity,
+      soilResistivity ?? 100,
       upstreamGrounding,
       isUtilityPowerplant,
       applyBentonite,
@@ -246,7 +277,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         deviceFa: 'کلید اتوماتیک کمپکت خروجی AC اینورتر (MCCB / ACB)',
         deviceEn: 'Molded Case Circuit Breaker (MCCB)',
         specificationFa: 'IEC 60947-2 با رله الکترونیکی LSI قابل تنظیم',
-        rating: `${Math.ceil((cableRuns[2]?.config.designCurrentAmps || 200) / 50) * 50}A / 50kA`,
+        rating: cableRuns[2]?.isAssessed === false ? (lang === 'fa' ? 'نیازمند الزام تأییدشده AC؛ انتخاب کلید انجام نشده' : 'Requires confirmed AC requirement; breaker not selected') : `${Math.ceil((cableRuns[2]?.config.designCurrentAmps ?? 0) / 50) * 50}A / 50kA`,
         quantity: isUtilityPowerplant ? Math.max(2, Math.ceil(systemCapacityKw / 300)) : 1,
         locationFa: 'خروجی AC اینورتر در تابلوی اصلی توزیع',
       },
@@ -359,6 +390,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
     isUtilityPowerplant,
     systemCapacityKw,
     cableRuns,
+    lang,
     earthingResult,
     totalModulesCount,
   ]);
@@ -402,8 +434,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             onClick={() => setActiveSubTab('cables')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               activeSubTab === 'cables'
-                ? 'bg-industrial-primary text-white shadow-md'
-                : 'bg-industrial-surface text-slate-400 hover:text-white'
+                ? 'bg-industrial-primary text-theme-strong shadow-md'
+                : 'bg-industrial-surface text-slate-400 hover:text-theme-strong'
             }`}
           >
             <Zap className="w-3.5 h-3.5" />
@@ -413,8 +445,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             onClick={() => setActiveSubTab('earthing')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               activeSubTab === 'earthing'
-                ? 'bg-industrial-primary text-white shadow-md'
-                : 'bg-industrial-surface text-slate-400 hover:text-white'
+                ? 'bg-industrial-primary text-theme-strong shadow-md'
+                : 'bg-industrial-surface text-slate-400 hover:text-theme-strong'
             }`}
           >
             <Anchor className="w-3.5 h-3.5" />
@@ -424,8 +456,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             onClick={() => setActiveSubTab('lightning')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               activeSubTab === 'lightning'
-                ? 'bg-industrial-primary text-white shadow-md'
-                : 'bg-industrial-surface text-slate-400 hover:text-white'
+                ? 'bg-industrial-primary text-theme-strong shadow-md'
+                : 'bg-industrial-surface text-slate-400 hover:text-theme-strong'
             }`}
           >
             <Radio className="w-3.5 h-3.5" />
@@ -435,8 +467,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             onClick={() => setActiveSubTab('bom')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               activeSubTab === 'bom'
-                ? 'bg-industrial-primary text-white shadow-md'
-                : 'bg-industrial-surface text-slate-400 hover:text-white'
+                ? 'bg-industrial-primary text-theme-strong shadow-md'
+                : 'bg-industrial-surface text-slate-400 hover:text-theme-strong'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -486,7 +518,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
               {/* DC String */}
               <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
                 <span className="font-bold text-industrial-warning block">
@@ -494,15 +526,15 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </span>
                 <div>
                   <label htmlFor="dc-string-length" className="text-slate-400 block mb-1">
-                    {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
+                    {lang === 'fa' ? 'طول یک‌طرفه مسیر اندازه‌گیری‌شده (متر؛ تا ورود نامشخص):' : 'Measured one-way route length (m; unknown until entered):'}
                   </label>
                   <input
                     id="dc-string-length"
                     type="number"
                     min="5"
                     max="500"
-                    value={dcStringLengthM}
-                    onChange={(e) => setDcStringLengthM(Math.max(1, Number(e.target.value)))}
+                    value={dcStringLengthM ?? ''}
+                    onChange={(e) => setDcStringLengthM(e.target.value === '' ? null : Number(e.target.value))}
                     className="studio-input w-full text-xs"
                   />
                 </div>
@@ -541,15 +573,15 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </span>
                 <div>
                   <label htmlFor="dc-main-feeder-length" className="text-slate-400 block mb-1">
-                    {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
+                    {lang === 'fa' ? 'طول یک‌طرفه مسیر اندازه‌گیری‌شده (متر؛ تا ورود نامشخص):' : 'Measured one-way route length (m; unknown until entered):'}
                   </label>
                   <input
                     id="dc-main-feeder-length"
                     type="number"
                     min="5"
                     max="1000"
-                    value={dcMainBusbarLengthM}
-                    onChange={(e) => setDcMainBusbarLengthM(Math.max(1, Number(e.target.value)))}
+                    value={dcMainBusbarLengthM ?? ''}
+                    onChange={(e) => setDcMainBusbarLengthM(e.target.value === '' ? null : Number(e.target.value))}
                     className="studio-input w-full text-xs"
                   />
                 </div>
@@ -581,6 +613,14 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </div>
               </div>
 
+              {!isUtilityPowerplant && (
+                <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
+                  <span className="font-bold text-indigo-500 block">{lang === 'fa' ? 'کابل DC باتری به اینورتر' : 'Battery-to-inverter DC cable'}</span>
+                  <label htmlFor="dc-battery-length" className="text-slate-400 block mb-1">{lang === 'fa' ? 'طول مسیر رفت اندازه‌گیری‌شده (متر):' : 'Measured one-way route length (m):'}</label>
+                  <input id="dc-battery-length" type="number" min="1" max="200" value={batteryCableLengthM ?? ''} onChange={(e) => setBatteryCableLengthM(e.target.value === '' ? null : Number(e.target.value))} className="studio-input w-full text-xs" />
+                </div>
+              )}
+
               {/* AC Output */}
               <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
                 <span className="font-bold text-industrial-success block">
@@ -588,15 +628,15 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </span>
                 <div>
                   <label htmlFor="ac-output-length" className="text-slate-400 block mb-1">
-                    {lang === 'fa' ? 'طول مسیر رفت (متر):' : 'One-way Length (m):'}
+                    {lang === 'fa' ? 'طول یک‌طرفه مسیر اندازه‌گیری‌شده (متر؛ تا ورود نامشخص):' : 'Measured one-way route length (m; unknown until entered):'}
                   </label>
                   <input
                     id="ac-output-length"
                     type="number"
                     min="5"
                     max="2000"
-                    value={acOutputLengthM}
-                    onChange={(e) => setAcOutputLengthM(Math.max(1, Number(e.target.value)))}
+                    value={acOutputLengthM ?? ''}
+                    onChange={(e) => setAcOutputLengthM(e.target.value === '' ? null : Math.max(1, Number(e.target.value)))}
                     className="studio-input w-full text-xs"
                   />
                 </div>
@@ -663,9 +703,15 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {cableRuns.map((run, idx) => (
+                  {cableRuns.map((run, idx) => run.isAssessed === false ? (
+                    <tr key={idx} data-testid="cable-run-unassessed" className="bg-amber-950/20">
+                      <td className="p-2.5 font-semibold text-theme-strong">{lang === 'fa' ? run.config.sectionNameFa : run.config.sectionNameEn}</td>
+                      <td colSpan={8} className="p-2.5 text-amber-700">{lang === 'fa' ? 'محاسبه/تأیید انجام نشد' : 'Not calculated / not approved'} — {run.assessmentNote}</td>
+                      <td className="p-2.5 text-center text-amber-700 font-bold">{lang === 'fa' ? 'نیازمند داده' : 'Data required'}</td>
+                    </tr>
+                  ) : (
                     <tr key={idx} className="hover:bg-slate-850/60">
-                      <td className="p-2.5 font-semibold text-white">
+                      <td className="p-2.5 font-semibold text-theme-strong">
                         {lang === 'fa' ? run.config.sectionNameFa : run.config.sectionNameEn}
                       </td>
                       <td className="p-2.5 font-mono">{run.config.oneWayLengthM} m</td>
@@ -761,7 +807,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     <div key={i} className="p-3 bg-red-950/40 border border-red-800/80 rounded-lg text-xs text-red-200 flex items-start gap-2.5">
                       <Wrench className="w-4 h-4 text-industrial-warning shrink-0 mt-0.5" />
                       <div>
-                        <strong className="text-white block font-bold mb-1">
+                        <strong className="text-theme-strong block font-bold mb-1">
                           {lang === 'fa' ? r.config.sectionNameFa : r.config.sectionNameEn}:
                         </strong>
                         <p className="leading-relaxed">
@@ -821,8 +867,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   type="number"
                   min="20"
                   max="2000"
-                  value={soilResistivity}
-                  onChange={(e) => setSoilResistivity(Math.max(10, Number(e.target.value)))}
+                  value={soilResistivity ?? ''}
+                  onChange={(e) => setSoilResistivity(e.target.value === '' ? null : Number(e.target.value))}
                   className="studio-input w-full"
                 />
                 <span className="text-[10px] text-slate-400 block">
@@ -882,7 +928,6 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 </span>
               </div>
             </div>
-
             {/* Single Unified Earthing Principle Box */}
             <div className="p-3 bg-sky-950/40 border border-sky-800/80 rounded-lg text-xs space-y-1 mb-4">
               <div className="flex items-center gap-2 font-bold text-sky-300">
@@ -896,6 +941,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </p>
             </div>
 
+            {earthingInputsAssessed ? (
+              <>
             {/* Equipotential Bonding Schedule Cards */}
             <div className="p-3 rounded-lg border border-industrial-border bg-industrial-surface mb-4">
               <h4 className="text-xs font-bold text-industrial-accent mb-2.5 flex items-center gap-2">
@@ -1037,6 +1084,13 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 )}
               </ul>
             </div>
+              </>
+            ) : (
+              <div data-testid="earthing-not-assessed" role="alert" className="rounded-lg border border-amber-600/50 bg-amber-950/20 p-4 text-sm text-amber-800">
+                <strong>{lang === 'fa' ? 'ارزیابی سیستم زمین انجام نشد.' : 'Earthing study not assessed.'}</strong>{' '}
+                {lang === 'fa' ? 'هرچند می‌توان مقاومت ویژه خاک را وارد کرد، موتور فعلی جریان خطای عمومی ۲٫۵/۶ kA و زمان قطع ثابت ۰٫۲ s را به‌کار می‌برد و ورودی مطالعه اتصال کوتاه پروژه نمی‌گیرد؛ بنابراین مقاومت محاسبه‌شده، ولتاژ لمس/گام، تعداد الکترود و حکم ایمنی پنهان می‌مانند. این مقادیر برای پروژه بررسی نشده‌اند.' : 'Soil resistivity can be entered, but the current engine hardcodes generic 2.5/6 kA fault current and 0.2 s clearing time and does not accept the project fault study. Calculated resistance, touch/step voltages, electrode counts and safety verdict are therefore withheld and are not assessed for this project.'}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1056,7 +1110,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             <div className="p-3 bg-sky-950/40 border border-sky-800/80 rounded-lg text-xs text-sky-200 mb-4 flex items-start gap-2.5">
               <ShieldAlert className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white block font-bold mb-0.5">
+                <strong className="text-theme-strong block font-bold mb-0.5">
                   {lang === 'fa' ? 'طبیعت ارزیابی صاعقه (Preliminary Screening):' : 'Preliminary Risk Screening:'}
                 </strong>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
@@ -1088,7 +1142,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             <div className="p-3 bg-industrial-surface rounded-lg border border-industrial-border text-xs mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'مساحت مؤثر جمع‌آوری صاعقه (Ad):' : 'Collection Area (Ad):'}</span>
-                <strong className="text-white font-mono">{lightningResult.collectionAreaM2.toLocaleString()} m²</strong>
+                <strong className="text-theme-strong font-mono">{lightningResult.collectionAreaM2.toLocaleString()} m²</strong>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'نرخ برخورد صاعقه موردانتظار (Nd):' : 'Expected Strike Rate (Nd):'}</span>
@@ -1142,9 +1196,12 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         <div className="studio-card">
           <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
             <Layers className="w-4 h-4 text-industrial-success" />
-            {lang === 'fa' ? 'فهرست کامل ادوات حفاظتی و صاعقه (Protection Bill of Materials)' : 'Protection Bill of Materials'}
+            {lang === 'fa' ? 'فهرست غربالگری اولیه ادوات — انتخاب BOM نهایی نیست' : 'Preliminary protection screening schedule — not a selected BOM'}
           </h3>
 
+          <div data-testid="protection-bom-warning" role="alert" className="mb-3 rounded border border-amber-600/50 bg-amber-950/20 p-3 text-xs text-amber-800">
+            {lang === 'fa' ? 'هیچ تجهیز حفاظتی در این جدول برای ساخت/خرید انتخاب یا هماهنگ نشده است. مقادیر اولیه بر داده‌های کاتالوگ و فرض‌های غربالگری تکیه دارند؛ سطح اتصال کوتاه، منحنی تجهیزات، مدارک سازنده و کد محل لازم‌اند. مقادیر گم‌شده به‌معنی انتخاب‌نشده است.' : 'No protective device in this table is selected or coordinated for construction/procurement. Preliminary values depend on catalog inputs and screening assumptions; utility fault level, device curves, manufacturer documents and local code are required. Missing values mean not selected.'}
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs text-slate-300">
               <thead className="bg-industrial-surface/90 text-slate-400 border-b border-industrial-border">
@@ -1159,7 +1216,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               <tbody className="divide-y divide-slate-800">
                 {protectionBom.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-850/60">
-                    <td className="p-2.5 font-bold text-white">
+                    <td className="p-2.5 font-bold text-theme-strong">
                       {lang === 'fa' ? item.deviceFa : item.deviceEn}
                     </td>
                     <td className="p-2.5 text-slate-300">{item.specificationFa}</td>

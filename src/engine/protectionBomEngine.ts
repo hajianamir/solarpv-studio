@@ -41,6 +41,9 @@ export interface CableRunResult {
   actualVoltageDropVolts: number;
   actualVoltageDropPct: number;
   isCompliant: boolean;
+  /** False means critical source inputs are missing; all numeric output fields are non-results. */
+  isAssessed?: boolean;
+  assessmentNote?: string;
   // Multi-constraint engineering parameters
   thermalAmpacityPerRunAmps: number;
   totalThermalAmpacityAmps: number;
@@ -58,6 +61,25 @@ export interface CableRunResult {
   capacitanceModelNote: string;
   troubleshootingGuideFa?: string;
   troubleshootingGuideEn?: string;
+}
+
+export function createUnassessedCableRun(config: Pick<CableRunConfig, 'id' | 'sectionNameFa' | 'sectionNameEn' | 'oneWayLengthM' | 'conductorMaterial' | 'insulationType' | 'allowableDropPct' | 'isDc' | 'isThreePhase'>, assessmentNote: string): CableRunResult {
+  // Numeric zeroes below are transport placeholders only. `isAssessed: false` is
+  // mandatory and consumers must suppress them; this object is never a pass.
+  return {
+    config: { ...config, designCurrentAmps: 0, nominalVoltageVolts: 0 },
+    calculatedTheoreticalCrossSectionMm2: 0, selectedStandardSingleCrossSectionMm2: 0,
+    parallelRunsCount: 0, perRunCrossSectionMm2: 0, totalEffectiveCrossSectionMm2: 0,
+    cableDesignationFa: 'بررسی نشده', cableDesignationEn: 'Not assessed',
+    actualVoltageDropVolts: 0, actualVoltageDropPct: 0, isCompliant: false,
+    isAssessed: false, assessmentNote,
+    thermalAmpacityPerRunAmps: 0, totalThermalAmpacityAmps: 0,
+    temperatureDeratingFactorKt: 0, groupingDeratingFactorKg: 0,
+    shortCircuitWithstandMinMm2: 0, powerLossWatts: 0, powerLossPct: 0,
+    isAmpacityCompliant: false, isShortCircuitCompliant: false,
+    lineCapacitanceUfPerKm: 0, totalCapacitanceUf: 0, chargingCurrentAmps: 0,
+    capacitanceModelNote: 'Not calculated: required AC inputs are unknown or unconfirmed.',
+  };
 }
 
 export type DcSystemEarthingType = 'floating' | 'functional_negative' | 'functional_positive';
@@ -464,6 +486,7 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     actualVoltageDropVolts: Number(actualDropVolts.toFixed(2)),
     actualVoltageDropPct: actualDropPct,
     isCompliant,
+    isAssessed: true,
     thermalAmpacityPerRunAmps: singleDeratedAmp,
     totalThermalAmpacityAmps: totalDeratedAmp,
     temperatureDeratingFactorKt: kt,

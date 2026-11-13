@@ -181,7 +181,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 max="50"
                 value={arrayTiltDeg}
                 onChange={(e) => setArrayTiltDeg(parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-theme-strong"
               />
             </div>
             <div>
@@ -196,7 +196,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 max="8.0"
                 value={tableSlopedWidthM}
                 onChange={(e) => setTableSlopedWidthM(parseFloat(e.target.value) || 2)}
-                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-theme-strong"
               />
             </div>
           </div>
@@ -214,7 +214,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 max="2.5"
                 value={groundClearanceM}
                 onChange={(e) => setGroundClearanceM(parseFloat(e.target.value) || 0.5)}
-                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-theme-strong"
               />
             </div>
             <div>
@@ -229,7 +229,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                 max="60"
                 value={arrayAzimuthDeg}
                 onChange={(e) => setArrayAzimuthDeg(parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-slate-800 border border-industrial-border rounded px-2.5 py-1.5 text-xs text-theme-strong"
               />
             </div>
           </div>
@@ -257,7 +257,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                     step="0.5"
                     value={obstacleHeightM}
                     onChange={(e) => setObstacleHeightM(parseFloat(e.target.value) || 1)}
-                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-white"
+                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-theme-strong"
                   />
                 </div>
                 <div>
@@ -267,7 +267,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                     step="0.5"
                     value={obstacleDistanceM}
                     onChange={(e) => setObstacleDistanceM(parseFloat(e.target.value) || 1)}
-                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-white"
+                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-theme-strong"
                   />
                 </div>
                 <div>
@@ -277,7 +277,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
                     step="5"
                     value={obstacleAzimuthDeg}
                     onChange={(e) => setObstacleAzimuthDeg(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-white"
+                    className="w-full bg-industrial-surface border border-industrial-border rounded px-1.5 py-1 text-xs text-theme-strong"
                   />
                 </div>
               </div>
@@ -296,7 +296,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
               <button
                 onClick={() => setSelectedSeason('winter')}
                 className={`text-xs px-2 py-1 rounded transition-colors ${
-                  selectedSeason === 'winter' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800 text-slate-400 hover:text-white'
+                  selectedSeason === 'winter' ? 'bg-sky-600 text-theme-strong font-bold' : 'bg-slate-800 text-slate-400 hover:text-theme-strong'
                 }`}
               >
                 {isEn ? 'Winter Solstice (Dec 21)' : 'انقلاب زمستانی (۲۱ دسامبر)'}
@@ -304,7 +304,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
               <button
                 onClick={() => setSelectedSeason('equinox')}
                 className={`text-xs px-2 py-1 rounded transition-colors ${
-                  selectedSeason === 'equinox' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800 text-slate-400 hover:text-white'
+                  selectedSeason === 'equinox' ? 'bg-sky-600 text-theme-strong font-bold' : 'bg-slate-800 text-slate-400 hover:text-theme-strong'
                 }`}
               >
                 {isEn ? 'Equinox (Mar 21)' : 'اعتدال بهاری (۲۱ مارس)'}
@@ -312,7 +312,7 @@ export const ShadingAnalysisSubTab: React.FC<ShadingAnalysisSubTabProps> = ({
               <button
                 onClick={() => setSelectedSeason('summer')}
                 className={`text-xs px-2 py-1 rounded transition-colors ${
-                  selectedSeason === 'summer' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800 text-slate-400 hover:text-white'
+                  selectedSeason === 'summer' ? 'bg-sky-600 text-theme-strong font-bold' : 'bg-slate-800 text-slate-400 hover:text-theme-strong'
                 }`}
               >
                 {isEn ? 'Summer Solstice (Jun 21)' : 'انقلاب تابستانی (۲۱ ژوئن)'}

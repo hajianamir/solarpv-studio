@@ -43,6 +43,10 @@ import { ElectricalLoadItemSchema } from '../projectMigration';
 import { UserFinancialPricingSchema } from '../projectMigration';
 import { DEFAULT_FINANCIAL_PRICING } from '../../financialEngine';
 import { getClimateData } from '../../climaticData';
+import { formatPsh } from '../../formatters';
+import { assessAcRequirements, createUnknownAcRequirements, evaluateLoadAcCurrents, isValidAcConnection, updateAcConnection } from '../../acRequirements';
+import { evaluateInverterClustering } from '../../inverterClustering';
+import { getContextualHelp } from '../../../helpContent';
 import { ExternalDataGateway, CircuitBreaker } from '../../dataGateway';
 import { recommendFoundation } from '../../structureRecommendationEngine';
 import { recommendSharedFoundation } from '../../geotech/foundationRecommendation';
@@ -829,6 +833,91 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     !munichSite.id.includes('tehran') &&
     munichSite.tempMinC < 0,
     `Munich coordinates (48.1351, 11.5820) resolved to ${munichSite.nameEn} (${munichSite.provinceEn}) without Iranian fallback.`
+  );
+
+  const twoDecimalPshFormatting =
+    formatPsh(0) === '0.00' && formatPsh(5.3) === '5.30' && formatPsh(5.236) === '5.24';
+  const fallbackSitePreservesModelPrecision = Math.abs(munichSite.peakSunHours - Number(munichSite.peakSunHours.toFixed(2))) > 0.001
+    && munichSite.fieldProvenance?.peakSunHours?.value === munichSite.peakSunHours;
+  const fallbackSiteHasExplicitClimateProvenance =
+    munichSite.fieldProvenance?.peakSunHours?.sourceKind === 'local_model' &&
+    munichSite.fieldProvenance?.tempMinC?.providerName === 'REGIONAL_ANALYTICAL_MODEL' &&
+    munichSite.fieldProvenance?.tempMaxC?.sourceKind === 'local_model' &&
+    munichSite.fieldProvenance?.albedo?.sourceKind === 'default_unverified' &&
+    munichSite.fieldProvenance?.albedo?.value === 0.20 &&
+    munichSite.albedo === 0.20;
+  assert(
+    'Climate',
+    'Presentation PSH precision and analytical/default field provenance',
+    twoDecimalPshFormatting && fallbackSitePreservesModelPrecision && fallbackSiteHasExplicitClimateProvenance,
+    `PSH display ${formatPsh(0)}/${formatPsh(5.3)}/${formatPsh(5.236)}; fallback fields explicitly identify modeled temperatures/PSH and fixed unverified albedo.`
+  );
+  let ac = createUnknownAcRequirements();
+  ac = updateAcConnection(ac, 'loadService', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: null, confirmed: true });
+  ac = updateAcConnection(ac, 'inverterOutput', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.92, availableFaultCurrentKa: 10, faultClearingTimeSec: 0.1, confirmed: true });
+  ac = updateAcConnection(ac, 'lvGrid', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: null, confirmed: true });
+  ac = { ...ac, injection: { level: 'not_applicable', nominalKv: null, confirmed: true }, inverterNameplate: { nominalFrequencyHz: 60, sourceUrl: 'https://vendor.example/exact-model-datasheet', userConfirmed: true } };
+  const acRequiresReconfirmation = updateAcConnection(ac, 'loadService', { frequencyHz: 50 });
+  ac = updateAcConnection(ac, 'loadService', { powerFactor: 0.9, confirmed: true });
+  ac = updateAcConnection(ac, 'load:single-load', { phase: 'single', lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.8, confirmed: true });
+  const loadAcCurrentResults = evaluateLoadAcCurrents([
+    { id: 'site-load', name: 'Three-phase site load', ratedWatts: 2000, quantity: 1, isDc: false },
+    { id: 'single-load', name: 'Explicit single-phase load', ratedWatts: 1000, quantity: 1, isDc: false },
+    { id: 'dc-load', name: 'DC load', ratedWatts: 500, quantity: 1, isDc: true },
+  ], ac);
+  const infiniteLoadVoltageResult = evaluateLoadAcCurrents(
+    [{ id: 'infinite-voltage', name: 'Invalid voltage load', ratedWatts: 1000, quantity: 1, isDc: false }],
+    { ...ac, loadService: { ...ac.loadService, lineToNeutralVolts: Infinity } },
+  )[0];
+  const infiniteInjectionAssessment = assessAcRequirements(
+    { ...ac, injection: { level: 'mv', nominalKv: Infinity, confirmed: true } },
+    { isThreePhase: true, acVoltageVac: 208 },
+    'powerplant',
+  );
+  const acCompatibleNorthAmerican = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid');
+  const acIncompatibleInverter = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 400 }, 'ongrid');
+  const clusterUnknownPhase = evaluateInverterClustering(5000, 7000, 5, 500).acPhaseType;
+  const clusterExplicitPhase = evaluateInverterClustering(5000, 7000, 5, 500, 'single').acPhaseType;
+  const acOldProjectMigration = migrateProjectToV3({ version: '3.0.0', projectName: 'Legacy AC unknown' });
+  const { inverterNameplate: _missingLegacyNameplate, ...legacyAcWithoutNameplate } = createUnknownAcRequirements();
+  const acPriorSchemaMigration = migrateProjectToV3({ ...REAL_WORLD_V2_TEST_VECTORS[0].rawPayload, acRequirements: legacyAcWithoutNameplate });
+  assert('AC REQUIREMENTS', 'Explicit phase/voltage/frequency, LV-vs-injection separation, mismatch and legacy unknown handling',
+    acCompatibleNorthAmerican.status === 'compatible' && acIncompatibleInverter.status === 'incompatible'
+      && acOldProjectMigration.project.acRequirements === null
+      && acOldProjectMigration.project.mvVoltageKv === null
+      && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.userConfirmed === false
+      && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.nominalFrequencyHz === null
+      && acPriorSchemaMigration.warnings.some((warning) => warning.includes('inverter nameplate evidence'))
+      && acOldProjectMigration.requiresUserConfirmation
+      && acOldProjectMigration.warnings.some((warning) => warning.includes('acRequirements'))
+      && clusterUnknownPhase === 'unknown' && clusterExplicitPhase === 'single'
+      && isValidAcConnection(ac.loadService)
+      && acRequiresReconfirmation.loadService.confirmed === false
+      && assessAcRequirements({ ...ac, inverterOutput: { ...ac.inverterOutput, lineToLineVolts: -208 } }, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid').status === 'incomplete'
+      && loadAcCurrentResults[0].status === 'assessed' && Math.abs((loadAcCurrentResults[0].currentAmps ?? 0) - 6.17) < 0.02
+      && loadAcCurrentResults[1].basis === 'per_load_override' && loadAcCurrentResults[1].status === 'assessed'
+      && loadAcCurrentResults[2].status === 'dc_not_applicable'
+      && infiniteLoadVoltageResult.status === 'incomplete' && infiniteLoadVoltageResult.currentAmps === null
+      && infiniteInjectionAssessment.status === 'incomplete'
+      && !assessAcRequirements(createUnknownAcRequirements(), { isThreePhase: true }, 'powerplant').reasons.some((reason) => reason.includes('230')),
+    `208/120 V 60 Hz explicit on-grid=${acCompatibleNorthAmerican.status}; 400 V inverter mismatch=${acIncompatibleInverter.status}; legacy AC stays unknown=${acOldProjectMigration.project.acRequirements === null}; infinite load voltage/injection are incomplete.`);
+
+  const contextualHelpPages = [
+    'climate', 'loads', 'system_mode', 'array', 'harmonics_grid', 'mv_substation', 'bess',
+    'cables_bom', 'structural', 'sim24h', 'waterfall_loss', 'financial', 'sld', 'cad_layout',
+    '3d_viewer', 'scenarios', 'catalog', 'iran_regulations', 'solar_pumping', 'iv_curve', 'rfc3_reports',
+  ];
+  const contextualHelpContractOk = contextualHelpPages.every((page) => {
+    const en = getContextualHelp(page, 'powerplant', 'en');
+    const fa = getContextualHelp(page, 'powerplant', 'fa');
+    return en.inputs.length > 80 && en.method.length > 80 && en.limitations.length > 40 && Boolean(en.sources) &&
+      fa.inputs.length > 40 && fa.method.length > 40 && fa.limitations.length > 20 && Boolean(fa.sources);
+  });
+  assert(
+    'Help',
+    'Every main workflow page has bilingual input/method/limitation guidance with a code-source reference',
+    contextualHelpContractOk,
+    `Checked ${contextualHelpPages.length} workflow pages for bilingual substantive help and registered source references.`
   );
 
   // 13.2 Negative Regression Test: Invalid Out-of-Bounds Coordinates

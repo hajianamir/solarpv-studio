@@ -78,13 +78,13 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
                   )}
                 </div>
 
-                <h3 className="font-bold text-white text-sm mb-1">{isFa ? sc.titleFa : sc.titleEn}</h3>
+                <h3 className="font-bold text-theme-strong text-sm mb-1">{isFa ? sc.titleFa : sc.titleEn}</h3>
                 <p className="text-xs text-slate-400 mb-3">{isFa ? sc.descriptionFa : sc.descriptionEn}</p>
 
                 <div className="space-y-2 text-xs border-t border-b border-industrial-border py-3 mb-3">
                   <div className="flex justify-between">
                     <span className="text-slate-400">{isFa ? 'سرمایه‌گذاری اولیه:' : 'Initial CAPEX:'}</span>
-                    <strong className="text-white font-mono">
+                    <strong className="text-theme-strong font-mono">
                       ${sc.initialCapexUsd.toLocaleString()} {isFa ? `(${(sc.initialCapexToman / 1_000_000).toFixed(0)} م.ت)` : ''}
                     </strong>
                   </div>

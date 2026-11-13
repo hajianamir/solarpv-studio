@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useReducer, useCallback } from 'react';
 import {
   Sun,
+  Moon,
   Zap,
   MapPin,
   Layers,
@@ -82,7 +83,7 @@ import { calculateThermalDerate } from './engine/core/thermalDerate';
 import { sizeBatteryBank, computeAutonomyEnergyRequirement, type BatteryChemistry, BATTERY_CHEMISTRIES } from './engine/batteryEngine';
 import { evaluateInverterClustering } from './engine/inverterClustering';
 import {
-  calculateAdvancedCableRun,
+  createUnassessedCableRun,
   calculateEarthingSystem,
   calculateLightningProtection,
   type CompleteProtectionSystemResult,
@@ -138,6 +139,8 @@ const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab'
 import { migrateProjectToV3 } from './engine/core/projectMigration';
 import { createProjectTransferEnvelope, restoreProjectTransferEnvelope, commitRestoredCustomEquipmentWithCrossTabLock } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
+import { formatPsh } from './engine/formatters';
+import { assessAcRequirements, createUnknownAcRequirements, isValidAcConnection, updateAcConnection, type AcConnectionRequirement, type AcRequirements } from './engine/acRequirements';
 import { getContextualHelp } from './helpContent';
 
 // Fallback component for lazy-loaded tabs (MAIN-05)
@@ -185,6 +188,13 @@ export const App: React.FC = () => {
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      return window.localStorage.getItem('solarpv_theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [updateWaiting, setUpdateWaiting] = useState(false);
 
@@ -193,6 +203,16 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (systemMode === 'offgrid' && activeTab === 'harmonics_grid') setActiveTab('array');
   }, [systemMode, activeTab]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    try {
+      window.localStorage.setItem('solarpv_theme', theme);
+    } catch {
+      // Theme remains available for this session when storage is unavailable.
+    }
+  }, [theme]);
 
   useEffect(() => {
     const notify = () => setUpdateWaiting(true);
@@ -209,7 +229,7 @@ export const App: React.FC = () => {
   // Inverter Technology & MV Bay Architecture (for Powerplant mode)
   const [inverterTech, setInverterTech] = useState<InverterTechnology>('string_inverter');
   const [customBaysCount, setCustomBaysCount] = useState<number>(2);
-  const [mvVoltageKv, setMvVoltageKv] = useState<number>(20); // 20 kV standard in Iran
+  const [mvVoltageKv, setMvVoltageKv] = useState<number | null>(null); // Must be explicitly specified for the project
 
   // Core System State
   const [projectName, setProjectName] = useState(
@@ -354,8 +374,11 @@ export const App: React.FC = () => {
     mpptChannelsCount: defaultUtilInv.mpptCount,
     efficiencyMaxPct: defaultUtilInv.efficiencyMaxPct,
     isThreePhase: defaultUtilInv.isThreePhase,
+    acVoltageVac: defaultUtilInv.acVoltageVac,
   });
 
+  const [acRequirements, setAcRequirements] = useState<AcRequirements | null>(null);
+  const acAssessment = useMemo(() => assessAcRequirements(acRequirements, selectedInverter, systemMode), [acRequirements, selectedInverter, systemMode]);
   const [selectedChemistry, setSelectedChemistry] = useState<BatteryChemistry>('lifepo4');
   const [autonomyDays, setAutonomyDays] = useState<number>(1.5);
   const [outageHours, setOutageHours] = useState<number>(6); // For ongrid mode blackout calculation
@@ -414,6 +437,7 @@ export const App: React.FC = () => {
   // Auto-switch inverters when Inverter Technology changes
   const handleInverterTechChange = (tech: InverterTechnology) => {
     setInverterTech(tech);
+    setAcRequirements((current) => current ? { ...current, inverterNameplate: { ...current.inverterNameplate, userConfirmed: false } } : current);
     const inverters = catalogRepo.getInverters();
     if (tech === 'mv_turnkey') {
       const turnkey = inverters.find((i) => i.technology === 'mv_turnkey');
@@ -432,6 +456,7 @@ export const App: React.FC = () => {
           mpptChannelsCount: turnkey.mpptCount,
           efficiencyMaxPct: turnkey.efficiencyMaxPct,
           isThreePhase: true,
+          acVoltageVac: turnkey.acVoltageVac,
         });
       }
     } else {
@@ -451,6 +476,7 @@ export const App: React.FC = () => {
           mpptChannelsCount: stringInv.mpptCount,
           efficiencyMaxPct: stringInv.efficiencyMaxPct,
           isThreePhase: true,
+          acVoltageVac: stringInv.acVoltageVac,
         });
       }
     }
@@ -504,6 +530,7 @@ export const App: React.FC = () => {
     loads,
     selectedModule,
     selectedInverter,
+    acRequirements,
     selectedChemistry,
     autonomyDays,
     outageHours,
@@ -750,7 +777,11 @@ export const App: React.FC = () => {
   // project architecture before calculating the array. This avoids a DC/AC ratio
   // calculated against one inverter while the plant has several.
   const sizingBayPlan = useMemo(() => {
-    if (systemMode !== 'powerplant' || isSiteUnsizable) return undefined;
+    const injectionAtDeclaredBusbar = acRequirements?.injection.confirmed
+      && (acRequirements.injection.level === 'mv' || acRequirements.injection.level === 'hv')
+      && acRequirements.injection.nominalKv !== null && mvVoltageKv !== null
+      && Math.abs(acRequirements.injection.nominalKv - mvVoltageKv) < 0.01;
+    if (systemMode !== 'powerplant' || isSiteUnsizable || mvVoltageKv === null || !injectionAtDeclaredBusbar) return undefined;
     const dcPlanningMwp = ((targetPowerplantCapacityKw || 1000) * 1.25) / 1000;
     return designPowerplantBays(
       (targetPowerplantCapacityKw || 1000) / 1000,
@@ -760,7 +791,7 @@ export const App: React.FC = () => {
       mvVoltageKv,
       selectedInverter.pnomAcKw,
     );
-  }, [systemMode, isSiteUnsizable, targetPowerplantCapacityKw, inverterTech, customBaysCount, mvVoltageKv, selectedInverter.pnomAcKw]);
+  }, [systemMode, isSiteUnsizable, targetPowerplantCapacityKw, inverterTech, customBaysCount, mvVoltageKv, selectedInverter.pnomAcKw, acRequirements]);
   const sizingFleetInverterCount = sizingBayPlan?.bays.reduce((count, bay) => count + bay.inverterCount, 0);
 
   const arrayDesign = useMemo(() => {
@@ -908,9 +939,10 @@ export const App: React.FC = () => {
       contWatts,
       peakWatts,
       selectedInverter.pnomAcKw,
-      selectedInverter.vmpptMaxVolts   // BUG-5: MPPT ceiling drives inverter DC bus display
+      selectedInverter.vmpptMaxVolts,
+      acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.phase : 'unknown'
     );
-  }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter]);
+  }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter, acRequirements]);
 
   // 5. Battery Storage Sizing
   const batterySizing = useMemo(() => {
@@ -940,7 +972,11 @@ export const App: React.FC = () => {
 
   // 6. Powerplant MV Bay Architecture (for Powerplant mode)
   const bayArchitecture: PowerplantBayArchitectureResult | undefined = useMemo(() => {
-    if (systemMode !== 'powerplant') return undefined;
+    const injectionAtDeclaredBusbar = acRequirements?.injection.confirmed
+      && (acRequirements.injection.level === 'mv' || acRequirements.injection.level === 'hv')
+      && acRequirements.injection.nominalKv !== null && mvVoltageKv !== null
+      && Math.abs(acRequirements.injection.nominalKv - mvVoltageKv) < 0.01;
+    if (systemMode !== 'powerplant' || mvVoltageKv === null || !injectionAtDeclaredBusbar) return undefined;
     return designPowerplantBays(
       (targetPowerplantCapacityKw || 1000) / 1000.0,
       arrayDesign.totalPvCapacityKwp / 1000.0,
@@ -957,58 +993,49 @@ export const App: React.FC = () => {
     customBaysCount,
     mvVoltageKv,
     selectedInverter,
+    acRequirements,
   ]);
 
   // 7. Complete Protection System (Cables, Earthing & Lightning)
   const protectionSystem: CompleteProtectionSystemResult = useMemo(() => {
     const isUtil = systemMode === 'powerplant';
     const capacityKw = isUtil ? targetPowerplantCapacityKw : inverterClustering.totalInverterCapacityKw;
-    const amb = city.tempMaxC;
 
-    const dcStringRun = calculateAdvancedCableRun({
+    const dcStringRun = createUnassessedCableRun({
       id: 'dc-str',
       sectionNameFa: 'کابل DC استرینگ خورشیدی',
       sectionNameEn: 'PV DC String Cable',
-      oneWayLengthM: 35,
-      designCurrentAmps: selectedModule.iscAmps * 1.25,
-      nominalVoltageVolts: arrayDesign.stringVocMaxColdVolts * 0.85,
+      oneWayLengthM: 0,
       conductorMaterial: 'copper',
       insulationType: 'xlpe',
       allowableDropPct: 1.5,
       isDc: true,
-      ambientTempC: amb,
-    });
+    }, 'Measured project route and installation details have not been entered; no DC cable sizing is claimed.');
 
-    const dcMainRun = calculateAdvancedCableRun({
+    const dcMainRun = createUnassessedCableRun({
       id: 'dc-main',
       sectionNameFa: 'کابل باسبار اصلی DC آرایه به اینورتر/پست',
       sectionNameEn: 'Main DC Feeder Busbar to Inverter Skid',
-      oneWayLengthM: isUtil ? 80 : 15,
-      designCurrentAmps: selectedModule.iscAmps * arrayDesign.parallelStringsCount * 1.25,
-      nominalVoltageVolts: arrayDesign.stringVocMaxColdVolts * 0.85,
+      oneWayLengthM: 0,
       conductorMaterial: isUtil ? 'aluminum' : 'copper',
       insulationType: 'xlpe',
       allowableDropPct: 1.5,
       isDc: true,
-      ambientTempC: amb,
-    });
+    }, 'Measured project route and installation details have not been entered; no DC cable sizing is claimed.');
 
-    const acOutputRun = calculateAdvancedCableRun({
+    const acCableBase = {
       id: 'ac-out',
       sectionNameFa: 'کابل AC خروجی اینورتر به ترانسفورماتور یا تابلوی اصلی',
       sectionNameEn: 'Inverter AC Output to Transformer / Main Board',
       oneWayLengthM: isUtil ? 120 : 25,
-      designCurrentAmps: selectedInverter.isThreePhase
-        ? (capacityKw * 1000.0) / (Math.sqrt(3) * (isUtil ? 800 : 400) * 0.95)
-        : (capacityKw * 1000.0) / (230.0 * 0.95),
-      nominalVoltageVolts: selectedInverter.isThreePhase ? (isUtil ? 800 : 400) : 230,
-      conductorMaterial: isUtil ? 'aluminum' : 'copper',
-      insulationType: 'xlpe',
+      conductorMaterial: isUtil ? 'aluminum' as const : 'copper' as const,
+      insulationType: 'xlpe' as const,
       allowableDropPct: 1.0,
       isDc: false,
       isThreePhase: selectedInverter.isThreePhase,
-      ambientTempC: amb,
-    });
+    };
+    const acOutputRun = createUnassessedCableRun(acCableBase,
+      'Application-level route length and fault study are not provided; use the Protection tab with verified route inputs. This is not a cable design or approval.');
 
     const earthing = calculateEarthingSystem(
       capacityKw,
@@ -1030,7 +1057,7 @@ export const App: React.FC = () => {
       lightning,
       protectionBom: [] as ProtectionBomItem[],
     };
-  }, [arrayDesign, selectedModule, selectedInverter, inverterClustering, systemMode, targetPowerplantCapacityKw, city, dcSystemEarthing]);
+  }, [selectedInverter, inverterClustering, systemMode, targetPowerplantCapacityKw, dcSystemEarthing]);
 
   // 8. 24-Hour Balance Simulation
   const simulationResult = useMemo(() => {
@@ -1198,6 +1225,7 @@ export const App: React.FC = () => {
       if (clean.loads) setLoads(clean.loads as unknown as ElectricalLoadItem[]);
       if (clean.selectedModule) setSelectedModule(clean.selectedModule as ModuleSpecs);
       if (clean.selectedInverter) setSelectedInverter(clean.selectedInverter as InverterSpecs);
+      setAcRequirements(clean.acRequirements ?? null);
       if (clean.projectName) setProjectName(clean.projectName);
       if (clean.systemMode) setSystemMode(clean.systemMode as SystemMode);
       if (clean.inverterTech) setInverterTech(clean.inverterTech as InverterTechnology);
@@ -1250,7 +1278,7 @@ export const App: React.FC = () => {
               title: t.tabSiteLocation,
               icon: <MapPin className="w-4 h-4 text-amber-400" />,
               code: 'NASA/PVGIS',
-              badge: `${city.peakSunHours} PSH`,
+              badge: `${formatPsh(city.peakSunHours)} PSH`,
             },
           ],
         },
@@ -1263,7 +1291,7 @@ export const App: React.FC = () => {
               title: lang === 'fa' ? `${t.tabSystemMode} & بی‌های MV` : `${t.tabSystemMode} & MV Bays`,
               icon: <Sliders className="w-4 h-4 text-sky-400" />,
               code: 'MV Turnkey',
-              badge: `${mvVoltageKv} kV`,
+              badge: mvVoltageKv === null ? (lang === 'fa' ? 'ولتاژ MV نامشخص' : 'MV voltage unknown') : `${mvVoltageKv} kV`,
             },
             {
               id: 'catalog' as ActiveModuleTab,
@@ -1409,7 +1437,7 @@ export const App: React.FC = () => {
               title: t.tabSiteLocation,
               icon: <MapPin className="w-4 h-4 text-amber-400" />,
               code: 'NASA/PVGIS',
-              badge: `${city.peakSunHours} PSH`,
+              badge: `${formatPsh(city.peakSunHours)} PSH`,
             },
             {
               id: 'loads' as ActiveModuleTab,
@@ -1684,9 +1712,33 @@ export const App: React.FC = () => {
     return evaluateEffectiveStructuralSnapshot(structuralSnapshot, currentStructuralInputHash);
   }, [structuralSnapshot, currentStructuralInputHash]);
 
+  const currentAcRequirements = acRequirements ?? createUnknownAcRequirements();
+  const patchAcConnection = (target: 'loadService' | 'inverterOutput' | 'lvGrid' | `load:${string}`, patch: Partial<AcConnectionRequirement>) => {
+    setAcRequirements((current) => updateAcConnection(current, target, patch));
+  };
+  const renderAcConnectionFields = (target: 'loadService' | 'inverterOutput' | 'lvGrid' | `load:${string}`, value: AcConnectionRequirement, title: string) => (
+    <fieldset key={target} className="rounded-lg border border-industrial-border p-3 space-y-2">
+      <legend className="px-1 text-xs font-bold text-theme-strong">{title}</legend>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'فاز' : 'Phase'}
+          <select aria-label={`${title} phase`} data-testid={`ac-phase-${target.replace(':','-')}`} value={value.phase} onChange={(e) => patchAcConnection(target, { phase: e.target.value as AcConnectionRequirement['phase'] })} className="studio-input mt-1 w-full">
+            <option value="unknown">{lang === 'fa' ? 'نامشخص' : 'Unknown'}</option><option value="single">{lang === 'fa' ? 'تک‌فاز' : 'Single-phase'}</option><option value="three">{lang === 'fa' ? 'سه‌فاز' : 'Three-phase'}</option>
+          </select>
+        </label>
+        {(['lineToLineVolts', 'lineToNeutralVolts', 'frequencyHz', 'powerFactor', 'availableFaultCurrentKa', 'faultClearingTimeSec'] as const).map((field) => (
+          <label key={field} className="text-[11px] text-theme-muted">{field === 'lineToLineVolts' ? (lang === 'fa' ? 'فاز-فاز (V)' : 'Line-line (V)') : field === 'lineToNeutralVolts' ? (lang === 'fa' ? 'فاز-نول (V)' : 'Line-neutral (V)') : field === 'frequencyHz' ? (lang === 'fa' ? 'فرکانس (Hz)' : 'Frequency (Hz)') : field === 'powerFactor' ? (lang === 'fa' ? 'ضریب توان (0 تا 1)' : 'Power factor (0–1)') : field === 'availableFaultCurrentKa' ? (lang === 'fa' ? 'جریان اتصال کوتاه در نقطه (kA)' : 'Prospective fault current (kA)') : (lang === 'fa' ? 'زمان قطع حفاظت (s)' : 'Protection clearing time (s)')}
+            <input aria-label={`${title} ${field}`} data-testid={`ac-input-${target.replace(':','-')}-${field}`} type="number" min="0" step="any" value={value[field] ?? ''} onChange={(e) => patchAcConnection(target, { [field]: e.target.value === '' ? null : Number(e.target.value) })} className="studio-input mt-1 w-full" />
+          </label>
+        ))}
+      </div>
+      <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid={`ac-confirmed-${target.replace(':','-')}`} checked={value.confirmed} onChange={(e) => patchAcConnection(target, { confirmed: e.target.checked })} />{lang === 'fa' ? 'این الزام محلی را تأیید می‌کنم' : 'I confirm this local requirement'}</label>
+      {!isValidAcConnection(value) && <p role="alert" className="ac-validation-error rounded px-2 py-1 text-xs">{lang === 'fa' ? 'مقادیر باید مثبت و متناهی باشند.' : 'Values must be finite and positive.'}</p>}
+    </fieldset>
+  );
+
   return (
     <div
-      className={`min-h-screen bg-[#080C14] text-slate-100 flex flex-col ${isRtl ? 'font-vazir' : 'font-sans'}`}
+      className={`min-h-screen bg-industrial-bg text-slate-100 flex flex-col ${isRtl ? 'font-vazir' : 'font-sans'}`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       {updateWaiting && (
@@ -1698,7 +1750,7 @@ export const App: React.FC = () => {
       )}
       {/* Toast Notification */}
       {saveToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-emerald-400 shadow-xl">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-theme-strong px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-emerald-400 shadow-xl">
           <CheckCircle2 className="w-4 h-4" />
           <span>{saveToast}</span>
         </div>
@@ -1731,7 +1783,7 @@ export const App: React.FC = () => {
               role="dialog"
               aria-modal="true"
               aria-labelledby="context-help-title"
-              aria-describedby="context-help-inputs context-help-method context-help-limitations"
+              aria-describedby="context-help-inputs context-help-method context-help-limitations context-help-sources"
               data-testid="context-help-dialog"
               onKeyDown={(event) => {
                 if (event.key === 'Tab') {
@@ -1739,19 +1791,19 @@ export const App: React.FC = () => {
                   event.currentTarget.querySelector<HTMLElement>('button')?.focus();
                 }
               }}
-              className="w-full max-w-xl rounded-xl border border-sky-500/40 bg-[#0E1422] p-5 shadow-2xl"
+              className="w-full max-w-xl rounded-xl border border-sky-500/40 bg-industrial-surface p-5 shadow-2xl"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-[10px] uppercase tracking-widest text-sky-300">{lang === 'fa' ? 'راهنمای زمینه‌ای · F1' : 'Contextual help · F1'}</div>
-                  <h2 id="context-help-title" className="mt-1 text-lg font-bold text-white">{help.title}</h2>
+                  <h2 id="context-help-title" className="mt-1 text-lg font-bold text-theme-strong">{help.title}</h2>
                 </div>
                 <button
                   type="button"
                   autoFocus
                   aria-label={lang === 'fa' ? 'بستن راهنما' : 'Close help'}
                   onClick={() => setIsHelpModalOpen(false)}
-                  className="rounded p-1.5 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  className="rounded p-1.5 text-slate-300 hover:bg-slate-800 hover:text-theme-strong"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -1769,6 +1821,10 @@ export const App: React.FC = () => {
                   <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-amber-300">{lang === 'fa' ? 'محدودیت‌ها' : 'Limitations'}</h3>
                   <p id="context-help-limitations">{help.limitations}</p>
                 </section>
+                <section className="border-t border-industrial-border pt-2">
+                  <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">{lang === 'fa' ? 'ارجاع کد' : 'Code reference'}</h3>
+                  <p id="context-help-sources" className="break-words font-mono text-[11px] text-slate-400">{help.sources}</p>
+                </section>
               </div>
               <p className="mt-4 border-t border-slate-700 pt-3 text-[11px] text-slate-500">
                 {lang === 'fa'
@@ -1784,11 +1840,11 @@ export const App: React.FC = () => {
       {isCommandPaletteOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
           <div
-            className="w-full max-w-xl bg-[#0E1422] border border-[#283548] rounded-xl shadow-2xl overflow-hidden text-xs"
+            className="w-full max-w-xl bg-industrial-surface border border-[#283548] rounded-xl shadow-2xl overflow-hidden text-xs"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Search Input Bar */}
-            <div className="p-3 border-b border-[#1E293B] flex items-center gap-2.5 bg-[#080D1A]">
+            <div className="p-3 border-b border-[#1E293B] flex items-center gap-2.5 bg-industrial-bg">
               <Search className="w-4 h-4 text-sky-400 shrink-0" />
               <input
                 ref={searchInputRef}
@@ -1824,11 +1880,11 @@ export const App: React.FC = () => {
                     setIsCommandPaletteOpen(false);
                   }
                 }}
-                className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none font-sans"
+                className="w-full bg-transparent text-sm text-theme-strong placeholder-slate-500 focus:outline-none font-sans"
               />
               <button
                 onClick={() => setIsCommandPaletteOpen(false)}
-                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1 rounded text-slate-400 hover:text-theme-strong hover:bg-slate-800"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1853,21 +1909,21 @@ export const App: React.FC = () => {
                       onMouseEnter={() => setPaletteSelectedIndex(idx)}
                       className={`w-full flex items-center justify-between p-2.5 rounded-lg transition text-right ${
                         isHighlighted
-                          ? 'bg-sky-600/30 text-white border border-sky-400 ring-1 ring-sky-500/50 shadow-sm'
+                          ? 'bg-sky-600/30 text-theme-strong border border-sky-400 ring-1 ring-sky-500/50 shadow-sm'
                           : activeTab === tab.id
                           ? 'bg-sky-600/20 text-sky-300 border border-sky-500/40'
-                          : 'text-slate-300 hover:bg-[#141C2E] hover:text-white'
+                          : 'text-slate-300 hover:bg-industrial-surface hover:text-theme-strong'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <div className="p-1.5 rounded bg-slate-800/80 text-sky-400">{tab.icon}</div>
                         <div>
-                          <strong className="block text-xs text-white">{tab.title}</strong>
+                          <strong className="block text-xs text-theme-strong">{tab.title}</strong>
                           {tab.code && <span className="text-[10px] text-slate-400 font-mono">{tab.code}</span>}
                         </div>
                       </div>
                       {tab.badge && (
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#1F2937] text-amber-300 border border-slate-700">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-industrial-border text-amber-300 border border-slate-700">
                           {tab.badge}
                         </span>
                       )}
@@ -1878,7 +1934,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Command Palette Quick Actions Footer */}
-            <div className="p-2.5 border-t border-[#1E293B] bg-[#080D1A] flex items-center justify-between text-[11px] text-slate-400">
+            <div className="p-2.5 border-t border-[#1E293B] bg-industrial-bg flex items-center justify-between text-[11px] text-slate-400">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -1913,17 +1969,17 @@ export const App: React.FC = () => {
       {isProjectJsonModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
           <div
-            className="w-full max-w-md bg-[#0E1422] border border-[#283548] rounded-xl shadow-2xl p-5 space-y-4 text-xs"
+            className="w-full max-w-md bg-industrial-surface border border-[#283548] rounded-xl shadow-2xl p-5 space-y-4 text-xs"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-              <h3 className="font-bold text-white flex items-center gap-2 text-sm">
+              <h3 className="font-bold text-theme-strong flex items-center gap-2 text-sm">
                 <Database className="w-4 h-4 text-sky-400" />
                 <span>{lang === 'fa' ? 'مدیریت داده‌های پروژه (JSON)' : 'Project Data Management (JSON)'}</span>
               </h3>
               <button
                 onClick={() => setIsProjectJsonModalOpen(false)}
-                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1 rounded text-slate-400 hover:text-theme-strong hover:bg-slate-800"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1938,7 +1994,7 @@ export const App: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={handleExportProjectJson}
-                className="p-3 bg-[#141C2E] hover:bg-[#1E293B] border border-sky-500/40 rounded-lg text-center space-y-1.5 transition text-sky-300 font-bold"
+                className="p-3 bg-industrial-surface hover:bg-industrial-border border border-sky-500/40 rounded-lg text-center space-y-1.5 transition text-sky-300 font-bold"
               >
                 <Download className="w-5 h-5 mx-auto text-sky-400" />
                 <span className="block text-xs">{lang === 'fa' ? 'دانلود پاکت JSON' : 'Export Envelope'}</span>
@@ -1947,7 +2003,7 @@ export const App: React.FC = () => {
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 bg-[#141C2E] hover:bg-[#1E293B] border border-emerald-500/40 rounded-lg text-center space-y-1.5 transition text-emerald-300 font-bold"
+                className="p-3 bg-industrial-surface hover:bg-industrial-border border border-emerald-500/40 rounded-lg text-center space-y-1.5 transition text-emerald-300 font-bold"
               >
                 <Upload className="w-5 h-5 mx-auto text-emerald-400" />
                 <span className="block text-xs">{lang === 'fa' ? 'بارگذاری فایل JSON' : 'Import JSON'}</span>
@@ -1958,7 +2014,7 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={() => void handleLoadLastProject()}
-              className="w-full p-2 bg-[#141C2E] hover:bg-[#1E293B] border border-amber-500/40 rounded-lg text-amber-300 font-bold"
+              className="w-full p-2 bg-industrial-surface hover:bg-industrial-border border border-amber-500/40 rounded-lg text-amber-300 font-bold"
             >
               {lang === 'fa' ? 'بازیابی آخرین ذخیرهٔ محلی' : 'Restore last local save'}
             </button>
@@ -1975,13 +2031,13 @@ export const App: React.FC = () => {
       )}
 
       {/* TOP MODERN ENGINEERING COCKPIT APP BAR */}
-      <header className="bg-[#0B101D] border-b border-[#1E293B] sticky top-0 z-30 px-3 sm:px-5 py-2 flex items-center justify-between gap-3 select-none">
+      <header className="bg-industrial-bg border-b border-[#1E293B] sticky top-0 z-30 px-3 sm:px-5 py-2 flex items-center justify-between gap-3 select-none">
         {/* Left Side (or Right in RTL): Brand, Project Title, Revision */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           {/* Mobile Menu Hamburger */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-1.5 rounded-lg bg-[#141C2E] border border-slate-700 text-slate-300 hover:text-white"
+            className="lg:hidden p-1.5 rounded-lg bg-industrial-surface border border-slate-700 text-slate-300 hover:text-theme-strong"
             aria-label="Toggle navigation menu"
           >
             <Menu className="w-4 h-4 text-sky-400" />
@@ -1990,7 +2046,7 @@ export const App: React.FC = () => {
           {/* Desktop Sidebar Collapse Toggle */}
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="hidden lg:flex p-1.5 rounded-lg bg-[#121A2B] hover:bg-[#1A253D] border border-[#283548] text-slate-300 hover:text-sky-400 transition"
+            className="hidden lg:flex p-1.5 rounded-lg bg-industrial-surface hover:bg-industrial-surface border border-[#283548] text-slate-300 hover:text-sky-400 transition"
             title={lang === 'fa' ? 'جمع/باز کردن سایدبار (Ctrl+B)' : 'Toggle Sidebar (Ctrl+B)'}
           >
             {isSidebarCollapsed ? (
@@ -2007,7 +2063,7 @@ export const App: React.FC = () => {
             </div>
             <div className="hidden sm:block">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs sm:text-sm font-extrabold text-white tracking-tight">SolarPV Studio</span>
+                <span className="text-xs sm:text-sm font-extrabold text-theme-strong tracking-tight">SolarPV Studio</span>
                 <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">
                   PRO v3.0.4
                 </span>
@@ -2023,7 +2079,7 @@ export const App: React.FC = () => {
               type="text"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-200 hover:text-white border-b border-transparent hover:border-slate-600 focus:border-sky-400 focus:outline-none transition px-1 py-0.5 max-w-[200px] lg:max-w-xs truncate"
+              className="bg-transparent text-xs font-bold text-slate-200 hover:text-theme-strong border-b border-transparent hover:border-slate-600 focus:border-sky-400 focus:outline-none transition px-1 py-0.5 max-w-[200px] lg:max-w-xs truncate"
               title={lang === 'fa' ? 'نام پروژه را ویرایش کنید' : 'Click to edit project name'}
             />
             {lastSavedTime && (
@@ -2035,7 +2091,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Center: Quick System Operating Mode Pill */}
-        <div className="flex items-center gap-1 bg-[#080D1A] p-1 rounded-lg border border-[#1E293B] text-[10px] font-bold">
+        <div className="flex items-center gap-1 bg-industrial-bg p-1 rounded-lg border border-[#1E293B] text-[10px] font-bold">
           <button
             onClick={() => setSystemMode('powerplant')}
             className={`px-2 sm:px-2.5 py-1 rounded transition flex items-center gap-1 ${
@@ -2087,10 +2143,25 @@ export const App: React.FC = () => {
             <span className="hidden xl:inline font-mono text-[10px]">F1</span>
           </button>
 
+          <button
+            type="button"
+            data-testid="theme-toggle"
+            aria-label={theme === 'dark'
+              ? (lang === 'fa' ? 'تغییر به پوستهٔ روشن' : 'Switch to light theme')
+              : (lang === 'fa' ? 'تغییر به پوستهٔ تیره' : 'Switch to dark theme')}
+            aria-pressed={theme === 'light'}
+            onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-industrial-surface border border-industrial-border text-slate-300 hover:text-theme-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+            title={lang === 'fa' ? 'تغییر پوستهٔ روشن/تیره' : 'Toggle light/dark theme'}
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            <span className="hidden md:inline">{theme === 'dark' ? (lang === 'fa' ? 'روشن' : 'Light') : (lang === 'fa' ? 'تیره' : 'Dark')}</span>
+          </button>
+
           {/* Quick Jump / Command Palette Trigger */}
           <button
             onClick={() => setIsCommandPaletteOpen(true)}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[#121A2B] hover:bg-[#1A253D] border border-[#283548] text-slate-300 hover:text-white transition"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-industrial-surface hover:bg-industrial-surface border border-[#283548] text-slate-300 hover:text-theme-strong transition"
             title={lang === 'fa' ? 'جستجوی سریع ماژول‌ها (Ctrl+K)' : 'Quick Jump / Command Palette (Ctrl+K)'}
           >
             <Search className="w-3.5 h-3.5 text-sky-400" />
@@ -2110,7 +2181,7 @@ export const App: React.FC = () => {
           {/* JSON Export/Import */}
           <button
             onClick={() => setIsProjectJsonModalOpen(true)}
-            className="p-1.5 rounded-lg bg-[#121A2B] hover:bg-[#1A253D] border border-[#283548] text-slate-300 hover:text-white transition"
+            className="p-1.5 rounded-lg bg-industrial-surface hover:bg-industrial-surface border border-[#283548] text-slate-300 hover:text-theme-strong transition"
             title={lang === 'fa' ? 'دانلود / بارگذاری فایل JSON پروژه' : 'Export / Import Project JSON'}
           >
             <Database className="w-3.5 h-3.5 text-purple-400" />
@@ -2129,7 +2200,7 @@ export const App: React.FC = () => {
           {/* Language Switcher */}
           <button
             onClick={() => setLang(lang === 'fa' ? 'en' : 'fa')}
-            className="flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg bg-[#121A2B] hover:bg-[#1A253D] border border-[#283548] text-slate-300 hover:text-white transition font-bold"
+            className="flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg bg-industrial-surface hover:bg-industrial-surface border border-[#283548] text-slate-300 hover:text-theme-strong transition font-bold"
             title={t.language}
           >
             <Globe className="w-3.5 h-3.5 text-sky-400" />
@@ -2139,7 +2210,7 @@ export const App: React.FC = () => {
       </header>
 
       {/* COCKPIT HEADS-UP DISPLAY (HUD) TELEMETRY RIBBON */}
-      <div className="bg-[#0A0E1A] border-b border-[#1E293B] px-3 sm:px-5 py-2 flex items-center justify-between overflow-x-auto gap-4 scrollbar-none text-[11px] font-mono shrink-0 select-none">
+      <div className="bg-industrial-bg border-b border-[#1E293B] px-3 sm:px-5 py-2 flex items-center justify-between overflow-x-auto gap-4 scrollbar-none text-[11px] font-mono shrink-0 select-none">
         {/* Metric Badges */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <div className="studio-hud-pill">
@@ -2180,7 +2251,7 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-1.5 text-slate-300">
             <MapPin className="w-3 h-3 text-amber-400" />
             <span>{lang === 'en' ? city.nameEn : city.nameFa}</span>
-            <span className="text-amber-400 font-bold">({city.peakSunHours} PSH)</span>
+            <span className="text-amber-400 font-bold">({formatPsh(city.peakSunHours)} PSH)</span>
           </div>
 
           <span className="text-slate-700 hidden sm:inline">|</span>
@@ -2196,7 +2267,7 @@ export const App: React.FC = () => {
       <div className="flex-1 flex relative">
         {/* COLLAPSIBLE ENGINEERING SIDEBAR DOCKED ACCORDING TO LANGUAGE */}
         <aside
-          className={`bg-[#0A0E1A] flex flex-col fixed inset-y-0 z-40 overflow-hidden transition-all duration-200 top-[88px] ${
+          className={`bg-industrial-bg flex flex-col fixed inset-y-0 z-40 overflow-hidden transition-all duration-200 top-[88px] ${
             isRtl ? 'right-0 border-l border-[#1E293B]' : 'left-0 border-r border-[#1E293B]'
           } ${sidebarWidthClass} ${
             isMobileMenuOpen
@@ -2207,7 +2278,7 @@ export const App: React.FC = () => {
           }`}
         >
           {/* Sidebar Mini Header with Rail Mode Indicator */}
-          <div className="p-2.5 border-b border-[#1E293B] bg-[#080D1A] flex items-center justify-between">
+          <div className="p-2.5 border-b border-[#1E293B] bg-industrial-bg flex items-center justify-between">
             {!isSidebarCollapsed ? (
               <div className="flex items-center gap-2">
                 <Workflow className="w-4 h-4 text-sky-400" />
@@ -2224,7 +2295,7 @@ export const App: React.FC = () => {
             {/* Mobile Close Button */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="lg:hidden p-1 rounded text-slate-400 hover:text-white"
+              className="lg:hidden p-1 rounded text-slate-400 hover:text-theme-strong"
             >
               <X className="w-4 h-4" />
             </button>
@@ -2236,7 +2307,7 @@ export const App: React.FC = () => {
               <div key={idx} className="space-y-1">
                 {/* Category Header (Hidden in rail mode) */}
                 {!isSidebarCollapsed && (
-                  <div className="text-[10px] font-extrabold text-sky-400 px-2 py-0.5 uppercase tracking-wider bg-[#0E1422] rounded border-r-2 border-sky-500 flex items-center justify-between">
+                  <div className="text-[10px] font-extrabold text-sky-400 px-2 py-0.5 uppercase tracking-wider bg-industrial-surface rounded border-r-2 border-sky-500 flex items-center justify-between">
                     <span>{section.categoryTitle}</span>
                     <span className="text-[9px] font-mono text-slate-500">P{section.phase}</span>
                   </div>
@@ -2259,13 +2330,13 @@ export const App: React.FC = () => {
                           isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-2.5 py-1.5'
                         } rounded-md transition-all text-xs ${
                           isActive
-                            ? 'bg-sky-600 text-white font-bold shadow-sm shadow-sky-600/30'
-                            : 'text-slate-300 hover:bg-[#141C2E] hover:text-white'
+                            ? 'bg-sky-600 text-theme-strong font-bold shadow-sm shadow-sky-600/30'
+                            : 'text-slate-300 hover:bg-industrial-surface hover:text-theme-strong'
                         }`}
                         title={tab.title}
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <span className={isActive ? 'text-white' : ''}>{tab.icon}</span>
+                          <span className={isActive ? 'text-theme-strong' : ''}>{tab.icon}</span>
                           {!isSidebarCollapsed && <span className="truncate">{tab.title}</span>}
                         </div>
 
@@ -2273,8 +2344,8 @@ export const App: React.FC = () => {
                           <span
                             className={`text-[9px] font-mono px-1.5 py-0.2 rounded shrink-0 ${
                               isActive
-                                ? 'bg-sky-700/80 text-white font-bold'
-                                : 'bg-[#141C2E] text-slate-400 border border-slate-800'
+                                ? 'bg-sky-700/80 text-theme-strong font-bold'
+                                : 'bg-industrial-surface text-slate-400 border border-slate-800'
                             }`}
                           >
                             {tab.badge}
@@ -2289,12 +2360,12 @@ export const App: React.FC = () => {
           </div>
 
           {/* Sidebar Footer with Quick Actions */}
-          <div className="p-2 border-t border-[#1E293B] bg-[#080D1A] space-y-1.5">
+          <div className="p-2 border-t border-[#1E293B] bg-industrial-bg space-y-1.5">
             {!isSidebarCollapsed ? (
               <>
                 <button
                   onClick={handleSaveProject}
-                  className="w-full py-1.5 px-2 bg-[#121A2B] hover:bg-[#1A253D] border border-[#283548] rounded text-[11px] font-bold text-slate-200 flex items-center justify-center gap-1.5 transition"
+                  className="w-full py-1.5 px-2 bg-industrial-surface hover:bg-industrial-surface border border-[#283548] rounded text-[11px] font-bold text-slate-200 flex items-center justify-center gap-1.5 transition"
                 >
                   <Save className="w-3.5 h-3.5 text-amber-400" />
                   <span>{t.saveProject}</span>
@@ -2311,14 +2382,14 @@ export const App: React.FC = () => {
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={handleSaveProject}
-                  className="p-2 rounded bg-[#121A2B] hover:bg-[#1A253D] text-amber-400"
+                  className="p-2 rounded bg-industrial-surface hover:bg-industrial-surface text-amber-400"
                   title={t.saveProject}
                 >
                   <Save className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setShowReportModal(true)}
-                  className="p-2 rounded bg-sky-600 text-white"
+                  className="p-2 rounded bg-sky-600 text-theme-strong"
                   title={t.generateReport}
                 >
                   <FileText className="w-4 h-4" />
@@ -2333,7 +2404,7 @@ export const App: React.FC = () => {
           {/* Main Operational Workspace Content */}
           <main className="p-4 sm:p-6 flex-1 w-full max-w-7xl mx-auto space-y-5">
             {/* WORKFLOW PHASE STEPPER & BREADCRUMB */}
-            <div className="p-3 bg-[#0E1422] border border-[#1E293B] rounded-lg flex items-center justify-between gap-3 text-xs">
+            <div className="p-3 bg-industrial-surface border border-[#1E293B] rounded-lg flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 sm:gap-3 truncate">
                 <div className="p-2 rounded-md bg-sky-500/20 text-sky-400 border border-sky-500/30">
                   {activeSectionInfo.tabIcon}
@@ -2345,7 +2416,7 @@ export const App: React.FC = () => {
                     </span>
                     <span className="truncate">{activeSectionInfo.categoryTitle}</span>
                   </div>
-                  <h2 className="text-sm sm:text-base font-extrabold text-white truncate flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-extrabold text-theme-strong truncate flex items-center gap-2">
                     <span>{activeSectionInfo.tabTitle}</span>
                     {activeSectionInfo.tabCode && (
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700 font-normal">
@@ -2363,7 +2434,7 @@ export const App: React.FC = () => {
                   disabled={currentTabIndex <= 0}
                   className={`p-1.5 sm:px-2 sm:py-1 rounded border flex items-center gap-1 transition ${
                     currentTabIndex > 0
-                      ? 'bg-[#121A2B] hover:bg-[#1A253D] text-slate-200 border-[#283548]'
+                      ? 'bg-industrial-surface hover:bg-industrial-surface text-slate-200 border-[#283548]'
                       : 'opacity-40 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-600'
                   }`}
                   title={lang === 'fa' ? 'مرحله قبلی' : 'Previous Module'}
@@ -2377,7 +2448,7 @@ export const App: React.FC = () => {
                   disabled={currentTabIndex >= flattenedTabsList.length - 1}
                   className={`p-1.5 sm:px-2 sm:py-1 rounded border flex items-center gap-1 transition ${
                     currentTabIndex < flattenedTabsList.length - 1
-                      ? 'bg-[#121A2B] hover:bg-[#1A253D] text-slate-200 border-[#283548]'
+                      ? 'bg-industrial-surface hover:bg-industrial-surface text-slate-200 border-[#283548]'
                       : 'opacity-40 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-600'
                   }`}
                   title={lang === 'fa' ? 'مرحله بعدی' : 'Next Module'}
@@ -2402,6 +2473,39 @@ export const App: React.FC = () => {
                     ? 'نحوه اتصال به شبکه مبنای محاسبات آرایه PV، عدم نیاز یا سایزینگ باتری، اینورترهای رشته‌ای در برابر پست‌های یکپارچه Turnkey و آرایش بی‌های فشار متوسط است.'
                     : 'The grid connection topology governs PV sizing, battery requirements, inverter selection (string vs MV Turnkey), and medium-voltage collector bay architecture.'}
                 </p>
+
+                <section aria-labelledby="ac-requirements-heading" data-testid="ac-requirements-panel" className="mt-6 rounded-xl border border-amber-700/50 bg-amber-950/10 p-4 space-y-3">
+                  <div>
+                    <h3 id="ac-requirements-heading" className="font-bold text-amber-300">{lang === 'fa' ? 'الزامات الکتریکی AC — ورودی صریح کاربر' : 'AC electrical requirements — explicit user input'}</h3>
+                    <p className="text-xs text-theme-muted mt-1">{lang === 'fa' ? 'ولتاژ/فاز/فرکانس محلی به‌صورت خودکار حدس زده نمی‌شود. سرویس بار، خروجی اینورتر، شبکه LV و تزریق MV/HV مستقل‌اند. اطلاعات ناقص، تأیید طراحی نیست.' : 'Local voltage/phase/frequency are never guessed. Load service, inverter output, LV grid, and MV/HV injection are separate. Incomplete data is not design approval.'}</p>
+                  </div>
+                  <div className={`rounded-md p-2 text-xs ${acAssessment.status === 'compatible' ? 'bg-emerald-900/30 text-emerald-200' : acAssessment.status === 'incompatible' ? 'bg-red-900/30 text-red-200' : 'bg-amber-900/30 text-amber-200'}`} role="status" data-testid="ac-requirements-assessment" data-status={acAssessment.status}>
+                    {acAssessment.status === 'compatible' ? (lang === 'fa' ? 'الزامات ثبت‌شده سازگارند؛ این بررسی، مطالعه حفاظت/اتصال نیست.' : 'Recorded requirements are compatible; this is not a protection/interconnection study.') : acAssessment.reasons.map((reason) => <div key={reason}>{reason}</div>)}
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {renderAcConnectionFields('loadService', currentAcRequirements.loadService, lang === 'fa' ? 'سرویس AC بارهای سایت' : 'Site load AC service')}
+                    {renderAcConnectionFields('inverterOutput', currentAcRequirements.inverterOutput, lang === 'fa' ? 'الزام خروجی AC اینورتر' : 'Inverter AC output requirement')}
+                    {renderAcConnectionFields('lvGrid', currentAcRequirements.lvGrid, lang === 'fa' ? 'اتصال شبکه فشار ضعیف (جدا از تزریق MV)' : 'Low-voltage grid interface (separate from MV injection)')}
+                  </div>
+                  <fieldset className="rounded-lg border border-industrial-border p-3 space-y-2">
+                    <legend className="px-1 text-xs font-bold text-theme-strong">{lang === 'fa' ? 'شاهد دیتاشیت اینورتر (اظهار کاربر)' : 'Inverter datasheet evidence (user attestation)'}</legend>
+                    <p className="text-[11px] text-theme-muted">{lang === 'fa' ? 'دادهٔ کاتالوگ داخلی احراز رسمی نشده است. URL و فرکانس نامی را از دیتاشیت دقیق مدل وارد کنید؛ سامانه اصالت URL را تأیید نمی‌کند.' : 'Built-in catalog facts are not officially authenticated. Enter the exact-model datasheet URL and nominal frequency; the app does not authenticate the URL.'}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'فرکانس نامی خروجی اینورتر (Hz)' : 'Inverter nameplate output frequency (Hz)'}<input data-testid="ac-inverter-nameplate-frequency" type="number" min="0" step="any" value={currentAcRequirements.inverterNameplate.nominalFrequencyHz ?? ''} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, nominalFrequencyHz: e.target.value === '' ? null : Number(e.target.value), userConfirmed: false } }))} className="studio-input mt-1 w-full" /></label>
+                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'پیوند دیتاشیت دقیق مدل (HTTPS)' : 'Exact-model datasheet URL (HTTPS)'}<input data-testid="ac-inverter-nameplate-url" type="url" value={currentAcRequirements.inverterNameplate.sourceUrl} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, sourceUrl: e.target.value, userConfirmed: false } }))} className="studio-input mt-1 w-full" placeholder="https://manufacturer.example/..." /></label>
+                    </div>
+                    <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid="ac-inverter-nameplate-confirmed" checked={currentAcRequirements.inverterNameplate.userConfirmed} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, userConfirmed: e.target.checked } }))} />{lang === 'fa' ? 'فاز/ولتاژ/فرکانس را با دیتاشیت همین مدل تطبیق دادم (اظهار کاربر؛ تأیید مستقل نیست)' : 'I checked phase/voltage/frequency against this exact model datasheet (user assertion; not independently verified)'}</label>
+                  </fieldset>
+                  <fieldset className="rounded-lg border border-industrial-border p-3">
+                    <legend className="px-1 text-xs font-bold text-theme-strong">{lang === 'fa' ? 'نقطه تزریق پس از ترانسفورماتور' : 'Post-transformer grid injection point'}</legend>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'سطح شبکه' : 'Network level'}<select aria-label="Grid injection level" data-testid="ac-injection-level" value={currentAcRequirements.injection.level} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, level: e.target.value as AcRequirements['injection']['level'], confirmed: false } }))} className="studio-input mt-1 w-full"><option value="unknown">Unknown</option><option value="not_applicable">Not applicable</option><option value="lv">LV</option><option value="mv">MV</option><option value="hv">HV</option></select></label>
+                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'ولتاژ نامی (kV)' : 'Nominal voltage (kV)'}<input aria-label="Grid injection nominal kV" data-testid="ac-injection-voltage" type="number" min="0" step="any" value={currentAcRequirements.injection.nominalKv ?? ''} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, nominalKv: e.target.value === '' ? null : Number(e.target.value), confirmed: false } }))} className="studio-input mt-1 w-full" /></label>
+                      <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid="ac-injection-confirmed" checked={currentAcRequirements.injection.confirmed} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, confirmed: e.target.checked } }))} />{lang === 'fa' ? 'مورد تأیید است' : 'Confirmed'}</label>
+                    </div>
+                  </fieldset>
+                  {systemMode !== 'powerplant' && loads.length > 0 && <details className="rounded-lg border border-industrial-border p-3"><summary className="cursor-pointer text-xs font-bold">{lang === 'fa' ? 'نیاز AC هر بار (در صورت تفاوت با سرویس سایت)' : 'Per-load AC requirement (when different from site service)'}</summary><div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">{loads.map((load) => renderAcConnectionFields(`load:${load.id}`, currentAcRequirements.loadOverrides[load.id] ?? createUnknownAcRequirements().loadService, `${load.name} — ${lang === 'fa' ? 'نیاز مستقل' : 'load-specific requirement'}`))}</div></details>}
+                </section>
 
                 {/* 3 Main Topologies */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -2496,7 +2600,7 @@ export const App: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <strong className="text-white text-xs">
+                          <strong className="text-theme-strong text-xs">
                             {lang === 'fa' ? '۱. اینورترهای رشته‌ای (String Inverter 1500V)' : '1. High-Power String Inverters (1500V)'}
                           </strong>
                           {inverterTech === 'string_inverter' && <CheckCircle2 className="w-4 h-4 text-sky-400" />}
@@ -2517,7 +2621,7 @@ export const App: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <strong className="text-white text-xs">
+                          <strong className="text-theme-strong text-xs">
                             {lang === 'fa' ? '۲. پست‌های یکپارچه کانتینری (MV Turnkey Skid Station)' : '2. Integrated MV Turnkey Skid Stations'}
                           </strong>
                           {inverterTech === 'mv_turnkey' && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
@@ -2575,16 +2679,17 @@ export const App: React.FC = () => {
                         <label htmlFor="mv-voltage-select" className="text-slate-300 font-bold block mb-1">
                           {lang === 'fa' ? 'سطح ولتاژ باسبار جمع‌آوری (MV Busbar):' : 'MV Collector Busbar Voltage Level:'}
                         </label>
-                        <select
+                        <input
                           id="mv-voltage-select"
-                          value={mvVoltageKv}
-                          onChange={(e) => setMvVoltageKv(Number(e.target.value))}
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={mvVoltageKv ?? ''}
+                          onChange={(e) => setMvVoltageKv(e.target.value === '' ? null : Number(e.target.value))}
                           className="studio-input w-full font-mono font-bold text-emerald-300"
-                        >
-                          <option value="20">{lang === 'fa' ? '۲۰ کیلوولت (استاندارد شبکه توزیع ایران)' : '20 kV (Standard Iran Distribution)'}</option>
-                          <option value="33">{lang === 'fa' ? '۳۳ کیلوولت (فشار متوسط مزارع بزرگ)' : '33 kV (Utility Scale Large Farms)'}</option>
-                          <option value="11">11 kV</option>
-                        </select>
+                          aria-label={lang === 'fa' ? 'ولتاژ باسبار جمع‌آوری MV بر حسب kV' : 'MV collector busbar voltage in kV'}
+                        />
+                        {mvVoltageKv === null && <p role="alert" className="mt-1 text-[10px] text-amber-700">{lang === 'fa' ? 'معماری بی‌های MV تا ورود ولتاژ صریح محاسبه/تأیید نمی‌شود.' : 'MV bay architecture is withheld until an explicit voltage is entered.'}</p>}
                       </div>
                     </div>
 
@@ -2612,7 +2717,7 @@ export const App: React.FC = () => {
                                 </span>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
-                                <div>{lang === 'fa' ? 'اینورترها:' : 'Inverters:'} <strong className="text-white">{bay.inverterCount} × ({bay.inverterUnitRatingKw} kW)</strong></div>
+                                <div>{lang === 'fa' ? 'اینورترها:' : 'Inverters:'} <strong className="text-theme-strong">{bay.inverterCount} × ({bay.inverterUnitRatingKw} kW)</strong></div>
                                 <div>{lang === 'fa' ? 'ترانسفورماتور:' : 'Transformer:'} <strong className="text-purple-300">{bay.transformerRatingMva} MVA ({bay.transformerVoltageRatio})</strong></div>
                                 <div>{lang === 'fa' ? 'جریان نامی MV:' : 'Rated MV Amps:'} <strong className="text-emerald-300">{bay.mvRatedCurrentAmps} A</strong></div>
                                 <div>{lang === 'fa' ? 'حفاظت دژنکتور:' : 'Breaker Rating:'} <strong className="text-slate-200">VCB 630A / 25kA</strong></div>
@@ -2714,7 +2819,12 @@ export const App: React.FC = () => {
               selectedModule={selectedModule}
               onModuleChange={setSelectedModule}
               selectedInverter={selectedInverter}
-              onInverterChange={setSelectedInverter}
+              onInverterChange={(inverter) => {
+                const catalogItem = inverter.id ? catalogRepo.getInverters().find((item) => item.id === inverter.id) : undefined;
+                const identityChanged = inverter.id !== selectedInverter.id || inverter.manufacturer !== selectedInverter.manufacturer || inverter.modelName !== selectedInverter.modelName;
+                if (identityChanged) setAcRequirements((current) => current ? { ...current, inverterNameplate: { ...current.inverterNameplate, userConfirmed: false } } : current);
+                setSelectedInverter({ ...inverter, acVoltageVac: inverter.acVoltageVac ?? catalogItem?.acVoltageVac });
+              }}
               arrayDesign={arrayDesign}
               inverterClustering={inverterClustering}
               city={city}
@@ -2760,12 +2870,10 @@ export const App: React.FC = () => {
 
           {/* MV SUBSTATION TAB (Only shown for Powerplant mode) */}
           {activeTab === 'mv_substation' && systemMode === 'powerplant' && (
-            <MvSubstationTab
-              plantCapacityAcMw={(targetPowerplantCapacityKw || 1000) / 1000.0}
-              ambientTempC={city.tempMaxC}
-              elevationM={city.elevationM}
-              lang={lang}
-            />
+            <div data-testid="mv-substation-not-assessed" role="alert" className="studio-card border border-amber-600/50 text-amber-800 space-y-2">
+              <h2 className="font-bold">{lang === 'fa' ? 'طراحی پست MV انجام/تأیید نشده است' : 'MV substation design not assessed'}</h2>
+              <p className="text-sm">{lang === 'fa' ? 'تا وقتی دیتاشیت ترانس، نقطه اتصال و سطح اتصال کوتاه تأییدشدهٔ شرکت برق، مقاومت ویژه خاک، آرایش زمین و داده هماهنگی/زمان قطع حفاظت به پروژه افزوده نشوند، ریتینگ ترانس/کلید یا جریان اتصال کوتاه نمایش داده نمی‌شود. ولتاژهای پیش‌فرض ۲۰/۴۰۰/۸۰۰ ولت اعمال نمی‌شوند.' : 'Transformer nameplate, utility point of connection and fault level, soil resistivity, earthing topology and protection coordination/clearing time are not all project inputs. Transformer/breaker ratings and fault currents are therefore withheld; no default 20/400/800 V is applied.'}</p>
+            </div>
           )}
 
           {/* CABLES, EARTHING & LIGHTNING TAB */}
@@ -2783,6 +2891,9 @@ export const App: React.FC = () => {
               inverterDcContinuousCurrentAmps={inverterClustering.inverterDcContinuousCurrentAmps}
               systemDcVoltage={inverterClustering.recommendedDcVoltageVdc || 48}
               isThreePhase={selectedInverter.isThreePhase}
+              acOutputRequirement={acRequirements?.inverterOutput ?? null}
+              inverterAcVoltageVac={selectedInverter.acVoltageVac}
+              inverterNameplateAttested={Boolean(currentAcRequirements.inverterNameplate.userConfirmed && currentAcRequirements.inverterNameplate.sourceUrl.startsWith('https://') && currentAcRequirements.inverterNameplate.nominalFrequencyHz === currentAcRequirements.inverterOutput.frequencyHz)}
               ambientTempC={city.tempMaxC}
               totalModulesCount={arrayDesign.totalModulesCount}
               dcSystemEarthing={dcSystemEarthing}
@@ -2899,22 +3010,22 @@ export const App: React.FC = () => {
               stringIscAmps={selectedModule.iscAmps}
               inverterKw={inverterClustering.totalInverterCapacityKw}
               inverterCount={inverterClustering.parallelUnitsCount}
-              isThreePhase={inverterClustering.acPhaseType === 'three_phase_400v'}
+              isThreePhase={selectedInverter.isThreePhase}
+              acOutputVoltageVolts={acRequirements?.inverterOutput.confirmed ? (acRequirements.inverterOutput.phase === 'three' ? acRequirements.inverterOutput.lineToLineVolts : (acRequirements.inverterOutput.lineToNeutralVolts ?? acRequirements.inverterOutput.lineToLineVolts)) : null}
+              acFrequencyHz={acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.frequencyHz : null}
+              acRequirements={acRequirements}
+              mvCollectorVoltageKv={mvVoltageKv}
               batteryKwh={batterySizing.grossCapacityKwh}
               batteryVoltageVdc={batterySizing.systemVoltageVdc}
               batteryAh={batterySizing.totalCapacityAh}
               batteryFuseAmps={Math.ceil(batterySizing.continuousDischargeCurrentAmps * 1.25)}
-              acCurrentAmps={
-                inverterClustering.acPhaseType === 'three_phase_400v'
-                  ? (inverterClustering.totalInverterCapacityKw * 1000) / (1.732 * 400 * 0.95)
-                  : (inverterClustering.totalInverterCapacityKw * 1000) / 230
-              }
-              dcCableMm2={protectionSystem.cableRuns[0]?.totalEffectiveCrossSectionMm2 || 6}
-              batCableMm2={protectionSystem.cableRuns[1]?.totalEffectiveCrossSectionMm2 || 35}
-              acCableMm2={protectionSystem.cableRuns[2]?.totalEffectiveCrossSectionMm2 || 50}
+              acCurrentAmps={protectionSystem.cableRuns[2]?.isAssessed === false ? null : (protectionSystem.cableRuns[2]?.config.designCurrentAmps ?? null)}
+              dcCableMm2={protectionSystem.cableRuns[1]?.isAssessed === false ? null : (protectionSystem.cableRuns[1]?.totalEffectiveCrossSectionMm2 ?? null)}
+              batCableMm2={null}
+              acCableMm2={protectionSystem.cableRuns[2]?.isAssessed === false ? null : (protectionSystem.cableRuns[2]?.totalEffectiveCrossSectionMm2 ?? null)}
               isUtilityPowerplant={systemMode === 'powerplant'}
-              targetGroundResistanceOhms={protectionSystem.earthing.targetGroundResistanceOhms}
-              batteryRackBondingMm2={protectionSystem.earthing.batteryRackBondingConductorMm2}
+              targetGroundResistanceOhms={null}
+              batteryRackBondingMm2={null}
               dcSystemEarthing={dcSystemEarthing}
               lang={lang}
             />
@@ -3035,7 +3146,7 @@ export const App: React.FC = () => {
         </main>
 
         {/* 24px Industrial CAD/SCADA Telemetry Status Bar */}
-        <footer className="h-6 bg-[#0A0E1A] border-t border-[#1F2937] px-4 flex items-center justify-between text-[11px] font-mono text-slate-400 select-none shrink-0 z-20">
+        <footer className="h-6 bg-industrial-bg border-t border-[#1F2937] px-4 flex items-center justify-between text-[11px] font-mono text-slate-400 select-none shrink-0 z-20">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-md bg-emerald-400" />
@@ -3047,7 +3158,7 @@ export const App: React.FC = () => {
             </span>
             <span className="text-slate-600">|</span>
             <span className="text-amber-400">
-              PSH: {city.peakSunHours} h/d
+              PSH: {formatPsh(city.peakSunHours)} h/d
             </span>
           </div>
 
@@ -3076,8 +3187,11 @@ export const App: React.FC = () => {
             systemMode={systemMode}
             city={city}
             loadAnalysis={loadAnalysis}
+            loads={loads}
             module={selectedModule}
             inverter={selectedInverter}
+            acRequirements={acRequirements}
+            mvCollectorVoltageKv={mvVoltageKv}
             arrayDesign={arrayDesign}
             batterySizing={batterySizing}
             protection={protectionSystem}

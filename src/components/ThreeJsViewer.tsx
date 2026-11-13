@@ -787,8 +787,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
               disabled={!hasProjectData}
               className={`px-3 py-1.5 rounded font-bold transition flex items-center gap-1.5 ${
                 sceneMode === 'project_array'
-                  ? 'bg-sky-500 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white disabled:opacity-40'
+                  ? 'bg-sky-500 text-theme-strong shadow-sm'
+                  : 'text-slate-400 hover:text-theme-strong disabled:opacity-40'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -798,8 +798,8 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
               onClick={() => setSceneMode('demo_block')}
               className={`px-3 py-1.5 rounded font-bold transition flex items-center gap-1.5 ${
                 sceneMode === 'demo_block'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-amber-600 text-theme-strong shadow-sm'
+                  : 'text-slate-400 hover:text-theme-strong'
               }`}
             >
               <Box className="w-3.5 h-3.5" />
@@ -1328,7 +1328,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                               calculatedSignature === appliedShading?.signatureHash &&
                               appliedShading?.lossPct === annualResult.annualCombinedShadingLossPct)
                           }
-                          className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                          className="px-3 py-1 bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-theme-strong rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
                           title={
                             isAnalysisStale
                               ? isEn
@@ -1426,7 +1426,7 @@ export const ThreeJsViewer: React.FC<ThreeJsViewerProps> = ({
                   <tbody className="divide-y divide-slate-800 font-mono text-[11px]">
                     {annualResult.tableHeatmap.map((t) => (
                       <tr key={t.tableId} className="hover:bg-slate-850/50">
-                        <td className="p-2 font-sans font-bold text-white">
+                        <td className="p-2 font-sans font-bold text-theme-strong">
                           {t.tableId} (#{t.tableIndex})
                         </td>
                         <td className="p-2 text-sky-300">
