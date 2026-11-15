@@ -814,6 +814,7 @@ export const App: React.FC = () => {
         stringVmpMinHotVolts: 0,
         maxMpptOperatingCurrentAmps: 0,
         maxMpptShortCircuitCurrentAmps: 0,
+        isMpptCurrentAssessed: false,
         isMpptCurrentCompliant: false,
         isVoltageFeasible: false,
         isDesignFeasible: false,

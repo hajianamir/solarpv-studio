@@ -80,6 +80,9 @@ export interface PvArrayDesignResult {
   stringVmpMinHotVolts: number;
   maxMpptOperatingCurrentAmps: number;
   maxMpptShortCircuitCurrentAmps: number;
+  /** Both per-MPPT operating and short-circuit current ratings must be supplied to assess compliance. */
+  isMpptCurrentAssessed: boolean;
+  /** False when unassessed or when either current limit is exceeded; inspect isMpptCurrentAssessed to distinguish. */
   isMpptCurrentCompliant: boolean;
   isVoltageFeasible: boolean;
   isDesignFeasible: boolean;
@@ -320,15 +323,28 @@ export function designPvArray(
     );
   }
 
-  let isMpptCurrentCompliant = true;
-  if (inverter.imppMaxAmpsPerMppt > 0 && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
+  const hasValidImppLimit = Number.isFinite(inverter.imppMaxAmpsPerMppt) && inverter.imppMaxAmpsPerMppt > 0;
+  const hasValidIscLimit = Number.isFinite(inverter.iscMaxAmpsPerMppt) && inverter.iscMaxAmpsPerMppt > 0;
+  const isMpptCurrentAssessed = hasValidImppLimit && hasValidIscLimit;
+  let isMpptCurrentCompliant = isMpptCurrentAssessed;
+  if (!isMpptCurrentAssessed) {
+    const missingLimits = [
+      !hasValidImppLimit ? 'Impp max per MPPT' : '',
+      !hasValidIscLimit ? 'Isc max per MPPT' : '',
+    ].filter(Boolean).join(' and ');
+    const msg = `MPPT current compliance NOT ASSESSED: valid catalog ${missingLimits} rating(s) are missing or invalid. Provide manufacturer limits before treating this design as feasible.`;
+    warnings.push(msg);
+    blockingErrors.push(msg);
+  }
+
+  if (hasValidImppLimit && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
     const msg = `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping).`;
     warnings.push(msg);
     blockingErrors.push(msg);
   }
 
-  if (inverter.iscMaxAmpsPerMppt > 0 && maxMpptShortCircuitCurrentAmps > inverter.iscMaxAmpsPerMppt) {
+  if (hasValidIscLimit && maxMpptShortCircuitCurrentAmps > inverter.iscMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
     const msg = `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر.`;
     warnings.push(msg);
@@ -388,6 +404,7 @@ export function designPvArray(
     stringVmpMinHotVolts,
     maxMpptOperatingCurrentAmps,
     maxMpptShortCircuitCurrentAmps,
+    isMpptCurrentAssessed,
     isMpptCurrentCompliant,
     isVoltageFeasible,
     isDesignFeasible: isVoltageFeasible && isMpptCurrentCompliant && (options === undefined || dcAcRatio <= 1.5),

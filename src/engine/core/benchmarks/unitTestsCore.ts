@@ -3263,6 +3263,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const design = designPvArray(150, 5.0, testModule, restrictiveInverter, deratings, 35.69);
     const lowDemandInverter = { ...restrictiveInverter, vmpptMinVolts: 150, imppMaxAmpsPerMppt: 30, iscMaxAmpsPerMppt: 30 };
     const underMinimumString = designPvArray(0.1, 5.0, testModule, lowDemandInverter, deratings, 35.69);
+    const missingCurrentLimitsInverter = { ...restrictiveInverter, imppMaxAmpsPerMppt: 0, iscMaxAmpsPerMppt: 0 };
+    const missingCurrentLimits = designPvArray(150, 5.0, testModule, missingCurrentLimitsInverter, deratings, 35.69);
 
     // Module Imp is 13.4A > Inverter ImppMax of 12A, so MPPT current compliance must flag warning.
     // A tiny array that is forced below MPPT minimum is diagnostic only, never executable.
@@ -3272,12 +3274,18 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       && !underMinimumString.isVoltageFeasible
       && !underMinimumString.isDesignFeasible
       && Boolean(underMinimumString.blockingErrors?.some((error) => error.includes('تعداد ماژول انتخاب‌شده')));
+    const missingCurrentLimitsBlocked = !missingCurrentLimits.isMpptCurrentAssessed
+      && !missingCurrentLimits.isMpptCurrentCompliant
+      && !missingCurrentLimits.isDesignFeasible
+      && Boolean(missingCurrentLimits.blockingErrors?.some((error) => error.includes('NOT ASSESSED')))
+      && missingCurrentLimits.warnings.some((warning) => warning.includes('NOT ASSESSED'));
 
     assert(
       'E8-PV-1',
-      'PV string sizing enforces MPPT current constraints, decoupled Vmp temperature coefficient, and blocks final strings below MPPT minimum',
-      !design.isMpptCurrentCompliant && currentWarningFound && design.maxMpptOperatingCurrentAmps >= 13.4 && underMinimumBlocked,
-      `MpptCompliant=${design.isMpptCurrentCompliant}, Impp=${design.maxMpptOperatingCurrentAmps}A (limit=12A), undersizedString=${underMinimumString.modulesPerString}/${underMinimumString.minModulesPerStringAllowed}, Vmp=${underMinimumString.stringVmpMinHotVolts}V, feasible=${underMinimumString.isDesignFeasible}`
+      'PV sizing enforces MPPT current limits, marks missing ratings unassessed, and blocks strings below MPPT minimum',
+      !design.isMpptCurrentCompliant && currentWarningFound && design.maxMpptOperatingCurrentAmps >= 13.4
+        && underMinimumBlocked && missingCurrentLimitsBlocked,
+      `MpptCompliant=${design.isMpptCurrentCompliant}, Impp=${design.maxMpptOperatingCurrentAmps}A (limit=12A), undersized=${underMinimumString.modulesPerString}/${underMinimumString.minModulesPerStringAllowed}, missingRatingsAssessed=${missingCurrentLimits.isMpptCurrentAssessed}, missingRatingsFeasible=${missingCurrentLimits.isDesignFeasible}`
     );
   }
 
