@@ -360,7 +360,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Selected inverter phase/status', inverter.isThreePhase ? 'three-phase catalog' : 'single-phase catalog', inverterClustering?.healthStatusTextFa ?? 'cluster check not supplied'],
       ['Inverter surge requirement (W)', loadAnalysis.recommendedInverterPeakSurgeWatts, 'Screening; verify model transient overload curve'],
       ['Catalog kVA validation', 'NOT ASSESSED', 'Selected inverter catalog record has no verified apparent-power rating'],
-      ['Conductor Run', 'Design Current (A)', 'Length (m)', 'Material', 'Insulation', 'Protective Device Reference', 'Device Rating (A)', 'Device Breaking Capacity (kA)', 'Prospective Isc (kA)', 'Clearing Time (s)', 'PF', 'Coincidence Factor', 'Grouped Circuits', 'Motor Starting Method', 'Starting Current Estimate (A)', 'Motor Start Voltage-Drop Assessment', 'Protection Coordination Screening', 'Designation', 'Voltage Drop (%)', 'Status'],
+      ['Conductor Run', 'Design Current (A)', 'Length (m)', 'Material', 'Insulation', 'Protective Device Reference', 'Device Rating (A)', 'Device Breaking Capacity (kA)', 'Prospective Isc (kA)', 'Clearing Time (s)', 'PF', 'Coincidence Factor', 'Grouped Circuits', 'Motor Starting Method', 'Starting Current Estimate (A)', 'Motor Start Voltage-Drop Assessment', 'Protection Coordination Screening', 'Designation', 'Voltage Drop (%)', 'Conductor Resistance Assumption', 'Status'],
       ...protection.cableRuns.map((c) => [
         isEn ? c.config.sectionNameEn : c.config.sectionNameFa,
         c.isAssessed === false ? 'not assessed' : c.config.designCurrentAmps,
@@ -381,6 +381,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
         c.isProtectionCoordinationAssessed ? (c.isProtectionCoordinationCompliant ? 'protection screening pass only' : 'protection coordination screening fail') : 'protection coordination NOT ASSESSED',
         c.isAssessed === false ? 'not assessed' : (isEn ? c.cableDesignationEn : c.cableDesignationFa),
         c.isAssessed === false ? 'not assessed' : c.actualVoltageDropPct,
+        c.isAssessed === false ? 'not assessed' : c.conductorResistanceModelNote,
         c.isAssessed === false ? `NOT ASSESSED: ${c.assessmentNote ?? ''}` : c.isCompliant ? 'INTERNAL SCREENING PASS (not compliance)' : 'INTERNAL SCREENING FAIL',
       ]),
     ];
@@ -1618,7 +1619,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                           <td className="p-2 font-mono">{c.config.conductorMaterial.toUpperCase()} / {c.config.insulationType}</td>
                           <td className="p-2 text-[10px]">{c.config.protectiveDeviceReference ?? '—'} / {c.config.protectiveDeviceRatingAmps ?? '—'}A / {c.config.protectiveDeviceBreakingCapacityKa ?? '—'}kA; Isc {c.config.expectedIscKa ?? '—'}kA @ {c.config.faultClearingTimeSec ?? '—'}s; motor {c.config.motorStartingMethod ?? 'unknown'} ×{c.config.motorStartingMultiplier ?? '—'} (current estimate {c.motorStartingCurrentAmps ?? '—'}A); start ΔV {c.isMotorStartingAssessed ? 'N/A' : 'NOT ASSESSED — dynamic start model/limit required'}</td>
                           <td className="p-2 font-mono text-industrial-accent print:text-sky-900 font-bold">{isEn ? c.cableDesignationEn : c.cableDesignationFa}</td>
-                          <td className="p-2 font-mono">{c.actualVoltageDropPct}%</td>
+                          <td className="p-2 font-mono" title={c.conductorResistanceModelNote}>{c.actualVoltageDropPct}% (R@{c.conductorResistanceTempC ?? '—'}°C)</td>
                           <td className="p-2 font-mono text-industrial-warning">{c.powerLossWatts ? `${c.powerLossWatts}W` : '-'}</td>
                           <td className="p-2"><span className="text-amber-700 font-bold text-[10px]">{c.isCompliant ? (isEn ? 'INTERNAL SCREENING PASS (not compliance)' : 'غربالگری داخلی (نه احراز انطباق)') : (isEn ? 'SCREENING LIMIT EXCEEDED' : 'حد غربالگری رد شده')}</span></td>
                         </>}

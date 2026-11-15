@@ -73,6 +73,9 @@ export interface CableRunResult {
   cableDesignationFa: string; // e.g. "2 × (1 × 185 mm²) مسی XLPE"
   cableDesignationEn: string;
   actualVoltageDropVolts: number;
+  /** Conservative conductor temperature used to convert 20°C nominal resistivity to operating resistance. */
+  conductorResistanceTempC: number | null;
+  conductorResistanceModelNote: string;
   /** Rounded display value; compliance uses the unrounded voltage-drop ratio. */
   actualVoltageDropPct: number;
   isVoltageDropCompliant: boolean;
@@ -114,7 +117,9 @@ export function createUnassessedCableRun(config: Pick<CableRunConfig, 'id' | 'se
     calculatedTheoreticalCrossSectionMm2: 0, selectedStandardSingleCrossSectionMm2: 0,
     parallelRunsCount: 0, perRunCrossSectionMm2: 0, totalEffectiveCrossSectionMm2: 0,
     cableDesignationFa: 'بررسی نشده', cableDesignationEn: 'Not assessed',
-    actualVoltageDropVolts: 0, actualVoltageDropPct: 0, isVoltageDropCompliant: false, isCompliant: false,
+    actualVoltageDropVolts: 0, conductorResistanceTempC: null,
+    conductorResistanceModelNote: 'Not assessed: required cable inputs are incomplete.',
+    actualVoltageDropPct: 0, isVoltageDropCompliant: false, isCompliant: false,
     isAssessed: false, assessmentNote,
     thermalAmpacityPerRunAmps: 0, totalThermalAmpacityAmps: 0,
     temperatureDeratingFactorKt: 0, groupingDeratingFactorKg: 0,
@@ -285,17 +290,21 @@ const MAX_PRACTICAL_SINGLE_CABLE_MM2 = 240.0;
  * Sizing satisfies Voltage Drop + Thermal Ampacity (with Temp/Grouping derating) + Short-circuit withstand.
  */
 export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResult {
-  // 1. Conductivity gamma: Copper = 56 m/(Ω*mm²), Aluminum = 35 m/(Ω*mm²)
-  const gamma = config.conductorMaterial === 'copper' ? 56.0 : 35.0;
-
-  // Temperature correction factor for conductivity
+  // 1. Conductor resistance: nominal conductivity is referenced to 20°C.
+  // In the absence of manufacturer resistance data or a verified operating temperature,
+  // use the insulation-class maximum as a conservative thermal design temperature.
+  const gamma20 = config.conductorMaterial === 'copper' ? 56.0 : 35.0;
+  const alphaPerC = config.conductorMaterial === 'copper' ? 0.00393 : 0.00403;
   const ambientTempC = config.ambientTempC ?? 40.0;
-  const tempCorrection = config.insulationType === 'xlpe' ? 1.0 : 0.88;
-  const effectiveGamma = gamma * tempCorrection;
+  const maxOperatingTemp = config.insulationType === 'xlpe' ? 90.0 : 70.0;
+  const conductorResistanceTempC = maxOperatingTemp;
+  const resistanceTemperatureFactor = 1.0 + alphaPerC * (conductorResistanceTempC - 20.0);
+  const effectiveGamma = gamma20 / resistanceTemperatureFactor;
+  const conductorResistanceModelNote =
+    `Resistance uses 20°C nominal conductivity corrected to ${conductorResistanceTempC}°C (maximum ${config.insulationType.toUpperCase()} conductor temperature) as a conservative screening assumption; verify manufacturer AC resistance and actual design conductor temperature.`;
 
   // Ampacity derating factors (IEC 60364-5-52 Table B.52.14)
   // kt = sqrt((T_max - T_amb) / (T_max - 30))
-  const maxOperatingTemp = config.insulationType === 'xlpe' ? 90.0 : 70.0;
   const kt = Number(
     Math.min(1.0, Math.max(0.60, Math.sqrt((maxOperatingTemp - ambientTempC) / (maxOperatingTemp - 30.0)))).toFixed(3)
   );
@@ -591,6 +600,8 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     cableDesignationFa,
     cableDesignationEn,
     actualVoltageDropVolts: Number(actualDropVolts.toFixed(2)),
+    conductorResistanceTempC,
+    conductorResistanceModelNote,
     actualVoltageDropPct: actualDropPct,
     isVoltageDropCompliant: isDropCompliant,
     isCompliant,

@@ -642,6 +642,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         <span className="block text-[9px] text-slate-400">
                           {lang === 'fa' ? `مجاز: ≤${run.config.allowableDropPct}٪` : `Max: ${run.config.allowableDropPct}%`}
                         </span>
+                        <span className="block text-[8px] text-amber-300" title={run.conductorResistanceModelNote}>
+                          {lang === 'fa' ? `مقاومت هادی در ${run.conductorResistanceTempC ?? '—'}°C (فرض محافظه‌کارانه)` : `R at ${run.conductorResistanceTempC ?? '—'}°C (conservative)`}
+                        </span>
                       </td>
                       <td className="p-2.5 font-mono text-xs">
                         <span className={run.isShortCircuitCompliant ? 'text-teal-300 font-bold' : 'text-industrial-error font-bold'}>
