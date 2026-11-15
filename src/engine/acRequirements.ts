@@ -55,7 +55,7 @@ export interface AcRequirementAssessment {
 /** Checks only explicitly supplied/confirmed interfaces; it is not a protection study. */
 export function assessAcRequirements(
   requirements: AcRequirements | null | undefined,
-  inverter?: Pick<InverterSpecs, 'isThreePhase' | 'acVoltageVac'> | null,
+  inverter?: Pick<InverterSpecs, 'isThreePhase' | 'acVoltageVac' | 'frequencyHz'> | null,
   mode?: 'powerplant' | 'ongrid' | 'offgrid',
 ): AcRequirementAssessment {
   if (!requirements) return { status: 'incomplete', reasons: ['AC requirements are not specified; confirm the local service and grid requirements.'] };
@@ -78,6 +78,9 @@ export function assessAcRequirements(
     const inverterPhase = inverter.isThreePhase ? 'three' : 'single';
     if (required.phase === 'three' && required.lineToLineVolts === null) reasons.push('Confirmed three-phase inverter output requires line-to-line voltage to compare the selected inverter.');
     if (required.frequencyHz !== requirements.inverterNameplate.nominalFrequencyHz) reasons.push(`Confirmed inverter frequency (${requirements.inverterNameplate.nominalFrequencyHz} Hz) does not match AC output requirement (${required.frequencyHz} Hz).`);
+    if (inverter.frequencyHz !== undefined && inverter.frequencyHz !== required.frequencyHz) {
+      reasons.push(`Selected inverter catalog frequency (${inverter.frequencyHz} Hz) does not match AC output requirement (${required.frequencyHz} Hz).`);
+    }
     if (required.phase !== inverterPhase) reasons.push(`Selected inverter phase (${inverterPhase}) does not match confirmed output requirement (${required.phase}).`);
     const catalogComparisonVoltage = required.phase === 'three'
       ? required.lineToLineVolts

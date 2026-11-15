@@ -65,12 +65,15 @@ export interface InverterClusteringResult {
   parallelUnitsCount: number;
   unitRatingKw: number;
   totalInverterCapacityKw: number;
+  requiredContinuousKw: number;
   inverterDcContinuousCurrentAmps: number;
   inverterDcSurgeCurrentAmps: number;
   healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested' | 'phase_incompatible';
   healthStatusTextFa: string;
   phaseCompatibilityWarningFa?: string;
   maxSinglePhaseLegWatts?: number;
+  requiredApparentPowerKva?: number;
+  apparentPowerAssessment: 'not_assessed_no_catalog_kva';
   recommendationFa: string;
   isUnitRightSized?: boolean;
   requestedUnitRatingKw?: number;
@@ -84,6 +87,7 @@ export function evaluateInverterClustering(
   confirmedAcPhase: AcPhase = 'unknown',
   selectedInverterThreePhase?: boolean,
   maxSinglePhaseLegWatts: number = 0,
+  confirmedLoadPowerFactor?: number,
 ): InverterClusteringResult {
   // For a selected three-phase unit, account for the per-leg loading limit as
   // well as total kW; this is a conservative equal-capacity-per-leg assumption.
@@ -91,6 +95,10 @@ export function evaluateInverterClustering(
     ? Math.max(continuousWatts, Math.max(0, maxSinglePhaseLegWatts) * 3)
     : continuousWatts;
   const continuousKw = phaseAdjustedContinuousWatts / 1000.0;
+  const requiredApparentPowerKva = confirmedLoadPowerFactor !== undefined
+    && Number.isFinite(confirmedLoadPowerFactor) && confirmedLoadPowerFactor > 0 && confirmedLoadPowerFactor <= 1
+    ? Number((phaseAdjustedContinuousWatts / (1000 * confirmedLoadPowerFactor)).toFixed(2))
+    : undefined;
   const peakKw = peakSurgeWatts / 1000.0;
 
   // 1. Identify engineering class
@@ -201,12 +209,15 @@ export function evaluateInverterClustering(
     parallelUnitsCount,
     unitRatingKw: unitKw,
     totalInverterCapacityKw,
+    requiredContinuousKw: continuousKw,
     inverterDcContinuousCurrentAmps,
     inverterDcSurgeCurrentAmps,
     healthStatus,
     healthStatusTextFa,
     phaseCompatibilityWarningFa,
     maxSinglePhaseLegWatts,
+    requiredApparentPowerKva,
+    apparentPowerAssessment: 'not_assessed_no_catalog_kva',
     recommendationFa,
     isUnitRightSized,
     requestedUnitRatingKw,

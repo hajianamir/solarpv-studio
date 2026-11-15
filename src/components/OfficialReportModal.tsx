@@ -48,6 +48,7 @@ import {
 import { type ClimateCity, type SiteGeotechnicalOverrides, getEffectiveClimateCity } from '../engine/climaticData';
 import { formatPsh } from '../engine/formatters';
 import { type ElectricalLoadItem, type LoadAnalysisResult } from '../engine/loadProfiles';
+import type { InverterClusteringResult } from '../engine/inverterClustering';
 import { evaluateLoadAcCurrents } from '../engine/acRequirements';
 import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
 import type { AcRequirements } from '../engine/acRequirements';
@@ -74,6 +75,7 @@ interface OfficialReportModalProps {
   loads?: ElectricalLoadItem[];
   module: ModuleSpecs;
   inverter: InverterSpecs;
+  inverterClustering?: InverterClusteringResult;
   acRequirements?: AcRequirements | null;
   mvCollectorVoltageKv?: number | null;
   arrayDesign: PvArrayDesignResult;
@@ -117,6 +119,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   loads = [],
   module,
   inverter,
+  inverterClustering,
   acRequirements,
   mvCollectorVoltageKv,
   arrayDesign,
@@ -347,13 +350,35 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['MV substation protection/design', '—', '—', '—', '—', '—', '—', '—', 'NOT ASSESSED: transformer, utility fault study, earthing and protection coordination data missing'],
       ['Load current screening (explicit phase/voltage/PF only)', 'Phase', 'Voltage V', 'Current A', 'Basis', 'Status'],
       ...loadAcCurrentSchedule.map((load) => [load.name, load.phase, load.voltageVolts ?? 'unknown', load.currentAmps ?? 'not calculated', load.basis, load.status]),
-      ['Conductor Run', 'Nominal Current (A)', 'Length (m)', 'Material', 'Insulation', 'Designation', 'Voltage Drop (%)', 'Status'],
+      ['AC phase balance summary', 'Leg', 'Active-equivalent load (W)', 'Current (A)', 'Basis'],
+      ...(['L1', 'L2', 'L3'] as const).map((leg) => [leg, leg, loadAnalysis.phaseLegWatts[leg], loadAnalysis.phaseLegAmps[leg], `${loadAnalysis.phaseCurrentBasis.phaseNeutralVolts} V L-N, ${loadAnalysis.phaseCurrentBasis.lineToLineVolts} V L-L, PF ${loadAnalysis.phaseCurrentBasis.powerFactor}${loadAnalysis.phaseCurrentBasis.isConfirmed ? ' (confirmed site service)' : ' (illustrative assumption)'}`]),
+      ['3-phase AC load W', loadAnalysis.threePhaseLoadWatts],
+      ['Maximum phase load W', loadAnalysis.maxPhaseLoadWatts],
+      ['Phase unbalance %', loadAnalysis.phaseUnbalancePct],
+      ['Inverter sizing summary', 'Value', 'Basis/status'],
+      ['Required continuous AC (phase-adjusted)', inverterClustering?.requiredContinuousKw ?? 'not assessed', `${inverterClustering?.acPhaseType ?? 'unknown phase'}; required apparent kVA ${inverterClustering?.requiredApparentPowerKva ?? 'not assessed — missing confirmed sizing inputs'}`],
+      ['Selected inverter phase/status', inverter.isThreePhase ? 'three-phase catalog' : 'single-phase catalog', inverterClustering?.healthStatusTextFa ?? 'cluster check not supplied'],
+      ['Inverter surge requirement (W)', loadAnalysis.recommendedInverterPeakSurgeWatts, 'Screening; verify model transient overload curve'],
+      ['Catalog kVA validation', 'NOT ASSESSED', 'Selected inverter catalog record has no verified apparent-power rating'],
+      ['Conductor Run', 'Design Current (A)', 'Length (m)', 'Material', 'Insulation', 'Protective Device Reference', 'Device Rating (A)', 'Device Breaking Capacity (kA)', 'Prospective Isc (kA)', 'Clearing Time (s)', 'PF', 'Coincidence Factor', 'Grouped Circuits', 'Motor Starting Method', 'Starting Current (A)', 'Starting Voltage Drop (%)', 'Protection Coordination Screening', 'Designation', 'Voltage Drop (%)', 'Status'],
       ...protection.cableRuns.map((c) => [
         isEn ? c.config.sectionNameEn : c.config.sectionNameFa,
         c.isAssessed === false ? 'not assessed' : c.config.designCurrentAmps,
         c.isAssessed === false ? 'unknown (measured route not entered)' : c.config.oneWayLengthM,
         c.config.conductorMaterial.toUpperCase(),
         c.config.insulationType,
+        c.config.protectiveDeviceReference ?? 'unknown',
+        c.config.protectiveDeviceRatingAmps ?? 'unknown A',
+        c.config.protectiveDeviceBreakingCapacityKa ?? 'unknown kA',
+        c.config.expectedIscKa ?? 'unknown kA',
+        c.config.faultClearingTimeSec ?? 'unknown s',
+        c.config.powerFactor ?? 'n/a',
+        c.config.coincidenceFactor ?? 'unknown',
+        c.config.groupedCircuitsCount ?? 'unknown',
+        c.config.motorStartingMethod ?? 'unknown',
+        c.motorStartingCurrentAmps ?? 'not calculated',
+        c.motorStartingVoltageDropPct ?? 'not calculated',
+        c.isProtectionCoordinationAssessed ? (c.isProtectionCoordinationCompliant ? 'protection screening pass only' : 'protection coordination screening fail') : 'protection coordination NOT ASSESSED',
         c.isAssessed === false ? 'not assessed' : (isEn ? c.cableDesignationEn : c.cableDesignationFa),
         c.isAssessed === false ? 'not assessed' : c.actualVoltageDropPct,
         c.isAssessed === false ? `NOT ASSESSED: ${c.assessmentNote ?? ''}` : c.isCompliant ? 'INTERNAL SCREENING PASS (not compliance)' : 'INTERNAL SCREENING FAIL',
@@ -1547,6 +1572,20 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div>{isEn ? 'LV grid' : 'شبکه LV'}: {acRequirements?.lvGrid.confirmed ? `${acRequirements.lvGrid.phase}, ${acRequirements.lvGrid.lineToLineVolts ?? '—'} V L-L, ${acRequirements.lvGrid.lineToNeutralVolts ?? '—'} V L-N, ${acRequirements.lvGrid.frequencyHz ?? '—'} Hz` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
                 <div>{isEn ? 'Grid injection (not interchangeable with LV service)' : 'تزریق شبکه (متمایز از سرویس LV)'}: {acRequirements?.injection.confirmed ? `${acRequirements.injection.level}, ${acRequirements.injection.nominalKv ?? '—'} kV` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
                 <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr><th>{isEn ? 'Load' : 'بار'}</th><th>{isEn ? 'Phase/voltage' : 'فاز/ولتاژ'}</th><th>{isEn ? 'Calculated current' : 'جریان محاسباتی'}</th><th>{isEn ? 'Basis/status' : 'مبنا/وضعیت'}</th></tr></thead><tbody>{loadAcCurrentSchedule.map((load) => <tr key={load.id}><td>{load.name}</td><td>{load.phase} / {load.voltageVolts ?? 'unknown'} V</td><td>{load.currentAmps === null ? (isEn ? 'not calculated' : 'محاسبه نشده') : `${load.currentAmps.toFixed(2)} A`}</td><td>{load.basis} / {load.status}</td></tr>)}</tbody></table></div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+                  {(['L1', 'L2', 'L3'] as const).map((leg) => <div key={leg} className="p-2 rounded bg-slate-900/50">{leg}: {Math.round(loadAnalysis.phaseLegWatts[leg])} W / {loadAnalysis.phaseLegAmps[leg].toFixed(2)} A</div>)}
+                  <div className="p-2 rounded bg-slate-900/50">{isEn ? '3-phase load' : 'بار سه‌فاز'}: {Math.round(loadAnalysis.threePhaseLoadWatts)} W</div>
+                  <div className="p-2 rounded bg-slate-900/50">{isEn ? 'Max leg' : 'بیشینه فاز'}: {Math.round(loadAnalysis.maxPhaseLoadWatts)} W</div>
+                  <div className="p-2 rounded bg-slate-900/50">{isEn ? 'Unbalance' : 'عدم تعادل'}: {loadAnalysis.phaseUnbalancePct.toFixed(1)}%</div>
+                  <div className="p-2 rounded bg-slate-900/50 col-span-2">{isEn ? 'Basis' : 'مبنا'}: {loadAnalysis.phaseCurrentBasis.phaseNeutralVolts}/{loadAnalysis.phaseCurrentBasis.lineToLineVolts} V, PF {loadAnalysis.phaseCurrentBasis.powerFactor}; {loadAnalysis.phaseCurrentBasis.isConfirmed ? (isEn ? 'confirmed' : 'تأییدشده') : (isEn ? 'illustrative assumptions' : 'فرض نمایشی')}</div>
+                </div>
+              </div>
+              <div className="mt-2 rounded border border-amber-600/40 bg-amber-950/10 p-3 text-[11px]">
+                <strong>{isEn ? 'Inverter phase / continuous / surge screening' : 'غربالگری فاز / توان پیوسته / هجومی اینورتر'}</strong>
+                <div>{isEn ? 'Required continuous capacity' : 'توان پیوسته لازم'}: {inverterClustering ? `${inverterClustering.requiredContinuousKw.toFixed(2)} kW; ${isEn ? 'cluster capacity' : 'ظرفیت خوشه'}: ${inverterClustering.totalInverterCapacityKw.toFixed(2)} kW` : (isEn ? 'not assessed' : 'بررسی‌نشده')}.</div>
+                <div>{isEn ? 'Catalog phase check' : 'بررسی فاز کاتالوگ'}: {inverterClustering ? `${inverterClustering.healthStatusTextFa} — ${inverterClustering.recommendationFa}` : (isEn ? 'not assessed' : 'بررسی‌نشده')}</div>
+                <div>{isEn ? 'Required apparent power' : 'توان ظاهری لازم'}: {inverterClustering?.requiredApparentPowerKva === undefined ? (isEn ? 'NOT ASSESSED (PF/sizing result missing)' : 'بررسی‌نشده (PF/نتیجه سایزینگ نامعلوم)') : `${inverterClustering.requiredApparentPowerKva.toFixed(2)} kVA`}; {isEn ? 'catalog kVA rating' : 'توان kVA کاتالوگ'}: NOT VERIFIED.</div>
+                <div>{isEn ? 'Transient surge sizing' : 'سایزینگ هجومی گذرا'}: {Math.round(loadAnalysis.recommendedInverterPeakSurgeWatts)} W; verify selected model's time/current overload curve.</div>
               </div>
               {/* Cable Schedule Table */}
               <div className="overflow-x-auto">
@@ -1558,6 +1597,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Ampacity Iz (A)' : 'جریان مجاز Iz (A)'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Length (m)' : 'طول (m)'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Conductor / Insulation' : 'هادی / عایق'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Protection / fault / motor start' : 'حفاظت / خطا / راه‌اندازی'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Calculated Sizing (Parallel Runs)' : 'سایزینگ محاسبه‌شده'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'ΔV (%)' : 'افت ولتاژ'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Joule Loss' : 'تلفات ژول'}</th>
@@ -1569,13 +1609,14 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <tr key={idx} className="border-b border-industrial-border print:border-slate-200">
                         <td className="p-2 font-medium">{isEn ? c.config.sectionNameEn : c.config.sectionNameFa}</td>
                         {c.isAssessed === false ? <>
-                          <td className="p-2" colSpan={7}>{isEn ? 'Not assessed' : 'بررسی نشده'} — {c.assessmentNote}</td>
+                          <td className="p-2" colSpan={8}>{isEn ? 'Not assessed' : 'بررسی نشده'} — {c.assessmentNote}</td>
                           <td className="p-2 font-bold text-amber-700">{isEn ? 'DATA REQUIRED' : 'داده لازم است'}</td>
                         </> : <>
                           <td className="p-2 font-mono">{c.config.designCurrentAmps.toFixed(1)}A</td>
                           <td className="p-2 font-mono text-teal-300 print:text-teal-900">{c.totalThermalAmpacityAmps || '-'}A</td>
                           <td className="p-2 font-mono">{c.config.oneWayLengthM}m</td>
                           <td className="p-2 font-mono">{c.config.conductorMaterial.toUpperCase()} / {c.config.insulationType}</td>
+                          <td className="p-2 text-[10px]">{c.config.protectiveDeviceReference ?? '—'} / {c.config.protectiveDeviceRatingAmps ?? '—'}A / {c.config.protectiveDeviceBreakingCapacityKa ?? '—'}kA; Isc {c.config.expectedIscKa ?? '—'}kA @ {c.config.faultClearingTimeSec ?? '—'}s; {c.config.motorStartingMethod ?? '—'} ×{c.config.motorStartingMultiplier ?? '—'}; start ΔV {c.motorStartingVoltageDropPct ?? '—'}%</td>
                           <td className="p-2 font-mono text-industrial-accent print:text-sky-900 font-bold">{isEn ? c.cableDesignationEn : c.cableDesignationFa}</td>
                           <td className="p-2 font-mono">{c.actualVoltageDropPct}%</td>
                           <td className="p-2 font-mono text-industrial-warning">{c.powerLossWatts ? `${c.powerLossWatts}W` : '-'}</td>

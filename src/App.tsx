@@ -87,6 +87,7 @@ import {
   calculateEarthingSystem,
   calculateLightningProtection,
   type CompleteProtectionSystemResult,
+  type CableFeederInputMap,
   type ProtectionBomItem,
   type DcSystemEarthingType,
 } from './engine/protectionBomEngine';
@@ -332,6 +333,7 @@ export const App: React.FC = () => {
   const [structuralModulesPerTable, setStructuralModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
   const [structuralSnapshot, setStructuralSnapshot] = useState<StructuralSnapshot | null>(null);
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
+  const [cableFeederInputs, setCableFeederInputs] = useState<CableFeederInputMap>({});
 
   const catalogRepo = CatalogRepository.getInstance();
   const initialModules = catalogRepo.getModules();
@@ -528,6 +530,7 @@ export const App: React.FC = () => {
     city,
     siteOverrides,
     loads,
+    cableFeederInputs,
     selectedModule,
     selectedInverter,
     acRequirements,
@@ -948,7 +951,8 @@ export const App: React.FC = () => {
         ? 'three'
         : (acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.phase : 'unknown'),
       selectedInverter.isThreePhase,
-      loadAnalysis.maxPhaseLoadWatts
+      loadAnalysis.maxPhaseLoadWatts,
+      acRequirements?.loadService.confirmed ? acRequirements.loadService.powerFactor ?? undefined : undefined
     );
   }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter, acRequirements]);
 
@@ -1231,6 +1235,7 @@ export const App: React.FC = () => {
         setPendingImportedEmbedmentDepthM(clean.pendingImportedEmbedmentDepthM);
       }
       if (clean.loads) setLoads(clean.loads as unknown as ElectricalLoadItem[]);
+      setCableFeederInputs((clean.cableFeederInputs ?? {}) as CableFeederInputMap);
       if (clean.selectedModule) setSelectedModule(clean.selectedModule as ModuleSpecs);
       if (clean.selectedInverter) setSelectedInverter(clean.selectedInverter as InverterSpecs);
       setAcRequirements(clean.acRequirements ?? null);
@@ -2906,6 +2911,8 @@ export const App: React.FC = () => {
               totalModulesCount={arrayDesign.totalModulesCount}
               dcSystemEarthing={dcSystemEarthing}
               onDcSystemEarthingChange={setDcSystemEarthing}
+              feederInputs={cableFeederInputs}
+              onFeederInputsChange={setCableFeederInputs}
               installationEnvironment={siteOverrides?.installationEnvironment || 'ground_mount'}
               lang={lang}
             />
@@ -3198,6 +3205,7 @@ export const App: React.FC = () => {
             loads={loads}
             module={selectedModule}
             inverter={selectedInverter}
+            inverterClustering={inverterClustering}
             acRequirements={acRequirements}
             mvCollectorVoltageKv={mvVoltageKv}
             arrayDesign={arrayDesign}

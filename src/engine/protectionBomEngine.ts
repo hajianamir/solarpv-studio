@@ -10,6 +10,32 @@ export type ConductorMaterial = 'copper' | 'aluminum';
 export type InsulationType = 'xlpe' | 'pvc';
 export type UpstreamGroundingSystem = 'solidly_grounded' | 'impedance_grounded' | 'isolated_it';
 export type InstallationMethod = 'cable_tray' | 'in_conduit' | 'direct_buried';
+export type MotorStartingMethod = 'not_applicable' | 'direct_on_line' | 'star_delta' | 'soft_starter' | 'vfd';
+
+/** User-authored, persisted design inputs for one physical feeder. Undefined means unknown, never inferred. */
+export interface CableFeederInputs {
+  oneWayLengthM?: number;
+  designCurrentAmps?: number;
+  nominalVoltageVolts?: number;
+  conductorMaterial?: ConductorMaterial;
+  insulationType?: InsulationType;
+  allowableDropPct?: number;
+  isDc?: boolean;
+  isThreePhase?: boolean;
+  powerFactor?: number;
+  coincidenceFactor?: number;
+  ambientTempC?: number;
+  installationMethod?: InstallationMethod;
+  groupedCircuitsCount?: number;
+  protectiveDeviceRatingAmps?: number;
+  protectiveDeviceBreakingCapacityKa?: number;
+  protectiveDeviceReference?: string;
+  expectedIscKa?: number;
+  faultClearingTimeSec?: number;
+  motorStartingMethod?: MotorStartingMethod;
+  motorStartingMultiplier?: number;
+}
+export type CableFeederInputMap = Record<string, CableFeederInputs>;
 
 export interface CableRunConfig {
   id: string;
@@ -25,8 +51,16 @@ export interface CableRunConfig {
   isThreePhase?: boolean;
   ambientTempC?: number;           // Defaults to 40°C
   installationMethod?: InstallationMethod; // Defaults to 'cable_tray'
-  expectedIscKa?: number;           // Defaults to 10 kA
-  faultClearingTimeSec?: number;    // Defaults to 0.1s
+  expectedIscKa?: number;           // Legacy calculation fallback only; not sufficient for final assessment
+  faultClearingTimeSec?: number;    // Legacy calculation fallback only; not sufficient for final assessment
+  powerFactor?: number;
+  groupedCircuitsCount?: number;
+  protectiveDeviceRatingAmps?: number;
+  protectiveDeviceBreakingCapacityKa?: number;
+  protectiveDeviceReference?: string;
+  coincidenceFactor?: number;
+  motorStartingMethod?: MotorStartingMethod;
+  motorStartingMultiplier?: number;
 }
 
 export interface CableRunResult {
@@ -54,6 +88,10 @@ export interface CableRunResult {
   powerLossPct: number;
   isAmpacityCompliant: boolean;
   isShortCircuitCompliant: boolean;
+  isProtectionCoordinationAssessed?: boolean;
+  isProtectionCoordinationCompliant?: boolean;
+  motorStartingCurrentAmps?: number | null;
+  motorStartingVoltageDropPct?: number | null;
   // Cable electrical parameters (IEC 60287 / IEC 60502)
   lineCapacitanceUfPerKm: number;
   totalCapacitanceUf: number;
@@ -77,6 +115,8 @@ export function createUnassessedCableRun(config: Pick<CableRunConfig, 'id' | 'se
     temperatureDeratingFactorKt: 0, groupingDeratingFactorKg: 0,
     shortCircuitWithstandMinMm2: 0, powerLossWatts: 0, powerLossPct: 0,
     isAmpacityCompliant: false, isShortCircuitCompliant: false,
+    isProtectionCoordinationAssessed: false, isProtectionCoordinationCompliant: false,
+    motorStartingCurrentAmps: null, motorStartingVoltageDropPct: null,
     lineCapacitanceUfPerKm: 0, totalCapacitanceUf: 0, chargingCurrentAmps: 0,
     capacitanceModelNote: 'Not calculated: required AC inputs are unknown or unconfirmed.',
   };
@@ -249,7 +289,10 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
 
   // Grouping factor kg: installation method and multi-circuit derating (IEC 60364-5-52 Table B.52.17)
   const installMethod = config.installationMethod ?? 'cable_tray';
-  const kg = installMethod === 'direct_buried' ? 0.70 : installMethod === 'in_conduit' ? 0.75 : 0.82;
+  const installBase = installMethod === 'direct_buried' ? 0.70 : installMethod === 'in_conduit' ? 0.75 : 0.82;
+  const groupedCount = Math.max(1, Math.floor(config.groupedCircuitsCount ?? 1));
+  const groupCountFactor = groupedCount <= 1 ? 1 : groupedCount === 2 ? 0.80 : groupedCount === 3 ? 0.70 : groupedCount === 4 ? 0.65 : groupedCount === 5 ? 0.60 : 0.57;
+  const kg = Number((installBase * groupCountFactor).toFixed(3));
 
   // 2. Short-Circuit Thermal Withstand Requirement (IEC 60364-5-54)
   // S_sc = (I_sc * sqrt(t)) / k
@@ -269,7 +312,7 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   if (config.isDc) {
     calculatedTheoreticalMm2 = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * allowableDropVolts);
   } else if (config.isThreePhase) {
-    const cosPhi = 0.95;
+    const cosPhi = config.powerFactor ?? 0.95;
     // Include AC reactance component (X_L ≈ 0.08 Ω/km = 0.00008 Ω/m)
     const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
     const reactiveDropVolts = Math.sqrt(3) * config.oneWayLengthM * config.designCurrentAmps * 0.00008 * sinPhi;
@@ -279,7 +322,11 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
       (Math.sqrt(3) * config.oneWayLengthM * config.designCurrentAmps * cosPhi) /
       (effectiveGamma * netAllowableResistiveDrop);
   } else {
-    calculatedTheoreticalMm2 = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * allowableDropVolts);
+    const cosPhi = config.powerFactor ?? 0.95;
+    const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
+    const reactiveDropVolts = 2 * config.oneWayLengthM * config.designCurrentAmps * 0.00008 * sinPhi;
+    const netAllowableResistiveDrop = Math.max(0.2, allowableDropVolts - reactiveDropVolts);
+    calculatedTheoreticalMm2 = (2.0 * config.oneWayLengthM * config.designCurrentAmps * cosPhi) / (effectiveGamma * netAllowableResistiveDrop);
   }
 
   // 4. Combined Sizing: Candidate cross section must satisfy ALL THREE constraints simultaneously:
@@ -355,7 +402,7 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   if (config.isDc) {
     actualDropVolts = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * totalEffectiveCrossSection);
   } else if (config.isThreePhase) {
-    const cosPhi = 0.95;
+    const cosPhi = config.powerFactor ?? 0.95;
     const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
     const rPerMeter = 1.0 / (effectiveGamma * totalEffectiveCrossSection);
     const xPerMeter = 0.00008; // 0.08 ohm/km
@@ -378,13 +425,26 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const isAmpacityCompliant = totalDeratedAmp >= config.designCurrentAmps;
   // Rigorous IEC 60364-5-54 k²S² >= I²t without arbitrary discount factors:
   const isShortCircuitCompliant = totalEffectiveCrossSection >= shortCircuitWithstandMinMm2;
+  const isProtectionCoordinationAssessed = Boolean(
+    config.protectiveDeviceRatingAmps && config.protectiveDeviceBreakingCapacityKa
+    && config.protectiveDeviceReference?.trim() && config.expectedIscKa && config.faultClearingTimeSec
+  );
+  const isProtectionCoordinationCompliant = isProtectionCoordinationAssessed
+    && (config.protectiveDeviceRatingAmps as number) >= config.designCurrentAmps
+    && (config.protectiveDeviceRatingAmps as number) <= totalDeratedAmp
+    && (config.protectiveDeviceBreakingCapacityKa as number) >= (config.expectedIscKa as number);
+  const motorStartingCurrentAmps = config.motorStartingMethod && config.motorStartingMethod !== 'not_applicable'
+    && config.motorStartingMultiplier && config.motorStartingMultiplier >= 1
+    ? config.designCurrentAmps * config.motorStartingMultiplier : null;
+  const motorStartingVoltageDropPct = motorStartingCurrentAmps === null
+    ? null : Number((actualDropPct * (motorStartingCurrentAmps / config.designCurrentAmps)).toFixed(2));
 
   // 7. Joule Thermal Power Loss (P_loss = m * I² * R)
   const lineResistanceOhms = config.oneWayLengthM / (effectiveGamma * totalEffectiveCrossSection);
   const multiplier = config.isThreePhase ? 3.0 : 2.0;
   const powerLossWatts = Math.round(multiplier * Math.pow(config.designCurrentAmps, 2) * lineResistanceOhms);
   const totalTransferredPowerWatts = config.isThreePhase
-    ? Math.sqrt(3) * config.nominalVoltageVolts * config.designCurrentAmps * 0.95
+    ? Math.sqrt(3) * config.nominalVoltageVolts * config.designCurrentAmps * (config.powerFactor ?? 0.95)
     : config.nominalVoltageVolts * config.designCurrentAmps;
   const powerLossPct = Number(((powerLossWatts / Math.max(1, totalTransferredPowerWatts)) * 100.0).toFixed(2));
 
@@ -433,7 +493,8 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     'Idealized coaxial screened geometry per IEC 60287-1-1 Eq. 2.2; actual capacitance of unshielded/multicore cables depends on laying geometry and manufacturer datasheets.';
 
   // Full compliance requires voltage drop, thermal ampacity, AND short-circuit withstand:
-  const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant;
+  const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant
+    && isProtectionCoordinationAssessed && isProtectionCoordinationCompliant;
 
   const matFa = config.conductorMaterial === 'copper' ? 'مسی (Cu)' : 'آلومینیومی (Al)';
   const matEn = config.conductorMaterial === 'copper' ? 'Cu' : 'Al';
@@ -469,6 +530,13 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
       errorReasonsFa.push(`سطح مقطع کل (${totalEffectiveCrossSection}mm²) کمتر از حداقل تحمل اتصال کوتاه آدیاباتیک (${shortCircuitWithstandMinMm2}mm² برای Isc=${config.expectedIscKa ?? 10}kA در زمان ${faultDurationSec}s) است.`);
       errorReasonsEn.push(`Cross-section (${totalEffectiveCrossSection}mm²) is below short-circuit withstand minimum (${shortCircuitWithstandMinMm2}mm² for ${config.expectedIscKa ?? 10}kA at ${faultDurationSec}s).`);
     }
+    if (!isProtectionCoordinationAssessed) {
+      errorReasonsFa.push('هماهنگی حفاظتی بررسی نشده: مشخصات کلید/فیوز و داده خطای معتبر ناقص است.');
+      errorReasonsEn.push('Protection coordination is unassessed: protective-device specifications or verified fault data are missing.');
+    } else if (!isProtectionCoordinationCompliant) {
+      errorReasonsFa.push('مشخصات حفاظت با جریان طراحی، ظرفیت حرارتی کابل یا جریان اتصال کوتاه اعلام‌شده سازگار نیست.');
+      errorReasonsEn.push('Protective-device rating/breaking capacity does not match the design current, cable ampacity or declared fault current.');
+    }
 
     troubleshootingGuideFa = `نحوه رفع خطا: ${errorReasonsFa.join(' ')} راهکار: ۱) افزایش تعداد کابل موازی به ${parallelRuns + 1} رشته، ۲) افزایش سایز کابل به سطح مقطع بالاتر، یا ۳) تغییر جنس کابل به مس با هدایت الکتریکی بالاتر.`;
     troubleshootingGuideEn = `Troubleshooting Guide: ${errorReasonsEn.join(' ')} Resolution: 1) Increase parallel runs to ${parallelRuns + 1}, 2) Select larger cross-section, or 3) Switch conductor to Copper.`;
@@ -486,7 +554,12 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     actualVoltageDropVolts: Number(actualDropVolts.toFixed(2)),
     actualVoltageDropPct: actualDropPct,
     isCompliant,
-    isAssessed: true,
+    isAssessed: isProtectionCoordinationAssessed,
+    assessmentNote: isProtectionCoordinationAssessed ? undefined : 'Incomplete: explicit protective-device rating/reference, breaking capacity, prospective fault current and clearing time are required before a compliance result.',
+    isProtectionCoordinationAssessed,
+    isProtectionCoordinationCompliant,
+    motorStartingCurrentAmps,
+    motorStartingVoltageDropPct,
     thermalAmpacityPerRunAmps: singleDeratedAmp,
     totalThermalAmpacityAmps: totalDeratedAmp,
     temperatureDeratingFactorKt: kt,

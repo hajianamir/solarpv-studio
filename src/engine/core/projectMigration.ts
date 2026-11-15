@@ -20,6 +20,7 @@ export type AdvancedFeatureFlags = typeof DEFAULT_FEATURE_FLAGS;
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity, calculateDesignDaylightHours } from '../climaticData';
 import { type LoadCategory, type ElectricalLoadItem, normalizeLoadItemToWindow } from '../loadProfiles';
+import { type CableFeederInputMap } from '../protectionBomEngine';
 import { DEFAULT_FINANCIAL_PRICING } from '../financialEngine';
 import type { UserFinancialPricing } from '../financialEngine';
 
@@ -112,6 +113,30 @@ export const ClimateCitySchema = z.object({
   drainageCondition: z.enum(['well_drained', 'moderate', 'poor_flood_prone']).optional(),
   groundwaterDepthM: z.number().nonnegative().optional(),
 });
+
+export const CableFeederInputsSchema = z.object({
+  oneWayLengthM: z.number().positive().optional(),
+  designCurrentAmps: z.number().positive().optional(),
+  nominalVoltageVolts: z.number().positive().optional(),
+  conductorMaterial: z.enum(['copper', 'aluminum']).optional(),
+  insulationType: z.enum(['xlpe', 'pvc']).optional(),
+  allowableDropPct: z.number().positive().max(15).optional(),
+  isDc: z.boolean().optional(),
+  isThreePhase: z.boolean().optional(),
+  powerFactor: z.number().positive().max(1).optional(),
+  coincidenceFactor: z.number().positive().max(1).optional(),
+  ambientTempC: z.number().min(-40).max(90).optional(),
+  installationMethod: z.enum(['cable_tray', 'in_conduit', 'direct_buried']).optional(),
+  groupedCircuitsCount: z.number().int().positive().max(50).optional(),
+  protectiveDeviceRatingAmps: z.number().positive().optional(),
+  protectiveDeviceBreakingCapacityKa: z.number().positive().optional(),
+  protectiveDeviceReference: z.string().min(1).optional(),
+  expectedIscKa: z.number().positive().optional(),
+  faultClearingTimeSec: z.number().positive().optional(),
+  motorStartingMethod: z.enum(['not_applicable', 'direct_on_line', 'star_delta', 'soft_starter', 'vfd']).optional(),
+  motorStartingMultiplier: z.number().min(1).max(12).optional(),
+});
+export const CableFeederInputMapSchema = z.record(z.string(), CableFeederInputsSchema).default({});
 
 export const SiteGeotechnicalOverridesSchema = z.object({
   basicWindSpeedKmh: z.number().optional(),
@@ -403,6 +428,7 @@ export const ProjectDataV3Schema = z.object({
   city: ClimateCitySchema,
   siteOverrides: SiteGeotechnicalOverridesSchema,
   loads: z.array(ElectricalLoadItemSchema).default([]),
+  cableFeederInputs: CableFeederInputMapSchema,
   selectedModule: ModuleSpecsSchema,
   selectedInverter: InverterSpecsSchema,
   /** Null explicitly means the project has not supplied local AC requirements. */
@@ -846,6 +872,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
         return norm;
       });
     })(),
+    cableFeederInputs: raw.cableFeederInputs && typeof raw.cableFeederInputs === 'object' ? raw.cableFeederInputs : {},
     selectedModule: raw.selectedModule && typeof raw.selectedModule === 'object'
       ? { ...raw.selectedModule, origin: raw.selectedModule.id ? (raw.selectedModule.origin ?? 'legacy') : 'legacy' }
       : { ...getFallbackModule(), origin: 'legacy' },
@@ -977,6 +1004,7 @@ export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
     city: getFallbackCity(),
     siteOverrides: {},
     loads: [],
+    cableFeederInputs: {},
     selectedModule: getFallbackModule(),
     selectedInverter: getFallbackInverter(),
     acRequirements: null,

@@ -20,6 +20,9 @@ import {
 import {
   type CableRunConfig,
   type CableRunResult,
+  type CableFeederInputMap,
+  type CableFeederInputs,
+  type MotorStartingMethod,
   calculateAdvancedCableRun,
   createUnassessedCableRun,
   calculateEarthingSystem,
@@ -50,9 +53,76 @@ interface ProtectionBomTabProps {
   totalModulesCount?: number;
   dcSystemEarthing?: DcSystemEarthingType;
   onDcSystemEarthingChange?: (earthing: DcSystemEarthingType) => void;
+  feederInputs?: CableFeederInputMap;
+  onFeederInputsChange?: (inputs: CableFeederInputMap) => void;
   installationEnvironment?: InstallationEnvironment;
   lang?: 'fa' | 'en';
 }
+
+const CableFeederInputEditor: React.FC<{
+  id: string; title: string; isDc: boolean; input: CableFeederInputs; lang: 'fa' | 'en';
+  onChange: (field: keyof CableFeederInputs, value: CableFeederInputs[keyof CableFeederInputs] | undefined) => void;
+}> = ({ id, title, isDc, input, lang, onChange }) => {
+  const fa = lang === 'fa';
+  const numericFields: Array<{ key: keyof CableFeederInputs; label: string; step?: number; min?: number; max?: number }> = [
+    { key: 'oneWayLengthM', label: fa ? 'طول یک‌طرفه مسیر (m)' : 'One-way route length (m)', step: 0.1, min: 0.1 },
+    { key: 'designCurrentAmps', label: fa ? 'جریان طراحی پیش از هم‌زمانی (A)' : 'Pre-coincidence design current (A)', step: 0.1, min: 0.1 },
+    { key: 'nominalVoltageVolts', label: fa ? 'ولتاژ نامی فیدر (V)' : 'Feeder nominal voltage (V)', step: 1, min: 1 },
+    { key: 'coincidenceFactor', label: fa ? 'ضریب هم‌زمانی (۰…۱)' : 'Coincidence factor (0…1)', step: 0.01, min: 0.01, max: 1 },
+    { key: 'ambientTempC', label: fa ? 'دمای محیط (°C)' : 'Ambient temperature (°C)', step: 1, min: -40, max: 90 },
+    { key: 'groupedCircuitsCount', label: fa ? 'تعداد مدارهای گروه‌شده' : 'Grouped circuit count', step: 1, min: 1, max: 50 },
+    { key: 'allowableDropPct', label: fa ? 'افت مجاز (%)' : 'Allowable drop (%)', step: 0.1, min: 0.1, max: 15 },
+    { key: 'protectiveDeviceRatingAmps', label: fa ? 'جریان نامی حفاظت (A)' : 'Protective device rating (A)', step: 1, min: 1 },
+    { key: 'protectiveDeviceBreakingCapacityKa', label: fa ? 'قدرت قطع حفاظت (kA)' : 'Protective breaking capacity (kA)', step: 0.1, min: 0.1 },
+    { key: 'expectedIscKa', label: fa ? 'جریان اتصال کوتاه موجود (kA)' : 'Prospective fault current (kA)', step: 0.1, min: 0.1 },
+    { key: 'faultClearingTimeSec', label: fa ? 'زمان قطع خطا (s)' : 'Fault clearing time (s)', step: 0.01, min: 0.001 },
+    ...(isDc ? [] : [{ key: 'powerFactor' as const, label: fa ? 'ضریب توان' : 'Power factor', step: 0.01, min: 0.01, max: 1 }]),
+  ];
+  return <div className="rounded-lg border border-industrial-border bg-industrial-bg/50 p-3 space-y-2" data-testid={`feeder-editor-${id}`}>
+    <h4 className="text-xs font-bold text-sky-300">{title} <span className="text-slate-500">({isDc ? 'DC' : 'AC'})</span></h4>
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2">
+      {numericFields.map(({ key, label, step, min, max }) => (
+        <label key={key} className="text-[10px] text-slate-400">{label}
+          <input data-testid={`feeder-${id}-${String(key)}`} type="number" step={step} min={min} max={max} value={typeof input[key] === 'number' ? input[key] as number : ''}
+            onChange={(e) => onChange(key, e.target.value === '' ? undefined : Number(e.target.value))}
+            className="studio-input w-full mt-0.5 text-xs" />
+        </label>
+      ))}
+      <label className="text-[10px] text-slate-400">{fa ? 'هادی' : 'Conductor'}
+        <select value={input.conductorMaterial ?? ''} onChange={(e) => onChange('conductorMaterial', e.target.value ? e.target.value as ConductorMaterial : undefined)} className="studio-input w-full mt-0.5 text-xs">
+          <option value="">{fa ? 'انتخاب شود' : 'Select'}</option><option value="copper">Cu</option><option value="aluminum">Al</option>
+        </select>
+      </label>
+      <label className="text-[10px] text-slate-400">{fa ? 'عایق' : 'Insulation'}
+        <select value={input.insulationType ?? ''} onChange={(e) => onChange('insulationType', e.target.value ? e.target.value as InsulationType : undefined)} className="studio-input w-full mt-0.5 text-xs">
+          <option value="">{fa ? 'انتخاب شود' : 'Select'}</option><option value="xlpe">XLPE</option><option value="pvc">PVC</option>
+        </select>
+      </label>
+      <label className="text-[10px] text-slate-400">{fa ? 'روش نصب' : 'Installation method'}
+        <select value={input.installationMethod ?? ''} onChange={(e) => onChange('installationMethod', e.target.value ? e.target.value as InstallationMethod : undefined)} className="studio-input w-full mt-0.5 text-xs">
+          <option value="">{fa ? 'انتخاب شود' : 'Select'}</option><option value="cable_tray">{fa ? 'سینی کابل' : 'Cable tray'}</option><option value="in_conduit">{fa ? 'لوله/داکت' : 'Conduit'}</option><option value="direct_buried">{fa ? 'دفنی' : 'Direct buried'}</option>
+        </select>
+      </label>
+      {!isDc && <label className="text-[10px] text-slate-400">{fa ? 'فاز' : 'Phase'}
+        <select value={input.isThreePhase === undefined ? '' : String(input.isThreePhase)} onChange={(e) => onChange('isThreePhase', e.target.value === '' ? undefined : e.target.value === 'true')} className="studio-input w-full mt-0.5 text-xs">
+          <option value="">{fa ? 'انتخاب شود' : 'Select'}</option><option value="false">{fa ? 'تک‌فاز' : 'Single-phase'}</option><option value="true">{fa ? 'سه‌فاز' : 'Three-phase'}</option>
+        </select>
+      </label>}
+      <label className="text-[10px] text-slate-400">{fa ? 'روش راه‌اندازی موتور' : 'Motor starting method'}
+        <select value={input.motorStartingMethod ?? ''} onChange={(e) => onChange('motorStartingMethod', e.target.value ? e.target.value as MotorStartingMethod : undefined)} className="studio-input w-full mt-0.5 text-xs">
+          <option value="">{fa ? 'انتخاب/تأیید شود' : 'Select/confirm'}</option><option value="not_applicable">{fa ? 'قابل‌اعمال نیست' : 'Not applicable'}</option><option value="direct_on_line">DOL</option><option value="star_delta">Star-delta</option><option value="soft_starter">Soft starter</option><option value="vfd">VFD</option>
+        </select>
+      </label>
+      {input.motorStartingMethod && input.motorStartingMethod !== 'not_applicable' && <label className="text-[10px] text-slate-400">{fa ? 'ضریب جریان راه‌اندازی' : 'Starting current multiplier'}
+        <input type="number" min="1" max="12" step="0.1" value={input.motorStartingMultiplier ?? ''} onChange={(e) => onChange('motorStartingMultiplier', e.target.value === '' ? undefined : Number(e.target.value))} className="studio-input w-full mt-0.5 text-xs" />
+      </label>}
+      <label className="text-[10px] text-slate-400 col-span-2">{fa ? 'مرجع/مدل حفاظت (برچسب تجهیزات؛ تأیید مستقل نشده)' : 'Protective device reference/model (user-entered, not independently verified)'}
+        <input type="text" value={input.protectiveDeviceReference ?? ''} onChange={(e) => onChange('protectiveDeviceReference', e.target.value || undefined)} className="studio-input w-full mt-0.5 text-xs" />
+      </label>
+    </div>
+    <p className="text-[10px] text-amber-300/80">{fa ? 'نتیجه تا تکمیل همه ورودی‌ها مقدماتی/بررسی‌نشده است؛ هماهنگی منحنی قطع، روش نصب واقعی و کد محلی باید توسط مهندس مسئول کنترل شود.' : 'Until every field is supplied, the feeder remains unassessed. Verify trip curves, actual installation and local code with the responsible engineer.'}</p>
+  </div>;
+};
 
 export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   systemCapacityKw = 1000,
@@ -70,26 +140,19 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   totalModulesCount = 100,
   dcSystemEarthing = 'floating',
   onDcSystemEarthingChange,
+  feederInputs: persistedFeederInputs,
+  onFeederInputsChange,
   installationEnvironment = 'ground_mount',
   lang = 'fa',
 }) => {
-  // Cable Run User Inputs
-  const [ambientTemp, setAmbientTemp] = useState<number>(ambientTempC);
-  const [installationMethod, setInstallationMethod] = useState<InstallationMethod>('cable_tray');
-  const [dcStringLengthM, setDcStringLengthM] = useState<number | null>(null);
-  const [dcStringMaterial, setDcStringMaterial] = useState<ConductorMaterial>('copper');
-  const [dcStringInsulation, setDcStringInsulation] = useState<InsulationType>('xlpe');
-
-  const [dcMainBusbarLengthM, setDcMainBusbarLengthM] = useState<number | null>(null);
-  const [dcMainMaterial, setDcMainMaterial] = useState<ConductorMaterial>(isUtilityPowerplant ? 'aluminum' : 'copper');
-  const [dcMainInsulation, setDcMainInsulation] = useState<InsulationType>('xlpe');
-
-  const [acOutputLengthM, setAcOutputLengthM] = useState<number | null>(null);
-  const [acMaterial, setAcMaterial] = useState<ConductorMaterial>(isUtilityPowerplant ? 'aluminum' : 'copper');
-  const [acInsulation, setAcInsulation] = useState<InsulationType>('xlpe');
-
-  const [batteryCableLengthM, setBatteryCableLengthM] = useState<number | null>(null);
-  const [batteryMaterial, setBatteryMaterial] = useState<ConductorMaterial>('copper');
+  // Feeder inputs are explicit, persist through the project snapshot, and are never inferred.
+  const [localFeederInputs, setLocalFeederInputs] = useState<CableFeederInputMap>({});
+  const feederInputs = persistedFeederInputs ?? localFeederInputs;
+  const updateFeederInput = (id: string, field: keyof CableFeederInputs, value: CableFeederInputs[keyof CableFeederInputs] | undefined) => {
+    const next = { ...feederInputs, [id]: { ...(feederInputs[id] ?? {}), [field]: value } };
+    setLocalFeederInputs(next);
+    onFeederInputsChange?.(next);
+  };
 
   // Earthing & DC Grounding Inputs
   const [soilResistivity, setSoilResistivity] = useState<number | null>(null);
@@ -113,113 +176,117 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   const cableRuns: CableRunResult[] = useMemo(() => {
     const runs: CableRunConfig[] = [
       {
-        id: 'dc-string',
-        sectionNameFa: 'کابل DC استرینگ خورشیدی تا تابلوی تجمیع/اینورتر',
-        sectionNameEn: 'PV DC String to Inverter / Combiner Box',
-        oneWayLengthM: dcStringLengthM ?? 0,
-        designCurrentAmps: stringIscAmps * 1.25,
-        nominalVoltageVolts: stringVocMaxVolts * 0.85,
-        conductorMaterial: dcStringMaterial,
-        insulationType: dcStringInsulation,
-        allowableDropPct: 1.5,
-        isDc: true,
-        ambientTempC: ambientTemp,
-        installationMethod,
+        id: 'dc-string', sectionNameFa: 'کابل DC استرینگ خورشیدی تا تابلوی تجمیع/اینورتر',
+        sectionNameEn: 'PV DC String to Inverter / Combiner Box', oneWayLengthM: 0,
+        designCurrentAmps: 0, nominalVoltageVolts: 0, conductorMaterial: 'copper',
+        insulationType: 'xlpe', allowableDropPct: 0, isDc: true,
       },
       {
-        id: 'dc-main',
-        sectionNameFa: 'کابل باسبار اصلی DC آرایه به اینورتر مرکزی/پست',
-        sectionNameEn: 'Main DC Feeder Busbar to Inverter Skid',
-        oneWayLengthM: dcMainBusbarLengthM ?? 0,
-        designCurrentAmps: stringIscAmps * parallelStringsCount * 1.25,
-        nominalVoltageVolts: stringVocMaxVolts * 0.85,
-        conductorMaterial: dcMainMaterial,
-        insulationType: dcMainInsulation,
-        allowableDropPct: 1.5,
-        isDc: true,
-        ambientTempC: ambientTemp,
-        installationMethod,
+        id: 'dc-main', sectionNameFa: 'کابل باسبار اصلی DC آرایه به اینورتر مرکزی/پست',
+        sectionNameEn: 'Main DC Feeder Busbar to Inverter Skid', oneWayLengthM: 0,
+        designCurrentAmps: 0, nominalVoltageVolts: 0, conductorMaterial: 'copper',
+        insulationType: 'xlpe', allowableDropPct: 0, isDc: true,
       },
     ];
+    if (!isUtilityPowerplant) runs.push({
+      id: 'dc-battery', sectionNameFa: 'کابل قدرت باتری به اینورتر',
+      sectionNameEn: 'Battery Bank to Inverter DC Bus', oneWayLengthM: 0,
+      designCurrentAmps: 0, nominalVoltageVolts: 0, conductorMaterial: 'copper',
+      insulationType: 'xlpe', allowableDropPct: 0, isDc: true,
+    });
 
-    if (!isUtilityPowerplant) {
-      runs.push({
-        id: 'dc-battery',
-        sectionNameFa: 'کابل قدرت باتری به اینورتر (Heavy DC Battery Run)',
-        sectionNameEn: 'Battery Bank to Inverter DC Bus',
-        oneWayLengthM: batteryCableLengthM ?? 0,
-        designCurrentAmps: inverterDcContinuousCurrentAmps * 1.25,
-        nominalVoltageVolts: systemDcVoltage,
-        conductorMaterial: batteryMaterial,
-        insulationType: 'xlpe',
-        allowableDropPct: 0.8,
-        isDc: true,
-        ambientTempC: Math.min(35, ambientTemp), // Battery rooms are temperature controlled
-        installationMethod,
-      });
-    }
-
-    const calculatedNonAcRuns = runs.map((run) => run.oneWayLengthM > 0
-      ? calculateAdvancedCableRun(run)
-      : createUnassessedCableRun(run, 'Enter and verify the measured one-way cable route length; no default route length is assumed.'));
+    const assessFeeder = (base: CableRunConfig): CableRunResult => {
+      const input = feederInputs[base.id] ?? {};
+      const required: Array<[keyof CableFeederInputs, string]> = [
+        ['oneWayLengthM', 'measured one-way route length'], ['designCurrentAmps', 'design current'],
+        ['nominalVoltageVolts', 'nominal voltage'], ['conductorMaterial', 'conductor material'],
+        ['insulationType', 'insulation'], ['allowableDropPct', 'permitted voltage drop'],
+        ['ambientTempC', 'ambient temperature'], ['installationMethod', 'installation method'],
+        ['groupedCircuitsCount', 'grouping/circuit count'], ['coincidenceFactor', 'coincidence factor'],
+        ['protectiveDeviceRatingAmps', 'protective-device current rating'],
+        ['protectiveDeviceBreakingCapacityKa', 'protective-device breaking capacity'],
+        ['protectiveDeviceReference', 'protective-device nameplate/model reference'],
+        ['expectedIscKa', 'prospective fault current'], ['faultClearingTimeSec', 'fault-clearing time'],
+      ];
+      if (!base.isDc) required.push(['isThreePhase', 'feeder phase'], ['powerFactor', 'power factor']);
+      const missing = required.filter(([key]) => {
+        const value = input[key];
+        if (value === undefined || value === null) return true;
+        if (typeof value === 'number') {
+          if (!Number.isFinite(value)) return true;
+          if (key !== 'ambientTempC' && value <= 0) return true;
+          if ((key === 'powerFactor' || key === 'coincidenceFactor') && value > 1) return true;
+        }
+        if (typeof value === 'string' && !value.trim()) return true;
+        return false;
+      }).map(([, label]) => label);
+      if (input.isDc !== undefined && input.isDc !== base.isDc) missing.push('matching feeder AC/DC selection');
+      if (input.motorStartingMethod === undefined) missing.push('motor starting method (or explicitly not applicable)');
+      if (input.motorStartingMethod && input.motorStartingMethod !== 'not_applicable' && !input.motorStartingMultiplier) missing.push('motor starting current multiplier');
+      const config: CableRunConfig = {
+        ...base,
+        oneWayLengthM: input.oneWayLengthM ?? 0,
+        designCurrentAmps: (input.designCurrentAmps ?? 0) * (input.coincidenceFactor ?? 1),
+        nominalVoltageVolts: input.nominalVoltageVolts ?? 0,
+        conductorMaterial: input.conductorMaterial ?? 'copper',
+        insulationType: input.insulationType ?? 'xlpe',
+        allowableDropPct: input.allowableDropPct ?? 0,
+        isDc: base.isDc,
+        isThreePhase: input.isThreePhase ?? base.isThreePhase,
+        powerFactor: input.powerFactor,
+        ambientTempC: input.ambientTempC,
+        installationMethod: input.installationMethod,
+        groupedCircuitsCount: input.groupedCircuitsCount,
+        protectiveDeviceRatingAmps: input.protectiveDeviceRatingAmps,
+        protectiveDeviceBreakingCapacityKa: input.protectiveDeviceBreakingCapacityKa,
+        protectiveDeviceReference: input.protectiveDeviceReference,
+        expectedIscKa: input.expectedIscKa,
+        faultClearingTimeSec: input.faultClearingTimeSec,
+        coincidenceFactor: input.coincidenceFactor,
+        motorStartingMethod: input.motorStartingMethod,
+        motorStartingMultiplier: input.motorStartingMultiplier,
+      };
+      if (missing.length) {
+        return createUnassessedCableRun(config, `Incomplete feeder inputs: ${missing.join(', ')}. No final/compliant cable result is issued.`);
+      }
+      const result = calculateAdvancedCableRun(config);
+      if (!base.isDc && input.motorStartingMethod !== 'not_applicable' && result.motorStartingVoltageDropPct === null) {
+        return { ...result, isCompliant: false, isAssessed: false, assessmentNote: 'Motor starting study is incomplete; verify starting method, multiplier and dynamic voltage drop.' };
+      }
+      return result;
+    };
+    const calculatedNonAcRuns = runs.map((run) => assessFeeder(run));
     const ac = acOutputRequirement;
-    const acVoltage = ac?.phase === 'three' ? ac.lineToLineVolts : (ac?.lineToNeutralVolts ?? ac?.lineToLineVolts);
-    const phaseMatches = ac?.phase === (isThreePhase ? 'three' : 'single');
-    const acInputsConfirmed = Boolean(acOutputLengthM !== null && Number.isFinite(acOutputLengthM) && acOutputLengthM > 0
-      && ac?.confirmed && phaseMatches && acVoltage && acVoltage > 0
+    const acInput = feederInputs['ac-output'] ?? {};
+    const acVoltage = acInput.isThreePhase ? ac?.lineToLineVolts : (ac?.lineToNeutralVolts ?? ac?.lineToLineVolts);
+    const phaseMatches = ac?.phase === (acInput.isThreePhase ? 'three' : 'single');
+    const acInputsConfirmed = Boolean(ac?.confirmed && phaseMatches && acVoltage && acVoltage > 0
       && ac.frequencyHz && ac.frequencyHz > 0
       && ac.powerFactor && ac.powerFactor > 0 && ac.powerFactor <= 1
       && ac.availableFaultCurrentKa && ac.availableFaultCurrentKa > 0
       && ac.faultClearingTimeSec && ac.faultClearingTimeSec > 0
       && inverterNameplateAttested
       && !(inverterAcVoltageVac !== undefined && ac.lineToLineVolts !== null
-        && Math.abs(inverterAcVoltageVac - ac.lineToLineVolts) > Math.max(1, ac.lineToLineVolts * 0.01)));
-    const acBase = {
+        && Math.abs(inverterAcVoltageVac - ac.lineToLineVolts) > Math.max(1, ac.lineToLineVolts * 0.01))
+      && acInput.nominalVoltageVolts !== undefined && Math.abs(acInput.nominalVoltageVolts - acVoltage) <= Math.max(1, acVoltage * 0.01)
+      && acInput.powerFactor === ac.powerFactor
+      && acInput.expectedIscKa === ac.availableFaultCurrentKa
+      && acInput.faultClearingTimeSec === ac.faultClearingTimeSec);
+    const acBase: CableRunConfig = {
       id: 'ac-output', sectionNameFa: 'کابل AC خروجی اینورتر به ترانسفورماتور یا تابلوی اصلی',
-      sectionNameEn: 'Inverter AC Output to Transformer / Main Board', oneWayLengthM: acOutputLengthM ?? 0,
-      conductorMaterial: acMaterial, insulationType: acInsulation, allowableDropPct: 1.0,
-      isDc: false, isThreePhase, ambientTempC: ambientTemp, installationMethod,
-    } as const;
+      sectionNameEn: 'Inverter AC Output to Transformer / Main Board', oneWayLengthM: 0,
+      designCurrentAmps: 0, nominalVoltageVolts: 0, conductorMaterial: 'copper', insulationType: 'xlpe',
+      allowableDropPct: 0, isDc: false, isThreePhase,
+    };
     const acRun = acInputsConfirmed
-      ? calculateAdvancedCableRun({
-          ...acBase,
-          designCurrentAmps: (systemCapacityKw * 1000) / ((isThreePhase ? Math.sqrt(3) : 1) * (acVoltage as number) * (ac?.powerFactor as number)),
-          nominalVoltageVolts: acVoltage as number,
-          expectedIscKa: ac?.availableFaultCurrentKa as number,
-          faultClearingTimeSec: ac?.faultClearingTimeSec as number,
-        })
+      ? assessFeeder(acBase)
       : createUnassessedCableRun(acBase,
           !ac?.confirmed ? 'AC connection requirements are not confirmed.'
-            : !phaseMatches ? 'Inverter phase does not match the confirmed requirement.'
-              : acOutputLengthM === null ? 'Enter and verify the measured one-way cable route length; no default route length is assumed.'
-            : 'Measured route, user-attested exact-model HTTPS datasheet, confirmed voltage/frequency/PF and fault current/clearing time, and matching catalog voltage are required.');
+            : !phaseMatches ? 'Feeder phase does not match the confirmed AC interface.'
+              : !inverterNameplateAttested ? 'Exact inverter nameplate evidence is not attested.'
+                : 'Confirm interface voltage, PF, fault data and match them to the saved per-feeder input before assessment.');
     return [calculatedNonAcRuns[0], calculatedNonAcRuns[1], acRun, ...calculatedNonAcRuns.slice(2)];
-  }, [
-    dcStringLengthM,
-    dcStringMaterial,
-    dcStringInsulation,
-    dcMainBusbarLengthM,
-    dcMainMaterial,
-    dcMainInsulation,
-    acOutputLengthM,
-    acMaterial,
-    acInsulation,
-    batteryCableLengthM,
-    batteryMaterial,
-    stringIscAmps,
-    stringVocMaxVolts,
-    parallelStringsCount,
-    systemCapacityKw,
-    isThreePhase,
-    acOutputRequirement,
-    inverterAcVoltageVac,
-    inverterNameplateAttested,
-    isUtilityPowerplant,
-    inverterDcContinuousCurrentAmps,
-    systemDcVoltage,
-    ambientTemp,
-    installationMethod,
-  ]);
+  }, [feederInputs, isThreePhase, acOutputRequirement, inverterAcVoltageVac, inverterNameplateAttested, isUtilityPowerplant]);
 
   // 2. Earthing Analysis (IEEE 80 Sverak + Touch/Step verification + DC Earthing Architecture)
   const earthingResult = useMemo(() => {
@@ -480,196 +547,22 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       {/* SUB-TAB 1: CABLES */}
       {activeSubTab === 'cables' && (
         <div className="space-y-6">
-          {/* User Parameters Configuration Card */}
-          <div className="studio-card">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-              <h3 className="text-sm font-bold text-industrial-accent flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-industrial-warning" />
-                {lang === 'fa' ? 'تنظیمات کابل‌کشی و دمای محیطی' : 'Cable Distance, Material & Environmental Settings'}
-              </h3>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <div className="flex items-center gap-1.5 text-xs bg-industrial-surface px-2.5 py-1 rounded-lg border border-industrial-border">
-                  <Sliders className="w-3.5 h-3.5 text-industrial-accent" />
-                  <span className="text-slate-400">{lang === 'fa' ? 'روش نصب:' : 'Method:'}</span>
-                  <select
-                    value={installationMethod}
-                    onChange={(e) => setInstallationMethod(e.target.value as InstallationMethod)}
-                    className="studio-input text-xs py-0.5 px-1.5 bg-industrial-bg"
-                  >
-                    <option value="cable_tray">{lang === 'fa' ? 'سینی کابل (kg=0.82)' : 'Tray (0.82)'}</option>
-                    <option value="in_conduit">{lang === 'fa' ? 'داخل داکت/لوله (kg=0.75)' : 'Conduit (0.75)'}</option>
-                    <option value="direct_buried">{lang === 'fa' ? 'دفنی خاک (kg=0.70)' : 'Buried (0.70)'}</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs bg-industrial-surface px-3 py-1 rounded-lg border border-industrial-border">
-                  <Thermometer className="w-3.5 h-3.5 text-industrial-warning" />
-                  <span className="text-slate-400">{lang === 'fa' ? 'دمای طراحی:' : 'Design Temp:'}</span>
-                  <input
-                    type="number"
-                    min="25"
-                    max="55"
-                    value={ambientTemp}
-                    onChange={(e) => setAmbientTemp(Number(e.target.value) || 40)}
-                    className="w-14 studio-input text-xs py-0.5 px-1 font-mono text-center"
-                  />
-                  <span className="text-slate-300 font-mono">°C</span>
-                </div>
-              </div>
+          <div className="studio-card space-y-3">
+            <div>
+              <h3 className="text-sm font-bold text-sky-300">{lang === 'fa' ? 'ورودی‌های مستقل و ذخیره‌شوندهٔ هر فیدر' : 'Independent, project-persisted feeder design inputs'}</h3>
+              <p className="text-[11px] text-amber-200/80 mt-1">{lang === 'fa' ? 'مقادیر تجمیعی قدیمی به‌تنهایی مبنای نتیجه نیستند. هر مسیر تا ثبت طول، بار/هم‌زمانی، مشخصات نصب، حفاظت و داده خطا بررسی‌نشده می‌ماند.' : 'Legacy aggregate settings alone do not produce a result. Each route remains unassessed until its length, load/coincidence, installation, protection and fault data are entered.'}</p>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
-              {/* DC String */}
-              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
-                <span className="font-bold text-industrial-warning block">
-                  {lang === 'fa' ? 'کابل DC استرینگ خورشیدی' : 'DC Solar String Cable'}
-                </span>
-                <div>
-                  <label htmlFor="dc-string-length" className="text-slate-400 block mb-1">
-                    {lang === 'fa' ? 'طول یک‌طرفه مسیر اندازه‌گیری‌شده (متر؛ تا ورود نامشخص):' : 'Measured one-way route length (m; unknown until entered):'}
-                  </label>
-                  <input
-                    id="dc-string-length"
-                    type="number"
-                    min="5"
-                    max="500"
-                    value={dcStringLengthM ?? ''}
-                    onChange={(e) => setDcStringLengthM(e.target.value === '' ? null : Number(e.target.value))}
-                    className="studio-input w-full text-xs"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label htmlFor="dc-string-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
-                    <select
-                      id="dc-string-material"
-                      value={dcStringMaterial}
-                      onChange={(e) => setDcStringMaterial(e.target.value as ConductorMaterial)}
-                      className="studio-input w-full text-xs"
-                    >
-                      <option value="copper">{lang === 'fa' ? 'مس (Cu)' : 'Copper'}</option>
-                      <option value="aluminum">{lang === 'fa' ? 'آلومینیوم (Al)' : 'Aluminum'}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="dc-string-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
-                    <select
-                      id="dc-string-insulation"
-                      value={dcStringInsulation}
-                      onChange={(e) => setDcStringInsulation(e.target.value as InsulationType)}
-                      className="studio-input w-full text-xs"
-                    >
-                      <option value="xlpe">XLPE (90°C)</option>
-                      <option value="pvc">PVC (70°C)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* DC Main Feeder */}
-              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
-                <span className="font-bold text-sky-300 block">
-                  {lang === 'fa' ? 'کابل باسبار اصلی DC آرایه' : 'Main DC Array Feeder'}
-                </span>
-                <div>
-                  <label htmlFor="dc-main-feeder-length" className="text-slate-400 block mb-1">
-                    {lang === 'fa' ? 'طول یک‌طرفه مسیر اندازه‌گیری‌شده (متر؛ تا ورود نامشخص):' : 'Measured one-way route length (m; unknown until entered):'}
-                  </label>
-                  <input
-                    id="dc-main-feeder-length"
-                    type="number"
-                    min="5"
-                    max="1000"
-                    value={dcMainBusbarLengthM ?? ''}
-                    onChange={(e) => setDcMainBusbarLengthM(e.target.value === '' ? null : Number(e.target.value))}
-                    className="studio-input w-full text-xs"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label htmlFor="dc-main-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
-                    <select
-                      id="dc-main-material"
-                      value={dcMainMaterial}
-                      onChange={(e) => setDcMainMaterial(e.target.value as ConductorMaterial)}
-                      className="studio-input w-full text-xs"
-                    >
-                      <option value="aluminum">{lang === 'fa' ? 'آلومینیوم (Al)' : 'Aluminum'}</option>
-                      <option value="copper">{lang === 'fa' ? 'مس (Cu)' : 'Copper'}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="dc-main-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
-                    <select
-                      id="dc-main-insulation"
-                      value={dcMainInsulation}
-                      onChange={(e) => setDcMainInsulation(e.target.value as InsulationType)}
-                      className="studio-input w-full text-xs"
-                    >
-                      <option value="xlpe">XLPE (90°C)</option>
-                      <option value="pvc">PVC (70°C)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {!isUtilityPowerplant && (
-                <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
-                  <span className="font-bold text-indigo-500 block">{lang === 'fa' ? 'کابل DC باتری به اینورتر' : 'Battery-to-inverter DC cable'}</span>
-                  <label htmlFor="dc-battery-length" className="text-slate-400 block mb-1">{lang === 'fa' ? 'طول مسیر رفت اندازه‌گیری‌شده (متر):' : 'Measured one-way route length (m):'}</label>
-                  <input id="dc-battery-length" type="number" min="1" max="200" value={batteryCableLengthM ?? ''} onChange={(e) => setBatteryCableLengthM(e.target.value === '' ? null : Number(e.target.value))} className="studio-input w-full text-xs" />
-                </div>
-              )}
-
-              {/* AC Output */}
-              <div className="p-3 bg-industrial-bg/60 border border-industrial-border rounded-lg space-y-2">
-                <span className="font-bold text-industrial-success block">
-                  {lang === 'fa' ? 'کابل AC خروجی اینورتر' : 'Inverter AC Output Cable'}
-                </span>
-                <div>
-                  <label htmlFor="ac-output-length" className="text-slate-400 block mb-1">
-                    {lang === 'fa' ? 'طول یک‌طرفه مسیر اندازه‌گیری‌شده (متر؛ تا ورود نامشخص):' : 'Measured one-way route length (m; unknown until entered):'}
-                  </label>
-                  <input
-                    id="ac-output-length"
-                    type="number"
-                    min="5"
-                    max="2000"
-                    value={acOutputLengthM ?? ''}
-                    onChange={(e) => setAcOutputLengthM(e.target.value === '' ? null : Math.max(1, Number(e.target.value)))}
-                    className="studio-input w-full text-xs"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label htmlFor="ac-output-material" className="text-slate-400 block mb-1">{lang === 'fa' ? 'جنس هادی:' : 'Conductor:'}</label>
-                    <select
-                      id="ac-output-material"
-                      value={acMaterial}
-                      onChange={(e) => setAcMaterial(e.target.value as ConductorMaterial)}
-                      className="studio-input w-full text-xs"
-                    >
-                      <option value="aluminum">{lang === 'fa' ? 'آلومینیوم (Al)' : 'Aluminum'}</option>
-                      <option value="copper">{lang === 'fa' ? 'مس (Cu)' : 'Copper'}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="ac-output-insulation" className="text-slate-400 block mb-1">{lang === 'fa' ? 'عایق:' : 'Insulation:'}</label>
-                    <select
-                      id="ac-output-insulation"
-                      value={acInsulation}
-                      onChange={(e) => setAcInsulation(e.target.value as InsulationType)}
-                      className="studio-input w-full text-xs"
-                    >
-                      <option value="xlpe">XLPE (90°C)</option>
-                      <option value="pvc">PVC (70°C)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {([
+              { id: 'dc-string', title: lang === 'fa' ? 'فیدر DC استرینگ' : 'PV string DC feeder', isDc: true },
+              { id: 'dc-main', title: lang === 'fa' ? 'فیدر اصلی DC آرایه' : 'Array main DC feeder', isDc: true },
+              ...(!isUtilityPowerplant ? [{ id: 'dc-battery', title: lang === 'fa' ? 'فیدر DC باتری' : 'Battery DC feeder', isDc: true }] : []),
+              { id: 'ac-output', title: lang === 'fa' ? 'فیدر خروجی AC اینورتر' : 'Inverter AC output feeder', isDc: false },
+            ] as const).map((run) => (
+              <CableFeederInputEditor key={run.id} id={run.id} title={run.title} isDc={run.isDc} lang={lang}
+                input={feederInputs[run.id] ?? {}}
+                onChange={(field, value) => updateFeederInput(run.id, field, value)} />
+            ))}
           </div>
-
           {/* Sizing & Multi-Constraint Verification Table */}
           <div className="studio-card">
             <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center justify-between">
@@ -680,7 +573,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   : 'Multi-Constraint Cable Sizing & Losses (IEC 60364-5-52 / IEC 60287)'}
               </span>
               <span className="text-[10px] text-slate-400 font-mono">
-                {lang === 'fa' ? `دمای محیط: ${ambientTemp}°C` : `Ambient: ${ambientTemp}°C`}
+                {lang === 'fa' ? 'پیش‌غربالگری؛ ورودی‌های دما/نصب/حفاظت مستقل برای هر فیدر اعمال می‌شوند' : 'Preliminary screen; each feeder uses its own explicit temperature, installation and protection inputs'}
               </span>
             </h3>
 
@@ -695,6 +588,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     <th className="p-2.5">{lang === 'fa' ? 'کابل و رشته‌های موازی' : 'Selected Parallel Spec'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'افت ولتاژ' : 'Voltage Drop'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'اتصال کوتاه (IEC 60364)' : 'SC Withstand'}</th>
+                    <th className="p-2.5">{lang === 'fa' ? 'حفاظت / راه‌اندازی' : 'Protection / starting'}</th>
                     <th className="p-2.5" title={lang === 'fa' ? 'جریان شارژ خازنی و ظرفیت خطی بر پایه مدل هم‌محور شیلددار فرضی (IEC 60287-1-1)' : 'Capacitive charging current and line capacitance under idealized coaxial screened model (IEC 60287-1-1)'}>
                       {lang === 'fa' ? 'جریان شارژ / خازن (مدل هم‌محور)' : 'Charging / Cap (Coax Model)'}
                     </th>
@@ -706,7 +600,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                   {cableRuns.map((run, idx) => run.isAssessed === false ? (
                     <tr key={idx} data-testid="cable-run-unassessed" className="bg-amber-950/20">
                       <td className="p-2.5 font-semibold text-theme-strong">{lang === 'fa' ? run.config.sectionNameFa : run.config.sectionNameEn}</td>
-                      <td colSpan={8} className="p-2.5 text-amber-700">{lang === 'fa' ? 'محاسبه/تأیید انجام نشد' : 'Not calculated / not approved'} — {run.assessmentNote}</td>
+                      <td colSpan={9} className="p-2.5 text-amber-700">{lang === 'fa' ? 'محاسبه/تأیید انجام نشد' : 'Not calculated / not approved'} — {run.assessmentNote}</td>
                       <td className="p-2.5 text-center text-amber-700 font-bold">{lang === 'fa' ? 'نیازمند داده' : 'Data required'}</td>
                     </tr>
                   ) : (
@@ -752,6 +646,11 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                           {lang === 'fa' ? `نیاز: ${run.shortCircuitWithstandMinMm2} mm²` : `Min: ${run.shortCircuitWithstandMinMm2} mm²`}
                         </span>
                       </td>
+                      <td className="p-2.5 text-[10px]">
+                        <div>{run.config.protectiveDeviceReference} ({run.config.protectiveDeviceRatingAmps}A/{run.config.protectiveDeviceBreakingCapacityKa}kA)</div>
+                        <div>Isc {run.config.expectedIscKa}kA / {run.config.faultClearingTimeSec}s — {run.isProtectionCoordinationCompliant ? 'screen pass' : 'screen fail'}</div>
+                        <div>{run.config.motorStartingMethod} ×{run.config.motorStartingMultiplier ?? '—'}; start ΔV {run.motorStartingVoltageDropPct ?? '—'}%</div>
+                      </td>
                       <td className="p-2.5 font-mono text-xs">
                         {run.config.isDc ? (
                           <>
@@ -783,7 +682,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         >
                           {run.isCompliant ? (
                             <>
-                              <CheckCircle2 className="w-3 h-3" /> {lang === 'fa' ? 'تایید استاندارد' : 'Compliant'}
+                              <CheckCircle2 className="w-3 h-3" /> {lang === 'fa' ? 'غربالگری داخلی قبول' : 'Internal screen pass'}
                             </>
                           ) : (
                             <>
@@ -799,10 +698,10 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             </div>
 
             {/* Troubleshooting Resolution Cards */}
-            {cableRuns.some((r) => !r.isCompliant) && (
+            {cableRuns.some((r) => r.isAssessed !== false && !r.isCompliant) && (
               <div className="mt-4 space-y-2">
                 {cableRuns
-                  .filter((r) => !r.isCompliant)
+                  .filter((r) => r.isAssessed !== false && !r.isCompliant)
                   .map((r, i) => (
                     <div key={i} className="p-3 bg-red-950/40 border border-red-800/80 rounded-lg text-xs text-red-200 flex items-start gap-2.5">
                       <Wrench className="w-4 h-4 text-industrial-warning shrink-0 mt-0.5" />

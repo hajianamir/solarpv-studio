@@ -39,7 +39,7 @@ import { runExternalEmpiricalValidationSuite } from './externalValidation';
 import { compareStatus } from './lhsBenchmark';
 import { simulateBipvThermalStep } from '../../bipv/bipvThermalEngine';
 import { runMigrationTestSuite, REAL_WORLD_V2_TEST_VECTORS } from './migrationTestVectors';
-import { ElectricalLoadItemSchema } from '../projectMigration';
+import { CableFeederInputMapSchema, ElectricalLoadItemSchema } from '../projectMigration';
 import { UserFinancialPricingSchema } from '../projectMigration';
 import { DEFAULT_FINANCIAL_PRICING } from '../../financialEngine';
 import { getClimateData } from '../../climaticData';
@@ -880,6 +880,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   );
   const acCompatibleNorthAmerican = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid');
   const acIncompatibleInverter = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 400 }, 'ongrid');
+  const acIncompatibleCatalogFrequency = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208, frequencyHz: 50 }, 'ongrid');
+  const acCompatibleCatalogFrequency = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208, frequencyHz: 60 }, 'ongrid');
   const clusterUnknownPhase = evaluateInverterClustering(5000, 7000, 5, 500).acPhaseType;
   const clusterExplicitPhase = evaluateInverterClustering(5000, 7000, 5, 500, 'single').acPhaseType;
   const acOldProjectMigration = migrateProjectToV3({ version: '3.0.0', projectName: 'Legacy AC unknown' });
@@ -887,6 +889,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   const acPriorSchemaMigration = migrateProjectToV3({ ...REAL_WORLD_V2_TEST_VECTORS[0].rawPayload, acRequirements: legacyAcWithoutNameplate });
   assert('AC REQUIREMENTS', 'Explicit phase/voltage/frequency, LV-vs-injection separation, mismatch and legacy unknown handling',
     acCompatibleNorthAmerican.status === 'compatible' && acIncompatibleInverter.status === 'incompatible'
+      && acIncompatibleCatalogFrequency.status === 'incompatible'
+      && acIncompatibleCatalogFrequency.reasons.some((reason) => reason.includes('catalog frequency'))
+      && acCompatibleCatalogFrequency.status === 'compatible'
       && acOldProjectMigration.project.acRequirements === null
       && acOldProjectMigration.project.mvVoltageKv === null
       && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.userConfirmed === false
@@ -3051,10 +3056,22 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       isDc: false,
       isThreePhase: true,
       ambientTempC: 45,
+      protectiveDeviceRatingAmps: 180,
+      protectiveDeviceBreakingCapacityKa: 15,
+      protectiveDeviceReference: 'Test breaker; verified rating 180A / 15kA',
+      expectedIscKa: 10,
+      faultClearingTimeSec: 0.1,
     });
 
+    const incompleteProtection = calculateAdvancedCableRun({
+      ...acRun.config,
+      protectiveDeviceRatingAmps: undefined,
+      protectiveDeviceBreakingCapacityKa: undefined,
+      protectiveDeviceReference: undefined,
+    });
+    const incompleteProtectionSafe = incompleteProtection.isAssessed === false && incompleteProtection.isCompliant === false;
     const cableOk =
-      acRun.isCompliant &&
+      acRun.isCompliant && incompleteProtectionSafe &&
       acRun.isAmpacityCompliant &&
       acRun.isShortCircuitCompliant &&
       acRun.totalThermalAmpacityAmps >= 180 &&
@@ -3281,6 +3298,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       isThreePhase: true,
       expectedIscKa: 40,
       faultClearingTimeSec: 0.5,
+      protectiveDeviceRatingAmps: 16,
+      protectiveDeviceBreakingCapacityKa: 50,
+      protectiveDeviceReference: 'Test breaker; verified rating 16A / 50kA',
       installationMethod: 'cable_tray',
     });
 
@@ -5428,14 +5448,31 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     ]).phaseLegWatts[leg]);
     const autoBalanced = Math.max(...allocations.map((leg) => singleLegs[leg])) - Math.min(...allocations.map((leg) => singleLegs[leg])) <= 1000;
     const singlePhaseInverter = evaluateInverterClustering(4000, 4000, 5, 500, 'three', false, 1334);
+    const threePhaseCluster = evaluateInverterClustering(4000, 4000, 5, 500, 'three', true, 2000, 0.8);
+    const inverterPhaseAwareKw = threePhaseCluster.requiredContinuousKw === 6 && threePhaseCluster.requiredApparentPowerKva === 7.5
+      && threePhaseCluster.apparentPowerAssessment === 'not_assessed_no_catalog_kva';
     const inverterWarns = singlePhaseInverter.healthStatus === 'phase_incompatible' && Boolean(singlePhaseInverter.phaseCompatibilityWarningFa);
     const schemaLegacy = ElectricalLoadItemSchema.safeParse({ ...fixture[0] }).success;
     const schemaRoundTrip = ElectricalLoadItemSchema.parse({ ...fixture[0], acPhase: 'three', phaseAssignment: 'auto' });
-    const roundTrip = schemaLegacy && schemaRoundTrip.acPhase === 'three' && schemaRoundTrip.phaseAssignment === 'auto';
+    const feederRoundTrip = CableFeederInputMapSchema.parse({ 'dc-string': {
+      oneWayLengthM: 24.5, designCurrentAmps: 12, nominalVoltageVolts: 1000, conductorMaterial: 'copper',
+      insulationType: 'xlpe', allowableDropPct: 1.5, coincidenceFactor: 0.9, ambientTempC: 40,
+      installationMethod: 'cable_tray', groupedCircuitsCount: 2, protectiveDeviceRatingAmps: 16,
+      protectiveDeviceBreakingCapacityKa: 25, protectiveDeviceReference: 'CB-1 16A/25kA', expectedIscKa: 12,
+      faultClearingTimeSec: 0.1, motorStartingMethod: 'not_applicable',
+    } });
+    const migratedFeederInputs = migrateProjectToV3({
+      ...REAL_WORLD_V2_TEST_VECTORS[0].rawPayload,
+      cableFeederInputs: feederRoundTrip,
+    }).project.cableFeederInputs;
+    const roundTrip = schemaLegacy && schemaRoundTrip.acPhase === 'three' && schemaRoundTrip.phaseAssignment === 'auto'
+      && feederRoundTrip['dc-string'].oneWayLengthM === 24.5
+      && feederRoundTrip['dc-string'].protectiveDeviceReference === 'CB-1 16A/25kA'
+      && migratedFeederInputs['dc-string'].expectedIscKa === 12;
     assert(
       'E23A-PER-LOAD-PHASE-BALANCE-AND-ROUNDTRIP',
       'Legacy loads default to single phase; three-phase loads share legs without duplicating energy; manual allocation and inverter mismatch are surfaced and project schema round-trips phase fields',
-      energyUnchanged && threePhaseSplit && autoBalanced && explicit.every((watts) => watts === 2000) && inverterWarns && roundTrip && currentCalculationOk,
+      energyUnchanged && threePhaseSplit && autoBalanced && explicit.every((watts) => watts === 2000) && inverterWarns && inverterPhaseAwareKw && roundTrip && currentCalculationOk,
       `energy=${measured.totalDailyEnergyWh}Wh threePhase=${measured.threePhaseLoadWatts}W legs=${JSON.stringify(singleLegs)} manual=${explicit.join(',')} mismatch=${singlePhaseInverter.healthStatus}`
     );
   }

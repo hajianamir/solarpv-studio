@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import ExcelJS from 'exceljs';
 import { unzipSync } from 'fflate';
-import { chromium as playwrightChromium } from 'playwright-core';
+import { chromium as playwrightChromium, type Dialog } from 'playwright-core';
 
 // Linux CI uses the bundled Amazon Linux Chromium runtime; other platforms use
 // the Playwright-managed browser installed by their CI runner.
@@ -345,7 +345,35 @@ async function main() {
   const unassessedCableRows = page.getByTestId('cable-run-unassessed');
   await unassessedCableRows.first().waitFor({ timeout: 10000 });
   assert.ok(await unassessedCableRows.count() >= 3, 'DC string, DC main and AC cables must remain unassessed without measured project routes');
-  assert.match(await unassessedCableRows.last().innerText(), /route length|measured length/i, 'AC cable must stay unassessed without a measured route and fault study');
+  assert.match(await unassessedCableRows.last().innerText(), /route length|measured length|AC connection requirements|fault data|feeder phase|nameplate|confirm interface|incomplete feeder/i, 'AC cable must stay unassessed without a measured route and confirmed interface/fault study');
+  const feederLength = page.getByTestId('feeder-dc-string-oneWayLengthM');
+  await feederLength.fill('24.5');
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press('Control+s');
+  await page.getByText(/Project v3 saved with trace|در ساعت/).waitFor({ timeout: 10000 });
+  const savedFeederProject = await page.evaluate(() => JSON.parse(localStorage.getItem('solarpv_project_save') ?? 'null'));
+  assert.equal(savedFeederProject?.cableFeederInputs?.['dc-string']?.oneWayLengthM, 24.5, 'per-feeder length input was not persisted in the project snapshot');
+  assert.equal((await page.getByTestId('cable-run-unassessed').count()) >= 3, true, 'incomplete feeder still appeared as assessed');
+  await page.keyboard.press('Control+e');
+  const feederReportDownloadPromise = page.waitForEvent('download');
+  await page.getByTitle('ذخیره محلی پروژه با نام دلخواه').click();
+  const feederReportDownload = await feederReportDownloadPromise;
+  const feederReportPath = path.join(artifactDir!, 'cable-feeder-report-project.solarpv.json');
+  await feederReportDownload.saveAs(feederReportPath);
+  const feederReportEnvelope = JSON.parse(await readFile(feederReportPath, 'utf8'));
+  assert.equal(feederReportEnvelope.projectData.cableFeederInputs?.['dc-string']?.oneWayLengthM, 24.5, 'report project export omitted persisted feeder inputs');
+  await page.locator('#report-modal-close-btn').click();
+
+  await feederLength.fill('31');
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.getByTitle(/دانلود \/ بارگذاری فایل JSON پروژه|Export \/ Import Project JSON/).click();
+  const acceptRestoreDialogs = async (dialog: Dialog) => { await dialog.accept(); };
+  page.on('dialog', acceptRestoreDialogs);
+  await page.getByRole('button', { name: /بازیابی آخرین ذخیرهٔ محلی|Restore last local save/ }).click();
+  await page.waitForFunction(() => (document.querySelector('[data-testid="feeder-dc-string-oneWayLengthM"]') as HTMLInputElement | null)?.value === '24.5', { timeout: 15000 });
+  page.off('dialog', acceptRestoreDialogs);
+  assert.equal(await page.getByTestId('feeder-dc-string-oneWayLengthM').inputValue(), '24.5', 'restoring the local project did not restore feeder inputs');
+  console.log('[PASS] Feeder input persists in local save, report project export and explicit local restore');
   await clickTab('system_mode');
 
   // Changing a stored plant target must not leak into either customer-mode AC
