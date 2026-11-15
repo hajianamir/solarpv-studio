@@ -5601,8 +5601,15 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       25.0,  // 25 kWh usable BESS
       30.0,  // 30 kWh gross BESS
       50.0,  // 50% initial SoC
-      9.58   // Winter solstice daylight window
+      9.58,  // Winter solstice daylight window
+      0.68   // Current design's effective system derate
     );
+    const fallbackDerateSim = simulate24hEnergyBalance(10, 5, 0, 0, 0, 0, 50, 12);
+    const generationDeratePassedThrough = sim.isGenerationDeratingAssessed
+      && sim.effectiveSystemDeratingFactor === 0.68
+      && Math.abs(sim.totalGeneration24hKwh - 10 * 5.2 * 0.68) < 1e-10
+      && !fallbackDerateSim.isGenerationDeratingAssessed
+      && fallbackDerateSim.effectiveSystemDeratingFactor === 0.78;
 
     const compensatedSum = (values: number[]) => {
       let sum = 0;
@@ -5664,7 +5671,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     assert(
       'E24-SIMULATION-24H-STRICT-LOAD-CONSERVATION-AND-SOC',
       'Dynamic sunrise/sunset 24h simulation conserves raw hourly energy within IEEE-754 error bounds and tracks SoC & surplus',
-      loadConservationOk && socReported && grossSurplusReported && polarNightOk && nightOnlySweepOk,
+      loadConservationOk && socReported && grossSurplusReported && polarNightOk && nightOnlySweepOk && generationDeratePassedThrough,
       `compensatedHourlySum=${hourlySum} kWh vs target=${totalTarget} kWh (withinIEEE754Bound=${Math.abs(hourlySum - totalTarget) <= summationBound(hourlyLoadValues)}), initialSoC=${sim.initialBatterySocPct}%, finalSoC=${sim.finalBatterySocPct}%, surplus=${sim.totalSurplus24hKwh} kWh, polarNight=${polarNightOk}, nightOnlySweep=${nightOnlySweepOk}`
     );
   }

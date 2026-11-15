@@ -404,6 +404,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['ENERGY YIELD SIMULATION & SENSITIVITY SCENARIOS (INDICATIVE)', ''],
       ['Methodology Note', 'Primary annual yield metrics are application model outputs from its waterfall loss calculation, with the 24h profile used only as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles. Applicable standards conformity has not been assessed.'],
       ['F-04 24-hour rounding disclosure', 'Hourly and daily 24-hour energy values are independently displayed to two decimals (nearest, ties away from zero); displayed differences are expected and residuals are not redistributed. Daily totals and annualized diagnostic rows derive from raw model values. Excel numeric cells preserve raw values and apply display-only number formats; formatting is not fed back into physics or finance.'],
+      ['24-hour simulator derating factor', simulation.effectiveSystemDeratingFactor, '-', simulation.isGenerationDeratingAssessed ? 'Passed from current PV array sizing' : 'UNASSESSED: legacy illustrative fallback 0.78 is used'],
       ['Metric', 'Value', 'Unit', 'Methodology / Standard'],
       ['Net AC Annual Generation (Primary)', primaryAnnualEnergyMwh, 'MWh/yr', waterfallReport ? 'Unified Waterfall Loss Model' : 'Annualized 24h Baseline Profile'],
 

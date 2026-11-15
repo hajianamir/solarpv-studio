@@ -26,6 +26,9 @@ export interface Simulation24hResult {
   finalBatterySocPct: number;
   reliesOnInitialCharge: boolean;
   isSelfSufficient: boolean;
+  effectiveSystemDeratingFactor: number;
+  /** False when the simulation had to use the legacy 0.78 illustrative derate. */
+  isGenerationDeratingAssessed: boolean;
 }
 
 export interface GeneratorSizingResult {
@@ -88,12 +91,11 @@ export function simulate24hEnergyBalance(
   }
 
   const sumSolarWeights = solarWeights.reduce((a, b) => a + b, 0);
-  const derateFactor =
+  const isGenerationDeratingAssessed =
     typeof effectiveSystemDeratingFactor === 'number' &&
     Number.isFinite(effectiveSystemDeratingFactor) &&
-    effectiveSystemDeratingFactor > 0
-      ? effectiveSystemDeratingFactor
-      : 0.78;
+    effectiveSystemDeratingFactor > 0 && effectiveSystemDeratingFactor <= 1;
+  const derateFactor = isGenerationDeratingAssessed ? effectiveSystemDeratingFactor : 0.78;
   const totalDailyGenerationKwh = D > 0 ? totalPvCapacityKwp * peakSunHours * derateFactor : 0;
 
   // Calculate day and night load hourly distributions with strict conservation:
@@ -248,6 +250,8 @@ export function simulate24hEnergyBalance(
     finalBatterySocPct: finalSoc,
     reliesOnInitialCharge,
     isSelfSufficient,
+    effectiveSystemDeratingFactor: derateFactor,
+    isGenerationDeratingAssessed,
   };
 }
 

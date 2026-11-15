@@ -1082,7 +1082,8 @@ export const App: React.FC = () => {
       batterySizing.usableCapacityKwh,
       batterySizing.grossCapacityKwh,
       50.0,
-      city.daylightHoursDesign
+      city.daylightHoursDesign,
+      arrayDesign.effectiveDeratingFactor
     );
   }, [arrayDesign, city, loadAnalysis, batterySizing]);
 
