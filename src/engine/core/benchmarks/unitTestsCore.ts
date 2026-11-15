@@ -5589,6 +5589,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   // E24: 24h simulation strictly conserves load energy and tracks SoC & gross surplus
   {
     const { simulate24hEnergyBalance } = await import('../../simulation24hEngine');
+    const { sizeBatteryBank } = await import('../../batteryEngine');
     const dayKwh = 24.5;
     const nightKwh = 18.2;
     const totalTarget = dayKwh + nightKwh;
@@ -5610,6 +5611,44 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       && Math.abs(sim.totalGeneration24hKwh - 10 * 5.2 * 0.68) < 1e-10
       && !fallbackDerateSim.isGenerationDeratingAssessed
       && fallbackDerateSim.effectiveSystemDeratingFactor === 0.78;
+    const pcsPowerCappedSim = simulate24hEnergyBalance(0, 0, 12, 0, 15, 20, 100, 12, 0.68, {
+      maxChargePowerKw: 1,
+      maxDischargePowerKw: 0.5,
+      chargePowerLimitConfirmed: true,
+      dischargePowerLimitConfirmed: true,
+      chargeEfficiencyFraction: 0.95,
+      dischargeEfficiencyFraction: 0.95,
+    });
+    const missingPcsRatingSim = simulate24hEnergyBalance(0, 0, 0, 0, 0, 0, 50, 12, 0.68);
+    const pcsLimitsApplied = pcsPowerCappedSim.isPowerLimitsAssessed
+      && pcsPowerCappedSim.hourlySteps.every((step) => step.batteryDischargeKwh <= 0.5 + 1e-12)
+      && pcsPowerCappedSim.hourlySteps.some((step) => Math.abs(step.batteryDischargeKwh - 0.5) < 1e-9)
+      && !missingPcsRatingSim.isPowerLimitsAssessed
+      && missingPcsRatingSim.powerLimitAssessmentNote.includes('NOT ASSESSED')
+      && !missingPcsRatingSim.isSelfSufficient;
+    const inferredPcsRatingSim = simulate24hEnergyBalance(0, 0, 0, 0, 0, 0, 50, 12, 0.68, {
+      maxChargePowerKw: 1,
+      maxDischargePowerKw: 0.5,
+      chargePowerLimitConfirmed: true,
+      dischargePowerLimitConfirmed: false,
+    });
+    const inferredLimitNotAssessed = !inferredPcsRatingSim.isPowerLimitsAssessed
+      && inferredPcsRatingSim.powerLimitAssessmentNote.includes('discharge limit is not confirmed');
+
+    const sizingBattery = sizeBatteryBank(2, 1, 'lifepo4', 48, 5000, 3000, 20, 100);
+    const sizingAndSimulation = simulate24hEnergyBalance(
+      0, 0, 0, sizingBattery.usableCapacityKwh, sizingBattery.nominalDoDUsableCapacityKwh,
+      sizingBattery.grossCapacityKwh, 100, 0, 1, {
+        maxChargePowerKw: 10, maxDischargePowerKw: 10,
+        chargeEfficiencyFraction: sizingBattery.chargeEfficiencyFraction,
+        dischargeEfficiencyFraction: sizingBattery.dischargeEfficiencyFraction,
+      }
+    );
+    const energyBoundaryConsistent = Math.abs(sizingBattery.nominalDoDUsableCapacityKwh
+      * sizingBattery.dischargeEfficiencyFraction - sizingBattery.usableCapacityKwh) < 1e-9
+      && Math.abs(sizingBattery.chargeEfficiencyFraction * sizingBattery.dischargeEfficiencyFraction
+        - sizingBattery.chemistry.roundTripEfficiencyPct / 100) < 1e-12
+      && sizingAndSimulation.energyNotServedKwh < 1e-9;
 
     const compensatedSum = (values: number[]) => {
       let sum = 0;
@@ -5670,8 +5709,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     assert(
       'E24-SIMULATION-24H-STRICT-LOAD-CONSERVATION-AND-SOC',
-      'Dynamic sunrise/sunset 24h simulation conserves raw hourly energy within IEEE-754 error bounds and tracks SoC & surplus',
-      loadConservationOk && socReported && grossSurplusReported && polarNightOk && nightOnlySweepOk && generationDeratePassedThrough,
+      '24h simulator conserves load energy, passes actual PV derating, caps explicit PCS power, labels missing PCS limits unassessed, and aligns battery DC/AC energy boundaries',
+      loadConservationOk && socReported && grossSurplusReported && polarNightOk && nightOnlySweepOk
+        && generationDeratePassedThrough && pcsLimitsApplied && inferredLimitNotAssessed && energyBoundaryConsistent,
       `compensatedHourlySum=${hourlySum} kWh vs target=${totalTarget} kWh (withinIEEE754Bound=${Math.abs(hourlySum - totalTarget) <= summationBound(hourlyLoadValues)}), initialSoC=${sim.initialBatterySocPct}%, finalSoC=${sim.finalBatterySocPct}%, surplus=${sim.totalSurplus24hKwh} kWh, polarNight=${polarNightOk}, nightOnlySweep=${nightOnlySweepOk}`
     );
   }

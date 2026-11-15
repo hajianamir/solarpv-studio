@@ -1079,13 +1079,24 @@ export const App: React.FC = () => {
       city.peakSunHours,
       loadAnalysis.daytimeEnergyWh / 1000.0,
       loadAnalysis.nighttimeEnergyWh / 1000.0,
-      batterySizing.usableCapacityKwh,
+      batterySizing.nominalDoDUsableCapacityKwh,
       batterySizing.grossCapacityKwh,
       50.0,
       city.daylightHoursDesign,
-      arrayDesign.effectiveDeratingFactor
+      arrayDesign.effectiveDeratingFactor,
+      {
+        chargeEfficiencyFraction: batterySizing.chargeEfficiencyFraction,
+        dischargeEfficiencyFraction: batterySizing.dischargeEfficiencyFraction,
+        maxDischargePowerKw: Math.min(
+          inverterClustering.totalInverterCapacityKw,
+          batterySizing.totalCapacityAh * batterySizing.chemistry.maxContinuousCRate
+            * batterySizing.systemVoltageVdc * 0.93 / 1000
+        ),
+        dischargePowerLimitConfirmed: false,
+        // The inferred battery/inverter discharge cap and missing PCS charge rating are not confirmed equipment ratings.
+      }
     );
-  }, [arrayDesign, city, loadAnalysis, batterySizing]);
+  }, [arrayDesign, city, loadAnalysis, batterySizing, inverterClustering]);
 
   // 9. Diesel Backup Generator Sizing (Optionally activated by user)
   const generatorSizing = useMemo(() => {
@@ -1553,7 +1564,9 @@ export const App: React.FC = () => {
               title: t.tabSimulation24h,
               icon: <Workflow className="w-4 h-4 text-cyan-400" />,
               code: '24h Balance',
-              badge: simulationResult.isSelfSufficient ? '100% Autonomy' : 'Grid Support',
+              badge: !simulationResult.isGenerationDeratingAssessed || !simulationResult.isPowerLimitsAssessed
+                ? 'Assessment Required'
+                : simulationResult.isSelfSufficient ? '100% Autonomy' : 'Grid Support',
             },
             {
               id: 'waterfall_loss' as ActiveModuleTab,
