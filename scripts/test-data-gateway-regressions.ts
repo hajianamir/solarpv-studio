@@ -128,6 +128,29 @@ async function main() {
     assert.equal(liveCached.metadata.cacheStatus, 'hit');
     assert.equal(pvgisCalls, remoteCallCount);
   });
+  globalThis.fetch = (async (input: RequestInfo | URL) => String(input).includes('re.jrc')
+    ? mkResponse(pvgisPayload)
+    : mkResponse({ properties: { parameter: {
+      ALLSKY_SFC_SW_DWN: { ANN: 5.2 }, T2M: { ANN: 20 }, T2M_MIN: { ANN: -8.4 }, T2M_MAX: { ANN: 41.7 },
+    } } })) as typeof fetch;
+  const pvgisWithNasaExtrema = await new ClimateDataProvider().fetchPvgisResource(35.1, 51.2);
+  check('PVGIS path overlays NASA POWER extrema from the same coordinates and records reanalysis provenance, not field measurement', () => {
+    assert.equal(pvgisWithNasaExtrema.tempMinC, -8.4);
+    assert.equal(pvgisWithNasaExtrema.tempMaxC, 41.7);
+    assert.equal(pvgisWithNasaExtrema.fieldProvenance.tempMinC.providerName, 'NASA_POWER');
+    assert.match(pvgisWithNasaExtrema.fieldProvenance.tempMinC.qualityNote ?? '', /not ground-station measurement/i);
+    assert.equal(pvgisWithNasaExtrema.metadata.dataStatus, 'mixed');
+  });
+  globalThis.fetch = (async (input: RequestInfo | URL) => String(input).includes('re.jrc')
+    ? mkResponse(pvgisPayload)
+    : mkResponse({ properties: { parameter: { ALLSKY_SFC_SW_DWN: { ANN: 5.2 } } } })) as typeof fetch;
+  const pvgisWithModelExtrema = await new ClimateDataProvider().fetchPvgisResource(20.1, 45.2);
+  check('Missing NASA extrema remain location-dependent local-model estimates with preliminary limitations', () => {
+    assert.equal(pvgisWithModelExtrema.fieldProvenance.tempMinC.sourceKind, 'local_model');
+    assert.match(pvgisWithModelExtrema.fieldProvenance.tempMinC.qualityNote ?? '', /preliminary|مقدماتی/i);
+    assert.equal(pvgisWithModelExtrema.tempMinC, 2);
+  });
+
   const analytical = await climate.fetchClimateResource(35.1, 51.2, { policy: 'analytical_only' });
   check('Analytical-only policy refuses an incompatible remote cache entry', () => {
     assert.equal(analytical.metadata.sourceProvider, 'REGIONAL_ANALYTICAL_MODEL');

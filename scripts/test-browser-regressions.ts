@@ -691,6 +691,13 @@ async function main() {
   // positive minimum, remain saveable, and never produce an unrelated bay error.
   await page.getByRole('button', { name: /آف.*گرید|Off.*Grid/i }).first().click();
   await clickTab('loads');
+  await page.locator('#load-preset-picker').selectOption('preset_workshop');
+  const threePhasePreset = page.getByTestId('load-phase-2');
+  await threePhasePreset.waitFor({ timeout: 10000 });
+  assert.equal(await threePhasePreset.inputValue(), 'three', 'workshop motor preset was not marked three-phase');
+  assert.equal(await page.getByTestId('load-phase-1').inputValue(), 'single', 'legacy/single-phase load default changed unexpectedly');
+  await page.getByTestId('load-leg-1').selectOption('L2');
+  assert.equal(await page.getByTestId('load-leg-1').inputValue(), 'L2', 'manual single-phase leg assignment did not stick');
   const firstLoadPower = page.locator('tbody tr').first().locator('input[type="number"]').first();
   await firstLoadPower.fill('-250');
   await firstLoadPower.press('Tab');
@@ -709,7 +716,9 @@ async function main() {
   assert.ok(Array.isArray(savedNegativeLoad?.loads) && savedNegativeLoad.loads.length > 0, 'project save failed after negative-load correction');
   assert.equal(savedNegativeLoad.loads[0].ratedWatts, 1);
   assert.ok(savedNegativeLoad.loads.every((load: { ratedWatts: number }) => Number.isFinite(load.ratedWatts) && load.ratedWatts > 0));
-  console.log('[PASS] Negative load is clamped independently of bay count and project remains saveable');
+  assert.equal(savedNegativeLoad.loads.find((load: { id: string }) => load.id === '1')?.phaseAssignment, 'L2', 'manual phase assignment did not survive project save');
+  assert.equal(savedNegativeLoad.loads.find((load: { id: string }) => load.id === '2')?.acPhase, 'three', 'three-phase preset tag did not survive project save');
+  console.log('[PASS] Per-load phase selection, manual leg assignment, and project persistence work through the UI');
 
   // Two real tabs share this browser context's profile/localStorage. Prepare two
   // distinct custom records while each tab has its own repository instance, then

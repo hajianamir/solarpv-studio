@@ -347,6 +347,18 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
         </div>
       )}
 
+      {selectedCity.confidence === 'reanalysis' && (
+        <div className="p-3 bg-sky-950/40 border border-sky-700/50 rounded-lg flex items-start gap-3 text-xs">
+          <Globe className="w-4 h-4 text-sky-300 shrink-0 mt-0.5" />
+          <div className="text-slate-200 leading-relaxed">
+            <strong className="text-sky-300">{isEn ? 'Climate / reanalysis data — not field measurements' : 'داده اقلیمی/بازتحلیل — نه اندازه‌گیری میدانی'}</strong>{' '}
+            {isEn
+              ? 'Provider-backed values are gridded climatology or satellite/reanalysis products. Temperature extremes may use NASA POWER at this site or a clearly identified preliminary local model; verify against local design codes and station data.'
+              : 'مقادیر ارائه‌دهنده از اقلیم شبکه‌ای یا محصولات ماهواره‌ای/بازتحلیل هستند. دماهای حدی از NASA POWER برای همین مختصات یا از مدل محلی مقدماتیِ مشخص‌شده می‌آیند؛ با داده ایستگاه و ضوابط طراحی محلی کنترل شوند.'}
+          </div>
+        </div>
+      )}
+
       {/* Zero PSH Physical Unsizable Banner */}
       {selectedCity.peakSunHours === 0 && (
         <div className="p-3 bg-red-500/15 border border-red-500/40 rounded-lg flex items-start gap-3 text-xs">

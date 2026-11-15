@@ -861,10 +861,14 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   ac = updateAcConnection(ac, 'loadService', { powerFactor: 0.9, confirmed: true });
   ac = updateAcConnection(ac, 'load:single-load', { phase: 'single', lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.8, confirmed: true });
   const loadAcCurrentResults = evaluateLoadAcCurrents([
-    { id: 'site-load', name: 'Three-phase site load', ratedWatts: 2000, quantity: 1, isDc: false },
+    { id: 'site-load', name: 'Three-phase site load', ratedWatts: 2000, quantity: 1, isDc: false, acPhase: 'three' },
     { id: 'single-load', name: 'Explicit single-phase load', ratedWatts: 1000, quantity: 1, isDc: false },
     { id: 'dc-load', name: 'DC load', ratedWatts: 500, quantity: 1, isDc: true },
   ], ac);
+  const threePhaseOnSinglePhaseService = evaluateLoadAcCurrents(
+    [{ id: 'three-on-single', name: 'Three-phase motor', ratedWatts: 3000, quantity: 1, isDc: false, acPhase: 'three' }],
+    { ...ac, loadService: { ...ac.loadService, phase: 'single', lineToLineVolts: null, lineToNeutralVolts: 120 } },
+  )[0];
   const infiniteLoadVoltageResult = evaluateLoadAcCurrents(
     [{ id: 'infinite-voltage', name: 'Invalid voltage load', ratedWatts: 1000, quantity: 1, isDc: false }],
     { ...ac, loadService: { ...ac.loadService, lineToNeutralVolts: Infinity } },
@@ -897,6 +901,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       && loadAcCurrentResults[0].status === 'assessed' && Math.abs((loadAcCurrentResults[0].currentAmps ?? 0) - 6.17) < 0.02
       && loadAcCurrentResults[1].basis === 'per_load_override' && loadAcCurrentResults[1].status === 'assessed'
       && loadAcCurrentResults[2].status === 'dc_not_applicable'
+      && loadAcCurrentResults[0].phase === 'three'
+      && threePhaseOnSinglePhaseService.status === 'incomplete'
       && infiniteLoadVoltageResult.status === 'incomplete' && infiniteLoadVoltageResult.currentAmps === null
       && infiniteInjectionAssessment.status === 'incomplete'
       && !assessAcRequirements(createUnknownAcRequirements(), { isThreePhase: true }, 'powerplant').reasons.some((reason) => reason.includes('230')),
@@ -5397,6 +5403,40 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Period-based continuous & surge analysis isolates DC loads from inverter sizing while preserving energy accounting',
       dcSegregated && periodDayContinuous && periodNightContinuous && acPeriodicOk && daySurge && energyOk,
       `acCont=${analysis.acContinuousActivePowerWatts}W, acGov=${analysis.acGoverningContinuousWatts}W, dcCont=${analysis.dcContinuousActivePowerWatts}W, dayPeak=${analysis.daytimeSurgeWatts}W, totalWh=${totalDailyWh} (exp 31568)`
+    );
+  }
+
+  // E23a: per-load phase, balanced auto allocation, energy invariance, and inverter phase compatibility
+  {
+    const { analyzeLoadProfile } = await import('../../loadProfiles');
+    const { evaluateInverterClustering } = await import('../../inverterClustering');
+    const fixture: import('../../loadProfiles').ElectricalLoadItem[] = [
+      { id: 'legacy', name: 'Legacy single-phase load', category: 'other', ratedWatts: 1000, surgeMultiplier: 1, quantity: 1, dayHours: 2, nightHours: 1, isDc: false },
+      { id: 'three', name: '3-phase motor', category: 'industrial_motor', ratedWatts: 3000, surgeMultiplier: 1, quantity: 1, dayHours: 2, nightHours: 1, isDc: false, acPhase: 'three' },
+    ];
+    const measured = analyzeLoadProfile(fixture);
+    const currentMeasured = analyzeLoadProfile(fixture, undefined, { lineToLineVolts: 400, phaseNeutralVolts: 230, powerFactor: 0.8 });
+    const expectedThreePhaseCurrent = 3000 / (Math.sqrt(3) * 400 * 0.8);
+    const currentCalculationOk = Math.abs(currentMeasured.phaseLegAmps.L2 - expectedThreePhaseCurrent) < 1e-9
+      && currentMeasured.phaseCurrentBasis.isConfirmed;
+    const singleLegs = measured.phaseLegWatts;
+    const energyUnchanged = measured.totalDailyEnergyWh === 12000;
+    const threePhaseSplit = measured.threePhaseLoadWatts === 3000 && singleLegs.L1 + singleLegs.L2 + singleLegs.L3 === 4000;
+    const allocations = ['L1', 'L2', 'L3'] as const;
+    const explicit = allocations.map((leg) => analyzeLoadProfile([
+      { ...fixture[0], phaseAssignment: leg }, fixture[1],
+    ]).phaseLegWatts[leg]);
+    const autoBalanced = Math.max(...allocations.map((leg) => singleLegs[leg])) - Math.min(...allocations.map((leg) => singleLegs[leg])) <= 1000;
+    const singlePhaseInverter = evaluateInverterClustering(4000, 4000, 5, 500, 'three', false, 1334);
+    const inverterWarns = singlePhaseInverter.healthStatus === 'phase_incompatible' && Boolean(singlePhaseInverter.phaseCompatibilityWarningFa);
+    const schemaLegacy = ElectricalLoadItemSchema.safeParse({ ...fixture[0] }).success;
+    const schemaRoundTrip = ElectricalLoadItemSchema.parse({ ...fixture[0], acPhase: 'three', phaseAssignment: 'auto' });
+    const roundTrip = schemaLegacy && schemaRoundTrip.acPhase === 'three' && schemaRoundTrip.phaseAssignment === 'auto';
+    assert(
+      'E23A-PER-LOAD-PHASE-BALANCE-AND-ROUNDTRIP',
+      'Legacy loads default to single phase; three-phase loads share legs without duplicating energy; manual allocation and inverter mismatch are surfaced and project schema round-trips phase fields',
+      energyUnchanged && threePhaseSplit && autoBalanced && explicit.every((watts) => watts === 2000) && inverterWarns && roundTrip && currentCalculationOk,
+      `energy=${measured.totalDailyEnergyWh}Wh threePhase=${measured.threePhaseLoadWatts}W legs=${JSON.stringify(singleLegs)} manual=${explicit.join(',')} mismatch=${singlePhaseInverter.healthStatus}`
     );
   }
 

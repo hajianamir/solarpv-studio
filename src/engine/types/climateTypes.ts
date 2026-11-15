@@ -89,7 +89,7 @@ export interface ClimateCity {
   dataSourceFa: string;              // Official source provenance
   dataSourceEn: string;              // Official source provenance in English
   dataRetrievalDate?: string;         // Date retrieved
-  confidence?: 'measured' | 'hub_calibrated' | 'analytical_estimate'; // Data confidence grade
+  confidence?: 'measured' | 'reanalysis' | 'hub_calibrated' | 'analytical_estimate'; // Data confidence grade; reanalysis is never ground measurement
   distanceToCoastKm?: number;        // Geodesic distance to nearest sea/coast (km)
   drainageCondition?: SiteDrainageCondition; // Site hydrology drainage classification
   groundwaterDepthM?: number;        // Depth to groundwater table GWL (m)

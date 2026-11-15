@@ -138,7 +138,7 @@ export class ExternalDataGateway {
       seismicZoneCoefficientA: structuralHazard.seismicAccelerationA,
       dataSourceFa: `درگاه یکپارچه جهانی (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
       dataSourceEn: `Unified External Gateway (${climateResource.metadata.sourceProvider} / ${soilProperties.metadata.sourceProvider})`,
-      confidence: climateResource.metadata.sourceProvider !== 'REGIONAL_ANALYTICAL_MODEL' ? 'measured' : 'analytical_estimate',
+      confidence: climateResource.metadata.sourceProvider === 'REGIONAL_ANALYTICAL_MODEL' ? 'analytical_estimate' : 'reanalysis',
       dataRetrievalDate: (climateResource.metadata.retrievalTimestamp || new Date().toISOString()).slice(0, 10),
       distanceToCoastKm: distCoastKm,
       drainageCondition: drainage,

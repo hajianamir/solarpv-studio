@@ -106,7 +106,7 @@ export const ClimateCitySchema = z.object({
   dataSourceFa: z.string().optional().default('منبع قدیمی نامشخص و تأییدنشده'),
   dataSourceEn: z.string().optional().default('Unverified legacy source'),
   dataRetrievalDate: z.string().optional(),
-  confidence: z.enum(['measured', 'analytical_estimate', 'hub_calibrated']).optional(),
+  confidence: z.enum(['measured', 'reanalysis', 'analytical_estimate', 'hub_calibrated']).optional(),
   fieldProvenance: z.record(z.string(), z.unknown()).optional(),
   distanceToCoastKm: z.number().nonnegative().optional(),
   drainageCondition: z.enum(['well_drained', 'moderate', 'poor_flood_prone']).optional(),
@@ -165,6 +165,8 @@ export const ElectricalLoadItemSchema = z.object({
   dayHours: z.number().min(0),
   nightHours: z.number().min(0),
   isDc: z.boolean(),
+  acPhase: z.enum(['single', 'three']).optional(),
+  phaseAssignment: z.enum(['auto', 'L1', 'L2', 'L3']).optional(),
 }).refine((item) => (item.dayHours + item.nightHours) <= 24.001, {
   message: 'Total daily operating hours (dayHours + nightHours) cannot exceed 24 hours',
 });
@@ -269,6 +271,10 @@ function normalizeLegacyLoad(
     dayHours: isCanonicalShape ? dayHours : Number(dayHours.toFixed(2)),
     nightHours: isCanonicalShape ? nightHours : Number(nightHours.toFixed(2)),
     isDc: typeof raw.isDc === 'boolean' ? raw.isDc : false,
+    acPhase: raw.acPhase === 'three' || raw.acPhase === 'single'
+      ? raw.acPhase
+      : (/3.?phase|سه.?فاز|سه فاز/i.test(String(raw.name ?? raw.nameFa ?? raw.nameEn ?? '')) ? 'three' : 'single'),
+    phaseAssignment: ['auto', 'L1', 'L2', 'L3'].includes(raw.phaseAssignment) ? raw.phaseAssignment : 'auto',
   };
 }
 
@@ -821,7 +827,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
       const nightCap = typeof baseCity.nightHoursDesign === 'number' ? baseCity.nightHoursDesign : designH.nightHoursDesign;
       return (Array.isArray(raw.loads) ? raw.loads : []).map((l: any) => {
         const norm = normalizeLegacyLoad(l, { dayCapHours: dayCap, nightCapHours: nightCap });
-        const fields = ['id', 'name', 'category', 'ratedWatts', 'surgeMultiplier', 'quantity', 'dayHours', 'nightHours', 'isDc'] as const;
+        const fields = ['id', 'name', 'category', 'ratedWatts', 'surgeMultiplier', 'quantity', 'dayHours', 'nightHours', 'isDc', 'acPhase', 'phaseAssignment'] as const;
         const changes = fields.filter((field) => !Object.is(l?.[field], norm?.[field]));
         if (changes.length) {
           warnings.push(`Load migration (${String(l?.name ?? l?.nameFa ?? 'legacy load')}): ${changes.map((field) =>

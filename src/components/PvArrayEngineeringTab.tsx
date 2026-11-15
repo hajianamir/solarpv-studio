@@ -675,14 +675,18 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                   {isEn
                     ? inverterClustering.healthStatus === 'compatible'
                       ? 'Compatible Clustering'
-                      : 'Upgrade Advised'
+                      : inverterClustering.healthStatus === 'phase_incompatible'
+                        ? 'Phase Incompatible'
+                        : 'Upgrade Advised'
                     : inverterClustering.healthStatusTextFa}:
                 </span>
                 <span className="text-slate-300">
                   {isEn
                     ? inverterClustering.healthStatus === 'compatible'
                       ? 'Inverter capacity matches array Peak DC rating efficiently.'
-                      : 'Consider adding an additional parallel inverter.'
+                      : inverterClustering.healthStatus === 'phase_incompatible'
+                        ? 'At least one AC load is three-phase; select a three-phase catalog inverter. Do not treat this unit as compatible.'
+                        : 'Consider adding an additional parallel inverter.'
                     : inverterClustering.recommendationFa}
                 </span>
               </div>

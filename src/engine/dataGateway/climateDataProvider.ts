@@ -350,9 +350,13 @@ export class ClimateDataProvider {
     }
 
     const hasT2M = rawTMean !== undefined && rawTMean !== null && isTempPhysical(rawTMean);
+    const absLat = Math.abs(lat);
+    const isAridWestAsiaScreen = absLat < 40 && lng > 25 && lng < 65;
+    const fallbackMin = absLat > 50 ? -25 : absLat > 35 ? -10 : 5;
+    const fallbackMax = (absLat > 50 ? 28 : absLat > 35 ? 38 : 45) + (isAridWestAsiaScreen ? 3 : 0);
     const tMean = hasT2M ? rawTMean : 20.0;
-    const tMin = rawTMin ?? -5.0;
-    const tMax = rawTMax ?? 42.0;
+    const tMin = rawTMin !== undefined && rawTMin !== null ? rawTMin : fallbackMin;
+    const tMax = rawTMax !== undefined && rawTMax !== null ? rawTMax : fallbackMax;
 
     if (tMin > tMax) {
       throw new Error(`NASA POWER temperature consistency error: tMin (${tMin}°C) > tMax (${tMax}°C)`);
@@ -369,7 +373,6 @@ export class ClimateDataProvider {
 
     let precipMm: number;
     let precipProvenance: ParameterProvenance;
-    const absLat = Math.abs(lat);
     if (hasPrecip) {
       precipMm = Number((rawPrectotcorr * 365.25).toFixed(1));
       precipProvenance = createParameterProvenance('provider_value', 'NASA_POWER', {
@@ -443,11 +446,13 @@ export class ClimateDataProvider {
             sourceParameter: 'T2M_MIN',
             unit: '°C',
             value: Number(tMin.toFixed(1)),
+            qualityNote: 'NASA POWER gridded reanalysis climatology at the requested coordinates; not ground-station measurement.',
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '°C',
             value: Number(tMin.toFixed(1)),
-            derivationMethod: 'Regional minimum temperature screening model',
+            derivationMethod: `Preliminary latitude-band model at ${lat.toFixed(4)}, ${lng.toFixed(4)}; no NASA POWER minimum available`,
+            qualityNote: 'Location-dependent screening estimate only; verify manually against local design climate data/code. Not measured and not a final design value.',
           }),
       tempMaxC: rawTMax !== undefined && isTempPhysical(rawTMax)
         ? createParameterProvenance('provider_value', 'NASA_POWER', {
@@ -455,11 +460,13 @@ export class ClimateDataProvider {
             sourceParameter: 'T2M_MAX',
             unit: '°C',
             value: Number(tMax.toFixed(1)),
+            qualityNote: 'NASA POWER gridded reanalysis climatology at the requested coordinates; not ground-station measurement.',
           })
         : createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
             unit: '°C',
             value: Number(tMax.toFixed(1)),
-            derivationMethod: 'Regional maximum temperature screening model',
+            derivationMethod: `Preliminary latitude/region model at ${lat.toFixed(4)}, ${lng.toFixed(4)}; no NASA POWER maximum available`,
+            qualityNote: 'Location-dependent screening estimate only; verify manually against local design climate data/code. Not measured and not a final design value.',
           }),
       albedo: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: 'dimensionless',
@@ -528,7 +535,7 @@ export class ClimateDataProvider {
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
         isEstimatedFromGlobalModel: !hasT2M,
-        dataStatus: psh === 0 ? 'unsizable' : 'measured',
+        dataStatus: psh === 0 ? 'unsizable' : 'mixed',
         ...(psh === 0 ? { qualityNotes: ['NASA POWER returned ANN=0; primary-provider zero is preserved and secondary providers are not queried.'] } : {}),
         geographicRegion: 'NASA POWER Climatology (GEOS-5 FP-IT)',
         governingStandards: ['NASA POWER Climatology v2.0', 'WMO Guide to Climatological Practices No. 100'],
@@ -553,7 +560,33 @@ export class ClimateDataProvider {
         throw new Error(`PVGIS HTTP ${resp.status}`);
       }
       const data = await resp.json();
-      return this.parsePvgisResponse(lat, lng, data);
+      const pvgis = this.parsePvgisResponse(lat, lng, data);
+      // PVGIS MRcalc does not provide annual Tmin/Tmax design extremes. Retrieve those
+      // separately from NASA POWER for the exact same coordinates; never infer them
+      // from PVGIS monthly mean temperature.
+      try {
+        if (pvgis.peakSunHours === 0) return pvgis;
+        const nasa = await this.fetchNasaPowerResource(lat, lng, { signal: options?.signal });
+        for (const field of ['tempMinC', 'tempMaxC'] as const) {
+          const prov = nasa.fieldProvenance?.[field];
+          if (typeof nasa[field] === 'number' && prov?.providerName === 'NASA_POWER' && prov.sourceKind !== 'local_model') {
+            pvgis[field] = nasa[field];
+            pvgis.fieldProvenance[field] = {
+              ...prov,
+              qualityNote: `${prov.qualityNote ? `${prov.qualityNote}; ` : ''}NASA POWER reanalysis climatology at same site coordinates; not ground-station measurement.`,
+            };
+          }
+        }
+        if (pvgis.metadata.dataStatus !== 'unsizable') pvgis.metadata.dataStatus = 'mixed';
+      } catch (extremaError) {
+        if (options?.signal?.aborted) throw extremaError;
+        // Keep the explicit location-based local model with its preliminary provenance.
+        pvgis.metadata.qualityNotes = [
+          ...(pvgis.metadata.qualityNotes ?? []),
+          'NASA POWER Tmin/Tmax unavailable; extrema remain preliminary location-based analytical estimates.',
+        ];
+      }
+      return pvgis;
     } catch (err) {
       if (options?.signal?.aborted) {
         const abortError = new Error('PVGIS request aborted by caller');
@@ -760,14 +793,14 @@ export class ClimateDataProvider {
       tempMinC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: '°C',
         value: tMin,
-        derivationMethod: 'Regional latitude extreme temperature model (Not from monthly average)',
-        qualityNote: 'میانگین ماهانه دمای حدی طراحی نیست؛ نیازمند داده‌های حدی ایستگاه هواشناسی یا آیین‌نامه محلی',
+        derivationMethod: `Preliminary latitude-band screening model at ${lat.toFixed(4)}, ${lng.toFixed(4)}; NASA POWER unavailable (not from PVGIS monthly mean)`,
+        qualityNote: 'برآورد مقدماتی وابسته به مکان است؛ اندازه‌گیری نیست و مقدار نهایی طراحی محسوب نمی‌شود. با داده اقلیمی محلی و کد طراحی بازبینی شود.',
       }),
       tempMaxC: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: '°C',
         value: tMax,
-        derivationMethod: 'Regional latitude extreme temperature model (Not from monthly average)',
-        qualityNote: 'میانگین ماهانه دمای حدی طراحی نیست؛ نیازمند داده‌های حدی ایستگاه هواشناسی یا آیین‌نامه محلی',
+        derivationMethod: `Preliminary latitude-band screening model at ${lat.toFixed(4)}, ${lng.toFixed(4)}; NASA POWER unavailable (not from PVGIS monthly mean)`,
+        qualityNote: 'برآورد مقدماتی وابسته به مکان است؛ اندازه‌گیری نیست و مقدار نهایی طراحی محسوب نمی‌شود. با داده اقلیمی محلی و کد طراحی بازبینی شود.',
       }),
       albedo: createParameterProvenance('local_model', 'REGIONAL_ANALYTICAL_MODEL', {
         unit: 'dimensionless',
@@ -829,7 +862,7 @@ export class ClimateDataProvider {
         retrievalTimestamp: new Date().toISOString(),
         isCached: false,
         isEstimatedFromGlobalModel: !hasProviderTemp,
-        dataStatus: psh === 0 ? 'unsizable' : 'measured',
+        dataStatus: psh === 0 ? 'unsizable' : 'mixed',
         ...(psh === 0 ? { qualityNotes: ['PVGIS returned a complete annual zero-irradiation series; primary-provider zero is preserved and secondary providers are not queried.'] } : {}),
         geographicRegion: 'PVGIS 5.2 SARAH-2 / ERA5',
         governingStandards: ['PVGIS v5.2 (European Commission JRC)', 'IEC 61724-1 Class A'],

@@ -688,8 +688,12 @@ export const App: React.FC = () => {
       analyzeLoadProfile(loads, {
         daylightHoursDesign: city.daylightHoursDesign,
         nightHoursDesign: city.nightHoursDesign,
-      }),
-    [loads, city.daylightHoursDesign, city.nightHoursDesign]
+      }, acRequirements?.loadService.confirmed ? {
+        lineToLineVolts: acRequirements.loadService.lineToLineVolts ?? undefined,
+        phaseNeutralVolts: acRequirements.loadService.lineToNeutralVolts ?? undefined,
+        powerFactor: acRequirements.loadService.powerFactor ?? undefined,
+      } : undefined),
+    [loads, city.daylightHoursDesign, city.nightHoursDesign, acRequirements]
   );
 
   // 2. Compute Target Energy Demand Based on System Mode
@@ -940,7 +944,11 @@ export const App: React.FC = () => {
       peakWatts,
       selectedInverter.pnomAcKw,
       selectedInverter.vmpptMaxVolts,
-      acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.phase : 'unknown'
+      loadAnalysis.hasThreePhaseAcLoad
+        ? 'three'
+        : (acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.phase : 'unknown'),
+      selectedInverter.isThreePhase,
+      loadAnalysis.maxPhaseLoadWatts
     );
   }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter, acRequirements]);
 

@@ -67,8 +67,10 @@ export interface InverterClusteringResult {
   totalInverterCapacityKw: number;
   inverterDcContinuousCurrentAmps: number;
   inverterDcSurgeCurrentAmps: number;
-  healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested';
+  healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested' | 'phase_incompatible';
   healthStatusTextFa: string;
+  phaseCompatibilityWarningFa?: string;
+  maxSinglePhaseLegWatts?: number;
   recommendationFa: string;
   isUnitRightSized?: boolean;
   requestedUnitRatingKw?: number;
@@ -80,8 +82,15 @@ export function evaluateInverterClustering(
   preferredUnitKw: number = 5.0,
   inverterVmpptMaxV?: number,   // MPPT ceiling of the selected inverter
   confirmedAcPhase: AcPhase = 'unknown',
+  selectedInverterThreePhase?: boolean,
+  maxSinglePhaseLegWatts: number = 0,
 ): InverterClusteringResult {
-  const continuousKw = continuousWatts / 1000.0;
+  // For a selected three-phase unit, account for the per-leg loading limit as
+  // well as total kW; this is a conservative equal-capacity-per-leg assumption.
+  const phaseAdjustedContinuousWatts = selectedInverterThreePhase
+    ? Math.max(continuousWatts, Math.max(0, maxSinglePhaseLegWatts) * 3)
+    : continuousWatts;
+  const continuousKw = phaseAdjustedContinuousWatts / 1000.0;
   const peakKw = peakSurgeWatts / 1000.0;
 
   // 1. Identify engineering class
@@ -155,7 +164,7 @@ export function evaluateInverterClustering(
   const inverterDcSurgeCurrentAmps = peakSurgeWatts / (recommendedDcVoltageVdc * 0.93);
 
   // Health evaluation
-  let healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested' = 'compatible';
+  let healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested' | 'phase_incompatible' = 'compatible';
   let healthStatusTextFa = 'سازگار و بهینه';
   let recommendationFa = `تعداد ${parallelUnitsCount} دستگاه اینورتر ${unitKw} کیلووات با کابل پارالل سنکرون همگام‌سازی شوند.`;
 
@@ -173,6 +182,15 @@ export function evaluateInverterClustering(
     recommendationFa = `به جای پارالل، می‌توانید از یک دستگاه اینورتر یکپارچه ${Math.ceil(continuousKw)}kW استفاده کنید.`;
   }
 
+  const phaseCompatibilityWarningFa = confirmedAcPhase === 'three' && selectedInverterThreePhase === false
+    ? 'ناسازگاری فاز: بارها خروجی سه‌فاز می‌خواهند، اما اینورتر انتخاب‌شده تک‌فاز است.'
+    : undefined;
+  if (phaseCompatibilityWarningFa) {
+    healthStatus = 'phase_incompatible';
+    healthStatusTextFa = 'ناسازگاری فاز اینورتر با بار';
+    recommendationFa = phaseCompatibilityWarningFa;
+  }
+
   return {
     engineeringClass,
     recommendedDcVoltageVdc,
@@ -187,6 +205,8 @@ export function evaluateInverterClustering(
     inverterDcSurgeCurrentAmps,
     healthStatus,
     healthStatusTextFa,
+    phaseCompatibilityWarningFa,
+    maxSinglePhaseLegWatts,
     recommendationFa,
     isUnitRightSized,
     requestedUnitRatingKw,
