@@ -3085,6 +3085,47 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       cableOk,
       `size=${acRun.cableDesignationEn}, Iz=${acRun.totalThermalAmpacityAmps}A (Ib=180A), kt=${acRun.temperatureDeratingFactorKt}, dV=${acRun.actualVoltageDropPct}%, Ploss=${acRun.powerLossWatts}W`
     );
+
+    const singlePhaseConfig = {
+      id: 'single-phase-ac-test',
+      sectionNameFa: 'کابل AC تک‌فاز آزمون',
+      sectionNameEn: 'Single-phase AC test run',
+      oneWayLengthM: 65,
+      designCurrentAmps: 32,
+      nominalVoltageVolts: 230,
+      conductorMaterial: 'copper' as const,
+      insulationType: 'xlpe' as const,
+      allowableDropPct: 3,
+      isDc: false,
+      isThreePhase: false,
+      powerFactor: 0.7,
+      ambientTempC: 30,
+      protectiveDeviceRatingAmps: 32,
+      protectiveDeviceBreakingCapacityKa: 6,
+      protectiveDeviceReference: 'Test single-phase breaker 32A/6kA',
+      expectedIscKa: 3,
+      faultClearingTimeSec: 0.1,
+    };
+    const singlePhaseAcRun = calculateAdvancedCableRun(singlePhaseConfig);
+    const singlePhaseRPerMeter = 1 / (56 * singlePhaseAcRun.totalEffectiveCrossSectionMm2);
+    const singlePhaseXPerMeter = 0.00008;
+    const singlePhaseSinPhi = Math.sqrt(1 - singlePhaseConfig.powerFactor ** 2);
+    const expectedSinglePhaseDropVolts = 2 * singlePhaseConfig.oneWayLengthM * singlePhaseConfig.designCurrentAmps
+      * (singlePhaseRPerMeter * singlePhaseConfig.powerFactor + singlePhaseXPerMeter * singlePhaseSinPhi);
+    const expectedSinglePhaseLossPct = Number((singlePhaseAcRun.powerLossWatts
+      / (singlePhaseConfig.nominalVoltageVolts * singlePhaseConfig.designCurrentAmps * singlePhaseConfig.powerFactor) * 100).toFixed(2));
+    const singlePhaseModelConsistent = singlePhaseAcRun.isAssessed === true
+      && singlePhaseAcRun.isCompliant
+      && Math.abs(singlePhaseAcRun.actualVoltageDropVolts - expectedSinglePhaseDropVolts) <= 0.01
+      && Math.abs(singlePhaseAcRun.actualVoltageDropPct - expectedSinglePhaseDropVolts / singlePhaseConfig.nominalVoltageVolts * 100) <= 0.01
+      && singlePhaseAcRun.actualVoltageDropPct <= singlePhaseConfig.allowableDropPct
+      && singlePhaseAcRun.powerLossPct === expectedSinglePhaseLossPct;
+    assert(
+      'E8-ELEC-1A',
+      'Single-phase AC reported voltage drop matches the sizing resistance/reactance/PF model and loss percentage uses real transferred power',
+      singlePhaseModelConsistent,
+      `size=${singlePhaseAcRun.cableDesignationEn}, dV=${singlePhaseAcRun.actualVoltageDropPct}% (expected ${Number((expectedSinglePhaseDropVolts / singlePhaseConfig.nominalVoltageVolts * 100).toFixed(2))}%), PF=${singlePhaseConfig.powerFactor}, loss=${singlePhaseAcRun.powerLossPct}% (expected ${expectedSinglePhaseLossPct}%)`
+    );
   }
 
   // [E8-ELEC-2] MV Substation IEC 60076 deratings, IEEE 80 touch/step safety & IEC 62305 lightning

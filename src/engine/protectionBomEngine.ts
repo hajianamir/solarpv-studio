@@ -412,7 +412,12 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
       config.designCurrentAmps *
       (rPerMeter * cosPhi + xPerMeter * sinPhi);
   } else {
-    actualDropVolts = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * totalEffectiveCrossSection);
+    const cosPhi = config.powerFactor ?? 0.95;
+    const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
+    const rPerMeter = 1.0 / (effectiveGamma * totalEffectiveCrossSection);
+    const xPerMeter = 0.00008; // 0.08 ohm/km, matching the single-phase sizing model
+    actualDropVolts = 2.0 * config.oneWayLengthM * config.designCurrentAmps
+      * (rPerMeter * cosPhi + xPerMeter * sinPhi);
   }
 
   const actualDropPct = Number(((actualDropVolts / config.nominalVoltageVolts) * 100.0).toFixed(2));
@@ -443,9 +448,12 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const lineResistanceOhms = config.oneWayLengthM / (effectiveGamma * totalEffectiveCrossSection);
   const multiplier = config.isThreePhase ? 3.0 : 2.0;
   const powerLossWatts = Math.round(multiplier * Math.pow(config.designCurrentAmps, 2) * lineResistanceOhms);
-  const totalTransferredPowerWatts = config.isThreePhase
-    ? Math.sqrt(3) * config.nominalVoltageVolts * config.designCurrentAmps * (config.powerFactor ?? 0.95)
-    : config.nominalVoltageVolts * config.designCurrentAmps;
+  const powerFactor = config.powerFactor ?? 0.95;
+  const totalTransferredPowerWatts = config.isDc
+    ? config.nominalVoltageVolts * config.designCurrentAmps
+    : config.isThreePhase
+      ? Math.sqrt(3) * config.nominalVoltageVolts * config.designCurrentAmps * powerFactor
+      : config.nominalVoltageVolts * config.designCurrentAmps * powerFactor;
   const powerLossPct = Number(((powerLossWatts / Math.max(1, totalTransferredPowerWatts)) * 100.0).toFixed(2));
 
   // 8. Line Capacitance & AC Charging Current per IEC 60287-1-1 & IEC 60502-1 / EN 50618:
