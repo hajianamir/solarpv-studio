@@ -1,6 +1,6 @@
 # SolarPV Studio — SAM Reference Case Manifest & Benchmark Guide
 
-This directory documents the reference project configurations, checksums, and execution instructions for empirical validation against **NREL SAM 2023.12.17 Revision 1**.
+This directory contains JSON benchmark manifests that record parameters and target values labelled with **NREL SAM 2023.12.17 Revision 1**. They are not runnable SAM projects and, by themselves, do not document or prove an independent SAM execution.
 
 ## Included Reference Cases
 
@@ -25,19 +25,17 @@ This directory documents the reference project configurations, checksums, and ex
    - Canonical SHA-256 Checksum: `0491b76bf2dd2d76987e0e28903f972c82755b7dd0f51f0f9db8cdf5bb809039`
    - Key Target: Annual Snow Loss = `2.60%` ($\pm 5.0\%$ relative tolerance).
 
-## Synthetic Benchmark Regression vs Independent Empirical Sensors
+## Scope and evidentiary status
 
-To maintain strict scientific and regulatory clarity:
-- **SAM Reference Cases as Synthetic Regression Manifests**: The `.sam` files in this directory are structured, version-controlled JSON benchmarks calibrated to match the governing physical formulas and baseline simulation results of **NREL SAM 2023.12.17 Revision 1**. They do not contain proprietary SAM binary project blobs or unparsed TMY raw timeseries, but rather standardized parameter manifests and published baseline targets used to detect algorithmic regression or parameter drift in SolarPV Studio.
-- **Independent Empirical Validation**: Actual independent physical accuracy is separately verified against calibrated hardware instrumentation (specifically IEC 61724-1 Class A optical transmissometer data from NREL PVDAQ Station 1221 in Mesa, Arizona, DOI: 10.2172/1055749), which has zero overlap with Kimber's calibration set.
+The `.sam` files in this directory are JSON manifests with metadata, model parameters, and recorded target outputs. Despite their suffix and SAM release labels, they are not executable SAM project files, do not include the weather files named in their metadata, and do not include an independently generated SAM output log. Their provenance as outputs of NREL SAM 2023.12.17 Revision 1 is **not established by the artifacts in this directory**. Treat the case names and target numbers as manifest labels, not as independently verified SAM results.
 
-## Validation Execution & Dynamic Binding Pipeline
+The Mesa/PVDAQ field-validation claim formerly made here is withdrawn. `src/engine/core/benchmarks/externalValidation.ts` constructs 45 daily synthetic inputs, uses a hard-coded default target of 8.45%, and compares the model output to that constant. The repository contains no raw PVDAQ time series, sensor identity/calibration record, or reproducible derivation of the claimed measured loss. Thus the reported 8.45% and 0.12% discrepancy do **not** constitute demonstrated field validation; a connection to PVDAQ Station 1221 and DOI 10.2172/1055749 is not established by the supplied evidence. The PVDAQ v3 API documentation identifies that API as decommissioned ([official documentation](https://developer.nrel.gov/docs/solar/pvdaq-v3/)); the endpoint cited in the code is not evidence that a station-specific record was retrieved. The official PVDAQ public-dataset collection DOI is [10.25984/1846021](https://data.openei.org/submissions/4568); citing that collection alone does not establish the specific Mesa measurement.
 
-The dynamic empirical test runner (`src/engine/core/benchmarks/externalValidation.ts`) actively parses these reference case files at runtime:
-- Extracts simulation parameters (e.g. daily deposition rates, array tilt, ground clearance, wash schedules).
-- Feeds them directly into the Studio simulation engines (`simulateAnnualSoiling`, `simulateAnnualSnowShedding`, 2D view-factor bifacial).
-- Evaluates the simulated results against the benchmark target outputs defined within the reference files.
-- If parameters or target outputs in these reference files are mutated, the runner evaluates against the modified values and detects divergence immediately.
+## Internal manifest comparison runner
+
+`src/engine/core/benchmarks/externalValidation.ts` parses and validates selected manifest fields, runs SolarPV Studio calculations, and compares those results with values recorded in the manifests. This may detect code changes relative to those stored targets. It does not run SAM, independently verify the targets, or establish physical accuracy. Some comparison values are also hard-coded in the runner. A passing result must therefore be described only as an internal comparison/regression result against recorded manifest values.
+
+For the independent evidence assessment and claim-by-claim limitations, see [`docs/audit/INDEPENDENT_EVIDENCE_AUDIT_1.0.3.md`](../../docs/audit/INDEPENDENT_EVIDENCE_AUDIT_1.0.3.md).
 
 To run the automated benchmark suite:
 

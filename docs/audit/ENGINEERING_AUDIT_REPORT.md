@@ -1,4 +1,7 @@
 # SolarPV Studio — Engineering Integrity Audit & Remediation Report
+
+> **Evidence-scope correction (2026-11-03):** This report contains historical implementation/remediation and internal test claims; it is not an independent field-validation or standards-conformity certificate. Its Mesa/PVDAQ, SAM-comparison, and provenance claims must be read subject to [`INDEPENDENT_EVIDENCE_AUDIT_1.0.3.md`](INDEPENDENT_EVIDENCE_AUDIT_1.0.3.md). In particular, the tests described below cannot substantiate field accuracy or an independent SAM run. The audit target for that correction is commit `6d508d2f3833849d92ba30f7302d9a0fd882dcbd`.
+
 **Date:** 2026-11-06  
 **Auditor:** Arena AI Senior Solar Engineering Agent  
 **Branch:** `arena/b1ee60dc-solarpv-studio`  
