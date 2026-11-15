@@ -251,7 +251,12 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       }
       const result = calculateAdvancedCableRun(config);
       if (!base.isDc && input.motorStartingMethod !== 'not_applicable' && result.motorStartingVoltageDropPct === null) {
-        return { ...result, isCompliant: false, isAssessed: false, assessmentNote: 'Motor starting study is incomplete; verify starting method, multiplier and dynamic voltage drop.' };
+        return {
+          ...result,
+          isCompliant: false,
+          isAssessed: false,
+          assessmentNote: 'Motor-start voltage drop is NOT ASSESSED: starting PF, source impedance, motor/drive dynamic data and the project acceptance limit are not modeled. The multiplier gives only a starting-current estimate.',
+        };
       }
       return result;
     };
@@ -588,7 +593,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     <th className="p-2.5">{lang === 'fa' ? 'کابل و رشته‌های موازی' : 'Selected Parallel Spec'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'افت ولتاژ' : 'Voltage Drop'}</th>
                     <th className="p-2.5">{lang === 'fa' ? 'اتصال کوتاه (IEC 60364)' : 'SC Withstand'}</th>
-                    <th className="p-2.5">{lang === 'fa' ? 'حفاظت / راه‌اندازی' : 'Protection / starting'}</th>
+                    <th className="p-2.5">{lang === 'fa' ? 'حفاظت / وضعیت راه‌اندازی' : 'Protection / start assessment'}</th>
                     <th className="p-2.5" title={lang === 'fa' ? 'جریان شارژ خازنی و ظرفیت خطی بر پایه مدل هم‌محور شیلددار فرضی (IEC 60287-1-1)' : 'Capacitive charging current and line capacitance under idealized coaxial screened model (IEC 60287-1-1)'}>
                       {lang === 'fa' ? 'جریان شارژ / خازن (مدل هم‌محور)' : 'Charging / Cap (Coax Model)'}
                     </th>
@@ -631,7 +636,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                         )}
                       </td>
                       <td className="p-2.5 font-mono font-bold">
-                        <span className={run.actualVoltageDropPct <= run.config.allowableDropPct ? 'text-industrial-success' : 'text-industrial-error'}>
+                        <span className={run.isVoltageDropCompliant ? 'text-industrial-success' : 'text-industrial-error'}>
                           {run.actualVoltageDropPct}% ({run.actualVoltageDropVolts}V)
                         </span>
                         <span className="block text-[9px] text-slate-400">
@@ -649,7 +654,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                       <td className="p-2.5 text-[10px]">
                         <div>{run.config.protectiveDeviceReference} ({run.config.protectiveDeviceRatingAmps}A/{run.config.protectiveDeviceBreakingCapacityKa}kA)</div>
                         <div>Isc {run.config.expectedIscKa}kA / {run.config.faultClearingTimeSec}s — {run.isProtectionCoordinationCompliant ? 'screen pass' : 'screen fail'}</div>
-                        <div>{run.config.motorStartingMethod} ×{run.config.motorStartingMultiplier ?? '—'}; start ΔV {run.motorStartingVoltageDropPct ?? '—'}%</div>
+                        <div>{run.config.motorStartingMethod ?? (lang === 'fa' ? 'راه‌اندازی نامشخص' : 'start method unknown')} ×{run.config.motorStartingMultiplier ?? '—'}; {lang === 'fa' ? 'جریان شروع (برآورد)' : 'start current estimate'}: {run.motorStartingCurrentAmps ?? '—'} A</div>
+                        <div className="text-amber-300">{run.isMotorStartingAssessed ? (lang === 'fa' ? 'افت راه‌اندازی: کاربرد ندارد' : 'Start voltage drop: not applicable') : (lang === 'fa' ? 'افت راه‌اندازی: بررسی‌نشده؛ مدل دینامیکی/حد پذیرش لازم است' : 'Start voltage drop: NOT ASSESSED; dynamic model/acceptance limit required')}</div>
                       </td>
                       <td className="p-2.5 font-mono text-xs">
                         {run.config.isDc ? (

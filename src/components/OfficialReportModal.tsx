@@ -360,7 +360,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Selected inverter phase/status', inverter.isThreePhase ? 'three-phase catalog' : 'single-phase catalog', inverterClustering?.healthStatusTextFa ?? 'cluster check not supplied'],
       ['Inverter surge requirement (W)', loadAnalysis.recommendedInverterPeakSurgeWatts, 'Screening; verify model transient overload curve'],
       ['Catalog kVA validation', 'NOT ASSESSED', 'Selected inverter catalog record has no verified apparent-power rating'],
-      ['Conductor Run', 'Design Current (A)', 'Length (m)', 'Material', 'Insulation', 'Protective Device Reference', 'Device Rating (A)', 'Device Breaking Capacity (kA)', 'Prospective Isc (kA)', 'Clearing Time (s)', 'PF', 'Coincidence Factor', 'Grouped Circuits', 'Motor Starting Method', 'Starting Current (A)', 'Starting Voltage Drop (%)', 'Protection Coordination Screening', 'Designation', 'Voltage Drop (%)', 'Status'],
+      ['Conductor Run', 'Design Current (A)', 'Length (m)', 'Material', 'Insulation', 'Protective Device Reference', 'Device Rating (A)', 'Device Breaking Capacity (kA)', 'Prospective Isc (kA)', 'Clearing Time (s)', 'PF', 'Coincidence Factor', 'Grouped Circuits', 'Motor Starting Method', 'Starting Current Estimate (A)', 'Motor Start Voltage-Drop Assessment', 'Protection Coordination Screening', 'Designation', 'Voltage Drop (%)', 'Status'],
       ...protection.cableRuns.map((c) => [
         isEn ? c.config.sectionNameEn : c.config.sectionNameFa,
         c.isAssessed === false ? 'not assessed' : c.config.designCurrentAmps,
@@ -376,8 +376,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
         c.config.coincidenceFactor ?? 'unknown',
         c.config.groupedCircuitsCount ?? 'unknown',
         c.config.motorStartingMethod ?? 'unknown',
-        c.motorStartingCurrentAmps ?? 'not calculated',
-        c.motorStartingVoltageDropPct ?? 'not calculated',
+        c.motorStartingCurrentAmps ?? 'not assessed',
+        c.isMotorStartingAssessed ? 'not applicable / no start-drop calculation' : 'NOT ASSESSED: dynamic starting PF, source impedance, motor/drive data and acceptance limit are required',
         c.isProtectionCoordinationAssessed ? (c.isProtectionCoordinationCompliant ? 'protection screening pass only' : 'protection coordination screening fail') : 'protection coordination NOT ASSESSED',
         c.isAssessed === false ? 'not assessed' : (isEn ? c.cableDesignationEn : c.cableDesignationFa),
         c.isAssessed === false ? 'not assessed' : c.actualVoltageDropPct,
@@ -1597,7 +1597,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Ampacity Iz (A)' : 'جریان مجاز Iz (A)'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Length (m)' : 'طول (m)'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Conductor / Insulation' : 'هادی / عایق'}</th>
-                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Protection / fault / motor start' : 'حفاظت / خطا / راه‌اندازی'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Protection / fault / motor-start assessment' : 'حفاظت / خطا / ارزیابی راه‌اندازی'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Calculated Sizing (Parallel Runs)' : 'سایزینگ محاسبه‌شده'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'ΔV (%)' : 'افت ولتاژ'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Joule Loss' : 'تلفات ژول'}</th>
@@ -1616,7 +1616,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                           <td className="p-2 font-mono text-teal-300 print:text-teal-900">{c.totalThermalAmpacityAmps || '-'}A</td>
                           <td className="p-2 font-mono">{c.config.oneWayLengthM}m</td>
                           <td className="p-2 font-mono">{c.config.conductorMaterial.toUpperCase()} / {c.config.insulationType}</td>
-                          <td className="p-2 text-[10px]">{c.config.protectiveDeviceReference ?? '—'} / {c.config.protectiveDeviceRatingAmps ?? '—'}A / {c.config.protectiveDeviceBreakingCapacityKa ?? '—'}kA; Isc {c.config.expectedIscKa ?? '—'}kA @ {c.config.faultClearingTimeSec ?? '—'}s; {c.config.motorStartingMethod ?? '—'} ×{c.config.motorStartingMultiplier ?? '—'}; start ΔV {c.motorStartingVoltageDropPct ?? '—'}%</td>
+                          <td className="p-2 text-[10px]">{c.config.protectiveDeviceReference ?? '—'} / {c.config.protectiveDeviceRatingAmps ?? '—'}A / {c.config.protectiveDeviceBreakingCapacityKa ?? '—'}kA; Isc {c.config.expectedIscKa ?? '—'}kA @ {c.config.faultClearingTimeSec ?? '—'}s; motor {c.config.motorStartingMethod ?? 'unknown'} ×{c.config.motorStartingMultiplier ?? '—'} (current estimate {c.motorStartingCurrentAmps ?? '—'}A); start ΔV {c.isMotorStartingAssessed ? 'N/A' : 'NOT ASSESSED — dynamic start model/limit required'}</td>
                           <td className="p-2 font-mono text-industrial-accent print:text-sky-900 font-bold">{isEn ? c.cableDesignationEn : c.cableDesignationFa}</td>
                           <td className="p-2 font-mono">{c.actualVoltageDropPct}%</td>
                           <td className="p-2 font-mono text-industrial-warning">{c.powerLossWatts ? `${c.powerLossWatts}W` : '-'}</td>

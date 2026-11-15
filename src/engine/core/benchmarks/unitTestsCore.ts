@@ -3041,7 +3041,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
   // [E8-ELEC-1] Cable triple-constraint sizing (Voltage Drop + Thermal Ampacity + Short-Circuit Withstand)
   {
-    const { calculateAdvancedCableRun } = await import('../../protectionBomEngine');
+    const { calculateAdvancedCableRun, isVoltageDropWithinLimit } = await import('../../protectionBomEngine');
 
     const acRun = calculateAdvancedCableRun({
       id: 'ac-test',
@@ -3055,6 +3055,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       allowableDropPct: 1.5,
       isDc: false,
       isThreePhase: true,
+      motorStartingMethod: 'not_applicable',
       ambientTempC: 45,
       protectiveDeviceRatingAmps: 180,
       protectiveDeviceBreakingCapacityKa: 15,
@@ -3098,6 +3099,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       allowableDropPct: 3,
       isDc: false,
       isThreePhase: false,
+      motorStartingMethod: 'not_applicable' as const,
       powerFactor: 0.7,
       ambientTempC: 30,
       protectiveDeviceRatingAmps: 32,
@@ -3125,6 +3127,35 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Single-phase AC reported voltage drop matches the sizing resistance/reactance/PF model and loss percentage uses real transferred power',
       singlePhaseModelConsistent,
       `size=${singlePhaseAcRun.cableDesignationEn}, dV=${singlePhaseAcRun.actualVoltageDropPct}% (expected ${Number((expectedSinglePhaseDropVolts / singlePhaseConfig.nominalVoltageVolts * 100).toFixed(2))}%), PF=${singlePhaseConfig.powerFactor}, loss=${singlePhaseAcRun.powerLossPct}% (expected ${expectedSinglePhaseLossPct}%)`
+    );
+
+    const motorStartRun = calculateAdvancedCableRun({
+      ...singlePhaseConfig,
+      motorStartingMethod: 'direct_on_line',
+      motorStartingMultiplier: 6,
+    });
+    const motorStartUnassessed = motorStartRun.isAssessed === false
+      && motorStartRun.isCompliant === false
+      && motorStartRun.isMotorStartingAssessed === false
+      && motorStartRun.motorStartingVoltageDropPct === null
+      && motorStartRun.assessmentNote?.includes('NOT ASSESSED') === true;
+    assert(
+      'E8-ELEC-1B',
+      'Motor start voltage drop remains unassessed and cannot produce an overall cable pass without dynamic inputs/acceptance criteria',
+      motorStartUnassessed,
+      `motorStartAssessed=${motorStartRun.isMotorStartingAssessed}, overallAssessed=${motorStartRun.isAssessed}, compliant=${motorStartRun.isCompliant}, startDeltaV=${motorStartRun.motorStartingVoltageDropPct}`
+    );
+
+    const roundedDropBoundarySafe = Number(((12.34 / 1000) * 100).toFixed(2)) === 1.23
+      && isVoltageDropWithinLimit(12.29, 1000, 1.23)
+      && isVoltageDropWithinLimit(12.30, 1000, 1.23)
+      && !isVoltageDropWithinLimit(12.31, 1000, 1.23)
+      && !isVoltageDropWithinLimit(12.34, 1000, 1.23);
+    assert(
+      'E8-ELEC-1C',
+      'Voltage-drop compliance uses unrounded under/on/over-limit values even when display rounding masks an exceedance',
+      roundedDropBoundarySafe,
+      `display=${Number(((12.34 / 1000) * 100).toFixed(2))}%, raw=1.234% > limit=1.23% is rejected; exact and below boundary pass`
     );
   }
 
@@ -3230,15 +3261,23 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     };
 
     const design = designPvArray(150, 5.0, testModule, restrictiveInverter, deratings, 35.69);
+    const lowDemandInverter = { ...restrictiveInverter, vmpptMinVolts: 150, imppMaxAmpsPerMppt: 30, iscMaxAmpsPerMppt: 30 };
+    const underMinimumString = designPvArray(0.1, 5.0, testModule, lowDemandInverter, deratings, 35.69);
 
-    // Module Imp is 13.4A > Inverter ImppMax of 12A, so MPPT current compliance must flag warning
+    // Module Imp is 13.4A > Inverter ImppMax of 12A, so MPPT current compliance must flag warning.
+    // A tiny array that is forced below MPPT minimum is diagnostic only, never executable.
     const currentWarningFound = design.warnings.some(w => w.includes('MPPT') || w.includes('جریان'));
+    const underMinimumBlocked = underMinimumString.modulesPerString < underMinimumString.minModulesPerStringAllowed
+      && underMinimumString.stringVmpMinHotVolts < lowDemandInverter.vmpptMinVolts
+      && !underMinimumString.isVoltageFeasible
+      && !underMinimumString.isDesignFeasible
+      && Boolean(underMinimumString.blockingErrors?.some((error) => error.includes('تعداد ماژول انتخاب‌شده')));
 
     assert(
       'E8-PV-1',
-      'PV string sizing enforces MPPT current constraints and decoupled Vmp temperature coefficient',
-      !design.isMpptCurrentCompliant && currentWarningFound && design.maxMpptOperatingCurrentAmps >= 13.4,
-      `MpptCompliant=${design.isMpptCurrentCompliant}, Impp=${design.maxMpptOperatingCurrentAmps}A (limit=12A), warningCount=${design.warnings.length}`
+      'PV string sizing enforces MPPT current constraints, decoupled Vmp temperature coefficient, and blocks final strings below MPPT minimum',
+      !design.isMpptCurrentCompliant && currentWarningFound && design.maxMpptOperatingCurrentAmps >= 13.4 && underMinimumBlocked,
+      `MpptCompliant=${design.isMpptCurrentCompliant}, Impp=${design.maxMpptOperatingCurrentAmps}A (limit=12A), undersizedString=${underMinimumString.modulesPerString}/${underMinimumString.minModulesPerStringAllowed}, Vmp=${underMinimumString.stringVmpMinHotVolts}V, feasible=${underMinimumString.isDesignFeasible}`
     );
   }
 
@@ -3337,6 +3376,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       allowableDropPct: 1.5,
       isDc: false,
       isThreePhase: true,
+      motorStartingMethod: 'not_applicable',
       expectedIscKa: 40,
       faultClearingTimeSec: 0.5,
       protectiveDeviceRatingAmps: 16,

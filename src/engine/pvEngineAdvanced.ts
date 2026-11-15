@@ -220,9 +220,9 @@ export function designPvArray(
 
   // Min series modules limited by MPPT Min
   const minModulesAllowed = Math.ceil(inverter.vmpptMinVolts / singleModuleVmpMinHot);
-  const isVoltageFeasible = minModulesAllowed <= upperLimit && minModulesAllowed > 0;
+  const hasFeasibleMpptWindow = minModulesAllowed <= upperLimit && minModulesAllowed > 0;
 
-  if (!isVoltageFeasible) {
+  if (!hasFeasibleMpptWindow) {
     warnings.push(
       "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
     );
@@ -278,6 +278,21 @@ export function designPvArray(
     }
   }
 
+  // Revalidate the final selected string, not only whether a feasible interval existed.
+  // The small-array load floor above may intentionally shorten a string below MPPT min;
+  // that diagnostic sizing must never be reported as executable.
+  const isVoltageFeasible = hasFeasibleMpptWindow
+    && chosenModulesPerString >= minModulesAllowed
+    && chosenModulesPerString <= upperLimit
+    && chosenModulesPerString * singleModuleVmpMinHot >= inverter.vmpptMinVolts
+    && chosenModulesPerString * singleModuleVmpMaxCold <= inverter.vmpptMaxVolts
+    && chosenModulesPerString * singleModuleVocMaxCold <= inverter.vdcMaxVolts;
+  if (!isVoltageFeasible && hasFeasibleMpptWindow) {
+    warnings.push(
+      `Selected string length (${chosenModulesPerString}) is outside the feasible MPPT voltage range (${minModulesAllowed}–${upperLimit} modules); this array is diagnostic only and is not executable.`
+    );
+  }
+
   let parallelStrings = Math.ceil(initialTotalModules / chosenModulesPerString);
   if (parallelStrings < 1) parallelStrings = 1;
 
@@ -299,8 +314,9 @@ export function designPvArray(
 
   const blockingErrors: string[] = [];
   if (!isVoltageFeasible) {
-    blockingErrors.push(
-      "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
+    blockingErrors.push(hasFeasibleMpptWindow
+      ? `تعداد ماژول انتخاب‌شده در رشته (${chosenModulesPerString}) کمتر از حداقل MPPT لازم (${minModulesAllowed}) یا خارج از پنجره ولتاژ اینورتر است؛ آرایه قابل بهره‌برداری نیست.`
+      : "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
     );
   }
 

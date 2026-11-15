@@ -73,7 +73,9 @@ export interface CableRunResult {
   cableDesignationFa: string; // e.g. "2 × (1 × 185 mm²) مسی XLPE"
   cableDesignationEn: string;
   actualVoltageDropVolts: number;
+  /** Rounded display value; compliance uses the unrounded voltage-drop ratio. */
   actualVoltageDropPct: number;
+  isVoltageDropCompliant: boolean;
   isCompliant: boolean;
   /** False means critical source inputs are missing; all numeric output fields are non-results. */
   isAssessed?: boolean;
@@ -90,6 +92,9 @@ export interface CableRunResult {
   isShortCircuitCompliant: boolean;
   isProtectionCoordinationAssessed?: boolean;
   isProtectionCoordinationCompliant?: boolean;
+  isMotorStartingAssessed?: boolean;
+  motorStartingAssessmentNote?: string;
+  /** User multiplier-based current estimate only; dynamic starting voltage drop is not assessed. */
   motorStartingCurrentAmps?: number | null;
   motorStartingVoltageDropPct?: number | null;
   // Cable electrical parameters (IEC 60287 / IEC 60502)
@@ -109,17 +114,25 @@ export function createUnassessedCableRun(config: Pick<CableRunConfig, 'id' | 'se
     calculatedTheoreticalCrossSectionMm2: 0, selectedStandardSingleCrossSectionMm2: 0,
     parallelRunsCount: 0, perRunCrossSectionMm2: 0, totalEffectiveCrossSectionMm2: 0,
     cableDesignationFa: 'بررسی نشده', cableDesignationEn: 'Not assessed',
-    actualVoltageDropVolts: 0, actualVoltageDropPct: 0, isCompliant: false,
+    actualVoltageDropVolts: 0, actualVoltageDropPct: 0, isVoltageDropCompliant: false, isCompliant: false,
     isAssessed: false, assessmentNote,
     thermalAmpacityPerRunAmps: 0, totalThermalAmpacityAmps: 0,
     temperatureDeratingFactorKt: 0, groupingDeratingFactorKg: 0,
     shortCircuitWithstandMinMm2: 0, powerLossWatts: 0, powerLossPct: 0,
     isAmpacityCompliant: false, isShortCircuitCompliant: false,
     isProtectionCoordinationAssessed: false, isProtectionCoordinationCompliant: false,
+    isMotorStartingAssessed: false, motorStartingAssessmentNote: assessmentNote,
     motorStartingCurrentAmps: null, motorStartingVoltageDropPct: null,
     lineCapacitanceUfPerKm: 0, totalCapacitanceUf: 0, chargingCurrentAmps: 0,
     capacitanceModelNote: 'Not calculated: required AC inputs are unknown or unconfirmed.',
   };
+}
+
+/** Compare raw voltage drop against its limit; formatting/rounding is display-only. */
+export function isVoltageDropWithinLimit(actualDropVolts: number, nominalVoltageVolts: number, allowableDropPct: number): boolean {
+  if (!Number.isFinite(actualDropVolts) || !Number.isFinite(nominalVoltageVolts) || nominalVoltageVolts <= 0
+    || !Number.isFinite(allowableDropPct) || allowableDropPct < 0) return false;
+  return (actualDropVolts / nominalVoltageVolts) * 100 <= allowableDropPct;
 }
 
 export type DcSystemEarthingType = 'floating' | 'functional_negative' | 'functional_positive';
@@ -420,8 +433,9 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
       * (rPerMeter * cosPhi + xPerMeter * sinPhi);
   }
 
-  const actualDropPct = Number(((actualDropVolts / config.nominalVoltageVolts) * 100.0).toFixed(2));
-  const isDropCompliant = actualDropPct <= config.allowableDropPct;
+  const actualDropPctUnrounded = (actualDropVolts / config.nominalVoltageVolts) * 100.0;
+  const actualDropPct = Number(actualDropPctUnrounded.toFixed(2));
+  const isDropCompliant = isVoltageDropWithinLimit(actualDropVolts, config.nominalVoltageVolts, config.allowableDropPct);
 
   // 6. Ampacity & Short-Circuit Verification
   const singleBaseAmp = getBaseAmpacity(perRunSection, config.conductorMaterial, config.insulationType);
@@ -441,8 +455,13 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const motorStartingCurrentAmps = config.motorStartingMethod && config.motorStartingMethod !== 'not_applicable'
     && config.motorStartingMultiplier && config.motorStartingMultiplier >= 1
     ? config.designCurrentAmps * config.motorStartingMultiplier : null;
-  const motorStartingVoltageDropPct = motorStartingCurrentAmps === null
-    ? null : Number((actualDropPct * (motorStartingCurrentAmps / config.designCurrentAmps)).toFixed(2));
+  // A current multiplier alone cannot determine dynamic voltage drop: starting PF,
+  // source impedance, motor/drive behavior and an acceptance limit are not modeled.
+  const isMotorStartingAssessed = config.isDc || config.motorStartingMethod === 'not_applicable';
+  const motorStartingVoltageDropPct = null;
+  const motorStartingAssessmentNote = isMotorStartingAssessed
+    ? undefined
+    : 'Motor starting voltage drop NOT ASSESSED: a current multiplier is only a current estimate; starting power factor, source impedance, motor/drive dynamic data and a project acceptance limit are required.';
 
   // 7. Joule Thermal Power Loss (P_loss = m * I² * R)
   const lineResistanceOhms = config.oneWayLengthM / (effectiveGamma * totalEffectiveCrossSection);
@@ -500,9 +519,17 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const capacitanceModelNote =
     'Idealized coaxial screened geometry per IEC 60287-1-1 Eq. 2.2; actual capacitance of unshielded/multicore cables depends on laying geometry and manufacturer datasheets.';
 
-  // Full compliance requires voltage drop, thermal ampacity, AND short-circuit withstand:
+  // A feeder pass also requires explicit protection data and, for AC circuits, an
+  // explicit motor-start disposition. Active motor starting remains unassessed here.
   const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant
-    && isProtectionCoordinationAssessed && isProtectionCoordinationCompliant;
+    && isProtectionCoordinationAssessed && isProtectionCoordinationCompliant && isMotorStartingAssessed;
+  const assessmentNotes = [
+    !isProtectionCoordinationAssessed
+      ? 'Protection coordination is unassessed: explicit protective-device and verified fault data are required.'
+      : '',
+    motorStartingAssessmentNote ?? '',
+  ].filter(Boolean);
+  const isAssessed = assessmentNotes.length === 0;
 
   const matFa = config.conductorMaterial === 'copper' ? 'مسی (Cu)' : 'آلومینیومی (Al)';
   const matEn = config.conductorMaterial === 'copper' ? 'Cu' : 'Al';
@@ -545,6 +572,10 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
       errorReasonsFa.push('مشخصات حفاظت با جریان طراحی، ظرفیت حرارتی کابل یا جریان اتصال کوتاه اعلام‌شده سازگار نیست.');
       errorReasonsEn.push('Protective-device rating/breaking capacity does not match the design current, cable ampacity or declared fault current.');
     }
+    if (!isMotorStartingAssessed && motorStartingAssessmentNote) {
+      errorReasonsFa.push('افت ولتاژ راه‌اندازی موتور بررسی نشده است؛ روش راه‌اندازی به‌تنهایی برای ارزیابی دینامیکی کافی نیست.');
+      errorReasonsEn.push(motorStartingAssessmentNote);
+    }
 
     troubleshootingGuideFa = `نحوه رفع خطا: ${errorReasonsFa.join(' ')} راهکار: ۱) افزایش تعداد کابل موازی به ${parallelRuns + 1} رشته، ۲) افزایش سایز کابل به سطح مقطع بالاتر، یا ۳) تغییر جنس کابل به مس با هدایت الکتریکی بالاتر.`;
     troubleshootingGuideEn = `Troubleshooting Guide: ${errorReasonsEn.join(' ')} Resolution: 1) Increase parallel runs to ${parallelRuns + 1}, 2) Select larger cross-section, or 3) Switch conductor to Copper.`;
@@ -561,11 +592,14 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     cableDesignationEn,
     actualVoltageDropVolts: Number(actualDropVolts.toFixed(2)),
     actualVoltageDropPct: actualDropPct,
+    isVoltageDropCompliant: isDropCompliant,
     isCompliant,
-    isAssessed: isProtectionCoordinationAssessed,
-    assessmentNote: isProtectionCoordinationAssessed ? undefined : 'Incomplete: explicit protective-device rating/reference, breaking capacity, prospective fault current and clearing time are required before a compliance result.',
+    isAssessed,
+    assessmentNote: assessmentNotes.length ? assessmentNotes.join(' ') : undefined,
     isProtectionCoordinationAssessed,
     isProtectionCoordinationCompliant,
+    isMotorStartingAssessed,
+    motorStartingAssessmentNote,
     motorStartingCurrentAmps,
     motorStartingVoltageDropPct,
     thermalAmpacityPerRunAmps: singleDeratedAmp,
