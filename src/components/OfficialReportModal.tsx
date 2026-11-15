@@ -360,6 +360,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Selected inverter phase/status', inverter.isThreePhase ? 'three-phase catalog' : 'single-phase catalog', inverterClustering?.healthStatusTextFa ?? 'cluster check not supplied'],
       ['Inverter surge requirement (W)', loadAnalysis.recommendedInverterPeakSurgeWatts, 'Screening; verify model transient overload curve'],
       ['Catalog kVA validation', 'NOT ASSESSED', 'Selected inverter catalog record has no verified apparent-power rating'],
+      ['Battery surge C-rate screening', batterySizing.isSurgeCRateAssessed ? `${batterySizing.actualSurgeCRate.toFixed(2)}C` : 'NOT ASSESSED', `Chemistry limit ${batterySizing.chemistry.maxSurgeCRate}C; ${batterySizing.isSurgeCRateCompliant ? 'within limit' : batterySizing.isSurgeCRateAssessed ? 'EXCEEDS limit' : 'no assessed battery-bank rate'}`],
       ['Conductor Run', 'Design Current (A)', 'Length (m)', 'Material', 'Insulation', 'Protective Device Reference', 'Device Rating (A)', 'Device Breaking Capacity (kA)', 'Prospective Isc (kA)', 'Clearing Time (s)', 'PF', 'Coincidence Factor', 'Grouped Circuits', 'Motor Starting Method', 'Starting Current Estimate (A)', 'Motor Start Voltage-Drop Assessment', 'Protection Coordination Screening', 'Designation', 'Voltage Drop (%)', 'Conductor Resistance Assumption', 'Status'],
       ...protection.cableRuns.map((c) => [
         isEn ? c.config.sectionNameEn : c.config.sectionNameFa,

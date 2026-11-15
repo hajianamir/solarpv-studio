@@ -487,7 +487,11 @@ export const BessTab: React.FC<BessTabProps> = ({
             <span className="text-industrial-error font-mono font-bold text-sm">
               {batterySizing.peakSurgeDischargeCurrentAmps.toFixed(1)} آمپر
             </span>
-            <span className="text-[10px] text-slate-400 block">جهت استارت بارهای موتوری</span>
+            <span className={`text-[10px] block ${batterySizing.isSurgeCRateCompliant ? 'text-teal-300' : 'text-red-300'}`}>
+              {batterySizing.isSurgeCRateAssessed
+                ? `نرخ هجومی: ${batterySizing.actualSurgeCRate.toFixed(2)}C / حد شیمی: ${batterySizing.chemistry.maxSurgeCRate}C — ${batterySizing.isSurgeCRateCompliant ? 'مجاز' : 'بیش از حد'}`
+                : 'نرخ C هجومی: بررسی‌نشده'}
+            </span>
           </div>
           <div>
             <span className="text-slate-400 block">تخمین طول عمر مفید و سیکل:</span>

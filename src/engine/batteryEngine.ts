@@ -117,6 +117,9 @@ export interface BatteryBankSizingResult {
   continuousDischargeCurrentAmps: number;
   peakSurgeDischargeCurrentAmps: number;
   actualContinuousCRate: number;
+  actualSurgeCRate: number;
+  isSurgeCRateAssessed: boolean;
+  isSurgeCRateCompliant: boolean;
   estimatedLifespanYears: number;
   expectedTotalCycles: number;
   warnings: string[];
@@ -229,6 +232,9 @@ export function sizeBatteryBank(
       continuousDischargeCurrentAmps: 0,
       peakSurgeDischargeCurrentAmps: 0,
       actualContinuousCRate: 0,
+      actualSurgeCRate: 0,
+      isSurgeCRateAssessed: false,
+      isSurgeCRateCompliant: false,
       estimatedLifespanYears: profile.typicalLifespanYears,
       expectedTotalCycles: profile.standardCycleLifeAt80DoD,
       warnings: [],
@@ -285,10 +291,20 @@ export function sizeBatteryBank(
   const peakSurgeDischargeCurrentAmps = peakWatts / (vdc * inverterEff);
 
   const actualContinuousCRate = actualBankAh > 0 ? continuousDischargeCurrentAmps / actualBankAh : 0;
+  const actualSurgeCRate = actualBankAh > 0 ? peakSurgeDischargeCurrentAmps / actualBankAh : 0;
+  const isSurgeCRateAssessed = actualBankAh > 0 && Number.isFinite(profile.maxSurgeCRate) && profile.maxSurgeCRate > 0;
+  const isSurgeCRateCompliant = isSurgeCRateAssessed && actualSurgeCRate <= profile.maxSurgeCRate;
 
   if (actualContinuousCRate > (profile.maxContinuousCRate || 1.0)) {
     warnings.push(
       `جریان دشارژ پیوسته (${continuousDischargeCurrentAmps.toFixed(1)}A معادل ${actualContinuousCRate.toFixed(2)}C) بیش از نرخ مجاز شیمی ${profile.nameFa} (${profile.maxContinuousCRate}C) است! خطر داغ شدن و سوختن باتری.`
+    );
+  }
+  if (!isSurgeCRateAssessed) {
+    warnings.push('Surge C-rate NOT ASSESSED: battery bank amp-hour capacity or chemistry surge C-rate limit is unavailable.');
+  } else if (!isSurgeCRateCompliant) {
+    warnings.push(
+      `جریان هجومی باتری (${peakSurgeDischargeCurrentAmps.toFixed(1)}A معادل ${actualSurgeCRate.toFixed(2)}C) از حد جهشی شیمی ${profile.nameFa} (${profile.maxSurgeCRate}C) بیشتر است.`
     );
   }
 
@@ -353,6 +369,9 @@ export function sizeBatteryBank(
     continuousDischargeCurrentAmps: Number(continuousDischargeCurrentAmps.toFixed(1)),
     peakSurgeDischargeCurrentAmps: Number(peakSurgeDischargeCurrentAmps.toFixed(1)),
     actualContinuousCRate: Number(actualContinuousCRate.toFixed(2)),
+    actualSurgeCRate: Number(actualSurgeCRate.toFixed(2)),
+    isSurgeCRateAssessed,
+    isSurgeCRateCompliant,
     estimatedLifespanYears,
     expectedTotalCycles: Math.round(cycleLifeAtActualDoD),
     warnings,

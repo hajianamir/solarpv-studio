@@ -2325,6 +2325,22 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       `powerplant=${powerplantDaily} (expect 0); ` +
       `sizeBatteryBank(20, 2, lifepo4) gross=${bat.grossCapacityKwh} kWh (expect 45-55)`
     );
+
+    const surgeOverLimit = sizeBatteryBank(0.8, 1, 'lifepo4', 48, 30000, 3000, 20, 100);
+    const surgeWithinLimit = sizeBatteryBank(0.8, 1, 'lifepo4', 48, 5000, 3000, 20, 100);
+    assert(
+      'E1-ENG-2A',
+      'Battery sizing flags chemistry maxSurgeCRate exceedance and accepts surge within the profile limit',
+      surgeOverLimit.totalCapacityAh === 100
+        && Math.abs(surgeOverLimit.actualSurgeCRate - 6.72) < 0.02
+        && surgeOverLimit.isSurgeCRateAssessed
+        && !surgeOverLimit.isSurgeCRateCompliant
+        && surgeOverLimit.warnings.some((warning) => warning.includes('6.72C') && warning.includes('2C'))
+        && surgeWithinLimit.isSurgeCRateAssessed
+        && surgeWithinLimit.isSurgeCRateCompliant
+        && !surgeWithinLimit.warnings.some((warning) => warning.includes('نرخ مجاز شیمی') && warning.includes('هجومی')),
+      `over=${surgeOverLimit.actualSurgeCRate}C/${surgeOverLimit.chemistry.maxSurgeCRate}C assessed=${surgeOverLimit.isSurgeCRateAssessed}; within=${surgeWithinLimit.actualSurgeCRate}C compliant=${surgeWithinLimit.isSurgeCRateCompliant}`
+    );
   }
 
   // [E2-ENG-3] Inverter clipping loss must be monotone in DC/AC ratio.
