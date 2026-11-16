@@ -65,8 +65,8 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
         </h1>
         <p className="text-slate-400 text-xs">
           {lang === 'fa'
-            ? 'ارزیابی کیفیت توان طبق استاندارد IEEE 519:2022، تغییرات ولتاژ در نقطه اتصال مشترک (PCC)، نسبت اتصال کوتاه (SCR)، فلیکر و تطابق با کدهای دیسپاچینگ توانیر'
-            : 'Power quality evaluation per IEEE 519:2022, Point of Common Coupling (PCC) voltage rise, Short-Circuit Ratio (SCR), flicker, and Tavanir Grid Code compliance.'}
+            ? 'برآورد مقدماتی/غربالگری با طیف نمونه و مدل ساده؛ این صفحه مطالعه اتصال، ارزیابی اندازه‌گیری‌شده یا تأیید انطباق IEEE 519/کد شبکه نیست. برای تصمیم طراحی، داده واقعی اینورتر و مطالعه متخصص لازم است.'
+            : 'Preliminary screening using illustrative spectra and simplified models only—not a measured interconnection study or IEEE 519/grid-code compliance determination. Design decisions require actual inverter data and qualified review.'}
         </p>
       </div>
 
@@ -196,23 +196,23 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
-            {lang === 'fa' ? 'تغییرات ولتاژ در نقطه اتصال (ΔV)' : 'PCC Voltage Rise (ΔV)'}
+            {lang === 'fa' ? 'تغییرات ولتاژ PCC — غربالگری (ΔV)' : 'PCC Voltage Rise Screening (ΔV)'}
           </div>
           <div
             className={`text-xl font-bold font-mono mt-1 ${
-              gridResult.pccVoltageRiseCompliant ? 'text-industrial-success' : 'text-industrial-error'
+              gridResult.pccVoltageRiseScreenPassed ? 'text-industrial-success' : 'text-industrial-error'
             }`}
           >
             {gridResult.pccVoltageRisePct}%
           </div>
           <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-            {gridResult.pccVoltageRiseCompliant ? (
+            {gridResult.pccVoltageRiseScreenPassed ? (
               <span className="text-industrial-success flex items-center gap-0.5">
-                <CheckCircle2 className="w-3 h-3" /> مجاز (حداکثر ±۳٪)
+                <CheckCircle2 className="w-3 h-3" /> درون target داخلی (نه تأیید انطباق)
               </span>
             ) : (
               <span className="text-industrial-error flex items-center gap-0.5">
-                <AlertTriangle className="w-3 h-3" /> فراتر از سقف مجاز
+                <AlertTriangle className="w-3 h-3" /> فراتر از target غربالگری داخلی
               </span>
             )}
           </div>
@@ -232,13 +232,13 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
-            {lang === 'fa' ? 'سقف ظرفیت مجاز اتصال' : 'Max Grid Injectable Capacity'}
+            {lang === 'fa' ? 'ظرفیت برآوردی مدل (نیازمند تأیید شبکه)' : 'Model Capacity Estimate (utility approval required)'}
           </div>
           <div className="text-xl font-bold font-mono mt-1 text-purple-400">
             {gridResult.maxAllowablePlantCapacityMw} <span className="text-xs font-normal">MW</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            بدون نیاز به تقویت خطوط فوق توزیع
+            برآورد مدل ساده؛ مطالعه اتصال و تأیید شرکت برق لازم است
           </div>
         </div>
       </div>
@@ -271,13 +271,13 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">شاخص‌های فلیکر ولتاژ (Pst / Plt):</span>
               <span className="font-mono text-industrial-warning">
-                Pst: {gridResult.flickerShortTermPst} (مجاز ≤ ۱.۰) | Plt: {gridResult.flickerLongTermPlt} (مجاز ≤ ۰.۸)
+                Pst: {gridResult.flickerShortTermPst} (حد مرجع غربالگری ≤ ۱.۰) | Plt: {gridResult.flickerLongTermPlt} (حد مرجع غربالگری ≤ ۰.۸)
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5">
-              <span className="text-slate-400">قابلیت عبور از افت ولتاژ (LVRT / FRT):</span>
-              <span className="text-industrial-success font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> {gridResult.lvrtCompliance.zeroVoltageRideThroughMs} میلی‌ثانیه افت کامل ولتاژ
+              <span className="text-slate-400">نمایش غربالگری عبور از افت ولتاژ (LVRT / FRT):</span>
+              <span className="text-amber-300 font-bold flex items-center gap-1">
+                {gridResult.lvrtCompliance.zeroVoltageRideThroughMs} میلی‌ثانیه — غربالگری مقدماتی؛ {gridResult.lvrtCompliance.statusFa}
               </span>
             </div>
           </div>
@@ -287,7 +287,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
         <div className="studio-card">
           <h3 className="text-sm font-bold text-industrial-accent mb-3 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-industrial-success" />
-            {lang === 'fa' ? 'خلاصه اعوجاج هارمونیکی کل (THD) طبق IEEE 519:' : 'Total Harmonic Distortion (THD) per IEEE 519:'}
+            {lang === 'fa' ? 'برآورد غربالگری THD (غیرحاکم، بدون ادعای انطباق):' : 'THD Screening Estimate (non-authoritative; no compliance claim):'}
           </h3>
           <div className="space-y-3 text-xs">
             <div className="p-3 bg-industrial-surface rounded border border-industrial-border">
@@ -302,7 +302,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
                 />
               </div>
               <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                <span>سقف مجاز استاندارد IEEE 519 برای این سطح SCR:</span>
+                <span>حد مرجع غربالگری (انطباق استاندارد تأیید نمی‌شود):</span>
                 <strong className="text-theme-strong font-mono">{harmonicsResult.thdCurrentLimitPct}%</strong>
               </div>
             </div>
@@ -319,7 +319,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
                 />
               </div>
               <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                <span>سقف مجاز اعوجاج ولتاژ در شبکه فشار متوسط:</span>
+                <span>حد مرجع غربالگری اعوجاج ولتاژ (بدون تعیین انطباق):</span>
                 <strong className="text-theme-strong font-mono">{harmonicsResult.thdVoltageLimitPct}%</strong>
               </div>
             </div>
@@ -343,8 +343,8 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
         <h3 className="text-sm font-bold text-industrial-accent mb-2 flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-industrial-accent" />
           {lang === 'fa'
-            ? 'طیف فرکانسی هارمونیک‌های فرد مرتبه ۳ تا ۲۵ و مقایسه با حدود استاندارد IEEE 519:'
-            : 'Odd Harmonic Spectrum (Orders 3 to 25) vs IEEE 519 Permissible Limits:'}
+            ? 'طیف هارمونیک نمونه (مرتبه ۳ تا ۲۵) در برابر حدود مرجع تقریبی — نه داده اندازه‌گیری‌شده:'
+            : 'Illustrative Harmonic Spectrum (Orders 3–25) vs Approximate Reference Limits—not measured data:'}
         </h3>
 
         <div className="overflow-x-auto">
@@ -356,8 +356,8 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
                 <th className="p-2">جریان تولیدی (% In)</th>
                 <th className="p-2">جریان موثر (Amps)</th>
                 <th className="p-2">اعوجاج ولتاژ PCC (%)</th>
-                <th className="p-2">سقف استاندارد IEEE 519</th>
-                <th className="p-2 text-center">وضعیت تطابق</th>
+                <th className="p-2">حد مرجع تقریبی</th>
+                <th className="p-2 text-center">غربالگری</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-300 font-mono">
@@ -370,13 +370,13 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
                   <td className="p-2 text-slate-400">{h.voltagePct}%</td>
                   <td className="p-2 text-slate-400">≤ {h.ieeeLimitPct}%</td>
                   <td className="p-2 text-center font-sans">
-                    {h.compliant ? (
+                    {h.withinReferenceLimit ? (
                       <span className="text-industrial-success flex items-center justify-center gap-1 text-[11px]">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> منطبق
+                        <CheckCircle2 className="w-3.5 h-3.5" /> درون حد غربالگری
                       </span>
                     ) : (
                       <span className="text-industrial-error flex items-center justify-center gap-1 text-[11px]">
-                        <AlertTriangle className="w-3.5 h-3.5" /> فراتر از سقف
+                        <AlertTriangle className="w-3.5 h-3.5" /> فراتر از حد مرجع غربالگری
                       </span>
                     )}
                   </td>

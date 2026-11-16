@@ -11,3 +11,8 @@ services:
       - PORT=3000
       - NODE_ENV=production
       - VITE_REAL_INTERNET=false
+    volumes:
+      - solarpv-data:/app/data
+
+volumes:
+  solarpv-data:

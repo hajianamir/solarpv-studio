@@ -63,7 +63,6 @@ export function buildProjectProvenanceSnapshot(
     const prov = source[key as string];
     const matches = typeof value === 'number' && prov?.value === value && prov?.unit === unit;
     const verifiedRegulatory = !hasOverride && typeof value === 'number' && evidenceIsValid(prov, value, unit);
-    const providerBacked = !hasOverride && matches && (prov?.sourceKind === 'provider_value' || prov?.sourceKind === 'provider_derived');
     return {
       key: String(key),
       parameter,
@@ -82,7 +81,8 @@ export function buildProjectProvenanceSnapshot(
         : matches
           ? prov?.qualityNote
           : 'No provenance record matching this exact value and unit.',
-      confidence: verifiedRegulatory ? 'regulatory' : providerBacked ? 'measured' : 'analytical',
+      // Third-party provider values (including reanalysis and derived fields) are not ground measurements.
+      confidence: verifiedRegulatory ? 'regulatory' : 'analytical',
     };
   });
 }

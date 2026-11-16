@@ -25,6 +25,7 @@ import {
 
 console.log('================================================================================');
 console.log(' SolarPV Studio v3.0 - Automated Core Suite Verification');
+console.log('NOTICE: PASS means internal test/target comparison only; stored citations/manifests do not establish independent validation or standards compliance.');
 console.log('================================================================================\n');
 
 // -----------------------------------------------------------------------------
@@ -55,13 +56,13 @@ console.log('+----------+--------------+--------------+-------------------+-----
 // -----------------------------------------------------------------------------
 // 2. SAM 2023.12.17 & TOPCon Golden Parameters (ASCII Table)
 // -----------------------------------------------------------------------------
-console.log('--- [2/4] SAM 2023.12.17 Reference Case & TOPCon Provenance ---');
-console.log(`SAM Software Release: ${GOLDEN_BIFACIAL_NREL.samSoftwareRelease}`);
-console.log(`Reference File Path: benchmarks/reference_files/sam_2023_12_17_bifacial_reference_case.sam`);
+console.log('--- [2/4] Stored Bifacial/Module Target Metadata (not a SAM execution record) ---');
+console.log(`Manifest-declared target version (unverified): ${GOLDEN_BIFACIAL_NREL.samSoftwareRelease}`);
+console.log(`Checked-in target manifest: benchmarks/reference_files/sam_2023_12_17_bifacial_reference_case.sam`);
 console.log(`SHA-256 Checksum:    ${GOLDEN_BIFACIAL_NREL.samReferenceCaseFileSha256}\n`);
 
 console.log('+----------------------------------------+------------------+---------------------+');
-console.log('| SAM 2023.12.17 Parameter               | Value            | Unit                |');
+console.log('| Stored manifest target field            | Value            | Unit                |');
 console.log('+----------------------------------------+------------------+---------------------+');
 console.log(`| Latitude / Longitude                   | 35.6892, 51.3890 | Deg N, Deg E        |`);
 console.log(`| Array Azimuth / Tilt                   | 180.0 / 25.0     | Deg (True South)    |`);
@@ -77,8 +78,8 @@ console.log(`| Rear Ground-Reflected Irradiance       | 110.50           | W/m2 
 console.log(`| Target Annual Bifacial Gain            | 10.40            | %                   |`);
 console.log('+----------------------------------------+------------------+---------------------+\n');
 
-console.log(`TOPCon Module Library Provenance: ${GOLDEN_SANDIA_PV.moduleName}`);
-console.log(`CEC Database Module ID:           ${GOLDEN_SANDIA_PV.cecDatabaseId}\n`);
+console.log(`Manifest-claimed module: ${GOLDEN_SANDIA_PV.moduleName}`);
+console.log(`Manifest-claimed CEC ID (not independently sourced here): ${GOLDEN_SANDIA_PV.cecDatabaseId}\n`);
 console.log('+----------------------------------------+------------------+---------------------+');
 console.log('| Sandia 5-Parameter TOPCon Variable     | Exact Value      | Engineering Unit    |');
 console.log('+----------------------------------------+------------------+---------------------+');
@@ -98,14 +99,14 @@ console.log('+----------------------------------------+------------------+------
 // -----------------------------------------------------------------------------
 // 3. Golden Dataset Cross-Validation — Split Tables (Ambiguity H)
 // -----------------------------------------------------------------------------
-console.log('--- [3/10] Golden Dataset Validation (Independent Cross-Validation + Implementation Verification) ---');
+console.log('--- [3/10] Stored Benchmark Target Comparisons (tagged cross-validation vs implementation checks) ---');
 const crossRes = runSystemCrossValidation();
 
 const crossValMetrics = crossRes.metrics.filter(m => m.verificationType === 'cross_validation');
 const implVerMetrics = crossRes.metrics.filter(m => m.verificationType === 'implementation_verification');
 
-// --- Table 3a: Independent Cross-Validation (counts toward overall PASS/FAIL) ---
-console.log(`\n3a. Independent Cross-Validation (${crossValMetrics.length} metrics — nominal source = independent third-party)`);
+// --- Table 3a: Metrics tagged as cross-validation; source independence is not asserted ---
+console.log(`\n3a. Cross-validation-tagged stored targets (${crossValMetrics.length}; independent execution not established)`);
 console.log(`Cross-Validation Count: ${crossRes.crossValidationCount} | Implementation Verification Count: ${crossRes.implementationVerificationCount}\n`);
 
 console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+');
@@ -121,12 +122,12 @@ for (const m of crossValMetrics) {
     `| ${pad(m.testId, 17)} | ${pad(m.name, 63)} | ${padNum(m.nominalValue, 8)} | ${padNum(m.calculatedValue, 8)} | ${padErr(m.relativeErrorPercent, 8)} | [${m.status}] | ${pad(source, 8)} |`
   );
   if (m.status === 'FAIL') {
-    console.error(`FATAL: Independent cross-validation failed on ${m.testId}`);
+    console.error(`FATAL: Stored-target comparison failed on ${m.testId}`);
     crossValFailed = true;
   }
 }
 console.log('+-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+');
-console.log(`Independent Cross-Validation Status: ${crossValFailed ? 'FAIL' : 'PASS'}\n`);
+console.log(`Cross-validation-tagged target comparisons: ${crossValFailed ? 'FAIL' : 'PASS'} (not independent validation)\n`);
 
 // --- Table 3b: Implementation Verification (informational, NOT in overall PASS/FAIL) ---
 console.log(`3b. Implementation Verification (${implVerMetrics.length} metrics — code-internal / literature threshold reproduction)`);
@@ -330,32 +331,31 @@ for (const p of snowRecal.threeWinterProfiles) {
 console.log('+--------------------+------------------------+----------+----------+----------+----------+----------+--------+\n');
 
 // -----------------------------------------------------------------------------
-// 9. Field Measurement Validation & SAM Cross-Model Comparison
+// 9. Internal reference-target comparisons (not field/SAM validation)
 // -----------------------------------------------------------------------------
-console.log('--- [9/10] Field Measurement Validation & SAM Cross-Model Comparison ---');
+console.log('--- [9/10] Internal Reference-Target Comparisons (not external validation) ---');
 const extVal = runExternalEmpiricalValidationSuite();
-console.log(`Overall Status: [${extVal.overallStatus}] | Field Sensors: ${extVal.fieldBenchmarks.length} | SAM Hubs: ${extVal.crossModelComparisons.length}\n`);
+console.log(`Internal target harness: [${extVal.overallStatus}] | Unverified field-like targets: ${extVal.referenceComparisons.length} | Stored multi-climate targets: ${extVal.crossModelComparisons.length}\n`);
 
-console.log('1. Field Measurement Validation (IEC 61724-1 Class A Sensors - PVDAQ Station 1221, Mesa AZ):');
-console.log('+--------------------+------------------------------------------+----------+----------+----------+--------+');
-console.log('| Station ID         | Sensor Specification & Location          | Measured | Sim Loss | Diff (%) | Status |');
-console.log('+--------------------+------------------------------------------+----------+----------+----------+--------+');
-for (const f of extVal.fieldBenchmarks) {
+console.log('1. Synthetic internal soiling target comparison (not field measurements):');
+console.log('+-------------------------------+------------------------------------------+----------+----------+----------+--------+');
+console.log('| Target ID                     | Target basis                             | Target   | Sim Loss | Diff (%) | Status |');
+console.log('+-------------------------------+------------------------------------------+----------+----------+----------+--------+');
+for (const f of extVal.referenceComparisons) {
   const pad = (s: string, l: number) => (s.length > l ? s.slice(0, l - 3) + '...' : s).padEnd(l);
   const padN = (n: number, l: number) => (n.toFixed(2) + '%').padStart(l);
-  console.log(`| ${pad(f.stationId, 18)} | ${pad(f.stationName, 40)} | ${padN(f.empiricalSensorLossPercent, 8)} | ${padN(f.simulatedEngineLossPercent, 8)} | ${padN(f.relativeDiscrepancyPercent, 8)} | [${f.status}] |`);
+  console.log(`| ${pad(f.targetId, 29)} | ${pad(f.description, 40)} | ${padN(f.referenceTargetLossPercent, 8)} | ${padN(f.simulatedEngineLossPercent, 8)} | ${padN(f.relativeDiscrepancyPercent, 8)} | [${f.status}] |`);
 }
 console.log('+--------------------+------------------------------------------+----------+----------+----------+--------+\n');
 
-for (const f of extVal.fieldBenchmarks) {
-  const prov = f.datasetProvenance;
-  console.log(`   Station ${f.stationId}: DOI=${prov.doi} | URL=${prov.url} | Period=${prov.monitoringPeriod} | Sensor=${prov.sensorTechnology}`);
+for (const f of extVal.referenceComparisons) {
+  console.log(`   Target ${f.targetId}: evidence=${f.evidenceStatus} | ${f.targetBasisNote}`);
 }
 console.log('');
 
-console.log('2. Cross-Model Comparison (NREL SAM 2023.12.17 Multi-Climate):');
+console.log('2. Stored multi-climate target comparison (not an executable SAM comparison):');
 console.log('+--------------------+--------------------------+---------------+---------------+---------------+--------+');
-console.log('| Climate Hub ID     | Location & Regime        | SAM Soil (%)  | Eng Soil (%)  | Eng Snow (%)  | Status |');
+console.log('| Target ID          | Location & Regime        | Ref Soil (%)  | Eng Soil (%)  | Eng Snow (%)  | Status |');
 console.log('+--------------------+--------------------------+---------------+---------------+---------------+--------+');
 for (const c of extVal.crossModelComparisons) {
   const pad = (s: string, l: number) => s.padEnd(l);
@@ -365,7 +365,7 @@ for (const c of extVal.crossModelComparisons) {
 console.log('+--------------------+--------------------------+---------------+---------------+---------------+--------+\n');
 
 if (extVal.overallStatus !== 'PASS') {
-  console.error('FATAL: External empirical validation suite failed (IEC 61724-1 sensor or SAM benchmark targets failed)');
+  console.error('FATAL: Internal reference-target comparison checks failed; no external validation claim is made');
   process.exit(1);
 }
 

@@ -1,11 +1,11 @@
 # ممیزی مستقل SolarPV Studio — برنامه و baseline اولیه
 
-**وضعیت سند:** فاز ۰ — فقط وضعیت مخزن، baseline آزمون و برنامهٔ اجرا؛ ممیزی کامل نشده است.<br>
+**وضعیت ثبت‌شده در نسخهٔ اولیه:** فاز ۰ — در لحظهٔ ثبت این baseline ممیزی کامل نشده بود. ممیزی تکمیلی و matrix A-01…A-84 بعداً در اسناد پیوندشده تکمیل شدند.<br>
 **snapshot هدف:** `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d`<br>
 **شاخهٔ فعال Arena:** `arena/12d13c9e-solarpv-studio` (وضعیت `active`)<br>
 **درخت منبع در شروع:** clean؛ `HEAD` با `origin/main` برابر بود.<br>
 **تاریخ مرجع محیط:** 2026-11-03 UTC.<br>
-**محدودیت انتشار:** هیچ commit، push، merge، release یا PR در این کار انجام نشده و بدون مجوز صریح جداگانه انجام نخواهد شد.
+**وضعیت انتشار در زمان baseline اولیه:** هنوز commit/push/merge/release/PR انجام نشده بود. وضعیت بسته‌بندی بعدی در بخش 7 و در گزارش ممیزی ثبت شده است.
 
 > این سند خود یک تغییر مستنداتی است که پس از ثبت baseline ایجاد شده است. جملهٔ «هنوز هیچ فایل ... تغییر نکرده» فقط وضعیت لحظهٔ ایجاد سند را توصیف می‌کند؛ از آن زمان `src/App.tsx` با افزودن دو dependency جاافتاده تغییر کرده است. baseline اولیهٔ زیر همچنان snapshot commit هدف را توصیف می‌کند و با نتایج working tree فعلی یکی نیست.
 
@@ -53,7 +53,7 @@
 
 | ID | شدت | وضعیت فعلی | شواهد snapshot | مالک/وابستگی | معیار بستن |
 |---|---|---|---|---|---|
-| BASE-LINT-01 | P1 — CI/dev | **روی snapshot تأیید شد؛ در working tree فعلی اصلاح محلی شده** | `npm run lint` روی `0a0adb6…` با یک خطای `react-hooks/exhaustive-deps` در `src/App.tsx:1665` و 95 هشدار پایان یافت؛ type-checkها سبز بودند. علت، استفاده از دو assessment flag برای badge منوی شبیه‌سازی بدون dependency متناظر بود. در working tree فعلی همان دو dependency افزوده شده و lint با exit 0 و همان 95 هشدار اجرا شد. | Frontend; React hook dependency semantics | regression رفتاری/مرورگر برای تغییر badge در اثر تغییر assessment flags؛ lint فعلی سبز است. هنوز commit یا push نشده است. |
+| BASE-LINT-01 | P1 — CI/dev | **روی snapshot تأیید شد؛ در بستهٔ ممیزی اصلاح و commit شد** | `npm run lint` روی `0a0adb6…` با یک خطای `react-hooks/exhaustive-deps` در `src/App.tsx:1665` و 95 هشدار پایان یافت؛ type-checkها سبز بودند. علت، استفاده از دو assessment flag برای badge منوی شبیه‌سازی بدون dependency متناظر بود. در working tree زمان ممیزی همان دو dependency افزوده شده و lint با exit 0 و همان 95 هشدار اجرا شد؛ این اصلاح بعداً در commit بسته‌بندی ممیزی `aca0328` ثبت و push شد. | Frontend; React hook dependency semantics | regression رفتاری/مرورگر برای تغییر badge در اثر تغییر assessment flags؛ lint فعلی سبز است. اصلاح محدود ثبت شده، اما آزمون regression اختصاصی badge و بررسی release جداگانه نیست. |
 | BASE-DOC-01 | P2 — صداقت baseline | **ناسازگاری قابل مشاهده؛ معنای شمار هنوز باز** | README عبارت `Test baseline: 297/297` دارد؛ runnerهای این baseline جداگانه‌اند و `test:all` شمار تجمیعیِ نام‌گذاری‌شده/قابل‌ردیابی چاپ نکرد. فعلاً آن عدد را غلط اعلام نمی‌کنیم؛ زنجیرهٔ تولید آن باید بازتولید شود. | QA/docs; test harness inventory | منبع شمار، فرمان، نوع assertion/suite و حذف دوباره‌شماری مستند؛ README فقط عدد قابل‌بازتولید را می‌گوید. |
 | BASE-PERF-01 | P1 — تجربه/عملکرد | **مشاهده شد؛ اثر کاربری نیازمند اندازه‌گیری** | Build روی همین snapshot `OfficialReportModal` را 1,258.46 kB و هشدار >1000 kB گزارش کرد. این به‌تنهایی ثابت نمی‌کند startup یا رندر کند است. | Frontend/build; `OfficialReportModal` dependencies | اندازه‌گیری cold-load/route chunk در browser با معیار ازپیش‌تعریف‌شده؛ تقسیم bundle فقط اگر شواهد نشان دهد لازم است. |
 | BASE-EXT-01 | P0 gate برای sign-off | **نیازمند شخص ثالث/مدرک** | baseline شامل هیچ محاسبهٔ امضاشدهٔ PE، حفاظت/ارتینگ، ژئوتکنیک یا مالی نیست. متن رسمی استانداردها در این اجرای baseline دسترس‌پذیر/بازبینی‌شده نیست. | مالک محصول + مهندس مستقل هر رشته | بستهٔ ورودی/خروجی قابل‌بازتولید و گزارش امضاشده با تلرانس ازپیش‌تعریف‌شده؛ تا آن زمان خروجی screening می‌ماند. |
@@ -110,18 +110,20 @@ Faiman/SAM/PVsyst thermal; advanced IEC voltage; cable tables; IAM/spectrum/bifa
 | نوع استفاده | وضعیت فعلی پیشنهادی | مدرک لازم برای ارتقا |
 |---|---|---|
 | نمونه‌سازی/آموزشی | مجاز با افشای تخمین‌ها و limitations | حفظ provenance و warnings |
-| screening مقدماتی | مشروط؛ lint در working tree فعلی سبز است، اما ریسک‌های P0/P1 و یافته‌های نیازمند بازتأیید همچنان بازند | رفع/mitigation ریسک‌های P0 متناسب با کاربرد، cross-path tests و افشای محدودیت‌ها |
+| screening مقدماتی | مشروط؛ lint در working tree زمان ممیزی سبز بود، اما ریسک‌های P0/P1 و یافته‌های نیازمند بازتأیید همچنان بازند | رفع/mitigation ریسک‌های P0 متناسب با کاربرد، cross-path tests و افشای محدودیت‌ها |
 | طراحی حرفه‌ای تحت بازبینی | فعلاً فقط به‌عنوان ابزار کمکی غیرحاکم | ورودی محل‌محور + review ذی‌صلاح برای هر رشته + حدود مدل |
 | تأمین مالی / bankability | غیرمجاز بر مبنای نرم‌افزار به‌تنهایی | validation مستقل، مدل مالی مورد توافق، دادهٔ site-specific و امضاهای لازم |
 
-## 7. پیگیری ممیزی و وضعیت working tree فعلی (2026-11-03 UTC)
+## 7. پیگیری ممیزی و وضعیت ثبت‌شده هنگام اجرای ممیزی (2026-11-03 UTC)
 
-### تغییرات محلی و وضعیت Git
-- شاخه همچنان `arena/12d13c9e-solarpv-studio` و `HEAD` همچنان `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d` است؛ با `main` به‌عنوان merge-base برابر است. `gh pr list --state open` خالی بود. remote refs موجود: `origin/main` و `origin/HEAD -> origin/main`.
-- تغییرات فعلی فقط شامل `src/App.tsx` (افزودن دو dependency جاافتاده به `useMemo`) و همین سند ممیزیِ untracked است. هیچ تغییر کاربری دیگری پاک/overwrite نشده؛ هیچ commit/push/merge/release انجام نشده است.
+> تاریخ بالا تاریخ اجرای ممیزی snapshot است، نه تاریخ وضعیت Git امروز. موارد این بخش مشاهده‌های همان زمان‌اند؛ commit بسته‌بندی و push بعداً انجام شده‌اند.
+
+### تغییرات محلی و وضعیت Git در زمان ممیزی
+- در زمان ثبت این بخش، شاخهٔ فعال `arena/12d13c9e-solarpv-studio` و `HEAD` برابر snapshot هدف `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d` بود؛ `gh pr list --state open` خالی بود و remote refs مشاهده‌شده `origin/main` و `origin/HEAD -> origin/main` بودند.
+- در آن زمان تغییرات شامل `src/App.tsx` (افزودن دو dependency جاافتاده به `useMemo`) و اسناد ممیزی بود و هنوز در commit نهایی بسته‌بندی نشده بودند. این تغییرات بعداً در commit `aca0328a4474fec593fd9b9808bcc87796defe97` ثبت و به شاخهٔ remote push شدند. هیچ merge یا release انجام نشده است.
 - دلیل اصلاح: badge آیتم شبیه‌سازی بر مبنای `isGenerationDeratingAssessed` و `isPowerLimitsAssessed` ساخته می‌شود؛ بدون dependencyها ممکن بود با تغییر assessment، memo و badge کهنه بمانند. type-check و lint بعد از اصلاح پاس شدند. تست مرورگر موجود regression اختصاصی برای toggle همین دو flag ندارد؛ این مورد به‌عنوان بررسی رفتاری باقیمانده ثبت می‌شود.
 
-### تکرار آزمون‌ها روی working tree فعلی
+### تکرار آزمون‌ها روی working tree زمان ممیزی
 | فرمان | نتیجهٔ فعلی | تفسیر/محدودیت |
 |---|---|---|
 | `npm run lint` | exit 0؛ دو type-check پاس؛ ESLint صفر error و 95 warning | مشکل baseline مربوط به dependency دیگر در این working tree دیده نشد؛ هشدارهای `no-explicit-any` همچنان هستند. |
@@ -145,4 +147,8 @@ Faiman/SAM/PVsyst thermal; advanced IEC voltage; cable tables; IAM/spectrum/bifa
 - production build/server و آزمون HTTP محلی اجرا شدند؛ `npm run test:coverage` نیز اجرا شد. اجرای Redis واقعی، SAM/pvlib مستقل، داده‌های زندهٔ بیرونی، آزمون کامل با identity provider/secret واقعی و performance profiling با معیار کاربری انجام نشد.
 - کد آزمون فعلی در بخش‌هایی PASS است، اما هیچ ادعای دقت فیزیکی، انطباق IEC/NEC/IEEE/ASCE، گواهی طراحی یا تأیید شخص ثالث ایجاد نمی‌کند. تأیید شخص ثالث برای طراحی محل‌محور همچنان در انتظار است.
 - اصلاح محدود `src/App.tsx` برای dependency React انجام شد؛ بازطراحی UX یا accessibility audit کامل انجام نشده است.
-- هیچ commit، push، PR یا release ایجاد نشده است.
+- در زمان اجرای این baseline، هیچ commit/push/PR/releaseی ایجاد نشده بود؛ بستهٔ ممیزی بعداً در commit `aca0328a4474fec593fd9b9808bcc87796defe97` ثبت و push شد. PR/merge/release همچنان انجام نشده است.
+
+## 9. وضعیت follow-up پیاده‌سازی
+
+این برنامه، baseline تاریخی است؛ وضعیت patchهای بعدی، نتایج جدید تست و موارد عمداً باز در [`RE-AUDIT-FOLLOWUP-IMPLEMENTATION.fa.md`](RE-AUDIT-FOLLOWUP-IMPLEMENTATION.fa.md) ثبت شده است. sign-off شخص ثالث، داده‌های site-specific، اجرای مستقل SAM/pvlib و پیکربندی GitHub branch protection در این پیگیری انجام‌شده محسوب نمی‌شوند.

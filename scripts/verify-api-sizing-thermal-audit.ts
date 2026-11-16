@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import {
   performQuickSizing,
   InMemorySolarDatabase,
@@ -444,6 +445,40 @@ async function runProbe() {
     projStatus === 401 && projBody?.error?.includes('unsupported or missing algorithm'),
     `status=${projStatus}, error="${projBody?.error}"`
   );
+
+  const signJwt = (payload: Record<string, unknown>) => {
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const signature = crypto.createHmac('sha256', 'test-audit-jwt-secret').update(`${header}.${body}`).digest('base64url');
+    return `${header}.${body}.${signature}`;
+  };
+  process.env.JWT_ISSUER = 'https://issuer.example.test';
+  process.env.JWT_AUDIENCE = 'solarpv-api';
+  const now = Math.floor(Date.now() / 1000);
+  const invalidClaims = [
+    { name: 'missing exp', payload: { sub: 'auditor', iss: process.env.JWT_ISSUER, aud: process.env.JWT_AUDIENCE } },
+    { name: 'wrong issuer', payload: { sub: 'auditor', exp: now + 3600, iss: 'https://attacker.example.test', aud: process.env.JWT_AUDIENCE } },
+    { name: 'wrong audience', payload: { sub: 'auditor', exp: now + 3600, iss: process.env.JWT_ISSUER, aud: 'another-api' } },
+    { name: 'excessive lifetime', payload: { sub: 'auditor', exp: now + 172800, iss: process.env.JWT_ISSUER, aud: process.env.JWT_AUDIENCE } },
+  ];
+  for (const testCase of invalidClaims) {
+    projStatus = 200;
+    projBody = null;
+    await projectsRoute({ headers: { authorization: `Bearer ${signJwt(testCase.payload)}` } }, mockProjRes);
+    check(
+      `JWT profile rejects ${testCase.name}`,
+      projStatus === 401,
+      `status=${projStatus}, error="${projBody?.error}"`
+    );
+  }
+  projStatus = 200;
+  projBody = null;
+  await projectsRoute({
+    headers: { authorization: `Bearer ${signJwt({ sub: 'auditor', exp: now + 3600, iss: process.env.JWT_ISSUER, aud: process.env.JWT_AUDIENCE })}` },
+  }, mockProjRes);
+  check('JWT profile accepts correctly signed, bounded token with expected issuer and audience', projStatus === 200, `status=${projStatus}`);
+  delete process.env.JWT_ISSUER;
+  delete process.env.JWT_AUDIENCE;
 
   console.log('\n================================================================================');
   console.log(` AUDIT PROBE COMPLETE: ${passedTests} / ${totalTests} TESTS PASSED`);

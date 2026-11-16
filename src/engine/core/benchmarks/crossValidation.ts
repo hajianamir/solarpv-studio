@@ -38,7 +38,7 @@ export interface ValidationMetricResult {
   unit: string;
   status: 'PASS' | 'WARN' | 'FAIL';
   details: string;
-  /** cross_validation = independent third-party source; implementation_verification = reproduces code-internal relationship */
+  /** Classification tag only; it does not prove independent authorship, acquisition, execution, or validation. */
   verificationType: VerificationType;
   /** Data confidence grade: Measured = field sensors, Calibrated = against reference, Estimated = model-derived */
   confidence: 'measured' | 'calibrated' | 'estimated';
@@ -53,7 +53,7 @@ export interface SystemValidationReport {
   testsWarned: number;
   testsFailed: number;
   maxDiscrepancyPercent: number;
-  /** Metrics verified against independent third-party sources (real cross-validation). */
+  /** Count of metrics carrying the cross_validation tag; inspect evidence/provenance separately. */
   crossValidationCount: number;
   /** Metrics that reproduce code-internal relationships / literature thresholds (implementation verification, NOT independent). */
   implementationVerificationCount: number;
@@ -175,9 +175,9 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       sandiaCalc,
       GOLDEN_SANDIA_PV.tolerancePercent,
       'W',
-      `Pmp computed live by single-diode engine at dG=-200 W/m2, dT=+20C (gamma -0.30%/C) on CEC module ${GOLDEN_SANDIA_PV.cecDatabaseId}; engine Pmp=${sandiaRes.pmp.toFixed(2)} W, Voc=${sandiaRes.voc.toFixed(2)} V, Isc=${sandiaRes.isc.toFixed(2)} A`,
-      'cross_validation',
-      'calibrated'
+      `Internal implementation check only: parameters are currently extracted from STC summary inputs rather than the CEC five-parameter record; engine Pmp=${sandiaRes.pmp.toFixed(2)} W, Voc=${sandiaRes.voc.toFixed(2)} V, Isc=${sandiaRes.isc.toFixed(2)} A. Not an independent SAM/CEC cross-validation.`,
+      'implementation_verification',
+      'estimated'
     )
   );
 
@@ -328,10 +328,10 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
   const overallStatus = testsFailed > 0 ? 'FAIL' : testsWarned > 0 ? 'WARN' : 'PASS';
 
   const complianceNotes = [
-    'Cross-validation vs implementation verification separated: only benchmarks against independent third-party sources (NREL SAM, Sandia/CEC, Kimber NREL, Marion IEEE JPV, IEA SHC Task 60) are classified cross_validation.',
+    'Cross-validation and implementation checks are tagged separately; a cross_validation tag is not proof that a reference was independently executed, acquired, or independently authored.',
     'VAL-IAM-10 (Martin & Ruiz ARC) uses the same formula in engine and nominal source — circular; classified as implementation_verification.',
     'Five tautological / hard-coded implementation metrics (VAL-FPV-03, VAL-LCA-04, VAL-GEOTECH-05, VAL-GEOTECH-06, VAL-GRID-07) were pruned per RFC 3.0 audit requirements R7 and R16.',
-    'No simulated parameter is tested against an identical hard-coded internal lookup; golden dataset nominals carry source URL / DOI.',
+    'Source URLs/DOIs attached to stored targets are bibliographic pointers only; they do not prove dataset authenticity or independent execution.',
     'PVsyst cross-validation terminology is strictly maintained (reserving validation for operational field sensors).',
   ];
 

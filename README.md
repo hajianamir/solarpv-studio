@@ -5,7 +5,7 @@
 Cross-platform web Solar PV design, simulation, and financial engineering
 platform.
 
-> **Current release:** v1.0.3 · **Test baseline:** 297/297 · **TypeScript:** `strict: true` · **Post-strict audit:** [READY](docs/evidence/post-strict-audit.md)
+> **Current release:** v1.0.3 · **Test suites:** run separately with the documented npm scripts (no aggregate 297/297 baseline is claimed) · **TypeScript:** `strict: true` · **Post-strict audit:** [READY](docs/evidence/post-strict-audit.md)
 
 ## Actual Stack (this repository)
 

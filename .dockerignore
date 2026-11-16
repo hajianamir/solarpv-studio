@@ -1,0 +1,28 @@
+# Never include local credentials or runtime data in Docker build contexts
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+
+# Repository / development artifacts
+.git
+.github
+node_modules
+**/node_modules
+.npm
+.cache
+.vite
+dist
+coverage
+*.log
+.DS_Store
+
+# Local mutable data and test scratch
+data
+**/data
+*.sqlite
+*.sqlite3
+*.db

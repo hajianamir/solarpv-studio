@@ -59,8 +59,6 @@ function makeFieldRow(
     : provenanceMatches
       ? provenance!.sourceKind
       : 'default_unverified';
-  const providerBacked = !overridden && provenanceMatches &&
-    (provenance?.sourceKind === 'provider_value' || provenance?.sourceKind === 'provider_derived');
   return {
     parameter,
     value: `${value} ${unit}`,
@@ -76,7 +74,9 @@ function makeFieldRow(
         : 'No matching provenance record for this exact value and unit.',
     traceId: provenance?.retrievedAt ? traceId : '—',
     timestamp: provenance?.retrievedAt || timestamp,
-    confidence: verified ? 'regulatory' : providerBacked ? 'measured' : 'analytical',
+    // Provider/reanalysis values are sourced data, but not field-measured observations.
+    // Keep sourceKind/provider visible while reserving "measured" for authenticated field measurements.
+    confidence: verified ? 'regulatory' : 'analytical',
   };
 }
 

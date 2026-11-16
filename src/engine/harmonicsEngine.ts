@@ -1,5 +1,5 @@
-// Utility Powerplant Harmonics & Upstream Grid Interconnection Engine
-// Conforming to IEEE 519:2022, IEC 61000-3-6, IEEE 1547-2018 & Tavanir Grid Code
+// Utility Powerplant Harmonics & Upstream Grid Screening Engine
+// Simplified screening relations only; not a standards-conformity or interconnection study.
 
 export interface HarmonicOrder {
   order: number;
@@ -7,8 +7,8 @@ export interface HarmonicOrder {
   currentPct: number;      // % of fundamental current
   currentAmps: number;
   voltagePct: number;      // % voltage distortion at PCC
-  ieeeLimitPct: number;    // IEEE 519 standard maximum allowed
-  compliant: boolean;
+  ieeeLimitPct: number;    // Approximate internal reference threshold; edition/jurisdiction must be verified
+  withinReferenceLimit: boolean; // Screening comparison only, not a compliance result
 }
 
 export interface HarmonicsAnalysisResult {
@@ -22,8 +22,11 @@ export interface HarmonicsAnalysisResult {
   thdCurrentLimitPct: number;
   thdVoltagePct: number;
   thdVoltageLimitPct: number;
-  isThdCompliant: boolean;
-  isTddCompliant: boolean;
+  /** No compliance determination is available from the simplified inputs/model. */
+  isThdCompliant: null;
+  isTddCompliant: null;
+  thdScreenPassed: boolean;
+  tddScreenPassed: boolean;
   individualHarmonics: HarmonicOrder[];
   recommendedFilterType: 'none' | 'lcl_trap' | 'active_harmonic_filter';
   recommendedAhfCurrentAmps: number;
@@ -59,7 +62,8 @@ export interface UpstreamGridAnalysisResult {
   theveninReactanceXgOhm: number;
   upstreamShortCircuitCurrentKa: number;
   pccVoltageRisePct: number;
-  pccVoltageRiseCompliant: boolean;
+  pccVoltageRiseCompliant: null;
+  pccVoltageRiseScreenPassed: boolean;
   maxAllowablePlantCapacityMw: number;
   reactivePowerRangeMvar: {
     maxAbsorbingInductiveMvar: number;
@@ -67,7 +71,8 @@ export interface UpstreamGridAnalysisResult {
   };
   flickerShortTermPst: number;
   flickerLongTermPlt: number;
-  isFlickerCompliant: boolean;
+  isFlickerCompliant: null;
+  flickerScreenPassed: boolean;
   lvrtCompliance: LvrtComplianceInfo;
 }
 
@@ -90,7 +95,7 @@ export function analyzePowerplantHarmonics(
   const actualPowerMw = operatingPowerMw !== undefined ? Math.max(0, operatingPowerMw) : plantCapacityMw;
   const fundamentalOperatingCurrentAmps = (actualPowerMw * 1000) / (Math.sqrt(3) * gridVoltageKv);
 
-  // Isc / IL ratio per IEEE 519-2022:
+  // Isc / IL ratio proxy for internal screening; site and adopted-standard inputs are not verified:
   // SCR = S_sc / P_plant => I_sc / I_L = SCR * (ratedCurrentAmps / demandCurrentAmps)
   const iscToIlRatio = Number((shortCircuitRatio * (ratedCurrentAmps / demandCurrentAmps)).toFixed(1));
 
@@ -109,7 +114,7 @@ export function analyzePowerplantHarmonics(
     { order: 25, pct: 0.25 },
   ];
 
-  // IEEE 519-2022 Table 2 Current Limits based on Isc / IL ratio:
+  // Illustrative internal current-threshold table keyed to Isc/IL; not an IEEE 519 compliance implementation.
   let tddLimit = 5.0;
   let individualLimit = 4.0;
   if (iscToIlRatio >= 1000) {
@@ -143,7 +148,7 @@ export function analyzePowerplantHarmonics(
       : 0;
     sumVoltageSq += Math.pow(voltPct, 2);
 
-    // Harmonic limits step down with harmonic order per IEEE 519-2022:
+    // Illustrative internal reference thresholds; not a standards-limit implementation:
     const limit =
       h.order < 11 ? individualLimit
       : h.order < 17 ? individualLimit * 0.50
@@ -161,7 +166,7 @@ export function analyzePowerplantHarmonics(
       currentAmps: Number(currentAmps.toFixed(2)),
       voltagePct: Number(voltPct.toFixed(3)),
       ieeeLimitPct: Number(limit.toFixed(2)),
-      compliant: harmonicDemandPct <= limit,
+      withinReferenceLimit: harmonicDemandPct <= limit,
     };
   });
 
@@ -170,20 +175,20 @@ export function analyzePowerplantHarmonics(
   const thdCurrentPct = Number(
     ((totalHarmonicCurrentRms / Math.max(0.1, fundamentalOperatingCurrentAmps)) * 100.0).toFixed(2)
   );
-  // TDD = (I_harmonic_rms / I_L) * 100% (Total Demand Distortion per IEEE 519)
+  // TDD proxy = (I_harmonic_rms / I_L) * 100%; this does not establish standards compliance.
   const tddCurrentPct = Number(
     ((totalHarmonicCurrentRms / Math.max(0.1, demandCurrentAmps)) * 100.0).toFixed(2)
   );
   const thdVoltagePct = Number(Math.sqrt(sumVoltageSq).toFixed(2));
 
   const thdVoltageLimitPct = gridVoltageKv <= 69 ? 5.0 : 2.5;
-  const isTddCompliant = tddCurrentPct <= tddLimit;
-  const isThdCompliant = isTddCompliant && thdVoltagePct <= thdVoltageLimitPct;
+  const tddScreenPassed = tddCurrentPct <= tddLimit;
+  const thdScreenPassed = tddScreenPassed && thdVoltagePct <= thdVoltageLimitPct;
 
   let recommendedFilterType: 'none' | 'lcl_trap' | 'active_harmonic_filter' = 'none';
   let recommendedAhfCurrentAmps = 0;
 
-  if (!isThdCompliant) {
+  if (!thdScreenPassed) {
     recommendedFilterType = 'active_harmonic_filter';
     // Size AHF for harmonic current RMS
     recommendedAhfCurrentAmps = Math.ceil(totalHarmonicCurrentRms * 1.25);
@@ -202,8 +207,10 @@ export function analyzePowerplantHarmonics(
     thdCurrentLimitPct: tddLimit,
     thdVoltagePct,
     thdVoltageLimitPct,
-    isThdCompliant,
-    isTddCompliant,
+    isThdCompliant: null,
+    isTddCompliant: null,
+    thdScreenPassed,
+    tddScreenPassed,
     individualHarmonics,
     recommendedFilterType,
     recommendedAhfCurrentAmps,
@@ -266,7 +273,7 @@ export function analyzeUpstreamGridConditions(
   const pccVoltageRisePct = Number((deltaVVolts * 100.0).toFixed(2));
 
   // Tavanir & IEC 60038 limit for grid voltage variation at PCC is 2.5% to 3.0%
-  const pccVoltageRiseCompliant = Math.abs(pccVoltageRisePct) <= 3.0;
+  const pccVoltageRiseScreenPassed = Math.abs(pccVoltageRisePct) <= 3.0;
 
   // Maximum plant capacity that can be connected without exceeding 3% voltage rise:
   // |Delta V%| = P * |R_g + (Q/P) * X_g| / V^2 * 100 <= 3.0%
@@ -284,7 +291,7 @@ export function analyzeUpstreamGridConditions(
   // Flicker estimation per IEC 61000-3-7
   const flickerShortTermPst = Number(Math.min(1.5, (plantCapacityMw / (gridShortCircuitMva * 0.08)) * 0.5).toFixed(2));
   const flickerLongTermPlt = Number((flickerShortTermPst * 0.75).toFixed(2));
-  const isFlickerCompliant = flickerShortTermPst <= 1.0 && flickerLongTermPlt <= 0.8;
+  const flickerScreenPassed = flickerShortTermPst <= 1.0 && flickerLongTermPlt <= 0.8;
 
   return {
     shortCircuitRatioScr,
@@ -296,7 +303,8 @@ export function analyzeUpstreamGridConditions(
     theveninReactanceXgOhm: Number(theveninReactanceXgOhm.toFixed(4)),
     upstreamShortCircuitCurrentKa,
     pccVoltageRisePct,
-    pccVoltageRiseCompliant,
+    pccVoltageRiseCompliant: null,
+    pccVoltageRiseScreenPassed,
     maxAllowablePlantCapacityMw,
     reactivePowerRangeMvar: {
       maxAbsorbingInductiveMvar: maxReactiveMvar,
@@ -304,7 +312,8 @@ export function analyzeUpstreamGridConditions(
     },
     flickerShortTermPst,
     flickerLongTermPlt,
-    isFlickerCompliant,
+    isFlickerCompliant: null,
+    flickerScreenPassed,
     lvrtCompliance: {
       zeroVoltageRideThroughMs: 150,
       recoveryTimeSec: 1.5,

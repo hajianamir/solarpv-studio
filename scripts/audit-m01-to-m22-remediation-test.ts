@@ -162,9 +162,9 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `required=${requiredConductor}mm², selected=${selectedConductor}mm²`
     );
     assert(
-      subHighFault.earthing.isConductorCompliant === true,
-      'M02: High-fault substation accurately confirms conductor compliance against required cross-section',
-      `isConductorCompliant=${subHighFault.earthing.isConductorCompliant}`
+      subHighFault.earthing.isConductorCompliant === null && subHighFault.earthing.conductorScreenPassed === true,
+      'M02: High-fault substation reports conductor internal screening threshold only, not standards compliance',
+      `isConductorCompliant=${subHighFault.earthing.isConductorCompliant}, conductorScreenPassed=${subHighFault.earthing.conductorScreenPassed}`
     );
   }
 
@@ -212,9 +212,9 @@ async function runM01ToM22TestSuite(): Promise<void> {
       isPowerFactorLagging: false,
     });
     assert(
-      rtLeading.pccVoltageRiseCompliant && rtLeading.pccVoltageRisePct <= 3.0,
+      rtLeading.pccVoltageRiseCompliant === null && rtLeading.pccVoltageRiseScreenPassed && rtLeading.pccVoltageRisePct <= 3.0,
       'M03: Round-trip test: leading max capacity strictly complies with <= 3% limit',
-      `rise=${rtLeading.pccVoltageRisePct}%, compliant=${rtLeading.pccVoltageRiseCompliant}`
+      `rise=${rtLeading.pccVoltageRisePct}%, screen=${rtLeading.pccVoltageRiseScreenPassed}, compliance=${rtLeading.pccVoltageRiseCompliant}`
     );
 
     // Reviewer case: 50 MVA grid, X/R = 4, lagging 0.95 PF
@@ -235,7 +235,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
       isPowerFactorLagging: true,
     });
     assert(
-      rtLagging.pccVoltageRiseCompliant && Math.abs(rtLagging.pccVoltageRisePct) <= 3.0,
+      rtLagging.pccVoltageRiseCompliant === null && rtLagging.pccVoltageRiseScreenPassed && Math.abs(rtLagging.pccVoltageRisePct) <= 3.0,
       'M03: Reviewer lagging round-trip case complies with <= 3% limit without undervoltage violation',
       `maxMw=${reviewerGrid.maxAllowablePlantCapacityMw}MW, rise=${rtLagging.pccVoltageRisePct}%`
     );
@@ -303,73 +303,72 @@ async function runM01ToM22TestSuite(): Promise<void> {
       `checksumsMatch=${allChecksumsValid}`
     );
 
-    // M04: Real disk mutation sensitivity test - altering a reference target strictly causes benchmark failure
-    const phxFilePath = path.resolve(process.cwd(), 'benchmarks/reference_files/sam_2023_12_17_phoenix_soiling_reference.sam');
-    const phxOriginalContent = fs.readFileSync(phxFilePath, 'utf-8');
+    // Mutate isolated fixture copies only; canonical benchmark files must remain immutable
+    // so this suite can safely run alongside npm test in the same checkout.
+    const scratchReferenceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'solarpv-sam-fixtures-'));
+    const phxFilename = 'sam_2023_12_17_phoenix_soiling_reference.sam';
+    const munichFilename = 'sam_2023_12_17_munich_snow_reference.sam';
+    const canonicalRefDir = path.resolve(process.cwd(), 'benchmarks/reference_files');
+    const phxFilePath = path.join(scratchReferenceDir, phxFilename);
+    const scratchMunichPath = path.join(scratchReferenceDir, munichFilename);
+    const phxOriginalContent = fs.readFileSync(path.join(canonicalRefDir, phxFilename), 'utf-8');
+    fs.copyFileSync(path.join(canonicalRefDir, munichFilename), scratchMunichPath);
+
     try {
       const phxMutated = JSON.parse(phxOriginalContent);
       phxMutated.benchmarkTargetOutputs.annualAverageSoilingLossPct = 99.0;
       fs.writeFileSync(phxFilePath, JSON.stringify(phxMutated, null, 2));
-
-      const mutatedReport = runExternalEmpiricalValidationSuite();
-      const phxHub = mutatedReport.crossModelComparisons.find(c => c.climateHubId === 'SAM-HUB-PHOENIX');
+      const mutatedReport = runExternalEmpiricalValidationSuite({ referenceDirectory: scratchReferenceDir });
+      const mutatedPhoenix = mutatedReport.crossModelComparisons.find(c => c.climateHubId === 'SAM-HUB-PHOENIX');
       assert(
-        mutatedReport.overallStatus === 'FAIL' && phxHub?.overallStatus === 'WARN' && phxHub?.samAnnualSoilingPercent === 99.0,
-        'M04: Real on-disk SAM file mutation is dynamically consumed and immediately fails validation',
-        `overallStatus=${mutatedReport.overallStatus}, phxStatus=${phxHub?.overallStatus}, phxTarget=${phxHub?.samAnnualSoilingPercent}%`
+        mutatedReport.overallStatus === 'FAIL' && mutatedPhoenix?.overallStatus === 'WARN' && mutatedPhoenix?.samAnnualSoilingPercent === 99.0,
+        'M04: Isolated SAM fixture mutation is dynamically consumed and fails validation',
+        `overallStatus=${mutatedReport.overallStatus}, phxStatus=${mutatedPhoenix?.overallStatus}, phxTarget=${mutatedPhoenix?.samAnnualSoilingPercent}%`
       );
+
+      // Missing-file behavior is exercised against a separate empty directory, never by renaming a repo fixture.
+      const emptyReferenceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'solarpv-sam-missing-'));
+      let missingFileErrorCaught = false;
+      try {
+        runExternalEmpiricalValidationSuite({ referenceDirectory: emptyReferenceDir });
+      } catch (err: any) {
+        missingFileErrorCaught = err.message.includes('Required SAM reference case file') && err.message.includes('was not found');
+      } finally {
+        fs.rmSync(emptyReferenceDir, { recursive: true, force: true });
+      }
+      assert(
+        missingFileErrorCaught,
+        'M04: Missing reference file fails closed in isolated directory',
+        `caught=${missingFileErrorCaught}`
+      );
+
+      // Invalid schema tests also use a private copy, preserving the shared golden fixture.
+      const schemaTestCases = [
+        { name: 'empty benchmarkTargetOutputs {}', mutate: (m: any) => { m.benchmarkTargetOutputs = {}; } },
+        { name: 'invalid string type "invalid"', mutate: (m: any) => { m.benchmarkTargetOutputs.annualAverageSoilingLossPct = 'invalid'; } },
+        { name: 'null target value', mutate: (m: any) => { m.benchmarkTargetOutputs.annualAverageSoilingLossPct = null; } },
+        { name: 'deleted target key', mutate: (m: any) => { delete m.benchmarkTargetOutputs.annualAverageSoilingLossPct; } },
+      ];
+      for (const tc of schemaTestCases) {
+        let schemaErrorCaught = false;
+        try {
+          const mutated = JSON.parse(phxOriginalContent);
+          tc.mutate(mutated);
+          fs.writeFileSync(phxFilePath, JSON.stringify(mutated, null, 2));
+          runExternalEmpiricalValidationSuite({ referenceDirectory: scratchReferenceDir });
+        } catch (err: any) {
+          schemaErrorCaught = err.message.includes('Reference case file') || err.message.includes('benchmarkTargetOutputs');
+        } finally {
+          fs.writeFileSync(phxFilePath, phxOriginalContent);
+        }
+        assert(
+          schemaErrorCaught,
+          `M04: Benchmark schema strictly throws on ${tc.name} without fallback`,
+          `caught=${schemaErrorCaught}`
+        );
+      }
     } finally {
-      fs.writeFileSync(phxFilePath, phxOriginalContent);
-    }
-
-    // M04: Missing reference file strictly throws explicit error rather than silently falling back
-    let missingFileErrorCaught = false;
-    try {
-      const tempPath = phxFilePath + '.temp_test_bak';
-      fs.renameSync(phxFilePath, tempPath);
-      try {
-        runExternalEmpiricalValidationSuite();
-      } catch (err: any) {
-        if (err.message.includes('Required SAM reference case file') && err.message.includes('was not found')) {
-          missingFileErrorCaught = true;
-        }
-      } finally {
-        fs.renameSync(tempPath, phxFilePath);
-      }
-    } catch {}
-    assert(
-      missingFileErrorCaught === true,
-      'M04: Missing SAM reference file strictly throws fail-closed error rather than silently falling back to defaults',
-      `caught=${missingFileErrorCaught}`
-    );
-
-    // M04: Incomplete / invalid benchmarkTargetOutputs schema strictly throws error without falling back to constants
-    const schemaTestCases = [
-      { name: 'empty benchmarkTargetOutputs {}', mutate: (m: any) => { m.benchmarkTargetOutputs = {}; } },
-      { name: 'invalid string type "invalid"', mutate: (m: any) => { m.benchmarkTargetOutputs.annualAverageSoilingLossPct = 'invalid'; } },
-      { name: 'null target value', mutate: (m: any) => { m.benchmarkTargetOutputs.annualAverageSoilingLossPct = null; } },
-      { name: 'deleted target key', mutate: (m: any) => { delete m.benchmarkTargetOutputs.annualAverageSoilingLossPct; } },
-    ];
-
-    for (const tc of schemaTestCases) {
-      let schemaErrorCaught = false;
-      try {
-        const mutated = JSON.parse(phxOriginalContent);
-        tc.mutate(mutated);
-        fs.writeFileSync(phxFilePath, JSON.stringify(mutated, null, 2));
-        runExternalEmpiricalValidationSuite();
-      } catch (err: any) {
-        if (err.message.includes('Reference case file') || err.message.includes('benchmarkTargetOutputs')) {
-          schemaErrorCaught = true;
-        }
-      } finally {
-        fs.writeFileSync(phxFilePath, phxOriginalContent);
-      }
-      assert(
-        schemaErrorCaught === true,
-        `M04: Benchmark schema strictly throws on ${tc.name} without silent fallback to constant 4.2`,
-        `caught=${schemaErrorCaught}`
-      );
+      fs.rmSync(scratchReferenceDir, { recursive: true, force: true });
     }
 
     // M04: Validation runner forceCrossModelFailure option verification

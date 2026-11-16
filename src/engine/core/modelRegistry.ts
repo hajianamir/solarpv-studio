@@ -7,7 +7,8 @@ export interface ModelSemverEntry {
   modelId: string;
   name: string;
   version: string; // Semantic Versioning x.y.z
-  lastModified: string;
+  /** Optional source-backed date; omitted where the original modification date cannot be verified. */
+  lastModified?: string;
   governingStandards: string[];
   referenceLiterature: string;
   analyticalAssumptions: string[];
@@ -37,7 +38,6 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
     modelId: 'climate_resilience_15min',
     name: 'Probabilistic Climate Resilience & 15-Min Dispatch',
     version: '3.1.0',
-    lastModified: '2026-11-04',
     governingStandards: ['ASTM E1036', 'IEC 62109', 'IEEE 1547'],
     referenceLiterature: 'Gumbel distribution for 50-year extreme gusts; Weibull for operational wind; Skartveit-Olseth clear-sky disaggregation; Kimber et al. (NREL) soiling model',
     analyticalAssumptions: [
@@ -92,7 +92,6 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
     modelId: 'civil_geotechnical_broms',
     name: 'Civil, Broms Lateral Pile, Skin Friction Uplift & Bishop Slope Engine',
     version: '3.1.0',
-    lastModified: '2026-11-04',
     governingStandards: ['ASCE 7-22', 'Eurocode 7 (EN 1997)', 'Eurocode 1 (EN 1991-1-4)'],
     referenceLiterature: 'Broms (1964) for lateral resistance; Tomlinson & Woodward for alpha/beta skin friction uplift; Bishop (1955) Modified Method of Slices for slope stability',
     analyticalAssumptions: [
@@ -112,12 +111,11 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
     modelId: 'pv_single_diode_core',
     name: '5-Parameter Single-Diode Equivalent Circuit Solver',
     version: '2.5.0',
-    lastModified: '2026-11-04',
     governingStandards: ['IEC 60904-1', 'IEC 60891'],
     referenceLiterature: 'De Soto et al. (2006); Sandia National Laboratories Photovoltaic Array Performance Model (SAPM)',
     analyticalAssumptions: [
       '5-parameter model (Iph, Io, Rs, Rsh, a) with temperature-dependent bandgap',
-      'Lambert W function analytical formulation for transcendental resolution',
+      'Newton–Raphson numerical root-finding for open-circuit voltage and I–V current points; parameters are extracted/calibrated from STC inputs unless custom values are supplied.',
     ],
     validityBoundaries: [
       'Irradiance: 50 W/m2 - 1400 W/m2',
@@ -128,7 +126,6 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
     modelId: 'optical_iam_thermo_coupled',
     name: 'Temperature-Coupled Incidence Angle Modifier (IAM) & Fresnel ARC Engine',
     version: '3.1.0',
-    lastModified: '2026-11-04',
     governingStandards: ['IEC 61853-2', 'ASHRAE Standard 93'],
     referenceLiterature: 'Martin & Ruiz (2001) for ARC solar glass; Brandemuehl & Beckman (1980) for diffuse integration; Ghosh (1995) for thermo-optic dn/dT coefficients',
     analyticalAssumptions: [

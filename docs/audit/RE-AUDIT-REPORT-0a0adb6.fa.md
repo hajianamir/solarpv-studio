@@ -4,9 +4,10 @@
 **مخزن:** `hajianamir/solarpv-studio`<br>
 **شاخهٔ Arena:** `arena/12d13c9e-solarpv-studio` — فعال<br>
 **نشانی شاخه:** `https://github.com/hajianamir/solarpv-studio/tree/arena/12d13c9e-solarpv-studio`<br>
-**HEAD / snapshot ممیزی‌شده:** `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d`
-**نشانی commit:** `https://github.com/hajianamir/solarpv-studio/commit/0a0adb6d63f107a4c56b87270c8d97fc91a68c4d`
-**وضعیت remote:** refs محلی فقط `origin/main` را داشتند؛ شاخهٔ فعال به remote push نشده است. PR باز مرتبط یافت نشد. این ممیزی هیچ commit، push، merge یا release ایجاد نکرد.
+**snapshot کدِ هدف ممیزی:** `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d`
+**نشانی commit مبنا:** `https://github.com/hajianamir/solarpv-studio/commit/0a0adb6d63f107a4c56b87270c8d97fc91a68c4d`
+
+**تفکیک زمان‌ها:** نتایج ممیزی روی snapshot مبنا ثبت شد؛ سپس گزارش‌ها و اصلاح محدود dependency در `src/App.tsx` در بستهٔ ممیزی شاخه ثبت و push شدند. این commit مبنا را با commit بسته‌بندی گزارش اشتباه نگیرید. در زمان ثبت اولیهٔ ممیزی، remote branch هنوز push نشده بود و PR باز یافت نشد؛ پس از آن commit بسته‌بندی به remote ارسال شد. هیچ merge یا release انجام نشده است.
 
 > این گزارش دربارهٔ کد و artifacts همین snapshot است، نه تأیید پروژهٔ واقعی. «PASS» در تست داخلی به معنی صحت فیزیکی، انطباق استاندارد، تأیید مهندس مسئول یا bankability نیست. هیچ‌یک از خروجی‌ها گواهی طراحی، نقشهٔ مهرشده یا گزارش مناسب تأمین مالی محسوب نمی‌شود.
 
@@ -41,7 +42,7 @@
 | RA-11 build/CI/عملکرد | **P2 — هشدار قابل بازتولید؛ اثر کاربری هنوز اندازه‌گیری نشده** | Build پاس شد اما `OfficialReportModal` حدود 1,258.46 kB و `index` حدود 873.11 kB minified است؛ Vite هشدار chunk >1000 kB، dynamic/static import دوگانهٔ `catalogRepository` و `fs` externalized برای browser داد. `npm run lint` صفر error و 95 warning دارد. CI Node 20/22 suites گسترده اجرا می‌کند. | cold-load/route profiling لازم است پیش از ادعای startup slowdown؛ کد split فقط بر اساس trace اندازه‌گیری شود. `fs` warning/import graph باید برای بستهٔ browser بررسی و هر code path server-only از bundle جدا شود. |
 | RA-12 MPPT | **Guard مشاهده شد؛ محدودیت شناخته‌شده** | `mpptAllocation.ts` تخصیص round-robin را صریحاً `isAssumed` می‌زند؛ `pvEngineAdvanced.ts` در نبود current limits، feasibility را false و blocking error می‌سازد؛ facade برای بعضی inverterهای utility از 65 A/90 A تخمینی استفاده و صریحاً `UNASSESSED` می‌کند. Coverage `electricalSizingContract.ts`: 74.5% statements, 44.44% branches. | این guardها نکتهٔ مثبت‌اند؛ عدد generic current را برای compliance استفاده نکنید. datasheet واقعی، wiring allocation واقعی و ضرایب/edition کد لازم است. از این ممیزی خطای قطعی voltage-window در ورودی کامل اثبات نشد. |
 | RA-13 سازه/ژئوتکنیک/زلزله | **P0 gate برای design use؛ screen-only status در کد عمدتاً صریح است** | `structuralEngine.ts` و `structuralContract.ts` صریحاً pullout، borehole/frost، anchor concrete، edge vortices و dynamic seismic را `UNASSESSED` می‌دانند. ورودی `seismicZoneCoefficientA` در UI/model موجود است ولی جست‌وجوی مسیر engine نشان نداد که وارد محاسبهٔ ساختاری شود؛ seismic status در contract unassessed است. `structure-verify.ts` با `REAL_INTERNET=false` تنوع خروجی 5 سایت را پاس کرد، اما ورودی‌ها از climate model محلی/تحلیلی بودند. | تنوع عددی/تست هندسی validation خاک/بار واقعی نیست. `UNASSESSED` را در خروجی حفظ کنید؛ برای طرح باید گزارش محل‌محور geotech/structural و seismic با edition نافذ و امضای PE لازم باشد. |
-| RA-14 baseline React dependency | **روی commit تأیید شد؛ در working tree فعلی اصلاح محلی** | `src/App.tsx` از دو flag assessment برای badge منو استفاده می‌کرد اما dependencyهای `useMemo` را نداشت. دو dependency افزوده شد؛ `npm run lint` فعلی پاس است. | این تغییر فقط reactivity badge را اصلاح می‌کند؛ suite مرورگر regression مستقیم toggle همین دو flag ندارد. تغییر هنوز commit نشده. |
+| RA-14 baseline React dependency | **در snapshot مبنا تأیید؛ در بستهٔ ممیزی اصلاح و commit شد** | `src/App.tsx` از دو flag assessment برای badge منو استفاده می‌کرد اما dependencyهای `useMemo` را نداشت. هر دو dependency در commit بسته‌بندی ممیزی `aca0328` افزوده شدند؛ type-check/lint پاس است. | این تغییر محدود به reactivity badge است؛ suite مرورگر regression اختصاصی toggle همین دو flag ندارد. این اصلاح، رفع ریسک‌های مهندسی P0 یا release رسمی نیست. |
 | RA-15 اجرای موازی suiteها و fixtureهای مرجع | **race بازتولید شد؛ harness تست فایل مرجع را موقتاً rename می‌کند** | `scripts/audit-m01-to-m22-remediation-test.ts` در آزمون M04 فایل Phoenix `.sam` را rename کرده و در `finally` برمی‌گرداند؛ `npm test` هم‌زمان همان فایل را می‌خواند. اجرای موازی این دو command در این دور سبب شد `npm test` به‌علت «file not found» fail شود؛ اجرای متوالی پس از restoration پاس شد. | در CI با checkout جدا race رخ نمی‌دهد، اما اجرای موازی محلی/همان workspace flaky است. فایل‌سیستم scratch مجزا یا synchronization لازم است؛ این خطا نباید به نبودن پایدار fixture یا شکست مدل نسبت داده شود. |
 
 ### نتیجهٔ دامنه‌های مهندسیِ حساس
@@ -105,7 +106,7 @@
 - «تغییر benchmarkهای single-diode و SAM/PVDAQ به مقایسه‌های internal-regression تا زمانی که fixture مستقلِ منشأدار وارد شود.»
 - «برچسب‌گذاری صریح screening/UNASSESSED برای PCC، harmonic, earthing و structural/seismic outputs؛ افزودن قفل عدم ادعای compliance در نبود دادهٔ لازم.»
 - «سخت‌گیری JWT (انقضای اجباری، issuer/audience policy) و production API rate limiting؛ افزودن Docker context exclusions و data persistence config.»
-- تغییر محلی موجود `src/App.tsx`: افزودن dependencies دو assessment flag برای refresh شدن badge منو؛ هنوز commit/release نیست.
+- اصلاح محدود `src/App.tsx` برای dependencyهای دو assessment flag در commit بسته‌بندی ممیزی `aca0328` ثبت شده است؛ این تغییر release مستقل نیست و regression اختصاصی toggle badge همچنان لازم است.
 
 ### گام‌های اولویت‌دار
 1. **قبل از انتشار حرفه‌ای:** خنثی‌کردن واژه‌های `CROSS-VALIDATION`, `Field Measurement`, `SAM`, `Compliant IEEE 80` تا برآورده‌شدن معیار شواهد؛ حفظ `UNASSESSED` در report/export.
@@ -133,6 +134,12 @@
 | طراحی حرفه‌ای تحت بازبینی | فقط ابزار کمکی غیرحاکم؛ هر رشته باید توسط مهندس ذی‌صلاح با ورودی محل‌محور بازبینی و تأیید شود. |
 | تأمین مالی / bankability / permit / construction | بر پایهٔ نرم‌افزار به‌تنهایی غیرمجاز؛ نیازمند validation مستقل، دادهٔ site-specific و امضاهای مربوط است. |
 
+## 10. پیگیری پیاده‌سازی پس از snapshot
+
+برای جداسازی یافته‌های تاریخی از اصلاحات بعدی، وضعیت اقدامات کدنویسی، آزمون‌های follow-up و blockerهای بیرونی در [سند پیگیری پیاده‌سازی](RE-AUDIT-FOLLOWUP-IMPLEMENTATION.fa.md) ثبت شده است. این پیگیری به معنی بستن موارد وابسته به مرجع/دادهٔ بیرونی یا sign-off نیست.
+
 ## 9. وضعیت working tree در پایان ممیزی
 
-Snapshot همچنان `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d` روی شاخهٔ Arena فعال است. این ممیزی فایل اجرایی تازه‌ای جز اصلاح React dependency که در بخش RA-14 توضیح شد تغییر نداد؛ گزارش، matrix و plan فایل‌های مستنداتی محلی‌اند. هیچ commit/push/PR/release انجام نشده است. اجرای آزمون‌ها نیز هیچ دادهٔ پروژهٔ کاربر را تغییر نداد؛ production probe از مسیر `/tmp` جداگانه استفاده کرد. در دور نهایی، `npm test` و `npm run test:audit` پس از هم و متوالی پاس شدند؛ اجرای هم‌زمان‌شان به‌علت rename موقت fixture توسط M04 می‌تواند race کند (RA-15).
+**توجه:** گزارش A-01…A-84 و یافته‌های RA-01…RA-15 همچنان صورت تاریخیِ بررسی snapshot `0a0adb6…` هستند. تغییرات follow-up زیر پس از آن snapshot اعمال شده‌اند؛ آن‌ها را به‌عنوان نتایج خود ممیزی تاریخی یا sign-off مستقل تلقی نکنید.
+
+snapshot هدف ممیزی `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d` است. بستهٔ ممیزی شامل سه سند و اصلاح dependencyهای React در `src/App.tsx` است؛ تغییر کد فقط به refresh شدن badge مربوط می‌شود و ریسک‌های مهندسی P0 را رفع نمی‌کند. این بسته در commit `aca0328` روی شاخهٔ فعال ثبت و به `origin` push شد؛ PR/merge/release انجام نشده است. اجرای آزمون‌ها هیچ دادهٔ پروژهٔ کاربر را تغییر نداد؛ production probe از مسیر `/tmp` جداگانه استفاده کرد. در اجرای ممیزی، `npm test` و `npm run test:audit` به‌صورت متوالی پاس شدند. در follow-up بعدی، M04 بازنویسی شد تا fixtureهای SAM فقط در پوشهٔ موقت هر اجرا تغییر کنند؛ اجرای هم‌زمان این دو suite پس از اصلاح نیز آزمایش شد. جزئیات و محدودیت‌های follow-up در بخش 10 آمده است.
