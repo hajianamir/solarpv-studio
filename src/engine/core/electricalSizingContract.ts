@@ -44,6 +44,7 @@ import {
 } from '../pvEngineAdvanced';
 
 import { calculateThermalDerate } from './thermalDerate';
+import { allocateStringsToMpptChannels } from './mpptAllocation';
 
 export type {
   ModuleSpecs,
@@ -115,6 +116,8 @@ export interface MpptCheckInput {
   ambientTempMinC: number;
   ambientTempMaxC: number;
   cellTempHotC?: number;
+  /** Measured/intended string count on each MPPT channel, ordered by inverter then channel. */
+  stringsPerMpptAllocation?: number[];
 }
 
 export interface MpptCheckResult {
@@ -123,8 +126,11 @@ export interface MpptCheckResult {
   isCompliant: boolean;
   stringVocMaxColdV: number;
   stringVmpMinHotV: number;
+  stringVmpMaxColdV: number;
   effectiveMpptChannels: number;
   stringsPerMppt: number;
+  stringsPerMpptAllocation: number[];
+  isMpptAllocationAssumed: boolean;
   operatingCurrentAmps: number;
   shortCircuitCurrentAmps: number;
   currentSafetyMarginPct: number;
@@ -154,21 +160,38 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
   );
   const singleVmpHot = input.moduleVmp * (1.0 + (vmpCoeffPct / 100.0) * (effectiveHotC - 25.0));
   const stringVmpMinHotV = Number((input.modulesPerString * singleVmpHot).toFixed(2));
+  // With no cold-cell input, minimum ambient temperature is used as the explicit cold-Vmp proxy.
+  const singleVmpCold = input.moduleVmp * (1.0 + (vmpCoeffPct / 100.0) * (input.ambientTempMinC - 25.0));
+  const stringVmpMaxColdV = Number((input.modulesPerString * singleVmpCold).toFixed(2));
 
   const isVoltageFeasible =
     stringVocMaxColdV <= input.inverterVdcMax &&
     stringVmpMinHotV >= input.inverterVmpptMin &&
+    stringVmpMaxColdV <= input.inverterVmpptMax &&
     stringVocMaxColdV >= stringVmpMinHotV;
 
-  // MPPT Current calculations
-  const stringsPerMppt = Math.ceil(input.parallelStrings / effectiveMpptChannels);
+  // Evaluate the proposed or supplied physical channel assignment, not an aggregate
+  // fleet quotient that can conceal an overloaded MPPT when the wiring is uneven.
+  const allocation = allocateStringsToMpptChannels(
+    input.parallelStrings,
+    effectiveMpptChannels,
+    input.stringsPerMpptAllocation,
+  );
+  const stringsPerMppt = allocation.maxStringsPerChannel;
   const operatingCurrentAmps = Number((stringsPerMppt * input.moduleImp).toFixed(2));
   const shortCircuitCurrentAmps = Number((stringsPerMppt * input.moduleIsc * 1.25).toFixed(2));
 
   const blockingErrors: string[] = [];
   const warnings: string[] = [];
 
-  let isCurrentFeasible = true;
+  let isCurrentFeasible = allocation.isValid;
+  if (!allocation.isValid) {
+    const msg = `Invalid MPPT string allocation: expected ${input.parallelStrings} strings across ${effectiveMpptChannels} channels.`;
+    blockingErrors.push(msg);
+    warnings.push(msg);
+  } else if (allocation.isAssumed) {
+    warnings.push('MPPT current compliance uses an assumed balanced round-robin string allocation; verify the actual per-channel wiring before treating this as installed-system compliance.');
+  }
   if (input.inverterImppMaxPerMppt > 0 && operatingCurrentAmps > input.inverterImppMaxPerMppt) {
     isCurrentFeasible = false;
     const msg = `Operating current (${operatingCurrentAmps}A) exceeds MPPT rating (${input.inverterImppMaxPerMppt}A)`;
@@ -185,7 +208,7 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
 
   if (!isVoltageFeasible) {
     blockingErrors.push(
-      `String voltage out of bounds: Voc_cold=${stringVocMaxColdV}V (max ${input.inverterVdcMax}V), Vmp_hot=${stringVmpMinHotV}V (min ${input.inverterVmpptMin}V)`
+      `String voltage out of bounds: Voc_cold=${stringVocMaxColdV}V (max ${input.inverterVdcMax}V), Vmp_hot=${stringVmpMinHotV}V (min ${input.inverterVmpptMin}V), Vmp_cold=${stringVmpMaxColdV}V (max ${input.inverterVmpptMax}V)`
     );
   }
 
@@ -203,8 +226,11 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
     isCompliant: isVoltageFeasible && isCurrentFeasible,
     stringVocMaxColdV,
     stringVmpMinHotV,
+    stringVmpMaxColdV,
     effectiveMpptChannels,
     stringsPerMppt,
+    stringsPerMpptAllocation: allocation.stringsPerChannel,
+    isMpptAllocationAssumed: allocation.isAssumed,
     operatingCurrentAmps,
     shortCircuitCurrentAmps,
     currentSafetyMarginPct,

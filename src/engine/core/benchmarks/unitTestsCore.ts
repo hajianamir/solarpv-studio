@@ -3309,6 +3309,83 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // [E8-PV-MPPT-2] MPPT upper Vmp limit and non-uniform physical string allocation
+  {
+    const { evaluateMpptCompatibility } = await import('../electricalSizingContract');
+    const voltageAndAllocationInput = {
+      moduleVoc: 45, moduleVmp: 40, moduleIsc: 10, moduleImp: 9, modulePmp: 400,
+      tempCoeffVocPct: -0.2, tempCoeffVmpPct: -0.2,
+      modulesPerString: 17, parallelStrings: 5,
+      inverterVdcMax: 900, inverterVmpptMin: 500, inverterVmpptMax: 700,
+      inverterImppMaxPerMppt: 25, inverterIscMaxPerMppt: 35,
+      inverterMpptChannels: 4, inverterCount: 1, inverterPnomAcKw: 10,
+      ambientTempMinC: -20, ambientTempMaxC: 45, cellTempHotC: 70,
+    };
+    const overUpperVmp = evaluateMpptCompatibility(voltageAndAllocationInput);
+    const balancedAllocation = evaluateMpptCompatibility({
+      ...voltageAndAllocationInput,
+      inverterVmpptMax: 800,
+    });
+    const unevenAllocation = evaluateMpptCompatibility({
+      ...voltageAndAllocationInput,
+      inverterVmpptMax: 800,
+      stringsPerMpptAllocation: [3, 2, 0, 0],
+    });
+    const invalidAllocation = evaluateMpptCompatibility({
+      ...voltageAndAllocationInput,
+      inverterVmpptMax: 800,
+      stringsPerMpptAllocation: [3, 1, 0, 0],
+    });
+
+    const { designPvArray: designArray } = await import('../../pvEngineAdvanced');
+    const pvModule = {
+      manufacturer: 'Tier1', modelName: '550W-MPPT-test', pmpWatts: 550,
+      vocVolts: 50, vmpVolts: 41, iscAmps: 14, impAmps: 13.4,
+      tempCoeffVocPct: -0.28, tempCoeffPmpPct: -0.30,
+      tempCoeffIscPct: 0.045, noctC: 45,
+    };
+    const pvDeratings = {
+      ambientTempMinC: -10, ambientTempMaxC: 45, soilingLossPct: 4,
+      dcCableLossPct: 1.5, mismatchAndLidLossPct: 2, inverterClippingLossPct: 1,
+      systemAvailabilityPct: 99, groundAlbedo: 0.20, arrayTiltDeg: 25,
+    };
+    const fourChannelInverter = {
+      manufacturer: 'Inv', modelName: 'Four-MPPT-test', pnomAcKw: 10,
+      vdcMaxVolts: 1000, vmpptMinVolts: 150, vmpptMaxVolts: 850,
+      iscMaxAmpsPerMppt: 50, imppMaxAmpsPerMppt: 30, mpptChannelsCount: 4,
+      efficiencyMaxPct: 98.5, isThreePhase: true,
+    };
+    const balancedPv = designArray(150, 5, pvModule, fourChannelInverter, pvDeratings, 35.69, { inverterCount: 1 });
+    const unevenPvAllocation = [balancedPv.parallelStringsCount, 0, 0, 0];
+    const unevenPv = designArray(150, 5, pvModule, fourChannelInverter, pvDeratings, 35.69, {
+      inverterCount: 1,
+      stringsPerMpptAllocation: unevenPvAllocation,
+    });
+
+    const passed = overUpperVmp.stringVocMaxColdV < voltageAndAllocationInput.inverterVdcMax
+      && overUpperVmp.stringVmpMinHotV >= voltageAndAllocationInput.inverterVmpptMin
+      && overUpperVmp.stringVmpMaxColdV > voltageAndAllocationInput.inverterVmpptMax
+      && !overUpperVmp.isVoltageFeasible
+      && balancedAllocation.isCurrentFeasible
+      && balancedAllocation.stringsPerMppt === 2
+      && balancedAllocation.isMpptAllocationAssumed
+      && !unevenAllocation.isCurrentFeasible
+      && unevenAllocation.stringsPerMppt === 3
+      && unevenAllocation.stringsPerMpptAllocation.join(',') === '3,2,0,0'
+      && !invalidAllocation.isCurrentFeasible
+      && !unevenPv.isMpptAllocationAssumed
+      && unevenPv.stringsPerMppt === balancedPv.parallelStringsCount
+      && !unevenPv.isMpptCurrentCompliant
+      && unevenPv.maxMpptOperatingCurrentAmps === Number((balancedPv.parallelStringsCount * pvModule.impAmps).toFixed(2));
+
+    assert(
+      'E8-PV-MPPT-2',
+      'MPPT voltage upper bound and explicit per-channel string allocation are enforced',
+      passed,
+      `VmpCold=${overUpperVmp.stringVmpMaxColdV}V/${voltageAndAllocationInput.inverterVmpptMax}V, balanced=${balancedAllocation.stringsPerMpptAllocation.join(',')}, uneven=${unevenAllocation.stringsPerMpptAllocation.join(',')} (${unevenAllocation.operatingCurrentAmps}A), PV strings=${balancedPv.parallelStringsCount}, PV max=${unevenPv.maxMpptOperatingCurrentAmps}A, compliant=${unevenPv.isMpptCurrentCompliant}`
+    );
+  }
+
   // [E8-FIN-1] Financial IRR root existence check & chemistry-dependent battery replacement schedules
   {
     const { calculateIrr } = await import('../../solarPvEngine');

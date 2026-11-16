@@ -1,6 +1,7 @@
 // Advanced PV Array Engineering, String Sizing & Deratings (IEC 62548 / NEC 690.7)
 
 import { calculateThermalDerate } from './core/thermalDerate';
+import { allocateStringsToMpptChannels } from './core/mpptAllocation';
 import { calculateWinterSolsticeNoonAltitudeDeg } from './core/solarGeometryContract';
 import type { InstallationEnvironment } from './types/climateTypes';
 
@@ -67,6 +68,8 @@ export interface PvArrayDesignOptions {
   targetDcAcRatio?: number;
   optimizeStringLengthForMppt?: boolean;
   resolveUtilityMpptLimits?: boolean;
+  /** Actual/intended strings per MPPT, ordered by inverter then channel; otherwise a balanced plan is assumed. */
+  stringsPerMpptAllocation?: number[];
 }
 
 export interface PvArrayDesignResult {
@@ -104,6 +107,8 @@ export interface PvArrayDesignResult {
   totalInverterAcCapacityKw?: number;
   singleInverterDcAcRatio?: number;
   stringsPerMppt?: number;
+  stringsPerMpptAllocation?: number[];
+  isMpptAllocationAssumed?: boolean;
   maxStringsPerMpptAllowed?: number;
   blockingErrors?: string[];
 }
@@ -313,7 +318,16 @@ export function designPvArray(
   }
 
   // 7. MPPT Current & Short-Circuit Constraints (IEC 62548 §7.3.3 & NEC 690.8)
-  const stringsPerMppt = Math.ceil(parallelStrings / effectiveFleetMpptChannels);
+  const mpptAllocation = allocateStringsToMpptChannels(
+    parallelStrings,
+    effectiveFleetMpptChannels,
+    options?.stringsPerMpptAllocation,
+  );
+  const stringsPerMpptAllocation = mpptAllocation.stringsPerChannel;
+  const stringsPerMppt = mpptAllocation.maxStringsPerChannel;
+  if (mpptAllocation.isAssumed) {
+    warnings.push('MPPT current sizing uses an assumed balanced round-robin string allocation; verify actual per-channel wiring before treating it as an installed-system assessment.');
+  }
   const maxMpptOperatingCurrentAmps = Number((stringsPerMppt * module.impAmps).toFixed(2));
   // 1.25 safety factor for cloud-enhancement / bifacial surge over STC
   const maxMpptShortCircuitCurrentAmps = Number((stringsPerMppt * module.iscAmps * 1.25).toFixed(2));
@@ -328,14 +342,21 @@ export function designPvArray(
 
   const hasValidImppLimit = Number.isFinite(inverter.imppMaxAmpsPerMppt) && inverter.imppMaxAmpsPerMppt > 0;
   const hasValidIscLimit = Number.isFinite(inverter.iscMaxAmpsPerMppt) && inverter.iscMaxAmpsPerMppt > 0;
-  const isMpptCurrentAssessed = hasValidImppLimit && hasValidIscLimit;
+  const isMpptCurrentAssessed = hasValidImppLimit && hasValidIscLimit && mpptAllocation.isValid;
   let isMpptCurrentCompliant = isMpptCurrentAssessed;
   if (!isMpptCurrentAssessed) {
     const missingLimits = [
       !hasValidImppLimit ? 'Impp max per MPPT' : '',
       !hasValidIscLimit ? 'Isc max per MPPT' : '',
     ].filter(Boolean).join(' and ');
-    const msg = `MPPT current compliance NOT ASSESSED: valid catalog ${missingLimits} rating(s) are missing or invalid. Provide manufacturer limits before treating this design as feasible.`;
+    if (missingLimits) {
+      const msg = `MPPT current compliance NOT ASSESSED: valid catalog ${missingLimits} rating(s) are missing or invalid. Provide manufacturer limits before treating this design as feasible.`;
+      warnings.push(msg);
+      blockingErrors.push(msg);
+    }
+  }
+  if (!mpptAllocation.isValid) {
+    const msg = `Invalid MPPT string allocation: expected ${parallelStrings} strings across ${effectiveFleetMpptChannels} channels.`;
     warnings.push(msg);
     blockingErrors.push(msg);
   }
@@ -426,6 +447,8 @@ export function designPvArray(
     totalInverterAcCapacityKw,
     singleInverterDcAcRatio,
     stringsPerMppt,
+    stringsPerMpptAllocation,
+    isMpptAllocationAssumed: mpptAllocation.isAssumed,
     maxStringsPerMpptAllowed: Number.isFinite(maxStringsPerMpptAllowed) ? maxStringsPerMpptAllowed : undefined,
     blockingErrors,
   };
