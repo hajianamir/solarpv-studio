@@ -6,6 +6,7 @@ export interface HelpCopy {
   inputs: string;
   method: string;
   limitations: string;
+  sources?: string;
 }
 
 const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
@@ -13,13 +14,13 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
     en: {
       title: 'Site & climate',
       inputs: 'Choose a place on the map or enter coordinates, then review/edit the climate fields shown here: peak sun hours (PSH), design temperatures, albedo, tilt and related site values. Keep their source/provenance in view when overriding them.',
-      method: 'The selected city/climate values are passed into load-window normalization, PV-array design and annual-yield calculations. The app does not derive a new weather resource from a manually typed coordinate alone; use the page’s location/data flow and verify custom values.',
+      method: 'Provider climate records are used when available; otherwise getClimateData() in src/engine/climaticData.ts validates coordinates, classifies macro-regions, and estimates PSH from latitude/region rules while preserving calculation precision (the UI displays two decimals). Design daylight comes from calculateDesignDaylightHours(latitude), using winter-solstice solar geometry; annual tilt uses clamp(round(|latitude| × 0.88), 8, 65)°, with seasonal ±15° rules. PV sizing consumes PSH and design temperatures; thermal derate and water pumping consume temperature/PSH; albedo feeds bifacial irradiance. On coordinate change the climate flow refreshes location data, then reapplies only explicitly edited fields.',
       limitations: 'PSH is daily solar resource (kWh/m²/day), not daylight-clock hours. A value below 1 has a displayed model limitation in some scenario calculations; zero/invalid solar resource makes PV sizing unassessable.',
     },
     fa: {
       title: 'مکان و اقلیم',
       inputs: 'مکان را از نقشه انتخاب کنید یا مختصات را وارد کنید؛ سپس ساعات اوج تابش (PSH)، دماهای طراحی، آلبدو، شیب و سایر مقادیر نمایش‌داده‌شده را بازبینی/ویرایش کنید. هنگام اصلاح دستی، منشأ داده را نیز بررسی کنید.',
-      method: 'مقادیر شهر و اقلیم انتخاب‌شده به نرمال‌سازی پنجرهٔ بار، طراحی آرایهٔ PV و محاسبهٔ تولید سالانه داده می‌شوند. صرف واردکردن مختصات، منبع هواشناسی تازه‌ای محاسبه نمی‌کند؛ مسیر انتخاب مکان/داده را به‌کار ببرید و مقادیر سفارشی را تأیید کنید.',
+      method: 'در صورت وجود از دادهٔ provider استفاده می‌شود؛ در غیر این صورت getClimateData() در src/engine/climaticData.ts مختصات را اعتبارسنجی و ناحیه را طبقه‌بندی می‌کند و PSH را از قواعد عرض/منطقه با حفظ دقت محاسبات تخمین می‌زند (نمایش UI دو رقم اعشار است). طول روز طراحی از calculateDesignDaylightHours(latitude) و هندسهٔ انقلاب زمستانی می‌آید؛ شیب سالانه clamp(round(|latitude| × ۰٫۸۸), ۸, ۶۵) درجه است و قواعد فصلی ±۱۵ درجه‌اند. سایزینگ PV از PSH و دماهای طراحی، derate حرارتی و پمپاژ از دما/PSH و تابش bifacial از آلبدو استفاده می‌کنند. با تغییر مختصات، دادهٔ مکان تازه می‌شود و فقط فیلدهای صریحاً ویرایش‌شده دوباره اعمال می‌شوند.',
       limitations: 'PSH منبع خورشیدی روزانه با واحد kWh/m²/day است، نه طول روزِ ساعت‌محور. برای PSH کمتر از ۱ در برخی محاسبات سناریو محدودیت مدل نمایش داده می‌شود؛ منبع صفر/نامعتبر، سایزینگ PV را غیرقابل ارزیابی می‌کند.',
     },
   },
@@ -320,7 +321,38 @@ const GENERIC: Record<HelpLanguage, HelpCopy> = {
   },
 };
 
+export const HELP_SOURCE_REFERENCES: Record<string, string> = {
+  climate: 'src/engine/climaticData.ts — getClimateData(), fetchClimateData(); src/engine/types/climateTypes.ts — calculateDesignDaylightHours().',
+  loads: 'src/engine/loadProfiles.ts — analyzeLoadProfile(), normalizeLoadItemToWindow().',
+  system_mode: 'src/engine/systemModeCapacity.ts — calculateLoadModeDailySizingTargetKwh(), resolveArrayAcReferenceKw(), isUpstreamGridAnalysisAvailable(); src/engine/acRequirements.ts — assessAcRequirements(), evaluateLoadAcCurrents(); src/engine/core/projectMigration.ts — AcRequirementsSchema; src/App.tsx — explicit local AC interface editor and mode flow.',
+  array: 'src/engine/pvEngineAdvanced.ts — designPvArray(); src/engine/core/thermalDerate.ts — calculateThermalDerate().',
+  harmonics_grid: 'src/engine/harmonicsEngine.ts — analyzePowerplantHarmonics(), analyzeUpstreamGridConditions().',
+  mv_substation: 'src/engine/mvSubstationEngine.ts — designMvSubstation().',
+  bess: 'src/engine/batteryEngine.ts — computeAutonomyEnergyRequirement(), sizeBatteryBank().',
+  cables_bom: 'src/engine/protectionBomEngine.ts — calculateAdvancedCableRun(), createUnassessedCableRun(), calculateEarthingSystem(), calculateLightningProtection(); src/engine/acRequirements.ts — assessed interface inputs.',
+  structural: 'src/engine/structuralEngine.ts — calculateStructuralAndFoundations(); src/engine/structureRecommendationEngine.ts — recommendFoundation().',
+  sim24h: 'src/engine/simulation24hEngine.ts — simulate24hEnergyBalance(), sizeDieselGenerator().',
+  waterfall_loss: 'src/engine/waterfallLossEngine.ts — computeWaterfallLosses().',
+  financial: 'src/engine/financialEngine.ts — performFinancialAnalysis(), sanitizeFinancialPricing().',
+  sld: 'src/components/SingleLineDiagram.tsx — generated visualization; no separate network solver.',
+  cad_layout: 'src/engine/powerplantCadLayout.ts — generatePowerplantLayout(), generatePowerplantDxf().',
+  '3d_viewer': 'src/components/ThreeJsViewer.tsx — scene controls; src/engine/shadingSunPathEngine.ts — annual shading calculations; src/engine/shadingLifecycle.ts — applied-result provenance and staleness.',
+  scenarios: 'src/engine/scenarioEngine.ts — generateScenarios().',
+  catalog: 'src/engine/catalogRepository.ts — CatalogRepository; src/engine/equipmentCatalogData.ts — built-in records.',
+  iran_regulations: 'src/components/IranianRegulationsTab.tsx — reference display; no authority query/certification function.',
+  solar_pumping: 'src/engine/solarPumpEngine.ts — calculateSolarPump().',
+  iv_curve: 'src/engine/singleDiodeModel.ts — calculateSingleDiodeCurve().',
+  rfc3_reports: 'src/components/RFC3ReportsTab.tsx — report composition and displayed checks; each check links to its engine module.',
+};
+
 export function getContextualHelp(tab: string, mode: HelpSystemMode, language: HelpLanguage): HelpCopy {
-  if (tab === 'harmonics_grid' && mode === 'offgrid') return GENERIC[language];
-  return (COPY[tab] ?? GENERIC)[language];
+  const copy = tab === 'harmonics_grid' && mode === 'offgrid'
+    ? GENERIC[language]
+    : (COPY[tab] ?? GENERIC)[language];
+  return {
+    ...copy,
+    sources: HELP_SOURCE_REFERENCES[tab] ?? (language === 'fa'
+      ? 'منبع محاسبهٔ اختصاصی برای این صفحه تعریف نشده است؛ خروجی را به‌عنوان محاسبهٔ مستقل تلقی نکنید.'
+      : 'No dedicated calculation source is registered for this page; do not treat its display as an independent calculation.'),
+  };
 }

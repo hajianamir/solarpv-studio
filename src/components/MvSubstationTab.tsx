@@ -366,11 +366,11 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           <div className="space-y-2 text-xs text-slate-300">
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'نوع خنک‌کاری:' : 'Cooling Type:'}</span>
-              <strong className="text-white">{subResult.transformer.coolingType}</strong>
+              <strong className="text-theme-strong">{subResult.transformer.coolingType}</strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'نسبت تبدیل ولتاژ:' : 'Voltage Ratio:'}</span>
-              <strong className="text-white font-mono">{inverterVoltageV}V / {gridVoltageKv}kV</strong>
+              <strong className="text-theme-strong font-mono">{inverterVoltageV}V / {gridVoltageKv}kV</strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'افت حرارتی محیطی (>40°C):' : 'Ambient Temp Derating (>40°C):'}</span>
@@ -455,7 +455,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           <div className="space-y-1.5 text-xs text-slate-300">
             <div className="flex justify-between">
               <span className="text-slate-400">{isFa ? 'ظرفیت نامی:' : 'Rating:'}</span>
-              <strong className="font-mono text-white">{subResult.auxiliaryTransformer.ratedKva} kVA</strong>
+              <strong className="font-mono text-theme-strong">{subResult.auxiliaryTransformer.ratedKva} kVA</strong>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">{isFa ? 'نسبت ولتاژ:' : 'Ratio:'}</span>
@@ -475,7 +475,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           <div className="space-y-1.5 text-xs text-slate-300">
             <div className="flex justify-between">
               <span className="text-slate-400">{isFa ? 'مقطع هادی:' : 'Conductor:'}</span>
-              <strong className="font-mono text-white">{subResult.mvCollectorCable.crossSectionMm2} mm² Al</strong>
+              <strong className="font-mono text-theme-strong">{subResult.mvCollectorCable.crossSectionMm2} mm² Al</strong>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">{isFa ? 'جریان نامی فاز:' : 'Nominal Current:'}</span>
@@ -499,7 +499,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">{isFa ? 'ولتاژ کار دائم (MCOV):' : 'MCOV (Uc):'}</span>
-              <strong className="font-mono text-white">{subResult.surgeArrester.continuousOperatingVoltageMcovKv} kV</strong>
+              <strong className="font-mono text-theme-strong">{subResult.surgeArrester.continuousOperatingVoltageMcovKv} kV</strong>
             </div>
             <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
               {subResult.surgeArrester.energyClass}
@@ -533,7 +533,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-800 font-mono text-[11px]">
               <tr>
-                <td className="p-2.5 font-sans font-bold text-white">{isFa ? 'شبکه بالادست (Utility Grid Q)' : 'Upstream Grid (Q)'}</td>
+                <td className="p-2.5 font-sans font-bold text-theme-strong">{isFa ? 'شبکه بالادست (Utility Grid Q)' : 'Upstream Grid (Q)'}</td>
                 <td className="p-2.5 text-slate-200">{subResult.shortCircuit.gridImpedance.rOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-slate-200">{subResult.shortCircuit.gridImpedance.xOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-sky-300 font-bold">{subResult.shortCircuit.gridImpedance.zOhms.toFixed(4)} Ω</td>
@@ -542,7 +542,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
                 </td>
               </tr>
               <tr>
-                <td className="p-2.5 font-sans font-bold text-white">{isFa ? 'ترانسفورماتور افزاینده (Trafo T)' : 'Power Transformer (T)'}</td>
+                <td className="p-2.5 font-sans font-bold text-theme-strong">{isFa ? 'ترانسفورماتور افزاینده (Trafo T)' : 'Power Transformer (T)'}</td>
                 <td className="p-2.5 text-slate-200">{subResult.shortCircuit.transformerImpedance.rOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-slate-200">{subResult.shortCircuit.transformerImpedance.xOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-sky-300 font-bold">{subResult.shortCircuit.transformerImpedance.zOhms.toFixed(4)} Ω</td>
@@ -551,7 +551,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
                 </td>
               </tr>
               <tr>
-                <td className="p-2.5 font-sans font-bold text-white">{isFa ? 'کابل جمع‌آورنده MV (Feeder Cable)' : 'MV Collection Cable (C)'}</td>
+                <td className="p-2.5 font-sans font-bold text-theme-strong">{isFa ? 'کابل جمع‌آورنده MV (Feeder Cable)' : 'MV Collection Cable (C)'}</td>
                 <td className="p-2.5 text-slate-200">{subResult.shortCircuit.cableImpedance.rOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-slate-200">{subResult.shortCircuit.cableImpedance.xOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-sky-300 font-bold">{subResult.shortCircuit.cableImpedance.zOhms.toFixed(4)} Ω</td>
@@ -569,7 +569,7 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
                 <td className="p-2.5 text-industrial-warning">{subResult.shortCircuit.rEquivalentOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-industrial-warning">{subResult.shortCircuit.xEquivalentOhms.toFixed(4)} Ω</td>
                 <td className="p-2.5 text-industrial-error font-extrabold">{subResult.shortCircuit.totalImpedanceOhms.toFixed(4)} Ω</td>
-                <td className="p-2.5 font-sans text-white">
+                <td className="p-2.5 font-sans text-theme-strong">
                   <div>
                     Isc″(Busbar) = {subResult.shortCircuit.busbarIscKa} kA
                     <span className="text-[10px] text-slate-400 font-normal"> (Grid: {subResult.shortCircuit.busbarGridIscKa} + Inv: {subResult.shortCircuit.inverterFaultContributionKa} kA)</span>

@@ -1,5 +1,7 @@
 // Adaptive Power Inverter, Auto-Voltage Stepping & Paralleling Engine
 
+import type { AcPhase } from './acRequirements';
+
 export type InverterEngineeringClass =
   | 'residential_micro'
   | 'residential_standard'
@@ -12,7 +14,6 @@ export interface InverterClassDefinition {
   titleEn: string;
   powerRangeDesc: string;
   recommendedDcVoltage: number; // 12, 24, or 48V
-  recommendedAcPhase: 'single_phase_230v' | 'three_phase_400v';
   maxSingleUnitKw: number;
 }
 
@@ -21,36 +22,32 @@ export const INVERTER_CLASSES: Record<InverterEngineeringClass, InverterClassDef
     classType: 'residential_micro',
     titleFa: 'مسکونی کوچک (Residential Micro)',
     titleEn: 'Residential Micro (<3 kW)',
-    powerRangeDesc: 'کمتر از ۳ کیلووات، ولتاژ ۱۲ یا ۲۴ ولت تکفاز',
+    powerRangeDesc: 'کمتر از ۳ کیلووات؛ توصیف اندازه توان، نه الزام فاز/ولتاژ محلی',
     recommendedDcVoltage: 24,
-    recommendedAcPhase: 'single_phase_230v',
     maxSingleUnitKw: 3.0,
   },
   residential_standard: {
     classType: 'residential_standard',
     titleFa: 'مسکونی استاندارد (Residential Standard)',
     titleEn: 'Residential Standard (3–10 kW)',
-    powerRangeDesc: '۳ الی ۱۰ کیلووات، ولتاژ ۴۸ ولت استاندارد تکفاز/سهفاز',
+    powerRangeDesc: '۳ الی ۱۰ کیلووات؛ فاز و ولتاژ از الزام تأییدشده پروژه می‌آید',
     recommendedDcVoltage: 48,
-    recommendedAcPhase: 'single_phase_230v',
     maxSingleUnitKw: 6.0,
   },
   commercial_light: {
     classType: 'commercial_light',
     titleFa: 'تجاری سبک / کارگاهی (Commercial Light)',
     titleEn: 'Commercial Light (10–30 kW)',
-    powerRangeDesc: '۱۰ الی ۳۰ کیلووات، اینورترهای پارالل یا سهفاز سنکرون ۴۰۰ ولت',
+    powerRangeDesc: '۱۰ الی ۳۰ کیلووات؛ فاز و ولتاژ از الزام تأییدشده پروژه می‌آید',
     recommendedDcVoltage: 48,
-    recommendedAcPhase: 'three_phase_400v',
     maxSingleUnitKw: 12.0,
   },
   industrial_utility: {
     classType: 'industrial_utility',
     titleFa: 'صنعتی و مزارع خورشیدی (Industrial / Utility)',
     titleEn: 'Industrial & Utility (>30 kW)',
-    powerRangeDesc: 'بالای ۳۰ کیلووات، شبکه‌های استرینگ سنترال و تجمیع توان سهفاز',
+    powerRangeDesc: 'بالای ۳۰ کیلووات؛ توپولوژی و فاز نیازمند مشخصات پروژه است',
     recommendedDcVoltage: 48, // or high-voltage battery racks
-    recommendedAcPhase: 'three_phase_400v',
     maxSingleUnitKw: 30.0,
   },
 };
@@ -63,14 +60,20 @@ export interface InverterClusteringResult {
   /** Inverter input DC bus nominal operating voltage (from MPPT ceiling). */
   inverterDcBusNominalV: number;
   autoSteppingReasonFa: string;
-  acPhaseType: 'single_phase_230v' | 'three_phase_400v';
+  /** Only the explicitly supplied project requirement; unknown is never class-inferred. */
+  acPhaseType: AcPhase;
   parallelUnitsCount: number;
   unitRatingKw: number;
   totalInverterCapacityKw: number;
+  requiredContinuousKw: number;
   inverterDcContinuousCurrentAmps: number;
   inverterDcSurgeCurrentAmps: number;
-  healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested';
+  healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested' | 'phase_incompatible';
   healthStatusTextFa: string;
+  phaseCompatibilityWarningFa?: string;
+  maxSinglePhaseLegWatts?: number;
+  requiredApparentPowerKva?: number;
+  apparentPowerAssessment: 'not_assessed_no_catalog_kva';
   recommendationFa: string;
   isUnitRightSized?: boolean;
   requestedUnitRatingKw?: number;
@@ -80,9 +83,22 @@ export function evaluateInverterClustering(
   continuousWatts: number,
   peakSurgeWatts: number,
   preferredUnitKw: number = 5.0,
-  inverterVmpptMaxV?: number   // NEW (BUG-5): MPPT ceiling of the selected inverter
+  inverterVmpptMaxV?: number,   // MPPT ceiling of the selected inverter
+  confirmedAcPhase: AcPhase = 'unknown',
+  selectedInverterThreePhase?: boolean,
+  maxSinglePhaseLegWatts: number = 0,
+  confirmedLoadPowerFactor?: number,
 ): InverterClusteringResult {
-  const continuousKw = continuousWatts / 1000.0;
+  // For a selected three-phase unit, account for the per-leg loading limit as
+  // well as total kW; this is a conservative equal-capacity-per-leg assumption.
+  const phaseAdjustedContinuousWatts = selectedInverterThreePhase
+    ? Math.max(continuousWatts, Math.max(0, maxSinglePhaseLegWatts) * 3)
+    : continuousWatts;
+  const continuousKw = phaseAdjustedContinuousWatts / 1000.0;
+  const requiredApparentPowerKva = confirmedLoadPowerFactor !== undefined
+    && Number.isFinite(confirmedLoadPowerFactor) && confirmedLoadPowerFactor > 0 && confirmedLoadPowerFactor <= 1
+    ? Number((phaseAdjustedContinuousWatts / (1000 * confirmedLoadPowerFactor)).toFixed(2))
+    : undefined;
   const peakKw = peakSurgeWatts / 1000.0;
 
   // 1. Identify engineering class
@@ -156,7 +172,7 @@ export function evaluateInverterClustering(
   const inverterDcSurgeCurrentAmps = peakSurgeWatts / (recommendedDcVoltageVdc * 0.93);
 
   // Health evaluation
-  let healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested' = 'compatible';
+  let healthStatus: 'compatible' | 'power_deficit' | 'upgrade_suggested' | 'phase_incompatible' = 'compatible';
   let healthStatusTextFa = 'سازگار و بهینه';
   let recommendationFa = `تعداد ${parallelUnitsCount} دستگاه اینورتر ${unitKw} کیلووات با کابل پارالل سنکرون همگام‌سازی شوند.`;
 
@@ -174,20 +190,34 @@ export function evaluateInverterClustering(
     recommendationFa = `به جای پارالل، می‌توانید از یک دستگاه اینورتر یکپارچه ${Math.ceil(continuousKw)}kW استفاده کنید.`;
   }
 
+  const phaseCompatibilityWarningFa = confirmedAcPhase === 'three' && selectedInverterThreePhase === false
+    ? 'ناسازگاری فاز: بارها خروجی سه‌فاز می‌خواهند، اما اینورتر انتخاب‌شده تک‌فاز است.'
+    : undefined;
+  if (phaseCompatibilityWarningFa) {
+    healthStatus = 'phase_incompatible';
+    healthStatusTextFa = 'ناسازگاری فاز اینورتر با بار';
+    recommendationFa = phaseCompatibilityWarningFa;
+  }
+
   return {
     engineeringClass,
     recommendedDcVoltageVdc,
     batteryDcBusNominalV: recommendedDcVoltageVdc,
     inverterDcBusNominalV,
     autoSteppingReasonFa,
-    acPhaseType: engineeringClass.recommendedAcPhase,
+    acPhaseType: confirmedAcPhase,
     parallelUnitsCount,
     unitRatingKw: unitKw,
     totalInverterCapacityKw,
+    requiredContinuousKw: continuousKw,
     inverterDcContinuousCurrentAmps,
     inverterDcSurgeCurrentAmps,
     healthStatus,
     healthStatusTextFa,
+    phaseCompatibilityWarningFa,
+    maxSinglePhaseLegWatts,
+    requiredApparentPowerKva,
+    apparentPowerAssessment: 'not_assessed_no_catalog_kva',
     recommendationFa,
     isUnitRightSized,
     requestedUnitRatingKw,

@@ -108,7 +108,12 @@ export interface BatteryBankSizingResult {
   systemVoltageVdc: number; // 12, 24, or 48V
   grossCapacityKwh: number;
   usableCapacityKwh: number;
-  nominalDoDUsableCapacityKwh?: number;
+  /** Stored DC energy window from gross capacity × DoD × temperature derate. */
+  nominalDoDUsableCapacityKwh: number;
+  /** AC-side energy after one discharge-conversion efficiency; not an energy/SOC window. */
+  chargeEfficiencyFraction: number;
+  dischargeEfficiencyFraction: number;
+  energySemanticsNote: string;
   totalCapacityAh: number;
   unitBatteryCapacityAh: number;
   batteriesInSeries: number;
@@ -117,6 +122,9 @@ export interface BatteryBankSizingResult {
   continuousDischargeCurrentAmps: number;
   peakSurgeDischargeCurrentAmps: number;
   actualContinuousCRate: number;
+  actualSurgeCRate: number;
+  isSurgeCRateAssessed: boolean;
+  isSurgeCRateCompliant: boolean;
   estimatedLifespanYears: number;
   expectedTotalCycles: number;
   warnings: string[];
@@ -213,6 +221,12 @@ export function sizeBatteryBank(
   const peakWatts = Math.max(contWatts, Number(inverterPeakWatts) || contWatts * 1.5);
   const ambientTemp = minAmbientTempC !== undefined ? Number(minAmbientTempC) : 15.0;
   const warnings: string[] = [];
+  const roundTripFraction = (profile.roundTripEfficiencyPct || 90) / 100.0;
+  // Chemistry profiles provide only round-trip efficiency; split it symmetrically for
+  // the hourly model until manufacturer-specific charge/discharge efficiencies exist.
+  const chargeEfficiencyFraction = Math.sqrt(roundTripFraction);
+  const dischargeEfficiencyFraction = Math.sqrt(roundTripFraction);
+  const energySemanticsNote = 'nominalDoDUsableCapacityKwh is the DC SOC window; usableCapacityKwh is its AC output after one discharge-efficiency conversion. Round-trip efficiency is split symmetrically between charge and discharge for screening.';
 
   // If zero energy requirement (e.g. utility powerplant or 0 autonomy)
   if (dailyEnergyForAutonomyKwh <= 0 || autonomyDays <= 0) {
@@ -221,6 +235,10 @@ export function sizeBatteryBank(
       systemVoltageVdc: vdc,
       grossCapacityKwh: 0,
       usableCapacityKwh: 0,
+      nominalDoDUsableCapacityKwh: 0,
+      chargeEfficiencyFraction,
+      dischargeEfficiencyFraction,
+      energySemanticsNote,
       totalCapacityAh: 0,
       unitBatteryCapacityAh: unitAh,
       batteriesInSeries: 0,
@@ -229,6 +247,9 @@ export function sizeBatteryBank(
       continuousDischargeCurrentAmps: 0,
       peakSurgeDischargeCurrentAmps: 0,
       actualContinuousCRate: 0,
+      actualSurgeCRate: 0,
+      isSurgeCRateAssessed: false,
+      isSurgeCRateCompliant: false,
       estimatedLifespanYears: profile.typicalLifespanYears,
       expectedTotalCycles: profile.standardCycleLifeAt80DoD,
       warnings: [],
@@ -247,13 +268,12 @@ export function sizeBatteryBank(
   );
 
   const dodFraction = (profile.recommendedDoDPct || 80) / 100.0;
-  const roundTripFraction = (profile.roundTripEfficiencyPct || 90) / 100.0;
 
-  // Total usable energy required during autonomy window
+  // Total AC-side energy requirement during the autonomy window
   const requiredUsableKwh = dailyEnergyForAutonomyKwh * Math.max(0.2, autonomyDays);
 
   // Gross capacity required
-  const grossCapacityKwh = requiredUsableKwh / (dodFraction * roundTripFraction * tempCorrectionFactor);
+  const grossCapacityKwh = requiredUsableKwh / (dodFraction * dischargeEfficiencyFraction * tempCorrectionFactor);
   const grossCapacityWh = grossCapacityKwh * 1000.0;
 
   // Capacity in Ampere-Hours at selected busbar DC voltage
@@ -276,8 +296,8 @@ export function sizeBatteryBank(
   const totalBatteryUnitsCount = batteriesInSeries * parallelStrings;
   const actualBankAh = parallelStrings * unitAh;
   const actualGrossKwh = (actualBankAh * vdc) / 1000.0;
-  const nominalDoDUsableKwh = actualGrossKwh * dodFraction;
-  const actualUsableKwh = actualGrossKwh * dodFraction * roundTripFraction * tempCorrectionFactor;
+  const nominalDoDUsableKwh = actualGrossKwh * dodFraction * tempCorrectionFactor;
+  const actualUsableKwh = actualGrossKwh * dodFraction * dischargeEfficiencyFraction * tempCorrectionFactor;
 
   // Current draws from battery bank
   const inverterEff = 0.93;
@@ -285,10 +305,20 @@ export function sizeBatteryBank(
   const peakSurgeDischargeCurrentAmps = peakWatts / (vdc * inverterEff);
 
   const actualContinuousCRate = actualBankAh > 0 ? continuousDischargeCurrentAmps / actualBankAh : 0;
+  const actualSurgeCRate = actualBankAh > 0 ? peakSurgeDischargeCurrentAmps / actualBankAh : 0;
+  const isSurgeCRateAssessed = actualBankAh > 0 && Number.isFinite(profile.maxSurgeCRate) && profile.maxSurgeCRate > 0;
+  const isSurgeCRateCompliant = isSurgeCRateAssessed && actualSurgeCRate <= profile.maxSurgeCRate;
 
   if (actualContinuousCRate > (profile.maxContinuousCRate || 1.0)) {
     warnings.push(
       `جریان دشارژ پیوسته (${continuousDischargeCurrentAmps.toFixed(1)}A معادل ${actualContinuousCRate.toFixed(2)}C) بیش از نرخ مجاز شیمی ${profile.nameFa} (${profile.maxContinuousCRate}C) است! خطر داغ شدن و سوختن باتری.`
+    );
+  }
+  if (!isSurgeCRateAssessed) {
+    warnings.push('Surge C-rate NOT ASSESSED: battery bank amp-hour capacity or chemistry surge C-rate limit is unavailable.');
+  } else if (!isSurgeCRateCompliant) {
+    warnings.push(
+      `جریان هجومی باتری (${peakSurgeDischargeCurrentAmps.toFixed(1)}A معادل ${actualSurgeCRate.toFixed(2)}C) از حد جهشی شیمی ${profile.nameFa} (${profile.maxSurgeCRate}C) بیشتر است.`
     );
   }
 
@@ -342,9 +372,12 @@ export function sizeBatteryBank(
   return {
     chemistry: profile,
     systemVoltageVdc: vdc,
-    grossCapacityKwh: Number(actualGrossKwh.toFixed(1)),
-    usableCapacityKwh: Number(actualUsableKwh.toFixed(1)),
-    nominalDoDUsableCapacityKwh: Number(nominalDoDUsableKwh.toFixed(1)),
+    grossCapacityKwh: actualGrossKwh,
+    usableCapacityKwh: actualUsableKwh,
+    nominalDoDUsableCapacityKwh: nominalDoDUsableKwh,
+    chargeEfficiencyFraction,
+    dischargeEfficiencyFraction,
+    energySemanticsNote,
     totalCapacityAh: Math.round(actualBankAh),
     unitBatteryCapacityAh: unitAh,
     batteriesInSeries,
@@ -353,6 +386,9 @@ export function sizeBatteryBank(
     continuousDischargeCurrentAmps: Number(continuousDischargeCurrentAmps.toFixed(1)),
     peakSurgeDischargeCurrentAmps: Number(peakSurgeDischargeCurrentAmps.toFixed(1)),
     actualContinuousCRate: Number(actualContinuousCRate.toFixed(2)),
+    actualSurgeCRate: Number(actualSurgeCRate.toFixed(2)),
+    isSurgeCRateAssessed,
+    isSurgeCRateCompliant,
     estimatedLifespanYears,
     expectedTotalCycles: Math.round(cycleLifeAtActualDoD),
     warnings,

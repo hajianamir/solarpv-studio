@@ -10,6 +10,32 @@ export type ConductorMaterial = 'copper' | 'aluminum';
 export type InsulationType = 'xlpe' | 'pvc';
 export type UpstreamGroundingSystem = 'solidly_grounded' | 'impedance_grounded' | 'isolated_it';
 export type InstallationMethod = 'cable_tray' | 'in_conduit' | 'direct_buried';
+export type MotorStartingMethod = 'not_applicable' | 'direct_on_line' | 'star_delta' | 'soft_starter' | 'vfd';
+
+/** User-authored, persisted design inputs for one physical feeder. Undefined means unknown, never inferred. */
+export interface CableFeederInputs {
+  oneWayLengthM?: number;
+  designCurrentAmps?: number;
+  nominalVoltageVolts?: number;
+  conductorMaterial?: ConductorMaterial;
+  insulationType?: InsulationType;
+  allowableDropPct?: number;
+  isDc?: boolean;
+  isThreePhase?: boolean;
+  powerFactor?: number;
+  coincidenceFactor?: number;
+  ambientTempC?: number;
+  installationMethod?: InstallationMethod;
+  groupedCircuitsCount?: number;
+  protectiveDeviceRatingAmps?: number;
+  protectiveDeviceBreakingCapacityKa?: number;
+  protectiveDeviceReference?: string;
+  expectedIscKa?: number;
+  faultClearingTimeSec?: number;
+  motorStartingMethod?: MotorStartingMethod;
+  motorStartingMultiplier?: number;
+}
+export type CableFeederInputMap = Record<string, CableFeederInputs>;
 
 export interface CableRunConfig {
   id: string;
@@ -25,8 +51,16 @@ export interface CableRunConfig {
   isThreePhase?: boolean;
   ambientTempC?: number;           // Defaults to 40°C
   installationMethod?: InstallationMethod; // Defaults to 'cable_tray'
-  expectedIscKa?: number;           // Defaults to 10 kA
-  faultClearingTimeSec?: number;    // Defaults to 0.1s
+  expectedIscKa?: number;           // Legacy calculation fallback only; not sufficient for final assessment
+  faultClearingTimeSec?: number;    // Legacy calculation fallback only; not sufficient for final assessment
+  powerFactor?: number;
+  groupedCircuitsCount?: number;
+  protectiveDeviceRatingAmps?: number;
+  protectiveDeviceBreakingCapacityKa?: number;
+  protectiveDeviceReference?: string;
+  coincidenceFactor?: number;
+  motorStartingMethod?: MotorStartingMethod;
+  motorStartingMultiplier?: number;
 }
 
 export interface CableRunResult {
@@ -39,8 +73,16 @@ export interface CableRunResult {
   cableDesignationFa: string; // e.g. "2 × (1 × 185 mm²) مسی XLPE"
   cableDesignationEn: string;
   actualVoltageDropVolts: number;
+  /** Conservative conductor temperature used to convert 20°C nominal resistivity to operating resistance. */
+  conductorResistanceTempC: number | null;
+  conductorResistanceModelNote: string;
+  /** Rounded display value; compliance uses the unrounded voltage-drop ratio. */
   actualVoltageDropPct: number;
+  isVoltageDropCompliant: boolean;
   isCompliant: boolean;
+  /** False means critical source inputs are missing; all numeric output fields are non-results. */
+  isAssessed?: boolean;
+  assessmentNote?: string;
   // Multi-constraint engineering parameters
   thermalAmpacityPerRunAmps: number;
   totalThermalAmpacityAmps: number;
@@ -51,6 +93,13 @@ export interface CableRunResult {
   powerLossPct: number;
   isAmpacityCompliant: boolean;
   isShortCircuitCompliant: boolean;
+  isProtectionCoordinationAssessed?: boolean;
+  isProtectionCoordinationCompliant?: boolean;
+  isMotorStartingAssessed?: boolean;
+  motorStartingAssessmentNote?: string;
+  /** User multiplier-based current estimate only; dynamic starting voltage drop is not assessed. */
+  motorStartingCurrentAmps?: number | null;
+  motorStartingVoltageDropPct?: number | null;
   // Cable electrical parameters (IEC 60287 / IEC 60502)
   lineCapacitanceUfPerKm: number;
   totalCapacitanceUf: number;
@@ -58,6 +107,37 @@ export interface CableRunResult {
   capacitanceModelNote: string;
   troubleshootingGuideFa?: string;
   troubleshootingGuideEn?: string;
+}
+
+export function createUnassessedCableRun(config: Pick<CableRunConfig, 'id' | 'sectionNameFa' | 'sectionNameEn' | 'oneWayLengthM' | 'conductorMaterial' | 'insulationType' | 'allowableDropPct' | 'isDc' | 'isThreePhase'>, assessmentNote: string): CableRunResult {
+  // Numeric zeroes below are transport placeholders only. `isAssessed: false` is
+  // mandatory and consumers must suppress them; this object is never a pass.
+  return {
+    config: { ...config, designCurrentAmps: 0, nominalVoltageVolts: 0 },
+    calculatedTheoreticalCrossSectionMm2: 0, selectedStandardSingleCrossSectionMm2: 0,
+    parallelRunsCount: 0, perRunCrossSectionMm2: 0, totalEffectiveCrossSectionMm2: 0,
+    cableDesignationFa: 'بررسی نشده', cableDesignationEn: 'Not assessed',
+    actualVoltageDropVolts: 0, conductorResistanceTempC: null,
+    conductorResistanceModelNote: 'Not assessed: required cable inputs are incomplete.',
+    actualVoltageDropPct: 0, isVoltageDropCompliant: false, isCompliant: false,
+    isAssessed: false, assessmentNote,
+    thermalAmpacityPerRunAmps: 0, totalThermalAmpacityAmps: 0,
+    temperatureDeratingFactorKt: 0, groupingDeratingFactorKg: 0,
+    shortCircuitWithstandMinMm2: 0, powerLossWatts: 0, powerLossPct: 0,
+    isAmpacityCompliant: false, isShortCircuitCompliant: false,
+    isProtectionCoordinationAssessed: false, isProtectionCoordinationCompliant: false,
+    isMotorStartingAssessed: false, motorStartingAssessmentNote: assessmentNote,
+    motorStartingCurrentAmps: null, motorStartingVoltageDropPct: null,
+    lineCapacitanceUfPerKm: 0, totalCapacitanceUf: 0, chargingCurrentAmps: 0,
+    capacitanceModelNote: 'Not calculated: required AC inputs are unknown or unconfirmed.',
+  };
+}
+
+/** Compare raw voltage drop against its limit; formatting/rounding is display-only. */
+export function isVoltageDropWithinLimit(actualDropVolts: number, nominalVoltageVolts: number, allowableDropPct: number): boolean {
+  if (!Number.isFinite(actualDropVolts) || !Number.isFinite(nominalVoltageVolts) || nominalVoltageVolts <= 0
+    || !Number.isFinite(allowableDropPct) || allowableDropPct < 0) return false;
+  return (actualDropVolts / nominalVoltageVolts) * 100 <= allowableDropPct;
 }
 
 export type DcSystemEarthingType = 'floating' | 'functional_negative' | 'functional_positive';
@@ -210,24 +290,31 @@ const MAX_PRACTICAL_SINGLE_CABLE_MM2 = 240.0;
  * Sizing satisfies Voltage Drop + Thermal Ampacity (with Temp/Grouping derating) + Short-circuit withstand.
  */
 export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResult {
-  // 1. Conductivity gamma: Copper = 56 m/(Ω*mm²), Aluminum = 35 m/(Ω*mm²)
-  const gamma = config.conductorMaterial === 'copper' ? 56.0 : 35.0;
-
-  // Temperature correction factor for conductivity
+  // 1. Conductor resistance: nominal conductivity is referenced to 20°C.
+  // In the absence of manufacturer resistance data or a verified operating temperature,
+  // use the insulation-class maximum as a conservative thermal design temperature.
+  const gamma20 = config.conductorMaterial === 'copper' ? 56.0 : 35.0;
+  const alphaPerC = config.conductorMaterial === 'copper' ? 0.00393 : 0.00403;
   const ambientTempC = config.ambientTempC ?? 40.0;
-  const tempCorrection = config.insulationType === 'xlpe' ? 1.0 : 0.88;
-  const effectiveGamma = gamma * tempCorrection;
+  const maxOperatingTemp = config.insulationType === 'xlpe' ? 90.0 : 70.0;
+  const conductorResistanceTempC = maxOperatingTemp;
+  const resistanceTemperatureFactor = 1.0 + alphaPerC * (conductorResistanceTempC - 20.0);
+  const effectiveGamma = gamma20 / resistanceTemperatureFactor;
+  const conductorResistanceModelNote =
+    `Resistance uses 20°C nominal conductivity corrected to ${conductorResistanceTempC}°C (maximum ${config.insulationType.toUpperCase()} conductor temperature) as a conservative screening assumption; verify manufacturer AC resistance and actual design conductor temperature.`;
 
   // Ampacity derating factors (IEC 60364-5-52 Table B.52.14)
   // kt = sqrt((T_max - T_amb) / (T_max - 30))
-  const maxOperatingTemp = config.insulationType === 'xlpe' ? 90.0 : 70.0;
   const kt = Number(
     Math.min(1.0, Math.max(0.60, Math.sqrt((maxOperatingTemp - ambientTempC) / (maxOperatingTemp - 30.0)))).toFixed(3)
   );
 
   // Grouping factor kg: installation method and multi-circuit derating (IEC 60364-5-52 Table B.52.17)
   const installMethod = config.installationMethod ?? 'cable_tray';
-  const kg = installMethod === 'direct_buried' ? 0.70 : installMethod === 'in_conduit' ? 0.75 : 0.82;
+  const installBase = installMethod === 'direct_buried' ? 0.70 : installMethod === 'in_conduit' ? 0.75 : 0.82;
+  const groupedCount = Math.max(1, Math.floor(config.groupedCircuitsCount ?? 1));
+  const groupCountFactor = groupedCount <= 1 ? 1 : groupedCount === 2 ? 0.80 : groupedCount === 3 ? 0.70 : groupedCount === 4 ? 0.65 : groupedCount === 5 ? 0.60 : 0.57;
+  const kg = Number((installBase * groupCountFactor).toFixed(3));
 
   // 2. Short-Circuit Thermal Withstand Requirement (IEC 60364-5-54)
   // S_sc = (I_sc * sqrt(t)) / k
@@ -247,7 +334,7 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   if (config.isDc) {
     calculatedTheoreticalMm2 = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * allowableDropVolts);
   } else if (config.isThreePhase) {
-    const cosPhi = 0.95;
+    const cosPhi = config.powerFactor ?? 0.95;
     // Include AC reactance component (X_L ≈ 0.08 Ω/km = 0.00008 Ω/m)
     const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
     const reactiveDropVolts = Math.sqrt(3) * config.oneWayLengthM * config.designCurrentAmps * 0.00008 * sinPhi;
@@ -257,7 +344,11 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
       (Math.sqrt(3) * config.oneWayLengthM * config.designCurrentAmps * cosPhi) /
       (effectiveGamma * netAllowableResistiveDrop);
   } else {
-    calculatedTheoreticalMm2 = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * allowableDropVolts);
+    const cosPhi = config.powerFactor ?? 0.95;
+    const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
+    const reactiveDropVolts = 2 * config.oneWayLengthM * config.designCurrentAmps * 0.00008 * sinPhi;
+    const netAllowableResistiveDrop = Math.max(0.2, allowableDropVolts - reactiveDropVolts);
+    calculatedTheoreticalMm2 = (2.0 * config.oneWayLengthM * config.designCurrentAmps * cosPhi) / (effectiveGamma * netAllowableResistiveDrop);
   }
 
   // 4. Combined Sizing: Candidate cross section must satisfy ALL THREE constraints simultaneously:
@@ -333,7 +424,7 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   if (config.isDc) {
     actualDropVolts = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * totalEffectiveCrossSection);
   } else if (config.isThreePhase) {
-    const cosPhi = 0.95;
+    const cosPhi = config.powerFactor ?? 0.95;
     const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
     const rPerMeter = 1.0 / (effectiveGamma * totalEffectiveCrossSection);
     const xPerMeter = 0.00008; // 0.08 ohm/km
@@ -343,11 +434,17 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
       config.designCurrentAmps *
       (rPerMeter * cosPhi + xPerMeter * sinPhi);
   } else {
-    actualDropVolts = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * totalEffectiveCrossSection);
+    const cosPhi = config.powerFactor ?? 0.95;
+    const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
+    const rPerMeter = 1.0 / (effectiveGamma * totalEffectiveCrossSection);
+    const xPerMeter = 0.00008; // 0.08 ohm/km, matching the single-phase sizing model
+    actualDropVolts = 2.0 * config.oneWayLengthM * config.designCurrentAmps
+      * (rPerMeter * cosPhi + xPerMeter * sinPhi);
   }
 
-  const actualDropPct = Number(((actualDropVolts / config.nominalVoltageVolts) * 100.0).toFixed(2));
-  const isDropCompliant = actualDropPct <= config.allowableDropPct;
+  const actualDropPctUnrounded = (actualDropVolts / config.nominalVoltageVolts) * 100.0;
+  const actualDropPct = Number(actualDropPctUnrounded.toFixed(2));
+  const isDropCompliant = isVoltageDropWithinLimit(actualDropVolts, config.nominalVoltageVolts, config.allowableDropPct);
 
   // 6. Ampacity & Short-Circuit Verification
   const singleBaseAmp = getBaseAmpacity(perRunSection, config.conductorMaterial, config.insulationType);
@@ -356,14 +453,35 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const isAmpacityCompliant = totalDeratedAmp >= config.designCurrentAmps;
   // Rigorous IEC 60364-5-54 k²S² >= I²t without arbitrary discount factors:
   const isShortCircuitCompliant = totalEffectiveCrossSection >= shortCircuitWithstandMinMm2;
+  const isProtectionCoordinationAssessed = Boolean(
+    config.protectiveDeviceRatingAmps && config.protectiveDeviceBreakingCapacityKa
+    && config.protectiveDeviceReference?.trim() && config.expectedIscKa && config.faultClearingTimeSec
+  );
+  const isProtectionCoordinationCompliant = isProtectionCoordinationAssessed
+    && (config.protectiveDeviceRatingAmps as number) >= config.designCurrentAmps
+    && (config.protectiveDeviceRatingAmps as number) <= totalDeratedAmp
+    && (config.protectiveDeviceBreakingCapacityKa as number) >= (config.expectedIscKa as number);
+  const motorStartingCurrentAmps = config.motorStartingMethod && config.motorStartingMethod !== 'not_applicable'
+    && config.motorStartingMultiplier && config.motorStartingMultiplier >= 1
+    ? config.designCurrentAmps * config.motorStartingMultiplier : null;
+  // A current multiplier alone cannot determine dynamic voltage drop: starting PF,
+  // source impedance, motor/drive behavior and an acceptance limit are not modeled.
+  const isMotorStartingAssessed = config.isDc || config.motorStartingMethod === 'not_applicable';
+  const motorStartingVoltageDropPct = null;
+  const motorStartingAssessmentNote = isMotorStartingAssessed
+    ? undefined
+    : 'Motor starting voltage drop NOT ASSESSED: a current multiplier is only a current estimate; starting power factor, source impedance, motor/drive dynamic data and a project acceptance limit are required.';
 
   // 7. Joule Thermal Power Loss (P_loss = m * I² * R)
   const lineResistanceOhms = config.oneWayLengthM / (effectiveGamma * totalEffectiveCrossSection);
   const multiplier = config.isThreePhase ? 3.0 : 2.0;
   const powerLossWatts = Math.round(multiplier * Math.pow(config.designCurrentAmps, 2) * lineResistanceOhms);
-  const totalTransferredPowerWatts = config.isThreePhase
-    ? Math.sqrt(3) * config.nominalVoltageVolts * config.designCurrentAmps * 0.95
-    : config.nominalVoltageVolts * config.designCurrentAmps;
+  const powerFactor = config.powerFactor ?? 0.95;
+  const totalTransferredPowerWatts = config.isDc
+    ? config.nominalVoltageVolts * config.designCurrentAmps
+    : config.isThreePhase
+      ? Math.sqrt(3) * config.nominalVoltageVolts * config.designCurrentAmps * powerFactor
+      : config.nominalVoltageVolts * config.designCurrentAmps * powerFactor;
   const powerLossPct = Number(((powerLossWatts / Math.max(1, totalTransferredPowerWatts)) * 100.0).toFixed(2));
 
   // 8. Line Capacitance & AC Charging Current per IEC 60287-1-1 & IEC 60502-1 / EN 50618:
@@ -410,8 +528,17 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   const capacitanceModelNote =
     'Idealized coaxial screened geometry per IEC 60287-1-1 Eq. 2.2; actual capacitance of unshielded/multicore cables depends on laying geometry and manufacturer datasheets.';
 
-  // Full compliance requires voltage drop, thermal ampacity, AND short-circuit withstand:
-  const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant;
+  // A feeder pass also requires explicit protection data and, for AC circuits, an
+  // explicit motor-start disposition. Active motor starting remains unassessed here.
+  const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant
+    && isProtectionCoordinationAssessed && isProtectionCoordinationCompliant && isMotorStartingAssessed;
+  const assessmentNotes = [
+    !isProtectionCoordinationAssessed
+      ? 'Protection coordination is unassessed: explicit protective-device and verified fault data are required.'
+      : '',
+    motorStartingAssessmentNote ?? '',
+  ].filter(Boolean);
+  const isAssessed = assessmentNotes.length === 0;
 
   const matFa = config.conductorMaterial === 'copper' ? 'مسی (Cu)' : 'آلومینیومی (Al)';
   const matEn = config.conductorMaterial === 'copper' ? 'Cu' : 'Al';
@@ -447,6 +574,17 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
       errorReasonsFa.push(`سطح مقطع کل (${totalEffectiveCrossSection}mm²) کمتر از حداقل تحمل اتصال کوتاه آدیاباتیک (${shortCircuitWithstandMinMm2}mm² برای Isc=${config.expectedIscKa ?? 10}kA در زمان ${faultDurationSec}s) است.`);
       errorReasonsEn.push(`Cross-section (${totalEffectiveCrossSection}mm²) is below short-circuit withstand minimum (${shortCircuitWithstandMinMm2}mm² for ${config.expectedIscKa ?? 10}kA at ${faultDurationSec}s).`);
     }
+    if (!isProtectionCoordinationAssessed) {
+      errorReasonsFa.push('هماهنگی حفاظتی بررسی نشده: مشخصات کلید/فیوز و داده خطای معتبر ناقص است.');
+      errorReasonsEn.push('Protection coordination is unassessed: protective-device specifications or verified fault data are missing.');
+    } else if (!isProtectionCoordinationCompliant) {
+      errorReasonsFa.push('مشخصات حفاظت با جریان طراحی، ظرفیت حرارتی کابل یا جریان اتصال کوتاه اعلام‌شده سازگار نیست.');
+      errorReasonsEn.push('Protective-device rating/breaking capacity does not match the design current, cable ampacity or declared fault current.');
+    }
+    if (!isMotorStartingAssessed && motorStartingAssessmentNote) {
+      errorReasonsFa.push('افت ولتاژ راه‌اندازی موتور بررسی نشده است؛ روش راه‌اندازی به‌تنهایی برای ارزیابی دینامیکی کافی نیست.');
+      errorReasonsEn.push(motorStartingAssessmentNote);
+    }
 
     troubleshootingGuideFa = `نحوه رفع خطا: ${errorReasonsFa.join(' ')} راهکار: ۱) افزایش تعداد کابل موازی به ${parallelRuns + 1} رشته، ۲) افزایش سایز کابل به سطح مقطع بالاتر، یا ۳) تغییر جنس کابل به مس با هدایت الکتریکی بالاتر.`;
     troubleshootingGuideEn = `Troubleshooting Guide: ${errorReasonsEn.join(' ')} Resolution: 1) Increase parallel runs to ${parallelRuns + 1}, 2) Select larger cross-section, or 3) Switch conductor to Copper.`;
@@ -462,8 +600,19 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
     cableDesignationFa,
     cableDesignationEn,
     actualVoltageDropVolts: Number(actualDropVolts.toFixed(2)),
+    conductorResistanceTempC,
+    conductorResistanceModelNote,
     actualVoltageDropPct: actualDropPct,
+    isVoltageDropCompliant: isDropCompliant,
     isCompliant,
+    isAssessed,
+    assessmentNote: assessmentNotes.length ? assessmentNotes.join(' ') : undefined,
+    isProtectionCoordinationAssessed,
+    isProtectionCoordinationCompliant,
+    isMotorStartingAssessed,
+    motorStartingAssessmentNote,
+    motorStartingCurrentAmps,
+    motorStartingVoltageDropPct,
     thermalAmpacityPerRunAmps: singleDeratedAmp,
     totalThermalAmpacityAmps: totalDeratedAmp,
     temperatureDeratingFactorKt: kt,

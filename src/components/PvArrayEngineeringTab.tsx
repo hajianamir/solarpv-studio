@@ -311,8 +311,8 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
           onClick={() => setActiveSubTab('sizing')}
           className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-colors ${
             activeSubTab === 'sizing'
-              ? 'bg-sky-600 text-white'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-sky-600 text-theme-strong'
+              : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
           }`}
         >
           <Layers className="w-4 h-4" />
@@ -322,8 +322,8 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
           onClick={() => setActiveSubTab('shading')}
           className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-colors ${
             activeSubTab === 'shading'
-              ? 'bg-sky-600 text-white'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              ? 'bg-sky-600 text-theme-strong'
+              : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
           }`}
         >
           <Eye className="w-4 h-4 text-industrial-warning" />
@@ -427,7 +427,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                   type="button"
                   onClick={() => setInverterCategory('all')}
                   className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${
-                    inverterCategory === 'all' ? 'bg-sky-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                    inverterCategory === 'all' ? 'bg-sky-500 text-theme-strong' : 'bg-slate-800 text-slate-400 hover:text-theme-strong'
                   }`}
                 >
                   {isEn ? 'All' : 'همه'}
@@ -436,7 +436,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                   type="button"
                   onClick={() => setInverterCategory('string')}
                   className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${
-                    inverterCategory === 'string' ? 'bg-sky-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                    inverterCategory === 'string' ? 'bg-sky-500 text-theme-strong' : 'bg-slate-800 text-slate-400 hover:text-theme-strong'
                   }`}
                 >
                   {isEn ? 'String Inverters' : 'اینورترهای رشته‌ای (String)'}
@@ -446,7 +446,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                     type="button"
                     onClick={() => setInverterCategory('turnkey')}
                     className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${
-                      inverterCategory === 'turnkey' ? 'bg-purple-600 text-white' : 'bg-slate-800 text-purple-300 hover:text-white'
+                      inverterCategory === 'turnkey' ? 'bg-purple-600 text-theme-strong' : 'bg-slate-800 text-purple-300 hover:text-theme-strong'
                     }`}
                   >
                     {isEn ? 'MV Turnkey Stations' : 'پست‌های Turnkey کانتینری'}
@@ -457,7 +457,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                     type="button"
                     onClick={() => setInverterCategory('hybrid')}
                     className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${
-                      inverterCategory === 'hybrid' ? 'bg-industrial-success text-white' : 'bg-slate-800 text-industrial-success hover:text-white'
+                      inverterCategory === 'hybrid' ? 'bg-industrial-success text-theme-strong' : 'bg-slate-800 text-industrial-success hover:text-theme-strong'
                     }`}
                   >
                     {isEn ? 'Hybrid / Off-Grid' : 'هیبرید و آفگرید'}
@@ -513,7 +513,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 <div>MPPT Min: <strong className="font-mono text-industrial-accent">{selectedInverter.vmpptMinVolts}V</strong></div>
                 <div>MPPT Max: <strong className="font-mono text-industrial-accent">{selectedInverter.vmpptMaxVolts}V</strong></div>
                 <div>{isEn ? 'MPPT Channels:' : 'تعداد MPPT:'} <span className="font-mono font-bold">{selectedInverter.mpptChannelsCount} {isEn ? 'Ch' : 'کانال'}</span></div>
-                <div>{isEn ? 'Phases:' : 'سیستم فاز:'} <span>{selectedInverter.isThreePhase ? (isEn ? 'Three-Phase 400/800V' : 'سه فاز') : (isEn ? 'Single-Phase 230V' : 'تکفاز')}</span></div>
+                <div>{isEn ? 'Inverter AC output:' : 'خروجی AC اینورتر:'} <span>{selectedInverter.isThreePhase ? (isEn ? 'Three-phase' : 'سه‌فاز') : (isEn ? 'Single-phase' : 'تک‌فاز')} / {selectedInverter.acVoltageVac === undefined ? (isEn ? 'voltage unknown' : 'ولتاژ نامعلوم') : `${selectedInverter.acVoltageVac} V`}</span></div>
                 <div>{isEn ? 'Efficiency:' : 'راندمان:'} <span className="font-mono text-industrial-success">{selectedInverter.efficiencyMaxPct}%</span></div>
                 {corrosion && (
                   <div>{isEn ? 'Salt Corrosion Derate:' : 'تأثیر شوری:'} <span className={`font-mono font-bold text-xs ${corrosion.inverterDeratePct > 0 ? 'text-industrial-error' : 'text-industrial-success'}`}>-{corrosion.inverterDeratePct}% → MTBF ×${(1 - corrosion.inverterDeratePct / 100).toFixed(2)}</span></div>
@@ -576,7 +576,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
             <div className="p-3 bg-industrial-surface/60 rounded-lg border border-industrial-border/60 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <span className="text-slate-400 block">{isEn ? 'Net Module Active Area:' : 'مساحت خالص پنل‌ها:'}</span>
-                <span className="text-white font-mono font-bold text-sm">
+                <span className="text-theme-strong font-mono font-bold text-sm">
                   {Math.round(arrayDesign.netArrayAreaM2)} {isEn ? 'm²' : 'متر مربع'}
                 </span>
               </div>
@@ -671,21 +671,30 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                 ) : (
                   <AlertTriangle className="w-4 h-4 text-industrial-warning shrink-0" />
                 )}
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-theme-strong">
                   {isEn
                     ? inverterClustering.healthStatus === 'compatible'
                       ? 'Compatible Clustering'
-                      : 'Upgrade Advised'
+                      : inverterClustering.healthStatus === 'phase_incompatible'
+                        ? 'Phase Incompatible'
+                        : 'Upgrade Advised'
                     : inverterClustering.healthStatusTextFa}:
                 </span>
                 <span className="text-slate-300">
                   {isEn
                     ? inverterClustering.healthStatus === 'compatible'
                       ? 'Inverter capacity matches array Peak DC rating efficiently.'
-                      : 'Consider adding an additional parallel inverter.'
+                      : inverterClustering.healthStatus === 'phase_incompatible'
+                        ? 'At least one AC load is three-phase; select a three-phase catalog inverter. Do not treat this unit as compatible.'
+                        : 'Consider adding an additional parallel inverter.'
                     : inverterClustering.recommendationFa}
                 </span>
               </div>
+            </div>
+            <div className="mt-2 px-3 py-2 rounded border border-amber-600/30 bg-amber-950/20 text-[10px] text-amber-200">
+              {isEn
+                ? `Apparent-power screen: ${inverterClustering.requiredApparentPowerKva === undefined ? 'not calculated (load PF unconfirmed)' : `${inverterClustering.requiredApparentPowerKva.toFixed(2)} kVA required`}. Selected catalog record has no verified kVA output field; compare against exact model nameplate before selection. Max modeled single-phase leg: ${Math.round(inverterClustering.maxSinglePhaseLegWatts ?? 0)} W.`
+                : `غربالگری توان ظاهری: ${inverterClustering.requiredApparentPowerKva === undefined ? 'محاسبه نشد (PF بار تأیید نشده)' : `نیاز ${inverterClustering.requiredApparentPowerKva.toFixed(2)} kVA`}. رکورد کاتالوگ توان kVA تأییدشده ندارد؛ پیش از انتخاب با پلاک دقیق مدل تطبیق دهید. بیشینه بار مدل‌شده تک‌فاز: ${Math.round(inverterClustering.maxSinglePhaseLegWatts ?? 0)} W.`}
             </div>
 
             {/* Environmental Temperature, Dust & Equipment Aging Panel */}
@@ -814,7 +823,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
                           <div>
                             <span className="text-slate-400 block">{isEn ? 'Effective Inverter Amb:' : 'دمای مؤثر محیط اینورتر:'}</span>
-                            <span className="font-mono font-bold text-white text-sm">
+                            <span className="font-mono font-bold text-theme-strong text-sm">
                               {envAging.inverterImpact.effectiveAmbientTempC}°C
                             </span>
                           </div>

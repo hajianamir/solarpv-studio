@@ -24,6 +24,7 @@ import { ExternalDataGateway } from '../engine/dataGateway/externalDataGateway';
 import { parseGeocodeResults } from '../engine/dataGateway/geocodeValidation';
 import { formatLatitude, formatLongitude, formatCoordinates } from '../engine/geoCoordinates';
 import { isRealInternetEnabled } from '../engine/env/runtimeEnv';
+import { formatPsh } from '../engine/formatters';
 
 const OFFLINE_KNOWN_HUBS = [
   { nameEn: 'Tehran', nameFa: 'تهران', lat: 35.6892, lng: 51.3890 },
@@ -119,7 +120,19 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
     if (typeof currentCity.peakSunHours === 'number') {
       setEstimatedPsh(currentCity.peakSunHours);
     }
-  }, [currentCity.peakSunHours]);
+    const marker = markerRef.current;
+    if (!marker) return;
+    const title = escapeHtml(isEn ? currentCity.nameEn : currentCity.nameFa);
+    const coordinates = escapeHtml(formatCoordinates(currentCity.latitude, currentCity.longitude, 4));
+    const psh = escapeHtml(formatPsh(currentCity.peakSunHours));
+    marker.getPopup()?.setContent(
+      `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
+        <strong style="color:#0f172a; font-size:13px;">${title}</strong><br/>
+        <span style="color:#0284c7; font-family:monospace; font-weight:bold;">${coordinates}</span><br/>
+        <span style="color:#f59e0b; font-weight:bold;">${psh} PSH</span>
+      </div>`
+    );
+  }, [currentCity, isEn]);
 
   // Cancel any in-flight geocode or climate requests on unmount
   useEffect(() => {
@@ -154,7 +167,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         if (markerRef.current) {
           const resTitle = escapeHtml(isEn ? locationData.nameEn : locationData.nameFa);
           const resCoords = escapeHtml(formatCoordinates(targetLat, targetLng, 4));
-          const resPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(String(locationData.peakSunHours))} PSH`;
+          const resPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(formatPsh(locationData.peakSunHours))} PSH`;
           markerRef.current.getPopup()?.setContent(
             `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
               <strong style="color:#0f172a; font-size:13px;">${resTitle}</strong><br/>
@@ -183,7 +196,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
           if (markerRef.current) {
             const resTitle = escapeHtml(isEn ? gwData.nameEn : gwData.nameFa);
             const resCoords = escapeHtml(formatCoordinates(targetLat, targetLng, 4));
-            const resPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(String(gwData.peakSunHours))} PSH`;
+            const resPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(formatPsh(gwData.peakSunHours))} PSH`;
             markerRef.current.getPopup()?.setContent(
               `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
                 <strong style="color:#0f172a; font-size:13px;">${resTitle}</strong><br/>
@@ -426,7 +439,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
       const updatePopup = (latVal: number, lngVal: number, cityData: ClimateCity) => {
         const titleText = escapeHtml(isEn ? cityData.nameEn : cityData.nameFa);
         const coordText = escapeHtml(formatCoordinates(latVal, lngVal, 4));
-        const pshText = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(String(cityData.peakSunHours))} PSH`;
+        const pshText = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(formatPsh(cityData.peakSunHours))} PSH`;
         marker.getPopup()?.setContent(
           `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
             <strong style="color:#0f172a; font-size:13px;">${titleText}</strong><br/>
@@ -438,7 +451,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
 
       const initialTitle = escapeHtml(isEn ? currentCity.nameEn : currentCity.nameFa);
       const initialCoords = escapeHtml(formatCoordinates(coords.lat, coords.lng, 4));
-      const initialPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(String(currentCity.peakSunHours))} PSH`;
+      const initialPsh = `${isEn ? 'Solar Resource:' : 'میزان تابش:'} ${escapeHtml(formatPsh(currentCity.peakSunHours))} PSH`;
       marker.bindPopup(
         `<div style="text-align:center; font-family:sans-serif; font-size:12px; padding:4px;">
           <strong style="color:#0f172a; font-size:13px;">${initialTitle}</strong><br/>
@@ -600,7 +613,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
               <span className="text-xs text-slate-400 block">
                 {isEn ? 'Selected Geographic Coordinates & Site:' : 'محل انتخاب‌شده بر روی نقشه:'}
               </span>
-              <span className="font-bold text-sm text-white">
+              <span className="font-bold text-sm text-theme-strong">
                 {isEn ? currentCity.nameEn : currentCity.nameFa} {currentCity.provinceEn ? `(${isEn ? currentCity.provinceEn : currentCity.provinceFa})` : ''}
               </span>
             </div>
@@ -631,14 +644,14 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
         {/* Live Coordinate Badges */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
           <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-sky-300">
-            LAT: <strong className="text-white">{formatLatitude(coords.lat, 4)}</strong>
+            LAT: <strong className="text-theme-strong">{formatLatitude(coords.lat, 4)}</strong>
           </div>
           <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-sky-300">
-            LNG: <strong className="text-white">{formatLongitude(coords.lng, 4)}</strong>
+            LNG: <strong className="text-theme-strong">{formatLongitude(coords.lng, 4)}</strong>
           </div>
           <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-industrial-warning flex items-center gap-1">
             <Sun className="w-3.5 h-3.5" />
-            PSH: <strong className="text-industrial-warning">{estimatedPsh} h/d</strong>
+            PSH: <strong className="text-industrial-warning">{formatPsh(estimatedPsh)} h/d</strong>
           </div>
           <div className="bg-slate-800 px-2.5 py-1 rounded border border-industrial-border text-industrial-success flex items-center gap-1">
             <Compass className="w-3.5 h-3.5" />
@@ -652,14 +665,14 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             <button
               type="button"
               onClick={() => onCreate3dRooftop(currentCity)}
-              className="px-3 py-1.5 rounded bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold shadow transition flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-theme-strong text-xs font-bold shadow transition flex items-center gap-1.5"
               title={
                 isEn
                   ? 'Generate 3D rooftop and near-shading layout for this exact site'
                   : 'ایجاد مدل سه‌بعدی سقف و شبیه‌سازی سایه‌اندازی برای این نقطه'
               }
             >
-              <Box className="w-4 h-4 text-white" />
+              <Box className="w-4 h-4 text-theme-strong" />
               <span>
                 {isEn ? 'Create 3D Rooftop from this Site' : 'ایجاد سقف سه‌بعدی از این محل'}
               </span>
@@ -671,7 +684,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
               type="button"
               onClick={() => handleSwitchLayer('hybrid')}
               className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
-                activeLayer === 'hybrid' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+                activeLayer === 'hybrid' ? 'bg-sky-500 text-theme-strong font-bold' : 'text-slate-400 hover:text-theme-strong'
               }`}
               title={isEn ? 'Satellite Imagery with Roads and Places labels' : 'تصاویر ماهواره‌ای به همراه اسامی اماکن، جاده‌ها و مرزها'}
             >
@@ -682,7 +695,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
               type="button"
               onClick={() => handleSwitchLayer('satellite_pure')}
               className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
-                activeLayer === 'satellite_pure' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+                activeLayer === 'satellite_pure' ? 'bg-sky-500 text-theme-strong font-bold' : 'text-slate-400 hover:text-theme-strong'
               }`}
               title={isEn ? 'Pure Satellite without overlays' : 'تصاویر ماهواره‌ای طبیعی'}
             >
@@ -693,7 +706,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
               type="button"
               onClick={() => handleSwitchLayer('streets')}
               className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
-                activeLayer === 'streets' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+                activeLayer === 'streets' ? 'bg-sky-500 text-theme-strong font-bold' : 'text-slate-400 hover:text-theme-strong'
               }`}
               title={isEn ? 'Detailed Street Map' : 'نقشه خیابانی و معابر'}
             >
@@ -704,7 +717,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
               type="button"
               onClick={() => handleSwitchLayer('topo')}
               className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
-                activeLayer === 'topo' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+                activeLayer === 'topo' ? 'bg-sky-500 text-theme-strong font-bold' : 'text-slate-400 hover:text-theme-strong'
               }`}
               title={isEn ? 'Topographic & Elevation Contour Map' : 'نقشه توپوگرافی و تراز ارتفاعی زمین (OpenTopoMap)'}
             >
@@ -742,7 +755,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
             </div>
             <button
               onClick={() => setIsPanelExpanded(!isPanelExpanded)}
-              className="p-1 hover:bg-slate-700 text-slate-400 hover:text-white rounded transition"
+              className="p-1 hover:bg-slate-700 text-slate-400 hover:text-theme-strong rounded transition"
               title={isPanelExpanded ? 'Collapse' : 'Expand'}
             >
               {isPanelExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -757,7 +770,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                   type="button"
                   onClick={() => setSearchTab('name')}
                   className={`flex-1 py-1 text-center font-semibold rounded transition ${
-                    searchTab === 'name' ? 'bg-sky-600 text-white ' : 'text-slate-400 hover:text-white'
+                    searchTab === 'name' ? 'bg-sky-600 text-theme-strong ' : 'text-slate-400 hover:text-theme-strong'
                   }`}
                 >
                   {isEn ? 'By Location Name' : 'جستجوی نام مکان'}
@@ -766,7 +779,7 @@ export const SiteLocationMap: React.FC<SiteLocationMapProps> = ({
                   type="button"
                   onClick={() => setSearchTab('coords')}
                   className={`flex-1 py-1 text-center font-semibold rounded transition ${
-                    searchTab === 'coords' ? 'bg-sky-600 text-white ' : 'text-slate-400 hover:text-white'
+                    searchTab === 'coords' ? 'bg-sky-600 text-theme-strong ' : 'text-slate-400 hover:text-theme-strong'
                   }`}
                 >
                   {isEn ? 'By Coordinates' : 'ورود با مختصات'}

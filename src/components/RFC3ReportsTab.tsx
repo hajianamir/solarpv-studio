@@ -36,6 +36,7 @@ import { calculateStructuralAndFoundations, type FoundationType, type SoilType }
 import { type ClimateCity, type SiteGeotechnicalOverrides } from '../engine/types/climateTypes';
 import { buildProjectProvenanceSnapshot } from '../engine/provenance/projectProvenance';
 import { gatewaySourceSummary } from '../engine/provenance/gatewayStatus';
+import { formatPsh } from '../engine/formatters';
 
 interface RFC3ReportsTabProps {
   lang: 'fa' | 'en';
@@ -327,7 +328,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-white tracking-wide font-sans">
+                <h1 className="text-lg font-bold text-theme-strong tracking-wide font-sans">
                   {isEn
                     ? 'RFC 3.0.0 Engineering Compliance & Validation Suite'
                     : 'سامانه جامع اعتبارسنجی و انطباق استانداردهای مهندسی (RFC 3.0.0)'}
@@ -380,7 +381,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             <button
               onClick={handleRunValidation}
               disabled={isRunningValidation}
-              className="px-3.5 py-1.5 rounded bg-industrial-primary hover:bg-industrial-primary text-white text-xs font-bold flex items-center gap-1.5 transition "
+              className="px-3.5 py-1.5 rounded bg-industrial-primary hover:bg-industrial-primary text-theme-strong text-xs font-bold flex items-center gap-1.5 transition "
             >
               <Play className="w-3.5 h-3.5" />
               <span>{isRunningValidation ? (isEn ? 'Executing...' : 'در حال اجرا...') : (isEn ? 'Re-run Benchmark Suite' : 'اجرای مجدد بنچمارک‌ها')}</span>
@@ -395,8 +396,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             onClick={() => setActiveSubTab('validation')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'validation'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <FileCheck className="w-3.5 h-3.5" />
@@ -406,8 +407,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             onClick={() => setActiveSubTab('provenance')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'provenance'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <Database className="w-3.5 h-3.5" />
@@ -417,8 +418,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             onClick={() => setActiveSubTab('impact')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'impact'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
@@ -431,8 +432,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             }}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'lhs_stats'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -445,8 +446,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             }}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'migration'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -456,8 +457,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             onClick={() => setActiveSubTab('registry')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'registry'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <Cpu className="w-3.5 h-3.5" />
@@ -467,8 +468,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             onClick={() => setActiveSubTab('telemetry')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'telemetry'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
@@ -479,8 +480,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             onClick={() => setActiveSubTab('climate_data')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'climate_data'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
@@ -491,8 +492,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             onClick={() => setActiveSubTab('structure_recommendation')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'structure_recommendation'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <Hammer className="w-3.5 h-3.5" />
@@ -503,8 +504,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             onClick={() => setActiveSubTab('unit_tests')}
             className={`px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5 ${
               activeSubTab === 'unit_tests'
-                ? 'bg-industrial-primary text-white font-bold '
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-industrial-primary text-theme-strong font-bold '
+                : 'text-slate-400 hover:text-theme-strong hover:bg-slate-800'
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -523,7 +524,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             >
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-industrial-warning" />
-                <span className="font-bold text-sm text-white">
+                <span className="font-bold text-sm text-theme-strong">
                   {isEn
                     ? 'Section B — Global Validation & Independent Cross-Validation'
                     : 'بخش B — اعتبارسنجی جهانی و اعتبارسنجی متقابل مستقل'}
@@ -541,7 +542,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               <span className="text-slate-400 block mb-1">
                 {isEn ? 'Total Benchmarks Tested' : 'تعداد کل بنچمارک‌ها'}
               </span>
-              <span className="text-2xl font-bold font-mono text-white">
+              <span className="text-2xl font-bold font-mono text-theme-strong">
                 {validationReport?.testsRun ?? 6}
               </span>
               <span className="text-[10px] text-slate-500 block mt-0.5">NREL, DNV, IEEE, ASCE, IEA</span>
@@ -614,7 +615,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
           {/* Detailed Benchmarks Table */}
           <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
                 <FileCheck className="w-4 h-4 text-industrial-primary" />
                 {isEn
                   ? 'Disaggregated Benchmark Matrix (Independent Validation vs Implementation Verification)'
@@ -702,7 +703,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                         <td className="p-2.5 text-right font-bold text-slate-300">
                           {metric.nominalValue} {metric.unit}
                         </td>
-                        <td className="p-2.5 text-right font-bold text-white">
+                        <td className="p-2.5 text-right font-bold text-theme-strong">
                           {metric.calculatedValue} {metric.unit}
                         </td>
                         <td className="p-2.5 text-right text-slate-400">
@@ -754,7 +755,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       {activeSubTab === 'provenance' && (
         <div className="space-y-5">
           <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-4">
-            <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-theme-strong mb-3 flex items-center gap-2">
               <Database className="w-4 h-4 text-industrial-primary" />
               <span>
                 {isEn ? 'Section A — This Project\'s Data Provenance' : 'بخش A — تاریخچه داده‌های پروژه'}
@@ -820,7 +821,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       {/* SUBTAB 3: DATA PROPAGATION & IMPACT */}
       {activeSubTab === 'impact' && (
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4 text-xs">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+          <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
             <Activity className="w-4 h-4 text-industrial-primary" />
             {isEn ? 'Cross-Tab Parameter Propagation Pipeline' : 'مسیر انتشار بین‌ماژولی پارامترهای مهندسی'}
           </h2>
@@ -871,13 +872,13 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       {activeSubTab === 'lhs_stats' && (
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-industrial-primary" />
               {isEn ? 'Latin Hypercube Sampling (LHS) vs Crude Monte Carlo (CMC)' : 'اثبات آماری برتری نمونه‌برداری ابرمکعب لاتین (LHS) نسبت به مونت‌کارلوی خام'}
             </h2>
             <button
               onClick={handleRunLhsBenchmark}
-              className="px-3 py-1 rounded bg-industrial-primary hover:bg-industrial-primary text-white text-xs font-bold transition"
+              className="px-3 py-1 rounded bg-industrial-primary hover:bg-industrial-primary text-theme-strong text-xs font-bold transition"
             >
               {isEn ? 'Re-run LHS Benchmark' : 'اجرای مجدد آزمون'}
             </button>
@@ -886,7 +887,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
               <span className="text-slate-400 block mb-1">{isEn ? 'LHS Sample Count' : 'تعداد نمونه LHS'}</span>
-              <span className="text-xl font-bold font-mono text-white">{lhsBenchmark?.lhsSampleSize ?? 100}</span>
+              <span className="text-xl font-bold font-mono text-theme-strong">{lhsBenchmark?.lhsSampleSize ?? 100}</span>
             </div>
             <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
               <span className="text-slate-400 block mb-1">{isEn ? 'CMC Sample Count' : 'تعداد نمونه CMC'}</span>
@@ -917,13 +918,13 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       {activeSubTab === 'migration' && (
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
               <Layers className="w-4 h-4 text-industrial-primary" />
               {isEn ? '3-State Project Migration Safety Suite' : 'مجموعه آزمون‌های ایمنی مهاجرت ۳ حالته (3-State)'}
             </h2>
             <button
               onClick={handleRunMigrationSuite}
-              className="px-3 py-1 rounded bg-industrial-primary hover:bg-industrial-primary text-white text-xs font-bold transition"
+              className="px-3 py-1 rounded bg-industrial-primary hover:bg-industrial-primary text-theme-strong text-xs font-bold transition"
             >
               {isEn ? 'Run Migration Vectors' : 'اجرای وکتورهای مهاجرت'}
             </button>
@@ -969,7 +970,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       {/* SUBTAB 6: PHYSICS MODEL REGISTRY */}
       {activeSubTab === 'registry' && (
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4 text-xs">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+          <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
             <Cpu className="w-4 h-4 text-industrial-primary" />
             {isEn ? 'Physical Models Registry & SemVer Compliance' : 'رجیستری مدل‌های فیزیکی و نگارش‌بندی معنایی (SemVer)'}
           </h2>
@@ -978,7 +979,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             {Object.values(PHYSICS_MODEL_REGISTRY).map((model) => (
               <div key={model.modelId} className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
                 <div className="flex items-center justify-between mb-1">
-                  <strong className="text-white text-xs">{model.name}</strong>
+                  <strong className="text-theme-strong text-xs">{model.name}</strong>
                   <span className="font-mono text-industrial-primary font-bold">v{model.version}</span>
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono mb-1">{model.governingStandards.join(', ')}</div>
@@ -992,7 +993,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       {/* SUBTAB 7: LIVE TELEMETRY & GATEWAY */}
       {activeSubTab === 'telemetry' && (
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4 text-xs">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+          <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
             <Globe className="w-4 h-4 text-industrial-primary" />
             {isEn ? 'Live Data Gateway & Circuit Breaker Telemetry' : 'تله‌متری زنده درگاه داده و کلید مدارشکن (Circuit Breaker)'}
           </h2>
@@ -1022,7 +1023,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4 text-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
                 <Globe className="w-4 h-4 text-industrial-accent" />
                 <span>
                   {isEn ? 'Live Global Climate API (NASA POWER / PVGIS / NSRDB)' : 'داده‌های زنده از API اقلیمی جهانی'}
@@ -1038,7 +1039,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               <button
                 onClick={() => handleFetchClimateApi(city.latitude, city.longitude)}
                 disabled={isFetchingClimate}
-                className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-theme-strong text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5"
               >
                 {isFetchingClimate ? <Play className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
                 <span>{isEn ? `Fetch ${city.nameEn} (${city.latitude.toFixed(2)}, ${city.longitude.toFixed(2)})` : `دریافت ${city.nameFa} از API`}</span>
@@ -1046,7 +1047,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               <button
                 onClick={() => handleFetchClimateApi(48.1351, 11.5820)}
                 disabled={isFetchingClimate}
-                className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-theme-strong text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5"
               >
                 <span>{isEn ? 'Fetch Munich (48.1351, 11.5820)' : 'دریافت مونیخ از API'}</span>
               </button>
@@ -1084,7 +1085,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 </div>
                 <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
                   <span className="text-slate-400 block mb-1">{isEn ? 'PSH (kWh/m²/day)' : 'PSH'} </span>
-                  <span className="font-mono text-industrial-warning text-lg">{climateApiData.city.peakSunHours}</span>
+                  <span className="font-mono text-industrial-warning text-lg">{formatPsh(climateApiData.city.peakSunHours)}</span>
                 </div>
                 <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded">
                   <span className="text-slate-400 block mb-1">{isEn ? 'Solar confidence' : 'اطمینان دادهٔ تابش'} </span>
@@ -1127,7 +1128,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
       {activeSubTab === 'structure_recommendation' && (
         <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5 space-y-4 text-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
               <Hammer className="w-4 h-4 text-industrial-warning" />
               <span>{isEn ? 'Foundation Engine — Per-Coordinate Integration Test' : 'تست یکپارچگی موتور فونداسیون بر حسب مختصات'}</span>
             </h2>
@@ -1217,7 +1218,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
           <div className="bg-industrial-surface border border-[#1F2937] rounded-lg p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-sm font-bold text-white">
+                <h2 className="text-sm font-bold text-theme-strong">
                   {isEn ? 'Core Unit Tests (runCoreUnitTests)' : 'تست‌های واحد هسته'}
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -1229,7 +1230,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               <button
                 onClick={handleRunUnitTests}
                 disabled={isRunningUnitTests}
-                className="px-3 py-1.5 rounded bg-industrial-primary text-white text-xs font-bold disabled:opacity-50"
+                className="px-3 py-1.5 rounded bg-industrial-primary text-theme-strong text-xs font-bold disabled:opacity-50"
               >
                 {isRunningUnitTests ? (isEn ? 'Running…' : 'در حال اجرا…') : (isEn ? 'Run Tests' : 'اجرای تست‌ها')}
               </button>
@@ -1240,7 +1241,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-xs">
                   <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
                     <div className="text-slate-400">{isEn ? 'Total' : 'کل'}</div>
-                    <div className="font-mono text-lg text-white">{unitTestReport.passed + unitTestReport.failed}</div>
+                    <div className="font-mono text-lg text-theme-strong">{unitTestReport.passed + unitTestReport.failed}</div>
                   </div>
                   <div className="p-2 bg-industrial-bg rounded border border-[#1F2937] text-center">
                     <div className="text-slate-400">{isEn ? 'Passed' : 'موفق'}</div>

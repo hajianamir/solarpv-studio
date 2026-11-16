@@ -98,7 +98,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
                   : 'bg-industrial-surface border-industrial-border hover:border-slate-500'
               }`}
             >
-              <div className="font-bold text-xs text-white mb-0.5">
+              <div className="font-bold text-xs text-theme-strong mb-0.5">
                 {isFa ? item.titleFa : item.titleEn}
               </div>
               <div className="text-[10.5px] text-slate-400">
@@ -188,7 +188,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
           <div className="text-xs text-slate-400">
             {isFa ? 'ارزش خالص فعلی پروژه (NPV)' : 'Project NPV'}
           </div>
-          <div className="text-xl font-bold font-mono text-white mt-1">
+          <div className="text-xl font-bold font-mono text-theme-strong mt-1">
             {(modelResult.npvMillionToman / 1000).toFixed(1)} <span className="text-xs font-normal text-slate-300">{isFa ? 'میلیارد تومان' : 'Billion Toman'}</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -260,7 +260,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
             <tbody className="divide-y divide-slate-800">
               {modelResult.cashFlow25Years.map((cf) => (
                 <tr key={cf.year} className="hover:bg-slate-850/60 font-mono">
-                  <td className="p-2.5 font-bold text-white">
+                  <td className="p-2.5 font-bold text-theme-strong">
                     {isFa ? `سال ${cf.year}` : `Yr ${cf.year}`}
                   </td>
                   <td className="p-2.5 text-slate-200" data-testid={`f04-regulatory-generation-year-${cf.year}`}>{cf.generationMwh.toLocaleString()}</td>

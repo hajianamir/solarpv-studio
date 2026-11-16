@@ -12,6 +12,18 @@ export interface HourlyEnergyStep {
   deficitKwh: number;
 }
 
+export interface SimulationBatteryConstraints {
+  /** Confirmed AC-side charge and discharge PCS limits in kW; both are required for an assessed power study. */
+  maxChargePowerKw?: number;
+  maxDischargePowerKw?: number;
+  /** Explicit provenance flags; a calculated or assumed limit is not an assessed equipment rating. */
+  chargePowerLimitConfirmed?: boolean;
+  dischargePowerLimitConfirmed?: boolean;
+  /** Per-stage battery efficiencies; their product should equal the chemistry round-trip efficiency. */
+  chargeEfficiencyFraction?: number;
+  dischargeEfficiencyFraction?: number;
+}
+
 export interface Simulation24hResult {
   hourlySteps: HourlyEnergyStep[];
   totalGeneration24hKwh: number;
@@ -26,6 +38,13 @@ export interface Simulation24hResult {
   finalBatterySocPct: number;
   reliesOnInitialCharge: boolean;
   isSelfSufficient: boolean;
+  effectiveSystemDeratingFactor: number;
+  /** False when the simulation had to use the legacy 0.78 illustrative derate. */
+  isGenerationDeratingAssessed: boolean;
+  isPowerLimitsAssessed: boolean;
+  powerLimitAssessmentNote: string;
+  effectiveMaxChargePowerKw: number;
+  effectiveMaxDischargePowerKw: number;
 }
 
 export interface GeneratorSizingResult {
@@ -50,7 +69,8 @@ export function simulate24hEnergyBalance(
   batteryCapacityTotalKwh: number,
   initialBatterySocPct: number = 50.0,
   daylightHoursDesign?: number,
-  effectiveSystemDeratingFactor?: number
+  effectiveSystemDeratingFactor?: number,
+  batteryConstraints?: SimulationBatteryConstraints
 ): Simulation24hResult {
   const steps: HourlyEnergyStep[] = [];
   const maxBatteryWh = batteryCapacityTotalKwh * 1000.0;
@@ -88,12 +108,11 @@ export function simulate24hEnergyBalance(
   }
 
   const sumSolarWeights = solarWeights.reduce((a, b) => a + b, 0);
-  const derateFactor =
+  const isGenerationDeratingAssessed =
     typeof effectiveSystemDeratingFactor === 'number' &&
     Number.isFinite(effectiveSystemDeratingFactor) &&
-    effectiveSystemDeratingFactor > 0
-      ? effectiveSystemDeratingFactor
-      : 0.78;
+    effectiveSystemDeratingFactor > 0 && effectiveSystemDeratingFactor <= 1;
+  const derateFactor = isGenerationDeratingAssessed ? effectiveSystemDeratingFactor : 0.78;
   const totalDailyGenerationKwh = D > 0 ? totalPvCapacityKwp * peakSunHours * derateFactor : 0;
 
   // Calculate day and night load hourly distributions with strict conservation:
@@ -120,9 +139,25 @@ export function simulate24hEnergyBalance(
   let minSoc = 100;
   let maxSoc = 0;
 
-  const chargeEff = 0.95;
-  const dischargeEff = 0.95;
-  const maxPcsPowerKw = batteryCapacityTotalKwh * 1.0;
+  const chargeEffCandidate = batteryConstraints?.chargeEfficiencyFraction;
+  const dischargeEffCandidate = batteryConstraints?.dischargeEfficiencyFraction;
+  const chargeEff = typeof chargeEffCandidate === 'number' && Number.isFinite(chargeEffCandidate) && chargeEffCandidate > 0 && chargeEffCandidate <= 1
+    ? chargeEffCandidate : 0.95;
+  const dischargeEff = typeof dischargeEffCandidate === 'number' && Number.isFinite(dischargeEffCandidate) && dischargeEffCandidate > 0 && dischargeEffCandidate <= 1
+    ? dischargeEffCandidate : 0.95;
+  const validChargeLimit = typeof batteryConstraints?.maxChargePowerKw === 'number'
+    && Number.isFinite(batteryConstraints.maxChargePowerKw) && batteryConstraints.maxChargePowerKw > 0;
+  const validDischargeLimit = typeof batteryConstraints?.maxDischargePowerKw === 'number'
+    && Number.isFinite(batteryConstraints.maxDischargePowerKw) && batteryConstraints.maxDischargePowerKw > 0;
+  const chargePowerLimitConfirmed = validChargeLimit && batteryConstraints?.chargePowerLimitConfirmed === true;
+  const dischargePowerLimitConfirmed = validDischargeLimit && batteryConstraints?.dischargePowerLimitConfirmed === true;
+  const isPowerLimitsAssessed = chargePowerLimitConfirmed && dischargePowerLimitConfirmed;
+  // If ratings are absent, retain the historical 1C behavior only as a labeled diagnostic fallback.
+  const effectiveMaxChargePowerKw = validChargeLimit ? batteryConstraints!.maxChargePowerKw! : batteryCapacityTotalKwh;
+  const effectiveMaxDischargePowerKw = validDischargeLimit ? batteryConstraints!.maxDischargePowerKw! : batteryCapacityTotalKwh;
+  const powerLimitAssessmentNote = isPowerLimitsAssessed
+    ? 'Confirmed charge/discharge equipment power limits supplied.'
+    : `Power limits NOT ASSESSED: ${!validChargeLimit ? 'PCS charge rating missing; ' : !chargePowerLimitConfirmed ? 'charge limit is not confirmed; ' : ''}${!validDischargeLimit ? 'PCS/discharge rating missing; ' : !dischargePowerLimitConfirmed ? 'discharge limit is not confirmed; ' : ''}${!validChargeLimit || !validDischargeLimit ? '1C fallback is used for missing limits; ' : ''}hourly flows are diagnostic only.`;
 
   // Pre-calculate full-precision hourly loads and distribute any floating residual
   // BEFORE the simulation loop, guaranteeing conservation without rounding published energy.
@@ -173,7 +208,7 @@ export function simulate24hEnergyBalance(
         // Solar surplus charges battery up to available capacity and PCS rating
         const spaceInBatWh = Math.max(0, maxBatteryWh - currentBatteryWh);
         const maxAbsorbKwh = (spaceInBatWh / chargeEff) / 1000.0;
-        const allowedChargeKwh = Math.min(netKwh, maxAbsorbKwh, maxPcsPowerKw);
+        const allowedChargeKwh = Math.min(netKwh, maxAbsorbKwh, effectiveMaxChargePowerKw);
         chargeKwh = Math.max(0, allowedChargeKwh);
         currentBatteryWh += chargeKwh * 1000.0 * chargeEff;
         // Surplus is remainder solar that does NOT enter battery; strictly unpenalized by battery efficiency
@@ -188,7 +223,7 @@ export function simulate24hEnergyBalance(
         // Net deficit discharges battery down to minimum allowable reserve
         const availableWh = Math.max(0, currentBatteryWh - minAllowedBatteryWh);
         const maxDeliverableKwh = (availableWh * dischargeEff) / 1000.0;
-        const allowedDischargeKwh = Math.min(neededKwh, maxDeliverableKwh, maxPcsPowerKw);
+        const allowedDischargeKwh = Math.min(neededKwh, maxDeliverableKwh, effectiveMaxDischargePowerKw);
         dischargeKwh = Math.max(0, allowedDischargeKwh);
         currentBatteryWh -= (dischargeKwh * 1000.0) / dischargeEff;
         deficitKwh = neededKwh - dischargeKwh;
@@ -232,7 +267,10 @@ export function simulate24hEnergyBalance(
   const hasUnservedDemand = sumDeficitKwh > 0;
   const batteryRoundoffWh = Number.EPSILON * Math.max(1, Math.abs(initialWh), Math.abs(currentBatteryWh)) * steps.length * 8;
   const reliesOnInitialCharge = hasBattery && initialWh - currentBatteryWh > batteryRoundoffWh;
-  const isSelfSufficient = !hasUnservedDemand && !reliesOnInitialCharge;
+  // Do not make a supply-adequacy claim when generation derating or PCS limits used
+  // by this simulation are assumptions rather than supplied equipment/design data.
+  const isSelfSufficient = !hasUnservedDemand && !reliesOnInitialCharge
+    && isGenerationDeratingAssessed && isPowerLimitsAssessed;
 
   return {
     hourlySteps: steps,
@@ -248,6 +286,12 @@ export function simulate24hEnergyBalance(
     finalBatterySocPct: finalSoc,
     reliesOnInitialCharge,
     isSelfSufficient,
+    effectiveSystemDeratingFactor: derateFactor,
+    isGenerationDeratingAssessed,
+    isPowerLimitsAssessed,
+    powerLimitAssessmentNote,
+    effectiveMaxChargePowerKw,
+    effectiveMaxDischargePowerKw,
   };
 }
 

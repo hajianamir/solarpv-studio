@@ -654,8 +654,8 @@ async function runAuditVerification() {
   const rfcRows = await buildProvenanceRows(unverifiedCity, undefined, true);
   const rfcPshRow = rfcRows.find((r) => r.parameter === 'Peak Sun Hours (PSH)');
   assert(
-    rfcPshRow?.provider === 'UNVERIFIED_DEFAULT' && rfcPshRow?.sourceKind === 'default_unverified',
-    'RFC Section A does not misrepresent an unverified default PSH as a regional model result',
+    rfcPshRow?.provider === 'REGIONAL_ANALYTICAL_MODEL' && rfcPshRow?.sourceKind === 'local_model',
+    'RFC Section A identifies default PSH as a regional analytical estimate, not live-provider data',
     `provider = ${rfcPshRow?.provider}, source = ${rfcPshRow?.sourceKind}`
   );
   const rfcSiteRow = rfcRows.find((r) => r.parameter === 'Project Site');

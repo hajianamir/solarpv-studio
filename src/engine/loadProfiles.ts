@@ -14,6 +14,10 @@ export type LoadCategory =
   | 'entertainment'
   | 'other';
 
+export type AcLoadPhase = 'single' | 'three';
+export type PhaseLeg = 'L1' | 'L2' | 'L3';
+export type PhaseAssignment = 'auto' | PhaseLeg;
+
 export interface ElectricalLoadItem {
   id: string;
   name: string;
@@ -24,6 +28,16 @@ export interface ElectricalLoadItem {
   dayHours: number;   // 0 to site daylightHoursDesign
   nightHours: number; // 0 to site nightHoursDesign
   isDc: boolean;      // AC vs DC load
+  /** Missing legacy values resolve conservatively to single-phase for AC; DC ignores this field. */
+  acPhase?: AcLoadPhase;
+  /** Single-phase leg; auto assignments are deterministically rebalanced from active load power. */
+  phaseAssignment?: PhaseAssignment;
+}
+
+export interface LoadCurrentBasis {
+  lineToLineVolts?: number;
+  phaseNeutralVolts?: number;
+  powerFactor?: number;
 }
 
 export interface ClimateDayNightWindow {
@@ -43,6 +57,8 @@ export interface LoadItemAnalysis {
   continuousPowerWatts: number;
   surgePowerWatts: number;
   isDc: boolean;
+  acPhase: AcLoadPhase;
+  phaseAssignment?: PhaseAssignment;
 }
 
 export interface LoadAnalysisResult {
@@ -62,6 +78,15 @@ export interface LoadAnalysisResult {
   // AC vs DC breakdown
   acContinuousActivePowerWatts: number;
   dcContinuousActivePowerWatts: number;
+  /** AC phase-aware summary; three-phase loads contribute equally to each leg. */
+  singlePhaseLoadWatts: number;
+  threePhaseLoadWatts: number;
+  phaseLegWatts: Record<PhaseLeg, number>;
+  phaseLegAmps: Record<PhaseLeg, number>;
+  phaseCurrentBasis: { lineToLineVolts: number; phaseNeutralVolts: number; powerFactor: number; isConfirmed: boolean };
+  maxPhaseLoadWatts: number;
+  phaseUnbalancePct: number;
+  hasThreePhaseAcLoad: boolean;
   acMaxSurgePeakPowerWatts: number;
   dcMaxSurgePeakPowerWatts: number;
 
@@ -229,9 +254,9 @@ export const LOAD_PRESETS: LoadPreset[] = [
     descriptionEn: 'Manufacturing workshop with welders, drill press, 22kW screw compressor.',
     items: [
       { id: '1', name: 'روشنایی صنعتی سوله LED', category: 'lighting', ratedWatts: 50, surgeMultiplier: 1.0, quantity: 12, dayHours: 8, nightHours: 2, isDc: false },
-      { id: '2', name: 'کمپرسور باد صنعتی اسکرو (۱۵ اسب / ۱۱ کیلووات)', category: 'industrial_motor', ratedWatts: 11000, surgeMultiplier: 2.5, quantity: 1, dayHours: 6, nightHours: 0, isDc: false },
+      { id: '2', name: 'کمپرسور باد صنعتی اسکرو (۱۵ اسب / ۱۱ کیلووات)', category: 'industrial_motor', ratedWatts: 11000, surgeMultiplier: 2.5, quantity: 1, dayHours: 6, nightHours: 0, isDc: false, acPhase: 'three' },
       { id: '3', name: 'اینورتر جوشکاری صنعتی ۲۵۰ آمپر', category: 'industrial_heating_welding', ratedWatts: 6000, surgeMultiplier: 1.4, quantity: 2, dayHours: 3, nightHours: 0, isDc: false },
-      { id: '4', name: 'دستگاه تراشکاری و سنگ مغناطیسی', category: 'industrial_motor', ratedWatts: 5500, surgeMultiplier: 2.8, quantity: 1, dayHours: 4, nightHours: 0, isDc: false },
+      { id: '4', name: 'دستگاه تراشکاری و سنگ مغناطیسی', category: 'industrial_motor', ratedWatts: 5500, surgeMultiplier: 2.8, quantity: 1, dayHours: 4, nightHours: 0, isDc: false, acPhase: 'three' },
       { id: '5', name: 'فن‌های تهویه اگزاست سوله', category: 'hvac', ratedWatts: 750, surgeMultiplier: 2.5, quantity: 3, dayHours: 8, nightHours: 1, isDc: false },
     ]
   },
@@ -242,10 +267,10 @@ export const LOAD_PRESETS: LoadPreset[] = [
     descriptionFa: 'شامل دستگاه‌های هیدرولیک تزریق، خنک‌کننده چیلر، آسیاب و کمپرسور باد ۲۴ ساعته',
     descriptionEn: 'Plastic manufacturing facility with hydraulic presses, industrial chiller, and resin dryers.',
     items: [
-      { id: '1', name: 'دستگاه تزریق پلاستیک ۱۸۰ تن (موتور اصلی)', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.5, quantity: 2, dayHours: 9.5, nightHours: 6.5, isDc: false },
-      { id: '2', name: 'چیلر تراکمی خنک‌کاری قالب‌ها', category: 'hvac', ratedWatts: 15000, surgeMultiplier: 3.0, quantity: 1, dayHours: 9.5, nightHours: 6.5, isDc: false },
-      { id: '3', name: 'کمپرسور باد اسکرو ۲۲ کیلووات', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.2, quantity: 1, dayHours: 9.5, nightHours: 4.5, isDc: false },
-      { id: '4', name: 'آسیاب پلاستیک بازیافتی ۷.۵ کیلووات', category: 'industrial_motor', ratedWatts: 7500, surgeMultiplier: 3.5, quantity: 1, dayHours: 4, nightHours: 0, isDc: false },
+      { id: '1', name: 'دستگاه تزریق پلاستیک ۱۸۰ تن (موتور اصلی)', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.5, quantity: 2, dayHours: 9.5, nightHours: 6.5, isDc: false, acPhase: 'three' },
+      { id: '2', name: 'چیلر تراکمی خنک‌کاری قالب‌ها', category: 'hvac', ratedWatts: 15000, surgeMultiplier: 3.0, quantity: 1, dayHours: 9.5, nightHours: 6.5, isDc: false, acPhase: 'three' },
+      { id: '3', name: 'کمپرسور باد اسکرو ۲۲ کیلووات', category: 'industrial_motor', ratedWatts: 22000, surgeMultiplier: 2.2, quantity: 1, dayHours: 9.5, nightHours: 4.5, isDc: false, acPhase: 'three' },
+      { id: '4', name: 'آسیاب پلاستیک بازیافتی ۷.۵ کیلووات', category: 'industrial_motor', ratedWatts: 7500, surgeMultiplier: 3.5, quantity: 1, dayHours: 4, nightHours: 0, isDc: false, acPhase: 'three' },
       { id: '5', name: 'روشنایی سالن و فن‌های خروجی', category: 'lighting', ratedWatts: 100, surgeMultiplier: 1.0, quantity: 20, dayHours: 9.5, nightHours: 8, isDc: false },
     ]
   },
@@ -370,7 +395,8 @@ export function normalizeLoadsToWindow(
  */
 export function analyzeLoadProfile(
   items: ElectricalLoadItem[],
-  window?: ClimateDayNightWindow
+  window?: ClimateDayNightWindow,
+  currentBasis?: LoadCurrentBasis
 ): LoadAnalysisResult {
   const dayCap = window ? Math.max(0, Math.min(24, window.dayCapHours ?? window.daylightHoursDesign ?? 12.0)) : 12.0;
   const nightCap = window ? Math.max(0, Math.min(24, window.nightCapHours ?? window.nightHoursDesign ?? 12.0)) : 12.0;
@@ -381,6 +407,7 @@ export function analyzeLoadProfile(
 
   const itemBreakdown: Record<string, LoadItemAnalysis> = {};
   const itemAnalysisList: LoadItemAnalysis[] = [];
+  const phaseAwareItems: Array<{ item: ElectricalLoadItem; watts: number }> = [];
 
   let acContinuousActivePowerWatts = 0;
   let dcContinuousActivePowerWatts = 0;
@@ -428,6 +455,7 @@ export function analyzeLoadProfile(
     nighttimeEnergyWh += itemNightWh;
 
     const isActive = clampedDay > 0 || clampedNight > 0;
+    if (isActive && !item.isDc) phaseAwareItems.push({ item, watts: totalWatts });
     const isDay = clampedDay > 0;
     const isNight = clampedNight > 0;
 
@@ -487,10 +515,63 @@ export function analyzeLoadProfile(
       continuousPowerWatts: totalWatts,
       surgePowerWatts: surgePower,
       isDc: Boolean(item.isDc),
+      acPhase: item.isDc ? 'single' : (item.acPhase ?? 'single'),
+      phaseAssignment: item.phaseAssignment ?? 'auto',
     };
     itemBreakdown[item.id] = itemAnalysis;
     itemAnalysisList.push(itemAnalysis);
   }
+
+  // AC leg allocation is power-aware: explicit assignments are retained and auto loads
+  // are greedily placed on the currently lightest leg. Three-phase loads are shared equally.
+  const phaseLegWatts: Record<PhaseLeg, number> = { L1: 0, L2: 0, L3: 0 };
+  const singlePhaseLegWatts: Record<PhaseLeg, number> = { L1: 0, L2: 0, L3: 0 };
+  let singlePhaseLoadWatts = 0;
+  let threePhaseLoadWatts = 0;
+  const legs: PhaseLeg[] = ['L1', 'L2', 'L3'];
+  const autoLoads = phaseAwareItems
+    .filter(({ item }) => (item.acPhase ?? 'single') === 'single' && (!item.phaseAssignment || item.phaseAssignment === 'auto'))
+    .sort((a, b) => b.watts - a.watts);
+  for (const { item, watts } of phaseAwareItems) {
+    if ((item.acPhase ?? 'single') === 'three') {
+      threePhaseLoadWatts += watts;
+      for (const leg of legs) phaseLegWatts[leg] += watts / 3;
+    } else {
+      singlePhaseLoadWatts += watts;
+      if (item.phaseAssignment && item.phaseAssignment !== 'auto') {
+        phaseLegWatts[item.phaseAssignment] += watts;
+        singlePhaseLegWatts[item.phaseAssignment] += watts;
+      }
+    }
+  }
+  for (const { watts } of autoLoads) {
+    const leastLoaded = [...legs].sort((a, b) => phaseLegWatts[a] - phaseLegWatts[b] || legs.indexOf(a) - legs.indexOf(b))[0];
+    phaseLegWatts[leastLoaded] += watts;
+    singlePhaseLegWatts[leastLoaded] += watts;
+  }
+  const maxPhaseLoadWatts = Math.max(...Object.values(phaseLegWatts));
+  const minPhaseLoadWatts = Math.min(...Object.values(phaseLegWatts));
+  const phaseUnbalancePct = maxPhaseLoadWatts > 0
+    ? ((maxPhaseLoadWatts - minPhaseLoadWatts) / maxPhaseLoadWatts) * 100
+    : 0;
+  const phaseNeutralVolts = currentBasis?.phaseNeutralVolts && currentBasis.phaseNeutralVolts > 0 ? currentBasis.phaseNeutralVolts : 230;
+  const lineToLineVolts = currentBasis?.lineToLineVolts && currentBasis.lineToLineVolts > 0 ? currentBasis.lineToLineVolts : Math.round(phaseNeutralVolts * Math.sqrt(3));
+  const powerFactor = currentBasis?.powerFactor && currentBasis.powerFactor > 0 && currentBasis.powerFactor <= 1 ? currentBasis.powerFactor : 1;
+  const threePhaseLegAmps = threePhaseLoadWatts / (Math.sqrt(3) * lineToLineVolts * powerFactor);
+  const phaseLegAmps: Record<PhaseLeg, number> = {
+    L1: singlePhaseLegWatts.L1 / (phaseNeutralVolts * powerFactor) + threePhaseLegAmps,
+    L2: singlePhaseLegWatts.L2 / (phaseNeutralVolts * powerFactor) + threePhaseLegAmps,
+    L3: singlePhaseLegWatts.L3 / (phaseNeutralVolts * powerFactor) + threePhaseLegAmps,
+  };
+  const phaseCurrentBasis = {
+    lineToLineVolts,
+    phaseNeutralVolts,
+    powerFactor,
+    isConfirmed: Boolean(currentBasis?.phaseNeutralVolts && currentBasis?.lineToLineVolts && currentBasis?.powerFactor),
+  };
+  const hasThreePhaseAcLoad = threePhaseLoadWatts > 0;
+  if (hasThreePhaseAcLoad) warnings.push('وجود بار AC سه‌فاز، خروجی اینورتر سه‌فاز را الزامی می‌کند.');
+  if (phaseUnbalancePct > 10) warnings.push(`عدم تعادل تقریبی بار فازی ${phaseUnbalancePct.toFixed(1)}٪ است؛ تخصیص فازها را بازبینی کنید.`);
 
   // Calculate Surge Peaks for various scopes:
   // IEC/IEEE concurrency: Largest motor starts while all other motors run at nominal base power
@@ -561,6 +642,14 @@ export function analyzeLoadProfile(
     items: itemAnalysisList,
     acContinuousActivePowerWatts,
     dcContinuousActivePowerWatts,
+    singlePhaseLoadWatts,
+    threePhaseLoadWatts,
+    phaseLegWatts,
+    phaseLegAmps,
+    phaseCurrentBasis,
+    maxPhaseLoadWatts,
+    phaseUnbalancePct,
+    hasThreePhaseAcLoad,
     acMaxSurgePeakPowerWatts,
     dcMaxSurgePeakPowerWatts,
     daytimeAcContinuousWatts,

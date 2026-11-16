@@ -240,7 +240,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
               }}
-              className="px-2.5 py-1 bg-sky-700 hover:bg-sky-600 text-white font-medium rounded flex items-center gap-1.5 transition-colors border border-sky-500/50"
+              className="px-2.5 py-1 bg-sky-700 hover:bg-sky-600 text-theme-strong font-medium rounded flex items-center gap-1.5 transition-colors border border-sky-500/50"
               title={isEn ? 'Export true-scale AutoCAD DXF file' : 'دریافت فایل استاندارد اتوکد DXF با لایه‌بندی کامل مهندسی'}
             >
               <Download className="w-3.5 h-3.5" />

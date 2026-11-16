@@ -39,10 +39,14 @@ import { runExternalEmpiricalValidationSuite } from './externalValidation';
 import { compareStatus } from './lhsBenchmark';
 import { simulateBipvThermalStep } from '../../bipv/bipvThermalEngine';
 import { runMigrationTestSuite, REAL_WORLD_V2_TEST_VECTORS } from './migrationTestVectors';
-import { ElectricalLoadItemSchema } from '../projectMigration';
+import { CableFeederInputMapSchema, ElectricalLoadItemSchema } from '../projectMigration';
 import { UserFinancialPricingSchema } from '../projectMigration';
 import { DEFAULT_FINANCIAL_PRICING } from '../../financialEngine';
 import { getClimateData } from '../../climaticData';
+import { formatPsh } from '../../formatters';
+import { assessAcRequirements, createUnknownAcRequirements, evaluateLoadAcCurrents, isValidAcConnection, updateAcConnection } from '../../acRequirements';
+import { evaluateInverterClustering } from '../../inverterClustering';
+import { getContextualHelp } from '../../../helpContent';
 import { ExternalDataGateway, CircuitBreaker } from '../../dataGateway';
 import { recommendFoundation } from '../../structureRecommendationEngine';
 import { recommendSharedFoundation } from '../../geotech/foundationRecommendation';
@@ -829,6 +833,102 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     !munichSite.id.includes('tehran') &&
     munichSite.tempMinC < 0,
     `Munich coordinates (48.1351, 11.5820) resolved to ${munichSite.nameEn} (${munichSite.provinceEn}) without Iranian fallback.`
+  );
+
+  const twoDecimalPshFormatting =
+    formatPsh(0) === '0.00' && formatPsh(5.3) === '5.30' && formatPsh(5.236) === '5.24';
+  const fallbackSitePreservesModelPrecision = Math.abs(munichSite.peakSunHours - Number(munichSite.peakSunHours.toFixed(2))) > 0.001
+    && munichSite.fieldProvenance?.peakSunHours?.value === munichSite.peakSunHours;
+  const fallbackSiteHasExplicitClimateProvenance =
+    munichSite.fieldProvenance?.peakSunHours?.sourceKind === 'local_model' &&
+    munichSite.fieldProvenance?.tempMinC?.providerName === 'REGIONAL_ANALYTICAL_MODEL' &&
+    munichSite.fieldProvenance?.tempMaxC?.sourceKind === 'local_model' &&
+    munichSite.fieldProvenance?.albedo?.sourceKind === 'default_unverified' &&
+    munichSite.fieldProvenance?.albedo?.value === 0.20 &&
+    munichSite.albedo === 0.20;
+  assert(
+    'Climate',
+    'Presentation PSH precision and analytical/default field provenance',
+    twoDecimalPshFormatting && fallbackSitePreservesModelPrecision && fallbackSiteHasExplicitClimateProvenance,
+    `PSH display ${formatPsh(0)}/${formatPsh(5.3)}/${formatPsh(5.236)}; fallback fields explicitly identify modeled temperatures/PSH and fixed unverified albedo.`
+  );
+  let ac = createUnknownAcRequirements();
+  ac = updateAcConnection(ac, 'loadService', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: null, confirmed: true });
+  ac = updateAcConnection(ac, 'inverterOutput', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.92, availableFaultCurrentKa: 10, faultClearingTimeSec: 0.1, confirmed: true });
+  ac = updateAcConnection(ac, 'lvGrid', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: null, confirmed: true });
+  ac = { ...ac, injection: { level: 'not_applicable', nominalKv: null, confirmed: true }, inverterNameplate: { nominalFrequencyHz: 60, sourceUrl: 'https://vendor.example/exact-model-datasheet', userConfirmed: true } };
+  const acRequiresReconfirmation = updateAcConnection(ac, 'loadService', { frequencyHz: 50 });
+  ac = updateAcConnection(ac, 'loadService', { powerFactor: 0.9, confirmed: true });
+  ac = updateAcConnection(ac, 'load:single-load', { phase: 'single', lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.8, confirmed: true });
+  const loadAcCurrentResults = evaluateLoadAcCurrents([
+    { id: 'site-load', name: 'Three-phase site load', ratedWatts: 2000, quantity: 1, isDc: false, acPhase: 'three' },
+    { id: 'single-load', name: 'Explicit single-phase load', ratedWatts: 1000, quantity: 1, isDc: false },
+    { id: 'dc-load', name: 'DC load', ratedWatts: 500, quantity: 1, isDc: true },
+  ], ac);
+  const threePhaseOnSinglePhaseService = evaluateLoadAcCurrents(
+    [{ id: 'three-on-single', name: 'Three-phase motor', ratedWatts: 3000, quantity: 1, isDc: false, acPhase: 'three' }],
+    { ...ac, loadService: { ...ac.loadService, phase: 'single', lineToLineVolts: null, lineToNeutralVolts: 120 } },
+  )[0];
+  const infiniteLoadVoltageResult = evaluateLoadAcCurrents(
+    [{ id: 'infinite-voltage', name: 'Invalid voltage load', ratedWatts: 1000, quantity: 1, isDc: false }],
+    { ...ac, loadService: { ...ac.loadService, lineToNeutralVolts: Infinity } },
+  )[0];
+  const infiniteInjectionAssessment = assessAcRequirements(
+    { ...ac, injection: { level: 'mv', nominalKv: Infinity, confirmed: true } },
+    { isThreePhase: true, acVoltageVac: 208 },
+    'powerplant',
+  );
+  const acCompatibleNorthAmerican = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid');
+  const acIncompatibleInverter = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 400 }, 'ongrid');
+  const acIncompatibleCatalogFrequency = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208, frequencyHz: 50 }, 'ongrid');
+  const acCompatibleCatalogFrequency = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208, frequencyHz: 60 }, 'ongrid');
+  const clusterUnknownPhase = evaluateInverterClustering(5000, 7000, 5, 500).acPhaseType;
+  const clusterExplicitPhase = evaluateInverterClustering(5000, 7000, 5, 500, 'single').acPhaseType;
+  const acOldProjectMigration = migrateProjectToV3({ version: '3.0.0', projectName: 'Legacy AC unknown' });
+  const { inverterNameplate: _missingLegacyNameplate, ...legacyAcWithoutNameplate } = createUnknownAcRequirements();
+  const acPriorSchemaMigration = migrateProjectToV3({ ...REAL_WORLD_V2_TEST_VECTORS[0].rawPayload, acRequirements: legacyAcWithoutNameplate });
+  assert('AC REQUIREMENTS', 'Explicit phase/voltage/frequency, LV-vs-injection separation, mismatch and legacy unknown handling',
+    acCompatibleNorthAmerican.status === 'compatible' && acIncompatibleInverter.status === 'incompatible'
+      && acIncompatibleCatalogFrequency.status === 'incompatible'
+      && acIncompatibleCatalogFrequency.reasons.some((reason) => reason.includes('catalog frequency'))
+      && acCompatibleCatalogFrequency.status === 'compatible'
+      && acOldProjectMigration.project.acRequirements === null
+      && acOldProjectMigration.project.mvVoltageKv === null
+      && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.userConfirmed === false
+      && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.nominalFrequencyHz === null
+      && acPriorSchemaMigration.warnings.some((warning) => warning.includes('inverter nameplate evidence'))
+      && acOldProjectMigration.requiresUserConfirmation
+      && acOldProjectMigration.warnings.some((warning) => warning.includes('acRequirements'))
+      && clusterUnknownPhase === 'unknown' && clusterExplicitPhase === 'single'
+      && isValidAcConnection(ac.loadService)
+      && acRequiresReconfirmation.loadService.confirmed === false
+      && assessAcRequirements({ ...ac, inverterOutput: { ...ac.inverterOutput, lineToLineVolts: -208 } }, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid').status === 'incomplete'
+      && loadAcCurrentResults[0].status === 'assessed' && Math.abs((loadAcCurrentResults[0].currentAmps ?? 0) - 6.17) < 0.02
+      && loadAcCurrentResults[1].basis === 'per_load_override' && loadAcCurrentResults[1].status === 'assessed'
+      && loadAcCurrentResults[2].status === 'dc_not_applicable'
+      && loadAcCurrentResults[0].phase === 'three'
+      && threePhaseOnSinglePhaseService.status === 'incomplete'
+      && infiniteLoadVoltageResult.status === 'incomplete' && infiniteLoadVoltageResult.currentAmps === null
+      && infiniteInjectionAssessment.status === 'incomplete'
+      && !assessAcRequirements(createUnknownAcRequirements(), { isThreePhase: true }, 'powerplant').reasons.some((reason) => reason.includes('230')),
+    `208/120 V 60 Hz explicit on-grid=${acCompatibleNorthAmerican.status}; 400 V inverter mismatch=${acIncompatibleInverter.status}; legacy AC stays unknown=${acOldProjectMigration.project.acRequirements === null}; infinite load voltage/injection are incomplete.`);
+
+  const contextualHelpPages = [
+    'climate', 'loads', 'system_mode', 'array', 'harmonics_grid', 'mv_substation', 'bess',
+    'cables_bom', 'structural', 'sim24h', 'waterfall_loss', 'financial', 'sld', 'cad_layout',
+    '3d_viewer', 'scenarios', 'catalog', 'iran_regulations', 'solar_pumping', 'iv_curve', 'rfc3_reports',
+  ];
+  const contextualHelpContractOk = contextualHelpPages.every((page) => {
+    const en = getContextualHelp(page, 'powerplant', 'en');
+    const fa = getContextualHelp(page, 'powerplant', 'fa');
+    return en.inputs.length > 80 && en.method.length > 80 && en.limitations.length > 40 && Boolean(en.sources) &&
+      fa.inputs.length > 40 && fa.method.length > 40 && fa.limitations.length > 20 && Boolean(fa.sources);
+  });
+  assert(
+    'Help',
+    'Every main workflow page has bilingual input/method/limitation guidance with a code-source reference',
+    contextualHelpContractOk,
+    `Checked ${contextualHelpPages.length} workflow pages for bilingual substantive help and registered source references.`
   );
 
   // 13.2 Negative Regression Test: Invalid Out-of-Bounds Coordinates
@@ -2225,6 +2325,22 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       `powerplant=${powerplantDaily} (expect 0); ` +
       `sizeBatteryBank(20, 2, lifepo4) gross=${bat.grossCapacityKwh} kWh (expect 45-55)`
     );
+
+    const surgeOverLimit = sizeBatteryBank(0.8, 1, 'lifepo4', 48, 30000, 3000, 20, 100);
+    const surgeWithinLimit = sizeBatteryBank(0.8, 1, 'lifepo4', 48, 5000, 3000, 20, 100);
+    assert(
+      'E1-ENG-2A',
+      'Battery sizing flags chemistry maxSurgeCRate exceedance and accepts surge within the profile limit',
+      surgeOverLimit.totalCapacityAh === 100
+        && Math.abs(surgeOverLimit.actualSurgeCRate - 6.72) < 0.02
+        && surgeOverLimit.isSurgeCRateAssessed
+        && !surgeOverLimit.isSurgeCRateCompliant
+        && surgeOverLimit.warnings.some((warning) => warning.includes('6.72C') && warning.includes('2C'))
+        && surgeWithinLimit.isSurgeCRateAssessed
+        && surgeWithinLimit.isSurgeCRateCompliant
+        && !surgeWithinLimit.warnings.some((warning) => warning.includes('نرخ مجاز شیمی') && warning.includes('هجومی')),
+      `over=${surgeOverLimit.actualSurgeCRate}C/${surgeOverLimit.chemistry.maxSurgeCRate}C assessed=${surgeOverLimit.isSurgeCRateAssessed}; within=${surgeWithinLimit.actualSurgeCRate}C compliant=${surgeWithinLimit.isSurgeCRateCompliant}`
+    );
   }
 
   // [E2-ENG-3] Inverter clipping loss must be monotone in DC/AC ratio.
@@ -2941,7 +3057,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
   // [E8-ELEC-1] Cable triple-constraint sizing (Voltage Drop + Thermal Ampacity + Short-Circuit Withstand)
   {
-    const { calculateAdvancedCableRun } = await import('../../protectionBomEngine');
+    const { calculateAdvancedCableRun, isVoltageDropWithinLimit } = await import('../../protectionBomEngine');
 
     const acRun = calculateAdvancedCableRun({
       id: 'ac-test',
@@ -2955,11 +3071,24 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       allowableDropPct: 1.5,
       isDc: false,
       isThreePhase: true,
+      motorStartingMethod: 'not_applicable',
       ambientTempC: 45,
+      protectiveDeviceRatingAmps: 180,
+      protectiveDeviceBreakingCapacityKa: 15,
+      protectiveDeviceReference: 'Test breaker; verified rating 180A / 15kA',
+      expectedIscKa: 10,
+      faultClearingTimeSec: 0.1,
     });
 
+    const incompleteProtection = calculateAdvancedCableRun({
+      ...acRun.config,
+      protectiveDeviceRatingAmps: undefined,
+      protectiveDeviceBreakingCapacityKa: undefined,
+      protectiveDeviceReference: undefined,
+    });
+    const incompleteProtectionSafe = incompleteProtection.isAssessed === false && incompleteProtection.isCompliant === false;
     const cableOk =
-      acRun.isCompliant &&
+      acRun.isCompliant && incompleteProtectionSafe &&
       acRun.isAmpacityCompliant &&
       acRun.isShortCircuitCompliant &&
       acRun.totalThermalAmpacityAmps >= 180 &&
@@ -2972,6 +3101,81 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Cable multi-constraint sizing: voltage drop, thermal ampacity with deratings & Joule power loss',
       cableOk,
       `size=${acRun.cableDesignationEn}, Iz=${acRun.totalThermalAmpacityAmps}A (Ib=180A), kt=${acRun.temperatureDeratingFactorKt}, dV=${acRun.actualVoltageDropPct}%, Ploss=${acRun.powerLossWatts}W`
+    );
+
+    const singlePhaseConfig = {
+      id: 'single-phase-ac-test',
+      sectionNameFa: 'کابل AC تک‌فاز آزمون',
+      sectionNameEn: 'Single-phase AC test run',
+      oneWayLengthM: 65,
+      designCurrentAmps: 32,
+      nominalVoltageVolts: 230,
+      conductorMaterial: 'copper' as const,
+      insulationType: 'xlpe' as const,
+      allowableDropPct: 3,
+      isDc: false,
+      isThreePhase: false,
+      motorStartingMethod: 'not_applicable' as const,
+      powerFactor: 0.7,
+      ambientTempC: 30,
+      protectiveDeviceRatingAmps: 32,
+      protectiveDeviceBreakingCapacityKa: 6,
+      protectiveDeviceReference: 'Test single-phase breaker 32A/6kA',
+      expectedIscKa: 3,
+      faultClearingTimeSec: 0.1,
+    };
+    const singlePhaseAcRun = calculateAdvancedCableRun(singlePhaseConfig);
+    const copperAlphaPerC = 0.00393;
+    const expectedResistanceTemperatureFactor = 1 + copperAlphaPerC * (90 - 20);
+    const singlePhaseRPerMeter = expectedResistanceTemperatureFactor / (56 * singlePhaseAcRun.totalEffectiveCrossSectionMm2);
+    const singlePhaseXPerMeter = 0.00008;
+    const singlePhaseSinPhi = Math.sqrt(1 - singlePhaseConfig.powerFactor ** 2);
+    const expectedSinglePhaseDropVolts = 2 * singlePhaseConfig.oneWayLengthM * singlePhaseConfig.designCurrentAmps
+      * (singlePhaseRPerMeter * singlePhaseConfig.powerFactor + singlePhaseXPerMeter * singlePhaseSinPhi);
+    const expectedSinglePhaseLossPct = Number((singlePhaseAcRun.powerLossWatts
+      / (singlePhaseConfig.nominalVoltageVolts * singlePhaseConfig.designCurrentAmps * singlePhaseConfig.powerFactor) * 100).toFixed(2));
+    const singlePhaseModelConsistent = singlePhaseAcRun.isAssessed === true
+      && singlePhaseAcRun.isCompliant
+      && singlePhaseAcRun.conductorResistanceTempC === 90
+      && singlePhaseAcRun.conductorResistanceModelNote.includes('20°C nominal conductivity corrected to 90°C')
+      && Math.abs(singlePhaseAcRun.actualVoltageDropVolts - expectedSinglePhaseDropVolts) <= 0.01
+      && Math.abs(singlePhaseAcRun.actualVoltageDropPct - expectedSinglePhaseDropVolts / singlePhaseConfig.nominalVoltageVolts * 100) <= 0.01
+      && singlePhaseAcRun.actualVoltageDropPct <= singlePhaseConfig.allowableDropPct
+      && singlePhaseAcRun.powerLossPct === expectedSinglePhaseLossPct;
+    assert(
+      'E8-ELEC-1A',
+      'Single-phase AC uses max insulation conductor temperature for R sizing/drop and real-power loss percentage with the R/X/PF model',
+      singlePhaseModelConsistent,
+      `size=${singlePhaseAcRun.cableDesignationEn}, dV=${singlePhaseAcRun.actualVoltageDropPct}% (expected ${Number((expectedSinglePhaseDropVolts / singlePhaseConfig.nominalVoltageVolts * 100).toFixed(2))}%), PF=${singlePhaseConfig.powerFactor}, loss=${singlePhaseAcRun.powerLossPct}% (expected ${expectedSinglePhaseLossPct}%)`
+    );
+
+    const motorStartRun = calculateAdvancedCableRun({
+      ...singlePhaseConfig,
+      motorStartingMethod: 'direct_on_line',
+      motorStartingMultiplier: 6,
+    });
+    const motorStartUnassessed = motorStartRun.isAssessed === false
+      && motorStartRun.isCompliant === false
+      && motorStartRun.isMotorStartingAssessed === false
+      && motorStartRun.motorStartingVoltageDropPct === null
+      && motorStartRun.assessmentNote?.includes('NOT ASSESSED') === true;
+    assert(
+      'E8-ELEC-1B',
+      'Motor start voltage drop remains unassessed and cannot produce an overall cable pass without dynamic inputs/acceptance criteria',
+      motorStartUnassessed,
+      `motorStartAssessed=${motorStartRun.isMotorStartingAssessed}, overallAssessed=${motorStartRun.isAssessed}, compliant=${motorStartRun.isCompliant}, startDeltaV=${motorStartRun.motorStartingVoltageDropPct}`
+    );
+
+    const roundedDropBoundarySafe = Number(((12.34 / 1000) * 100).toFixed(2)) === 1.23
+      && isVoltageDropWithinLimit(12.29, 1000, 1.23)
+      && isVoltageDropWithinLimit(12.30, 1000, 1.23)
+      && !isVoltageDropWithinLimit(12.31, 1000, 1.23)
+      && !isVoltageDropWithinLimit(12.34, 1000, 1.23);
+    assert(
+      'E8-ELEC-1C',
+      'Voltage-drop compliance uses unrounded under/on/over-limit values even when display rounding masks an exceedance',
+      roundedDropBoundarySafe,
+      `display=${Number(((12.34 / 1000) * 100).toFixed(2))}%, raw=1.234% > limit=1.23% is rejected; exact and below boundary pass`
     );
   }
 
@@ -3077,15 +3281,108 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     };
 
     const design = designPvArray(150, 5.0, testModule, restrictiveInverter, deratings, 35.69);
+    const lowDemandInverter = { ...restrictiveInverter, vmpptMinVolts: 150, imppMaxAmpsPerMppt: 30, iscMaxAmpsPerMppt: 30 };
+    const underMinimumString = designPvArray(0.1, 5.0, testModule, lowDemandInverter, deratings, 35.69);
+    const missingCurrentLimitsInverter = { ...restrictiveInverter, imppMaxAmpsPerMppt: 0, iscMaxAmpsPerMppt: 0 };
+    const missingCurrentLimits = designPvArray(150, 5.0, testModule, missingCurrentLimitsInverter, deratings, 35.69);
 
-    // Module Imp is 13.4A > Inverter ImppMax of 12A, so MPPT current compliance must flag warning
+    // Module Imp is 13.4A > Inverter ImppMax of 12A, so MPPT current compliance must flag warning.
+    // A tiny array that is forced below MPPT minimum is diagnostic only, never executable.
     const currentWarningFound = design.warnings.some(w => w.includes('MPPT') || w.includes('جریان'));
+    const underMinimumBlocked = underMinimumString.modulesPerString < underMinimumString.minModulesPerStringAllowed
+      && underMinimumString.stringVmpMinHotVolts < lowDemandInverter.vmpptMinVolts
+      && !underMinimumString.isVoltageFeasible
+      && !underMinimumString.isDesignFeasible
+      && Boolean(underMinimumString.blockingErrors?.some((error) => error.includes('تعداد ماژول انتخاب‌شده')));
+    const missingCurrentLimitsBlocked = !missingCurrentLimits.isMpptCurrentAssessed
+      && !missingCurrentLimits.isMpptCurrentCompliant
+      && !missingCurrentLimits.isDesignFeasible
+      && Boolean(missingCurrentLimits.blockingErrors?.some((error) => error.includes('NOT ASSESSED')))
+      && missingCurrentLimits.warnings.some((warning) => warning.includes('NOT ASSESSED'));
 
     assert(
       'E8-PV-1',
-      'PV string sizing enforces MPPT current constraints and decoupled Vmp temperature coefficient',
-      !design.isMpptCurrentCompliant && currentWarningFound && design.maxMpptOperatingCurrentAmps >= 13.4,
-      `MpptCompliant=${design.isMpptCurrentCompliant}, Impp=${design.maxMpptOperatingCurrentAmps}A (limit=12A), warningCount=${design.warnings.length}`
+      'PV sizing enforces MPPT current limits, marks missing ratings unassessed, and blocks strings below MPPT minimum',
+      !design.isMpptCurrentCompliant && currentWarningFound && design.maxMpptOperatingCurrentAmps >= 13.4
+        && underMinimumBlocked && missingCurrentLimitsBlocked,
+      `MpptCompliant=${design.isMpptCurrentCompliant}, Impp=${design.maxMpptOperatingCurrentAmps}A (limit=12A), undersized=${underMinimumString.modulesPerString}/${underMinimumString.minModulesPerStringAllowed}, missingRatingsAssessed=${missingCurrentLimits.isMpptCurrentAssessed}, missingRatingsFeasible=${missingCurrentLimits.isDesignFeasible}`
+    );
+  }
+
+  // [E8-PV-MPPT-2] MPPT upper Vmp limit and non-uniform physical string allocation
+  {
+    const { evaluateMpptCompatibility } = await import('../electricalSizingContract');
+    const voltageAndAllocationInput = {
+      moduleVoc: 45, moduleVmp: 40, moduleIsc: 10, moduleImp: 9, modulePmp: 400,
+      tempCoeffVocPct: -0.2, tempCoeffVmpPct: -0.2,
+      modulesPerString: 17, parallelStrings: 5,
+      inverterVdcMax: 900, inverterVmpptMin: 500, inverterVmpptMax: 700,
+      inverterImppMaxPerMppt: 25, inverterIscMaxPerMppt: 35,
+      inverterMpptChannels: 4, inverterCount: 1, inverterPnomAcKw: 10,
+      ambientTempMinC: -20, ambientTempMaxC: 45, cellTempHotC: 70,
+    };
+    const overUpperVmp = evaluateMpptCompatibility(voltageAndAllocationInput);
+    const balancedAllocation = evaluateMpptCompatibility({
+      ...voltageAndAllocationInput,
+      inverterVmpptMax: 800,
+    });
+    const unevenAllocation = evaluateMpptCompatibility({
+      ...voltageAndAllocationInput,
+      inverterVmpptMax: 800,
+      stringsPerMpptAllocation: [3, 2, 0, 0],
+    });
+    const invalidAllocation = evaluateMpptCompatibility({
+      ...voltageAndAllocationInput,
+      inverterVmpptMax: 800,
+      stringsPerMpptAllocation: [3, 1, 0, 0],
+    });
+
+    const { designPvArray: designArray } = await import('../../pvEngineAdvanced');
+    const pvModule = {
+      manufacturer: 'Tier1', modelName: '550W-MPPT-test', pmpWatts: 550,
+      vocVolts: 50, vmpVolts: 41, iscAmps: 14, impAmps: 13.4,
+      tempCoeffVocPct: -0.28, tempCoeffPmpPct: -0.30,
+      tempCoeffIscPct: 0.045, noctC: 45,
+    };
+    const pvDeratings = {
+      ambientTempMinC: -10, ambientTempMaxC: 45, soilingLossPct: 4,
+      dcCableLossPct: 1.5, mismatchAndLidLossPct: 2, inverterClippingLossPct: 1,
+      systemAvailabilityPct: 99, groundAlbedo: 0.20, arrayTiltDeg: 25,
+    };
+    const fourChannelInverter = {
+      manufacturer: 'Inv', modelName: 'Four-MPPT-test', pnomAcKw: 10,
+      vdcMaxVolts: 1000, vmpptMinVolts: 150, vmpptMaxVolts: 850,
+      iscMaxAmpsPerMppt: 50, imppMaxAmpsPerMppt: 30, mpptChannelsCount: 4,
+      efficiencyMaxPct: 98.5, isThreePhase: true,
+    };
+    const balancedPv = designArray(150, 5, pvModule, fourChannelInverter, pvDeratings, 35.69, { inverterCount: 1 });
+    const unevenPvAllocation = [balancedPv.parallelStringsCount, 0, 0, 0];
+    const unevenPv = designArray(150, 5, pvModule, fourChannelInverter, pvDeratings, 35.69, {
+      inverterCount: 1,
+      stringsPerMpptAllocation: unevenPvAllocation,
+    });
+
+    const passed = overUpperVmp.stringVocMaxColdV < voltageAndAllocationInput.inverterVdcMax
+      && overUpperVmp.stringVmpMinHotV >= voltageAndAllocationInput.inverterVmpptMin
+      && overUpperVmp.stringVmpMaxColdV > voltageAndAllocationInput.inverterVmpptMax
+      && !overUpperVmp.isVoltageFeasible
+      && balancedAllocation.isCurrentFeasible
+      && balancedAllocation.stringsPerMppt === 2
+      && balancedAllocation.isMpptAllocationAssumed
+      && !unevenAllocation.isCurrentFeasible
+      && unevenAllocation.stringsPerMppt === 3
+      && unevenAllocation.stringsPerMpptAllocation.join(',') === '3,2,0,0'
+      && !invalidAllocation.isCurrentFeasible
+      && !unevenPv.isMpptAllocationAssumed
+      && unevenPv.stringsPerMppt === balancedPv.parallelStringsCount
+      && !unevenPv.isMpptCurrentCompliant
+      && unevenPv.maxMpptOperatingCurrentAmps === Number((balancedPv.parallelStringsCount * pvModule.impAmps).toFixed(2));
+
+    assert(
+      'E8-PV-MPPT-2',
+      'MPPT voltage upper bound and explicit per-channel string allocation are enforced',
+      passed,
+      `VmpCold=${overUpperVmp.stringVmpMaxColdV}V/${voltageAndAllocationInput.inverterVmpptMax}V, balanced=${balancedAllocation.stringsPerMpptAllocation.join(',')}, uneven=${unevenAllocation.stringsPerMpptAllocation.join(',')} (${unevenAllocation.operatingCurrentAmps}A), PV strings=${balancedPv.parallelStringsCount}, PV max=${unevenPv.maxMpptOperatingCurrentAmps}A, compliant=${unevenPv.isMpptCurrentCompliant}`
     );
   }
 
@@ -3184,8 +3481,12 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       allowableDropPct: 1.5,
       isDc: false,
       isThreePhase: true,
+      motorStartingMethod: 'not_applicable',
       expectedIscKa: 40,
       faultClearingTimeSec: 0.5,
+      protectiveDeviceRatingAmps: 16,
+      protectiveDeviceBreakingCapacityKa: 50,
+      protectiveDeviceReference: 'Test breaker; verified rating 16A / 50kA',
       installationMethod: 'cable_tray',
     });
 
@@ -4901,9 +5202,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const { buildWaterfallArgs, WATERFALL_ARG_COUNT } = await import('../../waterfallArgs');
 
     // 1. Arity check
-    const arityOk = WATERFALL_ARG_COUNT === 16;
+    const arityOk = WATERFALL_ARG_COUNT === 17;
 
-    // 2. Contract builder generates exactly 16 positional arguments matching computeWaterfallLosses
+    // 2. Contract builder generates exactly 17 positional arguments matching computeWaterfallLosses
     const fixtureInput = {
       dcCapacityKw: 1100,
       peakSunHours: 5.2,
@@ -4924,7 +5225,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     };
 
     const builtArgs = buildWaterfallArgs(fixtureInput);
-    const argsLengthOk = builtArgs.length === 16;
+    const argsLengthOk = builtArgs.length === 17;
 
     // Verify arg positions
     const posOk =
@@ -4943,7 +5244,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       builtArgs[12] === 25.0 &&
       builtArgs[13] === 35.7 &&
       builtArgs[14] === 5.98 &&
-      builtArgs[15] === 0.0;
+      builtArgs[15] === 0.0 &&
+      builtArgs[16] === undefined;
 
     // 3. Execution equivalence
     const reportFromBuilder = computeWaterfallLosses(...builtArgs);
@@ -5311,9 +5613,61 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
+  // E23a: per-load phase, balanced auto allocation, energy invariance, and inverter phase compatibility
+  {
+    const { analyzeLoadProfile } = await import('../../loadProfiles');
+    const { evaluateInverterClustering } = await import('../../inverterClustering');
+    const fixture: import('../../loadProfiles').ElectricalLoadItem[] = [
+      { id: 'legacy', name: 'Legacy single-phase load', category: 'other', ratedWatts: 1000, surgeMultiplier: 1, quantity: 1, dayHours: 2, nightHours: 1, isDc: false },
+      { id: 'three', name: '3-phase motor', category: 'industrial_motor', ratedWatts: 3000, surgeMultiplier: 1, quantity: 1, dayHours: 2, nightHours: 1, isDc: false, acPhase: 'three' },
+    ];
+    const measured = analyzeLoadProfile(fixture);
+    const currentMeasured = analyzeLoadProfile(fixture, undefined, { lineToLineVolts: 400, phaseNeutralVolts: 230, powerFactor: 0.8 });
+    const expectedThreePhaseCurrent = 3000 / (Math.sqrt(3) * 400 * 0.8);
+    const currentCalculationOk = Math.abs(currentMeasured.phaseLegAmps.L2 - expectedThreePhaseCurrent) < 1e-9
+      && currentMeasured.phaseCurrentBasis.isConfirmed;
+    const singleLegs = measured.phaseLegWatts;
+    const energyUnchanged = measured.totalDailyEnergyWh === 12000;
+    const threePhaseSplit = measured.threePhaseLoadWatts === 3000 && singleLegs.L1 + singleLegs.L2 + singleLegs.L3 === 4000;
+    const allocations = ['L1', 'L2', 'L3'] as const;
+    const explicit = allocations.map((leg) => analyzeLoadProfile([
+      { ...fixture[0], phaseAssignment: leg }, fixture[1],
+    ]).phaseLegWatts[leg]);
+    const autoBalanced = Math.max(...allocations.map((leg) => singleLegs[leg])) - Math.min(...allocations.map((leg) => singleLegs[leg])) <= 1000;
+    const singlePhaseInverter = evaluateInverterClustering(4000, 4000, 5, 500, 'three', false, 1334);
+    const threePhaseCluster = evaluateInverterClustering(4000, 4000, 5, 500, 'three', true, 2000, 0.8);
+    const inverterPhaseAwareKw = threePhaseCluster.requiredContinuousKw === 6 && threePhaseCluster.requiredApparentPowerKva === 7.5
+      && threePhaseCluster.apparentPowerAssessment === 'not_assessed_no_catalog_kva';
+    const inverterWarns = singlePhaseInverter.healthStatus === 'phase_incompatible' && Boolean(singlePhaseInverter.phaseCompatibilityWarningFa);
+    const schemaLegacy = ElectricalLoadItemSchema.safeParse({ ...fixture[0] }).success;
+    const schemaRoundTrip = ElectricalLoadItemSchema.parse({ ...fixture[0], acPhase: 'three', phaseAssignment: 'auto' });
+    const feederRoundTrip = CableFeederInputMapSchema.parse({ 'dc-string': {
+      oneWayLengthM: 24.5, designCurrentAmps: 12, nominalVoltageVolts: 1000, conductorMaterial: 'copper',
+      insulationType: 'xlpe', allowableDropPct: 1.5, coincidenceFactor: 0.9, ambientTempC: 40,
+      installationMethod: 'cable_tray', groupedCircuitsCount: 2, protectiveDeviceRatingAmps: 16,
+      protectiveDeviceBreakingCapacityKa: 25, protectiveDeviceReference: 'CB-1 16A/25kA', expectedIscKa: 12,
+      faultClearingTimeSec: 0.1, motorStartingMethod: 'not_applicable',
+    } });
+    const migratedFeederInputs = migrateProjectToV3({
+      ...REAL_WORLD_V2_TEST_VECTORS[0].rawPayload,
+      cableFeederInputs: feederRoundTrip,
+    }).project.cableFeederInputs;
+    const roundTrip = schemaLegacy && schemaRoundTrip.acPhase === 'three' && schemaRoundTrip.phaseAssignment === 'auto'
+      && feederRoundTrip['dc-string'].oneWayLengthM === 24.5
+      && feederRoundTrip['dc-string'].protectiveDeviceReference === 'CB-1 16A/25kA'
+      && migratedFeederInputs['dc-string'].expectedIscKa === 12;
+    assert(
+      'E23A-PER-LOAD-PHASE-BALANCE-AND-ROUNDTRIP',
+      'Legacy loads default to single phase; three-phase loads share legs without duplicating energy; manual allocation and inverter mismatch are surfaced and project schema round-trips phase fields',
+      energyUnchanged && threePhaseSplit && autoBalanced && explicit.every((watts) => watts === 2000) && inverterWarns && inverterPhaseAwareKw && roundTrip && currentCalculationOk,
+      `energy=${measured.totalDailyEnergyWh}Wh threePhase=${measured.threePhaseLoadWatts}W legs=${JSON.stringify(singleLegs)} manual=${explicit.join(',')} mismatch=${singlePhaseInverter.healthStatus}`
+    );
+  }
+
   // E24: 24h simulation strictly conserves load energy and tracks SoC & gross surplus
   {
     const { simulate24hEnergyBalance } = await import('../../simulation24hEngine');
+    const { sizeBatteryBank } = await import('../../batteryEngine');
     const dayKwh = 24.5;
     const nightKwh = 18.2;
     const totalTarget = dayKwh + nightKwh;
@@ -5326,8 +5680,53 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       25.0,  // 25 kWh usable BESS
       30.0,  // 30 kWh gross BESS
       50.0,  // 50% initial SoC
-      9.58   // Winter solstice daylight window
+      9.58,  // Winter solstice daylight window
+      0.68   // Current design's effective system derate
     );
+    const fallbackDerateSim = simulate24hEnergyBalance(10, 5, 0, 0, 0, 0, 50, 12);
+    const generationDeratePassedThrough = sim.isGenerationDeratingAssessed
+      && sim.effectiveSystemDeratingFactor === 0.68
+      && Math.abs(sim.totalGeneration24hKwh - 10 * 5.2 * 0.68) < 1e-10
+      && !fallbackDerateSim.isGenerationDeratingAssessed
+      && fallbackDerateSim.effectiveSystemDeratingFactor === 0.78;
+    const pcsPowerCappedSim = simulate24hEnergyBalance(0, 0, 12, 0, 15, 20, 100, 12, 0.68, {
+      maxChargePowerKw: 1,
+      maxDischargePowerKw: 0.5,
+      chargePowerLimitConfirmed: true,
+      dischargePowerLimitConfirmed: true,
+      chargeEfficiencyFraction: 0.95,
+      dischargeEfficiencyFraction: 0.95,
+    });
+    const missingPcsRatingSim = simulate24hEnergyBalance(0, 0, 0, 0, 0, 0, 50, 12, 0.68);
+    const pcsLimitsApplied = pcsPowerCappedSim.isPowerLimitsAssessed
+      && pcsPowerCappedSim.hourlySteps.every((step) => step.batteryDischargeKwh <= 0.5 + 1e-12)
+      && pcsPowerCappedSim.hourlySteps.some((step) => Math.abs(step.batteryDischargeKwh - 0.5) < 1e-9)
+      && !missingPcsRatingSim.isPowerLimitsAssessed
+      && missingPcsRatingSim.powerLimitAssessmentNote.includes('NOT ASSESSED')
+      && !missingPcsRatingSim.isSelfSufficient;
+    const inferredPcsRatingSim = simulate24hEnergyBalance(0, 0, 0, 0, 0, 0, 50, 12, 0.68, {
+      maxChargePowerKw: 1,
+      maxDischargePowerKw: 0.5,
+      chargePowerLimitConfirmed: true,
+      dischargePowerLimitConfirmed: false,
+    });
+    const inferredLimitNotAssessed = !inferredPcsRatingSim.isPowerLimitsAssessed
+      && inferredPcsRatingSim.powerLimitAssessmentNote.includes('discharge limit is not confirmed');
+
+    const sizingBattery = sizeBatteryBank(2, 1, 'lifepo4', 48, 5000, 3000, 20, 100);
+    const sizingAndSimulation = simulate24hEnergyBalance(
+      0, 0, 0, sizingBattery.usableCapacityKwh, sizingBattery.nominalDoDUsableCapacityKwh,
+      sizingBattery.grossCapacityKwh, 100, 0, 1, {
+        maxChargePowerKw: 10, maxDischargePowerKw: 10,
+        chargeEfficiencyFraction: sizingBattery.chargeEfficiencyFraction,
+        dischargeEfficiencyFraction: sizingBattery.dischargeEfficiencyFraction,
+      }
+    );
+    const energyBoundaryConsistent = Math.abs(sizingBattery.nominalDoDUsableCapacityKwh
+      * sizingBattery.dischargeEfficiencyFraction - sizingBattery.usableCapacityKwh) < 1e-9
+      && Math.abs(sizingBattery.chargeEfficiencyFraction * sizingBattery.dischargeEfficiencyFraction
+        - sizingBattery.chemistry.roundTripEfficiencyPct / 100) < 1e-12
+      && sizingAndSimulation.energyNotServedKwh < 1e-9;
 
     const compensatedSum = (values: number[]) => {
       let sum = 0;
@@ -5388,8 +5787,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     assert(
       'E24-SIMULATION-24H-STRICT-LOAD-CONSERVATION-AND-SOC',
-      'Dynamic sunrise/sunset 24h simulation conserves raw hourly energy within IEEE-754 error bounds and tracks SoC & surplus',
-      loadConservationOk && socReported && grossSurplusReported && polarNightOk && nightOnlySweepOk,
+      '24h simulator conserves load energy, passes actual PV derating, caps explicit PCS power, labels missing PCS limits unassessed, and aligns battery DC/AC energy boundaries',
+      loadConservationOk && socReported && grossSurplusReported && polarNightOk && nightOnlySweepOk
+        && generationDeratePassedThrough && pcsLimitsApplied && inferredLimitNotAssessed && energyBoundaryConsistent,
       `compensatedHourlySum=${hourlySum} kWh vs target=${totalTarget} kWh (withinIEEE754Bound=${Math.abs(hourlySum - totalTarget) <= summationBound(hourlyLoadValues)}), initialSoC=${sim.initialBatterySocPct}%, finalSoC=${sim.finalBatterySocPct}%, surplus=${sim.totalSurplus24hKwh} kWh, polarNight=${polarNightOk}, nightOnlySweep=${nightOnlySweepOk}`
     );
   }
@@ -5561,6 +5961,56 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Engine input validation, negative tariff clamping, scenario zero-fallback, ephemeral sizing, and provenance preservation verified',
       z01DemandThrew && z01ModuleThrew && z01PmpThrew && z01FinOk && z01LcoeOk && z02ScenariosOk && z03NoPersistOk && z06ProvenanceOk,
       `z01Demand=${z01DemandThrew}, z01Module=${z01ModuleThrew}, z01Fin=${z01FinOk}, z02Scenarios=${z02ScenariosOk}, z03Ephemeral=${z03NoPersistOk}, z06Prov=${z06ProvenanceOk}`
+    );
+  }
+
+  // E28: live central sizing facade and synthetic annual hourly thermal sensitivity disclosure.
+  {
+    const { resolveElectricalSystemSizing } = await import('../electricalSizingContract');
+    const { simulateAnnualHourlyThermalDerate } = await import('../hourlyThermalEngine');
+    const facadeResult = resolveElectricalSystemSizing({
+      targetCapacityKw: 100,
+      requiredDailyEnergyKwh: 3000,
+      module: p0Module,
+      inverter: p0Inverter,
+      ambientTempMinC: -5,
+      ambientTempMaxC: 40,
+      latitudeDeg: 35.69,
+      peakSunHours: 5.2,
+      deratings: p0Deratings(40),
+      customInverterCount: 1,
+    });
+    const facadeTargetEnergyErrorPct = Math.abs(
+      facadeResult.arrayDesign.estimatedAnnualYieldKwh! - 3000 * 365
+    ) / (3000 * 365) * 100;
+    const facadeUsesDailyTarget = facadeResult.requiredInverterCount === 1
+      && facadeTargetEnergyErrorPct < 2
+      && facadeResult.arrayDesign.totalPvCapacityKwp > 0
+      && facadeResult.arrayDesign.isMpptRatingEstimated === true
+      && !facadeResult.arrayDesign.isMpptCurrentAssessed
+      && !facadeResult.arrayDesign.isDesignFeasible
+      && facadeResult.mpptRatingsAssessmentNote.includes('no finite percentage error bound');
+    const thermalYear = simulateAnnualHourlyThermalDerate({
+      latitudeDeg: 35.69,
+      peakSunHours: 5.2,
+      ambientTempMinC: -5,
+      ambientTempMaxC: 40,
+      ambientTempMeanC: 18,
+      noctC: 45,
+      tempCoeffPmpPct: -0.30,
+      ambientBiasSensitivityC: 5,
+    });
+    const thermalYearValid = thermalYear.hourlySamples === 8760
+      && Math.abs(thermalYear.irradianceAnnualKwhM2 - 5.2 * 365) < 1e-9
+      && thermalYear.annualThermalDeratePct >= 0
+      && thermalYear.temperatureSensitivityRangePct.high > thermalYear.temperatureSensitivityRangePct.low
+      && !thermalYear.isMeasuredHourlyWeather
+      && thermalYear.ambientMeanSource === 'provider_annual_mean';
+    assert(
+      'E28-CENTRAL-SIZING-HOURLY-THERMAL-AND-UNCERTAINTY',
+      'Live App sizing can route through the central facade; generic utility MPPT substitutions are explicitly unassessed; 8760 synthetic thermal samples conserve PSH and expose ±5°C sensitivity, not forecast confidence',
+      facadeUsesDailyTarget && thermalYearValid,
+      `facadeEstimatedMPPT=${facadeResult.mpptRatingsEstimated}, currentAssessed=${facadeResult.arrayDesign.isMpptCurrentAssessed}, thermalHours=${thermalYear.hourlySamples}, thermalLoss=${thermalYear.annualThermalDeratePct.toFixed(3)}%, +/-5C sensitivity=${thermalYear.temperatureSensitivityRangePct.low.toFixed(3)}..${thermalYear.temperatureSensitivityRangePct.high.toFixed(3)}%, weatherMeasured=${thermalYear.isMeasuredHourlyWeather}`
     );
   }
 

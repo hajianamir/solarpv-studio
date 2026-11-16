@@ -183,7 +183,7 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
       <div className="p-3 bg-industrial-surface border border-industrial-border/70 rounded-lg text-xs flex items-start gap-2.5">
         <Info className="w-4 h-4 text-sky-400 mt-0.5 shrink-0" />
         <div className="text-slate-300 leading-relaxed">
-          <span className="font-semibold text-white">
+          <span className="font-semibold text-theme-strong">
             {isFa ? 'قرارداد علامت مراحل زنجیره انرژی:' : 'Energy Chain Sign Convention:'}
           </span>{' '}
           {isFa ? (
@@ -218,7 +218,7 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              <tr className="bg-industrial-surface/60 font-semibold text-white">
+              <tr className="bg-industrial-surface/60 font-semibold text-theme-strong">
                 <td className="p-2.5 font-mono">0</td>
                 <td className="p-2.5 text-industrial-warning">
                   {isFa ? 'تشعشع کل افقی اولیه خورشید (GHI)' : 'Global Horizontal Irradiance (GHI Raw)'}
@@ -231,7 +231,7 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
                   {Math.round(report.rawGhiEnergyKwh / 1000).toLocaleString()} MWh
                 </td>
               </tr>
-              <tr className="bg-industrial-surface/40 font-semibold text-white">
+              <tr className="bg-industrial-surface/40 font-semibold text-theme-strong">
                 <td className="p-2.5 font-mono">1</td>
                 <td className="p-2.5 text-sky-300">
                   {isFa ? 'بهره انحراف زاویه شیب آرایه (Transposition POA)' : 'Transposition Gain to Plane-of-Array (POA)'}
@@ -259,7 +259,7 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
                   }
                 >
                   <td className="p-2.5 font-mono text-slate-400">{idx + 2}</td>
-                  <td className="p-2.5 font-medium text-white">
+                  <td className="p-2.5 font-medium text-theme-strong">
                     <div className="flex items-center gap-1.5">
                       {stage.id === 'bifacial_gain' && (
                         <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -287,7 +287,7 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
                         : `Exact: ${stage.percentageLossRaw?.toFixed(3)}% (display rounded)`}
                     </div>
                   </td>
-                  <td className="p-2.5 font-mono font-bold text-white">
+                  <td className="p-2.5 font-mono font-bold text-theme-strong">
                     {Math.round(stage.stageOutputKwh / 1000).toLocaleString()} MWh
                   </td>
                 </tr>

@@ -72,7 +72,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
 
       {/* Grid Inputs Card */}
       <div className="studio-card">
-        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-bold text-theme-strong mb-3 flex items-center gap-2">
           <Sliders className="w-4 h-4 text-industrial-accent" />
           {lang === 'fa' ? 'پارامترهای فنی شبکه بالادست و اینورترهای نیروگاه:' : 'Upstream Grid & Inverter Electrical Parameters:'}
         </h3>
@@ -254,7 +254,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
           <div className="space-y-2.5 text-xs text-slate-300">
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">امپدانس تونن شبکه (Z_grid):</span>
-              <span className="font-mono font-bold text-white">{gridResult.theveninImpedanceZgOhm} Ω</span>
+              <span className="font-mono font-bold text-theme-strong">{gridResult.theveninImpedanceZgOhm} Ω</span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-industrial-border">
               <span className="text-slate-400">مقاومت تونن (R_grid) و راکتانس (X_grid):</span>
@@ -303,7 +303,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
               </div>
               <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                 <span>سقف مجاز استاندارد IEEE 519 برای این سطح SCR:</span>
-                <strong className="text-white font-mono">{harmonicsResult.thdCurrentLimitPct}%</strong>
+                <strong className="text-theme-strong font-mono">{harmonicsResult.thdCurrentLimitPct}%</strong>
               </div>
             </div>
 
@@ -320,7 +320,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
               </div>
               <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                 <span>سقف مجاز اعوجاج ولتاژ در شبکه فشار متوسط:</span>
-                <strong className="text-white font-mono">{harmonicsResult.thdVoltageLimitPct}%</strong>
+                <strong className="text-theme-strong font-mono">{harmonicsResult.thdVoltageLimitPct}%</strong>
               </div>
             </div>
 
@@ -363,7 +363,7 @@ export const HarmonicsGridTab: React.FC<HarmonicsGridTabProps> = ({
             <tbody className="divide-y divide-slate-800 text-slate-300 font-mono">
               {harmonicsResult.individualHarmonics.map((h) => (
                 <tr key={h.order} className="hover:bg-slate-850/60">
-                  <td className="p-2 font-bold text-white">مرتبه {h.order}</td>
+                  <td className="p-2 font-bold text-theme-strong">مرتبه {h.order}</td>
                   <td className="p-2">{h.freqHz} Hz</td>
                   <td className="p-2 text-industrial-warning">{h.currentPct}%</td>
                   <td className="p-2 text-sky-300">{h.currentAmps} A</td>

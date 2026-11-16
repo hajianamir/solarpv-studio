@@ -20,6 +20,7 @@ export type AdvancedFeatureFlags = typeof DEFAULT_FEATURE_FLAGS;
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity, calculateDesignDaylightHours } from '../climaticData';
 import { type LoadCategory, type ElectricalLoadItem, normalizeLoadItemToWindow } from '../loadProfiles';
+import { type CableFeederInputMap } from '../protectionBomEngine';
 import { DEFAULT_FINANCIAL_PRICING } from '../financialEngine';
 import type { UserFinancialPricing } from '../financialEngine';
 
@@ -106,12 +107,36 @@ export const ClimateCitySchema = z.object({
   dataSourceFa: z.string().optional().default('منبع قدیمی نامشخص و تأییدنشده'),
   dataSourceEn: z.string().optional().default('Unverified legacy source'),
   dataRetrievalDate: z.string().optional(),
-  confidence: z.enum(['measured', 'analytical_estimate', 'hub_calibrated']).optional(),
+  confidence: z.enum(['measured', 'reanalysis', 'analytical_estimate', 'hub_calibrated']).optional(),
   fieldProvenance: z.record(z.string(), z.unknown()).optional(),
   distanceToCoastKm: z.number().nonnegative().optional(),
   drainageCondition: z.enum(['well_drained', 'moderate', 'poor_flood_prone']).optional(),
   groundwaterDepthM: z.number().nonnegative().optional(),
 });
+
+export const CableFeederInputsSchema = z.object({
+  oneWayLengthM: z.number().positive().optional(),
+  designCurrentAmps: z.number().positive().optional(),
+  nominalVoltageVolts: z.number().positive().optional(),
+  conductorMaterial: z.enum(['copper', 'aluminum']).optional(),
+  insulationType: z.enum(['xlpe', 'pvc']).optional(),
+  allowableDropPct: z.number().positive().max(15).optional(),
+  isDc: z.boolean().optional(),
+  isThreePhase: z.boolean().optional(),
+  powerFactor: z.number().positive().max(1).optional(),
+  coincidenceFactor: z.number().positive().max(1).optional(),
+  ambientTempC: z.number().min(-40).max(90).optional(),
+  installationMethod: z.enum(['cable_tray', 'in_conduit', 'direct_buried']).optional(),
+  groupedCircuitsCount: z.number().int().positive().max(50).optional(),
+  protectiveDeviceRatingAmps: z.number().positive().optional(),
+  protectiveDeviceBreakingCapacityKa: z.number().positive().optional(),
+  protectiveDeviceReference: z.string().min(1).optional(),
+  expectedIscKa: z.number().positive().optional(),
+  faultClearingTimeSec: z.number().positive().optional(),
+  motorStartingMethod: z.enum(['not_applicable', 'direct_on_line', 'star_delta', 'soft_starter', 'vfd']).optional(),
+  motorStartingMultiplier: z.number().min(1).max(12).optional(),
+});
+export const CableFeederInputMapSchema = z.record(z.string(), CableFeederInputsSchema).default({});
 
 export const SiteGeotechnicalOverridesSchema = z.object({
   basicWindSpeedKmh: z.number().optional(),
@@ -165,6 +190,8 @@ export const ElectricalLoadItemSchema = z.object({
   dayHours: z.number().min(0),
   nightHours: z.number().min(0),
   isDc: z.boolean(),
+  acPhase: z.enum(['single', 'three']).optional(),
+  phaseAssignment: z.enum(['auto', 'L1', 'L2', 'L3']).optional(),
 }).refine((item) => (item.dayHours + item.nightHours) <= 24.001, {
   message: 'Total daily operating hours (dayHours + nightHours) cannot exceed 24 hours',
 });
@@ -269,6 +296,10 @@ function normalizeLegacyLoad(
     dayHours: isCanonicalShape ? dayHours : Number(dayHours.toFixed(2)),
     nightHours: isCanonicalShape ? nightHours : Number(nightHours.toFixed(2)),
     isDc: typeof raw.isDc === 'boolean' ? raw.isDc : false,
+    acPhase: raw.acPhase === 'three' || raw.acPhase === 'single'
+      ? raw.acPhase
+      : (/3.?phase|سه.?فاز|سه فاز/i.test(String(raw.name ?? raw.nameFa ?? raw.nameEn ?? '')) ? 'three' : 'single'),
+    phaseAssignment: ['auto', 'L1', 'L2', 'L3'].includes(raw.phaseAssignment) ? raw.phaseAssignment : 'auto',
   };
 }
 
@@ -295,6 +326,28 @@ export const ModuleSpecsSchema = z.object({
   bifacialityFactor: z.number().min(0).max(1).optional(),
 });
 
+const AcPhaseSchema = z.enum(['single', 'three', 'unknown']);
+const AcNetworkLevelSchema = z.enum(['not_applicable', 'lv', 'mv', 'hv', 'unknown']);
+const AcConnectionRequirementSchema = z.object({
+  phase: AcPhaseSchema,
+  lineToLineVolts: z.number().positive().nullable(),
+  lineToNeutralVolts: z.number().positive().nullable(),
+  frequencyHz: z.number().positive().nullable(),
+  powerFactor: z.number().gt(0).max(1).nullable(),
+  availableFaultCurrentKa: z.number().positive().nullable(),
+  faultClearingTimeSec: z.number().positive().nullable(),
+  confirmed: z.boolean(),
+});
+export const AcRequirementsSchema = z.object({
+  loadService: AcConnectionRequirementSchema,
+  inverterOutput: AcConnectionRequirementSchema,
+  lvGrid: AcConnectionRequirementSchema,
+  injection: z.object({ level: AcNetworkLevelSchema, nominalKv: z.number().positive().nullable(), confirmed: z.boolean() }),
+  inverterNameplate: z.object({ nominalFrequencyHz: z.number().positive().nullable(), sourceUrl: z.string(), userConfirmed: z.boolean() })
+    .default({ nominalFrequencyHz: null, sourceUrl: '', userConfirmed: false }),
+  loadOverrides: z.record(z.string(), AcConnectionRequirementSchema),
+});
+
 export const InverterSpecsSchema = z.object({
   id: z.string().min(1).optional(),
   origin: z.enum(['builtin', 'custom', 'legacy', 'user']).optional(),
@@ -309,6 +362,8 @@ export const InverterSpecsSchema = z.object({
   mpptChannelsCount: z.number().int().positive().default(1),
   efficiencyMaxPct: z.number().min(80).max(100).default(98.5),
   isThreePhase: z.boolean().default(true),
+  acVoltageVac: z.number().positive().optional(),
+  frequencyHz: z.number().positive().optional(),
 });
 
 // Phase 1.2 (P1.2): mirrors UserFinancialPricing in financialEngine.ts
@@ -361,7 +416,8 @@ export const ProjectDataV3Schema = z.object({
   structuralModulesPerTable: z.union([z.literal(14), z.literal(20), z.literal(28), z.literal(56)]).default(28),
   dcSystemEarthing: z.enum(['floating', 'functional_negative', 'functional_positive']).default('floating'),
   customBaysCount: z.number().int().min(1).max(20).default(2),
-  mvVoltageKv: z.number().positive().default(20),
+  /** Internal MV collector busbar design voltage; null means not specified. */
+  mvVoltageKv: z.number().positive().nullable().optional(),
   targetPowerplantCapacityKw: z.number().positive().default(1000),
   enableDieselGenerator: z.boolean().default(false),
   autonomyDays: z.number().min(0).max(10).default(1.5),
@@ -372,8 +428,11 @@ export const ProjectDataV3Schema = z.object({
   city: ClimateCitySchema,
   siteOverrides: SiteGeotechnicalOverridesSchema,
   loads: z.array(ElectricalLoadItemSchema).default([]),
+  cableFeederInputs: CableFeederInputMapSchema,
   selectedModule: ModuleSpecsSchema,
   selectedInverter: InverterSpecsSchema,
+  /** Null explicitly means the project has not supplied local AC requirements. */
+  acRequirements: AcRequirementsSchema.nullable().optional(),
   userPricing: UserFinancialPricingSchema,
 
   // Feature Flags
@@ -506,6 +565,14 @@ function checkPhysicalContradictions(raw: Record<string, any>): string[] {
  * explicitly provided (canonical wins on collision). Legacy fields with no safe
  * conversion keep their DEFAULT (never zero/NaN).
  */
+function normalizeLegacyAcRequirements(raw: unknown, warnings: string[]): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw;
+  const requirements = raw as Record<string, unknown>;
+  if (requirements.inverterNameplate !== undefined) return raw;
+  warnings.push('Legacy AC requirements lack inverter nameplate evidence; frequency/source confirmation remains unknown and must be supplied by the user.');
+  return { ...requirements, inverterNameplate: { nominalFrequencyHz: null, sourceUrl: '', userConfirmed: false } };
+}
+
 function normalizeLegacyPricing(raw: any): UserFinancialPricing {
   const out: UserFinancialPricing = { ...DEFAULT_FINANCIAL_PRICING };
   if (!raw || typeof raw !== 'object') return out;
@@ -645,11 +712,12 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
   // does not silently borrow whichever values happen to be in the current UI.
   const missingDefaults: Array<[string, string]> = [
     ['projectName', 'Restored Solar PV Project'], ['systemMode', 'powerplant'],
-    ['inverterTech', 'string_inverter'], ['customBaysCount', '2'], ['mvVoltageKv', '20 kV'],
+    ['inverterTech', 'string_inverter'], ['customBaysCount', '2'], ['mvVoltageKv', 'unspecified; no local MV voltage is assumed'],
     ['targetPowerplantCapacityKw', '1000 kW'], ['enableDieselGenerator', 'false'],
     ['autonomyDays', '1.5 days'], ['outageHours', '6 hours'], ['selectedChemistry', 'lifepo4'],
     ['featureFlags', 'all advanced features disabled'], ['trackerConfig', 'fixed tilt (null)'],
     ['city', 'the documented local default climate site'],
+    ['acRequirements', 'unknown/unconfirmed AC interfaces; no voltage, phase or frequency is inferred'],
   ];
   for (const [key, proposal] of missingDefaults) {
     if (raw[key] === undefined) {
@@ -753,7 +821,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     structuralModulesPerTable: raw.structuralModulesPerTable ?? 28,
     dcSystemEarthing: raw.dcSystemEarthing ?? 'floating',
     customBaysCount: Number(raw.customBaysCount) || 2,
-    mvVoltageKv: Number(raw.mvVoltageKv) || 20,
+    mvVoltageKv: raw.mvVoltageKv === undefined ? null : raw.mvVoltageKv,
     targetPowerplantCapacityKw: Number(raw.targetPowerplantCapacityKw) || 1000,
     enableDieselGenerator: Boolean(raw.enableDieselGenerator),
     // Zero is a valid, intentional setting. Default only missing legacy fields;
@@ -785,7 +853,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
       const nightCap = typeof baseCity.nightHoursDesign === 'number' ? baseCity.nightHoursDesign : designH.nightHoursDesign;
       return (Array.isArray(raw.loads) ? raw.loads : []).map((l: any) => {
         const norm = normalizeLegacyLoad(l, { dayCapHours: dayCap, nightCapHours: nightCap });
-        const fields = ['id', 'name', 'category', 'ratedWatts', 'surgeMultiplier', 'quantity', 'dayHours', 'nightHours', 'isDc'] as const;
+        const fields = ['id', 'name', 'category', 'ratedWatts', 'surgeMultiplier', 'quantity', 'dayHours', 'nightHours', 'isDc', 'acPhase', 'phaseAssignment'] as const;
         const changes = fields.filter((field) => !Object.is(l?.[field], norm?.[field]));
         if (changes.length) {
           warnings.push(`Load migration (${String(l?.name ?? l?.nameFa ?? 'legacy load')}): ${changes.map((field) =>
@@ -804,12 +872,15 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
         return norm;
       });
     })(),
+    cableFeederInputs: raw.cableFeederInputs && typeof raw.cableFeederInputs === 'object' ? raw.cableFeederInputs : {},
     selectedModule: raw.selectedModule && typeof raw.selectedModule === 'object'
       ? { ...raw.selectedModule, origin: raw.selectedModule.id ? (raw.selectedModule.origin ?? 'legacy') : 'legacy' }
       : { ...getFallbackModule(), origin: 'legacy' },
     selectedInverter: raw.selectedInverter && typeof raw.selectedInverter === 'object'
       ? { ...raw.selectedInverter, origin: raw.selectedInverter.id ? (raw.selectedInverter.origin ?? 'legacy') : 'legacy' }
       : { ...getFallbackInverter(), origin: 'legacy' },
+    // Never promote legacy assumptions to a confirmed local electrical requirement.
+    acRequirements: raw.acRequirements === undefined ? null : normalizeLegacyAcRequirements(raw.acRequirements, warnings),
     userPricing: normalizeLegacyPricing(raw.userPricing), // P1.2: defaults applied here, never in schema
 
     featureFlags,
@@ -923,7 +994,7 @@ export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
     structuralModulesPerTable: 28,
     dcSystemEarthing: 'floating',
     customBaysCount: 2,
-    mvVoltageKv: 20,
+    mvVoltageKv: null,
     targetPowerplantCapacityKw: 1000,
     enableDieselGenerator: false,
     autonomyDays: 1.5,
@@ -933,8 +1004,10 @@ export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
     city: getFallbackCity(),
     siteOverrides: {},
     loads: [],
+    cableFeederInputs: {},
     selectedModule: getFallbackModule(),
     selectedInverter: getFallbackInverter(),
+    acRequirements: null,
     userPricing: { ...DEFAULT_FINANCIAL_PRICING } as ProjectDataV3['userPricing'] & import('../financialEngine').UserFinancialPricing as any,
 
     featureFlags: { ...DEFAULT_FEATURE_FLAGS },

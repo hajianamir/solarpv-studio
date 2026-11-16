@@ -4,6 +4,8 @@ import {
   type CatalogPvModule,
   type CatalogInverter,
   type CatalogBattery,
+  CATALOG_MODULES,
+  CATALOG_INVERTERS,
 } from '../engine/equipmentCatalogData';
 import {
   CatalogRepository,
@@ -244,13 +246,13 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
             <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
               <Database className="w-5 h-5 text-indigo-400 shrink-0" />
               {isFa
-                ? 'کتابخانه جامع تجهیزات خورشیدی و ادوات بازار ایران و جهان (Equipment Catalog)'
-                : 'Comprehensive Equipment Catalog (Tier-1 Modules, Inverters & BESS)'}
+                ? 'کاتالوگ تجهیزات — وضعیت منشأ و اعتبارسنجی'
+                : 'Equipment catalog — provenance & validation status'}
             </h1>
             <p className="text-slate-400 text-xs">
               {isFa
-                ? `بانک اطلاعاتی تجهیزات خورشیدی شامل ${customModules.length} پنل N-Type TOPCon/HJT، ${customInverters.length} اینورتر رشته‌ای/پست یکپارچه، و ${customBatteries.length} سیستم ذخیره‌ساز BESS (مجموع ${customModules.length + customInverters.length + customBatteries.length} تجهیز) با امکان ثبت و اعتبارسنجی تجهیز سفارشی.`
-                : `Comprehensive database of ${customModules.length} PV modules, ${customInverters.length} inverters & MV stations, and ${customBatteries.length} BESS units (Total ${customModules.length + customInverters.length + customBatteries.length} components) with custom equipment validation.`}
+                ? `رکوردهای فعلی: ${customModules.length} ماژول، ${customInverters.length} اینورتر و ${customBatteries.length} باتری؛ شامل رکوردهای داخلی ${CATALOG_MODULES.length}/${CATALOG_INVERTERS.length}. تعداد به معنی تأیید سازنده یا کامل‌بودن دیتاشیت نیست.`
+                : `Current records: ${customModules.length} modules, ${customInverters.length} inverters and ${customBatteries.length} batteries; built-in subset ${CATALOG_MODULES.length}/${CATALOG_INVERTERS.length}. Record count is not manufacturer verification or datasheet completeness.`}
             </p>
           </div>
 
@@ -262,6 +264,12 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
             {isFa ? 'افزودن تجهیز دلخواه جدید به کاتالوگ' : 'Add Custom Equipment to Catalog'}
           </button>
         </div>
+      </div>
+      <div data-testid="catalog-provenance-warning" role="alert" className="rounded-lg border border-amber-600/50 bg-amber-950/20 p-3 text-xs text-amber-800">
+        <strong>{isFa ? 'هشدار منشأ داده:' : 'Data provenance warning:'}</strong>{' '}
+        {isFa
+          ? 'برای هیچ رکورد داخلی، هویت دقیق مدل یا فیلدهای توان/ولتاژ/جریان/راندمان/ضرایب دما/ابعاد/وزن/عمر و ظرفیت به‌طور مستقل با دیتاشیت سازنده تطبیق و ثبت نشده‌اند؛ URL/نسخه/تاریخ دیتاشیت و مجوز بازنشر نیز ثبت نشده است. این مقادیر تأیید رسمی، کامل یا مجاز برای بازنشر نیستند. رکورد سفارشی ورودی کاربر و احرازنشده است. مشخصات جدید اضافه نشده‌اند تا منبع حدس زده نشود.'
+          : 'No built-in record has independently checked model identity or fields (power, voltage, current, efficiency, temperature coefficients, dimensions, weight, service life or capacity) recorded against an official manufacturer datasheet. Per-variant datasheet URL/version/date and republication-license status are also absent. These values are not certified as official, complete or cleared for republication. Custom entries are user-supplied and unauthenticated. No new specifications were added without verifiable sources.'}
       </div>
 
       {/* Tabs & Search Header */}
@@ -368,7 +376,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               <tbody className="divide-y divide-slate-800">
                 {filteredModules.map((m) => (
                   <tr key={m.id} className="hover:bg-slate-850/60 transition-colors">
-                    <td className="p-2.5 font-bold text-white">{m.manufacturer}</td>
+                    <td className="p-2.5 font-bold text-theme-strong">{m.manufacturer}</td>
                     <td className="p-2.5 text-sky-300 font-mono">{m.modelName}</td>
                     <td className="p-2.5 text-[11px] text-slate-400">{m.cellType}</td>
                     <td className="p-2.5 font-mono font-bold text-industrial-success">{m.pmpWatts} W</td>
@@ -404,7 +412,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               <tbody className="divide-y divide-slate-800">
                 {filteredInverters.map((i) => (
                   <tr key={i.id} className="hover:bg-slate-850/60 transition-colors">
-                    <td className="p-2.5 font-bold text-white">{i.manufacturer}</td>
+                    <td className="p-2.5 font-bold text-theme-strong">{i.manufacturer}</td>
                     <td className="p-2.5 text-sky-300 font-mono">{i.modelName}</td>
                     <td className="p-2.5 text-[11px]">
                       {i.technology === 'mv_turnkey' ? (
@@ -455,7 +463,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               <tbody className="divide-y divide-slate-800">
                 {filteredBatteries.map((b) => (
                   <tr key={b.id} className="hover:bg-slate-850/60 transition-colors">
-                    <td className="p-2.5 font-bold text-white">{b.manufacturer}</td>
+                    <td className="p-2.5 font-bold text-theme-strong">{b.manufacturer}</td>
                     <td className="p-2.5 text-sky-300 font-mono">{b.modelName}</td>
                     <td className="p-2.5 text-[11px] text-slate-300">{b.chemistry}</td>
                     <td className="p-2.5 font-mono font-bold text-industrial-success">
@@ -491,7 +499,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-theme-strong"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -504,7 +512,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                 onClick={() => { setActiveTab('modules'); setFormErrors([]); }}
                 className={`flex-1 py-1.5 rounded-lg font-bold border transition ${
                   activeTab === 'modules'
-                    ? 'bg-sky-600 text-white border-sky-500'
+                    ? 'bg-sky-600 text-theme-strong border-sky-500'
                     : 'bg-slate-800 text-slate-400 border-industrial-border'
                 }`}
               >
@@ -515,7 +523,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                 onClick={() => { setActiveTab('inverters'); setFormErrors([]); }}
                 className={`flex-1 py-1.5 rounded-lg font-bold border transition ${
                   activeTab === 'inverters'
-                    ? 'bg-sky-600 text-white border-sky-500'
+                    ? 'bg-sky-600 text-theme-strong border-sky-500'
                     : 'bg-slate-800 text-slate-400 border-industrial-border'
                 }`}
               >
@@ -526,7 +534,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                 onClick={() => { setActiveTab('batteries'); setFormErrors([]); }}
                 className={`flex-1 py-1.5 rounded-lg font-bold border transition ${
                   activeTab === 'batteries'
-                    ? 'bg-sky-600 text-white border-sky-500'
+                    ? 'bg-sky-600 text-theme-strong border-sky-500'
                     : 'bg-slate-800 text-slate-400 border-industrial-border'
                 }`}
               >
