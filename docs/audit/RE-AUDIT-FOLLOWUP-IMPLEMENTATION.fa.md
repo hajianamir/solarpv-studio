@@ -1,7 +1,7 @@
 # پیگیری پیاده‌سازی پس از re-audit snapshot
 
-**Snapshot ممیزی:** `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d`  
-**Commit بستهٔ ممیزی قبلی:** `aca0328a4474fec593fd9b9808bcc87796defe97`  
+**Snapshot ممیزی:** `0a0adb6d63f107a4c56b87270c8d97fc91a68c4d`
+**Commit بستهٔ ممیزی قبلی:** `aca0328a4474fec593fd9b9808bcc87796defe97`
 **وضعیت این پیگیری:** تغییرات working tree شاخهٔ فعال؛ هنوز commit/push نشده‌اند. این سند اجرای مستقل یا release sign-off نیست.
 
 ## تغییرات پیاده‌سازی‌شده در این follow-up
@@ -12,7 +12,7 @@
 - **JWT/API:** توکن Bearer اکنون `exp` عددی و معتبر می‌خواهد، از lifetime پیش‌فرض 24 ساعته (قابل تنظیم تا سقف 7 روز) فراتر نمی‌رود، `nbf`/`iat` معیوب را رد می‌کند و در صورت پیکربندی، `iss` و `aud` را دقیقاً بررسی می‌کند. آزمون‌های JWT برای exp غایب، issuer/audience نادرست، عمر بیش‌ازحد و token معتبر اضافه شدند. برای production، پیکربندی issuer/audience باید با identity provider واقعی توافق و در deployment اعمال شود؛ verifier یا provider واقعی اینجا در دسترس نبود.
 - **مصرف منابع:** برای geocoding و تولید گزارش، limitهای per-IP (به‌ترتیب 30 و 20 درخواست در دقیقه) اضافه شد؛ proxy headers فقط با `TRUST_PROXY=true` مورد اعتمادند. این rate limit درون‌حافظه‌ای و per-process است؛ deployment چند replica هنوز به limit مشترک در API gateway/WAF نیاز دارد. این مطابق توصیهٔ کلی OWASP API4 برای rate limit و محدودکردن مصرف است، نه جایگزین edge protection: [OWASP API4:2023](https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/).
 - **Container/data:** `.dockerignore` فایل‌های env/credential و runtime data را از build context خارج می‌کند؛ compose یک volume پایدار برای `/app/data` تعریف می‌کند. فایل‌محور بودن datastore همچنان برای چند replica/production durability کافی نیست و backup/restore، database واقعی و migration هنوز لازم‌اند.
-- **Registry/CI:** registry با script قراردادی بررسی می‌شود و workflow مستقل روی push همهٔ شاخه‌ها و PR اجرا می‌شود. metadata الگوریتم single-diode از Lambert W به Newton–Raphson اصلاح شد؛ تاریخ‌های آینده و بدون پشتوانه از `lastModified` حذف شدند، نه اینکه تاریخ جایگزین حدس زده شود. GitHub branch-protection/required-check setting خارج از این repository است و هنوز پیکربندی آن اثبات نشده است.
+- **Registry/CI:** registry با script قراردادی بررسی می‌شود و workflow روی push همهٔ شاخه‌ها و PR اجرا می‌شود. Gate مستقل جدید diff مبنا تا HEAD را با TypeScript AST می‌سنجد؛ تغییر/افزودن عبارات ریاضی، آستانه‌های عددی یا call siteهای helperهای محاسباتی نام‌گذاری‌شده در کد engine برای هر عبارت تغییرکرده یک evidence record مستقل می‌خواهد: fixture با ورودی/خروجی و tolerance، منبع HTTPS با edition/section locator، و تست اجرایی که همان formula ID و fixture را مصرف کند. تست‌ها در gate اجرا می‌شوند. فایل `scripts/physics-reference-evidence.json` فعلاً خالی است، چون هیچ fixture عددی مستقلی در این پیگیری برای ادعای علمی اضافه نشده؛ بنابراین هر تغییر فرمول تازه بدون مرجع معتبر fail-closed می‌شود. این AST gate یک screening مکانیکی است و استقلال علمی/مجوز منبع را به‌تنهایی اثبات نمی‌کند؛ review منبع و روش همچنان لازم است. الگوریتم single-diode در registry به Newton–Raphson توصیف می‌شود؛ تاریخ‌های آینده و بدون پشتوانه از `lastModified` حذف شده‌اند. Branch protection سراسری GitHub خارج از این repository است؛ API خواندن branch protection در این نشست 403 داد و نتوانستم required status check را در تنظیمات repository فعال یا تأیید کنم. مدیر مخزن باید در Settings → Branches/Rulesets روی شاخهٔ `main`، گزینهٔ Require status checks to pass before merging را فعال و پس از اجرای workflow check دقیق `Physics Registry & Independent Reference Gate` را انتخاب کند.
 - **تعداد تست:** عبارت غیرقابل‌بازتولید `297/297` از README حذف شد و تست shape شمارش core دیگر +1 ساختگی یا حداقل 140 assertion فرض نمی‌کند.
 - **race تست:** M04 دیگر فایل reference اصلی را تغییر/rename نمی‌کند؛ fixtureهای تغییر‌یافته در پوشهٔ موقت مجزا ساخته و پاک می‌شوند.
 
@@ -22,7 +22,8 @@
 |---|---|
 | `npm ci` | موفق؛ 551 packages audited، 0 vulnerability گزارش‌شده در audit npm (این audit جایگزین امنیت‌سنجی deployment نیست). |
 | `npm run lint:types` | موفق پس از رفع duplicate import آزمایشی. |
-| `npm run verify:physics-registry` | موفق؛ 8 model entries بررسی شدند. |
+| `npm run verify:physics-registry` | موفق؛ 8 model entries بررسی شدند (قرارداد metadata است، نه مرجع تجربی). |
+| `PHYSICS_DIFF_BASE=0a0adb6d63f107a4c56b87270c8d97fc91a68c4d npm run verify:physics-reference-gate` | PASS روی diff snapshot مبنا تا candidate؛ checker هیچ عبارت فرمولی جدید/تغییریافته در engineهای انتخاب‌شده نیافت. Policy unit test تغییر معادله/ضریب/ورودی و helper-call را به evidence obligation تبدیل می‌کند، prose-only را رد نمی‌کند و نبود evidence را fail می‌کند. Manifest مستقل فعلاً خالی است؛ این نتیجه اثبات صحت فرمول‌های موجود یا provenance علمی مراجع نیست. |
 | `npm run verify:rate-limit` | موفق؛ unit contract و آزمون HTTP واقعی در Express: 30 درخواست به route، درخواست 31ام با 429/Retry-After بلوکه شد؛ شبکهٔ بیرونی فراخوانی نشد. |
 | `npm run verify:source-invariants` | موفق؛ checks متنی node-only از bundle مرورگر جدا شدند. |
 | `npm run verify:engine-claims` | موفق؛ قراردادها assert می‌کنند وضعیت‌های compliance/safety استاندارد IEEE 519/80 و PCC/flicker در مدل‌های ساده `null` بمانند و فقط screening جداگانه گزارش شود. |

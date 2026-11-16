@@ -9,10 +9,12 @@ on:
 
 jobs:
   physics-model-registry-gate:
-    name: Physics Model Registry Contract Gate
+    name: Physics Registry & Independent Reference Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -21,6 +23,10 @@ jobs:
         run: npm ci
       - name: Verify model registry contract and implementation metadata
         run: npm run verify:physics-registry
+      - name: Require independent reference fixtures for every changed formula expression
+        run: npx tsx scripts/verify-physics-reference-gate.ts
+        env:
+          PHYSICS_DIFF_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
       - name: Verify public API client rate-limit contract
         run: npm run verify:rate-limit
       - name: Verify browser-safe source invariants
