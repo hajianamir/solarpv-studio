@@ -84,6 +84,9 @@ export interface PvArrayDesignResult {
   isMpptCurrentAssessed: boolean;
   /** False when unassessed or when either current limit is exceeded; inspect isMpptCurrentAssessed to distinguish. */
   isMpptCurrentCompliant: boolean;
+  /** True when centralized sizing substituted a generic rule-of-thumb MPPT current rating. */
+  isMpptRatingEstimated?: boolean;
+  mpptRatingAssessmentNote?: string;
   isVoltageFeasible: boolean;
   isDesignFeasible: boolean;
   dcAcRatio: number;

@@ -119,6 +119,7 @@ export class ExternalDataGateway {
       nightHoursDesign: designDaylight.nightHoursDesign,
       tempMinC: climateResource.tempMinC,
       tempMaxC: climateResource.tempMaxC,
+      tempAnnualMeanC: Number.isFinite(climateResource.tempAnnualMeanC) ? climateResource.tempAnnualMeanC : undefined,
       albedo: climateResource.albedo,
       soilingLossPct: climateResource.soilingLossPercent,
       optimalTiltAnnualDeg: climateResource.optimalTiltDeg,

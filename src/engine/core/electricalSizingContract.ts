@@ -453,6 +453,8 @@ export function resolveInverterMpptRatings(inverter: InverterSpecs): InverterSpe
 
 export interface ElectricalSystemSizingInput {
   targetCapacityKw: number;
+  /** Exact daily AC energy target from the active load/plant calculation, when available. */
+  requiredDailyEnergyKwh?: number;
   module: ModuleSpecs;
   inverter: InverterSpecs;
   ambientTempMinC: number;
@@ -472,6 +474,9 @@ export interface ElectricalSystemSizingResult {
   totalPvCapacityKwp: number;
   requiredInverterCount: number;
   totalInverterAcCapacityKw: number;
+  resolvedInverter: InverterSpecs;
+  mpptRatingsEstimated: boolean;
+  mpptRatingsAssessmentNote: string;
   arrayDesign: PvArrayDesignResult;
   waterfallInputDcAcRatio: number;
   powerplantArchitecture?: PowerplantBayArchitectureResult;
@@ -504,14 +509,21 @@ export function resolveElectricalSystemSizing(
   const effectiveDeratingFactor =
     derateTemp * derateSoiling * derateCable * derateMismatch * derateInverter * derateAvailability * derateClipping;
 
-  const requiredDailyKwh = targetDcCapacityKwp * input.peakSunHours * effectiveDeratingFactor;
+  const requiredDailyKwh = Number.isFinite(input.requiredDailyEnergyKwh) && input.requiredDailyEnergyKwh! >= 0
+    ? input.requiredDailyEnergyKwh!
+    : targetDcCapacityKwp * input.peakSunHours * effectiveDeratingFactor;
 
   const resolvedInverter = resolveInverterMpptRatings(input.inverter);
   const requiredInverterCount =
     input.customInverterCount ?? Math.max(1, Math.ceil(input.targetCapacityKw / input.inverter.pnomAcKw));
   const totalInverterAcCapacityKw = Number((requiredInverterCount * resolvedInverter.pnomAcKw).toFixed(2));
 
-  const arrayDesign = designPvArray(
+  const mpptRatingsEstimated = resolvedInverter.imppMaxAmpsPerMppt !== input.inverter.imppMaxAmpsPerMppt
+    || resolvedInverter.iscMaxAmpsPerMppt !== input.inverter.iscMaxAmpsPerMppt;
+  const mpptRatingsAssessmentNote = mpptRatingsEstimated
+    ? 'MPPT current ratings were replaced by the generic utility heuristic (65 A operating / 90 A short-circuit per MPPT). Treat current compliance as UNASSESSED until the exact inverter datasheet is verified; no finite percentage error bound is available.'
+    : 'MPPT current limits use the supplied inverter record; verify source/authenticity before final design.';
+  const rawArrayDesign = designPvArray(
     requiredDailyKwh,
     input.peakSunHours,
     input.module,
@@ -525,6 +537,22 @@ export function resolveElectricalSystemSizing(
       resolveUtilityMpptLimits: true,
     }
   );
+  const arrayDesign: PvArrayDesignResult = mpptRatingsEstimated
+    ? {
+        ...rawArrayDesign,
+        isMpptCurrentAssessed: false,
+        isMpptCurrentCompliant: false,
+        isMpptRatingEstimated: true,
+        mpptRatingAssessmentNote: mpptRatingsAssessmentNote,
+        isDesignFeasible: false,
+        warnings: [...(rawArrayDesign.warnings ?? []), mpptRatingsAssessmentNote],
+        blockingErrors: [...(rawArrayDesign.blockingErrors ?? []), mpptRatingsAssessmentNote],
+      }
+    : {
+        ...rawArrayDesign,
+        isMpptRatingEstimated: false,
+        mpptRatingAssessmentNote: mpptRatingsAssessmentNote,
+      };
 
   const waterfallInputDcAcRatio = arrayDesign.dcAcRatio;
 
@@ -548,6 +576,9 @@ export function resolveElectricalSystemSizing(
     totalPvCapacityKwp: arrayDesign.totalPvCapacityKwp,
     requiredInverterCount,
     totalInverterAcCapacityKw,
+    resolvedInverter,
+    mpptRatingsEstimated,
+    mpptRatingsAssessmentNote,
     arrayDesign,
     waterfallInputDcAcRatio,
     powerplantArchitecture,

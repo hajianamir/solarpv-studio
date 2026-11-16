@@ -597,6 +597,12 @@ async function main() {
   assert.equal(reportDecimalOracle(diurnalRow!.getCell(2).value as number), independentlyRoundedAnnualDisplay);
   const roundingDisclosureRow = energyRows.find((row) => row.getCell(1).value === 'F-04 24-hour rounding disclosure');
   assert.ok(roundingDisclosureRow && String(roundingDisclosureRow.getCell(2).value).includes('ties away from zero'), 'official UI XLSX is missing the F-04 tie/display/raw-model disclosure');
+  const thermalModelRow = energyRows.find((row) => row.getCell(1).value === 'Annual thermal model');
+  assert.ok(thermalModelRow && String(thermalModelRow.getCell(2).value).includes('synthetic hourly samples'), 'official UI XLSX is missing the synthetic 8760-hour thermal model disclosure');
+  const overallErrorRow = energyRows.find((row) => row.getCell(1).value === 'Overall model-to-reality error');
+  assert.ok(overallErrorRow && String(overallErrorRow.getCell(2).value).includes('NOT QUANTIFIED'), 'official UI XLSX must state that overall accuracy is not bounded by the sensitivity scenarios');
+  const pcsSensitivityRow = energyRows.find((row) => row.getCell(1).value === 'PCS / BMS / MPPT rating error');
+  assert.ok(pcsSensitivityRow && String(pcsSensitivityRow.getCell(2).value).includes('no finite percentage'), 'official UI XLSX must disclose unbounded equipment-rating uncertainty');
 
   await page.locator('#report-modal-close-btn').click();
   await page.keyboard.press('Control+s');

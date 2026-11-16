@@ -5125,9 +5125,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const { buildWaterfallArgs, WATERFALL_ARG_COUNT } = await import('../../waterfallArgs');
 
     // 1. Arity check
-    const arityOk = WATERFALL_ARG_COUNT === 16;
+    const arityOk = WATERFALL_ARG_COUNT === 17;
 
-    // 2. Contract builder generates exactly 16 positional arguments matching computeWaterfallLosses
+    // 2. Contract builder generates exactly 17 positional arguments matching computeWaterfallLosses
     const fixtureInput = {
       dcCapacityKw: 1100,
       peakSunHours: 5.2,
@@ -5148,7 +5148,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     };
 
     const builtArgs = buildWaterfallArgs(fixtureInput);
-    const argsLengthOk = builtArgs.length === 16;
+    const argsLengthOk = builtArgs.length === 17;
 
     // Verify arg positions
     const posOk =
@@ -5167,7 +5167,8 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       builtArgs[12] === 25.0 &&
       builtArgs[13] === 35.7 &&
       builtArgs[14] === 5.98 &&
-      builtArgs[15] === 0.0;
+      builtArgs[15] === 0.0 &&
+      builtArgs[16] === undefined;
 
     // 3. Execution equivalence
     const reportFromBuilder = computeWaterfallLosses(...builtArgs);
@@ -5883,6 +5884,56 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       'Engine input validation, negative tariff clamping, scenario zero-fallback, ephemeral sizing, and provenance preservation verified',
       z01DemandThrew && z01ModuleThrew && z01PmpThrew && z01FinOk && z01LcoeOk && z02ScenariosOk && z03NoPersistOk && z06ProvenanceOk,
       `z01Demand=${z01DemandThrew}, z01Module=${z01ModuleThrew}, z01Fin=${z01FinOk}, z02Scenarios=${z02ScenariosOk}, z03Ephemeral=${z03NoPersistOk}, z06Prov=${z06ProvenanceOk}`
+    );
+  }
+
+  // E28: live central sizing facade and synthetic annual hourly thermal sensitivity disclosure.
+  {
+    const { resolveElectricalSystemSizing } = await import('../electricalSizingContract');
+    const { simulateAnnualHourlyThermalDerate } = await import('../hourlyThermalEngine');
+    const facadeResult = resolveElectricalSystemSizing({
+      targetCapacityKw: 100,
+      requiredDailyEnergyKwh: 3000,
+      module: p0Module,
+      inverter: p0Inverter,
+      ambientTempMinC: -5,
+      ambientTempMaxC: 40,
+      latitudeDeg: 35.69,
+      peakSunHours: 5.2,
+      deratings: p0Deratings(40),
+      customInverterCount: 1,
+    });
+    const facadeTargetEnergyErrorPct = Math.abs(
+      facadeResult.arrayDesign.estimatedAnnualYieldKwh! - 3000 * 365
+    ) / (3000 * 365) * 100;
+    const facadeUsesDailyTarget = facadeResult.requiredInverterCount === 1
+      && facadeTargetEnergyErrorPct < 2
+      && facadeResult.arrayDesign.totalPvCapacityKwp > 0
+      && facadeResult.arrayDesign.isMpptRatingEstimated === true
+      && !facadeResult.arrayDesign.isMpptCurrentAssessed
+      && !facadeResult.arrayDesign.isDesignFeasible
+      && facadeResult.mpptRatingsAssessmentNote.includes('no finite percentage error bound');
+    const thermalYear = simulateAnnualHourlyThermalDerate({
+      latitudeDeg: 35.69,
+      peakSunHours: 5.2,
+      ambientTempMinC: -5,
+      ambientTempMaxC: 40,
+      ambientTempMeanC: 18,
+      noctC: 45,
+      tempCoeffPmpPct: -0.30,
+      ambientBiasSensitivityC: 5,
+    });
+    const thermalYearValid = thermalYear.hourlySamples === 8760
+      && Math.abs(thermalYear.irradianceAnnualKwhM2 - 5.2 * 365) < 1e-9
+      && thermalYear.annualThermalDeratePct >= 0
+      && thermalYear.temperatureSensitivityRangePct.high > thermalYear.temperatureSensitivityRangePct.low
+      && !thermalYear.isMeasuredHourlyWeather
+      && thermalYear.ambientMeanSource === 'provider_annual_mean';
+    assert(
+      'E28-CENTRAL-SIZING-HOURLY-THERMAL-AND-UNCERTAINTY',
+      'Live App sizing can route through the central facade; generic utility MPPT substitutions are explicitly unassessed; 8760 synthetic thermal samples conserve PSH and expose ±5°C sensitivity, not forecast confidence',
+      facadeUsesDailyTarget && thermalYearValid,
+      `facadeEstimatedMPPT=${facadeResult.mpptRatingsEstimated}, currentAssessed=${facadeResult.arrayDesign.isMpptCurrentAssessed}, thermalHours=${thermalYear.hourlySamples}, thermalLoss=${thermalYear.annualThermalDeratePct.toFixed(3)}%, +/-5C sensitivity=${thermalYear.temperatureSensitivityRangePct.low.toFixed(3)}..${thermalYear.temperatureSensitivityRangePct.high.toFixed(3)}%, weatherMeasured=${thermalYear.isMeasuredHourlyWeather}`
     );
   }
 

@@ -7,7 +7,7 @@ import {
 } from './core/physicalLossContract';
 
 /**
- * Named, typed, self-documenting input interface for the 16-stage PV loss waterfall.
+ * Named, typed, self-documenting input interface for the PV loss waterfall.
  * Eliminates positional argument misalignment bugs across all call sites.
  */
 export interface WaterfallArgsInput {
@@ -75,13 +75,16 @@ export interface WaterfallArgsInput {
   /** First-order bifacial rear irradiance gain percentage (optional, e.g. 3.01%) */
   bifacialGainPct?: number;
 
+  /** Optional synthetic/provider-informed annual hourly thermal derate from the thermal-year model. */
+  annualThermalDerateOverridePct?: number;
+
   /** Comprehensive physical loss configuration for 2D bifacial, angle-dependent IAM, snow & soiling */
   physicalLossConfig?: PhysicalLossEvaluationInput;
 }
 
 /**
  * Total parameter arity of computeWaterfallLosses.
- * Must strictly track the engine signature (16 positional parameters).
+ * Must strictly track the engine signature (17 positional parameters).
  *
  * NOTE ON FUNCTION ARITY IN JAVASCRIPT:
  * Function.prototype.length counts parameters up to the first parameter with a default value.
@@ -89,7 +92,7 @@ export interface WaterfallArgsInput {
  * WATERFALL_ARG_COUNT asserts the full tuple length as typed by
  * Parameters<typeof computeWaterfallLosses>['length'].
  */
-export const WATERFALL_ARG_COUNT: number = 16;
+export const WATERFALL_ARG_COUNT: number = 17;
 
 /**
  * Pure builder function mapping named WaterfallArgsInput to the strict 16-parameter
@@ -111,7 +114,8 @@ export const WATERFALL_ARG_COUNT: number = 16;
  * 12: fixedTiltDeg
  * 13: latitudeDeg
  * 14: shadingLossOverridePct
- * 15: bifacialGainPct (appended 16th slot)
+ * 15: bifacialGainPct
+ * 16: annualThermalDerateOverridePct (optional 17th slot)
  */
 export function buildWaterfallArgs(i: WaterfallArgsInput): Parameters<typeof computeWaterfallLosses> {
   const phys = i.physicalLossConfig ? evaluatePhysicalLossModels(i.physicalLossConfig) : null;
@@ -155,6 +159,7 @@ export function buildWaterfallArgs(i: WaterfallArgsInput): Parameters<typeof com
     lat,
     shadingOverride,
     bifacialGain,
+    i.annualThermalDerateOverridePct,
   ];
 
   return args;

@@ -67,6 +67,8 @@ export interface ClimateCity {
   nightHoursDesign: number;    // Design night duration (hours) = 24.0 - daylightHoursDesign
   tempMinC: number;     // Extreme design minimum ambient temp
   tempMaxC: number;     // Extreme design maximum ambient temp
+  /** Optional annual mean 2 m temperature from climate provider; not hourly weather. */
+  tempAnnualMeanC?: number;
   albedo: number;       // Ground reflection coefficient
   soilingLossPct: number; // Expected dust/soiling loss percentage
   optimalTiltAnnualDeg: number;

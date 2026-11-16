@@ -71,7 +71,8 @@ export function computeWaterfallLosses(
   fixedTiltDeg?: number,
   latitudeDeg?: number,
   shadingLossOverridePct?: number,
-  bifacialGainPct?: number
+  bifacialGainPct?: number,
+  annualThermalDerateOverridePct?: number
 ): WaterfallLossReport {
   // 1. Raw Global Horizontal Irradiance (GHI)
   // GHI annual = PSH * 365 days * 1 kW/m² reference
@@ -212,14 +213,21 @@ export function computeWaterfallLosses(
     ambientTempMaxC,
     installationEnvironment: installationEnv,
   });
-  const thermalLossPct = -1.0 * thermalDerate.deratePct;
+  const thermalLossPct = -1.0 * (Number.isFinite(annualThermalDerateOverridePct)
+    ? Math.max(0, Math.min(100, annualThermalDerateOverridePct!))
+    : thermalDerate.deratePct);
   addStage(
     'thermal',
     'تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)',
     'Cell Operating Temperature Loss (Pmp coeff)',
     Math.round(thermalLossPct * 10) / 10,
-    'کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC',
-    'Thermal degradation of silicon cells operating above standard STC 25°C rating.',
+    annualThermalDerateOverridePct !== undefined
+      ? 'برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.'
+      : 'کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC',
+    annualThermalDerateOverridePct !== undefined
+      ? 'Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY.'
+      : 'Thermal degradation of silicon cells operating above standard STC 25°C rating.',
+
     thermalLossPct // raw unrounded value for audit/tests
   );
 
