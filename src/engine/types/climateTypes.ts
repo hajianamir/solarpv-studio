@@ -67,6 +67,8 @@ export interface ClimateCity {
   nightHoursDesign: number;    // Design night duration (hours) = 24.0 - daylightHoursDesign
   tempMinC: number;     // Extreme design minimum ambient temp
   tempMaxC: number;     // Extreme design maximum ambient temp
+  /** Optional annual mean 2 m temperature from climate provider; not hourly weather. */
+  tempAnnualMeanC?: number;
   albedo: number;       // Ground reflection coefficient
   soilingLossPct: number; // Expected dust/soiling loss percentage
   optimalTiltAnnualDeg: number;
@@ -89,7 +91,7 @@ export interface ClimateCity {
   dataSourceFa: string;              // Official source provenance
   dataSourceEn: string;              // Official source provenance in English
   dataRetrievalDate?: string;         // Date retrieved
-  confidence?: 'measured' | 'hub_calibrated' | 'analytical_estimate'; // Data confidence grade
+  confidence?: 'measured' | 'reanalysis' | 'hub_calibrated' | 'analytical_estimate'; // Data confidence grade; reanalysis is never ground measurement
   distanceToCoastKm?: number;        // Geodesic distance to nearest sea/coast (km)
   drainageCondition?: SiteDrainageCondition; // Site hydrology drainage classification
   groundwaterDepthM?: number;        // Depth to groundwater table GWL (m)

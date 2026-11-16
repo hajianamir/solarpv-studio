@@ -44,6 +44,7 @@ import {
 } from '../pvEngineAdvanced';
 
 import { calculateThermalDerate } from './thermalDerate';
+import { allocateStringsToMpptChannels } from './mpptAllocation';
 
 export type {
   ModuleSpecs,
@@ -115,6 +116,8 @@ export interface MpptCheckInput {
   ambientTempMinC: number;
   ambientTempMaxC: number;
   cellTempHotC?: number;
+  /** Measured/intended string count on each MPPT channel, ordered by inverter then channel. */
+  stringsPerMpptAllocation?: number[];
 }
 
 export interface MpptCheckResult {
@@ -123,8 +126,11 @@ export interface MpptCheckResult {
   isCompliant: boolean;
   stringVocMaxColdV: number;
   stringVmpMinHotV: number;
+  stringVmpMaxColdV: number;
   effectiveMpptChannels: number;
   stringsPerMppt: number;
+  stringsPerMpptAllocation: number[];
+  isMpptAllocationAssumed: boolean;
   operatingCurrentAmps: number;
   shortCircuitCurrentAmps: number;
   currentSafetyMarginPct: number;
@@ -154,21 +160,38 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
   );
   const singleVmpHot = input.moduleVmp * (1.0 + (vmpCoeffPct / 100.0) * (effectiveHotC - 25.0));
   const stringVmpMinHotV = Number((input.modulesPerString * singleVmpHot).toFixed(2));
+  // With no cold-cell input, minimum ambient temperature is used as the explicit cold-Vmp proxy.
+  const singleVmpCold = input.moduleVmp * (1.0 + (vmpCoeffPct / 100.0) * (input.ambientTempMinC - 25.0));
+  const stringVmpMaxColdV = Number((input.modulesPerString * singleVmpCold).toFixed(2));
 
   const isVoltageFeasible =
     stringVocMaxColdV <= input.inverterVdcMax &&
     stringVmpMinHotV >= input.inverterVmpptMin &&
+    stringVmpMaxColdV <= input.inverterVmpptMax &&
     stringVocMaxColdV >= stringVmpMinHotV;
 
-  // MPPT Current calculations
-  const stringsPerMppt = Math.ceil(input.parallelStrings / effectiveMpptChannels);
+  // Evaluate the proposed or supplied physical channel assignment, not an aggregate
+  // fleet quotient that can conceal an overloaded MPPT when the wiring is uneven.
+  const allocation = allocateStringsToMpptChannels(
+    input.parallelStrings,
+    effectiveMpptChannels,
+    input.stringsPerMpptAllocation,
+  );
+  const stringsPerMppt = allocation.maxStringsPerChannel;
   const operatingCurrentAmps = Number((stringsPerMppt * input.moduleImp).toFixed(2));
   const shortCircuitCurrentAmps = Number((stringsPerMppt * input.moduleIsc * 1.25).toFixed(2));
 
   const blockingErrors: string[] = [];
   const warnings: string[] = [];
 
-  let isCurrentFeasible = true;
+  let isCurrentFeasible = allocation.isValid;
+  if (!allocation.isValid) {
+    const msg = `Invalid MPPT string allocation: expected ${input.parallelStrings} strings across ${effectiveMpptChannels} channels.`;
+    blockingErrors.push(msg);
+    warnings.push(msg);
+  } else if (allocation.isAssumed) {
+    warnings.push('MPPT current compliance uses an assumed balanced round-robin string allocation; verify the actual per-channel wiring before treating this as installed-system compliance.');
+  }
   if (input.inverterImppMaxPerMppt > 0 && operatingCurrentAmps > input.inverterImppMaxPerMppt) {
     isCurrentFeasible = false;
     const msg = `Operating current (${operatingCurrentAmps}A) exceeds MPPT rating (${input.inverterImppMaxPerMppt}A)`;
@@ -185,7 +208,7 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
 
   if (!isVoltageFeasible) {
     blockingErrors.push(
-      `String voltage out of bounds: Voc_cold=${stringVocMaxColdV}V (max ${input.inverterVdcMax}V), Vmp_hot=${stringVmpMinHotV}V (min ${input.inverterVmpptMin}V)`
+      `String voltage out of bounds: Voc_cold=${stringVocMaxColdV}V (max ${input.inverterVdcMax}V), Vmp_hot=${stringVmpMinHotV}V (min ${input.inverterVmpptMin}V), Vmp_cold=${stringVmpMaxColdV}V (max ${input.inverterVmpptMax}V)`
     );
   }
 
@@ -203,8 +226,11 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
     isCompliant: isVoltageFeasible && isCurrentFeasible,
     stringVocMaxColdV,
     stringVmpMinHotV,
+    stringVmpMaxColdV,
     effectiveMpptChannels,
     stringsPerMppt,
+    stringsPerMpptAllocation: allocation.stringsPerChannel,
+    isMpptAllocationAssumed: allocation.isAssumed,
     operatingCurrentAmps,
     shortCircuitCurrentAmps,
     currentSafetyMarginPct,
@@ -453,6 +479,8 @@ export function resolveInverterMpptRatings(inverter: InverterSpecs): InverterSpe
 
 export interface ElectricalSystemSizingInput {
   targetCapacityKw: number;
+  /** Exact daily AC energy target from the active load/plant calculation, when available. */
+  requiredDailyEnergyKwh?: number;
   module: ModuleSpecs;
   inverter: InverterSpecs;
   ambientTempMinC: number;
@@ -472,6 +500,9 @@ export interface ElectricalSystemSizingResult {
   totalPvCapacityKwp: number;
   requiredInverterCount: number;
   totalInverterAcCapacityKw: number;
+  resolvedInverter: InverterSpecs;
+  mpptRatingsEstimated: boolean;
+  mpptRatingsAssessmentNote: string;
   arrayDesign: PvArrayDesignResult;
   waterfallInputDcAcRatio: number;
   powerplantArchitecture?: PowerplantBayArchitectureResult;
@@ -504,14 +535,21 @@ export function resolveElectricalSystemSizing(
   const effectiveDeratingFactor =
     derateTemp * derateSoiling * derateCable * derateMismatch * derateInverter * derateAvailability * derateClipping;
 
-  const requiredDailyKwh = targetDcCapacityKwp * input.peakSunHours * effectiveDeratingFactor;
+  const requiredDailyKwh = Number.isFinite(input.requiredDailyEnergyKwh) && input.requiredDailyEnergyKwh! >= 0
+    ? input.requiredDailyEnergyKwh!
+    : targetDcCapacityKwp * input.peakSunHours * effectiveDeratingFactor;
 
   const resolvedInverter = resolveInverterMpptRatings(input.inverter);
   const requiredInverterCount =
     input.customInverterCount ?? Math.max(1, Math.ceil(input.targetCapacityKw / input.inverter.pnomAcKw));
   const totalInverterAcCapacityKw = Number((requiredInverterCount * resolvedInverter.pnomAcKw).toFixed(2));
 
-  const arrayDesign = designPvArray(
+  const mpptRatingsEstimated = resolvedInverter.imppMaxAmpsPerMppt !== input.inverter.imppMaxAmpsPerMppt
+    || resolvedInverter.iscMaxAmpsPerMppt !== input.inverter.iscMaxAmpsPerMppt;
+  const mpptRatingsAssessmentNote = mpptRatingsEstimated
+    ? 'MPPT current ratings were replaced by the generic utility heuristic (65 A operating / 90 A short-circuit per MPPT). Treat current compliance as UNASSESSED until the exact inverter datasheet is verified; no finite percentage error bound is available.'
+    : 'MPPT current limits use the supplied inverter record; verify source/authenticity before final design.';
+  const rawArrayDesign = designPvArray(
     requiredDailyKwh,
     input.peakSunHours,
     input.module,
@@ -525,6 +563,22 @@ export function resolveElectricalSystemSizing(
       resolveUtilityMpptLimits: true,
     }
   );
+  const arrayDesign: PvArrayDesignResult = mpptRatingsEstimated
+    ? {
+        ...rawArrayDesign,
+        isMpptCurrentAssessed: false,
+        isMpptCurrentCompliant: false,
+        isMpptRatingEstimated: true,
+        mpptRatingAssessmentNote: mpptRatingsAssessmentNote,
+        isDesignFeasible: false,
+        warnings: [...(rawArrayDesign.warnings ?? []), mpptRatingsAssessmentNote],
+        blockingErrors: [...(rawArrayDesign.blockingErrors ?? []), mpptRatingsAssessmentNote],
+      }
+    : {
+        ...rawArrayDesign,
+        isMpptRatingEstimated: false,
+        mpptRatingAssessmentNote: mpptRatingsAssessmentNote,
+      };
 
   const waterfallInputDcAcRatio = arrayDesign.dcAcRatio;
 
@@ -548,6 +602,9 @@ export function resolveElectricalSystemSizing(
     totalPvCapacityKwp: arrayDesign.totalPvCapacityKwp,
     requiredInverterCount,
     totalInverterAcCapacityKw,
+    resolvedInverter,
+    mpptRatingsEstimated,
+    mpptRatingsAssessmentNote,
     arrayDesign,
     waterfallInputDcAcRatio,
     powerplantArchitecture,

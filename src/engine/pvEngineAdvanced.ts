@@ -1,6 +1,7 @@
 // Advanced PV Array Engineering, String Sizing & Deratings (IEC 62548 / NEC 690.7)
 
 import { calculateThermalDerate } from './core/thermalDerate';
+import { allocateStringsToMpptChannels } from './core/mpptAllocation';
 import { calculateWinterSolsticeNoonAltitudeDeg } from './core/solarGeometryContract';
 import type { InstallationEnvironment } from './types/climateTypes';
 
@@ -67,6 +68,8 @@ export interface PvArrayDesignOptions {
   targetDcAcRatio?: number;
   optimizeStringLengthForMppt?: boolean;
   resolveUtilityMpptLimits?: boolean;
+  /** Actual/intended strings per MPPT, ordered by inverter then channel; otherwise a balanced plan is assumed. */
+  stringsPerMpptAllocation?: number[];
 }
 
 export interface PvArrayDesignResult {
@@ -80,7 +83,13 @@ export interface PvArrayDesignResult {
   stringVmpMinHotVolts: number;
   maxMpptOperatingCurrentAmps: number;
   maxMpptShortCircuitCurrentAmps: number;
+  /** Both per-MPPT operating and short-circuit current ratings must be supplied to assess compliance. */
+  isMpptCurrentAssessed: boolean;
+  /** False when unassessed or when either current limit is exceeded; inspect isMpptCurrentAssessed to distinguish. */
   isMpptCurrentCompliant: boolean;
+  /** True when centralized sizing substituted a generic rule-of-thumb MPPT current rating. */
+  isMpptRatingEstimated?: boolean;
+  mpptRatingAssessmentNote?: string;
   isVoltageFeasible: boolean;
   isDesignFeasible: boolean;
   dcAcRatio: number;
@@ -98,6 +107,8 @@ export interface PvArrayDesignResult {
   totalInverterAcCapacityKw?: number;
   singleInverterDcAcRatio?: number;
   stringsPerMppt?: number;
+  stringsPerMpptAllocation?: number[];
+  isMpptAllocationAssumed?: boolean;
   maxStringsPerMpptAllowed?: number;
   blockingErrors?: string[];
 }
@@ -220,9 +231,9 @@ export function designPvArray(
 
   // Min series modules limited by MPPT Min
   const minModulesAllowed = Math.ceil(inverter.vmpptMinVolts / singleModuleVmpMinHot);
-  const isVoltageFeasible = minModulesAllowed <= upperLimit && minModulesAllowed > 0;
+  const hasFeasibleMpptWindow = minModulesAllowed <= upperLimit && minModulesAllowed > 0;
 
-  if (!isVoltageFeasible) {
+  if (!hasFeasibleMpptWindow) {
     warnings.push(
       "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
     );
@@ -278,6 +289,21 @@ export function designPvArray(
     }
   }
 
+  // Revalidate the final selected string, not only whether a feasible interval existed.
+  // The small-array load floor above may intentionally shorten a string below MPPT min;
+  // that diagnostic sizing must never be reported as executable.
+  const isVoltageFeasible = hasFeasibleMpptWindow
+    && chosenModulesPerString >= minModulesAllowed
+    && chosenModulesPerString <= upperLimit
+    && chosenModulesPerString * singleModuleVmpMinHot >= inverter.vmpptMinVolts
+    && chosenModulesPerString * singleModuleVmpMaxCold <= inverter.vmpptMaxVolts
+    && chosenModulesPerString * singleModuleVocMaxCold <= inverter.vdcMaxVolts;
+  if (!isVoltageFeasible && hasFeasibleMpptWindow) {
+    warnings.push(
+      `Selected string length (${chosenModulesPerString}) is outside the feasible MPPT voltage range (${minModulesAllowed}–${upperLimit} modules); this array is diagnostic only and is not executable.`
+    );
+  }
+
   let parallelStrings = Math.ceil(initialTotalModules / chosenModulesPerString);
   if (parallelStrings < 1) parallelStrings = 1;
 
@@ -292,27 +318,57 @@ export function designPvArray(
   }
 
   // 7. MPPT Current & Short-Circuit Constraints (IEC 62548 §7.3.3 & NEC 690.8)
-  const stringsPerMppt = Math.ceil(parallelStrings / effectiveFleetMpptChannels);
+  const mpptAllocation = allocateStringsToMpptChannels(
+    parallelStrings,
+    effectiveFleetMpptChannels,
+    options?.stringsPerMpptAllocation,
+  );
+  const stringsPerMpptAllocation = mpptAllocation.stringsPerChannel;
+  const stringsPerMppt = mpptAllocation.maxStringsPerChannel;
+  if (mpptAllocation.isAssumed) {
+    warnings.push('MPPT current sizing uses an assumed balanced round-robin string allocation; verify actual per-channel wiring before treating it as an installed-system assessment.');
+  }
   const maxMpptOperatingCurrentAmps = Number((stringsPerMppt * module.impAmps).toFixed(2));
   // 1.25 safety factor for cloud-enhancement / bifacial surge over STC
   const maxMpptShortCircuitCurrentAmps = Number((stringsPerMppt * module.iscAmps * 1.25).toFixed(2));
 
   const blockingErrors: string[] = [];
   if (!isVoltageFeasible) {
-    blockingErrors.push(
-      "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
+    blockingErrors.push(hasFeasibleMpptWindow
+      ? `تعداد ماژول انتخاب‌شده در رشته (${chosenModulesPerString}) کمتر از حداقل MPPT لازم (${minModulesAllowed}) یا خارج از پنجره ولتاژ اینورتر است؛ آرایه قابل بهره‌برداری نیست.`
+      : "محدوده ولتاژ MPPT اینورتر برای دمای محیط انتخاب‌شده سازگار نیست (طراحی ولتاژ ناممکن است؛ حداقل ماژول بیش از حداکثر است)."
     );
   }
 
-  let isMpptCurrentCompliant = true;
-  if (inverter.imppMaxAmpsPerMppt > 0 && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
+  const hasValidImppLimit = Number.isFinite(inverter.imppMaxAmpsPerMppt) && inverter.imppMaxAmpsPerMppt > 0;
+  const hasValidIscLimit = Number.isFinite(inverter.iscMaxAmpsPerMppt) && inverter.iscMaxAmpsPerMppt > 0;
+  const isMpptCurrentAssessed = hasValidImppLimit && hasValidIscLimit && mpptAllocation.isValid;
+  let isMpptCurrentCompliant = isMpptCurrentAssessed;
+  if (!isMpptCurrentAssessed) {
+    const missingLimits = [
+      !hasValidImppLimit ? 'Impp max per MPPT' : '',
+      !hasValidIscLimit ? 'Isc max per MPPT' : '',
+    ].filter(Boolean).join(' and ');
+    if (missingLimits) {
+      const msg = `MPPT current compliance NOT ASSESSED: valid catalog ${missingLimits} rating(s) are missing or invalid. Provide manufacturer limits before treating this design as feasible.`;
+      warnings.push(msg);
+      blockingErrors.push(msg);
+    }
+  }
+  if (!mpptAllocation.isValid) {
+    const msg = `Invalid MPPT string allocation: expected ${parallelStrings} strings across ${effectiveFleetMpptChannels} channels.`;
+    warnings.push(msg);
+    blockingErrors.push(msg);
+  }
+
+  if (hasValidImppLimit && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
     const msg = `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping).`;
     warnings.push(msg);
     blockingErrors.push(msg);
   }
 
-  if (inverter.iscMaxAmpsPerMppt > 0 && maxMpptShortCircuitCurrentAmps > inverter.iscMaxAmpsPerMppt) {
+  if (hasValidIscLimit && maxMpptShortCircuitCurrentAmps > inverter.iscMaxAmpsPerMppt) {
     isMpptCurrentCompliant = false;
     const msg = `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر.`;
     warnings.push(msg);
@@ -372,6 +428,7 @@ export function designPvArray(
     stringVmpMinHotVolts,
     maxMpptOperatingCurrentAmps,
     maxMpptShortCircuitCurrentAmps,
+    isMpptCurrentAssessed,
     isMpptCurrentCompliant,
     isVoltageFeasible,
     isDesignFeasible: isVoltageFeasible && isMpptCurrentCompliant && (options === undefined || dcAcRatio <= 1.5),
@@ -390,6 +447,8 @@ export function designPvArray(
     totalInverterAcCapacityKw,
     singleInverterDcAcRatio,
     stringsPerMppt,
+    stringsPerMpptAllocation,
+    isMpptAllocationAssumed: mpptAllocation.isAssumed,
     maxStringsPerMpptAllowed: Number.isFinite(maxStringsPerMpptAllowed) ? maxStringsPerMpptAllowed : undefined,
     blockingErrors,
   };

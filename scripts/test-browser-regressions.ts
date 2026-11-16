@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import ExcelJS from 'exceljs';
 import { unzipSync } from 'fflate';
-import { chromium as playwrightChromium } from 'playwright-core';
+import { chromium as playwrightChromium, type Dialog } from 'playwright-core';
 
 // Linux CI uses the bundled Amazon Linux Chromium runtime; other platforms use
 // the Playwright-managed browser installed by their CI runner.
@@ -345,7 +345,35 @@ async function main() {
   const unassessedCableRows = page.getByTestId('cable-run-unassessed');
   await unassessedCableRows.first().waitFor({ timeout: 10000 });
   assert.ok(await unassessedCableRows.count() >= 3, 'DC string, DC main and AC cables must remain unassessed without measured project routes');
-  assert.match(await unassessedCableRows.last().innerText(), /route length|measured length/i, 'AC cable must stay unassessed without a measured route and fault study');
+  assert.match(await unassessedCableRows.last().innerText(), /route length|measured length|AC connection requirements|fault data|feeder phase|nameplate|confirm interface|incomplete feeder/i, 'AC cable must stay unassessed without a measured route and confirmed interface/fault study');
+  const feederLength = page.getByTestId('feeder-dc-string-oneWayLengthM');
+  await feederLength.fill('24.5');
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press('Control+s');
+  await page.getByText(/Project v3 saved with trace|در ساعت/).waitFor({ timeout: 10000 });
+  const savedFeederProject = await page.evaluate(() => JSON.parse(localStorage.getItem('solarpv_project_save') ?? 'null'));
+  assert.equal(savedFeederProject?.cableFeederInputs?.['dc-string']?.oneWayLengthM, 24.5, 'per-feeder length input was not persisted in the project snapshot');
+  assert.equal((await page.getByTestId('cable-run-unassessed').count()) >= 3, true, 'incomplete feeder still appeared as assessed');
+  await page.keyboard.press('Control+e');
+  const feederReportDownloadPromise = page.waitForEvent('download');
+  await page.getByTitle('ذخیره محلی پروژه با نام دلخواه').click();
+  const feederReportDownload = await feederReportDownloadPromise;
+  const feederReportPath = path.join(artifactDir!, 'cable-feeder-report-project.solarpv.json');
+  await feederReportDownload.saveAs(feederReportPath);
+  const feederReportEnvelope = JSON.parse(await readFile(feederReportPath, 'utf8'));
+  assert.equal(feederReportEnvelope.projectData.cableFeederInputs?.['dc-string']?.oneWayLengthM, 24.5, 'report project export omitted persisted feeder inputs');
+  await page.locator('#report-modal-close-btn').click();
+
+  await feederLength.fill('31');
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.getByTitle(/دانلود \/ بارگذاری فایل JSON پروژه|Export \/ Import Project JSON/).click();
+  const acceptRestoreDialogs = async (dialog: Dialog) => { await dialog.accept(); };
+  page.on('dialog', acceptRestoreDialogs);
+  await page.getByRole('button', { name: /بازیابی آخرین ذخیرهٔ محلی|Restore last local save/ }).click();
+  await page.waitForFunction(() => (document.querySelector('[data-testid="feeder-dc-string-oneWayLengthM"]') as HTMLInputElement | null)?.value === '24.5', { timeout: 15000 });
+  page.off('dialog', acceptRestoreDialogs);
+  assert.equal(await page.getByTestId('feeder-dc-string-oneWayLengthM').inputValue(), '24.5', 'restoring the local project did not restore feeder inputs');
+  console.log('[PASS] Feeder input persists in local save, report project export and explicit local restore');
   await clickTab('system_mode');
 
   // Changing a stored plant target must not leak into either customer-mode AC
@@ -569,6 +597,12 @@ async function main() {
   assert.equal(reportDecimalOracle(diurnalRow!.getCell(2).value as number), independentlyRoundedAnnualDisplay);
   const roundingDisclosureRow = energyRows.find((row) => row.getCell(1).value === 'F-04 24-hour rounding disclosure');
   assert.ok(roundingDisclosureRow && String(roundingDisclosureRow.getCell(2).value).includes('ties away from zero'), 'official UI XLSX is missing the F-04 tie/display/raw-model disclosure');
+  const thermalModelRow = energyRows.find((row) => row.getCell(1).value === 'Annual thermal model');
+  assert.ok(thermalModelRow && String(thermalModelRow.getCell(2).value).includes('synthetic hourly samples'), 'official UI XLSX is missing the synthetic 8760-hour thermal model disclosure');
+  const overallErrorRow = energyRows.find((row) => row.getCell(1).value === 'Overall model-to-reality error');
+  assert.ok(overallErrorRow && String(overallErrorRow.getCell(2).value).includes('NOT QUANTIFIED'), 'official UI XLSX must state that overall accuracy is not bounded by the sensitivity scenarios');
+  const pcsSensitivityRow = energyRows.find((row) => row.getCell(1).value === 'PCS / BMS / MPPT rating error');
+  assert.ok(pcsSensitivityRow && String(pcsSensitivityRow.getCell(2).value).includes('no finite percentage'), 'official UI XLSX must disclose unbounded equipment-rating uncertainty');
 
   await page.locator('#report-modal-close-btn').click();
   await page.keyboard.press('Control+s');
@@ -691,6 +725,13 @@ async function main() {
   // positive minimum, remain saveable, and never produce an unrelated bay error.
   await page.getByRole('button', { name: /آف.*گرید|Off.*Grid/i }).first().click();
   await clickTab('loads');
+  await page.locator('#load-preset-picker').selectOption('preset_workshop');
+  const threePhasePreset = page.getByTestId('load-phase-2');
+  await threePhasePreset.waitFor({ timeout: 10000 });
+  assert.equal(await threePhasePreset.inputValue(), 'three', 'workshop motor preset was not marked three-phase');
+  assert.equal(await page.getByTestId('load-phase-1').inputValue(), 'single', 'legacy/single-phase load default changed unexpectedly');
+  await page.getByTestId('load-leg-1').selectOption('L2');
+  assert.equal(await page.getByTestId('load-leg-1').inputValue(), 'L2', 'manual single-phase leg assignment did not stick');
   const firstLoadPower = page.locator('tbody tr').first().locator('input[type="number"]').first();
   await firstLoadPower.fill('-250');
   await firstLoadPower.press('Tab');
@@ -709,7 +750,9 @@ async function main() {
   assert.ok(Array.isArray(savedNegativeLoad?.loads) && savedNegativeLoad.loads.length > 0, 'project save failed after negative-load correction');
   assert.equal(savedNegativeLoad.loads[0].ratedWatts, 1);
   assert.ok(savedNegativeLoad.loads.every((load: { ratedWatts: number }) => Number.isFinite(load.ratedWatts) && load.ratedWatts > 0));
-  console.log('[PASS] Negative load is clamped independently of bay count and project remains saveable');
+  assert.equal(savedNegativeLoad.loads.find((load: { id: string }) => load.id === '1')?.phaseAssignment, 'L2', 'manual phase assignment did not survive project save');
+  assert.equal(savedNegativeLoad.loads.find((load: { id: string }) => load.id === '2')?.acPhase, 'three', 'three-phase preset tag did not survive project save');
+  console.log('[PASS] Per-load phase selection, manual leg assignment, and project persistence work through the UI');
 
   // Two real tabs share this browser context's profile/localStorage. Prepare two
   // distinct custom records while each tab has its own repository instance, then

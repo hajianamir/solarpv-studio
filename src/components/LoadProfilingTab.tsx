@@ -4,6 +4,8 @@ import { formatPsh } from '../engine/formatters';
 import {
   type ElectricalLoadItem,
   type LoadCategory,
+  type AcLoadPhase,
+  type PhaseAssignment,
   LOAD_CATEGORY_LABELS,
   LOAD_PRESETS,
   STANDARD_APPLIANCE_LIBRARY,
@@ -55,12 +57,17 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
   const [dayHours, setDayHours] = useState(Math.min(dayCap, 4));
   const [nightHours, setNightHours] = useState(Math.min(nightCap, 4));
   const [isDc, setIsDc] = useState(false);
+  const [acPhase, setAcPhase] = useState<AcLoadPhase>('single');
 
   const handleApplyPreset = (presetId: string) => {
     setSelectedPresetId(presetId);
     const found = LOAD_PRESETS.find((p) => p.id === presetId);
     if (found) {
-      const cloned = JSON.parse(JSON.stringify(found.items));
+      const cloned = JSON.parse(JSON.stringify(found.items)).map((item: ElectricalLoadItem) => ({
+        ...item,
+        acPhase: !item.isDc && /3.?phase|سه.?فاز|سه فاز/i.test(item.name) ? 'three' : (item.acPhase ?? 'single'),
+        phaseAssignment: item.phaseAssignment ?? 'auto',
+      }));
       const normalized = normalizeLoadsToWindow(cloned, { dayCapHours: dayCap, nightCapHours: nightCap });
       onLoadsChange(normalized.items);
     }
@@ -80,6 +87,8 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
       dayHours: clampedDay,
       nightHours: clampedNight,
       isDc: Boolean(isDc),
+      acPhase: isDc ? 'single' : acPhase,
+      phaseAssignment: 'auto',
     };
     onLoadsChange([...loads, newItem]);
     setName('');
@@ -202,6 +211,17 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
         </div>
       </div>
 
+      <div className="studio-card flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+        <strong className="text-sky-300">{isFa ? `توزیع فاز AC (${analysisResult.phaseCurrentBasis?.isConfirmed ? 'ورودی تأییدشده' : 'فرض نمایشی'}، ${analysisResult.phaseCurrentBasis?.phaseNeutralVolts ?? 230} ولت فاز-نول، PF=${analysisResult.phaseCurrentBasis?.powerFactor ?? 1}):` : `AC phase allocation (${analysisResult.phaseCurrentBasis?.isConfirmed ? 'confirmed inputs' : 'illustrative assumptions'}, ${analysisResult.phaseCurrentBasis?.phaseNeutralVolts ?? 230} V L-N, PF=${analysisResult.phaseCurrentBasis?.powerFactor ?? 1}):`}</strong>
+        {(['L1', 'L2', 'L3'] as const).map((leg) => (
+          <span key={leg} className="font-mono text-slate-200">{leg}: {Math.round(analysisResult.phaseLegWatts?.[leg] ?? 0)} W / {Math.round(analysisResult.phaseLegAmps?.[leg] ?? 0)} A</span>
+        ))}
+        <span className="text-amber-300">{isFa ? 'بار سه‌فاز:' : '3-phase:'} {Math.round(analysisResult.threePhaseLoadWatts ?? 0)} W</span>
+        <span className="text-slate-300">{isFa ? 'بیشینه فاز:' : 'Max leg:'} {Math.round(analysisResult.maxPhaseLoadWatts ?? 0)} W</span>
+        <span className="text-slate-300">{isFa ? 'عدم تعادل:' : 'Unbalance:'} {(analysisResult.phaseUnbalancePct ?? 0).toFixed(1)}%</span>
+        <span className="text-[10px] text-slate-500">{analysisResult.phaseCurrentBasis?.isConfirmed ? (isFa ? 'از ولتاژ و ضریب توان تأییدشدهٔ سرویس AC محاسبه شده؛ بارهای دارای override مستقل هنوز باید جداگانه بازبینی شوند.' : 'Calculated from confirmed AC service voltage and PF; loads with individual overrides require separate review.') : (isFa ? 'جریان صرفاً نمایشی با ۲۳۰/۴۰۰ ولت و PF=1؛ برای طراحی، ولتاژ و PF واقعی را در الزامات AC تأیید کنید.' : 'Illustrative only at 230/400 V and PF=1; confirm actual voltage and PF in AC requirements for design.')}</span>
+      </div>
+
       {/* Preset Selector & Action Bar */}
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -211,6 +231,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
               {isFa ? 'الگوهای مصرف از پیش‌آماده (Presets):' : 'Predefined Load Presets:'}
             </span>
             <select
+              id="load-preset-picker"
               value={selectedPresetId}
               onChange={(e) => handleApplyPreset(e.target.value)}
               className="studio-input text-xs py-1.5 px-3 w-full sm:w-auto max-w-xs"
@@ -264,6 +285,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                   <th className="p-2.5">{isFa ? 'نام وسیله برقی' : 'Appliance Name'}</th>
                   <th className="p-2.5">{isFa ? 'دسته‌بندی' : 'Category'}</th>
                   <th className="p-2.5">{isFa ? 'تغذیه (AC/DC)' : 'Bus (AC/DC)'}</th>
+                  <th className="p-2.5">{isFa ? 'فاز / تخصیص' : 'Phase / Leg'}</th>
                   <th className="p-2.5">{isFa ? 'توان (Watt)' : 'Power (W)'}</th>
                   <th className="p-2.5">{isFa ? 'ضریب هجومی' : 'Surge Multiplier'}</th>
                   <th className="p-2.5">{isFa ? 'تعداد' : 'Qty'}</th>
@@ -310,6 +332,33 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                         >
                           {item.isDc ? (isFa ? 'باتری DC' : 'DC Bus') : (isFa ? 'اینورتر AC' : 'AC Inverter')}
                         </button>
+                      </td>
+                      <td className="p-2.5">
+                        <div className="flex flex-col gap-1">
+                          <select
+                            aria-label={isFa ? `فاز بار ${item.name}` : `${item.name} phase`}
+                            data-testid={`load-phase-${item.id}`}
+                            disabled={item.isDc}
+                            value={item.isDc ? 'single' : (item.acPhase ?? 'single')}
+                            onChange={(e) => handleUpdateItem(item.id, 'acPhase', e.target.value as AcLoadPhase)}
+                            className="bg-industrial-surface border border-industrial-border rounded px-1 py-0.5 text-[10px]"
+                          >
+                            <option value="single">{isFa ? 'تک‌فاز' : 'Single-phase'}</option>
+                            <option value="three">{isFa ? 'سه‌فاز' : 'Three-phase'}</option>
+                          </select>
+                          {(item.acPhase ?? 'single') === 'single' && !item.isDc && (
+                            <select
+                              aria-label={isFa ? `تخصیص فاز ${item.name}` : `${item.name} phase leg`}
+                              data-testid={`load-leg-${item.id}`}
+                              value={item.phaseAssignment ?? 'auto'}
+                              onChange={(e) => handleUpdateItem(item.id, 'phaseAssignment', e.target.value as PhaseAssignment)}
+                              className="bg-industrial-surface border border-industrial-border rounded px-1 py-0.5 text-[10px]"
+                            >
+                              <option value="auto">{isFa ? 'متعادل‌سازی خودکار' : 'Auto balance'}</option>
+                              <option value="L1">L1</option><option value="L2">L2</option><option value="L3">L3</option>
+                            </select>
+                          )}
+                        </div>
                       </td>
                       <td className="p-2.5">
                         <input
@@ -411,6 +460,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                       setDayHours(Math.min(dayCap, app.typicalDayHours));
                       setNightHours(Math.min(nightCap, app.typicalNightHours));
                       setIsDc(Boolean(app.isDc));
+                      setAcPhase(!app.isDc && /3.?phase|سه.?فاز|سه فاز/i.test(app.nameFa) ? 'three' : 'single');
                     }
                   }}
                   className="studio-input"
@@ -489,6 +539,18 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
                     : 'DC Load (Direct Battery Bus, Bypasses AC Inverter)'}
                 </label>
               </div>
+
+              {!isDc && (
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="text-slate-300">{isFa ? 'فاز بار AC' : 'AC load phase'}
+                    <select value={acPhase} onChange={(e) => setAcPhase(e.target.value as AcLoadPhase)} className="studio-input mt-1">
+                      <option value="single">{isFa ? 'تک‌فاز' : 'Single-phase'}</option>
+                      <option value="three">{isFa ? 'سه‌فاز' : 'Three-phase'}</option>
+                    </select>
+                  </label>
+                  <div className="text-[10px] text-slate-500 self-end pb-2">{isFa ? 'بار تک‌فاز به‌صورت خودکار متعادل می‌شود؛ تخصیص بعداً قابل تغییر است.' : 'Single-phase loads are auto-balanced; assignment can be edited later.'}</div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <div>

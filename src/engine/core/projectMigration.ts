@@ -20,6 +20,7 @@ export type AdvancedFeatureFlags = typeof DEFAULT_FEATURE_FLAGS;
 import { generateTraceId } from './modelRegistry';
 import { getDefaultClimateCity, calculateDesignDaylightHours } from '../climaticData';
 import { type LoadCategory, type ElectricalLoadItem, normalizeLoadItemToWindow } from '../loadProfiles';
+import { type CableFeederInputMap } from '../protectionBomEngine';
 import { DEFAULT_FINANCIAL_PRICING } from '../financialEngine';
 import type { UserFinancialPricing } from '../financialEngine';
 
@@ -106,12 +107,36 @@ export const ClimateCitySchema = z.object({
   dataSourceFa: z.string().optional().default('منبع قدیمی نامشخص و تأییدنشده'),
   dataSourceEn: z.string().optional().default('Unverified legacy source'),
   dataRetrievalDate: z.string().optional(),
-  confidence: z.enum(['measured', 'analytical_estimate', 'hub_calibrated']).optional(),
+  confidence: z.enum(['measured', 'reanalysis', 'analytical_estimate', 'hub_calibrated']).optional(),
   fieldProvenance: z.record(z.string(), z.unknown()).optional(),
   distanceToCoastKm: z.number().nonnegative().optional(),
   drainageCondition: z.enum(['well_drained', 'moderate', 'poor_flood_prone']).optional(),
   groundwaterDepthM: z.number().nonnegative().optional(),
 });
+
+export const CableFeederInputsSchema = z.object({
+  oneWayLengthM: z.number().positive().optional(),
+  designCurrentAmps: z.number().positive().optional(),
+  nominalVoltageVolts: z.number().positive().optional(),
+  conductorMaterial: z.enum(['copper', 'aluminum']).optional(),
+  insulationType: z.enum(['xlpe', 'pvc']).optional(),
+  allowableDropPct: z.number().positive().max(15).optional(),
+  isDc: z.boolean().optional(),
+  isThreePhase: z.boolean().optional(),
+  powerFactor: z.number().positive().max(1).optional(),
+  coincidenceFactor: z.number().positive().max(1).optional(),
+  ambientTempC: z.number().min(-40).max(90).optional(),
+  installationMethod: z.enum(['cable_tray', 'in_conduit', 'direct_buried']).optional(),
+  groupedCircuitsCount: z.number().int().positive().max(50).optional(),
+  protectiveDeviceRatingAmps: z.number().positive().optional(),
+  protectiveDeviceBreakingCapacityKa: z.number().positive().optional(),
+  protectiveDeviceReference: z.string().min(1).optional(),
+  expectedIscKa: z.number().positive().optional(),
+  faultClearingTimeSec: z.number().positive().optional(),
+  motorStartingMethod: z.enum(['not_applicable', 'direct_on_line', 'star_delta', 'soft_starter', 'vfd']).optional(),
+  motorStartingMultiplier: z.number().min(1).max(12).optional(),
+});
+export const CableFeederInputMapSchema = z.record(z.string(), CableFeederInputsSchema).default({});
 
 export const SiteGeotechnicalOverridesSchema = z.object({
   basicWindSpeedKmh: z.number().optional(),
@@ -165,6 +190,8 @@ export const ElectricalLoadItemSchema = z.object({
   dayHours: z.number().min(0),
   nightHours: z.number().min(0),
   isDc: z.boolean(),
+  acPhase: z.enum(['single', 'three']).optional(),
+  phaseAssignment: z.enum(['auto', 'L1', 'L2', 'L3']).optional(),
 }).refine((item) => (item.dayHours + item.nightHours) <= 24.001, {
   message: 'Total daily operating hours (dayHours + nightHours) cannot exceed 24 hours',
 });
@@ -269,6 +296,10 @@ function normalizeLegacyLoad(
     dayHours: isCanonicalShape ? dayHours : Number(dayHours.toFixed(2)),
     nightHours: isCanonicalShape ? nightHours : Number(nightHours.toFixed(2)),
     isDc: typeof raw.isDc === 'boolean' ? raw.isDc : false,
+    acPhase: raw.acPhase === 'three' || raw.acPhase === 'single'
+      ? raw.acPhase
+      : (/3.?phase|سه.?فاز|سه فاز/i.test(String(raw.name ?? raw.nameFa ?? raw.nameEn ?? '')) ? 'three' : 'single'),
+    phaseAssignment: ['auto', 'L1', 'L2', 'L3'].includes(raw.phaseAssignment) ? raw.phaseAssignment : 'auto',
   };
 }
 
@@ -397,6 +428,7 @@ export const ProjectDataV3Schema = z.object({
   city: ClimateCitySchema,
   siteOverrides: SiteGeotechnicalOverridesSchema,
   loads: z.array(ElectricalLoadItemSchema).default([]),
+  cableFeederInputs: CableFeederInputMapSchema,
   selectedModule: ModuleSpecsSchema,
   selectedInverter: InverterSpecsSchema,
   /** Null explicitly means the project has not supplied local AC requirements. */
@@ -821,7 +853,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
       const nightCap = typeof baseCity.nightHoursDesign === 'number' ? baseCity.nightHoursDesign : designH.nightHoursDesign;
       return (Array.isArray(raw.loads) ? raw.loads : []).map((l: any) => {
         const norm = normalizeLegacyLoad(l, { dayCapHours: dayCap, nightCapHours: nightCap });
-        const fields = ['id', 'name', 'category', 'ratedWatts', 'surgeMultiplier', 'quantity', 'dayHours', 'nightHours', 'isDc'] as const;
+        const fields = ['id', 'name', 'category', 'ratedWatts', 'surgeMultiplier', 'quantity', 'dayHours', 'nightHours', 'isDc', 'acPhase', 'phaseAssignment'] as const;
         const changes = fields.filter((field) => !Object.is(l?.[field], norm?.[field]));
         if (changes.length) {
           warnings.push(`Load migration (${String(l?.name ?? l?.nameFa ?? 'legacy load')}): ${changes.map((field) =>
@@ -840,6 +872,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
         return norm;
       });
     })(),
+    cableFeederInputs: raw.cableFeederInputs && typeof raw.cableFeederInputs === 'object' ? raw.cableFeederInputs : {},
     selectedModule: raw.selectedModule && typeof raw.selectedModule === 'object'
       ? { ...raw.selectedModule, origin: raw.selectedModule.id ? (raw.selectedModule.origin ?? 'legacy') : 'legacy' }
       : { ...getFallbackModule(), origin: 'legacy' },
@@ -971,6 +1004,7 @@ export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
     city: getFallbackCity(),
     siteOverrides: {},
     loads: [],
+    cableFeederInputs: {},
     selectedModule: getFallbackModule(),
     selectedInverter: getFallbackInverter(),
     acRequirements: null,

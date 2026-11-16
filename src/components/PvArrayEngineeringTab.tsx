@@ -675,17 +675,26 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                   {isEn
                     ? inverterClustering.healthStatus === 'compatible'
                       ? 'Compatible Clustering'
-                      : 'Upgrade Advised'
+                      : inverterClustering.healthStatus === 'phase_incompatible'
+                        ? 'Phase Incompatible'
+                        : 'Upgrade Advised'
                     : inverterClustering.healthStatusTextFa}:
                 </span>
                 <span className="text-slate-300">
                   {isEn
                     ? inverterClustering.healthStatus === 'compatible'
                       ? 'Inverter capacity matches array Peak DC rating efficiently.'
-                      : 'Consider adding an additional parallel inverter.'
+                      : inverterClustering.healthStatus === 'phase_incompatible'
+                        ? 'At least one AC load is three-phase; select a three-phase catalog inverter. Do not treat this unit as compatible.'
+                        : 'Consider adding an additional parallel inverter.'
                     : inverterClustering.recommendationFa}
                 </span>
               </div>
+            </div>
+            <div className="mt-2 px-3 py-2 rounded border border-amber-600/30 bg-amber-950/20 text-[10px] text-amber-200">
+              {isEn
+                ? `Apparent-power screen: ${inverterClustering.requiredApparentPowerKva === undefined ? 'not calculated (load PF unconfirmed)' : `${inverterClustering.requiredApparentPowerKva.toFixed(2)} kVA required`}. Selected catalog record has no verified kVA output field; compare against exact model nameplate before selection. Max modeled single-phase leg: ${Math.round(inverterClustering.maxSinglePhaseLegWatts ?? 0)} W.`
+                : `غربالگری توان ظاهری: ${inverterClustering.requiredApparentPowerKva === undefined ? 'محاسبه نشد (PF بار تأیید نشده)' : `نیاز ${inverterClustering.requiredApparentPowerKva.toFixed(2)} kVA`}. رکورد کاتالوگ توان kVA تأییدشده ندارد؛ پیش از انتخاب با پلاک دقیق مدل تطبیق دهید. بیشینه بار مدل‌شده تک‌فاز: ${Math.round(inverterClustering.maxSinglePhaseLegWatts ?? 0)} W.`}
             </div>
 
             {/* Environmental Temperature, Dust & Equipment Aging Panel */}

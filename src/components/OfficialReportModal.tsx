@@ -48,6 +48,7 @@ import {
 import { type ClimateCity, type SiteGeotechnicalOverrides, getEffectiveClimateCity } from '../engine/climaticData';
 import { formatPsh } from '../engine/formatters';
 import { type ElectricalLoadItem, type LoadAnalysisResult } from '../engine/loadProfiles';
+import type { InverterClusteringResult } from '../engine/inverterClustering';
 import { evaluateLoadAcCurrents } from '../engine/acRequirements';
 import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
 import type { AcRequirements } from '../engine/acRequirements';
@@ -61,6 +62,7 @@ import { createProjectTransferEnvelope } from '../engine/offlineTransferEngine';
 import { type FoundationType } from '../engine/structuralEngine';
 import { calculateEnvironmentalAging, type EnvironmentalAgingResult } from '../engine/environmentalAgingEngine';
 import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
+import type { HourlyThermalModelResult } from '../engine/core/hourlyThermalEngine';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 import { type StructuralSnapshot, exportStructuralSheetRows, isWeightOnlyOverturningApplicable } from '../engine/core/structuralContract';
 import { formatCoordinates, calculateSolsticeSolarGeometry } from '../engine/geoCoordinates';
@@ -74,6 +76,7 @@ interface OfficialReportModalProps {
   loads?: ElectricalLoadItem[];
   module: ModuleSpecs;
   inverter: InverterSpecs;
+  inverterClustering?: InverterClusteringResult;
   acRequirements?: AcRequirements | null;
   mvCollectorVoltageKv?: number | null;
   arrayDesign: PvArrayDesignResult;
@@ -87,6 +90,7 @@ interface OfficialReportModalProps {
   structuralSnapshot?: StructuralSnapshot | null;
   foundationType?: FoundationType;
   waterfallReport?: WaterfallLossReport;
+  annualThermalProfile?: HourlyThermalModelResult;
   appliedShading?: AppliedShading3dRecord | null;
   isShadingStale?: boolean;
   bifacialGainPct?: number;
@@ -117,6 +121,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   loads = [],
   module,
   inverter,
+  inverterClustering,
   acRequirements,
   mvCollectorVoltageKv,
   arrayDesign,
@@ -130,6 +135,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   structuralSnapshot,
   foundationType: customFoundationType,
   waterfallReport,
+  annualThermalProfile,
   appliedShading,
   isShadingStale = false,
   bifacialGainPct,
@@ -185,6 +191,21 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   const p50Mwh = primaryAnnualEnergyMwh;
   const p75Mwh = Number((primaryAnnualEnergyMwh * 0.945).toFixed(1));
   const illustrativeDownsideMwh = Number((primaryAnnualEnergyMwh * 0.898).toFixed(1));
+  const resourceStressPct = city.confidence === 'analytical_estimate' ? 25 : 10;
+  const rteFraction = Math.max(0.01, Math.min(1, batterySizing.chemistry.roundTripEfficiencyPct / 100));
+  const rteLowSensitivityPct = (Math.sqrt(Math.max(0.01, rteFraction - 0.05)) / Math.sqrt(rteFraction) - 1) * 100;
+  const rteHighSensitivityPct = (Math.sqrt(Math.min(1, rteFraction + 0.05)) / Math.sqrt(rteFraction) - 1) * 100;
+  const thermalYieldSensitivityPct = annualThermalProfile
+    ? [annualThermalProfile.temperatureSensitivityRangePct.low, annualThermalProfile.temperatureSensitivityRangePct.high].map((deratePct) => {
+        const baseFactor = Math.max(0.01, 1 - annualThermalProfile.annualThermalDeratePct / 100);
+        const variantFactor = Math.max(0.01, 1 - deratePct / 100);
+        return (variantFactor / baseFactor - 1) * 100;
+      })
+    : [0, 0];
+  const cableResistanceSensitivityPct = [
+    (0.00393 * 10 / (1 + 0.00393 * (90 - 20))) * 100,
+    (0.00403 * 10 / (1 + 0.00403 * (90 - 20))) * 100,
+  ];
 
   // Dynamic Shading Derate & Provenance Metrics
   const isAppliedShadingActive = Boolean(appliedShading && !isShadingStale);
@@ -347,15 +368,40 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['MV substation protection/design', '—', '—', '—', '—', '—', '—', '—', 'NOT ASSESSED: transformer, utility fault study, earthing and protection coordination data missing'],
       ['Load current screening (explicit phase/voltage/PF only)', 'Phase', 'Voltage V', 'Current A', 'Basis', 'Status'],
       ...loadAcCurrentSchedule.map((load) => [load.name, load.phase, load.voltageVolts ?? 'unknown', load.currentAmps ?? 'not calculated', load.basis, load.status]),
-      ['Conductor Run', 'Nominal Current (A)', 'Length (m)', 'Material', 'Insulation', 'Designation', 'Voltage Drop (%)', 'Status'],
+      ['AC phase balance summary', 'Leg', 'Active-equivalent load (W)', 'Current (A)', 'Basis'],
+      ...(['L1', 'L2', 'L3'] as const).map((leg) => [leg, leg, loadAnalysis.phaseLegWatts[leg], loadAnalysis.phaseLegAmps[leg], `${loadAnalysis.phaseCurrentBasis.phaseNeutralVolts} V L-N, ${loadAnalysis.phaseCurrentBasis.lineToLineVolts} V L-L, PF ${loadAnalysis.phaseCurrentBasis.powerFactor}${loadAnalysis.phaseCurrentBasis.isConfirmed ? ' (confirmed site service)' : ' (illustrative assumption)'}`]),
+      ['3-phase AC load W', loadAnalysis.threePhaseLoadWatts],
+      ['Maximum phase load W', loadAnalysis.maxPhaseLoadWatts],
+      ['Phase unbalance %', loadAnalysis.phaseUnbalancePct],
+      ['Inverter sizing summary', 'Value', 'Basis/status'],
+      ['Required continuous AC (phase-adjusted)', inverterClustering?.requiredContinuousKw ?? 'not assessed', `${inverterClustering?.acPhaseType ?? 'unknown phase'}; required apparent kVA ${inverterClustering?.requiredApparentPowerKva ?? 'not assessed — missing confirmed sizing inputs'}`],
+      ['Selected inverter phase/status', inverter.isThreePhase ? 'three-phase catalog' : 'single-phase catalog', inverterClustering?.healthStatusTextFa ?? 'cluster check not supplied'],
+      ['Inverter surge requirement (W)', loadAnalysis.recommendedInverterPeakSurgeWatts, 'Screening; verify model transient overload curve'],
+      ['Catalog kVA validation', 'NOT ASSESSED', 'Selected inverter catalog record has no verified apparent-power rating'],
+      ['MPPT current rating provenance', arrayDesign.isMpptRatingEstimated ? 'ESTIMATED / NOT ASSESSED' : arrayDesign.isMpptCurrentAssessed ? 'Input record supplied; source still verify' : 'NOT ASSESSED', arrayDesign.mpptRatingAssessmentNote ?? 'Verify exact manufacturer datasheet; no finite error percentage can be stated for absent or substituted current ratings'],
+      ['Battery surge C-rate screening', batterySizing.isSurgeCRateAssessed ? `${batterySizing.actualSurgeCRate.toFixed(2)}C` : 'NOT ASSESSED', `Chemistry limit ${batterySizing.chemistry.maxSurgeCRate}C; ${batterySizing.isSurgeCRateCompliant ? 'within limit' : batterySizing.isSurgeCRateAssessed ? 'EXCEEDS limit' : 'no assessed battery-bank rate'}`],
+      ['Conductor Run', 'Design Current (A)', 'Length (m)', 'Material', 'Insulation', 'Protective Device Reference', 'Device Rating (A)', 'Device Breaking Capacity (kA)', 'Prospective Isc (kA)', 'Clearing Time (s)', 'PF', 'Coincidence Factor', 'Grouped Circuits', 'Motor Starting Method', 'Starting Current Estimate (A)', 'Motor Start Voltage-Drop Assessment', 'Protection Coordination Screening', 'Designation', 'Voltage Drop (%)', 'Conductor Resistance Assumption', 'Status'],
       ...protection.cableRuns.map((c) => [
         isEn ? c.config.sectionNameEn : c.config.sectionNameFa,
         c.isAssessed === false ? 'not assessed' : c.config.designCurrentAmps,
         c.isAssessed === false ? 'unknown (measured route not entered)' : c.config.oneWayLengthM,
         c.config.conductorMaterial.toUpperCase(),
         c.config.insulationType,
+        c.config.protectiveDeviceReference ?? 'unknown',
+        c.config.protectiveDeviceRatingAmps ?? 'unknown A',
+        c.config.protectiveDeviceBreakingCapacityKa ?? 'unknown kA',
+        c.config.expectedIscKa ?? 'unknown kA',
+        c.config.faultClearingTimeSec ?? 'unknown s',
+        c.config.powerFactor ?? 'n/a',
+        c.config.coincidenceFactor ?? 'unknown',
+        c.config.groupedCircuitsCount ?? 'unknown',
+        c.config.motorStartingMethod ?? 'unknown',
+        c.motorStartingCurrentAmps ?? 'not assessed',
+        c.isMotorStartingAssessed ? 'not applicable / no start-drop calculation' : 'NOT ASSESSED: dynamic starting PF, source impedance, motor/drive data and acceptance limit are required',
+        c.isProtectionCoordinationAssessed ? (c.isProtectionCoordinationCompliant ? 'protection screening pass only' : 'protection coordination screening fail') : 'protection coordination NOT ASSESSED',
         c.isAssessed === false ? 'not assessed' : (isEn ? c.cableDesignationEn : c.cableDesignationFa),
         c.isAssessed === false ? 'not assessed' : c.actualVoltageDropPct,
+        c.isAssessed === false ? 'not assessed' : c.conductorResistanceModelNote,
         c.isAssessed === false ? `NOT ASSESSED: ${c.assessmentNote ?? ''}` : c.isCompliant ? 'INTERNAL SCREENING PASS (not compliance)' : 'INTERNAL SCREENING FAIL',
       ]),
     ];
@@ -375,8 +421,19 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
 
     const energySheet = [
       ['ENERGY YIELD SIMULATION & SENSITIVITY SCENARIOS (INDICATIVE)', ''],
-      ['Methodology Note', 'Primary annual yield metrics are application model outputs from its waterfall loss calculation, with the 24h profile used only as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles. Applicable standards conformity has not been assessed.'],
+      ['Methodology Note', 'Primary annual yield is from the waterfall model. Annual thermal loss now uses an 8760-sample synthetic clear-sky-shaped profile normalized to annual PSH and a synthetic ambient-temperature cycle; this is NOT measured/reanalysis hourly weather, a TMY, or a PVWatts-equivalent forecast. The 24h battery profile is diagnostic. The numerical ranges below are one-at-a-time input sensitivities (including explicit assumed perturbations), not statistical confidence intervals or bounds on actual error; overall model-to-reality error may exceed them. Downside factors (-5.5% and -10.2%) remain illustrative, not formal P75/P90. Applicable standards conformity has not been assessed.'],
+      ['UNCERTAINTY / DEVIATION DISCLOSURE', 'Percentages are conditional sensitivities to stated input changes, not guaranteed maximum differences from reality.'],
       ['F-04 24-hour rounding disclosure', 'Hourly and daily 24-hour energy values are independently displayed to two decimals (nearest, ties away from zero); displayed differences are expected and residuals are not redistributed. Daily totals and annualized diagnostic rows derive from raw model values. Excel numeric cells preserve raw values and apply display-only number formats; formatting is not fed back into physics or finance.'],
+      ['24-hour simulator derating factor', simulation.effectiveSystemDeratingFactor, '-', simulation.isGenerationDeratingAssessed ? 'Array sizing non-thermal derates adjusted to the synthetic hourly annual thermal factor' : 'UNASSESSED: legacy illustrative fallback 0.78 is used'],
+      ['24-hour PCS power limits', simulation.isPowerLimitsAssessed ? 'ASSESSED' : 'NOT ASSESSED', `charge ${simulation.effectiveMaxChargePowerKw} kW; discharge ${simulation.effectiveMaxDischargePowerKw} kW; ${simulation.powerLimitAssessmentNote}`],
+      ['Battery energy boundary', batterySizing.energySemanticsNote, `charge efficiency ${batterySizing.chargeEfficiencyFraction}; discharge efficiency ${batterySizing.dischargeEfficiencyFraction}`],
+      ['Annual thermal model', annualThermalProfile ? `${annualThermalProfile.annualThermalDeratePct.toFixed(2)}% thermal derate over ${annualThermalProfile.hourlySamples} synthetic hourly samples` : 'NOT RUN', annualThermalProfile ? `${annualThermalProfile.weatherProfileSource}; mean ambient ${annualThermalProfile.ambientMeanUsedC.toFixed(1)}°C (${annualThermalProfile.ambientMeanSource})` : 'No thermal profile'],
+      ['Thermal sensitivity (not total forecast uncertainty)', `${Math.min(...thermalYieldSensitivityPct).toFixed(2)}% to ${Math.max(...thermalYieldSensitivityPct).toFixed(2)}% annual-energy change`, `Conditional on ambient temperature bias ±${annualThermalProfile?.temperatureSensitivityAllowanceC ?? 5}°C only; synthetic hourly temperatures; not a confidence interval`],
+      ['Solar-resource stress test', `±${resourceStressPct}% annual energy sensitivity`, `Assumed PSH perturbation only (${city.confidence ?? 'unspecified'} climate-data class); actual annual-yield error is not bounded by this scenario`],
+      ['Battery usable-energy sensitivity', `${rteLowSensitivityPct.toFixed(2)}% to ${rteHighSensitivityPct.toFixed(2)}%`, 'Recomputed if round-trip efficiency is 5 percentage points below/above the generic chemistry profile; manufacturer data may differ more'],
+      ['Cable conductor-resistance sensitivity', `±${Math.max(...cableResistanceSensitivityPct).toFixed(2)}% of conductor R`, 'Approximate ±10°C conductor-temperature perturbation using copper/aluminum temperature coefficients near 90°C; total feeder voltage-drop error is not bounded without verified route/install inputs'],
+      ['PCS / BMS / MPPT rating error', 'UNKNOWN — no finite percentage can be stated', 'Manufacturer/model-specific confirmed continuous, charge, surge, and MPPT ratings are not captured; profile estimates are screening only'],
+      ['Overall model-to-reality error', 'NOT QUANTIFIED; may exceed the scenarios above', 'Sensitivity rows are one-at-a-time perturbations, not a validated confidence interval, P50/P90, or combined error bound'],
       ['Metric', 'Value', 'Unit', 'Methodology / Standard'],
       ['Net AC Annual Generation (Primary)', primaryAnnualEnergyMwh, 'MWh/yr', waterfallReport ? 'Unified Waterfall Loss Model' : 'Annualized 24h Baseline Profile'],
 
@@ -1439,8 +1496,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   {isEn ? 'Methodology Note:' : 'یادداشت متدولوژی:'}
                 </span>{' '}
                 {isEn
-                  ? 'Primary annual yield metrics are application model outputs from its waterfall loss calculation, with the 24-hour profile used only as diagnostic screening. Downside scenarios (-5.5% and -10.2%) are illustrative fixed sensitivity factors, not formal probabilistic exceedance percentiles. Obtain an independent, project-specific hourly yield assessment for financing decisions; no bankability or standards conformity is established here.'
-                  : 'ارقام تولید سالانه انرژی بر پایه مدل‌سازی جامع ۱۴/۱۵ مرحله‌ای آبشار تلفات (ضریب عملکرد IEC 61724-1) محاسبه شده و پروفایل ۲۴ ساعته شبانه‌روزی به عنوان غربالگری تشخیصی مکمل عمل می‌کند. سناریوهای کاهشی (-۵.۵٪ و -۱۰.۲٪) صرفاً ضرایب حساسیت فرضی و نمایشی هستند نه صدک‌های آماری قطعی توزیع احتمالاتی سال‌های اقلیمی؛ این مقادیر به عنوان غربالگری اولیه مهندسی عمل نموده و برای تأمین مالی و تعیین ساختار بدهی بانکی باید با شبیه‌سازی کامل ۸۷۶۰ ساعته سال اقلیمی (TMY) تدقیق گردند.'}
+                  ? `Annual thermal loss uses ${annualThermalProfile?.hourlySamples ?? 0} synthetic hourly samples normalized to annual PSH; it is not measured/reanalysis hourly weather or a TMY. One-at-a-time sensitivity: annual energy changes ${Math.min(...thermalYieldSensitivityPct).toFixed(2)}% to ${Math.max(...thermalYieldSensitivityPct).toFixed(2)}% for an assumed ±${annualThermalProfile?.temperatureSensitivityAllowanceC ?? 5}°C ambient bias; an assumed ±${resourceStressPct}% PSH perturbation changes energy by approximately the same percentage. Battery usable-energy sensitivity to ±5 percentage points RTE is ${rteLowSensitivityPct.toFixed(2)}% to ${rteHighSensitivityPct.toFixed(2)}%. These are not probability intervals or bounds: overall error versus reality is not quantified and may exceed them. PCS/BMS/MPPT errors are unknown without confirmed datasheets.`
+                  : `تلفات حرارتی سالانه با ${annualThermalProfile?.hourlySamples ?? 0} نمونهٔ ساعتی مصنوعی و نرمال‌شده به PSH محاسبه می‌شود؛ این دادهٔ ساعتی اندازه‌گیری‌شده/بازتحلیل یا TMY نیست. حساسیت یک‌به‌یک: با فرض بایاس دمای محیط ±${annualThermalProfile?.temperatureSensitivityAllowanceC ?? 5}°C، تغییر انرژی سالانه ${Math.min(...thermalYieldSensitivityPct).toFixed(2)}٪ تا ${Math.max(...thermalYieldSensitivityPct).toFixed(2)}٪ است؛ تغییر فرضی PSH به میزان ±${resourceStressPct}٪ نیز تقریباً همین میزان اثر می‌گذارد. حساسیت انرژی قابل‌استفادهٔ باتری به تغییر ±۵ واحد درصد RTE برابر ${rteLowSensitivityPct.toFixed(2)}٪ تا ${rteHighSensitivityPct.toFixed(2)}٪ است. این‌ها بازهٔ احتمالاتی یا حد خطا نیستند؛ خطای کلی نسبت به واقعیت تعیین نشده و ممکن است بیشتر باشد. خطای PCS/BMS/MPPT بدون دیتاشیت تأییدشده نامعلوم است.`}
               </div>
 
               {/* Loss Waterfall Breakdown Table */}
@@ -1547,6 +1604,20 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <div>{isEn ? 'LV grid' : 'شبکه LV'}: {acRequirements?.lvGrid.confirmed ? `${acRequirements.lvGrid.phase}, ${acRequirements.lvGrid.lineToLineVolts ?? '—'} V L-L, ${acRequirements.lvGrid.lineToNeutralVolts ?? '—'} V L-N, ${acRequirements.lvGrid.frequencyHz ?? '—'} Hz` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
                 <div>{isEn ? 'Grid injection (not interchangeable with LV service)' : 'تزریق شبکه (متمایز از سرویس LV)'}: {acRequirements?.injection.confirmed ? `${acRequirements.injection.level}, ${acRequirements.injection.nominalKv ?? '—'} kV` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
                 <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr><th>{isEn ? 'Load' : 'بار'}</th><th>{isEn ? 'Phase/voltage' : 'فاز/ولتاژ'}</th><th>{isEn ? 'Calculated current' : 'جریان محاسباتی'}</th><th>{isEn ? 'Basis/status' : 'مبنا/وضعیت'}</th></tr></thead><tbody>{loadAcCurrentSchedule.map((load) => <tr key={load.id}><td>{load.name}</td><td>{load.phase} / {load.voltageVolts ?? 'unknown'} V</td><td>{load.currentAmps === null ? (isEn ? 'not calculated' : 'محاسبه نشده') : `${load.currentAmps.toFixed(2)} A`}</td><td>{load.basis} / {load.status}</td></tr>)}</tbody></table></div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+                  {(['L1', 'L2', 'L3'] as const).map((leg) => <div key={leg} className="p-2 rounded bg-slate-900/50">{leg}: {Math.round(loadAnalysis.phaseLegWatts[leg])} W / {loadAnalysis.phaseLegAmps[leg].toFixed(2)} A</div>)}
+                  <div className="p-2 rounded bg-slate-900/50">{isEn ? '3-phase load' : 'بار سه‌فاز'}: {Math.round(loadAnalysis.threePhaseLoadWatts)} W</div>
+                  <div className="p-2 rounded bg-slate-900/50">{isEn ? 'Max leg' : 'بیشینه فاز'}: {Math.round(loadAnalysis.maxPhaseLoadWatts)} W</div>
+                  <div className="p-2 rounded bg-slate-900/50">{isEn ? 'Unbalance' : 'عدم تعادل'}: {loadAnalysis.phaseUnbalancePct.toFixed(1)}%</div>
+                  <div className="p-2 rounded bg-slate-900/50 col-span-2">{isEn ? 'Basis' : 'مبنا'}: {loadAnalysis.phaseCurrentBasis.phaseNeutralVolts}/{loadAnalysis.phaseCurrentBasis.lineToLineVolts} V, PF {loadAnalysis.phaseCurrentBasis.powerFactor}; {loadAnalysis.phaseCurrentBasis.isConfirmed ? (isEn ? 'confirmed' : 'تأییدشده') : (isEn ? 'illustrative assumptions' : 'فرض نمایشی')}</div>
+                </div>
+              </div>
+              <div className="mt-2 rounded border border-amber-600/40 bg-amber-950/10 p-3 text-[11px]">
+                <strong>{isEn ? 'Inverter phase / continuous / surge screening' : 'غربالگری فاز / توان پیوسته / هجومی اینورتر'}</strong>
+                <div>{isEn ? 'Required continuous capacity' : 'توان پیوسته لازم'}: {inverterClustering ? `${inverterClustering.requiredContinuousKw.toFixed(2)} kW; ${isEn ? 'cluster capacity' : 'ظرفیت خوشه'}: ${inverterClustering.totalInverterCapacityKw.toFixed(2)} kW` : (isEn ? 'not assessed' : 'بررسی‌نشده')}.</div>
+                <div>{isEn ? 'Catalog phase check' : 'بررسی فاز کاتالوگ'}: {inverterClustering ? `${inverterClustering.healthStatusTextFa} — ${inverterClustering.recommendationFa}` : (isEn ? 'not assessed' : 'بررسی‌نشده')}</div>
+                <div>{isEn ? 'Required apparent power' : 'توان ظاهری لازم'}: {inverterClustering?.requiredApparentPowerKva === undefined ? (isEn ? 'NOT ASSESSED (PF/sizing result missing)' : 'بررسی‌نشده (PF/نتیجه سایزینگ نامعلوم)') : `${inverterClustering.requiredApparentPowerKva.toFixed(2)} kVA`}; {isEn ? 'catalog kVA rating' : 'توان kVA کاتالوگ'}: NOT VERIFIED.</div>
+                <div>{isEn ? 'Transient surge sizing' : 'سایزینگ هجومی گذرا'}: {Math.round(loadAnalysis.recommendedInverterPeakSurgeWatts)} W; verify selected model's time/current overload curve.</div>
               </div>
               {/* Cable Schedule Table */}
               <div className="overflow-x-auto">
@@ -1558,6 +1629,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Ampacity Iz (A)' : 'جریان مجاز Iz (A)'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Length (m)' : 'طول (m)'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Conductor / Insulation' : 'هادی / عایق'}</th>
+                      <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Protection / fault / motor-start assessment' : 'حفاظت / خطا / ارزیابی راه‌اندازی'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Calculated Sizing (Parallel Runs)' : 'سایزینگ محاسبه‌شده'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'ΔV (%)' : 'افت ولتاژ'}</th>
                       <th className="p-2 border border-industrial-border print:border-slate-300">{isEn ? 'Joule Loss' : 'تلفات ژول'}</th>
@@ -1569,15 +1641,16 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       <tr key={idx} className="border-b border-industrial-border print:border-slate-200">
                         <td className="p-2 font-medium">{isEn ? c.config.sectionNameEn : c.config.sectionNameFa}</td>
                         {c.isAssessed === false ? <>
-                          <td className="p-2" colSpan={7}>{isEn ? 'Not assessed' : 'بررسی نشده'} — {c.assessmentNote}</td>
+                          <td className="p-2" colSpan={8}>{isEn ? 'Not assessed' : 'بررسی نشده'} — {c.assessmentNote}</td>
                           <td className="p-2 font-bold text-amber-700">{isEn ? 'DATA REQUIRED' : 'داده لازم است'}</td>
                         </> : <>
                           <td className="p-2 font-mono">{c.config.designCurrentAmps.toFixed(1)}A</td>
                           <td className="p-2 font-mono text-teal-300 print:text-teal-900">{c.totalThermalAmpacityAmps || '-'}A</td>
                           <td className="p-2 font-mono">{c.config.oneWayLengthM}m</td>
                           <td className="p-2 font-mono">{c.config.conductorMaterial.toUpperCase()} / {c.config.insulationType}</td>
+                          <td className="p-2 text-[10px]">{c.config.protectiveDeviceReference ?? '—'} / {c.config.protectiveDeviceRatingAmps ?? '—'}A / {c.config.protectiveDeviceBreakingCapacityKa ?? '—'}kA; Isc {c.config.expectedIscKa ?? '—'}kA @ {c.config.faultClearingTimeSec ?? '—'}s; motor {c.config.motorStartingMethod ?? 'unknown'} ×{c.config.motorStartingMultiplier ?? '—'} (current estimate {c.motorStartingCurrentAmps ?? '—'}A); start ΔV {c.isMotorStartingAssessed ? 'N/A' : 'NOT ASSESSED — dynamic start model/limit required'}</td>
                           <td className="p-2 font-mono text-industrial-accent print:text-sky-900 font-bold">{isEn ? c.cableDesignationEn : c.cableDesignationFa}</td>
-                          <td className="p-2 font-mono">{c.actualVoltageDropPct}%</td>
+                          <td className="p-2 font-mono" title={c.conductorResistanceModelNote}>{c.actualVoltageDropPct}% (R@{c.conductorResistanceTempC ?? '—'}°C)</td>
                           <td className="p-2 font-mono text-industrial-warning">{c.powerLossWatts ? `${c.powerLossWatts}W` : '-'}</td>
                           <td className="p-2"><span className="text-amber-700 font-bold text-[10px]">{c.isCompliant ? (isEn ? 'INTERNAL SCREENING PASS (not compliance)' : 'غربالگری داخلی (نه احراز انطباق)') : (isEn ? 'SCREENING LIMIT EXCEEDED' : 'حد غربالگری رد شده')}</span></td>
                         </>}

@@ -1,4 +1,5 @@
 import type { InverterSpecs } from './pvEngineAdvanced';
+import type { AcLoadPhase } from './loadProfiles';
 
 export type AcPhase = 'single' | 'three' | 'unknown';
 export type AcNetworkLevel = 'not_applicable' | 'lv' | 'mv' | 'hv' | 'unknown';
@@ -54,7 +55,7 @@ export interface AcRequirementAssessment {
 /** Checks only explicitly supplied/confirmed interfaces; it is not a protection study. */
 export function assessAcRequirements(
   requirements: AcRequirements | null | undefined,
-  inverter?: Pick<InverterSpecs, 'isThreePhase' | 'acVoltageVac'> | null,
+  inverter?: Pick<InverterSpecs, 'isThreePhase' | 'acVoltageVac' | 'frequencyHz'> | null,
   mode?: 'powerplant' | 'ongrid' | 'offgrid',
 ): AcRequirementAssessment {
   if (!requirements) return { status: 'incomplete', reasons: ['AC requirements are not specified; confirm the local service and grid requirements.'] };
@@ -77,6 +78,9 @@ export function assessAcRequirements(
     const inverterPhase = inverter.isThreePhase ? 'three' : 'single';
     if (required.phase === 'three' && required.lineToLineVolts === null) reasons.push('Confirmed three-phase inverter output requires line-to-line voltage to compare the selected inverter.');
     if (required.frequencyHz !== requirements.inverterNameplate.nominalFrequencyHz) reasons.push(`Confirmed inverter frequency (${requirements.inverterNameplate.nominalFrequencyHz} Hz) does not match AC output requirement (${required.frequencyHz} Hz).`);
+    if (inverter.frequencyHz !== undefined && inverter.frequencyHz !== required.frequencyHz) {
+      reasons.push(`Selected inverter catalog frequency (${inverter.frequencyHz} Hz) does not match AC output requirement (${required.frequencyHz} Hz).`);
+    }
     if (required.phase !== inverterPhase) reasons.push(`Selected inverter phase (${inverterPhase}) does not match confirmed output requirement (${required.phase}).`);
     const catalogComparisonVoltage = required.phase === 'three'
       ? required.lineToLineVolts
@@ -141,7 +145,7 @@ export interface LoadAcCurrentResult {
 
 /** Active AC load currents from explicit connection requirements; no class/category phase inference. */
 export function evaluateLoadAcCurrents(
-  loads: Array<{ id: string; name: string; ratedWatts: number; quantity: number; isDc: boolean }>,
+  loads: Array<{ id: string; name: string; ratedWatts: number; quantity: number; isDc: boolean; acPhase?: AcLoadPhase }>,
   requirements: AcRequirements | null | undefined,
 ): LoadAcCurrentResult[] {
   return loads.map((load) => {
@@ -149,16 +153,23 @@ export function evaluateLoadAcCurrents(
     const override = requirements?.loadOverrides[load.id];
     const connection = override ?? requirements?.loadService;
     const basis = override ? 'per_load_override' : requirements ? 'site_load_service' : 'none';
+    const loadPhase: AcPhase = load.acPhase ?? 'single';
+    const phaseMismatch = Boolean(
+      connection && (override
+        ? override.phase !== loadPhase
+        : loadPhase === 'three' && connection.phase !== 'three')
+    );
     if (!connection || !connection.confirmed || !isValidAcConnection(connection)
-      || connection.phase === 'unknown' || connection.frequencyHz === null
+      || connection.phase === 'unknown' || phaseMismatch || connection.frequencyHz === null
       || connection.powerFactor === null || connection.powerFactor <= 0 || connection.powerFactor > 1
       || !Number.isFinite(load.ratedWatts) || load.ratedWatts < 0
       || !Number.isFinite(load.quantity) || load.quantity < 0) {
-      return { id: load.id, name: load.name, phase: connection?.phase ?? 'unknown', voltageVolts: null, currentAmps: null, status: 'incomplete', basis };
+      return { id: load.id, name: load.name, phase: loadPhase, voltageVolts: null, currentAmps: null, status: 'incomplete', basis };
     }
-    const voltage = connection.phase === 'three' ? connection.lineToLineVolts : (connection.lineToNeutralVolts ?? connection.lineToLineVolts);
-    if (voltage === null || !Number.isFinite(voltage) || voltage <= 0) return { id: load.id, name: load.name, phase: connection.phase, voltageVolts: null, currentAmps: null, status: 'incomplete', basis };
-    const current = load.ratedWatts * load.quantity / ((connection.phase === 'three' ? Math.sqrt(3) : 1) * voltage * connection.powerFactor);
-    return { id: load.id, name: load.name, phase: connection.phase, voltageVolts: voltage, currentAmps: Number.isFinite(current) ? current : null, status: Number.isFinite(current) ? 'assessed' : 'incomplete', basis };
+    const isThreePhaseLoad = loadPhase === 'three';
+    const voltage = isThreePhaseLoad ? connection.lineToLineVolts : (connection.lineToNeutralVolts ?? connection.lineToLineVolts);
+    if (voltage === null || !Number.isFinite(voltage) || voltage <= 0) return { id: load.id, name: load.name, phase: loadPhase, voltageVolts: null, currentAmps: null, status: 'incomplete', basis };
+    const current = load.ratedWatts * load.quantity / ((isThreePhaseLoad ? Math.sqrt(3) : 1) * voltage * connection.powerFactor);
+    return { id: load.id, name: load.name, phase: loadPhase, voltageVolts: voltage, currentAmps: Number.isFinite(current) ? current : null, status: Number.isFinite(current) ? 'assessed' : 'incomplete', basis };
   });
 }

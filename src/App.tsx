@@ -67,7 +67,9 @@ import {
   evaluateEffectiveStructuralSnapshot,
 } from './engine/core/structuralContract';
 import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoadsToWindow } from './engine/loadProfiles';
-import { designPvArray, type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
+import { type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
+import { resolveElectricalSystemSizing } from './engine/core/electricalSizingContract';
+import { simulateAnnualHourlyThermalDerate } from './engine/core/hourlyThermalEngine';
 import { computeWaterfallLosses } from './engine/waterfallLossEngine';
 import { buildWaterfallArgs } from './engine/waterfallArgs';
 import { rearGainPercent } from './engine/bifacialGain';
@@ -87,6 +89,7 @@ import {
   calculateEarthingSystem,
   calculateLightningProtection,
   type CompleteProtectionSystemResult,
+  type CableFeederInputMap,
   type ProtectionBomItem,
   type DcSystemEarthingType,
 } from './engine/protectionBomEngine';
@@ -332,6 +335,7 @@ export const App: React.FC = () => {
   const [structuralModulesPerTable, setStructuralModulesPerTable] = useState<number>(DEFAULT_MODULES_PER_TABLE);
   const [structuralSnapshot, setStructuralSnapshot] = useState<StructuralSnapshot | null>(null);
   const [loads, setLoads] = useState<ElectricalLoadItem[]>(LOAD_PRESETS[1].items); // Default Medium Residential
+  const [cableFeederInputs, setCableFeederInputs] = useState<CableFeederInputMap>({});
 
   const catalogRepo = CatalogRepository.getInstance();
   const initialModules = catalogRepo.getModules();
@@ -528,6 +532,7 @@ export const App: React.FC = () => {
     city,
     siteOverrides,
     loads,
+    cableFeederInputs,
     selectedModule,
     selectedInverter,
     acRequirements,
@@ -688,8 +693,12 @@ export const App: React.FC = () => {
       analyzeLoadProfile(loads, {
         daylightHoursDesign: city.daylightHoursDesign,
         nightHoursDesign: city.nightHoursDesign,
-      }),
-    [loads, city.daylightHoursDesign, city.nightHoursDesign]
+      }, acRequirements?.loadService.confirmed ? {
+        lineToLineVolts: acRequirements.loadService.lineToLineVolts ?? undefined,
+        phaseNeutralVolts: acRequirements.loadService.lineToNeutralVolts ?? undefined,
+        powerFactor: acRequirements.loadService.powerFactor ?? undefined,
+      } : undefined),
+    [loads, city.daylightHoursDesign, city.nightHoursDesign, acRequirements]
   );
 
   // 2. Compute Target Energy Demand Based on System Mode
@@ -794,6 +803,33 @@ export const App: React.FC = () => {
   }, [systemMode, isSiteUnsizable, targetPowerplantCapacityKw, inverterTech, customBaysCount, mvVoltageKv, selectedInverter.pnomAcKw, acRequirements]);
   const sizingFleetInverterCount = sizingBayPlan?.bays.reduce((count, bay) => count + bay.inverterCount, 0);
 
+  // Compute load/power-based inverter fleet before unified array sizing so the
+  // central facade receives the same plant/consumer inverter count.
+  const inverterClustering = useMemo(() => {
+    const contWatts = systemMode === 'powerplant'
+      ? (targetPowerplantCapacityKw || 1000) * 1000
+      : (typeof loadAnalysis.acGoverningContinuousWatts === 'number'
+          ? loadAnalysis.acGoverningContinuousWatts
+          : (loadAnalysis.continuousActivePowerWatts || 0));
+    const peakWatts = systemMode === 'powerplant'
+      ? (targetPowerplantCapacityKw || 1000) * 1100
+      : (typeof loadAnalysis.acGoverningSurgeWatts === 'number'
+          ? loadAnalysis.acGoverningSurgeWatts
+          : (loadAnalysis.maxSurgePeakPowerWatts || 0));
+    return evaluateInverterClustering(
+      contWatts,
+      peakWatts,
+      selectedInverter.pnomAcKw,
+      selectedInverter.vmpptMaxVolts,
+      loadAnalysis.hasThreePhaseAcLoad
+        ? 'three'
+        : (acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.phase : 'unknown'),
+      selectedInverter.isThreePhase,
+      loadAnalysis.maxPhaseLoadWatts,
+      acRequirements?.loadService.confirmed ? acRequirements.loadService.powerFactor ?? undefined : undefined
+    );
+  }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter, acRequirements]);
+
   const arrayDesign = useMemo(() => {
     if (isSiteUnsizable) {
       return {
@@ -807,6 +843,7 @@ export const App: React.FC = () => {
         stringVmpMinHotVolts: 0,
         maxMpptOperatingCurrentAmps: 0,
         maxMpptShortCircuitCurrentAmps: 0,
+        isMpptCurrentAssessed: false,
         isMpptCurrentCompliant: false,
         isVoltageFeasible: false,
         isDesignFeasible: false,
@@ -837,27 +874,39 @@ export const App: React.FC = () => {
         maxStringsPerMpptAllowed: 0,
       };
     }
-    return designPvArray(
-      effectiveDailyKwhDemand,
-      city.peakSunHours,
-      selectedModule,
-      selectedInverter,
-      {
-        ambientTempMinC: city.tempMinC,
-        ambientTempMaxC: city.tempMaxC,
-        soilingLossPct: city.soilingLossPct,
-        dcCableLossPct: 1.5,
-        mismatchAndLidLossPct: 2.0,
-        inverterClippingLossPct: 1.0,
-        systemAvailabilityPct: 99.0,
-        groundAlbedo: city.albedo,
-        arrayTiltDeg: city.optimalTiltAnnualDeg,
-        installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
-      },
-      city.latitude,
-      sizingFleetInverterCount ? { inverterCount: sizingFleetInverterCount } : undefined,
-    );
-  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment, isSiteUnsizable, sizingFleetInverterCount]);
+    const deratings = {
+      ambientTempMinC: city.tempMinC,
+      ambientTempMaxC: city.tempMaxC,
+      soilingLossPct: city.soilingLossPct,
+      dcCableLossPct: 1.5,
+      mismatchAndLidLossPct: 2.0,
+      inverterClippingLossPct: 1.0,
+      systemAvailabilityPct: 99.0,
+      groundAlbedo: city.albedo,
+      arrayTiltDeg: city.optimalTiltAnnualDeg,
+      installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
+    } as const;
+    const targetAcKw = systemMode === 'powerplant'
+      ? (targetPowerplantCapacityKw || 1000)
+      : Math.max(0.1, inverterClustering.totalInverterCapacityKw);
+    return resolveElectricalSystemSizing({
+      targetCapacityKw: targetAcKw,
+      requiredDailyEnergyKwh: effectiveDailyKwhDemand,
+      module: selectedModule,
+      inverter: selectedInverter,
+      ambientTempMinC: city.tempMinC,
+      ambientTempMaxC: city.tempMaxC,
+      latitudeDeg: city.latitude,
+      peakSunHours: city.peakSunHours,
+      deratings,
+      targetDcAcRatio: 1.25,
+      customInverterCount: systemMode === 'powerplant'
+        ? sizingFleetInverterCount
+        : inverterClustering.parallelUnitsCount,
+      technology: inverterTech,
+      customBaysCount,
+    }).arrayDesign;
+  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment, isSiteUnsizable, sizingFleetInverterCount, systemMode, targetPowerplantCapacityKw, inverterTech, customBaysCount, inverterClustering]);
 
   // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
   const [shadingSimulationMode, setShadingSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
@@ -919,30 +968,6 @@ export const App: React.FC = () => {
       currentSignatureHash: currentShadingSignature,
     });
   }, [city.id, activePlantCapacityKwp, currentShadingSignature]);
-
-  // 4. Inverter Clustering Evaluation
-  const inverterClustering = useMemo(() => {
-    const contWatts =
-      systemMode === 'powerplant'
-        ? (targetPowerplantCapacityKw || 1000) * 1000
-        : (typeof loadAnalysis.acGoverningContinuousWatts === 'number'
-            ? loadAnalysis.acGoverningContinuousWatts
-            : (loadAnalysis.continuousActivePowerWatts || 0));
-    const peakWatts =
-      systemMode === 'powerplant'
-        ? (targetPowerplantCapacityKw || 1000) * 1100
-        : (typeof loadAnalysis.acGoverningSurgeWatts === 'number'
-            ? loadAnalysis.acGoverningSurgeWatts
-            : (loadAnalysis.maxSurgePeakPowerWatts || 0));
-
-    return evaluateInverterClustering(
-      contWatts,
-      peakWatts,
-      selectedInverter.pnomAcKw,
-      selectedInverter.vmpptMaxVolts,
-      acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.phase : 'unknown'
-    );
-  }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter, acRequirements]);
 
   // 5. Battery Storage Sizing
   const batterySizing = useMemo(() => {
@@ -1059,6 +1084,18 @@ export const App: React.FC = () => {
     };
   }, [selectedInverter, inverterClustering, systemMode, targetPowerplantCapacityKw, dcSystemEarthing]);
 
+  const annualThermalProfile = useMemo(() => simulateAnnualHourlyThermalDerate({
+    latitudeDeg: city.latitude,
+    peakSunHours: city.peakSunHours,
+    ambientTempMinC: city.tempMinC,
+    ambientTempMaxC: city.tempMaxC,
+    ambientTempMeanC: city.tempAnnualMeanC,
+    noctC: selectedModule.noctC,
+    tempCoeffPmpPct: selectedModule.tempCoeffPmpPct,
+    installationEnvironment: siteOverrides?.installationEnvironment || 'ground_mount',
+    ambientBiasSensitivityC: 5,
+  }), [city, selectedModule, siteOverrides?.installationEnvironment]);
+
   // 8. 24-Hour Balance Simulation
   const simulationResult = useMemo(() => {
     return simulate24hEnergyBalance(
@@ -1066,12 +1103,26 @@ export const App: React.FC = () => {
       city.peakSunHours,
       loadAnalysis.daytimeEnergyWh / 1000.0,
       loadAnalysis.nighttimeEnergyWh / 1000.0,
-      batterySizing.usableCapacityKwh,
+      batterySizing.nominalDoDUsableCapacityKwh,
       batterySizing.grossCapacityKwh,
       50.0,
-      city.daylightHoursDesign
+      city.daylightHoursDesign,
+      arrayDesign.effectiveDeratingFactor
+        * Math.max(0.01, 1 - annualThermalProfile.annualThermalDeratePct / 100)
+        / Math.max(0.01, 1 - arrayDesign.powerTempDeratePct / 100),
+      {
+        chargeEfficiencyFraction: batterySizing.chargeEfficiencyFraction,
+        dischargeEfficiencyFraction: batterySizing.dischargeEfficiencyFraction,
+        maxDischargePowerKw: Math.min(
+          inverterClustering.totalInverterCapacityKw,
+          batterySizing.totalCapacityAh * batterySizing.chemistry.maxContinuousCRate
+            * batterySizing.systemVoltageVdc * 0.93 / 1000
+        ),
+        dischargePowerLimitConfirmed: false,
+        // The inferred battery/inverter discharge cap and missing PCS charge rating are not confirmed equipment ratings.
+      }
     );
-  }, [arrayDesign, city, loadAnalysis, batterySizing]);
+  }, [arrayDesign, city, loadAnalysis, batterySizing, inverterClustering, annualThermalProfile]);
 
   // 9. Diesel Backup Generator Sizing (Optionally activated by user)
   const generatorSizing = useMemo(() => {
@@ -1116,6 +1167,7 @@ export const App: React.FC = () => {
       latitudeDeg: city.latitude,
       shadingLoss3dPct: shadingLoss3dPct !== null ? shadingLoss3dPct : undefined,
       bifacialGainPct,
+      annualThermalDerateOverridePct: annualThermalProfile.annualThermalDeratePct,
     });
     return computeWaterfallLosses(...args);
   }, [
@@ -1127,6 +1179,7 @@ export const App: React.FC = () => {
     siteOverrides?.installationEnvironment,
     shadingLoss3dPct,
     bifacialGainPct,
+    annualThermalProfile,
   ]);
 
   const annualYieldKwh = waterfallReport.netAnnualEnergyExportMwh * 1000.0;
@@ -1223,6 +1276,7 @@ export const App: React.FC = () => {
         setPendingImportedEmbedmentDepthM(clean.pendingImportedEmbedmentDepthM);
       }
       if (clean.loads) setLoads(clean.loads as unknown as ElectricalLoadItem[]);
+      setCableFeederInputs((clean.cableFeederInputs ?? {}) as CableFeederInputMap);
       if (clean.selectedModule) setSelectedModule(clean.selectedModule as ModuleSpecs);
       if (clean.selectedInverter) setSelectedInverter(clean.selectedInverter as InverterSpecs);
       setAcRequirements(clean.acRequirements ?? null);
@@ -1538,7 +1592,9 @@ export const App: React.FC = () => {
               title: t.tabSimulation24h,
               icon: <Workflow className="w-4 h-4 text-cyan-400" />,
               code: '24h Balance',
-              badge: simulationResult.isSelfSufficient ? '100% Autonomy' : 'Grid Support',
+              badge: !simulationResult.isGenerationDeratingAssessed || !simulationResult.isPowerLimitsAssessed
+                ? 'Assessment Required'
+                : simulationResult.isSelfSufficient ? '100% Autonomy' : 'Grid Support',
             },
             {
               id: 'waterfall_loss' as ActiveModuleTab,
@@ -2898,6 +2954,8 @@ export const App: React.FC = () => {
               totalModulesCount={arrayDesign.totalModulesCount}
               dcSystemEarthing={dcSystemEarthing}
               onDcSystemEarthingChange={setDcSystemEarthing}
+              feederInputs={cableFeederInputs}
+              onFeederInputsChange={setCableFeederInputs}
               installationEnvironment={siteOverrides?.installationEnvironment || 'ground_mount'}
               lang={lang}
             />
@@ -3190,6 +3248,7 @@ export const App: React.FC = () => {
             loads={loads}
             module={selectedModule}
             inverter={selectedInverter}
+            inverterClustering={inverterClustering}
             acRequirements={acRequirements}
             mvCollectorVoltageKv={mvVoltageKv}
             arrayDesign={arrayDesign}
@@ -3202,6 +3261,7 @@ export const App: React.FC = () => {
             siteOverrides={siteOverrides}
             structuralSnapshot={effectiveStructuralSnapshot}
             waterfallReport={waterfallReport}
+            annualThermalProfile={annualThermalProfile}
             appliedShading={appliedShadingRecord}
             isShadingStale={isShadingStale}
             bifacialGainPct={bifacialGainPct}
