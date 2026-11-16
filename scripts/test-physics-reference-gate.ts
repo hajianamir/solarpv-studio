@@ -62,7 +62,8 @@ const unchangedBooleanContract = changedFormulaUnits(
 );
 assert.equal(unchangedBooleanContract.length, 0, 'non-numerical status wiring does not require scientific reference data');
 
-const formulaId = extractFormulaUnits('src/engine/exampleEngine.ts', sourceAfterCoefficientChange)[0].formulaId;
+const formulaId = extractFormulaUnits('src/engine/exampleEngine.ts', sourceAfterCoefficientChange)
+  .find((unit) => unit.expression.includes('input*2+1.5'))!.formulaId;
 const validRecord = {
   formulaId,
   fixtureFile: 'scripts/fixtures/physics/example-reference.json',
@@ -75,6 +76,13 @@ const validRecord = {
 assert.deepEqual(validateEvidenceRecords([formulaId], [validRecord]), [], 'complete independent-reference metadata satisfies the manifest contract');
 assert.ok(validateEvidenceRecords([formulaId], [{ ...validRecord, referenceUrl: 'http://example.org/reference' }]).length > 0, 'insecure/non-source URL fails closed');
 assert.ok(validateEvidenceRecords([formulaId], [{ ...validRecord, productionExport: 'not-valid-export!' }]).length > 0, 'malformed production export fails closed');
+assert.ok(validateEvidenceRecords([formulaId], [{ ...validRecord, productionExport: 'differentFunction' }]).some((error) => error.includes('must equal the function owner')), 'manifest export must match the function encoded in the formula ID');
+const nestedSameNameSource = 'export function calculate(input: number) { return input * 5; } function unrelated() { function calculate(input: number) { return input * 2 + 1.5; } return calculate(1); }';
+const nestedSameNameUnit = extractFormulaUnits('src/engine/exampleEngine.ts', nestedSameNameSource)
+  .find((unit) => unit.expression.includes('input*2+1.5'))!;
+assert.notEqual(nestedSameNameUnit.formulaId, formulaId, 'formula IDs encode lexical owner path, not only the leaf function name');
+assert.ok(validateEvidenceRecords([nestedSameNameUnit.formulaId], [{ ...validRecord, formulaId: nestedSameNameUnit.formulaId }])
+  .some((error) => error.includes('must equal the function owner')), 'nested same-named calculation cannot be attributed to the top-level export');
 
 // Exercise the same runner used by CI against a temporary real TS module. A
 // deliberately wrong fixture must fail numeric comparison, proving that the
@@ -83,7 +91,7 @@ const fixtureRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'physics-reference-gat
 try {
   fs.mkdirSync(path.join(fixtureRepo, 'src/engine'), { recursive: true });
   fs.mkdirSync(path.join(fixtureRepo, 'scripts/fixtures/physics'), { recursive: true });
-  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), 'export function calculate(x: number) { return x * 2 + 1; }');
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), 'export function calculate(input: number) { return input * 2 + 1.5; }');
   const fixturePath = path.join(fixtureRepo, validRecord.fixtureFile);
   const runtimeFixture = {
     schemaVersion: 1,
@@ -91,7 +99,7 @@ try {
     independentOfImplementation: true,
     productionExport: 'calculate',
     inputs: [3],
-    expected: 7,
+    expected: 7.5,
     tolerances: { absolute: 1e-12, relative: 1e-12 },
     referenceSource: {
       title: validRecord.referenceTitle,
@@ -105,6 +113,15 @@ try {
   fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, expected: 8 }));
   await assert.rejects(() => executeReferenceFixture(validRecord, fixtureRepo), /expected 8/,
     'mismatched independent output must fail after executing the production export');
+
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, productionExport: 'other' }));
+  await assert.rejects(() => executeReferenceFixture({ ...validRecord, productionExport: 'other' }, fixtureRepo), /same function owner/,
+    'an export with a different name from the formula owner must be rejected');
+
+  fs.writeFileSync(fixturePath, JSON.stringify(runtimeFixture));
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), 'export function calculate(input: number) { return input * 5; } function unrelated() { function calculate(input: number) { return input * 2 + 1.5; } return calculate(1); }');
+  await assert.rejects(() => executeReferenceFixture(validRecord, fixtureRepo), /formula unit is not present|direct named owner containing this formula expression/,
+    'an export that no longer contains the formula expression must be rejected');
 } finally {
   fs.rmSync(fixtureRepo, { recursive: true, force: true });
 }

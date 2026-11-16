@@ -113,38 +113,52 @@ function normalizeExpression(expression: string): string {
 
 export function extractFormulaUnits(sourceFile: string, source: string): FormulaUnit[] {
   const ast = ts.createSourceFile(sourceFile, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const byOwner = new Map<string, string[]>();
-  const ownerStack: string[] = ['<module>'];
+  const byOwner = new Map<string, { functionName: string; expressions: string[] }>();
+  const ownerPathStack: string[] = [];
+  const functionNameStack: string[] = [];
+  const currentOwnerPath = (): string => ownerPathStack.join('.') || '<module>';
+  const currentFunctionName = (): string => functionNameStack.at(-1) ?? '<module>';
 
-  const addExpression = (owner: string, expression: string): void => {
+  const addExpression = (expression: string): void => {
     const normalized = normalizeExpression(expression);
     if (!normalized) return;
-    const items = byOwner.get(owner) ?? [];
-    items.push(normalized);
-    byOwner.set(owner, items);
+    const ownerPath = currentOwnerPath();
+    const owner = byOwner.get(ownerPath) ?? { functionName: currentFunctionName(), expressions: [] };
+    owner.expressions.push(normalized);
+    byOwner.set(ownerPath, owner);
   };
 
   const visit = (node: ts.Node): void => {
-    const ownerNode = ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)
-      ? node
-      : undefined;
-    let pushedOwner = false;
-    if (ownerNode) {
-      const name = ownerNode.name?.getText(ast) ?? '<anonymous-method>';
-      ownerStack.push(name);
-      pushedOwner = true;
+    let pushedFunction = false;
+    let pushedOwnerPath = false;
+    if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) {
+      ownerPathStack.push(`@class:${node.name?.text ?? '<anonymous>'}`);
+      pushedOwnerPath = true;
+    } else if (ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)) {
+      const name = node.name?.getText(ast) ?? '<anonymous-method>';
+      ownerPathStack.push(`@method:${name}`);
+      functionNameStack.push(name);
+      pushedFunction = true;
+      pushedOwnerPath = true;
+    } else if (ts.isFunctionDeclaration(node)) {
+      const name = node.name?.text ?? '<anonymous-function>';
+      ownerPathStack.push(name);
+      functionNameStack.push(name);
+      pushedFunction = true;
+      pushedOwnerPath = true;
     } else if (ts.isVariableDeclaration(node) && node.initializer && (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))) {
-      ownerStack.push(node.name.getText(ast));
-      pushedOwner = true;
+      const name = node.name.getText(ast);
+      ownerPathStack.push(name);
+      functionNameStack.push(name);
+      pushedFunction = true;
+      pushedOwnerPath = true;
     }
 
     if (isFormulaExpression(node)) {
       const parent = node.parent;
       // Keep maximal expressions, not every nested operator; each changed equation
       // or threshold receives its own content-addressed fixture obligation.
-      if (!parent || !isFormulaExpression(parent)) {
-        addExpression(ownerStack.at(-1) ?? '<module>', node.getText(ast));
-      }
+      if (!parent || !isFormulaExpression(parent)) addExpression(node.getText(ast));
     } else if (ts.isNumericLiteral(node)) {
       let ancestor: ts.Node | undefined = node.parent;
       let covered = false;
@@ -158,24 +172,25 @@ export function extractFormulaUnits(sourceFile: string, source: string): Formula
       }
       if (!covered) {
         const parentText = node.parent ? normalizeExpression(node.parent.getText(ast)) : node.getText(ast);
-        addExpression(ownerStack.at(-1) ?? '<module>', `literal:${parentText}`);
+        addExpression(`literal:${parentText}`);
       }
     }
 
     ts.forEachChild(node, visit);
-    if (pushedOwner) ownerStack.pop();
+    if (pushedOwnerPath) ownerPathStack.pop();
+    if (pushedFunction) functionNameStack.pop();
   };
   visit(ast);
 
   const units: FormulaUnit[] = [];
-  for (const [functionName, expressions] of byOwner) {
+  for (const [ownerPath, { functionName, expressions }] of byOwner) {
     const occurrences = new Map<string, number>();
     for (const expression of expressions) {
       const occurrence = occurrences.get(expression) ?? 0;
       occurrences.set(expression, occurrence + 1);
-      const hash = createHash('sha256').update(`${expression}\noccurrence:${occurrence}`).digest('hex').slice(0, 12);
+      const hash = createHash('sha256').update(`${ownerPath}\n${expression}\noccurrence:${occurrence}`).digest('hex').slice(0, 12);
       units.push({
-        formulaId: `${sourceFile}#${functionName}#${hash}`,
+        formulaId: `${sourceFile}#${ownerPath}#${hash}`,
         sourceFile,
         functionName,
         expression,
@@ -217,6 +232,10 @@ export function validateEvidenceRecords(
     if (!record.referenceLocator.trim()) errors.push(`${formulaId}: section/table/page/equation locator is required`);
     if (!record.fixtureFile.startsWith('scripts/fixtures/physics/')) errors.push(`${formulaId}: fixtureFile must be under scripts/fixtures/physics/`);
     if (!/^[$A-Z_a-z][$\w]*$/.test(record.productionExport)) errors.push(`${formulaId}: productionExport must be a named JavaScript export`);
+    const [, formulaOwner] = formulaId.split('#');
+    if (!formulaOwner || record.productionExport !== formulaOwner) {
+      errors.push(`${formulaId}: productionExport must equal the function owner encoded in the formulaId (${formulaOwner ?? 'missing'})`);
+    }
   }
   return errors;
 }
@@ -277,6 +296,38 @@ function assertReferenceValue(actual: unknown, expected: unknown, absolute: numb
   assert.equal(actual, expected, `${location}: output value mismatch`);
 }
 
+function hasExportModifier(node: ts.Node): boolean {
+  return ts.canHaveModifiers(node) && (ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false);
+}
+
+function assertFormulaHasDirectExportBinding(record: PhysicsReferenceRecord, sourceText: string): void {
+  const [, formulaOwner] = record.formulaId.split('#');
+  assert.ok(formulaOwner && record.productionExport === formulaOwner,
+    `${record.formulaId}: productionExport must be the same function owner encoded in the formulaId`);
+  const formulaUnit = extractFormulaUnits(record.formulaId.split('#')[0], sourceText)
+    .find((unit) => unit.formulaId === record.formulaId);
+  assert.ok(formulaUnit, `${record.formulaId}: formula unit is not present in its production source`);
+
+  const ast = ts.createSourceFile(record.formulaId.split('#')[0], sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const normalizedFormula = normalizeExpression(formulaUnit.expression);
+  const directExportContainsFormula = ast.statements.some((statement) => {
+    if (ts.isFunctionDeclaration(statement)
+      && statement.name?.text === record.productionExport
+      && hasExportModifier(statement)) {
+      return normalizeExpression(statement.getText(ast)).includes(normalizedFormula);
+    }
+    if (!ts.isVariableStatement(statement) || !hasExportModifier(statement)) return false;
+    return statement.declarationList.declarations.some((declaration) =>
+      ts.isIdentifier(declaration.name)
+      && declaration.name.text === record.productionExport
+      && declaration.initializer !== undefined
+      && (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))
+      && normalizeExpression(declaration.getText(ast)).includes(normalizedFormula));
+  });
+  assert.ok(directExportContainsFormula,
+    `${record.formulaId}: exported production function ${record.productionExport} must be the direct named owner containing this formula expression`);
+}
+
 export async function executeReferenceFixture(record: PhysicsReferenceRecord, repoRoot = process.cwd()): Promise<void> {
   const fixturePath = path.resolve(repoRoot, record.fixtureFile);
   assert.ok(!path.isAbsolute(record.fixtureFile) && !record.fixtureFile.split(/[\\/]/).includes('..') && fs.existsSync(fixturePath), `${record.formulaId}: missing/unsafe fixture ${record.fixtureFile}`);
@@ -300,6 +351,7 @@ export async function executeReferenceFixture(record: PhysicsReferenceRecord, re
   assert.ok(!path.isAbsolute(sourceFile) && !sourceFile.split(/[\\/]/).includes('..'), `${record.formulaId}: unsafe production module path`);
   const modulePath = path.resolve(repoRoot, sourceFile);
   assert.ok(fs.existsSync(modulePath), `${record.formulaId}: production module is missing`);
+  assertFormulaHasDirectExportBinding(record, fs.readFileSync(modulePath, 'utf8'));
   const productionModule = await import(pathToFileURL(modulePath).href) as Record<string, unknown>;
   const productionFunction = productionModule[record.productionExport];
   assert.equal(typeof productionFunction, 'function', `${sourceFile}: exported production function ${record.productionExport} was not found`);
