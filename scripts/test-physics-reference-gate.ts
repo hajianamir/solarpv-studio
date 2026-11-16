@@ -122,6 +122,42 @@ try {
   fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), 'export function calculate(input: number) { return input * 5; } function unrelated() { function calculate(input: number) { return input * 2 + 1.5; } return calculate(1); }');
   await assert.rejects(() => executeReferenceFixture(validRecord, fixtureRepo), /formula unit is not present|direct named owner containing this formula expression/,
     'an export that no longer contains the formula expression must be rejected');
+
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), 'export function calculate(input: number) { if (false) { return input * 2 + 1.5; } return 7.5; }');
+  await assert.rejects(() => executeReferenceFixture(validRecord, fixtureRepo), /fixture inputs did not execute the exact formula AST node/,
+    'a formula node in an unexecuted branch must fail the execution probe');
+
+  const duplicateSource = 'export function calculate(input: number) { const output = input * 2 + 1.5; const unused = input * 2 + 1.5; return output; }';
+  const duplicateUnits = extractFormulaUnits('src/engine/exampleEngine.ts', duplicateSource)
+    .filter((unit) => unit.expression === 'input*2+1.5');
+  assert.equal(duplicateUnits.length, 2, 'identical formula occurrences are separately identified');
+  const unusedOccurrence = duplicateUnits[1];
+  const unusedOccurrenceRecord = { ...validRecord, formulaId: unusedOccurrence.formulaId };
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), duplicateSource);
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, formulaId: unusedOccurrence.formulaId }));
+  await assert.rejects(() => executeReferenceFixture(unusedOccurrenceRecord, fixtureRepo), /perturbing the exact formula AST result did not change the production output/,
+    'perturbing an unused duplicate formula occurrence must not be credited with the first occurrence output');
+
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), 'export function calculate(input: number) { const unused = input * 2 + 1.5; void unused; return 7.5; }');
+  fs.writeFileSync(fixturePath, JSON.stringify(runtimeFixture));
+  await assert.rejects(() => executeReferenceFixture(validRecord, fixtureRepo), /perturbing the exact formula AST result did not change the production output/,
+    'a formula node that executes but cannot affect the tested output must fail the influence probe');
+
+  const compoundSource = 'export function accumulate(sum: number, x: number) { sum += x; return sum; }';
+  const compoundUnit = extractFormulaUnits('src/engine/exampleEngine.ts', compoundSource)
+    .find((unit) => unit.expression.includes('sum+=x'))!;
+  const compoundRecord = { ...validRecord, formulaId: compoundUnit.formulaId, productionExport: 'accumulate' };
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), compoundSource);
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, formulaId: compoundUnit.formulaId, productionExport: 'accumulate', inputs: [2, 3], expected: 5 }));
+  await executeReferenceFixture(compoundRecord, fixtureRepo);
+
+  const incrementSource = 'export function increment(value: number) { value++; return value; }';
+  const incrementUnit = extractFormulaUnits('src/engine/exampleEngine.ts', incrementSource)
+    .find((unit) => unit.expression === 'value++')!;
+  const incrementRecord = { ...validRecord, formulaId: incrementUnit.formulaId, productionExport: 'increment' };
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), incrementSource);
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, formulaId: incrementUnit.formulaId, productionExport: 'increment', inputs: [4], expected: 5 }));
+  await executeReferenceFixture(incrementRecord, fixtureRepo);
 } finally {
   fs.rmSync(fixtureRepo, { recursive: true, force: true });
 }

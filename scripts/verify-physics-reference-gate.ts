@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -10,7 +10,10 @@ export interface FormulaUnit {
   formulaId: string;
   sourceFile: string;
   functionName: string;
+  ownerPath: string;
   expression: string;
+  nodeStart: number;
+  nodeEnd: number;
 }
 
 export interface PhysicsReferenceRecord {
@@ -113,18 +116,18 @@ function normalizeExpression(expression: string): string {
 
 export function extractFormulaUnits(sourceFile: string, source: string): FormulaUnit[] {
   const ast = ts.createSourceFile(sourceFile, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const byOwner = new Map<string, { functionName: string; expressions: string[] }>();
+  const byOwner = new Map<string, { functionName: string; occurrences: Array<{ expression: string; nodeStart: number; nodeEnd: number }> }>();
   const ownerPathStack: string[] = [];
   const functionNameStack: string[] = [];
   const currentOwnerPath = (): string => ownerPathStack.join('.') || '<module>';
   const currentFunctionName = (): string => functionNameStack.at(-1) ?? '<module>';
 
-  const addExpression = (expression: string): void => {
+  const addExpression = (node: ts.Node, expression: string): void => {
     const normalized = normalizeExpression(expression);
     if (!normalized) return;
     const ownerPath = currentOwnerPath();
-    const owner = byOwner.get(ownerPath) ?? { functionName: currentFunctionName(), expressions: [] };
-    owner.expressions.push(normalized);
+    const owner = byOwner.get(ownerPath) ?? { functionName: currentFunctionName(), occurrences: [] };
+    owner.occurrences.push({ expression: normalized, nodeStart: node.getStart(ast), nodeEnd: node.getEnd() });
     byOwner.set(ownerPath, owner);
   };
 
@@ -158,7 +161,7 @@ export function extractFormulaUnits(sourceFile: string, source: string): Formula
       const parent = node.parent;
       // Keep maximal expressions, not every nested operator; each changed equation
       // or threshold receives its own content-addressed fixture obligation.
-      if (!parent || !isFormulaExpression(parent)) addExpression(node.getText(ast));
+      if (!parent || !isFormulaExpression(parent)) addExpression(node, node.getText(ast));
     } else if (ts.isNumericLiteral(node)) {
       let ancestor: ts.Node | undefined = node.parent;
       let covered = false;
@@ -172,7 +175,7 @@ export function extractFormulaUnits(sourceFile: string, source: string): Formula
       }
       if (!covered) {
         const parentText = node.parent ? normalizeExpression(node.parent.getText(ast)) : node.getText(ast);
-        addExpression(`literal:${parentText}`);
+        addExpression(node, `literal:${parentText}`);
       }
     }
 
@@ -183,9 +186,10 @@ export function extractFormulaUnits(sourceFile: string, source: string): Formula
   visit(ast);
 
   const units: FormulaUnit[] = [];
-  for (const [ownerPath, { functionName, expressions }] of byOwner) {
+  for (const [ownerPath, { functionName, occurrences: formulaOccurrences }] of byOwner) {
     const occurrences = new Map<string, number>();
-    for (const expression of expressions) {
+    for (const formulaOccurrence of formulaOccurrences) {
+      const { expression, nodeStart, nodeEnd } = formulaOccurrence;
       const occurrence = occurrences.get(expression) ?? 0;
       occurrences.set(expression, occurrence + 1);
       const hash = createHash('sha256').update(`${ownerPath}\n${expression}\noccurrence:${occurrence}`).digest('hex').slice(0, 12);
@@ -193,7 +197,10 @@ export function extractFormulaUnits(sourceFile: string, source: string): Formula
         formulaId: `${sourceFile}#${ownerPath}#${hash}`,
         sourceFile,
         functionName,
+        ownerPath,
         expression,
+        nodeStart,
+        nodeEnd,
       });
     }
   }
@@ -300,21 +307,22 @@ function hasExportModifier(node: ts.Node): boolean {
   return ts.canHaveModifiers(node) && (ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false);
 }
 
-function assertFormulaHasDirectExportBinding(record: PhysicsReferenceRecord, sourceText: string): void {
+function assertFormulaHasDirectExportBinding(record: PhysicsReferenceRecord, sourceText: string): FormulaUnit {
   const [, formulaOwner] = record.formulaId.split('#');
   assert.ok(formulaOwner && record.productionExport === formulaOwner,
     `${record.formulaId}: productionExport must be the same function owner encoded in the formulaId`);
   const formulaUnit = extractFormulaUnits(record.formulaId.split('#')[0], sourceText)
     .find((unit) => unit.formulaId === record.formulaId);
   assert.ok(formulaUnit, `${record.formulaId}: formula unit is not present in its production source`);
+  assert.equal(formulaUnit.ownerPath, record.productionExport, `${record.formulaId}: selected AST occurrence is not directly owned by the production export`);
 
   const ast = ts.createSourceFile(record.formulaId.split('#')[0], sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const normalizedFormula = normalizeExpression(formulaUnit.expression);
-  const directExportContainsFormula = ast.statements.some((statement) => {
+  const ownerContainsNode = ast.statements.some((statement) => {
     if (ts.isFunctionDeclaration(statement)
       && statement.name?.text === record.productionExport
-      && hasExportModifier(statement)) {
-      return normalizeExpression(statement.getText(ast)).includes(normalizedFormula);
+      && hasExportModifier(statement)
+      && statement.body) {
+      return formulaUnit.nodeStart >= statement.body.getStart(ast) && formulaUnit.nodeEnd <= statement.body.getEnd();
     }
     if (!ts.isVariableStatement(statement) || !hasExportModifier(statement)) return false;
     return statement.declarationList.declarations.some((declaration) =>
@@ -322,10 +330,148 @@ function assertFormulaHasDirectExportBinding(record: PhysicsReferenceRecord, sou
       && declaration.name.text === record.productionExport
       && declaration.initializer !== undefined
       && (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))
-      && normalizeExpression(declaration.getText(ast)).includes(normalizedFormula));
+      && formulaUnit.nodeStart >= declaration.initializer.getStart(ast)
+      && formulaUnit.nodeEnd <= declaration.initializer.getEnd());
   });
-  assert.ok(directExportContainsFormula,
-    `${record.formulaId}: exported production function ${record.productionExport} must be the direct named owner containing this formula expression`);
+  assert.ok(ownerContainsNode,
+    `${record.formulaId}: exact formula AST occurrence must be inside the directly exported production function`);
+  return formulaUnit;
+}
+
+const formulaProbeSymbol = 'solarpv.physics-reference-gate.exact-node-probe';
+
+function findNodeAtRange(sourceFile: ts.SourceFile, start: number, end: number): ts.Node | undefined {
+  let match: ts.Node | undefined;
+  const visit = (node: ts.Node): void => {
+    if (!ts.isSourceFile(node) && node.getStart(sourceFile) === start && node.getEnd() === end) {
+      match = node;
+      return;
+    }
+    if (!match) ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return match;
+}
+
+function mutateFormulaOperator(sourceText: string, formula: FormulaUnit): { sourceText: string; endDelta: number; mutated: boolean } {
+  const sourceFile = ts.createSourceFile(formula.sourceFile, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const node = findNodeAtRange(sourceFile, formula.nodeStart, formula.nodeEnd);
+  if (!node) throw new Error(`${formula.formulaId}: exact AST node could not be resolved for the sensitivity mutation`);
+  let operatorStart: number | undefined;
+  let operatorEnd: number | undefined;
+  let replacement: string | undefined;
+
+  if (ts.isBinaryExpression(node)) {
+    const token = node.operatorToken;
+    const map: Record<string, string> = {
+      '+': '-', '-': '+', '*': '/', '/': '*', '%': '+', '**': '*',
+      '<<': '>>', '>>': '<<', '>>>': '<<', '<': '>', '>': '<',
+      '<=': '>=', '>=': '<=', '==': '!=', '!=': '==', '===': '!==', '!==': '===',
+      '+=': '-=', '-=': '+=', '*=': '/=', '/=': '*=', '%=': '+=', '**=': '*=',
+      '<<=': '>>=', '>>=': '<<=', '>>>=': '<<=', '&=': '|=', '|=': '&=', '^=': '&=',
+      '&&=': '||=', '||=': '&&=', '??=': '||=',
+    };
+    const text = token.getText(sourceFile);
+    replacement = map[text];
+    if (replacement) {
+      operatorStart = token.getStart(sourceFile);
+      operatorEnd = token.getEnd();
+    }
+  } else if (ts.isPrefixUnaryExpression(node)) {
+    const map: Partial<Record<ts.SyntaxKind, string>> = {
+      [ts.SyntaxKind.PlusToken]: '-',
+      [ts.SyntaxKind.MinusToken]: '+',
+      [ts.SyntaxKind.PlusPlusToken]: '--',
+      [ts.SyntaxKind.MinusMinusToken]: '++',
+    };
+    replacement = map[node.operator];
+    if (replacement) {
+      operatorStart = node.getStart(sourceFile);
+      operatorEnd = operatorStart + (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken ? 2 : 1);
+    }
+  } else if (ts.isPostfixUnaryExpression(node)) {
+    if (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken) {
+      replacement = node.operator === ts.SyntaxKind.PlusPlusToken ? '--' : '++';
+      operatorEnd = node.getEnd();
+      operatorStart = operatorEnd - 2;
+    }
+  }
+
+  if (!replacement || operatorStart === undefined || operatorEnd === undefined) {
+    return { sourceText, endDelta: 0, mutated: false };
+  }
+  const mutatedSource = sourceText.slice(0, operatorStart) + replacement + sourceText.slice(operatorEnd);
+  return { sourceText: mutatedSource, endDelta: replacement.length - (operatorEnd - operatorStart), mutated: true };
+}
+
+function perturbFormulaValue(value: unknown): unknown {
+  if (typeof value === 'number') {
+    const delta = Math.max(1, Math.abs(value) * 0.5);
+    const increased = value + delta;
+    return Number.isFinite(increased) && increased !== value ? increased : value - delta;
+  }
+  if (typeof value === 'boolean') return !value;
+  if (typeof value === 'string') return `${value}__physics_probe__`;
+  if (value === null || value === undefined) return '__physics_probe__';
+  if (Array.isArray(value)) {
+    if (value.length === 0) return ['__physics_probe__'];
+    return [perturbFormulaValue(value[0]), ...value.slice(1)];
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) return { __physics_probe__: true };
+    const [firstKey, firstValue] = entries[0];
+    return { ...(value as Record<string, unknown>), [firstKey]: perturbFormulaValue(firstValue) };
+  }
+  return '__physics_probe__';
+}
+
+async function invokeInstrumentedProduction(
+  modulePath: string,
+  sourceFile: string,
+  sourceText: string,
+  formula: FormulaUnit,
+  record: PhysicsReferenceRecord,
+  inputs: unknown[],
+  mutateFormula: boolean,
+): Promise<{ output: unknown; visits: number }> {
+  const mutation = mutateFormula ? mutateFormulaOperator(sourceText, formula) : { sourceText, endDelta: 0, mutated: false };
+  const targetEnd = formula.nodeEnd + mutation.endDelta;
+  const instrumentSourceFile = ts.createSourceFile(sourceFile, mutation.sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const instrumentNode = findNodeAtRange(instrumentSourceFile, formula.nodeStart, targetEnd);
+  assert.ok(instrumentNode, `${record.formulaId}: exact AST node could not be resolved in the probe module`);
+  const expressionText = mutation.sourceText.slice(instrumentNode.getStart(instrumentSourceFile), instrumentNode.getEnd());
+  assert.ok(expressionText.length > 0, `${record.formulaId}: AST node source range is empty`);
+  const hookCall = `Reflect.get(globalThis, Symbol.for(${JSON.stringify(formulaProbeSymbol)}))(${JSON.stringify(record.formulaId)}, (${expressionText}))`;
+  const instrumentedSource = mutation.sourceText.slice(0, instrumentNode.getStart(instrumentSourceFile)) + hookCall + mutation.sourceText.slice(instrumentNode.getEnd());
+  const perturbResult = mutateFormula && !mutation.mutated;
+  const extension = path.extname(modulePath) || '.ts';
+  const temporaryModule = path.join(
+    path.dirname(modulePath),
+    `${path.basename(modulePath, extension)}.physics-reference-${randomUUID()}${extension}`,
+  );
+  const visits: unknown[] = [];
+  const probe = (id: string, value: unknown): unknown => {
+    if (id !== record.formulaId) return value;
+    visits.push(value);
+    return perturbResult ? perturbFormulaValue(value) : value;
+  };
+  const symbol = Symbol.for(formulaProbeSymbol);
+  const previousProbe = Reflect.get(globalThis, symbol) as unknown;
+
+  fs.writeFileSync(temporaryModule, instrumentedSource, 'utf8');
+  Reflect.set(globalThis, symbol, probe);
+  try {
+    const productionModule = await import(pathToFileURL(temporaryModule).href) as Record<string, unknown>;
+    const productionFunction = productionModule[record.productionExport];
+    assert.equal(typeof productionFunction, 'function', `${sourceFile}: exported production function ${record.productionExport} was not found`);
+    const output = await (productionFunction as (...args: unknown[]) => unknown)(...inputs);
+    return { output, visits: visits.length };
+  } finally {
+    if (previousProbe === undefined) Reflect.deleteProperty(globalThis, symbol);
+    else Reflect.set(globalThis, symbol, previousProbe);
+    fs.rmSync(temporaryModule, { force: true });
+  }
 }
 
 export async function executeReferenceFixture(record: PhysicsReferenceRecord, repoRoot = process.cwd()): Promise<void> {
@@ -351,13 +497,21 @@ export async function executeReferenceFixture(record: PhysicsReferenceRecord, re
   assert.ok(!path.isAbsolute(sourceFile) && !sourceFile.split(/[\\/]/).includes('..'), `${record.formulaId}: unsafe production module path`);
   const modulePath = path.resolve(repoRoot, sourceFile);
   assert.ok(fs.existsSync(modulePath), `${record.formulaId}: production module is missing`);
-  assertFormulaHasDirectExportBinding(record, fs.readFileSync(modulePath, 'utf8'));
-  const productionModule = await import(pathToFileURL(modulePath).href) as Record<string, unknown>;
-  const productionFunction = productionModule[record.productionExport];
-  assert.equal(typeof productionFunction, 'function', `${sourceFile}: exported production function ${record.productionExport} was not found`);
-  const actual = await (productionFunction as (...args: unknown[]) => unknown)(...fixture.inputs);
-  assertReferenceValue(actual, fixture.expected, absolute, relative);
-  console.log(`Independent fixture executed against ${sourceFile}#${record.productionExport}: ${record.formulaId}`);
+  const sourceText = fs.readFileSync(modulePath, 'utf8');
+  const formula = assertFormulaHasDirectExportBinding(record, sourceText);
+
+  const baseline = await invokeInstrumentedProduction(modulePath, sourceFile, sourceText, formula, record, fixture.inputs, false);
+  assert.ok(baseline.visits > 0, `${record.formulaId}: fixture inputs did not execute the exact formula AST node`);
+  assertReferenceValue(baseline.output, fixture.expected, absolute, relative);
+
+  const sensitivityProbe = await invokeInstrumentedProduction(modulePath, sourceFile, sourceText, formula, record, fixture.inputs, true);
+  assert.ok(sensitivityProbe.visits > 0, `${record.formulaId}: exact formula AST node was not reached by the output-sensitivity probe`);
+  assert.notDeepEqual(
+    sensitivityProbe.output,
+    baseline.output,
+    `${record.formulaId}: perturbing the exact formula AST result did not change the production output for this fixture; choose an input that exercises an output-sensitive path`,
+  );
+  console.log(`Independent fixture executed and sensitivity-checked at ${sourceFile}#${record.productionExport}: ${record.formulaId}`);
 }
 
 function collectChangedFormulaUnits(baseRef: string): FormulaUnit[] {
