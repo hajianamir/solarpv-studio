@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 export interface FormulaUnit {
@@ -15,11 +16,22 @@ export interface FormulaUnit {
 export interface PhysicsReferenceRecord {
   formulaId: string;
   fixtureFile: string;
-  testFile: string;
+  productionExport: string;
   referenceTitle: string;
   referenceUrl: string;
   referenceVersion: string;
   referenceLocator: string;
+}
+
+interface PhysicsReferenceFixture {
+  schemaVersion?: number;
+  formulaId?: string;
+  independentOfImplementation?: boolean;
+  productionExport?: string;
+  inputs?: unknown[];
+  expected?: unknown;
+  tolerances?: { absolute?: number; relative?: number };
+  referenceSource?: { title?: string; url?: string; version?: string; locator?: string };
 }
 
 function isArithmeticOperator(kind: ts.SyntaxKind): boolean {
@@ -32,6 +44,24 @@ function isArithmeticOperator(kind: ts.SyntaxKind): boolean {
     ts.SyntaxKind.AsteriskAsteriskToken,
     ts.SyntaxKind.LessThanLessThanToken,
     ts.SyntaxKind.GreaterThanGreaterThanToken,
+    ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken,
+    // Compound assignments are calculation mutations too. Omitting these lets
+    // `sum += term` change to `sum -= term` without changing the AST unit.
+    ts.SyntaxKind.PlusEqualsToken,
+    ts.SyntaxKind.MinusEqualsToken,
+    ts.SyntaxKind.AsteriskEqualsToken,
+    ts.SyntaxKind.SlashEqualsToken,
+    ts.SyntaxKind.PercentEqualsToken,
+    ts.SyntaxKind.AsteriskAsteriskEqualsToken,
+    ts.SyntaxKind.LessThanLessThanEqualsToken,
+    ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
+    ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
+    ts.SyntaxKind.AmpersandEqualsToken,
+    ts.SyntaxKind.BarEqualsToken,
+    ts.SyntaxKind.CaretEqualsToken,
+    ts.SyntaxKind.AmpersandAmpersandEqualsToken,
+    ts.SyntaxKind.BarBarEqualsToken,
+    ts.SyntaxKind.QuestionQuestionEqualsToken,
   ].includes(kind);
 }
 
@@ -68,7 +98,10 @@ function isFormulaExpression(node: ts.Node): boolean {
     return isArithmeticOperator(node.operatorToken.kind) || isComparisonOperator(node.operatorToken.kind);
   }
   if (ts.isPrefixUnaryExpression(node)) {
-    return node.operator === ts.SyntaxKind.MinusToken || node.operator === ts.SyntaxKind.PlusToken;
+    return [ts.SyntaxKind.MinusToken, ts.SyntaxKind.PlusToken, ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(node.operator);
+  }
+  if (ts.isPostfixUnaryExpression(node)) {
+    return node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken;
   }
   if (ts.isConditionalExpression(node)) return containsFormulaMaterial(node);
   return isFormulaHelperCall(node);
@@ -183,7 +216,7 @@ export function validateEvidenceRecords(
     if (!record.referenceVersion.trim()) errors.push(`${formulaId}: referenceVersion/edition is required`);
     if (!record.referenceLocator.trim()) errors.push(`${formulaId}: section/table/page/equation locator is required`);
     if (!record.fixtureFile.startsWith('scripts/fixtures/physics/')) errors.push(`${formulaId}: fixtureFile must be under scripts/fixtures/physics/`);
-    if (!/^scripts\/[\w./-]+\.(?:ts|js|mjs)$/.test(record.testFile)) errors.push(`${formulaId}: testFile must be a repository script`);
+    if (!/^[$A-Z_a-z][$\w]*$/.test(record.productionExport)) errors.push(`${formulaId}: productionExport must be a named JavaScript export`);
   }
   return errors;
 }
@@ -212,34 +245,67 @@ function safeRepoPath(repoPath: string): boolean {
   return !path.isAbsolute(repoPath) && !repoPath.split(/[\\/]/).includes('..') && fs.existsSync(repoPath);
 }
 
-function runReferenceTest(record: PhysicsReferenceRecord): void {
-  assert.ok(safeRepoPath(record.fixtureFile), `${record.formulaId}: missing/unsafe fixture ${record.fixtureFile}`);
-  assert.ok(safeRepoPath(record.testFile), `${record.formulaId}: missing/unsafe test ${record.testFile}`);
-  const fixture = JSON.parse(fs.readFileSync(record.fixtureFile, 'utf8')) as {
-    schemaVersion?: number;
-    formulaId?: string;
-    independentOfImplementation?: boolean;
-    inputs?: Record<string, unknown>;
-    expected?: Record<string, unknown>;
-    tolerances?: Record<string, unknown>;
-    referenceSource?: { title?: string; url?: string; version?: string; locator?: string };
-  };
+function assertReferenceValue(actual: unknown, expected: unknown, absolute: number, relative: number, location = '$'): void {
+  if (typeof expected === 'number') {
+    assert.ok(typeof actual === 'number' && Number.isFinite(actual), `${location}: production output must be a finite number`);
+    const allowed = absolute + relative * Math.abs(expected);
+    assert.ok(Math.abs(actual - expected) <= allowed, `${location}: expected ${expected} ± ${allowed}, received ${actual}`);
+    return;
+  }
+  if (Array.isArray(expected)) {
+    assert.ok(Array.isArray(actual), `${location}: expected an array`);
+    assert.equal(actual.length, expected.length, `${location}: array length mismatch`);
+    expected.forEach((value, index) => assertReferenceValue(actual[index], value, absolute, relative, `${location}[${index}]`));
+    return;
+  }
+  if (expected !== null && typeof expected === 'object') {
+    assert.ok(actual !== null && typeof actual === 'object' && !Array.isArray(actual), `${location}: expected an object`);
+    const expectedKeys = Object.keys(expected as Record<string, unknown>).sort();
+    const actualKeys = Object.keys(actual as Record<string, unknown>).sort();
+    assert.deepEqual(actualKeys, expectedKeys, `${location}: output keys mismatch`);
+    for (const key of expectedKeys) {
+      assertReferenceValue(
+        (actual as Record<string, unknown>)[key],
+        (expected as Record<string, unknown>)[key],
+        absolute,
+        relative,
+        `${location}.${key}`,
+      );
+    }
+    return;
+  }
+  assert.equal(actual, expected, `${location}: output value mismatch`);
+}
+
+export async function executeReferenceFixture(record: PhysicsReferenceRecord, repoRoot = process.cwd()): Promise<void> {
+  const fixturePath = path.resolve(repoRoot, record.fixtureFile);
+  assert.ok(!path.isAbsolute(record.fixtureFile) && !record.fixtureFile.split(/[\\/]/).includes('..') && fs.existsSync(fixturePath), `${record.formulaId}: missing/unsafe fixture ${record.fixtureFile}`);
+  const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as PhysicsReferenceFixture;
   assert.equal(fixture.schemaVersion, 1, `${record.fixtureFile}: schemaVersion must be 1`);
   assert.equal(fixture.formulaId, record.formulaId, `${record.fixtureFile}: formulaId mismatch`);
   assert.equal(fixture.independentOfImplementation, true, `${record.fixtureFile}: reference outputs must be declared independent of this implementation`);
-  assert.ok(fixture.inputs && Object.keys(fixture.inputs).length > 0, `${record.fixtureFile}: independent fixture inputs are required`);
-  assert.ok(fixture.expected && Object.keys(fixture.expected).length > 0, `${record.fixtureFile}: expected reference outputs are required`);
-  assert.ok(fixture.tolerances && Object.keys(fixture.tolerances).length > 0, `${record.fixtureFile}: numerical tolerances are required`);
+  assert.equal(fixture.productionExport, record.productionExport, `${record.fixtureFile}: production export mismatch`);
+  assert.ok(Array.isArray(fixture.inputs), `${record.fixtureFile}: positional production-function inputs are required`);
+  assert.ok(Object.hasOwn(fixture, 'expected'), `${record.fixtureFile}: expected reference output is required`);
+  const absolute = fixture.tolerances?.absolute;
+  const relative = fixture.tolerances?.relative;
+  assert.ok(typeof absolute === 'number' && Number.isFinite(absolute) && absolute >= 0, `${record.fixtureFile}: non-negative absolute tolerance is required`);
+  assert.ok(typeof relative === 'number' && Number.isFinite(relative) && relative >= 0, `${record.fixtureFile}: non-negative relative tolerance is required`);
   assert.equal(fixture.referenceSource?.title, record.referenceTitle, `${record.fixtureFile}: reference title mismatch`);
   assert.equal(fixture.referenceSource?.url, record.referenceUrl, `${record.fixtureFile}: reference URL mismatch`);
   assert.equal(fixture.referenceSource?.version, record.referenceVersion, `${record.fixtureFile}: reference version mismatch`);
   assert.equal(fixture.referenceSource?.locator, record.referenceLocator, `${record.fixtureFile}: reference locator mismatch`);
 
-  const testText = fs.readFileSync(record.testFile, 'utf8');
-  assert.ok(testText.includes(record.formulaId), `${record.testFile}: test must name the exact formulaId`);
-  assert.ok(testText.includes(record.fixtureFile), `${record.testFile}: test must load the checked-in independent fixture`);
-  assert.match(testText, /assert\.|expect\(/, `${record.testFile}: test must contain assertions`);
-  execFileSync(process.execPath, ['node_modules/tsx/dist/cli.mjs', record.testFile], { stdio: 'inherit' });
+  const [sourceFile] = record.formulaId.split('#');
+  assert.ok(!path.isAbsolute(sourceFile) && !sourceFile.split(/[\\/]/).includes('..'), `${record.formulaId}: unsafe production module path`);
+  const modulePath = path.resolve(repoRoot, sourceFile);
+  assert.ok(fs.existsSync(modulePath), `${record.formulaId}: production module is missing`);
+  const productionModule = await import(pathToFileURL(modulePath).href) as Record<string, unknown>;
+  const productionFunction = productionModule[record.productionExport];
+  assert.equal(typeof productionFunction, 'function', `${sourceFile}: exported production function ${record.productionExport} was not found`);
+  const actual = await (productionFunction as (...args: unknown[]) => unknown)(...fixture.inputs);
+  assertReferenceValue(actual, fixture.expected, absolute, relative);
+  console.log(`Independent fixture executed against ${sourceFile}#${record.productionExport}: ${record.formulaId}`);
 }
 
 function collectChangedFormulaUnits(baseRef: string): FormulaUnit[] {
@@ -266,7 +332,7 @@ function collectChangedFormulaUnits(baseRef: string): FormulaUnit[] {
   return changed;
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const requestedBase = process.env.PHYSICS_DIFF_BASE;
   const baseRef = requestedBase && !/^0+$/.test(requestedBase) ? requestedBase : requestedBase ? 'origin/main' : 'HEAD';
   const manifest = readEvidenceManifest();
@@ -293,7 +359,7 @@ function main(): void {
     return;
   }
 
-  for (const record of manifest) runReferenceTest(record);
+  for (const record of manifest) await executeReferenceFixture(record);
   if (changed.length === 0) {
     console.log(`Independent physics reference gate passed: no formula-expression changes in the selected engine diff (base ${baseRef}).`);
   } else {
@@ -301,4 +367,10 @@ function main(): void {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) main();
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+  main().catch((error: unknown) => {
+    console.error('Independent physics reference gate FAILED while executing a fixture.');
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { changedFormulaUnits, extractFormulaUnits, validateEvidenceRecords } from './verify-physics-reference-gate';
+import os from 'node:os';
+import path from 'node:path';
+import { changedFormulaUnits, executeReferenceFixture, extractFormulaUnits, validateEvidenceRecords } from './verify-physics-reference-gate';
 
 const sourceBefore = `export function calculate(input: number) {\n  const power = input * 2 + 1;\n  return power <= 100;\n}`;
 const sourceAfterCoefficientChange = `export function calculate(input: number) {\n  const power = input * 2 + 1.5;\n  return power <= 100;\n}`;
@@ -40,6 +42,18 @@ const signChange = changedFormulaUnits(
   'export function calculate(x: number) { return -x; }',
 );
 assert.ok(signChange.length > 0, 'changing a formula sign creates a fixture obligation');
+const compoundAssignmentChange = changedFormulaUnits(
+  'src/engine/exampleEngine.ts',
+  'export function accumulate(sum: number, x: number) { sum += x; return sum; }',
+  'export function accumulate(sum: number, x: number) { sum -= x; return sum; }',
+);
+assert.ok(compoundAssignmentChange.some((unit) => unit.expression.includes('sum-=x')), 'changing += to -= creates a fixture obligation');
+const updateOperatorChange = changedFormulaUnits(
+  'src/engine/exampleEngine.ts',
+  'export function accumulate(sum: number) { sum++; return sum; }',
+  'export function accumulate(sum: number) { sum--; return sum; }',
+);
+assert.ok(updateOperatorChange.length > 0, 'changing a post-increment to post-decrement creates a fixture obligation');
 
 const unchangedBooleanContract = changedFormulaUnits(
   'src/engine/exampleEngine.ts',
@@ -52,7 +66,7 @@ const formulaId = extractFormulaUnits('src/engine/exampleEngine.ts', sourceAfter
 const validRecord = {
   formulaId,
   fixtureFile: 'scripts/fixtures/physics/example-reference.json',
-  testFile: 'scripts/verify-example-reference.ts',
+  productionExport: 'calculate',
   referenceTitle: 'Independent technical reference',
   referenceUrl: 'https://example.org/reference',
   referenceVersion: '2026 edition',
@@ -60,6 +74,40 @@ const validRecord = {
 };
 assert.deepEqual(validateEvidenceRecords([formulaId], [validRecord]), [], 'complete independent-reference metadata satisfies the manifest contract');
 assert.ok(validateEvidenceRecords([formulaId], [{ ...validRecord, referenceUrl: 'http://example.org/reference' }]).length > 0, 'insecure/non-source URL fails closed');
+assert.ok(validateEvidenceRecords([formulaId], [{ ...validRecord, productionExport: 'not-valid-export!' }]).length > 0, 'malformed production export fails closed');
+
+// Exercise the same runner used by CI against a temporary real TS module. A
+// deliberately wrong fixture must fail numeric comparison, proving that the
+// gate calls production code rather than trusting test-file text or assertions.
+const fixtureRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'physics-reference-gate-'));
+try {
+  fs.mkdirSync(path.join(fixtureRepo, 'src/engine'), { recursive: true });
+  fs.mkdirSync(path.join(fixtureRepo, 'scripts/fixtures/physics'), { recursive: true });
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), 'export function calculate(x: number) { return x * 2 + 1; }');
+  const fixturePath = path.join(fixtureRepo, validRecord.fixtureFile);
+  const runtimeFixture = {
+    schemaVersion: 1,
+    formulaId,
+    independentOfImplementation: true,
+    productionExport: 'calculate',
+    inputs: [3],
+    expected: 7,
+    tolerances: { absolute: 1e-12, relative: 1e-12 },
+    referenceSource: {
+      title: validRecord.referenceTitle,
+      url: validRecord.referenceUrl,
+      version: validRecord.referenceVersion,
+      locator: validRecord.referenceLocator,
+    },
+  };
+  fs.writeFileSync(fixturePath, JSON.stringify(runtimeFixture));
+  await executeReferenceFixture(validRecord, fixtureRepo);
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, expected: 8 }));
+  await assert.rejects(() => executeReferenceFixture(validRecord, fixtureRepo), /expected 8/,
+    'mismatched independent output must fail after executing the production export');
+} finally {
+  fs.rmSync(fixtureRepo, { recursive: true, force: true });
+}
 
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> };
 assert.match(packageJson.scripts['test:audit'], /verify:physics-reference-gate/, 'audit suite must run the reference gate');
