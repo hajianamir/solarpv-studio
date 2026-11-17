@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/thermalDerate.ts#calculateThermalDerate#6251a6a3528c",
+  "independentOfImplementation": true,
+  "productionExport": "calculateThermalDerate",
+  "inputs": [
+    {
+      "module": { "noctC": 45, "tempCoeffPmpPct": -0.3 },
+      "ambientTempMaxC": 35,
+      "ambientTempMeanC": 25,
+      "irradianceWm2": 800,
+      "installationEnvironment": "ground_mount",
+      "evaluationMode": "hot_design"
+    }
+  ],
+  "expected": {
+    "cellTempHotC": 60,
+    "cellTempAnnualMeanC": 50,
+    "annualMeanDeratePct": 7.5,
+    "deratePct": 10.5,
+    "derateFraction": 0.105,
+    "mountingDeltaTC": 0,
+    "source": "NOCT_IEC_61215",
+    "evaluationMode": "hot_design",
+    "effectiveAmbientTempC": 35
+  },
+  "independentCalculation": "Using the cited NOCT linear model T_module = T_ambient + (NOCT - 20)*G/800, at 800 W/m2 with NOCT 45 C the temperature rise is 25 C. Thus the hot case is 35+25=60 C and the annual-mean case is 25+25=50 C. Given the fixture's independently specified coefficient -0.30 percent/C, hot derate is 0.30*(60-25)=10.5 percent and annual-mean derate is 0.30*(50-25)=7.5 percent; the selected hot-design fraction is 0.105. The cited paper states the NOCT temperature equation as Equation (1). This case is ground-mount only and does not validate this project's mounting offsets, coefficient metadata, wind sensitivity, or the model's general field accuracy.",
+  "tolerances": {
+    "absolute": 0.0000005,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "Dependence of PV Module Temperature on Incident Time-Dependent Solar Spectrum",
+    "url": "https://doi.org/10.3390/app10030914",
+    "version": "2020",
+    "locator": "Section 2, NOCT-Based Module Temperature, Equation (1)"
+  }
+}
