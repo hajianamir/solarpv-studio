@@ -1,9 +1,8 @@
-// Advanced Cable Sizing, Multi-Conductor Parallel Runs, Earthing (IEEE 80 / IEC 60364-5-54)
-// and Lightning Protection System (IEC 62305 / IEC 62548) Engine
-// Sizing governed simultaneously by:
-// 1. Voltage Drop constraint (IEC 60364-5-52) with conductor inductive reactance
-// 2. Thermal Ampacity (Current-Carrying Capacity) with temperature & grouping derating (IEC 60287 / IEC 60364-5-52)
-// 3. Short-circuit adiabatic thermal withstand (k²S² >= I²t per IEC 60364-5-54)
+// Preliminary cable, grounding and lightning screening calculations.
+// Standards references below identify the model's intended context only: current edition,
+// jurisdiction, manufacturer data and project inputs are not independently verified here.
+// Outputs are not a standards-conformity determination or a substitute for qualified design review.
+// The simplified cable model checks voltage-drop, thermal-ampacity and adiabatic withstand proxies.
 // 4. Joule thermal power loss & efficiency verification
 
 export type ConductorMaterial = 'copper' | 'aluminum';
@@ -157,16 +156,20 @@ export interface EarthingAnalysisResult {
   upstreamSystemType: UpstreamGroundingSystem;
   maxTouchVoltageVolts: number;
   maxStepVoltageVolts: number;
-  // IEEE 80 touch/step potential safety verification
+  // Preliminary touch/step screening estimates only; no IEEE 80/site safety determination.
   tolerableTouchVoltageVolts: number;
   tolerableStepVoltageVolts: number;
   actualMeshVoltageVolts: number;
   actualStepVoltageVolts: number;
-  isTouchVoltageSafe: boolean;
-  isStepVoltageSafe: boolean;
-  isResistanceCompliant: boolean;
-  isEarthingSafe: boolean; // Integrated compliance: resistance AND touch AND step
-  isPreliminaryEstimate: boolean;
+  isTouchVoltageSafe: null;
+  isStepVoltageSafe: null;
+  isResistanceCompliant: null;
+  isEarthingSafe: null;
+  touchVoltageScreenPassed: boolean;
+  stepVoltageScreenPassed: boolean;
+  resistanceScreenPassed: boolean;
+  screeningPassed: boolean;
+  isPreliminaryEstimate: true;
   disclaimerFa: string;
   disclaimerEn: string;
   bentoniteEnhancedResistanceOhms?: number;
@@ -632,19 +635,19 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
 }
 
 /**
- * Calculates complete Earthing (IEEE 80-2013 / IEC 60364-5-54)
- * Uses IEEE 80 Sverak composite grid-rod equation and verifies Touch/Step potential limits.
+ * Produces a preliminary earthing estimate using simplified grid/rod formulas.
+ * Internal touch/step comparisons are for screening only and do not establish IEEE 80 compliance or site safety.
  */
 export function calculateEarthingSystem(
   systemCapacityKw: number,
-  soilResistivityOhmM: number = 100, // standard soil in Iran: 50-200 Ω·m
+  soilResistivityOhmM: number = 100, // generic default only; not a measured site value
   upstreamSystem: UpstreamGroundingSystem = 'solidly_grounded',
   isUtilityPowerplant: boolean = false,
   applyBentoniteEnhancement: boolean = false,
   dcSystemEarthing: DcSystemEarthingType = 'floating'
 ): EarthingAnalysisResult {
   const rho = Math.max(10, soilResistivityOhmM || 100);
-  const targetResistance = isUtilityPowerplant ? 1.0 : 4.0; // IEEE 80 requires <= 1.0 ohm for utility substations, <= 4-5 ohms for solar arrays
+  const targetResistance = isUtilityPowerplant ? 1.0 : 4.0; // Internal screening targets only; confirm project criteria with the utility/engineer
 
   // Ground Rod: standard 3m length, 16mm diameter (0.016m)
   const rodLengthM = 3.0;
@@ -730,7 +733,7 @@ export function calculateEarthingSystem(
   const requiresInsulationMonitoring = dcSystemEarthing === 'floating';
   const requiresGfdiRcu = dcSystemEarthing !== 'floating';
 
-  // IEEE 80 Tolerable Touch & Step Voltages (50kg body, crushed rock layer rho_s = 3000 ohm-m, fault t_f = 0.2s)
+  // Illustrative internal touch/step thresholds; site-specific IEEE 80 limits are not determined by this model.
   const hs = 0.10; // 10cm crushed rock layer
   const cs = 1.0 - (0.09 * (1.0 - rho / 3000.0)) / (2.0 * hs + 0.09);
   const tolerableTouch = Math.round((1000.0 + 1.5 * cs * 3000.0) * (0.116 / Math.sqrt(0.2)));
@@ -744,7 +747,7 @@ export function calculateEarthingSystem(
   const actualMeshVoltageVolts = Math.round((rho * ifaultKa * 1000.0 * km * ki) / (totalLength * 1.5));
   const actualStepVoltageVolts = Math.round((rho * ifaultKa * 1000.0 * 0.35 * ki) / (totalLength * 1.2));
 
-  // Maximum touch & step voltage limits according to standard regulatory thresholds (IEEE 80 / IEC 60364-4-41)
+  // Internal illustrative screen caps; not a standards-limit or regulatory-conformity determination.
   let maxTouch = tolerableTouch;
   let maxStep = tolerableStep;
   if (upstreamSystem === 'impedance_grounded') {
@@ -755,15 +758,17 @@ export function calculateEarthingSystem(
     maxStep = Math.min(tolerableStep, 200.0);
   }
 
-  // Safety compliance flags must verify actual potential against governing limit (maxTouch / maxStep)
-  const isTouchVoltageSafe = actualMeshVoltageVolts <= maxTouch;
-  const isStepVoltageSafe = actualStepVoltageVolts <= maxStep;
+  // Keep the model comparisons distinct from a real safety determination.
+  const touchVoltageScreenPassed = actualMeshVoltageVolts <= maxTouch;
+  const stepVoltageScreenPassed = actualStepVoltageVolts <= maxStep;
+  const resistanceScreenPassed = effectiveRg <= targetResistance;
+  const screeningPassed = resistanceScreenPassed && touchVoltageScreenPassed && stepVoltageScreenPassed;
 
   const earthingExecutionStepsFa = [
     '۱. اتصال فریم ماژول‌ها: نصب گیره‌های ارت دندانه‌دار یا لَگ استاندارد (Serrated Grounding Clips / Lugs) در زیر فریم تک‌تک ماژول‌های PV جهت سوراخ کردن لایه اکسید آلومینیوم و تضمین پیوستگی الکتریکی.',
     `۲. هم‌بندی حفاظتی استراکچر: اتصال پایه‌ها و استراکچر فلزی با هادی مسی ${pvFrameStructureBondingMm2} میلی‌متر مربع به شینه اصلی ارت (MET) و رینگ پیرامونی.`,
     `۳. هم‌بندی رک و کابینت باتری (BESS): اتصال شاسی و رک فلزی باتری‌ها با کابل مسی ${batteryRackBondingConductorMm2} میلی‌متر مربع به همان شینه اصلی ارت (MET) سیستم.`,
-    '۴. ممنوعیت ارت مجزا و ایزوله: طبق استاندارد، اجرای سیستم ارت مستقل و جداگانه برای بخش DC کاملاً ممنوع است؛ کلیه هادی‌های حفاظتی باید به یک شبکه هم‌پتانسیل واحد و یکپارچه وصل شوند.',
+    '۴. طرح اتصال زمین DC: توپولوژی زمین‌کردن/شناور و هم‌بندی را با سازنده اینورتر، استاندارد نافذ و طراحی حفاظت ساختگاه تعیین کنید؛ الکترود جداگانه را بدون مطالعه فرض نکنید.',
     `۵. وضعیت قطب‌های DC و مانیتورینگ: ${
       dcSystemEarthing === 'floating'
         ? 'قطب‌های مثبت و منفی حامل جریان DC شناور (Floating) هستند و نباید زمین شوند. نصب دستگاه پایش پیوسته مقاومت عایقی (IMD طبق IEC 61557-8) الزامی است.'
@@ -772,7 +777,7 @@ export function calculateEarthingSystem(
     `۶. حفر کانال و کوبش الکترودها: حفر کانال به عمق حداقل ۸۰ سانتی‌متر و کوبیدن ${estimatedRods} عدد راد ارت مسی ۳ متری با فاصله حداقل ۶ متر جهت جلوگیری از تداخل حوزه‌های پتانسیل.`,
     '۷. جوش احتراقی کدولد (Cadweld): اتصال کلیه سر میله‌ها به تسمه/سیم لخت مسی با جوش احتراقی استاندارد جهت ممانعت از خوردگی گالوانیک.',
     '۸. حوضچه بازدید و شینه اصلی اتصال زمین (MET): تعبیه دریچه بازدید تست ارت مجهز به شینه شمش مسی و پیت ارت در ورودی پست و اتاق اینورتر.',
-    `۹. هماهنگی با شبکه بالادست (${upstreamSystem === 'solidly_grounded' ? 'زمین مستقیم TN-S' : upstreamSystem === 'impedance_grounded' ? 'مقاومت زمین NGR' : 'ایزوله IT'}): تنظیم رله‌های خطای زمین 50N/51N جهت قطع در زمان کمتر از ۰.۲ ثانیه.`,
+    `۹. هماهنگی با شبکه بالادست (${upstreamSystem === 'solidly_grounded' ? 'زمین مستقیم TN-S' : upstreamSystem === 'impedance_grounded' ? 'مقاومت زمین NGR' : 'ایزوله IT'}): تنظیم رله‌های 50N/51N باید از مطالعه هماهنگی حفاظت و الزام شرکت برق استخراج شود؛ زمان ۰.۲ ثانیه در این مدل فرضی است.`,
     ...(rho > 150
       ? ['۱۰. بهسازی خاک با بنتونیت/مواد کاهنده LOM: در خاک‌های خشک و با مقاومت بالا، تزریق دوغاب بنتونیت اکتیو در اطراف میله‌ها مقاومت زمین را تا ۴۵٪ کاهش می‌دهد.']
       : []),
@@ -782,7 +787,7 @@ export function calculateEarthingSystem(
     '1. PV Module Frame Grounding: Install certified serrated grounding clips or lugs under each PV module frame to pierce anodization and ensure equipotential bonding.',
     `2. Metallic Structure Bonding: Bond all steel/aluminum mounting tables with ${pvFrameStructureBondingMm2} mm² copper conductor to the perimeter ground ring / MET.`,
     `3. BESS Battery Rack & Enclosure Bonding: Bond battery cabinets and metallic racks with ${batteryRackBondingConductorMm2} mm² copper conductor to the same Main Earthing Terminal (MET).`,
-    '4. Prohibition of Isolated Earth: Separate or isolated grounding systems for the DC side are strictly forbidden; all metallic enclosures must connect to a single unified equipotential earthing network.',
+    '4. DC grounding topology: confirm the grounded/floating and bonding arrangement with the inverter manufacturer, adopted codes, and site protection design; do not assume a separate electrode is suitable.',
     `5. DC Current-Carrying Conductors & Monitoring: ${
       dcSystemEarthing === 'floating'
         ? 'Positive and negative DC poles are Floating (IT system). Continuous Insulation Monitoring Device (IMD per IEC 61557-8) is mandatory.'
@@ -791,7 +796,7 @@ export function calculateEarthingSystem(
     `6. Perimeter Trench & Ground Rods: Excavate an 80cm deep trench and drive ${estimatedRods} x 3m copper rods spaced at least 6m apart to prevent sphere-of-influence overlap.`,
     '7. Exothermic Cadweld Connections: Connect all buried junctions using graphite-mold molecular exothermic welding to eliminate galvanic corrosion.',
     '8. Earth Test Wells & Main Earthing Terminal (MET): Install inspectable earth pits with test disconnect links at the substation and inverter skids.',
-    `9. Upstream Grid Coordination (${upstreamSystem}): Coordinate with upstream utility protection relays (50N/51N) for clearance under 0.2s.`,
+    `9. Upstream Grid Coordination (${upstreamSystem}): Set 50N/51N relays from the site-specific protection-coordination study and utility criteria; the model does not establish clearing time.`,
     ...(rho > 150
       ? ['10. Soil Enhancement Material: In high-resistivity arid soils, bentonite/GEM slurry reduces earth resistance by ~45%.']
       : []),
@@ -816,15 +821,19 @@ export function calculateEarthingSystem(
     tolerableStepVoltageVolts: tolerableStep,
     actualMeshVoltageVolts,
     actualStepVoltageVolts,
-    isTouchVoltageSafe,
-    isStepVoltageSafe,
-    isResistanceCompliant: effectiveRg <= targetResistance,
-    isEarthingSafe: effectiveRg <= targetResistance && isTouchVoltageSafe && isStepVoltageSafe,
+    isTouchVoltageSafe: null,
+    isStepVoltageSafe: null,
+    isResistanceCompliant: null,
+    isEarthingSafe: null,
+    touchVoltageScreenPassed,
+    stepVoltageScreenPassed,
+    resistanceScreenPassed,
+    screeningPassed,
     isPreliminaryEstimate: true,
     disclaimerFa:
-      'توجه: محاسبات مقاومت زمین و ولتاژهای تماس و گام صرفاً ارزیابی اولیه غربالگری بر پایه مدل خاک یکنواخت و حدود فرضی پیش‌فرض است. سیستم هم‌بندی حفاظتی سازه‌ها و باتری باید به یک شینه اصلی ارت (MET) متصل گردد و اجرای ارت جداگانه ممنوع است. طراحی اجرایی IEEE 80 نیازمند اندازه‌گیری مقاومت ویژه خاک با روش ۴ نقطه‌ای ونر است.',
+      'توجه: این فقط غربالگری مقدماتی با مدل خاک یکنواخت، جریان خطا/زمان قطع فرضی و targetهای داخلی است؛ ایمنی محل یا انطباق IEEE 80/IEC 60364 ارزیابی نشده است. طراحی اجرایی به اندازه‌گیری خاک، هندسه و لایه‌بندی واقعی، مطالعه خطا و حفاظت، معیار شرکت برق و بازبینی مهندس ذی‌صلاح نیاز دارد.',
     disclaimerEn:
-      'Notice: Ground resistance and touch/step potential verifications are preliminary screening estimates using uniform soil assumptions. Protective bonding of structures and BESS racks must terminate at a single Main Earthing Terminal (MET); isolated DC earthing is strictly prohibited. Definitive IEEE 80 compliance requires Wenner 4-pin soil testing.',
+      'Notice: This is preliminary screening only, using uniform-soil and assumed fault/time inputs with internal targets; site safety and IEEE 80/IEC 60364 compliance are not evaluated. Final design requires measured soil, actual grid geometry and layering, a fault/protection study, utility criteria, and qualified engineering review.',
     bentoniteEnhancedResistanceOhms: bentoniteEnhancedResistance,
     bentoniteApplied: applyBentoniteEnhancement,
     earthingExecutionStepsFa,

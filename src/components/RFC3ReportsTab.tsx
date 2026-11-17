@@ -401,7 +401,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             }`}
           >
             <FileCheck className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Independent Validation & Benchmarks' : 'اعتبارسنجی مستقل و بنچمارک‌ها'}</span>
+            <span>{isEn ? 'Benchmark Comparisons & Evidence Limits' : 'مقایسه بنچمارک‌ها و محدودیت شواهد'}</span>
           </button>
           <button
             onClick={() => setActiveSubTab('provenance')}
@@ -526,8 +526,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 <AlertTriangle className="w-4 h-4 text-industrial-warning" />
                 <span className="font-bold text-sm text-theme-strong">
                   {isEn
-                    ? 'Section B — Global Validation & Independent Cross-Validation'
-                    : 'بخش B — اعتبارسنجی جهانی و اعتبارسنجی متقابل مستقل'}
+                    ? 'Section B — Internal Benchmark Comparisons (no independent validation claim)'
+                    : 'بخش B — مقایسه‌های داخلی بنچمارک (بدون ادعای اعتبارسنجی مستقل)'}
                 </span>
               </div>
               <span className="text-xs font-mono text-slate-400">
@@ -536,6 +536,11 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
             </div>
             {sectionBExpanded && (
               <div className="p-4 space-y-5">
+          <div className="rounded border border-amber-500/40 bg-amber-950/20 p-3 text-xs text-amber-200">
+            {isEn
+              ? 'These are internal comparisons against stored targets. A citation, local PASS, or “cross-validation” tag does not demonstrate independent data provenance, an executable third-party run, field validation, or standards compliance.'
+              : 'این‌ها مقایسه‌های داخلی با targetهای ذخیره‌شده‌اند. ارجاع، PASS محلی یا برچسب «اعتبارسنجی متقابل» به‌تنهایی منشأ مستقل داده، اجرای واقعی ابزار ثالث، اعتبارسنجی میدانی یا انطباق با استاندارد را ثابت نمی‌کند.'}
+          </div>
           {/* Summary Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 text-xs">
             <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded-lg">
@@ -550,13 +555,13 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
 
             <div className="p-3 bg-industrial-surface border border-[#1F2937] rounded-lg">
               <span className="text-slate-400 block mb-1">
-                {isEn ? 'Independent Cross-Validation' : 'اعتبارسنجی متقابل مستقل'}
+                {isEn ? 'Cross-Validation Tags' : 'برچسب‌های اعتبارسنجی متقابل'}
               </span>
               <span className="text-2xl font-bold font-mono text-industrial-success">
-                {validationReport?.crossValidationCount ?? 5}
+                {validationReport?.crossValidationCount ?? 4}
               </span>
               <span className="text-[10px] text-industrial-success/80 block mt-0.5">
-                {isEn ? 'vs independent third-party sources' : 'منابع خارجی مستقل'}
+                {isEn ? 'tag only; provenance/execution not verified' : 'صرفاً برچسب؛ منشأ/اجرای مرجع تأیید نشده'}
               </span>
             </div>
 
@@ -618,8 +623,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
               <h2 className="text-sm font-bold text-theme-strong flex items-center gap-2">
                 <FileCheck className="w-4 h-4 text-industrial-primary" />
                 {isEn
-                  ? 'Disaggregated Benchmark Matrix (Independent Validation vs Implementation Verification)'
-                  : 'ماتریس تفکیک‌شده بنچمارک‌ها (اعتبارسنجی مستقل خارجی در برابر بازتولید روابط فیزیکی)'}
+                  ? 'Benchmark Matrix (reference-tagged comparisons vs implementation checks)'
+                  : 'ماتریس بنچمارک‌ها (مقایسه با targetهای ارجاع‌شده در برابر بررسی پیاده‌سازی)'}
               </h2>
               <span className="text-[11px] font-mono text-slate-400">
                 RFC 3.0 Section 2.1
@@ -639,7 +644,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                     <th className="p-2.5 text-right">{isEn ? 'Rel Err (%)' : 'خطای نسبی'}</th>
                     <th className="p-2.5 text-right">{isEn ? 'Tolerance (ε)' : 'حد مجاز (ε)'}</th>
                     <th className="p-2.5 text-center">{isEn ? 'Type / Conf' : 'نوع / اعتبار'}</th>
-                    <th className="p-2.5 text-center">{isEn ? 'Independent Source' : 'منبع مستقل'}</th>
+                    <th className="p-2.5 text-center">{isEn ? 'Reference pointer' : 'ارجاع مرجع'}</th>
                     <th className="p-2.5 text-center">{isEn ? 'Status' : 'وضعیت'}</th>
                   </tr>
                 </thead>
@@ -666,8 +671,8 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                           >
                             {isCrossValidation
                               ? isEn
-                                ? 'CROSS-VALIDATION'
-                                : 'اعتبارسنجی متقابل'
+                                ? 'CROSS-VALIDATION TAG'
+                                : 'برچسب مقایسه متقابل'
                               : isEn
                               ? 'IMPLEMENTATION VERIF.'
                               : 'بازتولید پیاده‌سازی'}

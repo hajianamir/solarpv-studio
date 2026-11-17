@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "formulaId": "src/engine/core/annualYieldEngine.ts#calculateStandardDeratingFactor#4e4825014850",
+      "fixtureFile": "scripts/fixtures/physics/pvwatts-v5-multiplicative-system-derate.json",
+      "productionExport": "calculateStandardDeratingFactor",
+      "referenceTitle": "PVWatts Version 5 Manual",
+      "referenceUrl": "https://pvwatts.nrel.gov/downloads/pvwattsv5.pdf",
+      "referenceVersion": "2014-09-04",
+      "referenceLocator": "Section 11, System Losses, Equation (9)"
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateVoltageDropDc#746c88a0e1f3",
+      "fixtureFile": "scripts/fixtures/physics/dc-cable-voltage-drop-pdh-copper.json",
+      "productionExport": "calculateVoltageDropDc",
+      "referenceTitle": "Voltage Drop Calculations",
+      "referenceUrl": "https://pdhonline.com/courses/e426/e426content.pdf",
+      "referenceVersion": "2026",
+      "referenceLocator": "Common Formulas for Voltage Drop Calculations, Single-Phase Approximate Voltage Drop Formulas, Equation 2"
+    },
+    {
+      "formulaId": "src/engine/core/thermalDerate.ts#calculateThermalDerate#6251a6a3528c",
+      "fixtureFile": "scripts/fixtures/physics/noct-linear-module-temperature-2020.json",
+      "productionExport": "calculateThermalDerate",
+      "referenceTitle": "Dependence of PV Module Temperature on Incident Time-Dependent Solar Spectrum",
+      "referenceUrl": "https://doi.org/10.3390/app10030914",
+      "referenceVersion": "2020",
+      "referenceLocator": "Section 2, NOCT-Based Module Temperature, Equation (1)"
+    }
+  ]
+}

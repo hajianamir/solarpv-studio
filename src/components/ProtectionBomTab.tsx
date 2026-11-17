@@ -476,13 +476,13 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             <h1 className="text-lg sm:text-xl font-bold text-industrial-accent flex items-center gap-2">
               <Shield className="w-5 h-5 text-industrial-warning shrink-0" />
               {lang === 'fa'
-                ? 'مهندسی کابل‌کشی، سیستم زمین (IEEE 80) و حفاظت صاعقه (IEC 62305)'
-                : 'Cable Sizing, IEEE 80 Earthing & IEC 62305 Lightning Protection'}
+                ? 'غربالگری کابل، ارتینگ و حفاظت صاعقه'
+                : 'Cable Sizing, Preliminary Earthing & Lightning Screening'}
             </h1>
             <p className="text-slate-400 text-xs mt-1">
               {lang === 'fa'
-                ? 'محاسبات جامع سه‌گانه کابل (جریان مجاز پیوسته، افت ولتاژ، تحمل اتصال کوتاه)، مش زمین IEEE 80 با کنترل ولتاژ گام و لمس، و حریم صاعقه'
-                : 'Triple-constraint cable sizing (ampacity, drop, short-circuit), IEEE 80 earth grid with step/touch verification, and IEC 62305 lightning.'}
+                ? 'محاسبات غربالگری کابل، تخمین مقدماتی ارتینگ و حریم صاعقه؛ این صفحه تأیید انطباق یا ایمنی ساختگاه صادر نمی‌کند.'
+                : 'Preliminary cable sizing, grounding and lightning screening only; this page does not determine site safety or standards compliance.'}
             </p>
           </div>
 
@@ -522,7 +522,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
             }`}
           >
             <Anchor className="w-3.5 h-3.5" />
-            {lang === 'fa' ? 'سیستم زمین و پتانسیل گام/لمس (IEEE 80)' : 'Earthing (IEEE 80)'}
+            {lang === 'fa' ? 'غربالگری مقدماتی سیستم زمین' : 'Preliminary Grounding Screen'}
           </button>
           <button
             onClick={() => setActiveSubTab('lightning')}
@@ -740,7 +740,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 2: EARTHING (IEEE 80) */}
+      {/* SUB-TAB 2: PRELIMINARY EARTHING SCREENING */}
       {activeSubTab === 'earthing' && (
         <div className="space-y-6">
           <div className="studio-card">
@@ -748,8 +748,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               <span className="flex items-center gap-2">
                 <Anchor className="w-4 h-4 text-industrial-success" />
                 {lang === 'fa'
-                  ? 'محاسبات سیستم ارتینگ، هم‌بندی و پتانسیل گام و لمس (IEEE 80 / IEC 60364-5-54)'
-                  : 'Earthing System Design & Touch/Step Potential (IEEE 80)'}
+                  ? 'غربالگری مقدماتی ارتینگ و پتانسیل گام/لمس (بدون تعیین انطباق)'
+                  : 'Preliminary Grounding & Touch/Step Screening'}
               </span>
               <label htmlFor="protection-bentonite-checkbox" className="flex items-center gap-2 cursor-pointer bg-industrial-surface px-2.5 py-1 rounded border border-industrial-border text-xs">
                 <input
@@ -844,8 +844,8 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
               <p className="text-slate-300 text-[11px] leading-relaxed">
                 {lang === 'fa'
-                  ? '۱) هم‌بندی حفاظتی فریم ماژول‌ها، استراکچر فلزی، بدنه اینورتر و رک باتری الزامی بوده و همه به «یک» شینه اصلی ارت (MET) متصل می‌شوند. ۲) احداث چاه ارت مجزا یا ایزوله برای بخش DC ممنوع است؛ هر الکترود جدید باید به همین شبکه متصل گردد. ۳) قطب‌های حامل جریان DC به‌صورت پیش‌فرض شناورند و نباید زمین شوند؛ مانیتورینگ پیوسته عایقی با IMD انجام می‌شود.'
-                  : '1) Protective equipotential bonding of PV frames, racking, inverter enclosures, and BESS battery racks to a single Main Earthing Terminal (MET) is mandatory. 2) Separate/isolated grounding pits for DC are strictly prohibited. 3) DC poles remain floating by default; continuous insulation monitoring (IMD) is active.'}
+                  ? '۱) هم‌بندی حفاظتی فریم ماژول‌ها، استراکچر فلزی، بدنه اینورتر و رک باتری الزامی بوده و همه به «یک» شینه اصلی ارت (MET) متصل می‌شوند. ۲) توپولوژی هم‌بندی/زمین‌کردن DC باید با سازنده، کد نافذ و طراحی حفاظت پروژه هماهنگ شود؛ الکترود مستقل را بدون مطالعه فرض نکنید. ۳) قطب‌های حامل جریان DC به‌صورت پیش‌فرض شناورند و نباید زمین شوند؛ مانیتورینگ پیوسته عایقی با IMD انجام می‌شود.'
+                  : '1) Protective equipotential bonding of PV frames, racking, inverter enclosures, and BESS battery racks to a single Main Earthing Terminal (MET) is mandatory. 2) Confirm DC grounding/bonding topology with the manufacturer, adopted code and project protection design; do not assume a separate electrode is suitable. 3) DC poles remain floating by default; continuous insulation monitoring (IMD) is active.'}
               </p>
             </div>
 
@@ -876,27 +876,19 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
             </div>
 
-            {/* Integrated Earthing Compliance Notice */}
+            {/* Preliminary grounding screen notice; model does not determine compliance or safety */}
             <div className={`p-3 rounded-lg border text-xs mb-4 flex items-center justify-between ${
-              earthingResult.isEarthingSafe
-                ? 'bg-emerald-950/40 border-emerald-800 text-emerald-200'
-                : 'bg-red-950/40 border-red-800 text-red-200'
+              earthingResult.screeningPassed
+                ? 'bg-amber-950/40 border-amber-800 text-amber-200'
+                : 'bg-amber-950/40 border-amber-800 text-amber-200'
             }`}>
               <div className="flex items-center gap-2.5">
-                {earthingResult.isEarthingSafe ? (
-                  <CheckCircle2 className="w-5 h-5 text-industrial-success shrink-0" />
-                ) : (
-                  <AlertTriangle className="w-5 h-5 text-industrial-error shrink-0" />
-                )}
+                <AlertTriangle className="w-5 h-5 text-amber-300 shrink-0" />
                 <div>
                   <strong className="block font-bold">
                     {lang === 'fa'
-                      ? earthingResult.isEarthingSafe
-                        ? 'انطباق جامع سیستم ارتینگ (مقاومت الکتریکی، ولتاژ گام و ولتاژ لمس)'
-                        : 'عدم انطباق جامع سیستم ارتینگ (خطر پتانسیل گام/لمس یا مقاومت بیش از حد)'
-                      : earthingResult.isEarthingSafe
-                      ? 'Comprehensive Earthing Compliance (Resistance, Step & Touch Potentials)'
-                      : 'Earthing Non-Compliance (Hazardous Step/Touch Potential or Excessive Resistance)'}
+                      ? `غربالگری مقدماتی ارتینگ: ${earthingResult.screeningPassed ? 'targetهای داخلی عبور کردند' : 'حداقل یک target داخلی رد شد'}؛ انطباق IEEE 80 و ایمنی محل ارزیابی نشده است.`
+                      : `Preliminary grounding screen: ${earthingResult.screeningPassed ? 'internal targets passed' : 'one or more internal targets failed'}; IEEE 80 compliance and site safety are unevaluated.`}
                   </strong>
                   <span className="text-[11px] text-slate-300 block mt-0.5">
                     {lang === 'fa' ? earthingResult.disclaimerFa : earthingResult.disclaimerEn}
@@ -913,7 +905,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
               <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'مقاومت محاسبه‌شده' : 'Calculated Rg'}</span>
-                <span className={`text-lg font-bold font-mono ${earthingResult.isResistanceCompliant ? 'text-industrial-success' : 'text-industrial-error'}`}>
+                <span className={`text-lg font-bold font-mono ${earthingResult.resistanceScreenPassed ? 'text-industrial-success' : 'text-industrial-error'}`}>
                   {earthingResult.calculatedGroundResistanceOhms} Ω
                 </span>
                 {applyBentonite && (
@@ -932,7 +924,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
             </div>
 
-            {/* IEEE 80 Touch & Step Safety Verification Cards */}
+            {/* Preliminary touch/step screen cards; no safety determination */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="p-3 rounded-lg bg-industrial-surface border border-industrial-border text-xs">
                 <div className="flex items-center justify-between mb-1.5">
@@ -940,17 +932,17 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     {lang === 'fa' ? 'کنترل ولتاژ لمس مش (Touch Voltage - Em):' : 'Mesh Touch Voltage (Em):'}
                   </span>
                   <span className={`font-mono px-2 py-0.5 rounded text-[10px] font-bold ${
-                    earthingResult.isTouchVoltageSafe ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' : 'bg-red-950 text-red-300 border border-red-700'
+                    earthingResult.touchVoltageScreenPassed ? 'bg-amber-950 text-amber-200 border border-amber-700' : 'bg-amber-950 text-amber-200 border border-amber-700'
                   }`}>
-                    {earthingResult.isTouchVoltageSafe ? (lang === 'fa' ? '✓ ایمن' : '✓ Safe') : (lang === 'fa' ? '✗ ناایمن' : '✗ Danger')}
+                    {earthingResult.touchVoltageScreenPassed ? (lang === 'fa' ? 'درون target داخلی' : 'Within internal target') : (lang === 'fa' ? 'فراتر از target داخلی' : 'Above internal target')}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-300 font-mono">
                   <span>{lang === 'fa' ? 'ولتاژ تماس محاسبه‌شده:' : 'Actual Em:'} <strong>{earthingResult.actualMeshVoltageVolts} V</strong></span>
-                  <span>{lang === 'fa' ? 'حد مجاز حاکم:' : 'Governing limit:'} <strong>{earthingResult.maxTouchVoltageVolts} V</strong></span>
+                  <span>{lang === 'fa' ? 'target داخلی مدل:' : 'Internal model target:'} <strong>{earthingResult.maxTouchVoltageVolts} V</strong></span>
                 </div>
                 <span className="text-[10px] text-slate-400 block mt-1">
-                  {lang === 'fa' ? 'حد غربالگری ولتاژ تماس (محاسبه IEEE 80 مقید به سقف ایمنی فرضی رژیم زمین)' : 'Touch screening limit (IEEE 80 constrained by indicative grounding regime ceiling)'}
+                  {lang === 'fa' ? 'حد غربالگری ولتاژ تماس (محاسبه IEEE 80 مقید به target داخلی فرضی رژیم زمین)' : 'Touch screening limit (IEEE 80 constrained by internal assumed grounding-regime target)'}
                 </span>
               </div>
 
@@ -960,17 +952,17 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                     {lang === 'fa' ? 'کنترل ولتاژ گام محوطه (Step Voltage - Es):' : 'Step Voltage (Es):'}
                   </span>
                   <span className={`font-mono px-2 py-0.5 rounded text-[10px] font-bold ${
-                    earthingResult.isStepVoltageSafe ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' : 'bg-red-950 text-red-300 border border-red-700'
+                    earthingResult.stepVoltageScreenPassed ? 'bg-amber-950 text-amber-200 border border-amber-700' : 'bg-amber-950 text-amber-200 border border-amber-700'
                   }`}>
-                    {earthingResult.isStepVoltageSafe ? (lang === 'fa' ? '✓ ایمن' : '✓ Safe') : (lang === 'fa' ? '✗ ناایمن' : '✗ Danger')}
+                    {earthingResult.stepVoltageScreenPassed ? (lang === 'fa' ? 'درون target داخلی' : 'Within internal target') : (lang === 'fa' ? 'فراتر از target داخلی' : 'Above internal target')}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-300 font-mono">
                   <span>{lang === 'fa' ? 'ولتاژ گام محاسبه‌شده:' : 'Actual Es:'} <strong>{earthingResult.actualStepVoltageVolts} V</strong></span>
-                  <span>{lang === 'fa' ? 'حد مجاز حاکم:' : 'Governing limit:'} <strong>{earthingResult.maxStepVoltageVolts} V</strong></span>
+                  <span>{lang === 'fa' ? 'target داخلی مدل:' : 'Internal model target:'} <strong>{earthingResult.maxStepVoltageVolts} V</strong></span>
                 </div>
                 <span className="text-[10px] text-slate-400 block mt-1">
-                  {lang === 'fa' ? 'حد غربالگری ولتاژ گام (محاسبه IEEE 80 مقید به سقف ایمنی فرضی رژیم زمین)' : 'Step screening limit (IEEE 80 constrained by indicative grounding regime ceiling)'}
+                  {lang === 'fa' ? 'حد غربالگری ولتاژ گام (محاسبه IEEE 80 مقید به target داخلی فرضی رژیم زمین)' : 'Step screening limit (IEEE 80 constrained by internal assumed grounding-regime target)'}
                 </span>
               </div>
             </div>

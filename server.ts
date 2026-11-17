@@ -45,6 +45,7 @@ import {
   normalizeGeocodeQuery,
 } from './src/engine/dataGateway/geocodeCache.js';
 import { isRealInternetEnabled } from './src/engine/env/runtimeEnv.js';
+import { createClientRateLimiter } from './src/server/clientRateLimit.js';
 
 const app = express();
 const rawPort = Number(process.env.PORT) || Number(process.env.APP_PORT);
@@ -84,6 +85,8 @@ function securityHeadersMiddleware(_req: Request, res: Response, next: (e?: any)
   next();
 }
 app.use(securityHeadersMiddleware);
+// Proxy headers are untrusted unless the deployment operator explicitly enables trust.
+app.set('trust proxy', process.env.TRUST_PROXY === 'true');
 
 function isProductionEnv(): boolean {
   return process.env.NODE_ENV === 'production';
@@ -104,6 +107,10 @@ const BUILT_IN_CATALOG_IDS = new Set<string>([
   'bat-byd-lvs',
 ]);
 
+// Bound high-cost public endpoints before JSON parsing. This in-memory limit is
+// per process; distributed deployments must additionally enforce a shared edge limit.
+app.use('/api/v1/gateway/geocode', createClientRateLimiter({ windowMs: 60_000, maxRequests: 30 }));
+app.use('/api/v1/reports/generate', createClientRateLimiter({ windowMs: 60_000, maxRequests: 20 }));
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '2mb' }));
 
 // Robust JSON body parse error handler (P3-01 / MAIN-01)
@@ -781,13 +788,41 @@ function resolveRequesterIdentity(req: Request): { userId?: string; authError?: 
           const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
           const payload = JSON.parse(payloadJson);
 
-          // Expiration check (exp in seconds)
-          if (typeof payload.exp === 'number' && Date.now() / 1000 > payload.exp) {
+          const nowSeconds = Math.floor(Date.now() / 1000);
+          // JWT exp is optional in RFC 7519, but this API's access-token profile requires it.
+          if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
+            return { authError: 'Invalid bearer token: exp claim is required' };
+          }
+          if (payload.exp <= nowSeconds) {
             return { authError: 'Invalid bearer token: token has expired' };
           }
-          // Not before check (nbf in seconds)
-          if (typeof payload.nbf === 'number' && Date.now() / 1000 < payload.nbf) {
+          const configuredMaxTtl = Number(process.env.JWT_MAX_TTL_SECONDS ?? 86400);
+          const maxTtlSeconds = Number.isFinite(configuredMaxTtl) && configuredMaxTtl >= 60
+            ? Math.min(configuredMaxTtl, 604800)
+            : 86400;
+          if (payload.exp - nowSeconds > maxTtlSeconds) {
+            return { authError: 'Invalid bearer token: expiration exceeds the configured maximum lifetime' };
+          }
+          // Not-before and issued-at claims, when present, must be numeric NumericDate values.
+          if (payload.nbf !== undefined && (typeof payload.nbf !== 'number' || !Number.isFinite(payload.nbf))) {
+            return { authError: 'Invalid bearer token: malformed nbf claim' };
+          }
+          if (typeof payload.nbf === 'number' && nowSeconds < payload.nbf) {
             return { authError: 'Invalid bearer token: token not yet valid' };
+          }
+          if (payload.iat !== undefined && (typeof payload.iat !== 'number' || !Number.isFinite(payload.iat) || payload.iat > nowSeconds + 60)) {
+            return { authError: 'Invalid bearer token: malformed or future iat claim' };
+          }
+          const expectedIssuer = process.env.JWT_ISSUER;
+          if (expectedIssuer && payload.iss !== expectedIssuer) {
+            return { authError: 'Invalid bearer token: issuer claim mismatch' };
+          }
+          const expectedAudience = process.env.JWT_AUDIENCE;
+          if (expectedAudience) {
+            const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+            if (!audiences.includes(expectedAudience)) {
+              return { authError: 'Invalid bearer token: audience claim mismatch' };
+            }
           }
 
           const userId = payload.sub || payload.userId || payload.id;

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/solarPvEngine.ts#calculateVoltageDropDc#746c88a0e1f3",
+  "independentOfImplementation": true,
+  "productionExport": "calculateVoltageDropDc",
+  "inputs": [6, 15, 10, 24, 0.017241],
+  "expected": 1.293075,
+  "independentCalculation": "For a two-wire DC circuit, the one-way length is doubled. From Ohm's law and conductor resistance R = rho*L/A, the loop resistance is 0.017241*(2*6)/10 = 0.0206892 ohm; multiplying by 15 A gives 0.310338 V. Dividing by 24 V and multiplying by 100 gives 1.293075%. Copper resistivity 0.017241 ohm-mm2/m at 20 C is independently listed by Copper Development Association (Introduction to Copper, Table 5). The two-conductor voltage-drop relation is independently derived in PDHonline Voltage Drop Calculations (2026), Common Formulas, single-phase approximate Equation 2; its stated K/A form is unit-system-specific, while this fixture uses SI resistivity and area.",
+  "tolerances": {
+    "absolute": 0.0000005,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "Voltage Drop Calculations",
+    "url": "https://pdhonline.com/courses/e426/e426content.pdf",
+    "version": "2026",
+    "locator": "Common Formulas for Voltage Drop Calculations, Single-Phase Approximate Voltage Drop Formulas, Equation 2"
+  }
+}

@@ -343,9 +343,9 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
             {subResult.earthing.calculatedGridResistanceOhms} <span className="text-xs font-normal text-slate-300">Ω</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {subResult.earthing.isCompliant
-              ? (isFa ? '✓ مطابق IEEE 80 (زیر ۱ اهم)' : '✓ Compliant IEEE 80 (< 1.0 Ω)')
-              : (isFa ? 'نیاز به بهسازی چاه ارت' : 'Deep earth boreholes required')}
+            {subResult.earthing.screeningPassed
+              ? (isFa ? '✓ غربالگری مقدماتی عبور کرد؛ انطباق IEEE 80 تأیید نشده' : '✓ Preliminary screen passed; IEEE 80 compliance not verified')
+              : (isFa ? 'غربالگری ناموفق؛ نیازمند بررسی تخصصی ارتینگ' : 'Screen failed; qualified grounding review required')}
           </div>
         </div>
       </div>
@@ -402,30 +402,35 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
           <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Anchor className="w-4 h-4 text-teal-400 shrink-0" />
-              {isFa ? 'طراحی مش ارتینگ و ولتاژهای گام/لمس (IEEE 80)' : 'Substation Grounding Grid Design (IEEE 80)'}
+              {isFa ? 'غربالگری مقدماتی ارتینگ و ولتاژهای گام/لمس' : 'Preliminary Grounding & Touch/Step Screening'}
             </span>
             <span className="text-[10px] text-industrial-success font-mono font-bold">
               Rg = {subResult.earthing.calculatedGridResistanceOhms} Ω
             </span>
           </h3>
+          <p className="mb-3 rounded border border-amber-700/50 bg-amber-950/20 p-2 text-[11px] text-amber-200">
+            {isFa
+              ? 'این خروجی فقط غربالگری با فرض‌های داخلی است، نه ارزیابی انطباق IEEE 80 یا تأیید ایمنی. حدود نمایش‌داده‌شده target مدل‌اند؛ طراحی نهایی به اندازه‌گیری خاک، هندسه واقعی شبکه و بازبینی مهندس ذی‌صلاح نیاز دارد.'
+              : 'Internal-assumption screening only—not an IEEE 80 compliance or safety determination. Displayed limits are model targets; final design requires measured soil, actual grid geometry, and qualified engineering review.'}
+          </p>
           <div className="space-y-2 text-xs text-slate-300">
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'سطح مقطع هادی مسی مش ارت:' : 'Grid Conductor Size:'}</span>
               <strong className="text-teal-300 font-mono text-sm">{subResult.earthing.groundGridConductorMm2} mm² Cu</strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
-              <span className="text-slate-400">{isFa ? 'ولتاژ تماس مش (Em) / حد مجاز:' : 'Mesh Touch Voltage (Em) / Tol:'}</span>
+              <span className="text-slate-400">{isFa ? 'ولتاژ تماس مش (Em) / target داخلی:' : 'Mesh Touch Voltage (Em) / internal target:'}</span>
               <div className="text-right">
-                <strong className={`font-mono ${subResult.earthing.isTouchSafe ? 'text-industrial-success' : 'text-industrial-error'}`}>
+                <strong className={`font-mono ${subResult.earthing.touchScreenPassed ? 'text-industrial-success' : 'text-industrial-error'}`}>
                   {subResult.earthing.actualMeshVoltageVolts} V
                 </strong>
                 <span className="text-[10px] text-slate-400 font-mono ml-1">/ {subResult.earthing.touchVoltageLimitVolts} V</span>
               </div>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
-              <span className="text-slate-400">{isFa ? 'ولتاژ گام محوطه (Es) / حد مجاز:' : 'Step Voltage (Es) / Tol:'}</span>
+              <span className="text-slate-400">{isFa ? 'ولتاژ گام محوطه (Es) / target داخلی:' : 'Step Voltage (Es) / internal target:'}</span>
               <div className="text-right">
-                <strong className={`font-mono ${subResult.earthing.isStepSafe ? 'text-industrial-success' : 'text-industrial-error'}`}>
+                <strong className={`font-mono ${subResult.earthing.stepScreenPassed ? 'text-industrial-success' : 'text-industrial-error'}`}>
                   {subResult.earthing.actualStepVoltageVolts} V
                 </strong>
                 <span className="text-[10px] text-slate-400 font-mono ml-1">/ {subResult.earthing.stepVoltageLimitVolts} V</span>
@@ -433,8 +438,8 @@ export const MvSubstationTab: React.FC<MvSubstationTabProps> = ({
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">
               <span className="text-slate-400">{isFa ? 'مقاومت الکتریکی کل مش زمین:' : 'Grid Resistance (Rg):'}</span>
-              <strong className="text-industrial-success font-mono font-bold text-sm">
-                {subResult.earthing.calculatedGridResistanceOhms} Ω (&lt; 1.0 Ω)
+              <strong className={`font-mono font-bold text-sm ${subResult.earthing.resistanceScreenPassed ? 'text-industrial-success' : 'text-industrial-error'}`}>
+                {subResult.earthing.calculatedGridResistanceOhms} Ω (internal target ≤ 1.0 Ω)
               </strong>
             </div>
             <div className="flex justify-between p-2 bg-industrial-surface/60 rounded">

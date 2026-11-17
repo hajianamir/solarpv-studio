@@ -1662,7 +1662,7 @@ export const App: React.FC = () => {
         },
       ];
     }
-  }, [systemMode, t, lang, city.peakSunHours, mvVoltageKv, customBaysCount, arrayDesign.totalPvCapacityKwp, arrayDesign.effectiveDeratingFactor, loadAnalysis.totalDailyEnergyKwh, batterySizing.grossCapacityKwh, simulationResult.isSelfSufficient, financialResult.irrPct, financialResult.isIrrDefined]);
+  }, [systemMode, t, lang, city.peakSunHours, mvVoltageKv, customBaysCount, arrayDesign.totalPvCapacityKwp, arrayDesign.effectiveDeratingFactor, loadAnalysis.totalDailyEnergyKwh, batterySizing.grossCapacityKwh, simulationResult.isSelfSufficient, simulationResult.isGenerationDeratingAssessed, simulationResult.isPowerLimitsAssessed, financialResult.irrPct, financialResult.isIrrDefined]);
 
   // Flattened list of tabs for Sequential Navigation and Command Palette
   const flattenedTabsList = useMemo(() => {

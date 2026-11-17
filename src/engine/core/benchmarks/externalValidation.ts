@@ -1,21 +1,12 @@
 /**
- * Field Measurement Validation & Cross-Model Comparison Suite
- * SolarPV Studio v3.0 - Phase 2a (PR-2a-4-REPAIR Gate)
+ * Internal Reference-Target Comparison Harness (NOT external validation)
  *
- * Taxonomical Distinction:
- * 1. Field Measurement Validation (IEC 61724-1 Class A Sensors):
- *    Direct physical field sensor measurements from calibrated optical transmissometers
- *    and reference cell pairs (SEAC / NREL PVDAQ Station 1221, Mesa, Arizona).
- *    Independent operational dataset: 45 consecutive dry days (Summer 2018), 8.45% measured loss.
- *    DOI: 10.2172/1055749 | URL: https://developer.nrel.gov/docs/solar/pvdaq-v3/site-1221/
- *    Guaranteed ZERO circularity or overlap with Kimber et al. (2006) 30-day calibration set.
- *
- * 2. Cross-Model Comparison (NREL SAM 2023.12.17 Multi-Climate):
- *    Third-party software inter-comparison against NREL System Advisor Model (SAM):
- *    - Hub A: Phoenix, Arizona (Hyper-arid desert, high soiling, zero snow)
- *    - Hub B: Munich, Bavaria (Temperate continental, moderate soiling, seasonal snow)
- *    - Hub C: Singapore (Tropical equatorial, high rainfall wash-off, zero snow)
- *
+ * The checked-in values in this module are synthetic/internal targets. This repository
+ * does not include authenticated raw field telemetry or an executable SAM run artifact.
+ * A PASS therefore means only that local code agrees with a stored target; it does not
+ * establish field validation, independent cross-validation, standards compliance, or
+ * accuracy against NREL SAM. Do not describe the output as independent evidence.
+
  * Explicit Physical Operational Validity Boundaries:
  * - Array Tilt Angle:          0.0° <= beta <= 60.0°
  * - Ambient Air Temperature:   -30.0°C <= T_amb <= +55.0°C
@@ -30,24 +21,18 @@ import { simulateAnnualSoiling, type DailyWeatherSoilingStep } from '../../soili
 import { simulateAnnualSnowShedding, type HourlySnowWeatherStep } from '../../snow/marionSnowEngine';
 import { generateNrelHubSnowWeather } from '../../snow/marionSnowRecalibration';
 
-export interface FieldStationBenchmark {
-  stationId: string;
-  stationName: string;
-  sourceStandard: string;
-  empiricalSensorLossPercent: number;
+export interface InternalReferenceComparison {
+  /** No authenticated raw field telemetry is supplied; PASS is an internal target comparison only. */
+  evidenceStatus: 'unverified';
+  targetId: string;
+  description: string;
+  targetBasisNote: string;
+  referenceTargetLossPercent: number;
   simulatedEngineLossPercent: number;
   relativeDiscrepancyPercent: number;
   tolerancePercent: number;
   status: 'PASS' | 'WARN' | 'FAIL';
   operationalNotes: string;
-  datasetProvenance: {
-    pvdaqStationId: string;
-    doi: string;
-    url: string;
-    monitoringPeriod: string;
-    dryIntervalDays: number;
-    sensorTechnology: string;
-  };
 }
 
 export interface CrossModelSamComparison {
@@ -84,7 +69,7 @@ export interface ExternalValidationReport {
     minGroundClearanceM: number;
     maxGroundClearanceM: number;
   };
-  fieldBenchmarks: FieldStationBenchmark[];
+  referenceComparisons: InternalReferenceComparison[];
   crossModelComparisons: CrossModelSamComparison[];
   /** Backward compatibility property */
   multiClimateComparisons: CrossModelSamComparison[];
@@ -92,7 +77,9 @@ export interface ExternalValidationReport {
 }
 
 export interface ExternalValidationOptions {
-  customFieldMeasuredLoss?: number;
+  /** Test-only/reference-harness override; limits all reads to this isolated directory. */
+  referenceDirectory?: string;
+  customReferenceTargetLoss?: number;
   customFieldSimLoss?: number;
   customTolerancePercent?: number;
   forceCrossModelFailure?: boolean;
@@ -191,7 +178,7 @@ function validateSamReferenceCase(filename: string, parsed: any): void {
  * Helper to dynamically load versioned reference case files from benchmarks/reference_files/
  * Safe across Node.js (reads strictly from disk with fail-closed validation) and browser runtimes.
  */
-function loadSamReferenceCase(filename: string): any {
+function loadSamReferenceCase(filename: string, referenceDirectory?: string): any {
   const isNode = typeof process !== 'undefined' && Boolean(process?.versions?.node);
   if (!isNode) {
     // In client browser builds, return null to fall back to static compiled baselines
@@ -204,8 +191,12 @@ function loadSamReferenceCase(filename: string): any {
     throw new Error(`[SAM Benchmark Loader] Node environment detected but failed to initialize fs/path modules for '${filename}'.`);
   }
 
-  let filePath = path.resolve(process.cwd(), 'benchmarks/reference_files', filename);
-  if (!fs.existsSync(filePath)) {
+  // An explicit referenceDirectory is intentionally strict: tests can exercise
+  // missing/corrupt fixtures without mutating the repository's canonical files.
+  let filePath = referenceDirectory
+    ? path.resolve(referenceDirectory, filename)
+    : path.resolve(process.cwd(), 'benchmarks/reference_files', filename);
+  if (!referenceDirectory && !fs.existsSync(filePath)) {
     // Check up to 3 parent directories in case cwd is in a subdirectory
     let cur = process.cwd();
     for (let i = 0; i < 3; i++) {
@@ -238,15 +229,13 @@ function loadSamReferenceCase(filename: string): any {
 }
 
 /**
- * Runs the IEC 61724-1 empirical sensor cross-check and SAM multi-climate suite.
+ * Runs internal stored-target comparisons only; no field or executable SAM validation is performed.
  */
 export function runExternalEmpiricalValidationSuite(options: ExternalValidationOptions = {}): ExternalValidationReport {
-  const fieldBenchmarks: FieldStationBenchmark[] = [];
+  const referenceComparisons: InternalReferenceComparison[] = [];
 
-  // 1. IEC 61724-1 Field Sensor Station: SEAC / NREL PVDAQ Mesa, Arizona (Station 1221)
-  // Field Measurement Protocol: Calibrated optical transmissometer sensor
-  // Independent operational dataset: 45 consecutive dry summer days (June 15 - July 30, 2018)
-  // Measured transmission loss: 8.45% (distinct from Kimber 30-day 6.60% calibration set)
+  // 1. Internal synthetic soiling comparison. The historical PVDAQ narrative/measurement
+  // values were not supported by raw telemetry in this repository, so they are not represented as field evidence.
   const mesaDryDays: DailyWeatherSoilingStep[] = Array.from({ length: 45 }, (_, i) => ({
     dayOfYear: i + 1,
     rainfallMm: 0,
@@ -254,7 +243,7 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
   }));
   const mesaSoilingSim = simulateAnnualSoiling(
     {
-      dailySoilingRatePercent: 0.188, // Mesa Summer 2018 operational baseline
+      dailySoilingRatePercent: 0.188, // Synthetic internal scenario input; not an independently sourced field rate.
       rainCleaningThresholdMm: 5.0,
       maxSoilingCeilingPercent: 30.0,
       scheduledWashIntervalDays: 0,
@@ -265,36 +254,28 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
 
   const rawSimLoss = mesaSoilingSim.dailyProfile[44]?.dailySoilingLossPercent ?? 8.46;
   const mesaSimLoss = options.customFieldSimLoss ?? rawSimLoss;
-  const mesaMeasuredLoss = options.customFieldMeasuredLoss ?? 8.45;
+  const storedTargetLoss = options.customReferenceTargetLoss ?? 8.45;
   const tolerance = options.customTolerancePercent ?? 3.0;
-  const mesaErr = (Math.abs(mesaSimLoss - mesaMeasuredLoss) / mesaMeasuredLoss) * 100.0;
-  const isFieldPass = mesaErr <= tolerance;
+  const targetDeviation = (Math.abs(mesaSimLoss - storedTargetLoss) / storedTargetLoss) * 100.0;
+  const targetComparisonPass = targetDeviation <= tolerance;
 
-  fieldBenchmarks.push({
-    stationId: 'FIELD-SEAC-AZ-01',
-    stationName: 'SEAC / NREL PVDAQ Mesa AZ Solar Testing Site (Station 1221)',
-    sourceStandard: 'IEC 61724-1 Class A Optical Transmissometer (PVDAQ Station 1221, Summer 2018)',
-    empiricalSensorLossPercent: mesaMeasuredLoss,
+  referenceComparisons.push({
+    evidenceStatus: 'unverified',
+    targetId: 'INTERNAL-SOILING-TARGET-01',
+    description: 'Internal synthetic soiling target (not field telemetry)',
+    targetBasisNote: 'No verified field dataset or sensor records supplied',
+    referenceTargetLossPercent: storedTargetLoss,
     simulatedEngineLossPercent: Number(mesaSimLoss.toFixed(2)),
-    relativeDiscrepancyPercent: Number(mesaErr.toFixed(2)),
+    relativeDiscrepancyPercent: Number(targetDeviation.toFixed(2)),
     tolerancePercent: tolerance,
-    status: isFieldPass ? 'PASS' : 'FAIL',
-    operationalNotes:
-      'Independent 45-day dry summer period in Sonoran desert (Station 1221): 8.45% measured loss vs 8.46% simulated (0.12% discrepancy). Provenance: NREL PVDAQ Site 1221, DOI 10.2172/1055749 (zero overlap with Kimber 2006 SMUD calibration set)',
-    datasetProvenance: {
-      pvdaqStationId: 'PVDAQ-1221-MESA-AZ',
-      doi: '10.2172/1055749',
-      url: 'https://developer.nrel.gov/docs/solar/pvdaq-v3/site-1221/',
-      monitoringPeriod: '2018-06-15 to 2018-07-30 (45 dry days)',
-      dryIntervalDays: 45,
-      sensorTechnology: 'IEC 61724-1 Class A Spectrally Flat Optical Transmissometer',
-    },
+    status: targetComparisonPass ? 'PASS' : 'FAIL',
+    operationalNotes: 'Internal target comparison only. The 8.45% target and 45-day input are not authenticated measurements; this result is not field validation.',
   });
 
-  // 2. SAM 2023.12.17 Cross-Model Multi-Climate Comparative Benchmarks (Dynamic Engine Executions)
+  // 2. Stored internal multi-climate target comparisons (not a SAM software execution)
   // Dynamically load versioned SAM reference cases from benchmarks/reference_files/
-  const phxRef = loadSamReferenceCase('sam_2023_12_17_phoenix_soiling_reference.sam');
-  const munichRef = loadSamReferenceCase('sam_2023_12_17_munich_snow_reference.sam');
+  const phxRef = loadSamReferenceCase('sam_2023_12_17_phoenix_soiling_reference.sam', options.referenceDirectory);
+  const munichRef = loadSamReferenceCase('sam_2023_12_17_munich_snow_reference.sam', options.referenceDirectory);
 
   // 2a. Phoenix, Arizona: Hyper-arid Sonoran desert with rain wash events dynamically loaded from reference case
   const phxWashDays: number[] = Array.isArray(phxRef?.soilingModel?.washEventsDaysOfYear)
@@ -424,7 +405,7 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
       studioAnnualSnowPercent: phxSnowPct,
       snowDeltaPercent: 0.00,
       overallStatus: options.forceCrossModelFailure ? 'FAIL' : (phxDelta <= phxTol ? 'PASS' : 'WARN'),
-      referenceSource: phxRef ? 'sam_2023_12_17_phoenix_soiling_reference.sam (Dynamically Bound)' : 'NREL SAM 2023.12.17 TMY3 Phoenix Case & Kimber (2006)',
+      referenceSource: phxRef ? 'Internal checked-in JSON target manifest (not an executable SAM output)' : 'Unverified internal fallback target',
     },
     {
       climateHubId: 'SAM-HUB-MUNICH',
@@ -437,7 +418,7 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
       studioAnnualSnowPercent: munichSnowPct,
       snowDeltaPercent: munichSnowDelta,
       overallStatus: munichSoilingDelta <= 5.0 && munichSnowDelta <= munichTol ? 'PASS' : 'WARN',
-      referenceSource: munichRef ? 'sam_2023_12_17_munich_snow_reference.sam (Dynamically Bound)' : 'DWD Munich Trial & NREL SAM 2023.12.17 Marion Snow Model',
+      referenceSource: munichRef ? 'Internal checked-in JSON target manifest (not an executable SAM output)' : 'Unverified internal fallback target',
     },
     {
       climateHubId: 'SAM-HUB-SINGAPORE',
@@ -450,26 +431,26 @@ export function runExternalEmpiricalValidationSuite(options: ExternalValidationO
       studioAnnualSnowPercent: sgSnowPct,
       snowDeltaPercent: 0.00,
       overallStatus: sgDelta <= 5.0 ? 'PASS' : 'WARN',
-      referenceSource: 'SERIS Singapore Field Trial & SAM High-Rainfall Wash-Off Model',
+      referenceSource: 'Synthetic internal comparison target; no verified SERIS or SAM output supplied',
     },
   ];
 
   const allPassed =
-    fieldBenchmarks.every(b => b.status === 'PASS') &&
+    referenceComparisons.every(b => b.status === 'PASS') &&
     crossModelComparisons.every(c => c.overallStatus === 'PASS');
 
   return {
     timestamp: new Date().toISOString(),
     overallStatus: allPassed ? 'PASS' : 'FAIL',
     validityBoundaries: PHYSICAL_VALIDITY_BOUNDARIES,
-    fieldBenchmarks,
+    referenceComparisons,
     crossModelComparisons,
     multiClimateComparisons: crossModelComparisons,
     engineeringSummary: [
-      'Field Measurement Validation proves empirical independence from circular calibration datasets.',
-      'Field transmissometer sensors at Mesa AZ (PVDAQ 1221, Summer 2018) match simulated soiling within 0.12% relative error.',
-      'Cross-Model Comparison against NREL SAM 2023.12.17 confirms multi-climate accuracy across hyper-arid, temperate snow-prone, and tropical regimes with all discrepancies <= 2.7%.',
-      'Operational boundaries documented and enforced across physical parameter domains.',
+      'The stored soiling target is synthetic/internal and is not field-measurement evidence.',
+      'The multi-climate comparisons consume checked-in targets; no executable SAM run or independent third-party output is verified here.',
+      'PASS means only agreement with local target values within configured tolerances; physical accuracy and standards conformity remain unassessed.',
+      'Operational input boundaries are documented; they do not establish model validity outside independently verified domains.',
     ],
   };
 }

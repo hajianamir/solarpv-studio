@@ -1,10 +1,6 @@
-// Medium-Voltage (MV) & High-Voltage (HV) Substation, Transformer & IEEE 80 Grounding Engine
-// Governed by:
-// - IEC 60076 (Power Transformers) with ambient temperature and altitude derating
-// - IEC 60909 (Short-circuit currents in three-phase a.c. systems)
-// - IEC 62271-200 (A.C. metal-enclosed switchgear and controlgear)
-// - IEEE 80-2013 (Guide for Safety in AC Substation Grounding)
-// - IEC 60099-4 (Surge arresters)
+// Medium-Voltage (MV) & High-Voltage (HV) preliminary engineering screening models.
+// The simplified calculations below are not standards-conformity determinations or substitutes
+// for a project study using verified manufacturer, utility, site, and licensed-standard inputs.
 
 export interface MvSubstationInput {
   plantCapacityAcMva?: number;   // Plant AC capacity in MVA
@@ -12,8 +8,8 @@ export interface MvSubstationInput {
   powerFactor?: number;          // Explicit operating power factor (default 0.95)
   inverterOutputVoltageV: number;// e.g. 400V, 690V, 800V
   gridConnectionVoltageKv: number;// e.g. 20kV, 33kV, 63kV
-  soilResistivityOhmM: number;  // Soil resistivity (e.g. 60 ohm-m moist clay, 250 ohm-m gravel)
-  clearingTimeSec: number;      // Fault duration (e.g. 0.5s)
+  soilResistivityOhmM: number;  // User-provided screening input; field measurement/soil model not verified here
+  clearingTimeSec: number;      // User-provided screening input; protection-study basis not verified here
   ambientTempC?: number;        // Site maximum ambient temp (e.g. 45°C)
   elevationM?: number;          // Site elevation (e.g. 1400m)
   upstreamGridShortCircuitMva?: number; // Upstream utility short-circuit capacity (e.g. 500 MVA)
@@ -242,13 +238,20 @@ export interface Ieee80EarthingResult {
   touchVoltageLimitVolts: number;  // Maximum permissible safe touch voltage
   stepVoltageLimitVolts: number;   // Maximum permissible safe step voltage
   calculatedGridResistanceOhms: number; // Target Rg <= 1.0 Ohm
-  isCompliant: boolean; // Comprehensive IEEE 80 compliance: Rg <= 1.0 && isTouchSafe && isStepSafe && isConductorCompliant
-  isResistanceCompliant: boolean; // Grid resistance threshold Rg <= 1.0 Ohm
+  /** No project-level compliance or safety determination is available from this model. */
+  isCompliant: null;
+  isResistanceCompliant: null;
+  isTouchSafe: null;
+  isStepSafe: null;
+  isConductorCompliant?: null;
+  /** Pass/fail comparisons against internal assumed thresholds only. */
+  screeningPassed: boolean;
+  resistanceScreenPassed: boolean;
+  touchScreenPassed: boolean;
+  stepScreenPassed: boolean;
+  conductorScreenPassed?: boolean;
   actualMeshVoltageVolts: number;
   actualStepVoltageVolts: number;
-  isTouchSafe: boolean;
-  isStepSafe: boolean;
-  isConductorCompliant?: boolean;
   requiredConductorMm2?: number;
   parallelConductorsCount?: number;
   complianceNotesFa?: string;
@@ -669,7 +672,7 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const selectedStandardMm2 = STANDARD_GROUND_CONDUCTORS.find(s => s >= requiredConductorMm2) ?? requiredConductorMm2;
   const parallelConductorsCount = requiredConductorMm2 > 500 ? Math.ceil(requiredConductorMm2 / 240) : (requiredConductorMm2 > 240 ? 2 : 1);
   const groundGridConductorMm2 = selectedStandardMm2;
-  const isConductorCompliant = groundGridConductorMm2 >= requiredConductorMm2;
+  const conductorScreenPassed = groundGridConductorMm2 >= requiredConductorMm2;
 
   // Tolerable Touch & Step Voltages for 50kg body with 10cm gravel surface layer (rho_s ≈ 3000 ohm-m)
   const cs = 1.0 - (0.09 * (1.0 - soilResistivityOhmM / 3000.0)) / (2.0 * 0.10 + 0.09);
@@ -688,39 +691,44 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
   const actualMesh = Math.round((soilResistivityOhmM * ifaultKa * 1000.0 * 0.65) / (totalBuriedLengthM * 1.5));
   const actualStep = Math.round((soilResistivityOhmM * ifaultKa * 1000.0 * 0.35) / (totalBuriedLengthM * 1.2));
 
-  const isResistanceCompliant = calculatedGridResistanceOhms <= 1.0;
-  const isTouchSafe = actualMesh <= touchVoltageLimitVolts;
-  const isStepSafe = actualStep <= stepVoltageLimitVolts;
-  const isCompliant = isResistanceCompliant && isTouchSafe && isStepSafe && isConductorCompliant;
+  const resistanceScreenPassed = calculatedGridResistanceOhms <= 1.0;
+  const touchScreenPassed = actualMesh <= touchVoltageLimitVolts;
+  const stepScreenPassed = actualStep <= stepVoltageLimitVolts;
+  const screeningPassed = resistanceScreenPassed && touchScreenPassed && stepScreenPassed && conductorScreenPassed;
 
   const earthing: Ieee80EarthingResult = {
     groundGridConductorMm2,
     touchVoltageLimitVolts,
     stepVoltageLimitVolts,
     calculatedGridResistanceOhms,
-    isCompliant,
-    isResistanceCompliant,
+    isCompliant: null,
+    isResistanceCompliant: null,
+    isTouchSafe: null,
+    isStepSafe: null,
+    isConductorCompliant: null,
+    screeningPassed,
+    resistanceScreenPassed,
+    touchScreenPassed,
+    stepScreenPassed,
+    conductorScreenPassed,
     actualMeshVoltageVolts: actualMesh,
     actualStepVoltageVolts: actualStep,
-    isTouchSafe,
-    isStepSafe,
-    isConductorCompliant,
     requiredConductorMm2,
     parallelConductorsCount,
-    complianceNotesFa: isCompliant
-      ? 'شبکه زمین پست طبق IEEE 80 هم از نظر مقاومت کمتر از ۱ اهم، هم ولتاژهای تماس و گام و هم سطح مقطع حرارتی هادی ایمن است.'
-      : !isConductorCompliant
-        ? `سطح مقطع هادی زمین (${groundGridConductorMm2} mm²) کمتر از نیاز حرارتی اتصال کوتاه (${requiredConductorMm2} mm²) است! خطر ذوب هادی طبق فرمول Onderdonk استاندارد IEEE 80.`
-        : !isResistanceCompliant
-          ? 'مقاومت شبکه زمین از ۱ اهم بیشتر است. نیاز به افزایش طول هادی مدفون یا افزودن میله راد عمقی.'
-          : 'ولتاژ تماس یا گام از حد مجاز انسانی فراتر است! ضخامت لایه شن سطحی یا تراکم مش زمین را افزایش دهید.',
-    complianceNotesEn: isCompliant
-      ? 'Substation grounding grid fully compliant with IEEE 80 (Rg <= 1.0 Ohm, touch and step voltages safe, and conductor thermal cross-section adequate).'
-      : !isConductorCompliant
-        ? `Earthing conductor cross-section (${groundGridConductorMm2} mm²) is insufficient for fault current thermal withstand (${requiredConductorMm2} mm² required per IEEE 80 Onderdonk equation).`
-        : !isResistanceCompliant
-          ? 'Ground resistance exceeds 1.0 Ohm target; add deep vertical ground rods or expand grid perimeter.'
-          : 'Touch or step voltage exceeds safe physiological threshold per IEEE 80; increase gravel surface layer or mesh density.',
+    complianceNotesFa: screeningPassed
+      ? 'غربالگری مقدماتی مدل با فرض‌های داخلی از حدود محاسباتی عبور کرده است؛ این نتیجه انطباق IEEE 80 یا ایمنی محل را تأیید نمی‌کند. مطالعهٔ مهندس حفاظت/ارتینگ با دادهٔ واقعی خاک و هندسه الزامی است.'
+      : !conductorScreenPassed
+        ? `غربالگری: سطح مقطع هادی ورودی (${groundGridConductorMm2} mm²) از مقدار محاسباتی داخلی (${requiredConductorMm2} mm²) کمتر است؛ انتخاب نهایی باید با استاندارد نافذ و محاسبهٔ مهندس بررسی شود.`
+        : !resistanceScreenPassed
+          ? 'غربالگری: مقاومت محاسباتی از target داخلی ۱ اهم بیشتر است؛ این target به‌تنهایی معیار کافی برای طراحی ارتینگ نیست.'
+          : 'غربالگری: مدل محاسباتی touch/step را از target داخلی تجاوزشده نشان می‌دهد؛ هندسه و دادهٔ واقعی خاک/سطح در این نتیجه کامل نیست.',
+    complianceNotesEn: screeningPassed
+      ? 'Preliminary model screening passed its internal thresholds; this does not establish IEEE 80 compliance or site safety. A qualified grounding study using measured soil and actual grid geometry is required.'
+      : !conductorScreenPassed
+        ? `Screening: input conductor area (${groundGridConductorMm2} mm²) is below this model's calculated value (${requiredConductorMm2} mm²); verify using the adopted standard and a qualified engineer.`
+        : !resistanceScreenPassed
+          ? 'Screening: calculated resistance exceeds the internal 1.0 Ohm target; this target alone is not a sufficient grounding design criterion.'
+          : 'Screening: modeled touch/step values exceed internal targets; actual soil/surface data and grid geometry are not fully represented.'
   };
 
   // 4. Auxiliary Station Service Transformer (مصارف داخلی)
@@ -790,7 +798,7 @@ export function designMvSubstation(input: MvSubstationInput): MvSubstationResult
     ...(isBreakerSufficient
       ? [`کلید دژنکتور منتخب از کاتالوگ مرجع (${shortCircuit.selectedBreakerModel} با قدرت قطع ${breakingCapacityKa} kA متقارن، قدرت وصل ${ratedPeakMakingCapacityKa} kA پیک و تحمل حرارتی ${shortCircuit.ratedShortTimeDurationSec} ثانیه‌ای) مقادیر اتصال کوتاه و بار نامی طراحی را طبق مشخصات کاتالوگ سازنده بر پایه رده‌بندی IEC 62271-100 پوشش می‌دهد؛ انطباق نهایی در اسناد EPC منوط به تایید تایپ‌تست کارخانه‌ای سازنده و تطبیق شرایط محیطی ساختگاه است.`]
       : [`هشدار بحرانی: هیچ بریکر استاندارد MV با مشخصات کافی برای شرایط پروژه یافت نشد (علت عدم انطباق: ${shortCircuit.breakerDeficiencyReason}).`]),
-    `طراحی مش ارتینگ پست بر اساس IEEE 80 با هادی مسی ${earthing.groundGridConductorMm2} mm² و مقاومت کل زمین ${earthing.calculatedGridResistanceOhms} اهم (تأمین ولتاژ گام و لمس مجاز).`,
+    `غربالگری مقدماتی ارتینگ با فرض‌های داخلی: هادی مسی ${earthing.groundGridConductorMm2} mm² و مقاومت برآوردی ${earthing.calculatedGridResistanceOhms} اهم؛ انطباق IEEE 80 یا ایمنی محل ارزیابی/تأیید نشده و ولتاژ گام/لمس باید با دادهٔ واقعی و مطالعهٔ مهندس بررسی شود.`,
     `تعبیه ترانسفورماتور مصارف داخلی ${auxiliaryTransformer.ratedKva} kVA جهت تغذیه بدون وقفه SCADA، سیستم‌های حفاظتی و درایوهای ترکر.`,
     `پشتیبانی کامل از تزریق توان راکتیو تا سقف ±${reactivePowerCapacityMvar} Mvar جهت تثبیت ولتاژ خطوط انتقال طبق کد شبکه ایران (Grid Code).`,
   ];

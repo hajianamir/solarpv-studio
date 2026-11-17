@@ -682,8 +682,8 @@ async function runAuditVerification() {
   const substringRows = await buildProvenanceRows(substringOnlyCity, undefined, true);
   const substringPsh = substringRows.find((r) => r.parameter === 'Peak Sun Hours (PSH)');
   assert(
-    substringPsh?.confidence === 'measured',
-    'A provider name containing regulatory words is not promoted without structured regulatory evidence',
+    substringPsh?.confidence === 'analytical',
+    'Provider/reanalysis data is not misrepresented as field-measured or regulatory evidence',
     `provider = ${substringPsh?.provider}, confidence = ${substringPsh?.confidence}`
   );
 
@@ -711,8 +711,8 @@ async function runAuditVerification() {
   const evidencedRows = await buildProvenanceRows(evidencedCity, undefined, true);
   const evidencedPsh = evidencedRows.find((r) => r.parameter === 'Peak Sun Hours (PSH)');
   assert(
-    evidencedPsh?.confidence === 'measured',
-    'Self-asserted structured evidence is not promoted to regulatory confidence without an independent trust anchor',
+    evidencedPsh?.confidence === 'analytical',
+    'Self-asserted provider data is not promoted to measured/regulatory confidence without an independent trust anchor',
     `provider = ${evidencedPsh?.provider}, confidence = ${evidencedPsh?.confidence}`
   );
 

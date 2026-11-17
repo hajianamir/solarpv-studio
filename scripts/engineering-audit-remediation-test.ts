@@ -380,11 +380,11 @@ async function runAuditRemediationSuite() {
       clearingTimeSec: 0.5,
     });
     const earthing = mvSub.earthing;
-    const isSafeLogic = earthing.isResistanceCompliant && earthing.isTouchSafe && earthing.isStepSafe;
+    const isSafeLogic = earthing.resistanceScreenPassed && earthing.touchScreenPassed && earthing.stepScreenPassed && earthing.conductorScreenPassed;
     assert(
-      earthing.isCompliant === isSafeLogic,
-      `Substation earthing compliance strictly gates on touch and step safety in addition to resistance`,
-      `isCompliant=${earthing.isCompliant}, touchSafe=${earthing.isTouchSafe}, stepSafe=${earthing.isStepSafe}, Rg=${earthing.calculatedGridResistanceOhms}Ω`
+      earthing.isCompliant === null && earthing.isResistanceCompliant === null && earthing.isTouchSafe === null && earthing.isStepSafe === null && earthing.screeningPassed === isSafeLogic,
+      `Substation grounding exposes internal screen results only, never project compliance or safety determinations`,
+      `isCompliant=${earthing.isCompliant}, screeningPassed=${earthing.screeningPassed}, touchScreen=${earthing.touchScreenPassed}, stepScreen=${earthing.stepScreenPassed}, Rg=${earthing.calculatedGridResistanceOhms}Ω`
     );
 
     // 5b. Structural preliminary screening disclaimer

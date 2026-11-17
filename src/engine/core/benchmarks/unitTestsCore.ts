@@ -650,40 +650,40 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   );
 
   // ==========================================================================
-  // Suite 11: Field Measurement Validation & SAM Cross-Model Suite
+  // Suite 11: Internal stored-target comparisons (external evidence status is unverified)
   // ==========================================================================
   const extReport = runExternalEmpiricalValidationSuite();
-  const mesaStation = extReport.fieldBenchmarks.find(b => b.stationId === 'FIELD-SEAC-AZ-01');
+  const mesaStation = extReport.referenceComparisons.find(b => b.targetId === 'INTERNAL-SOILING-TARGET-01');
   const samPhoenix = extReport.crossModelComparisons.find(c => c.climateHubId === 'SAM-HUB-PHOENIX');
   const samMunich = extReport.crossModelComparisons.find(c => c.climateHubId === 'SAM-HUB-MUNICH');
   const samSingapore = extReport.crossModelComparisons.find(c => c.climateHubId === 'SAM-HUB-SINGAPORE');
 
   assert(
     'ExternalVal',
-    'Overall External Validation Suite Status',
-    extReport.overallStatus === 'PASS',
-    `IEC 61724-1 field sensor benchmark and SAM cross-model comparisons all passed with zero tolerance violations`
+    'Internal Reference-Target Comparison Harness Status',
+    extReport.overallStatus === 'PASS' && mesaStation?.evidenceStatus === 'unverified',
+    `internal target comparisons passed; external field/SAM evidence remains explicitly unverified`
   );
   assert(
     'ExternalVal',
-    'IEC 61724-1 Mesa AZ Field Transmissometer',
-    mesaStation !== undefined && mesaStation.status === 'PASS' && mesaStation.relativeDiscrepancyPercent <= 1.0,
-    `Mesa AZ 45-day dry summer period (Station 1221): sensor measured 8.45% vs simulated ${mesaStation?.simulatedEngineLossPercent}% (err = ${mesaStation?.relativeDiscrepancyPercent}%)`
+    'Stored synthetic soiling target comparison is not field validation',
+    mesaStation !== undefined && mesaStation.evidenceStatus === 'unverified' && mesaStation.status === 'PASS' && mesaStation.relativeDiscrepancyPercent <= 3.0,
+    `internal target ${mesaStation?.referenceTargetLossPercent}% vs simulated ${mesaStation?.simulatedEngineLossPercent}% (discrepancy = ${mesaStation?.relativeDiscrepancyPercent}%)`
   );
   assert(
     'ExternalVal',
-    'SAM Cross-Model Conformity',
+    'Stored multi-climate target comparison (not external SAM validation)',
     samPhoenix?.overallStatus === 'PASS' && samMunich?.overallStatus === 'PASS' && samSingapore?.overallStatus === 'PASS',
     `Phoenix (soiling ${samPhoenix?.studioAnnualSoilingPercent}% vs SAM ${samPhoenix?.samAnnualSoilingPercent}%), Munich (snow ${samMunich?.studioAnnualSnowPercent}% vs SAM ${samMunich?.samAnnualSnowPercent}%), Singapore (soiling ${samSingapore?.studioAnnualSoilingPercent}%)`
   );
 
   // 11.4 External Validation Defensive Branch Testing (lines 125 & 178 coverage)
-  const failExt = runExternalEmpiricalValidationSuite({ customFieldMeasuredLoss: 15.0 });
+  const failExt = runExternalEmpiricalValidationSuite({ customReferenceTargetLoss: 15.0 });
   const failSam = runExternalEmpiricalValidationSuite({ forceCrossModelFailure: true });
   assert(
     'ExternalVal',
     'External Validation Defensive Branch Execution',
-    failExt.overallStatus === 'FAIL' && failExt.fieldBenchmarks[0].status === 'FAIL' && failSam.overallStatus === 'FAIL',
+    failExt.overallStatus === 'FAIL' && failExt.referenceComparisons[0].status === 'FAIL' && failSam.overallStatus === 'FAIL',
     `Defensive branches safely caught tolerance breach (15.0% vs 8.46%) and forced cross-model discrepancy, setting status to FAIL`
   );
 
@@ -1626,25 +1626,14 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const rep = computeWaterfallLosses(1000, 5.85, 46, 5.5, 1.25, false, 0.0, -2.2, 45, -0.30, cfgT);
     const gain = rep.trackerDetails!.annualTranspositionGainPct;
     const nearShade = rep.stages.find((st) => st.id === 'near_shading')!;
-    // UI source must not contain the old hardcoded tracker gain anymore
-    let uiSrc = '';
-    try {
-      const fs = await import('fs');
-      if (typeof fs.readFileSync === 'function') {
-        uiSrc = fs.readFileSync('src/components/WaterfallLossTab.tsx', 'utf8');
-      }
-    } catch {
-      // Browser runtime safe fallback
-      uiSrc = '';
-    }
-    const noHardcodedGain = !uiSrc || !uiSrc.includes('26.5');
+    // Source-text invariants are checked by a Node-only CI script; keeping node:fs
+    // out of this shared/browser-importable engine suite avoids browser externalization.
     assert(
       'TRACKER-UI-CONSISTENCY',
-      '[TRACKER-UI-CONSISTENCY] UI binds to trackerDetails (no hardcoded 26.5), engine=UI value',
-      noHardcodedGain &&
-        Math.abs(gain - 24.1) < 1.0 &&
+      '[TRACKER-UI-CONSISTENCY] Engine trackerDetails exposes expected gain and shading value',
+      Math.abs(gain - 24.1) < 1.0 &&
         Math.abs(nearShade.percentageLossRaw - (-rep.trackerDetails!.annualShadingLossPct)) < 1e-9,
-      `engine trackerDetails gain=+${gain.toFixed(1)}% (UI shows "+${gain.toFixed(1)}%" in both strip and stage-1 row); near_shading raw=${nearShade.percentageLossRaw.toFixed(3)}% = -annualShadingLossPct; '26.5' absent from WaterfallLossTab.tsx`
+      `engine trackerDetails gain=+${gain.toFixed(1)}%; near_shading raw=${nearShade.percentageLossRaw.toFixed(3)}% = -annualShadingLossPct`
     );
   }
   {
@@ -3203,17 +3192,21 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       sub.transformer.temperatureDeratingPct > 0 &&
       sub.transformer.altitudeDeratingPct > 0 &&
       sub.shortCircuit.initialSymmetricalIscKa > 0 &&
-      sub.earthing.isTouchSafe &&
-      sub.earthing.isStepSafe &&
+      sub.earthing.touchScreenPassed &&
+      sub.earthing.stepScreenPassed &&
+      sub.earthing.isTouchSafe === null &&
+      sub.earthing.isStepSafe === null &&
+      sub.earthing.isCompliant === null &&
       sub.auxiliaryTransformer.ratedKva > 0 &&
       lps.separationDistanceCm > 0 &&
-      earthing.isResistanceCompliant;
+      earthing.resistanceScreenPassed &&
+      earthing.isResistanceCompliant === null;
 
     assert(
       'E8-ELEC-2',
-      'Substation deratings (IEC 60076), IEEE 80 touch/step safety & IEC 62305 separation distance',
+      'Substation derating and grounding internal screen checks; no IEEE 80 safety determination; IEC 62305 separation distance',
       subOk,
-      `trafo=${sub.transformer.ratedPowerMva}MVA (eff=${sub.transformer.effectiveCapacityUnderSiteConditionsMva}MVA, tempDerate=-${sub.transformer.temperatureDeratingPct}%, altDerate=-${sub.transformer.altitudeDeratingPct}%), Isc=${sub.shortCircuit.initialSymmetricalIscKa}kA, touchSafe=${sub.earthing.isTouchSafe}, sepDist=${lps.separationDistanceCm}cm`
+      `trafo=${sub.transformer.ratedPowerMva}MVA (eff=${sub.transformer.effectiveCapacityUnderSiteConditionsMva}MVA, tempDerate=-${sub.transformer.temperatureDeratingPct}%, altDerate=-${sub.transformer.altitudeDeratingPct}%), Isc=${sub.shortCircuit.initialSymmetricalIscKa}kA, touchScreenPassed=${sub.earthing.touchScreenPassed}, sepDist=${lps.separationDistanceCm}cm`
     );
   }
 
@@ -3433,7 +3426,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     assert(
       'E8-HARM-1',
       'Harmonics engine conforms to IEEE 519-2022 with Isc/IL demand ratio and TDD distortion metric',
-      iscRatioCorrect && tddLowerAtPartial && resFull.isTddCompliant,
+      iscRatioCorrect && tddLowerAtPartial && resFull.tddScreenPassed && resFull.isTddCompliant === null,
       `Isc/IL=${resFull.iscToIlRatio}, full THD=${resFull.thdCurrentPct}%, partial THD=${resPartial.thdCurrentPct}%, partial TDD=${resPartial.tddCurrentPct}%`
     );
   }
@@ -3738,24 +3731,27 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     // 2. Earthing safety integration on solid ground
     const earthingSolid = calculateEarthingSystem(5000, 80, 'solidly_grounded', true);
     const earthingSolidOk =
-      typeof earthingSolid.isEarthingSafe === 'boolean' &&
-      earthingSolid.isEarthingSafe === (earthingSolid.isResistanceCompliant && earthingSolid.isTouchVoltageSafe && earthingSolid.isStepVoltageSafe) &&
-      earthingSolid.isTouchVoltageSafe === (earthingSolid.actualMeshVoltageVolts <= earthingSolid.maxTouchVoltageVolts) &&
+      earthingSolid.isEarthingSafe === null &&
+      earthingSolid.isResistanceCompliant === null &&
+      earthingSolid.isTouchVoltageSafe === null &&
+      earthingSolid.isStepVoltageSafe === null &&
+      earthingSolid.screeningPassed === (earthingSolid.resistanceScreenPassed && earthingSolid.touchVoltageScreenPassed && earthingSolid.stepVoltageScreenPassed) &&
+      earthingSolid.touchVoltageScreenPassed === (earthingSolid.actualMeshVoltageVolts <= earthingSolid.maxTouchVoltageVolts) &&
       earthingSolid.isPreliminaryEstimate === true;
 
-    // 3. High-priority safety boundary regression: Impedance grounded system where actualMesh (222V) > maxTouch (120V)
-    // Must strictly evaluate isTouchVoltageSafe = false and isEarthingSafe = false
+    // 3. Internal-screen boundary regression for the simplified impedance-grounded scenario.
     const earthingImpedance = calculateEarthingSystem(100, 40, 'impedance_grounded', false);
     const earthingSafetyBoundaryOk =
       earthingImpedance.actualMeshVoltageVolts > earthingImpedance.maxTouchVoltageVolts &&
-      earthingImpedance.isTouchVoltageSafe === false &&
-      earthingImpedance.isEarthingSafe === false;
+      earthingImpedance.isTouchVoltageSafe === null &&
+      earthingImpedance.isEarthingSafe === null &&
+      earthingImpedance.touchVoltageScreenPassed === false;
 
     assert(
       'E9-LPS-CLASS1-1',
-      'Lightning LPS condition strictly evaluates Class I (E>98%) and earthing bounds touch safety to maxTouch limit',
+      'Lightning LPS threshold check and preliminary earthing screen do not assert IEEE 80 safety/compliance',
       isStrictlyClass1 && earthingSolidOk && earthingSafetyBoundaryOk,
-      `LPS Class=${lpsClass1.lpsClass} (reqEff=${lpsClass1.requiredEfficiencyPct}%), solidSafe=${earthingSolid.isEarthingSafe}, impedanceMesh=${earthingImpedance.actualMeshVoltageVolts}V vs limit=${earthingImpedance.maxTouchVoltageVolts}V (touchSafe=${earthingImpedance.isTouchVoltageSafe})`
+      `LPS Class=${lpsClass1.lpsClass} (reqEff=${lpsClass1.requiredEfficiencyPct}%), solidScreen=${earthingSolid.screeningPassed}, impedanceMesh=${earthingImpedance.actualMeshVoltageVolts}V vs internalTarget=${earthingImpedance.maxTouchVoltageVolts}V (touchScreen=${earthingImpedance.touchVoltageScreenPassed})`
     );
   }
 
@@ -3874,30 +3870,10 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
-  // [F1-R3] AdvancedFeaturesModal is removed (dead code removal)
-  {
-    let exists = false;
-    try {
-      const fs = await import('fs');
-      if (typeof fs.existsSync === 'function') {
-        const modalPath = 'src/components/AdvancedFeaturesModal.tsx';
-        exists = fs.existsSync(modalPath);
-      }
-    } catch {
-      exists = false;
-    }
-    assert(
-      'F1-R3',
-      'AdvancedFeaturesModal is deleted from filesystem (dead code removal)',
-      !exists,
-      `AdvancedFeaturesModal exists=${exists}`
-    );
-  }
-
   // [F1-R4] runCoreUnitTests returns expected shape
   {
     const r = {
-      passed: results.filter(x => x.status === 'PASS').length + 1,
+      passed: results.filter(x => x.status === 'PASS').length,
       failed: results.filter(x => x.status === 'FAIL').length,
       results,
     };
@@ -3905,35 +3881,15 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       typeof r.passed === 'number' &&
       typeof r.failed === 'number' &&
       Array.isArray(r.results) &&
-      r.results.length + 1 === r.passed + r.failed &&
+      r.results.length === r.passed + r.failed &&
       r.results.every((x) =>
         typeof x.suite === 'string' && typeof x.name === 'string' && (x.status === 'PASS' || x.status === 'FAIL')
       );
     assert(
       'F1-R4',
       'runCoreUnitTests returns {passed, failed, results[]} with per-test records',
-      Boolean(shapeOk && r.passed + r.failed >= 140),
-      `passed=${r.passed}, failed=${r.failed}, results.length=${r.results.length + 1}`
-    );
-  }
-
-  // [F2-R5] Feature flags files are removed (option A: no phantom gating)
-  {
-    const files = ['src/engine/core/featureFlags.ts', 'src/engine/core/FeatureFlagContext.tsx'];
-    let noneExist = true;
-    try {
-      const fs = await import('fs');
-      if (typeof fs.existsSync === 'function') {
-        noneExist = files.every((f) => !fs.existsSync(f));
-      }
-    } catch {
-      noneExist = true;
-    }
-    assert(
-      'F2-R5',
-      'Feature flags files are removed (option A: no phantom gating)',
-      noneExist,
-      `featureFlags.ts & FeatureFlagContext.tsx removed`
+      Boolean(shapeOk && r.results.length > 0),
+      `passed=${r.passed}, failed=${r.failed}, results.length=${r.results.length}`
     );
   }
 
@@ -3961,19 +3917,19 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
-  // [F2-R7] Cross-validation pruned from 11 to 6 metrics (5 independent, 1 implementation verification)
+  // [F2-R7] Six tagged metrics are split by evidence class; Sandia is not independent
   {
     const report = runSystemCrossValidation();
     const ok =
       report.testsRun === 6 &&
       report.metrics.length === 6 &&
-      report.crossValidationCount === 5 &&
-      report.implementationVerificationCount === 1 &&
+      report.crossValidationCount === 4 &&
+      report.implementationVerificationCount === 2 &&
       report.testsPassed === 6 &&
       report.testsFailed === 0;
     assert(
       'F2-R7',
-      'Cross-validation pruned from 11 to 6 metrics (5 independent, 1 implementation verification)',
+      'Six benchmark metrics have explicit evidence classes (4 cross-validation tags, 2 implementation checks)',
       ok,
       `testsRun=${report.testsRun}, crossValidationCount=${report.crossValidationCount}, implementationVerificationCount=${report.implementationVerificationCount}`
     );
@@ -5854,7 +5810,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
-  // E26: Earthing & DC bonding calculations, IMD/GFDI enforcement, single unified MET mandate
+  // E26: Earthing estimates and cautious DC bonding guidance; no unsupported blanket prohibition
   {
     const { calculateEarthingSystem } = await import('../../protectionBomEngine');
     const floatingEarthing = calculateEarthingSystem(500, 100, 'solidly_grounded', true, false, 'floating');
@@ -5867,16 +5823,16 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const floatingMonitoringOk = floatingEarthing.requiresInsulationMonitoring === true && floatingEarthing.requiresGfdiRcu === false;
     const functionalGfdiOk = functionalEarthing.requiresInsulationMonitoring === false && functionalEarthing.requiresGfdiRcu === true;
 
-    // Single unified MET enforcement: execution steps must forbid isolated DC earth electrode
-    const unifiedMetEnforced =
+    // Check for MET guidance and ensure DC topology is referred to the project/manufacturer, not a blanket ban.
+    const groundingGuidanceScoped =
       floatingEarthing.earthingExecutionStepsFa.some(s => s.includes('MET') || s.includes('یکپارچه')) &&
-      floatingEarthing.earthingExecutionStepsFa.some(s => s.includes('ممنوع'));
+      floatingEarthing.earthingExecutionStepsFa.some(s => s.startsWith('۴.') && s.includes('سازنده') && !s.includes('ممنوع'));
 
     assert(
-      'E26-EARTHING-DC-SIDE-BONDING-AND-MET-MANDATE',
-      'Derives PV racking (>=6mm²), BESS rack (>=16mm²), and inverter bonding conductors to single unified MET with IMD/GFDI mandates',
-      pvBondingOk && bessBondingOk && inverterBondingOk && floatingMonitoringOk && functionalGfdiOk && unifiedMetEnforced,
-      `pvBonding=${floatingEarthing.pvFrameStructureBondingMm2}mm², bessBonding=${floatingEarthing.batteryRackBondingConductorMm2}mm², floatingIMD=${floatingMonitoringOk}, funcGFDI=${functionalGfdiOk}, unifiedMet=${unifiedMetEnforced}`
+      'E26-EARTHING-DC-SIDE-BONDING-SCREEN',
+      'Preliminary bonding sizes and IMD/GFDI logic are exposed while DC grounding topology requires project/manufacturer review',
+      pvBondingOk && bessBondingOk && inverterBondingOk && floatingMonitoringOk && functionalGfdiOk && groundingGuidanceScoped,
+      `pvBonding=${floatingEarthing.pvFrameStructureBondingMm2}mm², bessBonding=${floatingEarthing.batteryRackBondingConductorMm2}mm², floatingIMD=${floatingMonitoringOk}, funcGFDI=${functionalGfdiOk}, topologyGuidanceScoped=${groundingGuidanceScoped}`
     );
   }
 

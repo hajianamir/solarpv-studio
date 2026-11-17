@@ -1,6 +1,6 @@
 # Architecture Decision Record (ADR-002): Specification & Definition of the 2.5D Bifacial Irradiance Model
 
-**Status**: Accepted  
+**Status**: Retracted pending independent validation
 **Date**: 2026-10-29  
 **Scope**: RFC 3.0.0 — Engine Core / Multiphysics Pillar (Phase 2a)  
 **Authors**: Senior Systems Architect & Solar PV Engineering Team  
@@ -8,6 +8,8 @@
 - NREL SAM 2023.12.17 Bifacial 2D View-Factor Model (Technical Report NREL/TP-6A20-74905)
 - Marion, B., et al. (2017): *A Model for Calculating the Irradiance on the Rear Surface of Bifacial PV Modules*, Solar Energy 147, 338-348
 - Castillo-Aguilella, E., & Hauser, P. S. (2016): *Multi-dimensional View Factor Shading in Utility PV Plants*
+
+> **Evidence correction (2026-11-03):** This ADR is retracted as a validated or accepted physical specification. The cited publications are contextual sources only; this ADR does not establish that the production code implements their methods. In particular, the production function uses simplified view-factor expressions and unvalidated empirical multipliers, not Hottel crossed-strings integration. The stored SAM-like target comparison is not an independently run SAM result. Claims below about ±2% agreement, bankability, validated parameter ranges, exact Hottel integration, and measured runtime/scaling are unverified design assertions, not acceptance evidence. Do not use this ADR or the resulting bifacial gain as independent engineering validation. Reinstatement requires a documented independent method, source-matched test cases across geometry/irradiance conditions, and review by a qualified PV engineer.
 
 ---
 

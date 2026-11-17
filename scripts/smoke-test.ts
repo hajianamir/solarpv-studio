@@ -77,7 +77,7 @@ console.log('  -> Status: SUCCESS [PASS]\n');
 // -----------------------------------------------------------------------------
 // Step 3: Run Live Benchmark Suite
 // -----------------------------------------------------------------------------
-console.log('[Step 3/5] Triggering live execution of analytical cross-validation benchmark...');
+console.log('[Step 3/5] Running internal stored-target comparison harness (not an independent validation)...');
 const t0 = performance.now();
 const crossReport = runSystemCrossValidation();
 const lhsReport = runLhsVsCmcBenchmark();
@@ -105,7 +105,7 @@ const bifacialSim = calculateBifacialViewFactor(
   }
 );
 const elapsedMs = performance.now() - t0;
-console.log(`  ✓ Cross-Validation Status: [${crossReport.overallStatus}] (${crossReport.testsPassed}/${crossReport.testsRun} passed)`);
+console.log(`  ✓ Stored-target comparison harness: [${crossReport.overallStatus}] (${crossReport.testsPassed}/${crossReport.testsRun} passed; not independent validation)`);
 console.log(`  ✓ Live Bifacial 2.5D View-Factor: ${bifacialSim.bifacialGainPercent}% gain, latency: ${bifacialSim.computeLatencyMs} ms`);
 console.log(`  ✓ Total Benchmark Execution Time: ${elapsedMs.toFixed(2)} ms`);
 if (crossReport.overallStatus !== 'PASS') {
