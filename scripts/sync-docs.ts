@@ -68,7 +68,7 @@ function renderStatusDoc(adrs: AdrEntry[]): string {
   const rows = adrs
     .map(
       (a) =>
-        `- **ADR-${a.number}** (${a.status}): ${a.title}  ` +
+        `- **ADR-${a.number}** (${a.status}): ${a.title}` +
         `\n  _file: \`docs/adr/${a.filename}\` (${a.lineCount} lines, ${a.byteCount} bytes)_`
     )
     .join('\n');

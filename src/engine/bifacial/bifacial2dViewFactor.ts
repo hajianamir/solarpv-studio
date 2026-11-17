@@ -1,20 +1,20 @@
 /**
- * Bifacial 2.5D View-Factor Simulation Engine
+ * Preliminary bifacial rear-irradiance heuristic (not independently validated).
  * SolarPV Studio v3.0 - Phase 2a (PR-2a-1)
  *
- * Governing Standards & References:
- * - Architecture Decision Record: docs/adr/ADR-002-bifacial-2.5d-view-factor-definition.md
- * - NREL SAM (System Advisor Model 2023.12.17) Bifacial Model
- * - Marion, B., et al. (2017) "A Simple Model for Bifacial PV Yield Calculation"
- * - Hottel's Crossed-Strings Method for 2D Radiative Transfer
- * - Deline, C., et al. (NREL/TP-5K00-74905) "Bifacial Performance Verification"
+ * The references below are background/context only; they do not establish that
+ * this implementation reproduces SAM, Marion, Hottel, or Deline. The numerical
+ * blockage and finite-row correction terms are heuristic constants. Do not use
+ * these outputs as bankable yield, compliance, or independently validated results.
+ * See docs/adr/ADR-002-bifacial-2.5d-view-factor-definition.md for the retracted
+ * validation claims and the remaining evidence gap.
  *
- * Key Physics Implemented:
- * 1. 2D Hottel crossed-strings geometry for 10 module chord slices.
- * 2. Non-uniform ground exitance (spatial shade profile under and between rows).
- * 3. Torque tube structural shading factor (f_tt) based on tube diameter and clearance.
- * 4. 3D finite-row end-of-row edge loss correction (f_eor).
- * 5. Global applicability: supports any global latitude, tilt, albedo, and row layout.
+ * Implemented approximations:
+ * 1. Chord-slice rear irradiance with simplified tilted-plane sky/ground factors.
+ * 2. Approximate shaded/unshaded ground exitance blend.
+ * 3. Heuristic torque-tube obstruction multiplier.
+ * 4. Heuristic finite-row multiplier.
+ * 5. Inputs are accepted globally, but global physical applicability is unverified.
  */
 
 export interface BifacialArrayGeometry {
@@ -95,7 +95,7 @@ export interface BifacialViewFactorResult {
 
 /**
  * Calculates 2.5D view factors and rear irradiance distribution for a bifacial array.
- * Benchmark verified against NREL SAM 2023.12.17 Revision 1.
+ * Stored benchmark target comparison exists, but it is not an independently executed SAM comparison or validation.
  */
 export function calculateBifacialViewFactor(
   geometry: BifacialArrayGeometry,
@@ -117,13 +117,13 @@ export function calculateBifacialViewFactor(
   if (geometry.torqueTubeDiameterM && geometry.torqueTubeDiameterM > 0) {
     const D = geometry.torqueTubeDiameterM;
     const d = geometry.torqueTubeClearanceM ?? 0.08;
-    // NREL SAM empirical torque tube view blockage factor
+    // Unvalidated heuristic approximation; not claimed to reproduce SAM.
     const obstructionRatio = (D / w) * (1.0 / (1.0 + 2.0 * (d / D)));
     f_tt = Math.max(0.90, Math.min(1.0, 1.0 - 0.45 * obstructionRatio));
   }
 
-  // 2. Calculate 3D Finite-Row End-of-Row Correction (f_eor)
-  // Marion (2017): Modules near the row ends receive more ground reflection and diffuse sky light
+  // 2. Heuristic finite-row end-of-row multiplier (f_eor).
+  // The chosen constants below have not been calibrated against an independent data set.
   const rowLen = Math.max(w * 2, geometry.rowLengthM);
   const endEffectLength = w * Math.sin(tiltRad);
   const endFraction = Math.min(0.25, (2.0 * endEffectLength) / rowLen);
@@ -142,7 +142,7 @@ export function calculateBifacialViewFactor(
   const effectiveGroundExitance =
     unshadedGroundFraction * groundExitanceUnshaded + (1.0 - unshadedGroundFraction) * groundExitanceShaded;
 
-  // 4. Calculate 10-Slice Chord Distribution using Hottel's Formulation
+  // 4. Calculate a simplified 10-slice chord distribution. This is not Hottel's crossed-strings integration.
   const chordSlices: ChordSliceViewFactors[] = [];
   let sumRearWm2 = 0.0;
   let sumVfSky = 0.0;
