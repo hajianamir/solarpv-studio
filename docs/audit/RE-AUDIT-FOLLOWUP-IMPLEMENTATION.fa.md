@@ -4,6 +4,28 @@
 **Commit بستهٔ ممیزی قبلی:** `aca0328a4474fec593fd9b9808bcc87796defe97`
 **وضعیت مبنای این گزارش:** تغییرات اصلی follow-up در commitهای `3f3242d` و `d31ed61` روی شاخهٔ کاری منتشر شدند؛ تکمیل gate پس از بازبینی در همین سند جداگانه ثبت شده است. این سند اجرای مستقل یا release sign-off نیست.
 
+## تکمیل re-audit در working tree مبتنی بر `959b8b4b51d32c7328aad46d9e4fda8351f2ec0b`
+
+- **Bifacial `VAL-BIFACIAL-01`:** از taxonomy `cross_validation` به `implementation_verification` تغییر کرد؛ confidence برابر `estimated` است و نام/جزئیات توضیح می‌دهد که target فقط به NREL/SAM نسبت داده شده و اجرای مستقل یا بازیابی مستقل داده اثبات نشده است. مقدار target و solver دست‌نخورده‌اند. تعدادها هماهنگ شد: 6 کل، 3 برچسب cross-validation، 3 implementation verification؛ regression در `unitTestsCore.ts` assert می‌کند که این ID در طبقهٔ دوم و confidence تخمینی بماند. fallbackهای cardهای `RFC3ReportsTab` نیز 3/3 شدند؛ هشدار کلی گزارش دربارهٔ نبود اثبات provenance/execution مستقل حفظ شده است.
+- **حرارت:** offsetهای 0/14/6.5°C عمداً تغییر نکردند. `thermalDerate.ts` اکنون NOCT پایه را از offsetهای نصب جدا می‌کند، source را `NOCT_BASE_WITH_UNVALIDATED_MOUNTING_ASSUMPTIONS` می‌نامد و انتساب Faiman/King/IEC را حذف می‌کند. fixture خطی NOCT همچنان ground-mount/offset صفر است و source label آن با قرارداد جدید هماهنگ شد؛ این fixture offset نصب را validate نمی‌کند. متون `environmentalAgingEngine` و خروجی گزارش، offsetهای نصب را فرض غربالگری و نیازمند شواهد سایت و تأیید مالک/مهندس معرفی می‌کنند.
+- **JWT production:** مسیر Bearer در production اکنون نبود `JWT_ISSUER` یا `JWT_AUDIENCE` پیکربندی‌شده را رد می‌کند و claimهای issuer/audience باید با مقدارهای توافق‌شده دقیقاً match شوند. gateway-only مستند و مستقل باقی ماند. `scripts/verify-production-auth-http.ts` از HTTP واقعی Express، نبود claim، mismatch، نبود تنظیمات issuer یا audience سمت سرور، JWT معتبر و حالت gateway-only (Bearer/هدر خام مردود، gateway secret لازم) را می‌آزماید و به `verify:rate-limit`/`test:audit` وصل شد؛ fixtureهای JWT production قبلی با issuer/audience تستی تکمیل شدند. secretهای تست صرفاً مصنوعی‌اند؛ IdP واقعی، deployment یا penetration test ارزیابی نشده است.
+- **Ruleset مؤثر main (بررسی تازه و فقط خواندنی):** `GET /repos/hajianamir/solarpv-studio/rulesets/27445960` هنوز ruleset فعال و check دقیق `Physics Registry & Independent Reference Gate` با strict=true نشان می‌دهد، اما `conditions.ref_name.include=[]` و `exclude=[]` است. `GET /repos/hajianamir/solarpv-studio/rules/branches/main` پاسخ `[]` داد؛ endpoint legacy protection با 403 شکست خورد. بنابراین الزام روی `main` **باز/تأییدنشده** است. مدیر مخزن باید target را صریحاً روی `main` تنظیم کند و endpoint مؤثر branch rules را دوباره بررسی کند. در این دور هیچ تغییری در GitHub انجام نشد.
+
+### اجرای فعلی آزمون‌ها
+
+| فرمان | نتیجه در این working tree |
+|---|---|
+| `npm ci` | موفق؛ 550 package نصب، 0 vulnerability در npm audit گزارش شد. |
+| `npm run lint:types` | PASS، client و node. |
+| `npm test` | PASS؛ target bifacial در implementation verification شمرده شد (3/3 taxonomy). هشدار lifecycle shading قدیمی در stderr دیده شد. PASS به معنی اعتبار علمی نیست. |
+| `npm run test:audit` | PASS در اجرای نهایی؛ شامل production HTTP auth، browser-independent contracts و `verify:physics-reference-gate`. پیام‌های ENOTDIR persistence-blocker از سناریوهای عمدی audit در stderr ثبت شد. اجرای نخست پس از تغییر سیاست auth به علت fixtureهای JWT قدیمی fail شد؛ fixtureهای تست با claims agreed test values به‌روز و اجرای کامل تکرار شد. |
+| `npm run lint` | PASS؛ 0 error و 95 هشدار `no-explicit-any` موجود. |
+| `npm run build` | PASS؛ هشدارهای موجود large bundle، static/dynamic import catalogRepository و annotationهای Rollup/Zod باقی‌اند. |
+| `BROWSER_TEST_TIMEOUT_MS=240000 npm run test:browser` | PASS؛ regressions فعلی شامل offline/service-worker، report/export/import و persistence؛ پیام‌های browser `ERR_FAILED`/`ERR_INTERNET_DISCONNECTED` و CSP meta warning در محیط offline همچنان دیده شدند. |
+| `npm run verify:physics-reference-gate` | PASS در audit کامل: fixtureهای موجود اجرا شدند؛ fixture NOCT فقط رابطهٔ پایه با offset صفر را پوشش می‌دهد. عدم تغییر expression فیزیکی و PASS آن gate، offsetهای نصب یا اعتبار علمی کلی را تأیید نمی‌کند. |
+| `npm run verify:rate-limit` | PASS؛ rate-limitهای قبلی و production HTTP auth جدید. |
+| `git diff --check` | PASS پس از تغییرات. |
+
 ## تغییرات پیاده‌سازی‌شده در این follow-up
 
 - **ادعاهای benchmark:** target مصنوعی soiling دیگر به‌عنوان PVDAQ/IEC measurement عرضه نمی‌شود؛ خروجی آن `evidenceStatus: unverified` و internal target comparison است. متون test/output تصریح می‌کنند که فایل‌های checked-in و URL/DOI به‌تنهایی اجرای SAM یا استقلال مرجع را ثابت نمی‌کنند. `VAL-SANDIA-02` به `implementation_verification` تنزل‌یافته؛ پارامترهای CEC/SAM و solver از نظر عددی هنوز مستقل اعتبارسنجی نشده‌اند.

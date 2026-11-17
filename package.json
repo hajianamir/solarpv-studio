@@ -28,7 +28,7 @@
     "test:browser": "tsx scripts/test-browser-regressions.ts",
     "verify:exports": "tsx scripts/verify-export-artifact-readback.ts",
     "verify:physics-registry": "tsx scripts/verify-physics-model-registry.ts",
-    "verify:rate-limit": "tsx scripts/verify-client-rate-limit.ts && tsx scripts/verify-rate-limit-http.ts",
+    "verify:rate-limit": "tsx scripts/verify-client-rate-limit.ts && tsx scripts/verify-rate-limit-http.ts && tsx scripts/verify-production-auth-http.ts",
     "verify:source-invariants": "tsx scripts/verify-source-invariants.ts",
     "verify:engine-claims": "tsx scripts/verify-engine-claims.ts",
     "test:physics-reference-gate": "tsx scripts/test-physics-reference-gate.ts",

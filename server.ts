@@ -813,11 +813,14 @@ function resolveRequesterIdentity(req: Request): { userId?: string; authError?: 
           if (payload.iat !== undefined && (typeof payload.iat !== 'number' || !Number.isFinite(payload.iat) || payload.iat > nowSeconds + 60)) {
             return { authError: 'Invalid bearer token: malformed or future iat claim' };
           }
-          const expectedIssuer = process.env.JWT_ISSUER;
+          const expectedIssuer = process.env.JWT_ISSUER?.trim();
+          const expectedAudience = process.env.JWT_AUDIENCE?.trim();
+          if (isProductionEnv() && (!expectedIssuer || !expectedAudience)) {
+            return { authError: 'Authentication misconfiguration: JWT_ISSUER and JWT_AUDIENCE are required for production JWT authentication' };
+          }
           if (expectedIssuer && payload.iss !== expectedIssuer) {
             return { authError: 'Invalid bearer token: issuer claim mismatch' };
           }
-          const expectedAudience = process.env.JWT_AUDIENCE;
           if (expectedAudience) {
             const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
             if (!audiences.includes(expectedAudience)) {

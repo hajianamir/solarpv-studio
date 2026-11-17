@@ -82,10 +82,8 @@ export function calculateEnvironmentalAging(input: EnvironmentalAgingInput): Env
   // -------------------------------------------------------------
   // 1. PV MODULE CALCULATIONS
   // -------------------------------------------------------------
-  // Mounting ventilation factor Delta-T per King / Faiman / IEC 61853
-  // Ground Mount: Open rack, free rear convection -> Delta-T = 0.0°C
-  // Industrial Shed: Flush/close trapezoidal sheet -> trapped air layer -> Delta-T = +14.0°C
-  // Rooftop Flat: Ballasted/short legs on concrete -> concrete re-radiation -> Delta-T = +6.5°C
+  // Mounting Delta-T values are screening assumptions only; no independent mounting-offset validation is available.
+  // Values remain unchanged pending supporting data and owner/engineer approval.
   let mountingDeltaT = 0.0;
   let baseDegradationPct = 0.45; // N-type TOPCon base rate at standard operating temp
   let industrialDustMultiplier = 1.0;
@@ -155,11 +153,11 @@ export function calculateEnvironmentalAging(input: EnvironmentalAgingInput): Env
   let pvRiskSummaryFa = '';
   let pvRiskSummaryEn = '';
   if (env === 'industrial_shed') {
-    pvRiskSummaryFa = `دمای سلول تا ${cellTempHotC}°C افزایش می‌یابد (+۱۴°C ناشی از حبس حرارتی ورق سقف). نرخ افت راندمان حرارتی ${pvThermalLossPct}٪ و نرخ استهلاک سالانه به ${baseDegradationPct}٪ افزایش یافته و بازده ۲۵ ساله به ${retention25y}٪ می‌رسد.`;
-    pvRiskSummaryEn = `Cell operating temp reaches ${cellTempHotC}°C (+14°C roof heat trap). Instant thermal power loss is ${pvThermalLossPct}%, annual degradation accelerates to ${baseDegradationPct}%/yr, with 25-year retention at ${retention25y}%.`;
+    pvRiskSummaryFa = `دمای سلول تا ${cellTempHotC}°C افزایش می‌یابد (فرض غربالگری +۱۴°C برای نصب سقفی؛ اعتبارسنجی مستقل نشده). نرخ افت راندمان حرارتی ${pvThermalLossPct}٪ و نرخ استهلاک سالانه به ${baseDegradationPct}٪ افزایش یافته و بازده ۲۵ ساله به ${retention25y}٪ می‌رسد.`;
+    pvRiskSummaryEn = `Cell operating temp reaches ${cellTempHotC}°C (unvalidated +14°C mounting screening assumption). Instant thermal power loss is ${pvThermalLossPct}%, annual degradation accelerates to ${baseDegradationPct}%/yr, with 25-year retention at ${retention25y}%.`;
   } else if (env === 'rooftop_flat_concrete') {
-    pvRiskSummaryFa = `دمای سلول تا ${cellTempHotC}°C افزایش می‌یابد (+۶.۵°C بازتاب حرارتی دال بتنی). افت حرارتی ${pvThermalLossPct}٪ و نرخ استهلاک سالانه ${baseDegradationPct}٪ با ماندگاری ۲۵ ساله ${retention25y}٪.`;
-    pvRiskSummaryEn = `Cell operating temp reaches ${cellTempHotC}°C (+6.5°C concrete albedo re-radiation). Thermal loss is ${pvThermalLossPct}%, degradation is ${baseDegradationPct}%/yr, and 25-year retention is ${retention25y}%.`;
+    pvRiskSummaryFa = `دمای سلول تا ${cellTempHotC}°C افزایش می‌یابد (فرض غربالگری +۶.۵°C برای نصب روی بتن؛ اعتبارسنجی مستقل نشده). افت حرارتی ${pvThermalLossPct}٪ و نرخ استهلاک سالانه ${baseDegradationPct}٪ با ماندگاری ۲۵ ساله ${retention25y}٪.`;
+    pvRiskSummaryEn = `Cell operating temp reaches ${cellTempHotC}°C (unvalidated +6.5°C mounting screening assumption). Thermal loss is ${pvThermalLossPct}%, degradation is ${baseDegradationPct}%/yr, and 25-year retention is ${retention25y}%.`;
   } else {
     pvRiskSummaryFa = `تهویه آزاد پشت ماژول در استراکچر زمینی؛ دمای حداکثر سلول ${cellTempHotC}°C، افت حرارتی ${pvThermalLossPct}٪، استهلاک استاندارد ${baseDegradationPct}٪ در سال و طول عمر مفید ${usefulLifespanYears} سال.`;
     pvRiskSummaryEn = `Free rear convection on ground mount; peak cell temp is ${cellTempHotC}°C, thermal loss is ${pvThermalLossPct}%, nominal degradation is ${baseDegradationPct}%/yr, and useful life reaches ${usefulLifespanYears} years.`;

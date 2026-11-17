@@ -1647,11 +1647,13 @@ async function runM01ToM22TestSuite(): Promise<void> {
   {
     process.env.NODE_ENV = 'production';
     process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+    process.env.JWT_ISSUER = 'https://audit.example.test/';
+    process.env.JWT_AUDIENCE = 'solarpv-audit-test';
 
     const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     const mkJwt = (sub: string) => {
       const h = b64({ alg: 'HS256', typ: 'JWT' });
-      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const p = b64({ sub, iss: 'https://audit.example.test/', aud: 'solarpv-audit-test', exp: Math.floor(Date.now() / 1000) + 3600 });
       const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
       return `${h}.${p}.${s}`;
     };
@@ -1773,6 +1775,8 @@ async function runM01ToM22TestSuite(): Promise<void> {
   {
     process.env.NODE_ENV = 'production';
     process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+    process.env.JWT_ISSUER = 'https://audit.example.test/';
+    process.env.JWT_AUDIENCE = 'solarpv-audit-test';
 
     const catModPost = (app as any)._router.stack
       .find((r: any) => r.route && r.route.path === '/api/v1/catalog/modules' && r.route.methods.post)
@@ -1797,7 +1801,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
     const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     const mkJwt = (sub: string) => {
       const h = b64({ alg: 'HS256', typ: 'JWT' });
-      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const p = b64({ sub, iss: 'https://audit.example.test/', aud: 'solarpv-audit-test', exp: Math.floor(Date.now() / 1000) + 3600 });
       const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
       return `${h}.${p}.${s}`;
     };
@@ -2017,11 +2021,13 @@ async function runM01ToM22TestSuite(): Promise<void> {
   {
     process.env.NODE_ENV = 'production';
     process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+    process.env.JWT_ISSUER = 'https://audit.example.test/';
+    process.env.JWT_AUDIENCE = 'solarpv-audit-test';
 
     const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     const mkJwt = (sub: string) => {
       const h = b64({ alg: 'HS256', typ: 'JWT' });
-      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const p = b64({ sub, iss: 'https://audit.example.test/', aud: 'solarpv-audit-test', exp: Math.floor(Date.now() / 1000) + 3600 });
       const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
       return `${h}.${p}.${s}`;
     };
@@ -2203,11 +2209,13 @@ async function runM01ToM22TestSuite(): Promise<void> {
   {
     process.env.NODE_ENV = 'production';
     process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+    process.env.JWT_ISSUER = 'https://audit.example.test/';
+    process.env.JWT_AUDIENCE = 'solarpv-audit-test';
 
     const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     const mkJwt = (sub: string) => {
       const h = b64({ alg: 'HS256', typ: 'JWT' });
-      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const p = b64({ sub, iss: 'https://audit.example.test/', aud: 'solarpv-audit-test', exp: Math.floor(Date.now() / 1000) + 3600 });
       const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
       return `${h}.${p}.${s}`;
     };
@@ -2282,11 +2290,13 @@ async function runM01ToM22TestSuite(): Promise<void> {
   {
     process.env.NODE_ENV = 'production';
     process.env.JWT_SECRET = 'secure-jwt-secret-xyz';
+    process.env.JWT_ISSUER = 'https://audit.example.test/';
+    process.env.JWT_AUDIENCE = 'solarpv-audit-test';
 
     const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     const mkJwt = (sub: string) => {
       const h = b64({ alg: 'HS256', typ: 'JWT' });
-      const p = b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 });
+      const p = b64({ sub, iss: 'https://audit.example.test/', aud: 'solarpv-audit-test', exp: Math.floor(Date.now() / 1000) + 3600 });
       const s = crypto.createHmac('sha256', 'secure-jwt-secret-xyz').update(h + '.' + p).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
       return `${h}.${p}.${s}`;
     };
