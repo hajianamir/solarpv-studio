@@ -9,7 +9,16 @@ process.env.JWT_ISSUER = 'https://idp.example.test/';
 process.env.JWT_AUDIENCE = 'solarpv-api-test';
 delete process.env.INTERNAL_GATEWAY_SECRET;
 
-const { app } = await import('../server');
+const { app, assertProductionJwtConfiguration } = await import('../server');
+assert.doesNotThrow(() => assertProductionJwtConfiguration(), 'agreed production JWT configuration permits server startup');
+const configuredIssuer = process.env.JWT_ISSUER;
+const configuredAudience = process.env.JWT_AUDIENCE;
+delete process.env.JWT_ISSUER;
+assert.throws(() => assertProductionJwtConfiguration(), /JWT_ISSUER and JWT_AUDIENCE/, 'missing production issuer blocks startup in JWT mode');
+process.env.JWT_ISSUER = configuredIssuer;
+delete process.env.JWT_AUDIENCE;
+assert.throws(() => assertProductionJwtConfiguration(), /JWT_ISSUER and JWT_AUDIENCE/, 'missing production audience blocks startup in JWT mode');
+process.env.JWT_AUDIENCE = configuredAudience;
 const server = app.listen(0, '127.0.0.1');
 await once(server, 'listening');
 const address = server.address();
@@ -65,6 +74,7 @@ try {
   delete process.env.JWT_ISSUER;
   delete process.env.JWT_AUDIENCE;
   process.env.INTERNAL_GATEWAY_SECRET = 'gateway-http-test-secret-never-use-in-production';
+  assert.doesNotThrow(() => assertProductionJwtConfiguration(), 'documented gateway-only mode does not require JWT issuer/audience');
   assert.equal((await createProject(`Bearer ${bearerForGatewayOnly}`)).status, 401, 'gateway-only mode rejects bearer tokens');
   assert.equal((await createProject(undefined, { 'x-user-id': 'gateway-test-user' })).status, 401, 'gateway-only mode rejects unsigned identity headers');
   assert.equal((await createProject(undefined, {

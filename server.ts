@@ -92,6 +92,12 @@ function isProductionEnv(): boolean {
   return process.env.NODE_ENV === 'production';
 }
 
+export function assertProductionJwtConfiguration(env: NodeJS.ProcessEnv = process.env): void {
+  if (env.NODE_ENV === 'production' && env.JWT_SECRET && (!env.JWT_ISSUER?.trim() || !env.JWT_AUDIENCE?.trim())) {
+    throw new Error('Production JWT authentication requires JWT_ISSUER and JWT_AUDIENCE; configure the exact trusted IdP values or use the separately documented gateway-only mode.');
+  }
+}
+
 function isAuthConfigured(): boolean {
   return Boolean(process.env.INTERNAL_GATEWAY_SECRET || process.env.JWT_SECRET);
 }
@@ -1882,6 +1888,7 @@ app.use((err: any, req: Request, res: Response, next: (e?: any) => void) => {
 // VITE DEV SERVER OR STATIC SERVING (M20 dynamic import)
 // ----------------------------------------------------------------
 async function startServer() {
+  assertProductionJwtConfiguration();
   if (!isProduction) {
     // Dynamic import to prevent devDependencies requirement in production runtime
     const { createServer: createViteServer } = await import('vite');

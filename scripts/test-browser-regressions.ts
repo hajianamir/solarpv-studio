@@ -479,6 +479,8 @@ async function main() {
 
   // Exercise the application's real report modal buttons and re-import its downloaded JSON.
   await page.keyboard.press('Control+e');
+  const openedReportText = await page.locator('body').innerText();
+  assert.match(openedReportText, /فرض غربالگری است.*خروجی غربالگری مشروط‌اند/s, 'official report must disclose mounting-offset and dependent thermal-output screening status');
   await page.getByRole('button', { name: 'سفارشی‌سازی' }).click();
   await page.locator('#report-doc-id').fill('DOC-BROWSER-01');
   await page.locator('#report-doc-version').fill('Rev Browser 7');
