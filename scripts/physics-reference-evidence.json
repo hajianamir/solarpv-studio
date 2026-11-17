@@ -1,4 +1,14 @@
 {
   "schemaVersion": 1,
-  "fixtures": []
+  "fixtures": [
+    {
+      "formulaId": "src/engine/core/annualYieldEngine.ts#calculateStandardDeratingFactor#4e4825014850",
+      "fixtureFile": "scripts/fixtures/physics/pvwatts-v5-multiplicative-system-derate.json",
+      "productionExport": "calculateStandardDeratingFactor",
+      "referenceTitle": "PVWatts Version 5 Manual",
+      "referenceUrl": "https://pvwatts.nrel.gov/downloads/pvwattsv5.pdf",
+      "referenceVersion": "2014-09-04",
+      "referenceLocator": "Section 11, System Losses, Equation (9)"
+    }
+  ]
 }

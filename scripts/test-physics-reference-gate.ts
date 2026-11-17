@@ -100,6 +100,7 @@ try {
     productionExport: 'calculate',
     inputs: [3],
     expected: 7.5,
+    independentCalculation: 'Evaluate the stated fixture formula independently from the production implementation.',
     tolerances: { absolute: 1e-12, relative: 1e-12 },
     referenceSource: {
       title: validRecord.referenceTitle,

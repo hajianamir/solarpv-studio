@@ -33,6 +33,7 @@ interface PhysicsReferenceFixture {
   productionExport?: string;
   inputs?: unknown[];
   expected?: unknown;
+  independentCalculation?: string;
   tolerances?: { absolute?: number; relative?: number };
   referenceSource?: { title?: string; url?: string; version?: string; locator?: string };
 }
@@ -484,6 +485,8 @@ export async function executeReferenceFixture(record: PhysicsReferenceRecord, re
   assert.equal(fixture.productionExport, record.productionExport, `${record.fixtureFile}: production export mismatch`);
   assert.ok(Array.isArray(fixture.inputs), `${record.fixtureFile}: positional production-function inputs are required`);
   assert.ok(Object.hasOwn(fixture, 'expected'), `${record.fixtureFile}: expected reference output is required`);
+  assert.ok(typeof fixture.independentCalculation === 'string' && fixture.independentCalculation.trim().length > 0,
+    `${record.fixtureFile}: reproducible independent calculation steps are required`);
   const absolute = fixture.tolerances?.absolute;
   const relative = fixture.tolerances?.relative;
   assert.ok(typeof absolute === 'number' && Number.isFinite(absolute) && absolute >= 0, `${record.fixtureFile}: non-negative absolute tolerance is required`);

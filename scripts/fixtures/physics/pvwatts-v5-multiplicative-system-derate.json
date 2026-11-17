@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/annualYieldEngine.ts#calculateStandardDeratingFactor#4e4825014850",
+  "independentOfImplementation": true,
+  "productionExport": "calculateStandardDeratingFactor",
+  "inputs": [
+    {
+      "tempDeratePct": 10,
+      "soilingLossPct": 5,
+      "dcCableLossPct": 2,
+      "mismatchAndLidLossPct": 3,
+      "inverterEfficiencyPct": 96,
+      "systemAvailabilityPct": 98,
+      "clippingLossPct": -4
+    }
+  ],
+  "expected": 0.734062,
+  "independentCalculation": "Apply the multiplicative retained-fraction relation in PVWatts V5 Manual Equation (9): (1-0.10)*(1-0.05)*(1-0.02)*(1-0.03)*0.96*0.98*(1-0.04) = 0.734061533184, rounded to six decimal places = 0.734062. The reference equation supports multiplicative aggregation; this case does not validate the empirical provenance of any individual loss input.",
+  "tolerances": {
+    "absolute": 0.0000005,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "PVWatts Version 5 Manual",
+    "url": "https://pvwatts.nrel.gov/downloads/pvwattsv5.pdf",
+    "version": "2014-09-04",
+    "locator": "Section 11, System Losses, Equation (9)"
+  }
+}
