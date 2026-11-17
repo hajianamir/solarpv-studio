@@ -1,10 +1,9 @@
-// Bifacial Rear Irradiance Gain Engine
+// Bifacial Rear Irradiance Gain Estimates
 //
-// Dual-Mode Architecture:
-// 1. 'screening_proxy': First-order empirical screening proxy (bf * gcr * albedo * 0.45, clamped [0, 0.15]),
-//    intended for rapid preliminary techno-economic appraisal of Iranian C&I and utility PV plants.
-// 2. 'view_factor_2d': Rigorous 2.5D view-factor model (Marion 2017 / Hottel crossed-strings formulation,
-//    clamped [0, 0.25]), integrating chord slices, ground exitance shade profiles, and torque tube blockage.
+// Both modes are preliminary, unvalidated estimates—not independently benchmarked yield models.
+// 1. 'screening_proxy': First-order heuristic (bf * gcr * albedo * 0.45, clamped [0, 0.15]).
+// 2. 'view_factor_2d': Simplified chord-slice heuristic (clamped [0, 0.25]); it is not a
+//    rigorous Hottel crossed-strings integration or an independently verified SAM reproduction.
 
 import { calculateBifacialViewFactor } from './bifacial/bifacial2dViewFactor';
 
@@ -41,7 +40,7 @@ export interface BifacialGainDiagnostics {
 /**
  * Calculates rear irradiance gain fraction.
  * Defaults to first-order screening proxy (bf * gcr * albedo * 0.45, clamped to [0, 0.15])
- * or 2.5D view-factor model (clamped to [0, 0.25]) when modelMode === 'view_factor_2d'.
+ * or the simplified, unvalidated chord-slice heuristic (clamped to [0, 0.25]) when modelMode === 'view_factor_2d'.
  */
 export function rearGainFraction(input: BifacialGainInput): number {
   if (input.isBifacial === false) return 0.0;

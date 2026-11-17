@@ -82,7 +82,7 @@ export interface PhysicalLossEvaluationResult {
 }
 
 /**
- * Evaluates rigorous 2.5D view-factor bifacial gain with diagnostics.
+ * Evaluates the simplified, unvalidated chord-slice bifacial heuristic with diagnostics.
  */
 export function evaluatePhysicalBifacialGain(input: BifacialGainInput): BifacialGainDiagnostics {
   return evaluateBifacialGainWithDiagnostics({

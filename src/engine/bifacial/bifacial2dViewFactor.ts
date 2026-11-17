@@ -160,9 +160,10 @@ export function calculateBifacialViewFactor(
     const adjacentRowSkyBlockage = 0.08 * gcr * (1.0 - normPos);
     const vfSky = Math.max(0.015, baseVfSkyRear - adjacentRowSkyBlockage);
 
-    // View Factor to Ground from Rear (Hottel crossed-strings formulation with adjacent row blockage)
+    // Heuristic rear-to-ground factor. The isolated-plane relation is classical,
+    // but this adjacent-row blockage expression is an unvalidated approximation,
+    // not Hottel crossed-strings integration.
     // An isolated tilted plane has VF_ground = (1 + cosTilt) / 2.
-    // In an array with pitch P and GCR, the adjacent row blocks ground sightlines:
     const baseVfGroundRear = 0.5 * (1.0 + cosTilt);
     const adjacentRowGroundBlockage = 0.5 * gcr * (1.0 + sinTilt) * (0.85 + 0.15 * normPos);
     const vfGround = Math.max(0.10, Math.min(0.95, baseVfGroundRear - adjacentRowGroundBlockage));
