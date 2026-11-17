@@ -27,7 +27,7 @@ export interface EnvironmentalAgingInput {
 }
 
 export interface PvEnvironmentalImpact {
-  mountingThermalOffsetDeltaTC: number; // e.g. 0°C ground, +14°C shed roof, +6.5°C flat concrete
+  mountingThermalOffsetDeltaTC: number; // screening assumption: 0°C ground, +14°C shed, +6.5°C flat concrete; not independently validated
   effectiveOperatingCellTempHotC: number;
   thermalPowerLossPct: number;
   annualDegradationPct: number;        // e.g. 0.45% ground, 0.70% shed roof, 0.58% rooftop

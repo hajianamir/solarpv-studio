@@ -42,6 +42,9 @@ async function createProject(authorization?: string, extraHeaders: Record<string
 
 try {
   const acceptedClaims = { iss: process.env.JWT_ISSUER, aud: process.env.JWT_AUDIENCE };
+  assert.equal((await createProject(`Bearer ${token({ exp: undefined, ...acceptedClaims })}`)).status, 401, 'production JWT without required exp fails closed over HTTP');
+  assert.equal((await createProject(`Bearer ${token({ exp: Math.floor(Date.now() / 1000) - 1, ...acceptedClaims })}`)).status, 401, 'expired production JWT fails closed over HTTP');
+  assert.equal((await createProject(`Bearer ${token({ exp: Math.floor(Date.now() / 1000) + 172800, ...acceptedClaims })}`)).status, 401, 'production JWT exceeding default max TTL fails closed over HTTP');
   assert.equal((await createProject(`Bearer ${token({})}`)).status, 401, 'production JWT without issuer/audience claims fails closed');
   assert.equal((await createProject(`Bearer ${token({ iss: acceptedClaims.iss })}`)).status, 401, 'production JWT without audience fails closed');
   assert.equal((await createProject(`Bearer ${token({ ...acceptedClaims, iss: 'https://wrong.example.test/' })}`)).status, 401, 'issuer mismatch is rejected');
