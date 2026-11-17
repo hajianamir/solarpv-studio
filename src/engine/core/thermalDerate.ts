@@ -1,7 +1,6 @@
 // Single source of truth for PV thermal derating (PR-2a-7-P0 / Phase 3 Unified Annual Yield).
-// NOCT-based cell temperature model per IEC 61215 / IEC 62548.
-// Enhanced to account for mounting ventilation (ground mount, industrial shed, rooftop)
-// and dual-mode separation: hot_design (Vmp_min_hot inverter sizing) vs annual_energy (annual mean derate).
+// NOCT base model with unvalidated mounting screening assumptions; offsets are not established by IEC/Faiman/King.
+// Supports hot_design (Vmp_min_hot inverter sizing) and annual_energy (annual mean derate) modes.
 // ALL consumers (App display, pvEngineAdvanced, waterfallLossEngine, annualYieldEngine) MUST
 // call calculateThermalDerate() so every tab shows the same number.
 
@@ -25,8 +24,8 @@ export interface ThermalDerateResult {
   annualMeanDeratePct?: number;
   derateFraction: number;      // 0.0 to 1.0
   deratePct: number;           // 0 to 100
-  mountingDeltaTC: number;     // 0°C ground, +14°C shed roof, +6.5°C flat concrete
-  source: 'NOCT_IEC_61215';
+  mountingDeltaTC: number;     // screening assumption only; not validated by the NOCT reference fixture
+  source: 'NOCT_BASE_WITH_UNVALIDATED_MOUNTING_ASSUMPTIONS';
   evaluationMode: ThermalEvaluationMode;
   effectiveAmbientTempC: number;
 }
@@ -36,10 +35,9 @@ export function calculateThermalDerate(input: ThermalDerateInput): ThermalDerate
   const G = input.irradianceWm2 ?? 1000;
   const env = input.installationEnvironment || 'ground_mount';
 
-  // Mounting thermal offset Delta-T (Faiman / King / IEC 61853):
-  // Ground Mount = 0°C (free rear convection)
-  // Industrial Shed = +14°C (trapped air layer under sheet roof)
-  // Rooftop Flat Concrete = +6.5°C (re-radiation from concrete slab)
+  // Screening assumptions, not sourced/validated against Faiman, King, or IEC 61853.
+  // Keep these configured values unchanged pending independent evidence and owner/engineer approval.
+  // Ground Mount = 0°C; Industrial Shed = +14°C; Rooftop Flat Concrete = +6.5°C.
   const mountingDeltaTC = env === 'industrial_shed' ? 14.0 : env === 'rooftop_flat_concrete' ? 6.5 : 0.0;
   const noct = typeof input.module?.noctC === 'number' && Number.isFinite(input.module.noctC) ? input.module.noctC : 45.0;
 
@@ -69,7 +67,7 @@ export function calculateThermalDerate(input: ThermalDerateInput): ThermalDerate
     deratePct,
     derateFraction: deratePct / 100,
     mountingDeltaTC,
-    source: 'NOCT_IEC_61215',
+    source: 'NOCT_BASE_WITH_UNVALIDATED_MOUNTING_ASSUMPTIONS',
     evaluationMode: evalMode,
     effectiveAmbientTempC,
   };

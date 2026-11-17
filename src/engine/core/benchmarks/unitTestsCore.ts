@@ -3923,13 +3923,15 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const ok =
       report.testsRun === 6 &&
       report.metrics.length === 6 &&
-      report.crossValidationCount === 4 &&
-      report.implementationVerificationCount === 2 &&
+      report.crossValidationCount === 3 &&
+      report.implementationVerificationCount === 3 &&
+      report.metrics.find(m => m.testId === 'VAL-BIFACIAL-01')?.verificationType === 'implementation_verification' &&
+      report.metrics.find(m => m.testId === 'VAL-BIFACIAL-01')?.confidence === 'estimated' &&
       report.testsPassed === 6 &&
       report.testsFailed === 0;
     assert(
       'F2-R7',
-      'Six benchmark metrics have explicit evidence classes (4 cross-validation tags, 2 implementation checks)',
+      'Six benchmark metrics have evidence classes; stored bifacial target is not labeled independent (3 cross-validation tags, 3 implementation checks)',
       ok,
       `testsRun=${report.testsRun}, crossValidationCount=${report.crossValidationCount}, implementationVerificationCount=${report.implementationVerificationCount}`
     );

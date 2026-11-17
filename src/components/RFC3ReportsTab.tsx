@@ -558,7 +558,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 {isEn ? 'Cross-Validation Tags' : 'برچسب‌های اعتبارسنجی متقابل'}
               </span>
               <span className="text-2xl font-bold font-mono text-industrial-success">
-                {validationReport?.crossValidationCount ?? 4}
+                {validationReport?.crossValidationCount ?? 3}
               </span>
               <span className="text-[10px] text-industrial-success/80 block mt-0.5">
                 {isEn ? 'tag only; provenance/execution not verified' : 'صرفاً برچسب؛ منشأ/اجرای مرجع تأیید نشده'}
@@ -570,7 +570,7 @@ export const RFC3ReportsTab: React.FC<RFC3ReportsTabProps> = ({ lang, onJumpTab,
                 {isEn ? 'Implementation Verification' : 'بازتولید پیاده‌سازی'}
               </span>
               <span className="text-2xl font-bold font-mono text-industrial-warning">
-                {validationReport?.implementationVerificationCount ?? 1}
+                {validationReport?.implementationVerificationCount ?? 3}
               </span>
               <span className="text-[10px] text-amber-500/80 block mt-0.5">
                 {isEn ? 'code-internal / literature thresholds' : 'رابطهای داخلی یا آستانه‌های مرجع'}

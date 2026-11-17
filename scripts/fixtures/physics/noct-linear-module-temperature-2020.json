@@ -20,7 +20,7 @@
     "deratePct": 10.5,
     "derateFraction": 0.105,
     "mountingDeltaTC": 0,
-    "source": "NOCT_IEC_61215",
+    "source": "NOCT_BASE_WITH_UNVALIDATED_MOUNTING_ASSUMPTIONS",
     "evaluationMode": "hot_design",
     "effectiveAmbientTempC": 35
   },

@@ -53,7 +53,7 @@ export interface SystemValidationReport {
   testsWarned: number;
   testsFailed: number;
   maxDiscrepancyPercent: number;
-  /** Count of metrics carrying the cross_validation tag; inspect evidence/provenance separately. */
+  /** Count of metrics classified as cross-validation; tag does not prove independent evidence. */
   crossValidationCount: number;
   /** Metrics that reproduce code-internal relationships / literature thresholds (implementation verification, NOT independent). */
   implementationVerificationCount: number;
@@ -137,16 +137,16 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
   metrics.push(
     evaluate(
       'VAL-BIFACIAL-01',
-      'NREL SAM 2D View-Factor Bifacial Rear Gain',
+      'Bifacial Rear-Gain Comparison (stored NREL/SAM-attributed target; not independently reproduced)',
       GOLDEN_BIFACIAL_NREL.source,
       'https://www.nrel.gov/docs/fy23osti/74905.pdf',
       GOLDEN_BIFACIAL_NREL.bifacialGainPercent,
       bifacialCalc,
       GOLDEN_BIFACIAL_NREL.tolerancePercent,
       '%',
-      `Live 2.5D View-Factor Engine (f_tt=${bifacialSim.torqueTubeFactor}, f_eor=${bifacialSim.endOfRowFactor}, Rear=${bifacialSim.meanRearIrradianceWm2} W/m2, Latency=${bifacialSim.computeLatencyMs}ms)`,
-      'cross_validation',
-      'calibrated'
+      `Internal model-to-stored-target comparison only. The cited target is attributed to NREL/SAM, but independent source-data acquisition and SAM execution are not evidenced; live model details: f_tt=${bifacialSim.torqueTubeFactor}, f_eor=${bifacialSim.endOfRowFactor}, rear=${bifacialSim.meanRearIrradianceWm2} W/m2, latency=${bifacialSim.computeLatencyMs}ms.`,
+      'implementation_verification',
+      'estimated'
     )
   );
 

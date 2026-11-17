@@ -427,7 +427,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['24-hour simulator derating factor', simulation.effectiveSystemDeratingFactor, '-', simulation.isGenerationDeratingAssessed ? 'Array sizing non-thermal derates adjusted to the synthetic hourly annual thermal factor' : 'UNASSESSED: legacy illustrative fallback 0.78 is used'],
       ['24-hour PCS power limits', simulation.isPowerLimitsAssessed ? 'ASSESSED' : 'NOT ASSESSED', `charge ${simulation.effectiveMaxChargePowerKw} kW; discharge ${simulation.effectiveMaxDischargePowerKw} kW; ${simulation.powerLimitAssessmentNote}`],
       ['Battery energy boundary', batterySizing.energySemanticsNote, `charge efficiency ${batterySizing.chargeEfficiencyFraction}; discharge efficiency ${batterySizing.dischargeEfficiencyFraction}`],
-      ['Annual thermal model', annualThermalProfile ? `${annualThermalProfile.annualThermalDeratePct.toFixed(2)}% thermal derate over ${annualThermalProfile.hourlySamples} synthetic hourly samples` : 'NOT RUN', annualThermalProfile ? `${annualThermalProfile.weatherProfileSource}; mean ambient ${annualThermalProfile.ambientMeanUsedC.toFixed(1)}°C (${annualThermalProfile.ambientMeanSource})` : 'No thermal profile'],
+      ['Annual thermal model', annualThermalProfile ? `${annualThermalProfile.annualThermalDeratePct.toFixed(2)}% thermal derate over ${annualThermalProfile.hourlySamples} synthetic hourly samples` : 'NOT RUN', annualThermalProfile ? `${annualThermalProfile.weatherProfileSource}; mean ambient ${annualThermalProfile.ambientMeanUsedC.toFixed(1)}°C (${annualThermalProfile.ambientMeanSource}); NOCT base plus mounting ΔT +${envAging.pvImpact.mountingThermalOffsetDeltaTC}°C (unvalidated screening assumption; dependent thermal/yield values are conditional screening outputs, not design-final; numeric change requires site evidence and owner/engineer approval)` : 'No thermal profile'],
       ['Thermal sensitivity (not total forecast uncertainty)', `${Math.min(...thermalYieldSensitivityPct).toFixed(2)}% to ${Math.max(...thermalYieldSensitivityPct).toFixed(2)}% annual-energy change`, `Conditional on ambient temperature bias ±${annualThermalProfile?.temperatureSensitivityAllowanceC ?? 5}°C only; synthetic hourly temperatures; not a confidence interval`],
       ['Solar-resource stress test', `±${resourceStressPct}% annual energy sensitivity`, `Assumed PSH perturbation only (${city.confidence ?? 'unspecified'} climate-data class); actual annual-yield error is not bounded by this scenario`],
       ['Battery usable-energy sensitivity', `${rteLowSensitivityPct.toFixed(2)}% to ${rteHighSensitivityPct.toFixed(2)}%`, 'Recomputed if round-trip efficiency is 5 percentage points below/above the generic chemistry profile; manufacturer data may differ more'],
@@ -1261,9 +1261,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                     </strong>
                     <div className="space-y-1 text-slate-300 print:text-slate-700">
                       <div className="flex justify-between">
-                        <span>{isEn ? 'Mounting Thermal Delta-T:' : 'افزایش دمای ناشی از بستر نصب:'}</span>
+                        <span>{isEn ? 'Mounting Thermal Delta-T (screening assumption):' : 'دلتا-تی نصب (فرض غربالگری):'}</span>
                         <span className="font-mono font-bold text-industrial-warning">+{envAging.pvImpact.mountingThermalOffsetDeltaTC}°C</span>
                       </div>
+                      <p className="text-[9px] text-amber-300 print:text-amber-800">{isEn ? 'Screening assumption, not independently validated or established by NOCT/Faiman/King/IEC. Cell temperature, thermal-loss, aging and yield values using it are conditional screening outputs, not design-final or decision-grade. Do not change the offset without supporting site evidence and owner/engineer approval.' : 'فرض غربالگری است و با NOCT/Faiman/King/IEC تثبیت یا مستقل اعتبارسنجی نشده؛ دمای سلول، تلفات حرارتی، استهلاک و بازده وابسته به آن صرفاً خروجی غربالگری مشروط‌اند و نتیجهٔ نهایی طراحی/تصمیم مهندسی نیستند. تغییر عدد نیازمند شواهد سایت و تأیید مالک/مهندس است.'}</p>
                       <div className="flex justify-between">
                         <span>{isEn ? 'Hot Cell Operating Temp:' : 'دمای داغ سلول در اوج تابش:'}</span>
                         <span className="font-mono font-bold text-theme-strong print:text-black">{envAging.pvImpact.effectiveOperatingCellTempHotC}°C</span>
@@ -1388,7 +1389,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                       +{bifacialGainPct.toFixed(1)}%
                     </span>
                     <span className="text-[9px] text-slate-400 block font-mono">
-                      {isEn ? 'First-order optical proxy' : 'تخمین اولیه اپتیکی'}
+                      {isEn ? 'First-order screening proxy; no independent NREL/SAM execution/data reproduction; not a validated yield input' : 'تخمین غربالگری اولیه؛ اجرای مستقل NREL/SAM و بازتولید داده انجام نشده؛ ورودی بازده اعتبارسنجی‌شده نیست'}
                     </span>
                   </div>
                 )}
