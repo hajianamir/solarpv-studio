@@ -1,18 +1,10 @@
 /**
- * Marion Snow Shedding Empirical Recalibration & NREL Hub Benchmarks
- * SolarPV Studio v3.0 - Phase 2a (PR-2a-3 / PR-2a-4 Transition)
- *
- * Governing Empirical Literature & Ground Truth Studies:
- * - Marion, B., et al. (2013): "A Snow-Loss Model for Photovoltaic Systems", IEEE JPV, 3(1), pp. 236-242.
- * - Townsend, T. & Powers, L. (2011): "Photovoltaics and Snow: An Update from Two Cold Climates", NREL/CP-5200-51786.
- * - Andrews, R. W. & Pearce, J. M. (2012): "The Effect of Snow on Photovoltaic Performance: Testing the Marion et al. Model",
- *   IEEE Photovoltaic Specialists Conference (PVSC-38), Austin, TX.
- * - DWD (Deutscher Wetterdienst) & IEA PVPS Task 13: "Performance of PV Systems in Snow-Prone Cold Regions" (Munich Field Data).
- *
- * Benchmark Target Values:
- * 1. Boulder, CO (40° tilt, 300cm snow): Expected 4.0% - 6.0% (NREL Marion 2013 Reference Case)
- * 2. Munich, DE (30° tilt, 150cm snow): Expected 2.0% - 4.0% (DWD / IEA PVPS Reference Case)
- * 3. Toronto, CA (35° tilt, 200cm snow): Expected 3.0% - 5.0% (Andrews & Pearce 2012 Reference Case)
+ * Internal synthetic snow screening regression scenarios.
+ * Legacy Marion/recalibration names and HUB-SNOW identifiers are retained for API
+ * compatibility only. Generated weather, stored target ranges and tuned parameters
+ * are internal assumptions, not acquired NREL/DWD/Andrews & Pearce field records.
+ * Passing these checks is software regression evidence, not empirical calibration,
+ * independent validation, regional applicability, or bankable annual loss accuracy.
  */
 
 import {
@@ -108,7 +100,7 @@ export function generateNrelHubSnowWeather(
         groundSnowCm += snowPerStorm * compaction;
       } else if (tempC > 0.5 && groundSnowCm > 0) {
         // US Army Corps of Engineers (USACE 1956 "Snow Hydrology") & NRC Canada (Gold & Williams):
-        // Degree-day ablation: hourly melt rate calibrated per climate regime
+        // Degree-day ablation: hourly melt rate assumed for each synthetic scenario
         const meltRate = meltCoeff * (tempC - 0.5);
         groundSnowCm = Math.max(0.0, groundSnowCm - meltRate);
       }
@@ -135,17 +127,17 @@ export function generateNrelHubSnowWeather(
 }
 
 /**
- * Runs the Marion snow engine against the 3 canonical NREL/DWD empirical test hubs.
+ * Runs internal synthetic snow scenarios against assumed stored target ranges.
  */
 export function runMarionSnowRecalibrationSuite(): MarionRecalibrationReport {
   // TEST FIXTURE ONLY — NOT USED IN PRODUCTION (Ambiguity E).
-  // These HUB-SNOW-* IDs are empirical reference datasets for Marion snow
-  // recalibration (NREL / DWD / Andrews & Pearce). They are NOT climate hubs
+  // These HUB-SNOW-* IDs label internal synthetic regression scenarios.
+  // They are not independent calibration datasets and are NOT climate hubs
   // and NOT used for live climate data routing. Climate hubs (internationalHubs.ts)
   // were deleted per ADR-005; all live climate data comes from NASA POWER / PVGIS / NSRDB.
   const hubs = [
     {
-      hubId: 'HUB-SNOW-BOULDER', // TEST FIXTURE — NREL Boulder reference case (40° tilt, 300cm snow)
+      hubId: 'HUB-SNOW-BOULDER', // SYNTHETIC TEST FIXTURE — Boulder-labelled scenario (40° tilt, 300cm snow)
       locationName: 'Boulder, Colorado',
       country: 'USA',
       annualSnowfallCm: 300,
@@ -159,10 +151,10 @@ export function runMarionSnowRecalibrationSuite(): MarionRecalibrationReport {
       minLoss: 4.0,
       maxLoss: 6.0,
       nominalTarget: 4.6,
-      citation: 'Marion, B., et al. (2013) IEEE JPV Vol 3, No 1, pp. 236-242',
+      citation: 'Internal synthetic Boulder-labelled scenario; no independent field-data citation',
     },
     {
-      hubId: 'HUB-SNOW-MUNICH', // TEST FIXTURE — DWD Munich reference case (30° tilt, 150cm snow)
+      hubId: 'HUB-SNOW-MUNICH', // SYNTHETIC TEST FIXTURE — Munich-labelled scenario (30° tilt, 150cm snow)
       locationName: 'Munich, Bavaria',
       country: 'Germany',
       annualSnowfallCm: 150,
@@ -176,10 +168,10 @@ export function runMarionSnowRecalibrationSuite(): MarionRecalibrationReport {
       minLoss: 2.0,
       maxLoss: 4.0,
       nominalTarget: 2.9,
-      citation: 'DWD (Deutscher Wetterdienst) & IEA-PVPS Task 13 Munich Trial',
+      citation: 'Internal synthetic Munich-labelled scenario; not DWD trial data',
     },
     {
-      hubId: 'HUB-SNOW-TORONTO', // TEST FIXTURE — Andrews & Pearce Toronto reference case (35° tilt, 200cm snow)
+      hubId: 'HUB-SNOW-TORONTO', // SYNTHETIC TEST FIXTURE — Toronto-labelled scenario (35° tilt, 200cm snow)
       locationName: 'Toronto, Ontario',
       country: 'Canada',
       annualSnowfallCm: 200,
@@ -193,7 +185,7 @@ export function runMarionSnowRecalibrationSuite(): MarionRecalibrationReport {
       minLoss: 3.0,
       maxLoss: 5.0,
       nominalTarget: 3.8,
-      citation: 'Andrews, R.W. & Pearce, J.M. (2012) IEEE PVSC-38 Toronto Trial',
+      citation: 'Internal synthetic Toronto-labelled scenario; not Andrews & Pearce trial data',
     },
   ];
 
@@ -293,11 +285,11 @@ export function runMarionSnowRecalibrationSuite(): MarionRecalibrationReport {
     benchmarks,
     threeWinterProfiles,
     summaryNotes: [
-      'Marion snow engine successfully recalibrated against NREL Marion (2013), DWD Munich, and Andrews & Pearce (2012).',
-      'Ground snow persistence and degree-day ablation (USACE 1956, 0.20 cm/°C-day) accurately reproduces realistic multi-week snowpack accumulation.',
-      'Peak ground snow depths align with empirical cold-region records: Boulder (30-50cm), Munich (15-25cm), Toronto (20-35cm).',
-      'Continuous logistic damming function across 5° to 35° guarantees smooth gradient without cliff drops.',
-      '3-consecutive-winter inter-annual simulations confirm multi-year stability with CV <= 18% across all test hubs.',
+      'Internal synthetic snow screening regression; not independent calibration against NREL, DWD or Andrews & Pearce.',
+      'Generated ground-snow persistence and degree-day ablation use assumed scenario parameters; field accuracy is unverified.',
+      'Peak ground snow depths are synthetic outputs checked against internal stored ranges, not empirical cold-region records.',
+      'The continuous logistic damming function is an internal heuristic, not a validated physical sliding model.',
+      'Three synthetic winters exercise the internal CV <= 18% regression criterion; this is not evidence of real multi-year accuracy.',
     ],
   };
 }

@@ -66,3 +66,48 @@ const reportSource = fs.readFileSync('src/components/OfficialReportModal.tsx', '
 assert.doesNotMatch(reportSource, /Kimber Arid Climate Deposition Model|Kimber et al\. Arid Model based on/);
 assert.match(reportSource, /not rainfall-calibrated or independently validated/);
 console.log('Snow/soiling/bifacial provenance contract passed (screening only; no independent field validation claimed).');
+
+// Supervisor-identified legacy paths must not contradict the screening contract.
+function assertInternalSnowMetric(metric: { confidence: string; name: string; details: string; sourceStandard: string; sourceUrl?: string }): void {
+  assert.equal(metric.confidence, 'estimated', 'Internal snow/soiling targets are not independently calibrated');
+  assert.match(metric.name, /Internal .*Not Independent/);
+  assert.match(metric.sourceStandard, /Internal assumed target/);
+  assert.equal(metric.sourceUrl, undefined, 'Do not attach an independent-source URL to an internal target');
+  assert.doesNotMatch(metric.details, /Independent source:/);
+}
+const { runSystemCrossValidation } = await import('../src/engine/core/benchmarks/crossValidation');
+const validation = runSystemCrossValidation();
+for (const id of ['VAL-SNOW-09', 'VAL-SOILING-08']) {
+  const metric = validation.metrics.find(m => m.testId === id);
+  assert.ok(metric, `Missing provenance-covered metric ${id}`);
+  assertInternalSnowMetric(metric);
+  assert.throws(() => assertInternalSnowMetric({ ...metric, confidence: 'calibrated' }), /not independently calibrated/);
+  assert.throws(() => assertInternalSnowMetric({ ...metric, details: 'Independent source: NREL Marion field model' }), /Independent source:/);
+}
+const targetedClaims = [
+  { file: 'src/engine/snow/marionSnowRecalibration.ts', required: /Internal synthetic snow screening regression/,
+    forbidden: /successfully recalibrated against|align with empirical cold-region records|accurately reproduces realistic|citation: 'Marion, B\.|citation: 'DWD \(Deutscher|citation: 'Andrews, R\./,
+    regression: 'Marion snow engine successfully recalibrated against NREL' },
+  { file: 'src/engine/core/benchmarks/goldenDatasets.ts', required: /background only; not implemented-model equivalence or validation/,
+    forbidden: /governingStandard: 'NREL Marion|source: 'Marion, B\.|source: 'Kimber, A\./,
+    regression: "governingStandard: 'NREL Marion (2013)'" },
+  { file: 'src/engine/core/annualYieldEngine.ts', required: /Soiling & Dust Loss \(Assumed Screening Input\)/,
+    forbidden: /Kimber Model|Marion Model|Soiling & Environmental Dust Loss \(Kimber\)|Snow Coverage & Shedding Loss \(Marion\)/,
+    regression: 'Snow Coverage & Shedding Loss (Marion)' },
+  { file: 'src/engine/environmentalAgingEngine.ts', required: /Internal assumed screening baseline; not a Kimber coefficient/,
+    forbidden: /Kimber model base annual loss/,
+    regression: 'Kimber model base annual loss (~4.0% in Iran)' },
+  { file: 'src/engine/core/benchmarks/unitTestsCore.ts', required: /when the snow-loss input is zero/,
+    forbidden: /snow-free zones|snow-free climates|NREL Marion Recalibration Suite Status|All 3 empirical cold-climate hubs/,
+    regression: '0.0% no-op in snow-free zones' },
+];
+for (const { file, required, forbidden, regression } of targetedClaims) {
+  const source = fs.readFileSync(file, 'utf8');
+  assert.match(source, required, file);
+  const rejectUnsupportedClaim = (text: string): void => assert.doesNotMatch(text, forbidden, file);
+  rejectUnsupportedClaim(source);
+  assert.throws(() => rejectUnsupportedClaim(source + '\n' + regression),
+    'Restoring an unsupported legacy claim must fail the provenance guard');
+}
+assert.doesNotMatch(waterfallSource, /In snow-free climates/);
+console.log('Targeted legacy snow/soiling provenance guards and negative regressions passed.');

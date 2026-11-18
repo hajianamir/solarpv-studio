@@ -191,7 +191,7 @@ export function computeWaterfallLosses(
 
   // 3b. Snow Loss (screening input; not validated Marion output)
   // Invariant 14-stage structure across all global climates.
-  // In snow-free climates (snowLossPct = 0), operates as a strict 0.0% no-op.
+  // With a zero snow-loss input, operates as a strict 0.0% no-op; no climate inference.
   addStage(
     'snow',
     'تلفات برف (برآورد غربالگری)',

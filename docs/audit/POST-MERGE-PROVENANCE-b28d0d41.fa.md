@@ -55,3 +55,18 @@ Regression مثبت هر دو زبان و هر دو شاخه را پوشش می�
 ## بیرون از دامنه
 
 پیاده‌سازی مرجع snow/soiling، اعتبارسنجی SAM/pvfactors، مسیر TMY/8760، clipping ساعتی، ضرایب tracker، offsetهای حرارتی، تغییر UI state، JWT/CSP، persist و snapshot و budget bundle. هیچ ادعای تأیید production/IdP یا اعتبار علمی مدل سالانه از آزمون نرم‌افزاری نتیجه نمی‌شود.
+
+## تکمیل پس از بازبینی ناظرِ `21867004`
+
+بازبینی ناظر detector را پذیرفت ولی ادعاهای legacy باقی‌مانده را مسدودکننده دانست. اصلاح تکمیلی فقط متن، metadata و guardهای این نقاط است:
+
+- `crossValidation` و `goldenDatasets`: هر دو target برف و soiling داخلی/فرضی معرفی شده‌اند؛ confidence آن دو `estimated` است و URL منبع مستقل حذف شده است. شناسه، ورودی، target، tolerance، نوع tag و شمارنده‌ها تغییر نکردند. tag از نوع `cross_validation` صرفاً نام طبقه‌بندی تاریخی است، نه مدرک استقلال.
+- `marionSnowRecalibration`: عنوان، توضیحات، citation سناریوها و summaryNotes دیگر ادعای NREL/DWD/Andrews & Pearce calibration یا رکورد تجربی ندارند؛ weatherها synthetic و targetها داخلی معرفی شده‌اند. نام export و HUB-SNOWها صرفاً شناسهٔ سازگاری باقی‌اند.
+- خروجی legacy `annualYieldEngine`: نام lossهای snow/soiling به screening/assumed تغییر کرده است.
+- `environmentalAgingEngine`: مقدار 4.2 فرض داخلی است، نه ضریب Kimber یا اندازه‌گیری منطقه‌ای؛ مقدار تغییر نکرده است.
+- کامنت waterfall و توضیحات تست‌ها از ورودی loss صفر، نبود برف در اقلیم را استنتاج نمی‌کنند. عنوان‌های تست سناریو نیز داخلی‌اند؛ assertionهای عددی حفظ شده‌اند.
+- `verify-engine-claims`: guardهای runtime روی metadata دو metric و guardهای هدفمند روی پنج فایل دیگر افزوده شد. بازگرداندن `calibrated`، ادعای منبع مستقل، کالیبراسیون یا برچسب‌های legacy با regressionهای منفی رد می‌شود. این guardها ممیزی معنایی کل repository نیستند.
+
+در مقایسهٔ مستقیم با والد `21867004`، تمام ۳۷ برگ عددی خروجی crossValidation و ۴۸ برگ عددی گزارش سناریوهای برف دقیقاً یکسان بودند. numeric literals و عملگرهای هفت فایل موتور تغییرکرده نیز یکسان‌اند. این شواهد عدم تغییر محاسبات در موارد آزموده‌شده است، نه تأیید علمی targetها.
+
+Typecheck، ESLint (صفر خطا/۹۵ هشدار)، build، `npm test`، اجرای کامل `test:audit`، gateway (24/24)، guardهای provenance و gate نسبت به `21867004` موفق شدند. detector پذیرفته‌شده، manifest، fixtureهای مرجع و workflow تغییر نکرده‌اند. هیچ ادعای تأیید نهایی ناظر یا اجازهٔ merge از این تکمیل نتیجه نمی‌شود.

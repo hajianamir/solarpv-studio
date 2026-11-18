@@ -445,7 +445,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     'WaterfallLoss',
     'Compound Multiplier Integrity',
     soilingStage !== undefined && snowStage !== undefined && snowStage.stageOutputKwh < soilingStage.stageOutputKwh,
-    `Both Kimber (-5%) and Marion (-8%) stages present and compounded sequentially into net export`
+    `Both internal soiling (-5%) and snow (-8%) stages present and compounded sequentially into net export`
   );
 
   const waterfallZeroSnow = computeWaterfallLosses(100.0, 5.0, 40.0, 4.0, 1.25, false, 0.0);
@@ -454,7 +454,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     'WaterfallLoss',
     'Invariant 14-Stage Architecture (Zero Snow No-Op)',
     noSnowStage !== undefined && noSnowStage.percentageLoss === 0.0 && waterfallZeroSnow.stages.length === 14,
-    `Waterfall maintains constant 14-stage structure across all climates, executing snow as 0.0% no-op in snow-free zones`
+    `Waterfall maintains constant 14-stage structure across all climates, executing snow as 0.0% no-op when the snow-loss input is zero`
   );
 
   // ==========================================================================
@@ -647,53 +647,53 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   );
 
   // ==========================================================================
-  // Suite 10: Marion NREL Empirical Recalibration (Boulder, Munich, Toronto)
+  // Suite 10: Internal Synthetic Snow Regression (Boulder, Munich, Toronto)
   // ==========================================================================
   // TEST FIXTURE ONLY — NOT USED IN PRODUCTION CLIMATE ROUTING.
-  // HUB-SNOW-* IDs are empirical Marion snow recalibration reference datasets
-  // (NREL / DWD / Andrews & Pearce). Climate hubs were deleted per ADR-005.
+  // HUB-SNOW-* IDs are internal synthetic snow regression scenarios
+  // (not independently acquired field records). Climate hubs were deleted per ADR-005.
   const recalReport = runMarionSnowRecalibrationSuite();
-  const boulderBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-BOULDER'); // TEST FIXTURE — NREL Boulder reference
-  const munichBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-MUNICH'); // TEST FIXTURE — DWD Munich reference
-  const torontoBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-TORONTO'); // TEST FIXTURE — Andrews & Pearce Toronto reference
+  const boulderBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-BOULDER'); // SYNTHETIC TEST FIXTURE — Boulder label
+  const munichBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-MUNICH'); // SYNTHETIC TEST FIXTURE — Munich label
+  const torontoBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-TORONTO'); // SYNTHETIC TEST FIXTURE — Toronto label
 
   assert(
     'SnowRecalib',
-    'NREL Marion Recalibration Suite Status',
+    'Internal Synthetic Snow Suite Status',
     recalReport.overallStatus === 'PASS',
-    `All 3 empirical cold-climate hubs passed: Boulder (${boulderBench?.simulatedAnnualSnowLossPercent}%), Munich (${munichBench?.simulatedAnnualSnowLossPercent}%), Toronto (${torontoBench?.simulatedAnnualSnowLossPercent}%)`
+    `All 3 internal synthetic scenarios passed: Boulder (${boulderBench?.simulatedAnnualSnowLossPercent}%), Munich (${munichBench?.simulatedAnnualSnowLossPercent}%), Toronto (${torontoBench?.simulatedAnnualSnowLossPercent}%)`
   );
   assert(
     'SnowRecalib',
-    'Boulder CO NREL Target (4.0% - 6.0%)',
+    'Boulder-labelled Internal Target (4.0% - 6.0%)',
     boulderBench !== undefined && boulderBench.status === 'PASS' && boulderBench.simulatedAnnualSnowLossPercent >= 4.0 && boulderBench.simulatedAnnualSnowLossPercent <= 6.0,
-    `Boulder 300cm snow at 40 deg tilt produced ${boulderBench?.simulatedAnnualSnowLossPercent}% annual snow loss (NREL nominal target: 4.6%)`
+    `Boulder 300cm snow at 40 deg tilt produced ${boulderBench?.simulatedAnnualSnowLossPercent}% annual snow loss (internal nominal target: 4.6%)`
   );
   assert(
     'SnowRecalib',
-    'Munich DE DWD Target (2.0% - 4.0%)',
+    'Munich-labelled Internal Target (2.0% - 4.0%)',
     munichBench !== undefined && munichBench.status === 'PASS' && munichBench.simulatedAnnualSnowLossPercent >= 2.0 && munichBench.simulatedAnnualSnowLossPercent <= 4.0,
-    `Munich 150cm snow at 30 deg tilt produced ${munichBench?.simulatedAnnualSnowLossPercent}% annual snow loss (DWD nominal target: 2.9%)`
+    `Munich 150cm snow at 30 deg tilt produced ${munichBench?.simulatedAnnualSnowLossPercent}% annual snow loss (internal nominal target: 2.9%)`
   );
   assert(
     'SnowRecalib',
-    'Toronto CA Andrews Target (3.0% - 5.0%)',
+    'Toronto-labelled Internal Target (3.0% - 5.0%)',
     torontoBench !== undefined && torontoBench.status === 'PASS' && torontoBench.simulatedAnnualSnowLossPercent >= 3.0 && torontoBench.simulatedAnnualSnowLossPercent <= 5.0,
-    `Toronto 200cm snow at 35 deg tilt produced ${torontoBench?.simulatedAnnualSnowLossPercent}% annual snow loss (Andrews nominal target: 3.8%)`
+    `Toronto 200cm snow at 35 deg tilt produced ${torontoBench?.simulatedAnnualSnowLossPercent}% annual snow loss (internal nominal target: 3.8%)`
   );
   assert(
     'SnowRecalib',
-    'USACE Realistic Ground Snowpack Accumulation',
+    'Internal Synthetic Ground Snowpack Regression',
     (boulderBench?.maxGroundSnowDepthCm ?? 0) >= 30.0 && (boulderBench?.maxGroundSnowDepthCm ?? 0) <= 55.0 &&
     (munichBench?.maxGroundSnowDepthCm ?? 0) >= 15.0 && (munichBench?.maxGroundSnowDepthCm ?? 0) <= 30.0 &&
     (torontoBench?.maxGroundSnowDepthCm ?? 0) >= 20.0 && (torontoBench?.maxGroundSnowDepthCm ?? 0) <= 40.0,
-    `USACE DDA realistic peak ground snow depths: Boulder = ${boulderBench?.maxGroundSnowDepthCm}cm, Munich = ${munichBench?.maxGroundSnowDepthCm}cm, Toronto = ${torontoBench?.maxGroundSnowDepthCm}cm`
+    `Synthetic peak ground snow depths: Boulder = ${boulderBench?.maxGroundSnowDepthCm}cm, Munich = ${munichBench?.maxGroundSnowDepthCm}cm, Toronto = ${torontoBench?.maxGroundSnowDepthCm}cm`
   );
   assert(
     'SnowRecalib',
     'Three-Consecutive-Winter Inter-Annual Stability',
     recalReport.threeWinterProfiles.length === 3 && recalReport.threeWinterProfiles.every(p => p.status === 'PASS'),
-    `3-consecutive-winter simulation passed across all hubs with CV <= 18% (inter-annual stability verified)`
+    `3-consecutive-winter simulation passed across all hubs with CV <= 18% (internal synthetic regression only)`
   );
 
   // ==========================================================================
@@ -4831,7 +4831,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       4.5,  // soiling
       1.25, // dcAc
       false, // hasTracker (must be false when no tracker, not poisoned by isBifacial)
-      0.0,  // snowLossPct (must remain 0.0 in snow-free zones, not poisoned by bifacial gain)
+      0.0,  // snowLossPct (zero input must stay a no-op, not be poisoned by bifacial gain)
       -2.2, // iamLossPct (must remain -2.2, not overwritten by shading)
       45.0, // noct
       -0.30,// tempCoeff

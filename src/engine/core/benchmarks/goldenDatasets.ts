@@ -81,14 +81,14 @@ export const BENCHMARK_TOLERANCE_TABLE: Record<string, BenchmarkToleranceEntry> 
   KIMBER_SOILING_RECOVERY: {
     benchmarkId: 'VAL-SOILING-08',
     discipline: 'Environmental / Dust Accumulation',
-    governingStandard: 'Kimber et al. (NREL) / IEC 61724-1',
+    governingStandard: 'Kimber: background only; internal assumed cleaning target, not independent validation',
     tolerancePercent: 3.0, // \epsilon = 3.0%
     rationale: 'Rain wash-off threshold hysteresis and arid accumulation rate',
   },
   SNOW_SHEDDING_MARION: {
     benchmarkId: 'VAL-SNOW-09',
     discipline: 'Cold Climate / Structural Snow',
-    governingStandard: 'NREL Marion (2013) / Townsend (2011)',
+    governingStandard: 'Marion (2013) / Townsend (2011): background only; not implemented-model equivalence or validation',
     tolerancePercent: 5.0, // \epsilon = 5.0%
     rationale: 'Ambient thermal sliding angle and damming clearance threshold',
   },
@@ -404,8 +404,8 @@ export const GOLDEN_GEOTECH_PILE: GeotechnicalPileGoldenDataset = {
  * 7. Kimber Soiling Loss & Rain Wash-Off Benchmark
  */
 export const GOLDEN_KIMBER_SOILING: KimberSoilingGoldenDataset = {
-  description: 'Kimber et al. Arid Soiling Loss & Complete Rain Wash-off (5mm Threshold)',
-  source: 'Kimber, A., et al. (NREL/CP-520-40123) "The Effect of Soiling on Large Grid-Connected Photovoltaic Systems"',
+  description: 'Internal assumed soiling / rain-cleaning target (5mm threshold; not independent)',
+  source: 'Internal assumed target; Kimber literature is background only, not calibration data',
   dailySoilingRatePercent: 0.22,
   rainCleaningThresholdMm: 5.0,
   simulatedDryDays: 30,
@@ -419,8 +419,8 @@ export const GOLDEN_KIMBER_SOILING: KimberSoilingGoldenDataset = {
  * 8. Marion Snow Shedding Benchmark
  */
 export const GOLDEN_MARION_SNOW: MarionSnowGoldenDataset = {
-  description: 'Marion et al. Snow Melting and Gravity Sliding at 25° Tilt and +1.5°C Ambient',
-  source: 'Marion, B., et al. (2013) "Snow Loss Model for Photovoltaic Systems", IEEE JPV',
+  description: 'Internal assumed snow shedding target at 25° tilt and +1.5°C (not independent)',
+  source: 'Internal assumed target; Marion literature is background only, not calibration data',
   tiltDeg: 25.0,
   groundClearanceM: 1.0,
   snowDepthCm: 15.0,

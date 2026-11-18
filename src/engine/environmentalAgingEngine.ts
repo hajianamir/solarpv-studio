@@ -144,7 +144,8 @@ export function calculateEnvironmentalAging(input: EnvironmentalAgingInput): Env
   const usefulLifespanYears = Math.min(35, Math.round(Math.log(0.80) / Math.log(1.0 - effectiveDegradationPct / 100.0)));
 
   // Annual Soiling Loss Estimation
-  // Kimber model base annual loss (~4.0% in Iran) scaled by dust rate & wash-off
+  // Internal assumed screening baseline; not a Kimber coefficient or regional measurement.
+  // Site data and independent validation are required before design use.
   const baseSoilingAnnual = 4.2;
   const pvSoilingLossAnnualPct = Number(
     (baseSoilingAnnual * industrialDustMultiplier * (100.0 / washOffEfficiency) * (20.0 / Math.max(10, tilt))).toFixed(2)
