@@ -1,10 +1,11 @@
 /**
- * Physical Sensitivity Analysis & Overfitting Validation Suite
+ * Internal screening sensitivity / regression suite
  * SolarPV Studio v3.0 - Phase 2a (PR-2a-3 Pre-Merge Gate)
  *
- * Verifies that physical models (Kimber Soiling, Marion Snow Shedding, Temperature-Coupled IAM)
- * exhibit strict physical monotonicity and realistic multi-climate responsiveness,
- * disproving overfitting or circular golden-dataset dependency.
+ * Exercises internal assumed soiling/snow screening models and IAM over synthetic
+ * inputs. Monotonicity checks are software regressions, not independent validation
+ * of published models and not proof against overfitting or circular targets.
+ * Kimber/Marion type, field and function identifiers are legacy compatibility names.
  */
 
 import { simulateAnnualSoiling, type DailyWeatherSoilingStep } from '../../soiling/kimberSoilingEngine';
@@ -145,11 +146,11 @@ function generateSnowfallYear(totalSnowCm: number): { steps: HourlySnowWeatherSt
 }
 
 /**
- * Runs the full 3-discipline sensitivity sweep and validates physical gradient monotonicity.
+ * Runs internal sensitivity regressions over three model components.
  */
 export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
   // ==========================================================================
-  // 1. Kimber Soiling Sensitivity Sweep (3x3 Matrix)
+  // 1. Internal assumed soiling screening sweep (3x3 matrix)
   // Rain depths: 50mm (Hyper-arid), 150mm (Semi-arid), 400mm (Temperate)
   // Daily rates: 0.10%/d (Rural Clean), 0.22%/d (Standard Arid), 0.50%/d (Desert Haboob)
   // ==========================================================================
@@ -180,7 +181,7 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     }
   }
 
-  // Verify Kimber Monotonicity:
+  // Check internal soiling regression trends (not published-model validation):
   // - For each rain level, higher rate must give strictly higher loss
   // - For each rate, higher rain must give strictly lower loss
   let isKimberMonotonic = true;
@@ -200,7 +201,7 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
   }
 
   // ==========================================================================
-  // 2. Marion Snow Shedding Sensitivity Sweep (4x3 Matrix)
+  // 2. Internal snow screening sweep (4x3 matrix)
   // Tilts: 5° (Flat roof), 15° (Low tilt), 25° (Optimal utility), 40° (Steep snow-shed)
   // Snowfall depths: 50cm (Mild), 150cm (Moderate), 300cm (Heavy)
   // ==========================================================================
@@ -235,7 +236,7 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     }
   }
 
-  // Verify Marion Monotonicity:
+  // Check internal snow regression trends (not published-model validation):
   // - For each snowfall depth, steeper tilt must give strictly lower annual snow loss (greater gravity slide)
   // - For each tilt, deeper snowfall must give strictly higher annual snow loss
   let isMarionMonotonic = true;
@@ -243,7 +244,7 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     const pts = marionMatrix.filter(p => p.annualSnowfallCm === depth);
     for (let i = 0; i < pts.length - 1; i++) {
       if (pts[i].annualSnowLossPercent < pts[i + 1].annualSnowLossPercent) {
-        // Defensive assertion branch (lines 243-247): Flags non-physical tilt inversion where steeper tilt exhibits higher loss
+        // Defensive assertion branch (lines 243-247): Flags an internal tilt-trend inversion where steeper tilt exhibits higher loss
         isMarionMonotonic = false;
       }
     }
@@ -252,7 +253,7 @@ export function runPhysicalSensitivityAnalysis(): SensitivityAnalysisReport {
     const pts = marionMatrix.filter(p => p.tiltDeg === tilt);
     if (!(pts[0].annualSnowLossPercent < pts[1].annualSnowLossPercent &&
           pts[1].annualSnowLossPercent < pts[2].annualSnowLossPercent)) {
-      // Defensive assertion branch (lines 251-255): Flags non-physical snowfall depth inversion where heavier snow produces less loss
+      // Defensive assertion branch (lines 251-255): Flags an internal snowfall-trend inversion where heavier snow produces less loss
       isMarionMonotonic = false;
     }
   }

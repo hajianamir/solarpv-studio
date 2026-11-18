@@ -111,3 +111,28 @@ for (const { file, required, forbidden, regression } of targetedClaims) {
 }
 assert.doesNotMatch(waterfallSource, /In snow-free climates/);
 console.log('Targeted legacy snow/soiling provenance guards and negative regressions passed.');
+
+// Limited follow-up: human-readable sensitivity/test labels and dataset preamble.
+const sensitivitySource = fs.readFileSync('src/engine/core/benchmarks/sensitivityAnalysis.ts', 'utf8');
+const unitTestSource = fs.readFileSync('src/engine/core/benchmarks/unitTestsCore.ts', 'utf8');
+const goldenPreamble = fs.readFileSync('src/engine/core/benchmarks/goldenDatasets.ts', 'utf8').split('*/', 1)[0];
+const remainingLabelChecks = [
+  { source: sensitivitySource, required: /legacy compatibility names/,
+    forbidden: /Verifies that physical models \(Kimber|disproving overfitting|Verify (Kimber|Marion) Monotonicity|(?:Kimber Soiling|Marion Snow Shedding) Sensitivity Sweep/,
+    bad: 'disproving overfitting or circular golden-dataset dependency.' },
+  { source: unitTestSource, required: /Internal Snow Sensitivity Regression/,
+    forbidden: /Kimber 5-Bin|Kimber Climate Monotonicity|Marion Snow Monotonicity|['"](?:KimberSoiling|MarionSnow|Marion)['"]|Kimber soiling strictly responds|Marion snow loss responds/,
+    bad: "'Marion Snow Monotonicity'" },
+  { source: goldenPreamble, required: /Kimber et al\.: background only; soiling targets are internal and non-independent/,
+    forbidden: /Kimber et al\. \(NREL\) - Arid Soiling|Marion et al\. \(NREL\) - Snow Shedding/,
+    bad: 'Kimber et al. (NREL) - Arid Soiling Loss & Rain Wash-Off Recovery' },
+];
+assert.match(goldenPreamble, /Marion et al\.: background only; snow targets are internal and non-independent/);
+for (const { source, required, forbidden, bad } of remainingLabelChecks) {
+  assert.match(source, required);
+  const rejectClaim = (text: string): void => assert.doesNotMatch(text, forbidden);
+  rejectClaim(source);
+  assert.throws(() => rejectClaim(source + '\n' + bad),
+    'Restoring an unsupported sensitivity/test/source label must fail the guard');
+}
+console.log('Internal sensitivity/test labels and background-only dataset preamble guards passed.');

@@ -12,8 +12,8 @@
  * 4. IEA-PVPS Task 12 - Life Cycle Assessment of Photovoltaics (ISO 14040/14044)
  * 5. IEEE 2800-2022 / IEEE 1547-2018 - Inverter-Based Resources (IBR) Low-Voltage Ride-Through & SSR Screening
  * 6. ASCE 7-22 / Eurocode 7 - Broms Lateral Pile & Skin-Friction (Beta) Uplift Verification
- * 7. Kimber et al. (NREL) - Arid Soiling Loss & Rain Wash-Off Recovery
- * 8. Marion et al. (NREL) - Snow Shedding & Sliding Damming Loss
+ * 7. Kimber et al.: background only; soiling targets are internal and non-independent.
+ * 8. Marion et al.: background only; snow targets are internal and non-independent.
  */
 
 // ============================================================================
