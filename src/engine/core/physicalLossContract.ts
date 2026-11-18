@@ -46,7 +46,7 @@ export interface PhysicalLossEvaluationInput {
     beamPoaWm2?: number;
     skyDiffusePoaWm2?: number;
     groundReflectedPoaWm2?: number;
-    solarZenithDeg?: number;
+    aoiBeamDeg?: number;
     tiltDeg?: number;
     cellTemperatureC?: number;
     arCoatingFactor?: number;
@@ -93,12 +93,13 @@ export function evaluatePhysicalBifacialGain(input: BifacialGainInput): Bifacial
 
 /**
  * Evaluates Martin & Ruiz temperature-coupled incidence angle modifier (IAM) optical loss.
+ * `aoiBeamDeg` is the beam incidence angle on the module plane, not solar zenith.
  */
 export function evaluatePhysicalIamLoss(input: {
   beamPoaWm2?: number;
   skyDiffusePoaWm2?: number;
   groundReflectedPoaWm2?: number;
-  solarZenithDeg: number;
+  aoiBeamDeg: number;
   tiltDeg: number;
   cellTemperatureC?: number;
   arCoatingFactor?: number;
@@ -117,7 +118,7 @@ export function evaluatePhysicalIamLoss(input: {
     beam,
     diffuse,
     ground,
-    input.solarZenithDeg,
+    input.aoiBeamDeg,
     input.tiltDeg,
     tCell,
     ar
@@ -216,12 +217,12 @@ export function evaluatePhysicalLossModels(
 
   // 2. Optical IAM Loss
   let iamRes: { iamLossPct: number; iamPoaEffective: number; details: EffectivePoaTransmissionResult } | undefined;
-  if (input.iam && input.iam.solarZenithDeg !== undefined && input.iam.tiltDeg !== undefined) {
+  if (input.iam && input.iam.aoiBeamDeg !== undefined && input.iam.tiltDeg !== undefined) {
     iamRes = evaluatePhysicalIamLoss({
       beamPoaWm2: input.iam.beamPoaWm2,
       skyDiffusePoaWm2: input.iam.skyDiffusePoaWm2,
       groundReflectedPoaWm2: input.iam.groundReflectedPoaWm2,
-      solarZenithDeg: input.iam.solarZenithDeg,
+      aoiBeamDeg: input.iam.aoiBeamDeg,
       tiltDeg: input.iam.tiltDeg,
       cellTemperatureC: input.iam.cellTemperatureC,
       arCoatingFactor: input.iam.arCoatingFactor,

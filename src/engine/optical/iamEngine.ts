@@ -223,13 +223,46 @@ export function calculateBrandemuehlDiffuseAngles(tiltDeg: number): DiffuseEquiv
 }
 
 /**
+ * Calculates beam angle of incidence for a plane and solar position.
+ * Azimuths use the repository's north-clockwise convention (north = 0°, east = 90°).
+ *
+ * @param zenithDeg Solar zenith angle in degrees
+ * @param tiltDeg Surface tilt from horizontal in degrees
+ * @param sunAzimuthDeg Solar azimuth, north-clockwise in degrees
+ * @param surfaceAzimuthDeg Surface azimuth, north-clockwise in degrees
+ */
+export function calculateBeamAoiDeg(
+  zenithDeg: number,
+  tiltDeg: number,
+  sunAzimuthDeg: number,
+  surfaceAzimuthDeg: number
+): number {
+  if (![zenithDeg, tiltDeg, sunAzimuthDeg, surfaceAzimuthDeg].every(Number.isFinite)) {
+    throw new RangeError('AOI inputs must be finite degree values');
+  }
+
+  const toRad = (deg: number) => (deg * Math.PI) / 180.0;
+  const zenithRad = toRad(zenithDeg);
+  const tiltRad = toRad(tiltDeg);
+  const azimuthDeltaRad = toRad(sunAzimuthDeg - surfaceAzimuthDeg);
+  const cosAoi =
+    Math.cos(zenithRad) * Math.cos(tiltRad) +
+    Math.sin(zenithRad) * Math.sin(tiltRad) * Math.cos(azimuthDeltaRad);
+
+  // acos is defined on [-1, 1]; clamp floating-point roundoff before conversion.
+  const aoiRad = Math.acos(Math.max(-1.0, Math.min(1.0, cosAoi)));
+  return Math.max(0.0, Math.min(180.0, (aoiRad * 180.0) / Math.PI));
+}
+
+/**
  * Integrates beam, sky-diffuse, and ground-reflected components into effective POA transmittance factor.
+ * @param aoiBeamDeg Incidence angle of the beam on the module plane, NOT the solar zenith angle.
  */
 export function calculateEffectivePoaIam(
   beamPoaWm2: number,
   skyDiffusePoaWm2: number,
   groundReflectedPoaWm2: number,
-  solarZenithDeg: number,
+  aoiBeamDeg: number,
   tiltDeg: number,
   cellTemperatureC: number = 25.0,
   arCoatingFactor: number = 0.16
@@ -247,7 +280,7 @@ export function calculateEffectivePoaIam(
 
   // 1. Beam IAM
   const iamBeamRes = calculateTemperatureCoupledIam({
-    angleIncidenceDeg: solarZenithDeg,
+    angleIncidenceDeg: aoiBeamDeg,
     cellTemperatureC,
     arCoatingFactor,
     modelVariant: 'martin_ruiz',

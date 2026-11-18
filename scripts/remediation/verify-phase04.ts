@@ -194,7 +194,7 @@ export function runPhase04Verification(): Phase04Evidence {
   // -------------------------------------------------------------------------
   const p404Before = -2.2; // Baseline hardcoded IAM loss in waterfallArgs.ts
   const iamRes65 = evaluatePhysicalIamLoss({
-    solarZenithDeg: 65.0,
+    aoiBeamDeg: 65.0,
     tiltDeg: 30.0,
     cellTemperatureC: 53.25,
     arCoatingFactor: 0.16,
@@ -382,7 +382,7 @@ export function runPhase04Verification(): Phase04Evidence {
     ENGINE_DEFAULT_MODULES.length === 25 &&
     ENGINE_DEFAULT_MODULES[0].noctC === 45.0;
 
-  // C4-03: Physical Monotonicity of Temperature-Coupled Optical IAM Loss (0° < 35° < 65°)
+  // C4-03: Beam AOI monotonicity (incidence on the module plane, not solar zenith).
   const r0 = calculateEffectivePoaIam(700, 150, 50, 0.0, 30.0, 53.25, 0.16);
   const r35 = calculateEffectivePoaIam(700, 150, 50, 35.0, 30.0, 53.25, 0.16);
   const r65 = calculateEffectivePoaIam(700, 150, 50, 65.0, 30.0, 53.25, 0.16);

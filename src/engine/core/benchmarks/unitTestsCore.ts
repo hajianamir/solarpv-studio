@@ -32,6 +32,7 @@ import {
   calculateTemperatureCoupledIam,
   calculateBrandemuehlDiffuseAngles,
   calculateEffectivePoaIam,
+  calculateBeamAoiDeg,
 } from '../../optical/iamEngine';
 import { runPhysicalSensitivityAnalysis } from './sensitivityAnalysis';
 import { runMarionSnowRecalibrationSuite } from '../../snow/marionSnowRecalibration';
@@ -590,8 +591,54 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     `At 25 deg array tilt: sky diffuse theta = ${diffAngles25.skyDiffuseThetaDeg} deg, ground reflected theta = ${diffAngles25.groundReflectedThetaDeg} deg`
   );
 
-  // 9.6 Effective POA Transmittance Integration
-  const effPoa = calculateEffectivePoaIam(700.0, 150.0, 50.0, 35.0, 25.0, 45.0, 0.16);
+  // 9.6 Effective POA Transmittance Integration (beam input is AOI, not zenith)
+  // Dot-product geometry, same north-clockwise projection as calculatePoaIrradiance.
+  const aoiCases = [
+    { z: 59.1, tilt: 0, sunAz: 180, surfaceAz: 180, expected: 59.1 },
+    { z: 59.1, tilt: 30, sunAz: 180, surfaceAz: 180, expected: 29.1 },
+    { z: 20, tilt: 30, sunAz: 180, surfaceAz: 180, expected: 10 },
+    { z: 0, tilt: 0, sunAz: 0, surfaceAz: 0, expected: 0 },
+    { z: 90, tilt: 90, sunAz: 0, surfaceAz: 180, expected: 180 },
+  ];
+  for (const c of aoiCases) {
+    const aoi = calculateBeamAoiDeg(c.z, c.tilt, c.sunAz, c.surfaceAz);
+    assert('OpticalIAM', `Beam AOI geometry ${JSON.stringify(c)}`,
+      Math.abs(aoi - c.expected) < 1e-9,
+      `AOI=${aoi} deg; expected=${c.expected} deg`);
+  }
+  const noonAoi = calculateBeamAoiDeg(59.1, 30, 180, 180);
+  const offAzimuthAoi = calculateBeamAoiDeg(59.1, 30, 90, 180);
+  assert('OpticalIAM', 'Azimuth misalignment increases beam AOI',
+    offAzimuthAoi > noonAoi, `Aligned=${noonAoi}; misaligned=${offAzimuthAoi}`);
+  const { calculatePoaIrradiance: calculatePoaForAoi } = await import('../../solarPvEngine');
+  for (const c of [...aoiCases, { z: 50, tilt: 30, sunAz: 110, surfaceAz: 200 }]) {
+    const rad = Math.PI / 180;
+    const cosInc = Math.cos(c.z * rad) * Math.cos(c.tilt * rad) +
+      Math.sin(c.z * rad) * Math.sin(c.tilt * rad) * Math.cos((c.sunAz - c.surfaceAz) * rad);
+    const aoi = calculateBeamAoiDeg(c.z, c.tilt, c.sunAz, c.surfaceAz);
+    assert('OpticalIAM', `AOI cosine matches POA projection ${JSON.stringify(c)}`,
+      Math.abs(Math.cos(aoi * rad) - cosInc) < 1e-12,
+      `cos(AOI)=${Math.cos(aoi * rad)}; cosInc=${cosInc}`);
+    if (c.z < 90) {
+      // Zero diffuse/GHI isolates the beam projection in the actual POA engine.
+      const poa = calculatePoaForAoi({
+        ghi: 0, dhi: 0, dni: 1000, tiltDeg: c.tilt, azimuthDeg: c.surfaceAz,
+        sunZenithDeg: c.z, sunAzimuthDeg: c.sunAz,
+        surfaceAzimuthConvention: 'north_clockwise',
+      });
+      assert('OpticalIAM', `Beam AOI matches actual POA engine ${JSON.stringify(c)}`,
+        Math.abs(poa - 1000 * Math.max(0, Math.cos(aoi * rad))) < 1e-9,
+        `POA=${poa}; AOI beam projection=${1000 * Math.max(0, Math.cos(aoi * rad))}`);
+    }
+  }
+  for (const aoi of [90, 100, 180]) {
+    const beamOnly = calculateEffectivePoaIam(700, 0, 0, aoi, 30, 25, 0.16);
+    assert('OpticalIAM', `No beam transmission at AOI ${aoi}`,
+      beamOnly.iamBeam === 0 && beamOnly.iamPoaEffective === 0,
+      `Beam IAM=${beamOnly.iamBeam}; effective IAM=${beamOnly.iamPoaEffective}`);
+  }
+  const aoiBeamDeg = 35.0; // Preserve this fixture's intended module-plane incidence.
+  const effPoa = calculateEffectivePoaIam(700.0, 150.0, 50.0, aoiBeamDeg, 25.0, 45.0, 0.16);
   assert(
     'OpticalIAM',
     'Effective POA Weighted Transmittance',
