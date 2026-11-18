@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isDeepStrictEqual } from 'node:util';
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -435,8 +436,11 @@ async function invokeInstrumentedProduction(
   record: PhysicsReferenceRecord,
   inputs: unknown[],
   mutateFormula: boolean,
-): Promise<{ output: unknown; visits: number }> {
-  const mutation = mutateFormula ? mutateFormulaOperator(sourceText, formula) : { sourceText, endDelta: 0, mutated: false };
+  numericProperty?: string,
+): Promise<{ output: unknown; visits: number; numericProperties: string[] }> {
+  const mutation = mutateFormula && numericProperty === undefined
+    ? mutateFormulaOperator(sourceText, formula)
+    : { sourceText, endDelta: 0, mutated: false };
   const targetEnd = formula.nodeEnd + mutation.endDelta;
   const instrumentSourceFile = ts.createSourceFile(sourceFile, mutation.sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const instrumentNode = findNodeAtRange(instrumentSourceFile, formula.nodeStart, targetEnd);
@@ -452,9 +456,23 @@ async function invokeInstrumentedProduction(
     `${path.basename(modulePath, extension)}.physics-reference-${randomUUID()}${extension}`,
   );
   const visits: unknown[] = [];
+  const numericProperties = new Set<string>();
   const probe = (id: string, value: unknown): unknown => {
     if (id !== record.formulaId) return value;
     visits.push(value);
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [key, field] of Object.entries(value)) {
+        if (typeof field === 'number' && Number.isFinite(field)) numericProperties.add(key);
+      }
+      if (perturbResult && numericProperty !== undefined) {
+        const object = value as Record<string, unknown>;
+        const field = object[numericProperty];
+        assert.ok(typeof field === 'number' && Number.isFinite(field),
+          `${record.formulaId}: sensitivity property ${numericProperty} must remain finite and numeric`);
+        // Change only one numeric field per fresh production invocation.
+        return { ...object, [numericProperty]: perturbFormulaValue(field) };
+      }
+    }
     return perturbResult ? perturbFormulaValue(value) : value;
   };
   const symbol = Symbol.for(formulaProbeSymbol);
@@ -467,7 +485,7 @@ async function invokeInstrumentedProduction(
     const productionFunction = productionModule[record.productionExport];
     assert.equal(typeof productionFunction, 'function', `${sourceFile}: exported production function ${record.productionExport} was not found`);
     const output = await (productionFunction as (...args: unknown[]) => unknown)(...inputs);
-    return { output, visits: visits.length };
+    return { output, visits: visits.length, numericProperties: [...numericProperties] };
   } finally {
     if (previousProbe === undefined) Reflect.deleteProperty(globalThis, symbol);
     else Reflect.set(globalThis, symbol, previousProbe);
@@ -507,13 +525,26 @@ export async function executeReferenceFixture(record: PhysicsReferenceRecord, re
   assert.ok(baseline.visits > 0, `${record.formulaId}: fixture inputs did not execute the exact formula AST node`);
   assertReferenceValue(baseline.output, fixture.expected, absolute, relative);
 
-  const sensitivityProbe = await invokeInstrumentedProduction(modulePath, sourceFile, sourceText, formula, record, fixture.inputs, true);
-  assert.ok(sensitivityProbe.visits > 0, `${record.formulaId}: exact formula AST node was not reached by the output-sensitivity probe`);
-  assert.notDeepEqual(
-    sensitivityProbe.output,
-    baseline.output,
-    `${record.formulaId}: perturbing the exact formula AST result did not change the production output for this fixture; choose an input that exercises an output-sensitive path`,
-  );
+  // Object helper results may start with reporting-only fields. Probe each
+  // finite numeric property separately; never credit a metadata-only change.
+  const objectProperties = baseline.numericProperties;
+  const targets: (string | undefined)[] = objectProperties.length > 0 ? objectProperties : [undefined];
+  let sensitive = false;
+  for (const property of targets) {
+    const sensitivityProbe = await invokeInstrumentedProduction(
+      modulePath, sourceFile, sourceText, formula, record, fixture.inputs, true, property,
+    );
+    assert.ok(sensitivityProbe.visits > 0,
+      `${record.formulaId}: exact formula AST node was not reached by the output-sensitivity probe`);
+    if (!isDeepStrictEqual(sensitivityProbe.output, baseline.output)) {
+      sensitive = true;
+      console.log(`Sensitivity witness: ${record.formulaId} (${property ?? 'expression result'})`);
+    }
+  }
+  assert.ok(sensitive,
+    `${record.formulaId}: perturbing the exact formula AST result did not change the production output; ` +
+    `tested ${objectProperties.length > 0 ? `numeric properties: ${objectProperties.join(', ')}` : 'expression result'}; ` +
+    'choose an input that exercises an output-sensitive path');
   console.log(`Independent fixture executed and sensitivity-checked at ${sourceFile}#${record.productionExport}: ${record.formulaId}`);
 }
 

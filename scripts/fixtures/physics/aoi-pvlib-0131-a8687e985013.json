@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#a8687e985013",
+  "independentOfImplementation": true,
+  "productionExport": "calculateBeamAoiDeg",
+  "inputs": [
+    59.1,
+    30,
+    150,
+    210
+  ],
+  "expected": 48.75684447820537,
+  "independentCalculation": "Python pvlib==0.13.1: float(pvlib.irradiance.aoi(30,210,59.1,150)); positional production inputs are [zenith, tilt, solar azimuth, surface azimuth]. pvlib evaluates acos(aoi_projection(...)), with north-clockwise azimuths. Nonzero, nonaligned geometry makes all degree conversions output-sensitive. No application function or application output was used to generate this value.",
+  "tolerances": {
+    "absolute": 1e-09,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "pvlib.irradiance.aoi",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+    "version": "pvlib-python 0.13.1",
+    "locator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+  }
+}

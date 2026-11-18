@@ -144,6 +144,50 @@ try {
   await assert.rejects(() => executeReferenceFixture(validRecord, fixtureRepo), /perturbing the exact formula AST result did not change the production output/,
     'a formula node that executes but cannot affect the tested output must fail the influence probe');
 
+  // A helper's first numeric field is reporting-only; only the second is consumed.
+  const objectSource = `function calculatePair(input: number) {
+    return { angleIncidenceDeg: input, iamCoupled: input * 2 };
+  }
+  export function calculate(input: number) {
+    const pair = calculatePair(input);
+    return pair.iamCoupled;
+  }`;
+  const objectUnit = extractFormulaUnits('src/engine/exampleEngine.ts', objectSource)
+    .find((unit) => unit.ownerPath === 'calculate' && unit.expression === 'calculatePair(input)')!;
+  const objectRecord = { ...validRecord, formulaId: objectUnit.formulaId };
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), objectSource);
+  const objectFixture = { ...runtimeFixture, formulaId: objectUnit.formulaId, inputs: [3], expected: 6 };
+  fs.writeFileSync(fixturePath, JSON.stringify(objectFixture));
+  await executeReferenceFixture(objectRecord, fixtureRepo);
+
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...objectFixture, expected: 7 }));
+  await assert.rejects(() => executeReferenceFixture(objectRecord, fixtureRepo), /expected 7/,
+    'object sensitivity must not bypass the independent reference assertion');
+
+  const ratioSource = objectSource.replace('return pair.iamCoupled;',
+    'return pair.angleIncidenceDeg / pair.iamCoupled;');
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), ratioSource);
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...objectFixture, expected: 0.5 }));
+  await executeReferenceFixture(objectRecord, fixtureRepo);
+  // Mutating both fields by 50% would leave this ratio unchanged. Independent
+  // single-property executions must detect both influences instead.
+
+  const unusedObjectSource = objectSource.replace('return pair.iamCoupled;', 'return 6;');
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), unusedObjectSource);
+  fs.writeFileSync(fixturePath, JSON.stringify(objectFixture));
+  await assert.rejects(() => executeReferenceFixture(objectRecord, fixtureRepo),
+    /did not change the production output.*numeric properties: angleIncidenceDeg, iamCoupled/,
+    'all numeric properties of an unused object must fail sensitivity');
+
+  const unvisitedObjectSource = objectSource.replace(
+    'const pair = calculatePair(input);',
+    'if (false) { const pair = calculatePair(input); } const pair = { iamCoupled: 6 };',
+  );
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), unvisitedObjectSource);
+  await assert.rejects(() => executeReferenceFixture(objectRecord, fixtureRepo),
+    /fixture inputs did not execute the exact formula AST node/,
+    'an unvisited object expression cannot pass via the correct constant output');
+
   const compoundSource = 'export function accumulate(sum: number, x: number) { sum += x; return sum; }';
   const compoundUnit = extractFormulaUnits('src/engine/exampleEngine.ts', compoundSource)
     .find((unit) => unit.expression.includes('sum+=x'))!;

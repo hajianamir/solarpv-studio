@@ -226,6 +226,8 @@ export function calculateBrandemuehlDiffuseAngles(tiltDeg: number): DiffuseEquiv
  * Calculates beam angle of incidence for a plane and solar position.
  * Azimuths use the repository's north-clockwise convention (north = 0°, east = 90°).
  *
+ * Finite angles outside physical zenith/tilt ranges are accepted algebraically;
+ * callers must supply physical geometry. Azimuths are periodic (360 degrees).
  * @param zenithDeg Solar zenith angle in degrees
  * @param tiltDeg Surface tilt from horizontal in degrees
  * @param sunAzimuthDeg Solar azimuth, north-clockwise in degrees
@@ -241,10 +243,9 @@ export function calculateBeamAoiDeg(
     throw new RangeError('AOI inputs must be finite degree values');
   }
 
-  const toRad = (deg: number) => (deg * Math.PI) / 180.0;
-  const zenithRad = toRad(zenithDeg);
-  const tiltRad = toRad(tiltDeg);
-  const azimuthDeltaRad = toRad(sunAzimuthDeg - surfaceAzimuthDeg);
+  const zenithRad = (zenithDeg * Math.PI) / 180.0;
+  const tiltRad = (tiltDeg * Math.PI) / 180.0;
+  const azimuthDeltaRad = ((sunAzimuthDeg - surfaceAzimuthDeg) * Math.PI) / 180.0;
   const cosAoi =
     Math.cos(zenithRad) * Math.cos(tiltRad) +
     Math.sin(zenithRad) * Math.sin(tiltRad) * Math.cos(azimuthDeltaRad);
