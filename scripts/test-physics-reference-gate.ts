@@ -18,6 +18,54 @@ const commentOnly = changedFormulaUnits(
 );
 assert.equal(commentOnly.length, 0, 'comment-only edits do not create false formula changes');
 
+// Only the verified local snow-stage description arguments are prose. These
+// two ternaries reproduce the former #85396c0f10ad / #bcace70942a8 obligations.
+const waterfallPath = 'src/engine/waterfallLossEngine.ts';
+const snowDisplay = `export function computeWaterfallLosses(snowLossPct: number) {
+  const stages: unknown[] = [];
+  const addStage = (id: string, nameFa: string, nameEn: string, pct: number, descFa: string, descEn: string) => {
+    stages.push({ id, nameFa, nameEn, percentageLoss: pct, descriptionFa: descFa, descriptionEn: descEn });
+  };
+  addStage('snow', 'برف', 'Snow', -Math.abs(snowLossPct),
+    snowLossPct > 0 ? 'برآورد اولیهٔ برف؛ مدل Marion یا درصد تلفات سالانهٔ اعتبارسنجی‌شده نیست' : 'ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود',
+    snowLossPct > 0 ? 'Preliminary snow estimate; not the Marion model or an independently validated annual loss.' : 'Snow-loss input is zero (no-op); this does not establish a snow-free site.');
+  return stages;
+}`;
+for (const [from, to] of [
+  ['برآورد اولیهٔ برف؛ مدل Marion یا درصد تلفات سالانهٔ اعتبارسنجی‌شده نیست', 'توضیح فارسی جدید'],
+  ['Preliminary snow estimate; not the Marion model or an independently validated annual loss.', 'Revised English description'],
+  ['ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود', 'توضیح فارسیِ ورودی صفر'],
+  ['Snow-loss input is zero (no-op); this does not establish a snow-free site.', 'Revised zero-input description'],
+]) {
+  assert.equal(changedFormulaUnits(waterfallPath, snowDisplay, snowDisplay.replace(from, to)).length, 0,
+    'changing either language/branch of the verified snow description needs no physics fixture');
+}
+function requiresEvidence(file: string, before: string, after: string, reason: string): void {
+  const changed = changedFormulaUnits(file, before, after);
+  assert.ok(changed.length > 0, reason);
+  assert.ok(validateEvidenceRecords(changed.map(u => u.formulaId), []).length > 0,
+    `${reason}: the gate must require evidence, not merely detect an edit`);
+}
+requiresEvidence(waterfallPath, snowDisplay, snowDisplay.replace('-Math.abs(snowLossPct)', '-Math.abs(snowLossPct * 2)'), 'snow loss coefficient');
+requiresEvidence(waterfallPath, snowDisplay, snowDisplay.replace('-Math.abs(snowLossPct)', 'Math.abs(snowLossPct)'), 'snow loss sign');
+requiresEvidence(waterfallPath, snowDisplay, snowDisplay.replace('snowLossPct > 0', 'snowLossPct >= 0'), 'display predicate operator remains checked');
+requiresEvidence(waterfallPath, snowDisplay, snowDisplay.replace('snowLossPct > 0', 'snowLossPct > 1'), 'display predicate threshold remains checked');
+requiresEvidence(waterfallPath, snowDisplay, snowDisplay.replace("'snow', 'برف'", "'other', 'برف'"), 'another stage cannot borrow the snow display context');
+const textEdit = snowDisplay.replace('Preliminary snow estimate;', 'Updated snow description;');
+requiresEvidence('src/engine/unrelated.ts', snowDisplay, textEdit, 'a same-named function in another module is not exempt');
+const unsafeDisplay = snowDisplay.replace('stages.push({', 'const coefficient = Number(descEn); stages.push({ coefficient,');
+requiresEvidence(waterfallPath, unsafeDisplay, unsafeDisplay.replace('Preliminary snow estimate;', 'Updated snow description;'),
+  'a helper that consumes description as a number is not exempt');
+const wrongPosition = snowDisplay.replace("'Snow', -Math.abs(snowLossPct),", "snowLossPct > 0 ? 'name A' : 'name B', -Math.abs(snowLossPct),");
+requiresEvidence(waterfallPath, wrongPosition, wrongPosition.replace("'name A'", "'name C'"),
+  'string ternaries in a stage name argument remain outside the exemption');
+const computedDescription = snowDisplay.replace("'Preliminary snow estimate; not the Marion model or an independently validated annual loss.'", 'String(snowLossPct * 2)');
+requiresEvidence(waterfallPath, snowDisplay, computedDescription, 'computed description payloads are not exempt');
+const numericText = 'export function compute(x: number) { const factor = x > 0 ? "2" : "3"; return x * Number(factor); }';
+requiresEvidence(waterfallPath, numericText, numericText.replace('"2"', '"4"'), 'numeric-string coefficient');
+const selectorText = 'export function compute(x: number) { const mode = x > 0 ? "fixed" : "tracker"; return mode === "fixed" ? x * 1.168 : x * 1.25; }';
+requiresEvidence(waterfallPath, selectorText, selectorText.replace('? "fixed"', '? "tracker"'), 'string model selector');
+
 const variableChange = changedFormulaUnits(
   'src/engine/exampleEngine.ts',
   'export function calculate(x: number, y: number) { return x * 2 + y; }',

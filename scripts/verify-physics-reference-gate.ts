@@ -124,6 +124,51 @@ export function extractFormulaUnits(sourceFile: string, source: string): Formula
   const currentOwnerPath = (): string => ownerPathStack.join('.') || '<module>';
   const currentFunctionName = (): string => functionNameStack.at(-1) ?? '<module>';
 
+  // Narrow display context, not a general string-literal exemption. Keep the
+  // conditional's predicate under formula detection, but not its prose payload.
+  const isSnowDescription = (node: ts.Node): node is ts.ConditionalExpression => {
+    if (sourceFile !== 'src/engine/waterfallLossEngine.ts' || !ts.isConditionalExpression(node)
+      || !ts.isStringLiteral(node.whenTrue) || !ts.isStringLiteral(node.whenFalse)) return false;
+    const call = node.parent;
+    if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression) || call.expression.text !== 'addStage'
+      || !ts.isStringLiteral(call.arguments[0]) || call.arguments[0].text !== 'snow'
+      || ![4, 5].includes(call.arguments.indexOf(node))) return false;
+    const statement = call.parent;
+    if (!ts.isExpressionStatement(statement) || !ts.isBlock(statement.parent)) return false;
+    const body = statement.parent;
+    const owner = body.parent;
+    if (!ts.isFunctionDeclaration(owner) || owner.name?.text !== 'computeWaterfallLosses'
+      || owner.parent !== ast) return false;
+    const bindings = body.statements.filter(ts.isVariableStatement)
+      .flatMap(s => [...s.declarationList.declarations])
+      .filter(d => ts.isIdentifier(d.name) && d.name.text === 'addStage');
+    if (bindings.length !== 1) return false;
+    const declaration = bindings[0];
+    if (!(declaration.parent.flags & ts.NodeFlags.Const) || !declaration.initializer
+      || !ts.isArrowFunction(declaration.initializer)) return false;
+    const helper = declaration.initializer;
+    // The two parameters may only flow into their corresponding display fields.
+    for (const [index, field] of [[4, 'descriptionFa'], [5, 'descriptionEn']] as const) {
+      const parameter = helper.parameters[index];
+      if (!parameter || !ts.isIdentifier(parameter.name)) return false;
+      const name = parameter.name.text;
+      let uses = 0;
+      let safe = true;
+      const inspect = (child: ts.Node): void => {
+        if (ts.isIdentifier(child) && child.text === name) {
+          uses++;
+          const parent = child.parent;
+          if (!ts.isPropertyAssignment(parent) || parent.initializer !== child
+            || !ts.isIdentifier(parent.name) || parent.name.text !== field) safe = false;
+        }
+        ts.forEachChild(child, inspect);
+      };
+      inspect(helper.body);
+      if (!safe || uses !== 1) return false;
+    }
+    return true;
+  };
+
   const addExpression = (node: ts.Node, expression: string): void => {
     const normalized = normalizeExpression(expression);
     if (!normalized) return;
@@ -163,7 +208,9 @@ export function extractFormulaUnits(sourceFile: string, source: string): Formula
       const parent = node.parent;
       // Keep maximal expressions, not every nested operator; each changed equation
       // or threshold receives its own content-addressed fixture obligation.
-      if (!parent || !isFormulaExpression(parent)) addExpression(node, node.getText(ast));
+      if (!isSnowDescription(node) && (!parent || !isFormulaExpression(parent) || isSnowDescription(parent))) {
+        addExpression(node, node.getText(ast));
+      }
     } else if (ts.isNumericLiteral(node)) {
       let ancestor: ts.Node | undefined = node.parent;
       let covered = false;
