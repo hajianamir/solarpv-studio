@@ -163,3 +163,31 @@ for (const { file, required, forbidden, bad } of tailClaims) {
   assert.throws(() => rejectClaim(source + '\n' + bad), 'Legacy assumption/citation wording must not return');
 }
 console.log('BIPV/snow-input wording and bounded bibliography guards passed (not model validation).');
+
+// Human-readable npm test output must not upgrade internal scenarios to evidence.
+const runnerSource = fs.readFileSync('scripts/run-all-benchmarks.ts', 'utf8');
+const forbiddenRunnerClaims = [
+  /Overfitting Risk:\s*ZERO/i,
+  /site-specific[^\r\n]*calibrated/i,
+  /Empirical Recalibration/i,
+  /Front Exterior Kimber Soiling Loss/i,
+  /RECALIBRATED HUBS/i,
+  /Marion Snow Shedding Sensitivity/i,
+];
+assert.match(runnerSource, /Internal Synthetic Snow Screening Regressions/);
+assert.match(runnerSource, /Front Exterior Screening Assumption/);
+assert.match(runnerSource, /do not establish an overfitting risk bound or independent validity/);
+for (const [index, legacy] of [
+  'Overfitting Risk: ZERO',
+  'Site-specific NREL/DWD calibrated results',
+  'Marion Snow Shedding Empirical Recalibration',
+  'Front Exterior Kimber Soiling Loss',
+  'RECALIBRATED HUBS',
+  'Marion Snow Shedding Sensitivity',
+].entries()) {
+  const rejectClaim = (source: string): void => assert.doesNotMatch(source, forbiddenRunnerClaims[index]);
+  rejectClaim(runnerSource);
+  assert.throws(() => rejectClaim(runnerSource + '\n' + legacy),
+    'Restoring an unsupported visible benchmark claim must fail the guard');
+}
+console.log('Visible benchmark runner provenance guards and negative regressions passed.');

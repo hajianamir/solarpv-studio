@@ -200,14 +200,14 @@ if (kurtStudent <= kurtGauss) {
 }
 
 // -----------------------------------------------------------------------------
-// 5. Physical Sensitivity Analysis & Anti-Overfitting Verification (PR-2a-3)
+// 5. Internal Screening Sensitivity / Regression Checks
 // -----------------------------------------------------------------------------
-console.log('--- [5/7] Physical Sensitivity Analysis & Anti-Overfitting Sweeps ---');
+console.log('--- [5/7] Internal Synthetic Screening / Sensitivity Regressions ---');
 const sensRes = runPhysicalSensitivityAnalysis();
-console.log(`• Monotonicity Checks: Kimber=${sensRes.isKimberMonotonic ? 'PASS' : 'FAIL'} | Marion=${sensRes.isMarionMonotonic ? 'PASS' : 'FAIL'} | IAM=${sensRes.isIamMonotonic ? 'PASS' : 'FAIL'}`);
-console.log(`• Overfitting Risk: ZERO (Smooth monotonic responsiveness across 9 Kimber, 12 Marion, and 24 IAM scenarios)\n`);
+console.log(`• Internal Trend Checks: Soiling=${sensRes.isKimberMonotonic ? 'PASS' : 'FAIL'} | Snow=${sensRes.isMarionMonotonic ? 'PASS' : 'FAIL'} | IAM=${sensRes.isIamMonotonic ? 'PASS' : 'FAIL'}`);
+console.log(`• Internal sweeps: 9 soiling, 12 snow, and 24 IAM scenarios; these regressions do not establish an overfitting risk bound or independent validity\n`);
 
-console.log('1. Kimber Soiling Loss Sensitivity Matrix (Rainfall vs Deposition Rate):');
+console.log('1. Internal Assumed Soiling Screening Matrix (Synthetic Rainfall vs Deposition Rate):');
 console.log('+--------------------+------------------------+---------------------+---------------------+');
 console.log('| Annual Rain (mm)   | Daily Deposition Rate  | Annual Avg Loss (%) | Max Monthly Loss(%) |');
 console.log('+--------------------+------------------------+---------------------+---------------------+');
@@ -218,10 +218,10 @@ for (const p of sensRes.kimberMatrix) {
 }
 console.log('+--------------------+------------------------+---------------------+---------------------+\n');
 
-console.log('2. Marion Snow Shedding Sensitivity Matrix (Generic Weather Model):');
-console.log('   NOTE: Values use generateSnowfallYear() generic weather profile. Site-specific NREL/DWD calibrated');
-console.log('   results (Boulder=4.02%, Munich=2.55%, Toronto=3.67%) appear in Section 8 and use hub-specific parameters.');
-console.log('   These are complementary views, not contradictory: generic sensitivity vs empirical recalibration.');
+console.log('2. Internal Snow Screening Sensitivity Matrix (Synthetic Weather):');
+console.log('   NOTE: Values use generateSnowfallYear() synthetic weather; no independent site calibration is claimed.');
+console.log('   Section 8 reports separate internally parameterized synthetic scenarios, not NREL/DWD reference measurements.');
+console.log('   Both sections are internal regression views, not empirical calibration or independent validation.');
 console.log('+--------------------+------------------------+---------------------+---------------------+------------------+-----------------------+');
 console.log('| Array Tilt (deg)   | Annual Snowfall (cm)   | Annual Loss (%)     | Structural (kN/m2)  | Damming Risk     | Peak Ground Snow (cm) |');
 console.log('+--------------------+------------------------+---------------------+---------------------+------------------+-----------------------+');
@@ -302,13 +302,13 @@ for (const r of migRes.results) {
   console.log(`  • [${r.caseId}] ${r.name.padEnd(38)} -> State: [${r.status.padEnd(23)}] | Notes: ${r.notes}`);
 }
 // -----------------------------------------------------------------------------
-// 8. Marion Snow Shedding Empirical Recalibration (NREL & DWD Reference Hubs)
+// 8. Internal Synthetic Snow Screening Regression Scenarios
 // -----------------------------------------------------------------------------
-console.log('--- [8/10] Marion Snow Shedding Empirical Recalibration (NREL / DWD) ---');
+console.log('--- [8/10] Internal Synthetic Snow Screening Regressions ---');
 const snowRecal = runMarionSnowRecalibrationSuite();
-console.log(`Recalibration Status: [${snowRecal.overallStatus}] | Reference Hubs Tested: ${snowRecal.benchmarks.length}\n`);
+console.log(`Internal Regression Status: [${snowRecal.overallStatus}] | Synthetic Scenarios Tested: ${snowRecal.benchmarks.length}\n`);
 console.log('+--------------------+------------------------+----------+----------+----------+-------------------+--------------------+--------+');
-console.log('| Hub ID             | Location & Climate     | Snow(cm) | Tilt(°)  | Target(%)| Simulated Loss(%) | Peak Ground (cm)   | Status |');
+console.log('| Scenario ID        | Synthetic Site Label   | Snow(cm) | Tilt(°)  | Internal Target(%) | Simulated Loss(%) | Peak Ground (cm) | Status |');
 console.log('+--------------------+------------------------+----------+----------+----------+-------------------+--------------------+--------+');
 for (const b of snowRecal.benchmarks) {
   const pad = (s: string, l: number) => s.padEnd(l);
@@ -409,7 +409,7 @@ console.log(`| STC Gross Area Reference Target        | ${bipvTask60.stcGrossEle
 console.log(`| Series String Electrical Mismatch Loss | ${bipvTask60.stringMismatchLossPercent.toFixed(2).padStart(16)} | %                   |`);
 console.log(`| Net Delivered Aperture Efficiency      | ${bipvTask60.netElectricalEfficiencyPercent.toFixed(2).padStart(16)} | %                   |`);
 console.log(`| Net Delivered Gross Area Efficiency    | ${bipvTask60.netGrossDeliveredElectricalEfficiencyPercent.toFixed(2).padStart(16)} | %                   |`);
-console.log(`| Front Exterior Kimber Soiling Loss     | ${bipvTask60.frontSoilingLossPercent.toFixed(2).padStart(16)} | %                   |`);
+console.log(`| Front Exterior Screening Assumption     | ${bipvTask60.frontSoilingLossPercent.toFixed(2).padStart(16)} | %                   |`);
 console.log(`| Rear Cavity Duct Dust Deposition       | ${bipvTask60.rearDuctDustDepositionPercent.toFixed(2).padStart(16)} | %                   |`);
 console.log('+----------------------------------------+------------------+---------------------+\n');
 
@@ -423,6 +423,6 @@ if (!bipvtAreaOk) {
 }
 
 console.log('================================================================================');
-console.log(' SUMMARY: ALL 6 BENCHMARKS, RECALIBRATED HUBS & BIPV/T CONSTRAINTS PASS');
+console.log(' SUMMARY: ALL 6 BENCHMARKS, INTERNAL SYNTHETIC REGRESSIONS & BIPV/T CHECKS PASS');
 console.log('================================================================================');
 
