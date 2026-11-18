@@ -2,11 +2,11 @@
  * Physical Loss Contract & Multi-Model Unified Interface
  * SolarPV Studio v3.0 - Phase 4 (PR-2a-4)
  *
- * Single Source of Truth for Rigorous Physical Loss Integration:
- * 1. 2D Hottel crossed-strings view-factor bifacial rear irradiance model.
+ * Shared API for physical-loss estimates (not a validation certificate):
+ * 1. Unvalidated chord-slice bifacial screening proxy; not Hottel crossed-strings.
  * 2. Martin & Ruiz (2001) temperature-coupled angle-dependent IAM optical reflection model.
- * 3. Marion (2013) snow shedding & avalanche damming simulation model.
- * 4. Kimber (2006) discrete-bin soiling accumulation & scheduled cleaning model.
+ * 3. Internal snow shedding/damming screening heuristic; not the Marion model.
+ * 4. Soiling screening with internal/user-defined rain bins and cleaning inputs.
  * 5. Full catalog-backed Nominal Module Operating Cell Temperature (NOCT) resolution.
  */
 
@@ -174,7 +174,7 @@ export function buildStandardWinterSnowProfile(params?: {
 }
 
 /**
- * Evaluates Marion (2013) snow shedding loss and damming risk.
+ * Evaluates an unvalidated snow screening estimate and damming indicator.
  */
 export function evaluatePhysicalSnowLoss(
   config: Partial<SnowSheddingConfig> = {},
@@ -185,7 +185,7 @@ export function evaluatePhysicalSnowLoss(
 }
 
 /**
- * Evaluates Kimber (2006) discrete rainfall bin soiling loss.
+ * Evaluates soiling screening with assumed/user-defined rainfall-cleaning bins.
  */
 export function evaluatePhysicalSoilingLoss(
   config: Partial<SoilingConfig> = {},

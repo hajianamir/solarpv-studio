@@ -1,20 +1,23 @@
 /**
- * Marion / Townsend Snow Shedding & Sliding Damming Engine
+ * Preliminary snow coverage, shedding and damming screening heuristic
  * SolarPV Studio v3.0 - Phase 2a (PR-2a-2)
  *
- * Governing Standards & References:
+ * Background references only (not validation or implemented-model equivalence):
  * - Marion, B., et al. (2013): "A Snow-Loss Model for Photovoltaic Systems", IEEE JPV
  * - Townsend, T., & Powers, L. (2011): "Photovoltaics and Snow: An Update from Two Cold Climates"
  * - Andrews, R. W., & Pearce, J. M. (2012): "The Effect of Snow on Photovoltaic Performance"
  * - ASCE 7-22 Chapter 7 / Eurocode 1 (EN 1991-1-3): Snow Loads on Structures
  *
- * Physics & Mechanics:
+ * The exponential law, gamma and damming coefficients are internal assumptions.
+ * This is not an implementation of the Marion model or a validated annual loss
+ * prediction. Legacy filenames/exports are retained for API compatibility.
+ * Implemented approximations:
  * 1. Thermal melt when ambient temperature > slideTemperatureThresholdC (typically 0.0°C to +1.5°C).
  * 2. Gravity slide driven by array tilt angle: sliding force = m * g * sin(tilt).
  * 3. Base clearance damming: when ground snow depth approaches moduleBottomClearanceM,
  *    shed snow piles up at the lower rack edge, forming a physical dam that halts further shedding.
  * 4. Surface treatment coefficient (1.0 = standard glass, 1.25 = hydrophobic anti-stick coating).
- * 5. Structural sliding load calculation (kN/m2) for structural mounting compliance.
+ * 5. Indicative snow load calculation (kN/m2); not structural compliance verification.
  */
 
 import {
@@ -34,7 +37,7 @@ export interface HourlySnowWeatherStep {
 }
 
 /**
- * Evaluates the steady-state or post-storm module snow shedding fraction according to Marion et al. (2013).
+ * Evaluates an internal screening shedding fraction, not a Marion equation.
  *
  * S_frac = 1 - exp(-gamma * sin(tilt) * max(0, T_amb - T_slide) * surfaceCoeff)
  * Subject to base clearance damming constraints: if ground snow accumulation bridges
@@ -65,7 +68,7 @@ export function evaluateSheddingFraction(
     return Number(thermalFraction.toFixed(4));
   }
 
-  // Marion (2013) exponential gravity-shear sliding coefficient gamma = 4.49
+  // Internal assumed exponential coefficient gamma = 4.49; not sourced to Marion.
   // At tilt = 25 deg (sin(25) = 0.4226) and T_amb = 1.5 C (delta T = 1.0 C):
   // exponent = 4.49 * 0.4226 * 1.0 = 1.8975 -> 1 - exp(-1.8975) = 0.8500 (85.0% shed)
   const gamma = 4.49;
@@ -109,7 +112,7 @@ export function calculateSnowStep(
   const dammingThresholdM = config.dammingRiskThresholdM ?? 0.50;
 
   // Check avalanche damming at the lower frame edge
-  // Townsend & Powers (2011) / Marion (2013): Low tilt arrays retain a ground/toe snow drift berm
+  // Internal toe-drift heuristic: low tilt arrays may retain a ground snow berm
   // because gravitational sliding shear is insufficient to cast shed snow clear of the array frame.
   // Smooth continuous logistic transition function across 5° to 35°:
   // Eliminates non-physical cliff drops between discrete tilt brackets.

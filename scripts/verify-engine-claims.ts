@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { analyzePowerplantHarmonics, analyzeUpstreamGridConditions } from '../src/engine/harmonicsEngine';
 import { designMvSubstation } from '../src/engine/mvSubstationEngine';
 import { calculateEarthingSystem } from '../src/engine/protectionBomEngine';
@@ -45,3 +46,23 @@ assert.equal(protectionGrounding.isEarthingSafe, null);
 assert.equal(typeof protectionGrounding.screeningPassed, 'boolean');
 
 console.log('Engineering claims contract passed (IEEE 519 and IEEE 80 compliance/safety remain unevaluated; only internal screens are reported).');
+
+// Provenance is a reporting contract, not proof of physical model accuracy.
+const snowSource = fs.readFileSync('src/engine/snow/marionSnowEngine.ts', 'utf8');
+assert.match(snowSource, /not an implementation of the Marion model/);
+assert.match(snowSource, /gamma = 4.49; not sourced to Marion/);
+const soilingSource = fs.readFileSync('src/engine/soiling/kimberSoilingEngine.ts', 'utf8');
+assert.match(soilingSource, /NOT a published Kimber table/);
+assert.doesNotMatch(soilingSource, /Section IV: "Precipitation Thresholds and Wash-Off Dynamics"/);
+const bifacialSource = fs.readFileSync('src/engine/bifacial/bifacial2dViewFactor.ts', 'utf8');
+assert.match(bifacialSource, /not independently validated/);
+assert.match(bifacialSource, /not Hottel's crossed-strings integration/);
+const waterfallSource = fs.readFileSync('src/engine/waterfallLossEngine.ts', 'utf8');
+assert.match(waterfallSource, /Assumed\/user-defined input/);
+assert.match(waterfallSource, /not the Marion model or an independently validated annual loss/);
+assert.match(waterfallSource, /this does not establish a snow-free site/);
+assert.doesNotMatch(waterfallSource, /Snow Coverage & Shedding Loss \(Marion\)|Soiling & Environmental Dust Loss \(Kimber\)/);
+const reportSource = fs.readFileSync('src/components/OfficialReportModal.tsx', 'utf8');
+assert.doesNotMatch(reportSource, /Kimber Arid Climate Deposition Model|Kimber et al\. Arid Model based on/);
+assert.match(reportSource, /not rainfall-calibrated or independently validated/);
+console.log('Snow/soiling/bifacial provenance contract passed (screening only; no independent field validation claimed).');

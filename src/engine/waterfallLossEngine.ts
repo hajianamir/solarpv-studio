@@ -150,11 +150,11 @@ export function computeWaterfallLosses(
   if (bifacialGainPct !== undefined && bifacialGainPct > 0) {
     addStage(
       'bifacial_gain',
-      'بهره تابش بازتابی پشت پنل (Bifacial Rear Gain)',
+      'بهره پشت پنل (برآورد غربالگری تأییدنشده)',
       'Bifacial Rear Irradiance Gain (First-Order Proxy)',
       bifacialGainPct,
-      'افزایش دریافت پرتوهای خورشیدی از سطح پشتی ماژول ناشی از بازتابش آلبدوی زمین و ضریب دوطرفگی',
-      'First-order empirical proxy rear-side irradiance collection from ground albedo reflection.'
+      'برآورد تقریبی پشت پنل؛ فاقد اعتبارسنجی مستقل و نامناسب برای تضمین تولید',
+      'Unvalidated first-order rear-side screening proxy; not bankable yield or Hottel crossed-strings.'
     );
   }
 
@@ -179,30 +179,30 @@ export function computeWaterfallLosses(
     'Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling.'
   );
 
-  // 3. Soiling & Dust Loss (Kimber Model)
+  // 3. Soiling & Dust Loss (assumed/user-defined screening input)
   addStage(
     'soiling',
-    'تلفات نشست گرد و خاک و آلودگی سطحی (Kimber)',
-    'Soiling & Environmental Dust Loss (Kimber)',
+    'تلفات غبار (ورودی فرضی/کاربر؛ غربالگری)',
+    'Soiling & Dust Loss (Screening Input)',
     -Math.abs(soilingLossPct),
-    'رسوب ذرات غبار و معلقات هوا روی سطح پنل‌ها بین دوره‌های شستشو',
-    'Particulate dust accumulation on front glass between planned cleaning cycles.'
+    'ورودی فرضی یا کاربر؛ اتصال به مدل معتبر Kimber یا دادهٔ سایت را ثابت نمی‌کند',
+    'Assumed/user-defined input; not evidence of a validated Kimber model or site calibration.'
   );
 
-  // 3b. Snow Shedding & Damming Loss (Marion Model)
+  // 3b. Snow Loss (screening input; not validated Marion output)
   // Invariant 14-stage structure across all global climates.
   // In snow-free climates (snowLossPct = 0), operates as a strict 0.0% no-op.
   addStage(
     'snow',
-    'تلفات پوشش و ریزش برف (Marion Model)',
-    'Snow Coverage & Shedding Loss (Marion)',
+    'تلفات برف (برآورد غربالگری)',
+    'Snow Coverage & Shedding Loss (Screening)',
     -Math.abs(snowLossPct),
     snowLossPct > 0
-      ? 'پوشش برف، تاخیر در لغزش حرارتی و سدشدگی در انتهای ماژول'
-      : 'عدم وجود پوشش برف در این اقلیم (تلفات صفر)',
+      ? 'برآورد اولیهٔ برف؛ مدل Marion یا درصد تلفات سالانهٔ اعتبارسنجی‌شده نیست'
+      : 'ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود',
     snowLossPct > 0
-      ? 'Module snow obscuration, sliding delay, and base frame damming risk.'
-      : 'Zero snow accumulation in this climate zone (no-op 0.0% loss stage).'
+      ? 'Preliminary snow estimate; not the Marion model or an independently validated annual loss.'
+      : 'Snow-loss input is zero (no-op); this does not establish a snow-free site.'
   );
 
   // 4. PV Cell Temperature Thermal Loss (U-value model based on ambient design temperature)

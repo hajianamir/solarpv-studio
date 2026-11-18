@@ -456,7 +456,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           isEn ? st.descriptionEn : st.descriptionFa,
         ]),
       ] : [
-        ['Soiling Derate', '3.5%', '-', 'Kimber Arid Climate Deposition Model'],
+        ['Soiling Derate', '3.5%', '-', 'Assumed screening default; not a validated Kimber output'],
         ['Thermal Temperature Loss', '7.8%', '-', 'Gamma_Pmp = -0.30%/°C'],
         ['Ohmic Cable I2R Loss', '1.2%', '-', 'DC + AC Conductor Resistance'],
         ['Inverter Conversion Efficiency', '98.5%', '-', 'IEC 62891 Weighted Efficiency'],
@@ -1540,8 +1540,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Soiling & Dust Deposition' : 'تلفات غبار و ذرات معلق (Soiling)'}</td>
                           <td className="p-2 font-mono text-rose-400 print:text-rose-800">-3.5%</td>
-                          <td className="p-2 text-slate-400 print:text-slate-600">Kimber et al. Arid Model based on {effectiveCity.annualRainfallMm}mm rain</td>
-                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Automated waterless robotic cleaning schedule' : 'شستشوی مکانیزه رباتیک دوره‌ای'}</td>
+                          <td className="p-2 text-slate-400 print:text-slate-600">{isEn ? 'Assumed screening default; not rainfall-calibrated or independently validated' : 'پیش‌فرض غربالگری؛ فاقد کالیبراسیون بارش یا اعتبارسنجی مستقل'}</td>
+                          <td className="p-2 text-slate-300 print:text-slate-700">{isEn ? 'Cleaning schedule assumed; confirm for the site' : 'برنامهٔ شستشو فرضی است؛ نیازمند تأیید سایت'}</td>
                         </tr>
                         <tr>
                           <td className="p-2 font-medium">{isEn ? 'Thermal Temperature Derate' : 'افت توان حرارتی سلول در اثر گرما'}</td>
