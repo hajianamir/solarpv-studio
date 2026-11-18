@@ -35,7 +35,7 @@ export interface WaterfallArgsInput {
   /** Alias for hasTracker */
   isSingleAxisTracker?: boolean;
 
-  /** Marion snow coverage & shedding loss percentage (default 0.0%) */
+  /** Assumed/user-defined snow screening loss percentage (default 0.0%); not a validated Marion model output. */
   snowLossPct?: number;
 
   /** Martin & Ruiz incidence angle modifier Fresnel reflection loss (default -2.2%) */

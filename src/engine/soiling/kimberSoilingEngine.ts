@@ -3,9 +3,16 @@
  * SolarPV Studio v3.0 - Phase 2a (PR-2a-2)
  *
  * Background references only (not validation of this implementation):
- * - Kimber, A., et al. (NREL/CP-520-40123): "The Effect of Soiling on Large Grid-Connected Photovoltaic Systems in California and the Southwest US"
+ * - Kimber, A.; Mitchell, L.; Nogradi, S.; Wenger, H. (2006): "The Effect of
+ *   Soiling on Large Grid-Connected Photovoltaic Systems in California and the
+ *   Southwest Region of the United States", IEEE 4th WCPEC, vol. 2, pp. 2391-2395.
+ *   DOI: 10.1109/WCPEC.2006.279690.
  * - IEC 61724-1: Photovoltaic system performance - Monitoring: Soiling Ratio (SR)
- * - Coello, M., & Boyle, L. (2019): "Modelling the Impact of Soiling on Photovoltaic Performance"
+ * - Coello, M.; Boyle, L. (2019): "Simple Model For Predicting Time Series
+ *   Soiling of Photovoltaic Panels", IEEE Journal of Photovoltaics.
+ *   DOI: 10.1109/JPHOTOV.2019.2919628.
+ * Bibliographic verification and scope: docs/audit/SNOW-SOILING-BIBLIOGRAPHY.fa.md.
+ * These citations do not source the assumed cleaning bins or site coefficients.
  *
  * Rain bins, dust multipliers and cleaning assumptions are internal/user-defined.
  * No independent field validation or reproduction of Kimber, SAM or PVsyst is claimed.

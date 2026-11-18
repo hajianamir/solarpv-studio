@@ -180,7 +180,7 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
     )
   );
 
-  // 8. Kimber Soiling Loss & Complete Rain Wash-off Recovery (PR-2a-2 Live Engine Execution)
+  // 8. Internal soiling / rain-cleaning regression (legacy Kimber API identifiers only)
   let soilingCalc = customCalculatedValues?.['soilingLossPercent'];
   if (soilingCalc === undefined) {
     const weatherSteps: DailyWeatherSoilingStep[] = [];

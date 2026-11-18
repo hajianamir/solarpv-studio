@@ -31,7 +31,7 @@
  *              Vertical cell gradient Delta T_cell = 22.4°C along vertical slope deforms string aggregate IV curve:
  *              eta_mismatch = -1.55% relative mismatch loss.
  *    [Stage 4] Dual-Sided Environmental Soiling:
- *              Front exterior Kimber soiling (-3.50%) + Rear cavity duct particulate deposition (-0.32%).
+ *              Front exterior internal assumed screening loss (-3.50%) + Rear cavity duct particulate deposition (-0.32%).
  *    [Stage 5] DC Wiring & Internal Busbar Resistive Drop: -0.85% relative loss.
  *    [Final]   Net Delivered Aperture Efficiency: 14.77%.
  *              Net Delivered Gross Collector Efficiency: 12.70% (14.77% * 0.860).
@@ -389,10 +389,10 @@ export function simulateBipvThermalStep(
 
   // ==========================================================================
   // 5. Dual-Sided Environmental Soiling
-  // Front glass: exterior Kimber soiling (~3.5% default arid)
+  // Front glass: fixed internal screening assumption (3.5%); not a Kimber model output.
   // Rear cavity: interior dust deposition driven by duct air velocity and filtration
   // ==========================================================================
-  const frontSoilingPercent = 3.50; // Standard ambient baseline
+  const frontSoilingPercent = 3.50; // Assumed baseline; requires site-specific evidence.
   let rearDuctDustPercent = 0.0;
   if (merged.ventilationMode !== 'unventilated_insulated' && airVelocityMs > 0.1) {
     const filterEff = merged.ductFilterEfficiency ?? 0.70;

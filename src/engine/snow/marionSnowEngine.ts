@@ -3,9 +3,14 @@
  * SolarPV Studio v3.0 - Phase 2a (PR-2a-2)
  *
  * Background references only (not validation or implemented-model equivalence):
- * - Marion, B., et al. (2013): "A Snow-Loss Model for Photovoltaic Systems", IEEE JPV
- * - Townsend, T., & Powers, L. (2011): "Photovoltaics and Snow: An Update from Two Cold Climates"
- * - Andrews, R. W., & Pearce, J. M. (2012): "The Effect of Snow on Photovoltaic Performance"
+ * - Marion, B.; Schaefer, R.; Caine, H.; Sanchez, G. (2013): "Measured and modeled
+ *   photovoltaic system energy losses from snow for Colorado and Wisconsin
+ *   locations", Solar Energy 97, pp. 112-121. DOI: 10.1016/j.solener.2013.07.029.
+ * - Townsend, T.; Powers, L. (2011): "Photovoltaics and snow: An update from two
+ *   winters of measurements in the SIERRA", 37th IEEE PVSC.
+ *   DOI: 10.1109/PVSC.2011.6186627.
+ * Bibliographic verification and scope: docs/audit/SNOW-SOILING-BIBLIOGRAPHY.fa.md.
+ * No equation/table or coefficient in those papers is claimed for this heuristic.
  * - ASCE 7-22 Chapter 7 / Eurocode 1 (EN 1991-1-3): Snow Loads on Structures
  *
  * The exponential law, gamma and damming coefficients are internal assumptions.

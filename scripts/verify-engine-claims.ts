@@ -136,3 +136,30 @@ for (const { source, required, forbidden, bad } of remainingLabelChecks) {
     'Restoring an unsupported sensitivity/test/source label must fail the guard');
 }
 console.log('Internal sensitivity/test labels and background-only dataset preamble guards passed.');
+
+// Final bounded follow-up: fixed BIPV assumption, input docs and bibliography.
+const tailClaims = [
+  { file: 'src/engine/bipv/bipvThermalEngine.ts', required: /fixed internal screening assumption \(3.5%\); not a Kimber model output/,
+    forbidden: /Front exterior Kimber soiling|Front glass: exterior Kimber soiling|Standard ambient baseline/,
+    bad: 'Front glass: exterior Kimber soiling (~3.5% default arid)' },
+  { file: 'src/engine/waterfallArgs.ts', required: /Assumed\/user-defined snow screening loss percentage/,
+    forbidden: /Marion snow coverage & shedding loss percentage/,
+    bad: 'Marion snow coverage & shedding loss percentage' },
+  { file: 'src/engine/core/benchmarks/crossValidation.ts', required: /Internal soiling \/ rain-cleaning regression \(legacy Kimber API identifiers only\)/,
+    forbidden: /8\. Kimber Soiling Loss & Complete Rain Wash-off Recovery/,
+    bad: '8. Kimber Soiling Loss & Complete Rain Wash-off Recovery' },
+  { file: 'src/engine/snow/marionSnowEngine.ts', required: /10\.1016\/j\.solener\.2013\.07\.029/,
+    forbidden: /A Snow-Loss Model for Photovoltaic Systems|An Update from Two Cold Climates/,
+    bad: 'A Snow-Loss Model for Photovoltaic Systems' },
+  { file: 'src/engine/soiling/kimberSoilingEngine.ts', required: /10\.1109\/WCPEC\.2006\.279690/,
+    forbidden: /NREL\/CP-520-40123|Modelling the Impact of Soiling on Photovoltaic Performance/,
+    bad: 'NREL/CP-520-40123' },
+];
+for (const { file, required, forbidden, bad } of tailClaims) {
+  const source = fs.readFileSync(file, 'utf8');
+  assert.match(source, required, file);
+  const rejectClaim = (text: string): void => assert.doesNotMatch(text, forbidden, file);
+  rejectClaim(source);
+  assert.throws(() => rejectClaim(source + '\n' + bad), 'Legacy assumption/citation wording must not return');
+}
+console.log('BIPV/snow-input wording and bounded bibliography guards passed (not model validation).');
