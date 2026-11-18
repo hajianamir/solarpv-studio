@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/optical/iamEngine.ts#calculateEffectivePoaIam#ecf0155133d0",
+  "independentOfImplementation": true,
+  "productionExport": "calculateEffectivePoaIam",
+  "inputs": [
+    700,
+    0,
+    0,
+    65,
+    0,
+    25,
+    0.16
+  ],
+  "expected": {
+    "iamBeam": 0.9305,
+    "iamSkyDiffuse": 0.9591,
+    "iamGroundDiffuse": 0.0,
+    "iamPoaEffective": 0.9305,
+    "effectiveTransmissionLossPercent": 6.95
+  },
+  "independentCalculation": "Python pvlib==0.13.1: round(float(pvlib.iam.martin_ruiz(65,a_r=0.16)),4) for beam; round(float(pvlib.iam.martin_ruiz(59.7,a_r=0.16)),4) for sky; grazing ground IAM=0. The zero-tilt equivalent sky incidence 59.7 degrees is the intercept of Brandemuehl & Beckman (1980), Solar Energy 24(5),511-513, Ground incidence is 90 degrees. At 25 C the thermo-optic correction is zero; diffuse/ground irradiances are zero, so effective IAM is beam IAM. Loss=100*(1-IAM), rounded to 2 decimals and then 1 decimal for the contract. Rounding follows the public output precision. Unified-contract diagnostics use explicit zero-deposition, no-storm, no-snow, no-bifacial controls and explicit NOCT=45: zeros, unit daily soiling ratios and constant metadata are API zero-state assertions, not independent validation of those models. No application function or output was used for reference generation.",
+  "tolerances": {
+    "absolute": 5e-07,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "pvlib.iam.martin_ruiz",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.iam.martin_ruiz.html",
+    "version": "pvlib-python 0.13.1",
+    "locator": "martin_ruiz(aoi, a_r); pvlib/iam.py at tag v0.13.1; Martin and Ruiz (2001), DOI 10.1016/S0038-092X(00)00155-4"
+  }
+}

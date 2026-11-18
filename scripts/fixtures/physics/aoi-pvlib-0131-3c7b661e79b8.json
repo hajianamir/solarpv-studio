@@ -1,0 +1,3377 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels#3c7b661e79b8",
+  "independentOfImplementation": true,
+  "productionExport": "evaluatePhysicalLossModels",
+  "inputs": [
+    {
+      "iam": {
+        "beamPoaWm2": 700,
+        "skyDiffusePoaWm2": 0,
+        "groundReflectedPoaWm2": 0,
+        "aoiBeamDeg": 65,
+        "tiltDeg": 0,
+        "cellTemperatureC": 25,
+        "arCoatingFactor": 0.16
+      },
+      "module": {
+        "noctC": 45
+      },
+      "snow": {
+        "weatherHourly": [
+          {
+            "hourOfYear": 1,
+            "ambientTempC": 25,
+            "snowfallDepthCm": 0,
+            "accumulatedGroundSnowCm": 0
+          }
+        ]
+      },
+      "soiling": {
+        "config": {
+          "dailySoilingRatePercent": 0,
+          "scheduledWashIntervalDays": 0,
+          "dustStormVulnerabilityFactor": 1
+        }
+      }
+    }
+  ],
+  "expected": {
+    "bifacialGainPct": 0,
+    "iamLossPct": -7.0,
+    "snowLossPct": 0,
+    "soilingLossPct": 0,
+    "noctC": 45,
+    "diagnostics": {
+      "bifacialDiagnostics": {
+        "gainFraction": 0,
+        "gainPct": 0,
+        "unclampedGainPct": 0,
+        "isClampedAt15Pct": false,
+        "clampedExcessPct": 0,
+        "modelUsed": "view_factor_2d"
+      },
+      "iamDetails": {
+        "iamBeam": 0.9305,
+        "iamSkyDiffuse": 0.9591,
+        "iamGroundDiffuse": 0.0,
+        "iamPoaEffective": 0.9305,
+        "effectiveTransmissionLossPercent": 6.95
+      },
+      "snowSummary": {
+        "annualSnowLossPercent": 0,
+        "snowCoverageDays": 0,
+        "avalancheDammingRisk": "NONE",
+        "maxSnowStructuralLoadKnM2": 0
+      },
+      "soilingSummary": {
+        "annualAverageSoilingLossPercent": 0,
+        "maxMonthlySoilingLossPercent": 0,
+        "recommendedWashingCyclesPerYear": 2,
+        "dustStormVulnerabilityCategory": "LOW",
+        "dailyProfile": [
+          {
+            "dayOfYear": 1,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 2,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 3,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 4,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 5,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 6,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 7,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 8,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 9,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 10,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 11,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 12,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 13,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 14,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 15,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 16,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 17,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 18,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 19,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 20,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 21,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 22,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 23,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 24,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 25,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 26,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 27,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 28,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 29,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 30,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 31,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 32,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 33,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 34,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 35,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 36,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 37,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 38,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 39,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 40,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 41,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 42,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 43,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 44,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 45,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 46,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 47,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 48,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 49,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 50,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 51,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 52,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 53,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 54,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 55,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 56,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 57,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 58,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 59,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 60,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 61,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 62,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 63,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 64,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 65,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 66,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 67,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 68,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 69,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 70,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 71,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 72,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 73,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 74,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 75,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 76,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 77,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 78,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 79,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 80,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 81,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 82,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 83,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 84,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 85,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 86,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 87,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 88,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 89,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 90,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 91,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 92,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 93,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 94,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 95,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 96,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 97,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 98,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 99,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 100,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 101,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 102,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 103,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 104,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 105,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 106,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 107,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 108,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 109,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 110,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 111,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 112,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 113,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 114,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 115,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 116,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 117,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 118,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 119,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 120,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 121,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 122,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 123,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 124,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 125,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 126,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 127,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 128,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 129,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 130,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 131,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 132,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 133,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 134,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 135,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 136,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 137,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 138,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 139,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 140,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 141,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 142,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 143,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 144,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 145,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 146,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 147,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 148,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 149,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 150,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 151,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 152,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 153,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 154,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 155,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 156,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 157,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 158,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 159,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 160,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 161,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 162,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 163,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 164,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 165,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 166,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 167,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 168,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 169,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 170,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 171,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 172,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 173,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 174,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 175,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 176,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 177,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 178,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 179,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 180,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 181,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 182,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 183,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 184,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 185,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 186,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 187,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 188,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 189,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 190,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 191,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 192,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 193,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 194,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 195,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 196,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 197,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 198,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 199,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 200,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 201,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 202,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 203,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 204,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 205,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 206,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 207,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 208,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 209,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 210,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 211,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 212,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 213,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 214,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 215,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 216,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 217,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 218,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 219,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 220,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 221,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 222,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 223,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 224,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 225,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 226,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 227,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 228,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 229,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 230,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 231,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 232,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 233,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 234,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 235,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 236,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 237,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 238,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 239,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 240,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 241,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 242,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 243,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 244,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 245,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 246,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 247,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 248,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 249,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 250,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 251,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 252,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 253,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 254,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 255,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 256,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 257,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 258,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 259,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 260,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 261,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 262,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 263,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 264,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 265,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 266,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 267,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 268,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 269,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 270,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 271,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 272,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 273,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 274,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 275,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 276,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 277,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 278,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 279,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 280,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 281,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 282,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 283,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 284,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 285,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 286,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 287,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 288,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 289,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 290,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 291,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 292,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 293,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 294,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 295,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 296,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 297,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 298,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 299,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 300,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 301,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 302,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 303,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 304,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 305,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 306,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 307,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 308,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 309,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 310,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 311,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 312,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 313,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 314,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 315,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 316,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 317,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 318,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 319,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 320,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 321,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 322,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 323,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 324,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 325,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 326,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 327,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 328,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 329,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 330,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 331,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 332,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 333,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 334,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 335,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 336,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 337,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 338,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 339,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 340,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 341,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 342,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 343,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 344,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 345,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 346,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 347,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 348,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 349,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 350,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 351,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 352,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 353,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 354,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 355,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 356,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 357,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 358,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 359,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 360,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 361,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 362,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 363,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 364,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          },
+          {
+            "dayOfYear": 365,
+            "rainfallMm": 0,
+            "dustStormOccurred": false,
+            "manualCleanPerformed": false,
+            "dailySoilingLossPercent": 0,
+            "cumulativeSoilingFactor": 1,
+            "soilingRatio": 1
+          }
+        ]
+      },
+      "noctResolved": {
+        "noctC": 45,
+        "isFallback": false
+      }
+    }
+  },
+  "independentCalculation": "Python pvlib==0.13.1: round(float(pvlib.iam.martin_ruiz(65,a_r=0.16)),4) for beam; round(float(pvlib.iam.martin_ruiz(59.7,a_r=0.16)),4) for sky; grazing ground IAM=0. The zero-tilt equivalent sky incidence 59.7 degrees is the intercept of Brandemuehl & Beckman (1980), Solar Energy 24(5),511-513, Ground incidence is 90 degrees. At 25 C the thermo-optic correction is zero; diffuse/ground irradiances are zero, so effective IAM is beam IAM. Loss=100*(1-IAM), rounded to 2 decimals and then 1 decimal for the contract. Rounding follows the public output precision. Unified-contract diagnostics use explicit zero-deposition, no-storm, no-snow, no-bifacial controls and explicit NOCT=45: zeros, unit daily soiling ratios and constant metadata are API zero-state assertions, not independent validation of those models. No application function or output was used for reference generation.",
+  "tolerances": {
+    "absolute": 5e-07,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "pvlib.iam.martin_ruiz",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.iam.martin_ruiz.html",
+    "version": "pvlib-python 0.13.1",
+    "locator": "martin_ruiz(aoi, a_r); pvlib/iam.py at tag v0.13.1; Martin and Ruiz (2001), DOI 10.1016/S0038-092X(00)00155-4"
+  }
+}

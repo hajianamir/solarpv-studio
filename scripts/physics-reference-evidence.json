@@ -27,6 +27,141 @@
       "referenceUrl": "https://doi.org/10.3390/app10030914",
       "referenceVersion": "2020",
       "referenceLocator": "Section 2, NOCT-Based Module Temperature, Equation (1)"
+    },
+    {
+      "formulaId": "src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels#06b119dff7af",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-06b119dff7af.json",
+      "productionExport": "evaluatePhysicalLossModels",
+      "referenceTitle": "pvlib.iam.martin_ruiz",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.iam.martin_ruiz.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "martin_ruiz(aoi, a_r); pvlib/iam.py at tag v0.13.1; Martin and Ruiz (2001), DOI 10.1016/S0038-092X(00)00155-4"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#0a7b5f29beb5",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-0a7b5f29beb5.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#13b13b7b6deb",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-13b13b7b6deb.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#1ea8a2043dca",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-1ea8a2043dca.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#22bec45baaea",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-22bec45baaea.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#354b736ded69",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-354b736ded69.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels#3c7b661e79b8",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-3c7b661e79b8.json",
+      "productionExport": "evaluatePhysicalLossModels",
+      "referenceTitle": "pvlib.iam.martin_ruiz",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.iam.martin_ruiz.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "martin_ruiz(aoi, a_r); pvlib/iam.py at tag v0.13.1; Martin and Ruiz (2001), DOI 10.1016/S0038-092X(00)00155-4"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#57ca711e4e9a",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-57ca711e4e9a.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/core/physicalLossContract.ts#evaluatePhysicalIamLoss#5e1cb95d7803",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-5e1cb95d7803.json",
+      "productionExport": "evaluatePhysicalIamLoss",
+      "referenceTitle": "pvlib.iam.martin_ruiz",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.iam.martin_ruiz.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "martin_ruiz(aoi, a_r); pvlib/iam.py at tag v0.13.1; Martin and Ruiz (2001), DOI 10.1016/S0038-092X(00)00155-4"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#761c49b9c8db",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-761c49b9c8db.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#95eb3bf4f737",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-95eb3bf4f737.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#a8687e985013",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-a8687e985013.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#d595b0ad3bac",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-d595b0ad3bac.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#e61e81474671",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-e61e81474671.json",
+      "productionExport": "calculateBeamAoiDeg",
+      "referenceTitle": "pvlib.irradiance.aoi",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.aoi.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "aoi and aoi_projection; pvlib/irradiance.py at tag v0.13.1; north-clockwise surface and solar azimuths"
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateEffectivePoaIam#ecf0155133d0",
+      "fixtureFile": "scripts/fixtures/physics/aoi-pvlib-0131-ecf0155133d0.json",
+      "productionExport": "calculateEffectivePoaIam",
+      "referenceTitle": "pvlib.iam.martin_ruiz",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.iam.martin_ruiz.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "martin_ruiz(aoi, a_r); pvlib/iam.py at tag v0.13.1; Martin and Ruiz (2001), DOI 10.1016/S0038-092X(00)00155-4"
     }
   ]
 }
