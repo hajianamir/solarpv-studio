@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#7c8d85e86f82",
+  "independentOfImplementation": true,
+  "productionExport": "calculateKimberSeries",
+  "inputs": [
+    {
+      "timezone": "UTC",
+      "weatherQuality": "measured",
+      "parameterQuality": "user_configured",
+      "parameters": {
+        "cleaningThresholdMm": 6,
+        "lossRatePerDay": 0.02,
+        "gracePeriodDays": 1,
+        "maxLossFraction": 0.08,
+        "initialLossFraction": 0.03,
+        "rainAccumulationHours": 24
+      },
+      "manualWashTimestamps": [],
+      "steps": [
+        {
+          "timestamp": "1970-01-01T00:00:00Z",
+          "rainfallMm": 0,
+          "unsoiledEnergyWh": 100
+        },
+        {
+          "timestamp": "1970-01-02T00:00:00Z",
+          "rainfallMm": 0,
+          "unsoiledEnergyWh": 200
+        },
+        {
+          "timestamp": "1970-01-03T00:00:00Z",
+          "rainfallMm": 7,
+          "unsoiledEnergyWh": 300
+        },
+        {
+          "timestamp": "1970-01-04T00:00:00Z",
+          "rainfallMm": 0,
+          "unsoiledEnergyWh": 400
+        },
+        {
+          "timestamp": "1970-01-05T00:00:00Z",
+          "rainfallMm": 0,
+          "unsoiledEnergyWh": 500
+        },
+        {
+          "timestamp": "1970-01-06T00:00:00Z",
+          "rainfallMm": 0,
+          "unsoiledEnergyWh": 600
+        },
+        {
+          "timestamp": "1970-01-07T00:00:00Z",
+          "rainfallMm": 0,
+          "unsoiledEnergyWh": 700
+        },
+        {
+          "timestamp": "1970-01-08T00:00:00Z",
+          "rainfallMm": 0,
+          "unsoiledEnergyWh": 800
+        },
+        {
+          "timestamp": "1970-01-09T00:00:00Z",
+          "rainfallMm": 0,
+          "unsoiledEnergyWh": 900
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "modelId": "soiling_kimber_pvlib_0131",
+    "modelVersion": "1.0.0",
+    "referenceSoftware": "pvlib-python 0.13.1",
+    "validationStatus": "not_field_validated",
+    "units": {
+      "loss": "fraction",
+      "rainfall": "mm/interval",
+      "energy": "Wh"
+    },
+    "limitations": "Site parameters required; positive grace; regular intervals; no missing-rain inference; no annual claim without a full-year energy series",
+    "status": "computed",
+    "quality": "measured",
+    "parameterQuality": "user_configured",
+    "timezone": "UTC",
+    "period": {
+      "start": "1970-01-01T00:00:00Z",
+      "end": "1970-01-09T00:00:00Z"
+    },
+    "appliedParameters": {
+      "cleaningThresholdMm": 6,
+      "lossRatePerDay": 0.02,
+      "gracePeriodDays": 1,
+      "maxLossFraction": 0.08,
+      "initialLossFraction": 0.03,
+      "rainAccumulationHours": 24
+    },
+    "samples": [
+      {
+        "timestamp": "1970-01-01T00:00:00Z",
+        "lossFraction": 0.03
+      },
+      {
+        "timestamp": "1970-01-02T00:00:00Z",
+        "lossFraction": 0.05
+      },
+      {
+        "timestamp": "1970-01-03T00:00:00Z",
+        "lossFraction": 0
+      },
+      {
+        "timestamp": "1970-01-04T00:00:00Z",
+        "lossFraction": 0.020000000000000004
+      },
+      {
+        "timestamp": "1970-01-05T00:00:00Z",
+        "lossFraction": 0.04000000000000001
+      },
+      {
+        "timestamp": "1970-01-06T00:00:00Z",
+        "lossFraction": 0.06
+      },
+      {
+        "timestamp": "1970-01-07T00:00:00Z",
+        "lossFraction": 0.07999999999999999
+      },
+      {
+        "timestamp": "1970-01-08T00:00:00Z",
+        "lossFraction": 0.08
+      },
+      {
+        "timestamp": "1970-01-09T00:00:00Z",
+        "lossFraction": 0.08
+      }
+    ],
+    "energyWeightedLossFraction": 0.05977777777777778,
+    "energyQuality": "provided_complete"
+  },
+  "independentCalculation": "Generated independently with Python pvlib==0.13.1 soiling.kimber using the explicit JSON parameters and timezone-aware UTC timestamps. The first sample is initial_soiling; rainfall and grace windows are right-closed and cleaning uses strict >. Manual washes here are UTC-midnight sample timestamps, matching pvlib date semantics. Energy aggregation independently uses sum(pvlib_loss * unsoiledEnergyWh) / sum(unsoiledEnergyWh), not daily mean. The remaining expected metadata asserts the published application API contract; it is not scientific validation. Reproduce: python scripts/fixtures/physics/generate-kimber-0131.py. No TS engine imported or executed to compute expected values.",
+  "tolerances": {
+    "absolute": 1e-10,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "pvlib.soiling.kimber",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+    "version": "pvlib-python 0.13.1",
+    "locator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+  }
+}

@@ -162,6 +162,294 @@
       "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.iam.martin_ruiz.html",
       "referenceVersion": "pvlib-python 0.13.1",
       "referenceLocator": "martin_ruiz(aoi, a_r); pvlib/iam.py at tag v0.13.1; Martin and Ruiz (2001), DOI 10.1016/S0038-092X(00)00155-4"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#0bce74d37c79",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-0bce74d37c79.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#157d7bda6ae4",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-157d7bda6ae4.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#3096e08c96b1",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-3096e08c96b1.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#39558766fc36",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-39558766fc36.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#46b6b59dced6",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-46b6b59dced6.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#46c35fa66d2a",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-46c35fa66d2a.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#52e5c1f22168",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-52e5c1f22168.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#68f724d1a893",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-68f724d1a893.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#77c7dcf4d76a",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-77c7dcf4d76a.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#7c8d85e86f82",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-7c8d85e86f82.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#86d4c9d664d4",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-86d4c9d664d4.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#9a54916d694f",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-9a54916d694f.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#b53f4c427aeb",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-b53f4c427aeb.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#b70a12c317cf",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-b70a12c317cf.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#c2035abeaca1",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-c2035abeaca1.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#d4365bfb021c",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-d4365bfb021c.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#d61a5e8ff68b",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-d61a5e8ff68b.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#d8a555ab23d2",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-d8a555ab23d2.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#da472b5deb07",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-da472b5deb07.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#e33ba0103f90",
+      "fixtureFile": "scripts/fixtures/physics/kimber-0131-e33ba0103f90.json",
+      "productionExport": "calculateKimberSeries",
+      "referenceTitle": "pvlib.soiling.kimber",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.soiling.kimber.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "pvlib/soiling.py@v0.13.1 kimber; rolling windows closed=right, strict rain threshold, initial loss, cap and manual wash"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#1a0c0dbc85fc",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-1a0c0dbc85fc.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#4e16af6ba541",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-4e16af6ba541.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#50bae7e98fa8",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-50bae7e98fa8.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#6b3a3d0a740e",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-6b3a3d0a740e.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#7d776834858a",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-7d776834858a.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#7ec3b6a2aaa9",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-7ec3b6a2aaa9.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#8cb9cb7c4472",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-8cb9cb7c4472.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#937a3497004c",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-937a3497004c.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#93f3de04acec",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-93f3de04acec.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#c70094a3d6cf",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-c70094a3d6cf.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#f1487684a18d",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-f1487684a18d.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#f626031e49c0",
+      "fixtureFile": "scripts/fixtures/physics/snow-0131-f626031e49c0.json",
+      "productionExport": "calculateSnowSeries",
+      "referenceTitle": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
     }
   ]
 }

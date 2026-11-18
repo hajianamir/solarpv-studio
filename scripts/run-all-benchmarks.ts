@@ -3,6 +3,8 @@
  * SolarPV Studio v3.0 - Phase 1 Final Verification
  */
 
+import './test-reference-kimber';
+import './test-reference-snow';
 import { runLhsVsCmcBenchmark } from '../src/engine/core/benchmarks/lhsBenchmark';
 import { runSystemCrossValidation } from '../src/engine/core/benchmarks/crossValidation';
 import { runMigrationTestSuite } from '../src/engine/core/benchmarks/migrationTestVectors';
