@@ -6,6 +6,7 @@ import { formatCoordinates } from '../engine/geoCoordinates';
 import { formatPsh } from '../engine/formatters';
 
 import {ReferenceLossImport} from './ReferenceLossImport';
+import {PvlibStudyPanel} from './PvlibStudyPanel';
 
 const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
 
@@ -313,6 +314,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
 
   return (
     <div className="space-y-6">
+      <PvlibStudyPanel latitude={selectedCity.latitude} longitude={selectedCity.longitude} lang={lang}/>
       <ReferenceLossImport city={selectedCity} context={referenceContext} onChange={onCityChange} lang={lang}/>
       {/* Title */}
       <div className="studio-card">

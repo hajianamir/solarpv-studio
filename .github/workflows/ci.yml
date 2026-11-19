@@ -148,3 +148,41 @@ jobs:
 
       - name: Geocode cache regressions
         run: npx tsx scripts/test-geocode-cache.ts
+
+  direct-pvlib-study:
+    name: Direct pvlib study (${{ matrix.os }}, Python 3.11)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2022]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: services/pvlib_study/requirements.txt
+      - run: npm ci
+      - run: python -m pip install -r services/pvlib_study/requirements.txt
+      - name: Independent equations, published examples and ModelChain cross-check
+        run: npm run test:study:python
+      - name: Real HTTP, authentication, Python execution and resource/failure limits
+        run: npm run test:study
+      - name: Build offline frontend
+        run: npm run build
+        env:
+          VITE_REAL_INTERNET: 'false'
+      - name: Install Chromium (Windows)
+        if: runner.os == 'Windows'
+        run: npx playwright-core install chromium
+      - name: Install Chromium shared libraries (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libnspr4 libnss3
+      - name: Browser import, real Python study, reports and screening isolation
+        run: npm run test:study:browser
