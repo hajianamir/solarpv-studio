@@ -3,15 +3,15 @@
  * RFC 3.0.0 Section 2 - Technical Additions
  *
  * Defines formal data contracts for:
- * 1. Kimber/HSU Soiling & Rain Recovery
- * 2. Marion/Townsend Snow Shedding & Sliding Risk
+ * 1. Soiling & Rain Recovery screening (legacy Kimber/HSU identifiers)
+ * 2. Snow Shedding & Sliding screening (legacy Marion/Townsend identifiers)
  * 3. Temperature-Coupled Incidence Angle Modifier (IAM)
  * 4. 15-Minute Slope-Aware Backtracking Single-Axis Tracker
  */
 
 // ============================================================================
-// 1. Soiling & Rain Recovery (Kimber / HSU Model)
-// Standard: Kimber et al. (NREL) / IEC 61724-1 Soiling Ratio
+// 1. Soiling & Rain Recovery (internal screening assumptions)
+// Background: Kimber et al.; ratio bookkeeping is not independent validation.
 // ============================================================================
 
 export interface SoilingConfig {
@@ -33,7 +33,7 @@ export interface SoilingConfig {
   /** Desert dust storm vulnerability multiplier (1.0 = standard, 2.5 = high haboob/arid zone) */
   dustStormVulnerabilityFactor: number;
 
-  /** Kimber model calculation variant: simplified uniform daily or full discrete bin distribution */
+  /** Legacy variant identifier; discrete rain bins are internal/user-defined, not a Kimber table. */
   modelVariant: 'kimber_simplified' | 'kimber_full_discrete_bins';
 }
 
@@ -56,8 +56,8 @@ export interface SoilingSimulationResult {
 }
 
 // ============================================================================
-// 2. Snow Shedding & Sliding Risk (Marion / Townsend Model)
-// Standard: NREL Marion (2013) / Townsend & Powers (2011)
+// 2. Snow Shedding & Sliding Risk (internal screening heuristic)
+// Marion / Townsend are background references, not implemented-model equivalence.
 // ============================================================================
 
 export interface SnowSheddingConfig {

@@ -1,11 +1,14 @@
+import {ReferenceLossStatus} from './ReferenceLossStatus';
 import React from 'react';
 import { Layers, ArrowDownRight, Award, Info, CheckCircle2, TrendingDown, Sparkles } from 'lucide-react';
-import { computeWaterfallLosses, type WaterfallLossReport } from '../engine/waterfallLossEngine';
-import { buildWaterfallArgs } from '../engine/waterfallArgs';
+import { type WaterfallLossReport } from '../engine/waterfallLossEngine';
+import { computeConfiguredWaterfall, type AnnualReferenceInput } from '../engine/waterfallArgs';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 import { type TrackerConfig } from '../engine/tracker/backtrackingEngine';
 
 interface WaterfallLossTabProps {
+  annualReferenceLosses?: AnnualReferenceInput;
+  referenceSite?: {latitude:number;longitude:number};
   report?: WaterfallLossReport;
   installedCapacityKwp?: number;
   peakSunHours?: number;
@@ -24,6 +27,8 @@ interface WaterfallLossTabProps {
 
 export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   report: externalReport,
+  annualReferenceLosses,
+  referenceSite,
   installedCapacityKwp = 1000,
   peakSunHours = 5.0,
   ambientTempMaxC = 35.0,
@@ -44,8 +49,9 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   const activeTrackerConfig: TrackerConfig | undefined = trackerConfig ?? undefined;
   const isFa = lang === 'fa';
 
-  const report: WaterfallLossReport = externalReport ?? computeWaterfallLosses(
-    ...buildWaterfallArgs({
+  const report: WaterfallLossReport = externalReport ?? computeConfiguredWaterfall({
+      annualReferenceLosses,
+      referenceSite,
       installedCapacityKwp,
       peakSunHours,
       ambientTempMaxC,
@@ -57,11 +63,11 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
       noctC,
       tempCoeffPmpPct,
       trackerConfig: activeTrackerConfig,
-    })
-  );
+  });
 
   return (
     <div className="space-y-6">
+      <ReferenceLossStatus evaluation={report.annualReference} lang={lang}/>
       {/* Title */}
       <div className="studio-card">
         <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">

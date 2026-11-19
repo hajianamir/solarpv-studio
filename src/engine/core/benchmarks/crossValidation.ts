@@ -2,9 +2,8 @@
  * Cross-Validation Test Runner
  * RFC 3.0.0 Section 2.2
  *
- * Runs self-tests comparing analytical output against calibrated Golden Datasets
- * (NREL SAM, Sandia, DNV FPV, IEA-PVPS LCA, IEEE 2800 LVRT, Geotech Broms).
- * Generates an engineering validation certificate with pass/fail tolerances.
+ * Runs internal stored-target checks with per-metric evidence classifications.
+ * A PASS is software regression evidence, not an engineering validation certificate.
  */
 
 import {
@@ -181,7 +180,7 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
     )
   );
 
-  // 8. Kimber Soiling Loss & Complete Rain Wash-off Recovery (PR-2a-2 Live Engine Execution)
+  // 8. Internal soiling / rain-cleaning regression (legacy Kimber API identifiers only)
   let soilingCalc = customCalculatedValues?.['soilingLossPercent'];
   if (soilingCalc === undefined) {
     const weatherSteps: DailyWeatherSoilingStep[] = [];
@@ -207,20 +206,20 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
   metrics.push(
     evaluate(
       'VAL-SOILING-08',
-      'Kimber et al. Arid Soiling Loss & Complete Rain Wash-off Recovery',
+      'Internal Soiling Accumulation / Rain-Cleaning Regression (Not Independent)',
       GOLDEN_KIMBER_SOILING.source,
-      'https://www.nrel.gov/docs/fy06osti/40123.pdf (Kimber et al., NREL/CP-520-40123)',
+      undefined, // No independent source URL for this internal target
       GOLDEN_KIMBER_SOILING.soilingLossBeforeRainPercent,
       soilingCalc,
       GOLDEN_KIMBER_SOILING.tolerancePercent,
       '%',
-      `Live Kimber engine: accumulated soiling over 30 dry days at 0.22%/day rate with complete wash-off above 5.0mm rain threshold. Independent source: Kimber et al. (NREL) arid-soiling field measurements.`,
+      `Internal soiling screening: assumed 0.22%/day over 30 dry days and a 5.0mm cleaning threshold; stored-target regression, not independent Kimber field validation.`,
       'cross_validation',
-      'calibrated'
+      'estimated'
     )
   );
 
-  // 9. Marion Snow Shedding & Gravity Sliding (PR-2a-2 Live Engine Execution)
+  // 9. Internal snow screening regression (legacy benchmark ID retained)
   let snowCalc = customCalculatedValues?.['snowSheddingFraction'];
   if (snowCalc === undefined) {
     snowCalc = evaluateSheddingFraction(
@@ -236,16 +235,16 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
   metrics.push(
     evaluate(
       'VAL-SNOW-09',
-      'Marion et al. Snow Melting and Gravity Sliding at 25° Tilt',
+      'Internal Snow Shedding Regression at 25° Tilt (Not Independent)',
       GOLDEN_MARION_SNOW.source,
-      'https://ieeexplore.ieee.org/document/6394890/ (Marion et al., IEEE JPV Vol 3, No 1, 2013)',
+      undefined, // No independent source URL for this internal target
       GOLDEN_MARION_SNOW.expectedModuleSheddingFraction,
       snowCalc,
       GOLDEN_MARION_SNOW.tolerancePercent,
       'fraction',
-      `Live Marion snow engine: gravity sliding clearing at 25 deg array tilt, ambient temp +1.5 C, 10 cm ground snow (below damming boundary). Independent source: NREL Marion (2013) snow-loss field model.`,
+      `Internal snow screening heuristic at 25 deg tilt and +1.5 C; comparison with an assumed stored target, not independent Marion validation or calibration.`,
       'cross_validation',
-      'calibrated'
+      'estimated'
     )
   );
 

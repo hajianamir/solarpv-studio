@@ -1,3 +1,5 @@
+import { labelReferenceLosses } from './provenance/referenceLossLabels';
+import { evaluateAnnualReferenceLosses, type AnnualReferenceInput, type AnnualReferenceEvaluation } from './reference/annualReferenceLosses';
 import { computeWaterfallLosses } from './waterfallLossEngine';
 import { type TrackerConfig } from './tracker/backtrackingEngine';
 import { type InstallationEnvironment } from './types/climateTypes';
@@ -11,6 +13,8 @@ import {
  * Eliminates positional argument misalignment bugs across all call sites.
  */
 export interface WaterfallArgsInput {
+  annualReferenceLosses?: AnnualReferenceInput;
+  referenceSite?: {latitude: number; longitude: number};
   /** Nameplate DC array peak capacity in kWp */
   installedCapacityKwp?: number;
   /** Alias for installedCapacityKwp */
@@ -35,7 +39,7 @@ export interface WaterfallArgsInput {
   /** Alias for hasTracker */
   isSingleAxisTracker?: boolean;
 
-  /** Marion snow coverage & shedding loss percentage (default 0.0%) */
+  /** Assumed/user-defined snow screening loss percentage (default 0.0%); not a validated Marion model output. */
   snowLossPct?: number;
 
   /** Martin & Ruiz incidence angle modifier Fresnel reflection loss (default -2.2%) */
@@ -118,6 +122,8 @@ export const WATERFALL_ARG_COUNT: number = 17;
  * 16: annualThermalDerateOverridePct (optional 17th slot)
  */
 export function buildWaterfallArgs(i: WaterfallArgsInput): Parameters<typeof computeWaterfallLosses> {
+  const evaluation = i.annualReferenceLosses ? evaluateAnnualReferenceLosses(i.annualReferenceLosses, i.referenceSite, {hasTracker:i.hasTracker??i.isSingleAxisTracker??Boolean(i.trackerConfig),tiltDeg:i.fixedTiltDeg??i.tiltDeg,installationEnvironment:i.installationEnv??i.installationEnvironment}) : null;
+  i = {...i, soilingLossPct: evaluation?.soilingLossPct ?? i.soilingLossPct, snowLossPct: evaluation?.snowLossPct ?? i.snowLossPct};
   const phys = i.physicalLossConfig ? evaluatePhysicalLossModels(i.physicalLossConfig) : null;
 
   const capKwp = (i.installedCapacityKwp ?? i.dcCapacityKw) ?? 1000;
@@ -163,4 +169,18 @@ export function buildWaterfallArgs(i: WaterfallArgsInput): Parameters<typeof com
   ];
 
   return args;
+}
+
+export function computeConfiguredWaterfall(i: WaterfallArgsInput) {
+  let report = computeWaterfallLosses(...buildWaterfallArgs(i));
+  report=withReferenceLossMetadata(report,i);
+  // Optional diagnostics absent in serialized reports are absent here too.
+  const {trackerDetails,...base}=report;
+  return trackerDetails ? {...base,trackerDetails} : base;
+}
+export type { AnnualReferenceInput, AnnualReferenceEvaluation };
+
+export function withReferenceLossMetadata(report: ReturnType<typeof computeWaterfallLosses>, i: WaterfallArgsInput) {
+  const evaluation = i.annualReferenceLosses ? evaluateAnnualReferenceLosses(i.annualReferenceLosses,i.referenceSite, {hasTracker:i.hasTracker??i.isSingleAxisTracker??Boolean(i.trackerConfig),tiltDeg:i.fixedTiltDeg??i.tiltDeg,installationEnvironment:i.installationEnv??i.installationEnvironment}) : null;
+  return labelReferenceLosses(report,evaluation);
 }

@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/reference/snowSeries.ts#calculateSnowSeries#f1487684a18d",
+  "independentOfImplementation": true,
+  "productionExport": "calculateSnowSeries",
+  "inputs": [
+    {
+      "timezone": "UTC",
+      "weatherQuality": "measured",
+      "parameterQuality": "user_configured",
+      "mounting": "roof",
+      "parameters": {
+        "tiltDeg": 30,
+        "rowSlantHeightM": 2,
+        "parallelStringsAlongSlant": 3,
+        "initialCoverageFraction": 0,
+        "snowfallThresholdCmPerHour": 1,
+        "groundDepthThresholdCm": 1,
+        "canSlideCoefficientWm2PerC": -80,
+        "slideAmountCoefficientPerHour": 0.197
+      },
+      "steps": [
+        {
+          "timestamp": "2024-01-01T00:00:00Z",
+          "snowfallCm": 2,
+          "groundSnowDepthCm": 10,
+          "poaWm2": 400,
+          "ambientTempC": -10
+        },
+        {
+          "timestamp": "2024-01-01T01:00:00Z",
+          "snowfallCm": 0,
+          "groundSnowDepthCm": 10,
+          "poaWm2": 400,
+          "ambientTempC": -10
+        },
+        {
+          "timestamp": "2024-01-01T02:00:00Z",
+          "snowfallCm": 0,
+          "groundSnowDepthCm": 10,
+          "poaWm2": 400,
+          "ambientTempC": 2
+        },
+        {
+          "timestamp": "2024-01-01T03:00:00Z",
+          "snowfallCm": 0,
+          "groundSnowDepthCm": 10,
+          "poaWm2": 400,
+          "ambientTempC": 2
+        },
+        {
+          "timestamp": "2024-01-01T04:00:00Z",
+          "snowfallCm": 2,
+          "groundSnowDepthCm": 10,
+          "poaWm2": 400,
+          "ambientTempC": 2
+        },
+        {
+          "timestamp": "2024-01-01T05:00:00Z",
+          "snowfallCm": 0,
+          "groundSnowDepthCm": 10,
+          "poaWm2": 400,
+          "ambientTempC": 2
+        },
+        {
+          "timestamp": "2024-01-01T06:00:00Z",
+          "snowfallCm": 0,
+          "groundSnowDepthCm": 10,
+          "poaWm2": 400,
+          "ambientTempC": 2
+        },
+        {
+          "timestamp": "2024-01-01T07:00:00Z",
+          "snowfallCm": 0,
+          "groundSnowDepthCm": 10,
+          "poaWm2": 400,
+          "ambientTempC": 2
+        },
+        {
+          "timestamp": "2024-01-01T08:00:00Z",
+          "snowfallCm": 0,
+          "groundSnowDepthCm": 0,
+          "poaWm2": 400,
+          "ambientTempC": 2
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "modelId": "snow_pvlib_nrel_0131_roof",
+    "modelVersion": "1.0.0",
+    "referenceSoftware": "pvlib-python 0.13.1",
+    "validationStatus": "not_field_validated",
+    "units": {
+      "coverage": "fraction of row slant height",
+      "loss": "fraction of DC capacity",
+      "snowfall": "cm/interval",
+      "depth": "cm",
+      "poa": "W/m2"
+    },
+    "limitations": "Roof/reference coefficients only; string partly covered means string capacity lost; complete regular data required; no structural or annual energy result",
+    "status": "computed",
+    "quality": "measured",
+    "parameterQuality": "user_configured",
+    "timezone": "UTC",
+    "mounting": "roof",
+    "period": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-01-01T08:00:00Z"
+    },
+    "appliedParameters": {
+      "tiltDeg": 30,
+      "rowSlantHeightM": 2,
+      "parallelStringsAlongSlant": 3,
+      "initialCoverageFraction": 0,
+      "snowfallThresholdCmPerHour": 1,
+      "groundDepthThresholdCm": 1,
+      "canSlideCoefficientWm2PerC": -80,
+      "slideAmountCoefficientPerHour": 0.197
+    },
+    "samples": [
+      {
+        "timestamp": "2024-01-01T00:00:00Z",
+        "coverageFraction": 1,
+        "dcCapacityLossFraction": 1
+      },
+      {
+        "timestamp": "2024-01-01T01:00:00Z",
+        "coverageFraction": 1,
+        "dcCapacityLossFraction": 1
+      },
+      {
+        "timestamp": "2024-01-01T02:00:00Z",
+        "coverageFraction": 0.9015,
+        "dcCapacityLossFraction": 1
+      },
+      {
+        "timestamp": "2024-01-01T03:00:00Z",
+        "coverageFraction": 0.803,
+        "dcCapacityLossFraction": 1
+      },
+      {
+        "timestamp": "2024-01-01T04:00:00Z",
+        "coverageFraction": 1,
+        "dcCapacityLossFraction": 1
+      },
+      {
+        "timestamp": "2024-01-01T05:00:00Z",
+        "coverageFraction": 0.9015,
+        "dcCapacityLossFraction": 1
+      },
+      {
+        "timestamp": "2024-01-01T06:00:00Z",
+        "coverageFraction": 0.803,
+        "dcCapacityLossFraction": 1
+      },
+      {
+        "timestamp": "2024-01-01T07:00:00Z",
+        "coverageFraction": 0.7045,
+        "dcCapacityLossFraction": 1
+      },
+      {
+        "timestamp": "2024-01-01T08:00:00Z",
+        "coverageFraction": 0,
+        "dcCapacityLossFraction": 0
+      }
+    ]
+  },
+  "independentCalculation": "Python pvlib==0.13.1 coverage_nrel with the explicit JSON geometry, weather and coefficients, then dc_loss_nrel with explicit parallel strings. Index is a regular timezone-aware UTC DatetimeIndex (inferable frequency). Snowfall is cm/interval, POA W/m2, ground depth cm; no TypeScript implementation output used. Additional expected metadata is an API contract, not a scientific reference. Reproduce with scripts/fixtures/physics/generate-snow-0131.py.",
+  "tolerances": {
+    "absolute": 1e-10,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "pvlib.snow.coverage_nrel and dc_loss_nrel",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+    "version": "pvlib-python 0.13.1",
+    "locator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+  }
+}

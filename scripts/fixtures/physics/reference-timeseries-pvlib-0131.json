@@ -1,0 +1,597 @@
+{
+  "referenceSoftware": "pvlib-python 0.13.1",
+  "cases": [
+    {
+      "kind": "kimber",
+      "input": {
+        "timezone": "UTC",
+        "weatherQuality": "measured",
+        "parameterQuality": "user_configured",
+        "parameters": {
+          "cleaningThresholdMm": 6,
+          "lossRatePerDay": 0.02,
+          "gracePeriodDays": 1,
+          "maxLossFraction": 0.08,
+          "initialLossFraction": 0.03,
+          "rainAccumulationHours": 24
+        },
+        "manualWashTimestamps": [],
+        "steps": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 100
+          },
+          {
+            "timestamp": "2024-01-01T01:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 200
+          },
+          {
+            "timestamp": "2024-01-01T02:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 300
+          },
+          {
+            "timestamp": "2024-01-01T03:00:00Z",
+            "rainfallMm": 7,
+            "unsoiledEnergyWh": 400
+          },
+          {
+            "timestamp": "2024-01-01T04:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 500
+          },
+          {
+            "timestamp": "2024-01-01T05:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 600
+          },
+          {
+            "timestamp": "2024-01-01T06:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 700
+          },
+          {
+            "timestamp": "2024-01-01T07:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 800
+          },
+          {
+            "timestamp": "2024-01-01T08:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 900
+          }
+        ]
+      },
+      "expected": {
+        "modelId": "soiling_kimber_pvlib_0131",
+        "modelVersion": "1.0.0",
+        "referenceSoftware": "pvlib-python 0.13.1",
+        "validationStatus": "not_field_validated",
+        "units": {
+          "loss": "fraction",
+          "rainfall": "mm/interval",
+          "energy": "Wh"
+        },
+        "limitations": "Site parameters required; positive grace; regular intervals; no missing-rain inference; no annual claim without a full-year energy series",
+        "status": "computed",
+        "quality": "measured",
+        "parameterQuality": "user_configured",
+        "timezone": "UTC",
+        "period": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-01-01T08:00:00Z"
+        },
+        "appliedParameters": {
+          "cleaningThresholdMm": 6,
+          "lossRatePerDay": 0.02,
+          "gracePeriodDays": 1,
+          "maxLossFraction": 0.08,
+          "initialLossFraction": 0.03,
+          "rainAccumulationHours": 24
+        },
+        "samples": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "lossFraction": 0.03
+          },
+          {
+            "timestamp": "2024-01-01T01:00:00Z",
+            "lossFraction": 0.03083333333333333
+          },
+          {
+            "timestamp": "2024-01-01T02:00:00Z",
+            "lossFraction": 0.03166666666666666
+          },
+          {
+            "timestamp": "2024-01-01T03:00:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T04:00:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T05:00:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T06:00:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T07:00:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T08:00:00Z",
+            "lossFraction": 0.0
+          }
+        ],
+        "energyWeightedLossFraction": 0.004148148148148147,
+        "energyQuality": "provided_complete"
+      }
+    },
+    {
+      "kind": "kimber",
+      "input": {
+        "timezone": "UTC",
+        "weatherQuality": "measured",
+        "parameterQuality": "user_configured",
+        "parameters": {
+          "cleaningThresholdMm": 6,
+          "lossRatePerDay": 0.02,
+          "gracePeriodDays": 1,
+          "maxLossFraction": 0.08,
+          "initialLossFraction": 0.03,
+          "rainAccumulationHours": 24
+        },
+        "manualWashTimestamps": [],
+        "steps": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 100
+          },
+          {
+            "timestamp": "2024-01-01T00:30:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 200
+          },
+          {
+            "timestamp": "2024-01-01T01:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 300
+          },
+          {
+            "timestamp": "2024-01-01T01:30:00Z",
+            "rainfallMm": 7,
+            "unsoiledEnergyWh": 400
+          },
+          {
+            "timestamp": "2024-01-01T02:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 500
+          },
+          {
+            "timestamp": "2024-01-01T02:30:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 600
+          },
+          {
+            "timestamp": "2024-01-01T03:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 700
+          },
+          {
+            "timestamp": "2024-01-01T03:30:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 800
+          },
+          {
+            "timestamp": "2024-01-01T04:00:00Z",
+            "rainfallMm": 0,
+            "unsoiledEnergyWh": 900
+          }
+        ]
+      },
+      "expected": {
+        "modelId": "soiling_kimber_pvlib_0131",
+        "modelVersion": "1.0.0",
+        "referenceSoftware": "pvlib-python 0.13.1",
+        "validationStatus": "not_field_validated",
+        "units": {
+          "loss": "fraction",
+          "rainfall": "mm/interval",
+          "energy": "Wh"
+        },
+        "limitations": "Site parameters required; positive grace; regular intervals; no missing-rain inference; no annual claim without a full-year energy series",
+        "status": "computed",
+        "quality": "measured",
+        "parameterQuality": "user_configured",
+        "timezone": "UTC",
+        "period": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-01-01T04:00:00Z"
+        },
+        "appliedParameters": {
+          "cleaningThresholdMm": 6,
+          "lossRatePerDay": 0.02,
+          "gracePeriodDays": 1,
+          "maxLossFraction": 0.08,
+          "initialLossFraction": 0.03,
+          "rainAccumulationHours": 24
+        },
+        "samples": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "lossFraction": 0.03
+          },
+          {
+            "timestamp": "2024-01-01T00:30:00Z",
+            "lossFraction": 0.030416666666666665
+          },
+          {
+            "timestamp": "2024-01-01T01:00:00Z",
+            "lossFraction": 0.03083333333333333
+          },
+          {
+            "timestamp": "2024-01-01T01:30:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T02:00:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T02:30:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T03:00:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T03:30:00Z",
+            "lossFraction": 0.0
+          },
+          {
+            "timestamp": "2024-01-01T04:00:00Z",
+            "lossFraction": 0.0
+          }
+        ],
+        "energyWeightedLossFraction": 0.004074074074074074,
+        "energyQuality": "provided_complete"
+      }
+    },
+    {
+      "kind": "snow",
+      "input": {
+        "timezone": "UTC",
+        "weatherQuality": "measured",
+        "parameterQuality": "user_configured",
+        "mounting": "roof",
+        "parameters": {
+          "tiltDeg": 30,
+          "rowSlantHeightM": 2,
+          "parallelStringsAlongSlant": 3,
+          "initialCoverageFraction": 0,
+          "snowfallThresholdCmPerHour": 1,
+          "groundDepthThresholdCm": 1,
+          "canSlideCoefficientWm2PerC": -80,
+          "slideAmountCoefficientPerHour": 0.197
+        },
+        "steps": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "snowfallCm": 2,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": -10
+          },
+          {
+            "timestamp": "2024-01-01T01:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": -10
+          },
+          {
+            "timestamp": "2024-01-01T02:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T03:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T04:00:00Z",
+            "snowfallCm": 2,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T05:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T06:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T07:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T08:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 0,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          }
+        ]
+      },
+      "expected": {
+        "modelId": "snow_pvlib_nrel_0131_roof",
+        "modelVersion": "1.0.0",
+        "referenceSoftware": "pvlib-python 0.13.1",
+        "validationStatus": "not_field_validated",
+        "units": {
+          "coverage": "fraction of row slant height",
+          "loss": "fraction of DC capacity",
+          "snowfall": "cm/interval",
+          "depth": "cm",
+          "poa": "W/m2"
+        },
+        "limitations": "Roof/reference coefficients only; string partly covered means string capacity lost; complete regular data required; no structural or annual energy result",
+        "status": "computed",
+        "quality": "measured",
+        "parameterQuality": "user_configured",
+        "timezone": "UTC",
+        "mounting": "roof",
+        "period": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-01-01T08:00:00Z"
+        },
+        "appliedParameters": {
+          "tiltDeg": 30,
+          "rowSlantHeightM": 2,
+          "parallelStringsAlongSlant": 3,
+          "initialCoverageFraction": 0,
+          "snowfallThresholdCmPerHour": 1,
+          "groundDepthThresholdCm": 1,
+          "canSlideCoefficientWm2PerC": -80,
+          "slideAmountCoefficientPerHour": 0.197
+        },
+        "samples": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "coverageFraction": 1.0,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T01:00:00Z",
+            "coverageFraction": 1.0,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T02:00:00Z",
+            "coverageFraction": 0.9015,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T03:00:00Z",
+            "coverageFraction": 0.803,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T04:00:00Z",
+            "coverageFraction": 1.0,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T05:00:00Z",
+            "coverageFraction": 0.9015,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T06:00:00Z",
+            "coverageFraction": 0.803,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T07:00:00Z",
+            "coverageFraction": 0.7045,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T08:00:00Z",
+            "coverageFraction": 0.0,
+            "dcCapacityLossFraction": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "kind": "snow",
+      "input": {
+        "timezone": "UTC",
+        "weatherQuality": "measured",
+        "parameterQuality": "user_configured",
+        "mounting": "roof",
+        "parameters": {
+          "tiltDeg": 30,
+          "rowSlantHeightM": 2,
+          "parallelStringsAlongSlant": 3,
+          "initialCoverageFraction": 0,
+          "snowfallThresholdCmPerHour": 1,
+          "groundDepthThresholdCm": 1,
+          "canSlideCoefficientWm2PerC": -80,
+          "slideAmountCoefficientPerHour": 0.197
+        },
+        "steps": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "snowfallCm": 2,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": -10
+          },
+          {
+            "timestamp": "2024-01-01T00:30:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": -10
+          },
+          {
+            "timestamp": "2024-01-01T01:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T01:30:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T02:00:00Z",
+            "snowfallCm": 2,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T02:30:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T03:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T03:30:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 10,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          },
+          {
+            "timestamp": "2024-01-01T04:00:00Z",
+            "snowfallCm": 0,
+            "groundSnowDepthCm": 0,
+            "poaWm2": 400,
+            "ambientTempC": 2
+          }
+        ]
+      },
+      "expected": {
+        "modelId": "snow_pvlib_nrel_0131_roof",
+        "modelVersion": "1.0.0",
+        "referenceSoftware": "pvlib-python 0.13.1",
+        "validationStatus": "not_field_validated",
+        "units": {
+          "coverage": "fraction of row slant height",
+          "loss": "fraction of DC capacity",
+          "snowfall": "cm/interval",
+          "depth": "cm",
+          "poa": "W/m2"
+        },
+        "limitations": "Roof/reference coefficients only; string partly covered means string capacity lost; complete regular data required; no structural or annual energy result",
+        "status": "computed",
+        "quality": "measured",
+        "parameterQuality": "user_configured",
+        "timezone": "UTC",
+        "mounting": "roof",
+        "period": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-01-01T04:00:00Z"
+        },
+        "appliedParameters": {
+          "tiltDeg": 30,
+          "rowSlantHeightM": 2,
+          "parallelStringsAlongSlant": 3,
+          "initialCoverageFraction": 0,
+          "snowfallThresholdCmPerHour": 1,
+          "groundDepthThresholdCm": 1,
+          "canSlideCoefficientWm2PerC": -80,
+          "slideAmountCoefficientPerHour": 0.197
+        },
+        "samples": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "coverageFraction": 1.0,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T00:30:00Z",
+            "coverageFraction": 1.0,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T01:00:00Z",
+            "coverageFraction": 0.95075,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T01:30:00Z",
+            "coverageFraction": 0.9015,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T02:00:00Z",
+            "coverageFraction": 1.0,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T02:30:00Z",
+            "coverageFraction": 0.95075,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T03:00:00Z",
+            "coverageFraction": 0.9015,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T03:30:00Z",
+            "coverageFraction": 0.85225,
+            "dcCapacityLossFraction": 1.0
+          },
+          {
+            "timestamp": "2024-01-01T04:00:00Z",
+            "coverageFraction": 0.0,
+            "dcCapacityLossFraction": 0.0
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -16,7 +16,7 @@ import {
   computeWaterfallLosses,
   type WaterfallLossReport,
 } from '../waterfallLossEngine';
-import { buildWaterfallArgs } from '../waterfallArgs';
+import { buildWaterfallArgs, withReferenceLossMetadata, type AnnualReferenceInput, type WaterfallArgsInput } from '../waterfallArgs';
 import type { InstallationEnvironment } from '../types/climateTypes';
 
 export {
@@ -60,6 +60,8 @@ export interface AnnualYieldStageLoss {
 }
 
 export interface CanonicalAnnualYieldInput {
+  annualReferenceLosses?: AnnualReferenceInput;
+  referenceSite?: {latitude:number; longitude:number};
   installedCapacityKwp: number;
   peakSunHours: number;
   ambientTempMaxC: number;
@@ -153,7 +155,9 @@ export function computeCanonicalAnnualYield(
       ? input.ambientTempMeanC
       : input.ambientTempMaxC;
 
-  const wfArgs = buildWaterfallArgs({
+  const waterfallInput: WaterfallArgsInput = {
+    annualReferenceLosses: input.annualReferenceLosses,
+    referenceSite: input.referenceSite,
     installedCapacityKwp: input.installedCapacityKwp,
     peakSunHours: input.peakSunHours,
     ambientTempMaxC: effectiveTempC,
@@ -169,9 +173,11 @@ export function computeCanonicalAnnualYield(
     latitudeDeg: input.latitudeDeg ?? 35.6892,
     shadingLossOverridePct: input.shadingLoss3dPct,
     bifacialGainPct: input.bifacialGainPct ?? 0.0,
-  });
+  };
+  const wfArgs = buildWaterfallArgs(waterfallInput);
 
-  const waterfallReport = computeWaterfallLosses(...wfArgs);
+  let waterfallReport = computeWaterfallLosses(...wfArgs);
+  waterfallReport=withReferenceLossMetadata(waterfallReport,waterfallInput);
   const annualYieldKwh = waterfallReport.finalEnergyKwh ?? Math.round(waterfallReport.netAnnualEnergyExportMwh * 1000.0);
   const netAnnualEnergyExportMwh = waterfallReport.netAnnualEnergyExportMwh;
   const specificYieldKwhPerKwp = waterfallReport.specificAnnualYieldKwhPerKwp;
@@ -315,15 +321,15 @@ export function calculateUnifiedAnnualYield(
     },
     {
       id: 'soiling',
-      nameFa: 'تلفات گردوغبار و رسوب سطحی پنل (Kimber Model)',
-      nameEn: 'Soiling & Environmental Dust Loss (Kimber)',
+      nameFa: 'تلفات غبار (ورودی فرضی/غربالگری)',
+      nameEn: 'Soiling & Dust Loss (Assumed Screening Input)',
       percentageLoss: Number((-Math.abs(soilingLossPct)).toFixed(2)),
       percentageLossRaw: -Math.abs(soilingLossPct),
     },
     {
       id: 'snow',
-      nameFa: 'تلفات نشست و ماندگاری برف (Marion Model)',
-      nameEn: 'Snow Coverage & Shedding Loss (Marion)',
+      nameFa: 'تلفات برف (ورودی فرضی/غربالگری)',
+      nameEn: 'Snow Coverage & Shedding Loss (Screening Input)',
       percentageLoss: Number((-Math.abs(snowLossPct)).toFixed(2)),
       percentageLossRaw: -Math.abs(snowLossPct),
     },

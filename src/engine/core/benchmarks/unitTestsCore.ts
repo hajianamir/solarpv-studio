@@ -303,9 +303,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   );
 
   // ==========================================================================
-  // Suite 5: Kimber Soiling Simulation Engine (PR-2a-2)
+  // Suite 5: Internal Soiling Screening Regressions (legacy API names retained)
   // ==========================================================================
-  // 5.1 Kimber 5-Bin Discrete Rainfall Cleaning
+  // 5.1 Internal assumed 5-bin rainfall cleaning
   const binConfig = { ...DEFAULT_SOILING_CONFIG, modelVariant: 'kimber_full_discrete_bins' as const };
   const cleanTrace = evaluateRainCleaningFraction(0.5, binConfig);
   const cleanLight = evaluateRainCleaningFraction(2.0, binConfig);
@@ -320,10 +320,10 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     cleanHeavy === 0.95 &&
     cleanTorrential === 1.00;
   assert(
-    'KimberSoiling',
+    'SoilingScreening',
     'Discrete Rainfall Bins',
     discreteBinsCorrect,
-    `5-bin precipitation cleaning accurately mapped: trace=0%, 2mm=25%, 3.5mm=65%, 8mm=95%, 15mm=100%`
+    `Internal assumed 5-bin cleaning regression: trace=0%, 2mm=25%, 3.5mm=65%, 8mm=95%, 15mm=100%`
   );
 
   // 5.2 Simplified Linear Rain Cleaning
@@ -332,7 +332,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   const simpPartial = evaluateRainCleaningFraction(2.5, simpConfig);
   const simpFull = evaluateRainCleaningFraction(6.0, simpConfig);
   assert(
-    'KimberSoiling',
+    'SoilingScreening',
     'Simplified Linear Washing',
     simpUnder1 === 0.0 && Math.abs(simpPartial - 0.40) < 0.01 && simpFull === 1.0,
     `Simplified model: <1mm=0%, 2.5mm partial=40%, >=5mm threshold=100%`
@@ -346,7 +346,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   const stormLossDay10 = simStorm.dailyProfile[9].dailySoilingLossPercent;
   const normalLossDay10 = simNormal.dailyProfile[9].dailySoilingLossPercent;
   assert(
-    'KimberSoiling',
+    'SoilingScreening',
     'Dust Storm Multiplier',
     Math.abs(stormLossDay10 - normalLossDay10 * 2.5) < 0.05,
     `Dust storm vulnerability 2.5x produced ${stormLossDay10}% vs normal ${normalLossDay10}%`
@@ -357,7 +357,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   const simCeiling = simulateAnnualSoiling({ dailySoilingRatePercent: 0.25, maxSoilingCeilingPercent: 28.0, scheduledWashIntervalDays: 0 }, dryYear);
   const clampedLoss = simCeiling.dailyProfile[249].dailySoilingLossPercent;
   assert(
-    'KimberSoiling',
+    'SoilingScreening',
     'Saturation Ceiling Clamp',
     clampedLoss === 28.0,
     `Soiling accumulation safely clamped to saturation ceiling of 28.0% (theoretical unclamped: 62.5%)`
@@ -368,20 +368,20 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   const day14Loss = simWash.dailyProfile[13].dailySoilingLossPercent;
   const day15Loss = simWash.dailyProfile[14].dailySoilingLossPercent;
   assert(
-    'KimberSoiling',
+    'SoilingScreening',
     'Scheduled Wash Reset',
     day14Loss > 0 && day15Loss === 0.0 && simWash.dailyProfile[14].manualCleanPerformed,
     `Scheduled wash cycle on day 15 reset soiling loss to 0.0% with manualCleanPerformed flag`
   );
 
   // ==========================================================================
-  // Suite 6: Marion Snow Shedding & Base Damming Engine (PR-2a-2)
+  // Suite 6: Internal Snow Screening Regressions (legacy API names retained)
   // ==========================================================================
   // 6.1 Temperature Sliding Threshold
   const coldShed = evaluateSheddingFraction(25.0, -3.0, 0.8, 0, 1.0, 0.5);
   const warmShed = evaluateSheddingFraction(25.0, 1.5, 0.8, 0, 1.0, 0.5);
   assert(
-    'MarionSnow',
+    'SnowScreening',
     'Temperature Slide Threshold',
     coldShed === 0.0 && warmShed >= 0.84 && warmShed <= 0.86,
     `Sub-freezing (-3C) yielded 0.0 shedding; warm (+1.5C) at 25 deg tilt yielded ${warmShed} (target: 0.85)`
@@ -390,7 +390,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   // 6.2 Flat vs Tilted Array Kinematics
   const flatShed = evaluateSheddingFraction(1.0, 2.0, 0.8, 0, 1.0, 0.5);
   assert(
-    'MarionSnow',
+    'SnowScreening',
     'Flat Array Sublimation vs Tilt Slide',
     flatShed <= 0.40 && warmShed > flatShed * 2.0,
     `Low tilt (1 deg) limited to thermal sublimation (${flatShed}) vs gravity sliding at 25 deg (${warmShed})`
@@ -401,7 +401,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   const undammedShed = evaluateSheddingFraction(25.0, 1.5, 0.80, 10, 1.0, 0.5, 0.50);
   const dammedShed = evaluateSheddingFraction(25.0, 1.5, 0.80, 50, 1.0, 0.5, 0.50);
   assert(
-    'MarionSnow',
+    'SnowScreening',
     'Avalanche Damming Restriction',
     undammedShed >= 0.84 && dammedShed <= 0.50,
     `Damming boundary: 10cm ground snow shed ${undammedShed}; 50cm snow dammed lower rack to ${dammedShed}`
@@ -414,7 +414,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     0.0
   );
   assert(
-    'MarionSnow',
+    'SnowScreening',
     'Structural Snow Load',
     snowStepRes.structuralSlidingLoadKnM2 > 0 && snowStepRes.moduleCoveredFraction > 0,
     `Structural load calculated as ${snowStepRes.structuralSlidingLoadKnM2} kN/m2 under 25cm snowfall at 30 deg tilt`
@@ -429,7 +429,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   }));
   const severeDamSim = simulateAnnualSnowShedding({ groundClearanceM: 0.80, dammingRiskThresholdM: 0.50 }, severeDamWeather);
   assert(
-    'MarionSnow',
+    'SnowScreening',
     'Severe Damming Categorization',
     severeDamSim.avalancheDammingRisk === 'SEVERE',
     `Extended ground snow damming correctly classified as SEVERE risk`
@@ -445,7 +445,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     'WaterfallLoss',
     'Compound Multiplier Integrity',
     soilingStage !== undefined && snowStage !== undefined && snowStage.stageOutputKwh < soilingStage.stageOutputKwh,
-    `Both Kimber (-5%) and Marion (-8%) stages present and compounded sequentially into net export`
+    `Both internal soiling (-5%) and snow (-8%) stages present and compounded sequentially into net export`
   );
 
   const waterfallZeroSnow = computeWaterfallLosses(100.0, 5.0, 40.0, 4.0, 1.25, false, 0.0);
@@ -454,7 +454,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     'WaterfallLoss',
     'Invariant 14-Stage Architecture (Zero Snow No-Op)',
     noSnowStage !== undefined && noSnowStage.percentageLoss === 0.0 && waterfallZeroSnow.stages.length === 14,
-    `Waterfall maintains constant 14-stage structure across all climates, executing snow as 0.0% no-op in snow-free zones`
+    `Waterfall maintains constant 14-stage structure across all climates, executing snow as 0.0% no-op when the snow-loss input is zero`
   );
 
   // ==========================================================================
@@ -465,15 +465,15 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   const sensReport = runPhysicalSensitivityAnalysis();
   assert(
     'Sensitivity',
-    'Kimber Climate Monotonicity',
+    'Internal Soiling Sensitivity Regression',
     sensReport.isKimberMonotonic,
-    `Kimber soiling strictly responds monotonically across 9 climate regimes: higher rain reduces soiling, higher deposition increases soiling`
+    `Internal assumed soiling sweep across 9 synthetic regimes: higher rain reduces loss, higher deposition increases loss; not independent validation`
   );
   assert(
     'Sensitivity',
-    'Marion Snow Monotonicity',
+    'Internal Snow Sensitivity Regression',
     sensReport.isMarionMonotonic,
-    `Marion snow loss responds monotonically across 12 tilt-snowfall regimes: steeper tilt reduces snow loss via sliding, deeper snowfall increases loss`
+    `Internal snow screening sweep across 12 synthetic tilt-snowfall regimes: steeper tilt reduces loss, deeper snowfall increases loss; not independent validation`
   );
   assert(
     'Sensitivity',
@@ -647,53 +647,53 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   );
 
   // ==========================================================================
-  // Suite 10: Marion NREL Empirical Recalibration (Boulder, Munich, Toronto)
+  // Suite 10: Internal Synthetic Snow Regression (Boulder, Munich, Toronto)
   // ==========================================================================
   // TEST FIXTURE ONLY — NOT USED IN PRODUCTION CLIMATE ROUTING.
-  // HUB-SNOW-* IDs are empirical Marion snow recalibration reference datasets
-  // (NREL / DWD / Andrews & Pearce). Climate hubs were deleted per ADR-005.
+  // HUB-SNOW-* IDs are internal synthetic snow regression scenarios
+  // (not independently acquired field records). Climate hubs were deleted per ADR-005.
   const recalReport = runMarionSnowRecalibrationSuite();
-  const boulderBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-BOULDER'); // TEST FIXTURE — NREL Boulder reference
-  const munichBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-MUNICH'); // TEST FIXTURE — DWD Munich reference
-  const torontoBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-TORONTO'); // TEST FIXTURE — Andrews & Pearce Toronto reference
+  const boulderBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-BOULDER'); // SYNTHETIC TEST FIXTURE — Boulder label
+  const munichBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-MUNICH'); // SYNTHETIC TEST FIXTURE — Munich label
+  const torontoBench = recalReport.benchmarks.find(b => b.hubId === 'HUB-SNOW-TORONTO'); // SYNTHETIC TEST FIXTURE — Toronto label
 
   assert(
     'SnowRecalib',
-    'NREL Marion Recalibration Suite Status',
+    'Internal Synthetic Snow Suite Status',
     recalReport.overallStatus === 'PASS',
-    `All 3 empirical cold-climate hubs passed: Boulder (${boulderBench?.simulatedAnnualSnowLossPercent}%), Munich (${munichBench?.simulatedAnnualSnowLossPercent}%), Toronto (${torontoBench?.simulatedAnnualSnowLossPercent}%)`
+    `All 3 internal synthetic scenarios passed: Boulder (${boulderBench?.simulatedAnnualSnowLossPercent}%), Munich (${munichBench?.simulatedAnnualSnowLossPercent}%), Toronto (${torontoBench?.simulatedAnnualSnowLossPercent}%)`
   );
   assert(
     'SnowRecalib',
-    'Boulder CO NREL Target (4.0% - 6.0%)',
+    'Boulder-labelled Internal Target (4.0% - 6.0%)',
     boulderBench !== undefined && boulderBench.status === 'PASS' && boulderBench.simulatedAnnualSnowLossPercent >= 4.0 && boulderBench.simulatedAnnualSnowLossPercent <= 6.0,
-    `Boulder 300cm snow at 40 deg tilt produced ${boulderBench?.simulatedAnnualSnowLossPercent}% annual snow loss (NREL nominal target: 4.6%)`
+    `Boulder 300cm snow at 40 deg tilt produced ${boulderBench?.simulatedAnnualSnowLossPercent}% annual snow loss (internal nominal target: 4.6%)`
   );
   assert(
     'SnowRecalib',
-    'Munich DE DWD Target (2.0% - 4.0%)',
+    'Munich-labelled Internal Target (2.0% - 4.0%)',
     munichBench !== undefined && munichBench.status === 'PASS' && munichBench.simulatedAnnualSnowLossPercent >= 2.0 && munichBench.simulatedAnnualSnowLossPercent <= 4.0,
-    `Munich 150cm snow at 30 deg tilt produced ${munichBench?.simulatedAnnualSnowLossPercent}% annual snow loss (DWD nominal target: 2.9%)`
+    `Munich 150cm snow at 30 deg tilt produced ${munichBench?.simulatedAnnualSnowLossPercent}% annual snow loss (internal nominal target: 2.9%)`
   );
   assert(
     'SnowRecalib',
-    'Toronto CA Andrews Target (3.0% - 5.0%)',
+    'Toronto-labelled Internal Target (3.0% - 5.0%)',
     torontoBench !== undefined && torontoBench.status === 'PASS' && torontoBench.simulatedAnnualSnowLossPercent >= 3.0 && torontoBench.simulatedAnnualSnowLossPercent <= 5.0,
-    `Toronto 200cm snow at 35 deg tilt produced ${torontoBench?.simulatedAnnualSnowLossPercent}% annual snow loss (Andrews nominal target: 3.8%)`
+    `Toronto 200cm snow at 35 deg tilt produced ${torontoBench?.simulatedAnnualSnowLossPercent}% annual snow loss (internal nominal target: 3.8%)`
   );
   assert(
     'SnowRecalib',
-    'USACE Realistic Ground Snowpack Accumulation',
+    'Internal Synthetic Ground Snowpack Regression',
     (boulderBench?.maxGroundSnowDepthCm ?? 0) >= 30.0 && (boulderBench?.maxGroundSnowDepthCm ?? 0) <= 55.0 &&
     (munichBench?.maxGroundSnowDepthCm ?? 0) >= 15.0 && (munichBench?.maxGroundSnowDepthCm ?? 0) <= 30.0 &&
     (torontoBench?.maxGroundSnowDepthCm ?? 0) >= 20.0 && (torontoBench?.maxGroundSnowDepthCm ?? 0) <= 40.0,
-    `USACE DDA realistic peak ground snow depths: Boulder = ${boulderBench?.maxGroundSnowDepthCm}cm, Munich = ${munichBench?.maxGroundSnowDepthCm}cm, Toronto = ${torontoBench?.maxGroundSnowDepthCm}cm`
+    `Synthetic peak ground snow depths: Boulder = ${boulderBench?.maxGroundSnowDepthCm}cm, Munich = ${munichBench?.maxGroundSnowDepthCm}cm, Toronto = ${torontoBench?.maxGroundSnowDepthCm}cm`
   );
   assert(
     'SnowRecalib',
     'Three-Consecutive-Winter Inter-Annual Stability',
     recalReport.threeWinterProfiles.length === 3 && recalReport.threeWinterProfiles.every(p => p.status === 'PASS'),
-    `3-consecutive-winter simulation passed across all hubs with CV <= 18% (inter-annual stability verified)`
+    `3-consecutive-winter simulation passed across all hubs with CV <= 18% (internal synthetic regression only)`
   );
 
   // ==========================================================================
@@ -1034,13 +1034,13 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     `Analytic consistency verified: netAperture (${bipvtAnalytical.netElectricalEfficiencyPercent}%) * areaRatio (${bipvtAnalytical.apertureToGrossRatio}) = netGross (${bipvtAnalytical.netGrossDeliveredElectricalEfficiencyPercent}%); Aperture Area = ${bipvtAnalytical.netApertureAreaM2} m2, Gross Area = ${bipvtAnalytical.grossCollectorAreaM2} m2.`
   );
 
-  // 13.5 Marion Fine Low-Tilt Monotonicity Sweep (5° to 10° in 1° Increments)
+  // 13.5 Internal Snow Screening Low-Tilt Regression (5° to 10° in 1° Increments)
   const lowTiltSensReport = runPhysicalSensitivityAnalysis();
   assert(
-    'Marion',
-    'Fine Low-Tilt Monotonicity (5-10 deg)',
+    'SnowScreening',
+    'Internal Snow Low-Tilt Regression (5-10 deg)',
     lowTiltSensReport.isLowTiltMonotonic && lowTiltSensReport.fineLowTiltSweep.length === 6,
-    `Low-tilt snow loss monotonically decreases from ${lowTiltSensReport.fineLowTiltSweep[0].annualSnowLossPercent}% (5°) to ${lowTiltSensReport.fineLowTiltSweep[5].annualSnowLossPercent}% (10°) due to gravity slide force and toe damming alleviation.`
+    `Low-tilt snow loss monotonically decreases from ${lowTiltSensReport.fineLowTiltSweep[0].annualSnowLossPercent}% (5°) to ${lowTiltSensReport.fineLowTiltSweep[5].annualSnowLossPercent}% (10°) within this internal screening sweep; not field-validated sliding physics.`
   );
 
   // 13.6 Data Gateway Circuit Breaker Fault Tolerance
@@ -1072,12 +1072,12 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     `DataGateway generated trace IDs: ${climateResource.metadata.traceId}, ${soilResource.metadata.traceId}; correctly mapped Eurocodes for Munich.`
   );
 
-  // 13.8 Marion Fine 10°-15° Transition Sweep Monotonicity (PR-2a-6)
+  // 13.8 Internal Snow Screening 10°-15° Transition Regression (PR-2a-6)
   assert(
-    'Marion',
-    'Fine Transition Monotonicity (10-15 deg)',
+    'SnowScreening',
+    'Internal Snow Transition Regression (10-15 deg)',
     lowTiltSensReport.isTransitionMonotonic && lowTiltSensReport.fineTransitionSweep.length === 6,
-    `Transition 10°-15° snow loss monotonically decreases from ${lowTiltSensReport.fineTransitionSweep[0].annualSnowLossPercent}% (10°) to ${lowTiltSensReport.fineTransitionSweep[5].annualSnowLossPercent}% (15°) confirming absence of cliff artifacts.`
+    `Transition 10°-15° snow loss monotonically decreases from ${lowTiltSensReport.fineTransitionSweep[0].annualSnowLossPercent}% (10°) to ${lowTiltSensReport.fineTransitionSweep[5].annualSnowLossPercent}% (15°) within this internal screening sweep; not evidence of published-model validity.`
   );
 
   // 13.9 Multi-Scenario Foundation Recommendation Engine (5 Distinct Climates per PR-2a-6)
@@ -4831,7 +4831,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       4.5,  // soiling
       1.25, // dcAc
       false, // hasTracker (must be false when no tracker, not poisoned by isBifacial)
-      0.0,  // snowLossPct (must remain 0.0 in snow-free zones, not poisoned by bifacial gain)
+      0.0,  // snowLossPct (zero input must stay a no-op, not be poisoned by bifacial gain)
       -2.2, // iamLossPct (must remain -2.2, not overwritten by shading)
       45.0, // noct
       -0.30,// tempCoeff

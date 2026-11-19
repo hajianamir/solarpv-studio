@@ -54,6 +54,8 @@ export interface ParameterProvenance {
 }
 
 export interface ClimateCity {
+  /** User-imported opt-in annual time series; never inferred from climatology. */
+  annualReferenceLosses?: import('../../referenceModels/annualReferenceInput').AnnualReferenceInput;
   id: string;
   nameFa: string;
   nameEn: string;

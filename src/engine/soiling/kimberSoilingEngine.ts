@@ -1,18 +1,28 @@
 /**
- * Kimber Soiling & Environmental Deposition Simulation Engine
+ * Preliminary soiling accumulation and rain-cleaning screening model
  * SolarPV Studio v3.0 - Phase 2a (PR-2a-2)
  *
- * Governing Standards & References:
- * - Kimber, A., et al. (NREL/CP-520-40123): "The Effect of Soiling on Large Grid-Connected Photovoltaic Systems in California and the Southwest US"
+ * Background references only (not validation of this implementation):
+ * - Kimber, A.; Mitchell, L.; Nogradi, S.; Wenger, H. (2006): "The Effect of
+ *   Soiling on Large Grid-Connected Photovoltaic Systems in California and the
+ *   Southwest Region of the United States", IEEE 4th WCPEC, vol. 2, pp. 2391-2395.
+ *   DOI: 10.1109/WCPEC.2006.279690.
  * - IEC 61724-1: Photovoltaic system performance - Monitoring: Soiling Ratio (SR)
- * - Coello, M., & Boyle, L. (2019): "Modelling the Impact of Soiling on Photovoltaic Performance"
+ * - Coello, M.; Boyle, L. (2019): "Simple Model For Predicting Time Series
+ *   Soiling of Photovoltaic Panels", IEEE Journal of Photovoltaics.
+ *   DOI: 10.1109/JPHOTOV.2019.2919628.
+ * Bibliographic verification and scope: docs/audit/SNOW-SOILING-BIBLIOGRAPHY.fa.md.
+ * These citations do not source the assumed cleaning bins or site coefficients.
  *
+ * Rain bins, dust multipliers and cleaning assumptions are internal/user-defined.
+ * No independent field validation or reproduction of Kimber, SAM or PVsyst is claimed.
+ * Legacy export and variant names are retained for API compatibility.
  * Features:
  * 1. Supports both `kimber_simplified` and `kimber_full_discrete_bins` model variants.
  * 2. Full discrete precipitation bins (0mm, 1-2.5mm, 2.5-5mm, 5-10mm, >=10mm).
  * 3. Dust storm (haboob) vulnerability scaling factor for desert zones.
  * 4. Scheduled manual wash cycles and rain wash-off hysteresis.
- * 5. IEC 61724-1 Soiling Ratio output profile.
+ * 5. Soiling-ratio bookkeeping; not a claim of IEC monitoring compliance.
  */
 
 import {
@@ -30,26 +40,14 @@ export interface DiscreteRainCleaningBin {
 }
 
 /**
- * Kimber Discrete Rainfall Cleaning Bins
- * Exact Citation:
- * - Kimber, A., et al. (2006): "The Effect of Soiling on Large Grid-Connected Photovoltaic
- *   Systems in California and the Southwest US", IEEE 4th World Conference on Photovoltaic
- *   Energy Conversion (WCPEC-4), Waikoloa, HI, USA, May 2006, pp. 2391-2395.
- *   DOI: 10.1109/WCPEC.2006.279690.
- *
- * Specific Section & Table:
- * - Section IV: "Precipitation Thresholds and Wash-Off Dynamics", page 2393, Table 1 & Equation (2).
- * - Cross-reference standard implementations:
- *   1. NREL System Advisor Model (SAM 2023.12.17 Revision 1) PV Sub-hourly Soiling module
- *      "Rainfall Cleaning Thresholds & Discrete Precipitation Bins".
- *   2. PVsyst v7.4 "Soiling Loss and Rain Wash-out Model" (Version C empirical calibration).
- *
- * Physical Justification:
- * - < 1.0 mm: Insufficient surface tension detachment; causes dust cementing/crusting (0% wash).
- * - 1.0 - 2.5 mm: Light wash-off of loose unbonded topcoat particulate (25% wash).
- * - 2.5 - 5.0 mm: Moderate hydrodynamic sheet flow across tilted glass (65% wash).
- * - 5.0 - 10.0 mm: High kinetic energy rain droplet impaction and turbulent rinse (95% wash).
- * - >= 10.0 mm: Full torrential surface cleansing and frame dirt lip flush (100% complete recovery).
+ * Internal assumed rainfall-cleaning bins; NOT a published Kimber table.
+ * Kimber et al. (2006), "The Effect of Soiling on Large Grid-Connected
+ * Photovoltaic Systems in California and the Southwest US" is background on
+ * accumulation and rainfall-related cleaning, not provenance for these bins.
+ * The former section/table/equation and SAM/PVsyst equivalence claims are
+ * unverified and withdrawn. Each threshold/fraction below is an internal
+ * screening assumption; site-specific calibration is required before design use.
+ * The legacy KIMBER_STANDARD_RAIN_BINS export name is compatibility-only.
  */
 export const KIMBER_STANDARD_RAIN_BINS: ReadonlyArray<DiscreteRainCleaningBin> = [
   { minRainMm: 0.0, maxRainMm: 1.0, cleaningFraction: 0.00, description: 'Trace / Dew (<1.0mm) - Zero cleaning (crusting risk)' },

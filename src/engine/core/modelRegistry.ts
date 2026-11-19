@@ -39,7 +39,7 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
     name: 'Probabilistic Climate Resilience & 15-Min Dispatch',
     version: '3.1.0',
     governingStandards: ['ASTM E1036', 'IEC 62109', 'IEEE 1547'],
-    referenceLiterature: 'Gumbel distribution for 50-year extreme gusts; Weibull for operational wind; Skartveit-Olseth clear-sky disaggregation; Kimber et al. (NREL) soiling model',
+    referenceLiterature: 'Gumbel distribution for 50-year extreme gusts; Weibull for operational wind; Skartveit-Olseth clear-sky disaggregation; Kimber et al. as soiling background only; internal rain-cleaning bins are assumed, not independently validated',
     analyticalAssumptions: [
       'Extreme gusts modeled via Fisher-Tippett (Gumbel Type I) cumulative distribution',
       'Operational wind speed characterized via 2-parameter Weibull (k=2.1)',
@@ -149,7 +149,7 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
     analyticalAssumptions: [
       'Florschuetz modified Hottel-Whillier-Bliss collector heat removal factor for ventilated cavity duct',
       'Vertical thermal non-uniformity gradient from eave to ridge induces series string I-V deformation and mismatch loss',
-      'Dual-sided soiling: front glass Kimber deposition + rear cavity duct particulate intake filtration',
+      'Dual-sided soiling screening: assumed front-glass deposition/cleaning + rear cavity particulate intake; not independently field-validated',
       'Direct coupling to optical IAM engine for temperature-dependent angular transmittance',
       'Zero-overhead fallback to single-node NOCT/Faiman for standard non-BIPV installations',
     ],
