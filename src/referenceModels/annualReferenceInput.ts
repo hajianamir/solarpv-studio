@@ -13,6 +13,19 @@ export interface AnnualReferenceInput {
 }
 
 export interface ReferenceContext {hasTracker?:boolean;tiltDeg?:number;installationEnvironment?:string}
+
+/** Validate the written local calendar before Date.parse converts the explicit offset to UTC.
+ * Never let the host's timezone interpret an offset-free energy timestamp.
+ * Leap seconds and 24:00 notation are deliberately unsupported, as in the weather APIs.
+ */
+function hasExplicitEnergyOffset(timestamp: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(timestamp)) return false;
+  if (!Number.isFinite(Date.parse(timestamp))) return false;
+  const date = timestamp.slice(0, 10);
+  const calendar = new Date(`${date}T00:00:00Z`);
+  return Number.isFinite(calendar.getTime()) && calendar.toISOString().slice(0, 10) === date;
+}
+
 export function checkAnnualReferenceInput(input: AnnualReferenceInput, site?:{latitude:number;longitude:number}, context?:ReferenceContext) {
   const invalid=(reason:string)=>({ok:false as const,reason});
   if (!input || input.schemaVersion !== 1 || !Number.isInteger(input.year) || input.year < 1900 || input.year > 2200 || !input.site ||
@@ -22,6 +35,8 @@ export function checkAnnualReferenceInput(input: AnnualReferenceInput, site?:{la
   if (!Array.isArray(input.energy) || input.energy.length<2 || (!input.soiling && !input.snow)) return invalid('Complete annual energy series and at least one model required');
   const energy = input.energy;
   if (!energy.every(s=>s && typeof s.timestamp==='string' && typeof s.cleanDcEnergyWh==='number' && Number.isFinite(s.cleanDcEnergyWh) && s.cleanDcEnergyWh>=0)) return invalid('Missing or invalid clean DC energy; no zero substitution');
+  if (!energy.every(s=>hasExplicitEnergyOffset(s.timestamp))) return invalid('Every energy timestamp requires a valid ISO calendar timestamp with explicit Z or UTC offset');
+  // Date.parse is host-timezone independent only after the explicit-offset check above.
   const times=energy.map(s=>Date.parse(s.timestamp));
   const dt=times[1]-times[0];
   if (!Number.isFinite(dt) || dt<=0 || dt>86400000 || times[0]-dt!==Date.UTC(input.year,0,1) || times.at(-1)!==Date.UTC(input.year+1,0,1) || !times.slice(1).every((t,i)=>t-times[i]===dt)) return invalid('Require one complete UTC calendar year of regular interval-end energy samples, without gaps');
