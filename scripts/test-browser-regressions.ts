@@ -469,6 +469,31 @@ async function main() {
   await page.locator('#climate-longitude-input').fill('101');
   await page.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
   console.log('[PASS] Offline two-site climate refresh updates PSH/temperature provenance, preserves an explicit albedo override, and displays PSH to 2 decimals');
+
+  // Import an explicitly synthetic independent annual reference case at the active site.
+  const evidence=JSON.parse(await readFile('scripts/physics-reference-evidence.json','utf8'));
+  let referenceInput: any;
+  for(const record of evidence.fixtures.filter((r: any)=>r.productionExport==='evaluateAnnualReferenceLosses')) {
+    const fixture=JSON.parse(await readFile(record.fixtureFile,'utf8'));
+    if(fixture.inputs[0].soiling&&!fixture.inputs[0].snow){referenceInput=fixture.inputs[0];break;}
+  }
+  assert.ok(referenceInput);
+  referenceInput.site={latitude:12,longitude:101};
+  const rejectedInput=structuredClone(referenceInput);rejectedInput.energy[0].cleanDcEnergyWh=null;
+  const fileInput=page.getByLabel('Import reference annual JSON',{exact:true});
+  await fileInput.setInputFiles({name:'rejected-reference.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(rejectedInput))});
+  await page.getByRole('alert').filter({hasText:/Import rejected|ورود رد شد/}).waitFor();
+  await fileInput.setInputFiles({name:'synthetic-independent-reference.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(referenceInput))});
+  await page.getByRole('region',{name:'Reference loss status'}).filter({hasText:'computed'}).waitFor();
+  await fileInput.setInputFiles({name:'invalid-replacement.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(rejectedInput))});
+  await page.getByRole('alert').filter({hasText:/Import rejected|ورود رد شد/}).waitFor();
+  await page.getByRole('region',{name:'Reference loss status'}).filter({hasText:'computed'}).waitFor();
+  await clickTab('waterfall_loss');
+  await page.getByRole('region',{name:'Reference loss status'}).filter({hasText:'computed'}).waitFor();
+  assert.ok((await page.locator('body').innerText()).includes('soiling (pvlib 0.13.1'));
+  await clickTab('climate');
+  console.log('[PASS] Actual file import rejects missing energy without mutation, applies pinned reference model, and shows waterfall replacement/provenance.');
+
   await page.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
 
   // Preserve existing PSH<1 behavior while making its caveat visible to the user.
@@ -525,6 +550,9 @@ async function main() {
   assert.equal(exportedEnvelope.format, 'solarpv_project_envelope');
   assert.equal(exportedProject.city.latitude, 12);
   assert.equal(exportedProject.city.longitude, 101);
+  assert.deepEqual(exportedProject.city.annualReferenceLosses,referenceInput);
+  assert.equal(exportedProject.reportSnapshot.waterfallReport.annualReference.status,'computed');
+  assert.equal(exportedProject.reportSnapshot.waterfallReport.annualReference.metadata.soiling.modelId,'soiling_kimber_pvlib_0131');
   assert.equal(exportedProject.city.peakSunHours, 0.5);
   assert.equal(exportedEnvelope.metadata.docId, 'DOC-BROWSER-01');
   assert.equal(exportedEnvelope.metadata.docVersion, 'Rev Browser 7');
@@ -543,6 +571,7 @@ async function main() {
 
   const officialDocxZip = unzipSync(await readFile(docxPath));
   const officialDocxXml = new TextDecoder().decode(officialDocxZip['word/document.xml']);
+  assert.ok(officialDocxXml.includes('soiling_kimber_pvlib_0131'),'DOCX lost reference model identity');
   assert.ok(officialDocxXml.includes('0.5'), 'official UI DOCX lost the displayed PSH');
   assert.ok(officialDocxXml.includes('USER_OVERRIDE'), 'official UI DOCX lost PSH provenance');
   assert.ok(officialDocxXml.includes('user_input'), 'official UI DOCX lost PSH source kind');
@@ -565,6 +594,7 @@ async function main() {
   }
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(xlsxPath);
+  assert.ok(JSON.stringify(workbook.model).includes('soiling_kimber_pvlib_0131'),'XLSX lost reference model metadata');
   const summarySheet = workbook.getWorksheet('Project Summary');
   assert.ok(summarySheet, 'official UI XLSX is missing Project Summary sheet');
   const summaryValues = new Map<string, string>();
@@ -631,6 +661,13 @@ async function main() {
   assert.equal(await page.locator('#climate-psh-input').inputValue(), '0.5');
   await page.getByRole('button', { name: /Cancel Edit|انصراف از ویرایش/ }).click();
   console.log('[PASS] Actual UI DOCX/XLSX/JSON read-back preserves F-04 raw/format disclosure, provenance, and re-import state');
+  await page.getByRole('region',{name:'Reference loss status'}).filter({hasText:'computed'}).waitFor();
+  await page.getByRole('button',{name:/Disable reference models|غیرفعال‌سازی مدل مرجع/}).click();
+  assert.equal(await page.getByRole('region',{name:'Reference loss status'}).count(),0);
+  await clickTab('waterfall_loss');
+  assert.equal(await page.getByRole('region',{name:'Reference loss status'}).count(),0);
+  await clickTab('climate');
+  console.log('[PASS] Raw reference inputs survive real project restore; disabling restores screening mode without a reference claim.');
 
   // Select a location by clicking the actual Leaflet map (not by typing climate
   // coordinates), then override the newly estimated PSH to exact zero.

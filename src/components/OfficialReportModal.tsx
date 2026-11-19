@@ -1,3 +1,4 @@
+import {ReferenceLossStatus} from './ReferenceLossStatus';
 import React, { useState, useRef, useMemo } from 'react';
 import {
   X,
@@ -438,6 +439,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Net AC Annual Generation (Primary)', primaryAnnualEnergyMwh, 'MWh/yr', waterfallReport ? 'Unified Waterfall Loss Model' : 'Annualized 24h Baseline Profile'],
 
       ['Specific Annual Yield (Primary)', primarySpecificYieldKwhKwp.toString(), 'kWh/kWp/yr', 'Normalized to STC DC Capacity (Primary Model)'],
+      ['Reference snow/soiling status', waterfallReport?.annualReference?.status ?? 'screening/manual', '-', waterfallReport?.annualReference?.reason ?? 'No field-validation claim'],
+      ['Reference snow/soiling metadata', JSON.stringify(waterfallReport?.annualReference?.metadata ?? null), '-', 'Version, provenance, UTC period, parameters, units and limitations'],
       ['Performance Ratio (PR)', `${performanceRatioPct}%`, '-', 'Model-derived metric; standards conformity not assessed'],
       ['Diurnal Diagnostic Net AC Generation', diurnal24hAnnualMwh, 'MWh/yr', 'Annualized 24h Diurnal Profile (Diagnostic)'],
       ['Gross DC Annual Generation (24h Extrapolated)', diurnal24hAnnualMwh * 1.05, 'MWh/yr', 'Sandia Array Model (Annualized 24h Diagnostic)'],
@@ -2196,6 +2199,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           )}
 
           {/* Signoff / Approval Signature Block */}
+          <ReferenceLossStatus evaluation={waterfallReport?.annualReference} lang={isEn?'en':'fa'}/>
           <div className="pt-6 mt-6 border-t border-industrial-border/80 print:border-slate-400 grid grid-cols-3 gap-4 text-xs text-center">
             <div className="p-3 border border-dashed border-industrial-border print:border-slate-400 rounded">
               <span className="text-slate-400 block text-[10px] mb-6">{isEn ? 'PREPARED BY (DESIGN ENGINEER)' : 'تهیه‌کننده (مهندس طراح)'}</span>

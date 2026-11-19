@@ -1,3 +1,4 @@
+import { evaluateAnnualReferenceLosses, combineEnvironmentalLossPct } from './engine/reference/annualReferenceLosses';
 import React, { useState, useMemo, useEffect, useRef, useReducer, useCallback } from 'react';
 import {
   Sun,
@@ -70,8 +71,7 @@ import { LOAD_PRESETS, type ElectricalLoadItem, analyzeLoadProfile, normalizeLoa
 import { type ModuleSpecs, type InverterSpecs } from './engine/pvEngineAdvanced';
 import { resolveElectricalSystemSizing } from './engine/core/electricalSizingContract';
 import { simulateAnnualHourlyThermalDerate } from './engine/core/hourlyThermalEngine';
-import { computeWaterfallLosses } from './engine/waterfallLossEngine';
-import { buildWaterfallArgs } from './engine/waterfallArgs';
+import { computeConfiguredWaterfall } from './engine/waterfallArgs';
 import { rearGainPercent } from './engine/bifacialGain';
 import {
   shadingLifecycleReducer,
@@ -391,6 +391,7 @@ export const App: React.FC = () => {
   const [enableDieselGenerator, setEnableDieselGenerator] = useState<boolean>(false); // User-selectable optional genset
   // PR-2a-7: single-axis tracker config (null = fixed tilt)
   const [trackerConfig, setTrackerConfig] = useState<TrackerConfig | null>(null);
+  const annualReferenceEvaluation = useMemo(() => city.annualReferenceLosses ? evaluateAnnualReferenceLosses(city.annualReferenceLosses,city,{hasTracker:Boolean(trackerConfig),tiltDeg:city.optimalTiltAnnualDeg,installationEnvironment:siteOverrides.installationEnvironment??'ground_mount'}) : null, [city,siteOverrides.installationEnvironment,trackerConfig]);
   // 3D Shading input lifecycle managed via pure reducer (Apply / Revert / Provenance / Staleness)
   const [shadingLifecycle, dispatchShadingLifecycle] = useReducer(
     shadingLifecycleReducer,
@@ -743,7 +744,7 @@ export const App: React.FC = () => {
       // waterfall loss model — the old hardcoded PR constant was removed.
       // Basis: netAnnualEnergyExportMwh / 365 days for the target capacity.
       const targetKw = targetPowerplantCapacityKw || 1000;
-      const args = buildWaterfallArgs({
+      const waterfallInput = {
         dcCapacityKw: targetKw,
         peakSunHours: city.peakSunHours,
         ambientTempC: city.tempMaxC,
@@ -759,8 +760,10 @@ export const App: React.FC = () => {
         latitudeDeg: city.latitude,
         shadingLoss3dPct: shadingLoss3dPct !== null ? shadingLoss3dPct : undefined,
         bifacialGainPct,
-      });
-      const wf = computeWaterfallLosses(...args);
+        annualReferenceLosses: city.annualReferenceLosses,
+        referenceSite: city,
+      };
+      const wf = computeConfiguredWaterfall(waterfallInput);
       return (wf.netAnnualEnergyExportMwh * 1000.0) / 365.0; // Commercial Generation target
     } else {
       // Customer modes are sized solely from load/outage demand; the stored
@@ -875,9 +878,10 @@ export const App: React.FC = () => {
       };
     }
     const deratings = {
+      // Sizing has one environmental derate slot; use the combined reference retained-energy equivalent.
       ambientTempMinC: city.tempMinC,
       ambientTempMaxC: city.tempMaxC,
-      soilingLossPct: city.soilingLossPct,
+      soilingLossPct: annualReferenceEvaluation?.status==='computed' ? combineEnvironmentalLossPct(annualReferenceEvaluation.soilingLossPct??city.soilingLossPct,annualReferenceEvaluation.snowLossPct??0) : city.soilingLossPct,
       dcCableLossPct: 1.5,
       mismatchAndLidLossPct: 2.0,
       inverterClippingLossPct: 1.0,
@@ -906,7 +910,7 @@ export const App: React.FC = () => {
       technology: inverterTech,
       customBaysCount,
     }).arrayDesign;
-  }, [effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment, isSiteUnsizable, sizingFleetInverterCount, systemMode, targetPowerplantCapacityKw, inverterTech, customBaysCount, inverterClustering]);
+  }, [annualReferenceEvaluation, effectiveDailyKwhDemand, city, selectedModule, selectedInverter, siteOverrides?.installationEnvironment, isSiteUnsizable, sizingFleetInverterCount, systemMode, targetPowerplantCapacityKw, inverterTech, customBaysCount, inverterClustering]);
 
   // Synchronize 3D shading lifecycle on project city or capacity changes (evaluates reset & staleness)
   const [shadingSimulationMode, setShadingSimulationMode] = useState<'hourly_8760' | 'screening_3day'>('screening_3day');
@@ -1151,7 +1155,7 @@ export const App: React.FC = () => {
   // deleted. FinancialTab and WaterfallLossTab both consume this same report,
   // so they display the identical annual energy (< 0.1% difference).
   const waterfallReport = useMemo(() => {
-    const args = buildWaterfallArgs({
+    const waterfallInput = {
       dcCapacityKw: arrayDesign.totalPvCapacityKwp,
       peakSunHours: city.peakSunHours,
       ambientTempC: city.tempMaxC,
@@ -1168,8 +1172,10 @@ export const App: React.FC = () => {
       shadingLoss3dPct: shadingLoss3dPct !== null ? shadingLoss3dPct : undefined,
       bifacialGainPct,
       annualThermalDerateOverridePct: annualThermalProfile.annualThermalDeratePct,
-    });
-    return computeWaterfallLosses(...args);
+      annualReferenceLosses: city.annualReferenceLosses,
+      referenceSite: city,
+    };
+    return computeConfiguredWaterfall(waterfallInput);
   }, [
     arrayDesign,
     city,
@@ -2842,6 +2848,7 @@ export const App: React.FC = () => {
             {/* SITE & CLIMATE MAP TAB */}
             {activeTab === 'climate' && (
             <ClimateTab
+              referenceContext={{hasTracker:Boolean(trackerConfig),tiltDeg:city.optimalTiltAnnualDeg,installationEnvironment:siteOverrides.installationEnvironment??'ground_mount'}}
               selectedCity={city}
               onCityChange={transitionSite}
               onCreate3dRooftop={(newCity) => {

@@ -5,9 +5,12 @@ import { type ParameterProvenance } from '../engine/types/climateTypes';
 import { formatCoordinates } from '../engine/geoCoordinates';
 import { formatPsh } from '../engine/formatters';
 
+import {ReferenceLossImport} from './ReferenceLossImport';
+
 const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
 
 interface ClimateTabProps {
+  referenceContext?: import('../referenceModels/annualReferenceInput').ReferenceContext;
   selectedCity: ClimateCity;
   onCityChange: (city: ClimateCity) => void;
   onCreate3dRooftop?: (city: ClimateCity) => void;
@@ -16,6 +19,7 @@ interface ClimateTabProps {
 
 export const ClimateTab: React.FC<ClimateTabProps> = ({
   selectedCity,
+  referenceContext,
   onCityChange,
   onCreate3dRooftop,
   lang = 'fa',
@@ -309,6 +313,7 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
 
   return (
     <div className="space-y-6">
+      <ReferenceLossImport city={selectedCity} context={referenceContext} onChange={onCityChange} lang={lang}/>
       {/* Title */}
       <div className="studio-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
