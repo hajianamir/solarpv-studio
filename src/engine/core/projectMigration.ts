@@ -74,6 +74,7 @@ export function normalizeFeatureFlags(raw: unknown): z.infer<typeof FeatureFlags
 }
 
 export const ClimateCitySchema = z.object({
+  annualReferenceLosses: z.custom<import('../../referenceModels/annualReferenceInput').AnnualReferenceInput>().optional(),
   id: z.string(),
   nameFa: z.string(),
   nameEn: z.string(),

@@ -450,6 +450,303 @@
       "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
       "referenceVersion": "pvlib-python 0.13.1",
       "referenceLocator": "coverage_nrel, fully_covered_nrel and dc_loss_nrel; roof/reference coefficients; ground-depth reset refinement; NREL/TP-6A20-67399 Eq.11.8 string assumption"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#6ba195e31fa3",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-6ba195e31fa3.json",
+      "productionExport": "combineEnvironmentalLossPct",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#76e77ed99368",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-76e77ed99368.json",
+      "productionExport": "combineEnvironmentalLossPct",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#a67aa7ac24cf",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-a67aa7ac24cf.json",
+      "productionExport": "combineEnvironmentalLossPct",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#bb89bb410650",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-bb89bb410650.json",
+      "productionExport": "combineEnvironmentalLossPct",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#15041e19dc16",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-15041e19dc16.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#1a5e60c2a59f",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-1a5e60c2a59f.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#2cc8cdd135f2",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-2cc8cdd135f2.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#309fb24cb9a5",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-309fb24cb9a5.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#31a4ec9d24aa",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-31a4ec9d24aa.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#3891f04536ee",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-3891f04536ee.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#3f0dc394942c",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-3f0dc394942c.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#425ed87b5309",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-425ed87b5309.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#528247fcae08",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-528247fcae08.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#53eccebb3715",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-53eccebb3715.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#661409ac0ce5",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-661409ac0ce5.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#6827c36617c4",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-6827c36617c4.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#6b665cec370e",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-6b665cec370e.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#90b04274fced",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-90b04274fced.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#a44cdbd9213a",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-a44cdbd9213a.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#a501cddad27b",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-a501cddad27b.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#aedfaac2e805",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-aedfaac2e805.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#b52b15fab0f0",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-b52b15fab0f0.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#b5a320496268",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-b5a320496268.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#c440c2cd469b",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-c440c2cd469b.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#ceae44a92d24",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-ceae44a92d24.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#d34b1d92c95c",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-d34b1d92c95c.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#d950e9553387",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-d950e9553387.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#dc70474e647d",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-dc70474e647d.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#e4df360ed18f",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-e4df360ed18f.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#ee1c9bf09fa0",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-ee1c9bf09fa0.json",
+      "productionExport": "evaluateAnnualReferenceLosses",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/waterfallArgs.ts#buildWaterfallArgs#c17b191da6bf",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-c17b191da6bf.json",
+      "productionExport": "buildWaterfallArgs",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-3fe237bbeba0.json",
+      "productionExport": "computeConfiguredWaterfall",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/waterfallArgs.ts#withReferenceLossMetadata#4dc3d0d9e0f1",
+      "fixtureFile": "scripts/fixtures/physics/annual-reference-4dc3d0d9e0f1.json",
+      "productionExport": "withReferenceLossMetadata",
+      "referenceTitle": "pvlib-python 0.13.1 and energy-weighted loss aggregation",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
+      "referenceVersion": "pvlib-python 0.13.1",
+      "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
     }
   ]
 }

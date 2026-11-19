@@ -21,6 +21,7 @@ export interface LossStage {
 }
 
 export interface WaterfallLossReport {
+  annualReference?: import('./reference/annualReferenceLosses').AnnualReferenceEvaluation;
   installedCapacityKwp: number;
   rawGhiEnergyKwh: number;
   effectivePoaEnergyKwh: number;

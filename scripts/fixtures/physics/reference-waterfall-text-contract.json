@@ -1,0 +1,100 @@
+[
+  {
+    "id": "near_shading",
+    "nameFa": "تلفات سایه‌اندازی نزدیک بین ردیف‌ها",
+    "nameEn": "Near Shading Loss (Row-to-Row)",
+    "descriptionFa": "سایه‌اندازی ردیف‌های مجاور در اوایل صبح و غروب آفتاب",
+    "descriptionEn": "Inter-row module self-shading during low solar elevation angles (morning/evening)."
+  },
+  {
+    "id": "iam",
+    "nameFa": "تلفات انعکاس اپتیکی شیشه (IAM / Fresnel)",
+    "nameEn": "Incidence Angle Modifier (IAM)",
+    "descriptionFa": "زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل با کوپل حرارتی dn/dT",
+    "descriptionEn": "Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling."
+  },
+  {
+    "id": "soiling",
+    "nameFa": "تلفات غبار (ورودی فرضی/کاربر؛ غربالگری)",
+    "nameEn": "Soiling & Dust Loss (Screening Input)",
+    "descriptionFa": "ورودی فرضی یا کاربر؛ اتصال به مدل معتبر Kimber یا دادهٔ سایت را ثابت نمی‌کند",
+    "descriptionEn": "Assumed/user-defined input; not evidence of a validated Kimber model or site calibration."
+  },
+  {
+    "id": "snow",
+    "nameFa": "تلفات برف (برآورد غربالگری)",
+    "nameEn": "Snow Coverage & Shedding Loss (Screening)",
+    "descriptionFa": "ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود",
+    "descriptionEn": "Snow-loss input is zero (no-op); this does not establish a snow-free site."
+  },
+  {
+    "id": "thermal",
+    "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
+    "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
+    "descriptionFa": "برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.",
+    "descriptionEn": "Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY."
+  },
+  {
+    "id": "quality",
+    "nameFa": "تلورانس توان نامی تولیدکننده (Module Quality)",
+    "nameEn": "Module Quality & Factory Flash Tolerance",
+    "descriptionFa": "تلورانس مثبت توان نامی بر اساس تست فلش کارخانه (Positive Power Tolerance 0~+3%)",
+    "descriptionEn": "Positive factory power sorting tolerance (0~+3%) exceeding nominal nameplate rating."
+  },
+  {
+    "id": "lid",
+    "nameFa": "تلفات زوال اولیه نوری (LID & LeTID)",
+    "nameEn": "Light-Induced Degradation (LID & LeTID)",
+    "descriptionFa": "کاهش جزئی راندمان در چند ساعت اول تابش نور خورشید",
+    "descriptionEn": "Initial light-induced silicon lattice recombination loss during initial operating weeks."
+  },
+  {
+    "id": "mismatch",
+    "nameFa": "تلفات عدم تطابق مشخصه‌های I-V استرینگ‌ها",
+    "nameEn": "String Module I-V Mismatch Loss",
+    "descriptionFa": "اختلاف جزئی در نقطه کار ماکزیمم (MPP) ماژول‌های متوالی در یک رشته",
+    "descriptionEn": "Current and voltage dispersion at maximum power points among series-connected modules."
+  },
+  {
+    "id": "dc_cabling",
+    "nameFa": "تلفات اهمی کابل‌کشی DC خورشیدی (I²R)",
+    "nameEn": "DC Cabling Ohmic Loss (I²R)",
+    "descriptionFa": "مقاومت الکتریکی هادی مسی بین استرینگ‌ها و اینورتر",
+    "descriptionEn": "Resistive power dissipation in PV string homeruns and DC busbars to inverters."
+  },
+  {
+    "id": "mppt_tracking",
+    "nameFa": "تلفات ترکینگ نقطه حداکثر توان اینورتر (MPPT)",
+    "nameEn": "Inverter Dynamic MPPT Tracking Loss",
+    "descriptionFa": "خطای دینامیک الگوریتم Perturb & Observe یا Incremental Conductance اینورتر",
+    "descriptionEn": "Dynamic tracking latency of maximum power point algorithms under shifting cloud cover."
+  },
+  {
+    "id": "clipping",
+    "nameFa": "تلفات برش توان اینورتر (Clipping Over-paneling)",
+    "nameEn": "Inverter AC Power Clipping (DC/AC Over-paneling)",
+    "descriptionFa": "محدودیت خروجی AC اینورتر در ساعات اوج تابش تابستانه",
+    "descriptionEn": "Inverter AC power clipping limit during peak midday summer hours due to high DC/AC ratio."
+  },
+  {
+    "id": "inverter_efficiency",
+    "nameFa": "تلفات بازدهی تبدیل DC به AC اینورتر",
+    "nameEn": "Inverter DC-to-AC Conversion Loss",
+    "descriptionFa": "تلفات کلیدزنی IGBTها و فیلترهای خروجی AC اینورتر (راندمان ۹۷.۸٪)",
+    "descriptionEn": "IGBT switching losses and magnetic filter impedance at 97.8% weighted Euro efficiency."
+  },
+  {
+    "id": "mv_transformer",
+    "nameFa": "تلفات کابل AC و ترانسفورماتور پست فشار متوسط",
+    "nameEn": "AC Collector & MV Step-Up Transformer Loss",
+    "descriptionFa": "تلفات بی‌باری (هسته‌ای) و بارداری (مسی) ترانسفورماتور افزاینده ۲۰ یا ۳۳ کیلوولت",
+    "descriptionEn": "Copper resistive and core magnetic losses in 0.4/20kV or 0.8/33kV step-up transformer."
+  },
+  {
+    "id": "aux_unavailability",
+    "nameFa": "مصرف داخلی و قابلیت اطمینان شبکه (Availability)",
+    "nameEn": "Substation Auxiliaries & Grid Availability",
+    "descriptionFa": "مصرف فن‌های خنک‌کننده، مانیتورینگ SCADA و قطعی‌های احتمالی خطوط انتقال",
+    "descriptionEn": "Substation cooling fans, SCADA telecontrol power, and scheduled grid maintenance downtime."
+  }
+]
