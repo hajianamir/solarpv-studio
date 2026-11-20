@@ -38,6 +38,30 @@ const rowFields = [
   ["rearTransmissionLossPct", "Rear transmission loss / کاهش عبور پشت (%)"],
   ["rearIamB", "Rear ASHRAE b / ضریب IAM پشت"],
 ] as const;
+const electricalFields = [
+  ["alphaScAperC", "Module αsc / ضریب جریان (A/°C)"],
+  ["aRefV", "Module a_ref = nNsVth / ضریب دیود (V)"],
+  ["iLRefA", "Module I_L_ref / جریان نوری (A)"],
+  ["iORefA", "Module I_o_ref / جریان اشباع (A)"],
+  ["rShRefOhm", "Module R_sh_ref / مقاومت شنت (Ω)"],
+  ["rSOhm", "Module R_s / مقاومت سری (Ω)"],
+  ["egRefEv", "Module EgRef / شکاف انرژی مرجع (eV)"],
+  ["dEgdTPerK", "Module dEgdT / وابستگی شکاف انرژی (1/K)"],
+  ["modulesPerString", "Modules per string / ماژول سری در رشته"],
+  ["stringsInParallel", "Parallel strings / رشته‌های موازی"],
+  ["mpptMinV", "Minimum MPPT / کمینه MPPT (V)"],
+  ["mpptMaxV", "Maximum MPPT / بیشینه MPPT (V)"],
+  ["maxDcV", "Maximum DC voltage / حد ولتاژ DC (V)"],
+  ["maxInputCurrentA", "Aggregate current limit / حد جریان تجمیعی (A)"],
+  [
+    "designMinCellTemperatureC",
+    "Specified design minimum cell temperature / کمینه دمای سلول طراحی (°C)",
+  ],
+  [
+    "designMaxEffectiveIrradianceWm2",
+    "Specified design irradiance / بیشینه تابش مؤثر طراحی (W/m²)",
+  ],
+] as const;
 type Values = Record<string, string>;
 export function StudyBuilder({
   request,
@@ -85,6 +109,13 @@ export function StudyBuilder({
             parameterSource: r.parameterProvenance.source,
             parameterQuality: r.parameterProvenance.quality,
             mounting: r.system.tracking ? "single_axis" : "fixed",
+            electricalModel: r.system.electrical ? "diode" : "pvwatts",
+            ...Object.fromEntries(
+              electricalFields.map(([key]) => [
+                key,
+                r.system.electrical ? String(r.system.electrical[key]) : "",
+              ]),
+            ),
             optics: r.system.rowIrradiance ? "rows" : "isolated",
             temperatureIrradiance:
               r.system.rowIrradiance?.temperatureIrradiance ?? "",
@@ -286,6 +317,39 @@ export function StudyBuilder({
             </div>
           </div>
         )}
+        <label className="block text-xs">
+          {en ? "DC electrical model" : "مدل الکتریکی DC"}
+          <select
+            aria-label="Study electrical model"
+            value={v.electricalModel ?? "pvwatts"}
+            onChange={(e) => change("electricalModel", e.target.value)}
+            className="block bg-slate-900 p-2"
+          >
+            <option value="pvwatts">
+              PVWatts DC (legacy) / مدل تجمیعی قبلی
+            </option>
+            <option value="diode">
+              De Soto single diode + ideal constrained MPPT / تک‌دیودی
+            </option>
+          </select>
+        </label>
+        {v.electricalModel === "diode" && (
+          <div
+            data-testid="electrical-inputs"
+            className="space-y-3 border border-sky-800 p-3"
+          >
+            <p className="text-xs">
+              {en
+                ? "Module-level fitted parameters, uniform identical modules and one DC bus only. No guessing/fitting or bypass/mismatch. EgRef/dEgdT must match parameter source. Array nameplate must match module reference MPP × counts within 2%; gammaPdcPerC below is inactive. MPPT is an ideal static envelope, not certified protection or real controller dynamics. Voc checks apply only to the specified design condition and modeled samples."
+                : "پارامترهای برازش‌شده در سطح ماژول، ماژول‌های یکسان با تابش/دمای یکنواخت و فقط یک باس DC. بدون حدس/برازش و بدون bypass یا mismatch. EgRef/dEgdT باید با منبع سازگار باشند. توان نامی آرایه باید با MPP مرجع×تعدادها تا ۲٪ سازگار باشد؛ gammaPdcPerC پایین غیرفعال است. MPPT یک قید ایستای ایده‌آل است، نه حفاظت تأییدشده یا کنترل واقعی. بررسی Voc فقط شرایط طراحی اعلام‌شده و sampleها را می‌پوشاند."}
+            </p>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {electricalFields.map(([key, label]) =>
+                text(key, label, "number"),
+              )}
+            </div>
+          </div>
+        )}
         <div className="grid sm:grid-cols-3 gap-3">
           {text("label", "Study name / نام مطالعه")}
           {text("altitudeM", "Altitude / ارتفاع (m)", "number")}
@@ -385,6 +449,13 @@ export function StudyBuilder({
                 },
                 system: {
                   ...system,
+                  ...(v.electricalModel === "diode"
+                    ? {
+                        electrical: Object.fromEntries(
+                          electricalFields.map(([key]) => [key, number(key)]),
+                        ),
+                      }
+                    : {}),
                   ...(v.optics === "rows"
                     ? {
                         rowIrradiance: {

@@ -1,5 +1,6 @@
 # Direct pvlib studies — v1 operator and user guide
 
+**به‌روزرسانی 1.3.0:** مدل ماژول تک‌دیودی De Soto، آرایش یکنواخت سری/موازی و نقطه کار محدود به MPPT/جریان اکنون اختیاری‌اند؛ محدودیت‌های PVWatts-only در توضیحات قبلی مربوط به حالت legacy هستند. [قرارداد و حدود مدل الکتریکی](PVLIB-ELECTRICAL.fa.md).
 **به‌روزرسانی 1.2.0:** تابش ردیفی و دوطرفه برای زمین افقی اکنون اختیاری است؛ محدودیت‌های بدون row در نسخه اولیه برای این حالت جدید صدق نمی‌کنند. [قرارداد، روش استفاده و حدود مدل دوطرفه](PVLIB-ROW-BIFACIAL.fa.md).
 **به‌روزرسانی مدل / Model update:** موتور 1.1.0 اکنون fixed-tilt و single-axis monofacial را پشتیبانی می‌کند. قرارداد جدید، روش استفاده و محدودیت‌ها: [راهنمای ردیاب تک‌محوره](PVLIB-SINGLE-AXIS.fa.md).
 **Workflow update:** A bilingual form builder, strict weather CSV review, browser-local IndexedDB snapshots, portable restore, compatible-scenario comparison and printable HTML reporting are now available. See [the workflow guide](PVLIB-STUDY-WORKFLOW.fa.md). The original JSON import/API remain supported.
@@ -8,7 +9,7 @@ This is a separate, **real Python execution** path, not a JavaScript approximati
 
 ## Scope: what is and is not implemented
 
-Supported: one fixed-tilt or ideal single-axis tracking monofacial aggregate array and one aggregate inverter, explicit module/inverter and SAPM temperature parameters, complete regular interval-average GHI/DNI/DHI, dry-bulb temperature and **10 m** wind. Engine 1.2.0 calls pvlib-python **0.13.1** directly for SPA, optional single-axis geometry, Hay-Davies transposition, ASHRAE beam IAM, SAPM cell temperature, PVWatts DC and PVWatts inverter. It is **not** equivalent to SAM/PVWatts V8, a string electrical model or a measured site validation.
+Supported: one fixed-tilt or ideal single-axis tracking monofacial aggregate array and one aggregate inverter, explicit module/inverter and SAPM temperature parameters, complete regular interval-average GHI/DNI/DHI, dry-bulb temperature and **10 m** wind. Engine 1.3.0 calls pvlib-python **0.13.1** directly for SPA, optional single-axis geometry, Hay-Davies transposition, ASHRAE beam IAM, SAPM cell temperature, PVWatts DC or optional De Soto uniform-string single diode with ideal static MPPT, then an aggregate PVWatts inverter. It is **not** equivalent to SAM/PVWatts V8, a full mismatch/controller/protection model or a measured site validation.
 
 Not implemented in this chain: automatic weather acquisition, irradiation decomposition from GHI, gap filling, horizon/near-obstacle shading, electrical row mismatch, finite-array/terrain optics, tracker stow/control/motor consumption, snow/Kimber, batteries, grid curtailment, financial dispatch, persistent job queue or multi-node scheduling. Existing screening and reference-snow/soiling features remain separate and unchanged. No output is silently copied into screening finance, sizing or waterfall. No legacy clipping/loss factor is applied a second time.
 

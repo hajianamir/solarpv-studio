@@ -5,14 +5,23 @@ const timestamp = z.string().regex(/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d
   const day = new Date(`${value.slice(0,10)}T00:00:00Z`);
   return Number.isFinite(Date.parse(value)) && Number.isFinite(day.getTime()) && day.toISOString().slice(0,10)===value.slice(0,10);
 },'Valid calendar timestamp and explicit UTC offset required');
+const electricalSchema=z.object({
+ alphaScAperC:finite(-.05,.05),aRefV:finite(.1,10),iLRefA:finite(.01,30),iORefA:finite(1e-15,.01),rShRefOhm:finite(1,1e6),rSOhm:finite(0,10),egRefEv:finite(.5,2.5),dEgdTPerK:finite(-.002,0),
+ modulesPerString:z.number().int().min(1).max(1000),stringsInParallel:z.number().int().min(1).max(100000),mpptMinV:finite(1,3000),mpptMaxV:finite(1,3000),maxDcV:finite(1,3000),maxInputCurrentA:finite(.1,1e7),designMinCellTemperatureC:finite(-90,25),designMaxEffectiveIrradianceWm2:finite(1000,2500)
+}).strict();
 export const StudyRequestSchema = z.object({
   schemaVersion:z.literal('pvlib-study-v1'),label:z.string().min(1).max(200).refine(value=>Boolean(value.trim()),'Nonblank label required'),
   site:z.object({latitude:finite(-90,90),longitude:finite(-180,180),altitudeM:finite(-500,9000),timezone:z.string().min(1).max(100).refine(value=>{try{new Intl.DateTimeFormat('en',{timeZone:value});return true;}catch{return false;}},'IANA timezone required')}).strict(),
-  system:z.object({surfaceTiltDeg:finite(0,90),surfaceAzimuthDeg:finite(0,360),albedo:finite(0,1),arrayPdc0W:finite(1,1e9),gammaPdcPerC:finite(-.01,0),inverterPdc0W:finite(1,1e9),inverterEtaNom:finite(.8,.995),inverterEtaRef:z.literal(.9637),iamB:finite(0,1),additionalDcLossPct:finite(0,100),temperature:z.object({a:finite(-10,0),b:finite(-1,0),deltaT:finite(0,20)}).strict(),tracking:z.object({axisTiltDeg:finite(0,90),axisAzimuthDeg:finite(0,360),maxAngleDeg:finite(0,90),backtrack:z.boolean(),gcr:finite(.01,1),crossAxisTiltDeg:finite(-30,30)}).strict().optional(),rowIrradiance:z.object({gcr:finite(.01,1),heightM:finite(.1,100),pitchM:finite(.1,100),bifaciality:finite(0,1),rearShadeLossPct:finite(0,100),rearTransmissionLossPct:finite(0,100),rearIamB:finite(0,1),temperatureIrradiance:z.enum(['front_only','front_plus_rear'])}).strict().optional()}).strict(),
+  system:z.object({surfaceTiltDeg:finite(0,90),surfaceAzimuthDeg:finite(0,360),albedo:finite(0,1),arrayPdc0W:finite(1,1e9),gammaPdcPerC:finite(-.01,0),inverterPdc0W:finite(1,1e9),inverterEtaNom:finite(.8,.995),inverterEtaRef:z.literal(.9637),iamB:finite(0,1),additionalDcLossPct:finite(0,100),temperature:z.object({a:finite(-10,0),b:finite(-1,0),deltaT:finite(0,20)}).strict(),tracking:z.object({axisTiltDeg:finite(0,90),axisAzimuthDeg:finite(0,360),maxAngleDeg:finite(0,90),backtrack:z.boolean(),gcr:finite(.01,1),crossAxisTiltDeg:finite(-30,30)}).strict().optional(),rowIrradiance:z.object({gcr:finite(.01,1),heightM:finite(.1,100),pitchM:finite(.1,100),bifaciality:finite(0,1),rearShadeLossPct:finite(0,100),rearTransmissionLossPct:finite(0,100),rearIamB:finite(0,1),temperatureIrradiance:z.enum(['front_only','front_plus_rear'])}).strict().optional(),electrical:electricalSchema.optional()}).strict(),
   weather:provenance.extend({windHeightM:z.literal(10),timestampConvention:z.literal('interval_end'),intervalMinutes:z.number().int().min(1).max(60),records:z.array(z.object({timestamp,ghiWm2:finite(0,2000),dniWm2:finite(0,2000),dhiWm2:finite(0,2000),tempAirC:finite(-90,70),windSpeedMs:finite(0,75)}).strict()).min(2).max(17568)}).strict(),
   parameterProvenance:provenance,
 }).strict().superRefine((request,ctx)=>{
   if(request.system.arrayPdc0W/request.system.inverterPdc0W>2)ctx.addIssue({code:'custom',path:['system','inverterPdc0W'],message:'Supported array DC / inverter DC limit ratio <= 2'});
+  const electrical=request.system.electrical;
+  if(electrical){
+    if(!(electrical.mpptMinV<electrical.mpptMaxV&&electrical.mpptMaxV<=electrical.maxDcV))ctx.addIssue({code:'custom',path:['system','electrical'],message:'Require mpptMinV < mpptMaxV <= maxDcV'});
+    if(request.weather.records.length>8784)ctx.addIssue({code:'custom',path:['weather','records'],message:'Detailed electrical mode supports at most 8784 records'});
+  }
   const rows=request.system.rowIrradiance,tracking=request.system.tracking;
   if(rows){
     const issue=(message:string)=>ctx.addIssue({code:'custom',path:['system','rowIrradiance'],message});
@@ -30,9 +39,9 @@ export const StudyRequestSchema = z.object({
 export type StudyRequest = z.infer<typeof StudyRequestSchema>;
 export interface StudyResult {
   schemaVersion:'pvlib-study-result-v1';status:'completed';engine:'pvlib-python-direct';
-  manifest:{engineVersion:string;models:Record<string,string>;validationStatus:'not_field_validated';inputSha256:string;workerSha256:string;requirementsSha256:string;python:string;platform:string;dependencies:Record<string,string>;period:{startUtc:string;endUtc:string;intervalMinutes:number;intervalCount:number;completeUtcCalendarYear:boolean;monthlyAllocation:string};units:Record<string,string>;limitations:string[];warnings:string[]};
-  request:StudyRequest;summary:{dcBeforeAdditionalLossWh:number;dcWh:number;acWh:number;frontIncidentWhm2?:number;rearIncidentWhm2?:number;rearEffectiveWhm2?:number};
-  monthly:{month:string;dcBeforeAdditionalLossWh:number;dcWh:number;acWh:number;frontIncidentWhm2?:number;rearIncidentWhm2?:number;rearEffectiveWhm2?:number}[];
+  manifest:{electricalChecks?:Record<string,number>;engineVersion:string;models:Record<string,string>;validationStatus:'not_field_validated';inputSha256:string;workerSha256:string;requirementsSha256:string;python:string;platform:string;dependencies:Record<string,string>;period:{startUtc:string;endUtc:string;intervalMinutes:number;intervalCount:number;completeUtcCalendarYear:boolean;monthlyAllocation:string};units:Record<string,string>;limitations:string[];warnings:string[]};
+  request:StudyRequest;summary:{dcBeforeAdditionalLossWh:number;dcWh:number;acWh:number;frontIncidentWhm2?:number;rearIncidentWhm2?:number;rearEffectiveWhm2?:number;availableMppWh?:number;mpptConstraintLossWh?:number};
+  monthly:{month:string;dcBeforeAdditionalLossWh:number;dcWh:number;acWh:number;frontIncidentWhm2?:number;rearIncidentWhm2?:number;rearEffectiveWhm2?:number;availableMppWh?:number;mpptConstraintLossWh?:number}[];
   samples:({timestamp:string;midpointUtc:string}&Record<string,string|number>)[];
   execution?:{runId:string;startedAt:string;finishedAt:string};
 }

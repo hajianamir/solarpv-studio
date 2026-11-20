@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.2.0'
+ENGINE_VERSION = '1.3.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -22,7 +22,7 @@ MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg 
               energyIntegration='interval-average rectangular; solar geometry at interval midpoint')
 LIMITATIONS = [
     'Not field validated, calibrated, bankable or a standards-conformity assessment.',
-    'Fixed-tilt or single-axis single aggregate array (optional row/bifacial optics) and single aggregate inverter only; no string voltage/MPPT design.',
+    'Fixed-tilt or single-axis aggregate array and one aggregate inverter; optional uniform-string diode and ideal static MPPT envelope, not certified electrical design.',
     'No horizon, near-obstacle shading, electrical mismatch, snow, soiling, battery, grid curtailment or financial simulation.',
     'Fixed SPA delta_t=67 s and sunrise/sunset refraction 0.5667 deg are assumptions, not historical/forecast corrections.',
     'Diffuse IAM and spectral factors are unity assumptions; midpoint transposition does not eliminate interval-averaging error.',
@@ -77,7 +77,17 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else [])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else [])], 'system')
+    if 'electrical' in system:
+        e=system['electrical']
+        limits=dict(alphaScAperC=(-.05,.05),aRefV=(.1,10),iLRefA=(.01,30),iORefA=(1e-15,.01),rShRefOhm=(1,1e6),rSOhm=(0,10),egRefEv=(.5,2.5),dEgdTPerK=(-.002,0),modulesPerString=(1,1000),stringsInParallel=(1,100000),mpptMinV=(1,3000),mpptMaxV=(1,3000),maxDcV=(1,3000),maxInputCurrentA=(.1,1e7),designMinCellTemperatureC=(-90,25),designMaxEffectiveIrradianceWm2=(1000,2500))
+        keys(e,list(limits),'system.electrical')
+        for key,(lo,hi) in limits.items():
+            number(e[key],lo,hi,'electrical.'+key)
+        for key in ('modulesPerString','stringsInParallel'):
+            if int(e[key])!=e[key]:raise InputError('electrical string/module counts must be integers')
+        if not e['mpptMinV']<e['mpptMaxV']<=e['maxDcV']:
+            raise InputError('require mpptMinV < mpptMaxV <= maxDcV')
     if 'tracking' in system:
         track = system['tracking']
         tracking_bounds = dict(axisTiltDeg=(0,90), axisAzimuthDeg=(0,360), maxAngleDeg=(0,90), gcr=(.01,1), crossAxisTiltDeg=(-30,30))
@@ -134,6 +144,8 @@ def validate(req):
         raise InputError(f'2..{MAX_RECORDS} regular records required')
     if 'rowIrradiance' in system and len(rows)>8784:
         raise InputError('row irradiance mode supports at most 8784 records')
+    if 'electrical' in system and len(rows)>8784:
+        raise InputError('detailed electrical mode supports at most 8784 records')
     times = []
     for row in rows:
         keys(row, ['timestamp', 'ghiWm2', 'dniWm2', 'dhiWm2', 'tempAirC', 'windSpeedMs'], 'weather record')
@@ -147,6 +159,67 @@ def validate(req):
     if (times[0]-timedelta(minutes=dt)).year < 1900 or times[-1].year > 2200 or times[-1]-times[0]+timedelta(minutes=dt) > timedelta(days=366):
         raise InputError('supported period: 1900..2200, at most 366 days')
     return times
+
+
+def electrical_dc(e, effective, cell, declared_nameplate):
+    """Uniform identical modules, static single-bus ideal MPPT. Not mismatch/control."""
+    import numpy as np
+    import pandas as pd
+    import pvlib
+    from scipy.optimize import brentq
+
+    def parameters(g,t):
+        return pvlib.pvsystem.calcparams_desoto(g,t,e['alphaScAperC'],e['aRefV'],e['iLRefA'],e['iORefA'],e['rShRefOhm'],e['rSOhm'],EgRef=e['egRefEv'],dEgdT=e['dEgdTPerK'],irrad_ref=1000.,temp_ref=25.)
+    ns,np_=e['modulesPerString'],e['stringsInParallel']
+    reference=pvlib.pvsystem.singlediode(*parameters(1000.,25.),method='lambertw')
+    module_stc=float(reference['p_mp'])
+    modeled_nameplate=module_stc*ns*np_
+    if not math.isfinite(modeled_nameplate) or modeled_nameplate<=0 or abs(modeled_nameplate-declared_nameplate)/declared_nameplate>.02:
+        raise InputError('declared arrayPdc0W must match diode STC MPP times module/string counts within 2%; no hidden scaling')
+    design=pvlib.pvsystem.singlediode(*parameters(e['designMaxEffectiveIrradianceWm2'],e['designMinCellTemperatureC']),method='lambertw')
+    design_voc=float(design['v_oc'])*ns
+    if not math.isfinite(design_voc) or design_voc<=0 or design_voc>e['maxDcV']+1e-7:
+        raise InputError('specified cold-design string Voc exceeds maxDcV or has invalid diode parameters; study rejected')
+    if not np.isfinite(effective).all() or not np.isfinite(cell).all() or (effective<0).any() or ((cell < -100)|(cell>150)).any():
+        raise InputError('detailed electrical mode requires finite irradiance and cell temperature -100..150 degC')
+    with np.errstate(over='ignore',invalid='ignore',divide='ignore'):
+        params=parameters(effective,cell)
+        arrays=[np.broadcast_to(np.asarray(p,dtype=float),(len(effective),)) for p in params]
+        if not all(np.isfinite(p).all() for p in [arrays[0],arrays[1],arrays[2],arrays[4]]) or (arrays[0]<0).any() or (arrays[1]<=0).any() or (arrays[3]<=0).any() or (arrays[4]<=0).any():
+            raise InputError('De Soto parameters outside supported numerical/physical domain')
+        curve=pvlib.pvsystem.singlediode(*arrays,method='lambertw')
+    dark=np.asarray(effective)==0
+    voc=np.where(dark,0,np.asarray(curve['v_oc'])*ns)
+    vmp=np.where(dark,0,np.asarray(curve['v_mp'])*ns)
+    mpp=np.where(dark,0,np.asarray(curve['p_mp'])*ns*np_)
+    if not all(np.isfinite(p).all() and (p>=0).all() for p in [voc,vmp,mpp]):
+        raise InputError('nonfinite or negative single-diode result')
+    if (voc>e['maxDcV']+1e-7).any():
+        raise InputError('modeled sample string Voc exceeds maxDcV; no simulated voltage clipping can make this input safe')
+    volts=np.zeros(len(effective));amps=np.zeros(len(effective));state=np.zeros(len(effective))
+    for i in np.flatnonzero(~dark):
+        lo,hi=e['mpptMinV'],min(e['mpptMaxV'],float(voc[i]))
+        state[i]=4 # explicit no-feasible-operating-point shutdown
+        if hi<=lo+1e-9:continue
+        def current(v):
+            answer=float(pvlib.pvsystem.i_from_v(v/ns,*(p[i] for p in arrays),method='lambertw'))*np_
+            if not math.isfinite(answer) or answer < -1e-6:
+                raise InputError('invalid current on the supported first-quadrant IV curve')
+            return max(0.,answer) # only floating-point residuals at open circuit
+        v=float(np.clip(vmp[i],lo,hi))
+        current_limited=current(v)>e['maxInputCurrentA']+1e-9
+        if current_limited:
+            if current(hi)>e['maxInputCurrentA']:continue
+            v=brentq(lambda voltage:current(voltage)-e['maxInputCurrentA'],v,hi,xtol=1e-9,rtol=1e-12)
+        volts[i],amps[i]=v,current(v)
+        state[i]=3 if current_limited else (1 if abs(v-vmp[i])<1e-6 else 2)
+    operating=volts*amps
+    gap=mpp-operating
+    if (gap < -np.maximum(1e-5,mpp*1e-7)).any():
+        raise InputError('constrained point exceeds unconstrained MPP beyond numerical tolerance')
+    columns=dict(arrayVocV=voc,arrayVmpV=vmp,arrayMppW=mpp,operatingVoltageV=volts,operatingCurrentA=amps,dcOperatingState=state)
+    checks=dict(moduleStcMppW=module_stc,modeledArrayStcW=modeled_nameplate,declaredArrayStcW=declared_nameplate,specifiedDesignStringVocV=design_voc,maximumSampleStringVocV=float(voc.max()),designEnvelopeExceededIntervals=float(((np.asarray(effective)>e['designMaxEffectiveIrradianceWm2'])|(np.asarray(cell)<e['designMinCellTemperatureC'])).sum()))
+    return pd.Series(operating,index=effective.index),{key:pd.Series(value,index=effective.index) for key,value in columns.items()},checks,pd.Series(np.maximum(gap,0),index=effective.index)
 
 
 def run_study(req):
@@ -244,24 +317,43 @@ def run_study(req):
             'Bifaciality, rear structural shade and rear transmission reductions affect electrical irradiance only; unity diffuse IAM/spectral assumptions remain.'
         ])
     cell = pvlib.temperature.sapm_cell(thermal_poa, df.tempAirC, df.windSpeedMs, irrad_ref=1000.0, **s['temperature'])
-    raw_dc = pvlib.pvsystem.pvwatts_dc(effective, cell, s['arrayPdc0W'], s['gammaPdcPerC'], temp_ref=25)
-    if (raw_dc < 0).any():
-        raise InputError('PVWatts produced negative DC outside supported temperature/coefficient conditions')
+    electrical_columns={};electrical_checks={};constraint_loss=None
+    if 'electrical' in s:
+        raw_dc,electrical_columns,electrical_checks,constraint_loss=electrical_dc(s['electrical'],effective,cell,s['arrayPdc0W'])
+        models['dc']='desoto + singlediode lambertw; uniform identical modules in series/parallel; reference 1000 W/m2 and 25 degC'
+        models['mppt']='ideal static first-quadrant voltage/current constrained operating point; brentq for current boundary'
+        limitations.extend([
+            'Single-diode inputs are module-level fitted parameters; no implicit fitting or CEC Adjust correction. EgRef/dEgdT must match their source.',
+            'All modules/strings have identical irradiance, temperature and parameters; no cell/string mismatch, bypass diodes or multi-MPPT partitioning.',
+            'MPPT is an ideal static constraint, not real controller efficiency, startup/hysteresis, dynamics, current protection or hardware certification.',
+            'Voc checks cover the specified design condition and modeled samples only, not all climatic extremes or code-compliant string sizing.',
+            'gammaPdcPerC is inactive in diode mode; arrayPdc0W is a consistency check only, not a second power scaling factor.',
+            'Operating V/I and constrained power are before explicit additional DC loss; inverter efficiency remains aggregate PVWatts, not voltage dependent.'
+        ])
+    else:
+        raw_dc = pvlib.pvsystem.pvwatts_dc(effective, cell, s['arrayPdc0W'], s['gammaPdcPerC'], temp_ref=25)
+        if (raw_dc < 0).any():
+            raise InputError('PVWatts produced negative DC outside supported temperature/coefficient conditions')
     dc = raw_dc * (1-s['additionalDcLossPct']/100)
     ac = pvlib.inverter.pvwatts(dc, s['inverterPdc0W'], eta_inv_nom=s['inverterEtaNom'], eta_inv_ref=s['inverterEtaRef'])
-    columns = dict(surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
+    columns = dict(surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
         beamIam=iam, poaDirectWm2=poa.poa_direct, poaSkyDiffuseWm2=poa.poa_sky_diffuse,
         poaGroundDiffuseWm2=poa.poa_ground_diffuse, poaGlobalWm2=poa.poa_global,
         effectiveIrradianceWm2=effective, cellTemperatureC=cell, dcBeforeAdditionalLossW=raw_dc, dcW=dc, acW=ac)
     if not all(np.isfinite(values).all() for values in columns.values()):
         raise InputError('nonfinite model output; unsupported input combination')
     energy = pd.DataFrame(dict(dcBeforeAdditionalLossWh=raw_dc*dt_hours, dcWh=dc*dt_hours, acWh=ac*dt_hours), index=mid)
+    if 'electrical' in s:
+        energy['availableMppWh']=electrical_columns['arrayMppW']*dt_hours
+        energy['mpptConstraintLossWh']=constraint_loss*dt_hours
     if 'rowIrradiance' in s:
         energy['frontIncidentWhm2'] = poa.poa_global*dt_hours
         energy['rearIncidentWhm2'] = row_columns['rearIncidentWm2']*dt_hours
         energy['rearEffectiveWhm2'] = row_columns['rearEffectiveIrradianceWm2']*dt_hours
     monthly = energy.groupby(mid.strftime('%Y-%m')).sum()
     warnings = ['All provenance quality labels are caller declarations, not independently verified sources.']
+    if electrical_checks.get('designEnvelopeExceededIntervals',0)>0:
+        warnings.append('Modeled intervals exceed the declared electrical design irradiance/temperature envelope; specified design Voc is not a worst-case envelope guarantee.')
     closure = (df.ghiWm2-(df.dniWm2*np.maximum(0, np.cos(np.radians(position.apparent_zenith)))+df.dhiWm2)).abs()
     if (closure > 100).any():
         warnings.append('Irradiance component closure differs by >100 W/m2 at some interval midpoints; inputs retained without correction. Threshold is a diagnostic, not a validation criterion.')
@@ -274,13 +366,14 @@ def run_study(req):
     def iso(t):
         return t.isoformat().replace('+00:00', 'Z')
     return dict(schemaVersion='pvlib-study-result-v1', status='completed', engine='pvlib-python-direct',
-        manifest=dict(engineVersion=ENGINE_VERSION, models=models, validationStatus='not_field_validated',
+        manifest=dict(**(dict(electricalChecks=electrical_checks) if electrical_checks else {}),engineVersion=ENGINE_VERSION, models=models, validationStatus='not_field_validated',
             inputSha256=hashlib.sha256(request_bytes).hexdigest(), workerSha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             requirementsSha256=hashlib.sha256(Path(__file__).with_name('requirements.txt').read_bytes()).hexdigest(),
             python=platform.python_version(), platform=platform.platform(), dependencies=dependencies,
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
             units=dict(irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
+                **(dict(voltage='V at uniform array DC bus',current='A at uniform array DC bus',dcOperatingState='0 dark; 1 MPP; 2 voltage boundary; 3 current boundary; 4 no feasible MPPT point') if 'electrical' in s else {}),
                 **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
             limitations=limitations, warnings=warnings),
         request=req, summary={key:float(energy[key].sum()) for key in energy},

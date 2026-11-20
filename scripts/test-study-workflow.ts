@@ -148,3 +148,20 @@ assert.deepEqual(validateSnapshot({...snapshot,request:rowScenario,result:rowRes
 const absentRear=structuredClone(rowResult);delete absentRear.samples[0].rearIncidentWm2;assert.throws(()=>validateResult(absentRear),/components/);
 const differentElectrical=structuredClone(rowResult);differentElectrical.manifest.models.dc='different';assert.match(comparisonReason(result,differentElectrical)!,/engine/);
 console.log('Row workflow PASS: shared strict geometry/thermal contract, actual Python row result, archive metrics and scenario-comparison whitelist.');
+
+const detailed=structuredClone(rowScenario);detailed.system.arrayPdc0W=8800;
+detailed.system.electrical=JSON.parse(readFileSync('services/pvlib_study/tests/desoto-reference-parameters.json','utf8'));
+assert.equal(StudyRequestSchema.safeParse(detailed).success,true);
+for(const patch of [{modulesPerString:1.5},{stringsInParallel:true},{iORefA:0},{mpptMaxV:100},{mpptMaxV:2000},{dEgdTPerK:.001},{extra:1}]){
+ const bad=structuredClone(detailed);Object.assign(bad.system.electrical,patch);assert.equal(StudyRequestSchema.safeParse(bad).success,false);
+}
+for(const key of Object.keys(detailed.system.electrical)){const bad=structuredClone(detailed);delete bad.system.electrical[key];assert.equal(StudyRequestSchema.safeParse(bad).success,false);}
+const detailedRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(detailed),encoding:'utf8',maxBuffer:16*1024*1024});
+assert.equal(detailedRun.status,0,detailedRun.stderr);
+const detailedResult=validateResult(JSON.parse(detailedRun.stdout));assert.ok(detailedResult.summary.availableMppWh!>0);
+assert.match(comparisonReason(result,detailedResult)!,/engine/,'different DC model must not be automatically comparable');
+assert.equal(comparisonReason(detailedResult,structuredClone(detailedResult)),null);
+assert.deepEqual(validateSnapshot({...snapshot,request:detailed,result:detailedResult}).result,detailedResult);
+const missingPoint=structuredClone(detailedResult);delete missingPoint.samples[0].operatingCurrentA;assert.throws(()=>validateResult(missingPoint),/electrical/);
+assert.ok(studyReport(detailedResult).includes('De Soto single diode'));
+console.log('Detailed electrical workflow PASS: strict module/string/MPPT contract, actual Python, result/archive validation, DC-model comparison barrier and report.');

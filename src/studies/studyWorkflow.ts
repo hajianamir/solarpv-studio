@@ -101,6 +101,8 @@ const energy = z.object({
   dcBeforeAdditionalLossWh: z.number().finite().nonnegative(),
   dcWh: z.number().finite().nonnegative(),
   acWh: z.number().finite().nonnegative(),
+  availableMppWh: z.number().finite().nonnegative().optional(),
+  mpptConstraintLossWh: z.number().finite().nonnegative().optional(),
   frontIncidentWhm2: z.number().finite().nonnegative().optional(),
   rearIncidentWhm2: z.number().finite().nonnegative().optional(),
   rearEffectiveWhm2: z.number().finite().nonnegative().optional(),
@@ -120,6 +122,7 @@ const resultSchema = z.object({
     .min(2)
     .max(17568),
   manifest: z.object({
+    electricalChecks: z.record(z.string(), z.number().finite()).optional(),
     engineVersion: z.string(),
     models: z.record(z.string(), z.string()),
     validationStatus: z.literal("not_field_validated"),
@@ -225,6 +228,44 @@ export function validateResult(value: unknown): StudyResult {
         "Row irradiance result components missing or out of bounds",
       );
   }
+  if (r.request.system.electrical) {
+    const e = r.request.system.electrical;
+    if (
+      !r.manifest.models.dc?.startsWith("desoto + singlediode") ||
+      !r.manifest.electricalChecks ||
+      ![r.summary.availableMppWh, r.summary.mpptConstraintLossWh].every(
+        (v) => typeof v === "number" && Number.isFinite(v) && v >= 0,
+      ) ||
+      r.samples.some(
+        (row) =>
+          ![
+            "arrayVocV",
+            "arrayVmpV",
+            "arrayMppW",
+            "operatingVoltageV",
+            "operatingCurrentA",
+            "dcOperatingState",
+          ].every(
+            (key) =>
+              typeof row[key] === "number" &&
+              Number.isFinite(row[key]) &&
+              Number(row[key]) >= 0,
+          ) ||
+          ![0, 1, 2, 3, 4].includes(Number(row.dcOperatingState)) ||
+          Number(row.arrayVocV) > e.maxDcV + 1e-6 ||
+          Number(row.operatingCurrentA) > e.maxInputCurrentA + 1e-6 ||
+          ([1, 2, 3].includes(Number(row.dcOperatingState)) &&
+            (Number(row.operatingVoltageV) < e.mpptMinV - 1e-6 ||
+              Number(row.operatingVoltageV) > e.mpptMaxV + 1e-6)) ||
+          ([0, 4].includes(Number(row.dcOperatingState)) &&
+            (Number(row.operatingVoltageV) !== 0 ||
+              Number(row.operatingCurrentA) !== 0)),
+      )
+    )
+      throw new Error(
+        "Detailed electrical output missing or outside declared envelope",
+      );
+  }
   return r;
 }
 export interface StudySnapshot {
@@ -294,6 +335,6 @@ export function studyReport(result: StudyResult, other?: StudyResult): string {
     if (reason) throw new Error(reason);
   }
   const section = (r: StudyResult) =>
-    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th></tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td></tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
+    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC model: ${r.request.system.electrical ? "De Soto single diode + ideal constrained MPPT" : "PVWatts DC"}</p>${r.request.system.electrical ? `<p>Unconstrained MPP / constraint loss: ${r.summary.availableMppWh} / ${r.summary.mpptConstraintLossWh} Wh. Voc checks are for specified conditions only, not certified electrical design.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th></tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td></tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>Direct pvlib study report</title><style>body{font:15px system-ui;max-width:1000px;margin:2em auto;padding:1em;color:#172033}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere} @media print{body{margin:0}h2{break-before:page}}</style><h1>Direct pvlib study / گزارش مطالعه</h1><p>Not field validated. Separate from screening and financial reports. Imported/local results are not digitally certified. Keep the JSON bundle for full weather and reproducibility. Print using browser Print / Save as PDF.</p>${other ? `<h2>Scenario comparison</h2><p>Same weather, site and engine; mounting, row optics and thermal irradiance proxy may differ (see scenario inputs). Delta is not an isolated bifacial gain. No guarantee of tracking gain. AC difference (second − first): ${(other.summary.acWh - result.summary.acWh) / 1000} kWh; ${result.summary.acWh === 0 ? "percentage unavailable (zero baseline)" : `${(100 * (other.summary.acWh - result.summary.acWh)) / result.summary.acWh}%`}. Different capacities are not normalized.</p>` : ""}${section(result)}${other ? section(other) : ""}</html>`;
 }
