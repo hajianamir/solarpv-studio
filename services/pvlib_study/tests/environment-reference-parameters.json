@@ -1,0 +1,17 @@
+{
+  "horizonProfile":{"source":"SYNTHETIC test-only horizon, not a site survey","quality":"assumed","points":[{"azimuthDeg":0,"elevationDeg":10},{"azimuthDeg":90,"elevationDeg":20},{"azimuthDeg":180,"elevationDeg":65},{"azimuthDeg":270,"elevationDeg":20},{"azimuthDeg":360,"elevationDeg":10}]},
+  "soilingSchedule":{"source":"SYNTHETIC test-only optical ratios, not field measurements","quality":"assumed","records":[
+    {"timestamp":"2017-04-01T17:00:00Z","frontRatio":0.9,"rearRatio":0.8},
+    {"timestamp":"2017-04-01T18:00:00Z","frontRatio":1,"rearRatio":0.5},
+    {"timestamp":"2017-04-01T19:00:00Z","frontRatio":0,"rearRatio":1},
+    {"timestamp":"2017-04-01T20:00:00Z","frontRatio":0.8,"rearRatio":0.7},
+    {"timestamp":"2017-04-01T21:00:00Z","frontRatio":0.95,"rearRatio":0.8},
+    {"timestamp":"2017-04-01T22:00:00Z","frontRatio":1,"rearRatio":1}]},
+  "albedoSchedule":{"source":"SYNTHETIC test-only albedo, not a snow model","quality":"assumed","records":[
+    {"timestamp":"2017-04-01T17:00:00Z","albedo":0},
+    {"timestamp":"2017-04-01T18:00:00Z","albedo":0.1},
+    {"timestamp":"2017-04-01T19:00:00Z","albedo":0.2},
+    {"timestamp":"2017-04-01T20:00:00Z","albedo":0.5},
+    {"timestamp":"2017-04-01T21:00:00Z","albedo":0.8},
+    {"timestamp":"2017-04-01T22:00:00Z","albedo":1}]}
+}

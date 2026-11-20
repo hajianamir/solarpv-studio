@@ -5,6 +5,7 @@ import { StudyRequestSchema } from "../src/studies/studyContract";
 import {
   parseWeatherCsv,
   parseAvailabilityCsv,
+  parseHorizonCsv,parseSoilingCsv,parseAlbedoCsv,
   WEATHER_COLUMNS,
   weatherReview,
   validateResult,
@@ -247,3 +248,29 @@ for(const key of ['acPlantInputW','acAvailabilityFraction','availabilityLossW','
 const wrongImport=structuredClone(plantResult);wrongImport.summary.gridImportWh=0;assert.throws(()=>validateResult(wrongImport),/AC plant/);
 const wrongLoss=structuredClone(plantResult);wrongLoss.samples[0].transformerLossW=0;assert.throws(()=>validateResult(wrongLoss),/AC plant/);
 console.log('Three AC plant stages PASS: explicit schedule/UTC/CSV contract, transformer and auxiliary, actual Python, imports/exports and integrated/monthly accounting, archive and report.');
+
+const environmentFixture=JSON.parse(readFileSync('services/pvlib_study/tests/environment-reference-parameters.json','utf8'));
+const environmentScenario=structuredClone(plantScenario);Object.assign(environmentScenario.system,environmentFixture);delete environmentScenario.system.horizonProfile;
+assert.equal(StudyRequestSchema.safeParse(environmentScenario).success,true);
+const csvTable=(columns:string[],records:Record<string,unknown>[])=>[columns.join(','),...records.map(r=>columns.map(c=>String(r[c])).join(','))].join('\n');
+assert.deepEqual(parseHorizonCsv(csvTable(['azimuthDeg','elevationDeg'],environmentFixture.horizonProfile.points)),environmentFixture.horizonProfile.points);
+const soilCsv=csvTable(['timestamp','frontRatio','rearRatio'],environmentFixture.soilingSchedule.records);
+assert.deepEqual(parseSoilingCsv(soilCsv),environmentFixture.soilingSchedule.records);
+assert.deepEqual(parseAlbedoCsv(csvTable(['timestamp','albedo'],environmentFixture.albedoSchedule.records)),environmentFixture.albedoSchedule.records);
+for(const csv of [soilCsv.replace(',0.9,',',,'),soilCsv.replace(',0.9,',',1.5,'),soilCsv+'\n\n'])assert.throws(()=>parseSoilingCsv(csv));
+const forbiddenHorizon=structuredClone(environmentScenario);forbiddenHorizon.system.horizonProfile=environmentFixture.horizonProfile;assert.equal(StudyRequestSchema.safeParse(forbiddenHorizon).success,false);
+for(const change of [(r:typeof environmentScenario)=>{r.system.soilingSchedule!.records.pop();},(r:typeof environmentScenario)=>{r.system.albedoSchedule!.records.reverse();},(r:typeof environmentScenario)=>{r.system.soilingSchedule!.records[0].frontRatio=-1;},(r:typeof environmentScenario)=>{r.system.albedoSchedule!.source=' ';}]){const bad=structuredClone(environmentScenario);change(bad);assert.equal(StudyRequestSchema.safeParse(bad).success,false);}
+const offsetEnvironment=structuredClone(environmentScenario);offsetEnvironment.system.albedoSchedule!.records[0].timestamp='2017-04-01T10:00:00-07:00';assert.equal(StudyRequestSchema.safeParse(offsetEnvironment).success,true);
+const environmentRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(environmentScenario),encoding:'utf8',maxBuffer:16*1024*1024});assert.equal(environmentRun.status,0,environmentRun.stderr);
+const environmentResult=validateResult(JSON.parse(environmentRun.stdout));assert.ok(environmentResult.summary.soilingLossWhm2!>0);
+assert.deepEqual(validateSnapshot({...snapshot,request:environmentScenario,result:environmentResult}).result,environmentResult);
+assert.match(comparisonReason(plantResult,environmentResult)!,/engine/);assert.equal(comparisonReason(environmentResult,structuredClone(environmentResult)),null);
+assert.ok(studyReport(environmentResult).includes('Environment:'));
+for(const key of ['usedAlbedo','frontSoilingRatio','rearSoilingRatio','soilingInputIrradianceWm2','soilingLossWm2']){const bad=structuredClone(environmentResult);delete bad.samples[0][key];assert.throws(()=>validateResult(bad),/Environment/);}
+const badSoil=structuredClone(environmentResult);badSoil.summary.soilingLossWhm2=1e12;assert.throws(()=>validateResult(badSoil),/Environment/);
+const horizonScenario=structuredClone(environmentScenario);delete horizonScenario.system.rowIrradiance;horizonScenario.system.horizonProfile=environmentFixture.horizonProfile;horizonScenario.system.skyDiffuseModel='perez';
+const invalidSeam=structuredClone(horizonScenario);invalidSeam.system.horizonProfile.points.at(-1)!.elevationDeg=0;assert.equal(StudyRequestSchema.safeParse(invalidSeam).success,false);
+const horizonRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(horizonScenario),encoding:'utf8',maxBuffer:16*1024*1024});assert.equal(horizonRun.status,0,horizonRun.stderr);
+const horizonResult=validateResult(JSON.parse(horizonRun.stdout));assert.ok(horizonResult.summary.horizonBlockedBeamWhm2!>0);assert.deepEqual(validateSnapshot({...snapshot,request:horizonScenario,result:horizonResult}).result,horizonResult);
+for(const key of ['horizonElevationDeg','horizonBeamVisible','horizonBlockedBeamWm2']){const bad=structuredClone(horizonResult);delete bad.samples[0][key];assert.throws(()=>validateResult(bad),/Environment/);}
+console.log('Three environment stages PASS: strict profile/schedules/CSV and UTC, forbidden horizon/rows, actual Python, optical accounting, archive/report and comparison barriers.');

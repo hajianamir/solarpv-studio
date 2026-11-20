@@ -75,3 +75,6 @@ timestamp,ghiWm2,dniWm2,dhiWm2,tempAirC,windSpeedMs
 
 
 توسعهٔ موتور 1.7.0: [سه مرحلهٔ ترانسفورماتور، مصرف کمکی و دسترس‌پذیری بازه‌ای AC](PVLIB-AC-PLANT.fa.md).
+
+
+توسعهٔ موتور 1.8.0: [سه مرحلهٔ افق beam-only، برنامهٔ صریح آلودگی و آلبدوی بازه‌ای](PVLIB-ENVIRONMENT.fa.md).

@@ -1,6 +1,9 @@
 import {
   StudyRequestSchema,
   AvailabilityRecordSchema,
+  SoilingRecordSchema,
+  AlbedoRecordSchema,
+  HorizonPointSchema,
   type StudyRequest,
   type StudyResult,
 } from "./studyContract";
@@ -115,6 +118,58 @@ export function parseAvailabilityCsv(
     });
   });
 }
+function plainEnvironmentCsv<T>(
+  text: string,
+  columns: string[],
+  schema: z.ZodType<T>,
+  maximum: number,
+): T[] {
+  if (new TextEncoder().encode(text).length > 8 * 1024 * 1024)
+    throw new Error("Environment CSV exceeds 8 MiB");
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  if (lines.at(-1) === "") lines.pop();
+  if (
+    lines[0] !== columns.join(",") ||
+    lines.length < 3 ||
+    lines.length > maximum + 1
+  )
+    throw new Error("Environment CSV header/row count invalid");
+  return lines.slice(1).map((line, i) => {
+    const cells = line.split(",");
+    if (cells.length !== columns.length || cells.some((c) => !c.trim()))
+      throw new Error(`Environment CSV row ${i + 2}: missing is not zero`);
+    const obj: Record<string, unknown> = {};
+    for (const [j, k] of columns.entries()) {
+      if (k === "timestamp") obj[k] = cells[j];
+      else {
+        if (
+          !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(
+            cells[j].trim(),
+          )
+        )
+          throw new Error("Environment CSV invalid number");
+        obj[k] = Number(cells[j]);
+      }
+    }
+    return schema.parse(obj);
+  });
+}
+export const parseSoilingCsv = (text: string) =>
+  plainEnvironmentCsv(
+    text,
+    ["timestamp", "frontRatio", "rearRatio"],
+    SoilingRecordSchema,
+    8784,
+  );
+export const parseAlbedoCsv = (text: string) =>
+  plainEnvironmentCsv(text, ["timestamp", "albedo"], AlbedoRecordSchema, 8784);
+export const parseHorizonCsv = (text: string) =>
+  plainEnvironmentCsv(
+    text,
+    ["azimuthDeg", "elevationDeg"],
+    HorizonPointSchema,
+    361,
+  );
 export function weatherReview(request: StudyRequest) {
   return WEATHER_COLUMNS.slice(1).map((key) => {
     const values = request.weather.records.map((row) => Number(row[key]));
@@ -134,6 +189,8 @@ const energy = z.object({
   dcBeforeAdditionalLossWh: z.number().finite().nonnegative(),
   dcWh: z.number().finite().nonnegative(),
   acWh: z.number().finite().nonnegative(),
+  horizonBlockedBeamWhm2: z.number().finite().nonnegative().optional(),
+  soilingLossWhm2: z.number().finite().nonnegative().optional(),
   availabilityLossWh: z.number().finite().nonnegative().optional(),
   auxiliaryConsumptionWh: z.number().finite().nonnegative().optional(),
   transformerLossWh: z.number().finite().nonnegative().optional(),
@@ -247,6 +304,146 @@ export function validateResult(value: unknown): StudyResult {
           : active !== 0 || am !== 0 || factor !== 0)
       )
         throw new Error("Invalid spectral components/domain");
+    }
+  }
+  if (
+    r.request.system.horizonProfile ||
+    r.request.system.soilingSchedule ||
+    r.request.system.albedoSchedule
+  ) {
+    const sys = r.request.system,
+      dt = r.request.weather.intervalMinutes / 60;
+    const close = (a: number, b: number) =>
+      Number.isFinite(a) &&
+      Number.isFinite(b) &&
+      Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
+    const energies: Record<
+      string,
+      { sample: string; sum: number; months: Map<string, number> }
+    > = {};
+    if (sys.horizonProfile) {
+      if (!r.manifest.models.horizon?.startsWith("linear closed azimuth"))
+        throw new Error("Environment horizon manifest missing");
+      energies.horizonBlockedBeamWhm2 = {
+        sample: "horizonBlockedBeamWm2",
+        sum: 0,
+        months: new Map(),
+      };
+    }
+    if (sys.soilingSchedule) {
+      if (!r.manifest.models.soiling?.startsWith("explicit front/rear"))
+        throw new Error("Environment soiling manifest missing");
+      energies.soilingLossWhm2 = {
+        sample: "soilingLossWm2",
+        sum: 0,
+        months: new Map(),
+      };
+    }
+    if (
+      sys.albedoSchedule &&
+      !r.manifest.models.albedo?.startsWith("explicit interval albedo")
+    )
+      throw new Error("Environment albedo manifest missing");
+    for (const [i, row] of r.samples.entries()) {
+      const required = [
+        ...(sys.albedoSchedule ? ["usedAlbedo"] : []),
+        ...(sys.horizonProfile
+          ? [
+              "horizonElevationDeg",
+              "horizonBeamVisible",
+              "horizonBlockedBeamWm2",
+            ]
+          : []),
+        ...(sys.soilingSchedule
+          ? [
+              "frontSoilingRatio",
+              "rearSoilingRatio",
+              "soilingInputIrradianceWm2",
+              "soilingLossWm2",
+            ]
+          : []),
+      ];
+      if (required.some((k) => typeof row[k] !== "number"))
+        throw new Error("Environment numeric components missing");
+      if (
+        sys.albedoSchedule &&
+        !close(Number(row.usedAlbedo), sys.albedoSchedule.records[i]?.albedo)
+      )
+        throw new Error("Environment albedo record mismatch");
+      if (sys.horizonProfile) {
+        const h = Number(row.horizonElevationDeg),
+          v = Number(row.horizonBeamVisible),
+          blocked = Number(row.horizonBlockedBeamWm2),
+          direct = Number(row.poaDirectWm2);
+        const original = Math.max(
+          0,
+          r.request.weather.records[i]?.dniWm2 *
+            Math.cos((Number(row.aoiDeg) * Math.PI) / 180),
+        );
+        if (
+          !Number.isFinite(h) ||
+          h < 0 ||
+          h > 85 ||
+          v !== (90 - Number(row.solarZenithDeg) > h ? 1 : 0) ||
+          blocked < 0 ||
+          !close(blocked, original * (1 - v)) ||
+          !close(direct, original * v)
+        )
+          throw new Error("Environment horizon components invalid");
+      }
+      if (sys.soilingSchedule) {
+        const sr = sys.soilingSchedule.records[i],
+          front = sys.rowIrradiance
+            ? Number(row.frontEffectiveIrradianceWm2)
+            : Number(row.poaDirectWm2) * Number(row.beamIam) +
+              Number(row.poaSkyDiffuseWm2) +
+              Number(row.poaGroundDiffuseWm2),
+          rear = sys.rowIrradiance ? Number(row.rearEffectiveIrradianceWm2) : 0;
+        const input = Number(row.soilingInputIrradianceWm2),
+          loss = Number(row.soilingLossWm2);
+        if (
+          !close(Number(row.frontSoilingRatio), sr?.frontRatio) ||
+          !close(Number(row.rearSoilingRatio), sr?.rearRatio) ||
+          loss < 0 ||
+          !close(input, front + rear) ||
+          !close(
+            loss,
+            front * (1 - sr.frontRatio) + rear * (1 - sr.rearRatio),
+          ) ||
+          !close(
+            input - loss,
+            Number(
+              sys.sapmSpectral
+                ? row.spectralInputIrradianceWm2
+                : row.effectiveIrradianceWm2,
+            ),
+          )
+        )
+          throw new Error("Environment soiling components invalid");
+      }
+      for (const e of Object.values(energies)) {
+        const value = Number(row[e.sample]) * dt;
+        const month = String(row.midpointUtc).slice(0, 7);
+        e.sum += value;
+        e.months.set(month, (e.months.get(month) ?? 0) + value);
+      }
+    }
+    for (const [key, e] of Object.entries(energies)) {
+      if (
+        !close(
+          Number((r.summary as unknown as Record<string, number>)[key]),
+          e.sum,
+        ) ||
+        r.monthly.length !== e.months.size ||
+        r.monthly.some(
+          (m) =>
+            !close(
+              Number((m as unknown as Record<string, number>)[key]),
+              e.months.get(m.month) ?? NaN,
+            ),
+        )
+      )
+        throw new Error("Environment integrated irradiance invalid");
     }
   }
   const plantActive = Boolean(
@@ -656,6 +853,6 @@ export function studyReport(result: StudyResult, other?: StudyResult): string {
     if (reason) throw new Error(reason);
   }
   const section = (r: StudyResult) =>
-    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC model: ${r.request.system.electrical ? "De Soto single diode + ideal constrained MPPT" : "PVWatts DC"}</p>${r.request.system.electrical ? `<p>Unconstrained MPP / constraint loss: ${r.summary.availableMppWh} / ${r.summary.mpptConstraintLossWh} Wh. Voc checks are for specified conditions only, not certified electrical design.</p>` : ""}<p>Optics: ${escape(r.manifest.models.transposition)}; beam IAM: ${escape(r.manifest.models.beamIam)}; spectral: ${escape(r.manifest.models.spectral)}. Diffuse IAM remains unity; spectral modifier does not alter thermal POA.</p>${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? `<p>AC plant — always energized: availability loss / LV auxiliary / transformer loss: ${r.summary.availabilityLossWh} / ${r.summary.auxiliaryConsumptionWh} / ${r.summary.transformerLossWh} Wh. Total grid import: ${r.summary.gridImportWh} Wh; net grid: ${r.summary.netGridWh} Wh. Do not subtract inverter self-consumption a second time.</p>` : ""}<p>AC inverter: ${escape(r.manifest.models.ac)}.</p>${r.request.system.sandia ? `<p>Imported inverter self-consumption: ${r.summary.inverterSelfConsumptionWh} Wh; net grid (export minus total import): ${r.summary.netGridWh} Wh. Export cap does not limit self-consumption import. No external site load/storage; declared plant auxiliaries, if enabled, are included.</p>` : ""}<p>Thermal model: ${escape(r.manifest.models.temperature)}.</p>${r.request.system.acExportLimitW !== undefined ? `<p>AC export cap: ${r.request.system.acExportLimitW} W; before cap / export loss: ${r.summary.acBeforeExportLimitWh} / ${r.summary.acExportLimitLossWh} Wh. No external site load/storage beyond declared LV auxiliary; static cap only.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th>${r.request.system.sandia ? "<th>Inverter self-consumption Wh</th>" : ""}${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? "<th>Availability loss Wh</th><th>Auxiliary Wh</th><th>Transformer loss Wh</th><th>Total import Wh</th>" : ""}${r.summary.netGridWh !== undefined ? "<th>Net grid Wh</th>" : ""}</tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td>${r.request.system.sandia ? `<td>${m.inverterSelfConsumptionWh}</td>` : ""}${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? `<td>${m.availabilityLossWh}</td><td>${m.auxiliaryConsumptionWh}</td><td>${m.transformerLossWh}</td><td>${m.gridImportWh}</td>` : ""}${m.netGridWh !== undefined ? `<td>${m.netGridWh}</td>` : ""}</tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
+    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC model: ${r.request.system.electrical ? "De Soto single diode + ideal constrained MPPT" : "PVWatts DC"}</p>${r.request.system.electrical ? `<p>Unconstrained MPP / constraint loss: ${r.summary.availableMppWh} / ${r.summary.mpptConstraintLossWh} Wh. Voc checks are for specified conditions only, not certified electrical design.</p>` : ""}${r.request.system.horizonProfile || r.request.system.soilingSchedule || r.request.system.albedoSchedule ? `<p>Environment: ${escape(r.manifest.models.horizon ?? "horizon disabled")}; ${escape(r.manifest.models.soiling ?? "soiling disabled")}; ${escape(r.manifest.models.albedo ?? "constant albedo")}. Blocked beam / optical soiling loss: ${r.summary.horizonBlockedBeamWhm2 ?? "not enabled"} / ${r.summary.soilingLossWhm2 ?? "not enabled"} Wh/m². Beam-only horizon; no diffuse sky masking. Soiling changes optical irradiance, not thermal POA.</p>` : ""}<p>Optics: ${escape(r.manifest.models.transposition)}; beam IAM: ${escape(r.manifest.models.beamIam)}; spectral: ${escape(r.manifest.models.spectral)}. Diffuse IAM remains unity; spectral modifier does not alter thermal POA.</p>${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? `<p>AC plant — always energized: availability loss / LV auxiliary / transformer loss: ${r.summary.availabilityLossWh} / ${r.summary.auxiliaryConsumptionWh} / ${r.summary.transformerLossWh} Wh. Total grid import: ${r.summary.gridImportWh} Wh; net grid: ${r.summary.netGridWh} Wh. Do not subtract inverter self-consumption a second time.</p>` : ""}<p>AC inverter: ${escape(r.manifest.models.ac)}.</p>${r.request.system.sandia ? `<p>Imported inverter self-consumption: ${r.summary.inverterSelfConsumptionWh} Wh; net grid (export minus total import): ${r.summary.netGridWh} Wh. Export cap does not limit self-consumption import. No external site load/storage; declared plant auxiliaries, if enabled, are included.</p>` : ""}<p>Thermal model: ${escape(r.manifest.models.temperature)}.</p>${r.request.system.acExportLimitW !== undefined ? `<p>AC export cap: ${r.request.system.acExportLimitW} W; before cap / export loss: ${r.summary.acBeforeExportLimitWh} / ${r.summary.acExportLimitLossWh} Wh. No external site load/storage beyond declared LV auxiliary; static cap only.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th>${r.request.system.horizonProfile ? "<th>Blocked beam Wh/m²</th>" : ""}${r.request.system.soilingSchedule ? "<th>Soiling loss Wh/m²</th>" : ""}${r.request.system.sandia ? "<th>Inverter self-consumption Wh</th>" : ""}${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? "<th>Availability loss Wh</th><th>Auxiliary Wh</th><th>Transformer loss Wh</th><th>Total import Wh</th>" : ""}${r.summary.netGridWh !== undefined ? "<th>Net grid Wh</th>" : ""}</tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td>${r.request.system.horizonProfile ? `<td>${m.horizonBlockedBeamWhm2}</td>` : ""}${r.request.system.soilingSchedule ? `<td>${m.soilingLossWhm2}</td>` : ""}${r.request.system.sandia ? `<td>${m.inverterSelfConsumptionWh}</td>` : ""}${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? `<td>${m.availabilityLossWh}</td><td>${m.auxiliaryConsumptionWh}</td><td>${m.transformerLossWh}</td><td>${m.gridImportWh}</td>` : ""}${m.netGridWh !== undefined ? `<td>${m.netGridWh}</td>` : ""}</tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>Direct pvlib study report</title><style>body{font:15px system-ui;max-width:1000px;margin:2em auto;padding:1em;color:#172033}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere} @media print{body{margin:0}h2{break-before:page}}</style><h1>Direct pvlib study / گزارش مطالعه</h1><p>Not field validated. Separate from screening and financial reports. Imported/local results are not digitally certified. Keep the JSON bundle for full weather and reproducibility. Print using browser Print / Save as PDF.</p>${other ? `<h2>Scenario comparison</h2><p>Same weather, site and engine; mounting, row optics and thermal irradiance proxy may differ (see scenario inputs). Delta is not an isolated bifacial gain. No guarantee of tracking gain. AC difference (second − first): ${(other.summary.acWh - result.summary.acWh) / 1000} kWh; ${result.summary.acWh === 0 ? "percentage unavailable (zero baseline)" : `${(100 * (other.summary.acWh - result.summary.acWh)) / result.summary.acWh}%`}. Different capacities are not normalized.</p>` : ""}${section(result)}${other ? section(other) : ""}</html>`;
 }

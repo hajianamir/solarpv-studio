@@ -6,6 +6,9 @@ import {
 import {
   parseWeatherCsv,
   parseAvailabilityCsv,
+  parseHorizonCsv,
+  parseSoilingCsv,
+  parseAlbedoCsv,
   WEATHER_COLUMNS,
   weatherReview,
 } from "../studies/studyWorkflow";
@@ -149,6 +152,40 @@ export function StudyBuilder({
               r.system.acExportLimitW !== undefined
                 ? String(r.system.acExportLimitW)
                 : "",
+            horizonEnabled: r.system.horizonProfile ? "yes" : "no",
+            horizonSource: r.system.horizonProfile?.source ?? "",
+            horizonQuality: r.system.horizonProfile?.quality ?? "",
+            horizonCsv: r.system.horizonProfile
+              ? [
+                  "azimuthDeg,elevationDeg",
+                  ...r.system.horizonProfile.points.map(
+                    (row) => `${row.azimuthDeg},${row.elevationDeg}`,
+                  ),
+                ].join("\n")
+              : "",
+            soilingEnabled: r.system.soilingSchedule ? "yes" : "no",
+            soilingSource: r.system.soilingSchedule?.source ?? "",
+            soilingQuality: r.system.soilingSchedule?.quality ?? "",
+            soilingCsv: r.system.soilingSchedule
+              ? [
+                  "timestamp,frontRatio,rearRatio",
+                  ...r.system.soilingSchedule.records.map(
+                    (row) =>
+                      `${row.timestamp},${row.frontRatio},${row.rearRatio}`,
+                  ),
+                ].join("\n")
+              : "",
+            albedoEnabled: r.system.albedoSchedule ? "yes" : "no",
+            albedoSource: r.system.albedoSchedule?.source ?? "",
+            albedoQuality: r.system.albedoSchedule?.quality ?? "",
+            albedoCsv: r.system.albedoSchedule
+              ? [
+                  "timestamp,albedo",
+                  ...r.system.albedoSchedule.records.map(
+                    (row) => `${row.timestamp},${row.albedo}`,
+                  ),
+                ].join("\n")
+              : "",
             transformerEnabled: r.system.transformer ? "yes" : "no",
             ratingVa: r.system.transformer
               ? String(r.system.transformer.ratingVa)
@@ -492,6 +529,160 @@ export function StudyBuilder({
             {spectralFields.map(([key, label]) => text(key, label, "number"))}
           </div>
         )}
+        <fieldset data-testid="horizon-inputs" className="border p-3">
+          <legend>Beam-only horizon / افق فقط مستقیم</legend>
+          <select
+            aria-label="Study horizon enabled"
+            value={v.horizonEnabled ?? "no"}
+            onChange={(e) => change("horizonEnabled", e.target.value)}
+          >
+            <option value="no">Disabled / غیرفعال</option>
+            <option value="yes">Enabled / فعال</option>
+          </select>
+          {v.horizonEnabled === "yes" && (
+            <div>
+              <p>
+                Isolated plane only; closed ordered 0..360 profile, equal seam,
+                elevation 0..85. Diffuse and ground unchanged. / فقط صفحه منفرد؛
+                افق مرتب و بسته؛ بدون اصلاح تابش پخشیده و زمین.
+              </p>
+              {text("horizonSource", "Source / منبع")}
+              <label>
+                Quality
+                <select
+                  aria-label="Study horizonQuality"
+                  value={v.horizonQuality ?? ""}
+                  onChange={(e) => change("horizonQuality", e.target.value)}
+                >
+                  <option value="">—</option>
+                  {[
+                    "measured",
+                    "weather_provider",
+                    "user_configured",
+                    "assumed",
+                  ].map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                CSV: azimuthDeg,elevationDeg
+                <textarea
+                  aria-label="Study horizon CSV"
+                  className="block w-full bg-slate-900"
+                  rows={4}
+                  value={v.horizonCsv ?? ""}
+                  onChange={(e) => change("horizonCsv", e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+        </fieldset>
+        <fieldset data-testid="soiling-inputs" className="border p-3">
+          <legend>Explicit soiling ratios / ضرایب صریح آلودگی</legend>
+          <select
+            aria-label="Study soiling enabled"
+            value={v.soilingEnabled ?? "no"}
+            onChange={(e) => change("soilingEnabled", e.target.value)}
+          >
+            <option value="no">Disabled / غیرفعال</option>
+            <option value="yes">Enabled / فعال</option>
+          </select>
+          {v.soilingEnabled === "yes" && (
+            <div>
+              <p>
+                Complete weather-aligned front/rear transmission 0..1; no
+                Kimber, snow or thermal correction. Rear inactive on isolated
+                plane. / ضرایب عبور صریح هم‌تراز هواشناسی؛ نه Kimber، برف یا
+                اصلاح حرارتی.
+              </p>
+              {text("soilingSource", "Source / منبع")}
+              <label>
+                Quality
+                <select
+                  aria-label="Study soilingQuality"
+                  value={v.soilingQuality ?? ""}
+                  onChange={(e) => change("soilingQuality", e.target.value)}
+                >
+                  <option value="">—</option>
+                  {[
+                    "measured",
+                    "weather_provider",
+                    "user_configured",
+                    "assumed",
+                  ].map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                CSV: timestamp,frontRatio,rearRatio
+                <textarea
+                  aria-label="Study soiling CSV"
+                  className="block w-full bg-slate-900"
+                  rows={4}
+                  value={v.soilingCsv ?? ""}
+                  onChange={(e) => change("soilingCsv", e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+        </fieldset>
+        <fieldset data-testid="albedo-inputs" className="border p-3">
+          <legend>Interval albedo / آلبدوی بازه‌ای</legend>
+          <select
+            aria-label="Study albedo enabled"
+            value={v.albedoEnabled ?? "no"}
+            onChange={(e) => change("albedoEnabled", e.target.value)}
+          >
+            <option value="no">Disabled / غیرفعال</option>
+            <option value="yes">Enabled / فعال</option>
+          </select>
+          {v.albedoEnabled === "yes" && (
+            <div>
+              <p>
+                Complete weather-aligned albedo 0..1; scalar albedo retained but
+                inactive. No snow prediction. / آلبدوی کامل هم‌تراز هواشناسی؛
+                مقدار ثابت غیرفعال؛ بدون پیش‌بینی برف.
+              </p>
+              {text("albedoSource", "Source / منبع")}
+              <label>
+                Quality
+                <select
+                  aria-label="Study albedoQuality"
+                  value={v.albedoQuality ?? ""}
+                  onChange={(e) => change("albedoQuality", e.target.value)}
+                >
+                  <option value="">—</option>
+                  {[
+                    "measured",
+                    "weather_provider",
+                    "user_configured",
+                    "assumed",
+                  ].map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                CSV: timestamp,albedo
+                <textarea
+                  aria-label="Study albedo CSV"
+                  className="block w-full bg-slate-900"
+                  rows={4}
+                  value={v.albedoCsv ?? ""}
+                  onChange={(e) => change("albedoCsv", e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+        </fieldset>
         <fieldset data-testid="ac-plant-inputs" className="border p-3">
           <legend>
             {en
@@ -778,6 +969,34 @@ export function StudyBuilder({
                 },
                 system: {
                   ...system,
+                  ...(v.horizonEnabled === "yes"
+                    ? {
+                        horizonProfile: {
+                          source: v.horizonSource,
+                          quality: v.horizonQuality,
+                          points: parseHorizonCsv(v.horizonCsv ?? ""),
+                        },
+                      }
+                    : {}),
+                  ...(v.soilingEnabled === "yes"
+                    ? {
+                        soilingSchedule: {
+                          source: v.soilingSource,
+                          quality: v.soilingQuality,
+                          records: parseSoilingCsv(v.soilingCsv ?? ""),
+                        },
+                      }
+                    : {}),
+                  ...(v.albedoEnabled === "yes"
+                    ? {
+                        albedoSchedule: {
+                          source: v.albedoSource,
+                          quality: v.albedoQuality,
+                          records: parseAlbedoCsv(v.albedoCsv ?? ""),
+                        },
+                      }
+                    : {}),
+
                   ...(v.transformerEnabled === "yes"
                     ? {
                         transformer: {
@@ -920,6 +1139,18 @@ export function StudyBuilder({
                 ? "Contract checks passed: ordered, regular, finite, bounded. No gap filling. Domain checks also run in Python."
                 : "کنترل قرارداد موفق: مرتب، منظم، متناهی و در دامنه؛ بدون پرکردن شکاف. بررسی فیزیکی در Python نیز اجرا می‌شود."}
             </p>
+            {(review.system.soilingSchedule ||
+              review.system.albedoSchedule ||
+              review.system.horizonProfile) && (
+              <p data-testid="environment-review">
+                {en
+                  ? "Environment contracts checked; schedules aligned in UTC, no fill."
+                  : "قرارداد محیط بررسی شد؛ برنامه‌ها هم‌تراز UTC و بدون پرکردن."}{" "}
+                {review.system.soilingSchedule?.records.length} /{" "}
+                {review.system.albedoSchedule?.records.length} /{" "}
+                {review.system.horizonProfile?.points.length}
+              </p>
+            )}
             {review.system.acAvailability && (
               <p data-testid="availability-review">
                 {en

@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.7.0'
+ENGINE_VERSION = '1.8.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -77,7 +77,27 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','acAvailability') if k in system])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','acAvailability','horizonProfile','soilingSchedule','albedoSchedule') if k in system])], 'system')
+    for name,fields in [('soilingSchedule',['frontRatio','rearRatio']),('albedoSchedule',['albedo'])]:
+        if name not in system:continue
+        obj=system[name]
+        keys(obj,['source','quality','records'],name)
+        text(obj['source'],name+'.source')
+        if obj['quality'] not in ('measured','weather_provider','user_configured','assumed'):raise InputError('invalid environment provenance quality')
+        if not isinstance(obj['records'],list) or not 2<=len(obj['records'])<=8784:raise InputError(name+' requires 2..8784 complete records')
+        for row in obj['records']:
+            keys(row,['timestamp',*fields],name+' record')
+            timestamp(row['timestamp'])
+            for field in fields:number(row[field],0,1,name+'.'+field)
+    if 'horizonProfile' in system:
+        obj=system['horizonProfile'];keys(obj,['source','quality','points'],'horizonProfile');text(obj['source'],'horizonProfile.source')
+        if obj['quality'] not in ('measured','weather_provider','user_configured','assumed'):raise InputError('invalid horizon provenance quality')
+        pts=obj['points']
+        if not isinstance(pts,list) or not 2<=len(pts)<=361:raise InputError('horizon requires 2..361 points')
+        for p in pts:
+            keys(p,['azimuthDeg','elevationDeg'],'horizon point');number(p['azimuthDeg'],0,360,'horizon azimuth');number(p['elevationDeg'],0,85,'horizon elevation')
+        if pts[0]['azimuthDeg']!=0 or pts[-1]['azimuthDeg']!=360 or pts[0]['elevationDeg']!=pts[-1]['elevationDeg'] or any(b['azimuthDeg']<=a['azimuthDeg'] for a,b in zip(pts,pts[1:])):raise InputError('horizon must span ordered 0..360 degrees with identical seam elevation')
+        if 'rowIrradiance' in system:raise InputError('beam-only horizon unsupported with infinite_sheds rows; no fallback')
     if 'transformer' in system:
         t=system['transformer']
         keys(t,['ratingVa','noLoadLossFraction','loadLossFraction'],'transformer')
@@ -218,6 +238,11 @@ def validate(req):
     if 'acAvailability' in system:
         records=system['acAvailability']['records']
         if len(records)!=len(times) or any(timestamp(r['timestamp'])!=t for r,t in zip(records,times)):raise InputError('availability records must exactly align with weather interval ends in UTC; no fill')
+    for name in ('soilingSchedule','albedoSchedule'):
+        if name in system:
+            records=system[name]['records']
+            if len(records)!=len(times) or any(timestamp(r['timestamp'])!=t for r,t in zip(records,times)):raise InputError(name+' must exactly align with weather interval ends in UTC; no fill')
+    if any(k in system for k in ('horizonProfile','soilingSchedule','albedoSchedule')) and len(rows)>8784:raise InputError('environment mode supports at most 8784 records')
     return times
 
 
@@ -347,6 +372,14 @@ def ac_plant(system, inverter_net):
     return after.clip(lower=0),dict(acPlantInputW=inverter_net,acAvailabilityFraction=fraction,availabilityLossW=availability_loss,auxiliaryConsumptionW=auxiliary,transformerLossW=loss.clip(lower=0),gridImportW=imports)
 
 
+def horizon_visibility(azimuth, zenith, profile):
+    import numpy as np
+    import pandas as pd
+    pts=profile['points']
+    elevation=pd.Series(np.interp(azimuth,[p['azimuthDeg'] for p in pts],[p['elevationDeg'] for p in pts]),index=azimuth.index)
+    return elevation,((90-zenith)>elevation).astype(float)
+
+
 def run_study(req):
     times = validate(req)
     for requirement in Path(__file__).with_name('requirements.txt').read_text().splitlines():
@@ -372,6 +405,12 @@ def run_study(req):
     tracker_columns = {}
     models = dict(MODELS, mounting='fixed_tilt')
     limitations = list(LIMITATIONS)
+    environment_columns={}
+    albedo=pd.Series([r['albedo'] for r in s['albedoSchedule']['records']],index=mid) if 'albedoSchedule' in s else s['albedo']
+    if 'albedoSchedule' in s:
+        environment_columns['usedAlbedo']=albedo
+        models['albedo']='explicit interval albedo; retained scalar inactive'
+        limitations.append('Albedo schedule is caller-declared broadband ground reflectance, not a snow, melt, land-cover or spectral-reflection model. No temporal gap fill.')
     if 'tracking' in s:
         track = s['tracking']
         geometry = pvlib.tracking.singleaxis(position.apparent_zenith, position.azimuth,
@@ -400,13 +439,22 @@ def run_study(req):
             raise InputError('Perez requires zero irradiance below midpoint horizon; no undefined-airmass substitution')
         poa=pd.DataFrame(0.,index=mid,columns=['poa_global','poa_direct','poa_diffuse','poa_sky_diffuse','poa_ground_diffuse'])
         if day.any():
-            poa.loc[day]=pvlib.irradiance.get_total_irradiance(tilt[day],azimuth[day],position.apparent_zenith[day],position.azimuth[day],df.dniWm2[day],df.ghiWm2[day],df.dhiWm2[day],dni_extra=pvlib.irradiance.get_extra_radiation(mid[day],method='spencer',solar_constant=1366.1),airmass=pvlib.atmosphere.get_relative_airmass(position.apparent_zenith[day],model='kastenyoung1989'),albedo=s['albedo'],model='perez',model_perez='allsitescomposite1990')
+            poa.loc[day]=pvlib.irradiance.get_total_irradiance(tilt[day],azimuth[day],position.apparent_zenith[day],position.azimuth[day],df.dniWm2[day],df.ghiWm2[day],df.dhiWm2[day],dni_extra=pvlib.irradiance.get_extra_radiation(mid[day],method='spencer',solar_constant=1366.1),airmass=pvlib.atmosphere.get_relative_airmass(position.apparent_zenith[day],model='kastenyoung1989'),albedo=albedo[day] if 'albedoSchedule' in s else albedo,model='perez',model_perez='allsitescomposite1990')
         models['transposition']='perez allsitescomposite1990; relative airmass kastenyoung1989; zero-irradiance night only'
         limitations.append('Perez uses discontinuous sky-clearness bins, relative airmass and fixed published coefficients; no horizon/obstacle shading or row coupling.')
     else:
         poa = pvlib.irradiance.get_total_irradiance(tilt, azimuth, position.apparent_zenith,
             position.azimuth, df.dniWm2, df.ghiWm2, df.dhiWm2,
-            dni_extra=pvlib.irradiance.get_extra_radiation(mid, method='spencer', solar_constant=1366.1), albedo=s['albedo'], model='haydavies')
+            dni_extra=pvlib.irradiance.get_extra_radiation(mid, method='spencer', solar_constant=1366.1), albedo=albedo, model='haydavies')
+    if 'horizonProfile' in s:
+        horizon,visible=horizon_visibility(position.azimuth,position.apparent_zenith,s['horizonProfile'])
+        blocked=poa.poa_direct*(1-visible)
+        poa['poa_direct']=poa.poa_direct*visible
+        poa['poa_global']=poa.poa_direct+poa.poa_diffuse
+        environment_columns.update(horizonElevationDeg=horizon,horizonBeamVisible=visible,horizonBlockedBeamWm2=blocked)
+        models['horizon']='linear closed azimuth profile; beam-only post-transposition; apparent elevation strict greater-than'
+        limitations=[x.replace('No horizon, near-obstacle shading','No near-obstacle shading').replace('no horizon/obstacle shading or row coupling','no diffuse horizon/obstacle shading or row coupling') for x in limitations]
+        limitations.append('Beam-only horizon on isolated plane; diffuse including circumsolar, sky view and ground-reflected GHI unchanged. Not the full pvlib gallery pre-transposition DNI/GHI adjustment, near shading, solar-disk fraction or electrical mismatch.')
     aoi = pvlib.irradiance.aoi(tilt, azimuth, position.apparent_zenith, position.azimuth)
     iam = beam_iam(aoi,s)
     effective = poa.poa_direct*iam + poa.poa_diffuse
@@ -420,7 +468,7 @@ def run_study(req):
         # modifiers explicitly once, keeping thermal input independent of efficiency.
         row_poa = pvlib.bifacial.infinite_sheds.get_irradiance(tilt, azimuth,
             position.apparent_zenith, position.azimuth, rows['gcr'], rows['heightM'], rows['pitchM'],
-            df.ghiWm2, df.dhiWm2, df.dniWm2, s['albedo'], model='haydavies',
+            df.ghiWm2, df.dhiWm2, df.dniWm2, albedo, model='haydavies',
             dni_extra=pvlib.irradiance.get_extra_radiation(mid,method='spencer',solar_constant=1366.1),
             iam_front=1.0, iam_back=1.0, bifaciality=1.0, shade_factor=0.0,
             transmission_factor=0.0,npoints=100,vectorize=False)
@@ -451,6 +499,16 @@ def run_study(req):
             'Rear irradiance is area averaged; no cell/string electrical mismatch, bypass diode, nonuniformity or finite-array edge simulation.',
             'Bifaciality, rear structural shade and rear transmission reductions affect electrical irradiance only; unity diffuse IAM/spectral assumptions remain.'
         ])
+    if 'soilingSchedule' in s:
+        records=s['soilingSchedule']['records']
+        front_ratio=pd.Series([r['frontRatio'] for r in records],index=mid)
+        rear_ratio=pd.Series([r['rearRatio'] for r in records],index=mid)
+        clean=effective.copy()
+        effective=front_effective*front_ratio+rear_effective*rear_ratio if 'rowIrradiance' in s else effective*front_ratio
+        environment_columns.update(frontSoilingRatio=front_ratio,rearSoilingRatio=rear_ratio,soilingInputIrradianceWm2=clean,soilingLossWm2=clean-effective)
+        models['soiling']='explicit front/rear soiling ratio; after optical IAM before spectral; thermal unchanged'
+        limitations=[x.replace('snow, soiling, battery','snow, battery') for x in limitations]
+        limitations.append('Soiling ratios are area-averaged uniform optical transmissions, not Kimber/HSU, snow, precipitation cleaning or bypass/mismatch. Rear ratio inactive without rows; thermal POA unchanged; clean row optical metrics remain before soiling/spectral.')
     if 'physicalIam' in s:
         models['beamIam']='physical Fresnel-Bouguer single glazing; no AR; explicit front/rear parameters'
         limitations.append('Physical IAM changes beam only; diffuse IAM remains unity. Legacy iamB/rearIamB inactive; rear physical parameters inactive without rows. No multi-layer/AR coating or angular diffuse integration.')
@@ -521,13 +579,15 @@ def run_study(req):
         export_columns=dict(acBeforeExportLimitW=before_export,acExportLimitLossW=before_export-ac)
         models['acExport']='constant export cap after inverter; no local load or storage; no DC feedback'
         limitations.append('Static AC export cap acts after the optional AC plant; it does not limit imports. It assumes no external site load/storage beyond any declared LV auxiliary, and no controller dynamics, reactive power, grid voltage or time-varying dispatch; inverter clipping is already upstream and is not counted twice.')
-    columns = dict(**plant_columns,**spectral_columns,**inverter_columns,**export_columns,surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
+    columns = dict(**environment_columns,**plant_columns,**spectral_columns,**inverter_columns,**export_columns,surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
         beamIam=iam, poaDirectWm2=poa.poa_direct, poaSkyDiffuseWm2=poa.poa_sky_diffuse,
         poaGroundDiffuseWm2=poa.poa_ground_diffuse, poaGlobalWm2=poa.poa_global,
         effectiveIrradianceWm2=effective, cellTemperatureC=cell, dcBeforeAdditionalLossW=raw_dc, dcW=dc, acW=ac)
     if not all(np.isfinite(values).all() for values in columns.values()):
         raise InputError('nonfinite model output; unsupported input combination')
     energy = pd.DataFrame(dict(dcBeforeAdditionalLossWh=raw_dc*dt_hours, dcWh=dc*dt_hours, acWh=ac*dt_hours), index=mid)
+    if 'horizonProfile' in s:energy['horizonBlockedBeamWhm2']=environment_columns['horizonBlockedBeamWm2']*dt_hours
+    if 'soilingSchedule' in s:energy['soilingLossWhm2']=environment_columns['soilingLossWm2']*dt_hours
     if plant_active:
         for name in ('availabilityLoss','auxiliaryConsumption','transformerLoss','gridImport'):energy[name+'Wh']=plant_columns[name+'W']*dt_hours
         energy['netGridWh']=(ac-plant_columns['gridImportW'])*dt_hours
@@ -566,7 +626,7 @@ def run_study(req):
             python=platform.python_version(), platform=platform.platform(), dependencies=dependencies,
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
-            units=dict(**(dict(acPlantInputW='signed W inverter net before plant stages',acAvailabilityFraction='retained fraction of positive generation only',gridImportWh='total Wh imported after energized AC plant; includes inverter self-consumption',netGridWh='signed Wh export after cap minus total gridImportWh') if plant_active else {}),**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s and not plant_active else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
+            units=dict(**(dict(environmentIrradiance='W/m2; integrated Wh/m2; optical diagnostics, not DC energy losses',usedAlbedo='broadband fraction 0..1',soilingRatios='optical transmission fractions 0..1; rear inactive without rows',horizonBeamVisible='binary apparent solar elevation greater than interpolated horizon') if any(k in s for k in ('horizonProfile','soilingSchedule','albedoSchedule')) else {}),**(dict(acPlantInputW='signed W inverter net before plant stages',acAvailabilityFraction='retained fraction of positive generation only',gridImportWh='total Wh imported after energized AC plant; includes inverter self-consumption',netGridWh='signed Wh export after cap minus total gridImportWh') if plant_active else {}),**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s and not plant_active else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
                 **(dict(voltage='V at uniform array DC bus',current='A at uniform array DC bus',dcOperatingState='0 dark; 1 MPP; 2 voltage boundary; 3 current boundary; 4 no feasible MPPT point') if 'electrical' in s else {}),
                 **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
             limitations=limitations, warnings=warnings),

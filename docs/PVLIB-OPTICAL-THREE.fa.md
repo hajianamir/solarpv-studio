@@ -69,3 +69,6 @@ fixture `optical-reference-parameters.json` صریحاً ورودی synthetic آ
 - مرجع مستقل physical IAM و اصلاح Snell: https://pvpmc.sandia.gov/modeling-guide/1-weather-design-inputs/shading-soiling-and-reflection-losses/incident-angle-reflection-losses/physical-iam-model/
 - SAPM spectral API: https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.spectrum.spectral_factor_sapm.html
 - معادله مستقل f1: https://pvpmc.sandia.gov/modeling-guide/2-dc-module-iv/point-value-models/sandia-pv-array-performance-model/
+
+
+توسعهٔ موتور 1.8.0: [سه مرحلهٔ افق beam-only، برنامهٔ صریح آلودگی و آلبدوی بازه‌ای](PVLIB-ENVIRONMENT.fa.md).
