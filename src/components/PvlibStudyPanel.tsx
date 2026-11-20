@@ -1,3 +1,4 @@
+import {StudyExplorer} from './StudyExplorer';
 import {StudyInsights} from './StudyInsights';
 import {monthlyStudyCsv,studyInsights} from '../studies/studyInsights';
 import {StudyBuilder} from './StudyBuilder';
@@ -81,6 +82,7 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
     {error&&<p role="alert" className="text-xs text-red-300 whitespace-pre-wrap break-all">{error}</p>}
     {result&&<div data-testid="pvlib-study-result" className="text-xs space-y-3">
       {restored&&<p className="text-amber-300">{en?'Restored local/imported result — not a new execution; authenticity not certified.':'نتیجهٔ محلی/واردشدهٔ بازیابی‌شده — اجرای جدید نیست؛ اصالت تأیید نشده است.'}</p>}
+      <StudyExplorer key={`${revision.current}:${result.manifest.inputSha256}:${result.execution?.runId??'restored'}`} result={result} en={en}/>
       <StudyInsights request={result.request} result={result} en={en}/>
       <h3>{en?'Completed — not field validated':'اجرا شد — بدون اعتبارسنجی میدانی'}</h3>
       <p>{result.manifest.period.startUtc} → {result.manifest.period.endUtc} ({result.manifest.period.completeUtcCalendarYear?'complete UTC year':'period only; not annualized'})</p>

@@ -149,3 +149,6 @@ No measured independent field dataset has been acquired in this implementation. 
 
 
 [پنج ابزار گردش کار: QA اطلاعاتی، پوشش UTC، مقایسهٔ عددی، CSV ماهانه و دفتر منابع](PVLIB-WORKFLOW-FIVE.fa.md) — تحلیل study-insights-v1، موتور1.8.0 بدون تغییر.
+
+
+[ده ابزار بازبینی نتیجه و انتخاب بازه](PVLIB-EXPLORER-TEN.fa.md) — study-explorer-v1، بدون تغییر موتور1.8.0.

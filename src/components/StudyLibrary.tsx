@@ -1,5 +1,6 @@
+import { scenarioInputDiff } from "../studies/studyExplorer";
 import { compareStudies, comparisonStudyCsv } from "../studies/studyInsights";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import type { StudyRequest, StudyResult } from "../studies/studyContract";
 import {
   comparisonReason,
@@ -120,6 +121,11 @@ export function StudyLibrary({
   const reason = result && other ? comparisonReason(result, other) : null;
   const comparison =
     result && other && !reason ? compareStudies(result, other) : null;
+  const inputDiff = useMemo(
+    () =>
+      result && other && !reason ? scenarioInputDiff(result, other) : null,
+    [result, other, reason],
+  );
   return (
     <section
       className="border border-slate-600 rounded p-3 space-y-3"
@@ -282,6 +288,35 @@ export function StudyLibrary({
                 ? "Absolute energy deltas; other minus current. Percentage unavailable for zero/negative current or missing metrics. No capacity normalization, causal attribution or isolated bifacial gain."
                 : "اختلاف مطلق انرژی؛ دیگر منهای فعلی. درصد برای مبنای صفر/منفی یا شاخص مفقود ناموجود است. بدون نرمال‌سازی ظرفیت یا انتساب علّی و gain خالص دوطرفه."}
             </p>
+            <details data-testid="study-input-diff">
+              <summary>
+                {en
+                  ? "10. Input differences (first 100; full JSON)"
+                  : "۱۰. تفاوت ورودی‌ها (۱۰۰ مورد نخست؛ JSON کامل)"}
+              </summary>
+              <p>
+                {en
+                  ? "Includes inactive inputs. A difference is not a causal effect; capacities are not normalized."
+                  : "شامل ورودی‌های غیرفعال؛ تفاوت به‌معنای اثر علّی نیست و ظرفیت نرمال نمی‌شود."}{" "}
+                {inputDiff?.changes.length}
+              </p>
+              <pre dir="ltr" className="whitespace-pre-wrap break-all">
+                {JSON.stringify(inputDiff?.changes.slice(0, 100), null, 2)}
+              </pre>
+              <button
+                type="button"
+                data-testid="download-study-input-diff"
+                onClick={() =>
+                  studyDownload(
+                    "pvlib-study-input-diff.json",
+                    JSON.stringify(inputDiff, null, 2),
+                    "application/json",
+                  )
+                }
+              >
+                {en ? "Input diff JSON" : "JSON تفاوت ورودی"}
+              </button>
+            </details>
             <table data-testid="study-comparison-metrics">
               <thead>
                 <tr>
