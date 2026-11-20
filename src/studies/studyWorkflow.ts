@@ -1,5 +1,6 @@
 import {
   StudyRequestSchema,
+  AvailabilityRecordSchema,
   type StudyRequest,
   type StudyResult,
 } from "./studyContract";
@@ -82,6 +83,38 @@ export function parseWeatherCsv(
     };
   });
 }
+/** Availability CSV intentionally accepts only plain, unquoted two-column records. */
+export function parseAvailabilityCsv(
+  text: string,
+): NonNullable<StudyRequest["system"]["acAvailability"]>["records"] {
+  if (new TextEncoder().encode(text).length > 8 * 1024 * 1024)
+    throw new Error("Availability CSV exceeds 8 MiB");
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  if (lines.at(-1) === "") lines.pop();
+  if (
+    lines[0] !== "timestamp,availableFraction" ||
+    lines.length < 3 ||
+    lines.length > 8785
+  )
+    throw new Error(
+      "Availability CSV requires timestamp,availableFraction and 2..8784 rows",
+    );
+  return lines.slice(1).map((line, i) => {
+    const cells = line.split(",");
+    if (
+      cells.length !== 2 ||
+      !cells[0] ||
+      !/^\s*(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\s*$/.test(cells[1])
+    )
+      throw new Error(
+        `Availability CSV row ${i + 2}: explicit timestamp and fraction required; missing is not zero`,
+      );
+    return AvailabilityRecordSchema.parse({
+      timestamp: cells[0],
+      availableFraction: Number(cells[1]),
+    });
+  });
+}
 export function weatherReview(request: StudyRequest) {
   return WEATHER_COLUMNS.slice(1).map((key) => {
     const values = request.weather.records.map((row) => Number(row[key]));
@@ -101,6 +134,10 @@ const energy = z.object({
   dcBeforeAdditionalLossWh: z.number().finite().nonnegative(),
   dcWh: z.number().finite().nonnegative(),
   acWh: z.number().finite().nonnegative(),
+  availabilityLossWh: z.number().finite().nonnegative().optional(),
+  auxiliaryConsumptionWh: z.number().finite().nonnegative().optional(),
+  transformerLossWh: z.number().finite().nonnegative().optional(),
+  gridImportWh: z.number().finite().nonnegative().optional(),
   inverterSelfConsumptionWh: z.number().finite().nonnegative().optional(),
   netGridWh: z.number().finite().optional(),
   acBeforeExportLimitWh: z.number().finite().nonnegative().optional(),
@@ -212,6 +249,120 @@ export function validateResult(value: unknown): StudyResult {
         throw new Error("Invalid spectral components/domain");
     }
   }
+  const plantActive = Boolean(
+    r.request.system.transformer ||
+    r.request.system.auxiliaryPowerW !== undefined ||
+    r.request.system.acAvailability,
+  );
+  if (plantActive) {
+    const sys = r.request.system,
+      dt = r.request.weather.intervalMinutes / 60;
+    const close = (a: number, b: number) =>
+      Number.isFinite(a) &&
+      Number.isFinite(b) &&
+      Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
+    const keys = [
+      "availabilityLossWh",
+      "auxiliaryConsumptionWh",
+      "transformerLossWh",
+      "gridImportWh",
+      "netGridWh",
+      "acWh",
+    ] as const;
+    const sums = Object.fromEntries(keys.map((k) => [k, 0]));
+    const months = new Map<string, Record<string, number>>();
+    if (
+      !r.manifest.models.acAvailability ||
+      !r.manifest.models.auxiliary ||
+      !r.manifest.models.transformer
+    )
+      throw new Error("AC plant manifest missing");
+    for (const [i, row] of r.samples.entries()) {
+      if (
+        [
+          "acPlantInputW",
+          "acAvailabilityFraction",
+          "availabilityLossW",
+          "auxiliaryConsumptionW",
+          "transformerLossW",
+          "gridImportW",
+          "acW",
+        ].some((k) => typeof row[k] !== "number")
+      )
+        throw new Error("AC plant components missing");
+      const input = Number(row.acPlantInputW),
+        fraction = Number(row.acAvailabilityFraction),
+        availableLoss = Number(row.availabilityLossW),
+        aux = Number(row.auxiliaryConsumptionW),
+        tloss = Number(row.transformerLossW),
+        imported = Number(row.gridImportW),
+        exported = Number(row.acW);
+      const output = input - availableLoss - aux - tloss;
+      if (
+        !close(
+          fraction,
+          sys.acAvailability?.records[i]?.availableFraction ?? 1,
+        ) ||
+        !close(availableLoss, Math.max(0, input) * (1 - fraction)) ||
+        !close(aux, sys.auxiliaryPowerW ?? 0) ||
+        tloss < 0 ||
+        imported < 0 ||
+        exported < 0 ||
+        !close(imported, Math.max(0, -output)) ||
+        !close(
+          exported,
+          Math.min(Math.max(0, output), sys.acExportLimitW ?? Infinity),
+        ) ||
+        (sys.sandia && !close(input, Number(row.inverterNetAcW)))
+      )
+        throw new Error("AC plant power accounting invalid");
+      if (
+        (!sys.sandia && (input < 0 || input > Number(row.dcW) + 1e-5)) ||
+        (sys.acExportLimitW !== undefined &&
+          !close(Number(row.acBeforeExportLimitW), Math.max(0, output)))
+      )
+        throw new Error("AC plant upstream/cap boundary invalid");
+      if (sys.transformer) {
+        const t = sys.transformer;
+        if (
+          Math.abs(output) > t.ratingVa + 1e-5 ||
+          !close(
+            tloss,
+            t.ratingVa * t.noLoadLossFraction +
+              (t.loadLossFraction * output * output) / t.ratingVa,
+          )
+        )
+          throw new Error("AC plant transformer balance invalid");
+      } else if (tloss !== 0)
+        throw new Error("AC plant disabled transformer loss");
+      const values = {
+        availabilityLossWh: availableLoss * dt,
+        auxiliaryConsumptionWh: aux * dt,
+        transformerLossWh: tloss * dt,
+        gridImportWh: imported * dt,
+        netGridWh: (exported - imported) * dt,
+        acWh: exported * dt,
+      };
+      const month = String(row.midpointUtc).slice(0, 7);
+      const bucket =
+        months.get(month) ?? Object.fromEntries(keys.map((k) => [k, 0]));
+      for (const k of keys) {
+        sums[k] += values[k];
+        bucket[k] += values[k];
+      }
+      months.set(month, bucket);
+    }
+    if (
+      keys.some((k) => !close(Number(r.summary[k]), sums[k])) ||
+      r.monthly.length !== months.size ||
+      r.monthly.some(
+        (m) =>
+          !months.has(m.month) ||
+          keys.some((k) => !close(Number(m[k]), months.get(m.month)![k])),
+      )
+    )
+      throw new Error("AC plant integrated energy invalid");
+  }
   if (r.request.system.sandia) {
     const inv = r.request.system.sandia,
       dt = r.request.weather.intervalMinutes / 60;
@@ -221,10 +372,17 @@ export function validateResult(value: unknown): StudyResult {
       acWh: number;
       inverterSelfConsumptionWh?: number;
       netGridWh?: number;
+      gridImportWh?: number;
     }) =>
       row.inverterSelfConsumptionWh !== undefined &&
       row.netGridWh !== undefined &&
-      close(row.netGridWh, row.acWh - row.inverterSelfConsumptionWh);
+      close(
+        row.netGridWh,
+        row.acWh -
+          (plantActive
+            ? (row.gridImportWh ?? NaN)
+            : row.inverterSelfConsumptionWh),
+      );
     const monthlyImports = new Map<string, number>();
     let exported = 0,
       imported = 0;
@@ -247,13 +405,14 @@ export function validateResult(value: unknown): StudyResult {
         own < 0 ||
         net > Math.min(inv.Paco, dc) + 1e-5 ||
         !close(own, Math.max(0, -net)) ||
-        !close(
-          ac,
-          Math.min(
-            Math.max(0, net),
-            r.request.system.acExportLimitW ?? Infinity,
-          ),
-        )
+        (!plantActive &&
+          !close(
+            ac,
+            Math.min(
+              Math.max(0, net),
+              r.request.system.acExportLimitW ?? Infinity,
+            ),
+          ))
       )
         throw new Error("Invalid Sandia operating output");
       exported += ac * dt;
@@ -497,6 +656,6 @@ export function studyReport(result: StudyResult, other?: StudyResult): string {
     if (reason) throw new Error(reason);
   }
   const section = (r: StudyResult) =>
-    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC model: ${r.request.system.electrical ? "De Soto single diode + ideal constrained MPPT" : "PVWatts DC"}</p>${r.request.system.electrical ? `<p>Unconstrained MPP / constraint loss: ${r.summary.availableMppWh} / ${r.summary.mpptConstraintLossWh} Wh. Voc checks are for specified conditions only, not certified electrical design.</p>` : ""}<p>Optics: ${escape(r.manifest.models.transposition)}; beam IAM: ${escape(r.manifest.models.beamIam)}; spectral: ${escape(r.manifest.models.spectral)}. Diffuse IAM remains unity; spectral modifier does not alter thermal POA.</p><p>AC inverter: ${escape(r.manifest.models.ac)}.</p>${r.request.system.sandia ? `<p>Imported inverter self-consumption: ${r.summary.inverterSelfConsumptionWh} Wh; net grid (export minus import): ${r.summary.netGridWh} Wh. Export cap does not limit self-consumption import. No local load/storage.</p>` : ""}<p>Thermal model: ${escape(r.manifest.models.temperature)}.</p>${r.request.system.acExportLimitW !== undefined ? `<p>AC export cap: ${r.request.system.acExportLimitW} W; before cap / export loss: ${r.summary.acBeforeExportLimitWh} / ${r.summary.acExportLimitLossWh} Wh. No local load or storage; static cap only.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th>${r.request.system.sandia ? "<th>Inverter import Wh</th><th>Net grid Wh</th>" : ""}</tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td>${r.request.system.sandia ? `<td>${m.inverterSelfConsumptionWh}</td><td>${m.netGridWh}</td>` : ""}</tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
+    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC model: ${r.request.system.electrical ? "De Soto single diode + ideal constrained MPPT" : "PVWatts DC"}</p>${r.request.system.electrical ? `<p>Unconstrained MPP / constraint loss: ${r.summary.availableMppWh} / ${r.summary.mpptConstraintLossWh} Wh. Voc checks are for specified conditions only, not certified electrical design.</p>` : ""}<p>Optics: ${escape(r.manifest.models.transposition)}; beam IAM: ${escape(r.manifest.models.beamIam)}; spectral: ${escape(r.manifest.models.spectral)}. Diffuse IAM remains unity; spectral modifier does not alter thermal POA.</p>${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? `<p>AC plant — always energized: availability loss / LV auxiliary / transformer loss: ${r.summary.availabilityLossWh} / ${r.summary.auxiliaryConsumptionWh} / ${r.summary.transformerLossWh} Wh. Total grid import: ${r.summary.gridImportWh} Wh; net grid: ${r.summary.netGridWh} Wh. Do not subtract inverter self-consumption a second time.</p>` : ""}<p>AC inverter: ${escape(r.manifest.models.ac)}.</p>${r.request.system.sandia ? `<p>Imported inverter self-consumption: ${r.summary.inverterSelfConsumptionWh} Wh; net grid (export minus total import): ${r.summary.netGridWh} Wh. Export cap does not limit self-consumption import. No external site load/storage; declared plant auxiliaries, if enabled, are included.</p>` : ""}<p>Thermal model: ${escape(r.manifest.models.temperature)}.</p>${r.request.system.acExportLimitW !== undefined ? `<p>AC export cap: ${r.request.system.acExportLimitW} W; before cap / export loss: ${r.summary.acBeforeExportLimitWh} / ${r.summary.acExportLimitLossWh} Wh. No external site load/storage beyond declared LV auxiliary; static cap only.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th>${r.request.system.sandia ? "<th>Inverter self-consumption Wh</th>" : ""}${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? "<th>Availability loss Wh</th><th>Auxiliary Wh</th><th>Transformer loss Wh</th><th>Total import Wh</th>" : ""}${r.summary.netGridWh !== undefined ? "<th>Net grid Wh</th>" : ""}</tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td>${r.request.system.sandia ? `<td>${m.inverterSelfConsumptionWh}</td>` : ""}${r.request.system.transformer || r.request.system.auxiliaryPowerW !== undefined || r.request.system.acAvailability ? `<td>${m.availabilityLossWh}</td><td>${m.auxiliaryConsumptionWh}</td><td>${m.transformerLossWh}</td><td>${m.gridImportWh}</td>` : ""}${m.netGridWh !== undefined ? `<td>${m.netGridWh}</td>` : ""}</tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>Direct pvlib study report</title><style>body{font:15px system-ui;max-width:1000px;margin:2em auto;padding:1em;color:#172033}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere} @media print{body{margin:0}h2{break-before:page}}</style><h1>Direct pvlib study / گزارش مطالعه</h1><p>Not field validated. Separate from screening and financial reports. Imported/local results are not digitally certified. Keep the JSON bundle for full weather and reproducibility. Print using browser Print / Save as PDF.</p>${other ? `<h2>Scenario comparison</h2><p>Same weather, site and engine; mounting, row optics and thermal irradiance proxy may differ (see scenario inputs). Delta is not an isolated bifacial gain. No guarantee of tracking gain. AC difference (second − first): ${(other.summary.acWh - result.summary.acWh) / 1000} kWh; ${result.summary.acWh === 0 ? "percentage unavailable (zero baseline)" : `${(100 * (other.summary.acWh - result.summary.acWh)) / result.summary.acWh}%`}. Different capacities are not normalized.</p>` : ""}${section(result)}${other ? section(other) : ""}</html>`;
 }

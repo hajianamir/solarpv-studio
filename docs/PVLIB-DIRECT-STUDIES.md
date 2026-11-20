@@ -140,3 +140,6 @@ No measured independent field dataset has been acquired in this implementation. 
 
 
 توسعهٔ موتور 1.6.0: [سه مرحلهٔ Perez، IAM فیزیکی و اصلاح طیفی SAPM](PVLIB-OPTICAL-THREE.fa.md).
+
+
+توسعهٔ موتور 1.7.0: [سه مرحلهٔ ترانسفورماتور، مصرف کمکی و دسترس‌پذیری بازه‌ای AC](PVLIB-AC-PLANT.fa.md).

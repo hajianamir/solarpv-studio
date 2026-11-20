@@ -72,3 +72,6 @@ timestamp,ghiWm2,dniWm2,dhiWm2,tempAirC,windSpeedMs
 
 
 توسعهٔ موتور 1.6.0: [سه مرحلهٔ Perez، IAM فیزیکی و اصلاح طیفی SAPM](PVLIB-OPTICAL-THREE.fa.md).
+
+
+توسعهٔ موتور 1.7.0: [سه مرحلهٔ ترانسفورماتور، مصرف کمکی و دسترس‌پذیری بازه‌ای AC](PVLIB-AC-PLANT.fa.md).

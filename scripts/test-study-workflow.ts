@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { StudyRequestSchema } from "../src/studies/studyContract";
 import {
   parseWeatherCsv,
+  parseAvailabilityCsv,
   WEATHER_COLUMNS,
   weatherReview,
   validateResult,
@@ -228,3 +229,21 @@ const perezRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services
 const perezResult=validateResult(JSON.parse(perezRun.stdout));assert.match(comparisonReason(opticalResult,perezResult)!,/engine/);assert.ok(studyReport(perezResult).includes('perez allsitescomposite1990'));
 assert.deepEqual(validateSnapshot({...snapshot,request:perezScenario,result:perezResult}).result,perezResult);
 console.log('Three optical stages PASS: strict contracts, forbidden Perez/row combination, actual Python, spectral component guards, archive/report and incompatible-model comparison barriers.');
+
+const plantScenario=structuredClone(opticalScenario);
+Object.assign(plantScenario.system,JSON.parse(readFileSync('services/pvlib_study/tests/ac-plant-reference-parameters.json','utf8')));
+assert.equal(StudyRequestSchema.safeParse(plantScenario).success,true);
+const availabilityCsv=['timestamp,availableFraction',...plantScenario.system.acAvailability!.records.map((r:{timestamp:string;availableFraction:number})=>`${r.timestamp},${r.availableFraction}`)].join('\n');
+assert.deepEqual(parseAvailabilityCsv(availabilityCsv),plantScenario.system.acAvailability!.records);
+for(const csv of [availabilityCsv.replace(',0.5',','),availabilityCsv.replace(',0.5',',2'),availabilityCsv.replace('timestamp,availableFraction','time,fraction'),availabilityCsv+'\n\n'])assert.throws(()=>parseAvailabilityCsv(csv));
+const offsetPlant=structuredClone(plantScenario);offsetPlant.system.acAvailability!.records[0].timestamp='2017-04-01T10:00:00-07:00';assert.equal(StudyRequestSchema.safeParse(offsetPlant).success,true);
+for(const change of [(r:typeof plantScenario)=>{r.system.acAvailability!.records.pop();},(r:typeof plantScenario)=>{r.system.acAvailability!.records.reverse();},(r:typeof plantScenario)=>{r.system.acAvailability!.records[0].availableFraction=2;},(r:typeof plantScenario)=>{r.system.acAvailability!.source=' ';},(r:typeof plantScenario)=>{r.system.transformer!.loadLossFraction=-1;},(r:typeof plantScenario)=>{r.system.auxiliaryPowerW=-1;}]){const bad=structuredClone(plantScenario);change(bad);assert.equal(StudyRequestSchema.safeParse(bad).success,false);}
+const plantRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(plantScenario),encoding:'utf8',maxBuffer:16*1024*1024});assert.equal(plantRun.status,0,plantRun.stderr);
+const plantResult=validateResult(JSON.parse(plantRun.stdout));assert.ok(plantResult.summary.gridImportWh!>0);assert.ok(plantResult.summary.transformerLossWh!>0);
+assert.deepEqual(validateSnapshot({...snapshot,request:plantScenario,result:plantResult}).result,plantResult);
+assert.match(comparisonReason(opticalResult,plantResult)!,/engine/);assert.equal(comparisonReason(plantResult,structuredClone(plantResult)),null);
+assert.ok(studyReport(plantResult).includes('AC plant'));assert.ok(studyReport(plantResult).includes('Total import Wh'));
+for(const key of ['acPlantInputW','acAvailabilityFraction','availabilityLossW','auxiliaryConsumptionW','transformerLossW','gridImportW']){const bad=structuredClone(plantResult);delete bad.samples[0][key];assert.throws(()=>validateResult(bad),/AC plant/);}
+const wrongImport=structuredClone(plantResult);wrongImport.summary.gridImportWh=0;assert.throws(()=>validateResult(wrongImport),/AC plant/);
+const wrongLoss=structuredClone(plantResult);wrongLoss.samples[0].transformerLossW=0;assert.throws(()=>validateResult(wrongLoss),/AC plant/);
+console.log('Three AC plant stages PASS: explicit schedule/UTC/CSV contract, transformer and auxiliary, actual Python, imports/exports and integrated/monthly accounting, archive and report.');

@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.6.0'
+ENGINE_VERSION = '1.7.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -77,7 +77,24 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral') if k in system])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','acAvailability') if k in system])], 'system')
+    if 'transformer' in system:
+        t=system['transformer']
+        keys(t,['ratingVa','noLoadLossFraction','loadLossFraction'],'transformer')
+        number(t['ratingVa'],1,1e9,'transformer.ratingVa')
+        number(t['noLoadLossFraction'],0,.1,'transformer.noLoadLossFraction')
+        number(t['loadLossFraction'],0,.1,'transformer.loadLossFraction')
+    if 'auxiliaryPowerW' in system:number(system['auxiliaryPowerW'],0,1e9,'auxiliaryPowerW')
+    if 'acAvailability' in system:
+        a=system['acAvailability']
+        keys(a,['source','quality','records'],'acAvailability')
+        text(a['source'],'acAvailability.source')
+        if a['quality'] not in ('measured','weather_provider','user_configured','assumed'):raise InputError('invalid availability provenance quality')
+        if not isinstance(a['records'],list) or not 2<=len(a['records'])<=8784:raise InputError('availability requires 2..8784 explicit records')
+        for row in a['records']:
+            keys(row,['timestamp','availableFraction'],'availability record')
+            timestamp(row['timestamp'])
+            number(row['availableFraction'],0,1,'availableFraction')
     if 'skyDiffuseModel' in system:
         if system['skyDiffuseModel'] not in ('haydavies','perez'):raise InputError('unsupported skyDiffuseModel')
         if system['skyDiffuseModel']=='perez' and 'rowIrradiance' in system:raise InputError('Perez is unsupported with infinite_sheds rows; no fallback')
@@ -197,6 +214,10 @@ def validate(req):
         raise InputError('unordered, duplicate, gapped or nonuniform timestamps')
     if (times[0]-timedelta(minutes=dt)).year < 1900 or times[-1].year > 2200 or times[-1]-times[0]+timedelta(minutes=dt) > timedelta(days=366):
         raise InputError('supported period: 1900..2200, at most 366 days')
+    if any(k in system for k in ('transformer','auxiliaryPowerW','acAvailability')) and len(rows)>8784:raise InputError('AC plant mode supports at most 8784 records')
+    if 'acAvailability' in system:
+        records=system['acAvailability']['records']
+        if len(records)!=len(times) or any(timestamp(r['timestamp'])!=t for r,t in zip(records,times)):raise InputError('availability records must exactly align with weather interval ends in UTC; no fill')
     return times
 
 
@@ -303,6 +324,27 @@ def spectral_irradiance(effective, zenith, altitude, p):
     factor=pd.Series(0.,index=effective.index)
     if active.any():factor.loc[active]=pvlib.spectrum.spectral_factor_sapm(am,p)
     return effective*factor,dict(spectralInputIrradianceWm2=effective,spectralFactor=factor,absoluteAirmass=absolute.where(active,0.),spectralActive=active.astype(float))
+
+
+def ac_plant(system, inverter_net):
+    """Generation retention, always-on LV auxiliary and energized transformer."""
+    import numpy as np
+    import pandas as pd
+    fraction=pd.Series([r['availableFraction'] for r in system['acAvailability']['records']],index=inverter_net.index) if 'acAvailability' in system else pd.Series(1.,index=inverter_net.index)
+    availability_loss=inverter_net.clip(lower=0)*(1-fraction)
+    auxiliary=pd.Series(float(system.get('auxiliaryPowerW',0)),index=inverter_net.index)
+    before=inverter_net-availability_loss-auxiliary
+    after=before.copy()
+    if 'transformer' in system:
+        t=system['transformer'];rating=t['ratingVa'];a=t['loadLossFraction'];nll=t['noLoadLossFraction']
+        discriminant=1+4*a*(before/rating-nll)
+        if (discriminant<=0).any():raise InputError('transformer quadratic outside monotonic supported domain')
+        after=2*(before-rating*nll)/(1+np.sqrt(discriminant))
+        if (abs(after)>rating+1e-7).any():raise InputError('transformer output exceeds declared VA rating at unity power factor; no overload simulation')
+    loss=before-after
+    if not np.isfinite(after).all() or (loss < -1e-6).any():raise InputError('invalid transformer output/loss')
+    imports=(-after).clip(lower=0)
+    return after.clip(lower=0),dict(acPlantInputW=inverter_net,acAvailabilityFraction=fraction,availabilityLossW=availability_loss,auxiliaryConsumptionW=auxiliary,transformerLossW=loss.clip(lower=0),gridImportW=imports)
 
 
 def run_study(req):
@@ -457,23 +499,41 @@ def run_study(req):
         ])
     else:
         ac = pvlib.inverter.pvwatts(dc, s['inverterPdc0W'], eta_inv_nom=s['inverterEtaNom'], eta_inv_ref=s['inverterEtaRef'])
+    plant_columns={}
+    plant_active=any(k in s for k in ('transformer','auxiliaryPowerW','acAvailability'))
+    if plant_active:
+        inverter_net=inverter_columns['inverterNetAcW'] if 'sandia' in s else ac
+        ac,plant_columns=ac_plant(s,inverter_net)
+        models['acAvailability']='explicit interval retained positive generation; parasitic imports stay energized' if 'acAvailability' in s else 'disabled; fraction one'
+        models['auxiliary']='constant always-on LV auxiliary before transformer' if 'auxiliaryPowerW' in s else 'disabled; no auxiliary'
+        models['transformer']='energized quadratic output-load-loss model; unity power factor; stable root' if 'transformer' in s else 'disabled; ideal connection'
+        limitations.extend([
+            'AC availability is a declared positive-generation derate only, not a grid outage or physical inverter disconnect; DC operating point is unchanged and inverter self-consumption remains.',
+            'Auxiliary is an always-on LV demand, separate from inverter self-consumption; transformer remains energized at night and zero availability. No external site load, battery, reactive power, grid dynamics or transformer overload/thermal protection.',
+            'With AC plant enabled, acWh is positive export after plant and export cap; netGridWh subtracts total gridImportWh, not inverterSelfConsumptionWh again. Transformer/availability/auxiliary losses are separate diagnostics.'
+        ])
+    if plant_active:
+        limitations=[x.replace('netGridWh subtracts imported self-consumption','netGridWh subtracts total grid imports after AC plant').replace('No local load/storage.','No external site load/storage beyond declared plant auxiliary.').replace('assumes no local consumption/storage','assumes no external local consumption/storage beyond declared plant auxiliary') for x in limitations]
     export_columns={}
     if 'acExportLimitW' in s:
         before_export=ac.copy()
         ac=ac.clip(upper=s['acExportLimitW'])
         export_columns=dict(acBeforeExportLimitW=before_export,acExportLimitLossW=before_export-ac)
         models['acExport']='constant export cap after inverter; no local load or storage; no DC feedback'
-        limitations.append('Static AC export cap assumes no local consumption/storage and no controller dynamics, reactive power, grid voltage or time-varying dispatch; inverter clipping is already upstream and is not counted twice.')
-    columns = dict(**spectral_columns,**inverter_columns,**export_columns,surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
+        limitations.append('Static AC export cap acts after the optional AC plant; it does not limit imports. It assumes no external site load/storage beyond any declared LV auxiliary, and no controller dynamics, reactive power, grid voltage or time-varying dispatch; inverter clipping is already upstream and is not counted twice.')
+    columns = dict(**plant_columns,**spectral_columns,**inverter_columns,**export_columns,surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
         beamIam=iam, poaDirectWm2=poa.poa_direct, poaSkyDiffuseWm2=poa.poa_sky_diffuse,
         poaGroundDiffuseWm2=poa.poa_ground_diffuse, poaGlobalWm2=poa.poa_global,
         effectiveIrradianceWm2=effective, cellTemperatureC=cell, dcBeforeAdditionalLossW=raw_dc, dcW=dc, acW=ac)
     if not all(np.isfinite(values).all() for values in columns.values()):
         raise InputError('nonfinite model output; unsupported input combination')
     energy = pd.DataFrame(dict(dcBeforeAdditionalLossWh=raw_dc*dt_hours, dcWh=dc*dt_hours, acWh=ac*dt_hours), index=mid)
+    if plant_active:
+        for name in ('availabilityLoss','auxiliaryConsumption','transformerLoss','gridImport'):energy[name+'Wh']=plant_columns[name+'W']*dt_hours
+        energy['netGridWh']=(ac-plant_columns['gridImportW'])*dt_hours
     if 'sandia' in s:
         energy['inverterSelfConsumptionWh']=inverter_columns['inverterSelfConsumptionW']*dt_hours
-        energy['netGridWh']=(ac-inverter_columns['inverterSelfConsumptionW'])*dt_hours
+        if not plant_active:energy['netGridWh']=(ac-inverter_columns['inverterSelfConsumptionW'])*dt_hours
     if 'acExportLimitW' in s:
         energy['acBeforeExportLimitWh']=before_export*dt_hours
         energy['acExportLimitLossWh']=(before_export-ac)*dt_hours
@@ -506,7 +566,7 @@ def run_study(req):
             python=platform.python_version(), platform=platform.platform(), dependencies=dependencies,
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
-            units=dict(**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
+            units=dict(**(dict(acPlantInputW='signed W inverter net before plant stages',acAvailabilityFraction='retained fraction of positive generation only',gridImportWh='total Wh imported after energized AC plant; includes inverter self-consumption',netGridWh='signed Wh export after cap minus total gridImportWh') if plant_active else {}),**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s and not plant_active else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
                 **(dict(voltage='V at uniform array DC bus',current='A at uniform array DC bus',dcOperatingState='0 dark; 1 MPP; 2 voltage boundary; 3 current boundary; 4 no feasible MPPT point') if 'electrical' in s else {}),
                 **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
             limitations=limitations, warnings=warnings),

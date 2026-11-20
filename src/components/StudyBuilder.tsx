@@ -5,6 +5,7 @@ import {
 } from "../studies/studyContract";
 import {
   parseWeatherCsv,
+  parseAvailabilityCsv,
   WEATHER_COLUMNS,
   weatherReview,
 } from "../studies/studyWorkflow";
@@ -148,6 +149,33 @@ export function StudyBuilder({
               r.system.acExportLimitW !== undefined
                 ? String(r.system.acExportLimitW)
                 : "",
+            transformerEnabled: r.system.transformer ? "yes" : "no",
+            ratingVa: r.system.transformer
+              ? String(r.system.transformer.ratingVa)
+              : "",
+            noLoadLossFraction: r.system.transformer
+              ? String(r.system.transformer.noLoadLossFraction)
+              : "",
+            loadLossFraction: r.system.transformer
+              ? String(r.system.transformer.loadLossFraction)
+              : "",
+            auxiliaryEnabled:
+              r.system.auxiliaryPowerW !== undefined ? "yes" : "no",
+            auxiliaryPowerW:
+              r.system.auxiliaryPowerW !== undefined
+                ? String(r.system.auxiliaryPowerW)
+                : "",
+            availabilityEnabled: r.system.acAvailability ? "yes" : "no",
+            availabilitySource: r.system.acAvailability?.source ?? "",
+            availabilityQuality: r.system.acAvailability?.quality ?? "",
+            availabilityCsv: r.system.acAvailability
+              ? [
+                  "timestamp,availableFraction",
+                  ...r.system.acAvailability.records.map(
+                    (row) => `${row.timestamp},${row.availableFraction}`,
+                  ),
+                ].join("\n")
+              : "",
             skyDiffuseModel: r.system.skyDiffuseModel ?? "haydavies",
             beamIamModel: r.system.physicalIam ? "physical" : "ashrae",
             spectralModel: r.system.sapmSpectral ? "sapm" : "unity",
@@ -464,6 +492,114 @@ export function StudyBuilder({
             {spectralFields.map(([key, label]) => text(key, label, "number"))}
           </div>
         )}
+        <fieldset data-testid="ac-plant-inputs" className="border p-3">
+          <legend>
+            {en
+              ? "AC plant: three independent stages"
+              : "سه مرحله مستقل سمت AC نیروگاه"}
+          </legend>
+          <p>
+            {en
+              ? "Positive generation availability → always-on LV auxiliary → energized transformer → export cap. Inverter self-consumption remains. Not a grid outage/control model."
+              : "دسترس‌پذیری تولید مثبت ← مصرف کمکی دائمی LV ← ترانس همیشه متصل ← سقف صادرات. مصرف داخلی اینورتر باقی است. مدل خاموشی شبکه یا کنترل نیست."}
+          </p>
+          <label>
+            {en ? "Transformer" : "ترانسفورماتور"}
+            <select
+              aria-label="Study transformer enabled"
+              value={v.transformerEnabled ?? "no"}
+              onChange={(e) => change("transformerEnabled", e.target.value)}
+            >
+              <option value="no">Disabled / غیرفعال</option>
+              <option value="yes">Enabled / فعال</option>
+            </select>
+          </label>
+          {v.transformerEnabled === "yes" && (
+            <div>
+              {text("ratingVa", "Transformer rating (VA), unity PF", "number")}
+              {text(
+                "noLoadLossFraction",
+                "No-load loss fraction of rating (0..0.1)",
+                "number",
+              )}
+              {text(
+                "loadLossFraction",
+                "Rated output load-loss fraction (0..0.1)",
+                "number",
+              )}
+            </div>
+          )}
+          <label>
+            {en ? "Auxiliary demand" : "مصرف کمکی"}
+            <select
+              aria-label="Study auxiliary enabled"
+              value={v.auxiliaryEnabled ?? "no"}
+              onChange={(e) => change("auxiliaryEnabled", e.target.value)}
+            >
+              <option value="no">Disabled / غیرفعال</option>
+              <option value="yes">Enabled / فعال</option>
+            </select>
+          </label>
+          {v.auxiliaryEnabled === "yes" &&
+            text(
+              "auxiliaryPowerW",
+              "Always-on LV auxiliary (W), excluding inverter self-consumption",
+              "number",
+            )}
+          <label>
+            {en ? "Interval AC availability" : "دسترس‌پذیری بازه‌ای AC"}
+            <select
+              aria-label="Study availability enabled"
+              value={v.availabilityEnabled ?? "no"}
+              onChange={(e) => change("availabilityEnabled", e.target.value)}
+            >
+              <option value="no">Disabled / غیرفعال</option>
+              <option value="yes">Enabled / فعال</option>
+            </select>
+          </label>
+          {v.availabilityEnabled === "yes" && (
+            <div>
+              {text("availabilitySource", "Availability source / منبع")}
+              <label>
+                Availability quality
+                <select
+                  aria-label="Study availabilityQuality"
+                  value={v.availabilityQuality ?? ""}
+                  onChange={(e) =>
+                    change("availabilityQuality", e.target.value)
+                  }
+                >
+                  <option value="">—</option>
+                  {[
+                    "measured",
+                    "weather_provider",
+                    "user_configured",
+                    "assumed",
+                  ].map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                CSV: timestamp,availableFraction
+                <textarea
+                  aria-label="Study availability CSV"
+                  className="block w-full bg-slate-900"
+                  rows={5}
+                  value={v.availabilityCsv ?? ""}
+                  onChange={(e) => change("availabilityCsv", e.target.value)}
+                />
+              </label>
+              <p>
+                {en
+                  ? "Paste complete plain CSV with the exact weather interval-end timeline, explicit UTC offsets and fractions 0..1. No missing interval is filled."
+                  : "CSV کامل و ساده با خط زمان پایان بازه دقیقاً مطابق هواشناسی، offset صریح و ضریب صفر تا یک وارد کنید؛ هیچ بازه مفقود پر نمی‌شود."}
+              </p>
+            </div>
+          )}
+        </fieldset>
         {v.inverterModel === "sandia" && (
           <div
             data-testid="sandia-inputs"
@@ -642,6 +778,29 @@ export function StudyBuilder({
                 },
                 system: {
                   ...system,
+                  ...(v.transformerEnabled === "yes"
+                    ? {
+                        transformer: {
+                          ratingVa: number("ratingVa"),
+                          noLoadLossFraction: number("noLoadLossFraction"),
+                          loadLossFraction: number("loadLossFraction"),
+                        },
+                      }
+                    : {}),
+                  ...(v.auxiliaryEnabled === "yes"
+                    ? { auxiliaryPowerW: number("auxiliaryPowerW") }
+                    : {}),
+                  ...(v.availabilityEnabled === "yes"
+                    ? {
+                        acAvailability: {
+                          source: v.availabilitySource,
+                          quality: v.availabilityQuality,
+                          records: parseAvailabilityCsv(
+                            v.availabilityCsv ?? "",
+                          ),
+                        },
+                      }
+                    : {}),
                   ...(v.skyDiffuseModel === "perez"
                     ? { skyDiffuseModel: "perez" }
                     : request?.system.skyDiffuseModel === "haydavies"
@@ -761,6 +920,16 @@ export function StudyBuilder({
                 ? "Contract checks passed: ordered, regular, finite, bounded. No gap filling. Domain checks also run in Python."
                 : "کنترل قرارداد موفق: مرتب، منظم، متناهی و در دامنه؛ بدون پرکردن شکاف. بررسی فیزیکی در Python نیز اجرا می‌شود."}
             </p>
+            {review.system.acAvailability && (
+              <p data-testid="availability-review">
+                {en
+                  ? "Availability schedule aligned in UTC, no fill"
+                  : "برنامه دسترس‌پذیری هم‌تراز UTC؛ بدون پرکردن"}
+                : {review.system.acAvailability.records.length} ·{" "}
+                {review.system.acAvailability.source} ·{" "}
+                {review.system.acAvailability.quality}
+              </p>
+            )}
             <p dir="ltr">
               {review.weather.records[0].timestamp} →{" "}
               {review.weather.records.at(-1)!.timestamp} ·{" "}
