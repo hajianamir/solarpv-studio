@@ -1,3 +1,4 @@
+import {StudyInsights} from './StudyInsights';
 import React, { useEffect, useRef, useState } from "react";
 import {
   StudyRequestSchema,
@@ -1134,6 +1135,7 @@ export function StudyBuilder({
         )}
         {review && (
           <div data-testid="weather-review" className="text-xs">
+            <StudyInsights request={review} en={en}/>
             <p>
               {en
                 ? "Contract checks passed: ordered, regular, finite, bounded. No gap filling. Domain checks also run in Python."

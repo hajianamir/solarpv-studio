@@ -1,3 +1,5 @@
+import {StudyInsights} from './StudyInsights';
+import {monthlyStudyCsv,studyInsights} from '../studies/studyInsights';
 import {StudyBuilder} from './StudyBuilder';
 import {StudyLibrary} from './StudyLibrary';
 import {validateResult,stable} from '../studies/studyWorkflow';
@@ -70,6 +72,7 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
     }}/></label>
     <StudyBuilder request={request} latitude={latitude} longitude={longitude} en={en} busy={busy} onDirty={()=>{revision.current++;setDirty(true);setResult(null);setRestored(false);}} onApply={candidate=>{revision.current++;setRequest(candidate);setDirty(false);setResult(null);setError('');setRestored(false);}}/>
     {dirty&&<p role="status" className="text-xs text-amber-300">{en?'Inputs changed. Validate and apply before running or saving.':'ورودی‌ها تغییر کرده‌اند؛ پیش از اجرا یا ذخیره بررسی و اعمال کنید.'}</p>}
+    {request&&!result&&!dirty&&<StudyInsights request={request} en={en}/>}
     {request&&<p className="text-xs" data-testid="study-input-label">{request.label} — {request.system.tracking?'single-axis tracker':'fixed tilt'} — {request.weather.records.length} {en?'intervals':'بازه'}; {request.system.arrayPdc0W} W DC; {request.system.surfaceTiltDeg}° / {request.system.surfaceAzimuthDeg}°; {request.weather.quality}</p>}
     <div className="flex gap-3 text-sm">
       <button type="button" data-testid="run-pvlib-study" disabled={!request||dirty||busy||capability!=='enabled'} onClick={()=>void run()}>{busy?(en?'Running Python…':'در حال اجرای Python…'):(en?'Run independent study':'اجرای مطالعهٔ مستقل')}</button>
@@ -78,6 +81,7 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
     {error&&<p role="alert" className="text-xs text-red-300 whitespace-pre-wrap break-all">{error}</p>}
     {result&&<div data-testid="pvlib-study-result" className="text-xs space-y-3">
       {restored&&<p className="text-amber-300">{en?'Restored local/imported result — not a new execution; authenticity not certified.':'نتیجهٔ محلی/واردشدهٔ بازیابی‌شده — اجرای جدید نیست؛ اصالت تأیید نشده است.'}</p>}
+      <StudyInsights request={result.request} result={result} en={en}/>
       <h3>{en?'Completed — not field validated':'اجرا شد — بدون اعتبارسنجی میدانی'}</h3>
       <p>{result.manifest.period.startUtc} → {result.manifest.period.endUtc} ({result.manifest.period.completeUtcCalendarYear?'complete UTC year':'period only; not annualized'})</p>
       <p data-testid="study-geometry-mode">{result.request.system.tracking?(en?'Single-axis tracker — ideal geometry, not a shading/stow/structural model':'ردیاب تک‌محوره — هندسهٔ ایده‌آل، نه مدل سایه/کنترل/سازه'):(en?'Fixed-tilt array':'آرایهٔ سطح ثابت')}</p>
@@ -101,9 +105,11 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
           const csv=[columns,...result.samples.map(sample=>columns.map(column=>String(sample[column])))].map(row=>row.map(value=>`"${value.replace(/"/g,'""')}"`).join(',')).join('\r\n');
           download('pvlib-study-samples.csv',csv,'text/csv;charset=utf-8');
         }}>CSV</button>
+        <button type="button" data-testid="download-study-monthly-csv" onClick={()=>download('pvlib-study-monthly.csv',monthlyStudyCsv(result),'text/csv;charset=utf-8')}>{en?'Monthly CSV (UTC)':'CSV ماهانه UTC'}</button>
       </div>
       <details><summary>{en?'Models, versions, units and execution manifest':'مدل‌ها، نسخه‌ها، واحدها و شناسنامهٔ اجرا'}</summary><pre dir="ltr" className="whitespace-pre-wrap break-all">{JSON.stringify(result.manifest,null,2)}</pre></details>
     </div>}
+    {request&&!dirty&&<button type="button" data-testid="download-study-insights" onClick={()=>download('pvlib-study-insights.json',JSON.stringify(studyInsights(request,result??undefined),null,2),'application/json')}>{en?'Download data diagnostics & source ledger (JSON)':'دانلود بررسی داده و دفتر منابع (JSON)'}</button>}
     <StudyLibrary key={`${latitude}:${longitude}`} request={request} result={result} dirty={dirty} busy={busy} latitude={latitude} longitude={longitude} en={en} onRestore={snapshot=>{revision.current++;controller.current?.abort();setRequest(snapshot.request);setResult(snapshot.result);setDirty(false);setRestored(Boolean(snapshot.result));setError('');setBusy(false);}}/>
   </section>;
 }

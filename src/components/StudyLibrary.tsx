@@ -1,3 +1,4 @@
+import { compareStudies, comparisonStudyCsv } from "../studies/studyInsights";
 import React, { useEffect, useRef, useState } from "react";
 import type { StudyRequest, StudyResult } from "../studies/studyContract";
 import {
@@ -117,6 +118,8 @@ export function StudyLibrary({
     );
   }
   const reason = result && other ? comparisonReason(result, other) : null;
+  const comparison =
+    result && other && !reason ? compareStudies(result, other) : null;
   return (
     <section
       className="border border-slate-600 rounded p-3 space-y-3"
@@ -274,6 +277,68 @@ export function StudyLibrary({
                 ? "Comparable site/weather/engine; mounting/row optics/thermal proxy may differ; capacity not normalized"
                 : "سایت، هواشناسی و موتور سازگار؛ نصب/تابش ردیفی/فرض حرارتی ممکن است متفاوت باشند؛ بدون نرمال‌سازی ظرفیت"}
             </h4>
+            <p>
+              {en
+                ? "Absolute energy deltas; other minus current. Percentage unavailable for zero/negative current or missing metrics. No capacity normalization, causal attribution or isolated bifacial gain."
+                : "اختلاف مطلق انرژی؛ دیگر منهای فعلی. درصد برای مبنای صفر/منفی یا شاخص مفقود ناموجود است. بدون نرمال‌سازی ظرفیت یا انتساب علّی و gain خالص دوطرفه."}
+            </p>
+            <table data-testid="study-comparison-metrics">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Unit</th>
+                  <th>Current</th>
+                  <th>Other</th>
+                  <th>Δ other−current</th>
+                  <th>% / status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparison?.metrics.map((m) => (
+                  <tr key={m.metric}>
+                    <td>{m.metric}</td>
+                    <td>{m.unit}</td>
+                    <td>{m.baseline ?? "—"}</td>
+                    <td>{m.other ?? "—"}</td>
+                    <td>{m.delta ?? "—"}</td>
+                    <td>
+                      {m.percent ?? "—"} / {m.status}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              type="button"
+              data-testid="download-study-comparison-csv"
+              onClick={() =>
+                studyDownload(
+                  "pvlib-study-comparison.csv",
+                  comparisonStudyCsv(result, other),
+                  "text/csv;charset=utf-8",
+                )
+              }
+            >
+              {en
+                ? "Comparison CSV (total + monthly)"
+                : "CSV مقایسه (کل و ماهانه)"}
+            </button>
+            <details>
+              <summary>{en ? "Monthly deltas" : "اختلاف‌های ماهانه"}</summary>
+              {comparison?.monthly.map((m) => (
+                <div key={m.month}>
+                  <h5>{m.month}</h5>
+                  <ul>
+                    {m.metrics.map((v) => (
+                      <li key={v.metric}>
+                        {v.metric}: {v.delta ?? "—"} {v.unit} ·{" "}
+                        {v.percent ?? "—"}% · {v.status}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </details>
             <table>
               <thead>
                 <tr>
