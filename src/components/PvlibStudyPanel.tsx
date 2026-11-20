@@ -1,3 +1,4 @@
+import {requestStudyJson,weatherInputCsv} from '../studies/studyExchange';
 import {StudyExplorer} from './StudyExplorer';
 import {StudyInsights} from './StudyInsights';
 import {monthlyStudyCsv,studyInsights} from '../studies/studyInsights';
@@ -112,6 +113,7 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
       <details><summary>{en?'Models, versions, units and execution manifest':'مدل‌ها، نسخه‌ها، واحدها و شناسنامهٔ اجرا'}</summary><pre dir="ltr" className="whitespace-pre-wrap break-all">{JSON.stringify(result.manifest,null,2)}</pre></details>
     </div>}
     {request&&!dirty&&<button type="button" data-testid="download-study-insights" onClick={()=>download('pvlib-study-insights.json',JSON.stringify(studyInsights(request,result??undefined),null,2),'application/json')}>{en?'Download data diagnostics & source ledger (JSON)':'دانلود بررسی داده و دفتر منابع (JSON)'}</button>}
+    {request&&!dirty&&<div className="flex gap-3"><button type="button" data-testid="download-study-request" onClick={()=>{try{download('pvlib-study-request.json',requestStudyJson(request),'application/json');}catch(e){setError(String(e));}}}>{en?'Input request JSON':'JSON ورودی مطالعه'}</button><button type="button" data-testid="download-study-weather" onClick={()=>download('pvlib-study-weather.csv',weatherInputCsv(request),'text/csv;charset=utf-8')}>{en?'Input weather CSV':'CSV هواشناسی ورودی'}</button></div>}
     <StudyLibrary key={`${latitude}:${longitude}`} request={request} result={result} dirty={dirty} busy={busy} latitude={latitude} longitude={longitude} en={en} onRestore={snapshot=>{revision.current++;controller.current?.abort();setRequest(snapshot.request);setResult(snapshot.result);setDirty(false);setRestored(Boolean(snapshot.result));setError('');setBusy(false);}}/>
   </section>;
 }

@@ -84,3 +84,6 @@ timestamp,ghiWm2,dniWm2,dhiWm2,tempAirC,windSpeedMs
 
 
 [ده ابزار بازبینی نتیجه و انتخاب بازه](PVLIB-EXPLORER-TEN.fa.md) — study-explorer-v1، بدون تغییر موتور1.8.0.
+
+
+[۳۰ گام ترکیبی: کتابخانه، انتقال اتمی و دو ورودی حرارتی](PVLIB-BALANCED-30.fa.md) — موتور1.9.0، PVsyst با ضرایب صریح باد۱۰متر و برنامهٔ صریح دمای سلول؛ بدون هم‌ارزی کل نرم‌افزار PVsyst.

@@ -1,10 +1,11 @@
-import {StudyInsights} from './StudyInsights';
+import { StudyInsights } from "./StudyInsights";
 import React, { useEffect, useRef, useState } from "react";
 import {
   StudyRequestSchema,
   type StudyRequest,
 } from "../studies/studyContract";
 import {
+  parseCellTemperatureCsv,
   parseWeatherCsv,
   parseAvailabilityCsv,
   parseHorizonCsv,
@@ -145,7 +146,37 @@ export function StudyBuilder({
             parameterSource: r.parameterProvenance.source,
             parameterQuality: r.parameterProvenance.quality,
             mounting: r.system.tracking ? "single_axis" : "fixed",
-            thermalModel: r.system.faiman ? "faiman" : "sapm",
+            thermalModel: r.system.cellTemperatureSchedule
+              ? "explicit"
+              : r.system.pvsystTemperature
+                ? "pvsyst"
+                : r.system.faiman
+                  ? "faiman"
+                  : "sapm",
+            pvsystSource: r.system.pvsystTemperature?.source ?? "",
+            pvsystQuality: r.system.pvsystTemperature?.quality ?? "",
+            uc: r.system.pvsystTemperature
+              ? String(r.system.pvsystTemperature.uc)
+              : "",
+            uv: r.system.pvsystTemperature
+              ? String(r.system.pvsystTemperature.uv)
+              : "",
+            moduleEfficiency: r.system.pvsystTemperature
+              ? String(r.system.pvsystTemperature.moduleEfficiency)
+              : "",
+            alphaAbsorption: r.system.pvsystTemperature
+              ? String(r.system.pvsystTemperature.alphaAbsorption)
+              : "",
+            cellSource: r.system.cellTemperatureSchedule?.source ?? "",
+            cellQuality: r.system.cellTemperatureSchedule?.quality ?? "",
+            cellCsv: r.system.cellTemperatureSchedule
+              ? [
+                  "timestamp,cellTemperatureC",
+                  ...r.system.cellTemperatureSchedule.records.map(
+                    (row) => `${row.timestamp},${row.cellTemperatureC}`,
+                  ),
+                ].join("\n")
+              : "",
             u0: r.system.faiman ? String(r.system.faiman.u0) : "",
             u1: r.system.faiman ? String(r.system.faiman.u1) : "",
             exportEnabled: r.system.acExportLimitW !== undefined ? "yes" : "no",
@@ -837,8 +868,80 @@ export function StudyBuilder({
             >
               <option value="sapm">SAPM</option>
               <option value="faiman">Faiman</option>
+              <option value="pvsyst">
+                PVsyst — explicit 10 m wind coefficients
+              </option>
+              <option value="explicit">
+                Explicit interval cell temperature
+              </option>
             </select>
           </label>
+          {(v.thermalModel === "pvsyst" || v.thermalModel === "explicit") && (
+            <div data-testid="new-thermal-inputs">
+              <p>
+                {en
+                  ? "Explicit source required. No fitting, missing-data fill or wind-height/module-to-cell conversion. SAPM coefficients retained but inactive."
+                  : "منبع صریح لازم است. بدون برازش، پرکردن داده یا تبدیل ارتفاع باد/دمای ماژول به سلول. ضرایب SAPM حفظ ولی غیرفعال‌اند."}
+              </p>
+              {v.thermalModel === "pvsyst" ? (
+                <>
+                  {text("uc", "Uc (W/m²/K)", "number")}
+                  {text("uv", "Uv (W/m²/K per m/s)", "number")}
+                  {text(
+                    "moduleEfficiency",
+                    "Fixed thermal module efficiency (0..0.5)",
+                    "number",
+                  )}
+                  {text("alphaAbsorption", "Absorptance (0.01..1)", "number")}
+                  {text("pvsystSource", "PVsyst source")}
+                </>
+              ) : (
+                <>
+                  {text("cellSource", "Cell temperature source")}
+                  <label>
+                    timestamp,cellTemperatureC
+                    <textarea
+                      aria-label="Study cell temperature CSV"
+                      className="block w-full bg-slate-900"
+                      value={v.cellCsv ?? ""}
+                      onChange={(e) => change("cellCsv", e.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+              <label>
+                Quality
+                <select
+                  aria-label="Study thermal quality"
+                  value={
+                    (v.thermalModel === "pvsyst"
+                      ? v.pvsystQuality
+                      : v.cellQuality) ?? ""
+                  }
+                  onChange={(e) =>
+                    change(
+                      v.thermalModel === "pvsyst"
+                        ? "pvsystQuality"
+                        : "cellQuality",
+                      e.target.value,
+                    )
+                  }
+                >
+                  <option value="">—</option>
+                  {[
+                    "measured",
+                    "weather_provider",
+                    "user_configured",
+                    "assumed",
+                  ].map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
           {v.thermalModel === "faiman" && (
             <div data-testid="faiman-inputs">
               <p>
@@ -1047,6 +1150,28 @@ export function StudyBuilder({
                         ),
                       }
                     : {}),
+                  ...(v.thermalModel === "pvsyst"
+                    ? {
+                        pvsystTemperature: {
+                          source: v.pvsystSource,
+                          quality: v.pvsystQuality,
+                          uc: number("uc"),
+                          uv: number("uv"),
+                          moduleEfficiency: number("moduleEfficiency"),
+                          alphaAbsorption: number("alphaAbsorption"),
+                          windHeightM: 10,
+                        },
+                      }
+                    : {}),
+                  ...(v.thermalModel === "explicit"
+                    ? {
+                        cellTemperatureSchedule: {
+                          source: v.cellSource,
+                          quality: v.cellQuality,
+                          records: parseCellTemperatureCsv(v.cellCsv ?? ""),
+                        },
+                      }
+                    : {}),
                   ...(v.thermalModel === "faiman"
                     ? {
                         faiman: {
@@ -1135,7 +1260,16 @@ export function StudyBuilder({
         )}
         {review && (
           <div data-testid="weather-review" className="text-xs">
-            <StudyInsights request={review} en={en}/>
+            <StudyInsights request={review} en={en} />
+            {(review.system.pvsystTemperature ||
+              review.system.cellTemperatureSchedule) && (
+              <p data-testid="new-thermal-review">
+                Thermal mode:{" "}
+                {review.system.pvsystTemperature
+                  ? "PVsyst explicit 10 m fitted coefficients"
+                  : "explicit interval cell temperature; no fill"}
+              </p>
+            )}
             <p>
               {en
                 ? "Contract checks passed: ordered, regular, finite, bounded. No gap filling. Domain checks also run in Python."

@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.8.0'
+ENGINE_VERSION = '1.9.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -77,7 +77,19 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','acAvailability','horizonProfile','soilingSchedule','albedoSchedule') if k in system])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','acAvailability','horizonProfile','soilingSchedule','albedoSchedule','pvsystTemperature','cellTemperatureSchedule') if k in system])], 'system')
+    if sum(k in system for k in ('faiman','pvsystTemperature','cellTemperatureSchedule'))>1:raise InputError('Thermal opt-ins are mutually exclusive; no fallback')
+    if 'pvsystTemperature' in system:
+        p=system['pvsystTemperature'];keys(p,['source','quality','uc','uv','moduleEfficiency','alphaAbsorption','windHeightM'],'pvsystTemperature');text(p['source'],'pvsystTemperature.source')
+        if p['quality'] not in ('measured','weather_provider','user_configured','assumed'):raise InputError('invalid PVsyst provenance quality')
+        for key,lo,hi in [('uc',.1,200),('uv',0,100),('moduleEfficiency',0,.5),('alphaAbsorption',.01,1)]:number(p[key],lo,hi,'pvsystTemperature.'+key)
+        number(p['windHeightM'],10,10,'PVsyst coefficients must be fitted to 10 m wind; no conversion')
+    if 'cellTemperatureSchedule' in system:
+        p=system['cellTemperatureSchedule'];keys(p,['source','quality','records'],'cellTemperatureSchedule');text(p['source'],'cellTemperatureSchedule.source')
+        if p['quality'] not in ('measured','weather_provider','user_configured','assumed'):raise InputError('invalid cell temperature provenance quality')
+        if not isinstance(p['records'],list) or not 2<=len(p['records'])<=8784:raise InputError('cell temperature requires 2..8784 records')
+        for row in p['records']:
+            keys(row,['timestamp','cellTemperatureC'],'cell temperature record');timestamp(row['timestamp']);number(row['cellTemperatureC'],-100,150,'cellTemperatureC')
     for name,fields in [('soilingSchedule',['frontRatio','rearRatio']),('albedoSchedule',['albedo'])]:
         if name not in system:continue
         obj=system[name]
@@ -238,11 +250,12 @@ def validate(req):
     if 'acAvailability' in system:
         records=system['acAvailability']['records']
         if len(records)!=len(times) or any(timestamp(r['timestamp'])!=t for r,t in zip(records,times)):raise InputError('availability records must exactly align with weather interval ends in UTC; no fill')
-    for name in ('soilingSchedule','albedoSchedule'):
+    for name in ('soilingSchedule','albedoSchedule','cellTemperatureSchedule'):
         if name in system:
             records=system[name]['records']
             if len(records)!=len(times) or any(timestamp(r['timestamp'])!=t for r,t in zip(records,times)):raise InputError(name+' must exactly align with weather interval ends in UTC; no fill')
     if any(k in system for k in ('horizonProfile','soilingSchedule','albedoSchedule')) and len(rows)>8784:raise InputError('environment mode supports at most 8784 records')
+    if any(k in system for k in ('pvsystTemperature','cellTemperatureSchedule')) and len(rows)>8784:raise InputError('thermal detail supports at most 8784 records')
     return times
 
 
@@ -518,14 +531,23 @@ def run_study(req):
         limitations=[item.replace('Diffuse IAM and spectral factors are unity assumptions','Diffuse IAM remains a unity assumption').replace('unity diffuse IAM/spectral assumptions remain','unity diffuse IAM assumption remains') for item in limitations]
         models['spectral']='sapm A0..A4 polynomial; absolute airmass from kastenyoung1989 and altitude standard pressure'
         limitations.append('SAPM spectral modifier is applied once to optical effective irradiance, not thermal POA; same empirical factor for both sides. No wavelength-resolved spectrum, water vapor/aerosol correction or independently modeled rear spectrum. Nonactive factor/airmass=0 are explicit sentinels, not weather fill.')
-    if 'faiman' in s:
+    if 'cellTemperatureSchedule' in s:
+        cell=pd.Series([r['cellTemperatureC'] for r in s['cellTemperatureSchedule']['records']],index=mid)
+        models['temperature']='explicit interval cell temperature; no thermal model or module-to-cell conversion'
+        limitations.append('Cell temperature schedule is caller-declared interval cell temperature, not independently verified measurements. No thermal POA feedback, gap fill, interpolation or module-to-cell conversion; SAPM coefficients inactive. Row thermal policy retained but inactive for temperature; optical irradiance still drives DC.')
+    elif 'pvsystTemperature' in s:
+        p=s['pvsystTemperature']
+        cell=pvlib.temperature.pvsyst_cell(thermal_poa,df.tempAirC,df.windSpeedMs,u_c=p['uc'],u_v=p['uv'],module_efficiency=p['moduleEfficiency'],alpha_absorption=p['alphaAbsorption'])
+        models['temperature']='pvsyst empirical heat loss; explicit fixed module efficiency/absorptance and 10 m fitted wind coefficients'
+        limitations.append('PVsyst temperature is a steady-state empirical proxy with caller coefficients fitted to the supplied 10 m wind. Fixed thermal module efficiency is not solved from instantaneous DC efficiency. No default fitting, wind-height conversion, thermal inertia, independent bifacial thermal validation or whole-PVsyst equivalence. SAPM coefficients inactive.')
+    elif 'faiman' in s:
         f=s['faiman']
         cell=pvlib.temperature.faiman(thermal_poa,df.tempAirC,df.windSpeedMs,u0=f['u0'],u1=f['u1'])
         models['temperature']='faiman; caller coefficients fitted to 10 m wind; SAPM coefficients inactive'
         limitations.append('Faiman is an empirical steady-state cell/module temperature proxy with caller-declared coefficients at 10 m wind; no wind-height conversion, thermal inertia or independent bifacial thermal validation.')
     else:
         cell = pvlib.temperature.sapm_cell(thermal_poa, df.tempAirC, df.windSpeedMs, irrad_ref=1000.0, **s['temperature'])
-    if 'faiman' in s and (not np.isfinite(cell).all() or (cell < -100).any() or (cell > 150).any()):
+    if any(k in s for k in ('faiman','pvsystTemperature','cellTemperatureSchedule')) and (not np.isfinite(cell).all() or (cell < -100).any() or (cell > 150).any()):
         raise InputError('modeled cell temperature must be finite and within -100..150 degC')
     electrical_columns={};electrical_checks={};constraint_loss=None
     if 'electrical' in s:

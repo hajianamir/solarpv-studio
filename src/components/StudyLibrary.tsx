@@ -1,3 +1,11 @@
+import { StudyLibraryTools } from "./StudyLibraryTools";
+import {
+  filterStudyEntries,
+  cloneStudyInputs,
+  requestStudyJson,
+  weatherInputCsv,
+} from "../studies/studyExchange";
+import { watchStudyChanges } from "../studies/studyLibrary";
 import { scenarioInputDiff } from "../studies/studyExplorer";
 import { compareStudies, comparisonStudyCsv } from "../studies/studyInsights";
 import React, { useEffect, useRef, useState, useMemo } from "react";
@@ -49,6 +57,13 @@ export function StudyLibrary({
       active.current = false;
     };
   }, []);
+  const [search, setSearch] = useState(""),
+    [status, setStatus] = useState<"all" | "inputs" | "results">("all"),
+    [siteOnly, setSiteOnly] = useState(false),
+    [sort, setSort] = useState<"newest" | "oldest" | "label">("newest"),
+    [page, setPage] = useState(0),
+    [selected, setSelected] = useState<string[]>([]);
+  const [cloneLabel, setCloneLabel] = useState("");
   const [entries, setEntries] = useState<StudyIndex[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -67,6 +82,31 @@ export function StudyLibrary({
       active = false;
     };
   }, []);
+  useEffect(
+    () =>
+      watchStudyChanges(() => {
+        listStudies()
+          .then((rows) => {
+            if (active.current) {
+              setEntries(rows);
+              setOther(null);
+              setMessage(
+                "Library updated in another tab; comparison cleared / کتابخانه در تب دیگر تغییر کرد؛ مقایسه پاک شد",
+              );
+            }
+          })
+          .catch((e) => {
+            if (active.current) setError(String(e));
+          });
+      }),
+    [],
+  );
+  useEffect(() => {
+    setSelected((ids) => ids.filter((id) => entries.some((e) => e.id === id)));
+  }, [entries]);
+  useEffect(() => {
+    setPage(0);
+  }, [search, status, siteOnly, sort]);
   useEffect(() => {
     setOther(null);
   }, [result, latitude, longitude]);
@@ -126,6 +166,17 @@ export function StudyLibrary({
       result && other && !reason ? scenarioInputDiff(result, other) : null,
     [result, other, reason],
   );
+  const filtered = filterStudyEntries(entries, {
+    search,
+    status,
+    siteOnly,
+    latitude,
+    longitude,
+    sort,
+  });
+  const lastPage = Math.max(0, Math.ceil(filtered.length / 10) - 1),
+    currentPage = Math.min(page, lastPage),
+    visible = filtered.slice(currentPage * 10, currentPage * 10 + 10);
   return (
     <section
       className="border border-slate-600 rounded p-3 space-y-3"
@@ -198,18 +249,167 @@ export function StudyLibrary({
             }}
           />
         </label>
+        <StudyLibraryTools
+          entries={entries}
+          selected={selected}
+          setSelected={setSelected}
+          action={action}
+          en={en}
+        />
+        <div data-testid="study-library-filters">
+          <label>
+            Search
+            <input
+              aria-label="Search study labels"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-slate-900"
+            />
+          </label>
+          <select
+            aria-label="Filter study status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as typeof status)}
+          >
+            <option value="all">All</option>
+            <option value="inputs">Inputs only</option>
+            <option value="results">Results</option>
+          </select>
+          <label>
+            <input
+              aria-label="Only active study site"
+              type="checkbox"
+              checked={siteOnly}
+              onChange={(e) => setSiteOnly(e.target.checked)}
+            />
+            Active site only
+          </label>
+          <select
+            aria-label="Sort study library"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as typeof sort)}
+          >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="label">Label</option>
+          </select>
+          <p data-testid="study-library-page">
+            {filtered.length} · page {currentPage + 1}/{lastPage + 1}
+          </p>
+          <button
+            type="button"
+            aria-label="Previous study page"
+            disabled={currentPage === 0}
+            onClick={() => setPage(currentPage - 1)}
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            aria-label="Next study page"
+            disabled={currentPage >= lastPage}
+            onClick={() => setPage(currentPage + 1)}
+          >
+            →
+          </button>
+          <label>
+            Clone label
+            <input
+              aria-label="Cloned study label"
+              value={cloneLabel}
+              onChange={(e) => setCloneLabel(e.target.value)}
+              className="bg-slate-900"
+            />
+          </label>
+        </div>
         <ul className="text-xs space-y-2">
-          {entries.map((entry) => (
+          {visible.map((entry) => (
             <li
               key={entry.id}
               data-testid="saved-study-entry"
               className="border-b border-slate-700 pb-2"
             >
+              <input
+                aria-label={`Select study ${entry.id}`}
+                type="checkbox"
+                disabled={!selected.includes(entry.id) && selected.length >= 20}
+                checked={selected.includes(entry.id)}
+                onChange={(e) =>
+                  setSelected(
+                    e.target.checked
+                      ? [...selected, entry.id]
+                      : selected.filter((id) => id !== entry.id),
+                  )
+                }
+              />
               <span>
                 {entry.label} · {entry.savedAt} · {entry.latitude},{" "}
                 {entry.longitude} · {entry.completed ? "result" : "inputs only"}
               </span>
               <div className="flex gap-4">
+                <button
+                  type="button"
+                  data-testid="clone-study-inputs"
+                  onClick={() =>
+                    void action(async () => {
+                      await saveStudy(
+                        cloneStudyInputs(
+                          await loadStudy(entry.id),
+                          cloneLabel,
+                          crypto.randomUUID(),
+                          new Date().toISOString(),
+                        ),
+                      );
+                    })
+                  }
+                >
+                  {en ? "Clone inputs only" : "کپی فقط ورودی‌ها"}
+                </button>
+                <button
+                  type="button"
+                  data-testid="export-entry-archive"
+                  onClick={() =>
+                    void action(async () =>
+                      studyDownload(
+                        "pvlib-study-archive.json",
+                        JSON.stringify(await loadStudy(entry.id)),
+                        "application/json",
+                      ),
+                    )
+                  }
+                >
+                  Archive JSON
+                </button>
+                <button
+                  type="button"
+                  data-testid="export-entry-request"
+                  onClick={() =>
+                    void action(async () =>
+                      studyDownload(
+                        "pvlib-study-request.json",
+                        requestStudyJson((await loadStudy(entry.id)).request),
+                        "application/json",
+                      ),
+                    )
+                  }
+                >
+                  Request JSON
+                </button>
+                <button
+                  type="button"
+                  data-testid="export-entry-weather"
+                  onClick={() =>
+                    void action(async () =>
+                      studyDownload(
+                        "pvlib-study-weather.csv",
+                        weatherInputCsv((await loadStudy(entry.id)).request),
+                        "text/csv;charset=utf-8",
+                      ),
+                    )
+                  }
+                >
+                  Weather CSV
+                </button>
                 <button
                   type="button"
                   disabled={

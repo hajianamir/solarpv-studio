@@ -188,6 +188,8 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
     },
   ];
   for (const [component, value, count] of [
+    ["cellTemperatureSchedule",s.cellTemperatureSchedule,s.cellTemperatureSchedule?.records.length],
+    ["pvsystTemperature",s.pvsystTemperature,undefined],
     ["horizonProfile", s.horizonProfile, s.horizonProfile?.points.length],
     ["soilingSchedule", s.soilingSchedule, s.soilingSchedule?.records.length],
     ["albedoSchedule", s.albedoSchedule, s.albedoSchedule?.records.length],
@@ -220,6 +222,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
         s.soilingSchedule && !s.rowIrradiance
           ? "retained rear ratio inactive"
           : "not inactive",
+      thermalInputMode:s.cellTemperatureSchedule?"explicit cell temperature; thermal POA proxy inactive":s.pvsystTemperature?"PVsyst fixed efficiency/absorptance; 10 m wind fitted coefficients":"existing modeled thermal input",
       thermalIrradiance:
         s.rowIrradiance?.temperatureIrradiance ?? "front isolated POA",
       equipmentSourceScope:

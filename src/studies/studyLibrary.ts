@@ -71,6 +71,7 @@ export async function saveStudy(snapshot: StudySnapshot) {
     store.put(checked);
     done();
   });
+  notifyStudyChange();
 }
 export async function loadStudy(id: string) {
   return transaction<StudySnapshot>("readonly", (store, done) => {
@@ -89,6 +90,7 @@ export async function deleteStudy(id: string) {
     store.delete(id);
     done();
   });
+  notifyStudyChange();
 }
 export async function listStudies() {
   return transaction<StudyIndex[]>("readonly", (store, done) => {
@@ -112,4 +114,68 @@ export async function listStudies() {
       item.continue();
     };
   });
+}
+
+const notificationInstance =
+  globalThis.crypto?.randomUUID?.() ?? String(Math.random());
+/** Notification only: no requests, results or credentials are broadcast. */
+function notifyStudyChange() {
+  if (typeof BroadcastChannel !== "undefined") {
+    const channel = new BroadcastChannel("solarpv-study-library-changed-v1");
+    channel.postMessage({ type: "changed", sender: notificationInstance });
+    channel.close();
+  }
+}
+export function watchStudyChanges(refresh: () => void) {
+  if (typeof BroadcastChannel === "undefined") return () => {};
+  const channel = new BroadcastChannel("solarpv-study-library-changed-v1");
+  channel.onmessage = (e) => {
+    if (e.data?.type === "changed" && e.data.sender !== notificationInstance)
+      refresh();
+  };
+  return () => channel.close();
+}
+export async function loadStudies(ids: string[]) {
+  if (ids.length < 1 || ids.length > 20 || new Set(ids).size !== ids.length)
+    throw new Error("Select 1..20 distinct snapshots");
+  return transaction<StudySnapshot[]>("readonly", (store, done) => {
+    const rows: StudySnapshot[] = new Array(ids.length);
+    let count = 0;
+    ids.forEach((id, i) => {
+      const req = store.get(id);
+      req.onsuccess = () => {
+        try {
+          rows[i] = validateSnapshot(req.result);
+          if (++count === ids.length) done(rows);
+        } catch {
+          req.transaction?.abort();
+        }
+      };
+    });
+  });
+}
+export async function deleteStudies(ids: string[]) {
+  if (ids.length < 1 || ids.length > 20 || new Set(ids).size !== ids.length)
+    throw new Error("Select 1..20 distinct snapshots");
+  await transaction<void>("readwrite", (store, done) => {
+    for (const id of ids) store.delete(id);
+    done();
+  });
+  notifyStudyChange();
+}
+export async function importStudyBundle(value: unknown) {
+  const { validateStudyBundle } = await import("./studyExchange");
+  const bundle = await validateStudyBundle(value);
+  try {
+    await transaction<void>("readwrite", (store, done) => {
+      for (const s of bundle.snapshots) store.add(s);
+      done();
+    });
+  } catch (e) {
+    throw new Error(
+      "Bundle import aborted: ID conflict, quota or storage failure; no snapshots imported. " +
+        String(e),
+    );
+  }
+  notifyStudyChange();
 }

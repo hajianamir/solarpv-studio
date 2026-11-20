@@ -23,7 +23,7 @@ const base=`http://127.0.0.1:${address.port}`;
 const send=(body:unknown=request,headers:Record<string,string>={})=>fetch(`${base}/api/v1/studies/run`,{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
 const temp=mkdtempSync(path.join(os.tmpdir(),'pvlib-study-'));
 try{
-  const cap=await (await fetch(`${base}/api/v1/studies/capabilities`)).json();assert.equal(cap.runtimeStatus,'not_probed');assert.equal(cap.enabled,true);assert.ok(cap.supportedModes.includes('single_axis_monofacial'));
+  const cap=await (await fetch(`${base}/api/v1/studies/capabilities`)).json();assert.equal(cap.runtimeStatus,'not_probed');assert.equal(cap.enabled,true);assert.ok(cap.thermalCapabilities.includes('pvsyst_explicit_10m_coefficients'));assert.ok(cap.supportedTemperatureModels.includes('explicit_cell_temperature_schedule'));assert.ok(cap.supportedModes.includes('single_axis_monofacial'));
   process.env.PVLIB_STUDY_ENABLED='false';assert.equal((await send()).status,503);
   process.env.PVLIB_STUDY_ENABLED='true';
   // Real existing production identity path, not a test replacement.
@@ -54,7 +54,7 @@ try{
     const invalidTracker=structuredClone(tracked);invalidTracker.system.tracking!.gcr=0;
     assert.equal((await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(invalidTracker)})).status,400);
     const trackingRun=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(tracked)});assert.equal(trackingRun.status,200,await trackingRun.clone().text());
-    const trackingResult=await trackingRun.json();assert.deepEqual(trackingResult.request,tracked);assert.equal(trackingResult.manifest.engineVersion,'1.8.0');assert.ok(trackingResult.manifest.models.transposition.startsWith("perez"));assert.ok(trackingResult.samples.every((r:{spectralFactor:number;spectralActive:number})=>r.spectralActive===0?r.spectralFactor===0:r.spectralFactor>0));assert.ok(trackingResult.samples.some((row:{trackerThetaDeg:number})=>Math.abs(row.trackerThetaDeg)>1));
+    const trackingResult=await trackingRun.json();assert.deepEqual(trackingResult.request,tracked);assert.equal(trackingResult.manifest.engineVersion,'1.9.0');assert.ok(trackingResult.manifest.models.transposition.startsWith("perez"));assert.ok(trackingResult.samples.every((r:{spectralFactor:number;spectralActive:number})=>r.spectralActive===0?r.spectralFactor===0:r.spectralFactor>0));assert.ok(trackingResult.samples.some((row:{trackerThetaDeg:number})=>Math.abs(row.trackerThetaDeg)>1));
     const rows=structuredClone(tracked);delete rows.system.skyDiffuseModel;delete rows.system.horizonProfile;rows.system.rowIrradiance={gcr:.4,heightM:2,pitchM:5,bifaciality:.7,rearShadeLossPct:2,rearTransmissionLossPct:0,rearIamB:.05,temperatureIrradiance:'front_plus_rear'};
     rows.system.arrayPdc0W=8800;rows.system.electrical=JSON.parse(readFileSync('services/pvlib_study/tests/desoto-reference-parameters.json','utf8'));
     rows.system.faiman={u0:30,u1:5,windHeightM:10};rows.system.acExportLimitW=100;
