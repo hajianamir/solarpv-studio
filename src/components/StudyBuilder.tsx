@@ -109,6 +109,14 @@ export function StudyBuilder({
             parameterSource: r.parameterProvenance.source,
             parameterQuality: r.parameterProvenance.quality,
             mounting: r.system.tracking ? "single_axis" : "fixed",
+            thermalModel: r.system.faiman ? "faiman" : "sapm",
+            u0: r.system.faiman ? String(r.system.faiman.u0) : "",
+            u1: r.system.faiman ? String(r.system.faiman.u1) : "",
+            exportEnabled: r.system.acExportLimitW !== undefined ? "yes" : "no",
+            acExportLimitW:
+              r.system.acExportLimitW !== undefined
+                ? String(r.system.acExportLimitW)
+                : "",
             electricalModel: r.system.electrical ? "diode" : "pvwatts",
             ...Object.fromEntries(
               electricalFields.map(([key]) => [
@@ -354,6 +362,53 @@ export function StudyBuilder({
           {text("label", "Study name / نام مطالعه")}
           {text("altitudeM", "Altitude / ارتفاع (m)", "number")}
           {text("timezone", "IANA timezone / منطقه زمانی")}
+          <label>
+            {en ? "Thermal model" : "مدل حرارتی"}
+            <select
+              aria-label="Study thermal model"
+              value={v.thermalModel ?? "sapm"}
+              onChange={(e) => change("thermalModel", e.target.value)}
+            >
+              <option value="sapm">SAPM</option>
+              <option value="faiman">Faiman</option>
+            </select>
+          </label>
+          {v.thermalModel === "faiman" && (
+            <div data-testid="faiman-inputs">
+              <p>
+                {en
+                  ? "Explicit fitted coefficients for 10 m wind required; no height conversion. SAPM coefficients below are retained but inactive. Row thermal irradiance remains the declared proxy, not validated bifacial heat transfer."
+                  : "ضرایب صریح معتبر برای باد ۱۰ متر لازم است؛ بدون تبدیل ارتفاع. ضرایب SAPM پایین حفظ ولی غیرفعال‌اند. تابش حرارتی ردیف همان proxy اعلام‌شده است، نه انتقال حرارت دوطرفه تأییدشده."}
+              </p>
+              {text("u0", "u0 (W/m²/K)", "number")}
+              {text("u1", "u1 (W/m²/K per m/s)", "number")}
+            </div>
+          )}
+          <label>
+            {en ? "Constant AC export cap" : "سقف ثابت صادرات AC"}
+            <select
+              aria-label="Study export enabled"
+              value={v.exportEnabled ?? "no"}
+              onChange={(e) => change("exportEnabled", e.target.value)}
+            >
+              <option value="no">{en ? "Disabled" : "غیرفعال"}</option>
+              <option value="yes">{en ? "Enabled" : "فعال"}</option>
+            </select>
+          </label>
+          {v.exportEnabled === "yes" && (
+            <div>
+              <p>
+                {en
+                  ? "After inverter; assumes no local load or storage. Zero means no export. No DC feedback or grid dynamics."
+                  : "پس از اینورتر؛ بدون بار محلی یا ذخیره‌ساز. صفر یعنی بدون صادرات. بدون بازخورد DC یا دینامیک شبکه."}
+              </p>
+              {text(
+                "acExportLimitW",
+                en ? "AC export limit (W)" : "حد صادرات AC (W)",
+                "number",
+              )}
+            </div>
+          )}
           {fields.map(([key, label]) => text(key, label, "number"))}
           {text(
             "parameterSource",
@@ -449,6 +504,18 @@ export function StudyBuilder({
                 },
                 system: {
                   ...system,
+                  ...(v.thermalModel === "faiman"
+                    ? {
+                        faiman: {
+                          u0: number("u0"),
+                          u1: number("u1"),
+                          windHeightM: 10,
+                        },
+                      }
+                    : {}),
+                  ...(v.exportEnabled === "yes"
+                    ? { acExportLimitW: number("acExportLimitW") }
+                    : {}),
                   ...(v.electricalModel === "diode"
                     ? {
                         electrical: Object.fromEntries(

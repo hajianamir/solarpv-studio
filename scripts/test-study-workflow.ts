@@ -165,3 +165,24 @@ assert.deepEqual(validateSnapshot({...snapshot,request:detailed,result:detailedR
 const missingPoint=structuredClone(detailedResult);delete missingPoint.samples[0].operatingCurrentA;assert.throws(()=>validateResult(missingPoint),/electrical/);
 assert.ok(studyReport(detailedResult).includes('De Soto single diode'));
 console.log('Detailed electrical workflow PASS: strict module/string/MPPT contract, actual Python, result/archive validation, DC-model comparison barrier and report.');
+
+const thermalExport=structuredClone(detailed);
+thermalExport.system.faiman={u0:30,u1:5,windHeightM:10};thermalExport.system.acExportLimitW=100;
+assert.equal(StudyRequestSchema.safeParse(thermalExport).success,true);
+for(const f of [{u0:0,u1:5,windHeightM:10},{u0:30,u1:-1,windHeightM:10},{u0:30,u1:5,windHeightM:2},{u0:30,u1:5,windHeightM:10,extra:1}]){
+ const bad=structuredClone(thermalExport);bad.system.faiman=f as typeof bad.system.faiman;assert.equal(StudyRequestSchema.safeParse(bad).success,false);
+}
+for(const cap of [-1,true,NaN]){const bad=structuredClone(thermalExport);bad.system.acExportLimitW=cap as number;assert.equal(StudyRequestSchema.safeParse(bad).success,false);}
+const thermalRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(thermalExport),encoding:'utf8',maxBuffer:16*1024*1024});
+assert.equal(thermalRun.status,0,thermalRun.stderr);
+const thermalResult=validateResult(JSON.parse(thermalRun.stdout));
+assert.ok(thermalResult.summary.acExportLimitLossWh!>0);
+assert.deepEqual(validateSnapshot({...snapshot,request:thermalExport,result:thermalResult}).result,thermalResult);
+assert.match(comparisonReason(detailedResult,thermalResult)!,/engine/);
+assert.equal(comparisonReason(thermalResult,structuredClone(thermalResult)),null);
+assert.ok(studyReport(thermalResult).includes('AC export cap: 100 W'));
+assert.ok(studyReport(thermalResult).includes('faiman;'));
+for(const key of ['acBeforeExportLimitW','acExportLimitLossW']){const bad=structuredClone(thermalResult);delete bad.samples[0][key];assert.throws(()=>validateResult(bad),/export cap/);}
+const badEnergy=structuredClone(thermalResult);badEnergy.summary.acExportLimitLossWh=1e12;assert.throws(()=>validateResult(badEnergy),/export cap/);
+const badModel=structuredClone(thermalResult);badModel.manifest.models.temperature='sapm_cell';assert.throws(()=>validateResult(badModel),/Faiman/);
+console.log('Faiman + AC export workflow PASS: strict inputs, real Python, archive, model comparison barrier, report and rejected corrupted accounting.');

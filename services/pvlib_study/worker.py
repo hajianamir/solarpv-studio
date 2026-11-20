@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.3.0'
+ENGINE_VERSION = '1.4.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -23,7 +23,7 @@ MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg 
 LIMITATIONS = [
     'Not field validated, calibrated, bankable or a standards-conformity assessment.',
     'Fixed-tilt or single-axis aggregate array and one aggregate inverter; optional uniform-string diode and ideal static MPPT envelope, not certified electrical design.',
-    'No horizon, near-obstacle shading, electrical mismatch, snow, soiling, battery, grid curtailment or financial simulation.',
+    'No horizon, near-obstacle shading, electrical mismatch, snow, soiling, battery, dynamic grid control or financial simulation.',
     'Fixed SPA delta_t=67 s and sunrise/sunset refraction 0.5667 deg are assumptions, not historical/forecast corrections.',
     'Diffuse IAM and spectral factors are unity assumptions; midpoint transposition does not eliminate interval-averaging error.',
     'SAPM wind must be at 10 m; mounting-specific coefficients and all equipment parameters are caller-declared.',
@@ -77,7 +77,15 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else [])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else [])], 'system')
+    if 'acExportLimitW' in system:
+        number(system['acExportLimitW'],0,1e9,'acExportLimitW')
+    if 'faiman' in system:
+        f=system['faiman']
+        keys(f,['u0','u1','windHeightM'],'system.faiman')
+        number(f['u0'],.1,200,'faiman.u0')
+        number(f['u1'],0,100,'faiman.u1')
+        number(f['windHeightM'],10,10,'faiman.windHeightM')
     if 'electrical' in system:
         e=system['electrical']
         limits=dict(alphaScAperC=(-.05,.05),aRefV=(.1,10),iLRefA=(.01,30),iORefA=(1e-15,.01),rShRefOhm=(1,1e6),rSOhm=(0,10),egRefEv=(.5,2.5),dEgdTPerK=(-.002,0),modulesPerString=(1,1000),stringsInParallel=(1,100000),mpptMinV=(1,3000),mpptMaxV=(1,3000),maxDcV=(1,3000),maxInputCurrentA=(.1,1e7),designMinCellTemperatureC=(-90,25),designMaxEffectiveIrradianceWm2=(1000,2500))
@@ -316,7 +324,15 @@ def run_study(req):
             'Rear irradiance is area averaged; no cell/string electrical mismatch, bypass diode, nonuniformity or finite-array edge simulation.',
             'Bifaciality, rear structural shade and rear transmission reductions affect electrical irradiance only; unity diffuse IAM/spectral assumptions remain.'
         ])
-    cell = pvlib.temperature.sapm_cell(thermal_poa, df.tempAirC, df.windSpeedMs, irrad_ref=1000.0, **s['temperature'])
+    if 'faiman' in s:
+        f=s['faiman']
+        cell=pvlib.temperature.faiman(thermal_poa,df.tempAirC,df.windSpeedMs,u0=f['u0'],u1=f['u1'])
+        models['temperature']='faiman; caller coefficients fitted to 10 m wind; SAPM coefficients inactive'
+        limitations.append('Faiman is an empirical steady-state cell/module temperature proxy with caller-declared coefficients at 10 m wind; no wind-height conversion, thermal inertia or independent bifacial thermal validation.')
+    else:
+        cell = pvlib.temperature.sapm_cell(thermal_poa, df.tempAirC, df.windSpeedMs, irrad_ref=1000.0, **s['temperature'])
+    if 'faiman' in s and (not np.isfinite(cell).all() or (cell < -100).any() or (cell > 150).any()):
+        raise InputError('modeled cell temperature must be finite and within -100..150 degC')
     electrical_columns={};electrical_checks={};constraint_loss=None
     if 'electrical' in s:
         raw_dc,electrical_columns,electrical_checks,constraint_loss=electrical_dc(s['electrical'],effective,cell,s['arrayPdc0W'])
@@ -336,13 +352,23 @@ def run_study(req):
             raise InputError('PVWatts produced negative DC outside supported temperature/coefficient conditions')
     dc = raw_dc * (1-s['additionalDcLossPct']/100)
     ac = pvlib.inverter.pvwatts(dc, s['inverterPdc0W'], eta_inv_nom=s['inverterEtaNom'], eta_inv_ref=s['inverterEtaRef'])
-    columns = dict(surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
+    export_columns={}
+    if 'acExportLimitW' in s:
+        before_export=ac.copy()
+        ac=ac.clip(upper=s['acExportLimitW'])
+        export_columns=dict(acBeforeExportLimitW=before_export,acExportLimitLossW=before_export-ac)
+        models['acExport']='constant export cap after inverter; no local load or storage; no DC feedback'
+        limitations.append('Static AC export cap assumes no local consumption/storage and no controller dynamics, reactive power, grid voltage or time-varying dispatch; inverter clipping is already upstream and is not counted twice.')
+    columns = dict(**export_columns,surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
         beamIam=iam, poaDirectWm2=poa.poa_direct, poaSkyDiffuseWm2=poa.poa_sky_diffuse,
         poaGroundDiffuseWm2=poa.poa_ground_diffuse, poaGlobalWm2=poa.poa_global,
         effectiveIrradianceWm2=effective, cellTemperatureC=cell, dcBeforeAdditionalLossW=raw_dc, dcW=dc, acW=ac)
     if not all(np.isfinite(values).all() for values in columns.values()):
         raise InputError('nonfinite model output; unsupported input combination')
     energy = pd.DataFrame(dict(dcBeforeAdditionalLossWh=raw_dc*dt_hours, dcWh=dc*dt_hours, acWh=ac*dt_hours), index=mid)
+    if 'acExportLimitW' in s:
+        energy['acBeforeExportLimitWh']=before_export*dt_hours
+        energy['acExportLimitLossWh']=(before_export-ac)*dt_hours
     if 'electrical' in s:
         energy['availableMppWh']=electrical_columns['arrayMppW']*dt_hours
         energy['mpptConstraintLossWh']=constraint_loss*dt_hours

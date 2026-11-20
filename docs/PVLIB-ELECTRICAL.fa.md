@@ -82,3 +82,6 @@ summary و monthly شامل `availableMppWh` و `mpptConstraintLossWh` هستن�
 - [معادله مستقل تک‌دیود و شرط ماژول‌های یکسان، Sandia/NIST PVPMC](https://pvpmc.sandia.gov/modeling-guide/2-dc-module-iv/single-diode-equivalent-circuit-models/)
 
 آزمون‌ها شش نقطه منتشرشده، حل مستقل معادله Kirchhoff با bisection و جستجوی شبکه مستقل نقاط مجاز، scaling سری/موازی، حدود MPPT/current، خاموشی، رد Voc و nameplate، عدم فراخوانی PVWatts DC در حالت دیودی، ترکیب با bifacial/tracker، صفر شب و سال کبیسه را پوشش می‌دهند. پارامترهای نمونه فقط fixture آزمون‌اند؛ در پروژه واقعی خودکار وارد نمی‌شوند. هیچ داده مستقل میدانی، کالیبراسیون یا bankability اثبات نشده است.
+
+
+توسعهٔ موتور 1.4.0: [مدل حرارتی Faiman و سقف ثابت صادرات AC](PVLIB-THERMAL-EXPORT.fa.md).

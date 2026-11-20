@@ -63,3 +63,6 @@ timestamp,ghiWm2,dniWm2,dhiWm2,tempAirC,windSpeedMs
 ## شواهد نرم‌افزاری
 
 `test:study:workflow` قرارداد CSV، مقدار مفقود، حجم، زمان، پیوند snapshot/result، ناسازگاری مقایسه و escape گزارش را با نتیجه واقعی Python بررسی می‌کند. `test:study:browser` فرم+CSV تا Python، ذخیره و reload/restore، ویرایش و اجرای دوم، مقایسه، خواندن گزارش/پشتیبان، حذف و خطای ذخیره را در Chromium واقعی بررسی می‌کند. fixtureها مصنوعی و فقط برای آزمون عددی هستند، نه داده سایت.
+
+
+توسعهٔ موتور 1.4.0: [مدل حرارتی Faiman و سقف ثابت صادرات AC](PVLIB-THERMAL-EXPORT.fa.md).

@@ -85,3 +85,6 @@ SAPM موجود، مدل اختصاصی گرمایی ماژول دوطرفه ن�
 - [نمونه مشابه pvfactors و PVWatts](https://pvlib-python.readthedocs.io/en/v0.13.1/gallery/bifacial/plot_bifi_model_pvwatts.html)؛ الگوریتم و مدل حرارتی آن متفاوت‌اند و شاهد هم‌ارزی این پیاده‌سازی نیست.
 
 ۲۸ آزمون Python شامل حد تحلیلی تابش مستقیم سطح افقی، هندسه مستقل سایه، حسابداری مستقل rear/IAM/thermal/DC، حساسیت albedo و bifaciality، مونتاژ مستقل دو سمت با API تک‌سطحی pvlib (صرفاً wiring)، صفر شب، قیود دامنه و سال کبیسه ساعتی هستند. API واقعی و مرورگر فرم تا Python و backup/مقایسه/گزارش نیز آزموده می‌شوند. تمام fixtureهای جدید مصنوعی و شواهد نرم‌افزاری‌اند، نه اندازه‌گیری سایت.
+
+
+توسعهٔ موتور 1.4.0: [مدل حرارتی Faiman و سقف ثابت صادرات AC](PVLIB-THERMAL-EXPORT.fa.md).

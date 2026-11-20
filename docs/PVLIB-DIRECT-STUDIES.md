@@ -131,3 +131,6 @@ Numerical checks include a published SAPM temperature example, published SPA ref
 Dedicated CI runs these checks on Linux and Windows with Python 3.11. Existing application tests and the existing physics-reference gate are not weakened. The older scanner covers changed TypeScript engine expressions, not Python; the new Python equations and orchestration are covered explicitly by the dedicated CI jobs that run on push rather than being claimed as scanned by that gate.
 
 No measured independent field dataset has been acquired in this implementation. MBE/MAE/RMSE, bankability and annual site accuracy are **not established**. See the research/design record: `docs/audit/PVLIB-DIRECT-STUDY-DESIGN.fa.md`.
+
+
+توسعهٔ موتور 1.4.0: [مدل حرارتی Faiman و سقف ثابت صادرات AC](PVLIB-THERMAL-EXPORT.fa.md).
