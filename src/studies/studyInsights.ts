@@ -190,6 +190,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
   for (const [component, value, count] of [
     ["cellTemperatureSchedule",s.cellTemperatureSchedule,s.cellTemperatureSchedule?.records.length],
     ["pvsystTemperature",s.pvsystTemperature,undefined],
+    ["dcCable",s.electrical?.dcCable,undefined],
     ["horizonProfile", s.horizonProfile, s.horizonProfile?.points.length],
     ["soilingSchedule", s.soilingSchedule, s.soilingSchedule?.records.length],
     ["albedoSchedule", s.albedoSchedule, s.albedoSchedule?.records.length],
@@ -253,6 +254,7 @@ export const ENERGY_METRICS = [
   "transformerLossWh",
   "availableMppWh",
   "mpptConstraintLossWh",
+  "dcCableLossWh",
   "frontIncidentWhm2",
   "rearIncidentWhm2",
   "rearEffectiveWhm2",

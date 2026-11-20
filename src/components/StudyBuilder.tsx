@@ -267,6 +267,11 @@ export function StudyBuilder({
                 r.system.sandia ? String(r.system.sandia[key]) : "",
               ]),
             ),
+            dcCableEnabled: r.system.electrical?.dcCable ? "yes" : "no",
+            dcCableSource: r.system.electrical?.dcCable?.source ?? "",
+            dcCableQuality: r.system.electrical?.dcCable?.quality ?? "user_configured",
+            stringLoopResistanceOhm: String(r.system.electrical?.dcCable?.stringLoopResistanceOhm ?? ""),
+            sharedLoopResistanceOhm: String(r.system.electrical?.dcCable?.sharedLoopResistanceOhm ?? ""),
             electricalModel: r.system.electrical ? "diode" : "pvwatts",
             ...Object.fromEntries(
               electricalFields.map(([key]) => [
@@ -849,6 +854,18 @@ export function StudyBuilder({
                 : "پارامترهای برازش‌شده در سطح ماژول، ماژول‌های یکسان با تابش/دمای یکنواخت و فقط یک باس DC. بدون حدس/برازش و بدون bypass یا mismatch. EgRef/dEgdT باید با منبع سازگار باشند. توان نامی آرایه باید با MPP مرجع×تعدادها تا ۲٪ سازگار باشد؛ gammaPdcPerC پایین غیرفعال است. MPPT یک قید ایستای ایده‌آل است، نه حفاظت تأییدشده یا کنترل واقعی. بررسی Voc فقط شرایط طراحی اعلام‌شده و sampleها را می‌پوشاند."}
             </p>
             <div className="grid sm:grid-cols-3 gap-3">
+              <label>DC cable / کابل DC
+                <select aria-label="Study DC cable" value={v.dcCableEnabled ?? "no"} onChange={e=>change("dcCableEnabled",e.target.value)}>
+                  <option value="no">Disabled / غیرفعال</option><option value="yes">Uniform strings + shared home run / رشته‌های یکسان و کابل مشترک</option>
+                </select>
+              </label>
+              {v.dcCableEnabled === "yes" && <>
+                <p className="text-xs">Explicit round-trip loop Ω at declared design conditions, not one-way resistance. R_eq = R_string / parallel strings + R_shared. No automatic cable temperature correction or ampacity assessment. additionalDcLossPct must be zero. MPPT voltage/current are inverter-terminal values. / مقاومت حلقهٔ رفت‌وبرگشت؛ بدون تبدیل دما یا تأیید ظرفیت جریان کابل.</p>
+                {text("dcCableSource", "DC cable resistance source / منبع و شرایط مقاومت")}
+                {quality("dcCableQuality", "DC cable quality / کیفیت")}
+                {text("stringLoopResistanceOhm", "Each identical string loop resistance (Ω) / مقاومت حلقه هر رشته", "number")}
+                {text("sharedLoopResistanceOhm", "Shared home-run loop resistance (Ω) / مقاومت حلقه کابل مشترک", "number")}
+              </>}
               {electricalFields.map(([key, label]) =>
                 text(key, label, "number"),
               )}
@@ -1186,9 +1203,15 @@ export function StudyBuilder({
                     : {}),
                   ...(v.electricalModel === "diode"
                     ? {
-                        electrical: Object.fromEntries(
-                          electricalFields.map(([key]) => [key, number(key)]),
-                        ),
+                        electrical: {
+                          ...Object.fromEntries(electricalFields.map(([key]) => [key, number(key)])),
+                          ...(v.dcCableEnabled === "yes" ? {dcCable:{
+                            topology:"uniform_strings_shared_home_run",
+                            source:v.dcCableSource,quality:v.dcCableQuality,
+                            stringLoopResistanceOhm:number("stringLoopResistanceOhm"),
+                            sharedLoopResistanceOhm:number("sharedLoopResistanceOhm"),
+                          }} : {}),
+                        },
                       }
                     : {}),
                   ...(v.optics === "rows"
@@ -1261,6 +1284,7 @@ export function StudyBuilder({
         {review && (
           <div data-testid="weather-review" className="text-xs">
             <StudyInsights request={review} en={en} />
+            {review.system.electrical?.dcCable && <p data-testid="dc-cable-review" dir="ltr">DC cable: uniform identical strings + shared home run; string loop {review.system.electrical.dcCable.stringLoopResistanceOhm} Ω; shared loop {review.system.electrical.dcCable.sharedLoopResistanceOhm} Ω. Fixed declared design-condition resistance. Inverter-terminal MPPT; no double percentage loss. Source: {review.system.electrical.dcCable.source} ({review.system.electrical.dcCable.quality}).</p>}
             {(review.system.pvsystTemperature ||
               review.system.cellTemperatureSchedule) && (
               <p data-testid="new-thermal-review">

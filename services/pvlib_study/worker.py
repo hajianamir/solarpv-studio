@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.9.0'
+ENGINE_VERSION = '1.10.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -152,7 +152,14 @@ def validate(req):
     if 'electrical' in system:
         e=system['electrical']
         limits=dict(alphaScAperC=(-.05,.05),aRefV=(.1,10),iLRefA=(.01,30),iORefA=(1e-15,.01),rShRefOhm=(1,1e6),rSOhm=(0,10),egRefEv=(.5,2.5),dEgdTPerK=(-.002,0),modulesPerString=(1,1000),stringsInParallel=(1,100000),mpptMinV=(1,3000),mpptMaxV=(1,3000),maxDcV=(1,3000),maxInputCurrentA=(.1,1e7),designMinCellTemperatureC=(-90,25),designMaxEffectiveIrradianceWm2=(1000,2500))
-        keys(e,list(limits),'system.electrical')
+        keys(e,[*limits,*(['dcCable'] if 'dcCable' in e else [])],'system.electrical')
+        if 'dcCable' in e:
+            cable=e['dcCable']
+            keys(cable,['source','quality','topology','stringLoopResistanceOhm','sharedLoopResistanceOhm'],'electrical.dcCable')
+            text(cable['source'],'dcCable.source')
+            if cable['quality'] not in ('measured','weather_provider','user_configured','assumed') or cable['topology']!='uniform_strings_shared_home_run':raise InputError('unsupported DC cable provenance/topology')
+            for key in ('stringLoopResistanceOhm','sharedLoopResistanceOhm'):number(cable[key],0,100,'dcCable.'+key)
+            if system['additionalDcLossPct']!=0:raise InputError('DC cable requires additionalDcLossPct=0 to avoid double counting')
         for key,(lo,hi) in limits.items():
             number(e[key],lo,hi,'electrical.'+key)
         for key in ('modulesPerString','stringsInParallel'):
@@ -165,7 +172,7 @@ def validate(req):
         keys(inv,list(limits),'system.sandia')
         for key,(lo,hi) in limits.items():number(inv[key],lo,hi,'sandia.'+key)
         if 'electrical' not in system or system['additionalDcLossPct']!=0:
-            raise InputError('Sandia requires electrical operating voltage and additionalDcLossPct=0; DC cable voltage drop is not modeled')
+            raise InputError('Sandia requires electrical operating voltage and additionalDcLossPct=0')
         if inv['Pdco']!=system['inverterPdc0W'] or inv['Pdco']<inv['Paco'] or inv['Pdco']<=inv['Pso'] or inv['modelMaxDcPowerW']<inv['Pdco']:
             raise InputError('Sandia requires inverterPdc0W=Pdco >= Paco, Pdco>Pso, modelMaxDcPowerW>=Pdco')
         if not inv['modelMinDcV']<=inv['Vdco']<=inv['modelMaxDcV'] or not inv['modelMinDcV']<=system['electrical']['mpptMinV']<system['electrical']['mpptMaxV']<=inv['modelMaxDcV']:
@@ -264,7 +271,7 @@ def electrical_dc(e, effective, cell, declared_nameplate):
     import numpy as np
     import pandas as pd
     import pvlib
-    from scipy.optimize import brentq
+    from scipy.optimize import brentq, minimize_scalar
 
     def parameters(g,t):
         return pvlib.pvsystem.calcparams_desoto(g,t,e['alphaScAperC'],e['aRefV'],e['iLRefA'],e['iORefA'],e['rShRefOhm'],e['rSOhm'],EgRef=e['egRefEv'],dEgdT=e['dEgdTPerK'],irrad_ref=1000.,temp_ref=25.)
@@ -294,6 +301,9 @@ def electrical_dc(e, effective, cell, declared_nameplate):
         raise InputError('nonfinite or negative single-diode result')
     if (voc>e['maxDcV']+1e-7).any():
         raise InputError('modeled sample string Voc exceeds maxDcV; no simulated voltage clipping can make this input safe')
+    cable=e.get('dcCable')
+    resistance=(cable['stringLoopResistanceOhm']/np_+cable['sharedLoopResistanceOhm']) if cable else 0.
+    array_volts=np.zeros(len(effective))
     volts=np.zeros(len(effective));amps=np.zeros(len(effective));state=np.zeros(len(effective))
     for i in np.flatnonzero(~dark):
         lo,hi=e['mpptMinV'],min(e['mpptMaxV'],float(voc[i]))
@@ -304,18 +314,40 @@ def electrical_dc(e, effective, cell, declared_nameplate):
             if not math.isfinite(answer) or answer < -1e-6:
                 raise InputError('invalid current on the supported first-quadrant IV curve')
             return max(0.,answer) # only floating-point residuals at open circuit
+        if cable and resistance>0:
+            # Use array voltage as coordinate. Terminal voltage is monotone
+            # increasing on this uniform first-quadrant IV curve.
+            def terminal(v):return v-resistance*current(v)
+            low=brentq(lambda v:terminal(v)-e['mpptMinV'],0.,float(voc[i]),xtol=1e-9,rtol=1e-12)
+            high=float(voc[i])
+            if terminal(high)>e['mpptMaxV']:
+                high=brentq(lambda v:terminal(v)-e['mpptMaxV'],low,high,xtol=1e-9,rtol=1e-12)
+            if current(high)>e['maxInputCurrentA']+1e-9:continue
+            if current(low)>e['maxInputCurrentA']:
+                low=brentq(lambda v:current(v)-e['maxInputCurrentA'],low,high,xtol=1e-9,rtol=1e-12)
+            def delivered(v):return terminal(v)*current(v)
+            result=minimize_scalar(lambda v:-delivered(v),bounds=(low,high),method='bounded',options={'xatol':1e-9})
+            if not result.success:raise InputError('DC cable operating point solver failed')
+            v=max([low,high,float(result.x)],key=delivered)
+            array_volts[i]=v
+            volts[i],amps[i]=terminal(v),current(v)
+            state[i]=3 if abs(amps[i]-e['maxInputCurrentA'])<1e-6 else (2 if min(abs(volts[i]-e['mpptMinV']),abs(volts[i]-e['mpptMaxV']))<1e-6 else 1)
+            continue
         v=float(np.clip(vmp[i],lo,hi))
         current_limited=current(v)>e['maxInputCurrentA']+1e-9
         if current_limited:
             if current(hi)>e['maxInputCurrentA']:continue
             v=brentq(lambda voltage:current(voltage)-e['maxInputCurrentA'],v,hi,xtol=1e-9,rtol=1e-12)
+        array_volts[i]=v
         volts[i],amps[i]=v,current(v)
         state[i]=3 if current_limited else (1 if abs(v-vmp[i])<1e-6 else 2)
     operating=volts*amps
-    gap=mpp-operating
+    cable_loss=amps**2*resistance
+    gap=mpp-operating-cable_loss
     if (gap < -np.maximum(1e-5,mpp*1e-7)).any():
         raise InputError('constrained point exceeds unconstrained MPP beyond numerical tolerance')
     columns=dict(arrayVocV=voc,arrayVmpV=vmp,arrayMppW=mpp,operatingVoltageV=volts,operatingCurrentA=amps,dcOperatingState=state)
+    if cable:columns.update(arrayOperatingVoltageV=array_volts,dcCableVoltageDropV=amps*resistance,dcCableLossW=cable_loss,arrayOperatingPowerW=operating+cable_loss)
     checks=dict(moduleStcMppW=module_stc,modeledArrayStcW=modeled_nameplate,declaredArrayStcW=declared_nameplate,specifiedDesignStringVocV=design_voc,maximumSampleStringVocV=float(voc.max()),designEnvelopeExceededIntervals=float(((np.asarray(effective)>e['designMaxEffectiveIrradianceWm2'])|(np.asarray(cell)<e['designMinCellTemperatureC'])).sum()))
     return pd.Series(operating,index=effective.index),{key:pd.Series(value,index=effective.index) for key,value in columns.items()},checks,pd.Series(np.maximum(gap,0),index=effective.index)
 
@@ -553,6 +585,9 @@ def run_study(req):
     if 'electrical' in s:
         raw_dc,electrical_columns,electrical_checks,constraint_loss=electrical_dc(s['electrical'],effective,cell,s['arrayPdc0W'])
         models['dc']='desoto + singlediode lambertw; uniform identical modules in series/parallel; reference 1000 W/m2 and 25 degC'
+        if 'dcCable' in s['electrical']:
+            models['dcCable']='uniform_strings_shared_home_run; fixed declared loop ohms; jointly solved terminal MPPT; I^2 R'
+            limitations.append('DC cable resistance is fixed caller-declared round-trip resistance at design conditions, not temperature/ampacity/safety modeling. All strings identical; no asymmetric wiring or independent MPPT. Operating voltage/power are inverter-terminal values; arrayOperatingPowerW is before cable. Constraint loss is the array-MPP minus array operating power gap (includes cable-induced operating-point displacement, excludes cable dissipation); do not subtract cable loss twice. Shutdown array/terminal V and power use zero sentinels, not a physical open-circuit voltage measurement.')
         models['mppt']='ideal static first-quadrant voltage/current constrained operating point; brentq for current boundary'
         limitations.extend([
             'Single-diode inputs are module-level fitted parameters; no implicit fitting or CEC Adjust correction. EgRef/dEgdT must match their source.',
@@ -622,6 +657,7 @@ def run_study(req):
     if 'electrical' in s:
         energy['availableMppWh']=electrical_columns['arrayMppW']*dt_hours
         energy['mpptConstraintLossWh']=constraint_loss*dt_hours
+        if 'dcCable' in s['electrical']:energy['dcCableLossWh']=electrical_columns['dcCableLossW']*dt_hours
     if 'rowIrradiance' in s:
         energy['frontIncidentWhm2'] = poa.poa_global*dt_hours
         energy['rearIncidentWhm2'] = row_columns['rearIncidentWm2']*dt_hours
@@ -649,7 +685,7 @@ def run_study(req):
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
             units=dict(**(dict(environmentIrradiance='W/m2; integrated Wh/m2; optical diagnostics, not DC energy losses',usedAlbedo='broadband fraction 0..1',soilingRatios='optical transmission fractions 0..1; rear inactive without rows',horizonBeamVisible='binary apparent solar elevation greater than interpolated horizon') if any(k in s for k in ('horizonProfile','soilingSchedule','albedoSchedule')) else {}),**(dict(acPlantInputW='signed W inverter net before plant stages',acAvailabilityFraction='retained fraction of positive generation only',gridImportWh='total Wh imported after energized AC plant; includes inverter self-consumption',netGridWh='signed Wh export after cap minus total gridImportWh') if plant_active else {}),**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s and not plant_active else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
-                **(dict(voltage='V at uniform array DC bus',current='A at uniform array DC bus',dcOperatingState='0 dark; 1 MPP; 2 voltage boundary; 3 current boundary; 4 no feasible MPPT point') if 'electrical' in s else {}),
+                **(dict(voltage='V at inverter terminal when dcCable enabled, otherwise uniform array DC bus',current='A aggregate inverter input',dcOperatingState='0 dark; 1 MPP; 2 voltage boundary; 3 current boundary; 4 no feasible MPPT point') if 'electrical' in s else {}),
                 **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
             limitations=limitations, warnings=warnings),
         request=req, summary={key:float(energy[key].sum()) for key in energy},

@@ -11,6 +11,7 @@ export const AlbedoRecordSchema=z.object({timestamp,albedo:finite(0,1)}).strict(
 export const HorizonPointSchema=z.object({azimuthDeg:finite(0,360),elevationDeg:finite(0,85)}).strict();
 export const AvailabilityRecordSchema=z.object({timestamp,availableFraction:finite(0,1)}).strict();
 const electricalSchema=z.object({
+ dcCable:provenance.extend({topology:z.literal('uniform_strings_shared_home_run'),stringLoopResistanceOhm:finite(0,100),sharedLoopResistanceOhm:finite(0,100)}).strict().optional(),
  alphaScAperC:finite(-.05,.05),aRefV:finite(.1,10),iLRefA:finite(.01,30),iORefA:finite(1e-15,.01),rShRefOhm:finite(1,1e6),rSOhm:finite(0,10),egRefEv:finite(.5,2.5),dEgdTPerK:finite(-.002,0),
  modulesPerString:z.number().int().min(1).max(1000),stringsInParallel:z.number().int().min(1).max(100000),mpptMinV:finite(1,3000),mpptMaxV:finite(1,3000),maxDcV:finite(1,3000),maxInputCurrentA:finite(.1,1e7),designMinCellTemperatureC:finite(-90,25),designMaxEffectiveIrradianceWm2:finite(1000,2500)
 }).strict();
@@ -44,6 +45,7 @@ export const StudyRequestSchema = z.object({
     for(const v of [inv.modelMinDcV,inv.modelMaxDcV]){const a=inv.Pdco*(1+inv.C1*(v-inv.Vdco)),b=inv.Pso*(1+inv.C2*(v-inv.Vdco));if(b<0||a-b<=1e-6)issue('Sandia requires A>B>=0 over voltage domain');}
   }
   const electrical=request.system.electrical;
+  if(electrical?.dcCable && request.system.additionalDcLossPct!==0)ctx.addIssue({code:'custom',path:['system','additionalDcLossPct'],message:'DC cable requires additionalDcLossPct=0 to avoid double counting'});
   if(electrical){
     if(!(electrical.mpptMinV<electrical.mpptMaxV&&electrical.mpptMaxV<=electrical.maxDcV))ctx.addIssue({code:'custom',path:['system','electrical'],message:'Require mpptMinV < mpptMaxV <= maxDcV'});
     if(request.weather.records.length>8784)ctx.addIssue({code:'custom',path:['weather','records'],message:'Detailed electrical mode supports at most 8784 records'});
@@ -66,8 +68,8 @@ export type StudyRequest = z.infer<typeof StudyRequestSchema>;
 export interface StudyResult {
   schemaVersion:'pvlib-study-result-v1';status:'completed';engine:'pvlib-python-direct';
   manifest:{electricalChecks?:Record<string,number>;engineVersion:string;models:Record<string,string>;validationStatus:'not_field_validated';inputSha256:string;workerSha256:string;requirementsSha256:string;python:string;platform:string;dependencies:Record<string,string>;period:{startUtc:string;endUtc:string;intervalMinutes:number;intervalCount:number;completeUtcCalendarYear:boolean;monthlyAllocation:string};units:Record<string,string>;limitations:string[];warnings:string[]};
-  request:StudyRequest;summary:{dcBeforeAdditionalLossWh:number;dcWh:number;acWh:number;horizonBlockedBeamWhm2?:number;soilingLossWhm2?:number;availabilityLossWh?:number;auxiliaryConsumptionWh?:number;transformerLossWh?:number;gridImportWh?:number;inverterSelfConsumptionWh?:number;netGridWh?:number;acBeforeExportLimitWh?:number;acExportLimitLossWh?:number;frontIncidentWhm2?:number;rearIncidentWhm2?:number;rearEffectiveWhm2?:number;availableMppWh?:number;mpptConstraintLossWh?:number};
-  monthly:{month:string;dcBeforeAdditionalLossWh:number;dcWh:number;acWh:number;horizonBlockedBeamWhm2?:number;soilingLossWhm2?:number;availabilityLossWh?:number;auxiliaryConsumptionWh?:number;transformerLossWh?:number;gridImportWh?:number;inverterSelfConsumptionWh?:number;netGridWh?:number;acBeforeExportLimitWh?:number;acExportLimitLossWh?:number;frontIncidentWhm2?:number;rearIncidentWhm2?:number;rearEffectiveWhm2?:number;availableMppWh?:number;mpptConstraintLossWh?:number}[];
+  request:StudyRequest;summary:{dcBeforeAdditionalLossWh:number;dcWh:number;acWh:number;horizonBlockedBeamWhm2?:number;soilingLossWhm2?:number;availabilityLossWh?:number;auxiliaryConsumptionWh?:number;transformerLossWh?:number;gridImportWh?:number;inverterSelfConsumptionWh?:number;netGridWh?:number;acBeforeExportLimitWh?:number;acExportLimitLossWh?:number;frontIncidentWhm2?:number;rearIncidentWhm2?:number;rearEffectiveWhm2?:number;availableMppWh?:number;mpptConstraintLossWh?:number;dcCableLossWh?:number};
+  monthly:{month:string;dcBeforeAdditionalLossWh:number;dcWh:number;acWh:number;horizonBlockedBeamWhm2?:number;soilingLossWhm2?:number;availabilityLossWh?:number;auxiliaryConsumptionWh?:number;transformerLossWh?:number;gridImportWh?:number;inverterSelfConsumptionWh?:number;netGridWh?:number;acBeforeExportLimitWh?:number;acExportLimitLossWh?:number;frontIncidentWhm2?:number;rearIncidentWhm2?:number;rearEffectiveWhm2?:number;availableMppWh?:number;mpptConstraintLossWh?:number;dcCableLossWh?:number}[];
   samples:({timestamp:string;midpointUtc:string}&Record<string,string|number>)[];
   execution?:{runId:string;startedAt:string;finishedAt:string};
 }

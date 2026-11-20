@@ -51,6 +51,7 @@ function powerMap(r: StudyResult) {
           availableMppWh: "arrayMppW",
         }
       : {}),
+    ...(s.electrical?.dcCable ? {dcCableLossWh:"dcCableLossW"} : {}),
     ...(s.rowIrradiance
       ? {
           frontIncidentWhm2: "poaGlobalWm2",
@@ -71,9 +72,9 @@ function importPower(r: StudyResult, row: Sample) {
       ? numeric(row, "inverterSelfConsumptionW")
       : null;
 }
-function mpptLoss(row: Sample) {
+function mpptLoss(row: Sample, cableEnabled: boolean) {
   const mpp = numeric(row, "arrayMppW"),
-    gap = mpp - numeric(row, "dcBeforeAdditionalLossW");
+    gap = mpp - numeric(row, "dcBeforeAdditionalLossW") - (cableEnabled ? numeric(row,"dcCableLossW") : 0);
   if (gap < -Math.max(1e-5, mpp * 1e-7))
     throw new Error("Explorer MPPT operating power exceeds available MPP");
   return Math.max(0, gap);
@@ -84,7 +85,7 @@ function energyRow(r: StudyResult, row: Sample) {
   for (const [metric, key] of Object.entries(powerMap(r)))
     values[metric] = numeric(row, key) * dt;
   if (r.request.system.electrical)
-    values.mpptConstraintLossWh = mpptLoss(row) * dt;
+    values.mpptConstraintLossWh = mpptLoss(row,Boolean(r.request.system.electrical?.dcCable)) * dt;
   const imported = importPower(r, row);
   if (imported !== null)
     values.netGridWh = (numeric(row, "acW") - imported) * dt;
@@ -105,7 +106,7 @@ export function validateExplorerEvidence(r: StudyResult) {
   ];
   for (const [i, row] of r.samples.entries()) {
     for (const key of keys) numeric(row, key);
-    if (s.electrical) mpptLoss(row);
+    if (s.electrical) mpptLoss(row,Boolean(s.electrical.dcCable));
     if (
       typeof row.midpointUtc !== "string" ||
       instant(row.midpointUtc) !==
@@ -372,7 +373,7 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
               ? chosen.reduce((sum, row) => sum + numeric(row, "dcW") * dt, 0)
               : null,
             constraintLossWh: chosen.length
-              ? chosen.reduce((sum, row) => sum + mpptLoss(row) * dt, 0)
+              ? chosen.reduce((sum, row) => sum + mpptLoss(row,Boolean(r.request.system.electrical?.dcCable)) * dt, 0)
               : null,
           };
         }),
@@ -581,6 +582,7 @@ export function dailyExplorerCsv(
   const data = exploreStudy(r, options),
     metrics = Object.keys(powerMap(r));
   if (r.request.system.electrical) metrics.push("mpptConstraintLossWh");
+  if(r.request.system.electrical?.dcCable) metrics.push("dcCableLossWh");
   if (plant(r) || r.request.system.sandia) metrics.push("netGridWh");
   return csv([
     [
