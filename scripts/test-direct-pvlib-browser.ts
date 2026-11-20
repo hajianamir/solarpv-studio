@@ -34,13 +34,14 @@ try{
   const request=JSON.parse(await readFile('services/pvlib_study/tests/synthetic-study.json','utf8'));
   request.system.arrayPdc0W=8800;request.system.electrical=JSON.parse(await readFile('services/pvlib_study/tests/desoto-reference-parameters.json','utf8'));
   request.system.faiman={u0:30,u1:5,windHeightM:10};request.system.acExportLimitW=100;
+  request.system.sandia=JSON.parse(await readFile('services/pvlib_study/tests/sandia-reference-parameters.json','utf8'));request.system.inverterPdc0W=request.system.sandia.Pdco;request.system.additionalDcLossPct=0;
   const invalid=structuredClone(request);invalid.weather.records[0].timestamp='2017-04-01T17:00:00';
   const upload=page.getByLabel('Import direct pvlib study JSON');
   await upload.setInputFiles({name:'invalid-study.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});
   await panel.getByRole('alert').waitFor();assert.equal(await panel.getByTestId('run-pvlib-study').isDisabled(),true);
   // Build from blank form and a real uploaded CSV: no study JSON is needed.
   const values:Record<string,string|number>={label:request.label,altitudeM:request.site.altitudeM,timezone:request.site.timezone,intervalMinutes:request.weather.intervalMinutes,weatherSource:request.weather.source,parameterSource:request.parameterProvenance.source,...request.system,...request.system.temperature};
-  delete values.temperature;delete values.inverterEtaRef;delete values.electrical;delete values.faiman;delete values.acExportLimitW;
+  delete values.temperature;delete values.inverterEtaRef;delete values.electrical;delete values.faiman;delete values.acExportLimitW;delete values.sandia;
   for(const [key,value] of Object.entries(values))await page.getByLabel(`Study ${key}`,{exact:true}).fill(String(value));
   await page.getByLabel('Study weatherQuality',{exact:true}).selectOption(request.weather.quality);
   await page.getByLabel('Study parameterQuality',{exact:true}).selectOption(request.parameterProvenance.quality);
@@ -49,6 +50,8 @@ try{
   await page.getByLabel('Study thermal model',{exact:true}).selectOption('faiman');
   await page.getByLabel('Study u0',{exact:true}).fill('30');await page.getByLabel('Study u1',{exact:true}).fill('5');
   await page.getByLabel('Study export enabled',{exact:true}).selectOption('yes');await page.getByLabel('Study acExportLimitW',{exact:true}).fill('100');
+  await page.getByLabel('Study inverter model',{exact:true}).selectOption('sandia');
+  for(const [key,value] of Object.entries(request.system.sandia))await page.getByLabel(`Study ${key}`,{exact:true}).fill(String(value));
   const columns=['timestamp','ghiWm2','dniWm2','dhiWm2','tempAirC','windSpeedMs'];
   const weatherCsv=[columns.join(','),...request.weather.records.map((r:Record<string,unknown>)=>columns.map(k=>r[k]).join(','))].join('\n');
   await page.getByLabel('Study weather CSV',{exact:true}).setInputFiles({name:'missing-weather.csv',mimeType:'text/csv',buffer:Buffer.from(weatherCsv.replace(',600,',',,'))});
@@ -70,6 +73,7 @@ try{
   const download=await downloadPromise;const stream=await download.createReadStream();assert.ok(stream);const chunks:Buffer[]=[];for await(const chunk of stream)chunks.push(Buffer.from(chunk));const result=JSON.parse(Buffer.concat(chunks).toString());
   assert.equal(result.engine,'pvlib-python-direct');assert.equal(result.manifest.dependencies.pvlib,'0.13.1');assert.deepEqual(result.request,request);assert.ok(result.execution.runId);assert.equal(result.manifest.period.completeUtcCalendarYear,false);assert.ok(result.summary.acWh>0);assert.ok(result.manifest.models.dc.startsWith('desoto'));assert.ok(result.manifest.electricalChecks.specifiedDesignStringVocV<1000);assert.ok(result.samples.every((r:{operatingVoltageV:number})=>r.operatingVoltageV>=200&&r.operatingVoltageV<=800));
   assert.ok(result.summary.acExportLimitLossWh>0);assert.ok(result.manifest.models.temperature.startsWith('faiman;'));await page.getByTestId('export-limit-result').waitFor();
+  await page.getByTestId('sandia-result').waitFor();assert.ok(result.manifest.models.ac.startsWith('sandia voltage-dependent'));assert.ok(Number.isFinite(result.summary.netGridWh));
   const csvPromise=page.waitForEvent('download');await page.getByTestId('download-study-csv').click();assert.ok((await csvPromise).suggestedFilename().endsWith('.csv'));
   // Persist a real result, reload the browser, restore without rerunning, then vary a parameter.
   await page.getByTestId('save-study').click();await page.getByTestId('saved-study-entry').waitFor();
@@ -79,7 +83,7 @@ try{
   await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();
   await page.getByTestId('saved-study-entry').getByRole('button',{name:/^Restore$|^بازیابی$/}).click();
   await page.getByTestId('pvlib-study-result').waitFor();
-  await page.getByLabel('Study additionalDcLossPct',{exact:true}).fill('10');
+  await page.getByLabel('Study u0',{exact:true}).fill('35');
   assert.equal(await page.getByTestId('run-pvlib-study').isDisabled(),true);
   assert.equal(await page.getByTestId('pvlib-study-result').count(),0);
   await page.getByLabel('Study label',{exact:true}).fill('Second synthetic scenario');
@@ -102,12 +106,13 @@ try{
   await page.getByTestId('saved-study-entry').filter({hasText:request.label}).getByRole('button',{name:/Compare with current|مقایسه با نتیجه/}).click();
   await page.getByTestId('study-comparison').waitFor();
   const reportPromise=page.waitForEvent('download');await page.getByTestId('download-study-report').click();
-  const reportStream=await (await reportPromise).createReadStream();assert.ok(reportStream);let report='';for await(const chunk of reportStream)report+=String(chunk);assert.ok(report.includes('faiman;'));assert.ok(report.includes('AC export cap: 100 W'));assert.ok(report.includes('Scenario comparison'));assert.ok(report.includes('Second synthetic scenario'));assert.ok(report.includes('single-axis tracker'));assert.ok(report.includes('infinite sheds'));assert.ok(report.includes('front_plus_rear'));assert.ok(report.includes('De Soto single diode'));assert.ok(report.includes(result.manifest.inputSha256));
+  const reportStream=await (await reportPromise).createReadStream();assert.ok(reportStream);let report='';for await(const chunk of reportStream)report+=String(chunk);assert.ok(report.includes('sandia voltage-dependent'));assert.ok(report.includes('Imported inverter self-consumption'));assert.ok(report.includes('faiman;'));assert.ok(report.includes('AC export cap: 100 W'));assert.ok(report.includes('Scenario comparison'));assert.ok(report.includes('Second synthetic scenario'));assert.ok(report.includes('single-axis tracker'));assert.ok(report.includes('infinite sheds'));assert.ok(report.includes('front_plus_rear'));assert.ok(report.includes('De Soto single diode'));assert.ok(report.includes(result.manifest.inputSha256));
   const archivePromise=page.waitForEvent('download');await page.getByTestId('backup-study').click();
-  const archiveStream=await (await archivePromise).createReadStream();assert.ok(archiveStream);let archive='';for await(const chunk of archiveStream)archive+=String(chunk);assert.equal(JSON.parse(archive).request.system.additionalDcLossPct,10);assert.equal(JSON.parse(archive).request.system.tracking.gcr,.4);assert.equal(JSON.parse(archive).request.system.rowIrradiance.bifaciality,.7);assert.equal(JSON.parse(archive).request.system.electrical.modulesPerString,10);assert.ok(JSON.parse(archive).result.summary.availableMppWh>0);assert.ok(JSON.parse(archive).result.summary.rearEffectiveWhm2>0);assert.ok(JSON.parse(archive).result.samples.some((r:{trackerThetaDeg:number})=>Math.abs(r.trackerThetaDeg)>1));
+  const archiveStream=await (await archivePromise).createReadStream();assert.ok(archiveStream);let archive='';for await(const chunk of archiveStream)archive+=String(chunk);assert.equal(JSON.parse(archive).request.system.additionalDcLossPct,0);assert.equal(JSON.parse(archive).request.system.faiman.u0,35);assert.equal(JSON.parse(archive).request.system.sandia.Paco,8000);assert.equal(JSON.parse(archive).request.system.tracking.gcr,.4);assert.equal(JSON.parse(archive).request.system.rowIrradiance.bifaciality,.7);assert.equal(JSON.parse(archive).request.system.electrical.modulesPerString,10);assert.ok(JSON.parse(archive).result.summary.availableMppWh>0);assert.ok(JSON.parse(archive).result.summary.rearEffectiveWhm2>0);assert.ok(JSON.parse(archive).result.samples.some((r:{trackerThetaDeg:number})=>Math.abs(r.trackerThetaDeg)>1));
   await page.getByLabel('Restore study archive').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(archive)});
   await page.getByTestId('pvlib-study-result').waitFor();
-  assert.equal(await page.getByLabel('Study thermal model',{exact:true}).inputValue(),'faiman');assert.equal(await page.getByLabel('Study u0',{exact:true}).inputValue(),'30');assert.equal(await page.getByLabel('Study acExportLimitW',{exact:true}).inputValue(),'100');
+  assert.equal(await page.getByLabel('Study inverter model',{exact:true}).inputValue(),'sandia');assert.equal(await page.getByLabel('Study Paco',{exact:true}).inputValue(),'8000');
+  assert.equal(await page.getByLabel('Study thermal model',{exact:true}).inputValue(),'faiman');assert.equal(await page.getByLabel('Study u0',{exact:true}).inputValue(),'35');assert.equal(await page.getByLabel('Study acExportLimitW',{exact:true}).inputValue(),'100');
   assert.equal(await page.getByLabel('Study mounting',{exact:true}).inputValue(),'single_axis');assert.equal(await page.getByLabel('Study gcr',{exact:true}).inputValue(),'0.4');assert.equal(await page.getByLabel('Study electrical model',{exact:true}).inputValue(),'diode');assert.equal(await page.getByLabel('Study modulesPerString',{exact:true}).inputValue(),'10');assert.equal(await page.getByLabel('Study optics',{exact:true}).inputValue(),'rows');assert.equal(await page.getByLabel('Study temperatureIrradiance',{exact:true}).inputValue(),'front_plus_rear');
   page.once('dialog',dialog=>dialog.accept());
   await page.getByTestId('saved-study-entry').filter({hasText:'Second synthetic scenario'}).getByRole('button',{name:/^Delete$|^حذف$/}).click();

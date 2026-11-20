@@ -38,6 +38,20 @@ const rowFields = [
   ["rearTransmissionLossPct", "Rear transmission loss / کاهش عبور پشت (%)"],
   ["rearIamB", "Rear ASHRAE b / ضریب IAM پشت"],
 ] as const;
+const sandiaFields = [
+  ["Paco", "AC rating Paco (W)"],
+  ["Pdco", "Reference DC power Pdco (W)"],
+  ["Vdco", "Reference voltage Vdco (V)"],
+  ["Pso", "Startup DC power Pso (W)"],
+  ["C0", "C0 (1/W)"],
+  ["C1", "C1 (1/V)"],
+  ["C2", "C2 (1/V)"],
+  ["C3", "C3 (1/V)"],
+  ["Pnt", "Night self-consumption Pnt (W)"],
+  ["modelMinDcV", "Fitted domain minimum DC (V)"],
+  ["modelMaxDcV", "Fitted domain maximum DC (V)"],
+  ["modelMaxDcPowerW", "Fitted domain maximum DC power (W)"],
+] as const;
 const electricalFields = [
   ["alphaScAperC", "Module αsc / ضریب جریان (A/°C)"],
   ["aRefV", "Module a_ref = nNsVth / ضریب دیود (V)"],
@@ -117,6 +131,13 @@ export function StudyBuilder({
               r.system.acExportLimitW !== undefined
                 ? String(r.system.acExportLimitW)
                 : "",
+            inverterModel: r.system.sandia ? "sandia" : "pvwatts",
+            ...Object.fromEntries(
+              sandiaFields.map(([key]) => [
+                key,
+                r.system.sandia ? String(r.system.sandia[key]) : "",
+              ]),
+            ),
             electricalModel: r.system.electrical ? "diode" : "pvwatts",
             ...Object.fromEntries(
               electricalFields.map(([key]) => [
@@ -341,6 +362,34 @@ export function StudyBuilder({
             </option>
           </select>
         </label>
+        <label>
+          {en ? "AC inverter model" : "مدل اینورتر AC"}
+          <select
+            aria-label="Study inverter model"
+            value={v.inverterModel ?? "pvwatts"}
+            onChange={(e) => change("inverterModel", e.target.value)}
+          >
+            <option value="pvwatts">PVWatts</option>
+            <option value="sandia">
+              Sandia (voltage dependent / وابسته به ولتاژ)
+            </option>
+          </select>
+        </label>
+        {v.inverterModel === "sandia" && (
+          <div
+            data-testid="sandia-inputs"
+            className="space-y-3 border border-sky-800 p-3"
+          >
+            <p>
+              {en
+                ? "Explicit fitted inverter parameters and supported voltage/power domain required. Select De Soto and set additional DC loss to zero: cable voltage drop is not modeled. inverterPdc0W must equal Pdco (reference, not protection rating); legacy eta values are inactive. Negative inverter AC is imported self-consumption, reported separately from nonnegative export. No real controller dynamics or certified protection."
+                : "پارامترهای صریح برازش‌شده و دامنه معتبر ولتاژ/توان لازم است. De Soto را انتخاب و تلفات DC اضافی را صفر کنید؛ افت ولتاژ کابل مدل نشده است. inverterPdc0W باید برابر Pdco باشد (مرجع، نه حد حفاظت)؛ etaهای قبلی غیرفعال‌اند. AC منفی اینورتر واردات مصرف داخلی است و جدا از صادرات غیرمنفی گزارش می‌شود. بدون کنترل دینامیکی یا حفاظت تأییدشده."}
+            </p>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {sandiaFields.map(([key, label]) => text(key, label, "number"))}
+            </div>
+          </div>
+        )}
         {v.electricalModel === "diode" && (
           <div
             data-testid="electrical-inputs"
@@ -504,6 +553,13 @@ export function StudyBuilder({
                 },
                 system: {
                   ...system,
+                  ...(v.inverterModel === "sandia"
+                    ? {
+                        sandia: Object.fromEntries(
+                          sandiaFields.map(([key]) => [key, number(key)]),
+                        ),
+                      }
+                    : {}),
                   ...(v.thermalModel === "faiman"
                     ? {
                         faiman: {

@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.4.0'
+ENGINE_VERSION = '1.5.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -77,7 +77,7 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else [])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else [])], 'system')
     if 'acExportLimitW' in system:
         number(system['acExportLimitW'],0,1e9,'acExportLimitW')
     if 'faiman' in system:
@@ -96,6 +96,21 @@ def validate(req):
             if int(e[key])!=e[key]:raise InputError('electrical string/module counts must be integers')
         if not e['mpptMinV']<e['mpptMaxV']<=e['maxDcV']:
             raise InputError('require mpptMinV < mpptMaxV <= maxDcV')
+    if 'sandia' in system:
+        inv=system['sandia']
+        limits=dict(Paco=(1,1e9),Pdco=(1,1e9),Vdco=(1,3000),Pso=(.001,1e8),C0=(-1,1),C1=(-.1,.1),C2=(-.1,.1),C3=(-.1,.1),Pnt=(0,1e7),modelMinDcV=(1,3000),modelMaxDcV=(1,3000),modelMaxDcPowerW=(1,1e9))
+        keys(inv,list(limits),'system.sandia')
+        for key,(lo,hi) in limits.items():number(inv[key],lo,hi,'sandia.'+key)
+        if 'electrical' not in system or system['additionalDcLossPct']!=0:
+            raise InputError('Sandia requires electrical operating voltage and additionalDcLossPct=0; DC cable voltage drop is not modeled')
+        if inv['Pdco']!=system['inverterPdc0W'] or inv['Pdco']<inv['Paco'] or inv['Pdco']<=inv['Pso'] or inv['modelMaxDcPowerW']<inv['Pdco']:
+            raise InputError('Sandia requires inverterPdc0W=Pdco >= Paco, Pdco>Pso, modelMaxDcPowerW>=Pdco')
+        if not inv['modelMinDcV']<=inv['Vdco']<=inv['modelMaxDcV'] or not inv['modelMinDcV']<=system['electrical']['mpptMinV']<system['electrical']['mpptMaxV']<=inv['modelMaxDcV']:
+            raise InputError('Sandia reference and MPPT window must lie in declared model voltage domain')
+        for v in (inv['modelMinDcV'],inv['modelMaxDcV']):
+            a=inv['Pdco']*(1+inv['C1']*(v-inv['Vdco']))
+            b=inv['Pso']*(1+inv['C2']*(v-inv['Vdco']))
+            if b<0 or a-b<=1e-6:raise InputError('Sandia requires A>B>=0 throughout voltage domain')
     if 'tracking' in system:
         track = system['tracking']
         tracking_bounds = dict(axisTiltDeg=(0,90), axisAzimuthDeg=(0,360), maxAngleDeg=(0,90), gcr=(.01,1), crossAxisTiltDeg=(-30,30))
@@ -230,6 +245,22 @@ def electrical_dc(e, effective, cell, declared_nameplate):
     return pd.Series(operating,index=effective.index),{key:pd.Series(value,index=effective.index) for key,value in columns.items()},checks,pd.Series(np.maximum(gap,0),index=effective.index)
 
 
+def sandia_ac(inv, volts, dc):
+    """Signed inverter output, plus explicit nonnegative self-consumption import."""
+    import numpy as np
+    import pandas as pd
+    import pvlib
+    active=dc>0
+    if ((volts[active]<inv['modelMinDcV']-1e-7)|(volts[active]>inv['modelMaxDcV']+1e-7)).any() or (dc>inv['modelMaxDcPowerW']).any():
+        raise InputError('Sandia operating point outside declared fitted domain; no extrapolation')
+    net=pd.Series(-float(inv['Pnt']),index=dc.index)
+    if active.any():net.loc[active]=pvlib.inverter.sandia(volts[active],dc[active],inv)
+    if not np.isfinite(net).all() or (net>dc+np.maximum(1e-6,dc*1e-7)).any():
+        raise InputError('Sandia nonfinite or AC output exceeds DC input; unsupported fit/operating point')
+    imports=(-net).clip(lower=0)
+    return net.clip(lower=0),dict(inverterNetAcW=net,inverterSelfConsumptionW=imports)
+
+
 def run_study(req):
     times = validate(req)
     for requirement in Path(__file__).with_name('requirements.txt').read_text().splitlines():
@@ -344,14 +375,25 @@ def run_study(req):
             'MPPT is an ideal static constraint, not real controller efficiency, startup/hysteresis, dynamics, current protection or hardware certification.',
             'Voc checks cover the specified design condition and modeled samples only, not all climatic extremes or code-compliant string sizing.',
             'gammaPdcPerC is inactive in diode mode; arrayPdc0W is a consistency check only, not a second power scaling factor.',
-            'Operating V/I and constrained power are before explicit additional DC loss; inverter efficiency remains aggregate PVWatts, not voltage dependent.'
+            'Operating V/I and constrained power are before explicit additional DC loss; selected inverter model and its limitations apply.' if 'sandia' in s else 'Operating V/I and constrained power are before explicit additional DC loss; inverter efficiency remains aggregate PVWatts, not voltage dependent.'
         ])
     else:
         raw_dc = pvlib.pvsystem.pvwatts_dc(effective, cell, s['arrayPdc0W'], s['gammaPdcPerC'], temp_ref=25)
         if (raw_dc < 0).any():
             raise InputError('PVWatts produced negative DC outside supported temperature/coefficient conditions')
     dc = raw_dc * (1-s['additionalDcLossPct']/100)
-    ac = pvlib.inverter.pvwatts(dc, s['inverterPdc0W'], eta_inv_nom=s['inverterEtaNom'], eta_inv_ref=s['inverterEtaRef'])
+    inverter_columns={}
+    if 'sandia' in s:
+        ac,inverter_columns=sandia_ac(s['sandia'],electrical_columns['operatingVoltageV'],dc)
+        models['ac']='sandia voltage-dependent inverter; pvlib 0.13.1 startup p_dc<Pso; zero DC consumes Pnt'
+        limitations.extend([
+            'Sandia coefficients and fitted voltage/power domain are caller-declared; no automatic fitting, catalog selection or equipment verification.',
+            'Sandia uses the ideal constrained DC operating point with zero additional DC loss; no cable drop, inverter temperature/aging, dynamic startup/hysteresis, reactive power or multiple MPPT buses.',
+            'inverterPdc0W equals Pdco reference DC power, not a hard protection rating; legacy inverterEtaNom/inverterEtaRef are inactive.',
+            'Positive inverter AC is generation; negative model AC is imported self-consumption. acW/acWh remain nonnegative export after cap; netGridWh subtracts imported self-consumption. No local load/storage.'
+        ])
+    else:
+        ac = pvlib.inverter.pvwatts(dc, s['inverterPdc0W'], eta_inv_nom=s['inverterEtaNom'], eta_inv_ref=s['inverterEtaRef'])
     export_columns={}
     if 'acExportLimitW' in s:
         before_export=ac.copy()
@@ -359,13 +401,16 @@ def run_study(req):
         export_columns=dict(acBeforeExportLimitW=before_export,acExportLimitLossW=before_export-ac)
         models['acExport']='constant export cap after inverter; no local load or storage; no DC feedback'
         limitations.append('Static AC export cap assumes no local consumption/storage and no controller dynamics, reactive power, grid voltage or time-varying dispatch; inverter clipping is already upstream and is not counted twice.')
-    columns = dict(**export_columns,surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
+    columns = dict(**inverter_columns,**export_columns,surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
         beamIam=iam, poaDirectWm2=poa.poa_direct, poaSkyDiffuseWm2=poa.poa_sky_diffuse,
         poaGroundDiffuseWm2=poa.poa_ground_diffuse, poaGlobalWm2=poa.poa_global,
         effectiveIrradianceWm2=effective, cellTemperatureC=cell, dcBeforeAdditionalLossW=raw_dc, dcW=dc, acW=ac)
     if not all(np.isfinite(values).all() for values in columns.values()):
         raise InputError('nonfinite model output; unsupported input combination')
     energy = pd.DataFrame(dict(dcBeforeAdditionalLossWh=raw_dc*dt_hours, dcWh=dc*dt_hours, acWh=ac*dt_hours), index=mid)
+    if 'sandia' in s:
+        energy['inverterSelfConsumptionWh']=inverter_columns['inverterSelfConsumptionW']*dt_hours
+        energy['netGridWh']=(ac-inverter_columns['inverterSelfConsumptionW'])*dt_hours
     if 'acExportLimitW' in s:
         energy['acBeforeExportLimitWh']=before_export*dt_hours
         energy['acExportLimitLossWh']=(before_export-ac)*dt_hours
@@ -398,7 +443,7 @@ def run_study(req):
             python=platform.python_version(), platform=platform.platform(), dependencies=dependencies,
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
-            units=dict(irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
+            units=dict(**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
                 **(dict(voltage='V at uniform array DC bus',current='A at uniform array DC bus',dcOperatingState='0 dark; 1 MPP; 2 voltage boundary; 3 current boundary; 4 no feasible MPPT point') if 'electrical' in s else {}),
                 **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
             limitations=limitations, warnings=warnings),

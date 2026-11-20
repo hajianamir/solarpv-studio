@@ -66,3 +66,6 @@ timestamp,ghiWm2,dniWm2,dhiWm2,tempAirC,windSpeedMs
 
 
 توسعهٔ موتور 1.4.0: [مدل حرارتی Faiman و سقف ثابت صادرات AC](PVLIB-THERMAL-EXPORT.fa.md).
+
+
+توسعهٔ موتور 1.5.0: [اینورتر Sandia وابسته به ولتاژ و حسابداری مصرف داخلی](PVLIB-SANDIA-INVERTER.fa.md).

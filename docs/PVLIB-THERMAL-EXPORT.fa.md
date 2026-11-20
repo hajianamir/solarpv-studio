@@ -44,3 +44,6 @@ Faiman به دو ضریب **صریح و مستند برای باد ۱۰ متر**
 - pvlib 0.13.1، API و شرط ارتفاع باد: https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.temperature.faiman.html
 - مرجع مستقل Sandia PVPMC، معادلهٔ Faiman و محدودیت نصب‌های آزمایش اصلی: https://pvpmc.sandia.gov/modeling-guide/2-dc-module-iv/module-temperature/faiman-module-temperature-model/
 - منبع SSC، بخش interconnection، فقط برای رابطهٔ سقف در حالت بدون بار/ذخیره: https://github.com/NatLabRockies/ssc/blob/fe79123d73eea2608d2de158183a058ebd6bd5e1/ssc/cmod_grid.cpp . متن بررسی‌شده max(0,gridNet-limit) و کسر از gen در خطوط 205–209 بود. صفحه راهنمای SAM قابل دریافت نبود؛ هم‌ارزی کامل ادعا نمی‌شود.
+
+
+توسعهٔ موتور 1.5.0: [اینورتر Sandia وابسته به ولتاژ و حسابداری مصرف داخلی](PVLIB-SANDIA-INVERTER.fa.md).

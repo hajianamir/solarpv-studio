@@ -186,3 +186,25 @@ for(const key of ['acBeforeExportLimitW','acExportLimitLossW']){const bad=struct
 const badEnergy=structuredClone(thermalResult);badEnergy.summary.acExportLimitLossWh=1e12;assert.throws(()=>validateResult(badEnergy),/export cap/);
 const badModel=structuredClone(thermalResult);badModel.manifest.models.temperature='sapm_cell';assert.throws(()=>validateResult(badModel),/Faiman/);
 console.log('Faiman + AC export workflow PASS: strict inputs, real Python, archive, model comparison barrier, report and rejected corrupted accounting.');
+
+const sandiaScenario=structuredClone(thermalExport);
+sandiaScenario.system.sandia=JSON.parse(readFileSync('services/pvlib_study/tests/sandia-reference-parameters.json','utf8'));
+sandiaScenario.system.inverterPdc0W=sandiaScenario.system.sandia!.Pdco;sandiaScenario.system.additionalDcLossPct=0;
+assert.equal(StudyRequestSchema.safeParse(sandiaScenario).success,true);
+for(const patch of [{Paco:1e8},{Pdco:9000},{Pso:0},{C1:.1},{C2:.1},{Vdco:100},{modelMaxDcPowerW:100},{Pnt:true},{extra:1}]){
+ const bad=structuredClone(sandiaScenario);Object.assign(bad.system.sandia!,patch);assert.equal(StudyRequestSchema.safeParse(bad).success,false);
+}
+for(const key of Object.keys(sandiaScenario.system.sandia!)){const bad=structuredClone(sandiaScenario);delete (bad.system.sandia as unknown as Record<string,number>)[key];assert.equal(StudyRequestSchema.safeParse(bad).success,false);}
+const noVoltage=structuredClone(sandiaScenario);delete noVoltage.system.electrical;assert.equal(StudyRequestSchema.safeParse(noVoltage).success,false);
+const ambiguousLoss=structuredClone(sandiaScenario);ambiguousLoss.system.additionalDcLossPct=5;assert.equal(StudyRequestSchema.safeParse(ambiguousLoss).success,false);
+const sandiaRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(sandiaScenario),encoding:'utf8',maxBuffer:16*1024*1024});
+assert.equal(sandiaRun.status,0,sandiaRun.stderr);
+const sandiaResult=validateResult(JSON.parse(sandiaRun.stdout));
+assert.deepEqual(validateSnapshot({...snapshot,request:sandiaScenario,result:sandiaResult}).result,sandiaResult);
+assert.match(comparisonReason(thermalResult,sandiaResult)!,/engine/);
+assert.equal(comparisonReason(sandiaResult,structuredClone(sandiaResult)),null);
+assert.ok(studyReport(sandiaResult).includes('sandia voltage-dependent'));assert.ok(studyReport(sandiaResult).includes('Imported inverter self-consumption'));
+for(const key of ['inverterNetAcW','inverterSelfConsumptionW']){const bad=structuredClone(sandiaResult);delete bad.samples[0][key];assert.throws(()=>validateResult(bad),/Sandia/);}
+const badNet=structuredClone(sandiaResult);badNet.summary.netGridWh=1e12;assert.throws(()=>validateResult(badNet),/Sandia/);
+const badImport=structuredClone(sandiaResult);badImport.summary.inverterSelfConsumptionWh=1e12;badImport.summary.netGridWh=badImport.summary.acWh-1e12;assert.throws(()=>validateResult(badImport),/Sandia/);
+console.log('Sandia workflow PASS: strict fitted-domain/voltage/loss contract, actual Python, import/export accounting, archive, incompatible AC model barrier and report.');

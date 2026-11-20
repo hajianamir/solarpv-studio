@@ -85,3 +85,6 @@ summary و monthly شامل `availableMppWh` و `mpptConstraintLossWh` هستن�
 
 
 توسعهٔ موتور 1.4.0: [مدل حرارتی Faiman و سقف ثابت صادرات AC](PVLIB-THERMAL-EXPORT.fa.md).
+
+
+توسعهٔ موتور 1.5.0: [اینورتر Sandia وابسته به ولتاژ و حسابداری مصرف داخلی](PVLIB-SANDIA-INVERTER.fa.md).
