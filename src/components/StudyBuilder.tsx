@@ -29,6 +29,15 @@ const trackingFields = [
   ["gcr", "GCR / نسبت عرض میز به فاصله محورها (0.01–1)"],
   ["crossAxisTiltDeg", "Cross-axis tilt / شیب عرضی راست‌گرد (°)"],
 ] as const;
+const rowFields = [
+  ["rowGcr", "Row GCR / نسبت عرض میز به فاصله محورها"],
+  ["heightM", "Row center height / ارتفاع مرکز میز (m)"],
+  ["pitchM", "Row pitch / فاصله محورها (m)"],
+  ["bifaciality", "Bifaciality / نسبت بازده پشت به جلو (0–1)"],
+  ["rearShadeLossPct", "Rear structure loss / کاهش ساختاری پشت (%)"],
+  ["rearTransmissionLossPct", "Rear transmission loss / کاهش عبور پشت (%)"],
+  ["rearIamB", "Rear ASHRAE b / ضریب IAM پشت"],
+] as const;
 type Values = Record<string, string>;
 export function StudyBuilder({
   request,
@@ -76,6 +85,19 @@ export function StudyBuilder({
             parameterSource: r.parameterProvenance.source,
             parameterQuality: r.parameterProvenance.quality,
             mounting: r.system.tracking ? "single_axis" : "fixed",
+            optics: r.system.rowIrradiance ? "rows" : "isolated",
+            temperatureIrradiance:
+              r.system.rowIrradiance?.temperatureIrradiance ?? "",
+            ...Object.fromEntries(
+              rowFields.map(([key]) => [
+                key,
+                r.system.rowIrradiance
+                  ? String(
+                      r.system.rowIrradiance[key === "rowGcr" ? "gcr" : key],
+                    )
+                  : "",
+              ]),
+            ),
             backtrack: r.system.tracking
               ? String(r.system.tracking.backtrack)
               : "",
@@ -213,6 +235,57 @@ export function StudyBuilder({
             </div>
           </div>
         )}
+        <label className="block text-xs">
+          {en ? "Irradiance geometry" : "هندسهٔ تابش"}
+          <select
+            aria-label="Study optics"
+            value={v.optics ?? "isolated"}
+            onChange={(e) => change("optics", e.target.value)}
+            className="block bg-slate-900 p-2"
+          >
+            <option value="isolated">
+              Isolated plane (legacy) / سطح منفرد
+            </option>
+            <option value="rows">
+              Infinite sheds: row shading + optional bifacial / ردیفی و دوطرفه
+            </option>
+          </select>
+        </label>
+        {v.optics === "rows" && (
+          <div
+            className="border border-sky-800 p-3 space-y-3"
+            data-testid="row-inputs"
+          >
+            <p className="text-xs">
+              {en
+                ? "Level terrain, parallel equally spaced infinite rows only; horizontal tracker axes and matching GCR required. Bifaciality=0 keeps front row shading but no rear electrical contribution. Height is row center, not bottom edge. SAPM thermal irradiance is an explicit uncalibrated proxy. Maximum 8784 intervals."
+                : "فقط زمین افقی و ردیف‌های بی‌نهایتِ موازی و هم‌فاصله؛ محور ردیاب باید افقی و GCR دو بخش برابر باشد. bifaciality صفر، سایه تابشی جلو را حفظ و سهم برقی عقب را حذف می‌کند. ارتفاع مربوط به مرکز میز است، نه لبه پایین. ورودی حرارتی SAPM یک فرض کالیبره‌نشدهٔ صریح است. حداکثر ۸۷۸۴ بازه."}
+            </p>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {rowFields.map(([key, label]) => text(key, label, "number"))}
+              <label className="block text-xs">
+                {en
+                  ? "SAPM incident irradiance proxy"
+                  : "فرض تابش ورودی حرارتی SAPM"}
+                <select
+                  aria-label="Study temperatureIrradiance"
+                  value={v.temperatureIrradiance ?? ""}
+                  onChange={(e) =>
+                    change("temperatureIrradiance", e.target.value)
+                  }
+                  className="block bg-slate-900 p-2"
+                >
+                  <option value="">—</option>
+                  <option value="front_only">Front only / فقط جلو</option>
+                  <option value="front_plus_rear">
+                    Front + rear (not efficiency weighted) / جلو و عقب، بدون وزن
+                    بازده
+                  </option>
+                </select>
+              </label>
+            </div>
+          </div>
+        )}
         <div className="grid sm:grid-cols-3 gap-3">
           {text("label", "Study name / نام مطالعه")}
           {text("altitudeM", "Altitude / ارتفاع (m)", "number")}
@@ -312,6 +385,19 @@ export function StudyBuilder({
                 },
                 system: {
                   ...system,
+                  ...(v.optics === "rows"
+                    ? {
+                        rowIrradiance: {
+                          ...Object.fromEntries(
+                            rowFields.map(([key]) => [
+                              key === "rowGcr" ? "gcr" : key,
+                              number(key),
+                            ]),
+                          ),
+                          temperatureIrradiance: v.temperatureIrradiance,
+                        },
+                      }
+                    : {}),
                   ...(v.mounting === "single_axis"
                     ? {
                         tracking: {

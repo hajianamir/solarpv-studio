@@ -52,7 +52,10 @@ try{
     const invalidTracker=structuredClone(tracked);invalidTracker.system.tracking!.gcr=0;
     assert.equal((await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(invalidTracker)})).status,400);
     const trackingRun=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(tracked)});assert.equal(trackingRun.status,200,await trackingRun.clone().text());
-    const trackingResult=await trackingRun.json();assert.deepEqual(trackingResult.request,tracked);assert.equal(trackingResult.manifest.engineVersion,'1.1.0');assert.ok(trackingResult.samples.some((row:{trackerThetaDeg:number})=>Math.abs(row.trackerThetaDeg)>1));
+    const trackingResult=await trackingRun.json();assert.deepEqual(trackingResult.request,tracked);assert.equal(trackingResult.manifest.engineVersion,'1.2.0');assert.ok(trackingResult.samples.some((row:{trackerThetaDeg:number})=>Math.abs(row.trackerThetaDeg)>1));
+    const rows=structuredClone(tracked);rows.system.rowIrradiance={gcr:.4,heightM:2,pitchM:5,bifaciality:.7,rearShadeLossPct:2,rearTransmissionLossPct:0,rearIamB:.05,temperatureIrradiance:'front_plus_rear'};
+    const rowRun=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rows)});assert.equal(rowRun.status,200,await rowRun.clone().text());
+    const rowResult=await rowRun.json();assert.deepEqual(rowResult.request,rows);assert.ok(rowResult.summary.rearIncidentWhm2>0);assert.ok(rowResult.summary.rearEffectiveWhm2>0);assert.ok(rowResult.samples.every((sample:{frontShadedFraction:number})=>Number.isFinite(sample.frontShadedFraction)));
   }finally{freshServer.closeAllConnections();await new Promise<void>(resolve=>freshServer.close(()=>resolve()));}
   const missing=new StudyExecutor({python:path.join(temp,'not-a-python')});await assert.rejects(()=>missing.run(request),(e:unknown)=>e instanceof StudyError&&e.code==='UNAVAILABLE');assert.equal(missing.activeCount,0);
   const slow=path.join(temp,'slow.py');writeFileSync(slow,'import time\ntime.sleep(10)\n');

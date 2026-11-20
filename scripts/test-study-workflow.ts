@@ -125,3 +125,26 @@ assert.throws(()=>validateResult(missingGeometry),/geometry/);
 const wrongModel=structuredClone(trackingResult);wrongModel.manifest.models.transposition='different';
 assert.match(comparisonReason(result,wrongModel)!,/engine/);
 console.log('Tracker workflow PASS: explicit strict contract, actual Python geometry, fixed/tracker comparison whitelist, archives and report.');
+
+const rowScenario=structuredClone(tracked);
+rowScenario.system.rowIrradiance={gcr:.4,heightM:2,pitchM:5,bifaciality:.7,rearShadeLossPct:2,rearTransmissionLossPct:0,rearIamB:.05,temperatureIrradiance:'front_plus_rear'};
+assert.equal(StudyRequestSchema.safeParse(rowScenario).success,true);
+for(const patch of [{gcr:0},{heightM:.1},{heightM:100},{bifaciality:2},{rearShadeLossPct:-1},{rearTransmissionLossPct:101},{temperatureIrradiance:'auto'},{extra:1}]){
+  const bad=structuredClone(rowScenario);Object.assign(bad.system.rowIrradiance,patch);assert.equal(StudyRequestSchema.safeParse(bad).success,false);
+}
+for(const key of Object.keys(rowScenario.system.rowIrradiance)){
+  const bad=structuredClone(rowScenario);delete bad.system.rowIrradiance[key];assert.equal(StudyRequestSchema.safeParse(bad).success,false);
+}
+for(const patch of [{axisTiltDeg:1},{crossAxisTiltDeg:1},{gcr:.5}]){
+  const bad=structuredClone(rowScenario);Object.assign(bad.system.tracking,patch);assert.equal(StudyRequestSchema.safeParse(bad).success,false);
+}
+const rowRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(rowScenario),encoding:'utf8',maxBuffer:16*1024*1024});
+assert.equal(rowRun.status,0,rowRun.stderr);
+const rowResult=validateResult(JSON.parse(rowRun.stdout));
+assert.equal(comparisonReason(result,rowResult),null);
+assert.ok(rowResult.summary.rearIncidentWhm2!>0);assert.ok(rowResult.summary.rearEffectiveWhm2!>0);
+assert.ok(studyReport(result,rowResult).includes('infinite sheds'));
+assert.deepEqual(validateSnapshot({...snapshot,request:rowScenario,result:rowResult}).result,rowResult);
+const absentRear=structuredClone(rowResult);delete absentRear.samples[0].rearIncidentWm2;assert.throws(()=>validateResult(absentRear),/components/);
+const differentElectrical=structuredClone(rowResult);differentElectrical.manifest.models.dc='different';assert.match(comparisonReason(result,differentElectrical)!,/engine/);
+console.log('Row workflow PASS: shared strict geometry/thermal contract, actual Python row result, archive metrics and scenario-comparison whitelist.');

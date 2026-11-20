@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.1.0'
+ENGINE_VERSION = '1.2.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -22,8 +22,8 @@ MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg 
               energyIntegration='interval-average rectangular; solar geometry at interval midpoint')
 LIMITATIONS = [
     'Not field validated, calibrated, bankable or a standards-conformity assessment.',
-    'Fixed-tilt or single-axis monofacial single aggregate array and single aggregate inverter only; no string voltage/MPPT design.',
-    'No horizon, near/electrical row shading, bifacial, snow, soiling, battery, grid curtailment or financial simulation.',
+    'Fixed-tilt or single-axis single aggregate array (optional row/bifacial optics) and single aggregate inverter only; no string voltage/MPPT design.',
+    'No horizon, near-obstacle shading, electrical mismatch, snow, soiling, battery, grid curtailment or financial simulation.',
     'Fixed SPA delta_t=67 s and sunrise/sunset refraction 0.5667 deg are assumptions, not historical/forecast corrections.',
     'Diffuse IAM and spectral factors are unity assumptions; midpoint transposition does not eliminate interval-averaging error.',
     'SAPM wind must be at 10 m; mounting-specific coefficients and all equipment parameters are caller-declared.',
@@ -77,7 +77,7 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else [])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else [])], 'system')
     if 'tracking' in system:
         track = system['tracking']
         tracking_bounds = dict(axisTiltDeg=(0,90), axisAzimuthDeg=(0,360), maxAngleDeg=(0,90), gcr=(.01,1), crossAxisTiltDeg=(-30,30))
@@ -86,12 +86,32 @@ def validate(req):
             number(track[key], lo, hi, 'tracking.'+key)
         if not isinstance(track['backtrack'], bool):
             raise InputError('tracking.backtrack: boolean required')
+    if 'rowIrradiance' in system:
+        rows = system['rowIrradiance']
+        row_bounds = dict(gcr=(.01,1),heightM=(.1,100),pitchM=(.1,100),bifaciality=(0,1),rearShadeLossPct=(0,100),rearTransmissionLossPct=(0,100),rearIamB=(0,1))
+        keys(rows, [*row_bounds, 'temperatureIrradiance'], 'system.rowIrradiance')
+        for key, (lo, hi) in row_bounds.items():
+            number(rows[key],lo,hi,'rowIrradiance.'+key)
+        if rows['temperatureIrradiance'] not in ('front_only','front_plus_rear'):
+            raise InputError('explicit row temperature irradiance proxy required')
+        if rows['heightM']/rows['pitchM'] > 2:
+            raise InputError('row center height/pitch must be <=2 for bounded view-factor computation')
+        track = system.get('tracking')
+        if track and (track['axisTiltDeg'] != 0 or track['crossAxisTiltDeg'] != 0):
+            raise InputError('infinite sheds supports horizontal axes on level terrain only')
+        if track and abs(track['gcr']-rows['gcr']) > 1e-9:
+            raise InputError('tracker and row irradiance GCR must match')
     for key, (lo, hi) in bounds.items():
         number(system[key], lo, hi, 'system.'+key)
     if system['arrayPdc0W']/system['inverterPdc0W'] > 2:
         raise InputError('study configuration supports array DC / inverter DC limit ratio <= 2 only')
     if system['inverterEtaRef'] != 0.9637:
         raise InputError('this model configuration requires PVWatts eta_inv_ref=0.9637')
+    if 'rowIrradiance' in system:
+        rows = system['rowIrradiance']
+        maximum_tilt = system['tracking']['maxAngleDeg'] if 'tracking' in system else system['surfaceTiltDeg']
+        if rows['heightM'] <= .5*rows['gcr']*rows['pitchM']*math.sin(math.radians(maximum_tilt)):
+            raise InputError('row edge would touch/intersect ground at supported tilt')
     keys(system['temperature'], ['a', 'b', 'deltaT'], 'system.temperature')
     for key, lo, hi in [('a', -10, 0), ('b', -1, 0), ('deltaT', 0, 20)]:
         number(system['temperature'][key], lo, hi, 'temperature.'+key)
@@ -112,6 +132,8 @@ def validate(req):
     rows = weather['records']
     if not isinstance(rows, list) or not 2 <= len(rows) <= MAX_RECORDS:
         raise InputError(f'2..{MAX_RECORDS} regular records required')
+    if 'rowIrradiance' in system and len(rows)>8784:
+        raise InputError('row irradiance mode supports at most 8784 records')
     times = []
     for row in rows:
         keys(row, ['timestamp', 'ghiWm2', 'dniWm2', 'dhiWm2', 'tempAirC', 'windSpeedMs'], 'weather record')
@@ -180,19 +202,64 @@ def run_study(req):
     aoi = pvlib.irradiance.aoi(tilt, azimuth, position.apparent_zenith, position.azimuth)
     iam = pvlib.iam.ashrae(aoi, b=s['iamB'])
     effective = poa.poa_direct*iam + poa.poa_diffuse
-    cell = pvlib.temperature.sapm_cell(poa.poa_global, df.tempAirC, df.windSpeedMs, irrad_ref=1000.0, **s['temperature'])
+    thermal_poa = poa.poa_global
+    row_columns = {}
+    models['rowIrradiance'] = 'isolated plane; no row shading'
+    models['temperatureIrradiance'] = 'front incident POA'
+    if 'rowIrradiance' in s:
+        rows = s['rowIrradiance']
+        # Unit IAM and bifaciality expose incident energy; apply optical/electrical
+        # modifiers explicitly once, keeping thermal input independent of efficiency.
+        row_poa = pvlib.bifacial.infinite_sheds.get_irradiance(tilt, azimuth,
+            position.apparent_zenith, position.azimuth, rows['gcr'], rows['heightM'], rows['pitchM'],
+            df.ghiWm2, df.dhiWm2, df.dniWm2, s['albedo'], model='haydavies',
+            dni_extra=pvlib.irradiance.get_extra_radiation(mid,method='spencer',solar_constant=1366.1),
+            iam_front=1.0, iam_back=1.0, bifaciality=1.0, shade_factor=0.0,
+            transmission_factor=0.0,npoints=100,vectorize=False)
+        rear_aoi = pvlib.irradiance.aoi(180-tilt,(azimuth+180)%360,position.apparent_zenith,position.azimuth)
+        rear_iam = pvlib.iam.ashrae(rear_aoi,b=rows['rearIamB'])
+        front_effective = row_poa.poa_front_direct*iam+row_poa.poa_front_diffuse
+        rear_optical = row_poa.poa_back_direct*rear_iam+row_poa.poa_back_diffuse
+        rear_effective = rear_optical*rows['bifaciality']*(1-rows['rearShadeLossPct']/100)*(1-rows['rearTransmissionLossPct']/100)
+        effective = front_effective+rear_effective
+        thermal_poa = row_poa.poa_front+(row_poa.poa_back if rows['temperatureIrradiance']=='front_plus_rear' else 0)
+        # Existing POA columns remain incident FRONT only, never the weighted sum.
+        poa = pd.DataFrame(dict(poa_direct=row_poa.poa_front_direct,poa_sky_diffuse=row_poa.poa_front_sky_diffuse,
+            poa_ground_diffuse=row_poa.poa_front_ground_diffuse,poa_global=row_poa.poa_front),index=mid)
+        row_columns = dict(frontEffectiveIrradianceWm2=front_effective,rearIncidentWm2=row_poa.poa_back,
+            rearDirectWm2=row_poa.poa_back_direct,rearSkyDiffuseWm2=row_poa.poa_back_sky_diffuse,
+            rearGroundDiffuseWm2=row_poa.poa_back_ground_diffuse,rearBeamIam=rear_iam,
+            rearEffectiveIrradianceWm2=rear_effective,frontShadedFraction=row_poa.shaded_fraction_front,
+            rearShadedFraction=row_poa.shaded_fraction_back,temperatureIrradianceWm2=thermal_poa)
+        if any((values < -1e-8).any() for values in [*row_columns.values(),poa.poa_global]):
+            raise InputError('negative row irradiance: unsupported weather/geometry combination')
+        models['rowIrradiance'] = 'infinite_sheds haydavies; npoints=100; vectorize=False; beam IAM applied once per side'
+        models['temperatureIrradiance'] = rows['temperatureIrradiance']+' incident POA proxy (not bifaciality weighted)'
+        limitations = [item for item in limitations if 'no diffuse row masking' not in item and 'True-tracking has NO row-shading deduction' not in item]
+        limitations.extend([
+            'No tracker motor parasitic energy, controller availability or physical stow simulation.',
+            'Infinite sheds assumes infinitely long, parallel, equally spaced rows on level terrain; front/rear optical row shading and diffuse masking only.',
+            'SAPM thermal input is a declared front-only or front-plus-rear incident-POA proxy, not a calibrated bifacial thermal model.',
+            'Rear irradiance is area averaged; no cell/string electrical mismatch, bypass diode, nonuniformity or finite-array edge simulation.',
+            'Bifaciality, rear structural shade and rear transmission reductions affect electrical irradiance only; unity diffuse IAM/spectral assumptions remain.'
+        ])
+    cell = pvlib.temperature.sapm_cell(thermal_poa, df.tempAirC, df.windSpeedMs, irrad_ref=1000.0, **s['temperature'])
     raw_dc = pvlib.pvsystem.pvwatts_dc(effective, cell, s['arrayPdc0W'], s['gammaPdcPerC'], temp_ref=25)
     if (raw_dc < 0).any():
         raise InputError('PVWatts produced negative DC outside supported temperature/coefficient conditions')
     dc = raw_dc * (1-s['additionalDcLossPct']/100)
     ac = pvlib.inverter.pvwatts(dc, s['inverterPdc0W'], eta_inv_nom=s['inverterEtaNom'], eta_inv_ref=s['inverterEtaRef'])
-    columns = dict(surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
+    columns = dict(surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
         beamIam=iam, poaDirectWm2=poa.poa_direct, poaSkyDiffuseWm2=poa.poa_sky_diffuse,
         poaGroundDiffuseWm2=poa.poa_ground_diffuse, poaGlobalWm2=poa.poa_global,
         effectiveIrradianceWm2=effective, cellTemperatureC=cell, dcBeforeAdditionalLossW=raw_dc, dcW=dc, acW=ac)
     if not all(np.isfinite(values).all() for values in columns.values()):
         raise InputError('nonfinite model output; unsupported input combination')
     energy = pd.DataFrame(dict(dcBeforeAdditionalLossWh=raw_dc*dt_hours, dcWh=dc*dt_hours, acWh=ac*dt_hours), index=mid)
+    if 'rowIrradiance' in s:
+        energy['frontIncidentWhm2'] = poa.poa_global*dt_hours
+        energy['rearIncidentWhm2'] = row_columns['rearIncidentWm2']*dt_hours
+        energy['rearEffectiveWhm2'] = row_columns['rearEffectiveIrradianceWm2']*dt_hours
     monthly = energy.groupby(mid.strftime('%Y-%m')).sum()
     warnings = ['All provenance quality labels are caller declarations, not independently verified sources.']
     closure = (df.ghiWm2-(df.dniWm2*np.maximum(0, np.cos(np.radians(position.apparent_zenith)))+df.dhiWm2)).abs()
@@ -213,7 +280,7 @@ def run_study(req):
             python=platform.python_version(), platform=platform.platform(), dependencies=dependencies,
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
-            units=dict(irradiance='W/m2',power='W',energy='Wh',temperature='degC',angles='degrees; azimuth clockwise from north',
+            units=dict(irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
                 **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
             limitations=limitations, warnings=warnings),
         request=req, summary={key:float(energy[key].sum()) for key in energy},

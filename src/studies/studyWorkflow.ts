@@ -101,6 +101,9 @@ const energy = z.object({
   dcBeforeAdditionalLossWh: z.number().finite().nonnegative(),
   dcWh: z.number().finite().nonnegative(),
   acWh: z.number().finite().nonnegative(),
+  frontIncidentWhm2: z.number().finite().nonnegative().optional(),
+  rearIncidentWhm2: z.number().finite().nonnegative().optional(),
+  rearEffectiveWhm2: z.number().finite().nonnegative().optional(),
 });
 const resultSchema = z.object({
   schemaVersion: z.literal("pvlib-study-result-v1"),
@@ -186,6 +189,42 @@ export function validateResult(value: unknown): StudyResult {
     )
       throw new Error("Tracker result geometry missing or out of bounds");
   }
+  if (r.request.system.rowIrradiance) {
+    if (
+      !r.manifest.models.rowIrradiance?.startsWith("infinite_sheds ") ||
+      ![
+        r.summary.frontIncidentWhm2,
+        r.summary.rearIncidentWhm2,
+        r.summary.rearEffectiveWhm2,
+      ].every((value) => typeof value === "number" && Number.isFinite(value)) ||
+      r.samples.some(
+        (row) =>
+          ![
+            "frontEffectiveIrradianceWm2",
+            "rearIncidentWm2",
+            "rearDirectWm2",
+            "rearSkyDiffuseWm2",
+            "rearGroundDiffuseWm2",
+            "rearBeamIam",
+            "rearEffectiveIrradianceWm2",
+            "frontShadedFraction",
+            "rearShadedFraction",
+            "temperatureIrradianceWm2",
+          ].every(
+            (key) =>
+              typeof row[key] === "number" &&
+              Number.isFinite(row[key]) &&
+              Number(row[key]) >= -1e-8,
+          ) ||
+          Number(row.frontShadedFraction) > 1 + 1e-8 ||
+          Number(row.rearShadedFraction) > 1 + 1e-8 ||
+          Number(row.rearBeamIam) > 1 + 1e-8,
+      )
+    )
+      throw new Error(
+        "Row irradiance result components missing or out of bounds",
+      );
+  }
   return r;
 }
 export interface StudySnapshot {
@@ -212,11 +251,14 @@ export function validateSnapshot(value: unknown): StudySnapshot {
     throw new Error("Saved result does not match saved request");
   return { ...envelope, result };
 }
-// Mount selection is a scenario input. Only this documented model-key difference
+// Mount selection is a scenario input. Only these documented geometry/thermal-input model-key differences
 // may vary; transposition, thermal/electrical models, versions and hashes stay exact.
 function comparisonModels(models: Record<string, string>) {
   return Object.fromEntries(
-    Object.entries(models).filter(([key]) => key !== "mounting"),
+    Object.entries(models).filter(
+      ([key]) =>
+        !["mounting", "rowIrradiance", "temperatureIrradiance"].includes(key),
+    ),
   );
 }
 export function comparisonReason(
@@ -252,6 +294,6 @@ export function studyReport(result: StudyResult, other?: StudyResult): string {
     if (reason) throw new Error(reason);
   }
   const section = (r: StudyResult) =>
-    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}</p><p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th></tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td></tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>Direct pvlib study report</title><style>body{font:15px system-ui;max-width:1000px;margin:2em auto;padding:1em;color:#172033}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere} @media print{body{margin:0}h2{break-before:page}}</style><h1>Direct pvlib study / گزارش مطالعه</h1><p>Not field validated. Separate from screening and financial reports. Imported/local results are not digitally certified. Keep the JSON bundle for full weather and reproducibility. Print using browser Print / Save as PDF.</p>${other ? `<h2>Scenario comparison</h2><p>Same weather, site and engine; mounting may differ (see scenario inputs). No guarantee of tracking gain. AC difference (second − first): ${(other.summary.acWh - result.summary.acWh) / 1000} kWh; ${result.summary.acWh === 0 ? "percentage unavailable (zero baseline)" : `${(100 * (other.summary.acWh - result.summary.acWh)) / result.summary.acWh}%`}. Different capacities are not normalized.</p>` : ""}${section(result)}${other ? section(other) : ""}</html>`;
+    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th></tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td></tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>Direct pvlib study report</title><style>body{font:15px system-ui;max-width:1000px;margin:2em auto;padding:1em;color:#172033}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere} @media print{body{margin:0}h2{break-before:page}}</style><h1>Direct pvlib study / گزارش مطالعه</h1><p>Not field validated. Separate from screening and financial reports. Imported/local results are not digitally certified. Keep the JSON bundle for full weather and reproducibility. Print using browser Print / Save as PDF.</p>${other ? `<h2>Scenario comparison</h2><p>Same weather, site and engine; mounting, row optics and thermal irradiance proxy may differ (see scenario inputs). Delta is not an isolated bifacial gain. No guarantee of tracking gain. AC difference (second − first): ${(other.summary.acWh - result.summary.acWh) / 1000} kWh; ${result.summary.acWh === 0 ? "percentage unavailable (zero baseline)" : `${(100 * (other.summary.acWh - result.summary.acWh)) / result.summary.acWh}%`}. Different capacities are not normalized.</p>` : ""}${section(result)}${other ? section(other) : ""}</html>`;
 }

@@ -65,7 +65,7 @@ export function createStudyRouter(options:{resolveIdentity:(req:Request)=>Identi
   const executor=options.executor??new StudyExecutor();
   router.get('/capabilities',(_req,res)=>{
     res.setHeader('Cache-Control','no-store');
-    res.json({engine:'pvlib-python-direct',schemaVersion:'pvlib-study-v1',enabled:process.env.PVLIB_STUDY_ENABLED==='true',runtimeStatus:'not_probed',pvlibVersion:'0.13.1',maxRecords:17568,maxBytes:8*1024*1024,mode:'fixed_tilt_or_single_axis_monofacial',defaultMode:'fixed_tilt_monofacial',supportedModes:['fixed_tilt_monofacial','single_axis_monofacial'],engineVersion:'1.1.0',validationStatus:'not_field_validated'});
+    res.json({engine:'pvlib-python-direct',schemaVersion:'pvlib-study-v1',enabled:process.env.PVLIB_STUDY_ENABLED==='true',runtimeStatus:'not_probed',pvlibVersion:'0.13.1',maxRecords:17568,maxBytes:8*1024*1024,mode:'fixed_tilt_or_single_axis',defaultMode:'fixed_tilt_monofacial',supportedModes:['fixed_tilt_monofacial','single_axis_monofacial','fixed_tilt_row_optics','single_axis_row_optics'],engineVersion:'1.2.0',supportedOptics:['isolated_plane','infinite_sheds_haydavies'],maxRowRecords:8784,validationStatus:'not_field_validated'});
   });
   router.post('/run',createClientRateLimiter({windowMs:60000,maxRequests:6}), (req,res,next)=>{
     res.setHeader('Cache-Control','no-store');
