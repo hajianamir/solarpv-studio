@@ -1,3 +1,6 @@
+import {StudyBuilder} from './StudyBuilder';
+import {StudyLibrary} from './StudyLibrary';
+import {validateResult,stable} from '../studies/studyWorkflow';
 import React,{useEffect,useRef,useState} from 'react';
 import {StudyRequestSchema,type StudyRequest,type StudyResult} from '../studies/studyContract';
 
@@ -14,11 +17,13 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
   const [result,setResult]=useState<StudyResult|null>(null);
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
+  const [dirty,setDirty]=useState(false);
+  const [restored,setRestored]=useState(false);
   const controller=useRef<AbortController|null>(null);
   const revision=useRef(0);
   useEffect(()=>{
     const invalidate=()=>{revision.current++;controller.current?.abort();};
-    invalidate();setRequest(null);setResult(null);setError('');setBusy(false);
+    invalidate();setRequest(null);setResult(null);setError('');setBusy(false);setDirty(false);setRestored(false);
     return ()=>invalidate();
   },[latitude,longitude]);
   useEffect(()=>{
@@ -32,17 +37,18 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
     return ()=>abort.abort();
   },[]);
   async function run(){
-    if(!request||busy)return;
+    if(!request||busy||dirty)return;
     const version=++revision.current;
     const abort=new AbortController();controller.current=abort;
-    setBusy(true);setError('');setResult(null);
+    setBusy(true);setError('');setResult(null);setRestored(false);
     const timeout=setTimeout(()=>abort.abort(),55000);
     try{
       const response=await fetch('/api/v1/studies/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request),signal:abort.signal,cache:'no-store'});
       const data=await response.json();
       if(!response.ok)throw new Error(`${data.code??response.status}: ${data.message??'Study rejected'}`);
       if(data.engine!=='pvlib-python-direct'||data.status!=='completed'||data.schemaVersion!=='pvlib-study-result-v1'||data.manifest?.dependencies?.pvlib!=='0.13.1'||!Array.isArray(data.samples)||data.samples.length!==request.weather.records.length||!Number.isFinite(data.summary?.acWh))throw new Error('Unexpected study response');
-      if(version===revision.current)setResult(data as StudyResult);
+      const checked=validateResult(data);if(stable(checked.request)!==stable(request))throw new Error('Result inputs differ from active request');
+      if(version===revision.current)setResult(checked);
     }catch(cause){if(version===revision.current)setError(abort.signal.aborted?(en?'Cancelled or timed out; no screening fallback applied.':'لغو یا پایان مهلت؛ fallback غربالگری اعمال نشد.'):(cause instanceof Error?cause.message:String(cause)));}
     finally{clearTimeout(timeout);if(version===revision.current)setBusy(false);}
   }
@@ -59,16 +65,19 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
         const candidate=StudyRequestSchema.parse(JSON.parse(await file.text()));
         if(candidate.site.latitude!==latitude||candidate.site.longitude!==longitude)throw new Error('Study coordinates differ from active site');
         if(version!==revision.current)return;
-        setRequest(candidate);setResult(null);setError('');
+        setRequest(candidate);setResult(null);setError('');setDirty(false);setRestored(false);
       }catch(cause){if(version===revision.current)setError(cause instanceof Error?cause.message:String(cause));}
     }}/></label>
+    <StudyBuilder request={request} latitude={latitude} longitude={longitude} en={en} busy={busy} onDirty={()=>{revision.current++;setDirty(true);setResult(null);setRestored(false);}} onApply={candidate=>{revision.current++;setRequest(candidate);setDirty(false);setResult(null);setError('');setRestored(false);}}/>
+    {dirty&&<p role="status" className="text-xs text-amber-300">{en?'Inputs changed. Validate and apply before running or saving.':'ورودی‌ها تغییر کرده‌اند؛ پیش از اجرا یا ذخیره بررسی و اعمال کنید.'}</p>}
     {request&&<p className="text-xs" data-testid="study-input-label">{request.label} — {request.weather.records.length} {en?'intervals':'بازه'}; {request.system.arrayPdc0W} W DC; {request.system.surfaceTiltDeg}° / {request.system.surfaceAzimuthDeg}°; {request.weather.quality}</p>}
     <div className="flex gap-3 text-sm">
-      <button type="button" data-testid="run-pvlib-study" disabled={!request||busy||capability!=='enabled'} onClick={()=>void run()}>{busy?(en?'Running Python…':'در حال اجرای Python…'):(en?'Run independent study':'اجرای مطالعهٔ مستقل')}</button>
+      <button type="button" data-testid="run-pvlib-study" disabled={!request||dirty||busy||capability!=='enabled'} onClick={()=>void run()}>{busy?(en?'Running Python…':'در حال اجرای Python…'):(en?'Run independent study':'اجرای مطالعهٔ مستقل')}</button>
       {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{en?'Cancel':'لغو'}</button>}
     </div>
     {error&&<p role="alert" className="text-xs text-red-300 whitespace-pre-wrap break-all">{error}</p>}
     {result&&<div data-testid="pvlib-study-result" className="text-xs space-y-3">
+      {restored&&<p className="text-amber-300">{en?'Restored local/imported result — not a new execution; authenticity not certified.':'نتیجهٔ محلی/واردشدهٔ بازیابی‌شده — اجرای جدید نیست؛ اصالت تأیید نشده است.'}</p>}
       <h3>{en?'Completed — not field validated':'اجرا شد — بدون اعتبارسنجی میدانی'}</h3>
       <p>{result.manifest.period.startUtc} → {result.manifest.period.endUtc} ({result.manifest.period.completeUtcCalendarYear?'complete UTC year':'period only; not annualized'})</p>
       <p>{en?'Period DC / AC energy':'انرژی DC / AC همین دوره'}: {(result.summary.dcWh/1000).toFixed(3)} / {(result.summary.acWh/1000).toFixed(3)} kWh</p>
@@ -85,5 +94,6 @@ export function PvlibStudyPanel({latitude,longitude,lang}:{latitude:number;longi
       </div>
       <details><summary>{en?'Models, versions, units and execution manifest':'مدل‌ها، نسخه‌ها، واحدها و شناسنامهٔ اجرا'}</summary><pre dir="ltr" className="whitespace-pre-wrap break-all">{JSON.stringify(result.manifest,null,2)}</pre></details>
     </div>}
+    <StudyLibrary key={`${latitude}:${longitude}`} request={request} result={result} dirty={dirty} busy={busy} latitude={latitude} longitude={longitude} en={en} onRestore={snapshot=>{revision.current++;controller.current?.abort();setRequest(snapshot.request);setResult(snapshot.result);setDirty(false);setRestored(Boolean(snapshot.result));setError('');setBusy(false);}}/>
   </section>;
 }

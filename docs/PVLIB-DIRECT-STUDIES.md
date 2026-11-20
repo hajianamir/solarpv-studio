@@ -1,5 +1,7 @@
 # Direct pvlib studies — v1 operator and user guide
 
+**Workflow update:** A bilingual form builder, strict weather CSV review, browser-local IndexedDB snapshots, portable restore, compatible-scenario comparison and printable HTML reporting are now available. See [the workflow guide](PVLIB-STUDY-WORKFLOW.fa.md). The original JSON import/API remain supported.
+
 This is a separate, **real Python execution** path, not a JavaScript approximation or a relabeling of the existing screening waterfall. It is opt-in and disabled by default. It can run on a local computer without internet after installing its pinned runtime; a remote deployment needs connectivity to that server. No weather/provider fetch is performed by this worker.
 
 ## Scope: what is and is not implemented
@@ -8,7 +10,7 @@ Supported: one fixed-tilt, monofacial aggregate array and one aggregate inverter
 
 Not implemented in this chain: automatic weather acquisition, irradiation decomposition from GHI, gap filling, horizon/near shading, bifacial, trackers, snow/Kimber, batteries, grid curtailment, financial dispatch, persistent job queue or multi-node scheduling. Existing screening and reference-snow/soiling features remain separate and unchanged. No output is silently copied into screening finance, sizing or waterfall. No legacy clipping/loss factor is applied a second time.
 
-The current study report is **JSON plus intermediate CSV**, independently downloadable from the study panel. It is not merged into the existing project's DOCX/XLSX or automatically restored by the existing project loader. Download the JSON bundle to retain a study; changing the active site or leaving the panel clears its in-memory state. Server-side automatic history storage is deliberately absent to avoid storing private weather under an unscoped shared project identity.
+The current study report is **JSON plus intermediate CSV**, independently downloadable from the study panel. It is not merged into the existing project's DOCX/XLSX or automatically restored by the existing project loader. Save a snapshot in the local study library or export a portable archive to retain a study; changing the active site or leaving the panel clears only its active in-memory state. Server-side automatic history storage is deliberately absent to avoid storing private weather under an unscoped shared project identity.
 
 ## Install and run locally
 

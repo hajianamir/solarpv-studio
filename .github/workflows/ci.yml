@@ -173,7 +173,7 @@ jobs:
       - name: Independent equations, published examples and ModelChain cross-check
         run: npm run test:study:python
       - name: Real HTTP, authentication, Python execution and resource/failure limits
-        run: npm run test:study
+        run: npm run test:study && npm run test:study:workflow
       - name: Build offline frontend
         run: npm run build
         env:

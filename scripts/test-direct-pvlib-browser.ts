@@ -36,18 +36,69 @@ try{
   const upload=page.getByLabel('Import direct pvlib study JSON');
   await upload.setInputFiles({name:'invalid-study.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});
   await panel.getByRole('alert').waitFor();assert.equal(await panel.getByTestId('run-pvlib-study').isDisabled(),true);
-  await upload.setInputFiles({name:'synthetic-test-only.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(request))});
+  // Build from blank form and a real uploaded CSV: no study JSON is needed.
+  const values:Record<string,string|number>={label:request.label,altitudeM:request.site.altitudeM,timezone:request.site.timezone,intervalMinutes:request.weather.intervalMinutes,weatherSource:request.weather.source,parameterSource:request.parameterProvenance.source,...request.system,...request.system.temperature};
+  delete values.temperature;delete values.inverterEtaRef;
+  for(const [key,value] of Object.entries(values))await page.getByLabel(`Study ${key}`,{exact:true}).fill(String(value));
+  await page.getByLabel('Study weatherQuality',{exact:true}).selectOption(request.weather.quality);
+  await page.getByLabel('Study parameterQuality',{exact:true}).selectOption(request.parameterProvenance.quality);
+  const columns=['timestamp','ghiWm2','dniWm2','dhiWm2','tempAirC','windSpeedMs'];
+  const weatherCsv=[columns.join(','),...request.weather.records.map((r:Record<string,unknown>)=>columns.map(k=>r[k]).join(','))].join('\n');
+  await page.getByLabel('Study weather CSV',{exact:true}).setInputFiles({name:'missing-weather.csv',mimeType:'text/csv',buffer:Buffer.from(weatherCsv.replace(',600,',',,'))});
+  await page.getByTestId('study-builder').getByRole('alert').waitFor();assert.equal(await page.getByTestId('run-pvlib-study').isDisabled(),true);
+  await page.getByLabel('Study weather CSV',{exact:true}).setInputFiles({name:'synthetic-weather-test-only.csv',mimeType:'text/csv',buffer:Buffer.from(weatherCsv)});
+  await page.getByLabel('Confirm weather conventions').check();
+  await page.getByTestId('apply-study-builder').click();
+  await page.getByTestId('weather-review').waitFor();
   await page.getByTestId('study-input-label').waitFor();
+  // An inputs-only snapshot is restorable without manufacturing a completed result.
+  await page.getByTestId('save-study').click();await page.getByTestId('saved-study-entry').waitFor();
+  await page.getByTestId('saved-study-entry').getByRole('button',{name:/^Restore$|^بازیابی$/}).click();
+  assert.equal(await page.getByTestId('pvlib-study-result').count(),0);
+  page.once('dialog',dialog=>dialog.accept());await page.getByTestId('saved-study-entry').getByRole('button',{name:/^Delete$|^حذف$/}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===0);
   await page.getByTestId('run-pvlib-study').click();
   await page.getByTestId('pvlib-study-result').waitFor({timeout:55000});
   const downloadPromise=page.waitForEvent('download');await page.getByTestId('download-study-json').click();
   const download=await downloadPromise;const stream=await download.createReadStream();assert.ok(stream);const chunks:Buffer[]=[];for await(const chunk of stream)chunks.push(Buffer.from(chunk));const result=JSON.parse(Buffer.concat(chunks).toString());
   assert.equal(result.engine,'pvlib-python-direct');assert.equal(result.manifest.dependencies.pvlib,'0.13.1');assert.deepEqual(result.request,request);assert.ok(result.execution.runId);assert.equal(result.manifest.period.completeUtcCalendarYear,false);assert.ok(result.summary.acWh>0);
   const csvPromise=page.waitForEvent('download');await page.getByTestId('download-study-csv').click();assert.ok((await csvPromise).suggestedFilename().endsWith('.csv'));
+  // Persist a real result, reload the browser, restore without rerunning, then vary a parameter.
+  await page.getByTestId('save-study').click();await page.getByTestId('saved-study-entry').waitFor();
+  await page.reload();await tab('climate');
+  await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();
+  await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');
+  await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();
+  await page.getByTestId('saved-study-entry').getByRole('button',{name:/^Restore$|^بازیابی$/}).click();
+  await page.getByTestId('pvlib-study-result').waitFor();
+  await page.getByLabel('Study additionalDcLossPct',{exact:true}).fill('10');
+  assert.equal(await page.getByTestId('run-pvlib-study').isDisabled(),true);
+  assert.equal(await page.getByTestId('pvlib-study-result').count(),0);
+  await page.getByLabel('Study label',{exact:true}).fill('Second synthetic scenario');
+  await page.getByTestId('apply-study-builder').click();await page.getByTestId('run-pvlib-study').click();
+  await page.getByTestId('pvlib-study-result').waitFor({timeout:55000});
+  await page.getByTestId('save-study').click();await page.waitForFunction(()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===2);
+  await page.getByTestId('saved-study-entry').filter({hasText:request.label}).getByRole('button',{name:/Compare with current|مقایسه با نتیجه/}).click();
+  await page.getByTestId('study-comparison').waitFor();
+  const reportPromise=page.waitForEvent('download');await page.getByTestId('download-study-report').click();
+  const reportStream=await (await reportPromise).createReadStream();assert.ok(reportStream);let report='';for await(const chunk of reportStream)report+=String(chunk);assert.ok(report.includes('Scenario comparison'));assert.ok(report.includes('Second synthetic scenario'));assert.ok(report.includes(result.manifest.inputSha256));
+  const archivePromise=page.waitForEvent('download');await page.getByTestId('backup-study').click();
+  const archiveStream=await (await archivePromise).createReadStream();assert.ok(archiveStream);let archive='';for await(const chunk of archiveStream)archive+=String(chunk);assert.equal(JSON.parse(archive).request.system.additionalDcLossPct,10);
+  await page.getByLabel('Restore study archive').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(archive)});
+  await page.getByTestId('pvlib-study-result').waitFor();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByTestId('saved-study-entry').filter({hasText:'Second synthetic scenario'}).getByRole('button',{name:/^Delete$|^حذف$/}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===1);
+  // A denied/quota-style transaction must surface as a failure, never a successful save.
+  await page.evaluate(()=>{IDBObjectStore.prototype.put=function(){throw new DOMException('Injected quota denial','QuotaExceededError');};});
+  await page.getByTestId('save-study').click();await page.getByTestId('study-library').getByRole('alert').waitFor();
+  assert.equal(await page.getByTestId('saved-study-entry').count(),1);
+  await upload.setInputFiles({name:'original-study.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(request))});
+  await page.getByTestId('study-input-label').waitFor();
   // Explicit service failure cannot silently show a screening result or retain a completed study.
   await page.route('**/api/v1/studies/run',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({code:'UNAVAILABLE',message:'Injected runtime outage; no fallback'})}));
-  await page.getByTestId('run-pvlib-study').click();await panel.getByRole('alert').waitFor();assert.equal(await page.getByTestId('pvlib-study-result').count(),0);
+  await page.getByTestId('run-pvlib-study').click();await panel.getByRole('alert').filter({hasText:'UNAVAILABLE'}).waitFor();assert.equal(await page.getByTestId('pvlib-study-result').count(),0);
   await tab('waterfall_loss');assert.deepEqual(await page.locator('table').allTextContents(),before,'Independent study changed screening waterfall');
   assert.deepEqual(errors,[]);
-  console.log('Direct study real-browser PASS: invalid import, actual Python run over authenticated HTTP, JSON/CSV download, explicit outage without fallback, screening waterfall unchanged. Synthetic numerical inputs only.');
+  console.log('Direct study real-browser PASS: form + CSV review, actual Python run, IndexedDB reload/restore/delete, scenario rerun/comparison, portable backup, printable report, outage without fallback, screening unchanged. Synthetic numerical inputs only.');
 }finally{await browser?.close();child.kill('SIGTERM');}
