@@ -88,3 +88,6 @@ SAPM موجود، مدل اختصاصی گرمایی ماژول دوطرفه ن�
 
 
 توسعهٔ موتور 1.4.0: [مدل حرارتی Faiman و سقف ثابت صادرات AC](PVLIB-THERMAL-EXPORT.fa.md).
+
+
+توسعهٔ موتور 1.6.0: [سه مرحلهٔ Perez، IAM فیزیکی و اصلاح طیفی SAPM](PVLIB-OPTICAL-THREE.fa.md).

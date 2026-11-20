@@ -208,3 +208,23 @@ for(const key of ['inverterNetAcW','inverterSelfConsumptionW']){const bad=struct
 const badNet=structuredClone(sandiaResult);badNet.summary.netGridWh=1e12;assert.throws(()=>validateResult(badNet),/Sandia/);
 const badImport=structuredClone(sandiaResult);badImport.summary.inverterSelfConsumptionWh=1e12;badImport.summary.netGridWh=badImport.summary.acWh-1e12;assert.throws(()=>validateResult(badImport),/Sandia/);
 console.log('Sandia workflow PASS: strict fitted-domain/voltage/loss contract, actual Python, import/export accounting, archive, incompatible AC model barrier and report.');
+
+const opticalScenario=structuredClone(sandiaScenario);
+Object.assign(opticalScenario.system,JSON.parse(readFileSync('services/pvlib_study/tests/optical-reference-parameters.json','utf8')));
+assert.equal(StudyRequestSchema.safeParse(opticalScenario).success,true);
+const invalidPerez=structuredClone(opticalScenario);invalidPerez.system.skyDiffuseModel='perez';assert.equal(StudyRequestSchema.safeParse(invalidPerez).success,false);
+for(const obj of ['physicalIam','sapmSpectral'] as const){for(const key of Object.keys(opticalScenario.system[obj]!)){const bad=structuredClone(opticalScenario);delete (bad.system[obj] as unknown as Record<string,number>)[key];assert.equal(StudyRequestSchema.safeParse(bad).success,false);}}
+for(const patch of [{frontN:1},{frontL:0},{frontK:-1},{rearL:true},{extra:1}]){const bad=structuredClone(opticalScenario);Object.assign(bad.system.physicalIam!,patch);assert.equal(StudyRequestSchema.safeParse(bad).success,false);}
+const invalidDomain=structuredClone(opticalScenario);invalidDomain.system.sapmSpectral!.maxAbsoluteAirmass=.1;assert.equal(StudyRequestSchema.safeParse(invalidDomain).success,false);
+const opticalRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(opticalScenario),encoding:'utf8',maxBuffer:16*1024*1024});
+assert.equal(opticalRun.status,0,opticalRun.stderr);const opticalResult=validateResult(JSON.parse(opticalRun.stdout));
+assert.deepEqual(validateSnapshot({...snapshot,request:opticalScenario,result:opticalResult}).result,opticalResult);
+assert.match(comparisonReason(sandiaResult,opticalResult)!,/engine/);assert.equal(comparisonReason(opticalResult,structuredClone(opticalResult)),null);
+assert.ok(studyReport(opticalResult).includes('physical Fresnel-Bouguer'));assert.ok(studyReport(opticalResult).includes('sapm A0..A4'));
+for(const key of ['spectralFactor','spectralInputIrradianceWm2','absoluteAirmass','spectralActive']){const bad=structuredClone(opticalResult);delete bad.samples[0][key];assert.throws(()=>validateResult(bad),/spectral/);}
+const invalidFactor=structuredClone(opticalResult);invalidFactor.samples[0].spectralFactor=1.9;assert.throws(()=>validateResult(invalidFactor),/spectral/);
+const perezScenario=structuredClone(opticalScenario);delete perezScenario.system.rowIrradiance;perezScenario.system.skyDiffuseModel='perez';
+const perezRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(perezScenario),encoding:'utf8',maxBuffer:16*1024*1024});assert.equal(perezRun.status,0,perezRun.stderr);
+const perezResult=validateResult(JSON.parse(perezRun.stdout));assert.match(comparisonReason(opticalResult,perezResult)!,/engine/);assert.ok(studyReport(perezResult).includes('perez allsitescomposite1990'));
+assert.deepEqual(validateSnapshot({...snapshot,request:perezScenario,result:perezResult}).result,perezResult);
+console.log('Three optical stages PASS: strict contracts, forbidden Perez/row combination, actual Python, spectral component guards, archive/report and incompatible-model comparison barriers.');

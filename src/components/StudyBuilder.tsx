@@ -38,6 +38,23 @@ const rowFields = [
   ["rearTransmissionLossPct", "Rear transmission loss / کاهش عبور پشت (%)"],
   ["rearIamB", "Rear ASHRAE b / ضریب IAM پشت"],
 ] as const;
+const physicalIamFields = [
+  ["frontN", "Front refractive index n"],
+  ["frontK", "Front extinction K (1/m)"],
+  ["frontL", "Front glass thickness L (m)"],
+  ["rearN", "Rear refractive index n"],
+  ["rearK", "Rear extinction K (1/m)"],
+  ["rearL", "Rear glass thickness L (m)"],
+] as const;
+const spectralFields = [
+  ["A0", "Spectral A0"],
+  ["A1", "Spectral A1"],
+  ["A2", "Spectral A2"],
+  ["A3", "Spectral A3"],
+  ["A4", "Spectral A4"],
+  ["minAbsoluteAirmass", "Fitted minimum absolute airmass"],
+  ["maxAbsoluteAirmass", "Fitted maximum absolute airmass"],
+] as const;
 const sandiaFields = [
   ["Paco", "AC rating Paco (W)"],
   ["Pdco", "Reference DC power Pdco (W)"],
@@ -131,6 +148,21 @@ export function StudyBuilder({
               r.system.acExportLimitW !== undefined
                 ? String(r.system.acExportLimitW)
                 : "",
+            skyDiffuseModel: r.system.skyDiffuseModel ?? "haydavies",
+            beamIamModel: r.system.physicalIam ? "physical" : "ashrae",
+            spectralModel: r.system.sapmSpectral ? "sapm" : "unity",
+            ...Object.fromEntries(
+              physicalIamFields.map(([key]) => [
+                key,
+                r.system.physicalIam ? String(r.system.physicalIam[key]) : "",
+              ]),
+            ),
+            ...Object.fromEntries(
+              spectralFields.map(([key]) => [
+                key,
+                r.system.sapmSpectral ? String(r.system.sapmSpectral[key]) : "",
+              ]),
+            ),
             inverterModel: r.system.sandia ? "sandia" : "pvwatts",
             ...Object.fromEntries(
               sandiaFields.map(([key]) => [
@@ -375,6 +407,63 @@ export function StudyBuilder({
             </option>
           </select>
         </label>
+        <label>
+          {en ? "Sky diffuse transposition" : "مدل انتقال تابش آسمان"}
+          <select
+            aria-label="Study sky diffuse model"
+            value={v.skyDiffuseModel ?? "haydavies"}
+            onChange={(e) => change("skyDiffuseModel", e.target.value)}
+          >
+            <option value="haydavies">Hay–Davies</option>
+            <option value="perez">
+              Perez 1990 (isolated plane only / فقط صفحه منفرد)
+            </option>
+          </select>
+        </label>
+        <label>
+          {en ? "Beam IAM model" : "مدل IAM مستقیم"}
+          <select
+            aria-label="Study beam IAM model"
+            value={v.beamIamModel ?? "ashrae"}
+            onChange={(e) => change("beamIamModel", e.target.value)}
+          >
+            <option value="ashrae">ASHRAE</option>
+            <option value="physical">Physical glazing / شیشه فیزیکی</option>
+          </select>
+        </label>
+        {v.beamIamModel === "physical" && (
+          <div data-testid="physical-iam-inputs">
+            <p>
+              {en
+                ? "Explicit glass parameters for front/rear, no AR coating. Beam only: diffuse IAM stays unity. Legacy iamB/rearIamB inactive. Rear values retained but inactive on isolated plane."
+                : "پارامترهای صریح شیشه جلو/عقب؛ بدون AR. فقط تابش مستقیم؛ IAM پخشیده همچنان یک است. iamB/rearIamB غیرفعال. مقادیر عقب در صفحه منفرد حفظ ولی غیرفعال‌اند."}
+            </p>
+            {physicalIamFields.map(([key, label]) =>
+              text(key, label, "number"),
+            )}
+          </div>
+        )}
+        <label>
+          {en ? "Spectral modifier" : "اصلاح طیفی"}
+          <select
+            aria-label="Study spectral model"
+            value={v.spectralModel ?? "unity"}
+            onChange={(e) => change("spectralModel", e.target.value)}
+          >
+            <option value="unity">Unity / یک</option>
+            <option value="sapm">SAPM absolute airmass / جرم هوای مطلق</option>
+          </select>
+        </label>
+        {v.spectralModel === "sapm" && (
+          <div data-testid="spectral-inputs">
+            <p>
+              {en
+                ? "Explicit fitted A0..A4 and absolute-airmass validity domain required. No extrapolation. One common factor for front/rear effective irradiance, not thermal POA. This is not full SAPM or wavelength-resolved spectrum."
+                : "ضرایب صریح برازش‌شده A0..A4 و دامنه معتبر جرم هوای مطلق لازم است. بدون برون‌یابی. یک عامل مشترک برای تابش مؤثر جلو/عقب، نه تابش حرارتی. این کل SAPM یا طیف طول‌موجی نیست."}
+            </p>
+            {spectralFields.map(([key, label]) => text(key, label, "number"))}
+          </div>
+        )}
         {v.inverterModel === "sandia" && (
           <div
             data-testid="sandia-inputs"
@@ -553,6 +642,25 @@ export function StudyBuilder({
                 },
                 system: {
                   ...system,
+                  ...(v.skyDiffuseModel === "perez"
+                    ? { skyDiffuseModel: "perez" }
+                    : request?.system.skyDiffuseModel === "haydavies"
+                      ? { skyDiffuseModel: "haydavies" }
+                      : {}),
+                  ...(v.beamIamModel === "physical"
+                    ? {
+                        physicalIam: Object.fromEntries(
+                          physicalIamFields.map(([key]) => [key, number(key)]),
+                        ),
+                      }
+                    : {}),
+                  ...(v.spectralModel === "sapm"
+                    ? {
+                        sapmSpectral: Object.fromEntries(
+                          spectralFields.map(([key]) => [key, number(key)]),
+                        ),
+                      }
+                    : {}),
                   ...(v.inverterModel === "sandia"
                     ? {
                         sandia: Object.fromEntries(

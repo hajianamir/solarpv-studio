@@ -158,6 +158,60 @@ const resultSchema = z.object({
 });
 export function validateResult(value: unknown): StudyResult {
   const r = resultSchema.parse(value) as StudyResult;
+  if (
+    r.request.system.skyDiffuseModel === "perez" &&
+    !r.manifest.models.transposition?.startsWith("perez allsitescomposite1990")
+  )
+    throw new Error("Perez manifest mismatch");
+  if (
+    r.request.system.physicalIam &&
+    !r.manifest.models.beamIam?.startsWith("physical Fresnel-Bouguer")
+  )
+    throw new Error("Physical IAM manifest mismatch");
+  if (
+    r.request.system.physicalIam &&
+    r.samples.some((sample) =>
+      [
+        "beamIam",
+        ...(r.request.system.rowIrradiance ? ["rearBeamIam"] : []),
+      ].some(
+        (k) =>
+          typeof sample[k] !== "number" ||
+          Number(sample[k]) < 0 ||
+          Number(sample[k]) > 1.00000001,
+      ),
+    )
+  )
+    throw new Error("Invalid physical IAM components");
+  if (r.request.system.sapmSpectral) {
+    const p = r.request.system.sapmSpectral;
+    if (!r.manifest.models.spectral?.startsWith("sapm A0..A4"))
+      throw new Error("Spectral manifest mismatch");
+    for (const sample of r.samples) {
+      const input = sample.spectralInputIrradianceWm2,
+        factor = sample.spectralFactor,
+        am = sample.absoluteAirmass,
+        active = sample.spectralActive,
+        out = sample.effectiveIrradianceWm2;
+      if (
+        typeof input !== "number" ||
+        typeof factor !== "number" ||
+        typeof am !== "number" ||
+        typeof out !== "number" ||
+        input < 0 ||
+        factor < 0 ||
+        factor > 2 ||
+        Math.abs(input * factor - out) > 1e-6 * Math.max(1, out) ||
+        (input > 0
+          ? active !== 1 ||
+            am < p.minAbsoluteAirmass ||
+            am > p.maxAbsoluteAirmass ||
+            factor <= 0
+          : active !== 0 || am !== 0 || factor !== 0)
+      )
+        throw new Error("Invalid spectral components/domain");
+    }
+  }
   if (r.request.system.sandia) {
     const inv = r.request.system.sandia,
       dt = r.request.weather.intervalMinutes / 60;
@@ -443,6 +497,6 @@ export function studyReport(result: StudyResult, other?: StudyResult): string {
     if (reason) throw new Error(reason);
   }
   const section = (r: StudyResult) =>
-    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC model: ${r.request.system.electrical ? "De Soto single diode + ideal constrained MPPT" : "PVWatts DC"}</p>${r.request.system.electrical ? `<p>Unconstrained MPP / constraint loss: ${r.summary.availableMppWh} / ${r.summary.mpptConstraintLossWh} Wh. Voc checks are for specified conditions only, not certified electrical design.</p>` : ""}<p>AC inverter: ${escape(r.manifest.models.ac)}.</p>${r.request.system.sandia ? `<p>Imported inverter self-consumption: ${r.summary.inverterSelfConsumptionWh} Wh; net grid (export minus import): ${r.summary.netGridWh} Wh. Export cap does not limit self-consumption import. No local load/storage.</p>` : ""}<p>Thermal model: ${escape(r.manifest.models.temperature)}.</p>${r.request.system.acExportLimitW !== undefined ? `<p>AC export cap: ${r.request.system.acExportLimitW} W; before cap / export loss: ${r.summary.acBeforeExportLimitWh} / ${r.summary.acExportLimitLossWh} Wh. No local load or storage; static cap only.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th>${r.request.system.sandia ? "<th>Inverter import Wh</th><th>Net grid Wh</th>" : ""}</tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td>${r.request.system.sandia ? `<td>${m.inverterSelfConsumptionWh}</td><td>${m.netGridWh}</td>` : ""}</tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
+    `<h2>${escape(r.request.label)}</h2><p>Mounting: ${r.request.system.tracking ? "single-axis tracker (ideal geometry)" : "fixed tilt"}; optics: ${r.request.system.rowIrradiance ? "infinite sheds (front/rear row optics)" : "isolated plane"}</p>${r.request.system.rowIrradiance ? `<p>Incident front / rear / weighted effective rear: ${r.summary.frontIncidentWhm2} / ${r.summary.rearIncidentWhm2} / ${r.summary.rearEffectiveWhm2} Wh/m². Thermal proxy: ${escape(r.request.system.rowIrradiance.temperatureIrradiance)}.</p>` : ""}<p>DC model: ${r.request.system.electrical ? "De Soto single diode + ideal constrained MPPT" : "PVWatts DC"}</p>${r.request.system.electrical ? `<p>Unconstrained MPP / constraint loss: ${r.summary.availableMppWh} / ${r.summary.mpptConstraintLossWh} Wh. Voc checks are for specified conditions only, not certified electrical design.</p>` : ""}<p>Optics: ${escape(r.manifest.models.transposition)}; beam IAM: ${escape(r.manifest.models.beamIam)}; spectral: ${escape(r.manifest.models.spectral)}. Diffuse IAM remains unity; spectral modifier does not alter thermal POA.</p><p>AC inverter: ${escape(r.manifest.models.ac)}.</p>${r.request.system.sandia ? `<p>Imported inverter self-consumption: ${r.summary.inverterSelfConsumptionWh} Wh; net grid (export minus import): ${r.summary.netGridWh} Wh. Export cap does not limit self-consumption import. No local load/storage.</p>` : ""}<p>Thermal model: ${escape(r.manifest.models.temperature)}.</p>${r.request.system.acExportLimitW !== undefined ? `<p>AC export cap: ${r.request.system.acExportLimitW} W; before cap / export loss: ${r.summary.acBeforeExportLimitWh} / ${r.summary.acExportLimitLossWh} Wh. No local load or storage; static cap only.</p>` : ""}<p>DC nameplate: ${r.request.system.arrayPdc0W} W; period AC: ${r.summary.acWh / 1000} kWh; DC: ${r.summary.dcWh / 1000} kWh</p><p>${escape(r.manifest.period.startUtc)} → ${escape(r.manifest.period.endUtc)}; UTC months, not annualized unless complete year.</p><table><tr><th>UTC month</th><th>DC Wh</th><th>AC Wh</th>${r.request.system.sandia ? "<th>Inverter import Wh</th><th>Net grid Wh</th>" : ""}</tr>${r.monthly.map((m) => `<tr><td>${escape(m.month)}</td><td>${m.dcWh}</td><td>${m.acWh}</td>${r.request.system.sandia ? `<td>${m.inverterSelfConsumptionWh}</td><td>${m.netGridWh}</td>` : ""}</tr>`).join("")}</table><h3>Warnings & limitations</h3><ul>${[...r.manifest.warnings, ...r.manifest.limitations].map((w) => `<li>${escape(w)}</li>`).join("")}</ul><h3>Inputs (weather retained in companion JSON)</h3><pre>${escape(JSON.stringify({ ...r.request, weather: { ...r.request.weather, records: `${r.request.weather.records.length} rows; see JSON bundle` } }, null, 2))}</pre><h3>Execution and reproducibility</h3><pre>${escape(JSON.stringify({ execution: r.execution, manifest: r.manifest }, null, 2))}</pre>`;
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>Direct pvlib study report</title><style>body{font:15px system-ui;max-width:1000px;margin:2em auto;padding:1em;color:#172033}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere} @media print{body{margin:0}h2{break-before:page}}</style><h1>Direct pvlib study / گزارش مطالعه</h1><p>Not field validated. Separate from screening and financial reports. Imported/local results are not digitally certified. Keep the JSON bundle for full weather and reproducibility. Print using browser Print / Save as PDF.</p>${other ? `<h2>Scenario comparison</h2><p>Same weather, site and engine; mounting, row optics and thermal irradiance proxy may differ (see scenario inputs). Delta is not an isolated bifacial gain. No guarantee of tracking gain. AC difference (second − first): ${(other.summary.acWh - result.summary.acWh) / 1000} kWh; ${result.summary.acWh === 0 ? "percentage unavailable (zero baseline)" : `${(100 * (other.summary.acWh - result.summary.acWh)) / result.summary.acWh}%`}. Different capacities are not normalized.</p>` : ""}${section(result)}${other ? section(other) : ""}</html>`;
 }

@@ -29,19 +29,21 @@ try{
   await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();
   await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');
   await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();
-  await tab('waterfall_loss');const before=await page.locator('table').allTextContents();assert.ok(before.length);
+  const waterfall=page.getByRole('heading',{name:/PVsyst-Grade Loss Waterfall/}).locator('../..');
+  await tab('waterfall_loss');await waterfall.waitFor();const before=await waterfall.locator('table').allTextContents();assert.ok(before.length);
   await tab('climate');
   const request=JSON.parse(await readFile('services/pvlib_study/tests/synthetic-study.json','utf8'));
   request.system.arrayPdc0W=8800;request.system.electrical=JSON.parse(await readFile('services/pvlib_study/tests/desoto-reference-parameters.json','utf8'));
   request.system.faiman={u0:30,u1:5,windHeightM:10};request.system.acExportLimitW=100;
   request.system.sandia=JSON.parse(await readFile('services/pvlib_study/tests/sandia-reference-parameters.json','utf8'));request.system.inverterPdc0W=request.system.sandia.Pdco;request.system.additionalDcLossPct=0;
+  const optical=JSON.parse(await readFile('services/pvlib_study/tests/optical-reference-parameters.json','utf8'));Object.assign(request.system,optical);
   const invalid=structuredClone(request);invalid.weather.records[0].timestamp='2017-04-01T17:00:00';
   const upload=page.getByLabel('Import direct pvlib study JSON');
   await upload.setInputFiles({name:'invalid-study.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});
   await panel.getByRole('alert').waitFor();assert.equal(await panel.getByTestId('run-pvlib-study').isDisabled(),true);
   // Build from blank form and a real uploaded CSV: no study JSON is needed.
   const values:Record<string,string|number>={label:request.label,altitudeM:request.site.altitudeM,timezone:request.site.timezone,intervalMinutes:request.weather.intervalMinutes,weatherSource:request.weather.source,parameterSource:request.parameterProvenance.source,...request.system,...request.system.temperature};
-  delete values.temperature;delete values.inverterEtaRef;delete values.electrical;delete values.faiman;delete values.acExportLimitW;delete values.sandia;
+  delete values.temperature;delete values.inverterEtaRef;delete values.electrical;delete values.faiman;delete values.acExportLimitW;delete values.sandia;delete values.physicalIam;delete values.sapmSpectral;
   for(const [key,value] of Object.entries(values))await page.getByLabel(`Study ${key}`,{exact:true}).fill(String(value));
   await page.getByLabel('Study weatherQuality',{exact:true}).selectOption(request.weather.quality);
   await page.getByLabel('Study parameterQuality',{exact:true}).selectOption(request.parameterProvenance.quality);
@@ -52,6 +54,8 @@ try{
   await page.getByLabel('Study export enabled',{exact:true}).selectOption('yes');await page.getByLabel('Study acExportLimitW',{exact:true}).fill('100');
   await page.getByLabel('Study inverter model',{exact:true}).selectOption('sandia');
   for(const [key,value] of Object.entries(request.system.sandia))await page.getByLabel(`Study ${key}`,{exact:true}).fill(String(value));
+  await page.getByLabel('Study beam IAM model',{exact:true}).selectOption('physical');await page.getByLabel('Study spectral model',{exact:true}).selectOption('sapm');
+  for(const obj of [request.system.physicalIam,request.system.sapmSpectral])for(const [key,value] of Object.entries(obj))await page.getByLabel(`Study ${key}`,{exact:true}).fill(String(value));
   const columns=['timestamp','ghiWm2','dniWm2','dhiWm2','tempAirC','windSpeedMs'];
   const weatherCsv=[columns.join(','),...request.weather.records.map((r:Record<string,unknown>)=>columns.map(k=>r[k]).join(','))].join('\n');
   await page.getByLabel('Study weather CSV',{exact:true}).setInputFiles({name:'missing-weather.csv',mimeType:'text/csv',buffer:Buffer.from(weatherCsv.replace(',600,',',,'))});
@@ -106,7 +110,7 @@ try{
   await page.getByTestId('saved-study-entry').filter({hasText:request.label}).getByRole('button',{name:/Compare with current|مقایسه با نتیجه/}).click();
   await page.getByTestId('study-comparison').waitFor();
   const reportPromise=page.waitForEvent('download');await page.getByTestId('download-study-report').click();
-  const reportStream=await (await reportPromise).createReadStream();assert.ok(reportStream);let report='';for await(const chunk of reportStream)report+=String(chunk);assert.ok(report.includes('sandia voltage-dependent'));assert.ok(report.includes('Imported inverter self-consumption'));assert.ok(report.includes('faiman;'));assert.ok(report.includes('AC export cap: 100 W'));assert.ok(report.includes('Scenario comparison'));assert.ok(report.includes('Second synthetic scenario'));assert.ok(report.includes('single-axis tracker'));assert.ok(report.includes('infinite sheds'));assert.ok(report.includes('front_plus_rear'));assert.ok(report.includes('De Soto single diode'));assert.ok(report.includes(result.manifest.inputSha256));
+  const reportStream=await (await reportPromise).createReadStream();assert.ok(reportStream);let report='';for await(const chunk of reportStream)report+=String(chunk);assert.ok(report.includes('physical Fresnel-Bouguer'));assert.ok(report.includes('sapm A0..A4'));assert.ok(report.includes('sandia voltage-dependent'));assert.ok(report.includes('Imported inverter self-consumption'));assert.ok(report.includes('faiman;'));assert.ok(report.includes('AC export cap: 100 W'));assert.ok(report.includes('Scenario comparison'));assert.ok(report.includes('Second synthetic scenario'));assert.ok(report.includes('single-axis tracker'));assert.ok(report.includes('infinite sheds'));assert.ok(report.includes('front_plus_rear'));assert.ok(report.includes('De Soto single diode'));assert.ok(report.includes(result.manifest.inputSha256));
   const archivePromise=page.waitForEvent('download');await page.getByTestId('backup-study').click();
   const archiveStream=await (await archivePromise).createReadStream();assert.ok(archiveStream);let archive='';for await(const chunk of archiveStream)archive+=String(chunk);assert.equal(JSON.parse(archive).request.system.additionalDcLossPct,0);assert.equal(JSON.parse(archive).request.system.faiman.u0,35);assert.equal(JSON.parse(archive).request.system.sandia.Paco,8000);assert.equal(JSON.parse(archive).request.system.tracking.gcr,.4);assert.equal(JSON.parse(archive).request.system.rowIrradiance.bifaciality,.7);assert.equal(JSON.parse(archive).request.system.electrical.modulesPerString,10);assert.ok(JSON.parse(archive).result.summary.availableMppWh>0);assert.ok(JSON.parse(archive).result.summary.rearEffectiveWhm2>0);assert.ok(JSON.parse(archive).result.samples.some((r:{trackerThetaDeg:number})=>Math.abs(r.trackerThetaDeg)>1));
   await page.getByLabel('Restore study archive').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(archive)});
@@ -117,6 +121,10 @@ try{
   page.once('dialog',dialog=>dialog.accept());
   await page.getByTestId('saved-study-entry').filter({hasText:'Second synthetic scenario'}).getByRole('button',{name:/^Delete$|^حذف$/}).click();
   await page.waitForFunction(()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===1);
+  assert.equal(await page.getByLabel('Study beam IAM model',{exact:true}).inputValue(),'physical');assert.equal(await page.getByLabel('Study frontN',{exact:true}).inputValue(),'1.526');assert.equal(await page.getByLabel('Study spectral model',{exact:true}).inputValue(),'sapm');assert.equal(await page.getByLabel('Study A0',{exact:true}).inputValue(),'0.96');
+  // Reject Perez+rows visibly, then run the valid isolated-plane Perez scenario.
+  await page.getByLabel('Study sky diffuse model',{exact:true}).selectOption('perez');await page.getByTestId('apply-study-builder').click();await page.getByTestId('study-builder').getByRole('alert').waitFor();assert.equal(await page.getByTestId('run-pvlib-study').isDisabled(),true);
+  await page.getByLabel('Study optics',{exact:true}).selectOption('isolated');await page.getByTestId('apply-study-builder').click();await page.getByTestId('run-pvlib-study').click();await page.getByTestId('pvlib-study-result').waitFor({timeout:55000});assert.ok((await page.getByTestId('optical-models-result').textContent())?.includes('perez allsitescomposite1990'));
   // A denied/quota-style transaction must surface as a failure, never a successful save.
   await page.evaluate(()=>{IDBObjectStore.prototype.put=function(){throw new DOMException('Injected quota denial','QuotaExceededError');};});
   await page.getByTestId('save-study').click();await page.getByTestId('study-library').getByRole('alert').waitFor();
@@ -126,7 +134,7 @@ try{
   // Explicit service failure cannot silently show a screening result or retain a completed study.
   await page.route('**/api/v1/studies/run',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({code:'UNAVAILABLE',message:'Injected runtime outage; no fallback'})}));
   await page.getByTestId('run-pvlib-study').click();await panel.getByRole('alert').filter({hasText:'UNAVAILABLE'}).waitFor();assert.equal(await page.getByTestId('pvlib-study-result').count(),0);
-  await tab('waterfall_loss');assert.deepEqual(await page.locator('table').allTextContents(),before,'Independent study changed screening waterfall');
+  await tab('waterfall_loss');await waterfall.waitFor();assert.deepEqual(await waterfall.locator('table').allTextContents(),before,'Independent study changed screening waterfall');
   assert.deepEqual(errors,[]);
-  console.log('Direct study real-browser PASS: form + CSV review, actual Python run, IndexedDB reload/restore/delete, single diode/string/MPPT + tracker + bifacial row optics, explicit thermal policy, isolated/row comparison, portable backup, printable report, outage without fallback, screening unchanged. Synthetic numerical inputs only.');
+  console.log('Direct study real-browser PASS: form + CSV review, actual Python run, IndexedDB reload/restore/delete, single diode/string/MPPT + Sandia + tracker + bifacial row optics, physical IAM + SAPM spectral + isolated Perez and rejected Perez/rows, explicit thermal policy, isolated/row comparison, portable backup, printable report, outage without fallback, screening unchanged. Synthetic numerical inputs only.');
 }finally{await browser?.close();child.kill('SIGTERM');}

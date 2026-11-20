@@ -68,3 +68,6 @@ fixture نه‌ضریبی از دیتابیس CEC همراه pvlib 0.13.1، رک
 - سورس همان نسخه، شرط واقعی startup/clipping: https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/inverter.html
 - مرجع مستقل معادله Sandia PVPMC: https://pvpmc.sandia.gov/modeling-guide/dc-to-ac-conversion/sandia-inverter-model/
 - دیتابیس همراه نسخه: https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/data/sam-library-cec-inverters-2019-03-05.csv
+
+
+توسعهٔ موتور 1.6.0: [سه مرحلهٔ Perez، IAM فیزیکی و اصلاح طیفی SAPM](PVLIB-OPTICAL-THREE.fa.md).

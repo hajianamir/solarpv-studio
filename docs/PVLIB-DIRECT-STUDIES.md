@@ -137,3 +137,6 @@ No measured independent field dataset has been acquired in this implementation. 
 
 
 توسعهٔ موتور 1.5.0: [اینورتر Sandia وابسته به ولتاژ و حسابداری مصرف داخلی](PVLIB-SANDIA-INVERTER.fa.md).
+
+
+توسعهٔ موتور 1.6.0: [سه مرحلهٔ Perez، IAM فیزیکی و اصلاح طیفی SAPM](PVLIB-OPTICAL-THREE.fa.md).
