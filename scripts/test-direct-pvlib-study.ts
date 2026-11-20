@@ -23,7 +23,7 @@ const base=`http://127.0.0.1:${address.port}`;
 const send=(body:unknown=request,headers:Record<string,string>={})=>fetch(`${base}/api/v1/studies/run`,{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
 const temp=mkdtempSync(path.join(os.tmpdir(),'pvlib-study-'));
 try{
-  const cap=await (await fetch(`${base}/api/v1/studies/capabilities`)).json();assert.equal(cap.runtimeStatus,'not_probed');assert.equal(cap.enabled,true);
+  const cap=await (await fetch(`${base}/api/v1/studies/capabilities`)).json();assert.equal(cap.runtimeStatus,'not_probed');assert.equal(cap.enabled,true);assert.ok(cap.supportedModes.includes('single_axis_monofacial'));
   process.env.PVLIB_STUDY_ENABLED='false';assert.equal((await send()).status,503);
   process.env.PVLIB_STUDY_ENABLED='true';
   // Real existing production identity path, not a test replacement.
@@ -48,6 +48,11 @@ try{
     assert.equal((await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({large:'x'.repeat(8*1024*1024)})})).status,413);
     const unsupported=structuredClone(request);unsupported.weather.records.forEach((row,i)=>{row.timestamp=`2017-04-01T${String(7+i).padStart(2,'0')}:00:00Z`;});
     const domain=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(unsupported)});assert.equal(domain.status,422);assert.equal((await domain.json()).code,'INVALID_INPUT');
+    const tracked=structuredClone(request);tracked.system.tracking={axisTiltDeg:0,axisAzimuthDeg:180,maxAngleDeg:60,backtrack:true,gcr:.4,crossAxisTiltDeg:0};
+    const invalidTracker=structuredClone(tracked);invalidTracker.system.tracking!.gcr=0;
+    assert.equal((await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(invalidTracker)})).status,400);
+    const trackingRun=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(tracked)});assert.equal(trackingRun.status,200,await trackingRun.clone().text());
+    const trackingResult=await trackingRun.json();assert.deepEqual(trackingResult.request,tracked);assert.equal(trackingResult.manifest.engineVersion,'1.1.0');assert.ok(trackingResult.samples.some((row:{trackerThetaDeg:number})=>Math.abs(row.trackerThetaDeg)>1));
   }finally{freshServer.closeAllConnections();await new Promise<void>(resolve=>freshServer.close(()=>resolve()));}
   const missing=new StudyExecutor({python:path.join(temp,'not-a-python')});await assert.rejects(()=>missing.run(request),(e:unknown)=>e instanceof StudyError&&e.code==='UNAVAILABLE');assert.equal(missing.activeCount,0);
   const slow=path.join(temp,'slow.py');writeFileSync(slow,'import time\ntime.sleep(10)\n');

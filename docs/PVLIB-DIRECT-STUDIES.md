@@ -1,14 +1,15 @@
 # Direct pvlib studies — v1 operator and user guide
 
+**به‌روزرسانی مدل / Model update:** موتور 1.1.0 اکنون fixed-tilt و single-axis monofacial را پشتیبانی می‌کند. قرارداد جدید، روش استفاده و محدودیت‌ها: [راهنمای ردیاب تک‌محوره](PVLIB-SINGLE-AXIS.fa.md).
 **Workflow update:** A bilingual form builder, strict weather CSV review, browser-local IndexedDB snapshots, portable restore, compatible-scenario comparison and printable HTML reporting are now available. See [the workflow guide](PVLIB-STUDY-WORKFLOW.fa.md). The original JSON import/API remain supported.
 
 This is a separate, **real Python execution** path, not a JavaScript approximation or a relabeling of the existing screening waterfall. It is opt-in and disabled by default. It can run on a local computer without internet after installing its pinned runtime; a remote deployment needs connectivity to that server. No weather/provider fetch is performed by this worker.
 
 ## Scope: what is and is not implemented
 
-Supported: one fixed-tilt, monofacial aggregate array and one aggregate inverter, explicit module/inverter and SAPM temperature parameters, complete regular interval-average GHI/DNI/DHI, dry-bulb temperature and **10 m** wind. The chain calls pvlib-python **0.13.1** directly for SPA, Hay-Davies transposition, ASHRAE beam IAM, SAPM cell temperature, PVWatts DC and PVWatts inverter. It is **not** equivalent to SAM/PVWatts V8, a string electrical model or a measured site validation.
+Supported: one fixed-tilt or ideal single-axis tracking monofacial aggregate array and one aggregate inverter, explicit module/inverter and SAPM temperature parameters, complete regular interval-average GHI/DNI/DHI, dry-bulb temperature and **10 m** wind. Engine 1.1.0 calls pvlib-python **0.13.1** directly for SPA, optional single-axis geometry, Hay-Davies transposition, ASHRAE beam IAM, SAPM cell temperature, PVWatts DC and PVWatts inverter. It is **not** equivalent to SAM/PVWatts V8, a string electrical model or a measured site validation.
 
-Not implemented in this chain: automatic weather acquisition, irradiation decomposition from GHI, gap filling, horizon/near shading, bifacial, trackers, snow/Kimber, batteries, grid curtailment, financial dispatch, persistent job queue or multi-node scheduling. Existing screening and reference-snow/soiling features remain separate and unchanged. No output is silently copied into screening finance, sizing or waterfall. No legacy clipping/loss factor is applied a second time.
+Not implemented in this chain: automatic weather acquisition, irradiation decomposition from GHI, gap filling, horizon/near or electrical row shading, bifacial, tracker stow/control/motor consumption, snow/Kimber, batteries, grid curtailment, financial dispatch, persistent job queue or multi-node scheduling. Existing screening and reference-snow/soiling features remain separate and unchanged. No output is silently copied into screening finance, sizing or waterfall. No legacy clipping/loss factor is applied a second time.
 
 The current study report is **JSON plus intermediate CSV**, independently downloadable from the study panel. It is not merged into the existing project's DOCX/XLSX or automatically restored by the existing project loader. Save a snapshot in the local study library or export a portable archive to retain a study; changing the active site or leaving the panel clears only its active in-memory state. Server-side automatic history storage is deliberately absent to avoid storing private weather under an unscoped shared project identity.
 
@@ -72,6 +73,7 @@ system:
   inverterEtaRef: exactly 0.9637 for this supported model configuration
   iamB: explicit ASHRAE coefficient, 0..1
   additionalDcLossPct: explicit constant additional DC loss, 0..100%
+  tracking: optional strict tracker object; all six fields explicit (see single-axis guide)
   temperature: {a: -10..0, b: -1..0, deltaT: 0..20 degC}
 parameterProvenance:
   source: nonblank source/assumption description, <=500 characters

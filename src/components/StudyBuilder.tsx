@@ -22,6 +22,13 @@ const fields = [
   ["b", "SAPM b"],
   ["deltaT", "SAPM ΔT (°C)"],
 ] as const;
+const trackingFields = [
+  ["axisTiltDeg", "Axis tilt / شیب محور (°)"],
+  ["axisAzimuthDeg", "Axis azimuth / سمت محور (° clockwise from N)"],
+  ["maxAngleDeg", "Symmetric rotation limit / حد چرخش متقارن (±°)"],
+  ["gcr", "GCR / نسبت عرض میز به فاصله محورها (0.01–1)"],
+  ["crossAxisTiltDeg", "Cross-axis tilt / شیب عرضی راست‌گرد (°)"],
+] as const;
 type Values = Record<string, string>;
 export function StudyBuilder({
   request,
@@ -68,6 +75,16 @@ export function StudyBuilder({
             weatherQuality: r.weather.quality,
             parameterSource: r.parameterProvenance.source,
             parameterQuality: r.parameterProvenance.quality,
+            mounting: r.system.tracking ? "single_axis" : "fixed",
+            backtrack: r.system.tracking
+              ? String(r.system.tracking.backtrack)
+              : "",
+            ...Object.fromEntries(
+              trackingFields.map(([key]) => [
+                key,
+                r.system.tracking ? String(r.system.tracking[key]) : "",
+              ]),
+            ),
             ...Object.fromEntries(
               fields.map(([key]) => [
                 key,
@@ -152,6 +169,50 @@ export function StudyBuilder({
             ? "Equipment is an independent scenario, not auto-linked to the catalog."
             : "تجهیزات سناریوی مستقل‌اند و به کاتالوگ متصل نیستند."}
         </p>
+        <label className="block text-xs">
+          {en ? "Mounting model" : "مدل نصب"}
+          <select
+            aria-label="Study mounting"
+            value={v.mounting ?? "fixed"}
+            onChange={(e) => change("mounting", e.target.value)}
+            className="block bg-slate-900 p-2"
+          >
+            <option value="fixed">Fixed tilt / سطح ثابت</option>
+            <option value="single_axis">
+              Single-axis tracker / ردیاب تک‌محوره
+            </option>
+          </select>
+        </label>
+        {v.mounting === "single_axis" && (
+          <div
+            className="space-y-3 border border-sky-800 p-3"
+            data-testid="tracker-inputs"
+          >
+            <p className="text-xs">
+              {en
+                ? "Ideal monofacial tracker geometry; no row-shading electrical loss, wind stow or motor consumption. Fixed tilt/azimuth below are retained references only and do not control tracking. For a south-pointing axis, positive theta rotates west; cross-axis slope is right-handed. All tracker values and their source must be declared."
+                : "هندسهٔ ایده‌آل ردیاب یک‌رو؛ بدون تلفات الکتریکی سایه ردیف، stow باد یا مصرف موتور. شیب و سمت ثابت پایین فقط مرجع نگه‌داری‌شده‌اند و ردیاب را کنترل نمی‌کنند. برای محور جنوبی، theta مثبت به غرب است؛ شیب عرضی قرارداد راست‌گرد دارد. تمام مقادیر و منبع ردیاب باید صریح باشند."}
+            </p>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {trackingFields.map(([key, label]) => text(key, label, "number"))}
+              <label className="block text-xs">
+                Backtracking / عقب‌گرد ضدسایه
+                <select
+                  aria-label="Study backtrack"
+                  value={v.backtrack ?? ""}
+                  onChange={(e) => change("backtrack", e.target.value)}
+                  className="block bg-slate-900 p-2"
+                >
+                  <option value="">—</option>
+                  <option value="true">Enabled / فعال</option>
+                  <option value="false">
+                    Disabled (true tracking) / غیرفعال
+                  </option>
+                </select>
+              </label>
+            </div>
+          </div>
+        )}
         <div className="grid sm:grid-cols-3 gap-3">
           {text("label", "Study name / نام مطالعه")}
           {text("altitudeM", "Altitude / ارتفاع (m)", "number")}
@@ -251,6 +312,22 @@ export function StudyBuilder({
                 },
                 system: {
                   ...system,
+                  ...(v.mounting === "single_axis"
+                    ? {
+                        tracking: {
+                          ...Object.fromEntries(
+                            trackingFields.map(([key]) => [key, number(key)]),
+                          ),
+                          backtrack: (() => {
+                            if (!["true", "false"].includes(v.backtrack))
+                              throw new Error(
+                                "Choose backtracking explicitly / وضعیت backtracking را انتخاب کنید",
+                              );
+                            return v.backtrack === "true";
+                          })(),
+                        },
+                      }
+                    : {}),
                   inverterEtaRef: 0.9637,
                   temperature: {
                     a: number("a"),

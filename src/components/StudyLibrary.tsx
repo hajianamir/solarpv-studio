@@ -271,13 +271,14 @@ export function StudyLibrary({
           <div data-testid="study-comparison" className="text-xs">
             <h4>
               {en
-                ? "Comparable site, weather and engine; capacity not normalized"
-                : "سایت، هواشناسی و موتور سازگار؛ بدون نرمال‌سازی ظرفیت"}
+                ? "Comparable site/weather/engine; mounting may differ, capacity not normalized"
+                : "سایت، هواشناسی و موتور سازگار؛ نصب ممکن است متفاوت باشد، بدون نرمال‌سازی ظرفیت"}
             </h4>
             <table>
               <thead>
                 <tr>
                   <th>Scenario</th>
+                  <th>Mounting</th>
                   <th>DC W</th>
                   <th>AC kWh</th>
                 </tr>
@@ -286,6 +287,9 @@ export function StudyLibrary({
                 {[result, other].map((r, i) => (
                   <tr key={i}>
                     <td>{r.request.label}</td>
+                    <td>
+                      {r.request.system.tracking ? "single-axis" : "fixed"}
+                    </td>
                     <td>{r.request.system.arrayPdc0W}</td>
                     <td>{r.summary.acWh / 1000}</td>
                   </tr>

@@ -14,7 +14,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.0.0'
+ENGINE_VERSION = '1.1.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -22,8 +22,8 @@ MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg 
               energyIntegration='interval-average rectangular; solar geometry at interval midpoint')
 LIMITATIONS = [
     'Not field validated, calibrated, bankable or a standards-conformity assessment.',
-    'Fixed-tilt monofacial single aggregate array and single aggregate inverter only; no string voltage/MPPT design.',
-    'No horizon, near shading, bifacial, tracker, snow, soiling, battery, grid curtailment or financial simulation.',
+    'Fixed-tilt or single-axis monofacial single aggregate array and single aggregate inverter only; no string voltage/MPPT design.',
+    'No horizon, near/electrical row shading, bifacial, snow, soiling, battery, grid curtailment or financial simulation.',
     'Fixed SPA delta_t=67 s and sunrise/sunset refraction 0.5667 deg are assumptions, not historical/forecast corrections.',
     'Diffuse IAM and spectral factors are unity assumptions; midpoint transposition does not eliminate interval-averaging error.',
     'SAPM wind must be at 10 m; mounting-specific coefficients and all equipment parameters are caller-declared.',
@@ -77,7 +77,15 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature'], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else [])], 'system')
+    if 'tracking' in system:
+        track = system['tracking']
+        tracking_bounds = dict(axisTiltDeg=(0,90), axisAzimuthDeg=(0,360), maxAngleDeg=(0,90), gcr=(.01,1), crossAxisTiltDeg=(-30,30))
+        keys(track, [*tracking_bounds, 'backtrack'], 'system.tracking')
+        for key, (lo, hi) in tracking_bounds.items():
+            number(track[key], lo, hi, 'tracking.'+key)
+        if not isinstance(track['backtrack'], bool):
+            raise InputError('tracking.backtrack: boolean required')
     for key, (lo, hi) in bounds.items():
         number(system[key], lo, hi, 'system.'+key)
     if system['arrayPdc0W']/system['inverterPdc0W'] > 2:
@@ -139,10 +147,37 @@ def run_study(req):
         pressure=pvlib.atmosphere.alt2pres(site['altitudeM']), temperature=df.tempAirC, method='nrel_numpy', delta_t=67.0, atmos_refract=0.5667)
     if ((position.apparent_zenith >= 90) & (df.dniWm2 > 0)).any():
         raise InputError('positive DNI below the midpoint apparent horizon is unsupported; review timestamp and weather')
-    poa = pvlib.irradiance.get_total_irradiance(s['surfaceTiltDeg'], s['surfaceAzimuthDeg'], position.apparent_zenith,
+    tilt = pd.Series(s['surfaceTiltDeg'], index=mid, dtype=float)
+    azimuth = pd.Series(s['surfaceAzimuthDeg'], index=mid, dtype=float)
+    tracker_columns = {}
+    models = dict(MODELS, mounting='fixed_tilt')
+    limitations = list(LIMITATIONS)
+    if 'tracking' in s:
+        track = s['tracking']
+        geometry = pvlib.tracking.singleaxis(position.apparent_zenith, position.azimuth,
+            axis_tilt=track['axisTiltDeg'], axis_azimuth=track['axisAzimuthDeg'],
+            max_angle=track['maxAngleDeg'], backtrack=track['backtrack'],
+            gcr=track['gcr'], cross_axis_tilt=track['crossAxisTiltDeg'])
+        # Only model geometry is parked; no missing weather is filled here.
+        daylight = position.apparent_zenith < 90
+        theta = geometry.tracker_theta.where(daylight, 0.0)
+        orientation = pvlib.tracking.calc_surface_orientation(theta,
+            axis_tilt=track['axisTiltDeg'], axis_azimuth=track['axisAzimuthDeg'])
+        tilt, azimuth = orientation['surface_tilt'], orientation['surface_azimuth']
+        tracker_columns = dict(trackerThetaDeg=theta, trackerActive=daylight.astype(float))
+        models['mounting'] = 'singleaxis; pvlib slope-aware backtracking if requested; night theta=0 axis-neutral park'
+        limitations.extend([
+            'Tracker is ideal parallel-row geometry only; no diffuse row masking, electrical shading/mismatch, terrain/layout verification or motor energy.',
+            'No wind/snow stow, tracking error, slew-rate or structural control simulation; SAPM coefficients must suit moving open-rack mounting.',
+            'Fixed surfaceTiltDeg/surfaceAzimuthDeg are inactive retained reference inputs in tracker mode; axis geometry controls modeled orientation.',
+            'Night (midpoint zenith >=90 deg) uses theta=0 axis-neutral park, not necessarily a horizontal module on a tilted axis.'
+        ])
+        if not track['backtrack']:
+            limitations.append('True-tracking has NO row-shading deduction; GCR and crossAxisTiltDeg are retained but inactive when backtracking is disabled.')
+    poa = pvlib.irradiance.get_total_irradiance(tilt, azimuth, position.apparent_zenith,
         position.azimuth, df.dniWm2, df.ghiWm2, df.dhiWm2,
         dni_extra=pvlib.irradiance.get_extra_radiation(mid, method='spencer', solar_constant=1366.1), albedo=s['albedo'], model='haydavies')
-    aoi = pvlib.irradiance.aoi(s['surfaceTiltDeg'], s['surfaceAzimuthDeg'], position.apparent_zenith, position.azimuth)
+    aoi = pvlib.irradiance.aoi(tilt, azimuth, position.apparent_zenith, position.azimuth)
     iam = pvlib.iam.ashrae(aoi, b=s['iamB'])
     effective = poa.poa_direct*iam + poa.poa_diffuse
     cell = pvlib.temperature.sapm_cell(poa.poa_global, df.tempAirC, df.windSpeedMs, irrad_ref=1000.0, **s['temperature'])
@@ -151,7 +186,7 @@ def run_study(req):
         raise InputError('PVWatts produced negative DC outside supported temperature/coefficient conditions')
     dc = raw_dc * (1-s['additionalDcLossPct']/100)
     ac = pvlib.inverter.pvwatts(dc, s['inverterPdc0W'], eta_inv_nom=s['inverterEtaNom'], eta_inv_ref=s['inverterEtaRef'])
-    columns = dict(solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
+    columns = dict(surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
         beamIam=iam, poaDirectWm2=poa.poa_direct, poaSkyDiffuseWm2=poa.poa_sky_diffuse,
         poaGroundDiffuseWm2=poa.poa_ground_diffuse, poaGlobalWm2=poa.poa_global,
         effectiveIrradianceWm2=effective, cellTemperatureC=cell, dcBeforeAdditionalLossW=raw_dc, dcW=dc, acW=ac)
@@ -172,14 +207,15 @@ def run_study(req):
     def iso(t):
         return t.isoformat().replace('+00:00', 'Z')
     return dict(schemaVersion='pvlib-study-result-v1', status='completed', engine='pvlib-python-direct',
-        manifest=dict(engineVersion=ENGINE_VERSION, models=MODELS, validationStatus='not_field_validated',
+        manifest=dict(engineVersion=ENGINE_VERSION, models=models, validationStatus='not_field_validated',
             inputSha256=hashlib.sha256(request_bytes).hexdigest(), workerSha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             requirementsSha256=hashlib.sha256(Path(__file__).with_name('requirements.txt').read_bytes()).hexdigest(),
             python=platform.python_version(), platform=platform.platform(), dependencies=dependencies,
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
-            units=dict(irradiance='W/m2',power='W',energy='Wh',temperature='degC',angles='degrees; azimuth clockwise from north'),
-            limitations=LIMITATIONS, warnings=warnings),
+            units=dict(irradiance='W/m2',power='W',energy='Wh',temperature='degC',angles='degrees; azimuth clockwise from north',
+                **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
+            limitations=limitations, warnings=warnings),
         request=req, summary={key:float(energy[key].sum()) for key in energy},
         monthly=[dict(month=month,**{key:float(v) for key,v in row.items()}) for month,row in monthly.iterrows()],
         samples=[dict(timestamp=original['timestamp'], midpointUtc=iso(mid[i]), **{key:float(val.iloc[i]) for key,val in columns.items()}) for i,original in enumerate(w['records'])])

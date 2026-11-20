@@ -75,17 +75,26 @@ try{
   assert.equal(await page.getByTestId('run-pvlib-study').isDisabled(),true);
   assert.equal(await page.getByTestId('pvlib-study-result').count(),0);
   await page.getByLabel('Study label',{exact:true}).fill('Second synthetic scenario');
+  await page.getByLabel('Study mounting',{exact:true}).selectOption('single_axis');
+  for(const [key,value] of Object.entries({axisTiltDeg:0,axisAzimuthDeg:180,maxAngleDeg:60,gcr:.4,crossAxisTiltDeg:0}))await page.getByLabel(`Study ${key}`,{exact:true}).fill(String(value));
+  await page.getByTestId('apply-study-builder').click();
+  await page.getByTestId('study-builder').getByRole('alert').waitFor();assert.equal(await page.getByTestId('run-pvlib-study').isDisabled(),true);
+  await page.getByLabel('Study backtrack',{exact:true}).selectOption('true');
   await page.getByTestId('apply-study-builder').click();await page.getByTestId('run-pvlib-study').click();
   await page.getByTestId('pvlib-study-result').waitFor({timeout:55000});
+  assert.ok((await page.getByTestId('study-geometry-mode').textContent())?.match(/Single-axis|ردیاب/));
+  await page.getByTestId('tracker-geometry').locator('summary').click();
+  assert.equal(await page.getByTestId('tracker-geometry').locator('tbody tr').count(),6);
   await page.getByTestId('save-study').click();await page.waitForFunction(()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===2);
   await page.getByTestId('saved-study-entry').filter({hasText:request.label}).getByRole('button',{name:/Compare with current|مقایسه با نتیجه/}).click();
   await page.getByTestId('study-comparison').waitFor();
   const reportPromise=page.waitForEvent('download');await page.getByTestId('download-study-report').click();
-  const reportStream=await (await reportPromise).createReadStream();assert.ok(reportStream);let report='';for await(const chunk of reportStream)report+=String(chunk);assert.ok(report.includes('Scenario comparison'));assert.ok(report.includes('Second synthetic scenario'));assert.ok(report.includes(result.manifest.inputSha256));
+  const reportStream=await (await reportPromise).createReadStream();assert.ok(reportStream);let report='';for await(const chunk of reportStream)report+=String(chunk);assert.ok(report.includes('Scenario comparison'));assert.ok(report.includes('Second synthetic scenario'));assert.ok(report.includes('single-axis tracker'));assert.ok(report.includes(result.manifest.inputSha256));
   const archivePromise=page.waitForEvent('download');await page.getByTestId('backup-study').click();
-  const archiveStream=await (await archivePromise).createReadStream();assert.ok(archiveStream);let archive='';for await(const chunk of archiveStream)archive+=String(chunk);assert.equal(JSON.parse(archive).request.system.additionalDcLossPct,10);
+  const archiveStream=await (await archivePromise).createReadStream();assert.ok(archiveStream);let archive='';for await(const chunk of archiveStream)archive+=String(chunk);assert.equal(JSON.parse(archive).request.system.additionalDcLossPct,10);assert.equal(JSON.parse(archive).request.system.tracking.gcr,.4);assert.ok(JSON.parse(archive).result.samples.some((r:{trackerThetaDeg:number})=>Math.abs(r.trackerThetaDeg)>1));
   await page.getByLabel('Restore study archive').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(archive)});
   await page.getByTestId('pvlib-study-result').waitFor();
+  assert.equal(await page.getByLabel('Study mounting',{exact:true}).inputValue(),'single_axis');assert.equal(await page.getByLabel('Study gcr',{exact:true}).inputValue(),'0.4');
   page.once('dialog',dialog=>dialog.accept());
   await page.getByTestId('saved-study-entry').filter({hasText:'Second synthetic scenario'}).getByRole('button',{name:/^Delete$|^حذف$/}).click();
   await page.waitForFunction(()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===1);
@@ -100,5 +109,5 @@ try{
   await page.getByTestId('run-pvlib-study').click();await panel.getByRole('alert').filter({hasText:'UNAVAILABLE'}).waitFor();assert.equal(await page.getByTestId('pvlib-study-result').count(),0);
   await tab('waterfall_loss');assert.deepEqual(await page.locator('table').allTextContents(),before,'Independent study changed screening waterfall');
   assert.deepEqual(errors,[]);
-  console.log('Direct study real-browser PASS: form + CSV review, actual Python run, IndexedDB reload/restore/delete, scenario rerun/comparison, portable backup, printable report, outage without fallback, screening unchanged. Synthetic numerical inputs only.');
+  console.log('Direct study real-browser PASS: form + CSV review, actual Python run, IndexedDB reload/restore/delete, single-axis tracker geometry + fixed/tracker comparison, portable backup, printable report, outage without fallback, screening unchanged. Synthetic numerical inputs only.');
 }finally{await browser?.close();child.kill('SIGTERM');}

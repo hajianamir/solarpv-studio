@@ -102,3 +102,26 @@ console.log(
 );
 
 assert.equal(validateSnapshot({...snapshot,result:null}).result,null);
+
+// Tracker is a scenario input, not a reason to relax any other model/version check.
+const tracked=structuredClone(request);
+tracked.system.tracking={axisTiltDeg:0,axisAzimuthDeg:180,maxAngleDeg:60,backtrack:true,gcr:.4,crossAxisTiltDeg:0};
+assert.equal(StudyRequestSchema.safeParse(tracked).success,true);
+for(const patch of [{gcr:0},{axisTiltDeg:-1},{maxAngleDeg:91},{crossAxisTiltDeg:31},{backtrack:1},{unexpected:1}]){
+  const bad=structuredClone(tracked);Object.assign(bad.system.tracking,patch);assert.equal(StudyRequestSchema.safeParse(bad).success,false);
+}
+for(const key of Object.keys(tracked.system.tracking)){
+  const bad=structuredClone(tracked);delete bad.system.tracking[key];assert.equal(StudyRequestSchema.safeParse(bad).success,false);
+}
+const trackingRun=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(tracked),encoding:'utf8',maxBuffer:16*1024*1024});
+assert.equal(trackingRun.status,0,trackingRun.stderr);
+const trackingResult=validateResult(JSON.parse(trackingRun.stdout));
+assert.equal(comparisonReason(result,trackingResult),null);
+assert.ok(trackingResult.samples.some(row=>Number(row.trackerThetaDeg)!==0));
+assert.ok(studyReport(result,trackingResult).includes('single-axis tracker'));
+assert.deepEqual(validateSnapshot({...snapshot,request:tracked,result:trackingResult}).request,tracked);
+const missingGeometry=structuredClone(trackingResult);delete missingGeometry.samples[0].trackerThetaDeg;
+assert.throws(()=>validateResult(missingGeometry),/geometry/);
+const wrongModel=structuredClone(trackingResult);wrongModel.manifest.models.transposition='different';
+assert.match(comparisonReason(result,wrongModel)!,/engine/);
+console.log('Tracker workflow PASS: explicit strict contract, actual Python geometry, fixed/tracker comparison whitelist, archives and report.');
