@@ -2,6 +2,7 @@
 Scientific model contracts and sources: docs/audit/PVLIB-DIRECT-STUDY-DESIGN.fa.md.
 """
 import sys
+import copy
 import json
 import math
 import hashlib
@@ -14,7 +15,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.10.0'
+ENGINE_VERSION = '1.11.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -59,6 +60,17 @@ def timestamp(value):
         raise InputError('invalid weather calendar timestamp') from error
 
 
+def mppt_request(req, entry):
+    child=copy.deepcopy(req)
+    system=child['system']
+    for key in ('mpptInputs','transformer','auxiliaryPowerW','acAvailability','acExportLimitW'):
+        system.pop(key,None)
+    for key in ('surfaceTiltDeg','surfaceAzimuthDeg','arrayPdc0W','electrical'):
+        system[key]=copy.deepcopy(entry[key])
+    child['parameterProvenance']={key:entry[key] for key in ('source','quality')}
+    return child
+
+
 def validate(req):
     keys(req, ['schemaVersion', 'label', 'site', 'system', 'weather', 'parameterProvenance'], 'study')
     if req['schemaVersion'] != 'pvlib-study-v1':
@@ -77,7 +89,7 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','acAvailability','horizonProfile','soilingSchedule','albedoSchedule','pvsystTemperature','cellTemperatureSchedule') if k in system])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','acAvailability','horizonProfile','soilingSchedule','albedoSchedule','pvsystTemperature','cellTemperatureSchedule','mpptInputs') if k in system])], 'system')
     if sum(k in system for k in ('faiman','pvsystTemperature','cellTemperatureSchedule'))>1:raise InputError('Thermal opt-ins are mutually exclusive; no fallback')
     if 'pvsystTemperature' in system:
         p=system['pvsystTemperature'];keys(p,['source','quality','uc','uv','moduleEfficiency','alphaAbsorption','windHeightM'],'pvsystTemperature');text(p['source'],'pvsystTemperature.source')
@@ -263,6 +275,19 @@ def validate(req):
             if len(records)!=len(times) or any(timestamp(r['timestamp'])!=t for r,t in zip(records,times)):raise InputError(name+' must exactly align with weather interval ends in UTC; no fill')
     if any(k in system for k in ('horizonProfile','soilingSchedule','albedoSchedule')) and len(rows)>8784:raise InputError('environment mode supports at most 8784 records')
     if any(k in system for k in ('pvsystTemperature','cellTemperatureSchedule')) and len(rows)>8784:raise InputError('thermal detail supports at most 8784 records')
+    if 'mpptInputs' in system:
+        entries=system['mpptInputs']
+        if not isinstance(entries,list) or not 2<=len(entries)<=4:raise InputError('independent MPPT requires 2..4 inputs')
+        if any(k in system for k in ('electrical','sandia','tracking','rowIrradiance','cellTemperatureSchedule')) or system['additionalDcLossPct']!=0:raise InputError('independent MPPT requires fixed tilt, modeled temperature, PVWatts inverter, no global electrical and additionalDcLossPct=0')
+        if len(rows)>8784 or len(entries)*len(rows)>17568:raise InputError('independent MPPT supports at most 8784 intervals and 17568 input-intervals total')
+        ids=[]
+        for entry in entries:
+            keys(entry,['id','source','quality','surfaceTiltDeg','surfaceAzimuthDeg','arrayPdc0W','electrical'],'MPPT input')
+            if not isinstance(entry['id'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}',entry['id']):raise InputError('MPPT id must be ASCII identifier')
+            ids.append(entry['id'])
+            validate(mppt_request(req,entry))
+        if len(set(ids))!=len(ids):raise InputError('MPPT ids must be unique')
+        if abs(sum(entry['arrayPdc0W'] for entry in entries)-system['arrayPdc0W'])>1e-6:raise InputError('total arrayPdc0W must equal sum of MPPT nameplates')
     return times
 
 
@@ -582,7 +607,28 @@ def run_study(req):
     if any(k in s for k in ('faiman','pvsystTemperature','cellTemperatureSchedule')) and (not np.isfinite(cell).all() or (cell < -100).any() or (cell > 150).any()):
         raise InputError('modeled cell temperature must be finite and within -100..150 degC')
     electrical_columns={};electrical_checks={};constraint_loss=None
-    if 'electrical' in s:
+    if 'mpptInputs' in s:
+        raw_dc=pd.Series(0.,index=mid);constraint_loss=raw_dc.copy()
+        electrical_columns={'arrayMppW':raw_dc.copy(),'dcCableLossW':raw_dc.copy()}
+        for index,entry in enumerate(s['mpptInputs']):
+            child=run_study(mppt_request(req,entry))
+            prefix=f'm{index}_'
+            rows=child['samples']
+            for key in ('arrayVocV','arrayVmpV','arrayMppW','operatingVoltageV','operatingCurrentA','dcOperatingState','poaGlobalWm2','cellTemperatureC','effectiveIrradianceWm2','dcW'):
+                electrical_columns[prefix+key]=pd.Series([row[key] for row in rows],index=mid)
+            for key in ('dcCableLossW','dcCableVoltageDropV','arrayOperatingVoltageV'):
+                fallback='operatingVoltageV' if key=='arrayOperatingVoltageV' else None
+                electrical_columns[prefix+key]=pd.Series([row.get(key,row[fallback] if fallback else 0.) for row in rows],index=mid)
+            raw_dc+=electrical_columns[prefix+'dcW']
+            electrical_columns['arrayMppW']+=electrical_columns[prefix+'arrayMppW']
+            electrical_columns['dcCableLossW']+=electrical_columns[prefix+'dcCableLossW']
+            for key,value in child['manifest']['electricalChecks'].items():electrical_checks[prefix+key]=value
+        constraint_loss=(electrical_columns['arrayMppW']-raw_dc-electrical_columns['dcCableLossW']).clip(lower=0)
+        models['dc']='independent_mppt; desoto + singlediode per input; sum terminal DC powers only'
+        models['mppt']='independent voltage/current/cable envelopes per input; no shared voltage or aggregate operating state'
+        models['diagnostics']='unprefixed optical/thermal values describe root reference plane only; m0_,m1_,... describe actual input planes in request order'
+        limitations.append('Independent fixed-tilt uniform subarrays feed one aggregate PVWatts inverter. No common voltage, controller dynamics, MPPT efficiency or inter-input shared-current limit. Input limits must reflect hardware constraints; no multi-inverter or asymmetric string model. Root optical/thermal values are reference-plane diagnostics, not aggregate irradiance/temperature. MPPT powers and cable heat are summed before a single inverter/plant/export chain. No field validation.')
+    elif 'electrical' in s:
         raw_dc,electrical_columns,electrical_checks,constraint_loss=electrical_dc(s['electrical'],effective,cell,s['arrayPdc0W'])
         models['dc']='desoto + singlediode lambertw; uniform identical modules in series/parallel; reference 1000 W/m2 and 25 degC'
         if 'dcCable' in s['electrical']:
@@ -654,16 +700,18 @@ def run_study(req):
     if 'acExportLimitW' in s:
         energy['acBeforeExportLimitWh']=before_export*dt_hours
         energy['acExportLimitLossWh']=(before_export-ac)*dt_hours
-    if 'electrical' in s:
+    if 'electrical' in s or 'mpptInputs' in s:
         energy['availableMppWh']=electrical_columns['arrayMppW']*dt_hours
         energy['mpptConstraintLossWh']=constraint_loss*dt_hours
-        if 'dcCable' in s['electrical']:energy['dcCableLossWh']=electrical_columns['dcCableLossW']*dt_hours
+        if 'mpptInputs' in s or 'dcCable' in s['electrical']:energy['dcCableLossWh']=electrical_columns['dcCableLossW']*dt_hours
     if 'rowIrradiance' in s:
         energy['frontIncidentWhm2'] = poa.poa_global*dt_hours
         energy['rearIncidentWhm2'] = row_columns['rearIncidentWm2']*dt_hours
         energy['rearEffectiveWhm2'] = row_columns['rearEffectiveIrradianceWm2']*dt_hours
     monthly = energy.groupby(mid.strftime('%Y-%m')).sum()
     warnings = ['All provenance quality labels are caller declarations, not independently verified sources.']
+    for index,entry in enumerate(s.get('mpptInputs',[])):
+        if electrical_checks.get(f'm{index}_designEnvelopeExceededIntervals',0)>0:warnings.append('MPPT '+entry['id']+' exceeds its declared design irradiance/temperature envelope; not certified string design.')
     if electrical_checks.get('designEnvelopeExceededIntervals',0)>0:
         warnings.append('Modeled intervals exceed the declared electrical design irradiance/temperature envelope; specified design Voc is not a worst-case envelope guarantee.')
     closure = (df.ghiWm2-(df.dniWm2*np.maximum(0, np.cos(np.radians(position.apparent_zenith)))+df.dhiWm2)).abs()

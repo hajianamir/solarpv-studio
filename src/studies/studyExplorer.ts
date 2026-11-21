@@ -1,3 +1,4 @@
+import {multiMpptEnergy} from "./multiMpptEvidence";
 import type { StudyResult } from "./studyContract";
 import { comparisonReason, stable } from "./studyComparisonGate";
 export const EXPLORER_VERSION = "study-explorer-v1";
@@ -46,12 +47,12 @@ function powerMap(r: StudyResult) {
           acExportLimitLossWh: "acExportLimitLossW",
         }
       : {}),
-    ...(s.electrical
+    ...(s.electrical || s.mpptInputs
       ? {
           availableMppWh: "arrayMppW",
         }
       : {}),
-    ...(s.electrical?.dcCable ? {dcCableLossWh:"dcCableLossW"} : {}),
+    ...(s.electrical?.dcCable || s.mpptInputs ? {dcCableLossWh:"dcCableLossW"} : {}),
     ...(s.rowIrradiance
       ? {
           frontIncidentWhm2: "poaGlobalWm2",
@@ -84,8 +85,8 @@ function energyRow(r: StudyResult, row: Sample) {
   const values: Record<string, number> = {};
   for (const [metric, key] of Object.entries(powerMap(r)))
     values[metric] = numeric(row, key) * dt;
-  if (r.request.system.electrical)
-    values.mpptConstraintLossWh = mpptLoss(row,Boolean(r.request.system.electrical?.dcCable)) * dt;
+  if (r.request.system.electrical || r.request.system.mpptInputs)
+    values.mpptConstraintLossWh = mpptLoss(row,Boolean(r.request.system.electrical?.dcCable || r.request.system.mpptInputs)) * dt;
   const imported = importPower(r, row);
   if (imported !== null)
     values.netGridWh = (numeric(row, "acW") - imported) * dt;
@@ -373,12 +374,12 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
               ? chosen.reduce((sum, row) => sum + numeric(row, "dcW") * dt, 0)
               : null,
             constraintLossWh: chosen.length
-              ? chosen.reduce((sum, row) => sum + mpptLoss(row,Boolean(r.request.system.electrical?.dcCable)) * dt, 0)
+              ? chosen.reduce((sum, row) => sum + mpptLoss(row,Boolean(r.request.system.electrical?.dcCable || r.request.system.mpptInputs)) * dt, 0)
               : null,
           };
         }),
       }
-    : { status: "unavailable_model_disabled", states: [] };
+    : { status: s.mpptInputs ? "independent_inputs_no_aggregate_state" : "unavailable_model_disabled", states: [] };
   let totalActiveStepTravelDeg = 0,
     maxActiveStepDeg = 0,
     activePairs = 0;
@@ -508,6 +509,7 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
     limitations: [
       "Selected interval means, not instantaneous extrema; no partial interval energy prorating or annualization.",
       "Temperature threshold is user-declared diagnostic, not equipment protection or damage.",
+      ...(s.mpptInputs?["Independent MPPT: root optical/temperature diagnostics refer to the reference plane only; per-input energy and states are separate. No aggregate operating voltage/state."]:[]),
       "Tracker travel is ideal geometric sampled active-step travel only, not actuator speed, cycles, stow, wear or reliability.",
       "Export-cap events exclude upstream inverter clipping; MPPT states are ideal static model states, not physical outages.",
     ],
@@ -517,6 +519,11 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
     temperature,
     exportCap,
     mppt,
+    independentMppt: s.mpptInputs ? {
+      status:selection.status,
+      inputs:rows.length?multiMpptEnergy({...r,samples:rows}):[],
+      states:s.mpptInputs.map((input,index)=>({id:input.id,states:stateLabels.map((label,state)=>({state,label,intervals:rows.filter(row=>numeric(row,`m${index}_dcOperatingState`)===state).length,hours:rows.filter(row=>numeric(row,`m${index}_dcOperatingState`)===state).length*dt}))})),
+    } : {status:"unavailable_model_disabled",inputs:[],states:[]},
     tracker,
     environment,
     balances,
@@ -581,8 +588,8 @@ export function dailyExplorerCsv(
 ) {
   const data = exploreStudy(r, options),
     metrics = Object.keys(powerMap(r));
-  if (r.request.system.electrical) metrics.push("mpptConstraintLossWh");
-  if(r.request.system.electrical?.dcCable) metrics.push("dcCableLossWh");
+  if (r.request.system.electrical || r.request.system.mpptInputs) metrics.push("mpptConstraintLossWh");
+  if(r.request.system.electrical?.dcCable || r.request.system.mpptInputs) metrics.push("dcCableLossWh");
   if (plant(r) || r.request.system.sandia) metrics.push("netGridWh");
   return csv([
     [

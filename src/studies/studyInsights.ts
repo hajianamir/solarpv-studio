@@ -203,6 +203,10 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
         quality: value.quality,
         count: count ?? null,
       });
+  for (const input of s.mpptInputs??[]) {
+    entries.push({component:`mppt:${input.id}`,source:input.source,quality:input.quality,count:null});
+    if(input.electrical.dcCable)entries.push({component:`mpptCable:${input.id}`,source:input.electrical.dcCable.source,quality:input.electrical.dcCable.quality,count:null});
+  }
   return {
     version: INSIGHTS_VERSION,
     authenticity:
@@ -216,7 +220,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
       albedo: s.albedoSchedule
         ? "schedule; retained scalar inactive"
         : "declared scalar",
-      fixedGeometry: s.tracking
+      fixedGeometry: s.mpptInputs ? "independent fixed input planes; root is reference diagnostic only" : s.tracking
         ? "tracker active; retained fixed tilt/azimuth inactive"
         : "fixed plane",
       rearSoiling:
@@ -227,7 +231,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
       thermalIrradiance:
         s.rowIrradiance?.temperatureIrradiance ?? "front isolated POA",
       equipmentSourceScope:
-        "All model parameters inherit parameterProvenance; no per-coefficient certification.",
+        "Root model parameters inherit parameterProvenance; independent MPPT electrical parameters inherit their input source and optional cable source. No per-coefficient certification.",
     },
     execution: result
       ? {

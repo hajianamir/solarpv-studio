@@ -272,7 +272,8 @@ export function StudyBuilder({
             dcCableQuality: r.system.electrical?.dcCable?.quality ?? "user_configured",
             stringLoopResistanceOhm: String(r.system.electrical?.dcCable?.stringLoopResistanceOhm ?? ""),
             sharedLoopResistanceOhm: String(r.system.electrical?.dcCable?.sharedLoopResistanceOhm ?? ""),
-            electricalModel: r.system.electrical ? "diode" : "pvwatts",
+            electricalModel: r.system.mpptInputs ? "multi" : r.system.electrical ? "diode" : "pvwatts",
+            mpptInputsJson: r.system.mpptInputs ? JSON.stringify(r.system.mpptInputs,null,2) : "",
             ...Object.fromEntries(
               electricalFields.map(([key]) => [
                 key,
@@ -491,6 +492,7 @@ export function StudyBuilder({
             <option value="pvwatts">
               PVWatts DC (legacy) / مدل تجمیعی قبلی
             </option>
+            <option value="multi">Independent MPPT inputs / ورودی‌های MPPT مستقل</option>
             <option value="diode">
               De Soto single diode + ideal constrained MPPT / تک‌دیودی
             </option>
@@ -843,6 +845,13 @@ export function StudyBuilder({
             </div>
           </div>
         )}
+        {v.electricalModel === "multi" && <fieldset className="space-y-2 border p-3" data-testid="multi-mppt-inputs">
+          <legend>Independent MPPT / ورودی‌های مستقل</legend>
+          <p>2–4 fixed-tilt uniform subarrays; each entry must explicitly declare id, source, quality, surfaceTiltDeg, surfaceAzimuthDeg, arrayPdc0W and electrical (full diode/limits, optional dcCable). Same site/weather and optical/thermal coefficients; each input has its own POA, cell temperature and terminal operating point. Total arrayPdc0W must equal the sum. additionalDcLossPct=0. PVWatts inverter only, clipping once after summing DC; no shared voltage. Root plane is a reference diagnostic only. Maximum 8784 weather intervals and 17568 input-intervals total; no automatic annual splitting. / هر ورودی هندسه، دیود، قیود و کابل مستقل؛ بدون فرض ولتاژ مشترک.</p>
+          <label className="block">MPPT input list JSON / فهرست ورودی‌ها
+            <textarea aria-label="Study MPPT inputs JSON" dir="ltr" className="block w-full bg-slate-900 p-2" rows={14} value={v.mpptInputsJson??""} onChange={e=>change("mpptInputsJson",e.target.value)} />
+          </label>
+        </fieldset>}
         {v.electricalModel === "diode" && (
           <div
             data-testid="electrical-inputs"
@@ -1201,6 +1210,7 @@ export function StudyBuilder({
                   ...(v.exportEnabled === "yes"
                     ? { acExportLimitW: number("acExportLimitW") }
                     : {}),
+                  ...(v.electricalModel === "multi" ? {mpptInputs: JSON.parse(v.mpptInputsJson || "null")} : {}),
                   ...(v.electricalModel === "diode"
                     ? {
                         electrical: {
@@ -1284,6 +1294,7 @@ export function StudyBuilder({
         {review && (
           <div data-testid="weather-review" className="text-xs">
             <StudyInsights request={review} en={en} />
+            {review.system.mpptInputs && <div data-testid="multi-mppt-review"><p>Independent terminal MPPTs; one PVWatts inverter after DC aggregation. Root POA/temperature are reference-plane diagnostics only.</p><pre dir="ltr" className="overflow-auto">{JSON.stringify(review.system.mpptInputs,null,2)}</pre></div>}
             {review.system.electrical?.dcCable && <p data-testid="dc-cable-review" dir="ltr">DC cable: uniform identical strings + shared home run; string loop {review.system.electrical.dcCable.stringLoopResistanceOhm} Ω; shared loop {review.system.electrical.dcCable.sharedLoopResistanceOhm} Ω. Fixed declared design-condition resistance. Inverter-terminal MPPT; no double percentage loss. Source: {review.system.electrical.dcCable.source} ({review.system.electrical.dcCable.quality}).</p>}
             {(review.system.pvsystTemperature ||
               review.system.cellTemperatureSchedule) && (
