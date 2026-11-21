@@ -26,3 +26,8 @@ data
 *.sqlite
 *.sqlite3
 *.db
+
+# Direct study Python environments and bytecode
+**/__pycache__
+**/*.pyc
+**/.venv

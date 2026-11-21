@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "study-measurements-v1",
+  "id": "meter_export",
+  "source": "SYNTHETIC test observations; not operational or measured site data",
+  "sourceVersion": "synthetic-example-v1",
+  "quality": "assumed",
+  "sensorId": "SYNTHETIC export meter",
+  "siteLatitude": 32.2,
+  "siteLongitude": -110.9,
+  "modelPoint": "plant_export",
+  "unit": "kW",
+  "intervalMinutes": 60,
+  "timestampConvention": "interval_end",
+  "statistic": "interval_mean"
+}

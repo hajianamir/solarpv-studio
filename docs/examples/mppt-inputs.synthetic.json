@@ -1,0 +1,68 @@
+[
+  {
+    "id": "input0",
+    "source": "SYNTHETIC numerical subarray test only",
+    "quality": "assumed",
+    "arrayPdc0W": 8800,
+    "surfaceTiltDeg": 30,
+    "surfaceAzimuthDeg": 90,
+    "electrical": {
+      "alphaScAperC": 0.004539,
+      "aRefV": 2.6373,
+      "iLRefA": 5.114,
+      "iORefA": 8.196e-10,
+      "rShRefOhm": 381.68,
+      "rSOhm": 1.065,
+      "egRefEv": 1.121,
+      "dEgdTPerK": -0.0002677,
+      "modulesPerString": 10,
+      "stringsInParallel": 4,
+      "mpptMinV": 200,
+      "mpptMaxV": 800,
+      "maxDcV": 1000,
+      "maxInputCurrentA": 30,
+      "designMinCellTemperatureC": -20,
+      "designMaxEffectiveIrradianceWm2": 1500,
+      "dcCable": {
+        "source": "SYNTHETIC fixed design-temperature round-trip resistance, not project data",
+        "quality": "assumed",
+        "topology": "uniform_strings_shared_home_run",
+        "stringLoopResistanceOhm": 1.2,
+        "sharedLoopResistanceOhm": 0.3
+      }
+    }
+  },
+  {
+    "id": "input1",
+    "source": "SYNTHETIC numerical subarray test only",
+    "quality": "assumed",
+    "arrayPdc0W": 7040,
+    "surfaceTiltDeg": 30,
+    "surfaceAzimuthDeg": 270,
+    "electrical": {
+      "alphaScAperC": 0.004539,
+      "aRefV": 2.6373,
+      "iLRefA": 5.114,
+      "iORefA": 8.196e-10,
+      "rShRefOhm": 381.68,
+      "rSOhm": 1.065,
+      "egRefEv": 1.121,
+      "dEgdTPerK": -0.0002677,
+      "modulesPerString": 8,
+      "stringsInParallel": 4,
+      "mpptMinV": 200,
+      "mpptMaxV": 800,
+      "maxDcV": 1000,
+      "maxInputCurrentA": 30,
+      "designMinCellTemperatureC": -20,
+      "designMaxEffectiveIrradianceWm2": 1500,
+      "dcCable": {
+        "source": "SYNTHETIC fixed design-temperature round-trip resistance, not project data",
+        "quality": "assumed",
+        "topology": "uniform_strings_shared_home_run",
+        "stringLoopResistanceOhm": 1.2,
+        "sharedLoopResistanceOhm": 0.3
+      }
+    }
+  }
+]

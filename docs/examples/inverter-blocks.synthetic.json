@@ -1,0 +1,78 @@
+[
+  {
+    "id": "pvwatts",
+    "source": "SYNTHETIC inverter A",
+    "quality": "assumed",
+    "system": {
+      "surfaceTiltDeg": 20,
+      "surfaceAzimuthDeg": 180,
+      "albedo": 0.2,
+      "arrayPdc0W": 8800,
+      "gammaPdcPerC": -0.004,
+      "inverterPdc0W": 5000,
+      "inverterEtaNom": 0.96,
+      "inverterEtaRef": 0.9637,
+      "iamB": 0.05,
+      "additionalDcLossPct": 0,
+      "temperature": {
+        "a": -3.47,
+        "b": -0.0594,
+        "deltaT": 3
+      }
+    }
+  },
+  {
+    "id": "sandia",
+    "source": "SYNTHETIC inverter B",
+    "quality": "assumed",
+    "system": {
+      "surfaceTiltDeg": 20,
+      "surfaceAzimuthDeg": 180,
+      "albedo": 0.2,
+      "arrayPdc0W": 8800,
+      "gammaPdcPerC": -0.004,
+      "inverterPdc0W": 8189.146484,
+      "inverterEtaNom": 0.96,
+      "inverterEtaRef": 0.9637,
+      "iamB": 0.05,
+      "additionalDcLossPct": 0,
+      "temperature": {
+        "a": -3.47,
+        "b": -0.0594,
+        "deltaT": 3
+      },
+      "electrical": {
+        "alphaScAperC": 0.004539,
+        "aRefV": 2.6373,
+        "iLRefA": 5.114,
+        "iORefA": 8.196e-10,
+        "rShRefOhm": 381.68,
+        "rSOhm": 1.065,
+        "egRefEv": 1.121,
+        "dEgdTPerK": -0.0002677,
+        "modulesPerString": 10,
+        "stringsInParallel": 4,
+        "mpptMinV": 200,
+        "mpptMaxV": 800,
+        "maxDcV": 1000,
+        "maxInputCurrentA": 30,
+        "designMinCellTemperatureC": -20,
+        "designMaxEffectiveIrradianceWm2": 1500
+      },
+      "sandia": {
+        "Paco": 8000,
+        "Pdco": 8189.146484,
+        "Vdco": 379,
+        "Pso": 20.059303,
+        "C0": -2.702809e-06,
+        "C1": 2.072e-06,
+        "C2": 0.001293,
+        "C3": -0.001493,
+        "Pnt": 2.4,
+        "modelMinDcV": 200,
+        "modelMaxDcV": 800,
+        "modelMaxDcPowerW": 12000
+      }
+    }
+  }
+]
