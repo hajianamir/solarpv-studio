@@ -106,7 +106,7 @@ jobs:
       - name: Enable native Safari automation
         run: sudo /usr/bin/safaridriver --enable
       - name: Native Safari all-mode App / worker / real PDF readback
-        run: python scripts/test-native-safari.py
+        run: node scripts/ci-command.mjs python scripts/test-native-safari.py
       - name: Record exact checkout SHA
         if: always()
         run: |

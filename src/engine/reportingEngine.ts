@@ -307,7 +307,8 @@ export async function exportToWordDocument(
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Allow the browser download navigation to consume the Blob before revocation.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
   return blob;
@@ -388,7 +389,8 @@ export async function exportToExcelWorkbook(
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Allow the browser download navigation to consume the Blob before revocation.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
   return blob;

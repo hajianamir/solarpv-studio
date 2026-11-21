@@ -292,6 +292,7 @@ try {
       assert.equal(doc.receipt.importKwh, 0);
     }
     for (const kind of ["HTML", "Word", "Excel", "PDF"]) {
+      console.log(`Download contract: ${engine} / ${mode} / ${kind}`);
       const event = page.waitForEvent("download");
       await report
         .getByRole("button", {
