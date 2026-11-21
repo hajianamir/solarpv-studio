@@ -30,7 +30,7 @@ try {
     if (Date.now() > deadline || child.exitCode !== null) throw new Error(logs);
     await new Promise((r) => setTimeout(r, 200));
   }
-  let executablePath: string | undefined;
+  let executablePath: string | undefined=process.env.BROWSER_EXECUTABLE_PATH;
   const engine = process.env.BROWSER_ENGINE ?? "chromium";
   if (!["chromium", "webkit"].includes(engine))
     throw new Error("Unsupported BROWSER_ENGINE");

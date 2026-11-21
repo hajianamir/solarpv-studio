@@ -1216,12 +1216,14 @@ export const App: React.FC = () => {
   }:null;
   const adoptedEnergy=activeOperationalEnergy(operationalEnergy,operationalContext);
   operationalReportBlockedRef.current=!!adoptedEnergy;
-  useEffect(()=>{if(adoptedEnergy)setShowReportModal(false);setShowOperationalReport(false);},[adoptedEnergy?.sourceSha256,adoptedEnergy?.studyId,adoptedEnergy?.context.configurationSha256]);
+  const adoptedSourceKey=adoptedEnergy?`${adoptedEnergy.sourceSha256}/${adoptedEnergy.studyId??''}/${adoptedEnergy.context.configurationSha256}`:'';
+  useEffect(()=>{if(adoptedSourceKey)setShowReportModal(false);setShowOperationalReport(false);},[adoptedSourceKey]);
   const operationalContextKey=operationalStable(operationalContext);
   useEffect(()=>{setOperationalEnergy(null);},[operationalContextKey]);
   useEffect(()=>{
     let cancelled=false;setOperationalRestoreError('');
-    if(operationalStudyId&&operationalContext)void loadOperationalStudy(operationalStudyId,operationalContext).then(r=>{if(!cancelled)setOperationalEnergy(r.receipt);}).catch(e=>{if(!cancelled)setOperationalRestoreError(String(e));});
+    const restoredContext=JSON.parse(operationalContextKey) as OperationalContext|null;
+    if(operationalStudyId&&restoredContext)void loadOperationalStudy(operationalStudyId,restoredContext).then(r=>{if(!cancelled)setOperationalEnergy(r.receipt);}).catch(e=>{if(!cancelled)setOperationalRestoreError(String(e));});
     return()=>{cancelled=true;};
   },[operationalStudyId,operationalContextKey,projectImportRevision]);
   const changeOperationalEnergy=(r:OperationalEnergy|null)=>{setOperationalEnergy(r);setOperationalStudyId(r?.studyId??null);setOperationalRestoreError('');};
