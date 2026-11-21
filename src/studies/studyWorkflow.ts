@@ -871,6 +871,19 @@ export function validateResult(value: unknown): StudyResult {
   }
   validateMultiMpptEvidence(r);
   validateExplorerEvidence(r);
+  // All modes, including legacy PVWatts without optional plant/electrical stages.
+  const dt=r.request.weather.intervalMinutes/60;
+  const basic=[['dcBeforeAdditionalLossWh','dcBeforeAdditionalLossW'],['dcWh','dcW'],['acWh','acW']] as const;
+  const close=(a:number,b:number)=>Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=1e-6*Math.max(1,Math.abs(a),Math.abs(b));
+  const buckets=new Map<string,Record<string,number>>(),totals:Record<string,number>={};
+  for(const row of r.samples){const month=String(row.midpointUtc).slice(0,7),bucket=buckets.get(month)??{};
+    for(const [energy,power] of basic){const value=Number(row[power])*dt;if(value<0)throw new Error('Result energy must be nonnegative');bucket[energy]=(bucket[energy]??0)+value;totals[energy]=(totals[energy]??0)+value;}
+    buckets.set(month,bucket);
+  }
+  if(new Set(r.monthly.map(m=>m.month)).size!==r.monthly.length||r.monthly.length!==buckets.size||basic.some(([key])=>!close(r.summary[key],totals[key]))||r.monthly.some(m=>!buckets.has(m.month)||basic.some(([key])=>!close(m[key],buckets.get(m.month)![key]))))throw new Error('Result energy integration mismatch');
+  const start=Date.parse(r.request.weather.records[0].timestamp)-dt*3600000,end=Date.parse(r.request.weather.records.at(-1)!.timestamp),year=new Date(start).getUTCFullYear();
+  const complete=start===Date.UTC(year,0,1)&&end===Date.UTC(year+1,0,1);
+  if(Date.parse(r.manifest.period.startUtc)!==start||Date.parse(r.manifest.period.endUtc)!==end||r.manifest.period.completeUtcCalendarYear!==complete||r.manifest.period.monthlyAllocation!=='interval midpoint UTC month')throw new Error('Result period metadata mismatch');
   return r;
 }
 export interface StudySnapshot {

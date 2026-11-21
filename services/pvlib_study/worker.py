@@ -654,7 +654,7 @@ def run_study(req):
         models['ac']='sandia voltage-dependent inverter; pvlib 0.13.1 startup p_dc<Pso; zero DC consumes Pnt'
         limitations.extend([
             'Sandia coefficients and fitted voltage/power domain are caller-declared; no automatic fitting, catalog selection or equipment verification.',
-            'Sandia uses the ideal constrained DC operating point with zero additional DC loss; no cable drop, inverter temperature/aging, dynamic startup/hysteresis, reactive power or multiple MPPT buses.',
+            'Sandia uses the ideal constrained DC operating point with zero additional DC loss; declared cable drop if enabled; no inverter temperature/aging, dynamic startup/hysteresis, reactive power or multiple MPPT buses.',
             'inverterPdc0W equals Pdco reference DC power, not a hard protection rating; legacy inverterEtaNom/inverterEtaRef are inactive.',
             'Positive inverter AC is generation; negative model AC is imported self-consumption. acW/acWh remain nonnegative export after cap; netGridWh subtracts imported self-consumption. No local load/storage.'
         ])
