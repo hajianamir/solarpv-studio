@@ -295,9 +295,7 @@
     }
   ],
   "separateSameLibraryCrosscheck": "test_worker.StudyTests.test_separate_modelchain_oracle",
-  "pendingSteps": [
-    42
-  ],
+  "pendingSteps": [],
   "completedEngineeringSteps": [
     30,
     31,
@@ -310,7 +308,8 @@
     38,
     39,
     40,
-    41
+    41,
+    42
   ],
   "nonNumericalEvidence": [
     {
@@ -336,6 +335,12 @@
       "test": "scripts/test-study-measurements.ts",
       "kind": "declared_observations_and_utc_pairing",
       "scope": "Preserved independent observations; no calibration/field validation or overlap metrics."
+    },
+    {
+      "id": "measurement-comparison",
+      "test": "scripts/test-measurement-comparison.ts",
+      "kind": "derived_overlap_and_error_statistics",
+      "scope": "Read-only exact UTC valid-pair coverage/MBE/MAE/RMSE and matched power energy, independent hand/published/Python arithmetic witnesses. No field validation or calibration."
     }
   ],
   "engineVersion": "1.16.0"
