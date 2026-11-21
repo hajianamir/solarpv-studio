@@ -28,3 +28,6 @@ CI دقیق SHA پس از commit روی همین شاخه بررسی می‌شو
 این مرحله ورود/حفظ مشاهده و جفت‌سازی دقیق UTC است. MBE/MAE/RMSE، درصد هم‌پوشانی و تحلیل residual برای مرحلهٔ ۴۲ باقی است. این تست‌ها تأیید نرم‌افزار با دادهٔ مصنوعی‌اند؛ field validation، کالیبراسیون، تأیید حسگر، bankable yield یا اعتبار سالانه محسوب نمی‌شوند. هیچ merge یا تغییر main انجام نمی‌شود.
 
 مرجع بررسی‌شده پیش از کد: https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.iotools.read_pvgis_hourly.html — نگاشت نام متغیر و metadata به‌تنهایی منشأ measured یا سازگاری boundary/interval را ثابت نمی‌کند؛ provider autodetection اضافه نشده است.
+
+### اصلاح قابلیت حمل تست پس از CI اولیه
+CI نسخهٔ `fcf23b7` در پنج job موفق و در direct-study ویندوز ناموفق بود. دریافت log به‌علت EOF شبکه ممکن نشد؛ بررسی تست و بازتولید محلی با fixture دارای CRLF همان خطای parser در خط ساخت نمونهٔ CRLF را نشان داد: `replaceAll(LF, CRLF)` روی CRLF به CRCRLF تبدیل می‌کرد. ساخت variant تست به تبدیل idempotent با `/\r?\n/g` اصلاح شد؛ **بایت‌های receipt ورودی، SHA، parser و قیود داده تغییر نکردند**. تست کامل جدید با fixture LF و CRLF جداگانه دوباره PASS شد. CI باید برای commit اصلاحی نیز کامل بررسی شود؛ موفقیت Linux نسخهٔ اولیه جایگزین CI دقیق نسخهٔ اصلاح‌شده نیست.

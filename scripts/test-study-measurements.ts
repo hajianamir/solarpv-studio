@@ -14,7 +14,7 @@ const dataset=importMeasurementCsv(manifest,csv);
 const request=StudyRequestSchema.parse({...base,measurements:[dataset]});
 function run(req:StudyRequest){const p=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(req),encoding:'utf8',maxBuffer:16*1024*1024});assert.equal(p.status,0,p.stderr);return validateResult(JSON.parse(p.stdout));}
 for(const bad of [csv.replace('value,','Wh,'),csv.replace(',1.2,',',NaN,'),csv.replace(',1.2,',',"1.2",'),csv.replace(',1.2,',',,'),csv+'\n'])assert.throws(()=>parseMeasurementCsv(bad));
-assert.deepEqual(parseMeasurementCsv('\uFEFF'+csv.replaceAll('\n','\r\n')),dataset.records);
+assert.deepEqual(parseMeasurementCsv('\uFEFF'+csv.replace(/\r?\n/g,'\r\n')),dataset.records);
 for(const alter of [(r:StudyRequest)=>{r.measurements![0].siteLatitude=0;},(r:StudyRequest)=>{r.measurements![0].intervalMinutes=15;},(r:StudyRequest)=>{r.measurements!.push(structuredClone(dataset));},(r:StudyRequest)=>{r.measurements![0].records.reverse();},(r:StudyRequest)=>{r.measurements![0].importTrace!.rawCsv+='x';},(r:StudyRequest)=>{r.measurements![0].records[0].value=-1;}]){const bad=structuredClone(request);alter(bad);assert.equal(StudyRequestSchema.safeParse(bad).success,false);const p=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(bad),encoding:'utf8'});assert.notEqual(p.status,0,'Python must reject the same invalid request');}
 const out=run(request),plain=run(base);
 for(const key of ['samples','summary','monthly'] as const)assert.deepEqual(out[key],plain[key]);
