@@ -6,3 +6,8 @@ dist
 .vite
 *.log
 data/
+
+# Direct Python study runtime artifacts
+__pycache__/
+*.pyc
+services/pvlib_study/.venv/

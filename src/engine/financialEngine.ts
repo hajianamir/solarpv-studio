@@ -24,6 +24,7 @@ export interface PaybackPeriodResult {
 }
 
 export interface UserFinancialPricing {
+  annualGridImportKwh?:number; // Explicit metered/modelled annual imports, not netted against sales.
   moduleUsdPerWp: number; // e.g. 0.14 $/Wp
   inverterUsdPerKw: number; // e.g. 55 $/kW
   batteryUsdPerKwh: number; // e.g. 160 $/kWh
@@ -161,6 +162,8 @@ export interface FinancialAnalysisResult {
   inverterKw: number;
   capexBreakdown: FinancialCapexBreakdown;
   annualEnergyYieldKwh: number;
+  annualGridImportKwh?:number;
+  annualGridImportCostToman?:number;
   annualOpexUsd: number;
   annualOpexToman: number;
   annualRevenueToman: number;
@@ -239,6 +242,7 @@ export function sanitizeFinancialPricing(custom?: Partial<UserFinancialPricing>)
     epcLaborUsdPerKw: cleanNum(custom.epcLaborUsdPerKw, base.epcLaborUsdPerKw, 0),
     gridTariffTomanPerKwh: cleanNum(custom.gridTariffTomanPerKwh, base.gridTariffTomanPerKwh, 0),
     usdToTomanRate: cleanNum(custom.usdToTomanRate, base.usdToTomanRate, 1),
+    annualGridImportKwh: cleanNum(custom.annualGridImportKwh,0,0,1e12),
     annualOpexPctOfCapex: cleanNum(custom.annualOpexPctOfCapex, base.annualOpexPctOfCapex, 0, 100),
     discountRatePct: cleanNum(custom.discountRatePct, base.discountRatePct, 0, 100),
     tariffEscalationPct: cleanNum(custom.tariffEscalationPct, base.tariffEscalationPct, 0, 100),
@@ -447,6 +451,8 @@ export function performFinancialAnalysis(
   capexBreakdown.totalCapexToman = sumItemsToman;
 
   // 2. OPEX & Diesel Fuel Estimation (Explicit Proxy Model)
+  const annualGridImportKwh=p.annualGridImportKwh??0;
+  const annualGridImportCostToman=annualGridImportKwh*p.gridTariffTomanPerKwh;
   const baseAnnualOpexToman = totalCapexToman * (p.annualOpexPctOfCapex / 100.0);
   const baseAnnualOpexUsd = totalCapexUsd * (p.annualOpexPctOfCapex / 100.0);
 
@@ -594,7 +600,7 @@ export function performFinancialAnalysis(
 
     const opexGrowthFactor = Math.pow(1.0 + opexEscalationRate, yr - 1);
     const fixedChargesGrowth = p.escalateFixedChargesWithOpex ? opexGrowthFactor : 1.0;
-    const opex = baseAnnualOpexToman * opexGrowthFactor + fixedAnnualChargesUsd * p.usdToTomanRate * fixedChargesGrowth;
+    const opex = baseAnnualOpexToman * opexGrowthFactor + annualGridImportCostToman * Math.pow(1+p.tariffEscalationPct/100,yr-1) + fixedAnnualChargesUsd * p.usdToTomanRate * fixedChargesGrowth;
     const fuel = annualDieselFuelCostToman * opexGrowthFactor;
 
     const isBatteryReplacementYr =
@@ -911,6 +917,7 @@ export function performFinancialAnalysis(
   const annualizedCapexUsd = totalCapexUsd * crf;
   const annualCostOfEnergyServedUsd =
     annualizedCapexUsd +
+    annualGridImportCostToman/p.usdToTomanRate +
     baseAnnualOpexUsd +
     dieselFuelCostUsd +
     dieselOpexUsd +
@@ -973,6 +980,7 @@ export function performFinancialAnalysis(
     batteryKwh: safeBatteryKwh,
     inverterKw: safeInverterKw,
     capexBreakdown,
+    annualGridImportKwh,annualGridImportCostToman,
     annualEnergyYieldKwh: Math.round(safeAnnualYieldKwh),
     annualOpexUsd: Math.round(baseAnnualOpexUsd),
     annualOpexToman: Math.round(baseAnnualOpexToman),

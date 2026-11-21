@@ -747,6 +747,69 @@
       "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
       "referenceVersion": "pvlib-python 0.13.1",
       "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
+    },
+    {
+      "formulaId": "src/engine/financialEngine.ts#performFinancialAnalysis#07cbbf982780",
+      "fixtureFile": "scripts/fixtures/physics/grid-import-07cbbf982780.json",
+      "productionExport": "performFinancialAnalysis",
+      "referenceTitle": "SSC singleowner separate utility-purchase bill with independent Decimal flat-rate ledger",
+      "referenceUrl": "https://github.com/NatLabRockies/ssc/blob/6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860/ssc/cmod_singleowner.cpp",
+      "referenceVersion": "SSC 6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860; flat-rate test specialization v1",
+      "referenceLocator": "utility_bill_w_sys / cf_utility_bill; separate purchases and sales. Local explicit test policies: finite clamp [0,1e12], zero capital, two years, stated tariff escalation; not claimed SSC defaults."
+    },
+    {
+      "formulaId": "src/engine/financialEngine.ts#performFinancialAnalysis#2abf8b390bac",
+      "fixtureFile": "scripts/fixtures/physics/grid-import-2abf8b390bac.json",
+      "productionExport": "performFinancialAnalysis",
+      "referenceTitle": "SSC singleowner separate utility-purchase bill with independent Decimal flat-rate ledger",
+      "referenceUrl": "https://github.com/NatLabRockies/ssc/blob/6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860/ssc/cmod_singleowner.cpp",
+      "referenceVersion": "SSC 6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860; flat-rate test specialization v1",
+      "referenceLocator": "utility_bill_w_sys / cf_utility_bill; separate purchases and sales. Local explicit test policies: finite clamp [0,1e12], zero capital, two years, stated tariff escalation; not claimed SSC defaults."
+    },
+    {
+      "formulaId": "src/engine/financialEngine.ts#performFinancialAnalysis#535a26248a84",
+      "fixtureFile": "scripts/fixtures/physics/grid-import-535a26248a84.json",
+      "productionExport": "performFinancialAnalysis",
+      "referenceTitle": "SSC singleowner separate utility-purchase bill with independent Decimal flat-rate ledger",
+      "referenceUrl": "https://github.com/NatLabRockies/ssc/blob/6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860/ssc/cmod_singleowner.cpp",
+      "referenceVersion": "SSC 6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860; flat-rate test specialization v1",
+      "referenceLocator": "utility_bill_w_sys / cf_utility_bill; separate purchases and sales. Local explicit test policies: finite clamp [0,1e12], zero capital, two years, stated tariff escalation; not claimed SSC defaults."
+    },
+    {
+      "formulaId": "src/engine/financialEngine.ts#performFinancialAnalysis#a67c22a299a1",
+      "fixtureFile": "scripts/fixtures/physics/grid-import-a67c22a299a1.json",
+      "productionExport": "performFinancialAnalysis",
+      "referenceTitle": "SSC singleowner separate utility-purchase bill with independent Decimal flat-rate ledger",
+      "referenceUrl": "https://github.com/NatLabRockies/ssc/blob/6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860/ssc/cmod_singleowner.cpp",
+      "referenceVersion": "SSC 6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860; flat-rate test specialization v1",
+      "referenceLocator": "utility_bill_w_sys / cf_utility_bill; separate purchases and sales. Local explicit test policies: finite clamp [0,1e12], zero capital, two years, stated tariff escalation; not claimed SSC defaults."
+    },
+    {
+      "formulaId": "src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e",
+      "fixtureFile": "scripts/fixtures/physics/grid-import-488ab5156c0e.json",
+      "productionExport": "sanitizeFinancialPricing",
+      "referenceTitle": "SSC singleowner separate utility-purchase bill with independent Decimal flat-rate ledger",
+      "referenceUrl": "https://github.com/NatLabRockies/ssc/blob/6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860/ssc/cmod_singleowner.cpp",
+      "referenceVersion": "SSC 6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860; flat-rate test specialization v1",
+      "referenceLocator": "utility_bill_w_sys / cf_utility_bill; separate purchases and sales. Local explicit test policies: finite clamp [0,1e12], zero capital, two years, stated tariff escalation; not claimed SSC defaults."
+    },
+    {
+      "formulaId": "src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d",
+      "fixtureFile": "scripts/fixtures/physics/grid-import-4a0793d3b20d.json",
+      "productionExport": "sanitizeFinancialPricing",
+      "referenceTitle": "SSC singleowner separate utility-purchase bill with independent Decimal flat-rate ledger",
+      "referenceUrl": "https://github.com/NatLabRockies/ssc/blob/6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860/ssc/cmod_singleowner.cpp",
+      "referenceVersion": "SSC 6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860; flat-rate test specialization v1",
+      "referenceLocator": "utility_bill_w_sys / cf_utility_bill; separate purchases and sales. Local explicit test policies: finite clamp [0,1e12], zero capital, two years, stated tariff escalation; not claimed SSC defaults."
+    },
+    {
+      "formulaId": "src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee",
+      "fixtureFile": "scripts/fixtures/physics/grid-import-9c94a974a0ee.json",
+      "productionExport": "sanitizeFinancialPricing",
+      "referenceTitle": "SSC singleowner separate utility-purchase bill with independent Decimal flat-rate ledger",
+      "referenceUrl": "https://github.com/NatLabRockies/ssc/blob/6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860/ssc/cmod_singleowner.cpp",
+      "referenceVersion": "SSC 6ce13d26f44b3a21f7bf0fbb5b1e3f3f80cf3860; flat-rate test specialization v1",
+      "referenceLocator": "utility_bill_w_sys / cf_utility_bill; separate purchases and sales. Local explicit test policies: finite clamp [0,1e12], zero capital, two years, stated tariff escalation; not claimed SSC defaults."
     }
   ]
 }

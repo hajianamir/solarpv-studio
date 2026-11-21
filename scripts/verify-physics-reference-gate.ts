@@ -34,6 +34,7 @@ interface PhysicsReferenceFixture {
   productionExport?: string;
   inputs?: unknown[];
   expected?: unknown;
+  expectedEncoding?: 'js-undefined-v1';
   independentCalculation?: string;
   tolerances?: { absolute?: number; relative?: number };
   referenceSource?: { title?: string; url?: string; version?: string; locator?: string };
@@ -320,7 +321,21 @@ function safeRepoPath(repoPath: string): boolean {
   return !path.isAbsolute(repoPath) && !repoPath.split(/[\\/]/).includes('..') && fs.existsSync(repoPath);
 }
 
-function assertReferenceValue(actual: unknown, expected: unknown, absolute: number, relative: number, location = '$'): void {
+/** Lossless fixture representation; never omits a key or relaxes numeric checks. */
+export function decodeReferenceExpected(value:unknown):unknown {
+  if(Array.isArray(value))return value.map(decodeReferenceExpected);
+  if(value!==null&&typeof value==='object'){
+    const object=value as Record<string,unknown>;
+    if(Object.hasOwn(object,'$undefined')){
+      assert.deepEqual(Object.keys(object),['$undefined'],'Undefined marker must be exact');
+      assert.equal(object.$undefined,true,'Invalid undefined marker');return undefined;
+    }
+    return Object.fromEntries(Object.entries(object).map(([key,v])=>[key,decodeReferenceExpected(v)]));
+  }
+  return value;
+}
+
+export function assertReferenceValue(actual: unknown, expected: unknown, absolute: number, relative: number, location = '$'): void {
   if (typeof expected === 'number') {
     assert.ok(typeof actual === 'number' && Number.isFinite(actual), `${location}: production output must be a finite number`);
     const allowed = absolute + relative * Math.abs(expected);
@@ -570,7 +585,8 @@ export async function executeReferenceFixture(record: PhysicsReferenceRecord, re
 
   const baseline = await invokeInstrumentedProduction(modulePath, sourceFile, sourceText, formula, record, fixture.inputs, false);
   assert.ok(baseline.visits > 0, `${record.formulaId}: fixture inputs did not execute the exact formula AST node`);
-  assertReferenceValue(baseline.output, fixture.expected, absolute, relative);
+  assert.ok(fixture.expectedEncoding===undefined||fixture.expectedEncoding==='js-undefined-v1','Unknown expected encoding');
+  assertReferenceValue(baseline.output, fixture.expectedEncoding==='js-undefined-v1'?decodeReferenceExpected(fixture.expected):fixture.expected, absolute, relative);
 
   // Object helper results may start with reporting-only fields. Probe each
   // finite numeric property separately; never credit a metadata-only change.
