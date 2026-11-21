@@ -294,16 +294,17 @@ try {
     }
     for (const kind of ["HTML", "Word", "Excel", "PDF"]) {
       console.log(`Download contract: ${engine} / ${mode} / ${kind}`);
-      const event = page.waitForEvent("download", { timeout: 180_000 }).catch(async (e) => {
-        throw new Error(`${engine}/${mode}/${kind}: ${String(e)}; alerts=${await report.locator('[role="alert"]').allTextContents()}; pageErrors=${errors.join(";")}`);
+      // Observe click and download together so either failure is handled immediately.
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 180_000 }),
+        report.getByRole("button", {
+          name: `Download operational ${kind}`, exact: true,
+        }).click(),
+      ]).catch(async (error) => {
+        const alerts = await report.locator('[role="alert"]').allTextContents().catch(() => ["page closed"]);
+        throw new Error(`${engine}/${mode}/${kind}: ${String(error)}; alerts=${alerts}; pageErrors=${errors.join(";")}`);
       });
-      await report
-        .getByRole("button", {
-          name: `Download operational ${kind}`,
-          exact: true,
-        })
-        .click();
-      const path = await (await event).path();
+      const path = await download.path();
       assert.ok(path);
       const bytes = await readFile(path);
       if (kind === "PDF") {

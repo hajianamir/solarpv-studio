@@ -117,32 +117,32 @@ export function OperationalEnergyPanel({
           Optional declared metadata — not measured or applied to yield
         </legend>
         <input
-          aria-label="Study time zone"
+          aria-label="Operational study time zone"
           placeholder="IANA time zone (optional)"
           value={timeZone}
           onChange={(e) => setTimeZone(e.target.value)}
         />
         <input
-          aria-label="Study altitude"
+          aria-label="Operational study altitude"
           placeholder="Altitude m (optional)"
           type="number"
           value={altitude}
           onChange={(e) => setAltitude(e.target.value)}
         />
         <input
-          aria-label="Study module model"
+          aria-label="Operational study module model"
           placeholder="Module model"
           value={moduleModel}
           onChange={(e) => setModuleModel(e.target.value)}
         />
         <input
-          aria-label="Study inverter model"
+          aria-label="Operational study inverter model"
           placeholder="Inverter model"
           value={inverterModel}
           onChange={(e) => setInverterModel(e.target.value)}
         />
         <textarea
-          aria-label="Study notes"
+          aria-label="Operational study notes"
           placeholder="Evidence and boundary notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

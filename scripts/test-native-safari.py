@@ -13,6 +13,8 @@ import platform
 import subprocess
 import sys
 import time
+import tempfile
+import hashlib
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -50,6 +52,22 @@ def main():
         assert driver.capabilities.get('browserName', '').lower() == 'safari', 'Not native Safari'
         wait = WebDriverWait(driver, 120)
         driver.set_script_timeout(120)
+        # Isolate genuine disk access from app parsing, workers and input-reset behavior.
+        upload_dir = Path(tempfile.mkdtemp(prefix='solarpv-safari-', dir='/tmp')).resolve()
+        upload_dir.chmod(0o755)
+        probe = upload_dir / 'readable.json'
+        probe.write_text('{"nativeDiskProbe":true}')
+        probe.chmod(0o644)
+        driver.get(f'http://127.0.0.1:{port}')
+        driver.execute_script("document.body.innerHTML='<input type=file id=disk-probe accept=\".json,application/json\">'")
+        driver.find_element(By.ID, 'disk-probe').send_keys(str(probe))
+        disk_probe = driver.execute_async_script("""const done=arguments[0],f=document.querySelector('#disk-probe').files[0];
+          if(!f){done({ok:false,error:'No selected file'});return;}
+          f.text().then(text=>done({ok:true,text,name:f.name,size:f.size}),e=>done({ok:false,error:e.name+': '+e.message,name:f.name,size:f.size}));""")
+        receipt['nativeDiskProbe'] = {**disk_probe, 'path': str(probe), 'sha256': hashlib.sha256(probe.read_bytes()).hexdigest()}
+        print('Native disk probe: ' + json.dumps(receipt['nativeDiskProbe']), flush=True)
+        if not disk_probe.get('ok') or disk_probe.get('text') != probe.read_text():
+            raise RuntimeError('BLOCKED_NATIVE_DISK_ACCESS: ' + json.dumps(receipt['nativeDiskProbe']))
         driver.get(f'http://127.0.0.1:{port}')
         def button(text):
             return driver.find_element(By.XPATH, f"//button[normalize-space(.)='{text}']")
@@ -92,7 +110,7 @@ def main():
                     'battery': {'capacityKwh': context.get('batteryCapacityKwh', 0), 'minSocFraction': .1, 'initialSocFraction': .1, 'maxChargeKw': 10, 'maxDischargeKw': 10, 'chargeEfficiency': .9, 'dischargeEfficiency': .9},
                     'records': [{'timestamp': s['timestamp'], 'loadW': 0 if mode == 'powerplant' else 500, 'gridAvailable': mode != 'offgrid', 'exportLimitW': 1e9} for s in result['samples']]}
             operating = {'schemaVersion': 'operating-study-v1', 'pvResults': result, 'plan': plan}
-            file = evidence / f'{mode}-input.json'
+            file = upload_dir / f'{mode}-input.json'
             file.write_text(json.dumps(operating))
             driver.find_element(By.CSS_SELECTOR, '[aria-label="Import operational annual results"]').send_keys(str(file))
             driver.find_element(By.CSS_SELECTOR, '[aria-label="Operational acknowledgement"]').send_keys('Synthetic native Safari explicit acceptance')
@@ -114,7 +132,7 @@ def main():
                 'diesel': None if mode != 'offgrid' else {'source': 'Synthetic Safari diesel parameters only', 'ratedKw': 2, 'minLoadFraction': .1, 'interceptLitersPerHour': .2, 'slopeLitersPerKwh': .25, 'fuelTomanPerLiter': 100, 'startCostToman': 10, 'initiallyOn': False},
                 'aging': None if mode == 'powerplant' else {'source': 'Synthetic Safari aging parameters only', 'initialSoh': 1, 'endOfLifeSoh': .8, 'calendarLossFractionPerYear': .01, 'lossFractionPerEfc': .00001, 'projectionYears': 25},
                 'economics': [{'timestamp': s['timestamp'], 'importTomanPerKwh': 200, 'exportTomanPerKwh': 50, 'dieselAvailable': mode == 'offgrid'} for s in result['samples']]}}
-            advanced_file = evidence / f'{mode}-advanced-input.json'
+            advanced_file = upload_dir / f'{mode}-advanced-input.json'
             advanced_file.write_text(json.dumps(advanced))
             driver.find_element(By.CSS_SELECTOR, '[aria-label="Import advanced operating study"]').send_keys(str(advanced_file))
             wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '[data-testid="advanced-dispatch-result"]'))

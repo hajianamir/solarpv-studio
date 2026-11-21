@@ -8,6 +8,7 @@ import {
   type AdvancedDispatchPlan,
 } from "../src/studies/advancedDispatch";
 import { runAdvancedStudy } from "../src/studies/advancedStudy";
+import { compareOperatingPolicies } from "../src/studies/operatingPolicyComparison";
 const close = (a: number, b: number) =>
   assert.ok(Math.abs(a - b) < 1e-7, `${a} != ${b}`);
 const p: AdvancedDispatchPlan = {
@@ -220,6 +221,28 @@ for (const mode of ["powerplant", "ongrid", "offgrid"] as const) {
     { schemaVersion: "advanced-study-v1", pvResults: evidence, plan },
     context,
   );
+  const shared = { schemaVersion: "advanced-study-v1", pvResults: evidence, plan };
+  const unchanged = JSON.stringify(shared);
+  const comparison = compareOperatingPolicies(shared, context);
+  assert.equal(comparison.loadFirst.status, "completed");
+  assert.equal(comparison.optimalDiscrete.status, "completed");
+  assert.equal(JSON.stringify(shared), unchanged);
+  assert.match(comparison.sharedInputSha256, /^[a-f0-9]{64}$/);
+  assert.equal(comparison.sharedInputSha256, compareOperatingPolicies(
+    { ...shared, plan: { ...plan, controller: "load-first" } }, context,
+  ).sharedInputSha256);
+  assert.throws(() => compareOperatingPolicies(shared, { ...context, latitude: 0 }));
+  if (mode === "ongrid") {
+    const blocked = compareOperatingPolicies({ ...shared, plan: {
+      ...plan, optimizer: { ...plan.optimizer, terminalSocFraction: 1 },
+      operatingPlan: { ...plan.operatingPlan, battery: {
+        ...plan.operatingPlan.battery, initialSocFraction: 0, maxChargeKw: 0,
+      } },
+    } }, context);
+    assert.equal(blocked.loadFirst.status, "blocked");
+    assert.equal(blocked.optimalDiscrete.status, "blocked");
+    assert.equal(blocked.delta, null);
+  }
   assert.equal(r.result.samples.length, 8760);
   if (mode === "offgrid")
     close(r.result.gridImportKwh + r.result.gridExportKwh, 0);
@@ -358,3 +381,5 @@ assert.throws(
 console.log(
   "PASS integrated annual advanced source with inverter auxiliaries; explicit oversized optimization rejection without fallback",
 );
+
+console.log("PASS phase4 controlled policy comparison: all modes, stable identity, unchanged input, invalid shared evidence and infeasible policies");
