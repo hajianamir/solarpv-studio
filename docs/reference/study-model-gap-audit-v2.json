@@ -313,7 +313,8 @@
     43,
     44,
     45,
-    46
+    46,
+    47
   ],
   "nonNumericalEvidence": [
     {
@@ -381,6 +382,12 @@
       "test": "scripts/test-energy-uncertainty-review.ts",
       "kind": "conditional_correlated_lognormal_budget_review",
       "scope": "Sourced CV and signed covariance budget with independent NumPy/NormalDist oracle, period/year gates, safe exports, exact-result and old protocol compatibility. Not verified site uncertainty."
+    },
+    {
+      "id": "field-evidence-review",
+      "test": "scripts/test-field-evidence-review.ts",
+      "kind": "bound_declared_document_dossier_review",
+      "scope": "Actual worker and independent Python error oracle, held-out raw/corrected metrics, strict optional register binding and full-interval document applicability, safe exports and bundle recomputation. Document authenticity and reviewer independence are NOT verified; always not_field_validated."
     }
   ],
   "engineVersion": "1.16.0",

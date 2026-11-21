@@ -1,3 +1,4 @@
+import {FieldEvidenceReview} from './FieldEvidenceReview';
 import {EnergyUncertaintyReview} from './EnergyUncertaintyReview';
 import {parseStudyJson} from '../studies/strictStudyJson';
 import {OutputCalibrationReview} from './OutputCalibrationReview';
@@ -39,6 +40,7 @@ export function StudyValidationTools({result}:{result:StudyResult}){
  {protocol&&<div data-testid="verified-study-protocol"><p>Exact-result integrity and recomputation checked. Not authenticated or field validated. Reconfirm assumptions before displaying a newly imported analysis.</p><pre>{JSON.stringify({metadata:protocol.metadata,resultSha256:protocol.resultSha256,reportSha256:protocol.reportSha256,packageSha256:protocol.packageSha256},null,2)}</pre><button type="button" data-testid="download-study-protocol-json" onClick={()=>download('study-protocol-package.json',JSON.stringify(protocol,null,2),'application/json')}>Protocol package JSON</button><button type="button" data-testid="download-study-protocol-html" onClick={()=>download('study-protocol-package.html',studyProtocolHtml(protocol),'text/html;charset=utf-8')}>Protocol traceability HTML</button></div>}
  </fieldset>
  {error&&<p role="alert">{error}</p>}
+ {report?.plan.tool==='field_evidence'&&<FieldEvidenceReview key={report.planSha256} result={result} plan={report.plan}/>}
  {report?.plan.tool==='energy_uncertainty'&&<EnergyUncertaintyReview result={result} plan={report.plan}/>}
  {report?.plan.tool==='output_calibration'&&<OutputCalibrationReview result={result} plan={report.plan}/>}
  {report&&<div data-testid="study-validation-report"><pre dir="ltr" className="overflow-auto">{JSON.stringify(report,null,2)}</pre><button type="button" data-testid="download-study-validation-json" onClick={()=>download('study-validation-report.json',JSON.stringify(report,null,2),'application/json')}>Report JSON + plan</button><button type="button" data-testid="download-study-validation-html" onClick={()=>download('study-validation-report.html',studyValidationHtml(report),'text/html;charset=utf-8')}>Report HTML</button><button type="button" data-testid="download-study-validation-plan" onClick={()=>download('study-validation-plan.json',JSON.stringify(report.plan,null,2),'application/json')}>Recomputable plan JSON</button></div>}
