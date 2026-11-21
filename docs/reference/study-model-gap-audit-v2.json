@@ -312,7 +312,8 @@
     42,
     43,
     44,
-    45
+    45,
+    46
   ],
   "nonNumericalEvidence": [
     {
@@ -368,6 +369,18 @@
       "test": "scripts/test-output-calibration-review.ts",
       "kind": "bounded_empirical_output_review",
       "scope": "Train-only bounded gain, explicit raw/corrected holdout metrics, matched energy and rows; safe exports and legacy report/protocol invariance. No physical fitting or field validation."
+    },
+    {
+      "id": "validation-json-boundary",
+      "test": "scripts/test-validation-json-boundary.ts",
+      "kind": "strict_text_import_regression",
+      "scope": "Duplicate decoded keys, nonfinite numbers, excessive nesting and UTF8 bytes rejected at validation plan/protocol text boundaries."
+    },
+    {
+      "id": "energy-uncertainty-review",
+      "test": "scripts/test-energy-uncertainty-review.ts",
+      "kind": "conditional_correlated_lognormal_budget_review",
+      "scope": "Sourced CV and signed covariance budget with independent NumPy/NormalDist oracle, period/year gates, safe exports, exact-result and old protocol compatibility. Not verified site uncertainty."
     }
   ],
   "engineVersion": "1.16.0",
