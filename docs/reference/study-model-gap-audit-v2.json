@@ -310,7 +310,8 @@
     40,
     41,
     42,
-    43
+    43,
+    44
   ],
   "nonNumericalEvidence": [
     {
@@ -354,6 +355,12 @@
       "test": "scripts/test-study-validation.ts",
       "kind": "conditional_calibration_uncertainty_and_evidence",
       "scope": "Empirical bounded output gain with temporal holdout; lognormal exceedance from declared CV/correlation; caller-evidence criteria gates. Never field certification or physical parameter calibration."
+    },
+    {
+      "id": "protocol-traceability",
+      "test": "scripts/test-study-protocol.ts",
+      "kind": "exact_result_protocol_integrity_and_recomputation",
+      "scope": "Strict metadata/revision, exact result fingerprint, report/package checksums, recomputed report equality, bounded portable import and safe HTML. No authenticated preregistration, signature or field validation."
     }
   ],
   "engineVersion": "1.16.0",
