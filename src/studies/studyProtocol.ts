@@ -1,3 +1,4 @@
+import {parseStudyJson} from './strictStudyJson';
 import {z} from 'zod';
 import {validateResult} from './studyWorkflow';
 import {runStudyValidation,studyValidationHtml} from './studyValidation';
@@ -28,7 +29,7 @@ export function validateStudyProtocol(rawResult:unknown,rawPackage:unknown){
  if(canonicalBundleJson(recomputed)!==canonicalBundleJson(pkg))throw new Error('Protocol report differs from recomputed analysis');
  return recomputed;
 }
-export function readStudyProtocol(rawResult:unknown,text:string){if(new TextEncoder().encode(text).length>MAX_PROTOCOL_BYTES)throw new Error('Protocol file exceeds 256 KiB');return validateStudyProtocol(rawResult,JSON.parse(text));}
+export function readStudyProtocol(rawResult:unknown,text:string){if(new TextEncoder().encode(text).length>MAX_PROTOCOL_BYTES)throw new Error('Protocol file exceeds 256 KiB');return validateStudyProtocol(rawResult,parseStudyJson(text,MAX_PROTOCOL_BYTES,'Protocol JSON'));}
 export function studyProtocolHtml(pkg:ReturnType<typeof makeStudyProtocol>){
  // Generation accepts only packages produced/verified by the functions above; exports are not signed.
  const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
