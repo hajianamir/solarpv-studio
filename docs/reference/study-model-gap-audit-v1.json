@@ -1,0 +1,180 @@
+{
+  "schemaVersion": "study-model-gap-audit-v1",
+  "baselineEngineVersion": "1.9.0",
+  "baselineCommit": "7224c42a75be93a2a0d6e5b56223afacd23ce939",
+  "fieldValidation": false,
+  "scope": "Direct study worker only; evidence is local numerical testing, not field accuracy or exhaustive combinations.",
+  "models": [
+    {
+      "id": "solar-time",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_worker.StudyTests.test_published_spa_reference",
+        "kind": "published_point"
+      },
+      "modeled": "SPA at UTC interval midpoint; fixed delta_t=67 s and atmospheric refraction; altitude-derived pressure.",
+      "gap": "No measured pressure, subinterval integration or historical delta_t correction."
+    },
+    {
+      "id": "tracking",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_tracking.TrackingTests.test_true_tracking_vector_oracle_and_rotation_limit",
+        "kind": "independent_equation"
+      },
+      "modeled": "Ideal single-axis geometry and optional slope-aware backtracking.",
+      "gap": "No actuator, slew, stow, motor energy or verified terrain/layout."
+    },
+    {
+      "id": "row-bifacial",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_rows.RowTests.test_independent_beam_shadow_projection",
+        "kind": "independent_equation"
+      },
+      "modeled": "Uniform infinite parallel sheds; Hay-Davies row irradiance; explicit front/rear thermal policy.",
+      "gap": "No finite edge effects, spatial mismatch or nonhorizontal tracker axes with rows."
+    },
+    {
+      "id": "transposition",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_optical_models.OpticalModelTests.test_perez_eight_bins_independent_table",
+        "kind": "published_coefficients_independent_equation"
+      },
+      "modeled": "Hay-Davies isolated plane or optional Perez; row branch remains Hay-Davies.",
+      "gap": "No diffuse horizon masking; not all sky models are interchangeable with rows."
+    },
+    {
+      "id": "iam",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "beam_iam"
+      },
+      "evidence": {
+        "test": "test_optical_models.OpticalModelTests.test_physical_iam_independent_fresnel_and_parameters",
+        "kind": "independent_equation"
+      },
+      "modeled": "ASHRAE or explicit physical glazing parameters; beam only per side.",
+      "gap": "Diffuse IAM unity; no soiling-dependent glazing fit."
+    },
+    {
+      "id": "spectral",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "spectral_irradiance"
+      },
+      "evidence": {
+        "test": "test_optical_models.OpticalModelTests.test_spectral_coefficient_sensitive_witnesses",
+        "kind": "independent_equation"
+      },
+      "modeled": "Unity or bounded SAPM polynomial with explicit coefficients and airmass domain.",
+      "gap": "No extrapolation or site spectral measurements; polynomial is not a spectral simulator."
+    },
+    {
+      "id": "temperature",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_balanced_thermal.BalancedThermalTests.test_independent_heat_equation_and_sensitivity",
+        "kind": "independent_equation"
+      },
+      "modeled": "SAPM, Faiman, explicit PVsyst heat balance or aligned supplied cell temperatures.",
+      "gap": "Steady state only; wind height and coefficient fit caller-declared; no dynamic thermal inertia."
+    },
+    {
+      "id": "dc",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "electrical_dc"
+      },
+      "evidence": {
+        "test": "test_electrical.ElectricalTests.test_operating_points_independent_iv_equation",
+        "kind": "independent_equation"
+      },
+      "modeled": "PVWatts DC or uniform De Soto single diode with ideal static bounded MPPT.",
+      "gap": "Single aggregate bus; no DC cable circuit, multiple independent MPPT, mismatch or bypass diodes."
+    },
+    {
+      "id": "inverter",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "sandia_ac"
+      },
+      "evidence": {
+        "test": "test_sandia.SandiaTests.test_each_coefficient_has_independent_sensitive_witness",
+        "kind": "independent_equation"
+      },
+      "modeled": "One aggregate PVWatts or voltage-dependent Sandia inverter, clipping and standby accounting.",
+      "gap": "No independent inverter blocks, transient controller or thermal derating."
+    },
+    {
+      "id": "plant",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "ac_plant"
+      },
+      "evidence": {
+        "test": "test_ac_plant.AcPlantTests.test_transformer_independent_signed_conservation",
+        "kind": "independent_equation"
+      },
+      "modeled": "Signed transformer losses, constant external auxiliary consumption and aligned availability.",
+      "gap": "No AC cable circuit, power factor/loadflow, auxiliary schedule or protection design."
+    },
+    {
+      "id": "environment",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "horizon_visibility"
+      },
+      "evidence": {
+        "test": "test_environment.EnvironmentTests.test_horizon_independent_interpolation_and_boundary",
+        "kind": "independent_equation"
+      },
+      "modeled": "Explicit beam horizon profile and aligned albedo/soiling input schedules.",
+      "gap": "Not dynamic soiling/snow prediction; no diffuse horizon or near-object mismatch."
+    },
+    {
+      "id": "energy",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_worker.StudyTests.test_independent_dc_inverter_and_energy_equations",
+        "kind": "independent_equation"
+      },
+      "modeled": "Rectangular interval energy and UTC midpoint monthly allocation; constant export cap.",
+      "gap": "No annualization, export schedule, measurement comparison, calibration or P50/P90."
+    }
+  ],
+  "separateSameLibraryCrosscheck": "test_worker.StudyTests.test_separate_modelchain_oracle",
+  "pendingSteps": [
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+  ],
+  "snapshotStatus": "Historical 1.9.0 inventory; superseded for current status by study-model-gap-audit-v2.json"
+}

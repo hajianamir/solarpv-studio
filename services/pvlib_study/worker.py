@@ -15,7 +15,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.14.0'
+ENGINE_VERSION = '1.15.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -71,7 +71,7 @@ def block_request(req, entry):
 def mppt_request(req, entry):
     child=copy.deepcopy(req)
     system=child['system']
-    for key in ('mpptInputs','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW','acExportLimitSchedule'):
+    for key in ('mpptInputs','acCable','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW','acExportLimitSchedule'):
         system.pop(key,None)
     for key in ('surfaceTiltDeg','surfaceAzimuthDeg','arrayPdc0W','electrical'):
         system[key]=copy.deepcopy(entry[key])
@@ -97,7 +97,7 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitSchedule','horizonProfile','soilingSchedule','albedoSchedule','pvsystTemperature','cellTemperatureSchedule','mpptInputs','inverterBlocks') if k in system])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','acCable','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitSchedule','horizonProfile','soilingSchedule','albedoSchedule','pvsystTemperature','cellTemperatureSchedule','mpptInputs','inverterBlocks') if k in system])], 'system')
     if sum(k in system for k in ('faiman','pvsystTemperature','cellTemperatureSchedule'))>1:raise InputError('Thermal opt-ins are mutually exclusive; no fallback')
     if 'pvsystTemperature' in system:
         p=system['pvsystTemperature'];keys(p,['source','quality','uc','uv','moduleEfficiency','alphaAbsorption','windHeightM'],'pvsystTemperature');text(p['source'],'pvsystTemperature.source')
@@ -130,6 +130,11 @@ def validate(req):
             keys(p,['azimuthDeg','elevationDeg'],'horizon point');number(p['azimuthDeg'],0,360,'horizon azimuth');number(p['elevationDeg'],0,85,'horizon elevation')
         if pts[0]['azimuthDeg']!=0 or pts[-1]['azimuthDeg']!=360 or pts[0]['elevationDeg']!=pts[-1]['elevationDeg'] or any(b['azimuthDeg']<=a['azimuthDeg'] for a,b in zip(pts,pts[1:])):raise InputError('horizon must span ordered 0..360 degrees with identical seam elevation')
         if 'rowIrradiance' in system:raise InputError('beam-only horizon unsupported with infinite_sheds rows; no fallback')
+    if 'acCable' in system:
+        c=system['acCable'];keys(c,['source','quality','topology','resistancePerPhaseOhm','receivingLineVoltageV','maxCurrentA'],'acCable')
+        text(c['source'],'acCable.source')
+        if c['quality'] not in ('measured','weather_provider','user_configured','assumed') or c['topology']!='balanced_three_phase_lv':raise InputError('explicit balanced three phase LV cable provenance/topology required')
+        for key,lo,hi in [('resistancePerPhaseOhm',0,100),('receivingLineVoltageV',1,100000),('maxCurrentA',.01,1e7)]:number(c[key],lo,hi,key)
     if 'transformer' in system:
         t=system['transformer']
         keys(t,['ratingVa','noLoadLossFraction','loadLossFraction'],'transformer')
@@ -259,7 +264,7 @@ def validate(req):
     prov = req['parameterProvenance']
     keys(prov, ['source', 'quality'], 'parameterProvenance')
     weather = req['weather']
-    keys(weather, ['source', 'quality', 'windHeightM', 'timestampConvention', 'intervalMinutes', 'records'], 'weather')
+    keys(weather, ['source', 'quality', 'windHeightM', 'timestampConvention', 'intervalMinutes', 'records', *(['importTrace'] if 'importTrace' in weather else [])], 'weather')
     for obj in (prov, weather):
         text(obj['source'], 'provenance source')
         if obj['quality'] not in ('measured', 'weather_provider', 'user_configured', 'assumed'):
@@ -291,7 +296,7 @@ def validate(req):
         raise InputError('unordered, duplicate, gapped or nonuniform timestamps')
     if (times[0]-timedelta(minutes=dt)).year < 1900 or times[-1].year > 2200 or times[-1]-times[0]+timedelta(minutes=dt) > timedelta(days=366):
         raise InputError('supported period: 1900..2200, at most 366 days')
-    if any(k in system for k in ('transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability')) and len(rows)>8784:raise InputError('AC plant mode supports at most 8784 records')
+    if any(k in system for k in ('acCable','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability')) and len(rows)>8784:raise InputError('AC plant mode supports at most 8784 records')
     if 'acExportLimitSchedule' in system:
         records=system['acExportLimitSchedule']['records']
         if len(rows)>8784:raise InputError('export cap schedule supports at most 8784 records')
@@ -330,13 +335,47 @@ def validate(req):
             keys(entry,['id','source','quality','system'],'inverter block')
             if not isinstance(entry['id'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}',entry['id']):raise InputError('block id must be ASCII identifier')
             ids.append(entry['id']);child=entry['system']
-            if not isinstance(child,dict) or any(key in child for key in ('inverterBlocks','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW','acExportLimitSchedule')) or child.get('additionalDcLossPct')!=0:raise InputError('no nested blocks or child plant/export; block additionalDcLossPct must be zero')
+            if not isinstance(child,dict) or any(key in child for key in ('inverterBlocks','acCable','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW','acExportLimitSchedule')) or child.get('additionalDcLossPct')!=0:raise InputError('no nested blocks or child plant/export; block additionalDcLossPct must be zero')
             validate(block_request(req,entry))
             cost+=len(child.get('mpptInputs',[None]))*len(rows)
             if cost>8784:raise InputError('blocks support at most 8784 total block-MPPT intervals')
         if len(set(ids))!=len(ids):raise InputError('block ids must be unique')
         if abs(sum(b['system']['arrayPdc0W'] for b in blocks)-system['arrayPdc0W'])>1e-6 or abs(sum(b['system']['inverterPdc0W'] for b in blocks)-system['inverterPdc0W'])>1e-6:raise InputError('root capacities must equal block sums')
+    validate_weather_trace(req)
     return times
+
+
+def validate_weather_trace(req):
+    weather=req['weather']
+    if 'importTrace' not in weather:return
+    tr=weather['importTrace'];keys(tr,['schemaVersion','rawCsv','rawManifest','canonicalWeatherJson','rawCsvSha256','manifestSha256','canonicalWeatherSha256'],'weather import trace')
+    if tr['schemaVersion']!='declared-weather-receipt-v1':raise InputError('unsupported weather receipt')
+    for raw,digest,limit in [('rawCsv','rawCsvSha256',2*1024*1024),('rawManifest','manifestSha256',64000),('canonicalWeatherJson','canonicalWeatherSha256',4*1024*1024)]:
+        if not isinstance(tr[raw],str) or len(tr[raw].encode())>limit or hashlib.sha256(tr[raw].encode()).hexdigest()!=tr[digest]:raise InputError('weather receipt size/hash mismatch')
+    try:m=json.loads(tr['rawManifest']);canonical=json.loads(tr['canonicalWeatherJson'])
+    except (ValueError,TypeError) as exc:raise InputError('invalid weather receipt JSON') from exc
+    keys(m,['schemaVersion','source','quality','sourceVersion','reference','site','intervalMinutes','timestampConvention','variableSemantics','windHeightM','units'],'declared weather manifest')
+    keys(m['site'],['latitude','longitude','altitudeM','timezone'],'declared weather site')
+    for key,lo,hi in [('latitude',-90,90),('longitude',-180,180),('altitudeM',-500,9000)]:number(m['site'][key],lo,hi,key)
+    if m['schemaVersion']!='declared-interval-weather-v1' or m['timestampConvention']!='interval_end' or m['variableSemantics']!='interval_mean' or isinstance(m['windHeightM'],bool) or m['windHeightM']!=10 or m['site']!=req['site'] or m['intervalMinutes']!=weather['intervalMinutes'] or isinstance(m['intervalMinutes'],bool):raise InputError('declared weather site/interval semantics differ')
+    for k in ('source','sourceVersion','reference'):text(m[k],k)
+    if m['quality']!=weather['quality']:raise InputError('declared weather quality differs')
+    units=m['units'];keys(units,['ghi','dni','dhi','tempAir','windSpeed'],'declared units')
+    if any(units[k] not in ('W/m2','kW/m2') for k in ('ghi','dni','dhi')) or units['tempAir'] not in ('degC','K') or units['windSpeed'] not in ('m/s','km/h'):raise InputError('unsupported declared units')
+    source='declared-import csv:'+tr['rawCsvSha256']+'; manifest:'+tr['manifestSha256']
+    def equivalent(a,b):
+        if isinstance(a,bool) or isinstance(b,bool):return isinstance(a,bool) and isinstance(b,bool) and a==b
+        if isinstance(a,dict) and isinstance(b,dict):return set(a)==set(b) and all(equivalent(a[k],b[k]) for k in a)
+        if isinstance(a,list) and isinstance(b,list):return len(a)==len(b) and all(equivalent(x,y) for x,y in zip(a,b))
+        return a==b
+    if weather['source']!=source or not equivalent(canonical,{k:v for k,v in weather.items() if k!='importTrace'}):raise InputError('canonical imported weather differs')
+    lines=tr['rawCsv'].removeprefix('\ufeff').splitlines()
+    if not lines or lines[0]!='timestamp,ghi,dni,dhi,tempAir,windSpeed' or len(lines)!=len(weather['records'])+1:raise InputError('declared CSV header/rows mismatch')
+    for line,row in zip(lines[1:],weather['records']):
+        fields=line.split(',')
+        if len(fields)!=6 or fields[0]!=row['timestamp'] or any(not re.fullmatch(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?',f.strip()) for f in fields[1:]):raise InputError('invalid declared CSV record')
+        values=list(map(float,fields[1:]));expected=[values[i]*(1000 if units[k]=='kW/m2' else 1) for i,k in enumerate(('ghi','dni','dhi'))]+[values[3]-(273.15 if units['tempAir']=='K' else 0),values[4]/(3.6 if units['windSpeed']=='km/h' else 1)]
+        if any(not math.isfinite(v) or abs(v-row[k])>1e-12*max(1,abs(v)) for k,v in zip(('ghiWm2','dniWm2','dhiWm2','tempAirC','windSpeedMs'),expected)):raise InputError('declared unit conversion mismatch')
 
 
 def electrical_dc(e, effective, cell, declared_nameplate):
@@ -477,6 +516,16 @@ def ac_plant(system, inverter_net, gross_generation=None):
     availability_loss=(inverter_net.clip(lower=0) if gross_generation is None else gross_generation)*(1-fraction)
     auxiliary=pd.Series([r['powerW'] for r in system['auxiliarySchedule']['records']],index=inverter_net.index,dtype=float) if 'auxiliarySchedule' in system else pd.Series(float(system.get('auxiliaryPowerW',0)),index=inverter_net.index)
     before=inverter_net-availability_loss-auxiliary
+    cable_columns={}
+    if 'acCable' in system:
+        c=system['acCable'];v=c['receivingLineVoltageV'];k=c['resistancePerPhaseOhm']/(v*v)
+        discriminant=1+4*k*before
+        if (discriminant<=0).any():raise InputError('AC cable outside monotonic constant receiving voltage domain')
+        after_cable=2*before/(1+np.sqrt(discriminant))
+        current=abs(after_cable)/(np.sqrt(3)*v)
+        if (current>c['maxCurrentA']+1e-8).any():raise InputError('AC cable current exceeds declared limit; no clipping/overload simulation')
+        cable_columns=dict(acCableInputW=before,acCableOutputW=after_cable,acCableCurrentA=current,acCableLossW=before-after_cable)
+        before=after_cable
     after=before.copy()
     if 'transformer' in system:
         t=system['transformer'];rating=t['ratingVa'];a=t['loadLossFraction'];nll=t['noLoadLossFraction']
@@ -487,7 +536,7 @@ def ac_plant(system, inverter_net, gross_generation=None):
     loss=before-after
     if not np.isfinite(after).all() or (loss < -1e-6).any():raise InputError('invalid transformer output/loss')
     imports=(-after).clip(lower=0)
-    return after.clip(lower=0),dict(acPlantInputW=inverter_net,acAvailabilityFraction=fraction,availabilityLossW=availability_loss,auxiliaryConsumptionW=auxiliary,transformerLossW=loss.clip(lower=0),gridImportW=imports)
+    return after.clip(lower=0),dict(**cable_columns,acPlantInputW=inverter_net,acAvailabilityFraction=fraction,availabilityLossW=availability_loss,auxiliaryConsumptionW=auxiliary,transformerLossW=loss.clip(lower=0),gridImportW=imports)
 
 
 def horizon_visibility(azimuth, zenith, profile):
@@ -727,11 +776,14 @@ def run_study(req):
     else:
         ac = pvlib.inverter.pvwatts(dc, s['inverterPdc0W'], eta_inv_nom=s['inverterEtaNom'], eta_inv_ref=s['inverterEtaRef'])
     plant_columns={}
-    plant_active='inverterBlocks' in s or any(k in s for k in ('transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability'))
+    plant_active='inverterBlocks' in s or any(k in s for k in ('acCable','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability'))
     if plant_active:
         inverter_net=inverter_columns['inverterNetAcW'] if 'sandia' in s or 'inverterBlocks' in s else ac
         ac,plant_columns=ac_plant(s,inverter_net,inverter_columns['inverterGrossGenerationW'] if 'inverterBlocks' in s else None)
         if 'auxiliarySchedule' in s:limitations.append('Auxiliary schedule is explicit interval-average nonnegative W on the LV bus before transformer. It remains during zero availability and at night; it is not an outage, tracker motor, dispatch or external site-load model. Do not include inverter internal consumption twice. No interpolation or missing-interval fill.')
+        if 'acCable' in s:
+            models['acCable']='balanced three phase LV; explicit receiving line voltage and per-phase resistance; unity PF; signed constant voltage circuit'
+            limitations.append('AC cable is a lumped balanced three-phase constant receiving voltage unity-PF circuit, after auxiliary and before transformer. No reactance, voltage load flow, temperature/ampacity design or protection. Current/domain excess is rejected. Export curtailment does not re-solve cable/transformer losses.')
         models['acAvailability']='explicit interval retained positive generation; parasitic imports stay energized' if 'acAvailability' in s else 'disabled; fraction one'
         models['auxiliary']='explicit interval-average LV auxiliary schedule before transformer; no fill' if 'auxiliarySchedule' in s else 'constant always-on LV auxiliary before transformer' if 'auxiliaryPowerW' in s else 'disabled; no auxiliary'
         models['transformer']='energized quadratic output-load-loss model; unity power factor; stable root' if 'transformer' in s else 'disabled; ideal connection'
@@ -762,6 +814,7 @@ def run_study(req):
     if 'soilingSchedule' in s:energy['soilingLossWhm2']=environment_columns['soilingLossWm2']*dt_hours
     if plant_active:
         for name in ('availabilityLoss','auxiliaryConsumption','transformerLoss','gridImport'):energy[name+'Wh']=plant_columns[name+'W']*dt_hours
+        if 'acCable' in s:energy['acCableLossWh']=plant_columns['acCableLossW']*dt_hours
         energy['netGridWh']=(ac-plant_columns['gridImportW'])*dt_hours
     if 'sandia' in s or 'inverterBlocks' in s:
         energy['inverterSelfConsumptionWh']=inverter_columns['inverterSelfConsumptionW']*dt_hours
@@ -801,7 +854,7 @@ def run_study(req):
             python=platform.python_version(), platform=platform.platform(), dependencies=dependencies,
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
-            units=dict(**(dict(appliedAcExportLimitW='explicit nonnegative export ceiling W for this interval, after AC plant; imports unaffected') if 'acExportLimitSchedule' in s else {}),**(dict(inverterSelfConsumptionWh='gross inverter internal consumption Wh before AC netting; diagnostic, not additional grid import',inverterGrossGenerationW='sum of positive block AC before internal-consumption netting; availability derates this positive-generation component only') if 'inverterBlocks' in s else {}),**(dict(environmentIrradiance='W/m2; integrated Wh/m2; optical diagnostics, not DC energy losses',usedAlbedo='broadband fraction 0..1',soilingRatios='optical transmission fractions 0..1; rear inactive without rows',horizonBeamVisible='binary apparent solar elevation greater than interpolated horizon') if any(k in s for k in ('horizonProfile','soilingSchedule','albedoSchedule')) else {}),**(dict(auxiliaryConsumptionW='nonnegative interval-average LV auxiliary W before transformer; excludes inverter internal consumption',auxiliaryConsumptionWh='integral of auxiliaryConsumptionW times interval hours; already included in net-grid balance',acPlantInputW='signed W inverter net before plant stages',acAvailabilityFraction='retained fraction of positive generation only',gridImportWh='total Wh imported after energized AC plant; includes inverter self-consumption',netGridWh='signed Wh export after cap minus total gridImportWh') if plant_active else {}),**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s and not plant_active else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
+            units=dict(**(dict(appliedAcExportLimitW='explicit nonnegative export ceiling W for this interval, after AC plant; imports unaffected') if 'acExportLimitSchedule' in s else {}),**(dict(inverterSelfConsumptionWh='gross inverter internal consumption Wh before AC netting; diagnostic, not additional grid import',inverterGrossGenerationW='sum of positive block AC before internal-consumption netting; availability derates this positive-generation component only') if 'inverterBlocks' in s else {}),**(dict(environmentIrradiance='W/m2; integrated Wh/m2; optical diagnostics, not DC energy losses',usedAlbedo='broadband fraction 0..1',soilingRatios='optical transmission fractions 0..1; rear inactive without rows',horizonBeamVisible='binary apparent solar elevation greater than interpolated horizon') if any(k in s for k in ('horizonProfile','soilingSchedule','albedoSchedule')) else {}),**(dict(acCableLossW='nonnegative W already in signed plant balance; not an additional subtraction',acCableCurrentA='nonnegative line current A at declared receiving line voltage; balanced three phase unity PF',auxiliaryConsumptionW='nonnegative interval-average LV auxiliary W before transformer; excludes inverter internal consumption',auxiliaryConsumptionWh='integral of auxiliaryConsumptionW times interval hours; already included in net-grid balance',acPlantInputW='signed W inverter net before plant stages',acAvailabilityFraction='retained fraction of positive generation only',gridImportWh='total Wh imported after energized AC plant; includes inverter self-consumption',netGridWh='signed Wh export after cap minus total gridImportWh') if plant_active else {}),**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s and not plant_active else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
                 **(dict(voltage='V at inverter terminal when dcCable enabled, otherwise uniform array DC bus',current='A aggregate inverter input',dcOperatingState='0 dark; 1 MPP; 2 voltage boundary; 3 current boundary; 4 no feasible MPPT point') if 'electrical' in s else {}),
                 **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
             limitations=limitations, warnings=warnings),

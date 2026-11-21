@@ -187,6 +187,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
       count: null,
     },
   ];
+  if(request.weather.importTrace){const m=JSON.parse(request.weather.importTrace.rawManifest);entries.push({component:"weatherImport",source:m.source,quality:m.quality,count:request.weather.records.length});}
   for (const [component, value, count] of [
     ["cellTemperatureSchedule",s.cellTemperatureSchedule,s.cellTemperatureSchedule?.records.length],
     ["pvsystTemperature",s.pvsystTemperature,undefined],
@@ -194,6 +195,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
     ["horizonProfile", s.horizonProfile, s.horizonProfile?.points.length],
     ["soilingSchedule", s.soilingSchedule, s.soilingSchedule?.records.length],
     ["albedoSchedule", s.albedoSchedule, s.albedoSchedule?.records.length],
+    ["acCable",s.acCable,null],
     ["acAvailability", s.acAvailability, s.acAvailability?.records.length],
     ["auxiliarySchedule", s.auxiliarySchedule, s.auxiliarySchedule?.records.length],
     ["acExportLimitSchedule", s.acExportLimitSchedule, s.acExportLimitSchedule?.records.length],
@@ -259,6 +261,7 @@ export const ENERGY_METRICS = [
   "availabilityLossWh",
   "auxiliaryConsumptionWh",
   "transformerLossWh",
+  "acCableLossWh",
   "availableMppWh",
   "mpptConstraintLossWh",
   "dcCableLossWh",

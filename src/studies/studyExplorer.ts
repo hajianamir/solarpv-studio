@@ -15,7 +15,7 @@ const BASE_POWER = {
 function plant(r: StudyResult) {
   const s = r.request.system;
   return !!(
-    s.transformer ||
+    s.acCable || s.transformer ||
     s.auxiliaryPowerW !== undefined || s.auxiliarySchedule ||
     s.acAvailability || s.inverterBlocks
   );
@@ -38,6 +38,7 @@ function powerMap(r: StudyResult) {
           gridImportWh: "gridImportW",
         }
       : {}),
+    ...(s.acCable ? {acCableLossWh:"acCableLossW"} : {}),
     ...(s.sandia || s.inverterBlocks
       ? { inverterSelfConsumptionWh: "inverterSelfConsumptionW" }
       : {}),
@@ -460,7 +461,7 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
     plant(r) && rows.length
       ? totals.availabilityLossWh +
         totals.auxiliaryConsumptionWh +
-        totals.transformerLossWh
+        totals.transformerLossWh + (totals.acCableLossWh ?? 0)
       : null;
   const balances = {
     note: "Arithmetic bookkeeping, not measured plant validation. Do not subtract inverter self-consumption again. No hardware import is inferred for baseline PVWatts.",

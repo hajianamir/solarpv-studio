@@ -186,3 +186,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libnspr4 libnss3
       - name: Browser import, real Python study, reports and screening isolation
         run: npm run test:study:browser
+      - name: Preserve bounded contract/runtime classification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: study-contract-evidence-${{ matrix.os }}
+          path: .cache/study-evidence/contract-matrix-v2.json
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14

@@ -1,0 +1,289 @@
+{
+  "schemaVersion": "study-independent-numerics-v2",
+  "classification": "analytic/published numerical evidence; not field validation; synthetic inputs",
+  "sources": {
+    "pvwatts": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.inverter.pvwatts.html",
+    "heat": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.temperature.pvsyst_cell.html",
+    "ground": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.irradiance.get_ground_diffuse.html",
+    "cable": "Declared balanced three-phase LV model: Pin=Pout+3RI\u00b2; I=|Pout|/(sqrt(3)Vll)",
+    "integration": "Interval-average rectangular integral in Wh; midpoint UTC month allocation"
+  },
+  "absoluteTolerance": 1e-09,
+  "heat": [
+    {
+      "poa": 1000,
+      "ambient": 10,
+      "wind": 1,
+      "uc": 29,
+      "uv": 0,
+      "eta": 0.1,
+      "alpha": 0.9,
+      "expectedC": 37.93103448275862
+    },
+    {
+      "poa": 800,
+      "ambient": 20,
+      "wind": 5,
+      "uc": 25,
+      "uv": 3,
+      "eta": 0.2,
+      "alpha": 0.8,
+      "expectedC": 32.8
+    },
+    {
+      "poa": 0,
+      "ambient": -10,
+      "wind": 0,
+      "uc": 25,
+      "uv": 3,
+      "eta": 0.2,
+      "alpha": 0.8,
+      "expectedC": -10
+    }
+  ],
+  "pvwatts": [
+    {
+      "dcW": 0,
+      "dcLimitW": 10000,
+      "etaNom": 0.96,
+      "expectedW": 0
+    },
+    {
+      "dcW": 10000,
+      "dcLimitW": 10000,
+      "etaNom": 0.96,
+      "expectedW": 9600
+    },
+    {
+      "dcW": 20000,
+      "dcLimitW": 10000,
+      "etaNom": 0.96,
+      "expectedW": 9600
+    }
+  ],
+  "ground": [
+    {
+      "tilt": 0,
+      "ghi": 1000,
+      "albedo": 0.2,
+      "expectedWm2": 0
+    },
+    {
+      "tilt": 60,
+      "ghi": 1000,
+      "albedo": 0.2,
+      "expectedWm2": 50
+    },
+    {
+      "tilt": 90,
+      "ghi": 1000,
+      "albedo": 0.2,
+      "expectedWm2": 100
+    }
+  ],
+  "acCable": [
+    {
+      "pinW": 10250,
+      "poutW": 10000,
+      "lossW": 250,
+      "R": 0.4,
+      "Vll": 400
+    },
+    {
+      "pinW": -9750,
+      "poutW": -10000,
+      "lossW": 250,
+      "R": 0.4,
+      "Vll": 400
+    }
+  ],
+  "integration": {
+    "intervalMinutes": 15,
+    "powersW": [
+      0,
+      20,
+      100,
+      0,
+      50,
+      300
+    ],
+    "expectedWh": 117.5,
+    "expectedUtcMonthlyWh": [
+      5,
+      112.5
+    ]
+  },
+  "equationEvidence": [
+    {
+      "id": "solar-time",
+      "test": "test_worker.StudyTests.test_published_spa_reference",
+      "kind": "published_point",
+      "domain": "SPA at UTC interval midpoint; fixed delta_t=67 s and atmospheric refraction; altitude-derived pressure.",
+      "limitations": "No measured pressure, subinterval integration or historical delta_t correction.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "tracking",
+      "test": "test_tracking.TrackingTests.test_true_tracking_vector_oracle_and_rotation_limit",
+      "kind": "independent_equation",
+      "domain": "Ideal single-axis geometry and optional slope-aware backtracking.",
+      "limitations": "No actuator, slew, stow, motor energy or verified terrain/layout.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "row-bifacial",
+      "test": "test_rows.RowTests.test_independent_beam_shadow_projection",
+      "kind": "independent_equation",
+      "domain": "Uniform infinite parallel sheds; Hay-Davies row irradiance; explicit front/rear thermal policy.",
+      "limitations": "No finite edge effects, spatial mismatch or nonhorizontal tracker axes with rows.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "transposition",
+      "test": "test_optical_models.OpticalModelTests.test_perez_eight_bins_independent_table",
+      "kind": "published_coefficients_independent_equation",
+      "domain": "Hay-Davies isolated plane or optional Perez; row branch remains Hay-Davies.",
+      "limitations": "No diffuse horizon masking; not all sky models are interchangeable with rows.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "iam",
+      "test": "test_optical_models.OpticalModelTests.test_physical_iam_independent_fresnel_and_parameters",
+      "kind": "independent_equation",
+      "domain": "ASHRAE or explicit physical glazing parameters; beam only per side.",
+      "limitations": "Diffuse IAM unity; no soiling-dependent glazing fit.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "spectral",
+      "test": "test_optical_models.OpticalModelTests.test_spectral_coefficient_sensitive_witnesses",
+      "kind": "independent_equation",
+      "domain": "Unity or bounded SAPM polynomial with explicit coefficients and airmass domain.",
+      "limitations": "No extrapolation or site spectral measurements; polynomial is not a spectral simulator.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "temperature",
+      "test": "test_balanced_thermal.BalancedThermalTests.test_independent_heat_equation_and_sensitivity",
+      "kind": "independent_equation",
+      "domain": "SAPM, Faiman, explicit PVsyst heat balance or aligned supplied cell temperatures.",
+      "limitations": "Steady state only; wind height and coefficient fit caller-declared; no dynamic thermal inertia.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "dc",
+      "test": "test_electrical.ElectricalTests.test_operating_points_independent_iv_equation",
+      "kind": "independent_equation",
+      "domain": "PVWatts or uniform De Soto; constrained MPPT, explicit DC cable circuits, 2\u20134 independent MPPT inputs or inverter blocks.",
+      "limitations": "No mismatch/bypass diode network, spatial cell model or transient MPPT controller.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "inverter",
+      "test": "test_sandia.SandiaTests.test_each_coefficient_has_independent_sensitive_witness",
+      "kind": "independent_equation",
+      "domain": "Per-inverter PVWatts or voltage-dependent Sandia, clipping and signed standby; independent inverter blocks.",
+      "limitations": "No transient controller, reactive output or thermal inverter derating.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "plant",
+      "test": "test_ac_plant.AcPlantTests.test_transformer_independent_signed_conservation",
+      "kind": "independent_equation",
+      "domain": "Signed transformer and balanced three-phase LV cable, explicit constant/scheduled auxiliary and interval availability.",
+      "limitations": "Constant receiving cable voltage/unity PF; no reactive loadflow, thermal ampacity or protection design; export cap does not re-solve losses.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "environment",
+      "test": "test_environment.EnvironmentTests.test_horizon_independent_interpolation_and_boundary",
+      "kind": "independent_equation",
+      "domain": "Explicit beam horizon profile and aligned albedo/soiling input schedules.",
+      "limitations": "Not dynamic soiling/snow prediction; no diffuse horizon or near-object mismatch.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "energy",
+      "test": "test_worker.StudyTests.test_independent_dc_inverter_and_energy_equations",
+      "kind": "independent_equation",
+      "domain": "Interval energy, UTC midpoint months, constant or interval export cap with per-sample/summary/monthly guards.",
+      "limitations": "No measurement comparison, calibration, P50/P90 or automatic annualization; interval cap is not subinterval dispatch.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty."
+    },
+    {
+      "id": "dc-cable",
+      "test": "test_dc_cable.DcCableTests.test_independent_iv_dense_grid_and_terminal_constraints",
+      "kind": "independent_equation",
+      "domain": "Uniform strings and shared home-run loop resistances, actual joint IV+cable operating-point solution.",
+      "limitations": "Explicit loop ohms only; no cable temperature/ampacity or mismatch.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test."
+    },
+    {
+      "id": "multi-mppt",
+      "test": "test_multi_mppt.MultiMpptTests.test_separate_operating_points_power_sum_and_analytic_inverter",
+      "kind": "independent_equation",
+      "domain": "2\u20134 fixed subarrays, own voltage/diode/cable; terminal DC sum into one PVWatts.",
+      "limitations": "17568 total input-intervals; no Sandia shared input, tracker or imported cell schedule.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test."
+    },
+    {
+      "id": "inverter-blocks",
+      "test": "test_inverter_blocks.InverterBlockTests.test_pvwatts_unused_capacity_cannot_move_between_inverters",
+      "kind": "independent_equation",
+      "domain": "2\u20134 full independent systems; own clipping, signed AC aggregation then common plant.",
+      "limitations": "8784 total block-MPPT intervals; no shared electrical bus/loadflow.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test."
+    },
+    {
+      "id": "ac-cable",
+      "test": "test_ac_cable.AcCableTests.test_independent_signed_circuit_and_sensitivity",
+      "kind": "independent_equation",
+      "domain": "Balanced three-phase LV constant receiving voltage, signed P conservation and per-phase I\u00b2R.",
+      "limitations": "No reactance/PF variation, voltage loadflow or ampacity design. Current/domain excess rejected.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test."
+    },
+    {
+      "id": "auxiliary-schedule",
+      "test": "test_auxiliary_schedule.AuxiliaryScheduleTests.test_signed_transformer_conservation_and_export_cap",
+      "kind": "independent_equation",
+      "domain": "Explicit mean interval W at LV, before transformer; night and zero availability remain energized.",
+      "limitations": "No inference of equipment duty cycle, tracker motor or external site demand.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test."
+    },
+    {
+      "id": "export-cap-schedule",
+      "test": "test_export_limit_schedule.ExportLimitScheduleTests.test_auxiliary_transformer_and_cap_order_independent_root",
+      "kind": "independent_equation",
+      "domain": "Explicit W ceiling per interval, positive exports only after plant, import preservation.",
+      "limitations": "No DC/network re-solve or subinterval control.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test."
+    }
+  ],
+  "versionedParameterFixtures": [
+    {
+      "path": "services/pvlib_study/tests/ac-plant-reference-parameters.json",
+      "sha256": "dd22cee387aa5a0bd68059c279874d5f2b71901bc5b65269224b5e0904f403ec",
+      "classification": "synthetic explicit parameters, not manufacturer validation"
+    },
+    {
+      "path": "services/pvlib_study/tests/desoto-reference-parameters.json",
+      "sha256": "c7e905d2b99d43212756702cd90ccc056f397930f8e756bd89c1abb8f484ef35",
+      "classification": "synthetic explicit parameters, not manufacturer validation"
+    },
+    {
+      "path": "services/pvlib_study/tests/environment-reference-parameters.json",
+      "sha256": "3ce59f428e7c7ec6c53918afc789c4ae1f60f3b62c1bb257038a5d3534a06aaa",
+      "classification": "synthetic explicit parameters, not manufacturer validation"
+    },
+    {
+      "path": "services/pvlib_study/tests/optical-reference-parameters.json",
+      "sha256": "083e3ec90ae85b29066c8998c92bb197153402436e341977dddf8063082d4a7a",
+      "classification": "synthetic explicit parameters, not manufacturer validation"
+    },
+    {
+      "path": "services/pvlib_study/tests/sandia-reference-parameters.json",
+      "sha256": "4b70da53821dc6d68a56986d472f414f035d99f2ad52142dae19e4afdfcda1a7",
+      "classification": "synthetic explicit parameters, not manufacturer validation"
+    }
+  ]
+}

@@ -1,0 +1,336 @@
+{
+  "schemaVersion": "study-model-gap-audit-v2",
+  "baselineEngineVersion": "1.14.0",
+  "baselineCommit": "c3f9289fd76c04267f1972605077f6627cfaeeae",
+  "fieldValidation": false,
+  "scope": "Current engineering coverage of milestones 30..40; bounded domains and executable evidence. Historical baselineCommit names the pre-review parent, not the delivery SHA.",
+  "models": [
+    {
+      "id": "solar-time",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_worker.StudyTests.test_published_spa_reference",
+        "kind": "published_point"
+      },
+      "modeled": "SPA at UTC interval midpoint; fixed delta_t=67 s and atmospheric refraction; altitude-derived pressure.",
+      "gap": "No measured pressure, subinterval integration or historical delta_t correction.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "tracking",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_tracking.TrackingTests.test_true_tracking_vector_oracle_and_rotation_limit",
+        "kind": "independent_equation"
+      },
+      "modeled": "Ideal single-axis geometry and optional slope-aware backtracking.",
+      "gap": "No actuator, slew, stow, motor energy or verified terrain/layout.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "row-bifacial",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_rows.RowTests.test_independent_beam_shadow_projection",
+        "kind": "independent_equation"
+      },
+      "modeled": "Uniform infinite parallel sheds; Hay-Davies row irradiance; explicit front/rear thermal policy.",
+      "gap": "No finite edge effects, spatial mismatch or nonhorizontal tracker axes with rows.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "transposition",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_optical_models.OpticalModelTests.test_perez_eight_bins_independent_table",
+        "kind": "published_coefficients_independent_equation"
+      },
+      "modeled": "Hay-Davies isolated plane or optional Perez; row branch remains Hay-Davies.",
+      "gap": "No diffuse horizon masking; not all sky models are interchangeable with rows.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "iam",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "beam_iam"
+      },
+      "evidence": {
+        "test": "test_optical_models.OpticalModelTests.test_physical_iam_independent_fresnel_and_parameters",
+        "kind": "independent_equation"
+      },
+      "modeled": "ASHRAE or explicit physical glazing parameters; beam only per side.",
+      "gap": "Diffuse IAM unity; no soiling-dependent glazing fit.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "spectral",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "spectral_irradiance"
+      },
+      "evidence": {
+        "test": "test_optical_models.OpticalModelTests.test_spectral_coefficient_sensitive_witnesses",
+        "kind": "independent_equation"
+      },
+      "modeled": "Unity or bounded SAPM polynomial with explicit coefficients and airmass domain.",
+      "gap": "No extrapolation or site spectral measurements; polynomial is not a spectral simulator.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "temperature",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_balanced_thermal.BalancedThermalTests.test_independent_heat_equation_and_sensitivity",
+        "kind": "independent_equation"
+      },
+      "modeled": "SAPM, Faiman, explicit PVsyst heat balance or aligned supplied cell temperatures.",
+      "gap": "Steady state only; wind height and coefficient fit caller-declared; no dynamic thermal inertia.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "dc",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "electrical_dc"
+      },
+      "evidence": {
+        "test": "test_electrical.ElectricalTests.test_operating_points_independent_iv_equation",
+        "kind": "independent_equation"
+      },
+      "modeled": "PVWatts or uniform De Soto; constrained MPPT, explicit DC cable circuits, 2\u20134 independent MPPT inputs or inverter blocks.",
+      "gap": "No mismatch/bypass diode network, spatial cell model or transient MPPT controller.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "inverter",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "sandia_ac"
+      },
+      "evidence": {
+        "test": "test_sandia.SandiaTests.test_each_coefficient_has_independent_sensitive_witness",
+        "kind": "independent_equation"
+      },
+      "modeled": "Per-inverter PVWatts or voltage-dependent Sandia, clipping and signed standby; independent inverter blocks.",
+      "gap": "No transient controller, reactive output or thermal inverter derating.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "plant",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "ac_plant"
+      },
+      "evidence": {
+        "test": "test_ac_plant.AcPlantTests.test_transformer_independent_signed_conservation",
+        "kind": "independent_equation"
+      },
+      "modeled": "Signed transformer and balanced three-phase LV cable, explicit constant/scheduled auxiliary and interval availability.",
+      "gap": "Constant receiving cable voltage/unity PF; no reactive loadflow, thermal ampacity or protection design; export cap does not re-solve losses.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "environment",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "horizon_visibility"
+      },
+      "evidence": {
+        "test": "test_environment.EnvironmentTests.test_horizon_independent_interpolation_and_boundary",
+        "kind": "independent_equation"
+      },
+      "modeled": "Explicit beam horizon profile and aligned albedo/soiling input schedules.",
+      "gap": "Not dynamic soiling/snow prediction; no diffuse horizon or near-object mismatch.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "energy",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_worker.StudyTests.test_independent_dc_inverter_and_energy_equations",
+        "kind": "independent_equation"
+      },
+      "modeled": "Interval energy, UTC midpoint months, constant or interval export cap with per-sample/summary/monthly guards.",
+      "gap": "No measurement comparison, calibration, P50/P90 or automatic annualization; interval cap is not subinterval dispatch.",
+      "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
+      "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
+      "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
+    },
+    {
+      "id": "dc-cable",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "electrical_dc"
+      },
+      "evidence": {
+        "test": "test_dc_cable.DcCableTests.test_independent_iv_dense_grid_and_terminal_constraints",
+        "kind": "independent_equation"
+      },
+      "modeled": "Uniform strings and shared home-run loop resistances, actual joint IV+cable operating-point solution.",
+      "gap": "Explicit loop ohms only; no cable temperature/ampacity or mismatch.",
+      "domain": "Explicit strict schema; opt-in only; provenance required.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test.",
+      "source": "Independent signed conservation/IV/analytic inverter tests; pvlib 0.13.1 interfaces."
+    },
+    {
+      "id": "multi-mppt",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_multi_mppt.MultiMpptTests.test_separate_operating_points_power_sum_and_analytic_inverter",
+        "kind": "independent_equation"
+      },
+      "modeled": "2\u20134 fixed subarrays, own voltage/diode/cable; terminal DC sum into one PVWatts.",
+      "gap": "17568 total input-intervals; no Sandia shared input, tracker or imported cell schedule.",
+      "domain": "Explicit strict schema; opt-in only; provenance required.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test.",
+      "source": "Independent signed conservation/IV/analytic inverter tests; pvlib 0.13.1 interfaces."
+    },
+    {
+      "id": "inverter-blocks",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_inverter_blocks.InverterBlockTests.test_pvwatts_unused_capacity_cannot_move_between_inverters",
+        "kind": "independent_equation"
+      },
+      "modeled": "2\u20134 full independent systems; own clipping, signed AC aggregation then common plant.",
+      "gap": "8784 total block-MPPT intervals; no shared electrical bus/loadflow.",
+      "domain": "Explicit strict schema; opt-in only; provenance required.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test.",
+      "source": "Independent signed conservation/IV/analytic inverter tests; pvlib 0.13.1 interfaces."
+    },
+    {
+      "id": "ac-cable",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "ac_plant"
+      },
+      "evidence": {
+        "test": "test_ac_cable.AcCableTests.test_independent_signed_circuit_and_sensitivity",
+        "kind": "independent_equation"
+      },
+      "modeled": "Balanced three-phase LV constant receiving voltage, signed P conservation and per-phase I\u00b2R.",
+      "gap": "No reactance/PF variation, voltage loadflow or ampacity design. Current/domain excess rejected.",
+      "domain": "Explicit strict schema; opt-in only; provenance required.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test.",
+      "source": "Independent signed conservation/IV/analytic inverter tests; pvlib 0.13.1 interfaces."
+    },
+    {
+      "id": "auxiliary-schedule",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "ac_plant"
+      },
+      "evidence": {
+        "test": "test_auxiliary_schedule.AuxiliaryScheduleTests.test_signed_transformer_conservation_and_export_cap",
+        "kind": "independent_equation"
+      },
+      "modeled": "Explicit mean interval W at LV, before transformer; night and zero availability remain energized.",
+      "gap": "No inference of equipment duty cycle, tracker motor or external site demand.",
+      "domain": "Explicit strict schema; opt-in only; provenance required.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test.",
+      "source": "Independent signed conservation/IV/analytic inverter tests; pvlib 0.13.1 interfaces."
+    },
+    {
+      "id": "export-cap-schedule",
+      "callsite": {
+        "path": "services/pvlib_study/worker.py",
+        "symbol": "run_study"
+      },
+      "evidence": {
+        "test": "test_export_limit_schedule.ExportLimitScheduleTests.test_auxiliary_transformer_and_cap_order_independent_root",
+        "kind": "independent_equation"
+      },
+      "modeled": "Explicit W ceiling per interval, positive exports only after plant, import preservation.",
+      "gap": "No DC/network re-solve or subinterval control.",
+      "domain": "Explicit strict schema; opt-in only; provenance required.",
+      "tolerance": "Assertion-specific explicit numerical bounds in named test.",
+      "source": "Independent signed conservation/IV/analytic inverter tests; pvlib 0.13.1 interfaces."
+    }
+  ],
+  "separateSameLibraryCrosscheck": "test_worker.StudyTests.test_separate_modelchain_oracle",
+  "pendingSteps": [
+    41,
+    42
+  ],
+  "completedEngineeringSteps": [
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40
+  ],
+  "nonNumericalEvidence": [
+    {
+      "id": "weather-adapter",
+      "test": "scripts/test-study-review-30-40.ts",
+      "kind": "independent_unit_conversion_and_sha_oracle",
+      "scope": "32 unit combinations, manifest semantics/site/UTC, raw receipt/TS/Python guards; no provider inference or operational input supplied"
+    },
+    {
+      "id": "contract-matrix",
+      "test": "scripts/test-study-contract-matrix.ts",
+      "kind": "independently_expected_bounded_contracts",
+      "scope": "8192 two-language contracts;16 runtime pair-cover;3824 valid contract-only"
+    },
+    {
+      "id": "portable-library",
+      "test": "scripts/test-study-storage-browser.ts",
+      "kind": "actual_browser_transactions",
+      "scope": "Atomic rollback/conflict/quota/delete/reload/cross-tab and bundle guards; not physics evidence"
+    }
+  ],
+  "engineVersion": "1.15.0"
+}

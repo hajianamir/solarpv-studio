@@ -1,3 +1,5 @@
+import {DeclaredWeatherImporter} from "./DeclaredWeatherImporter";
+import {type WeatherImportTrace} from "../studies/declaredWeatherAdapter";
 import { StudyInsights } from "./StudyInsights";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -130,6 +132,7 @@ export function StudyBuilder({
   const [records, setRecords] = useState<StudyRequest["weather"]["records"]>(
     [],
   );
+  const [importTrace,setImportTrace]=useState<WeatherImportTrace|undefined>();
   const [error, setError] = useState("");
   const [review, setReview] = useState<StudyRequest | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -242,6 +245,11 @@ export function StudyBuilder({
               r.system.auxiliaryPowerW !== undefined
                 ? String(r.system.auxiliaryPowerW)
                 : "",
+            acCableEnabled:r.system.acCable ? "yes" : "no",
+            acCableSource:r.system.acCable?.source ?? "",acCableQuality:r.system.acCable?.quality ?? "",
+            resistancePerPhaseOhm:r.system.acCable ? String(r.system.acCable.resistancePerPhaseOhm) : "",
+            receivingLineVoltageV:r.system.acCable ? String(r.system.acCable.receivingLineVoltageV) : "",
+            acCableMaxCurrentA:r.system.acCable ? String(r.system.acCable.maxCurrentA) : "",
             availabilityEnabled: r.system.acAvailability ? "yes" : "no",
             availabilitySource: r.system.acAvailability?.source ?? "",
             availabilityQuality: r.system.acAvailability?.quality ?? "",
@@ -324,6 +332,7 @@ export function StudyBuilder({
           }
         : {},
     );
+    setImportTrace(r?.weather.importTrace);
     setRecords(r?.weather.records ?? []);
     setReview(r);
     setConfirmed(Boolean(r));
@@ -769,6 +778,10 @@ export function StudyBuilder({
               )}
             </div>
           )}
+          <label>AC cable / کابل AC
+            <select aria-label="Study AC cable enabled" value={v.acCableEnabled ?? "no"} onChange={e=>change("acCableEnabled",e.target.value)}><option value="no">Disabled</option><option value="yes">Balanced three phase LV</option></select>
+          </label>
+          {v.acCableEnabled==="yes" && <div data-testid="ac-cable-inputs"><p>Explicit receiving line voltage, per-phase resistance, unity PF. After LV auxiliary, before transformer. Not a voltage load-flow or ampacity/protection design.</p>{text("acCableSource","AC cable source")}{quality("acCableQuality","AC cable quality")}{text("resistancePerPhaseOhm","Per-phase resistance (Ohm)","number")}{text("receivingLineVoltageV","Receiving line voltage (V)","number")}{text("acCableMaxCurrentA","Declared maximum line current (A)","number")}</div>}
           <label>
             {en ? "Auxiliary demand" : "مصرف کمکی"}
             <select
@@ -1137,6 +1150,7 @@ export function StudyBuilder({
               const revision = ++csvRevision.current;
               onDirty();
               setReview(null);
+              setImportTrace(undefined);
               setRecords([]);
               setError("");
               try {
@@ -1150,6 +1164,8 @@ export function StudyBuilder({
             }}
           />
         </label>
+        <DeclaredWeatherImporter site={{latitude,longitude,altitudeM:Number(v.altitudeM),timezone:v.timezone ?? ""}} onDirty={()=>{onDirty();setReview(null);setConfirmed(false);}} onApply={weather=>{csvRevision.current++;setRecords(weather.records);setImportTrace(weather.importTrace);setV(old=>({...old,weatherSource:weather.source,weatherQuality:weather.quality,intervalMinutes:String(weather.intervalMinutes)}));setReview(null);setConfirmed(false);setError("");onDirty();}}/>
+        {importTrace&&<p data-testid="weather-import-trace">Declared weather raw package retained · {importTrace.rawCsvSha256}<button type="button" onClick={()=>{setImportTrace(undefined);setReview(null);onDirty();}}>Detach import trace (explicit canonical edit)</button></p>}
         <p className="text-xs">
           {records.length}{" "}
           {en
@@ -1224,6 +1240,7 @@ export function StudyBuilder({
                       }
                     : {}),
 
+                  ...(v.acCableEnabled==="yes" ? {acCable:{source:v.acCableSource,quality:v.acCableQuality,topology:"balanced_three_phase_lv",resistancePerPhaseOhm:number("resistancePerPhaseOhm"),receivingLineVoltageV:number("receivingLineVoltageV"),maxCurrentA:number("acCableMaxCurrentA")}} : {}),
                   ...(v.transformerEnabled === "yes"
                     ? {
                         transformer: {
@@ -1365,6 +1382,7 @@ export function StudyBuilder({
                   quality: v.parameterQuality,
                 },
                 weather: {
+                  ...(importTrace ? {importTrace} : {}),
                   source: v.weatherSource,
                   quality: v.weatherQuality,
                   windHeightM: 10,
