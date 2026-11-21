@@ -1,2 +1,6 @@
 # These benchmark fixtures are validated by byte-level SHA-256 hashes.
 benchmarks/reference_files/*.sam -text
+
+# Versioned direct-study parameter fixtures have byte-level SHA256 identities.
+# Keep the actual bytes identical on Windows and Unix; do not weaken hash checks.
+services/pvlib_study/tests/*reference-parameters.json text eol=lf

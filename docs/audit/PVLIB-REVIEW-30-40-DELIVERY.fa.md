@@ -31,3 +31,6 @@
 
 ## حدود صریح
 تمامشواهد عددی اینتحویل مصنوعی/تحلیلی/منتشرشده‌اند. فایلعملیاتیپروژه ارائه‌نشده و ساخته/صفرپرنشده است؛ استفاده ازدادهٔواقعی پروژه وfieldvalidation هنوز بدونآن ممکننیست. خواستهٔتکمیل باعث حدسواحد،ارتفاعباد،زمان،پارامترتجهیزات یا ادعایجعلیاعتبارسالانه نشده است. محدودیت‌هایفیزیکی اعلام‌شده (reactive/loadflow،کنترلگذرا،عدمبازحلپسازcap،calibration،ایمنی/bankability) حذف‌شده تلقینمی‌شوند. مراحل۴۱/۴۲ خارجازدرخواست‌اند. Dockerاجرانشده است. CIدقیقSHAپسازpushدرپاسخنهایی اعلاممی‌شود؛موفقیتقبلی بهنسخهٔجدید نسبتداده نمی‌شود.
+
+## اصلاح portability پس از CI اولیه
+روی017f20e، پنجjobازششjob ازجمله directLinux موفق شدند؛ directWindows درPythonsuite شکست خورد. دریافتlogخامrunner درمحیطفعلی باEOFدرredirectstorageممکننشد؛ بازتولید واقعیcheckoutبا `git -c core.autocrlf=true checkout-index --prefix=.cache/windows-byte-check/` همانخطای SHAfixtureرا درtest_versioned_numerics ایجاد کرد. بدونتغییرhashانتظار یااستثناکردنassertion، برایفایل‌های `services/pvlib_study/tests/*reference-parameters.json` سیاست `text eol=lf` درgitattributesثبتشد. همانcheckout/testپسازاصلاحPASSشد. محتوایعددیfixtureها و تمامhashهایانتظار بدونتغییرماندند. نتیجهCIدقیقSHAاصلاح‌شده جداگانهتحویل می‌شود؛ CIاولیه موفقکامل اعلامنمی‌شود.
