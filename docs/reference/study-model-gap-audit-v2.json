@@ -296,7 +296,6 @@
   ],
   "separateSameLibraryCrosscheck": "test_worker.StudyTests.test_separate_modelchain_oracle",
   "pendingSteps": [
-    41,
     42
   ],
   "completedEngineeringSteps": [
@@ -310,7 +309,8 @@
     37,
     38,
     39,
-    40
+    40,
+    41
   ],
   "nonNumericalEvidence": [
     {
@@ -330,7 +330,13 @@
       "test": "scripts/test-study-storage-browser.ts",
       "kind": "actual_browser_transactions",
       "scope": "Atomic rollback/conflict/quota/delete/reload/cross-tab and bundle guards; not physics evidence"
+    },
+    {
+      "id": "measurement-import",
+      "test": "scripts/test-study-measurements.ts",
+      "kind": "declared_observations_and_utc_pairing",
+      "scope": "Preserved independent observations; no calibration/field validation or overlap metrics."
     }
   ],
-  "engineVersion": "1.15.0"
+  "engineVersion": "1.16.0"
 }

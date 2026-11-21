@@ -10,7 +10,8 @@ export function validateInverterBlockEvidence(r:StudyResult,validate:(value:unkn
  if(!r.blockResults||r.blockResults.length!==blocks.length||!r.manifest.models.ac.startsWith('independent inverter blocks;'))fail();
  const children=r.blockResults!.map((raw,index)=>{
   const child=validate(raw),block=blocks[index];
-  const expected={...r.request,label:block.id,system:block.system,parameterProvenance:{source:block.source,quality:block.quality}};
+  const {measurements:_,...modelRequest}=r.request;
+  const expected={...modelRequest,label:block.id,system:block.system,parameterProvenance:{source:block.source,quality:block.quality}};
   if(stable(child.request)!==stable(expected)||child.manifest.engineVersion!==r.manifest.engineVersion||child.manifest.workerSha256!==r.manifest.workerSha256||child.manifest.requirementsSha256!==r.manifest.requirementsSha256||stable(child.manifest.dependencies)!==stable(r.manifest.dependencies))fail();
   for(const [key,value] of Object.entries(child.manifest.models))if(r.manifest.models[`block${index}.${key}`]!==value)fail();
   return child;

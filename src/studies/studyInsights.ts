@@ -187,6 +187,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
       count: null,
     },
   ];
+  for(const d of request.measurements??[])entries.push({component:`measurement:${d.id}:${d.modelPoint}`,source:d.source,quality:d.quality,count:d.records.length});
   if(request.weather.importTrace){const m=JSON.parse(request.weather.importTrace.rawManifest);entries.push({component:"weatherImport",source:m.source,quality:m.quality,count:request.weather.records.length});}
   for (const [component, value, count] of [
     ["cellTemperatureSchedule",s.cellTemperatureSchedule,s.cellTemperatureSchedule?.records.length],

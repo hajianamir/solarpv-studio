@@ -1,11 +1,9 @@
+import {studyTimestamp as timestamp} from './studyTime';
+import {MeasurementDatasetSchema,validateMeasurementContext} from './measurementContract';
 import {z} from 'zod';
 import {WeatherImportTraceSchema,validateWeatherImportTrace} from './declaredWeatherAdapter';
 const finite = (min:number,max:number) => z.number().finite().min(min).max(max);
 const provenance = z.object({source:z.string().min(1).max(500).refine(value=>Boolean(value.trim()),'Nonblank source required'),quality:z.enum(['measured','weather_provider','user_configured','assumed'])}).strict();
-const timestamp = z.string().regex(/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/).refine(value=>{
-  const day = new Date(`${value.slice(0,10)}T00:00:00Z`);
-  return Number.isFinite(Date.parse(value)) && Number.isFinite(day.getTime()) && day.toISOString().slice(0,10)===value.slice(0,10);
-},'Valid calendar timestamp and explicit UTC offset required');
 export const CellTemperatureRecordSchema=z.object({timestamp,cellTemperatureC:finite(-100,150)}).strict();
 export const SoilingRecordSchema=z.object({timestamp,frontRatio:finite(0,1),rearRatio:finite(0,1)}).strict();
 export const AlbedoRecordSchema=z.object({timestamp,albedo:finite(0,1)}).strict();
@@ -26,9 +24,11 @@ export const StudyRequestSchema = z.object({
   site:z.object({latitude:finite(-90,90),longitude:finite(-180,180),altitudeM:finite(-500,9000),timezone:z.string().min(1).max(100).refine(value=>{try{new Intl.DateTimeFormat('en',{timeZone:value});return true;}catch{return false;}},'IANA timezone required')}).strict(),
   system:systemSchema.extend({inverterBlocks:z.array(inverterBlockSchema).min(2).max(4).optional()}).strict(),
   weather:provenance.extend({importTrace:WeatherImportTraceSchema.optional(),windHeightM:z.literal(10),timestampConvention:z.literal('interval_end'),intervalMinutes:z.number().int().min(1).max(60),records:z.array(z.object({timestamp,ghiWm2:finite(0,2000),dniWm2:finite(0,2000),dhiWm2:finite(0,2000),tempAirC:finite(-90,70),windSpeedMs:finite(0,75)}).strict()).min(2).max(17568)}).strict(),
+  measurements:z.array(MeasurementDatasetSchema).min(1).max(4).optional(),
   parameterProvenance:provenance,
 }).strict().superRefine((request,ctx)=>{
   try{validateWeatherImportTrace(request.weather,request.site);}catch(e){ctx.addIssue({code:"custom",path:["weather","importTrace"],message:String(e)});}
+  try{validateMeasurementContext(request.measurements,request.site,request.weather);}catch(e){ctx.addIssue({code:"custom",path:["measurements"],message:String(e)});}
   validateInverterBlocks(request,ctx);
   const inputs=request.system.mpptInputs;
   if(inputs){

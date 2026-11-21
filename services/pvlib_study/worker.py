@@ -15,7 +15,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.15.0'
+ENGINE_VERSION = '1.16.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -62,6 +62,7 @@ def timestamp(value):
 
 def block_request(req, entry):
     child=copy.deepcopy(req)
+    child.pop('measurements',None)
     child['label']=entry['id']
     child['system']=copy.deepcopy(entry['system'])
     child['parameterProvenance']={key:entry[key] for key in ('source','quality')}
@@ -70,6 +71,7 @@ def block_request(req, entry):
 
 def mppt_request(req, entry):
     child=copy.deepcopy(req)
+    child.pop('measurements',None)
     system=child['system']
     for key in ('mpptInputs','acCable','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW','acExportLimitSchedule'):
         system.pop(key,None)
@@ -80,7 +82,7 @@ def mppt_request(req, entry):
 
 
 def validate(req):
-    keys(req, ['schemaVersion', 'label', 'site', 'system', 'weather', 'parameterProvenance'], 'study')
+    keys(req, ['schemaVersion', 'label', 'site', 'system', 'weather', 'parameterProvenance', *(['measurements'] if 'measurements' in req else [])], 'study')
     if req['schemaVersion'] != 'pvlib-study-v1':
         raise InputError('unsupported study schemaVersion')
     text(req['label'], 'label', 200)
@@ -341,8 +343,61 @@ def validate(req):
             if cost>8784:raise InputError('blocks support at most 8784 total block-MPPT intervals')
         if len(set(ids))!=len(ids):raise InputError('block ids must be unique')
         if abs(sum(b['system']['arrayPdc0W'] for b in blocks)-system['arrayPdc0W'])>1e-6 or abs(sum(b['system']['inverterPdc0W'] for b in blocks)-system['inverterPdc0W'])>1e-6:raise InputError('root capacities must equal block sums')
+    validate_measurements(req)
     validate_weather_trace(req)
     return times
+
+
+def validate_measurements(req):
+    if 'measurements' not in req:return
+    datasets=req['measurements'];weather=req['weather'];anchor=timestamp(weather['records'][0]['timestamp']);step=weather['intervalMinutes']*60000
+    if not isinstance(datasets,list) or not 1<=len(datasets)<=4:raise InputError('1..4 measurement datasets required')
+    ids=[];total=0
+    for d in datasets:
+        fields=['schemaVersion','id','source','sourceVersion','quality','sensorId','siteLatitude','siteLongitude','modelPoint','unit','intervalMinutes','timestampConvention','statistic','records']
+        keys(d,fields+(['importTrace'] if 'importTrace' in d else []),'measurement dataset')
+        if d['schemaVersion']!='study-measurements-v1' or not isinstance(d['id'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}',d['id']):raise InputError('invalid measurement schema/id')
+        ids.append(d['id'])
+        for key in ('source','sourceVersion'):text(d[key],key)
+        text(d['sensorId'],'sensorId',100)
+        if d['quality'] not in ('measured','user_configured','assumed'):raise InputError('explicit measurement provenance quality required')
+        number(d['siteLatitude'],-90,90,'measurement latitude');number(d['siteLongitude'],-180,180,'measurement longitude')
+        if d['siteLatitude']!=req['site']['latitude'] or d['siteLongitude']!=req['site']['longitude']:raise InputError('measurement site differs')
+        number(d['intervalMinutes'],1,60,'measurement intervalMinutes')
+        if d['intervalMinutes']!=weather['intervalMinutes'] or d['timestampConvention']!='interval_end' or d['statistic']!='interval_mean':raise InputError('measurement interval semantics differ; no resampling')
+        point=d['modelPoint'];temperature=point=='reference_cell_temperature'
+        if point not in ('plant_export','plant_import','plant_net_grid','array_dc_terminal','reference_cell_temperature') or (d['unit']!='degC' if temperature else d['unit'] not in ('W','kW')):raise InputError('measurement point/unit mismatch')
+        records=d['records']
+        if not isinstance(records,list) or not 1<=len(records)<=17568:raise InputError('1..17568 explicit measurement records required')
+        total+=len(records);times=[]
+        if total>17568:raise InputError('at most 17568 measurement records total')
+        for row in records:
+            keys(row,['timestamp','value','qualityFlag']+(['reason'] if 'reason' in row else []),'measurement record')
+            t=timestamp(row['timestamp']);times.append(t);delta=t-anchor;ms=(delta.days*86400+delta.seconds)*1000+delta.microseconds//1000
+            if ms%step!=0:raise InputError('measurement timestamps differ from weather grid; no shift')
+            flag=row['qualityFlag']
+            if flag not in ('valid','excluded','missing') or ((flag=='missing')!=(row['value'] is None)):raise InputError('only missing measurements have null values')
+            if flag!='valid' or 'reason' in row:text(row.get('reason'),'measurement reason')
+            if row['value'] is not None:
+                number(row['value'],-1e9,1e9,'measurement value');n=row['value']*(1000 if d['unit']=='kW' else 1)
+                number(n,-1e9,1e9,'normalized measurement value')
+                if flag=='valid' and ((temperature and not -100<=n<=150) or (not temperature and point!='plant_net_grid' and n<0)):raise InputError('valid measurement outside point domain')
+        if any(b<=a for a,b in zip(times,times[1:])) or times[-1]-times[0]+timedelta(minutes=d['intervalMinutes'])>timedelta(days=366) or (times[0]-timedelta(minutes=d['intervalMinutes'])).year<1900 or times[-1].year>2200:raise InputError('ordered unique supported measurement period required')
+        if 'importTrace' in d:
+            tr=d['importTrace'];keys(tr,['schemaVersion','rawCsv','rawCsvSha256'],'measurement CSV trace')
+            raw=tr['rawCsv']
+            if tr['schemaVersion']!='measurement-csv-receipt-v1' or not isinstance(raw,str) or len(raw.encode())>2*1024*1024 or hashlib.sha256(raw.encode()).hexdigest()!=tr['rawCsvSha256']:raise InputError('measurement CSV size/hash mismatch')
+            lines=raw.removeprefix('\ufeff').split('\n')
+            lines=[line[:-1] if line.endswith('\r') else line for line in lines]
+            if lines[-1]=='':lines.pop()
+            if not lines or lines[0]!='timestamp,value,qualityFlag,reason' or len(lines)!=len(records)+1:raise InputError('measurement CSV header/count mismatch')
+            for line,row in zip(lines[1:],records):
+                c=line.split(',')
+                if len(c)!=4 or c[0]!=row['timestamp'] or c[2]!=row['qualityFlag'] or c[3]!=row.get('reason',''):raise InputError('measurement CSV differs from records')
+                if c[1]=='':
+                    if row['value'] is not None:raise InputError('missing measurement CSV value is not zero')
+                elif not re.fullmatch(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?',c[1].strip()) or not math.isfinite(float(c[1])) or float(c[1])!=row['value']:raise InputError('measurement CSV value mismatch')
+    if len(set(ids))!=len(ids):raise InputError('measurement ids must be unique')
 
 
 def validate_weather_trace(req):
@@ -794,6 +849,7 @@ def run_study(req):
         ])
     if plant_active:
         limitations=[x.replace('netGridWh subtracts imported self-consumption','netGridWh subtracts total grid imports after AC plant').replace('No local load/storage.','No external site load/storage beyond declared plant auxiliary.').replace('assumes no local consumption/storage','assumes no external local consumption/storage beyond declared plant auxiliary') for x in limitations]
+    if 'measurements' in req:limitations.append('Measurements are retained declared observations only, not physical-model inputs, calibration or field validation. Quality flags are caller declarations; no fill/resampling or automatic parameter fitting. Exact UTC interval pairing is a separate read-only view; overlap/error statistics are not computed by this engine.')
     export_columns={}
     if 'acExportLimitW' in s or 'acExportLimitSchedule' in s:
         before_export=ac.copy()

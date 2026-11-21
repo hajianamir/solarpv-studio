@@ -1,3 +1,5 @@
+import {MeasurementImporter} from "./MeasurementImporter";
+import type {MeasurementDataset} from "../studies/measurementContract";
 import {DeclaredWeatherImporter} from "./DeclaredWeatherImporter";
 import {type WeatherImportTrace} from "../studies/declaredWeatherAdapter";
 import { StudyInsights } from "./StudyInsights";
@@ -129,6 +131,7 @@ export function StudyBuilder({
     [],
   );
   const [v, setV] = useState<Values>({});
+  const [measurements,setMeasurements]=useState<MeasurementDataset[]>([]);
   const [records, setRecords] = useState<StudyRequest["weather"]["records"]>(
     [],
   );
@@ -139,6 +142,7 @@ export function StudyBuilder({
   useEffect(() => {
     csvRevision.current++;
     const r = request;
+    setMeasurements(r?.measurements ?? []);
     setV(
       r
         ? {
@@ -1166,6 +1170,7 @@ export function StudyBuilder({
         </label>
         <DeclaredWeatherImporter site={{latitude,longitude,altitudeM:Number(v.altitudeM),timezone:v.timezone ?? ""}} onDirty={()=>{onDirty();setReview(null);setConfirmed(false);}} onApply={weather=>{csvRevision.current++;setRecords(weather.records);setImportTrace(weather.importTrace);setV(old=>({...old,weatherSource:weather.source,weatherQuality:weather.quality,intervalMinutes:String(weather.intervalMinutes)}));setReview(null);setConfirmed(false);setError("");onDirty();}}/>
         {importTrace&&<p data-testid="weather-import-trace">Declared weather raw package retained · {importTrace.rawCsvSha256}<button type="button" onClick={()=>{setImportTrace(undefined);setReview(null);onDirty();}}>Detach import trace (explicit canonical edit)</button></p>}
+        <MeasurementImporter datasets={measurements} site={{latitude,longitude}} weather={{intervalMinutes:Number(v.intervalMinutes),records}} onDirty={()=>{onDirty();setReview(null);}} onChange={values=>{setMeasurements(values);setReview(null);setError("");onDirty();}}/>
         <p className="text-xs">
           {records.length}{" "}
           {en
@@ -1377,6 +1382,7 @@ export function StudyBuilder({
                     deltaT: number("deltaT"),
                   },
                 },
+                ...(measurements.length ? {measurements} : {}),
                 parameterProvenance: {
                   source: v.parameterSource,
                   quality: v.parameterQuality,
@@ -1441,6 +1447,7 @@ export function StudyBuilder({
                 {review.system.horizonProfile?.points.length}
               </p>
             )}
+            {review.measurements&&<p data-testid="measurements-review">Independent observations: {review.measurements.length} dataset(s), {review.measurements.reduce((n,d)=>n+d.records.length,0)} records. Not model inputs or field validation.</p>}
             {review.system.acExportLimitSchedule && <p data-testid="export-schedule-review">Explicit interval export cap W: {review.system.acExportLimitSchedule.records.length} · {review.system.acExportLimitSchedule.source} · {review.system.acExportLimitSchedule.quality}. After plant; imports unaffected; no DC feedback.</p>}
             {review.system.auxiliarySchedule && <p data-testid="auxiliary-schedule-review">LV auxiliary interval-average W: {review.system.auxiliarySchedule.records.length} · {review.system.auxiliarySchedule.source} · {review.system.auxiliarySchedule.quality}. Applied before transformer, including night and zero availability; excludes inverter internal consumption.</p>}
             {review.system.acAvailability && (
