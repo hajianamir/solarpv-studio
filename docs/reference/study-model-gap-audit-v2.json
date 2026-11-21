@@ -192,7 +192,7 @@
         "kind": "independent_equation"
       },
       "modeled": "Interval energy, UTC midpoint months, constant or interval export cap with per-sample/summary/monthly guards.",
-      "gap": "No measurement comparison, calibration, P50/P90 or automatic annualization; interval cap is not subinterval dispatch.",
+      "gap": "Read-only measurement comparison and bounded empirical output gain are available, not physical parameter calibration or field certification. P50/P90 is conditional on a caller-sourced lognormal budget, not verified uncertainty; no automatic annualization, multi-year model or subinterval dispatch.",
       "domain": "Strict request schema + worker validation; see modeled/gap and named boundary tests.",
       "tolerance": "Assertion-specific explicit tolerances in named versioned test; not a field uncertainty.",
       "source": "pvlib 0.13.1 documented equations and independently coded tests; published-point evidence identified by kind."
@@ -348,7 +348,20 @@
       "test": "scripts/test-measurement-periods.ts",
       "kind": "derived_utc_period_analysis",
       "scope": "UTC midpoint range/daily/monthly residual metrics and safe CSV. No resampling, calibration or field validation."
+    },
+    {
+      "id": "validation-tools",
+      "test": "scripts/test-study-validation.ts",
+      "kind": "conditional_calibration_uncertainty_and_evidence",
+      "scope": "Empirical bounded output gain with temporal holdout; lognormal exceedance from declared CV/correlation; caller-evidence criteria gates. Never field certification or physical parameter calibration."
     }
   ],
-  "engineVersion": "1.16.0"
+  "engineVersion": "1.16.0",
+  "operationalValidationStatus": {
+    "fieldCampaign": "pending_real_data_and_independent_review",
+    "physicalParameterCalibration": "not_implemented",
+    "empiricalOutputGain": "available_with_disjoint_holdout",
+    "p50p90": "conditional_lognormal_budget_only",
+    "phasePlan": "docs/PVLIB-NEXT-PHASES.fa.md"
+  }
 }
