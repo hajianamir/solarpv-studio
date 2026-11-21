@@ -25,7 +25,7 @@
     "test:remediation": "tsx scripts/verify-audit-remediation.ts",
     "test:gateway": "tsx scripts/test-data-gateway-regressions.ts",
     "test:redis-distributed": "tsx scripts/test-real-redis-distributed-gate.ts",
-    "test:study:workflow": "tsx scripts/test-study-workflow.ts && tsx scripts/test-study-insights.ts && tsx scripts/test-study-explorer.ts && tsx scripts/test-study-balanced.ts && tsx scripts/test-study-dc-cable.ts && tsx scripts/test-study-multi-mppt.ts && tsx scripts/test-study-reaudit.ts && tsx scripts/test-study-inverter-blocks.ts && tsx scripts/test-study-auxiliary-schedule.ts && tsx scripts/test-study-export-limit-schedule.ts && tsx scripts/test-study-measurements.ts && tsx scripts/test-measurement-comparison.ts && tsx scripts/test-study-review-30-40.ts && tsx scripts/test-study-contract-matrix.ts",
+    "test:study:workflow": "tsx scripts/test-study-workflow.ts && tsx scripts/test-study-insights.ts && tsx scripts/test-study-explorer.ts && tsx scripts/test-study-balanced.ts && tsx scripts/test-study-dc-cable.ts && tsx scripts/test-study-multi-mppt.ts && tsx scripts/test-study-reaudit.ts && tsx scripts/test-study-inverter-blocks.ts && tsx scripts/test-study-auxiliary-schedule.ts && tsx scripts/test-study-export-limit-schedule.ts && tsx scripts/test-study-measurements.ts && tsx scripts/test-measurement-comparison.ts && tsx scripts/test-measurement-periods.ts && tsx scripts/test-study-review-30-40.ts && tsx scripts/test-study-contract-matrix.ts",
     "test:study": "tsx scripts/test-direct-pvlib-study.ts",
     "test:study:browser": "tsx scripts/test-direct-pvlib-browser.ts && tsx scripts/test-study-storage-browser.ts",
     "test:study:python": "python -m unittest discover -s services/pvlib_study/tests -v",

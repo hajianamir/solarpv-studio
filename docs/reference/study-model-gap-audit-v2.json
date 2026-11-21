@@ -309,7 +309,8 @@
     39,
     40,
     41,
-    42
+    42,
+    43
   ],
   "nonNumericalEvidence": [
     {
@@ -341,6 +342,12 @@
       "test": "scripts/test-measurement-comparison.ts",
       "kind": "derived_overlap_and_error_statistics",
       "scope": "Read-only exact UTC valid-pair coverage/MBE/MAE/RMSE and matched power energy, independent hand/published/Python arithmetic witnesses. No field validation or calibration."
+    },
+    {
+      "id": "measurement-periods",
+      "test": "scripts/test-measurement-periods.ts",
+      "kind": "derived_utc_period_analysis",
+      "scope": "UTC midpoint range/daily/monthly residual metrics and safe CSV. No resampling, calibration or field validation."
     }
   ],
   "engineVersion": "1.16.0"

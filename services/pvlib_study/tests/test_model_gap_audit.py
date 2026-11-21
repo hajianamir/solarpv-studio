@@ -19,7 +19,7 @@ class ModelGapAuditTests(unittest.TestCase):
         self.assertEqual(audit['schemaVersion'], 'study-model-gap-audit-v2')
         self.assertFalse(audit['fieldValidation'])
         self.assertEqual(audit['engineVersion'],worker.ENGINE_VERSION)
-        self.assertEqual(audit['completedEngineeringSteps'],list(range(30,43)))
+        self.assertEqual(audit['completedEngineeringSteps'],list(range(30,44)))
         self.assertEqual(audit['pendingSteps'],[])
         self.assertEqual(len({m['id'] for m in audit['models']}), 18)
         for model in audit['models']:
