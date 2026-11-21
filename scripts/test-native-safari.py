@@ -134,6 +134,7 @@ def main():
     except Exception as exc:
         receipt.update(status='FAIL', error=str(exc))
         if driver:
+            print('FAILURE PAGE TEXT: ' + driver.find_element(By.TAG_NAME, 'body').text[-18000:], file=sys.stderr)
             driver.save_screenshot(str(evidence / 'failure.png'))
         raise
     finally:

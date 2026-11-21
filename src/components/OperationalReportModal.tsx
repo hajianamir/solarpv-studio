@@ -148,8 +148,10 @@ export function OperationalReportModal({
     const a = document.createElement("a");
     a.href = url;
     a.download = name;
+    document.body.appendChild(a);
     a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
   const run = async (action: () => Promise<unknown> | unknown) => {
     try {

@@ -293,7 +293,9 @@ try {
     }
     for (const kind of ["HTML", "Word", "Excel", "PDF"]) {
       console.log(`Download contract: ${engine} / ${mode} / ${kind}`);
-      const event = page.waitForEvent("download");
+      const event = page.waitForEvent("download").catch(async (e) => {
+        throw new Error(`${engine}/${mode}/${kind}: ${String(e)}; alerts=${await report.locator('[role="alert"]').allTextContents()}; pageErrors=${errors.join(";")}`);
+      });
       await report
         .getByRole("button", {
           name: `Download operational ${kind}`,
