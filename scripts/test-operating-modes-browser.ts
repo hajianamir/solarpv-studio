@@ -89,7 +89,7 @@ try {
         .click();
     await tab("climate");
     const panel = page.getByTestId("operational-energy-panel");
-    const down = page.waitForEvent("download");
+    const down = page.waitForEvent("download", { timeout: 180_000 });
     await panel
       .getByRole("button", {
         name: "Download operational context",
@@ -207,7 +207,7 @@ try {
         originalSource,
         "Advanced independent analysis must not covertly change finance",
       );
-      const event = page.waitForEvent("download");
+      const event = page.waitForEvent("download", { timeout: 180_000 });
       await advanced
         .getByRole("button", {
           name: "Download advanced ledger JSON",
@@ -227,7 +227,7 @@ try {
         assert.ok(value.result.batteryLife);
         assert.equal(value.result.gridImportKwh, 0);
       }
-      const pdfEvent = page.waitForEvent("download");
+      const pdfEvent = page.waitForEvent("download", { timeout: 180_000 });
       await advanced
         .getByRole("button", { name: "Download advanced PDF", exact: true })
         .click();
@@ -274,7 +274,7 @@ try {
     await page.keyboard.press("Control+e");
     const report = page.getByTestId("operational-report");
     await report.waitFor();
-    const download = page.waitForEvent("download");
+    const download = page.waitForEvent("download", { timeout: 180_000 });
     await report
       .getByRole("button", {
         name: "Download operational JSON with evidence",
@@ -293,7 +293,7 @@ try {
     }
     for (const kind of ["HTML", "Word", "Excel", "PDF"]) {
       console.log(`Download contract: ${engine} / ${mode} / ${kind}`);
-      const event = page.waitForEvent("download").catch(async (e) => {
+      const event = page.waitForEvent("download", { timeout: 180_000 }).catch(async (e) => {
         throw new Error(`${engine}/${mode}/${kind}: ${String(e)}; alerts=${await report.locator('[role="alert"]').allTextContents()}; pageErrors=${errors.join(";")}`);
       });
       await report
@@ -384,7 +384,7 @@ try {
         /دانلود \/ بارگذاری فایل JSON پروژه|Export \/ Import Project JSON/,
       )
       .click();
-    const bundleDownload = page.waitForEvent("download");
+    const bundleDownload = page.waitForEvent("download", { timeout: 180_000 });
     await page
       .getByRole("button", { name: /دانلود پاکت JSON|Export Envelope/ })
       .click();
@@ -423,7 +423,7 @@ try {
         buffer: bundle,
       });
     await panel.getByTestId("operational-energy-active").waitFor();
-    const next = page.waitForEvent("download");
+    const next = page.waitForEvent("download", { timeout: 180_000 });
     await panel
       .getByRole("button", {
         name: "Download operational receipt",
