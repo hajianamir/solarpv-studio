@@ -13,7 +13,7 @@ const request=StudyRequestSchema.parse(raw);
 for(const patch of [{topology:'one_way'},{source:''},{quality:'verified'},{stringLoopResistanceOhm:-1},{sharedLoopResistanceOhm:NaN},{extra:true}]){const r=structuredClone(raw);Object.assign(r.system.electrical.dcCable,patch);assert.equal(StudyRequestSchema.safeParse(r).success,false);}
 const double=structuredClone(raw);double.system.additionalDcLossPct=1;assert.equal(StudyRequestSchema.safeParse(double).success,false);
 function run(req:typeof request){const out=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(req),encoding:'utf8',maxBuffer:16*1024*1024});assert.equal(out.status,0,out.stderr);return validateResult(JSON.parse(out.stdout));}
-const out=run(request);assert.equal(out.manifest.engineVersion,'1.13.0');assert.ok(out.summary.dcCableLossWh!>0);
+const out=run(request);assert.equal(out.manifest.engineVersion,'1.14.0');assert.ok(out.summary.dcCableLossWh!>0);
 const explored=exploreStudy(out);assert.ok(Math.abs(explored.totalsWhOrWhm2!.dcCableLossWh-out.summary.dcCableLossWh!)<1e-7);assert.ok(dailyExplorerCsv(out).includes('dcCableLossWh'));
 assert.equal(sourceLedger(request,out).entries.find(v=>v.component==='dcCable')!.source,request.system.electrical!.dcCable!.source);
 const snapshot=validateSnapshot({version:1,id:'00000000-0000-4000-8000-000000000035',savedAt:'2026-11-03T00:00:00Z',request,result:out});

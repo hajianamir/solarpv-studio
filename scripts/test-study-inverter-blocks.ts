@@ -11,7 +11,7 @@ raw.system.inverterBlocks=JSON.parse(readFileSync('docs/examples/inverter-blocks
 raw.system.additionalDcLossPct=0;raw.system.arrayPdc0W=raw.system.inverterBlocks.reduce((n:number,b:{system:{arrayPdc0W:number}})=>n+b.system.arrayPdc0W,0);raw.system.inverterPdc0W=raw.system.inverterBlocks.reduce((n:number,b:{system:{inverterPdc0W:number}})=>n+b.system.inverterPdc0W,0);
 const request=StudyRequestSchema.parse(raw);
 function run(req:typeof request){const result=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(req),encoding:'utf8',maxBuffer:16*1024*1024});assert.equal(result.status,0,result.stderr);return validateResult(JSON.parse(result.stdout));}
-const out=run(request);assert.equal(out.blockResults!.length,2);assert.equal(out.manifest.engineVersion,'1.13.0');assert.equal('operatingVoltageV' in out.samples[0],false);
+const out=run(request);assert.equal(out.blockResults!.length,2);assert.equal(out.manifest.engineVersion,'1.14.0');assert.equal('operatingVoltageV' in out.samples[0],false);
 assert.ok(Math.abs(exploreStudy(out).totalsWhOrWhm2!.acWh-out.summary.acWh)<1e-7);assert.equal(sourceLedger(request,out).entries.filter(e=>e.component.startsWith('inverterBlock:')).length,2);
 const snapshot=validateSnapshot({version:1,id:'00000000-0000-4000-8000-000000000037',savedAt:'2026-11-03T00:00:00Z',request,result:out});assert.deepEqual((await validateStudyBundle(JSON.parse(JSON.stringify(await makeStudyBundle([snapshot]))))).snapshots[0],snapshot);
 assert.deepEqual(cloneStudyInputs(snapshot,'Block clone','00000000-0000-4000-8000-000000000038',snapshot.savedAt).request.system.inverterBlocks,request.system.inverterBlocks);

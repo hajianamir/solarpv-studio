@@ -9,6 +9,7 @@ import {
   parseWeatherCsv,
   parseAvailabilityCsv,
   parseAuxiliaryCsv,
+  parseExportLimitCsv,
   parseHorizonCsv,
   parseSoilingCsv,
   parseAlbedoCsv,
@@ -180,7 +181,10 @@ export function StudyBuilder({
               : "",
             u0: r.system.faiman ? String(r.system.faiman.u0) : "",
             u1: r.system.faiman ? String(r.system.faiman.u1) : "",
-            exportEnabled: r.system.acExportLimitW !== undefined ? "yes" : "no",
+            exportEnabled: r.system.acExportLimitSchedule ? "schedule" : r.system.acExportLimitW !== undefined ? "yes" : "no",
+            exportScheduleSource:r.system.acExportLimitSchedule?.source ?? "",
+            exportScheduleQuality:r.system.acExportLimitSchedule?.quality ?? "",
+            exportScheduleCsv:r.system.acExportLimitSchedule ? ["timestamp,limitW",...r.system.acExportLimitSchedule.records.map(row=>`${row.timestamp},${row.limitW}`)].join("\n") : "",
             acExportLimitW:
               r.system.acExportLimitW !== undefined
                 ? String(r.system.acExportLimitW)
@@ -1030,21 +1034,22 @@ export function StudyBuilder({
             </div>
           )}
           <label>
-            {en ? "Constant AC export cap" : "سقف ثابت صادرات AC"}
+            {en ? "AC export cap" : "سقف صادرات AC"}
             <select
               aria-label="Study export enabled"
               value={v.exportEnabled ?? "no"}
               onChange={(e) => change("exportEnabled", e.target.value)}
             >
               <option value="no">{en ? "Disabled" : "غیرفعال"}</option>
-              <option value="yes">{en ? "Enabled" : "فعال"}</option>
+              <option value="yes">{en ? "Constant W" : "توان ثابت"}</option>
+              <option value="schedule">{en ? "Interval schedule" : "برنامهٔ بازه‌ای"}</option>
             </select>
           </label>
           {v.exportEnabled === "yes" && (
             <div>
               <p>
                 {en
-                  ? "After inverter; assumes no local load or storage. Zero means no export. No DC feedback or grid dynamics."
+                  ? "After inverter and declared AC plant; no external local load or storage. Zero means no export; imports remain. No DC feedback or grid dynamics."
                   : "پس از اینورتر؛ بدون بار محلی یا ذخیره‌ساز. صفر یعنی بدون صادرات. بدون بازخورد DC یا دینامیک شبکه."}
               </p>
               {text(
@@ -1052,6 +1057,48 @@ export function StudyBuilder({
                 en ? "AC export limit (W)" : "حد صادرات AC (W)",
                 "number",
               )}
+            </div>
+          )}
+          {v.exportEnabled === "schedule" && (
+            <div>
+              {text("exportScheduleSource", "Export cap schedule source / منبع")}
+              <label>
+                Export cap schedule quality
+                <select
+                  aria-label="Study exportScheduleQuality"
+                  value={v.exportScheduleQuality ?? ""}
+                  onChange={(e) =>
+                    change("exportScheduleQuality", e.target.value)
+                  }
+                >
+                  <option value="">—</option>
+                  {[
+                    "measured",
+                    "weather_provider",
+                    "user_configured",
+                    "assumed",
+                  ].map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                CSV: timestamp,limitW
+                <textarea
+                  aria-label="Study exportSchedule CSV"
+                  className="block w-full bg-slate-900"
+                  rows={5}
+                  value={v.exportScheduleCsv ?? ""}
+                  onChange={(e) => change("exportScheduleCsv", e.target.value)}
+                />
+              </label>
+              <p>
+                {en
+                  ? "Paste complete plain CSV with the exact weather interval-end timeline, explicit UTC offsets and nonnegative export limits W. No missing interval is filled."
+                  : "CSV کامل و ساده با خط زمان پایان بازه دقیقاً مطابق هواشناسی، offset صریح و سقف صادرات غیرمنفی به وات وارد کنید؛ هیچ بازه مفقود پر نمی‌شود."}
+              </p>
             </div>
           )}
           {fields.map(([key, label]) => text(key, label, "number"))}
@@ -1258,6 +1305,7 @@ export function StudyBuilder({
                         },
                       }
                     : {}),
+                  ...(v.exportEnabled === "schedule" ? {acExportLimitSchedule:{source:v.exportScheduleSource,quality:v.exportScheduleQuality,records:parseExportLimitCsv(v.exportScheduleCsv ?? "")}} : {}),
                   ...(v.exportEnabled === "yes"
                     ? { acExportLimitW: number("acExportLimitW") }
                     : {}),
@@ -1375,6 +1423,7 @@ export function StudyBuilder({
                 {review.system.horizonProfile?.points.length}
               </p>
             )}
+            {review.system.acExportLimitSchedule && <p data-testid="export-schedule-review">Explicit interval export cap W: {review.system.acExportLimitSchedule.records.length} · {review.system.acExportLimitSchedule.source} · {review.system.acExportLimitSchedule.quality}. After plant; imports unaffected; no DC feedback.</p>}
             {review.system.auxiliarySchedule && <p data-testid="auxiliary-schedule-review">LV auxiliary interval-average W: {review.system.auxiliarySchedule.records.length} · {review.system.auxiliarySchedule.source} · {review.system.auxiliarySchedule.quality}. Applied before transformer, including night and zero availability; excludes inverter internal consumption.</p>}
             {review.system.acAvailability && (
               <p data-testid="availability-review">

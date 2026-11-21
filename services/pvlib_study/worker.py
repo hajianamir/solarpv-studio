@@ -15,7 +15,7 @@ import re
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_RECORDS = 17568
-ENGINE_VERSION = '1.13.0'
+ENGINE_VERSION = '1.14.0'
 MODELS = dict(solarPosition='nrel_numpy; delta_t=67 s; atmos_refract=0.5667 deg (fixed assumptions)', pressure='alt2pres standard atmosphere from altitude',
               transposition='haydavies', extraterrestrial='spencer; solar_constant=1366.1 W/m2', beamIam='ashrae',
               diffuseIam='unity assumption', temperature='sapm_cell', dc='pvwatts_dc',
@@ -71,7 +71,7 @@ def block_request(req, entry):
 def mppt_request(req, entry):
     child=copy.deepcopy(req)
     system=child['system']
-    for key in ('mpptInputs','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW'):
+    for key in ('mpptInputs','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW','acExportLimitSchedule'):
         system.pop(key,None)
     for key in ('surfaceTiltDeg','surfaceAzimuthDeg','arrayPdc0W','electrical'):
         system[key]=copy.deepcopy(entry[key])
@@ -97,7 +97,7 @@ def validate(req):
     bounds = dict(surfaceTiltDeg=(0, 90), surfaceAzimuthDeg=(0, 360), albedo=(0, 1), arrayPdc0W=(1, 1e9),
                   gammaPdcPerC=(-.01, 0), inverterPdc0W=(1, 1e9), inverterEtaNom=(.8, .995),
                   inverterEtaRef=(.8, 1), iamB=(0, 1), additionalDcLossPct=(0, 100))
-    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','horizonProfile','soilingSchedule','albedoSchedule','pvsystTemperature','cellTemperatureSchedule','mpptInputs','inverterBlocks') if k in system])], 'system')
+    keys(system, [*bounds, 'temperature', *(['tracking'] if 'tracking' in system else []), *(['rowIrradiance'] if 'rowIrradiance' in system else []), *(['electrical'] if 'electrical' in system else []), *(['faiman'] if 'faiman' in system else []), *(['acExportLimitW'] if 'acExportLimitW' in system else []), *(['sandia'] if 'sandia' in system else []), *([k for k in ('skyDiffuseModel','physicalIam','sapmSpectral','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitSchedule','horizonProfile','soilingSchedule','albedoSchedule','pvsystTemperature','cellTemperatureSchedule','mpptInputs','inverterBlocks') if k in system])], 'system')
     if sum(k in system for k in ('faiman','pvsystTemperature','cellTemperatureSchedule'))>1:raise InputError('Thermal opt-ins are mutually exclusive; no fallback')
     if 'pvsystTemperature' in system:
         p=system['pvsystTemperature'];keys(p,['source','quality','uc','uv','moduleEfficiency','alphaAbsorption','windHeightM'],'pvsystTemperature');text(p['source'],'pvsystTemperature.source')
@@ -137,6 +137,15 @@ def validate(req):
         number(t['noLoadLossFraction'],0,.1,'transformer.noLoadLossFraction')
         number(t['loadLossFraction'],0,.1,'transformer.loadLossFraction')
     if 'auxiliaryPowerW' in system:number(system['auxiliaryPowerW'],0,1e9,'auxiliaryPowerW')
+    if 'acExportLimitSchedule' in system:
+        if 'acExportLimitW' in system:raise InputError('choose constant acExportLimitW OR acExportLimitSchedule, never both')
+        a=system['acExportLimitSchedule']
+        keys(a,['source','quality','records'],'acExportLimitSchedule')
+        text(a['source'],'acExportLimitSchedule.source')
+        if a['quality'] not in ('measured','weather_provider','user_configured','assumed'):raise InputError('invalid export cap provenance quality')
+        if not isinstance(a['records'],list) or not 2<=len(a['records'])<=8784:raise InputError('export cap schedule requires 2..8784 explicit records')
+        for row in a['records']:
+            keys(row,['timestamp','limitW'],'export cap record');timestamp(row['timestamp']);number(row['limitW'],0,1e9,'export cap limitW')
     if 'auxiliarySchedule' in system:
         if 'auxiliaryPowerW' in system:raise InputError('choose constant auxiliaryPowerW OR auxiliarySchedule, never both')
         a=system['auxiliarySchedule']
@@ -283,6 +292,10 @@ def validate(req):
     if (times[0]-timedelta(minutes=dt)).year < 1900 or times[-1].year > 2200 or times[-1]-times[0]+timedelta(minutes=dt) > timedelta(days=366):
         raise InputError('supported period: 1900..2200, at most 366 days')
     if any(k in system for k in ('transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability')) and len(rows)>8784:raise InputError('AC plant mode supports at most 8784 records')
+    if 'acExportLimitSchedule' in system:
+        records=system['acExportLimitSchedule']['records']
+        if len(rows)>8784:raise InputError('export cap schedule supports at most 8784 records')
+        if len(records)!=len(times) or any(timestamp(r['timestamp'])!=t for r,t in zip(records,times)):raise InputError('export cap records must exactly align with weather interval ends in UTC; no fill')
     if 'auxiliarySchedule' in system:
         records=system['auxiliarySchedule']['records']
         if len(records)!=len(times) or any(timestamp(r['timestamp'])!=t for r,t in zip(records,times)):raise InputError('auxiliary records must exactly align with weather interval ends in UTC; no fill')
@@ -317,7 +330,7 @@ def validate(req):
             keys(entry,['id','source','quality','system'],'inverter block')
             if not isinstance(entry['id'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}',entry['id']):raise InputError('block id must be ASCII identifier')
             ids.append(entry['id']);child=entry['system']
-            if not isinstance(child,dict) or any(key in child for key in ('inverterBlocks','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW')) or child.get('additionalDcLossPct')!=0:raise InputError('no nested blocks or child plant/export; block additionalDcLossPct must be zero')
+            if not isinstance(child,dict) or any(key in child for key in ('inverterBlocks','transformer','auxiliaryPowerW','auxiliarySchedule','acAvailability','acExportLimitW','acExportLimitSchedule')) or child.get('additionalDcLossPct')!=0:raise InputError('no nested blocks or child plant/export; block additionalDcLossPct must be zero')
             validate(block_request(req,entry))
             cost+=len(child.get('mpptInputs',[None]))*len(rows)
             if cost>8784:raise InputError('blocks support at most 8784 total block-MPPT intervals')
@@ -730,12 +743,14 @@ def run_study(req):
     if plant_active:
         limitations=[x.replace('netGridWh subtracts imported self-consumption','netGridWh subtracts total grid imports after AC plant').replace('No local load/storage.','No external site load/storage beyond declared plant auxiliary.').replace('assumes no local consumption/storage','assumes no external local consumption/storage beyond declared plant auxiliary') for x in limitations]
     export_columns={}
-    if 'acExportLimitW' in s:
+    if 'acExportLimitW' in s or 'acExportLimitSchedule' in s:
         before_export=ac.copy()
-        ac=ac.clip(upper=s['acExportLimitW'])
+        cap=pd.Series([r['limitW'] for r in s['acExportLimitSchedule']['records']],index=ac.index,dtype=float) if 'acExportLimitSchedule' in s else float(s['acExportLimitW'])
+        ac=ac.clip(upper=cap)
         export_columns=dict(acBeforeExportLimitW=before_export,acExportLimitLossW=before_export-ac)
-        models['acExport']='constant export cap after inverter; no local load or storage; no DC feedback'
-        limitations.append('Static AC export cap acts after the optional AC plant; it does not limit imports. It assumes no external site load/storage beyond any declared LV auxiliary, and no controller dynamics, reactive power, grid voltage or time-varying dispatch; inverter clipping is already upstream and is not counted twice.')
+        if 'acExportLimitSchedule' in s:export_columns['appliedAcExportLimitW']=cap
+        models['acExport']='explicit interval export cap after plant; no fill; no DC feedback' if 'acExportLimitSchedule' in s else 'constant export cap after inverter; no local load or storage; no DC feedback'
+        limitations.append('Declared AC export cap (constant or explicit per interval) acts after the optional AC plant; it does not limit imports. It assumes no external site load/storage beyond any declared LV auxiliary, and no controller dynamics, reactive power, grid voltage or dynamic dispatch; inverter clipping is already upstream and is not counted twice.')
     columns = dict(**environment_columns,**plant_columns,**spectral_columns,**inverter_columns,**export_columns,surfaceTiltDeg=tilt, surfaceAzimuthDeg=azimuth, **tracker_columns, **row_columns, **electrical_columns, solarZenithDeg=position.apparent_zenith, solarAzimuthDeg=position.azimuth, aoiDeg=aoi,
         beamIam=iam, poaDirectWm2=poa.poa_direct, poaSkyDiffuseWm2=poa.poa_sky_diffuse,
         poaGroundDiffuseWm2=poa.poa_ground_diffuse, poaGlobalWm2=poa.poa_global,
@@ -751,7 +766,7 @@ def run_study(req):
     if 'sandia' in s or 'inverterBlocks' in s:
         energy['inverterSelfConsumptionWh']=inverter_columns['inverterSelfConsumptionW']*dt_hours
         if not plant_active:energy['netGridWh']=(ac-inverter_columns['inverterSelfConsumptionW'])*dt_hours
-    if 'acExportLimitW' in s:
+    if 'acExportLimitW' in s or 'acExportLimitSchedule' in s:
         energy['acBeforeExportLimitWh']=before_export*dt_hours
         energy['acExportLimitLossWh']=(before_export-ac)*dt_hours
     if 'electrical' in s or 'mpptInputs' in s:
@@ -786,7 +801,7 @@ def run_study(req):
             python=platform.python_version(), platform=platform.platform(), dependencies=dependencies,
             period=dict(startUtc=iso(start),endUtc=iso(times[-1]),intervalMinutes=w['intervalMinutes'],intervalCount=len(times),
                         completeUtcCalendarYear=annual, monthlyAllocation='interval midpoint UTC month'),
-            units=dict(**(dict(inverterSelfConsumptionWh='gross inverter internal consumption Wh before AC netting; diagnostic, not additional grid import',inverterGrossGenerationW='sum of positive block AC before internal-consumption netting; availability derates this positive-generation component only') if 'inverterBlocks' in s else {}),**(dict(environmentIrradiance='W/m2; integrated Wh/m2; optical diagnostics, not DC energy losses',usedAlbedo='broadband fraction 0..1',soilingRatios='optical transmission fractions 0..1; rear inactive without rows',horizonBeamVisible='binary apparent solar elevation greater than interpolated horizon') if any(k in s for k in ('horizonProfile','soilingSchedule','albedoSchedule')) else {}),**(dict(auxiliaryConsumptionW='nonnegative interval-average LV auxiliary W before transformer; excludes inverter internal consumption',auxiliaryConsumptionWh='integral of auxiliaryConsumptionW times interval hours; already included in net-grid balance',acPlantInputW='signed W inverter net before plant stages',acAvailabilityFraction='retained fraction of positive generation only',gridImportWh='total Wh imported after energized AC plant; includes inverter self-consumption',netGridWh='signed Wh export after cap minus total gridImportWh') if plant_active else {}),**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s and not plant_active else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
+            units=dict(**(dict(appliedAcExportLimitW='explicit nonnegative export ceiling W for this interval, after AC plant; imports unaffected') if 'acExportLimitSchedule' in s else {}),**(dict(inverterSelfConsumptionWh='gross inverter internal consumption Wh before AC netting; diagnostic, not additional grid import',inverterGrossGenerationW='sum of positive block AC before internal-consumption netting; availability derates this positive-generation component only') if 'inverterBlocks' in s else {}),**(dict(environmentIrradiance='W/m2; integrated Wh/m2; optical diagnostics, not DC energy losses',usedAlbedo='broadband fraction 0..1',soilingRatios='optical transmission fractions 0..1; rear inactive without rows',horizonBeamVisible='binary apparent solar elevation greater than interpolated horizon') if any(k in s for k in ('horizonProfile','soilingSchedule','albedoSchedule')) else {}),**(dict(auxiliaryConsumptionW='nonnegative interval-average LV auxiliary W before transformer; excludes inverter internal consumption',auxiliaryConsumptionWh='integral of auxiliaryConsumptionW times interval hours; already included in net-grid balance',acPlantInputW='signed W inverter net before plant stages',acAvailabilityFraction='retained fraction of positive generation only',gridImportWh='total Wh imported after energized AC plant; includes inverter self-consumption',netGridWh='signed Wh export after cap minus total gridImportWh') if plant_active else {}),**(dict(spectralFactor='dimensionless; zero when spectralActive=0',absoluteAirmass='dimensionless; zero sentinel when spectralActive=0',spectralActive='0 no optical effective irradiance; 1 applied within declared fitted airmass domain',spectralInputIrradianceWm2='W/m2 after optical IAM, before spectral multiplier') if 'sapmSpectral' in s else {}),**(dict(inverterNetAcW='signed W before export cap; positive generation, negative self-consumption import',inverterSelfConsumptionWh='nonnegative Wh imported for inverter self-consumption',netGridWh='signed Wh after export cap: exported acWh minus imported inverterSelfConsumptionWh') if 'sandia' in s and not plant_active else {}),irradiance='W/m2',power='W',energy='Wh; row irradiance integrals Wh/m2',temperature='degC',angles='degrees; azimuth clockwise from north',
                 **(dict(voltage='V at inverter terminal when dcCable enabled, otherwise uniform array DC bus',current='A aggregate inverter input',dcOperatingState='0 dark; 1 MPP; 2 voltage boundary; 3 current boundary; 4 no feasible MPPT point') if 'electrical' in s else {}),
                 **(dict(trackerActive='dimensionless daylight command flag (0/1), not equipment availability') if 'tracking' in s else {})),
             limitations=limitations, warnings=warnings),

@@ -41,7 +41,7 @@ function powerMap(r: StudyResult) {
     ...(s.sandia || s.inverterBlocks
       ? { inverterSelfConsumptionWh: "inverterSelfConsumptionW" }
       : {}),
-    ...(s.acExportLimitW !== undefined
+    ...((s.acExportLimitW !== undefined || !!s.acExportLimitSchedule)
       ? {
           acBeforeExportLimitWh: "acBeforeExportLimitW",
           acExportLimitLossWh: "acExportLimitLossW",
@@ -307,7 +307,7 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
     hours: number;
     lossWh: number;
   }[] = [];
-  if (s.acExportLimitW !== undefined) {
+  if ((s.acExportLimitW !== undefined || !!s.acExportLimitSchedule)) {
     let run: (typeof eventExamples)[number] | null = null;
     const flush = () => {
       if (!run) return;
@@ -338,16 +338,17 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
   }
   const exportCap = {
     status:
-      s.acExportLimitW === undefined
+      (s.acExportLimitW === undefined && !s.acExportLimitSchedule)
         ? "unavailable_model_disabled"
         : selection.status,
     thresholdW: 1e-6,
     capW: s.acExportLimitW ?? null,
+    mode: s.acExportLimitSchedule ? "explicit_interval_schedule" : s.acExportLimitW !== undefined ? "constant" : "disabled",
     eventCount:
-      s.acExportLimitW === undefined || !rows.length ? null : eventCount,
-    hours: s.acExportLimitW === undefined || !rows.length ? null : activeHours,
+      (s.acExportLimitW === undefined && !s.acExportLimitSchedule) || !rows.length ? null : eventCount,
+    hours: (s.acExportLimitW === undefined && !s.acExportLimitSchedule) || !rows.length ? null : activeHours,
     longestHours:
-      s.acExportLimitW === undefined || !rows.length ? null : longestHours,
+      (s.acExportLimitW === undefined && !s.acExportLimitSchedule) || !rows.length ? null : longestHours,
     lossWh: totals.acExportLimitLossWh ?? null,
     examples: eventExamples,
   };
@@ -450,7 +451,7 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
     ? totals.dcBeforeAdditionalLossWh - totals.dcWh
     : null;
   const capLoss =
-    totals.acExportLimitLossWh ?? (s.acExportLimitW === undefined ? 0 : null);
+    totals.acExportLimitLossWh ?? ((s.acExportLimitW === undefined && !s.acExportLimitSchedule) ? 0 : null);
   const input =
     plant(r) && rows.length
       ? rows.reduce((sum, row) => sum + numeric(row, "acPlantInputW") * dt, 0)
@@ -477,7 +478,7 @@ export function exploreStudy(r: StudyResult, options: ExplorerOptions = {}) {
     ),
     exportCap: balance(
       totals.acBeforeExportLimitWh ?? null,
-      ac !== null && capLoss !== null && s.acExportLimitW !== undefined
+      ac !== null && capLoss !== null && (s.acExportLimitW !== undefined || !!s.acExportLimitSchedule)
         ? ac + capLoss
         : null,
     ),
