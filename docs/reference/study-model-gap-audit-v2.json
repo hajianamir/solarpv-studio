@@ -311,7 +311,8 @@
     41,
     42,
     43,
-    44
+    44,
+    45
   ],
   "nonNumericalEvidence": [
     {
@@ -361,6 +362,12 @@
       "test": "scripts/test-study-protocol.ts",
       "kind": "exact_result_protocol_integrity_and_recomputation",
       "scope": "Strict metadata/revision, exact result fingerprint, report/package checksums, recomputed report equality, bounded portable import and safe HTML. No authenticated preregistration, signature or field validation."
+    },
+    {
+      "id": "output-calibration-review",
+      "test": "scripts/test-output-calibration-review.ts",
+      "kind": "bounded_empirical_output_review",
+      "scope": "Train-only bounded gain, explicit raw/corrected holdout metrics, matched energy and rows; safe exports and legacy report/protocol invariance. No physical fitting or field validation."
     }
   ],
   "engineVersion": "1.16.0",
