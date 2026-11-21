@@ -109,9 +109,9 @@ export function AdvancedDispatchPanel({
         accept=".json,application/json"
         disabled={!context}
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (f) void load(f);
+          const input = e.currentTarget;
+          const f = input.files?.[0];
+          if (f) void load(f).finally(() => { if (input.files?.[0] === f) input.value = ""; });
         }}
       />
       {busy && (

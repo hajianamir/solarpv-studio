@@ -106,9 +106,10 @@ export function OperationalEnergyPanel({
         type="file"
         accept=".json,application/json"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) void load(f);
-          e.target.value = "";
+          const input = e.currentTarget;
+          const f = input.files?.[0];
+          // Safari revokes file access when the selection is cleared before File.text settles.
+          if (f) void load(f).finally(() => { if (input.files?.[0] === f) input.value = ""; });
         }}
       />
       <fieldset className="space-y-2">
@@ -199,8 +200,8 @@ export function OperationalEnergyPanel({
         type="file"
         accept=".json"
         onChange={async (e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
+          const input = e.currentTarget;
+          const f = input.files?.[0];
           if (!f) return;
           const version = ++revision.current.version;
           onChange(null);
@@ -219,6 +220,8 @@ export function OperationalEnergyPanel({
             }
           } catch (err) {
             if (version === revision.current.version) setError(String(err));
+          } finally {
+            if (input.files?.[0] === f) input.value = "";
           }
         }}
       />
