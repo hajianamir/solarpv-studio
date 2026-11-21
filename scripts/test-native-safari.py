@@ -134,7 +134,7 @@ def main():
     except Exception as exc:
         receipt.update(status='FAIL', error=str(exc))
         if driver:
-            print('FAILURE PAGE TEXT: ' + driver.execute_script('return document.body.textContent.slice(-18000)'), file=sys.stderr)
+            print('FAILURE PAGE TEXT: ' + driver.execute_script("return JSON.stringify({panel:document.querySelector('[data-testid=operational-energy-panel]')?.textContent,ack:document.querySelector('[aria-label=\"Operational acknowledgement\"]')?.value})"), file=sys.stderr)
             driver.save_screenshot(str(evidence / 'failure.png'))
         raise
     finally:

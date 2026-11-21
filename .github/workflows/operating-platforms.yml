@@ -44,7 +44,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: npm ci
+      - run: node scripts/ci-command.mjs npm ci --fetch-retries=3
       - run: python -m pip install -r services/pvlib_study/requirements.txt
       - name: Locate Windows system Chromium (no CDN requirement)
         if: runner.os == 'Windows'
@@ -99,7 +99,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: npm ci
+      - run: node scripts/ci-command.mjs npm ci --fetch-retries=3
       - run: python -m pip install -r services/pvlib_study/requirements.txt selenium==4.27.1 pypdf==5.1.0
       - run: python -m scripts.operational-energy-fixture
       - run: npm run build
