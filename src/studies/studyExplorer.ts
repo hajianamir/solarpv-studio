@@ -17,7 +17,7 @@ function plant(r: StudyResult) {
   return !!(
     s.transformer ||
     s.auxiliaryPowerW !== undefined ||
-    s.acAvailability
+    s.acAvailability || s.inverterBlocks
   );
 }
 function numeric(row: Sample, key: string) {
@@ -38,7 +38,7 @@ function powerMap(r: StudyResult) {
           gridImportWh: "gridImportW",
         }
       : {}),
-    ...(s.sandia
+    ...(s.sandia || s.inverterBlocks
       ? { inverterSelfConsumptionWh: "inverterSelfConsumptionW" }
       : {}),
     ...(s.acExportLimitW !== undefined

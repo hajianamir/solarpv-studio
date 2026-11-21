@@ -272,7 +272,8 @@ export function StudyBuilder({
             dcCableQuality: r.system.electrical?.dcCable?.quality ?? "user_configured",
             stringLoopResistanceOhm: String(r.system.electrical?.dcCable?.stringLoopResistanceOhm ?? ""),
             sharedLoopResistanceOhm: String(r.system.electrical?.dcCable?.sharedLoopResistanceOhm ?? ""),
-            electricalModel: r.system.mpptInputs ? "multi" : r.system.electrical ? "diode" : "pvwatts",
+            inverterBlocksJson: r.system.inverterBlocks ? JSON.stringify(r.system.inverterBlocks,null,2) : "",
+            electricalModel: r.system.inverterBlocks ? "blocks" : r.system.mpptInputs ? "multi" : r.system.electrical ? "diode" : "pvwatts",
             mpptInputsJson: r.system.mpptInputs ? JSON.stringify(r.system.mpptInputs,null,2) : "",
             ...Object.fromEntries(
               electricalFields.map(([key]) => [
@@ -492,6 +493,7 @@ export function StudyBuilder({
             <option value="pvwatts">
               PVWatts DC (legacy) / مدل تجمیعی قبلی
             </option>
+            <option value="blocks">Independent inverter blocks / اینورترهای مستقل</option>
             <option value="multi">Independent MPPT inputs / ورودی‌های MPPT مستقل</option>
             <option value="diode">
               De Soto single diode + ideal constrained MPPT / تک‌دیودی
@@ -845,6 +847,7 @@ export function StudyBuilder({
             </div>
           </div>
         )}
+        {v.electricalModel === "blocks" && <fieldset data-testid="inverter-block-inputs" className="border p-3"><legend>Independent inverter blocks / بلوک‌های اینورتر مستقل</legend><p>2–4 blocks, each with unique id, source, quality and full system object. Same site/weather; independent optics, thermal, DC, MPPT and inverter. Clipping/internal consumption per block, then signed AC sum before common root plant/export. No block nesting or child plant/export; additionalDcLossPct=0. Root nameplates/DC inverter reference capacities must equal sums. Root optical/thermal diagnostics and inverter efficiency are not an equivalent plant model. Max 8784 total block-MPPT intervals.</p><textarea aria-label="Study inverter blocks JSON" dir="ltr" rows={14} className="w-full bg-slate-900" value={v.inverterBlocksJson??""} onChange={e=>change("inverterBlocksJson",e.target.value)}/></fieldset>}
         {v.electricalModel === "multi" && <fieldset className="space-y-2 border p-3" data-testid="multi-mppt-inputs">
           <legend>Independent MPPT / ورودی‌های مستقل</legend>
           <p>2–4 fixed-tilt uniform subarrays; each entry must explicitly declare id, source, quality, surfaceTiltDeg, surfaceAzimuthDeg, arrayPdc0W and electrical (full diode/limits, optional dcCable). Same site/weather and optical/thermal coefficients; each input has its own POA, cell temperature and terminal operating point. Total arrayPdc0W must equal the sum. additionalDcLossPct=0. PVWatts inverter only, clipping once after summing DC; no shared voltage. Root plane is a reference diagnostic only. Maximum 8784 weather intervals and 17568 input-intervals total; no automatic annual splitting. / هر ورودی هندسه، دیود، قیود و کابل مستقل؛ بدون فرض ولتاژ مشترک.</p>
@@ -1169,7 +1172,7 @@ export function StudyBuilder({
                         ),
                       }
                     : {}),
-                  ...(v.inverterModel === "sandia"
+                  ...(v.inverterModel === "sandia" && v.electricalModel !== "blocks"
                     ? {
                         sandia: Object.fromEntries(
                           sandiaFields.map(([key]) => [key, number(key)]),
@@ -1210,6 +1213,7 @@ export function StudyBuilder({
                   ...(v.exportEnabled === "yes"
                     ? { acExportLimitW: number("acExportLimitW") }
                     : {}),
+                  ...(v.electricalModel === "blocks" ? {inverterBlocks:JSON.parse(v.inverterBlocksJson || "null")} : {}),
                   ...(v.electricalModel === "multi" ? {mpptInputs: JSON.parse(v.mpptInputsJson || "null")} : {}),
                   ...(v.electricalModel === "diode"
                     ? {
@@ -1294,6 +1298,7 @@ export function StudyBuilder({
         {review && (
           <div data-testid="weather-review" className="text-xs">
             <StudyInsights request={review} en={en} />
+            {review.system.inverterBlocks&&<div data-testid="inverter-block-review"><p>Signed AC aggregation AFTER each independent inverter. Internal consumption is not subtracted twice. Root plant/export once. Reference-plane diagnostics only.</p><pre dir="ltr" className="overflow-auto">{JSON.stringify(review.system.inverterBlocks,null,2)}</pre></div>}
             {review.system.mpptInputs && <div data-testid="multi-mppt-review"><p>Independent terminal MPPTs; one PVWatts inverter after DC aggregation. Root POA/temperature are reference-plane diagnostics only.</p><pre dir="ltr" className="overflow-auto">{JSON.stringify(review.system.mpptInputs,null,2)}</pre></div>}
             {review.system.electrical?.dcCable && <p data-testid="dc-cable-review" dir="ltr">DC cable: uniform identical strings + shared home run; string loop {review.system.electrical.dcCable.stringLoopResistanceOhm} Ω; shared loop {review.system.electrical.dcCable.sharedLoopResistanceOhm} Ω. Fixed declared design-condition resistance. Inverter-terminal MPPT; no double percentage loss. Source: {review.system.electrical.dcCable.source} ({review.system.electrical.dcCable.quality}).</p>}
             {(review.system.pvsystTemperature ||

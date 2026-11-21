@@ -203,6 +203,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
         quality: value.quality,
         count: count ?? null,
       });
+  for (const block of s.inverterBlocks??[])entries.push({component:`inverterBlock:${block.id}`,source:block.source,quality:block.quality,count:null});
   for (const input of s.mpptInputs??[]) {
     entries.push({component:`mppt:${input.id}`,source:input.source,quality:input.quality,count:null});
     if(input.electrical.dcCable)entries.push({component:`mpptCable:${input.id}`,source:input.electrical.dcCable.source,quality:input.electrical.dcCable.quality,count:null});
@@ -220,7 +221,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
       albedo: s.albedoSchedule
         ? "schedule; retained scalar inactive"
         : "declared scalar",
-      fixedGeometry: s.mpptInputs ? "independent fixed input planes; root is reference diagnostic only" : s.tracking
+      fixedGeometry: s.inverterBlocks ? "root reference diagnostic; actual geometry belongs to each inverter block" : s.mpptInputs ? "independent fixed input planes; root is reference diagnostic only" : s.tracking
         ? "tracker active; retained fixed tilt/azimuth inactive"
         : "fixed plane",
       rearSoiling:
@@ -230,7 +231,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
       thermalInputMode:s.cellTemperatureSchedule?"explicit cell temperature; thermal POA proxy inactive":s.pvsystTemperature?"PVsyst fixed efficiency/absorptance; 10 m wind fitted coefficients":"existing modeled thermal input",
       thermalIrradiance:
         s.rowIrradiance?.temperatureIrradiance ?? "front isolated POA",
-      equipmentSourceScope:
+      equipmentSourceScope: s.inverterBlocks ? "Each inverter block carries its own declared parameter source; full child requests/results retained. Root optical/thermal inputs are reference diagnostics only." :
         "Root model parameters inherit parameterProvenance; independent MPPT electrical parameters inherit their input source and optional cable source. No per-coefficient certification.",
     },
     execution: result
