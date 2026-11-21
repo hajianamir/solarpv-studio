@@ -195,6 +195,7 @@ export function sourceLedger(request: StudyRequest, result?: StudyResult) {
     ["soilingSchedule", s.soilingSchedule, s.soilingSchedule?.records.length],
     ["albedoSchedule", s.albedoSchedule, s.albedoSchedule?.records.length],
     ["acAvailability", s.acAvailability, s.acAvailability?.records.length],
+    ["auxiliarySchedule", s.auxiliarySchedule, s.auxiliarySchedule?.records.length],
   ] as const)
     if (value)
       entries.push({

@@ -16,7 +16,7 @@ function plant(r: StudyResult) {
   const s = r.request.system;
   return !!(
     s.transformer ||
-    s.auxiliaryPowerW !== undefined ||
+    s.auxiliaryPowerW !== undefined || s.auxiliarySchedule ||
     s.acAvailability || s.inverterBlocks
   );
 }

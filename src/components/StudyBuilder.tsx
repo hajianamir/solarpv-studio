@@ -8,6 +8,7 @@ import {
   parseCellTemperatureCsv,
   parseWeatherCsv,
   parseAvailabilityCsv,
+  parseAuxiliaryCsv,
   parseHorizonCsv,
   parseSoilingCsv,
   parseAlbedoCsv,
@@ -229,7 +230,10 @@ export function StudyBuilder({
               ? String(r.system.transformer.loadLossFraction)
               : "",
             auxiliaryEnabled:
-              r.system.auxiliaryPowerW !== undefined ? "yes" : "no",
+              r.system.auxiliarySchedule ? "schedule" : r.system.auxiliaryPowerW !== undefined ? "yes" : "no",
+            auxiliaryScheduleSource: r.system.auxiliarySchedule?.source ?? "",
+            auxiliaryScheduleQuality: r.system.auxiliarySchedule?.quality ?? "",
+            auxiliaryScheduleCsv: r.system.auxiliarySchedule ? ["timestamp,powerW",...r.system.auxiliarySchedule.records.map(row=>`${row.timestamp},${row.powerW}`)].join("\n") : "",
             auxiliaryPowerW:
               r.system.auxiliaryPowerW !== undefined
                 ? String(r.system.auxiliaryPowerW)
@@ -732,7 +736,7 @@ export function StudyBuilder({
           </legend>
           <p>
             {en
-              ? "Positive generation availability → always-on LV auxiliary → energized transformer → export cap. Inverter self-consumption remains. Not a grid outage/control model."
+              ? "Positive generation availability → declared LV auxiliary (constant or interval-average W) → energized transformer → export cap. Inverter self-consumption remains. Not a grid outage/control model."
               : "دسترس‌پذیری تولید مثبت ← مصرف کمکی دائمی LV ← ترانس همیشه متصل ← سقف صادرات. مصرف داخلی اینورتر باقی است. مدل خاموشی شبکه یا کنترل نیست."}
           </p>
           <label>
@@ -769,7 +773,8 @@ export function StudyBuilder({
               onChange={(e) => change("auxiliaryEnabled", e.target.value)}
             >
               <option value="no">Disabled / غیرفعال</option>
-              <option value="yes">Enabled / فعال</option>
+              <option value="yes">Constant W / توان ثابت</option>
+              <option value="schedule">Interval schedule / برنامهٔ بازه‌ای</option>
             </select>
           </label>
           {v.auxiliaryEnabled === "yes" &&
@@ -778,6 +783,48 @@ export function StudyBuilder({
               "Always-on LV auxiliary (W), excluding inverter self-consumption",
               "number",
             )}
+          {v.auxiliaryEnabled === "schedule" && (
+            <div>
+              {text("auxiliaryScheduleSource", "Auxiliary schedule source / منبع")}
+              <label>
+                Auxiliary schedule quality
+                <select
+                  aria-label="Study auxiliaryScheduleQuality"
+                  value={v.auxiliaryScheduleQuality ?? ""}
+                  onChange={(e) =>
+                    change("auxiliaryScheduleQuality", e.target.value)
+                  }
+                >
+                  <option value="">—</option>
+                  {[
+                    "measured",
+                    "weather_provider",
+                    "user_configured",
+                    "assumed",
+                  ].map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                CSV: timestamp,powerW
+                <textarea
+                  aria-label="Study auxiliarySchedule CSV"
+                  className="block w-full bg-slate-900"
+                  rows={5}
+                  value={v.auxiliaryScheduleCsv ?? ""}
+                  onChange={(e) => change("auxiliaryScheduleCsv", e.target.value)}
+                />
+              </label>
+              <p>
+                {en
+                  ? "Paste complete plain CSV with the exact weather interval-end timeline, explicit UTC offsets and nonnegative interval-average W. No missing interval is filled."
+                  : "CSV کامل و ساده با خط زمان پایان بازه دقیقاً مطابق هواشناسی، offset صریح و توان میانگین غیرمنفی به وات وارد کنید؛ هیچ بازه مفقود پر نمی‌شود."}
+              </p>
+            </div>
+          )}
           <label>
             {en ? "Interval AC availability" : "دسترس‌پذیری بازه‌ای AC"}
             <select
@@ -1142,6 +1189,7 @@ export function StudyBuilder({
                   ...(v.auxiliaryEnabled === "yes"
                     ? { auxiliaryPowerW: number("auxiliaryPowerW") }
                     : {}),
+                  ...(v.auxiliaryEnabled === "schedule" ? {auxiliarySchedule:{source:v.auxiliaryScheduleSource,quality:v.auxiliaryScheduleQuality,records:parseAuxiliaryCsv(v.auxiliaryScheduleCsv ?? "")}} : {}),
                   ...(v.availabilityEnabled === "yes"
                     ? {
                         acAvailability: {
@@ -1327,6 +1375,7 @@ export function StudyBuilder({
                 {review.system.horizonProfile?.points.length}
               </p>
             )}
+            {review.system.auxiliarySchedule && <p data-testid="auxiliary-schedule-review">LV auxiliary interval-average W: {review.system.auxiliarySchedule.records.length} · {review.system.auxiliarySchedule.source} · {review.system.auxiliarySchedule.quality}. Applied before transformer, including night and zero availability; excludes inverter internal consumption.</p>}
             {review.system.acAvailability && (
               <p data-testid="availability-review">
                 {en
