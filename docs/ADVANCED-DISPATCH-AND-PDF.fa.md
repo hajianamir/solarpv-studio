@@ -22,7 +22,7 @@
 | macOS / Playwright WebKit | workflow آماده؛ **هنوز اجرا نشده**؛ حتی PASS آن هم به معنی Safari واقعی نیست |
 | macOS / Safari واقعی | runner مستقل Selenium/safaridriver و workflow آماده؛ **هنوز اجرا نشده** |
 
-سیستم این نشست Linux است. `python scripts/test-native-safari.py` در این محیط با کد ۲ و پیام `NOT RUN` متوقف شد، نه PASS. کد فعلی روی GitHub commit/push نشده؛ بنابراین CI این working tree اجرا نشده است. فهرست workflow موجود از GitHub قابل خواندن بود، ولی API مدیریتی runnerها HTTP 403 داد؛ از آن نمی‌توان وجود یا آمادگی runner اختصاصی را نتیجه گرفت. هیچ تلاش برای دورزدن مجوز یا تغییر شاخه/اتصال انجام نشده است.
+سیستم محلی این نشست Linux است؛ Safari بومی در آن اجرا نمی‌شود. تغییرات روی همین شاخه commit/push شده‌اند. در اجرای واقعی GitHub Actions شمارهٔ 44955669115 برای SHA `5c673a908d4744f81f51870fe15a6add77474ec4`، Windows/Chromium، Linux/Chromium و macOS/WebKit موفق شدند. در اجرای جدیدتر شمارهٔ 44957120805 برای SHA `cc08f910cd306f4c7d94f1105d1c2e5768a84d5e`، Windows و Linux موفق شدند، اما WebKit هنگام تعامل دانلود PDF و Safari بومی هنگام خواندن فایل با `NotReadableError` شکست خوردند. انتقال پاک‌کردن انتخاب فایل به پس از خواندن، برای حل خطای Safari کافی نبود؛ علت نهایی هنوز تأیید نشده است. تنظیم timeout تعامل مرورگر به ۱۸۰ ثانیه شاهد اجرای موفق جدید محسوب نمی‌شود. بنابراین Safari واقعی و موفقیت کل CI تأیید نشده‌اند. jobهای مرورگر direct-study در CI عمومی نیز قبلاً شکست داشته‌اند. جزئیات در `docs/audit/ADVANCED-DISPATCH-PDF-LOCAL-CHECKS.json` ثبت شده است.
 
 پس درخواست «تست واقعی Windows/Safari» هنوز باز است؛ پیکربندی آزمون را به‌جای نتیجهٔ اجراشده معرفی نمی‌کنیم.
 

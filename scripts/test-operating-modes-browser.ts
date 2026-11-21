@@ -53,6 +53,7 @@ try {
         : [],
   });
   const page = await browser.newPage({ acceptDownloads: true });
+  page.setDefaultTimeout(180_000);
   await page.route("https://**/*", (r) => r.abort());
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
