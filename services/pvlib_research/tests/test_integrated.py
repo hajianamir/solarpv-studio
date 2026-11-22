@@ -14,9 +14,9 @@ from services.pvlib_research.__main__ import strict_json
 
 
 def fixture(modes=('fixed','tracker'),thermal='modeled'):
-    base=json.loads((ROOT/'services/pvlib_study/tests/synthetic-study.json').read_text())
-    diode=json.loads((ROOT/'services/pvlib_study/tests/desoto-reference-parameters.json').read_text())
-    inv=json.loads((ROOT/'services/pvlib_study/tests/sandia-reference-parameters.json').read_text())
+    base=json.loads((ROOT/'services/pvlib_study/tests/synthetic-study.json').read_text(encoding='utf-8'))
+    diode=json.loads((ROOT/'services/pvlib_study/tests/desoto-reference-parameters.json').read_text(encoding='utf-8'))
+    inv=json.loads((ROOT/'services/pvlib_study/tests/sandia-reference-parameters.json').read_text(encoding='utf-8'))
     inputs=[]
     for i,mode in enumerate(modes):
         r=copy.deepcopy(base);s=r['system'];s.update(electrical=copy.deepcopy(diode),arrayPdc0W=4400,additionalDcLossPct=0)

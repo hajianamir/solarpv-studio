@@ -3,6 +3,8 @@ import copy
 import json
 from pathlib import Path
 import sys
+# The JSON protocol is UTF-8 on Windows as well as POSIX.
+sys.stdout.reconfigure(encoding='utf-8')
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from services.pvlib_research.tests.test_integrated import matrix,fixture
 from services.pvlib_research.integrated import validate_plan,run_integrated,migrate_legacy
