@@ -88,6 +88,7 @@ export const ClimateCitySchema = z.object({
   nightHoursDesign: z.number().min(0).max(24).optional().default(14.42),
   tempMinC: z.number().min(-60).max(50),
   tempMaxC: z.number().min(-20).max(65),
+  tempAnnualMeanC: z.number().finite().optional(),
   albedo: z.number().min(0).max(1).default(0.20),
   soilingLossPct: z.number().min(0).max(30).default(4.0),
   optimalTiltAnnualDeg: z.number().min(0).max(90).default(30),
@@ -443,6 +444,8 @@ export const ProjectDataV3Schema = z.object({
   // Manual foundation depth imported from another site remains explicitly pending
   // until the user confirms or discards it for the current physical location.
   pendingImportedEmbedmentDepthM: z.number().nonnegative().nullable().optional(),
+
+  operationalStudyId: z.string().regex(/^[a-f0-9]{64}$/).nullable().optional(),
 
   // Traceability & Metadata (Z-06)
   traceId: z.string().optional(),
@@ -887,6 +890,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     featureFlags,
     trackerConfig: raw.trackerConfig !== undefined ? raw.trackerConfig : null, // BUG-2: persist (null = fixed tilt)
     pendingImportedEmbedmentDepthM: raw.pendingImportedEmbedmentDepthM,
+    operationalStudyId: raw.operationalStudyId,
     traceId: raw.traceId || traceId,
     provenance: raw.provenance && typeof raw.provenance === 'object' ? raw.provenance : undefined,
     metadata: raw.metadata && typeof raw.metadata === 'object' ? raw.metadata : undefined,

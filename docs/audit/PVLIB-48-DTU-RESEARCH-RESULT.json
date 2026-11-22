@@ -1,0 +1,370 @@
+{
+  "data": {
+    "schemaVersion": "module-back-research-data-v1",
+    "parserVersion": "1.0.0",
+    "target": "back_of_module",
+    "statistic": "interval_mean",
+    "intervalMinutes": 60,
+    "poaBasis": "measured_front_poa",
+    "windHeightM": null,
+    "windHeightSource": null,
+    "receipt": {
+      "kind": "tool_rendered_excerpt",
+      "sha256": "e4ce1e6a329e520b61cd9a4681c7d2977a240e249fd993e7e16a11fb5f8339a6",
+      "bytes": 605,
+      "doi": "10.11583/DTU.13580759.v3",
+      "originalBytesVerified": false
+    },
+    "records": [
+      {
+        "timestamp": "2019-06-04T10:00:00Z",
+        "poaWm2": 862.5833392,
+        "tempAirC": 20.1,
+        "windSpeedMs": 0.7,
+        "moduleBackC": 43.85833359,
+        "used": true,
+        "filter1": true,
+        "filter2": true,
+        "filter3": true,
+        "filter4": true,
+        "eligible": true,
+        "reasons": []
+      },
+      {
+        "timestamp": "2019-06-04T11:00:00Z",
+        "poaWm2": 616.9999987,
+        "tempAirC": 20.0,
+        "windSpeedMs": 0.8,
+        "moduleBackC": 40.74166679,
+        "used": true,
+        "filter1": true,
+        "filter2": true,
+        "filter3": true,
+        "filter4": true,
+        "eligible": true,
+        "reasons": []
+      },
+      {
+        "timestamp": "2019-06-04T12:00:00Z",
+        "poaWm2": 842.2500044,
+        "tempAirC": 20.4,
+        "windSpeedMs": 1.4,
+        "moduleBackC": 45.51666705,
+        "used": true,
+        "filter1": true,
+        "filter2": true,
+        "filter3": true,
+        "filter4": true,
+        "eligible": true,
+        "reasons": []
+      },
+      {
+        "timestamp": "2019-06-04T13:00:00Z",
+        "poaWm2": 561.3333335,
+        "tempAirC": 20.0,
+        "windSpeedMs": 0.8,
+        "moduleBackC": 39.05833308,
+        "used": true,
+        "filter1": true,
+        "filter2": true,
+        "filter3": true,
+        "filter4": true,
+        "eligible": true,
+        "reasons": []
+      },
+      {
+        "timestamp": "2019-06-04T14:00:00Z",
+        "poaWm2": 602.4999966,
+        "tempAirC": 20.7,
+        "windSpeedMs": 0.8,
+        "moduleBackC": 40.18333308,
+        "used": true,
+        "filter1": true,
+        "filter2": true,
+        "filter3": true,
+        "filter4": true,
+        "eligible": true,
+        "reasons": []
+      },
+      {
+        "timestamp": "2019-06-04T15:00:00Z",
+        "poaWm2": 311.6666683,
+        "tempAirC": 19.5,
+        "windSpeedMs": 1.2,
+        "moduleBackC": 33.63333321,
+        "used": true,
+        "filter1": true,
+        "filter2": true,
+        "filter3": true,
+        "filter4": true,
+        "eligible": true,
+        "reasons": []
+      },
+      {
+        "timestamp": "2019-06-04T16:00:00Z",
+        "poaWm2": 228.4999999,
+        "tempAirC": 18.7,
+        "windSpeedMs": 1.1,
+        "moduleBackC": 28.45000013,
+        "used": true,
+        "filter1": true,
+        "filter2": true,
+        "filter3": true,
+        "filter4": true,
+        "eligible": true,
+        "reasons": []
+      }
+    ],
+    "dataSha256": "33927a16a2ad55a9b3235fd2506ab9ecea50717e8eea456ded0b282f9454d2fc"
+  },
+  "operationalStatus": "blocked",
+  "blockers": [
+    "original_xlsx_receipt_unavailable",
+    "wind_sensor_installation_height_unverified",
+    "sensor_calibration_and_independent_engineering_review_pending"
+  ],
+  "researchFit": {
+    "schemaVersion": "module-back-research-fit-v1",
+    "algorithmVersion": "1.0.0",
+    "pvlibVersion": "0.13.1",
+    "parameterUnits": {
+      "u0": "W/(m2 K)",
+      "u1": "W/(m2 K (m/s))"
+    },
+    "temperatureUnit": "degC",
+    "validationStatus": "not_field_validated",
+    "operationalStatus": "blocked",
+    "operationalBlockers": [
+      "original_xlsx_receipt_unavailable",
+      "wind_sensor_installation_height_unverified",
+      "sensor_calibration_and_independent_engineering_review_pending"
+    ],
+    "dataSha256": "33927a16a2ad55a9b3235fd2506ab9ecea50717e8eea456ded0b282f9454d2fc",
+    "planSha256": "1f59c88f847256795628436cce0a73f9ace8e5aed0235754d8cfe713bbab39f4",
+    "plan": {
+      "train": [
+        "2019-06-04T09:30:00Z",
+        "2019-06-04T13:30:00Z"
+      ],
+      "holdout": [
+        "2019-06-04T13:30:00Z",
+        "2019-06-04T16:30:00Z"
+      ],
+      "u0Bounds": [
+        10,
+        60
+      ],
+      "u1Bounds": [
+        0,
+        20
+      ],
+      "baseline": [
+        29.5,
+        1.6
+      ],
+      "gridPoints": 3,
+      "rounds": 3,
+      "maxEvaluations": 40,
+      "timeoutSeconds": 120,
+      "minPairs": 2,
+      "minPoaWm2": 100,
+      "source": "Research-only bounds revised from u0 min=5 to 10 after the worker rejected an over-150 C candidate; no residual/holdout-based tuning. not engineering approval. Pre-fit split on 7 tool-rendered T7 observations from DTU v3. One-day convenience subset, not representative. Native wind height UNKNOWN. Original XLSX bytes NOT available locally."
+    },
+    "target": "back_of_module",
+    "model": "pvlib.temperature.faiman",
+    "windBasis": "native_sensor_no_height_conversion",
+    "baseline": [
+      29.5,
+      1.6
+    ],
+    "fitted": [
+      35.0,
+      0.0
+    ],
+    "parameterDiff": [
+      5.5,
+      -1.6
+    ],
+    "boundActive": [
+      false,
+      true
+    ],
+    "candidateEvaluations": 16,
+    "totalWorkerEvaluations": 20,
+    "identifiable": true,
+    "jacobianSingularValues": [
+      1.6820108408869576,
+      0.2632464396716384
+    ],
+    "trainingDomain": {
+      "poaWm2": [
+        561.3333335,
+        862.5833392
+      ],
+      "tempAirC": [
+        20.0,
+        20.4
+      ],
+      "windSpeedMs": [
+        0.7,
+        1.4
+      ]
+    },
+    "evaluation": {
+      "train": {
+        "raw": {
+          "n": 4,
+          "mbe": 1.0784841906787008,
+          "rmse": 2.379158484523605,
+          "mae": 1.8372669034564737
+        },
+        "fitted": {
+          "n": 4,
+          "mbe": -1.574702443214285,
+          "rmse": 2.2752640321187365,
+          "mae": 2.018154779642856
+        },
+        "extrapolatedIntervals": [],
+        "acceptanceBlocked": false,
+        "rows": [
+          {
+            "timestamp": "2019-06-04T10:00:00Z",
+            "poaWm2": 862.5833392,
+            "tempAirC": 20.1,
+            "windSpeedMs": 0.7,
+            "moduleBackC": 43.85833359,
+            "used": true,
+            "filter1": true,
+            "filter2": true,
+            "filter3": true,
+            "filter4": true,
+            "eligible": true,
+            "reasons": [],
+            "rawModuleBackC": 48.270585865447416,
+            "fittedModuleBackC": 44.74523826285714
+          },
+          {
+            "timestamp": "2019-06-04T11:00:00Z",
+            "poaWm2": 616.9999987,
+            "tempAirC": 20.0,
+            "windSpeedMs": 0.8,
+            "moduleBackC": 40.74166679,
+            "used": true,
+            "filter1": true,
+            "filter2": true,
+            "filter3": true,
+            "filter4": true,
+            "eligible": true,
+            "reasons": [],
+            "rawModuleBackC": 40.04548403833658,
+            "fittedModuleBackC": 37.62857139142857
+          },
+          {
+            "timestamp": "2019-06-04T12:00:00Z",
+            "poaWm2": 842.2500044,
+            "tempAirC": 20.4,
+            "windSpeedMs": 1.4,
+            "moduleBackC": 45.51666705,
+            "used": true,
+            "filter1": true,
+            "filter2": true,
+            "filter3": true,
+            "filter4": true,
+            "eligible": true,
+            "reasons": [],
+            "rawModuleBackC": 46.93591696282294,
+            "fittedModuleBackC": 44.46428584
+          },
+          {
+            "timestamp": "2019-06-04T13:00:00Z",
+            "poaWm2": 561.3333335,
+            "tempAirC": 20.0,
+            "windSpeedMs": 0.8,
+            "moduleBackC": 39.05833308,
+            "used": true,
+            "filter1": true,
+            "filter2": true,
+            "filter3": true,
+            "filter4": true,
+            "eligible": true,
+            "reasons": [],
+            "rawModuleBackC": 38.236950406107866,
+            "fittedModuleBackC": 36.03809524285714
+          }
+        ]
+      },
+      "holdout": {
+        "raw": {
+          "n": 3,
+          "mbe": -2.1877448876258527,
+          "rmse": 2.811939874256306,
+          "mae": 2.2484554008942097
+        },
+        "fitted": {
+          "n": 3,
+          "mbe": -3.573015808571428,
+          "rmse": 3.7799531166163773,
+          "mae": 3.573015808571428
+        },
+        "extrapolatedIntervals": [
+          "2019-06-04T14:00:00Z",
+          "2019-06-04T15:00:00Z",
+          "2019-06-04T16:00:00Z"
+        ],
+        "acceptanceBlocked": true,
+        "rows": [
+          {
+            "timestamp": "2019-06-04T14:00:00Z",
+            "poaWm2": 602.4999966,
+            "tempAirC": 20.7,
+            "windSpeedMs": 0.8,
+            "moduleBackC": 40.18333308,
+            "used": true,
+            "filter1": true,
+            "filter2": true,
+            "filter3": true,
+            "filter4": true,
+            "eligible": true,
+            "reasons": [],
+            "rawModuleBackC": 40.27439884990253,
+            "fittedModuleBackC": 37.91428561714286
+          },
+          {
+            "timestamp": "2019-06-04T15:00:00Z",
+            "poaWm2": 311.6666683,
+            "tempAirC": 19.5,
+            "windSpeedMs": 1.2,
+            "moduleBackC": 33.63333321,
+            "used": true,
+            "filter1": true,
+            "filter2": true,
+            "filter3": true,
+            "filter4": true,
+            "eligible": true,
+            "reasons": [],
+            "rawModuleBackC": 29.41937200190961,
+            "fittedModuleBackC": 28.404761951428572
+          },
+          {
+            "timestamp": "2019-06-04T16:00:00Z",
+            "poaWm2": 228.4999999,
+            "tempAirC": 18.7,
+            "windSpeedMs": 1.1,
+            "moduleBackC": 28.45000013,
+            "used": true,
+            "filter1": true,
+            "filter2": true,
+            "filter3": true,
+            "filter4": true,
+            "eligible": true,
+            "reasons": [],
+            "rawModuleBackC": 26.009660905310298,
+            "fittedModuleBackC": 25.228571425714286
+          }
+        ]
+      }
+    },
+    "holdoutWorse": true,
+    "policy": "Research only. Holdout never chooses coefficients. Extrapolated holdout is diagnostic only and blocks acceptance. No cell/energy conversion, no baseline mutation, no field or seasonal representativeness claim. Bounds are research declarations, not engineering approval."
+  }
+}

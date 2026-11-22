@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "physical-model-working-tree-checks-v1",
+  "recordedDate": "2026-11-03",
+  "branch": "arena/237e6ea2-solarpv-studio",
+  "baseHead": "5438fb59f4bb5cde05c20818b780464e1fe28752",
+  "scope": "Local working-tree; preserved pre-existing changes; no commit/push or remote exact-SHA CI from this delivery",
+  "checks": [
+    {
+      "command": "npm run test:physical:python",
+      "status": "PASS",
+      "details": "15 tests, 300 randomized DC cases; 4 targeted equation mutations detected"
+    },
+    {
+      "command": "PVLIB_PYTHON=<pinned> npm run test:physical:api",
+      "status": "PASS",
+      "details": "24 Python/TS input cases; 3 actual isolated kernels; binding/tamper/cancel/nonfinite; duplicate JSON and UTC/+06:30/+14"
+    },
+    {
+      "command": "PVLIB_PYTHON=<pinned> npm run test:physical:browser",
+      "status": "PASS",
+      "details": "Actual Chromium, 6 research operations, all3 DC operating modes, real JWT/API, archive disk readback/import, cancel/stale/site invalidation; rate limit respected"
+    },
+    {
+      "command": "PYBAMM_DISABLE_TELEMETRY=true <isolatedPyBaMM25.10.2> scripts/physical-models-pybamm-oracle.py",
+      "status": "PASS",
+      "details": "Independent actual SPM/Chen2020/Casadi run, fixture and exact environment retained"
+    },
+    {
+      "command": "3x python -m services.power_dynamics --input <example> --output <result> and deterministic direct-kernel replay",
+      "status": "PASS"
+    },
+    {
+      "command": "python -m unittest discover -s services/pvlib_research/tests",
+      "status": "PASS",
+      "tests": 66
+    },
+    {
+      "command": "python -m unittest discover -s services/pvlib_study/tests",
+      "status": "PASS",
+      "tests": 158
+    },
+    {
+      "command": "npm run test:research:api",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run test:all",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run lint:types",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run build",
+      "status": "PASS",
+      "warnings": "Chunks >1000kB"
+    },
+    {
+      "command": "npm run lint",
+      "status": "PASS",
+      "errors": 0,
+      "warnings": 95
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS"
+    }
+  ],
+  "numericalExamples": {
+    "dcMaxResidualKwh": 8.881784197001252e-16,
+    "spmLithiumResidualMolPerCell": 1.6653345369377348e-15,
+    "spmCoulombNegativeResidualMolM3": 2.1827872842550278e-10,
+    "controlMaxEnergyResidualJ": 7.048485748325025e-08,
+    "controlUndervoltageTripS": 0.17002,
+    "spmOracleMaxVoltageErrorV": {
+      "10cells": 0.025173111842079265,
+      "30cells": 0.008765608843807726,
+      "60cells": 0.004428009700304436
+    },
+    "spmOracleSelectedSettledPointsMaxErrorVBound": 0.0004
+  },
+  "limitations": [
+    "Numerical verification only, not field calibration or hardware safety qualification",
+    "Independent physical kernels, not automatically co-solved or adopted into annual energy/finance",
+    "SPM is isothermal with fixed electrolyte; no ageing/SEI/plating/runaway",
+    "Control is balanced averaged stiff-grid following; not island grid-forming/EMT/switching/complete anti-islanding",
+    "DC bus is ideal regulated, constant explicit efficiencies, scheduled commands not optimizer",
+    "No new Windows/WebKit/nativeSafari execution claimed; nativeSafari historical issue not resolved by Linux Chromium",
+    "CI steps prepared but not remotely run; current HEAD is not a commit containing these changes"
+  ],
+  "fileSha256": {
+    ".github/workflows/operating-platforms.yml": "edb5daf4b90a2c3d1342b27fbae032b5c0276eae5522c491c28aa41d82ba3af2",
+    "docs/PHYSICAL-MODELS.fa.md": "4704aa5795f92a9d0487e943e42ec66cec298ff7e43d1c16b8b4e6135dadb523",
+    "docs/audit/PHYSICAL-MODELS-START.fa.md": "2c7dec983f47e28eaa6a1c68fae2ca66e6d62df633cc843feb2d7f80bdb9127a",
+    "docs/examples/physical-models/SOURCES.json": "1348c3e4347e80cabe1461e50601153aae5fcbc9591dcc475dfc0dcc138cbff8",
+    "docs/examples/physical-models/dc_coupled.json": "57d2bb79f3ea3e92f6bcfb7583f1bb0f0908bc324c5b25186dc1a7e984c40b44",
+    "docs/examples/physical-models/dq_protection_control.json": "29e7024b1a2560aad5b3bdfc14d22e99b092b710251ee7691af7321db26be02e",
+    "docs/examples/physical-models/electrochemical_spm.json": "5ca31e3a2b42602d158c59c98b8bce8a9374b9907bdf42834ed3eaeab04334cb",
+    "docs/examples/physical-models/pybamm-oracle.json": "59d645307e22cb78c19ec55bcf1e0818af60677130b897b88dce0329aeb19699",
+    "docs/examples/physical-models/reference/Chen2020.py": "7c360a546a76492585e147231caee2f8f4fe29222b893cb12091dc4d158f62f0",
+    "docs/examples/physical-models/reference/PYBAMM-LICENSE.txt": "586953e8ef87b1fc2c81c27f880dae79c7474c5ff17a8b478ac977c4f4da8361",
+    "docs/examples/physical-models/reference/oracle-environment.txt": "921b54d06063c90002ae47b144735ef55cdf3ccba9f9a9dd5b8b2e04a1708cff",
+    "package.json": "bfbdd906ea866d62803f93cbe206dd13a0fff4f10e37d90e6f2b002103bf388f",
+    "scripts/generate-physical-examples.py": "07ef2afd8890d67b9567afb0273c7e9c4387627751d061280bad29454a45ab7c",
+    "scripts/physical-models-pybamm-oracle.py": "601b947d9b0a25dab3c90407a713a8f2126ebf2b5be5182c9abf0bcb0ec10d85",
+    "scripts/test-physical-browser.ts": "47864cb8ae06709a4294277c1124d7e73be86e90efa822588b145c49169b648c",
+    "scripts/test-physical-models.ts": "cdb3a3c84f4a7c2423e7241ab252cfdb996b4bf96287fd5b274bbfac49b95730",
+    "scripts/test_physical_models.py": "7e44b92338cef0cc0c6e185957ccec6732b2c27de9f9c307c4bb0b43d031518d",
+    "scripts/test_physical_mutations.py": "390057aa999a8077d7c0b933277b1a53cb300be7e4823eca7d8f7cce74b9bdba",
+    "services/power_dynamics/__init__.py": "52c7a6d4a360257574e90ff5b57e7a34b9e9d8793f30e53b187e75e69fdc7c81",
+    "services/power_dynamics/__main__.py": "adcdda956535626b3d2f5f1b2d234ac5968de8156d590676982a433f21e6e416",
+    "services/power_dynamics/common.py": "0a8bdacb595d723f349f0ea66a8d206dd2eedfbf331f96e8fa3f006549e505fa",
+    "services/power_dynamics/control.py": "3f31c56f0ae43ee2ed21282149442de67dc0ed577a18141d327ba040a8baa1a2",
+    "services/power_dynamics/dc_coupled.py": "949f89a2f2602427ed0cef47bf4e9f705b67790fc4e81b0483811b867ed4df15",
+    "services/power_dynamics/electrochemistry.py": "4e0dd32b66279072095cb18977b04b306c587d6a4254350b4520b016e19d85b0",
+    "services/pvlib_research/api_worker.py": "43181e94ca564b562bba4ee0285bca95f6e36d4b4f5be8aec523a9995940b5db",
+    "src/components/ResearchEditor.tsx": "2311178f21ab3dfbe3b26800836047b4a07cf0e9733baf3f4192a2f23aad48dc",
+    "src/server/researchApi.ts": "3c39e0bd00ad7472d62f722cbeae3c5e89b9bdd82a9daeea81b2051c7393a17f",
+    "src/studies/physicalModels.ts": "d1305c1587a5049a24e92cf071ffca58ca36f56e0cdd065e5c99d07021d2de2a",
+    "src/studies/researchApi.ts": "cba82c199e836379c9e44b798e3279035072d774bec2492c24e10ecedad06820"
+  },
+  "localLogReceipts": {
+    "final-physical-python": {
+      "sha256": "e40d3736c68fe5edbf1690408e8a11e0e04d03ffc4279c27a8374dc1a4db5d7b",
+      "tail": "SPM oracle max voltage error V, cells 30 0.008765608843807726\nSPM oracle max voltage error V, cells 60 0.004428009700304436\nPASS sensitive independent witness: services.power_dynamics.dc_coupled stored += (charge*cc*ec-discharge/(cd*ed))*dt\nPASS sensitive independent witness: services.power_dynamics.electrochemistry jn = current/(F*neg['area'])\nPASS sensitive independent witness: services.power_dynamics.control (applied-gg-effective_r*ii)/L\nPASS sensitive independent witness: services.power_dynamics.control 'normal_inverse': (.14, .02)"
+    },
+    "api-tests": {
+      "sha256": "d068308c29b8cd8be59ab295e253414ac7d3587fb1040019041b950a3528317a",
+      "tail": "> tsx scripts/test-physical-models.ts\n\nPASS isolated actual dc_coupled: binding, physical residuals, tamper, nonfinite, cancellation\nPASS isolated actual electrochemical_spm: binding, physical residuals, tamper, nonfinite, cancellation\nPASS isolated actual dq_protection_control: binding, physical residuals, tamper, nonfinite, cancellation\nPASS Python/TS strict input matrix, explicit-offset continuity, direct-worker duplicate-key guard"
+    },
+    "final-browser": {
+      "sha256": "23fa6f60ddd51efd579b4b628b64cf73ce28e229da9a7034d21a7f62b4bf24a4",
+      "tail": "\n> solarpv-studio@1.0.3 test:physical:browser\n> tsx scripts/test-physical-browser.ts\n\nPASS real browser (chromium): six research operations including DC/SPM/dq, three DC operating modes, actual JWT/API, physical archive disk readback/import, cancel/stale/site invalidation"
+    },
+    "research-api": {
+      "sha256": "a211144749798766c0f37da90767a8f79736f01b5f1b1f03ffe906731056af00",
+      "tail": "\n> solarpv-studio@1.0.3 test:research:api\n> tsx scripts/test-research-api.ts\n\n[SolarPV Studio] Restored database from snapshot: 17 projects loaded.\nPASS research: three actual models, binding/tamper, real JWT/auth-before-parser, disabled/body/rate/capacity/cancel/timeout/output/process-tree"
+    },
+    "research-tests": {
+      "sha256": "2a1d02e21c3185cbb734dca72a1ec19d7df291a2ea2ecc1119dbfeb62f8acb09",
+      "tail": "..................................................................\n----------------------------------------------------------------------\nRan 66 tests in 9.849s\n\nOK"
+    },
+    "study-tests": {
+      "sha256": "4f25f00c9c64db2b5bc8eb15ff2399ea9290b0da61912f8aeb868fb5d576f676",
+      "tail": "..............................................................................................................................................................\n----------------------------------------------------------------------\nRan 158 tests in 89.874s\n\nOK\nReview matrix: 8192 contract cases; 4352 rejected; 16 runtime-executed; 3824 contract-only, not numerically executed; admissible option-pair coverage complete."
+    },
+    "test-all": {
+      "sha256": "4674be0063298911f5e84f709345832c8a6d715ff216648e659059484dc63502",
+      "tail": "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e\nSensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d (expression result)\nIndependent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d\nSensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee (expression result)\nIndependent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee\nIndependent physics reference gate passed: 7 changed formula expression(s) each have an executed independent fixture."
+    },
+    "final-types": {
+      "sha256": "6630b4873247b6b923b8b408d635c8350b803eef379efaf90e0f4528b3ff87c9",
+      "tail": "> tsc --noEmit\n\n\n> solarpv-studio@1.0.3 lint:types:node\n> tsc --project tsconfig.node.json --noEmit\n"
+    },
+    "final-build": {
+      "sha256": "16efb30130e4c0e789fd4849c104896dd1f3fbad4b07d8be9cbd27cbe6e77547",
+      "tail": "\n(!) Some chunks are larger than 1000 kB after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\n✓ built in 30.57s"
+    },
+    "final-lint": {
+      "sha256": "98f1e84b884cfde2647bf946c15737e36ad79f80989d17c8844abc4bf1f94eb8",
+      "tail": "  193:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any\n  212:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any\n  225:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any\n\n✖ 95 problems (0 errors, 95 warnings)\n"
+    }
+  }
+}

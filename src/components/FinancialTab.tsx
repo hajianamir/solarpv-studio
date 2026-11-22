@@ -176,7 +176,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="financial-analysis" data-annual-energy-kwh={financial.annualEnergyYieldKwh}>
+      {(financial.annualGridImportKwh??0)>0&&<p data-testid="financial-grid-import">خرید برق سالانه: {financial.annualGridImportKwh?.toLocaleString()} kWh — هزینهٔ سال اول: {financial.annualGridImportCostToman?.toLocaleString()} تومان؛ در OPEX/NPV منظور شده، با نرخ رشد تعرفه.</p>}
       {/* Title */}
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
@@ -485,7 +486,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </span>
               <span className="font-mono text-industrial-success">
                 {lang === 'fa' ? 'خودمصرفی: ' : 'Self-Consumed: '}
-                <strong>{(financial.selfConsumedYieldKwh ?? financial.annualEnergyYieldKwh).toLocaleString()} kWh/yr</strong> (~{pricing.selfConsumptionRatioPct ?? 100}%)
+                <strong>{(financial.selfConsumedYieldKwh ?? financial.annualEnergyYieldKwh).toLocaleString()} kWh/yr</strong> (~{financial.selfConsumptionRatioPct ?? 100}%)
               </span>
               <span className="font-mono text-sky-300">
                 {lang === 'fa' ? 'صادرات به شبکه: ' : 'Grid Export: '}

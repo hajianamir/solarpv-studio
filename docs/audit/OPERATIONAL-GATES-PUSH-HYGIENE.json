@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-11-21T19:35:37.238163+00:00",
+  "scope": "Working-tree push candidates, not Git history; high-confidence pattern scan only, not credential validation or a comprehensive secret scanner",
+  "candidateFiles": 297,
+  "candidateBytes": 2951107,
+  "over5MiB": [],
+  "sensitiveFilenames": [],
+  "secretPatternFindings": [],
+  "patterns": [
+    "private_key_block",
+    "github_classic_token",
+    "github_fine_grained_token",
+    "aws_access_key_id",
+    "slack_token"
+  ],
+  "stagedPaths": [],
+  "ignored": {
+    ".env": true,
+    ".cache/study-evidence/operational/annual-direct.json": true,
+    ".cache/study-evidence/operational/annual-integrated.json": true,
+    ".cache/study-evidence/operational/annual-leap.json": true
+  },
+  "candidateManifestSha256": "7b4d2fdde81e1b312150fad36ff21bbd60d897f910d9c12ba2e18582365fb2ee"
+}

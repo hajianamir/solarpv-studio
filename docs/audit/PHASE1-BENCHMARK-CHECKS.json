@@ -1,0 +1,66 @@
+{
+  "scope": "research package only; no product suite or field calibration",
+  "checks": [
+    {
+      "command": [
+        ".cache/thermal-research/venv/bin/python",
+        "docs/research/phase1/run-benchmark-package.py"
+      ],
+      "exitCode": 0,
+      "stdout": "Integrity 43 PASS; weather 4; lab modules 20\nMIAMI run {'faiman': 1697.2715860986582, 'sapm_open_rack_glass_polymer': 1674.201110113145}\n\"SAND POINT\" run {'faiman': 939.9399152107206, 'sapm_open_rack_glass_polymer': 932.5968714718135}\n\"GREENSBORO PIEDMONT TRIAD INT\" run {'faiman': 1576.0068387859142, 'sapm_open_rack_glass_polymer': 1561.7538780822647}\nAMSTERDAM run {'faiman': 989.0397521027536, 'sapm_open_rack_glass_polymer': 979.9197652931231}\npvwatts_form_fit holdout nRMSE/STC min median max 0.0029508607207020024 0.009670101949233498 0.021104070737801975\nadr_fit holdout nRMSE/STC min median max 0.0014714647922353845 0.0023192140172200804 0.017803131799656917\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        ".cache/thermal-research/venv/bin/python",
+        "docs/research/phase1/run-benchmark-package.py"
+      ],
+      "exitCode": 0,
+      "stdout": "Integrity 43 PASS; weather 4; lab modules 20\nMIAMI run {'faiman': 1697.2715860986582, 'sapm_open_rack_glass_polymer': 1674.201110113145}\n\"SAND POINT\" run {'faiman': 939.9399152107206, 'sapm_open_rack_glass_polymer': 932.5968714718135}\n\"GREENSBORO PIEDMONT TRIAD INT\" run {'faiman': 1576.0068387859142, 'sapm_open_rack_glass_polymer': 1561.7538780822647}\nAMSTERDAM run {'faiman': 989.0397521027536, 'sapm_open_rack_glass_polymer': 979.9197652931231}\npvwatts_form_fit holdout nRMSE/STC min median max 0.0029508607207020024 0.009670101949233498 0.021104070737801975\nadr_fit holdout nRMSE/STC min median max 0.0014714647922353845 0.0023192140172200804 0.017803131799656917\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        ".cache/thermal-research/venv/bin/python",
+        "docs/research/phase1/test-benchmark-package.py"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "test_duplicate_operating_point_rejected (__main__.BenchmarkTests.test_duplicate_operating_point_rejected) ... ok\ntest_holdout_power_never_changes_training_fit (__main__.BenchmarkTests.test_holdout_power_never_changes_training_fit) ... ok\ntest_missing_stc_rejected_not_filled (__main__.BenchmarkTests.test_missing_stc_rejected_not_filled) ... ok\ntest_negative_lab_power_rejected (__main__.BenchmarkTests.test_negative_lab_power_rejected) ... ok\ntest_prilliman_constant_input_invariant (__main__.BenchmarkTests.test_prilliman_constant_input_invariant) ... ok\ntest_prilliman_hourly_not_fake_dynamic_improvement (__main__.BenchmarkTests.test_prilliman_hourly_not_fake_dynamic_improvement) ... ok\ntest_prilliman_irregular_cadence_rejected (__main__.BenchmarkTests.test_prilliman_irregular_cadence_rejected) ... ok\ntest_prilliman_missing_wind_not_zero_filled (__main__.BenchmarkTests.test_prilliman_missing_wind_not_zero_filled) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.038s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "py_compile",
+        "docs/research/phase1/acquire-benchmark-package.py",
+        "docs/research/phase1/run-benchmark-package.py",
+        "docs/research/phase1/test-benchmark-package.py"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "repeatResultHashes": [
+    "859817e832363533fa1adc3e22ce759ac590de0748e9739564a8e7182f51702f",
+    "859817e832363533fa1adc3e22ce759ac590de0748e9739564a8e7182f51702f"
+  ],
+  "deterministicRepeat": true,
+  "files": {
+    "docs/research/phase1/acquire-benchmark-package.py": "136726f0e5649e87a3fa9fa50f66d90ab37948637761b7b2206b2710213676c0",
+    "docs/research/phase1/run-benchmark-package.py": "62a0408d716893353fe39c458027c5a5b73935b7d3ece8d5752fba4727b1a0a9",
+    "docs/research/phase1/test-benchmark-package.py": "7bb76e2a0d02ddcc9ec73712e72cb22ab59e65143f33463652f3c95955dacdde",
+    "docs/research/phase1/BENCHMARK-PROTOCOL.json": "8ed27408da706938a249751317171ac5f5706976a00540e284da487fff3a035e"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "tracker-motion-plan-v1",
+  "source": "Synthetic geometry and movement fixture",
+  "terrain": {
+    "datum": "Synthetic local ENU, metres",
+    "source": "Synthetic plane, not survey",
+    "slopeTiltDeg": 5,
+    "slopeAzimuthDeg": 270
+  },
+  "layout": {
+    "axisAzimuthDeg": 180,
+    "widthM": 2,
+    "pitchM": 6,
+    "backtrack": true
+  },
+  "actuator": {
+    "source": "Synthetic constant-speed motor",
+    "minPhysicalDeg": -60,
+    "maxPhysicalDeg": 60,
+    "encoderOffsetDeg": 14,
+    "slewDegPerS": 2,
+    "windStowDeg": 0,
+    "nightStowDeg": -10,
+    "movingW": 120,
+    "idleW": 3,
+    "count": 4
+  },
+  "wind": {
+    "source": "Synthetic wind, no operational telemetry",
+    "heightM": 3,
+    "triggerMps": 15,
+    "releaseMps": 10
+  },
+  "initial": {
+    "encoderDeg": -14,
+    "windLatched": false
+  },
+  "intervals": [
+    {
+      "start": "2026-01-01T00:00:00Z",
+      "durationS": 60,
+      "solarZenithDeg": 80,
+      "solarAzimuthDeg": 90,
+      "windMps": 0
+    },
+    {
+      "start": "2026-01-01T00:01:00Z",
+      "durationS": 60,
+      "solarZenithDeg": 45,
+      "solarAzimuthDeg": 180,
+      "windMps": 16
+    },
+    {
+      "start": "2026-01-01T00:02:00Z",
+      "durationS": 60,
+      "solarZenithDeg": 45,
+      "solarAzimuthDeg": 270,
+      "windMps": 12
+    },
+    {
+      "start": "2026-01-01T00:03:00Z",
+      "durationS": 60,
+      "solarZenithDeg": 95,
+      "solarAzimuthDeg": 270,
+      "windMps": 9
+    }
+  ]
+}

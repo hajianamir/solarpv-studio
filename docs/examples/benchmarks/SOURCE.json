@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "b6c85b0323d20fb801cab3377c803a285d730847",
+  "caseUrl": "https://github.com/MATPOWER/matpower/blob/b6c85b0323d20fb801cab3377c803a285d730847/data/case33bw.m",
+  "citation": "Baran & Wu, 1989, DOI 10.1109/61.25627",
+  "use": "Published electrical benchmark only, not product defaults or site weather",
+  "licenseCaveat": "MATPOWER notice states case files are not covered by the code BSD license; original case citation retained",
+  "sha256": {
+    "case33bw.m": "b40831eeb444669ae876e2996f0dda9f05cd83e81b314b8dfca51e4890cca95d",
+    "MATPOWER-LICENSE.txt": "5d14c09b3e4f2adf62c0373e6320163697aa4603186f8925c07c6b84201e1750"
+  }
+}

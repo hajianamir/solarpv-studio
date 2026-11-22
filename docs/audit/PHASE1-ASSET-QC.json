@@ -1,0 +1,125 @@
+{
+  "scope": "hash,byte-count,CSV structure only; no calibration or model acceptance",
+  "results": [
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvlib-python__LICENSE",
+      "integrity": "PASS"
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvlib-python__tests__data__inverter_fit_snl_meas.csv",
+      "integrity": "PASS",
+      "recordsAfterFirstRow": 126,
+      "rowWidths": [
+        5
+      ],
+      "blankCells": 0,
+      "timestampOffsetPolicy": "not_assumed",
+      "fieldValidated": false
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvlib-python__tests__data__singleaxis_tracker_wslope.csv",
+      "integrity": "PASS",
+      "recordsAfterFirstRow": 8760,
+      "rowWidths": [
+        5
+      ],
+      "blankCells": 17412,
+      "timestampOffsetPolicy": "not_assumed",
+      "fieldValidated": false,
+      "classification": "tracker algorithm reference, not measured actuator motion"
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvlib-python__tests__data__PVsyst_demo_model.csv",
+      "integrity": "PASS",
+      "recordsAfterFirstRow": 3587,
+      "rowWidths": [
+        1,
+        4,
+        5,
+        9
+      ],
+      "blankCells": 0,
+      "timestampOffsetPolicy": "not_assumed",
+      "fieldValidated": false,
+      "format": "multi-section model fixture; not rectangular timeseries"
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvlib-python__tests__test_inverter.py",
+      "integrity": "PASS"
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvlib-python__tests__test_tracking.py",
+      "integrity": "PASS"
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvanalytics__README.md",
+      "integrity": "PASS"
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvanalytics__pvanalytics__data__nrel_1axis_tracker_mesa_ac_power.csv",
+      "integrity": "PASS",
+      "recordsAfterFirstRow": 576,
+      "rowWidths": [
+        2
+      ],
+      "blankCells": 0,
+      "timestampOffsetPolicy": "not_assumed",
+      "fieldValidated": false
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvanalytics__pvanalytics__data__rmis_weather_data.csv",
+      "integrity": "PASS",
+      "recordsAfterFirstRow": 1151,
+      "rowWidths": [
+        13
+      ],
+      "blankCells": 48,
+      "timestampOffsetPolicy": "not_assumed",
+      "fieldValidated": false,
+      "operationalImport": "BLOCKED: timestamps lack explicit offset; metadata required"
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvanalytics__pvanalytics__data__snow_data.csv",
+      "integrity": "PASS",
+      "recordsAfterFirstRow": 576,
+      "rowWidths": [
+        14
+      ],
+      "blankCells": 1169,
+      "timestampOffsetPolicy": "not_assumed",
+      "fieldValidated": false,
+      "operationalImport": "BLOCKED: timestamps lack explicit offset; metadata required"
+    },
+    {
+      "path": ".cache/phase1-research/assets/pvlib__pvanalytics__pvanalytics__data__snow_snowfall.csv",
+      "integrity": "PASS",
+      "recordsAfterFirstRow": 6,
+      "rowWidths": [
+        2
+      ],
+      "blankCells": 0,
+      "timestampOffsetPolicy": "not_assumed",
+      "fieldValidated": false
+    },
+    {
+      "path": ".cache/phase1-research/assets/NatLabRockies__ssc__LICENSE",
+      "integrity": "PASS"
+    },
+    {
+      "path": ".cache/phase1-research/assets/NatLabRockies__ssc__ssc__cmod_singleowner.cpp",
+      "integrity": "PASS"
+    },
+    {
+      "path": ".cache/phase1-research/assets/NatLabRockies__ssc__ssc__cmod_utilityrate5.cpp",
+      "integrity": "PASS"
+    },
+    {
+      "path": ".cache/phase1-research/assets/NatLabRockies__bifacial_radiance__README.md",
+      "integrity": "PASS"
+    },
+    {
+      "path": ".cache/phase1-research/assets/NatLabRockies__bifacial_radiance__LICENSE",
+      "integrity": "PASS"
+    }
+  ]
+}

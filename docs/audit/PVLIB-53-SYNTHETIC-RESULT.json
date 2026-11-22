@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "finite-shading-result-v1",
+  "algorithmVersion": "1.0.0",
+  "reference": "https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm",
+  "plan": {
+    "schemaVersion": "finite-shading-plan-v1",
+    "source": "Synthetic finite optical/circuit fixture",
+    "datum": "Synthetic local ENU metres, not survey",
+    "patches": [
+      {
+        "id": "s0",
+        "origin": [
+          0,
+          0,
+          0
+        ],
+        "u": [
+          1,
+          0,
+          0
+        ],
+        "v": [
+          0,
+          1,
+          0
+        ],
+        "iscRefA": 10,
+        "vocV": 30
+      },
+      {
+        "id": "s1",
+        "origin": [
+          1,
+          0,
+          0
+        ],
+        "u": [
+          1,
+          0,
+          0
+        ],
+        "v": [
+          0,
+          1,
+          0
+        ],
+        "iscRefA": 10,
+        "vocV": 30
+      }
+    ],
+    "triangles": [
+      [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          0.5,
+          0,
+          1
+        ],
+        [
+          0.5,
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          0.5,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          1
+        ]
+      ]
+    ],
+    "sun": {
+      "zenithDeg": 0,
+      "azimuthDeg": 180,
+      "dniWm2": 1000,
+      "dhiWm2": 100
+    },
+    "quadrature": {
+      "surfaceGrid": 4,
+      "skyMu": 4,
+      "skyAzimuth": 16,
+      "maxPairTests": 2000000
+    },
+    "electrical": {
+      "source": "Assumed linear IV, not equipment parameters",
+      "strings": [
+        [
+          "s0",
+          "s1"
+        ]
+      ],
+      "bypassDropV": 0.5,
+      "referenceWm2": 1000
+    }
+  },
+  "planSha256": "cba0196845ebc5f8f699071c50c895e972ccbbb63f3349eacb8ea4ffc8b17a0e",
+  "validationStatus": "conditional_assumptions",
+  "projectApproval": "blocked",
+  "estimatedRayTrianglePairs": 4160,
+  "patches": [
+    {
+      "id": "s0",
+      "areaM2": 1.0,
+      "normalENU": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "directVisibleFraction": 0.5,
+      "directUnshadedWm2": 1000.0,
+      "directShadedWm2": 500.0,
+      "diffuseUnshadedWm2": 100.0,
+      "diffuseShadedWm2": 90.4296875,
+      "unshadedWm2": 1100.0,
+      "shadedWm2": 590.4296875
+    },
+    {
+      "id": "s1",
+      "areaM2": 1.0,
+      "normalENU": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "directVisibleFraction": 1.0,
+      "directUnshadedWm2": 1000.0,
+      "directShadedWm2": 1000.0,
+      "diffuseUnshadedWm2": 100.0,
+      "diffuseShadedWm2": 98.046875,
+      "unshadedWm2": 1100.0,
+      "shadedWm2": 1098.046875
+    }
+  ],
+  "optical": {
+    "unshadedIncidentW": 2200.0,
+    "shadedIncidentW": 1688.4765625,
+    "blockedIncidentW": 511.5234375
+  },
+  "electrical": {
+    "model": "assumed_linear_IV_constant_Voc_ideal_bypass_and_string_blocking",
+    "unshaded": {
+      "mppW": 165.00000000000003,
+      "mppV": 30.000000000000004,
+      "mppA": 5.5,
+      "independentSubstringMppW": 165.0,
+      "mismatchW": 0.0
+    },
+    "shaded": {
+      "mppW": 115.19013429005206,
+      "mppV": 30.0,
+      "mppA": 3.8396711430017354,
+      "independentSubstringMppW": 126.6357421875,
+      "mismatchW": 11.445607897447942
+    },
+    "networkReductionW": 49.80986570994797,
+    "independentSubstringReductionW": 38.3642578125,
+    "additionalMismatchW": 11.445607897447942
+  },
+  "accounting": "Optical incident watts are not electrical watts; no losses added to existing waterfall",
+  "limitations": [
+    "finite_opaque_triangles_explicit_only_receivers_not_automatic_occluders",
+    "midpoint_surface_and_sky_quadrature_aliasing_requires_refinement",
+    "isotropic_upper_sky_only",
+    "no_ground_reflections_rear_or_anisotropic_diffuse",
+    "uniform_irradiance_within_each_electrical_substring",
+    "assumed_linear_IV_not_physical_cell_or_diode_model",
+    "no_temperature_reverse_breakdown_or_resistive_losses",
+    "no_field_validation_or_production_yield_integration"
+  ]
+}

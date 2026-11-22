@@ -1,0 +1,154 @@
+{
+  "schemaVersion": "dynamic-environment-result-v1",
+  "algorithmVersion": "1.0.0",
+  "reference": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.temperature.faiman.html",
+  "plan": {
+    "schemaVersion": "dynamic-environment-plan-v1",
+    "source": "Synthetic assumed thermal/environment fixture",
+    "target": "back_of_module",
+    "poaBasis": "unshaded_front",
+    "stepS": 1,
+    "thermal": {
+      "source": "Synthetic areal balance coefficients, not fitted Faiman",
+      "capacityJm2K": 12000,
+      "absorptance": 0.9,
+      "h0Wm2K": 20,
+      "hWindWm2KPerMps": 5,
+      "windHeightM": 3,
+      "coefficientWindHeightM": 3,
+      "domain": {
+        "source": "Synthetic declared domain, not engineering approved",
+        "airMinC": -30,
+        "airMaxC": 50,
+        "windMaxMps": 20,
+        "poaMaxWm2": 1500,
+        "backMinC": -40,
+        "backMaxC": 120
+      }
+    },
+    "snow": {
+      "source": "Assumed degree-day cover, not Marion",
+      "coverageSweMm": 2,
+      "meltMmPerHourPerC": 0.2,
+      "coveredTransmission": 0.1
+    },
+    "soiling": {
+      "source": "Assumed optical depth, not Kimber",
+      "depositionTauPerHour": 0.02,
+      "rainWashPerMm": 0.5
+    },
+    "initial": {
+      "moduleBackC": 20,
+      "snowSweMm": 0.5,
+      "soilOpticalDepth": 0.2
+    },
+    "intervals": [
+      {
+        "start": "2026-01-01T00:00:00Z",
+        "durationS": 600,
+        "poaWm2": 1000,
+        "extractedElectricalWm2": 0,
+        "airC": 5,
+        "windMps": 2,
+        "rainMmPerHour": 2,
+        "snowfallSweMmPerHour": 0.1,
+        "soilCleaningFraction": 0,
+        "snowRemovalFraction": 0
+      },
+      {
+        "start": "2026-01-01T00:10:00Z",
+        "durationS": 600,
+        "poaWm2": 500,
+        "extractedElectricalWm2": 0,
+        "airC": 10,
+        "windMps": 2,
+        "rainMmPerHour": 0,
+        "snowfallSweMmPerHour": 0,
+        "soilCleaningFraction": 0.8,
+        "snowRemovalFraction": 1
+      }
+    ]
+  },
+  "planSha256": "4a2b2ac002735c155c0cb6e6410662e34722de7b441cb3ec4f38a8afdc78a565",
+  "validationStatus": "conditional_assumptions",
+  "projectApproval": "blocked",
+  "target": "back_of_module",
+  "steps": 1200,
+  "effectiveIncidentWhm2": 192.33691036748394,
+  "absorbedWhm2": 173.1032193307355,
+  "extractedElectricalWhm2": 0.0,
+  "heatToAmbientWhm2": 158.41576607740691,
+  "storedHeatChangeJm2": 52874.83171198364,
+  "thermalResidualJm2": 6.984919309616089e-10,
+  "trace": [
+    {
+      "startUTC": "2026-01-01T00:00:00+00:00",
+      "durationS": 600.0,
+      "steps": 600,
+      "moduleBackC": 24.2128757806567,
+      "snowSweMm": 0.35000000000001646,
+      "soilOpticalDepth": 0.17236671048031268,
+      "endSnowTransmission": 0.8424999999999926,
+      "endSoilTransmission": 0.8416704671878127,
+      "effectiveIncidentWhm2": 111.96143608645066,
+      "absorbedWhm2": 100.76529247780569,
+      "extractedElectricalWhm2": 0.0,
+      "heatToAmbientWhm2": 86.7223732089501,
+      "storedHeatChangeJm2": 50554.50936788038,
+      "thermalResidualJm2": 2.9103830456733704e-10,
+      "snowAddedMm": 0.016666666666666646,
+      "snowMeltedMm": 0.1666666666666594,
+      "snowRemovedMm": 0.0,
+      "snowBalanceResidualMm": 9.242606680004428e-15,
+      "soilDepositedTau": 0.003333333333333317,
+      "soilWashedTau": 0.030966622853025844,
+      "soilCleanedTau": 0.0,
+      "soilBalanceResidualTau": 5.200700980978468e-15,
+      "observedEndModuleBackC": null,
+      "moduleBackErrorC": null
+    },
+    {
+      "startUTC": "2026-01-01T00:10:00+00:00",
+      "durationS": 600.0,
+      "steps": 600,
+      "moduleBackC": 24.406235975998637,
+      "snowSweMm": 0.0,
+      "soilOpticalDepth": 0.03780667542939689,
+      "endSnowTransmission": 1.0,
+      "endSoilTransmission": 0.962899074948675,
+      "effectiveIncidentWhm2": 80.37547428103328,
+      "absorbedWhm2": 72.33792685292983,
+      "extractedElectricalWhm2": 0.0,
+      "heatToAmbientWhm2": 71.69339286845681,
+      "storedHeatChangeJm2": 2320.3223441032605,
+      "thermalResidualJm2": 3.7834979593753815e-10,
+      "snowAddedMm": 0.0,
+      "snowMeltedMm": 0.0,
+      "snowRemovedMm": 0.35000000000001646,
+      "snowBalanceResidualMm": 0.0,
+      "soilDepositedTau": 0.003333333333333317,
+      "soilWashedTau": 0.0,
+      "soilCleanedTau": 0.13789336838425015,
+      "soilBalanceResidualTau": 1.0269562977782698e-15,
+      "observedEndModuleBackC": null,
+      "moduleBackErrorC": null
+    }
+  ],
+  "comparison": {
+    "pairs": 0,
+    "rmseC": null,
+    "mbeC": null
+  },
+  "fallback": "none_fail_closed",
+  "accounting": "Snow and soil transmission multiply unshaded POA once; not production PV yield, auxiliary or structural snow",
+  "limitations": [
+    "assumed_single_module_back_node_not_cell_temperature",
+    "caller_declared_coefficients_domain_and_wind_height_not_authenticated",
+    "midpoint_optical_forcing_requires_step_refinement",
+    "empirical_snow_cover_no_latent_heat_or_insulation",
+    "assumed_soil_optical_depth_not_dust_mass",
+    "no_Marion_Kimber_or_structural_load_claim",
+    "ZOH_inputs_no_gapfill_or_annualization",
+    "no_field_validation_or_production_waterfall"
+  ]
+}

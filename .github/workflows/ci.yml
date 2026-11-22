@@ -148,3 +148,66 @@ jobs:
 
       - name: Geocode cache regressions
         run: npx tsx scripts/test-geocode-cache.ts
+
+  direct-pvlib-study:
+    name: Direct pvlib study (${{ matrix.os }}, Python 3.11)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2022]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: services/pvlib_study/requirements.txt
+      - run: npm ci
+      - run: python -m pip install -r services/pvlib_research/requirements.txt
+      - name: Operational annual energy and import-cost finance bridge
+        run: npm run test:operational:energy
+      - name: Research editor API integration and process bounds
+        run: npm run test:research:api
+      - name: Isolated research equations, bounded composition and failure regressions
+        run: python -m unittest discover -s services/pvlib_research/tests -v
+      - name: Stage55 dual-language composition, archive and migration gates
+        run: npx tsx scripts/test-integrated-study.ts
+      - name: Independent equations, published examples and ModelChain cross-check
+        run: npm run test:study:python
+      - name: Real HTTP, authentication, Python execution and resource/failure limits
+        run: npm run test:study && npm run test:study:workflow
+      - name: Build offline frontend
+        run: npm run build
+        env:
+          VITE_REAL_INTERNET: 'false'
+      - name: Install Chromium (Windows)
+        if: runner.os == 'Windows'
+        run: npx playwright-core install chromium
+      - name: Install Chromium shared libraries (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libnspr4 libnss3
+      - name: Browser import, real Python study, reports and screening isolation
+        run: npm run test:study:browser
+      - name: Stage55 real-browser contract and portable archive
+        run: npx tsx scripts/test-integrated-browser.ts
+      - name: Operational App source adoption and financial UI
+        run: npm run test:operational:browser
+      - name: Research editor real browser
+        run: npm run test:research:browser
+      - name: Preserve bounded contract/runtime classification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: study-contract-evidence-${{ matrix.os }}
+          path: |
+            .cache/study-evidence/contract-matrix-v2.json
+            .cache/study-evidence/integrated-matrix-v1.json
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14

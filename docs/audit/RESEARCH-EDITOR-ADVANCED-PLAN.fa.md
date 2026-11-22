@@ -1,0 +1,12 @@
+# برنامه پیش از کد — editor/API و دو مدل پیشرفته
+2026-11-03؛ شاخهarena/237e6ea2-solarpv-studio،HEAD5438fb5. تغییرات قبلی حفظ می‌شوند.
+موجودی: integratedCLIوTSvalidator/archiveمرحله۵۵آماده‌اند ولی route/editorندارند؛sourceهایserverauth/rate/body وClimateTab/PvlibStudyPanelبررسیشدند. workerانرژیقدیمی تغییر نمی‌کند.
+دامنه۱: اتصال /api/v1/research با featureflagجداPVLIB_RESEARCH_ENABLED،authقبلparse،schemaسخت،rate/capacity/output/time/bodybounds؛Pythonwrapperثابتstdin/stdout؛killکلprocessgroupدرUnixوtaskkilltreeدرWindows برایجلوگیریازorphanchildهایintegrated. هیچshell/pathازدرخواستگرفتهنمی‌شود. JSONeditorباpreview/اعتبارسنجیقبلrun،لغو،ابطالنتیجهباedit/restore/sitechange،resultdownloadوarchiveنسخه‌دار؛هیچاتصالبهfinanceیاwaterfall.
+دامنه۲: مدل حرارتی دوگره‌ایCell/Back،Cسطحی جدا،Gcb،convectionfront/back وابسته بهباد،تابشT^4بهsky/ground دمایصریح. initialcell/backهرکداماجباری؛observationsجدا؛منبعپارامترهاوdomainصریح. RK4وintegralهایحرارتیهمزمان،step/stability/budget،ZOH/UTC/gap،بدونتبدیلاندازه‌گیریbackبهcell.
+دامنه۳: شبکهٔفیزیکیsingle-diodeباRs/Rsh/IL/I0/nNsVthبرایهرsubstringدرشرایطکارکردصریح،bypassباافتثابتایده‌آل،seriesداخلstring وparallelcommonvoltageبابلاکینگایده‌آل؛به‌جایlinearIVمرحله۵۳. پارامترهایmoduleبهsubstringخودکارتقسیم نمی‌شوند. avalanche/hotspot/دیودswitchingواقعیپشتیبانی‌نشده؛بدونپارامترسازندهآن‌راتأیید نمی‌کنیم. حلrootI/V وبهینه‌سازیهرsegmentبینactivation/bypassوblockingباbudget/residual/convergence؛مقایسهباoracleضمنی مستقل وuniformPVlib.
+منابع خوانده‌شده پیش از کد:
+https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.singlediode.bishop88.html (معادلهVd=V+IRsوحدreverse/breakdown)
+https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.calcparams_desoto.html (پارامترهایپنج‌گانهوتمایزشرایطکارکرد/مرجع)
+https://physics.nist.gov/cgi-bin/cuu/Value?sigma (sigma=5.670374419...e-8W/m²/K⁴)
+مدلدوگرهderivedenergybalanceاستنهکالیبراسیونپروژه. همهٔخروجی‌هاblocked/not_field_validatedمی‌مانند.
+تستپسازکد:oracleحرارتmatrixexponentialبدونradiationوDOP853باتابش،توازنهرگره/کل،nightcoolingوsensorseparation؛oracleمدارضمنی،partialshade/multipeak/dark/بای‌پس/کاهشmismatchباpartition؛TS/Pythoninvalid/domain؛HTTPauth/disabled/forged/body/busy/timeout/cancel/output/orphantree؛Chromiumواقعیeditor/import/run/download/restore/stalereset؛regression۵۸research+۱۵۸production+workflow/types/build/HTTP/browserقدیمی. UIفرمJSONمهندسی استنهطراحیگرافیکی۳بعدی. داده/گواهی/ایمنیبدونشواهدواقعیcompleteنمی‌شوند.

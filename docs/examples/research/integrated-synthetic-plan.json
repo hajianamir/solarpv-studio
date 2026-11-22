@@ -1,0 +1,306 @@
+{
+  "schemaVersion": "integrated-mppt-plan-v1",
+  "source": "Synthetic stage55 combination, not equipment/site validation",
+  "inverter": {
+    "Paco": 8000,
+    "Pdco": 8189.146484,
+    "Vdco": 379,
+    "Pso": 20.059303,
+    "C0": -2.702809e-06,
+    "C1": 2.072e-06,
+    "C2": 0.001293,
+    "C3": -0.001493,
+    "Pnt": 2.4,
+    "modelMinDcV": 200,
+    "modelMaxDcV": 800,
+    "modelMaxDcPowerW": 12000
+  },
+  "inputs": [
+    {
+      "id": "input0",
+      "request": {
+        "schemaVersion": "pvlib-study-v1",
+        "label": "SYNTHETIC TEST ONLY — not measured weather or a site yield claim",
+        "site": {
+          "latitude": 32.2,
+          "longitude": -110.9,
+          "altitudeM": 700,
+          "timezone": "America/Phoenix"
+        },
+        "system": {
+          "surfaceTiltDeg": 20,
+          "surfaceAzimuthDeg": 150,
+          "albedo": 0.2,
+          "arrayPdc0W": 4400,
+          "gammaPdcPerC": -0.004,
+          "inverterPdc0W": 9000,
+          "inverterEtaNom": 0.96,
+          "inverterEtaRef": 0.9637,
+          "iamB": 0.05,
+          "additionalDcLossPct": 0,
+          "temperature": {
+            "a": -3.47,
+            "b": -0.0594,
+            "deltaT": 3
+          },
+          "electrical": {
+            "alphaScAperC": 0.004539,
+            "aRefV": 2.6373,
+            "iLRefA": 5.114,
+            "iORefA": 8.196e-10,
+            "rShRefOhm": 381.68,
+            "rSOhm": 1.065,
+            "egRefEv": 1.121,
+            "dEgdTPerK": -0.0002677,
+            "modulesPerString": 10,
+            "stringsInParallel": 2,
+            "mpptMinV": 200,
+            "mpptMaxV": 800,
+            "maxDcV": 1000,
+            "maxInputCurrentA": 30,
+            "designMinCellTemperatureC": -20,
+            "designMaxEffectiveIrradianceWm2": 1500
+          },
+          "cellTemperatureSchedule": {
+            "source": "Synthetic independent cell fixture, not backsheet",
+            "quality": "assumed",
+            "records": [
+              {
+                "timestamp": "2017-04-01T17:00:00Z",
+                "cellTemperatureC": 35
+              },
+              {
+                "timestamp": "2017-04-01T18:00:00Z",
+                "cellTemperatureC": 35
+              },
+              {
+                "timestamp": "2017-04-01T19:00:00Z",
+                "cellTemperatureC": 35
+              },
+              {
+                "timestamp": "2017-04-01T20:00:00Z",
+                "cellTemperatureC": 35
+              },
+              {
+                "timestamp": "2017-04-01T21:00:00Z",
+                "cellTemperatureC": 35
+              },
+              {
+                "timestamp": "2017-04-01T22:00:00Z",
+                "cellTemperatureC": 35
+              }
+            ]
+          }
+        },
+        "parameterProvenance": {
+          "quality": "assumed",
+          "source": "Synthetic numerical test parameters, not equipment certification"
+        },
+        "weather": {
+          "source": "Synthetic independent test inputs; not weather data",
+          "quality": "assumed",
+          "windHeightM": 10,
+          "timestampConvention": "interval_end",
+          "intervalMinutes": 60,
+          "records": [
+            {
+              "timestamp": "2017-04-01T17:00:00Z",
+              "ghiWm2": 0,
+              "dniWm2": 0,
+              "dhiWm2": 0,
+              "tempAirC": 25,
+              "windSpeedMs": 2
+            },
+            {
+              "timestamp": "2017-04-01T18:00:00Z",
+              "ghiWm2": 750,
+              "dniWm2": 800,
+              "dhiWm2": 100,
+              "tempAirC": 27,
+              "windSpeedMs": 2
+            },
+            {
+              "timestamp": "2017-04-01T19:00:00Z",
+              "ghiWm2": 900,
+              "dniWm2": 900,
+              "dhiWm2": 100,
+              "tempAirC": 29,
+              "windSpeedMs": 3
+            },
+            {
+              "timestamp": "2017-04-01T20:00:00Z",
+              "ghiWm2": 950,
+              "dniWm2": 950,
+              "dhiWm2": 100,
+              "tempAirC": 30,
+              "windSpeedMs": 3
+            },
+            {
+              "timestamp": "2017-04-01T21:00:00Z",
+              "ghiWm2": 850,
+              "dniWm2": 850,
+              "dhiWm2": 100,
+              "tempAirC": 30,
+              "windSpeedMs": 4
+            },
+            {
+              "timestamp": "2017-04-01T22:00:00Z",
+              "ghiWm2": 700,
+              "dniWm2": 700,
+              "dhiWm2": 100,
+              "tempAirC": 28,
+              "windSpeedMs": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "input1",
+      "request": {
+        "schemaVersion": "pvlib-study-v1",
+        "label": "SYNTHETIC TEST ONLY — not measured weather or a site yield claim",
+        "site": {
+          "latitude": 32.2,
+          "longitude": -110.9,
+          "altitudeM": 700,
+          "timezone": "America/Phoenix"
+        },
+        "system": {
+          "surfaceTiltDeg": 20,
+          "surfaceAzimuthDeg": 180,
+          "albedo": 0.2,
+          "arrayPdc0W": 4400,
+          "gammaPdcPerC": -0.004,
+          "inverterPdc0W": 9000,
+          "inverterEtaNom": 0.96,
+          "inverterEtaRef": 0.9637,
+          "iamB": 0.05,
+          "additionalDcLossPct": 0,
+          "temperature": {
+            "a": -3.47,
+            "b": -0.0594,
+            "deltaT": 3
+          },
+          "electrical": {
+            "alphaScAperC": 0.004539,
+            "aRefV": 2.6373,
+            "iLRefA": 5.114,
+            "iORefA": 8.196e-10,
+            "rShRefOhm": 381.68,
+            "rSOhm": 1.065,
+            "egRefEv": 1.121,
+            "dEgdTPerK": -0.0002677,
+            "modulesPerString": 10,
+            "stringsInParallel": 2,
+            "mpptMinV": 200,
+            "mpptMaxV": 800,
+            "maxDcV": 1000,
+            "maxInputCurrentA": 30,
+            "designMinCellTemperatureC": -20,
+            "designMaxEffectiveIrradianceWm2": 1500
+          },
+          "tracking": {
+            "axisTiltDeg": 0,
+            "axisAzimuthDeg": 180,
+            "maxAngleDeg": 60,
+            "backtrack": true,
+            "gcr": 0.3,
+            "crossAxisTiltDeg": 0
+          },
+          "cellTemperatureSchedule": {
+            "source": "Synthetic independent cell fixture, not backsheet",
+            "quality": "assumed",
+            "records": [
+              {
+                "timestamp": "2017-04-01T17:00:00Z",
+                "cellTemperatureC": 40
+              },
+              {
+                "timestamp": "2017-04-01T18:00:00Z",
+                "cellTemperatureC": 40
+              },
+              {
+                "timestamp": "2017-04-01T19:00:00Z",
+                "cellTemperatureC": 40
+              },
+              {
+                "timestamp": "2017-04-01T20:00:00Z",
+                "cellTemperatureC": 40
+              },
+              {
+                "timestamp": "2017-04-01T21:00:00Z",
+                "cellTemperatureC": 40
+              },
+              {
+                "timestamp": "2017-04-01T22:00:00Z",
+                "cellTemperatureC": 40
+              }
+            ]
+          }
+        },
+        "parameterProvenance": {
+          "quality": "assumed",
+          "source": "Synthetic numerical test parameters, not equipment certification"
+        },
+        "weather": {
+          "source": "Synthetic independent test inputs; not weather data",
+          "quality": "assumed",
+          "windHeightM": 10,
+          "timestampConvention": "interval_end",
+          "intervalMinutes": 60,
+          "records": [
+            {
+              "timestamp": "2017-04-01T17:00:00Z",
+              "ghiWm2": 0,
+              "dniWm2": 0,
+              "dhiWm2": 0,
+              "tempAirC": 25,
+              "windSpeedMs": 2
+            },
+            {
+              "timestamp": "2017-04-01T18:00:00Z",
+              "ghiWm2": 750,
+              "dniWm2": 800,
+              "dhiWm2": 100,
+              "tempAirC": 27,
+              "windSpeedMs": 2
+            },
+            {
+              "timestamp": "2017-04-01T19:00:00Z",
+              "ghiWm2": 900,
+              "dniWm2": 900,
+              "dhiWm2": 100,
+              "tempAirC": 29,
+              "windSpeedMs": 3
+            },
+            {
+              "timestamp": "2017-04-01T20:00:00Z",
+              "ghiWm2": 950,
+              "dniWm2": 950,
+              "dhiWm2": 100,
+              "tempAirC": 30,
+              "windSpeedMs": 3
+            },
+            {
+              "timestamp": "2017-04-01T21:00:00Z",
+              "ghiWm2": 850,
+              "dniWm2": 850,
+              "dhiWm2": 100,
+              "tempAirC": 30,
+              "windSpeedMs": 4
+            },
+            {
+              "timestamp": "2017-04-01T22:00:00Z",
+              "ghiWm2": 700,
+              "dniWm2": 700,
+              "dhiWm2": 100,
+              "tempAirC": 28,
+              "windSpeedMs": 3
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

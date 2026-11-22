@@ -1,0 +1,40 @@
+{
+  "scope": "phase2 local working tree, not committed-SHA CI or field validation",
+  "branch": "arena/237e6ea2-solarpv-studio",
+  "baseHead": "5438fb59f4bb5cde05c20818b780464e1fe28752",
+  "checks": {
+    "types": "PASS client and node",
+    "productionBuild": "PASS; chunk/import/zod annotation warnings retained",
+    "testAll": "PASS",
+    "operationalEnergy": "PASS with explicit pvlib Python",
+    "operationalStudy": "PASS",
+    "operationalBrowser": "PASS including missing storage recovery, print document and four download routes",
+    "studyWorkflow": "PASS with explicit pvlib Python; initial default interpreter attempt failed",
+    "legacyExportReadback": "PASS",
+    "phase1BenchmarkUnitTests": "8/8 PASS",
+    "diffCheck": "PASS"
+  },
+  "files": {
+    "src/studies/operationalStudy.ts": "346f1358d62d924fe86be5747b171659d29fee8649677f8317169c1a3ac0216a",
+    "src/studies/operationalEnergy.ts": "6cd51285fe97d39ead132c792363832ad789554737ae80801263d6df77c7f91f",
+    "src/components/OperationalEnergyPanel.tsx": "4649231d1b23bc693b61b6fcb19542300794012de595e07a03e739afe8e23f8e",
+    "src/components/OperationalReportModal.tsx": "0646c97a6bc239f9c8a6c6b57f356869a6ffd96a414ddaeaedb9bbdc2271e510",
+    "src/App.tsx": "847dc739dd79ddc13f8b393ba380aa7305900b70ac3cc8647e1f619994215458",
+    "src/engine/core/projectMigration.ts": "5b7ee2a0faf699af37e8aaa649b86ffdbc05bfee94caac4b68294c0a74bc7444",
+    "scripts/test-operational-study.ts": "0245c421d570a19ddf6d9cebe9263ad6befdb5c882303e5f2110e4aa7ed87dc1",
+    "scripts/test-operational-browser.ts": "380bc6d1b3d31d2eeec17b4c6281436a49168d6a240adde4a12f770e68d2c5c3",
+    "docs/research/PHASE2-STUDY-WORKFLOW.fa.md": "2b2cda2eb81d0be7a207e036dd8ba0199335ad2b5bd55530d150819ac9eb40cb"
+  },
+  "notExecuted": [
+    "Windows browser/runtime",
+    "Safari",
+    "PDF renderer output readback",
+    "exact-commit CI",
+    "field validation"
+  ],
+  "limitations": [
+    "Source-aware dossier is separate from comprehensive EPC report",
+    "Project JSON references local evidence; portable archive exported separately",
+    "SHA-256 is content integrity, not authentication"
+  ]
+}

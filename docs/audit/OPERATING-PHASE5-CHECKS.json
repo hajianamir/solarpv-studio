@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-03",
+  "branch": "arena/237e6ea2-solarpv-studio",
+  "gitHead": "5438fb59f4bb5cde05c20818b780464e1fe28752",
+  "snapshot": "Working tree; gitHead is not the implementation commit; no new remote CI or push claimed",
+  "checks": {
+    "types": "PASS",
+    "eslint": "PASS, 0 errors / 95 existing warnings",
+    "build": "PASS",
+    "testAll": "PASS after whole DOM delivery adapter extraction; verifier unchanged this turn",
+    "lifecycle": "PASS two explicit synthetic test years, all 3 modes; Decimal NPV, negative discount, carry/spill/replacement/EOL/invalid inputs",
+    "publishedGrid": "PASS MATPOWER33 with independent nodal root at load scales0.5/1/1.25",
+    "browser": "PASS Chromium133 all 3 modes, experiments, JSON replay, real PDF readback and unchanged active finance",
+    "browserSnapshotCaveat": "Final no-battery workload-budget refinement was checked separately by kernel test and types/build after browser bundle build; browser normal SOC-resolution cases unchanged",
+    "pythonStudy": "PASS158 tests",
+    "pythonResearch": "PASS66 tests",
+    "pdf": "PASS Unicode/Persian/readback",
+    "exports": "PASS DOCX/XLSX/JSON",
+    "studyWorkflow": "PASS",
+    "directStudyAndStorageBrowser": "PASS",
+    "nativeSafari": "NOT RUN locally: Linux; explicit exit2; historical native disk-access blocker not fixed",
+    "remoteCI": "NOT RUN for current working tree; workflow extended but no execution claimed"
+  },
+  "initialFailure": {
+    "testAll": "Physics gate flagged prior numeric UI cleanup delays in reportingEngine; full browser DOM delivery moved to adapter with independent fake DOM/clock success/failure tests. No verifier weakening or formula hash exceptions."
+  },
+  "research": {
+    "deepSearches": 3,
+    "plan": "docs/audit/OPERATING-PHASE5-START.fa.md",
+    "acquiredPrimaryBenchmark": "docs/examples/benchmarks/SOURCE.json",
+    "failedFullFetch": [
+      "https://docs.nlr.gov/docs/fy15osti/64641.pdf",
+      "https://docs.nrel.gov/docs/fy21osti/79575.pdf",
+      "https://samrepo.nrelcloud.org/help/battery_life.html"
+    ]
+  },
+  "fileSha256": {
+    "src/studies/operatingLifecycle.ts": "36f74efc776bc7e9cb3bcdbc11149fbbf2e53395d78dfefa2166f1263801cc24",
+    "src/studies/operatingPolicyComparison.ts": "ef3b441a35331de0c22a2168365f1eb78e9ebb4ba4e9b8f73b87f5942b817f94",
+    "src/studies/operatingExperiments.worker.ts": "a41f87503020e669740f23408b826afe17653175cb5fa7e244129f454007ae96",
+    "src/components/OperatingExperimentPanel.tsx": "4c7e11b85c6164ce63965acfaedd78701d4bd960964eee0e6b2a9c2d121c6045",
+    "src/components/AdvancedDispatchPanel.tsx": "d91b5eb9e9d0a499c91ca19dd85e1025e291e1fe1a6a64d02fe799f47b626392",
+    "src/browser/download.ts": "aa9ac76a3cadea98f611bdb2f3403de02f670133ca33fbf192db495c2729d6e4",
+    "src/engine/reportingEngine.ts": "5af76669fa1cbdc69fe0ce6326a01d356c63a031f1453076678e8733c713162b",
+    "scripts/test-operating-lifecycle.ts": "351907e797519c18c1e78c0e1de40a12258dedfab58939226d7378d1702cee49",
+    "scripts/test-published-radial-benchmark.py": "97aa8cc5bd009cc7b439aeae9869fd6711ba35630ae3d47ede381689e337ea6a",
+    "scripts/test-browser-download.ts": "528fc0bcd6e35674b855ad0d9b6521d509ca3716d8bb48d3ffe5edb0d34dfcab",
+    "scripts/test-operating-modes-browser.ts": "f0a99eb958dccebd4ee4f39b72080b60846e59165b850d756e3fe4a09a7a7e85",
+    "scripts/operating-lifecycle-fixture.py": "a91b407eeef8c529f0c886197bc5e9b18036715681e175045ae069828683b2e9",
+    "scripts/run-operating-lifecycle.ts": "a01de166c15e9ac316d3bc34dce3e2f260382f3d15f1cd90190f3060bf045ac2",
+    ".github/workflows/operating-platforms.yml": "f6fc4f45b59f64c00ea8102a2d1777d1afd3dbad11994b767bffba05ee1093b8",
+    "docs/examples/benchmarks/case33bw.m": "b40831eeb444669ae876e2996f0dda9f05cd83e81b314b8dfca51e4890cca95d"
+  },
+  "logSha256": {
+    "phase5-final-lint.log": "98f1e84b884cfde2647bf946c15737e36ad79f80989d17c8844abc4bf1f94eb8",
+    "phase5-test-all-fixed.log": "06e9e222fbcc92fad214bf6d8366b1724b5c20c527e7c02c6278dd87e29a476c",
+    "phase5-final-kernel.log": "6882ca61b8dfab67164985bca49986b3224c32a254e7d08e9085f5a8fb24b1bb",
+    "phase5-final-grid.log": "3724f4df51bd3b87d0d9529dcd22a44c316bfbc60edf794c7d16de6af89f1af1",
+    "phase5-release-browser.log": "a32ebf1ced10d8a8bb53048c94b6d7f7d350ac09b2bb123601eb2cb328f97113",
+    "phase5-python-study-tests.log": "177c626ea4a825708eef32bb03415a3954dc8ff1c7c33e01e7c1ae6f4f5d4402",
+    "phase5-research-tests.log": "e8447d1c5466494bc2473519d86276f63137dacb51150e7c99a722711d428033",
+    "phase5-final-pdf.log": "c31240f7ebc04464487cbe33f8d47c857b76c869137d3384016c33459807647f",
+    "phase5-final-exports.log": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe",
+    "phase5-study-workflow.log": "ce1226a67ea7b4bc010febd7c0f0989e82ba8f41a291a763be7f23e2bd8138ad",
+    "phase5-direct-browser.log": "30f246b5a5703a8274f1039c180a9fd2640bb7a1ceba608b8c4a461747db439a"
+  },
+  "limitations": [
+    "Native Safari genuine disk import unresolved",
+    "No new remote Windows/WebKit test for this snapshot",
+    "No DC-coupled / electrochemistry / grid-forming protection / unbalanced network implementation",
+    "Annual boundary fade and per-year optimization, not global multiyear optimum",
+    "No implicit weather repetition or financial adoption; baseline remains independent"
+  ]
+}

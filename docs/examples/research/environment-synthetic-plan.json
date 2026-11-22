@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "dynamic-environment-plan-v1",
+  "source": "Synthetic assumed thermal/environment fixture",
+  "target": "back_of_module",
+  "poaBasis": "unshaded_front",
+  "stepS": 1,
+  "thermal": {
+    "source": "Synthetic areal balance coefficients, not fitted Faiman",
+    "capacityJm2K": 12000,
+    "absorptance": 0.9,
+    "h0Wm2K": 20,
+    "hWindWm2KPerMps": 5,
+    "windHeightM": 3,
+    "coefficientWindHeightM": 3,
+    "domain": {
+      "source": "Synthetic declared domain, not engineering approved",
+      "airMinC": -30,
+      "airMaxC": 50,
+      "windMaxMps": 20,
+      "poaMaxWm2": 1500,
+      "backMinC": -40,
+      "backMaxC": 120
+    }
+  },
+  "snow": {
+    "source": "Assumed degree-day cover, not Marion",
+    "coverageSweMm": 2,
+    "meltMmPerHourPerC": 0.2,
+    "coveredTransmission": 0.1
+  },
+  "soiling": {
+    "source": "Assumed optical depth, not Kimber",
+    "depositionTauPerHour": 0.02,
+    "rainWashPerMm": 0.5
+  },
+  "initial": {
+    "moduleBackC": 20,
+    "snowSweMm": 0.5,
+    "soilOpticalDepth": 0.2
+  },
+  "intervals": [
+    {
+      "start": "2026-01-01T00:00:00Z",
+      "durationS": 600,
+      "poaWm2": 1000,
+      "extractedElectricalWm2": 0,
+      "airC": 5,
+      "windMps": 2,
+      "rainMmPerHour": 2,
+      "snowfallSweMmPerHour": 0.1,
+      "soilCleaningFraction": 0,
+      "snowRemovalFraction": 0
+    },
+    {
+      "start": "2026-01-01T00:10:00Z",
+      "durationS": 600,
+      "poaWm2": 500,
+      "extractedElectricalWm2": 0,
+      "airC": 10,
+      "windMps": 2,
+      "rainMmPerHour": 0,
+      "snowfallSweMmPerHour": 0,
+      "soilCleaningFraction": 0.8,
+      "snowRemovalFraction": 1
+    }
+  ]
+}

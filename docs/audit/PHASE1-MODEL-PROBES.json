@@ -1,0 +1,67 @@
+{
+  "scope": "independent arithmetic probes only; no annual, field, dispatch or bankability validation",
+  "pvlibVersion": "0.13.1",
+  "verifiedSourceFiles": 21,
+  "checks": [
+    {
+      "name": "pvwatts_dc_stc",
+      "actual": 1000.0,
+      "expected": 1000.0,
+      "status": "PASS"
+    },
+    {
+      "name": "pvwatts_dc_hot",
+      "actual": 736.0,
+      "expected": 736.0,
+      "status": "PASS"
+    },
+    {
+      "name": "pvwatts_dc_dark",
+      "actual": 0.0,
+      "expected": 0.0,
+      "status": "PASS"
+    },
+    {
+      "name": "inverter_zero",
+      "actual": 0.0,
+      "expected": 0.0,
+      "status": "PASS"
+    },
+    {
+      "name": "inverter_rated",
+      "actual": 960.0,
+      "expected": 960.0,
+      "status": "PASS"
+    },
+    {
+      "name": "inverter_clip",
+      "actual": 960.0,
+      "expected": 960.0,
+      "status": "PASS"
+    },
+    {
+      "name": "faiman",
+      "actual": 40.682523267838675,
+      "expected": 40.682523267838675,
+      "status": "PASS"
+    },
+    {
+      "name": "two_losses_not_sum",
+      "actual": 27.999999999999993,
+      "expected": 28.0,
+      "status": "PASS"
+    },
+    {
+      "name": "battery_storage_change",
+      "actual": 0.0,
+      "expected": 0.0,
+      "status": "PASS"
+    },
+    {
+      "name": "offgrid_energy_fraction_not_time_fraction",
+      "actual": 0.1,
+      "expected": 0.1,
+      "status": "PASS"
+    }
+  ]
+}

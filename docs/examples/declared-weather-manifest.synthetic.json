@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "declared-interval-weather-v1",
+  "source": "SYNTHETIC existing test fixture; not operational",
+  "quality": "assumed",
+  "sourceVersion": "synthetic-example-v1",
+  "reference": "services/pvlib_study/tests/synthetic-study.json; teaching only",
+  "site": {
+    "latitude": 32.2,
+    "longitude": -110.9,
+    "altitudeM": 700,
+    "timezone": "America/Phoenix"
+  },
+  "intervalMinutes": 60,
+  "timestampConvention": "interval_end",
+  "variableSemantics": "interval_mean",
+  "windHeightM": 10,
+  "units": {
+    "ghi": "W/m2",
+    "dni": "W/m2",
+    "dhi": "W/m2",
+    "tempAir": "degC",
+    "windSpeed": "m/s"
+  }
+}

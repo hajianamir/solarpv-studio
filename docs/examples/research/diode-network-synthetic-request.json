@@ -1,0 +1,36 @@
+{
+  "operation": "diode_network",
+  "plan": {
+    "schemaVersion": "diode-network-plan-v1",
+    "source": "SYNTHETIC operating-condition substring parameters only",
+    "substrings": [
+      {
+        "id": "bright",
+        "photocurrentA": 8,
+        "saturationCurrentA": 1e-09,
+        "seriesOhm": 0.1,
+        "shuntOhm": 200,
+        "nNsVthV": 0.6,
+        "bypassDropV": 0.5
+      },
+      {
+        "id": "shaded",
+        "photocurrentA": 2,
+        "saturationCurrentA": 1e-09,
+        "seriesOhm": 0.1,
+        "shuntOhm": 200,
+        "nNsVthV": 0.6,
+        "bypassDropV": 0.5
+      }
+    ],
+    "strings": [
+      [
+        "bright",
+        "shaded"
+      ]
+    ],
+    "voltageToleranceV": 1e-06,
+    "currentToleranceA": 1e-09,
+    "maxEvaluations": 100000
+  }
+}

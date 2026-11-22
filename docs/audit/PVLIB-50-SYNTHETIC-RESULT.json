@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "radial-ac-result-v1",
+  "algorithmVersion": "1.0.0",
+  "reference": "https://matpower.app/manual/matpower/DistributionPowerFlow.html",
+  "plan": {
+    "schemaVersion": "radial-ac-plan-v1",
+    "source": "Synthetic circuit fixture, not equipment evidence",
+    "voltageLLV": 400,
+    "nodes": [
+      {
+        "parent": 0,
+        "rOhm": 0.1,
+        "xOhm": 0.05,
+        "loadW": 2000,
+        "loadVar": 0,
+        "generationW": 100000,
+        "generationPf": 0.98,
+        "generationQSign": 1
+      }
+    ],
+    "exportLimitW": 40000
+  },
+  "planSha256": "adb184469f614fa2a0eae12f2346b450735da7fa70b0cb2576def8f351c97b1a",
+  "source": "Synthetic circuit fixture, not equipment evidence",
+  "validationStatus": "conditional_assumptions",
+  "projectApproval": "blocked",
+  "limitations": [
+    "balanced_radial_constant_PQ_only",
+    "single_referred_voltage_level",
+    "no_shunt_tap_or_transient",
+    "no_ampacity_or_protection_approval",
+    "manufacturer_limits_and_engineering_review_unverified",
+    "not_connected_to_energy_waterfall"
+  ],
+  "uncapped": {
+    "generationScale": 1.0,
+    "iterations": 9,
+    "poiImportW": -92464.23964947397,
+    "poiImportVar": -17537.9858881374,
+    "exportW": 92464.23964947397,
+    "seriesLossW": 5535.760351854911,
+    "seriesLossVar": 2767.8801759274556,
+    "nodeVoltageLLV": [
+      400.0,
+      425.3688006456167
+    ],
+    "branchCurrentA": [
+      135.84010639786408
+    ],
+    "branchLossW": [
+      5535.760351854911
+    ],
+    "pqResidualVA": 1.4857340116961917e-06,
+    "balanceResidualVA": 4.067383956680332e-12
+  },
+  "final": {
+    "generationScale": 0.4304221982713017,
+    "iterations": 7,
+    "poiImportW": -39999.99999999969,
+    "poiImportVar": -8218.98559524619,
+    "exportW": 39999.99999999969,
+    "seriesLossW": 1042.2198276342745,
+    "seriesLossVar": 521.1099138171372,
+    "nodeVoltageLLV": [
+      400.0,
+      411.03792530371067
+    ],
+    "branchCurrentA": [
+      58.9412087771726
+    ],
+    "branchLossW": [
+      1042.2198276342745
+    ],
+    "pqResidualVA": 5.632456360047008e-07,
+    "balanceResidualVA": 6.757436995809976e-12
+  },
+  "loadFlowCalls": 50,
+  "curtailedGenerationW": 56957.78017286983,
+  "lossChangeW": 4493.540524220637,
+  "accounting": "POI already includes series losses; do not subtract them again"
+}

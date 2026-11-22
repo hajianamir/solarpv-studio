@@ -1,0 +1,52 @@
+{
+  "operation": "dc_coupled",
+  "plan": {
+    "schemaVersion": "dc-coupled-plan-v1",
+    "source": "Synthetic DC topology verification; not operational measurements",
+    "mode": "ongrid",
+    "allowGridCharging": false,
+    "islandCapable": true,
+    "dcChargingWhenIslanded": true,
+    "equipment": {
+      "pvMpptEfficiency": 0.98,
+      "inverterEfficiency": 0.96,
+      "rectifierEfficiency": 0.95,
+      "inverterAcRatingW": 5000,
+      "inverterDcLimitW": 6000,
+      "converterBusLimitW": 5000,
+      "chargeConverterEfficiency": 0.97,
+      "dischargeConverterEfficiency": 0.97
+    },
+    "battery": {
+      "capacityKwh": 20,
+      "initialKwh": 5,
+      "minimumKwh": 2,
+      "maximumChargeW": 5000,
+      "maximumDischargeW": 5000,
+      "storageChargeEfficiency": 0.98,
+      "storageDischargeEfficiency": 0.98
+    },
+    "intervals": [
+      {
+        "start": "2026-01-01T00:00:00Z",
+        "durationS": 3600,
+        "pvAvailableDcW": 10000,
+        "loadAcW": 1000,
+        "batteryBusCommandW": -4000,
+        "gridAvailable": true,
+        "gridImportLimitW": 10000,
+        "exportLimitW": 4000
+      },
+      {
+        "start": "2026-01-01T01:00:00Z",
+        "durationS": 3600,
+        "pvAvailableDcW": 0,
+        "loadAcW": 3000,
+        "batteryBusCommandW": 3500,
+        "gridAvailable": true,
+        "gridImportLimitW": 10000,
+        "exportLimitW": 0
+      }
+    ]
+  }
+}

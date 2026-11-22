@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "transient-result-v1",
+  "algorithmVersion": "1.0.0",
+  "plan": {
+    "schemaVersion": "transient-plan-v1",
+    "source": "Synthetic assumed dynamics fixture",
+    "stepS": 0.1,
+    "equipment": {
+      "ratingW": 10000,
+      "efficiency": 0.96,
+      "mpptTauS": 2,
+      "controlTauS": 3,
+      "thermalRKW": 0.1,
+      "thermalCJK": 1000,
+      "derateStartC": 60,
+      "shutdownC": 90
+    },
+    "initial": {
+      "trackedDcW": 0,
+      "commandW": 10000,
+      "temperatureC": 75
+    },
+    "intervals": [
+      {
+        "start": "2026-01-01T00:00:00Z",
+        "durationS": 20,
+        "availableDcW": 8000,
+        "setpointW": 10000,
+        "hardLimitW": 10000,
+        "ambientC": 25
+      },
+      {
+        "start": "2026-01-01T00:00:20Z",
+        "durationS": 20,
+        "availableDcW": 8000,
+        "setpointW": 1000,
+        "hardLimitW": 2500,
+        "ambientC": 25
+      }
+    ]
+  },
+  "planSha256": "020c42e89dfe33619d1795f06e5f814ac02f0632a82b339c77fe28bbacbc0cc4",
+  "validationStatus": "conditional_assumptions",
+  "projectApproval": "blocked",
+  "source": "Synthetic assumed dynamics fixture",
+  "model": "assumed_first_order_power_tracking_and_control_with_lumped_RC",
+  "equipment": {
+    "ratingW": 10000.0,
+    "efficiency": 0.96,
+    "mpptTauS": 2.0,
+    "controlTauS": 3.0,
+    "thermalRKW": 0.1,
+    "thermalCJK": 1000.0,
+    "derateStartC": 60.0,
+    "shutdownC": 90.0
+  },
+  "initial": {
+    "trackedDcW": 0,
+    "commandW": 10000,
+    "temperatureC": 75
+  },
+  "stepS": 0.1,
+  "steps": 400,
+  "durationS": 40.0,
+  "energyWh": 40.425665134135066,
+  "conversionHeatWh": 1.6844027139223032,
+  "ambientHeatWh": 4.950469708809242,
+  "trace": [
+    {
+      "startUTC": "2026-01-01T00:00:00+00:00",
+      "durationS": 20.0,
+      "elapsedS": 20.0,
+      "trackedDcW": 7999.636800364679,
+      "commandW": 10000.0,
+      "temperatureC": 70.23925008042156,
+      "endAcW": 6586.916639859482,
+      "energyWh": 31.389969660477462,
+      "thermalBalanceResidualJ": 7.275957614183426e-12
+    },
+    {
+      "startUTC": "2026-01-01T00:00:20+00:00",
+      "durationS": 20.0,
+      "elapsedS": 40.0,
+      "trackedDcW": 7999.999983510753,
+      "commandW": 1011.4537050197712,
+      "temperatureC": 63.24215881840705,
+      "endAcW": 1011.4537050197712,
+      "energyWh": 9.035695473657608,
+      "thermalBalanceResidualJ": 2.3646862246096134e-11
+    }
+  ],
+  "fallback": "none_fail_closed",
+  "limitations": [
+    "not_PandO_or_voltage_current_MPPT",
+    "not_manufacturer_controller",
+    "ZOH_subinterval_inputs_not_hourly_means",
+    "local_AC_limit_not_POI_control",
+    "linear_derating_no_hysteresis_or_trip_latch",
+    "fixed_efficiency_no_idle_loss",
+    "no_field_validation_or_production_energy_waterfall"
+  ]
+}

@@ -6,10 +6,18 @@ import { formatCoordinates } from '../engine/geoCoordinates';
 import { formatPsh } from '../engine/formatters';
 
 import {ReferenceLossImport} from './ReferenceLossImport';
+import {AdvancedDispatchPanel} from './AdvancedDispatchPanel';
+import {OperationalEnergyPanel} from './OperationalEnergyPanel';
+import type {OperationalContext,OperationalEnergy} from '../studies/operationalEnergy';
+import {ResearchEditor} from './ResearchEditor';
+import {PvlibStudyPanel} from './PvlibStudyPanel';
 
 const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
 
 interface ClimateTabProps {
+  operationalContext?:OperationalContext|null;
+  operationalEnergy?:OperationalEnergy|null;
+  onOperationalEnergyChange?:(r:OperationalEnergy|null)=>void;
   referenceContext?: import('../referenceModels/annualReferenceInput').ReferenceContext;
   selectedCity: ClimateCity;
   onCityChange: (city: ClimateCity) => void;
@@ -19,6 +27,7 @@ interface ClimateTabProps {
 
 export const ClimateTab: React.FC<ClimateTabProps> = ({
   selectedCity,
+  operationalContext,operationalEnergy,onOperationalEnergyChange,
   referenceContext,
   onCityChange,
   onCreate3dRooftop,
@@ -313,6 +322,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
 
   return (
     <div className="space-y-6">
+      <OperationalEnergyPanel context={operationalContext??null} receipt={operationalEnergy??null} onChange={onOperationalEnergyChange??(()=>{})}/>
+      <AdvancedDispatchPanel context={operationalContext??null}/>
+      <ResearchEditor latitude={selectedCity.latitude} longitude={selectedCity.longitude} lang={lang}/>
+      <PvlibStudyPanel latitude={selectedCity.latitude} longitude={selectedCity.longitude} lang={lang}/>
       <ReferenceLossImport city={selectedCity} context={referenceContext} onChange={onCityChange} lang={lang}/>
       {/* Title */}
       <div className="studio-card">
