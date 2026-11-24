@@ -1,0 +1,129 @@
+name: Operating models and native platform evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['arena/237e6ea2-solarpv-studio']
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'services/**'
+      - 'package*.json'
+      - '.github/workflows/operating-platforms.yml'
+  pull_request:
+    paths: ['src/**', 'scripts/**', 'services/**', 'package*.json', '.github/workflows/operating-platforms.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  operating-browser:
+    name: '${{ matrix.os }} / ${{ matrix.browser }}'
+    runs-on: '${{ matrix.os }}'
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            browser: chromium
+          - os: macos-15-intel
+            browser: webkit
+          - os: ubuntu-latest
+            browser: chromium
+    env:
+      PVLIB_PYTHON: python
+      BROWSER_ENGINE: '${{ matrix.browser }}'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: node scripts/ci-command.mjs npm ci --fetch-retries=3
+      - run: python -m pip install -r services/pvlib_study/requirements.txt
+      - name: Locate Windows system Chromium (no CDN requirement)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $candidates = @("C:\Program Files\Google\Chrome\Application\chrome.exe", "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe", "C:\Program Files\Microsoft\Edge\Application\msedge.exe")
+          $browser = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $browser) { throw "No native system Chromium found; no untested fallback" }
+          "BROWSER_EXECUTABLE_PATH=$browser" >> $env:GITHUB_ENV
+      - name: Install WebKit runtime
+        if: matrix.browser == 'webkit'
+        run: node scripts/ci-command.mjs npx playwright-core install webkit
+      - name: Select installed WebKit runtime
+        if: matrix.browser == 'webkit'
+        shell: bash
+        run: echo 'PLAYWRIGHT_INSTALLED=true' >> "$GITHUB_ENV"
+      - run: python -m scripts.operational-energy-fixture
+      - run: npm run lint:types
+      - run: npm run test:advanced:dispatch
+      - run: python -m scripts.test_physical_models
+      - run: python -m scripts.test_physical_mutations
+      - run: node scripts/ci-command.mjs npm run test:physical:api
+      - run: python -m scripts.operating-lifecycle-fixture
+      - run: python -m scripts.test-published-radial-benchmark
+      - run: node scripts/ci-command.mjs npx tsx scripts/test-operating-lifecycle.ts
+      - run: npx tsx scripts/test-browser-download.ts
+      - run: npm run test:pdf
+      - run: npm run build
+      - run: node scripts/ci-command.mjs npm run test:operating:browser
+      - run: node scripts/ci-command.mjs npm run test:physical:browser
+      - name: Record exact checkout and platform (not a field-validation receipt)
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p .cache/platform-evidence
+          git rev-parse HEAD > .cache/platform-evidence/checkout-sha.txt
+          node -p 'JSON.stringify({platform:process.platform,arch:process.arch,node:process.version,browser:process.env.BROWSER_ENGINE})' > .cache/platform-evidence/runtime.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: 'operating-${{ matrix.os }}-${{ matrix.browser }}'
+          path: |
+            .cache/pdf-evidence/
+            .cache/platform-evidence/
+          include-hidden-files: true
+          retention-days: 14
+
+  native-safari:
+    name: Native Safari (not Playwright WebKit)
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: node scripts/ci-command.mjs npm ci --fetch-retries=3
+      - run: python -m pip install -r services/pvlib_study/requirements.txt selenium==4.27.1 pypdf==5.1.0
+      - run: python -m scripts.operational-energy-fixture
+      - run: npm run build
+      - name: Enable native Safari automation
+        run: sudo /usr/bin/safaridriver --enable
+      - name: Native Safari all-mode App / worker / real PDF readback
+        run: node scripts/ci-command.mjs python scripts/test-native-safari.py
+      - name: Record exact checkout SHA
+        if: always()
+        run: |
+          mkdir -p .cache/platform-evidence
+          git rev-parse HEAD > .cache/platform-evidence/checkout-sha.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-safari-evidence
+          path: .cache/platform-evidence/
+          include-hidden-files: true
+          retention-days: 14

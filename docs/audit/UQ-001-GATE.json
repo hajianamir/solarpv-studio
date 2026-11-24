@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "feature-gate-v1",
+  "feature": "UQ-001",
+  "testedAt": "2026-11-24T14:20:18.104Z",
+  "baseHead": "0051d3ef224da0a1555d2766e13f5625b103f6ff",
+  "workingTreeChangesIncluded": true,
+  "status": "ready-for-review",
+  "scope": "Opt-in pure quantile adapter only; not product release or field validation.",
+  "featureFlag": "uq_explicit_quantiles_v1: enabled per request only; existing product unchanged",
+  "researchAdoption": "Not introduced; existing gates unchanged",
+  "checks": [
+    {
+      "command": "npm run test:uq:contract",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npx tsx scripts/test-energy-uncertainty-review.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npm run test:operational:energy",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npm test",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npm run lint:types",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    }
+  ]
+}

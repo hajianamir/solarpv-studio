@@ -1,0 +1,237 @@
+{
+  "schemaVersion": "tracker-motion-result-v1",
+  "algorithmVersion": "1.0.0",
+  "pvlibVersion": "0.13.1",
+  "plan": {
+    "schemaVersion": "tracker-motion-plan-v1",
+    "source": "Synthetic geometry and movement fixture",
+    "terrain": {
+      "datum": "Synthetic local ENU, metres",
+      "source": "Synthetic plane, not survey",
+      "slopeTiltDeg": 5,
+      "slopeAzimuthDeg": 270
+    },
+    "layout": {
+      "axisAzimuthDeg": 180,
+      "widthM": 2,
+      "pitchM": 6,
+      "backtrack": true
+    },
+    "actuator": {
+      "source": "Synthetic constant-speed motor",
+      "minPhysicalDeg": -60,
+      "maxPhysicalDeg": 60,
+      "encoderOffsetDeg": 14,
+      "slewDegPerS": 2,
+      "windStowDeg": 0,
+      "nightStowDeg": -10,
+      "movingW": 120,
+      "idleW": 3,
+      "count": 4
+    },
+    "wind": {
+      "source": "Synthetic wind, no operational telemetry",
+      "heightM": 3,
+      "triggerMps": 15,
+      "releaseMps": 10
+    },
+    "initial": {
+      "encoderDeg": -14,
+      "windLatched": false
+    },
+    "intervals": [
+      {
+        "start": "2026-01-01T00:00:00Z",
+        "durationS": 60,
+        "solarZenithDeg": 80,
+        "solarAzimuthDeg": 90,
+        "windMps": 0
+      },
+      {
+        "start": "2026-01-01T00:01:00Z",
+        "durationS": 60,
+        "solarZenithDeg": 45,
+        "solarAzimuthDeg": 180,
+        "windMps": 16
+      },
+      {
+        "start": "2026-01-01T00:02:00Z",
+        "durationS": 60,
+        "solarZenithDeg": 45,
+        "solarAzimuthDeg": 270,
+        "windMps": 12
+      },
+      {
+        "start": "2026-01-01T00:03:00Z",
+        "durationS": 60,
+        "solarZenithDeg": 95,
+        "solarAzimuthDeg": 270,
+        "windMps": 9
+      }
+    ]
+  },
+  "planSha256": "76a214e8feaffa7d687738b66f85bf271db36be022698a36d3e687392c00317e",
+  "reference": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.tracking.singleaxis.html",
+  "source": "Synthetic geometry and movement fixture",
+  "terrain": {
+    "datum": "Synthetic local ENU, metres",
+    "source": "Synthetic plane, not survey",
+    "slopeTiltDeg": 5,
+    "slopeAzimuthDeg": 270
+  },
+  "layout": {
+    "axisAzimuthDeg": 180,
+    "widthM": 2,
+    "pitchM": 6,
+    "backtrack": true
+  },
+  "actuator": {
+    "source": "Synthetic constant-speed motor",
+    "minPhysicalDeg": -60,
+    "maxPhysicalDeg": 60,
+    "encoderOffsetDeg": 14,
+    "slewDegPerS": 2,
+    "windStowDeg": 0,
+    "nightStowDeg": -10,
+    "movingW": 120,
+    "idleW": 3,
+    "count": 4
+  },
+  "wind": {
+    "source": "Synthetic wind, no operational telemetry",
+    "heightM": 3,
+    "triggerMps": 15,
+    "releaseMps": 10
+  },
+  "initial": {
+    "encoderDeg": -14,
+    "windLatched": false
+  },
+  "axisTiltDeg": 3.0694125943937005e-16,
+  "crossAxisTiltDeg": 5.0,
+  "validationStatus": "conditional_assumptions",
+  "projectApproval": "blocked",
+  "trace": [
+    {
+      "startUTC": "2026-01-01T00:00:00+00:00",
+      "durationS": 60.0,
+      "solarZenithDeg": 80.0,
+      "solarAzimuthDeg": 90.0,
+      "windMps": 0.0,
+      "mode": "tracking",
+      "windLatched": false,
+      "idealTrackingDeg": -5.216435754297805,
+      "targetPhysicalDeg": -5.216435754297805,
+      "startPhysicalDeg": 0.0,
+      "endPhysicalDeg": -5.216435754297805,
+      "endEncoderDeg": -19.216435754297805,
+      "movingS": 2.6082178771489026,
+      "targetReached": true,
+      "motorEnergyWh": 0.5390683240293573,
+      "endSurfaceTiltDeg": 5.216435754297798,
+      "endSurfaceAzimuthDeg": 90.0,
+      "endNormalENU": [
+        0.09091825389914694,
+        5.567137431082834e-18,
+        0.9958583589587077
+      ],
+      "observedEndEncoderDeg": null,
+      "encoderErrorDeg": null
+    },
+    {
+      "startUTC": "2026-01-01T00:01:00+00:00",
+      "durationS": 60.0,
+      "solarZenithDeg": 45.0,
+      "solarAzimuthDeg": 180.0,
+      "windMps": 16.0,
+      "mode": "wind_stow",
+      "windLatched": true,
+      "idealTrackingDeg": null,
+      "targetPhysicalDeg": 0.0,
+      "startPhysicalDeg": -5.216435754297805,
+      "endPhysicalDeg": 0.0,
+      "endEncoderDeg": -14.0,
+      "movingS": 2.6082178771489026,
+      "targetReached": true,
+      "motorEnergyWh": 0.5390683240293573,
+      "endSurfaceTiltDeg": 0.0,
+      "endSurfaceAzimuthDeg": 270.0,
+      "endNormalENU": [
+        -0.0,
+        -0.0,
+        1.0
+      ],
+      "observedEndEncoderDeg": null,
+      "encoderErrorDeg": null
+    },
+    {
+      "startUTC": "2026-01-01T00:02:00+00:00",
+      "durationS": 60.0,
+      "solarZenithDeg": 45.0,
+      "solarAzimuthDeg": 270.0,
+      "windMps": 12.0,
+      "mode": "wind_stow",
+      "windLatched": true,
+      "idealTrackingDeg": null,
+      "targetPhysicalDeg": 0.0,
+      "startPhysicalDeg": 0.0,
+      "endPhysicalDeg": 0.0,
+      "endEncoderDeg": -14.0,
+      "movingS": 0.0,
+      "targetReached": true,
+      "motorEnergyWh": 0.2,
+      "endSurfaceTiltDeg": 0.0,
+      "endSurfaceAzimuthDeg": 270.0,
+      "endNormalENU": [
+        -0.0,
+        -0.0,
+        1.0
+      ],
+      "observedEndEncoderDeg": null,
+      "encoderErrorDeg": null
+    },
+    {
+      "startUTC": "2026-01-01T00:03:00+00:00",
+      "durationS": 60.0,
+      "solarZenithDeg": 95.0,
+      "solarAzimuthDeg": 270.0,
+      "windMps": 9.0,
+      "mode": "night_stow",
+      "windLatched": false,
+      "idealTrackingDeg": null,
+      "targetPhysicalDeg": -10.0,
+      "startPhysicalDeg": 0.0,
+      "endPhysicalDeg": -10.0,
+      "endEncoderDeg": -24.0,
+      "movingS": 5.0,
+      "targetReached": true,
+      "motorEnergyWh": 0.85,
+      "endSurfaceTiltDeg": 10.000000000000012,
+      "endSurfaceAzimuthDeg": 90.00000295755866,
+      "endNormalENU": [
+        0.17364817766693033,
+        -8.963568978934446e-09,
+        0.984807753012208
+      ],
+      "observedEndEncoderDeg": null,
+      "encoderErrorDeg": null
+    }
+  ],
+  "motorEnergyWh": 2.1281366480587147,
+  "travelDegPerActuator": 20.43287150859561,
+  "movementComparison": {
+    "pairs": 0,
+    "rmseDeg": null,
+    "mbeDeg": null
+  },
+  "accounting": "Standalone actuator consumption; not subtracted from energy or existing auxiliary",
+  "limitations": [
+    "planar_parallel_identical_rows_only",
+    "no_survey_authentication_or_3D_terrain",
+    "ZOH_sun_and_wind_no_gust_interpolation",
+    "constant_slew_no_acceleration_or_torque",
+    "wind_stow_transit_not_safety_certified",
+    "backtracking_target_not_actual_no_shade_guarantee",
+    "no_field_validation_or_yield_integration"
+  ]
+}

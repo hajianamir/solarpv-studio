@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "pvt-pem-coupling-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:26:11.496Z",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "acceptedScope": [
+    "one-way interval-average electrical composition of existing PV-T/PCM and PEM kernels",
+    "derived feed only, transfer losses, coarse/fine H2 sensitivity and signed energy ledger",
+    "authenticated API, SDK and editor integration"
+  ],
+  "evidenceLevel": "analytic_composition_verification_not_coupled_equipment_validation",
+  "notCompleted": [
+    "two-way thermal feedback and preheating model",
+    "instantaneous electrical feasibility",
+    "spatial Stefan coupling",
+    "experimental device qualification",
+    "other remaining A1-D3 roadmap"
+  ],
+  "flags": {
+    "PVT_PEM_COUPLING_ENABLED": true,
+    "deploymentDefault": "off",
+    "requiresBaseResearchFlag": true,
+    "separateReferenceRuntimeForThisOperation": false
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked",
+    "safetyApproval": "not_assessed"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python -m unittest scripts.test_pvt_pem_coupling -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-coupling.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/pvtPemCoupling.ts src/studies/scienceC.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:inventory",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-coupling-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/pvt_pem_coupling.py": "5059223ff6933251a230142a8a9dd4f0c5b52f080a7dda9f9799b94d97abcc65",
+    "services/pvlib_research/science_c.py": "b80f0b4c21a312887c9f7d30be20814a5b1b612a2615b40b2035526be8a61ef7",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/pvtPemCoupling.ts": "e3ad32dce5b86ea35bda40097c6b8dc2f158e6000261a38bdea2e6c63678e05e",
+    "src/studies/scienceC.ts": "dc65bbf20d83b62b88c79cf88c6fc209646251041b5a7a42f8c123dc9c0b92eb",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_pvt_pem_coupling.py": "4bd81517f9f0d43b6d1954e33b75c3214a5d708188fd557aa859fe8aafce43eb",
+    "scripts/test-coupling.ts": "838ce468fc054269c59d2653b3faff709a2820c3557d24acbcd277db01867a96",
+    "scripts/test-coupling-browser.ts": "71596dbed1bde599d0c269db9593578b7d22541f47f01e296deb677104540d97",
+    "scripts/verify-coupling.ts": "110802af4b327983477ac895e460d8db0e744bce5941007aed842a61844f5b7c",
+    "docs/examples/science-c/coupled.request.json": "09a35cb042000f18c40cc623d3d5616a74d7f46c1afde1f074680d63469e88a4",
+    "docs/features/PVT-PEM-COUPLING-SPEC.fa.md": "425a532a554adad1639d3cd7ed5cadfd794856f1b54f6194071cfa2b17f08db7",
+    "docs/features/PVT-PEM-COUPLING.fa.md": "06ed052271ca1e7e23182c1ba8bc776f2ac58b807b4355d3a14c05a5ae8114db",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/MATERIAL-INVENTORY-GATE.json": "3dec945c5c94a4ca4758408c18debb648b4b4f518b85324d1d85df12ff232b96",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    "CHANGELOG.md": "211a6db5e8763bdd215cf82025041f018f7dccaa60a8db5ebe4e9b7ac3275ddf"
+  }
+}

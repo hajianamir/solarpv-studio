@@ -1,0 +1,6 @@
+# Optional B2 environment, installed explicitly. Existing core pins unchanged.
+-r requirements.txt
+pybamm==25.10.2
+casadi==3.6.7
+pybammsolvers==0.3.3
+sympy==1.14.0

@@ -1,0 +1,8 @@
+# پیش از کد: مرحله۳۵ — کابل DC
+2026-11-03. inventory: worker.electrical_dc اکنون نقطه‌کار باس بدون کابل را حل می‌کند؛ Sandia همان ولتاژ را می‌گیرد. قرارداد TS/Python سخت‌گیر، فرم StudyBuilder، archive/result guards و report باید همزمان تغییر کنند. فایل‌های ناتمام۳۱–۳۴ جدا حفظ می‌شوند.
+
+پژوهش قبل از تغییر: pvlib0.13.1 dc_ohms_from_percent و پیوند dc_ohmic_losses خوانده شد: https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.dc_ohms_from_percent.html ؛ معادل مقاومت آرایه با مقیاس series/parallel تعریف می‌شود. این پیاده‌سازی درصد را به مقاومت تبدیل نمی‌کند: مقاومت حلقهٔ رفت‌وبرگشت هر رشته و حلقهٔ کابل مشترک مستقیماً از کاربر دریافت می‌شود. R_eq=R_string/N_parallel+R_shared؛ V_inv=V_array−I R_eq؛ P_loss=I²R_eq. مقاومت ثابت در دمای طراحی اعلام‌شده است، نه مدل حرارت کابل یا sizing/ampacity.
+
+دامنه: ماژول‌ها و رشته‌ها یکسان، تمام مقاومت‌های رشته یکسان، یک باس و یک MPPT ایده‌آل. کابل فقط همراه diode و additionalDcLossPct=0؛ جلوگیری از double counting. قیود MPPT/current در سمت inverter و Voc همچنان سمت آرایه/بی‌باری. بیشینهٔ توان تحویلی روی IV یکنواخت با bounded optimization و بررسی endpoint؛ مرزهای ولتاژ و جریان با brentq. بدون کابل مسیر عددی قبلی حفظ می‌شود. مدل چند MPPT/اینورتر مستقل و AC کابل خارج از دامنه.
+
+شواهد لازم: معادلهٔ IV مستقل/شبکهٔ متراکم در تست‌ها، KVL وI²R، حساسیتR، صفرRبرابرlegacy، محدودیتولتاژ/جریان، ناممکن/شب، SandiaاستفادهازterminalV، TScontract/archive/report/restore وbrowser عملی. تلفات کابل از constraint loss جدا: arrayMpp = deliveredDC + cableLoss + operatingPointGap؛ کم‌شدن دوباره ازwaterfall ممنوع. منبع/کیفیت declared، نهfieldvalidation. تحویل SHA/CI صریح، بدونmerge.

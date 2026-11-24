@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {StudyRequestSchema,type StudyRequest} from '../src/studies/studyContract';
+import {importMeasurementCsv,parseMeasurementCsv} from '../src/studies/measurementContract';
+import {measurementRows,measurementView,measurementPairsCsv} from '../src/studies/studyMeasurements';
+import {validateResult,validateSnapshot,studyReport} from '../src/studies/studyWorkflow';
+import {makeStudyBundle,validateStudyBundle,cloneStudyInputs} from '../src/studies/studyExchange';
+import {sourceLedger} from '../src/studies/studyInsights';
+const base=JSON.parse(readFileSync('services/pvlib_study/tests/synthetic-study.json','utf8'));
+const manifest=JSON.parse(readFileSync('docs/examples/measurement-manifest.synthetic.json','utf8'));
+const csv=readFileSync('docs/examples/measurement-observations.synthetic.csv','utf8');
+const dataset=importMeasurementCsv(manifest,csv);
+const request=StudyRequestSchema.parse({...base,measurements:[dataset]});
+function run(req:StudyRequest){const p=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(req),encoding:'utf8',maxBuffer:16*1024*1024});assert.equal(p.status,0,p.stderr);return validateResult(JSON.parse(p.stdout));}
+for(const bad of [csv.replace('value,','Wh,'),csv.replace(',1.2,',',NaN,'),csv.replace(',1.2,',',"1.2",'),csv.replace(',1.2,',',,'),csv+'\n'])assert.throws(()=>parseMeasurementCsv(bad));
+assert.deepEqual(parseMeasurementCsv('\uFEFF'+csv.replace(/\r?\n/g,'\r\n')),dataset.records);
+for(const alter of [(r:StudyRequest)=>{r.measurements![0].siteLatitude=0;},(r:StudyRequest)=>{r.measurements![0].intervalMinutes=15;},(r:StudyRequest)=>{r.measurements!.push(structuredClone(dataset));},(r:StudyRequest)=>{r.measurements![0].records.reverse();},(r:StudyRequest)=>{r.measurements![0].importTrace!.rawCsv+='x';},(r:StudyRequest)=>{r.measurements![0].records[0].value=-1;}]){const bad=structuredClone(request);alter(bad);assert.equal(StudyRequestSchema.safeParse(bad).success,false);const p=spawnSync(process.env.PVLIB_PYTHON??'python',['-I','-B','services/pvlib_study/worker.py'],{input:JSON.stringify(bad),encoding:'utf8'});assert.notEqual(p.status,0,'Python must reject the same invalid request');}
+const out=run(request),plain=run(base);
+for(const key of ['samples','summary','monthly'] as const)assert.deepEqual(out[key],plain[key]);
+assert.deepEqual(out.request.measurements,request.measurements);
+assert.deepEqual(measurementRows(out,dataset).map(r=>r.status),['paired','paired','missing','excluded','outside_model_period']);
+assert.equal(measurementRows(out,dataset)[0].canonicalValue,0);
+assert.equal(measurementRows(out,dataset)[1].canonicalValue,1200);
+const offset=structuredClone(dataset);delete offset.importTrace;offset.records[0].timestamp='2017-04-01T10:00:00-07:00';assert.equal(measurementRows(out,offset)[0].modeledValue,out.samples[0].acW);
+const imports=structuredClone(dataset);delete imports.importTrace;imports.modelPoint='plant_import';assert.equal(measurementRows(out,imports)[0].status,'model_point_unavailable');
+const temp=structuredClone(dataset);delete temp.importTrace;temp.modelPoint='reference_cell_temperature';temp.unit='degC';assert.equal(measurementRows(out,temp)[0].modeledValue,out.samples[0].cellTemperatureC);
+const injection=structuredClone(dataset);injection.records[3].reason='=1+1';assert.ok(measurementPairsCsv(out,injection).includes("'=1+1"));
+assert.equal(measurementView(out).datasets.length,1);assert.ok(studyReport(out).includes('meter_export'));assert.ok(sourceLedger(request,out).entries.some(e=>e.component.includes('measurement')));
+const snap=validateSnapshot({version:1,id:'00000000-0000-4000-8000-000000000041',savedAt:'2026-11-03T00:00:00Z',request,result:out});
+assert.deepEqual((await validateStudyBundle(JSON.parse(JSON.stringify(await makeStudyBundle([snap]))))).snapshots[0],snap);
+assert.deepEqual(cloneStudyInputs(snap,'Observation clone','00000000-0000-4000-8000-000000000042',snap.savedAt).request.measurements,request.measurements);
+const blocks=structuredClone(request);blocks.system.inverterBlocks=JSON.parse(readFileSync('docs/examples/inverter-blocks.synthetic.json','utf8'));blocks.system.additionalDcLossPct=0;blocks.system.arrayPdc0W=17600;blocks.system.inverterPdc0W=blocks.system.inverterBlocks!.reduce((n,b)=>n+b.system.inverterPdc0W,0);const blockOut=run(StudyRequestSchema.parse(blocks));assert.equal(blockOut.blockResults!.length,2);for(const child of blockOut.blockResults!)assert.equal(child.request.measurements,undefined);
+console.log('Step 41 PASS: actual Python; unchanged physics; strict CSV/receipts/context; UTC exact pairing, gaps/flags/unavailable boundaries, canonical units, safe CSV; report/ledger/archive/bundle/clone and root-only blocks. Synthetic only; no accuracy statistics.');

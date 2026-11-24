@@ -1,0 +1,42 @@
+{
+  "operation": "pvice_inventory",
+  "plan": {
+    "schemaVersion": "pvice-inventory-v1",
+    "source": "Frozen PV ICE US c-Si scenario, not measured site inventory",
+    "contextSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "installationScale": 0.001,
+    "materials": [
+      "glass",
+      "silicon",
+      "silver",
+      "copper",
+      "aluminium_frames",
+      "encapsulant",
+      "backsheet"
+    ],
+    "inventory": {
+      "schemaVersion": "declared-material-inventory-v1",
+      "source": "Synthetic reconciliation fixture, not independently measured material inventory",
+      "documentSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "contextSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "unit": "kg",
+      "boundary": "annual_selected_material_flows",
+      "observations": [
+        {
+          "year": 1995,
+          "material": "glass",
+          "metric": "usedInModulesKg",
+          "observedKg": 800,
+          "absoluteToleranceKg": 0.01
+        },
+        {
+          "year": 1995,
+          "material": "copper",
+          "metric": "usedInModulesKg",
+          "observedKg": 0.5,
+          "absoluteToleranceKg": 0.1
+        }
+      ]
+    }
+  }
+}

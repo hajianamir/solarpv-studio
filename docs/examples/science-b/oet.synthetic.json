@@ -1,0 +1,59 @@
+{
+  "operation": "oet_patch",
+  "plan": {
+    "schemaVersion": "oet-patch-v1",
+    "source": "SYNTHETIC horizontal patch numerical benchmark; not field calibrated",
+    "contextSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "dniWm2": 800,
+    "airC": 25,
+    "skyC": 20,
+    "convectionWm2K": 25,
+    "emissivity": 0.85,
+    "surfaceGrid": 4,
+    "maxRayPairs": 100000,
+    "temperatureToleranceC": 0.1,
+    "powerRelativeTolerance": 0.01,
+    "patches": [
+      {
+        "id": "a",
+        "origin": [
+          0,
+          0,
+          0
+        ],
+        "widthM": 0.156,
+        "heightM": 0.156,
+        "absorptance": 0.9,
+        "photocurrentRefA": 8,
+        "saturationRefA": 1e-10,
+        "nVtRefV": 0.035,
+        "alphaPerK": 0.0005,
+        "bandgapEv": 1.12
+      },
+      {
+        "id": "b",
+        "origin": [
+          0.156,
+          0,
+          0
+        ],
+        "widthM": 0.156,
+        "heightM": 0.156,
+        "absorptance": 0.9,
+        "photocurrentRefA": 8,
+        "saturationRefA": 1e-10,
+        "nVtRefV": 0.035,
+        "alphaPerK": 0.0005,
+        "bandgapEv": 1.12
+      }
+    ],
+    "triangles": [],
+    "links": [
+      {
+        "a": "a",
+        "b": "b",
+        "conductanceWK": 0.1
+      }
+    ]
+  }
+}

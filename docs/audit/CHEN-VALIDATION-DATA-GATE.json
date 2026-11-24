@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "chen-validation-data-gate-v1",
+  "runtimeTimestamp": "2026-11-24T15:13:35.539351+00:00",
+  "softwareStatus": "ready-for-review",
+  "evidenceLevel": "original_publisher_checksummed_measured_data_acquisition_only",
+  "modelValidationPerformed": false,
+  "projectApproval": "blocked",
+  "automaticEnergyAdoption": false,
+  "financeMutation": false,
+  "checks": [
+    {
+      "command": [
+        "/home/user/solarpv-studio/.venv/bin/python",
+        "scripts/acquire_chen_validation.py"
+      ],
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "command": [
+        "/home/user/solarpv-studio/.venv/bin/python",
+        "-m",
+        "unittest",
+        "scripts.test_chen_validation_data",
+        "-v"
+      ],
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "fileSha256": {
+    "scripts/acquire_chen_validation.py": "a8498261b9cf07c6c74b98664fa3dc2a296c9cf601ac5584e6f4da99c3498cb3",
+    "scripts/test_chen_validation_data.py": "491bba204f29bae0a093381f4e9fc2d90b725738c9aa9966cfc78378a4e8b95b",
+    "scripts/verify_chen_validation_data.py": "4c6196f8dd6046ee299c33979e68dad86b6314609b4ca1606460e6010b39ed7c",
+    "docs/reference-data/chen-validation/.gitattributes": "75c59c8fabc08364842a008f35c5de3a53037fc2790414712e0b51a57b356613",
+    "docs/reference-data/chen-validation/ATTRIBUTION.md": "666db382e60ef76e1e6d027c1f890a0087bf946521ecd4a021c420efea7f502b",
+    "docs/reference-data/chen-validation/LGM50_cell02.csv": "650e7f9ac5217b4db158047e50b6b464100b13f4859002421114edebca629b35",
+    "docs/reference-data/chen-validation/LGM50_cell03.csv": "fcc13423786d6044f3ec41b1b278fb1d42ff55018666be743243f7c34b1b98cb",
+    "docs/reference-data/chen-validation/LGM50_cell04.csv": "e1cbb60e79911824d5559f12db8e8ecdd4781d077a45f5b1ecbcf103aa271d9e",
+    "docs/reference-data/chen-validation/manifest.json": "d0fd1ce8fd40fcf6cd13981755bf04af9d2cbbcc8bfd8735cb2152aadcd0611a"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "branch": "arena/237e6ea2-solarpv-studio",
+  "head": "5438fb59f4bb5cde05c20818b780464e1fe28752",
+  "candidateFiles": 279,
+  "workingFileBytes": 2735637,
+  "over5MiB": [],
+  "sensitiveFilenames": [],
+  "stagedPaths": [],
+  "ignoredGeneratedExamples": {
+    ".cache/study-evidence/operational/annual-direct.json": true,
+    ".cache/study-evidence/operational/annual-integrated.json": true,
+    ".env": true
+  },
+  "note": "Filename/size hygiene only, not a content secret scan. Existing cumulative work is not staged or rewritten."
+}

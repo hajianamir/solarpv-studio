@@ -1,0 +1,164 @@
+{
+  "operation": "pvdeg_acceleration",
+  "plan": {
+    "source": "Derived from frozen upstream software fixture; NOT independent field qualification",
+    "contextSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "schemaVersion": "pvdeg-acceleration-v1",
+    "intervalHours": 1,
+    "chamberIrradianceWm2": 1000,
+    "chamberRhPct": 15,
+    "chamberTemperatureC": 60,
+    "activationEnergyKjMol": 40,
+    "irradianceExponent": 0.5,
+    "humidityExponent": 1,
+    "baseEnergyBasis": "undegraded",
+    "alreadyAppliedMechanisms": [],
+    "records": [
+      {
+        "timestamp": "1999-01-01T00:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": 0.0,
+        "rhPct": 79.39
+      },
+      {
+        "timestamp": "1999-01-01T01:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": 0.0,
+        "rhPct": 80.84
+      },
+      {
+        "timestamp": "1999-01-01T02:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": 0.0,
+        "rhPct": 82.98
+      },
+      {
+        "timestamp": "1999-01-01T03:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": 0.0,
+        "rhPct": 85.01
+      },
+      {
+        "timestamp": "1999-01-01T04:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": 0.0,
+        "rhPct": 85.81
+      },
+      {
+        "timestamp": "1999-01-01T05:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": 0.0,
+        "rhPct": 86.55
+      },
+      {
+        "timestamp": "1999-01-01T06:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": 0.0,
+        "rhPct": 87.12
+      },
+      {
+        "timestamp": "1999-01-01T07:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": 0.0,
+        "rhPct": 80.24
+      },
+      {
+        "timestamp": "1999-01-01T08:30:00-07:00",
+        "irradianceWm2": 95.29497169691128,
+        "temperatureC": 3.1908754621287625,
+        "rhPct": 66.21388638324451
+      },
+      {
+        "timestamp": "1999-01-01T09:30:00-07:00",
+        "irradianceWm2": 451.6726756510375,
+        "temperatureC": 11.36315181427291,
+        "rhPct": 44.063330786564784
+      },
+      {
+        "timestamp": "1999-01-01T10:30:00-07:00",
+        "irradianceWm2": 627.455610102217,
+        "temperatureC": 15.43813997363906,
+        "rhPct": 34.54330094376894
+      },
+      {
+        "timestamp": "1999-01-01T11:30:00-07:00",
+        "irradianceWm2": 606.0340999376997,
+        "temperatureC": 16.167582073233064,
+        "rhPct": 33.36945531090896
+      },
+      {
+        "timestamp": "1999-01-01T12:30:00-07:00",
+        "irradianceWm2": 116.91511959427562,
+        "temperatureC": 6.392783091654232,
+        "rhPct": 52.93591841197243
+      },
+      {
+        "timestamp": "1999-01-01T13:30:00-07:00",
+        "irradianceWm2": 90.42653781119755,
+        "temperatureC": 4.911019763459575,
+        "rhPct": 55.48636241017548
+      },
+      {
+        "timestamp": "1999-01-01T14:30:00-07:00",
+        "irradianceWm2": 21.92158492392668,
+        "temperatureC": 2.4910359378930886,
+        "rhPct": 62.529483187758196
+      },
+      {
+        "timestamp": "1999-01-01T15:30:00-07:00",
+        "irradianceWm2": 57.54416042530753,
+        "temperatureC": 1.4218940858516924,
+        "rhPct": 61.466133584158406
+      },
+      {
+        "timestamp": "1999-01-01T16:30:00-07:00",
+        "irradianceWm2": 7.3071949746422264,
+        "temperatureC": -0.8070867599800826,
+        "rhPct": 79.59577794976671
+      },
+      {
+        "timestamp": "1999-01-01T17:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": -2.0,
+        "rhPct": 81.99
+      },
+      {
+        "timestamp": "1999-01-01T18:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": -3.0,
+        "rhPct": 78.79
+      },
+      {
+        "timestamp": "1999-01-01T19:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": -4.0,
+        "rhPct": 81.85000000000002
+      },
+      {
+        "timestamp": "1999-01-01T20:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": -4.0,
+        "rhPct": 84.68
+      },
+      {
+        "timestamp": "1999-01-01T21:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": -5.0,
+        "rhPct": 80.79
+      },
+      {
+        "timestamp": "1999-01-01T22:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": -5.0,
+        "rhPct": 83.44
+      },
+      {
+        "timestamp": "1999-01-01T23:30:00-07:00",
+        "irradianceWm2": 0.0,
+        "temperatureC": -6.0,
+        "rhPct": 80.23
+      }
+    ],
+    "temperatureBasis": "cell"
+  }
+}

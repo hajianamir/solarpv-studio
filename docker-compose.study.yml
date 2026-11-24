@@ -1,0 +1,28 @@
+# Explicit opt-in, same-origin deployment. Configure authenticated reverse-proxy
+# JWT injection or use an authenticated API client; never embed signing keys in UI.
+services:
+  solarpv-study:
+    build:
+      context: .
+      dockerfile: Dockerfile.study
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PVLIB_STUDY_ENABLED: "true"
+      PVLIB_PYTHON: /opt/pvlib/bin/python
+      REAL_INTERNET: "false"
+      JWT_SECRET: ${JWT_SECRET:?Configure a private HS256 signing key}
+      JWT_ISSUER: ${JWT_ISSUER:?Configure trusted token issuer}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:?Configure trusted token audience}
+    mem_limit: 1g
+    cpus: 2
+    pids_limit: 128
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    volumes:
+      - study-app-data:/app/data
+    restart: unless-stopped
+volumes:
+  study-app-data:

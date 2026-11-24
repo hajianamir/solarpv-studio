@@ -1,0 +1,26 @@
+{
+  "source": "Synthetic analytical acceptance fixture; not field calibration",
+  "contextSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "schemaVersion": "fpv-balance-v1",
+  "intervalS": 3600,
+  "stepS": 60,
+  "areaM2": 100,
+  "depthM": 2,
+  "initialTemperatureC": 20,
+  "coverageFraction": 0.5,
+  "coveredEvaporationRatio": 0.5,
+  "waterAbsorptance": 0.8,
+  "convectionWm2K": 10,
+  "temperatureToleranceC": 0.01,
+  "records": [
+    {
+      "timestamp": "2026-01-01T00:00:00Z",
+      "solarWm2": 500,
+      "airC": 20,
+      "potentialEvapMmDay": 4,
+      "rainMm": 0,
+      "inflowM3": 0,
+      "outflowM3": 0
+    }
+  ]
+}

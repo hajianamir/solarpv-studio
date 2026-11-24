@@ -1,0 +1,83 @@
+{
+  "thermal": {
+    "operation": "thermal_two_node",
+    "plan": {
+      "schemaVersion": "two-node-thermal-plan-v1",
+      "source": "SYNTHETIC demonstration only — replace all parameters with sourced evidence",
+      "parameters": {
+        "cellCapacityJm2K": 8000,
+        "backCapacityJm2K": 12000,
+        "couplingWm2K": 30,
+        "frontH0": 8,
+        "frontHWind": 2,
+        "backH0": 6,
+        "backHWind": 2,
+        "frontEmissivity": 0.85,
+        "backEmissivity": 0.85,
+        "windHeightM": 2,
+        "coefficientWindHeightM": 2
+      },
+      "domain": {
+        "nodeMinC": -50,
+        "nodeMaxC": 120,
+        "airMinC": -20,
+        "airMaxC": 60,
+        "windMaxMps": 20
+      },
+      "initial": {
+        "cellC": 25,
+        "backC": 25
+      },
+      "intervals": [
+        {
+          "start": "2026-01-01T12:00:00Z",
+          "durationS": 60,
+          "absorbedCellWm2": 700,
+          "electricalExtractedWm2": 140,
+          "airC": 25,
+          "skyC": 10,
+          "groundC": 25,
+          "windMps": 2
+        }
+      ],
+      "stepS": 1,
+      "maxSteps": 10000
+    }
+  },
+  "circuit": {
+    "operation": "diode_network",
+    "plan": {
+      "schemaVersion": "diode-network-plan-v1",
+      "source": "SYNTHETIC operating-condition substring parameters only",
+      "substrings": [
+        {
+          "id": "bright",
+          "photocurrentA": 8,
+          "saturationCurrentA": 1e-9,
+          "seriesOhm": 0.1,
+          "shuntOhm": 200,
+          "nNsVthV": 0.6,
+          "bypassDropV": 0.5
+        },
+        {
+          "id": "shaded",
+          "photocurrentA": 2,
+          "saturationCurrentA": 1e-9,
+          "seriesOhm": 0.1,
+          "shuntOhm": 200,
+          "nNsVthV": 0.6,
+          "bypassDropV": 0.5
+        }
+      ],
+      "strings": [
+        [
+          "bright",
+          "shaded"
+        ]
+      ],
+      "voltageToleranceV": 0.000001,
+      "currentToleranceA": 1e-9,
+      "maxEvaluations": 100000
+    }
+  }
+}

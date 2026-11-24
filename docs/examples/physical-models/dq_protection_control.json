@@ -1,0 +1,66 @@
+{
+  "operation": "dq_protection_control",
+  "plan": {
+    "schemaVersion": "dq-control-plan-v1",
+    "source": "Synthetic balanced stiff-grid test, Imperix TN106/TN103 equations; user gains/settings, no hardware qualification",
+    "sampleS": 2e-05,
+    "outputEvery": 50,
+    "plant": {
+      "inductanceH": 0.005,
+      "resistanceOhm": 0.2,
+      "dcVoltageV": 800,
+      "maximumModulation": 0.95,
+      "openCircuitDumpResistanceOhm": 5,
+      "initialCurrentAlphaA": 0,
+      "initialCurrentBetaA": 0
+    },
+    "controller": {
+      "currentKpOhm": 5,
+      "currentKiOhmPerS": 200,
+      "antiWindupPerS": 200,
+      "maximumCurrentPeakA": 30,
+      "pllKpPerS": 177.71531752633464,
+      "pllKiPerS2": 15791.367041742973,
+      "nominalFrequencyHz": 50,
+      "maximumFrequencyDeviationHz": 15,
+      "initialPllAngleRad": 0,
+      "initialGridAngleRad": 0.1,
+      "minimumPllVoltagePeakV": 20
+    },
+    "protection": {
+      "pickupRmsA": 25,
+      "curve": "normal_inverse",
+      "timeMultiplier": 0.1,
+      "minimumOperateS": 0.01,
+      "instantaneousRmsA": 50,
+      "breakerDelayS": 0.005,
+      "underVoltagePeakV": 200,
+      "overVoltagePeakV": 400,
+      "voltageDelayS": 0.02,
+      "underFrequencyHz": 45,
+      "overFrequencyHz": 55,
+      "frequencyDelayS": 0.05,
+      "startupBlankingS": 0.05
+    },
+    "intervals": [
+      {
+        "start": "2026-01-01T00:00:00Z",
+        "durationS": 0.15,
+        "gridVoltagePeakV": 325,
+        "gridFrequencyHz": 50,
+        "gridPhaseJumpRad": 0,
+        "currentReferenceDPeakA": 10,
+        "currentReferenceQPeakA": 0
+      },
+      {
+        "start": "2026-01-01T00:00:00.150Z",
+        "durationS": 0.1,
+        "gridVoltagePeakV": 100,
+        "gridFrequencyHz": 50,
+        "gridPhaseJumpRad": 0,
+        "currentReferenceDPeakA": 20,
+        "currentReferenceQPeakA": 0
+      }
+    ]
+  }
+}

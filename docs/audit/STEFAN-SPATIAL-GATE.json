@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "stefan-spatial-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:25:47.575Z",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "acceptedScope": [
+    "standalone 1D conduction-only isothermal melting FV kernel",
+    "opt-in bounded offline CLI",
+    "independent Neumann reference and numerical regression"
+  ],
+  "notCompleted": [
+    "API/SDK/UI integration for this new kernel",
+    "PV-T/PEM coupling",
+    "multidimensional convection and material validation",
+    "remaining A1-D3 roadmap"
+  ],
+  "evidenceLevel": "analytic_verification_not_experimental_validation",
+  "deploymentDefault": "CLI disabled without --enable-research",
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python scripts/build_stefan_reference.py",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python -m unittest scripts.test_stefan_spatial -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:applied",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/stefan_spatial.py": "d63c395f8efc4fe3b73e990277df261bab45c69b04f9e5d06c43c8840b7e4168",
+    "scripts/test_stefan_spatial.py": "0761e7903ecf2f7411f735e68e485d6db2d22e5999eb374357f85a12d3390de7",
+    "scripts/build_stefan_reference.py": "32dd358980554b35697496f3a004e995bf0884ed388369b575d0cd21fb1c0dd3",
+    "scripts/verify-stefan.ts": "e293afd394be325c8a5528e53171ef5b87f7b872c99abae1527ce8b0189efc27",
+    "docs/features/STEFAN-SPATIAL-SPEC.fa.md": "48b50eb50521775438879a173d32d36095c7cf77fe98f811dc7cecc72d0be0ce",
+    "docs/features/STEFAN-SPATIAL.fa.md": "8b9a1d98291cd9d5e6290e77a6886114c72efa6249929047a42c2375202aeeb0",
+    "docs/examples/stefan/paraffin.json": "9c4ce075405f41776b58e7c8126a722d8772a61fab8b6cb87f1a97cf6dfa7ba4",
+    "docs/examples/stefan/neumann-reference.json": "8eb6ff9b685c26be4e71a79e0066735897b408605361c140b297d61f6171276e",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/APPLIED-RESEARCH-GATE.json": "ed08d628201783cfcfa04c3323709234c16308785ec311ae0739dc1b2f043ba0",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    "CHANGELOG.md": "211a6db5e8763bdd215cf82025041f018f7dccaa60a8db5ebe4e9b7ac3275ddf"
+  }
+}

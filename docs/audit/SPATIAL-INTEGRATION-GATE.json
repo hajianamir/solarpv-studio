@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "spatial-integration-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:25:53.536Z",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "acceptedScope": [
+    "authenticated API, SDK and editor integration of bounded 1D Stefan kernel",
+    "O(cells) independent constitutive/grid/energy witnesses",
+    "opt-in independent flag, rollback, production browser archive/cancel"
+  ],
+  "evidenceLevel": "analytic_software_verification_not_field_validation",
+  "notCompleted": [
+    "PV-T/PEM coupling",
+    "multidimensional convection or real material validation",
+    "other remaining A1-D3 roadmap items"
+  ],
+  "flags": {
+    "SPATIAL_RESEARCH_ENABLED": true,
+    "deploymentDefault": "off",
+    "requiresBaseResearchFlag": true
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked"
+  },
+  "checks": [
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-spatial.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/spatialResearch.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:stefan",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-spatial-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/stefan_spatial.py": "d63c395f8efc4fe3b73e990277df261bab45c69b04f9e5d06c43c8840b7e4168",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/spatialResearch.ts": "25423bf32df5afa02b73ad2345490d4ab15200c67b56b7605612594f1a4b14f2",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test-spatial.ts": "99bb1920d4a1bd94d7fc896aa5444ec3d73cfd7e20edd430f0ca6997b812d78a",
+    "scripts/test-spatial-browser.ts": "a211e8670a8144d04f990bb2d7a2ea5a94e3a83f0bf09ba22e86a6162ab76417",
+    "scripts/verify-spatial.ts": "c06fbfc34d6d26bdad79457711897f477fb9bd7cf8937d4bbf87fa81b837f369",
+    "docs/examples/stefan/request.json": "1ab38f1c7adf62162d9d81a8a4abff6a5e5934486eff715de58211fbb776b337",
+    "docs/features/SPATIAL-INTEGRATION.fa.md": "ba7b7142147209fd377a166d33765430685907b9d8c786ad4cc8c23672e5ff51",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/STEFAN-SPATIAL-GATE.json": "cc8223b5aad9947771623bc97bf6ad04278dc8cc831245888f21d0337a5d95f9",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    "CHANGELOG.md": "211a6db5e8763bdd215cf82025041f018f7dccaa60a8db5ebe4e9b7ac3275ddf"
+  }
+}

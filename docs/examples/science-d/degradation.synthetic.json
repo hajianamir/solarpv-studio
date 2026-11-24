@@ -1,0 +1,38 @@
+{
+  "operation": "degradation_exposure",
+  "plan": {
+    "source": "Synthetic acceptance fixture only; not measured or licensed inventory",
+    "contextSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "schemaVersion": "degradation-exposure-v1",
+    "intervalHours": 1,
+    "activationEnergyKjMol": 40,
+    "referenceTemperatureC": 25,
+    "referenceRhPct": 50,
+    "humidityExponent": 1,
+    "referenceHazardPerHour": 1e-05,
+    "baseEnergyBasis": "undegraded",
+    "alreadyAppliedMechanisms": [],
+    "records": [
+      {
+        "timestamp": "2026-01-01T00:00:00Z",
+        "temperatureC": 25,
+        "rhPct": 50
+      },
+      {
+        "timestamp": "2026-01-01T01:00:00Z",
+        "temperatureC": 25,
+        "rhPct": 50
+      },
+      {
+        "timestamp": "2026-01-01T02:00:00Z",
+        "temperatureC": 25,
+        "rhPct": 50
+      },
+      {
+        "timestamp": "2026-01-01T03:00:00Z",
+        "temperatureC": 25,
+        "rhPct": 50
+      }
+    ]
+  }
+}

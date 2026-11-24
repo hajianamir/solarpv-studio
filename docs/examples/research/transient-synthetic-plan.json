@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "transient-plan-v1",
+  "source": "Synthetic assumed dynamics fixture",
+  "stepS": 0.1,
+  "equipment": {
+    "ratingW": 10000,
+    "efficiency": 0.96,
+    "mpptTauS": 2,
+    "controlTauS": 3,
+    "thermalRKW": 0.1,
+    "thermalCJK": 1000,
+    "derateStartC": 60,
+    "shutdownC": 90
+  },
+  "initial": {
+    "trackedDcW": 0,
+    "commandW": 10000,
+    "temperatureC": 75
+  },
+  "intervals": [
+    {
+      "start": "2026-01-01T00:00:00Z",
+      "durationS": 20,
+      "availableDcW": 8000,
+      "setpointW": 10000,
+      "hardLimitW": 10000,
+      "ambientC": 25
+    },
+    {
+      "start": "2026-01-01T00:00:20Z",
+      "durationS": 20,
+      "availableDcW": 8000,
+      "setpointW": 1000,
+      "hardLimitW": 2500,
+      "ambientC": 25
+    }
+  ]
+}

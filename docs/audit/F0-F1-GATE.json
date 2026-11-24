@@ -1,0 +1,197 @@
+{
+  "schemaVersion": "foundation-gate-v1",
+  "softwareStatus": "ready-for-review",
+  "overallReleaseStatus": "blocked_external_evidence",
+  "scope": "F0 exact capability inventory; F1 bounded data comparison and opt-in SDK foundation, not live ingestion, persistence or energy adoption",
+  "runtimeTimestamp": "2026-11-24T14:23:21.435Z",
+  "runtime": {
+    "node": "v22.22.3",
+    "platform": "linux"
+  },
+  "coverage": {
+    "capabilities": 33,
+    "partial": 29,
+    "planned": 4
+  },
+  "testFlags": {
+    "CAPABILITY_AUDIT_ENABLED": true,
+    "EXTERNAL_DATA_ENABLED": true,
+    "PVLIB_RESEARCH_ENABLED": true,
+    "SDK_ENABLED": true
+  },
+  "deploymentDefaults": "off; explicit opt-in required",
+  "boundary": {
+    "newEnergyAdoptionPath": false,
+    "newFinanceMutation": false,
+    "researchGate": "blocked"
+  },
+  "externalBlockers": [
+    "owner_license_rights",
+    "native_safari_evidence",
+    "windows_execution_evidence",
+    "independent_field_data"
+  ],
+  "checks": [
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:physics-registry",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:source-invariants",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:engine-claims",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:rate-limit",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run test",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run lint:types",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-foundation.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-foundation-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python -m unittest discover -s sdk -p test_*.py -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-research-api.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-physical-models.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/capabilities/manifest.ts src/studies/externalSeries.ts src/components/ExternalDataReview.tsx src/server/researchApi.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:uq:remaining",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-research-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    ".github/workflows/foundation-acceptance.yml": "282a07fe47534668da2ae1c0c1451d0bed17adc7d3c836f0b0c5c364df49049f",
+    "docs/audit/UQ-005-GATE.json": "d59b0b0627e7bf17b22a5c90329fb958984807c006f5f1b035a75c9b6d729d38",
+    "docs/examples/external-series.synthetic.json": "7613dc62f626806bcac3086d170011d6b5a6f612440b3fa872a669e4b2a176bd",
+    "docs/features/F0-F1-FOUNDATION.fa.md": "4ad98879c42b9158f7933b96d706ef325d73a17d0f734e68b11bed8f9038161d",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    "scripts/test-advanced-dispatch.ts": "4bfdee832002a8d4e56851e07d85f4dac1c972136e7ff08b1b16530506759fa7",
+    "scripts/test-energy-uncertainty-review.ts": "0d45a0f28909b299d71e623393f16604bdf287cfe297e16c7e384ec8b3a034b7",
+    "scripts/test-financial-uq-worker.ts": "14c6afc942313fb5ef3b4ea86eff68b31a39f6ff996fa4616702da3910cc28bb",
+    "scripts/test-foundation-browser.ts": "de5ebd37416b7d1cdae59d2e5c76b47fca3340677fa05c2269d4747097ee21a9",
+    "scripts/test-foundation.ts": "3b5a28bc6cdff93e9704c66597a8a7b3f108729cd70d50ada6de095318471ccf",
+    "scripts/test-measurement-comparison.ts": "b5425243101eec3f37085bc47f973ed5aa17fdc817fedf5fbf0cc301ee5ddaef",
+    "scripts/test-operating-dispatch.ts": "cc735af8e6415739234f4c33bc9aed037bb336edaa36dc4fd5aba4ad4265ea2c",
+    "scripts/test-physical-models.ts": "cdb3a3c84f4a7c2423e7241ab252cfdb996b4bf96287fd5b274bbfac49b95730",
+    "scripts/test-portfolio.ts": "14cf44fa15bfed19b5855c658398f3ea757f8d31110e4b65186ab06242260081",
+    "scripts/test-reference-models-browser.ts": "2c7501a6a0181a8d5f9186e673dee05aef1f8d5b821f5c22c9854cd84e1c093e",
+    "scripts/test-reference-models.ts": "2efce7d340e46987edeca3d35bdbabed66867621b06d9d1d4c4b323862e859d5",
+    "scripts/test-research-api.ts": "46f77450ad220beef252fb5533d7497b253a9f883d82d4a506b000e0c1fa941c",
+    "scripts/test-science-b.ts": "7443d9ec6fae0c5f8154c94c35b024d23a66e946c8d133b19cf967d350548f47",
+    "scripts/test-science-c-browser.ts": "34452f5fb6e9e53adf365e9bb2331cdd2b6e2a8e8f23150de83188480a2f39ed",
+    "scripts/test-science-c.ts": "0fcb900ed456f6f3872c0970e6ad6083e04be29a66eab2698effd47e24d1c696",
+    "scripts/test-science-d-browser.ts": "4c67e43f017727c5bcd55bc937b58776483bfe2b44a836c6c8683b6b00ca5d58",
+    "scripts/test-science-d.ts": "d6237ea470937676e7a334e47c381a7d4a3edbd9c3fb5d9fb2873ddc40ed2a03",
+    "scripts/test-survival.ts": "5b9e39880a0190057c8bc9fe11e288ab1f0bce11448a66a76b1cd2c83b2d9f26",
+    "scripts/test_portfolio.py": "6fb97e5c46f4d1bac63fe783b7d4c2568a1819a255fa94dfb31b8357f963501e",
+    "scripts/test_reference_models.py": "f738d2a0adbf6c0f990e076b718b661707d5371225932474071d2a771e3aa4b8",
+    "scripts/test_science_b.py": "6dbf65012015e7aa851f588aca06c87a479bcbd1481312cb86e59484b718ae1f",
+    "scripts/test_science_c.py": "709ccfa1ffb5cfd22af0931a438c93ae643eac97b5ea68257a806bbefbb18c46",
+    "scripts/test_science_d.py": "cc2c8c6aceaf92765d63e0d64c51e412bda69893fac6b6ab8bb750d13b2e2566",
+    "scripts/test_survival.py": "2ec3b1c5a332001646033c883e87af2c64d9f6facaca2a9cbf1b559c16be8acc",
+    "scripts/verify-foundation.ts": "a03baac5055e1d1681f7662a876eac94bba223beaf76e3062c2209e5ef45ea34",
+    "sdk/example.py": "50f637f0758ec3c77df0e875ff5f1f3ef696bb361eaba3752fc49c92a1bd680e",
+    "sdk/pyproject.toml": "3daac82ba15baad4f56a0dd94d4bd8415e0db32f7dbbeebcd3ba8e607d09c664",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "sdk/test_sdk.py": "586bb766b5d87458cc16c9a970a4eeca5fb7cf714039d6c289e07155f3ba95b8",
+    "services/power_dynamics/control.py": "3f31c56f0ae43ee2ed21282149442de67dc0ed577a18141d327ba040a8baa1a2",
+    "services/power_dynamics/electrochemistry.py": "4e0dd32b66279072095cb18977b04b306c587d6a4254350b4520b016e19d85b0",
+    "services/pvlib_research/advanced_thermal.py": "877839f5af6b1bf650f9f8998f993dcaa31b16e1af395e4e8e964bbeee30a247",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "services/pvlib_research/battery_pybamm.py": "31e0b31e09af65334d8c36d630c33d166fced6a0c40fa17427cb363b26115243",
+    "services/pvlib_research/diode_network.py": "346a77cfe76862d73f98e7c6de4f06200b436478873f885bac2c3d07b75ae552",
+    "services/pvlib_research/portfolio.py": "b4b4dc479e623ffd090b169a5244a57ff244e7a25dab942fe21d182db6754f4f",
+    "services/pvlib_research/reference_models.py": "f9fe8534bf74a1e10b2642a282c799ae789a119a3ebc9cd5341fed141aed4e07",
+    "services/pvlib_research/science_b.py": "e2e91f8487c6a44572b5984b458711421f3056fa4867cae24c43b5481edd54c5",
+    "services/pvlib_research/science_c.py": "b80f0b4c21a312887c9f7d30be20814a5b1b612a2615b40b2035526be8a61ef7",
+    "services/pvlib_research/science_d.py": "b7f9ccc239f0fe5d43eab05879248b86dfba4b95c594ecede81cd511cdd7766a",
+    "services/pvlib_research/survival.py": "f79c67056bc4ce2ace71c4df09a911d10feb56e04129d4ace8eae9121f601cf2",
+    "services/pvlib_research/tests/test_research.py": "4ec0b8aabe5f0756d9659e3c01d6fe751fcf56ed6c39cb9238ef1493e9b678ea",
+    "services/pvlib_research/tests/test_transient.py": "9eb8fc5eea59a7d1504d7a50c5b755fd4b9e5931c8abd775df898dcd058d4be3",
+    "services/pvlib_research/transient.py": "2ef5411e83b45521b3acb62fe189615401243b31c5abb67b61f5debd999101f3",
+    "services/pvlib_research/uncertainty.py": "33a666c326de91883e49bdf620b69c1b3fdd153200631e9f5db4f32da6f10c23",
+    "services/pvlib_study/tests/test_auxiliary_schedule.py": "0bccd96f8487bcf64fb02e159674149e4193d28b8b4583fae30e663959be61f6",
+    "services/pvlib_study/tests/test_export_limit_schedule.py": "df4481db3f7387a8b6fc4fbb6519f0ab728316212235bda38113b752f95e8f8c",
+    "services/pvlib_study/tests/test_optical_models.py": "3d1526b7ae6d376224ef553f24c50857fc2fbcd60519a5245f95b637f6242407",
+    "services/pvlib_study/tests/test_tracking.py": "7c8ce5af9359ce9f2528faf324defa24e05cc5b096c588c18a341b16053d744b",
+    "services/pvlib_study/worker.py": "978c44b11717797201c571423c4e30838d7ca439f3420ac79cb79063a7a8e060",
+    "src/capabilities/manifest.json": "38008723ef466957488182995eec1b57991b677d88f4847b4641b2ec26bbd6ce",
+    "src/capabilities/manifest.ts": "29b481e1ad64679a5899e67beb162d029424bef8053e28184655eb9873e82a19",
+    "src/components/ExternalDataReview.tsx": "17a3ee1236c52a2683d0ccf657ffd44f290af8936e288ce704358e12bda4bcaf",
+    "src/components/FinancialTab.tsx": "457f30cb26aad3f9986ed23c09566972616df303a24e22b8243925649a95a2f7",
+    "src/components/PvlibStudyPanel.tsx": "50e6db020788340b5705bec3b69254e88dd537a5e4da170a88c80f23f70b46f8",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "src/engine/core/modelRegistry.ts": "047bfe369eb22ad156097f67f86d4a55bca9616d0d90e5a3da509db1075a2991",
+    "src/engine/core/uncertaintyPropagation.ts": "8f70a32346bd368a74f37a92e57e12ccfa4e08f924a34eb64d6e09fe74629491",
+    "src/engine/environmentalAgingEngine.ts": "43b5f0dad088fe1dff976bcf843acf799d3807b7d97372640d23136762589efe",
+    "src/engine/loadProfiles.ts": "536fd7ef5fdcf68bd73ef8b963f05483f9e219d711d56cc5641fa99b593cc94a",
+    "src/engine/roof3dShadingEngine.ts": "d48d420c32e59246f5bf6411fc888e65265b2ca120ad963c8242e5ad70db8ee0",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/studies/advancedDispatch.ts": "4dc2aee61486721c2b8ef132f56a9de30bb05ecd5f188282f899487efa65e392",
+    "src/studies/energyUncertaintyReview.ts": "a6c725ca21bd86230063d02eb463a5234d3828045fc6977d6b4744a1a02c71c8",
+    "src/studies/externalSeries.ts": "dd6c37eefc1373e7b5b0b1ac195610a5d8d4ff8ae6a6d6f2cd9bbc7b5bc9a04a",
+    "src/studies/measurementComparison.ts": "a3572b0da4ff215c85c019549be5823b773aa2317f624ac78675768885224bd1",
+    "src/studies/operatingDispatch.ts": "23c1ff8a504a60968513ae483f9ca40836e3243325eff2ef56bbc92182c9e634",
+    "src/studies/referenceModels.ts": "f9fb70b9e6eb204cfc19d5ff75ad6d1bb28f459b9560caa8d6026d7b21981bcf",
+    "src/studies/scienceC.ts": "dc65bbf20d83b62b88c79cf88c6fc209646251041b5a7a42f8c123dc9c0b92eb",
+    "src/studies/scienceD.ts": "92ba4d7430e92db9f369d7328b01ac2d5ba2d3114c0bdf06d6a2c9aa6b1e2f79"
+  }
+}

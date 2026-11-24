@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { changedFormulaUnits, executeReferenceFixture, extractFormulaUnits, validateEvidenceRecords } from './verify-physics-reference-gate';
+import { assertReferenceValue,decodeReferenceExpected, changedFormulaUnits, executeReferenceFixture, extractFormulaUnits, validateEvidenceRecords } from './verify-physics-reference-gate';
 
 const sourceBefore = `export function calculate(input: number) {\n  const power = input * 2 + 1;\n  return power <= 100;\n}`;
 const sourceAfterCoefficientChange = `export function calculate(input: number) {\n  const power = input * 2 + 1.5;\n  return power <= 100;\n}`;
@@ -264,3 +264,10 @@ assert.match(workflow, /verify-physics-reference-gate\.ts/, 'dedicated workflow 
 assert.match(workflow, /PHYSICS_DIFF_BASE:/, 'workflow must pass the push/PR base to the detector');
 
 console.log('Physics reference gate tests passed (formula mutations fail closed; prose-only edits do not; CI wiring is present).');
+
+// Lossless undefined encoding still checks the entire object and exact value type.
+const explicitUndefined=decodeReferenceExpected({number:12,optional:{$undefined:true}});
+assertReferenceValue({number:12,optional:undefined},explicitUndefined,0,0);
+for(const bad of [{number:12},{number:12,optional:null},{number:13,optional:undefined},{number:12,optional:0}])assert.throws(()=>assertReferenceValue(bad,explicitUndefined,0,0));
+assert.throws(()=>decodeReferenceExpected({$undefined:true,ignored:12}));
+assert.throws(()=>decodeReferenceExpected({$undefined:false}));

@@ -1,0 +1,23 @@
+import {z} from 'zod';
+import {stable} from './studyComparisonGate';
+import manifest from '../../docs/reference-data/manifest.json';
+const f=(a:number,b:number)=>z.number().finite().min(a).max(b),hash=z.string().regex(/^[a-f0-9]{64}$/),text=z.string().trim().min(10).max(1000),vector=(a:number,b:number)=>z.array(f(a,b)).min(2).max(256),finite=z.number().finite();
+export const incoherentOperations=['incoherent_optics'] as const;
+const plan=z.object({schemaVersion:z.literal('incoherent-optics-v1'),source:text,contextSha256:hash,incidence:z.literal('normal'),coherenceBasis:z.string().trim().min(20).max(1000),wavelengthNm:vector(20,4000),irradianceWm2Nm:vector(0,10),layers:z.array(z.object({thicknessNm:f(.01,1e9).nullable(),n:vector(.01,10),k:vector(0,10),source:text}).strict()).min(3).max(12)}).strict().superRefine((p,c)=>{const fail=()=>c.addIssue({code:'custom',message:'Exact grid, thick incoherent layers, nonabsorbing outer media, no opacity clamp'});if(p.wavelengthNm.length!==p.irradianceWm2Nm.length||p.wavelengthNm.some((w,i)=>i>0&&w<=p.wavelengthNm[i-1]))fail();p.layers.forEach((l,j)=>{if(l.n.length!==p.wavelengthNm.length||l.k.length!==p.wavelengthNm.length)fail();if(j===0||j===p.layers.length-1){if(l.thicknessNm!==null||l.k.some(k=>k!==0))fail();}else if(l.thicknessNm===null||l.thicknessNm<10*Math.max(...p.wavelengthNm)||l.k.some((k,i)=>4*Math.PI*k*l.thicknessNm!/p.wavelengthNm[i]>60))fail();});});
+export const IncoherentRequestSchema=z.discriminatedUnion('operation',[z.object({operation:z.literal('incoherent_optics'),plan}).strict()]);
+export type IncoherentRequest=z.infer<typeof IncoherentRequestSchema>;
+const near=(a:number,b:number)=>{if(Math.abs(a-b)>1e-8*Math.max(1,Math.abs(b)))throw new Error('Independent incoherent intensity-series witness');};
+/** Independent geometric-series intensity composition, not upstream transfer matrices. */
+function witness(p:IncoherentRequest['plan'],i:number){
+ const iface=(j:number)=>{const a=p.layers[j],b=p.layers[j+1],na=a.n[i],ka=a.k[i],nb=b.n[i],kb=b.k[i],den=(na+nb)**2+(ka+kb)**2;return {R:((na-nb)**2+(ka-kb)**2)/den,T:4*(na**2+ka**2)/den*nb/na,backT:4*(nb**2+kb**2)/den*na/nb};};
+ let {R,T}=iface(p.layers.length-2);
+ for(let j=p.layers.length-3;j>=0;j--){const f=iface(j),l=p.layers[j+1],P=Math.exp(-4*Math.PI*l.k[i]*l.thicknessNm!/p.wavelengthNm[i]),den=1-f.R*R*P*P;if(den<=0)throw new Error('Incoherent conditioning');T=f.T*P*T/den;R=f.R+f.T*f.backT*R*P*P/den;}
+ return {R,T};
+}
+export function validateIncoherentResult(value:unknown,request:IncoherentRequest){
+ const r=z.object({schemaVersion:z.literal('portfolio-result-v1'),algorithmVersion:z.literal('1.0.0'),plan:z.unknown(),planSha256:hash,operation:z.literal('incoherent_optics'),status:z.literal('insufficient_evidence'),validationStatus:z.literal('not_field_validated'),projectApproval:z.literal('blocked'),safetyApproval:z.literal('not_assessed'),limitations:z.array(z.string()).min(1),output:z.unknown()}).strict().parse(value);if(stable(r.plan)!==stable(request.plan))throw new Error('Incoherent input binding');
+ const p=request.plan,o=z.object({runtime:z.object({package:z.literal('tmm'),version:z.literal('0.2.0'),engineSourceSha256:hash}).strict(),referenceHashes:z.record(z.string(),hash),scope:z.string().min(40),trace:z.array(z.object({wavelengthNm:finite,reflectance:f(-1e-9,1.000000001),transmittance:f(-1e-9,1.000000001),absorptance:f(-1e-9,1.000000001)}).strict()).length(p.wavelengthNm.length),incidentWm2:finite,reflectedWm2:finite,transmittedWm2:finite,absorbedWm2:finite,residualWm2:finite}).strict().parse(r.output);
+ for(const [i,row] of o.trace.entries()){const {R,T}=witness(p,i);near(row.wavelengthNm,p.wavelengthNm[i]);near(row.reflectance,R);near(row.transmittance,T);near(row.absorptance,1-R-T);}
+ const integrate=(v:number[])=>v.slice(1).reduce((s,x,i)=>s+(v[i]+x)*(p.wavelengthNm[i+1]-p.wavelengthNm[i])/2,0);near(o.incidentWm2,integrate(p.irradianceWm2Nm));for(const [name,field] of [['reflectedWm2','reflectance'],['transmittedWm2','transmittance'],['absorbedWm2','absorptance']] as const)near(o[name],integrate(o.trace.map((r,i)=>r[field]*p.irradianceWm2Nm[i])));near(o.residualWm2,o.incidentWm2-o.reflectedWm2-o.transmittedWm2-o.absorbedWm2);near(o.residualWm2,0);
+ const expected=Object.fromEntries(['tmm/upstream-tests.txt','tmm/LICENSE.txt','tmm/engine-source.txt'].map(n=>{const path='docs/reference-data/'+n,entry=manifest.files.find(x=>x.path===path);if(!entry)throw new Error('Unregistered tmm evidence');return [path,entry.sha256];}));if(stable(o.referenceHashes)!==stable(expected))throw new Error('Incoherent provenance');return r;
+}

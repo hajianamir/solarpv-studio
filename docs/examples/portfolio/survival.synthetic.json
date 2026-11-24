@@ -1,0 +1,81 @@
+{
+  "operation": "cohort_survival",
+  "plan": {
+    "schemaVersion": "cohort-survival-v1",
+    "source": "SYNTHETIC numerical cohort only, no real failure records",
+    "eventDefinition": "SYNTHETIC first yield-relevant failure, no competing events",
+    "censoringAssumptionSource": "SYNTHETIC independent censoring with transferable training distribution; assumption only",
+    "trainSites": [
+      "train"
+    ],
+    "evaluationSites": [
+      "future"
+    ],
+    "trainEndUtc": "2021-01-01T00:00:00Z",
+    "evaluationStartUtc": "2024-01-01T00:00:00Z",
+    "confidenceLevel": 0.95,
+    "minimumAtRisk": 2,
+    "ageDays": 2,
+    "remainingHorizonDays": 3,
+    "scoreHorizonDays": 4,
+    "minimumCensorSurvival": 0.05,
+    "records": [
+      {
+        "siteId": "train",
+        "assetId": "train-A0",
+        "installedUtc": "2020-01-01T00:00:00+00:00",
+        "observedUntilUtc": "2020-01-03T00:00:00+00:00",
+        "failed": true
+      },
+      {
+        "siteId": "train",
+        "assetId": "train-A1",
+        "installedUtc": "2020-01-01T00:00:00+00:00",
+        "observedUntilUtc": "2020-01-03T00:00:00+00:00",
+        "failed": false
+      },
+      {
+        "siteId": "train",
+        "assetId": "train-A2",
+        "installedUtc": "2020-01-01T00:00:00+00:00",
+        "observedUntilUtc": "2020-01-05T00:00:00+00:00",
+        "failed": true
+      },
+      {
+        "siteId": "train",
+        "assetId": "train-A3",
+        "installedUtc": "2020-01-01T00:00:00+00:00",
+        "observedUntilUtc": "2020-01-07T00:00:00+00:00",
+        "failed": false
+      },
+      {
+        "siteId": "train",
+        "assetId": "train-A4",
+        "installedUtc": "2020-01-01T00:00:00+00:00",
+        "observedUntilUtc": "2020-01-09T00:00:00+00:00",
+        "failed": false
+      },
+      {
+        "siteId": "future",
+        "assetId": "future-A0",
+        "installedUtc": "2024-01-01T00:00:00+00:00",
+        "observedUntilUtc": "2024-01-04T00:00:00+00:00",
+        "failed": true
+      },
+      {
+        "siteId": "future",
+        "assetId": "future-A1",
+        "installedUtc": "2024-01-01T00:00:00+00:00",
+        "observedUntilUtc": "2024-01-06T00:00:00+00:00",
+        "failed": false
+      },
+      {
+        "siteId": "future",
+        "assetId": "future-A2",
+        "installedUtc": "2024-01-01T00:00:00+00:00",
+        "observedUntilUtc": "2024-01-02T00:00:00+00:00",
+        "failed": false
+      }
+    ]
+  }
+}

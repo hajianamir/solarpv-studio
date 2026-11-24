@@ -1,0 +1,86 @@
+{
+  "operation": "interval_calibration",
+  "plan": {
+    "schemaVersion": "interval-calibration-v1",
+    "source": "Synthetic absolute-residual rank and holdout fixture, not field calibration or measured PV data",
+    "contextSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "modelSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "datasetSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "modelTrainingEndTimestamp": "2025-12-31T00:00:00Z",
+    "durationHours": 24,
+    "alpha": 0.1,
+    "trainingSites": [
+      "training-site"
+    ],
+    "calibration": [
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-01T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 11
+      },
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-02T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 12
+      },
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-03T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 13
+      },
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-04T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 14
+      },
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-05T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 15
+      },
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-06T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 16
+      },
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-07T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 17
+      },
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-08T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 18
+      },
+      {
+        "siteId": "calibration-site",
+        "timestamp": "2026-01-09T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 19
+      }
+    ],
+    "evaluation": [
+      {
+        "siteId": "evaluation-site",
+        "timestamp": "2026-01-11T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 15
+      },
+      {
+        "siteId": "other-evaluation-site",
+        "timestamp": "2026-01-11T00:00:00Z",
+        "predictionKwh": 10,
+        "observedKwh": 25
+      }
+    ]
+  }
+}

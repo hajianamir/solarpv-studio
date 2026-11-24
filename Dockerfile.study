@@ -1,0 +1,28 @@
+# Optional study deployment; the existing offline/default image is not replaced.
+FROM node:20-bookworm-slim AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+ENV VITE_REAL_INTERNET=false
+RUN npm run build && npm prune --omit=dev
+
+FROM node:20-bookworm-slim AS runner
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+COPY services/pvlib_study/requirements.txt /tmp/study-requirements.txt
+RUN python3 -m venv /opt/pvlib && /opt/pvlib/bin/pip install --no-cache-dir -r /tmp/study-requirements.txt
+WORKDIR /app
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server.ts ./
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/services/pvlib_study ./services/pvlib_study
+RUN mkdir -p /app/data && chown node:node /app/data
+USER node
+ENV NODE_ENV=production PORT=3000 PVLIB_PYTHON=/opt/pvlib/bin/python PVLIB_STUDY_ENABLED=false
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "--import", "tsx", "server.ts"]

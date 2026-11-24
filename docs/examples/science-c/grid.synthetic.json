@@ -1,0 +1,31 @@
+{
+  "source": "Synthetic analytical acceptance fixture; not field calibration",
+  "contextSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "schemaVersion": "grid-support-v1",
+  "intervalS": 1,
+  "ratingKva": 10,
+  "maximumCurrentPu": 1,
+  "responseS": 2,
+  "nominalHz": 50,
+  "droopKwPerHz": 2,
+  "voltVar": [
+    {
+      "voltagePu": 0.9,
+      "qPu": 0.5
+    },
+    {
+      "voltagePu": 1.1,
+      "qPu": -0.5
+    }
+  ],
+  "rulepack": null,
+  "records": [
+    {
+      "timestamp": "2026-01-01T00:00:00Z",
+      "voltagePu": 1,
+      "frequencyHz": 50,
+      "availableKw": 8,
+      "connected": true
+    }
+  ]
+}

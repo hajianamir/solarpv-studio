@@ -1,0 +1,77 @@
+{
+  "scope": "Phase 2 local all-mode data/workflow/report acceptance; Phase 3 AC operating-ledger start only",
+  "branch": "arena/237e6ea2-solarpv-studio",
+  "head": "5438fb59f4bb5cde05c20818b780464e1fe28752",
+  "committed": false,
+  "modes": [
+    "powerplant",
+    "ongrid",
+    "offgrid"
+  ],
+  "checks": [
+    {
+      "command": "npm run lint:types",
+      "result": "PASS client/node"
+    },
+    {
+      "command": "npm run build",
+      "result": "PASS, warnings retained"
+    },
+    {
+      "command": "npm run test:all",
+      "result": "PASS benchmark/audit; existing reference gate"
+    },
+    {
+      "command": "PVLIB_PYTHON=.cache/thermal-research/venv/bin/python npm run test:study:workflow",
+      "result": "PASS"
+    },
+    {
+      "command": "npm run test:operating:dispatch",
+      "result": "PASS hand/Decimal, sensitivity, balance, explicit edge cases, direct and integrated annual all-mode contracts and finance"
+    },
+    {
+      "command": "PVLIB_PYTHON=.cache/thermal-research/venv/bin/python npm run test:operating:browser",
+      "result": "PASS all 3 modes; 5 report routes, real OOXML readback, cleared-study-store portable restore"
+    },
+    {
+      "command": "PVLIB_PYTHON=.cache/thermal-research/venv/bin/python npm run test:operational:browser",
+      "result": "PASS legacy regression"
+    },
+    {
+      "command": "npm run test:operational:study",
+      "result": "PASS"
+    },
+    {
+      "command": "npm run verify:exports",
+      "result": "PASS legacy exports"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "files": {
+    "src/studies/operatingDispatch.ts": "23c1ff8a504a60968513ae483f9ca40836e3243325eff2ef56bbc92182c9e634",
+    "src/studies/operationalEnergy.ts": "89e8e6d9282d4ea6110365f710129d03f2bca9130c2db24b283cf1ca40042ee2",
+    "src/studies/operationalProjectTransfer.ts": "43dfb4dceddccbb04f6f6362e4d0ff7a5ca3c003076e4609eb127bdfae466167",
+    "src/studies/operationalStudy.ts": "346f1358d62d924fe86be5747b171659d29fee8649677f8317169c1a3ac0216a",
+    "src/App.tsx": "e58c2134aa162b2bc5818fa059b7f11c7a17e06f4a4b7211027623c3a3bddb5c",
+    "src/components/OperationalEnergyPanel.tsx": "8007463f89a3be25eac587802259d993c3888072f65fa6999042c75f78a213a6",
+    "src/components/OperationalReportModal.tsx": "4859e2e2fbfad036d6b530dbdbc629b6ae804558a6388f4a1d836a7690a05408",
+    "src/components/FinancialTab.tsx": "c857c0409834b17e831f2a1f41025c28edd01ef5e194f9f80beaac50105f6421",
+    "scripts/test-operating-dispatch.ts": "cc735af8e6415739234f4c33bc9aed037bb336edaa36dc4fd5aba4ad4265ea2c",
+    "scripts/test-operating-modes-browser.ts": "85709814af80a8309a014aed6336ba65ccc1f3b716ce6c8a36d31f7a39d03fac",
+    "docs/OPERATING-DISPATCH.fa.md": "20e82321966100e6883ba8300b4c379c34aae6615e78797a57b53bfb90ea80cb",
+    "docs/audit/PHASE2-CLOSE-PHASE3-START.fa.md": "cc7a7c4b50df77edf5efb8e4fe21da90d3d99b9e057611e65f2b854dc19079d7",
+    "package.json": "b6a8b0abc868822b19128e261b036664a28b5587f38d8158e9fc07ad901512c0"
+  },
+  "limitations": [
+    "No field validation",
+    "Not exact-commit CI",
+    "Windows/Safari and PDF renderer output not tested",
+    "AC-coupled energy bucket only; no optimized/diesel/aging dispatch",
+    "Later financial years retain scalar degradation",
+    "Engineering annex is structured data, not legacy graphical layout or construction approval"
+  ],
+  "executionClockUsedForClaims": false
+}

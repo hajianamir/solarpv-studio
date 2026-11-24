@@ -1,0 +1,20 @@
+{
+  "operation": "battery_pybamm",
+  "plan": {
+    "schemaVersion": "battery-pybamm-v1",
+    "source": "Published Chen2020 PyBaMM numerical benchmark, not project cell calibration",
+    "model": "SPMe",
+    "parameterSet": "Chen2020",
+    "sei": false,
+    "currentA": 1.0,
+    "initialSoc": 0.5,
+    "temperatureK": 298.15,
+    "durationS": 60.0,
+    "samples": 7,
+    "meshPoints": 6,
+    "relativeTolerance": 1e-06,
+    "voltageToleranceV": 0.02,
+    "temperatureToleranceK": 0.1,
+    "capacityToleranceAh": 1e-06
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "radial-ac-plan-v1",
+  "source": "Synthetic circuit fixture, not equipment evidence",
+  "voltageLLV": 400,
+  "nodes": [
+    {
+      "parent": 0,
+      "rOhm": 0.1,
+      "xOhm": 0.05,
+      "loadW": 2000,
+      "loadVar": 0,
+      "generationW": 100000,
+      "generationPf": 0.98,
+      "generationQSign": 1
+    }
+  ],
+  "exportLimitW": 40000
+}

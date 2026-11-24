@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-11-21T19:09:37.182460+00:00",
+  "scope": "local Linux dirty working tree, not field evidence or remote CI",
+  "files": {
+    "src/App.tsx": "cb73471c2f0c462510aac573707c414236f35a86621a045338a2ab848a44e233",
+    "src/engine/financialEngine.ts": "0cae8745055275b2818e1b72101772d942bdd31781003c9bd28c5d6a5b2a6d84",
+    "src/studies/operationalEnergy.ts": "6a3dee920bdaf1988efb6343a7d1271315ca8c0b0f0d4f6f40d497b92a56a2ff",
+    "src/components/OperationalEnergyPanel.tsx": "e24a5e368d9d28110239e651f95676262ce5e88b43459a94886cb6cccc359636",
+    "src/components/ClimateTab.tsx": "5815adfef1d6bd2f8060aad584a86acb847bbde0a78d3fe431dfbd64f4ebdf2e",
+    "src/components/FinancialTab.tsx": "335b469cdec2f297851c0eed8f29b14b8a31cd00c73c5fe5e0bf051ef7a7830b",
+    "scripts/operational-energy-fixture.py": "d7cb5df77371011e46944c3f3e31225065f98f4f7fe8951c399c20c35a83c9fb",
+    "scripts/test-operational-energy.ts": "3a932bd4fdcd6c2623e603fa910e42c46cafc8c6a16c6e9c09549f0605ca4d84",
+    "scripts/test-operational-browser.ts": "09bdfca0d0ccd8c00bdc19403adf0f8d0728be1e555ceb749968adca1db0a6b7",
+    "package.json": "f6e1a726b53394788697ef0b49b7df2a0f5faf4c1063f460321ff67a36eb4c8f",
+    ".github/workflows/ci.yml": "a3bee356ffe4a1722f60737d120c5bc5753280aa5a30331d7031a89139dec401"
+  },
+  "results": [
+    {
+      "suite": "types",
+      "exitCode": 0,
+      "logSha256": "6630b4873247b6b923b8b408d635c8350b803eef379efaf90e0f4528b3ff87c9"
+    },
+    {
+      "suite": "build",
+      "exitCode": 0,
+      "logSha256": "13bdba3f2c4c772134f5f49d32ec83116a870e8311e9a9ea7c55208cb31f8ef0"
+    },
+    {
+      "suite": "operational",
+      "exitCode": 0,
+      "logSha256": "c2f258e4cd0788b672b7a75a774e0985434ecf29dc66e6bf8b59487f83e1dff2"
+    },
+    {
+      "suite": "browser",
+      "exitCode": 0,
+      "logSha256": "791768b29bf0c1c578392b3915f90ff77b0aae2f7cb1003a8ee7d57dae92ca72"
+    },
+    {
+      "suite": "research-api",
+      "exitCode": 0,
+      "logSha256": "055ffe380db77e1aa73a6f46b29cadce125ec3f7593435caf32c63128f43ff2d"
+    },
+    {
+      "suite": "core",
+      "exitCode": 0,
+      "logSha256": "e7b1b3bc5ab12828779788caa1a399c5bad65763845da7b71abf3bf7e02c8927"
+    },
+    {
+      "suite": "workflow",
+      "exitCode": 0,
+      "logSha256": "ce1226a67ea7b4bc010febd7c0f0989e82ba8f41a291a763be7f23e2bd8138ad"
+    },
+    {
+      "suite": "research-python",
+      "exitCode": 0,
+      "logSha256": "8da2dd9880a16002a19303355f5ab991bdc078f8d8b9fb3e859c8891a192d269"
+    },
+    {
+      "suite": "audit",
+      "exitCode": 1,
+      "logSha256": "b3d1a1ca85d7ca5265c775642c9f491bccdabdcbb5b07cd399178f60f497ad75"
+    }
+  ]
+}

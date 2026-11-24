@@ -1,0 +1,27 @@
+{
+  "source": "Synthetic analytical acceptance fixture; not field calibration",
+  "contextSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "schemaVersion": "agri-water-v1",
+  "totalAvailableWaterMm": 100,
+  "initialWaterMm": 100,
+  "readilyAvailableFraction": 0.5,
+  "cropCoefficient": 1,
+  "runoffFraction": 0.1,
+  "lightTransmission": 0.7,
+  "shadedEtMultiplier": 0.8,
+  "interceptedParFraction": 0.8,
+  "lightUseEfficiencyGPerMj": 2,
+  "harvestIndex": 0.5,
+  "parMolPerMj": 4.57,
+  "referencePvKwh": 10,
+  "records": [
+    {
+      "timestamp": "2026-01-01T00:00:00Z",
+      "parMjM2": 10,
+      "referenceEtMm": 5,
+      "rainMm": 0,
+      "irrigationMm": 0,
+      "pvKwh": 5
+    }
+  ]
+}

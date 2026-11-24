@@ -1,0 +1,64 @@
+{
+  "operation": "incoherent_optics",
+  "plan": {
+    "schemaVersion": "incoherent-optics-v1",
+    "source": "Analytic all-incoherent dielectric slab benchmark, not measured EQE or material validation",
+    "contextSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "incidence": "normal",
+    "coherenceBasis": "Caller assumes unresolved Fabry-Perot fringes from an ensemble of optical path lengths; synthetic benchmark only",
+    "wavelengthNm": [
+      500,
+      600,
+      700
+    ],
+    "irradianceWm2Nm": [
+      0.5,
+      0.6,
+      0.4
+    ],
+    "layers": [
+      {
+        "thicknessNm": null,
+        "n": [
+          1,
+          1,
+          1
+        ],
+        "k": [
+          0,
+          0,
+          0
+        ],
+        "source": "Analytic nonabsorbing incident medium"
+      },
+      {
+        "thicknessNm": 10000,
+        "n": [
+          1.5,
+          1.5,
+          1.5
+        ],
+        "k": [
+          0.001,
+          0.001,
+          0.001
+        ],
+        "source": "Synthetic absorbing dielectric slab benchmark"
+      },
+      {
+        "thicknessNm": null,
+        "n": [
+          1,
+          1,
+          1
+        ],
+        "k": [
+          0,
+          0,
+          0
+        ],
+        "source": "Analytic nonabsorbing exit medium"
+      }
+    ]
+  }
+}

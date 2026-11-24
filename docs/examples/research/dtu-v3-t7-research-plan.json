@@ -1,0 +1,14 @@
+{
+  "train": ["2019-06-04T09:30:00Z", "2019-06-04T13:30:00Z"],
+  "holdout": ["2019-06-04T13:30:00Z", "2019-06-04T16:30:00Z"],
+  "u0Bounds": [10, 60],
+  "u1Bounds": [0, 20],
+  "baseline": [29.5, 1.6],
+  "gridPoints": 3,
+  "rounds": 3,
+  "maxEvaluations": 40,
+  "timeoutSeconds": 120,
+  "minPairs": 2,
+  "minPoaWm2": 100,
+  "source": "Research-only bounds revised from u0 min=5 to 10 after the worker rejected an over-150 C candidate; no residual/holdout-based tuning. not engineering approval. Pre-fit split on 7 tool-rendered T7 observations from DTU v3. One-day convenience subset, not representative. Native wind height UNKNOWN. Original XLSX bytes NOT available locally."
+}

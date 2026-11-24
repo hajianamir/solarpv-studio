@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "incoherent-optics-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:25:59.030Z",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "acceptedScope": [
+    "actual pinned tmm all-incoherent normal-incidence adapter",
+    "independent intensity-series and coherent phase-average tests",
+    "authenticated API, SDK and editor integration"
+  ],
+  "evidenceLevel": "upstream_software_and_analytic_verification_not_technology_EQE_or_field_validation",
+  "notCompleted": [
+    "mixed coherent/incoherent stacks",
+    "oblique incidence for this new adapter",
+    "roughness/scattering/depth profile",
+    "measured technology EQE",
+    "other remaining A1-D3 roadmap"
+  ],
+  "flags": {
+    "INCOHERENT_OPTICS_ENABLED": true,
+    "deploymentDefault": "off",
+    "requiresBaseAndReferenceFlags": true,
+    "separateRuntimeRequired": true
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python scripts/acquire_reference_data.py",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.cache/reference-env/bin/python -m unittest scripts.test_incoherent_optics -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-incoherent.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/incoherentOptics.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:spatial",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-incoherent-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/incoherent_optics.py": "2be7d57dfc1de7d8757df85f98ccb68b4901e86d15fc149f3e400b212ce6d44f",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/incoherentOptics.ts": "e55378f275534106d042d61bd3761a0080ecbf8207ecdb5ab09369f23bf9e037",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_incoherent_optics.py": "ca599e3dcd349f960627f7e90fb630927284059af7977c12cc4da7fb4dd86482",
+    "scripts/test-incoherent.ts": "070daa6dc305a406187bc4566a76476b8c15fe895555dbed908fd946e48e071d",
+    "scripts/test-incoherent-browser.ts": "f46aaff5d08dad5369adf5c70dffd5284c8a12fd73edabd1247271fa3a1599b2",
+    "scripts/verify-incoherent.ts": "f0e6dad7f724c9eee53290b775809bf64794c14eeb75b8db0e942363816fb582",
+    "scripts/acquire_reference_data.py": "6db705665ea2e59fcf9a03da4561910b0d62c73ba2aa5704bd3cbd4e32cb8969",
+    "docs/reference-data/manifest.json": "7c54caad59a002a2d872db9b31ec2cf4ae03ee3900d709a1ad9dba534b648eb1",
+    "docs/reference-data/tmm/engine-source.txt": "0b6831a436bc2be5f1c035d3aa79a88dcc4c7e000dd32e095f968a51afb35628",
+    "docs/reference-data/tmm/upstream-tests.txt": "d37c6580656d5094c12e84baf7af1d310732b250eeb7fa9430aa73d421c32940",
+    "docs/reference-data/tmm/LICENSE.txt": "d0446f2bf4cfba6dcb4c5428e02e4181d55b72efb6abd141a889a992601c29e5",
+    "docs/examples/references/incoherent.json": "35430302c52917240a0f0274f02b1b96bdbab555d2a25422d4f6ef554ec8cc8b",
+    "docs/features/INCOHERENT-OPTICS-SPEC.fa.md": "4d685de064d6f01985d900731d62aab087cf7296b7d84bc8a028c13208bc9db3",
+    "docs/features/INCOHERENT-OPTICS.fa.md": "6920e2f49276f6fe35c2bda7cdcb3cb215512e1bac19e64891763d2c016532d8",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/SPATIAL-INTEGRATION-GATE.json": "3f4b2af4d4d5f3739a5af91861b29403f35e6e0a25d8981b77abc74f1ab8bb25",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    "CHANGELOG.md": "211a6db5e8763bdd215cf82025041f018f7dccaa60a8db5ebe4e9b7ac3275ddf"
+  }
+}

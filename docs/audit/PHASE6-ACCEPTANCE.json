@@ -1,0 +1,2006 @@
+{
+  "schemaVersion": "phase6-acceptance-v1",
+  "recordedDate": "2026-11-03",
+  "branch": "arena/237e6ea2-solarpv-studio",
+  "testedCodeSha": "0051d3ef224da0a1555d2766e13f5625b103f6ff",
+  "remoteHeadVerified": "0051d3ef224da0a1555d2766e13f5625b103f6ff",
+  "history": {
+    "localDeliverySnapshot": "9a42db4",
+    "sameBranchMerge": "563d878",
+    "cspTestFix": "d47dc54",
+    "utf8Fix": "0051d3e",
+    "remoteHistoryPreserved": true,
+    "forcePush": false,
+    "prMerged": false,
+    "releaseCreated": false
+  },
+  "decision": {
+    "implementation": "completed",
+    "linuxWindowsTechnicalAcceptance": "passed",
+    "distributionAcceptance": "blocked_license_review",
+    "allPlatformsAcceptance": "blocked_native_safari_disk_read",
+    "fieldValidation": false,
+    "comprehensivePentest": false
+  },
+  "requiredBlockers": [
+    {
+      "id": "ROOT_LICENSE_UNSPECIFIED",
+      "description": "No owner-authorized root license; do not assign a license on the owner’s behalf."
+    },
+    {
+      "id": "DEPENDENCY_LICENSE_UNKNOWN",
+      "name": "buffers",
+      "version": "0.1.1",
+      "description": "Installed package metadata and archive contain no license. Distribution clearance required."
+    },
+    {
+      "id": "BENCHMARK_CASE_RIGHTS_REVIEW",
+      "description": "MATPOWER notice excludes case files from code BSD license; retained case33bw attribution is not an explicit distribution license."
+    }
+  ],
+  "ciRuns": {
+    "security": {
+      "conclusion": "success",
+      "headSha": "0051d3ef224da0a1555d2766e13f5625b103f6ff",
+      "jobs": [
+        {
+          "completedAt": "2026-11-22T13:17:03Z",
+          "conclusion": "success",
+          "databaseId": 137218385418,
+          "name": "Phase6 / ubuntu-latest",
+          "startedAt": "2026-11-22T13:07:10Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install locked dependencies",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m pip install -r services/pvlib_research/requirements.txt",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "npm advisory gate (all locked packages)",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Python advisory gate",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "License inventory (NOT distribution clearance)",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run lint",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npx tsx scripts/test-phase6-security.ts",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:research:api",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:api",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_models",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_mutations",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m unittest discover -s services/pvlib_research/tests",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m unittest discover -s services/pvlib_study/tests",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:all",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run build",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate Windows system Chromium",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Linux Chromium libraries",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:browser",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Record exact checkout and distinguish technical success from release acceptance",
+              "number": 23,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 24,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 46,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 47,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 48,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 49,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785226/job/137218385418"
+        },
+        {
+          "completedAt": "2026-11-22T13:17:03Z",
+          "conclusion": "success",
+          "databaseId": 137218385598,
+          "name": "Phase6 / windows-latest",
+          "startedAt": "2026-11-22T13:09:21Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install locked dependencies",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m pip install -r services/pvlib_research/requirements.txt",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "npm advisory gate (all locked packages)",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Python advisory gate",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "License inventory (NOT distribution clearance)",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run lint",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npx tsx scripts/test-phase6-security.ts",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:research:api",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:api",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_models",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_mutations",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m unittest discover -s services/pvlib_research/tests",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m unittest discover -s services/pvlib_study/tests",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:all",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run build",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate Windows system Chromium",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Linux Chromium libraries",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:browser",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Record exact checkout and distinguish technical success from release acceptance",
+              "number": 23,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 24,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 46,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 47,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 48,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 49,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785226/job/137218385598"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785226"
+    },
+    "general": {
+      "conclusion": "success",
+      "headSha": "0051d3ef224da0a1555d2766e13f5625b103f6ff",
+      "jobs": [
+        {
+          "completedAt": "2026-11-22T13:13:03Z",
+          "conclusion": "success",
+          "databaseId": 137218385337,
+          "name": "Physics Registry & Independent Reference Gate",
+          "startedAt": "2026-11-22T13:07:10Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install dependencies",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify model registry contract and implementation metadata",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Require independent reference fixtures for every changed formula expression",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify public API client rate-limit contract",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify browser-safe source invariants",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Verify engineering compliance claims stay screening-only",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 19,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785206/job/137218385337"
+        },
+        {
+          "completedAt": "2026-11-22T13:13:03Z",
+          "conclusion": "success",
+          "databaseId": 137218385473,
+          "name": "Build and Validate SolarPV Studio (Node 20)",
+          "startedAt": "2026-11-22T13:07:10Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Dependencies",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Lint (tsc --noEmit)",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Build Application",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run Benchmark Test Suite",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Smoke Test (5 end-to-end flows)",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Provider Gateway Regression Tests",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Chromium Runtime Libraries",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Browser Regressions (cold offline)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Binary Export Read-back (DOCX/XLSX/JSON)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run Audit Remediation Verification Suite",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run Engineering Audit Remediation Tests (R01-R07, R08-R13, Areas 1-10)",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 27,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 28,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 29,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785206/job/137218385473"
+        },
+        {
+          "completedAt": "2026-11-22T13:13:03Z",
+          "conclusion": "success",
+          "databaseId": 137218385514,
+          "name": "Build and Validate SolarPV Studio (Node 22)",
+          "startedAt": "2026-11-22T13:07:10Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Dependencies",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Lint (tsc --noEmit)",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Build Application",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run Benchmark Test Suite",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Smoke Test (5 end-to-end flows)",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Provider Gateway Regression Tests",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Chromium Runtime Libraries",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real Browser Regressions (cold offline)",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Binary Export Read-back (DOCX/XLSX/JSON)",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run Audit Remediation Verification Suite",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run Engineering Audit Remediation Tests (R01-R07, R08-R13, Areas 1-10)",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 27,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 28,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 29,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785206/job/137218385514"
+        },
+        {
+          "completedAt": "2026-11-22T13:13:03Z",
+          "conclusion": "success",
+          "databaseId": 137218385519,
+          "name": "Direct pvlib study (windows-2022, Python 3.11)",
+          "startedAt": "2026-11-22T13:07:09Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm ci",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m pip install -r services/pvlib_research/requirements.txt",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Operational annual energy and import-cost finance bridge",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Research editor API integration and process bounds",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Isolated research equations, bounded composition and failure regressions",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Stage55 dual-language composition, archive and migration gates",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Independent equations, published examples and ModelChain cross-check",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real HTTP, authentication, Python execution and resource/failure limits",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Build offline frontend",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Chromium (Windows)",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Chromium shared libraries (Linux)",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Browser import, real Python study, reports and screening isolation",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Stage55 real-browser contract and portable archive",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Operational App source adoption and financial UI",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Research editor real browser",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Preserve bounded contract/runtime classification evidence",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 38,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 39,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 40,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 41,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785206/job/137218385519"
+        },
+        {
+          "completedAt": "2026-11-22T13:13:03Z",
+          "conclusion": "success",
+          "databaseId": 137218385572,
+          "name": "Direct pvlib study (ubuntu-latest, Python 3.11)",
+          "startedAt": "2026-11-22T13:07:13Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm ci",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m pip install -r services/pvlib_research/requirements.txt",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Operational annual energy and import-cost finance bridge",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Research editor API integration and process bounds",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Isolated research equations, bounded composition and failure regressions",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Stage55 dual-language composition, archive and migration gates",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Independent equations, published examples and ModelChain cross-check",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real HTTP, authentication, Python execution and resource/failure limits",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Build offline frontend",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install Chromium (Windows)",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Chromium shared libraries (Linux)",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Browser import, real Python study, reports and screening isolation",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Stage55 real-browser contract and portable archive",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Operational App source adoption and financial UI",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Research editor real browser",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Preserve bounded contract/runtime classification evidence",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 38,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 39,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 40,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 41,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785206/job/137218385572"
+        },
+        {
+          "completedAt": "2026-11-22T13:13:03Z",
+          "conclusion": "success",
+          "databaseId": 137218385611,
+          "name": "Windows operational validation (Node 22)",
+          "startedAt": "2026-11-22T13:08:36Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install dependencies",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install Playwright Chromium",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Type checks and lint",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Production build",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Engineering calculations and core regressions",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "User-flow smoke tests",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Data gateway regressions",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Real browser and offline workflow regressions",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "DOCX/XLSX/JSON export read-back",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Audit remediation verification",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Engineering audit R01-R07",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Engineering audit Areas 1-10",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Engineering audit M01-M22",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Engineering phase audit",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "API sizing and thermal audit",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "F-04 energy contract",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Geocode cache regressions",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 39,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 40,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 41,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785206/job/137218385611"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785206"
+    },
+    "operating": {
+      "conclusion": "failure",
+      "headSha": "0051d3ef224da0a1555d2766e13f5625b103f6ff",
+      "jobs": [
+        {
+          "completedAt": "2026-11-22T13:15:02Z",
+          "conclusion": "failure",
+          "databaseId": 137218385453,
+          "name": "Native Safari (not Playwright WebKit)",
+          "startedAt": "2026-11-22T13:07:10Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm ci --fetch-retries=3",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m pip install -r services/pvlib_study/requirements.txt selenium==4.27.1 pypdf==5.1.0",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.operational-energy-fixture",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run build",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Enable native Safari automation",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "failure",
+              "name": "Native Safari all-mode App / worker / real PDF readback",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Record exact checkout SHA",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 23,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 24,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 25,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785207/job/137218385453"
+        },
+        {
+          "completedAt": "2026-11-22T13:15:02Z",
+          "conclusion": "success",
+          "databaseId": 137218385600,
+          "name": "macos-15-intel / webkit",
+          "startedAt": "2026-11-22T13:07:34Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm ci --fetch-retries=3",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m pip install -r services/pvlib_study/requirements.txt",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate Windows system Chromium (no CDN requirement)",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Install WebKit runtime",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Select installed WebKit runtime",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.operational-energy-fixture",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run lint:types",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run test:advanced:dispatch",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_models",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_mutations",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:api",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.operating-lifecycle-fixture",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test-published-radial-benchmark",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npx tsx scripts/test-operating-lifecycle.ts",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npx tsx scripts/test-browser-download.ts",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run test:pdf",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run build",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:operating:browser",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:browser",
+              "number": 23,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Record exact checkout and platform (not a field-validation receipt)",
+              "number": 24,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 25,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 48,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 49,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 50,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 51,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785207/job/137218385600"
+        },
+        {
+          "completedAt": "2026-11-22T13:15:02Z",
+          "conclusion": "success",
+          "databaseId": 137218385624,
+          "name": "windows-latest / chromium",
+          "startedAt": "2026-11-22T13:09:10Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm ci --fetch-retries=3",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m pip install -r services/pvlib_study/requirements.txt",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Locate Windows system Chromium (no CDN requirement)",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install WebKit runtime",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Select installed WebKit runtime",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.operational-energy-fixture",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run lint:types",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run test:advanced:dispatch",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_models",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_mutations",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:api",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.operating-lifecycle-fixture",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test-published-radial-benchmark",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npx tsx scripts/test-operating-lifecycle.ts",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npx tsx scripts/test-browser-download.ts",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run test:pdf",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run build",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:operating:browser",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:browser",
+              "number": 23,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Record exact checkout and platform (not a field-validation receipt)",
+              "number": 24,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 25,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 48,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 49,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 50,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 51,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785207/job/137218385624"
+        },
+        {
+          "completedAt": "2026-11-22T13:15:02Z",
+          "conclusion": "success",
+          "databaseId": 137218385641,
+          "name": "ubuntu-latest / chromium",
+          "startedAt": "2026-11-22T13:07:12Z",
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm ci --fetch-retries=3",
+              "number": 5,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m pip install -r services/pvlib_study/requirements.txt",
+              "number": 6,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Locate Windows system Chromium (no CDN requirement)",
+              "number": 7,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Install WebKit runtime",
+              "number": 8,
+              "status": "completed"
+            },
+            {
+              "conclusion": "skipped",
+              "name": "Select installed WebKit runtime",
+              "number": 9,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.operational-energy-fixture",
+              "number": 10,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run lint:types",
+              "number": 11,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run test:advanced:dispatch",
+              "number": 12,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_models",
+              "number": 13,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test_physical_mutations",
+              "number": 14,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:api",
+              "number": 15,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.operating-lifecycle-fixture",
+              "number": 16,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run python -m scripts.test-published-radial-benchmark",
+              "number": 17,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npx tsx scripts/test-operating-lifecycle.ts",
+              "number": 18,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npx tsx scripts/test-browser-download.ts",
+              "number": 19,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run test:pdf",
+              "number": 20,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run npm run build",
+              "number": 21,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:operating:browser",
+              "number": 22,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run node scripts/ci-command.mjs npm run test:physical:browser",
+              "number": 23,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Record exact checkout and platform (not a field-validation receipt)",
+              "number": 24,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 25,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 48,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 49,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 50,
+              "status": "completed"
+            },
+            {
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 51,
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785207/job/137218385641"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45025785207"
+    }
+  },
+  "artifactMetadata": {
+    "total_count": 2,
+    "artifacts": [
+      {
+        "id": 14755882181,
+        "node_id": "MDg6QXJ0aWZhY3QxNDc1NTg4MjE4MQ==",
+        "name": "phase6-windows-latest-0051d3ef224da0a1555d2766e13f5625b103f6ff",
+        "size_in_bytes": 222660,
+        "url": "https://api.github.com/repos/hajianamir/solarpv-studio/actions/artifacts/14755882181",
+        "archive_download_url": "https://api.github.com/repos/hajianamir/solarpv-studio/actions/artifacts/14755882181/zip",
+        "expired": false,
+        "digest": "sha256:154fa12c9791debf878c550bb0ea89137eb3393555c8cf2979742fbb56cf1e66",
+        "created_at": "2026-11-22T13:16:58Z",
+        "updated_at": "2026-11-22T13:16:58Z",
+        "expires_at": "2026-12-22T13:16:58Z",
+        "workflow_run": {
+          "id": 45025785226,
+          "repository_id": 1426665227,
+          "head_repository_id": 1426665227,
+          "head_branch": "arena/237e6ea2-solarpv-studio",
+          "head_sha": "0051d3ef224da0a1555d2766e13f5625b103f6ff"
+        }
+      },
+      {
+        "id": 14754774408,
+        "node_id": "MDg6QXJ0aWZhY3QxNDc1NDc3NDQwOA==",
+        "name": "phase6-ubuntu-latest-0051d3ef224da0a1555d2766e13f5625b103f6ff",
+        "size_in_bytes": 250467,
+        "url": "https://api.github.com/repos/hajianamir/solarpv-studio/actions/artifacts/14754774408",
+        "archive_download_url": "https://api.github.com/repos/hajianamir/solarpv-studio/actions/artifacts/14754774408/zip",
+        "expired": false,
+        "digest": "sha256:b04c4f31b176213934a337ebbbf5a1c3055018c3654a278f10d2ba392bde40d1",
+        "created_at": "2026-11-22T13:11:41Z",
+        "updated_at": "2026-11-22T13:11:41Z",
+        "expires_at": "2026-12-22T13:11:39Z",
+        "workflow_run": {
+          "id": 45025785226,
+          "repository_id": 1426665227,
+          "head_repository_id": 1426665227,
+          "head_branch": "arena/237e6ea2-solarpv-studio",
+          "head_sha": "0051d3ef224da0a1555d2766e13f5625b103f6ff"
+        }
+      }
+    ]
+  },
+  "artifactContentReadback": "NOT_PERFORMED: artifact CDN hosts inaccessible; API job/step metadata and artifact existence verified, no claim to have downloaded CI ZIP contents",
+  "nativeSafariAnnotations": [
+    {
+      "path": ".github",
+      "blob_href": "https://github.com/hajianamir/solarpv-studio/blob/0051d3ef224da0a1555d2766e13f5625b103f6ff/.github",
+      "start_line": 3,
+      "start_column": null,
+      "end_line": 3,
+      "end_column": null,
+      "annotation_level": "warning",
+      "title": "",
+      "message": "Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/",
+      "raw_details": ""
+    },
+    {
+      "path": ".github",
+      "blob_href": "https://github.com/hajianamir/solarpv-studio/blob/0051d3ef224da0a1555d2766e13f5625b103f6ff/.github",
+      "start_line": 33,
+      "start_column": null,
+      "end_line": 33,
+      "end_column": null,
+      "annotation_level": "failure",
+      "title": "",
+      "message": "Process completed with exit code 1.",
+      "raw_details": ""
+    },
+    {
+      "path": ".github",
+      "blob_href": "https://github.com/hajianamir/solarpv-studio/blob/0051d3ef224da0a1555d2766e13f5625b103f6ff/.github",
+      "start_line": 15,
+      "start_column": null,
+      "end_line": 15,
+      "end_column": null,
+      "annotation_level": "failure",
+      "title": "Bounded command failure",
+      "message": "Native disk probe: {\"size\": 24, \"ok\": false, \"error\": \"NotReadableError: The I/O read operation failed.\", \"name\": \"readable.json\", \"path\": \"/private/tmp/solarpv-safari-9c62569t/readable.json\", \"sha256\": \"ca39a6e2707c5692a9c2f15b01262266a0855491ca9493e3bdcce64cf64ea89e\"}\n\nFAILURE PAGE TEXT: {}\nTraceback (most recent call last):\n  File \"/Users/runner/work/solarpv-studio/solarpv-studio/scripts/test-native-safari.py\", line 171, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/Users/runner/work/solarpv-studio/solarpv-studio/scripts/test-native-safari.py\", line 70, in main\n    raise RuntimeError('BLOCKED_NATIVE_DISK_ACCESS: ' + json.dumps(receipt['nativeDiskProbe']))\nRuntimeError: BLOCKED_NATIVE_DISK_ACCESS: {\"size\": 24, \"ok\": false, \"error\": \"NotReadableError: The I/O read operation failed.\", \"name\": \"readable.json\", \"path\": \"/private/tmp/solarpv-safari-9c62569t/readable.json\", \"sha256\": \"ca39a6e2707c5692a9c2f15b01262266a0855491ca9493e3bdcce64cf64ea89e\"}\n\n",
+      "raw_details": ""
+    }
+  ],
+  "localSecretScan": {
+    "scope": "Current tracked tree only; high-confidence credential/file patterns, not full secret-history audit",
+    "sha": "0051d3ef224da0a1555d2766e13f5625b103f6ff",
+    "status": "PASS",
+    "findings": []
+  },
+  "localChecks": [
+    {
+      "command": "new phase6 real-HTTP JWT/ownership/CSP + actual descendant cancellation",
+      "status": "PASS"
+    },
+    {
+      "command": "npm audit all locked packages",
+      "status": "PASS",
+      "knownVulnerabilities": 0
+    },
+    {
+      "command": "pip-audit pinned runtime requirements after 4 package updates",
+      "status": "PASS",
+      "beforeFindings": 9,
+      "afterFindings": 0
+    },
+    {
+      "command": "test:all; test:research:api; test:study; study158+research66+physical15+mutation4; test:physical:api; build; test:physical:browser",
+      "status": "PASS"
+    },
+    {
+      "command": "test:study:browser under strict production CSP, after debugger-poll fix",
+      "status": "PASS"
+    },
+    {
+      "command": "PYTHONIOENCODING=cp1252 test-integrated-study.ts after explicit UTF8 bridge/fixture fix",
+      "status": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS"
+    }
+  ],
+  "scopeLimits": [
+    "No owner root license invented; buffers and benchmark distribution rights unresolved",
+    "Inventory is not legal clearance; dependency metadata does not cover every bundled binary license",
+    "Current-tree high-confidence secret-pattern scan only, not complete git-history scanning",
+    "HS256/TTL/issuer/audience/ownership checks are not full OIDC, RBAC or token revocation",
+    "Subprocess isolation is not OS sandboxing; deployment requires least privilege, memory/CPU/network/filesystem limits and TLS",
+    "Final evidence documents are local working-tree deliverables, not additional code commits or a different claimed CI SHA"
+  ],
+  "fileSha256": {
+    "src/server/terminateProcessTree.ts": "609d812e401e3634a44bbe82cebb940d98a0929507cae4c426e99db42750b6f1",
+    "src/server/pvlibStudy.ts": "7538924e399a6f0e1f0c400d6c789a8123c7896e4fba8b8a6e2b7efa3a4bde17",
+    "src/server/researchApi.ts": "8b8632b51b7317533b41d1cf72174bc6df959f2c980a607b2ba25ae8668acb4a",
+    "server.ts": "c04288020d20ae20bb62c6580dd565b03357b02871c3b04f82de3a39c15abe35",
+    "services/pvlib_study/requirements.txt": "a205af18295a97872306ce982ed3a55a07a8532ad5d25d83333f602f07846b3d",
+    ".github/workflows/phase6-acceptance.yml": "fe1c45e90771f90f8c99cd4c36a9f91bfd1fc44dd748e4488bc9204485b8f9c8",
+    ".github/workflows/ci.yml": "67819e4a56a20516da3430a015e2a3efc157553f4b5319749efdf56cdbd35918",
+    ".github/workflows/operating-platforms.yml": "edb5daf4b90a2c3d1342b27fbae032b5c0276eae5522c491c28aa41d82ba3af2",
+    "scripts/test-phase6-security.ts": "cc33324fe041ae128fecbbbff8458cb5592692997fa690555198bfd0758de634",
+    "scripts/phase6-license-inventory.mjs": "189372e9ee0fa8c942f2e6bc0a22ec6eac75581e7a641cb5d831631e1647483e",
+    "scripts/phase6-license-inventory.py": "e5be778a121aadedb27854e1a1f1137e67294e1f2c62f7655a020b6ad7e52dc4",
+    "scripts/phase6-python-audit.mjs": "b575c7fced2c1fcd4832a34aa0e2271bc148b8547665a8db44d0177df64a8a56",
+    "scripts/phase6-ci-receipt.mjs": "df0b73035d719512e90729a40246fc85501a4b8fb7a1fe0c4cbbe7955bcacbbc",
+    "scripts/test-direct-pvlib-browser.ts": "6ca16f71d3e09adda1bd7adf9963ebd9b0b003e1b788dc5b85ed49faa25a5979",
+    "scripts/integrated-study-bridge.py": "6abc292b072af295a7339d0ef59f1daffa881dafbe43339fff0f11cde3f5599b",
+    "services/pvlib_research/tests/test_integrated.py": "e049b54312f983f801d1825695ffd3045bc54559a4aa5475641dfeefbfc82d76",
+    "docs/PHASE6-SECURITY-ACCEPTANCE.fa.md": "de5d735d863c0fd998306d352e68db890cceef6e8129d456ae5533e799f1eed3",
+    "docs/audit/PHASE6-DEPENDENCIES.json": "946c1c7276d189c189ddf9c3fca5e9ff041db6f1fb99db70beed637147bf7184"
+  }
+}

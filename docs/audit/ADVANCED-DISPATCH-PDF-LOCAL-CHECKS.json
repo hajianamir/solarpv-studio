@@ -1,0 +1,120 @@
+{
+  "scope": "Advanced operating analysis and real PDF; local tests and exact-SHA external results recorded separately",
+  "branch": "arena/237e6ea2-solarpv-studio",
+  "head": "649b0859722d31d75e0f69b81e7af29f40768b95",
+  "checks": {
+    "types": "PASS",
+    "newFilesEslint": "PASS",
+    "build": "PASS with prior warnings retained",
+    "advancedIndependentArithmeticAndAnnualRuntime": "PASS including 20 exhaustive Python cases, integrated source and explicit resource bound",
+    "pdfStructureUnicodeBidiReadbackAndRaster": "PASS, 5-page synthetic PDF",
+    "chromiumLinuxApp": "PASS all modes including worker, unchanged finance, replay, real operational and advanced PDFs",
+    "testAll": "PASS",
+    "studyWorkflow": "PASS",
+    "legacyOperatingAndArchive": "PASS",
+    "legacyExportReadback": "PASS",
+    "pythonSafariSyntax": "PASS syntax only",
+    "nativeSafariLocalInvocation": "NOT RUN: exited 2 on Linux as designed",
+    "windows": "PASS on 649b0859722d31d75e0f69b81e7af29f40768b95",
+    "macosWebKit": "PASS on 649b0859722d31d75e0f69b81e7af29f40768b95",
+    "nativeSafari": "FAIL: independent genuine disk probe NotReadableError before app import; run 44958669864",
+    "remoteCI": "General CI 44958669854 SUCCESS (all 6 jobs). Platform 44958669864 FAILURE: Windows/Linux Chromium + macOS WebKit PASS; native Safari disk probe FAIL.",
+    "productionNpmAudit": "0 vulnerabilities reported",
+    "diffCheck": "PASS",
+    "fullLint": "PASS: 0 errors; existing warnings retained",
+    "phase4Comparison": "PASS all-mode annual policy comparison, shared identity, no mutation, invalid context rejection and infeasible policies blocked"
+  },
+  "browserReceipt": {
+    "status": "PASS",
+    "platform": "linux",
+    "arch": "x64",
+    "node": "v22.22.3",
+    "engine": "chromium",
+    "browserVersion": "133.0.6943.0",
+    "advanced": true,
+    "modes": [
+      "powerplant",
+      "ongrid",
+      "offgrid"
+    ],
+    "realPdfReadback": true,
+    "qualification": "Browser engine is not automatically native Safari"
+  },
+  "modelsLimitations": [
+    "Discrete SOC-lattice optimum with perfect foresight, not a continuous/online guarantee",
+    "AC-coupled only; no grid/diesel charging or battery export",
+    "Linear diesel fuel model without ramp/min-updown/start delay",
+    "Calendar+EFC aging is ex-post, not capacity fade feedback in same horizon",
+    "Independent advanced result does not auto-replace main financial source or battery replacement cashflow"
+  ],
+  "files": {
+    "src/studies/advancedDispatch.ts": "4dc2aee61486721c2b8ef132f56a9de30bb05ecd5f188282f899487efa65e392",
+    "src/studies/advancedStudy.ts": "b60a5fcb91bb4f10e2ea52550ba8e7941e3c7340c7bc5ab8d2f2dd51ffedccbb",
+    "src/studies/advancedDispatch.worker.ts": "33119ce21e59e2b2fcf9401408e62e71e253e9e4d4cc63eb6a96ee3722114f4f",
+    "src/studies/reportPdf.ts": "debbd80ee8b083bc15b5f91cfdb3ac5b5129734e27753ad8f82c21c4d70ad869",
+    "src/components/AdvancedDispatchPanel.tsx": "e1957cd9d41d56ec363ba7a86c90513ed79fac5b1621104b5c7129d6de3e1d6c",
+    "src/components/OperationalReportModal.tsx": "8bc3c97ca11f722794ce7cd2308f3f84443dea62abc4f239845b1eaba9c1da87",
+    "src/components/ClimateTab.tsx": "fd4f0aebd262a97dda74fe63e4d18da17154335a04c0c746f5ab7263629ef18d",
+    "src/assets/fonts/DejaVuSans.ttf": "abdc775b21b1bc470d50c97e790d276f2054b7504e56e5bd3e64f48d68582322",
+    "src/assets/fonts/LICENSE-DejaVu.txt": "e81d9dced49fea2a7d576cbea283873de58563c5d488f954deb282843c3ea79c",
+    "scripts/test-advanced-dispatch.ts": "4bfdee832002a8d4e56851e07d85f4dac1c972136e7ff08b1b16530506759fa7",
+    "scripts/test-report-pdf.ts": "4e45bb71e67cc4b2e615f04460c2e539cbe729656411130cc8be4497c1abe60d",
+    "scripts/pdf-readback.ts": "18147f19ab31531705a1f5beb3ca71a8d762c4871cf2966a18117469a16d6534",
+    "scripts/test-operating-modes-browser.ts": "9782893eb39aca922427f979caabb2c277740d7cac8f2ca01ed9816aef94eed3",
+    "scripts/test-native-safari.py": "dc3720e46d69d8ad3617b6dc2493dfdbb3bc00417dc392cb1da75f76489b3f1f",
+    ".github/workflows/operating-platforms.yml": "7f50c2426d728876cbcb23c9aabf0d55ef865e030573660943f15f0e50aecaad",
+    "docs/ADVANCED-DISPATCH-AND-PDF.fa.md": "b1e9f860aee538639760b118e497c3629a8f123d5458c7a2c2e89a2d658ab8ba",
+    "package.json": "518696312a74099ff1feec1ecbccc93578cb0c04f6fdb02b6ea4e9c7a6910bd9",
+    "package-lock.json": "ae9407716ee32b67205d69d36bf64c30ff54d2de961ae0f038ab1bb6bd64e4c1"
+  },
+  "localPdfArtifacts": {
+    ".cache/pdf-evidence/synthetic-report.pdf": "d9283aa090c3b5f6f5ece51d20141a35612b535f01942964010200dc0fc569f6",
+    ".cache/pdf-evidence/chromium-powerplant-advanced.pdf": "f2c5bd33b086cbebb18bd19b773cecaa41c0bc162884577d59741d16a3793dd4",
+    ".cache/pdf-evidence/chromium-powerplant-operational.pdf": "53254eb58ba97db4809161e486a7629bbc45248c637b33290691aebe2bb372a0",
+    ".cache/pdf-evidence/chromium-ongrid-advanced.pdf": "7dfb020fc31505d4f0a4bf2011ead2d680154190a167765fc3133c10a02d8bf9",
+    ".cache/pdf-evidence/chromium-ongrid-operational.pdf": "5cd86fb9d49252c6bfce2f21e090e52f5ce72a33bbe3427f9e617e3a0de51db5",
+    ".cache/pdf-evidence/chromium-offgrid-advanced.pdf": "1f627e0062e313a1d94fab6a24e93a07ab9eb2371b1749cd49ab98f08b60f078",
+    ".cache/pdf-evidence/chromium-offgrid-operational.pdf": "71a2886154c85d4fb7a435b6a4f8748cbf26bee9ca7d6eed1127a35b96c6ce1b"
+  },
+  "artifactCaveat": "PDF artifacts in ignored cache are synthetic software tests and not persisted project reports",
+  "externalRunnerInventory": "Actual GitHub-hosted Windows, Ubuntu and macos-15-intel executed; native Safari is distinct from WebKit.",
+  "externalRuns": [
+    {
+      "run": 44955669115,
+      "sha": "5c673a908d4744f81f51870fe15a6add77474ec4",
+      "windows": "PASS",
+      "linux": "PASS",
+      "macosWebKit": "PASS",
+      "nativeSafari": "FAIL setup: npm ci; test skipped"
+    },
+    {
+      "run": 44956410896,
+      "sha": "7f334364358d558896bb7e66c7008c2a828b0975",
+      "status": "completed with native Safari import failure"
+    },
+    {
+      "run": 44957120805,
+      "sha": "cc08f910cd306f4c7d94f1105d1c2e5768a84d5e",
+      "windows": "PASS",
+      "linux": "PASS",
+      "macosWebKit": "FAIL during PDF interaction; browser action timeout adjustment pending remote execution",
+      "nativeSafari": "FAIL: File.text NotReadableError at import; no evidence acceptance or final PDF pass"
+    },
+    {
+      "run": 44958669854,
+      "sha": "649b0859722d31d75e0f69b81e7af29f40768b95",
+      "workflow": "CI Pipeline",
+      "conclusion": "success",
+      "jobs": 6
+    },
+    {
+      "run": 44958669864,
+      "sha": "649b0859722d31d75e0f69b81e7af29f40768b95",
+      "workflow": "Operating models and native platform evidence",
+      "windows": "PASS",
+      "linux": "PASS",
+      "macosWebKit": "PASS",
+      "nativeSafari": "FAIL: BLOCKED_NATIVE_DISK_ACCESS; genuine 24-byte JSON mode0644 in mode0755 /private/tmp; File.text NotReadableError"
+    }
+  ]
+}

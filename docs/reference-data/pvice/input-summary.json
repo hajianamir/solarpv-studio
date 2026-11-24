@@ -1,0 +1,942 @@
+{
+  "upstream_test": [
+    {
+      "year": 1995,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 1996,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 1997,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 1998,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 1999,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2000,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2001,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2002,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2003,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2004,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2005,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2006,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2007,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2008,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2009,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2010,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2011,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2012,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2013,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2014,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2015,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2016,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2017,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2018,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2019,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2020,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2021,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2022,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2023,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2024,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2025,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2026,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2027,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2028,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2029,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2030,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2031,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2032,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2033,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2034,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2035,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2036,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2037,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2038,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2039,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2040,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2041,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2042,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2043,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2044,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2045,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2046,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2047,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2048,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2049,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2050,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2051,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2052,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2053,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2054,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2055,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2056,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2057,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2058,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2059,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2060,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2061,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2062,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2063,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2064,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2065,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2066,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2067,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2068,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2069,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2070,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2071,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2072,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2073,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2074,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2075,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2076,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2077,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2078,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2079,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2080,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2081,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2082,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2083,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2084,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2085,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2086,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2087,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2088,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2089,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2090,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2091,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2092,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2093,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    },
+    {
+      "year": 2094,
+      "installedMw": 100.0,
+      "efficiencyPct": 10.0,
+      "glassGM2": 10000.0
+    }
+  ],
+  "us_glass_baseline": [
+    {
+      "year": 1995,
+      "installedMw": 12.5,
+      "efficiencyPct": 12.5,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 1996,
+      "installedMw": 9.667666667,
+      "efficiencyPct": 12.7,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 1997,
+      "installedMw": 11.622,
+      "efficiencyPct": 12.88,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 1998,
+      "installedMw": 11.781,
+      "efficiencyPct": 13.06,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 1999,
+      "installedMw": 16.88466667,
+      "efficiencyPct": 13.24,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2000,
+      "installedMw": 20.92666667,
+      "efficiencyPct": 13.42,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2001,
+      "installedMw": 27.985,
+      "efficiencyPct": 13.6,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2002,
+      "installedMw": 42.476,
+      "efficiencyPct": 13.72222222,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2003,
+      "installedMw": 59.745,
+      "efficiencyPct": 13.84444444,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2004,
+      "installedMw": 94.752,
+      "efficiencyPct": 13.96666667,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2005,
+      "installedMw": 96.58117322,
+      "efficiencyPct": 14.08888889,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2006,
+      "installedMw": 98.21307161,
+      "efficiencyPct": 14.21111111,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2007,
+      "installedMw": 324.2327484,
+      "efficiencyPct": 14.33333333,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2008,
+      "installedMw": 314.5851087,
+      "efficiencyPct": 14.45555556,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2009,
+      "installedMw": 431.2448039,
+      "efficiencyPct": 14.57777778,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2010,
+      "installedMw": 719.8444376,
+      "efficiencyPct": 14.7,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2011,
+      "installedMw": 1781.377078,
+      "efficiencyPct": 15.1,
+      "glassGM2": 8000.0
+    },
+    {
+      "year": 2012,
+      "installedMw": 3064.162281,
+      "efficiencyPct": 15.4,
+      "glassGM2": 8080.0
+    },
+    {
+      "year": 2013,
+      "installedMw": 4037.449113,
+      "efficiencyPct": 16.0,
+      "glassGM2": 8160.0
+    },
+    {
+      "year": 2014,
+      "installedMw": 3722.199485,
+      "efficiencyPct": 16.3,
+      "glassGM2": 8292.7
+    },
+    {
+      "year": 2015,
+      "installedMw": 6834.328813,
+      "efficiencyPct": 17.0,
+      "glassGM2": 8225.6625
+    },
+    {
+      "year": 2016,
+      "installedMw": 12897.66595,
+      "efficiencyPct": 17.5,
+      "glassGM2": 8158.8875
+    },
+    {
+      "year": 2017,
+      "installedMw": 9784.506215,
+      "efficiencyPct": 17.7,
+      "glassGM2": 8289.75
+    },
+    {
+      "year": 2018,
+      "installedMw": 9352.529448,
+      "efficiencyPct": 18.4,
+      "glassGM2": 8350.15
+    },
+    {
+      "year": 2019,
+      "installedMw": 10949.78234,
+      "efficiencyPct": 19.2,
+      "glassGM2": 8607.5
+    },
+    {
+      "year": 2020,
+      "installedMw": 14903.79,
+      "efficiencyPct": 20.0,
+      "glassGM2": 8975.5
+    },
+    {
+      "year": 2021,
+      "installedMw": 16455.56,
+      "efficiencyPct": 20.9,
+      "glassGM2": 9284.5875
+    },
+    {
+      "year": 2022,
+      "installedMw": 15227.23,
+      "efficiencyPct": 21.1,
+      "glassGM2": 9626.5
+    },
+    {
+      "year": 2023,
+      "installedMw": 15224.02,
+      "efficiencyPct": 21.88587403,
+      "glassGM2": 9805.45
+    },
+    {
+      "year": 2024,
+      "installedMw": 16634.43,
+      "efficiencyPct": 22.20562728,
+      "glassGM2": 9977.4
+    },
+    {
+      "year": 2025,
+      "installedMw": 18114.89427,
+      "efficiencyPct": 22.47034948,
+      "glassGM2": 9940.2375
+    },
+    {
+      "year": 2026,
+      "installedMw": 19727.11986,
+      "efficiencyPct": 22.6966295,
+      "glassGM2": 9901.5
+    },
+    {
+      "year": 2027,
+      "installedMw": 21482.83353,
+      "efficiencyPct": 22.89448321,
+      "glassGM2": 10008.40556
+    },
+    {
+      "year": 2028,
+      "installedMw": 23394.80571,
+      "efficiencyPct": 23.07043369,
+      "glassGM2": 10113.40556
+    },
+    {
+      "year": 2029,
+      "installedMw": 25476.94342,
+      "efficiencyPct": 23.22897228,
+      "glassGM2": 10216.5
+    },
+    {
+      "year": 2030,
+      "installedMw": 27744.39138,
+      "efficiencyPct": 23.3733262,
+      "glassGM2": 10170.91111
+    },
+    {
+      "year": 2031,
+      "installedMw": 30213.64222,
+      "efficiencyPct": 23.50589418,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2032,
+      "installedMw": 32902.65637,
+      "efficiencyPct": 23.62850877,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2033,
+      "installedMw": 35830.99279,
+      "efficiencyPct": 23.7426023,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2034,
+      "installedMw": 39019.95115,
+      "efficiencyPct": 23.84931597,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2035,
+      "installedMw": 42492.7268,
+      "efficiencyPct": 23.94957409,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2036,
+      "installedMw": 46274.57949,
+      "efficiencyPct": 24.04413599,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2037,
+      "installedMw": 50393.01706,
+      "efficiencyPct": 24.13363324,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2038,
+      "installedMw": 54877.99558,
+      "efficiencyPct": 24.21859695,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2039,
+      "installedMw": 59762.13719,
+      "efficiencyPct": 24.29947807,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2040,
+      "installedMw": 65080.9674,
+      "efficiencyPct": 24.3766628,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2041,
+      "installedMw": 70873.1735,
+      "efficiencyPct": 24.45048453,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2042,
+      "installedMw": 77180.88594,
+      "efficiencyPct": 24.52123306,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2043,
+      "installedMw": 84049.98479,
+      "efficiencyPct": 24.5891619,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2044,
+      "installedMw": 91530.43343,
+      "efficiencyPct": 24.65449415,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2045,
+      "installedMw": 99676.64201,
+      "efficiencyPct": 24.71742718,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2046,
+      "installedMw": 108547.8631,
+      "efficiencyPct": 24.77813646,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2047,
+      "installedMw": 118208.623,
+      "efficiencyPct": 24.8367787,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2048,
+      "installedMw": 128729.1904,
+      "efficiencyPct": 24.89349446,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2049,
+      "installedMw": 140186.0884,
+      "efficiencyPct": 24.94841027,
+      "glassGM2": 10125.01111
+    },
+    {
+      "year": 2050,
+      "installedMw": 152662.6502,
+      "efficiencyPct": 25.00164048,
+      "glassGM2": 10125.01111
+    }
+  ]
+}

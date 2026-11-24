@@ -1,0 +1,13 @@
+# B2 — قرارداد مقایسه با اندازه‌گیری Chen2020
+
+دامنه: runner آفلاین research-only،نه تغییر رفتار battery_protocol و نه API/UI/finance. هر سه سلول02/03/04 اصلی Zenodo4032561 با byte identity تأییدشده،چهار discharge کامل پس از CC/CV+دو ساعت rest (Step7/12/17/22)،و rest بعدی (Step8/13/18/23) بررسی شوند. discharge اولیهٔ Step2 initialSOC معلوم ندارد و از پیش کنار گذاشته می‌شود. mode SBr در Step8 بدون تغییر جریان حفظ می‌شود؛O پایان آزمایش اندازه‌گیری rest نیست.
+
+هیچ fitting،انتخاب بهترین سلول یا حذف outlier مجاز نیست. initialSOC=1 ثابت،parameterSet=Chen2020،مدلDFN،thermal=lumped،جریان nominal=.5/2.5/5/7.5A ثابت (نه measured current drive cycle). ambient ثابت برابر اولین دمای chamber هر discharge و initial temperature برابر اولین دمای سطح همان discharge؛این دو فرض گزارش شوند. residual جریان actual−nominal و تغییرات chamber گزارش شوند. سلول02 development reference فقط برای تحلیل؛03/04 evaluation باپارامترهای کاملاً یکسان و بدون tuning. این split بعد از انتشار dataset اعلام شده،prospective/blinded holdout نیست.
+
+دو mesh8/16 باrtol1e-7،atol1e-8 وCasADi safe باIDAS maxstep10s. هر case ازinitialSOC=1 مستقل آغاز می‌شود؛state discharge به rest حمل شود. زمان حقیقی step از CSV،بدون بازصفرسازی اولین نمونهٔ0.04s به0. مدل تا انتهای discharge اندازه‌گیری‌شده اجرا شود. اگر cutoff خود مدل زودتر رخ داد،فقط نقاط اندازه‌گیری داخل horizon واقعی حل score شوند؛تعدادکل/تعدادscore/coverage وcutoff mismatch گزارش شود و rest برای آن run مسدود شود. هیچ extrapolation،تغییرcutoff برای کامل‌کردن افق یا چسباندن rest مصنوعی مجاز نیست.
+
+برای discharge/rest جدا:MAE/RMSE/maxAbs/bias(pred−measured) ولتاژ ودمای سطح دربرابر lumped،تعدادوcoverage زمانی/نمونه‌ای،trace روی همهٔ نمونه‌های پشتیبانی‌شده،duration mismatch وrefinementdelta روی اشتراک نقاط. هیچ آستانهٔ تجربی pass برای خطای فیزیکی جعل نشود؛وضعیت physicalQualification همیشهnot_established. trace دمای lumped با sensor سطح دقیقاً یک observable نیست و agreement آن thermal validation نیست.
+
+پذیرش نرم‌افزاری:آزمونchecksum/schema/sign/segmentation/duplicate boundary،oracle مستقل metrics،ردnonfinite/extrapolation،تطابق canonical source hashes نصب‌شده باfrozen،runtime pinned،offline،state continuity ونتیجهٔ همه12case دردوmesh. reportباز‌تولیدپذیر باید configuration/data/code provenance وlimitations وfailures را داشته باشد؛خطای حل فیزیکی باآزمون نرم‌افزار جایگزین نشود. rollback:runner اجرا نشود؛هیچ مصرف‌کنندهٔ تولیدی ندارد. کلB2/A1–D3 وCVcycling/runaway همچنان بازند.
+
+اصلاح کارایی پیش از تولید نتیجهٔ نهایی:شبکهٔخروجی حلگرثابت10s (به‌علاوهendpointدقیق)،درون‌یابی ProcessedVariable درزمان‌هاینامنظمmeasurement وفقطداخلsupport؛gridنامنظم موجبساخت مکررintegratorشد واجرایاول بدوننتیجه متوقفشد. این تغییر solveroutputsampling است،نه تغییرphysics/انتخابcase/آستانه. خطایدرون‌یابی جداکالیبره نشده ودرlimitations گزارش شود.

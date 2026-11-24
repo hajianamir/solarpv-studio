@@ -1,0 +1,18 @@
+{
+  "alphaScAperC": 0.004539,
+  "aRefV": 2.6373,
+  "iLRefA": 5.114,
+  "iORefA": 8.196e-10,
+  "rShRefOhm": 381.68,
+  "rSOhm": 1.065,
+  "egRefEv": 1.121,
+  "dEgdTPerK": -0.0002677,
+  "modulesPerString": 10,
+  "stringsInParallel": 4,
+  "mpptMinV": 200,
+  "mpptMaxV": 800,
+  "maxDcV": 1000,
+  "maxInputCurrentA": 30,
+  "designMinCellTemperatureC": -20,
+  "designMaxEffectiveIrradianceWm2": 1500
+}

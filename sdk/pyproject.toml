@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solarpv-studio-sdk"
+version = "0.1.0"
+description = "Opt-in, no-dependency client for SolarPV Studio bounded research and data comparison APIs"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["solarpv_sdk*"]

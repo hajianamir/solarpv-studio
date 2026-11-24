@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "finite-shading-plan-v1",
+  "source": "Synthetic finite optical/circuit fixture",
+  "datum": "Synthetic local ENU metres, not survey",
+  "patches": [
+    {
+      "id": "s0",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "u": [
+        1,
+        0,
+        0
+      ],
+      "v": [
+        0,
+        1,
+        0
+      ],
+      "iscRefA": 10,
+      "vocV": 30
+    },
+    {
+      "id": "s1",
+      "origin": [
+        1,
+        0,
+        0
+      ],
+      "u": [
+        1,
+        0,
+        0
+      ],
+      "v": [
+        0,
+        1,
+        0
+      ],
+      "iscRefA": 10,
+      "vocV": 30
+    }
+  ],
+  "triangles": [
+    [
+      [
+        0,
+        0,
+        1
+      ],
+      [
+        0.5,
+        0,
+        1
+      ],
+      [
+        0.5,
+        1,
+        1
+      ]
+    ],
+    [
+      [
+        0,
+        0,
+        1
+      ],
+      [
+        0.5,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        1
+      ]
+    ]
+  ],
+  "sun": {
+    "zenithDeg": 0,
+    "azimuthDeg": 180,
+    "dniWm2": 1000,
+    "dhiWm2": 100
+  },
+  "quadrature": {
+    "surfaceGrid": 4,
+    "skyMu": 4,
+    "skyAzimuth": 16,
+    "maxPairTests": 2000000
+  },
+  "electrical": {
+    "source": "Assumed linear IV, not equipment parameters",
+    "strings": [
+      [
+        "s0",
+        "s1"
+      ]
+    ],
+    "bypassDropV": 0.5,
+    "referenceWm2": 1000
+  }
+}

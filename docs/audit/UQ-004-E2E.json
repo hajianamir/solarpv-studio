@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "browser": "Chromium",
+  "surface": "Full production App + Express server + real dedicated Worker; offline App reload",
+  "parity": "All fields except clock-based traceId exactly equal direct legacy engine",
+  "responsiveness": {
+    "ticks": 36,
+    "ok": true
+  },
+  "checks": [
+    "versioned archive download/import/replay, tamper and code-mismatch rejection",
+    "fa/en risk/method labels",
+    "three quantile cards",
+    "actual PDF downloads",
+    "cancel/retry",
+    "pricing and sample-count invalidation",
+    "worker asset failure/retry",
+    "navigation cancellation",
+    "energy-source unchanged",
+    "offline worker after App reload"
+  ],
+  "manifestBytes": 18399,
+  "notTested": [
+    "native Safari",
+    "all unrelated application features"
+  ]
+}

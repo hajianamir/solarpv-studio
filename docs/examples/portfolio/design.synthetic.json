@@ -1,0 +1,61 @@
+{
+  "operation": "hybrid_design",
+  "plan": {
+    "schemaVersion": "hybrid-design-v1",
+    "source": "SYNTHETIC capacity MILP analytical witness, period costs only",
+    "contextSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "intervalHours": 1,
+    "initialSoc": 0.5,
+    "minimumSoc": 0,
+    "chargeEfficiency": 0.9,
+    "dischargeEfficiency": 0.9,
+    "minimumDeliveredKwh": 1,
+    "wearPerKwh": 0.01,
+    "standbyW": 0,
+    "hvacWPerKwhC": 0,
+    "setpointC": 25,
+    "maximumBatteryC": 1,
+    "minimumInstalledBatteryKwh": 0.1,
+    "capacities": {
+      "pvKwp": {
+        "maximum": 10,
+        "unitSize": 1,
+        "integer": true,
+        "costPerUnit": 2
+      },
+      "inverterKw": {
+        "maximum": 10,
+        "unitSize": 1,
+        "integer": false,
+        "costPerUnit": 1
+      },
+      "batteryKwh": {
+        "maximum": 0,
+        "unitSize": 1,
+        "integer": false,
+        "costPerUnit": 1
+      },
+      "batteryKw": {
+        "maximum": 0,
+        "unitSize": 1,
+        "integer": false,
+        "costPerUnit": 1
+      }
+    },
+    "records": [
+      {
+        "timestamp": "2024-01-01T01:00:00Z",
+        "pvKwhPerKwp": 1,
+        "externalKwh": 0,
+        "loadKwh": 0.5,
+        "importPrice": 1,
+        "exportPrice": 0,
+        "importLimitKw": 0,
+        "exportLimitKw": 10,
+        "ambientC": 25
+      }
+    ],
+    "timeLimitS": 5,
+    "relativeGap": 0
+  }
+}

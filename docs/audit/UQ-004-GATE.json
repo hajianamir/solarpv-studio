@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "feature-gate-v1",
+  "feature": "UQ-004",
+  "testedAt": "2026-11-24T14:23:08.410Z",
+  "status": "ready-for-review",
+  "scope": "Full-App Chromium UQ E2E and existing broad browser suite; not all possible app cases or native Safari.",
+  "boundary": true,
+  "documentation": true,
+  "offlineWorker": true,
+  "featureFlag": "VITE_FINANCIAL_UQ_WORKER=false disables jobs without synchronous fallback; tested in isolated build.",
+  "researchGate": "Unchanged; operational energy regressions included via upstream gates.",
+  "fileSha256": {
+    "src/components/FinancialTab.tsx": "457f30cb26aad3f9986ed23c09566972616df303a24e22b8243925649a95a2f7",
+    "src/studies/financialUq.worker.ts": "7582360c2445f4cae0ed04eee9a372a51f1c28157ce18c5a2fd7cca52dd9517a",
+    "src/studies/financialUqRunner.ts": "312f5fdc4d67231e4f5d0f04e05fbb8a1985590a25a164f8bc31e846bf5b37c2",
+    "vite.config.ts": "4f8ee82800892a2a567f50b75e8b78d0e08256e06878135fb69abe91567cd3d2",
+    "scripts/test-financial-uq-worker.ts": "14c6afc942313fb5ef3b4ea86eff68b31a39f6ff996fa4616702da3910cc28bb",
+    "scripts/test-financial-uq-e2e.ts": "4aaa15f1a29a540fd232febd30eb37d41d275439435bd86c6d9c8723d526766a",
+    "docs/features/UQ-004-WORKER-E2E.fa.md": "096a5996dabeac707e3230c148ccecf528a36e4dba674eb9d4ea9e6ead878852",
+    "src/studies/financialUqResultValidation.ts": "969abd53548c6956508ff0063841419ca9a42012e1990121db84143faaf5852c",
+    "src/components/FinancialEnergyQuantiles.tsx": "6f6f730ebe75a5bcf25aee327bcad84f1ac223c4b1691788410559b2804b5a66",
+    "src/components/FinancialMetricQuantiles.tsx": "01c16b213f0efabd862a6c2abc6f1f5c1f835e345fc0dc9667e8e12304de268e",
+    "scripts/test-financial-energy-quantiles-browser.ts": "0f8dd1b1db2f31f63decac8551f488b873c57614820e53d648f4e5fe1601e92c"
+  },
+  "checks": [
+    {
+      "command": "npm run verify:uq:metrics",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npx tsx scripts/test-financial-uq-worker.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npx eslint src/studies/uqQuantileContract.ts src/studies/financialEnergyQuantileView.ts src/studies/financialMetricQuantiles.ts src/studies/financialUq.worker.ts src/studies/financialUqRunner.ts src/studies/financialUqResultValidation.ts src/components/FinancialEnergyQuantiles.tsx src/components/FinancialMetricQuantiles.tsx src/components/FinancialTab.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npm run test:browser",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npm run build",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    },
+    {
+      "command": "npx tsx scripts/test-financial-uq-e2e.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null,
+      "error": null
+    }
+  ]
+}

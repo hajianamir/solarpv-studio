@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FinancialEnergyQuantiles } from './FinancialEnergyQuantiles';
+import { FinancialMetricQuantiles } from './FinancialMetricQuantiles';
+import { startFinancialUq } from '../studies/financialUqRunner';
+import { FinancialUqArchivePanel } from './FinancialUqArchivePanel';
 import {
   DollarSign,
   TrendingUp,
@@ -29,8 +33,8 @@ import {
   formatCurrencyAmount,
 } from '../engine/offlineTransferEngine';
 import {
-  runFinancialUncertaintyPropagation,
   type FinancialUqResult,
+  type FinancialUqRunInput,
 } from '../engine/core/uncertaintyPropagation';
 import { type AppliedShading3dRecord } from '../engine/shadingLifecycle';
 
@@ -65,14 +69,28 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 }) => {
   const [showCashflowTable, setShowCashflowTable] = useState(false);
   const [corrosion, setCorrosion] = useState<SaltCorrosionOutput | null>(null);
-  const [uqResult, setUqResult] = useState<FinancialUqResult | null>(null);
+  const [uqSnapshot, setUqSnapshot] = useState<{ result: FinancialUqResult; context: string; input: FinancialUqRunInput } | null>(null);
   const [uqSampleSize, setUqSampleSize] = useState<number>(100);
+  // Bind temporary UQ to the exact input snapshot; never display it for changed project inputs.
+  const uqContext = JSON.stringify({ financial, pricing, city, foundationType, isBifacial, bifacialityFactor, groundCoverRatio, bifacialGainPct, shadingProvenance, isShadingStale, uqSampleSize });
+  const uqContextRef = useRef(uqContext);
+  uqContextRef.current = uqContext;
+  const uqResult = uqSnapshot?.context === uqContext ? uqSnapshot.result : null;
+  const uqJob = useRef<ReturnType<typeof startFinancialUq> | null>(null);
+  const uqSequence = useRef({ value: 0 });
+  useEffect(() => {
+    const sequence = uqSequence.current;
+    setUqSnapshot(null);
+    setIsUqRunning(false);
+    setUqErrorMessage(null);
+    return () => { sequence.value++; uqJob.current?.cancel(); uqJob.current = null; };
+  }, [uqContext]);
   const [isUqRunning, setIsUqRunning] = useState<boolean>(false);
   const [uqErrorMessage, setUqErrorMessage] = useState<string | null>(null);
 
   const isReadyForUq = (financial.systemKwp ?? 0) > 0 && (financial.annualEnergyYieldKwh ?? 0) > 0;
 
-  const handleRunUqSimulation = () => {
+  const handleRunUqSimulation = async () => {
     setUqErrorMessage(null);
     if (!isReadyForUq) {
       setUqErrorMessage(
@@ -84,9 +102,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     }
 
     setIsUqRunning(true);
-    setTimeout(() => {
-      try {
-        const res = runFinancialUncertaintyPropagation({
+    const requestedContext = uqContext;
+    const sequence = ++uqSequence.current.value;
+    uqJob.current?.cancel();
+    try {
+        const request: FinancialUqRunInput = {
           plantCapacityKwp: financial.systemKwp,
           batteryCapacityKwh: financial.batteryKwh || 0,
           inverterCapacityKw: financial.inverterKw || financial.systemKwp,
@@ -98,19 +118,22 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           isBifacial,
           bifacialityFactor,
           groundCoverRatio,
-        });
-        setUqResult(res);
+        };
+        const job = startFinancialUq(request);
+        uqJob.current = job;
+        const res = await job.promise;
+        if (uqContextRef.current === requestedContext && uqJob.current === job) setUqSnapshot({ result: res, context: requestedContext, input: request });
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
+        if (sequence !== uqSequence.current.value || uqContextRef.current !== requestedContext || (err instanceof Error && err.message === 'UQ_WORKER_CANCELLED')) return;
+        const msg = lang === 'fa' ? 'اجرای Worker ناموفق بود؛ دوباره تلاش کنید.' : 'Worker unavailable or failed; retry is available.';
         setUqErrorMessage(
           lang === 'fa'
             ? `خطا در اجرای شبیه‌سازی عدم قطعیت مالی: ${msg}`
             : `Error executing financial UQ simulation: ${msg}`
         );
       } finally {
-        setIsUqRunning(false);
+        if (sequence === uqSequence.current.value && uqContextRef.current === requestedContext) setIsUqRunning(false);
       }
-    }, 100);
   };
 
   // Salt corrosion / ISO 9223 exposure for LCOE derating (resolved via OSM Nominatim shoreline distance)
@@ -164,11 +187,11 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
   const [activeCurrency, setActiveCurrency] = useState<SupportedCurrency>('TOMAN');
 
-  const updateField = (field: keyof UserFinancialPricing, val: any) => {
+  const updateField = <K extends keyof UserFinancialPricing,>(field: K, val: UserFinancialPricing[K]) => {
     // Route through sanitizeNumericField for every numeric field.
     const currentVal = pricing[field];
     const isNumeric = typeof currentVal === 'number';
-    const next = isNumeric ? sanitizeNumericField(field, val) : val;
+    const next = isNumeric && (typeof val === 'number' || typeof val === 'string') ? sanitizeNumericField(field, val) : val;
     onPricingChange({
       ...pricing,
       [field]: next,
@@ -176,7 +199,8 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="financial-analysis" data-annual-energy-kwh={financial.annualEnergyYieldKwh}>
+      {(financial.annualGridImportKwh??0)>0&&<p data-testid="financial-grid-import">خرید برق سالانه: {financial.annualGridImportKwh?.toLocaleString()} kWh — هزینهٔ سال اول: {financial.annualGridImportCostToman?.toLocaleString()} تومان؛ در OPEX/NPV منظور شده، با نرخ رشد تعرفه.</p>}
       {/* Title */}
       <div className="studio-card">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
@@ -416,7 +440,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                     onClick={() => {
                       onPricingChange({
                         ...pricing,
-                        customerType: prof.id as any,
+                        customerType: prof.id as UserFinancialPricing['customerType'],
                         gridTariffTomanPerKwh: prof.retail,
                         gridExportTariffTomanPerKwh: prof.exportT,
                         selfConsumptionRatioPct: prof.selfC,
@@ -485,7 +509,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
               </span>
               <span className="font-mono text-industrial-success">
                 {lang === 'fa' ? 'خودمصرفی: ' : 'Self-Consumed: '}
-                <strong>{(financial.selfConsumedYieldKwh ?? financial.annualEnergyYieldKwh).toLocaleString()} kWh/yr</strong> (~{pricing.selfConsumptionRatioPct ?? 100}%)
+                <strong>{(financial.selfConsumedYieldKwh ?? financial.annualEnergyYieldKwh).toLocaleString()} kWh/yr</strong> (~{financial.selfConsumptionRatioPct ?? 100}%)
               </span>
               <span className="font-mono text-sky-300">
                 {lang === 'fa' ? 'صادرات به شبکه: ' : 'Grid Export: '}
@@ -976,16 +1000,18 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
           <div className="flex items-center gap-2">
             <select
+              aria-label="UQ sample count"
               value={uqSampleSize}
               onChange={(e) => setUqSampleSize(parseInt(e.target.value) || 100)}
               className="studio-input text-xs font-mono py-1.5"
             >
               <option value="50">50 {lang === 'fa' ? 'نمونه (سریع)' : 'trials (fast)'}</option>
               <option value="100">100 {lang === 'fa' ? 'نمونه (استاندارد)' : 'trials (standard)'}</option>
-              <option value="200">200 {lang === 'fa' ? 'نمونه (دقیق)' : 'trials (high-res)'}</option>
+              <option value="200">200 {lang === 'fa' ? 'نمونه (بیشتر)' : 'trials (more samples)'}</option>
             </select>
 
             <button
+              data-testid="uq-run"
               onClick={handleRunUqSimulation}
               disabled={isUqRunning || !isReadyForUq}
               className={`studio-btn-primary text-xs py-1.5 px-3 flex items-center gap-2 rounded-lg font-bold ${
@@ -1004,11 +1030,12 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 </>
               )}
             </button>
+            {isUqRunning && <button type="button" data-testid="uq-cancel" onClick={() => { uqSequence.current.value++; uqJob.current?.cancel(); setIsUqRunning(false); }}>{lang === 'fa' ? 'لغو' : 'Cancel UQ'}</button>}
           </div>
         </div>
 
         {uqErrorMessage && (
-          <div className="mt-3 p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-200 flex items-center gap-2">
+          <div role="alert" data-testid="uq-worker-error" className="mt-3 p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-200 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
             <span>{uqErrorMessage}</span>
           </div>
@@ -1026,29 +1053,27 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
         )}
 
         {uqResult && (
-          <div className="mt-4 space-y-4 animate-fadeIn">
-            {/* Bankable Category & Quantile Cards */}
+          <div data-testid="financial-uq-result" className="mt-4 space-y-4 animate-fadeIn">
+            {uqSnapshot && <FinancialUqArchivePanel key={uqResult.traceId} input={uqSnapshot.input} result={uqResult} panelContext={uqSnapshot.context} lang={lang} />}
+            {/* Exploratory screening and explicit quantile cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
-                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'رتبه اعتباری و ریسک مالی' : 'Bankability Risk Rating'}</div>
+                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'نشانگر غربالگری NPV — بدون رتبهٔ اعتباری' : 'NPV screening indicator — not a credit rating'}</div>
                 <div className="text-base font-bold font-mono text-industrial-success mt-1">
-                  {uqResult.bankableRiskCategory}
+                  {uqResult.npvUsd.p10 > 0
+                    ? (lang === 'fa' ? 'صدک q10 نمونهٔ NPV مثبت است' : 'Sampled NPV q10 is positive')
+                    : uqResult.npvUsd.p50 > 0
+                      ? (lang === 'fa' ? 'میانهٔ NPV مثبت؛ دنبالهٔ پایین غیرمثبت' : 'Positive NPV median; nonpositive lower tail')
+                      : (lang === 'fa' ? 'میانهٔ نمونهٔ NPV غیرمثبت است' : 'Sampled NPV median is nonpositive')}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
                   {uqResult.sampleCount} {lang === 'fa' ? 'آزمون ساختاریافته LHS' : 'stratified LHS trials'}
                 </div>
               </div>
 
-              <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
-                <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'تولید سالانه (MWh) - P10/P50/P90' : 'Annual Yield (MWh) - P10/P50/P90'}</div>
-                <div className="text-base font-bold font-mono text-sky-400 mt-1">
-                  {uqResult.annualGenerationMwh.p50} <span className="text-xs font-normal text-slate-300">MWh</span>
-                </div>
-                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                  P10: {uqResult.annualGenerationMwh.p10} | P90: {uqResult.annualGenerationMwh.p90} (±{uqResult.annualGenerationMwh.relativeSpreadPercent}%)
-                </div>
-              </div>
+              <FinancialEnergyQuantiles energy={uqResult.annualGenerationMwh} traceId={uqResult.traceId} lang={lang} />
 
+              <FinancialMetricQuantiles metric="lcoe" value={uqResult.lcoeUsdPerMwh} traceId={uqResult.traceId} lang={lang}>
               <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
                 <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'بهای تمام‌شده انرژی (LCOE $/MWh)' : 'LCOE ($/MWh) - P10/P50/P90'}</div>
                 <div className="text-base font-bold font-mono text-industrial-warning mt-1">
@@ -1058,7 +1083,9 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   P10: ${uqResult.lcoeUsdPerMwh.p10} | P90: ${uqResult.lcoeUsdPerMwh.p90}
                 </div>
               </div>
+              </FinancialMetricQuantiles>
 
+              <FinancialMetricQuantiles metric="npv" value={uqResult.npvUsd} traceId={uqResult.traceId} lang={lang}>
               <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg">
                 <div className="text-[11px] text-slate-400">{lang === 'fa' ? 'ارزش فعلی خالص (NPV USD)' : 'Project NPV (USD) - P10/P50/P90'}</div>
                 <div className="text-base font-bold font-mono text-emerald-400 mt-1">
@@ -1068,6 +1095,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   P10: ${uqResult.npvUsd.p10.toLocaleString()} | P90: ${uqResult.npvUsd.p90.toLocaleString()}
                 </div>
               </div>
+              </FinancialMetricQuantiles>
             </div>
 
             {/* Aleatory vs Epistemic Uncertainty Breakdown */}
@@ -1076,10 +1104,10 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                 <div className="flex items-center justify-between text-slate-300">
                   <span className="font-bold flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-sky-400" />
-                    {lang === 'fa' ? 'تفکیک عدم قطعیت فیزیکی (Aleatory) و مدل/اقتصادی (Epistemic):' : 'Aleatory vs Epistemic Uncertainty Decomposition:'}
+                    {lang === 'fa' ? 'گروه‌بندی اکتشافی امتیاز همبستگی Pearson r²:' : 'Exploratory grouping of normalized Pearson r² scores:'}
                   </span>
                   <span className="font-mono text-[11px] text-slate-400">
-                    {lang === 'fa' ? 'خطای استاندارد همگرایی: ' : 'Std Error: '}
+                    {lang === 'fa' ? 'برآورد سادهٔ SD/√N (بدون تضمین همگرایی): ' : 'Naive SD/√N (not a convergence guarantee): '}
                     ${uqResult.convergenceStandardErrorNpvUsd?.toLocaleString()} USD
                   </span>
                 </div>
@@ -1089,34 +1117,35 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   <div
                     style={{ width: `${uqResult.uncertaintyDecomposition.aleatoryVariancePct}%` }}
                     className="bg-sky-500 h-full"
-                    title={`Aleatory (Physical Climate): ${uqResult.uncertaintyDecomposition.aleatoryVariancePct}%`}
+                    title={`Climate proxy score: ${uqResult.uncertaintyDecomposition.aleatoryVariancePct}%`}
                   />
                   <div
                     style={{ width: `${uqResult.uncertaintyDecomposition.epistemicVariancePct}%` }}
                     className="bg-amber-500 h-full"
-                    title={`Epistemic (Techno-Economic): ${uqResult.uncertaintyDecomposition.epistemicVariancePct}%`}
+                    title={`Financial proxy score: ${uqResult.uncertaintyDecomposition.epistemicVariancePct}%`}
                   />
                 </div>
 
                 <div className="flex justify-between text-[11px] text-slate-400">
                   <span className="text-sky-300">
-                    ● {lang === 'fa' ? 'عدم قطعیت فیزیکی اقلیم (تابش، غبار، آلبدو):' : 'Aleatory Climate Variance (GHI, soiling, albedo):'}{' '}
+                    ● {lang === 'fa' ? 'امتیاز گروه اقلیمی (تابش، غبار، آلبدو):' : 'Climate-group proxy score (GHI, soiling, albedo):'}{' '}
                     <strong>{uqResult.uncertaintyDecomposition.aleatoryVariancePct}%</strong>
                   </span>
                   <span className="text-amber-300">
-                    ● {lang === 'fa' ? 'عدم قطعیت اقتصادی و پارامترها (CAPEX, OPEX, تعرفه، تنزیل):' : 'Epistemic Financial Variance (CAPEX, OPEX, tariff, discount):'}{' '}
+                    ● {lang === 'fa' ? 'امتیاز گروه مالی (CAPEX, OPEX, تعرفه، تنزیل):' : 'Financial-group proxy score (CAPEX, OPEX, tariff, discount):'}{' '}
                     <strong>{uqResult.uncertaintyDecomposition.epistemicVariancePct}%</strong>
                   </span>
                 </div>
               </div>
             )}
 
+            <p data-testid="uq-method-limitations" className="text-xs text-amber-300">{lang === 'fa' ? 'درصدها امتیازهای همبستگی نرمال‌شده‌اند، نه تفکیک معتبر aleatory/epistemic، اثر علّی یا Sobol؛ ورودی‌های همبسته و تعامل‌ها قابل جمع به سهم واریانس نیستند.' : 'Percentages are normalized correlation proxy scores, not a validated aleatory/epistemic decomposition, causal effects or Sobol indices; correlated inputs and interactions are not additive variance shares.'}</p>
             {/* Sensitivity Tornado Ranking */}
             <div className="studio-card">
               <h4 className="text-xs font-bold text-slate-300 mb-2">
                 {lang === 'fa'
-                  ? 'رتبه‌بندی حساسیت تورنادو (سهم از واریانس کل NPV طبق رگرسیون رتبه‌ای استاندارد SRC²):'
-                  : 'Tornado Sensitivity Ranking (First-Order Variance Contribution via SRC² per Saltelli et al.):'}
+                  ? 'رتبه‌بندی امتیاز نرمال‌شدهٔ Pearson r² — نه سهم واریانس:'
+                  : 'Normalized Pearson r² ranking — not variance contribution:'}
               </h4>
               <div className="space-y-2">
                 {uqResult.tornadoSensitivityRanking.map((item) => (

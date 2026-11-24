@@ -1,0 +1,1594 @@
+{
+  "schemaVersion": "chen-measured-benchmark-v1",
+  "physicalQualification": "not_established",
+  "projectApproval": "blocked",
+  "safetyApproval": "not_assessed",
+  "automaticEnergyAdoption": false,
+  "financeMutation": false,
+  "runtime": {
+    "pybamm": "25.10.2",
+    "casadi": "3.6.7"
+  },
+  "configuration": {
+    "model": "DFN",
+    "parameterSet": "Chen2020",
+    "thermal": "lumped",
+    "initialSoc": 1,
+    "meshPoints": [
+      8,
+      16
+    ],
+    "relativeTolerance": 1e-07,
+    "absoluteTolerance": 1e-08,
+    "configuredGlobalStepS": 60,
+    "configuredIdasMaxStepS": 10,
+    "solverOutputGridS": 10,
+    "measurementSampling": "within_support_processed_variable_interpolation",
+    "currentBasis": "nominal_constant_not_measured_drive_cycle",
+    "ambientBasis": "first_measured_chamber_constant",
+    "initialTemperatureBasis": "first_measured_surface_temperature"
+  },
+  "parameterSourceSha256": "7c360a546a76492585e147231caee2f8f4fe29222b893cb12091dc4d158f62f0",
+  "cases": [
+    {
+      "cell": "02",
+      "split": "development_reference",
+      "dischargeStep": 7,
+      "restStep": 8,
+      "nominalCurrentA": 0.5,
+      "initialSoc": 1,
+      "ambientK": 299.87969999999996,
+      "initialTemperatureK": 300.01559999999995,
+      "maxCurrentDeviationA": 0.0021740000000000093,
+      "chamberRangeC": [
+        26.5969,
+        26.8791
+      ],
+      "dataSha256": "650e7f9ac5217b4db158047e50b6b464100b13f4859002421114edebca629b35",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 1213,
+            "scoredSamples": 1213,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 1213,
+              "mae": 0.0690825714867897,
+              "rmse": 0.0881084235241925,
+              "bias": 0.0690825714867897,
+              "maxAbs": 0.4202153583137056
+            },
+            "temperatureK": {
+              "count": 1213,
+              "mae": 0.2661452410512883,
+              "rmse": 0.4091822567836662,
+              "bias": -0.16672724675700099,
+              "maxAbs": 1.5656391431618317
+            }
+          },
+          "rest": {
+            "totalSamples": 254,
+            "scoredSamples": 254,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 254,
+              "mae": 0.14257973689547132,
+              "rmse": 0.16033900401310466,
+              "bias": 0.14257973689547132,
+              "maxAbs": 0.42899116467342635
+            },
+            "temperatureK": {
+              "count": 254,
+              "mae": 0.48647438164803924,
+              "rmse": 0.6394918766754806,
+              "bias": -0.48647438164803924,
+              "maxAbs": 1.5887276589297699
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 35985.27,
+          "measuredDischargeEndS": 35985.27,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 1213,
+            "scoredSamples": 1213,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 1213,
+              "mae": 0.06893347814378414,
+              "rmse": 0.08798935774628534,
+              "bias": 0.06893347814378414,
+              "maxAbs": 0.41994338628421835
+            },
+            "temperatureK": {
+              "count": 1213,
+              "mae": 0.2659655415822523,
+              "rmse": 0.40890165242742704,
+              "bias": -0.1660807171167153,
+              "maxAbs": 1.5649640702874308
+            }
+          },
+          "rest": {
+            "totalSamples": 254,
+            "scoredSamples": 254,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 254,
+              "mae": 0.14263287782411133,
+              "rmse": 0.16044607462015872,
+              "bias": 0.14263287782411133,
+              "maxAbs": 0.4287836853258771
+            },
+            "temperatureK": {
+              "count": 254,
+              "mae": 0.486376850765004,
+              "rmse": 0.6393043503871998,
+              "bias": -0.486376850765004,
+              "maxAbs": 1.5880714840869246
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 35985.27,
+          "measuredDischargeEndS": 35985.27,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 1213,
+          "maxVoltageDeltaV": 0.0020661303494637906,
+          "maxTemperatureDeltaK": 0.0008219162801879065
+        },
+        "rest": {
+          "commonSamples": 254,
+          "maxVoltageDeltaV": 0.0015776753253660125,
+          "maxTemperatureDeltaK": 0.000675195139308471
+        }
+      }
+    },
+    {
+      "cell": "02",
+      "split": "development_reference",
+      "dischargeStep": 12,
+      "restStep": 13,
+      "nominalCurrentA": 2.5,
+      "initialSoc": 1,
+      "ambientK": 299.9129,
+      "initialTemperatureK": 299.9989,
+      "maxCurrentDeviationA": 0.0006499999999998174,
+      "chamberRangeC": [
+        26.5305,
+        27.1281
+      ],
+      "dataSha256": "650e7f9ac5217b4db158047e50b6b464100b13f4859002421114edebca629b35",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 284,
+            "scoredSamples": 284,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 284,
+              "mae": 0.09961359296492202,
+              "rmse": 0.1291843215954797,
+              "bias": 0.09961359296492202,
+              "maxAbs": 0.38676774158270755
+            },
+            "temperatureK": {
+              "count": 284,
+              "mae": 0.9303968249434346,
+              "rmse": 1.3332429361158993,
+              "bias": -0.5278871993874269,
+              "maxAbs": 3.4023625356934417
+            }
+          },
+          "rest": {
+            "totalSamples": 261,
+            "scoredSamples": 261,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 0.9999999999999999,
+            "voltageV": {
+              "count": 261,
+              "mae": 0.10909412818540931,
+              "rmse": 0.12290149807621979,
+              "bias": 0.10909412818540931,
+              "maxAbs": 0.3946706606672068
+            },
+            "temperatureK": {
+              "count": 261,
+              "mae": 0.9930042544780018,
+              "rmse": 1.5076438165199986,
+              "bias": -0.9930042544780018,
+              "maxAbs": 3.632244332006053
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 7090.57002,
+          "measuredDischargeEndS": 7090.57002,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 284,
+            "scoredSamples": 284,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 284,
+              "mae": 0.09877162829647129,
+              "rmse": 0.1285745415907903,
+              "bias": 0.0987418853801967,
+              "maxAbs": 0.38559823546532757
+            },
+            "temperatureK": {
+              "count": 284,
+              "mae": 0.927995407093277,
+              "rmse": 1.326049588981002,
+              "bias": -0.5144306572483626,
+              "maxAbs": 3.3863287322773203
+            }
+          },
+          "rest": {
+            "totalSamples": 261,
+            "scoredSamples": 261,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 0.9999999999999999,
+            "voltageV": {
+              "count": 261,
+              "mae": 0.10937192246279659,
+              "rmse": 0.12333969221397187,
+              "bias": 0.10937192246279659,
+              "maxAbs": 0.39382631807975343
+            },
+            "temperatureK": {
+              "count": 261,
+              "mae": 0.9901355342437925,
+              "rmse": 1.50216732082422,
+              "bias": -0.9901355342437925,
+              "maxAbs": 3.6176755562030394
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 7090.57002,
+          "measuredDischargeEndS": 7090.57002,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 284,
+          "maxVoltageDeltaV": 0.009295293327225451,
+          "maxTemperatureDeltaK": 0.016046860589597145
+        },
+        "rest": {
+          "commonSamples": 261,
+          "maxVoltageDeltaV": 0.006055698529814357,
+          "maxTemperatureDeltaK": 0.016033712393152655
+        }
+      }
+    },
+    {
+      "cell": "02",
+      "split": "development_reference",
+      "dischargeStep": 17,
+      "restStep": 18,
+      "nominalCurrentA": 5.0,
+      "initialSoc": 1,
+      "ambientK": 299.82989999999995,
+      "initialTemperatureK": 299.9989,
+      "maxCurrentDeviationA": 0.003890000000000171,
+      "chamberRangeC": [
+        26.6633,
+        27.6095
+      ],
+      "dataSha256": "650e7f9ac5217b4db158047e50b6b464100b13f4859002421114edebca629b35",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 176,
+            "scoredSamples": 176,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 176,
+              "mae": 0.09293271480646981,
+              "rmse": 0.10057801755871451,
+              "bias": 0.09293271480646981,
+              "maxAbs": 0.20462121240243647
+            },
+            "temperatureK": {
+              "count": 176,
+              "mae": 1.6391170274046551,
+              "rmse": 1.9337510724107008,
+              "bias": -0.9411882588653117,
+              "maxAbs": 3.5421750114065844
+            }
+          },
+          "rest": {
+            "totalSamples": 256,
+            "scoredSamples": 256,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 256,
+              "mae": 0.08980560657055259,
+              "rmse": 0.09353270874853484,
+              "bias": 0.08980560657055259,
+              "maxAbs": 0.17971873204422817
+            },
+            "temperatureK": {
+              "count": 256,
+              "mae": 1.2625060019850722,
+              "rmse": 1.8083137794413533,
+              "bias": -1.2625060019850722,
+              "maxAbs": 4.253477372051407
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 3549.40002,
+          "measuredDischargeEndS": 3549.40002,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 176,
+            "scoredSamples": 176,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 176,
+              "mae": 0.0909982804576074,
+              "rmse": 0.09903277314306858,
+              "bias": 0.0909982804576074,
+              "maxAbs": 0.20197008822089835
+            },
+            "temperatureK": {
+              "count": 176,
+              "mae": 1.6228778315394181,
+              "rmse": 1.9126019293913126,
+              "bias": -0.9107642447604021,
+              "maxAbs": 3.5044107174374517
+            }
+          },
+          "rest": {
+            "totalSamples": 256,
+            "scoredSamples": 256,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 256,
+              "mae": 0.09038286978531734,
+              "rmse": 0.09432418952454456,
+              "bias": 0.09038286978531734,
+              "maxAbs": 0.17767035057437752
+            },
+            "temperatureK": {
+              "count": 256,
+              "mae": 1.2564093251936028,
+              "rmse": 1.7969722595004927,
+              "bias": -1.2564093251936028,
+              "maxAbs": 4.218552525954237
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 3549.40002,
+          "measuredDischargeEndS": 3549.40002,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 176,
+          "maxVoltageDeltaV": 0.015327837540312306,
+          "maxTemperatureDeltaK": 0.038163160055262324
+        },
+        "rest": {
+          "commonSamples": 256,
+          "maxVoltageDeltaV": 0.014747226853232043,
+          "maxTemperatureDeltaK": 0.037764756462991045
+        }
+      }
+    },
+    {
+      "cell": "02",
+      "split": "development_reference",
+      "dischargeStep": 22,
+      "restStep": 23,
+      "nominalCurrentA": 7.5,
+      "initialSoc": 1,
+      "ambientK": 300.0789,
+      "initialTemperatureK": 299.9822,
+      "maxCurrentDeviationA": 0.0025599999999998957,
+      "chamberRangeC": [
+        13.166,
+        28.2402
+      ],
+      "dataSha256": "650e7f9ac5217b4db158047e50b6b464100b13f4859002421114edebca629b35",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 146,
+            "scoredSamples": 146,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 146,
+              "mae": 0.06763533961883952,
+              "rmse": 0.0714758284983771,
+              "bias": 0.06763533961883952,
+              "maxAbs": 0.10441795062625259
+            },
+            "temperatureK": {
+              "count": 146,
+              "mae": 1.0965940583439397,
+              "rmse": 1.2375264840536198,
+              "bias": 0.004719700270990406,
+              "maxAbs": 2.2271410484595435
+            }
+          },
+          "rest": {
+            "totalSamples": 254,
+            "scoredSamples": 254,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 254,
+              "mae": 0.07741761784540635,
+              "rmse": 0.0802124463909323,
+              "bias": 0.07352907691559821,
+              "maxAbs": 0.12386993283950076
+            },
+            "temperatureK": {
+              "count": 254,
+              "mae": 3.153964203722252,
+              "rmse": 5.5113399407062635,
+              "bias": 1.0465608454796218,
+              "maxAbs": 13.670821468877193
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 2362.87998,
+          "measuredDischargeEndS": 2362.87998,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 146,
+            "scoredSamples": 146,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 146,
+              "mae": 0.06483910990111287,
+              "rmse": 0.06886727196861966,
+              "bias": 0.06483910990111287,
+              "maxAbs": 0.1037312196163418
+            },
+            "temperatureK": {
+              "count": 146,
+              "mae": 1.0917893892276336,
+              "rmse": 1.2355002270630664,
+              "bias": 0.017820541759668726,
+              "maxAbs": 2.236304090456599
+            }
+          },
+          "rest": {
+            "totalSamples": 254,
+            "scoredSamples": 254,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 254,
+              "mae": 0.07795518830186324,
+              "rmse": 0.08075759995187988,
+              "bias": 0.07438990275624592,
+              "maxAbs": 0.12706855825837726
+            },
+            "temperatureK": {
+              "count": 254,
+              "mae": 3.1518369751445054,
+              "rmse": 5.51041868041267,
+              "bias": 1.048690059655226,
+              "maxAbs": 13.670832680379874
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 2362.87998,
+          "measuredDischargeEndS": 2362.87998,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 146,
+          "maxVoltageDeltaV": 0.01838970936606321,
+          "maxTemperatureDeltaK": 0.02082843517496258
+        },
+        "rest": {
+          "commonSamples": 254,
+          "maxVoltageDeltaV": 0.0237360421372097,
+          "maxTemperatureDeltaK": 0.016189814132701486
+        }
+      }
+    },
+    {
+      "cell": "03",
+      "split": "retrospective_evaluation_not_blinded",
+      "dischargeStep": 7,
+      "restStep": 8,
+      "nominalCurrentA": 0.5,
+      "initialSoc": 1,
+      "ambientK": 299.87969999999996,
+      "initialTemperatureK": 299.5546,
+      "maxCurrentDeviationA": 0.0008010000000000517,
+      "chamberRangeC": [
+        26.5969,
+        26.8791
+      ],
+      "dataSha256": "fcc13423786d6044f3ec41b1b278fb1d42ff55018666be743243f7c34b1b98cb",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 1214,
+            "scoredSamples": 1214,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 1214,
+              "mae": 0.06868131190673861,
+              "rmse": 0.08730030306787136,
+              "bias": 0.06868131190673861,
+              "maxAbs": 0.4123389554766992
+            },
+            "temperatureK": {
+              "count": 1214,
+              "mae": 0.42348120156349683,
+              "rmse": 0.4714583787601739,
+              "bias": 0.32334241208571124,
+              "maxAbs": 0.9688604403488625
+            }
+          },
+          "rest": {
+            "totalSamples": 255,
+            "scoredSamples": 255,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 255,
+              "mae": 0.1345712049610337,
+              "rmse": 0.15325391068453215,
+              "bias": 0.1345712049610337,
+              "maxAbs": 0.4221512846493285
+            },
+            "temperatureK": {
+              "count": 255,
+              "mae": 0.2768384611121327,
+              "rmse": 0.3548869344555063,
+              "bias": 0.0034002151931190384,
+              "maxAbs": 1.040328646045623
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 36014.4,
+          "measuredDischargeEndS": 36014.4,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 1214,
+            "scoredSamples": 1214,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 1214,
+              "mae": 0.06853206981068992,
+              "rmse": 0.08718052146986689,
+              "bias": 0.06853206981068992,
+              "maxAbs": 0.4120623706797861
+            },
+            "temperatureK": {
+              "count": 1214,
+              "mae": 0.423928503624348,
+              "rmse": 0.4718953045739577,
+              "bias": 0.32398855408792826,
+              "maxAbs": 0.9681854205197737
+            }
+          },
+          "rest": {
+            "totalSamples": 255,
+            "scoredSamples": 255,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 255,
+              "mae": 0.13462482886061394,
+              "rmse": 0.153363497121585,
+              "bias": 0.13462482886061394,
+              "maxAbs": 0.42193930297886695
+            },
+            "temperatureK": {
+              "count": 255,
+              "mae": 0.27675152531175995,
+              "rmse": 0.3547141797802738,
+              "bias": 0.003498198021644634,
+              "maxAbs": 1.0403284760516271
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 36014.4,
+          "measuredDischargeEndS": 36014.4,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 1214,
+          "maxVoltageDeltaV": 0.0020660410270076923,
+          "maxTemperatureDeltaK": 0.0008216555503963718
+        },
+        "rest": {
+          "commonSamples": 255,
+          "maxVoltageDeltaV": 0.001534771783539668,
+          "maxTemperatureDeltaK": 0.0006755809771448185
+        }
+      }
+    },
+    {
+      "cell": "03",
+      "split": "retrospective_evaluation_not_blinded",
+      "dischargeStep": 12,
+      "restStep": 13,
+      "nominalCurrentA": 2.5,
+      "initialSoc": 1,
+      "ambientK": 299.9129,
+      "initialTemperatureK": 299.5546,
+      "maxCurrentDeviationA": 0.004160000000000164,
+      "chamberRangeC": [
+        26.5305,
+        27.1281
+      ],
+      "dataSha256": "fcc13423786d6044f3ec41b1b278fb1d42ff55018666be743243f7c34b1b98cb",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 284,
+            "scoredSamples": 284,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 284,
+              "mae": 0.0966037375124229,
+              "rmse": 0.12741499178278656,
+              "bias": 0.09658718009919148,
+              "maxAbs": 0.3869200150120986
+            },
+            "temperatureK": {
+              "count": 284,
+              "mae": 0.9559705317899407,
+              "rmse": 1.070574250608405,
+              "bias": 0.32402968237539376,
+              "maxAbs": 2.210641206925061
+            }
+          },
+          "rest": {
+            "totalSamples": 263,
+            "scoredSamples": 263,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 263,
+              "mae": 0.1017990319639413,
+              "rmse": 0.1168616193249472,
+              "bias": 0.1017990319639413,
+              "maxAbs": 0.39961299683424345
+            },
+            "temperatureK": {
+              "count": 263,
+              "mae": 0.6315058043746148,
+              "rmse": 0.9428526460243735,
+              "bias": -0.28671570064128027,
+              "maxAbs": 2.483671114649894
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 7090.33998,
+          "measuredDischargeEndS": 7090.33998,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 284,
+            "scoredSamples": 284,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 284,
+              "mae": 0.09592211903206482,
+              "rmse": 0.1268211093095036,
+              "bias": 0.09571652443573707,
+              "maxAbs": 0.3857512109816499
+            },
+            "temperatureK": {
+              "count": 284,
+              "mae": 0.9605255960042116,
+              "rmse": 1.0733008187546764,
+              "bias": 0.33747924679552216,
+              "maxAbs": 2.1946084580661136
+            }
+          },
+          "rest": {
+            "totalSamples": 263,
+            "scoredSamples": 263,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 263,
+              "mae": 0.10208284661607957,
+              "rmse": 0.11729873608929255,
+              "bias": 0.10208284661607957,
+              "maxAbs": 0.3987693317518164
+            },
+            "temperatureK": {
+              "count": 263,
+              "mae": 0.6287448630711621,
+              "rmse": 0.9372957300200411,
+              "bias": -0.28378903111423237,
+              "maxAbs": 2.4686334174841704
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 7090.33998,
+          "measuredDischargeEndS": 7090.33998,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 284,
+          "maxVoltageDeltaV": 0.009318436299413868,
+          "maxTemperatureDeltaK": 0.01604639993360024
+        },
+        "rest": {
+          "commonSamples": 263,
+          "maxVoltageDeltaV": 0.006129128555634189,
+          "maxTemperatureDeltaK": 0.016033607235726777
+        }
+      }
+    },
+    {
+      "cell": "03",
+      "split": "retrospective_evaluation_not_blinded",
+      "dischargeStep": 17,
+      "restStep": 18,
+      "nominalCurrentA": 5.0,
+      "initialSoc": 1,
+      "ambientK": 299.8465,
+      "initialTemperatureK": 299.488,
+      "maxCurrentDeviationA": 0.0040399999999998215,
+      "chamberRangeC": [
+        26.6633,
+        27.6095
+      ],
+      "dataSha256": "fcc13423786d6044f3ec41b1b278fb1d42ff55018666be743243f7c34b1b98cb",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 176,
+            "scoredSamples": 176,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 176,
+              "mae": 0.08527917928171086,
+              "rmse": 0.0932831352576127,
+              "bias": 0.08527917928171086,
+              "maxAbs": 0.19359659328420697
+            },
+            "temperatureK": {
+              "count": 176,
+              "mae": 1.1832582021329368,
+              "rmse": 1.3826591895736715,
+              "bias": 0.41628267110881206,
+              "maxAbs": 2.3951421350890882
+            }
+          },
+          "rest": {
+            "totalSamples": 257,
+            "scoredSamples": 257,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 257,
+              "mae": 0.081608520594316,
+              "rmse": 0.08528506646557633,
+              "bias": 0.081608520594316,
+              "maxAbs": 0.17910138654315455
+            },
+            "temperatureK": {
+              "count": 257,
+              "mae": 0.6262659472985241,
+              "rmse": 0.906468127986399,
+              "bias": -0.31096901842396646,
+              "maxAbs": 2.4256250265001995
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 3552.97998,
+          "measuredDischargeEndS": 3552.97998,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 176,
+            "scoredSamples": 176,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 176,
+              "mae": 0.08333994787380906,
+              "rmse": 0.09178832672730272,
+              "bias": 0.08333994787380906,
+              "maxAbs": 0.19087936665767735
+            },
+            "temperatureK": {
+              "count": 176,
+              "mae": 1.18459925179098,
+              "rmse": 1.3874810600255338,
+              "bias": 0.44669949083652777,
+              "maxAbs": 2.42395377234169
+            }
+          },
+          "rest": {
+            "totalSamples": 257,
+            "scoredSamples": 257,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 257,
+              "mae": 0.08219687229642629,
+              "rmse": 0.0860743360849733,
+              "bias": 0.08219687229642629,
+              "maxAbs": 0.17698967730553505
+            },
+            "temperatureK": {
+              "count": 257,
+              "mae": 0.62033431469101,
+              "rmse": 0.8947291087321004,
+              "bias": -0.3047870104680445,
+              "maxAbs": 2.3931291656535336
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 3552.97998,
+          "measuredDischargeEndS": 3552.97998,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 176,
+          "maxVoltageDeltaV": 0.015310513460015773,
+          "maxTemperatureDeltaK": 0.038160987916285194
+        },
+        "rest": {
+          "commonSamples": 257,
+          "maxVoltageDeltaV": 0.014817160501795268,
+          "maxTemperatureDeltaK": 0.03779742707041578
+        }
+      }
+    },
+    {
+      "cell": "03",
+      "split": "retrospective_evaluation_not_blinded",
+      "dischargeStep": 22,
+      "restStep": 23,
+      "nominalCurrentA": 7.5,
+      "initialSoc": 1,
+      "ambientK": 299.97929999999997,
+      "initialTemperatureK": 299.50469999999996,
+      "maxCurrentDeviationA": 0.003169999999999895,
+      "chamberRangeC": [
+        13.1491,
+        28.2402
+      ],
+      "dataSha256": "fcc13423786d6044f3ec41b1b278fb1d42ff55018666be743243f7c34b1b98cb",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 148,
+            "scoredSamples": 146,
+            "sampleCoverage": 0.9864864864864865,
+            "timeCoverage": 0.9997791809325359,
+            "voltageV": {
+              "count": 146,
+              "mae": 0.05466280789728509,
+              "rmse": 0.06017427403090412,
+              "bias": 0.05405270457792218,
+              "maxAbs": 0.0931916549945564
+            },
+            "temperatureK": {
+              "count": 146,
+              "mae": 1.7486050303634355,
+              "rmse": 1.9462474122581561,
+              "bias": 1.7486050303634355,
+              "maxAbs": 3.394503522367131
+            }
+          },
+          "rest": null,
+          "termination": "event: Minimum voltage [V]",
+          "modelDischargeEndS": 2366.787272808985,
+          "measuredDischargeEndS": 2367.31002,
+          "endTimeDifferenceS": -0.522747191014787,
+          "restStatus": "blocked_model_cutoff_before_measured_switch"
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 148,
+            "scoredSamples": 146,
+            "sampleCoverage": 0.9864864864864865,
+            "timeCoverage": 0.9994671727215184,
+            "voltageV": {
+              "count": 146,
+              "mae": 0.05244207729875947,
+              "rmse": 0.05773741735461384,
+              "bias": 0.05124176460259869,
+              "maxAbs": 0.09254998077655374
+            },
+            "temperatureK": {
+              "count": 146,
+              "mae": 1.7616775243263827,
+              "rmse": 1.9582916808703108,
+              "bias": 1.7616775243263827,
+              "maxAbs": 3.4057005124171837
+            }
+          },
+          "rest": null,
+          "termination": "event: Minimum voltage [V]",
+          "modelDischargeEndS": 2366.048652644721,
+          "measuredDischargeEndS": 2367.31002,
+          "endTimeDifferenceS": -1.2613673552787077,
+          "restStatus": "blocked_model_cutoff_before_measured_switch"
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 146,
+          "maxVoltageDeltaV": 0.018722626559823485,
+          "maxTemperatureDeltaK": 0.020793082667523777
+        },
+        "rest": null
+      }
+    },
+    {
+      "cell": "04",
+      "split": "retrospective_evaluation_not_blinded",
+      "dischargeStep": 7,
+      "restStep": 8,
+      "nominalCurrentA": 0.5,
+      "initialSoc": 1,
+      "ambientK": 299.8631,
+      "initialTemperatureK": 299.5872,
+      "maxCurrentDeviationA": 0.0008010000000000517,
+      "chamberRangeC": [
+        26.5969,
+        26.8791
+      ],
+      "dataSha256": "e1cbb60e79911824d5559f12db8e8ecdd4781d077a45f5b1ecbcf103aa271d9e",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 1212,
+            "scoredSamples": 1212,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 1212,
+              "mae": 0.06994462378626215,
+              "rmse": 0.08960948181493456,
+              "bias": 0.06994462378626215,
+              "maxAbs": 0.42867022445090575
+            },
+            "temperatureK": {
+              "count": 1212,
+              "mae": 0.43730149439158855,
+              "rmse": 0.5074377098308103,
+              "bias": 0.23023757234455627,
+              "maxAbs": 1.4607744236536178
+            }
+          },
+          "rest": {
+            "totalSamples": 254,
+            "scoredSamples": 254,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 254,
+              "mae": 0.15544856499773207,
+              "rmse": 0.17118766811126235,
+              "bias": 0.15544856499773207,
+              "maxAbs": 0.4385137460028763
+            },
+            "temperatureK": {
+              "count": 254,
+              "mae": 0.3736941134441823,
+              "rmse": 0.5395038834314234,
+              "bias": -0.13516923343845955,
+              "maxAbs": 1.5039958487938634
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 35953.11,
+          "measuredDischargeEndS": 35953.11,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 1212,
+            "scoredSamples": 1212,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 1212,
+              "mae": 0.0697956774203997,
+              "rmse": 0.08949142131729067,
+              "bias": 0.0697956774203997,
+              "maxAbs": 0.42840319587733156
+            },
+            "temperatureK": {
+              "count": 1212,
+              "mae": 0.4375756869352877,
+              "rmse": 0.5077203975783167,
+              "bias": 0.2308836814768264,
+              "maxAbs": 1.4600996190603155
+            }
+          },
+          "rest": {
+            "totalSamples": 254,
+            "scoredSamples": 254,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 254,
+              "mae": 0.15550043408465858,
+              "rmse": 0.1712883689359084,
+              "bias": 0.15550043408465858,
+              "maxAbs": 0.438311088161905
+            },
+            "temperatureK": {
+              "count": 254,
+              "mae": 0.3736025378951853,
+              "rmse": 0.5393121264518309,
+              "bias": -0.13507318290367548,
+              "maxAbs": 1.5033486755552303
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 35953.11,
+          "measuredDischargeEndS": 35953.11,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 1212,
+          "maxVoltageDeltaV": 0.0020660472804676644,
+          "maxTemperatureDeltaK": 0.0008215946527343476
+        },
+        "rest": {
+          "commonSamples": 254,
+          "maxVoltageDeltaV": 0.0015370634357991797,
+          "maxTemperatureDeltaK": 0.0006747960271695774
+        }
+      }
+    },
+    {
+      "cell": "04",
+      "split": "retrospective_evaluation_not_blinded",
+      "dischargeStep": 12,
+      "restStep": 13,
+      "nominalCurrentA": 2.5,
+      "initialSoc": 1,
+      "ambientK": 299.92949999999996,
+      "initialTemperatureK": 299.5705,
+      "maxCurrentDeviationA": 0.0012599999999998168,
+      "chamberRangeC": [
+        26.5139,
+        27.1447
+      ],
+      "dataSha256": "e1cbb60e79911824d5559f12db8e8ecdd4781d077a45f5b1ecbcf103aa271d9e",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 284,
+            "scoredSamples": 284,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 284,
+              "mae": 0.09544859961107693,
+              "rmse": 0.12516882467644191,
+              "bias": 0.09543731590877388,
+              "maxAbs": 0.3802773426478647
+            },
+            "temperatureK": {
+              "count": 284,
+              "mae": 1.1601235910477932,
+              "rmse": 1.6543486977019548,
+              "bias": -0.7336568798010459,
+              "maxAbs": 4.147834957312682
+            }
+          },
+          "rest": {
+            "totalSamples": 261,
+            "scoredSamples": 261,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 261,
+              "mae": 0.11526055772937598,
+              "rmse": 0.1278324973593446,
+              "bias": 0.11526055772937598,
+              "maxAbs": 0.3932047456802299
+            },
+            "temperatureK": {
+              "count": 261,
+              "mae": 1.1511759721664094,
+              "rmse": 1.8139272898381522,
+              "bias": -0.9327120652946806,
+              "maxAbs": 4.5236938189744365
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 7096.35,
+          "measuredDischargeEndS": 7096.35,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 284,
+            "scoredSamples": 284,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 284,
+              "mae": 0.09475836342701908,
+              "rmse": 0.12456645873209148,
+              "bias": 0.09456408817281393,
+              "maxAbs": 0.3790899366272642
+            },
+            "temperatureK": {
+              "count": 284,
+              "mae": 1.1545358859575408,
+              "rmse": 1.6464856282347475,
+              "bias": -0.7202029699885546,
+              "maxAbs": 4.131797725491026
+            }
+          },
+          "rest": {
+            "totalSamples": 261,
+            "scoredSamples": 261,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 261,
+              "mae": 0.115539884829073,
+              "rmse": 0.12827085331738244,
+              "bias": 0.115539884829073,
+              "maxAbs": 0.39234312330552035
+            },
+            "temperatureK": {
+              "count": 261,
+              "mae": 1.1483550756377754,
+              "rmse": 1.808440016261412,
+              "bias": -0.9298651725944171,
+              "maxAbs": 4.508602228039479
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 7096.35,
+          "measuredDischargeEndS": 7096.35,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 284,
+          "maxVoltageDeltaV": 0.009304237272778515,
+          "maxTemperatureDeltaK": 0.016046555321224787
+        },
+        "rest": {
+          "commonSamples": 261,
+          "maxVoltageDeltaV": 0.0060818537038489495,
+          "maxTemperatureDeltaK": 0.016037805286885032
+        }
+      }
+    },
+    {
+      "cell": "04",
+      "split": "retrospective_evaluation_not_blinded",
+      "dischargeStep": 17,
+      "restStep": 18,
+      "nominalCurrentA": 5.0,
+      "initialSoc": 1,
+      "ambientK": 299.81329999999997,
+      "initialTemperatureK": 299.5705,
+      "maxCurrentDeviationA": 0.0017500000000003624,
+      "chamberRangeC": [
+        26.6467,
+        27.6261
+      ],
+      "dataSha256": "e1cbb60e79911824d5559f12db8e8ecdd4781d077a45f5b1ecbcf103aa271d9e",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 177,
+            "scoredSamples": 177,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 177,
+              "mae": 0.08496518697296629,
+              "rmse": 0.09356278095929894,
+              "bias": 0.08496518697296629,
+              "maxAbs": 0.2013509858053979
+            },
+            "temperatureK": {
+              "count": 177,
+              "mae": 2.6281071433186662,
+              "rmse": 3.1819548032009237,
+              "bias": -2.1143742660134706,
+              "maxAbs": 5.552400117273351
+            }
+          },
+          "rest": {
+            "totalSamples": 256,
+            "scoredSamples": 256,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 256,
+              "mae": 0.09799333333907426,
+              "rmse": 0.10142560479022408,
+              "bias": 0.09799333333907426,
+              "maxAbs": 0.18661255937995325
+            },
+            "temperatureK": {
+              "count": 256,
+              "mae": 1.6776762806970253,
+              "rmse": 2.6153244368441095,
+              "bias": -1.5664575605640458,
+              "maxAbs": 6.2049443582827735
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 3550.45998,
+          "measuredDischargeEndS": 3550.45998,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 177,
+            "scoredSamples": 177,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 177,
+              "mae": 0.08302292569777744,
+              "rmse": 0.0920566735043167,
+              "bias": 0.08302292569777744,
+              "maxAbs": 0.19868048011441264
+            },
+            "temperatureK": {
+              "count": 177,
+              "mae": 2.6076582299690556,
+              "rmse": 3.155637599164614,
+              "bias": -2.0839061287462575,
+              "maxAbs": 5.514623400149503
+            }
+          },
+          "rest": {
+            "totalSamples": 256,
+            "scoredSamples": 256,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 256,
+              "mae": 0.09858100287654009,
+              "rmse": 0.10222209283574483,
+              "bias": 0.09858100287654009,
+              "maxAbs": 0.18454561929891256
+            },
+            "temperatureK": {
+              "count": 256,
+              "mae": 1.6716366825978715,
+              "rmse": 2.603662613779539,
+              "bias": -1.5604041080768511,
+              "maxAbs": 6.169971865496564
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 3550.45998,
+          "measuredDischargeEndS": 3550.45998,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 177,
+          "maxVoltageDeltaV": 0.015277085238983634,
+          "maxTemperatureDeltaK": 0.038159462340615846
+        },
+        "rest": {
+          "commonSamples": 256,
+          "maxVoltageDeltaV": 0.014821635925152954,
+          "maxTemperatureDeltaK": 0.03777638936162475
+        }
+      }
+    },
+    {
+      "cell": "04",
+      "split": "retrospective_evaluation_not_blinded",
+      "dischargeStep": 22,
+      "restStep": 23,
+      "nominalCurrentA": 7.5,
+      "initialSoc": 1,
+      "ambientK": 299.9129,
+      "initialTemperatureK": 299.5872,
+      "maxCurrentDeviationA": 0.000880000000000436,
+      "chamberRangeC": [
+        13.166,
+        28.2569
+      ],
+      "dataSha256": "e1cbb60e79911824d5559f12db8e8ecdd4781d077a45f5b1ecbcf103aa271d9e",
+      "runs": [
+        {
+          "meshPoints": 8,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 148,
+            "scoredSamples": 148,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 148,
+              "mae": 0.05500708681785638,
+              "rmse": 0.05906208104169591,
+              "bias": 0.05500708681785638,
+              "maxAbs": 0.09078855174016587
+            },
+            "temperatureK": {
+              "count": 148,
+              "mae": 2.6407966575884543,
+              "rmse": 3.086158739930016,
+              "bias": -2.0225994993535004,
+              "maxAbs": 5.05177270168997
+            }
+          },
+          "rest": {
+            "totalSamples": 254,
+            "scoredSamples": 254,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 254,
+              "mae": 0.08425625500629262,
+              "rmse": 0.08714470910094319,
+              "bias": 0.08119906537075386,
+              "maxAbs": 0.13223039025880245
+            },
+            "temperatureK": {
+              "count": 254,
+              "mae": 3.1107545536748544,
+              "rmse": 5.0090385775812525,
+              "bias": -0.552560598183547,
+              "maxAbs": 13.99402349011558
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 2363.07,
+          "measuredDischargeEndS": 2363.07,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        },
+        {
+          "meshPoints": 16,
+          "solverStatus": "completed",
+          "discharge": {
+            "totalSamples": 148,
+            "scoredSamples": 148,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 148,
+              "mae": 0.05219302567443359,
+              "rmse": 0.056500044909084154,
+              "bias": 0.05219302567443359,
+              "maxAbs": 0.09010269856508879
+            },
+            "temperatureK": {
+              "count": 148,
+              "mae": 2.632638360596132,
+              "rmse": 3.0753362540503013,
+              "bias": -2.009476735991867,
+              "maxAbs": 5.035612535177734
+            }
+          },
+          "rest": {
+            "totalSamples": 254,
+            "scoredSamples": 254,
+            "sampleCoverage": 1.0,
+            "timeCoverage": 1.0,
+            "voltageV": {
+              "count": 254,
+              "mae": 0.08489366160150852,
+              "rmse": 0.08775474909425472,
+              "bias": 0.0820773235619058,
+              "maxAbs": 0.13557191850867945
+            },
+            "temperatureK": {
+              "count": 254,
+              "mae": 3.108595801238582,
+              "rmse": 5.006850453691102,
+              "bias": -0.5503882598511269,
+              "maxAbs": 13.99403204910061
+            }
+          },
+          "termination": "final time",
+          "modelDischargeEndS": 2363.07,
+          "measuredDischargeEndS": 2363.07,
+          "endTimeDifferenceS": 0.0,
+          "restStatus": "scored",
+          "capacityBoundaryJumpAh": 0.0,
+          "temperatureBoundaryJumpK": 0.0
+        }
+      ],
+      "meshSensitivity": {
+        "discharge": {
+          "commonSamples": 148,
+          "maxVoltageDeltaV": 0.01838115939581053,
+          "maxTemperatureDeltaK": 0.020793876165043912
+        },
+        "rest": {
+          "commonSamples": 254,
+          "maxVoltageDeltaV": 0.024211826077054965,
+          "maxTemperatureDeltaK": 0.016210817305818637
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "No parameter fitting or post-hoc physical acceptance threshold. All selected cells/currents retained.",
+    "Retrospective published data comparison, not prospective independent project calibration.",
+    "Lumped temperature is not a calibrated surface-sensor observable. Constant ambient/current and ideal full initial SOC are assumptions.",
+    "First partial discharge with unknown initial SOC excluded by specification before execution. Full CC/CV and preceding history not reproduced.",
+    "Early model cutoff scores only supported measurement prefix and blocks rest; no extrapolation or threshold relaxation.",
+    "Fixed 10-second solver output grid is interpolated at irregular measurement timestamps within support; interpolation error is not separately calibrated.",
+    "Mesh sensitivity is not a general convergence-order proof, safety, life or runaway qualification."
+  ],
+  "derivedTraceArtifact": {
+    "path": ".cache/chen-measured-traces.json",
+    "sha256": "32528f24b571edad1c5a5e74c7241c68a0a9ab1eab4502b2dc5a8fc2d24ef585",
+    "persisted": false,
+    "note": "Reproducible with this runner; trace cache is intentionally not versioned."
+  },
+  "fileSha256": {
+    "services/pvlib_research/chen_measured_benchmark.py": "fb4e65984f7330245e7a11f9aa06b61d42fe9b8b63cc026cdded7c38877a606f",
+    "scripts/run_chen_measured_benchmark.py": "b23c5a2041122bc672ce302fa1f4c2b1c0fae2c7b2533405e979af7e75879974",
+    "docs/features/CHEN-MEASURED-BENCHMARK-SPEC.fa.md": "f2fe01af9f0a672946827f7fd62a68caed6c602a2e8e9376c9e3e2f6425ceba2",
+    "docs/reference-data/chen-validation/manifest.json": "d0fd1ce8fd40fcf6cd13981755bf04af9d2cbbcc8bfd8735cb2152aadcd0611a",
+    "docs/reference-data/pybamm/Chen2020.txt": "7c360a546a76492585e147231caee2f8f4fe29222b893cb12091dc4d158f62f0"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "status": "research_protocol_not_signed_preregistration",
+  "scope": "offline reference package; not a production gate and not field calibration",
+  "runtime": "pvlib==0.13.1; existing thermal-research venv",
+  "tracks": {
+    "W": {
+      "name": "multi-location typical-weather QC and illustrative model sensitivity",
+      "files": ["12839.tm2", "703165TY.csv", "723170TYA.CSV", "NLD_Amsterdam062400_IWEC.epw"],
+      "truth": "no measured PV output; weather-source/regression only",
+      "calendar": "explicit synthetic non-leap 2001 local standard time, source month/day/hour, no DST; hourly irradiance evaluated at interval midpoint",
+      "parameters": {"pdc_stc_W": 1000, "inverter_dc_limit_W": 1000, "gamma_per_C": -0.004, "surface_azimuth_degrees": 180, "surface_tilt": "absolute site latitude", "albedo": 0.2, "faiman_u0": 25, "faiman_u1": 6.84, "wind_to_reference_height": "not converted; illustrative Faiman scenario only, not calibration", "aoi": "not separately modeled", "spectral": "not modeled", "other_losses": "not modeled", "snow": "not modeled", "soil": "not modeled"},
+      "outputs": ["source QC and metadata", "scenario AC energy for Faiman and SAPM open_rack_glass_polymer", "paired thermal model sensitivity, not accuracy ranking"],
+      "prohibited_claims": ["measured annual yield validation", "four independently verified Koppen classes", "bankable yield", "site calibration"]
+    },
+    "L": {
+      "name": "repackaged NREL/Sandia/CFV laboratory matrix cross-technology holdout",
+      "sourceCommit": "7618782d59335f91305b93f1be21a47a7569df0b",
+      "inputPattern": "data/nrel_mpert/modules/*.txt",
+      "truth": "upstream repackaged laboratory p_mp measurements; not original XLSX verified and not field timeseries",
+      "split": "hold out ALL 600 and 800 W/m2 matrix points at all temperatures; fit remaining irradiance levels; require a 25 C, 1000 W/m2 training point and positive finite data",
+      "models": ["PVWatts-form two-parameter least-squares fitted on training only", "ADR five-parameter pvlib fit on identical training only"],
+      "normalization": "training STC measured Pmp, never held-out peak or full-dataset quantile",
+      "metrics": ["train RMSE W", "holdout RMSE W", "holdout MAE W", "holdout signed bias W", "holdout RMSE divided by training STC power"],
+      "prohibited_claims": ["seasonal field holdout", "untouched original mPERT time series", "cross-site independent module identities", "ADR always more accurate", "accepted production parameters"]
+    },
+    "F": {
+      "name": "multi-climate measured field validation",
+      "datasets": ["NREL mPERT Cocoa/Eugene/Golden DOI 10.21948/1811521", "DTU bifacial v3 DOI 10.11583/DTU.13580759.v3", "SUPSI IEA Task 13", "Sandia SLTE temperature DOI 10.21948/2204673"],
+      "status": "not_executed_original_field_binaries_unavailable",
+      "split": "group by physical module and campaign; cross-climate leave-one-site-out; seasonal chronological blocks within site; purge interval at least longest model history; freeze final test before fitting",
+      "metrics": ["paired common-mask MAE/RMSE/bias in physical units", "capacity-normalized error", "coverage/missingness by site season and QC reason", "energy bias only for intervals with defensible integration and coverage", "paired day/block bootstrap confidence intervals with block-length sensitivity"],
+      "exclusions": "no zero fill, no interpolation across missing I-V observations to claim annual truth, no time-series random split, no shared physical module across train/test claimed independent"
+    }
+  },
+  "thresholdPolicy": "integrity and structural assertions may PASS; empirical model accuracy is reported, not assigned invented universal acceptance limits",
+  "userImpact": "missing research data limits only its benchmark or model claim; baseline powerplant/ongrid/offgrid calculations remain independent"
+}

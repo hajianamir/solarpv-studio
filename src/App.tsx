@@ -1,3 +1,9 @@
+import {createOperationalProjectBundle,unpackOperationalProject} from './studies/operationalProjectTransfer';
+import {parseStudyJson} from './studies/strictStudyJson';
+import {loadOperationalStudy,saveOperationalStudy,operationalCityInputs} from './studies/operationalStudy';
+import {activeOperationalEnergy,operationalFinanceInputs,type OperationalEnergy,type OperationalContext} from './studies/operationalEnergy';
+import {stable as operationalStable} from './studies/studyComparisonGate';
+import {weatherSha256 as operationalHash} from './studies/declaredWeatherAdapter';
 import { evaluateAnnualReferenceLosses, combineEnvironmentalLossPct } from './engine/reference/annualReferenceLosses';
 import React, { useState, useMemo, useEffect, useRef, useReducer, useCallback } from 'react';
 import {
@@ -117,9 +123,9 @@ import {
 
 // Components - Core Suite
 import { LoadProfilingTab } from './components/LoadProfilingTab';
-import { ClimateTab } from './components/ClimateTab';
+const ClimateTab = React.lazy(() => import('./components/ClimateTab').then(m => ({default:m.ClimateTab})));
 import { PvArrayEngineeringTab } from './components/PvArrayEngineeringTab';
-import { FinancialTab } from './components/FinancialTab';
+const FinancialTab = React.lazy(() => import('./components/FinancialTab').then(m => ({default:m.FinancialTab})));
 import { SingleLineDiagram } from './components/SingleLineDiagram';
 import { CatalogTab } from './components/CatalogTab';
 
@@ -137,6 +143,7 @@ const IvCurveTracerTab = React.lazy(() => import('./components/IvCurveTracerTab'
 const RFC3ReportsTab = React.lazy(() => import('./components/RFC3ReportsTab'));
 const ScenarioComparisonTab = React.lazy(() => import('./components/ScenarioComparisonTab').then((m) => ({ default: m.ScenarioComparisonTab })));
 const Simulation24hTab = React.lazy(() => import('./components/Simulation24hTab').then((m) => ({ default: m.Simulation24hTab })));
+const OperationalReportModal=React.lazy(()=>import('./components/OperationalReportModal').then(m=>({default:m.OperationalReportModal})));
 const OfficialReportModal = React.lazy(() => import('./components/OfficialReportModal').then((m) => ({ default: m.OfficialReportModal })));
 const WaterfallLossTab = React.lazy(() => import('./components/WaterfallLossTab').then((m) => ({ default: m.WaterfallLossTab })));
 import { migrateProjectToV3 } from './engine/core/projectMigration';
@@ -188,8 +195,14 @@ export const App: React.FC = () => {
 
   // Navigation & System Mode State
   const [activeTab, setActiveTab] = useState<ActiveModuleTab>('climate');
+  const [operationalStudyId,setOperationalStudyId]=useState<string|null>(null);
+  const [operationalRestoreError,setOperationalRestoreError]=useState('');
+  const [operationalEnergy,setOperationalEnergy]=useState<OperationalEnergy|null>(null);
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showOperationalReport,setShowOperationalReport]=useState(false);
+  const operationalReportBlockedRef=useRef(false);
+  const requestOfficialReport=useCallback(()=>{if(operationalReportBlockedRef.current)setShowOperationalReport(true);else setShowReportModal(true);},[]);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try {
@@ -545,6 +558,7 @@ export const App: React.FC = () => {
     userPricing,
     trackerConfig,
     metadata: reportMetadata,
+    operationalStudyId: operationalEnergy?.studyId??operationalStudyId,
     pendingImportedEmbedmentDepthM,
   });
 
@@ -595,7 +609,8 @@ export const App: React.FC = () => {
         if (!isEditor && !hasOpenDialog) setIsHelpModalOpen(true);
         return;
       }
-      if (e.key === 'Escape' && (isHelpModalOpen || isCommandPaletteOpen || isProjectJsonModalOpen)) {
+      if (e.key === 'Escape' && (showOperationalReport || isHelpModalOpen || isCommandPaletteOpen || isProjectJsonModalOpen)) {
+        setShowOperationalReport(false);
         setIsCommandPaletteOpen(false);
         setIsProjectJsonModalOpen(false);
         setIsHelpModalOpen(false);
@@ -614,11 +629,12 @@ export const App: React.FC = () => {
         handleSaveProjectRef.current();
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') {
         e.preventDefault();
-        setShowReportModal(true);
+        requestOfficialReport();
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
         setIsSidebarCollapsed((prev) => !prev);
       } else if (e.key === 'Escape') {
+        setShowOperationalReport(false);
         setIsCommandPaletteOpen(false);
         setIsProjectJsonModalOpen(false);
         setIsHelpModalOpen(false);
@@ -626,7 +642,7 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showReportModal, isHelpModalOpen, isCommandPaletteOpen, isProjectJsonModalOpen]);
+  }, [showReportModal, showOperationalReport, isHelpModalOpen, isCommandPaletteOpen, isProjectJsonModalOpen,requestOfficialReport]);
 
   // Local saves are not auto-applied at startup: restoring one replaces the
   // current in-memory project, so ask first and use the same migration path as
@@ -650,7 +666,8 @@ export const App: React.FC = () => {
   };
 
   // Export project with full transfer envelope and custom equipment snapshots (OFF-01)
-  const handleExportProjectJson = () => {
+  const handleExportProjectJson = async () => {
+    try{
     const projectData = buildProjectInputSnapshot();
     const envelope = createProjectTransferEnvelope({
       projectName,
@@ -659,7 +676,10 @@ export const App: React.FC = () => {
       activeModule: selectedModule,
       activeInverter: selectedInverter,
     });
-    const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
+    const id=projectData.operationalStudyId;
+    const portable=id?createOperationalProjectBundle(envelope,(await loadOperationalStudy(id)).document):envelope;
+    const blob = new Blob([JSON.stringify(portable)], { type: 'application/json' });
+    if(blob.size>76*1024*1024)throw new Error('Portable project exceeds 76 MiB');
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -669,16 +689,18 @@ export const App: React.FC = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     setIsProjectJsonModalOpen(false);
+    }catch(error){setSaveToast(`Export failed; no incomplete archive exported: ${String(error)}`);}
   };
 
   // Import project JSON via file input
   const handleJsonFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if(file.size>76*1024*1024){alert('Maximum project archive 76 MiB');return;}
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const json = JSON.parse(event.target?.result as string);
+        const json = parseStudyJson(event.target?.result as string,76*1024*1024);
         const applied = await handleImportProject(json);
         if (applied) setIsProjectJsonModalOpen(false);
       } catch (err) {
@@ -1188,7 +1210,26 @@ export const App: React.FC = () => {
     annualThermalProfile,
   ]);
 
-  const annualYieldKwh = waterfallReport.netAnnualEnergyExportMwh * 1000.0;
+  const operationalContext:OperationalContext|null=arrayDesign.totalPvCapacityKwp>0&&inverterClustering.totalInverterCapacityKw>0?{
+    latitude:city.latitude,longitude:city.longitude,dcCapacityKwp:arrayDesign.totalPvCapacityKwp,inverterCapacityKw:inverterClustering.totalInverterCapacityKw,mode:systemMode,...(systemMode!=='powerplant'?{batteryCapacityKwh:batterySizing.grossCapacityKwh}:{}),
+    configurationSha256:operationalHash(operationalStable(JSON.parse(JSON.stringify({city:operationalCityInputs(city),selectedModule,selectedInverter,trackerConfig,siteOverrides,arrayDesign:{totalPvCapacityKwp:arrayDesign.totalPvCapacityKwp,totalModulesCount:arrayDesign.totalModulesCount,modulesPerString:arrayDesign.modulesPerString,parallelStringsCount:arrayDesign.parallelStringsCount,stringsPerMpptAllocation:arrayDesign.stringsPerMpptAllocation},inverterCapacityKw:inverterClustering.totalInverterCapacityKw,systemMode,operatingDependencies:systemMode==='powerplant'?undefined:{selectedChemistry,autonomyDays,outageHours,enableDieselGenerator,loads:loads.map(l=>({id:l.id,ratedWatts:l.ratedWatts,quantity:l.quantity,dayHours:l.dayHours,nightHours:l.nightHours,isDc:l.isDc})),batteryCapacityKwh:batterySizing.grossCapacityKwh}})))),
+  }:null;
+  const adoptedEnergy=activeOperationalEnergy(operationalEnergy,operationalContext);
+  operationalReportBlockedRef.current=!!adoptedEnergy;
+  const adoptedSourceKey=adoptedEnergy?`${adoptedEnergy.sourceSha256}/${adoptedEnergy.studyId??''}/${adoptedEnergy.context.configurationSha256}`:'';
+  useEffect(()=>{if(adoptedSourceKey)setShowReportModal(false);setShowOperationalReport(false);},[adoptedSourceKey]);
+  const operationalContextKey=operationalStable(operationalContext);
+  useEffect(()=>{setOperationalEnergy(null);},[operationalContextKey]);
+  useEffect(()=>{
+    let cancelled=false;setOperationalRestoreError('');
+    const restoredContext=JSON.parse(operationalContextKey) as OperationalContext|null;
+    if(operationalStudyId&&restoredContext)void loadOperationalStudy(operationalStudyId,restoredContext).then(r=>{if(!cancelled)setOperationalEnergy(r.receipt);}).catch(e=>{if(!cancelled)setOperationalRestoreError(String(e));});
+    return()=>{cancelled=true;};
+  },[operationalStudyId,operationalContextKey,projectImportRevision]);
+  const changeOperationalEnergy=(r:OperationalEnergy|null)=>{setOperationalEnergy(r);setOperationalStudyId(r?.studyId??null);setOperationalRestoreError('');};
+  const annualYieldKwh = (adoptedEnergy?.financeEnergyKwh??adoptedEnergy?.exportKwh) ?? waterfallReport.netAnnualEnergyExportMwh * 1000.0;
+
+  const annualPvGenerationKwh=adoptedEnergy?.dispatch?.pvKwh??adoptedEnergy?.exportKwh??waterfallReport.netAnnualEnergyExportMwh*1000;
 
   // Unified thermal derate for display (PR-2a-7-P0, P0-3) — same value used
   // inside pvEngineAdvanced and waterfallLossEngine.
@@ -1211,6 +1252,7 @@ export const App: React.FC = () => {
       annualYieldKwh,
       {
         ...userPricing,
+        ...(adoptedEnergy?operationalFinanceInputs(adoptedEnergy).pricing:{annualGridImportKwh:0}),
         includeDieselGenSet: userPricing.includeDieselGenSet !== undefined
           ? userPricing.includeDieselGenSet
           : enableDieselGenerator,
@@ -1224,7 +1266,7 @@ export const App: React.FC = () => {
       25,
       systemMode
     );
-  }, [arrayDesign, batterySizing, inverterClustering, annualYieldKwh, userPricing, enableDieselGenerator, generatorSizing, systemMode]);
+  }, [arrayDesign, batterySizing, inverterClustering, annualYieldKwh, adoptedEnergy, userPricing, enableDieselGenerator, generatorSizing, systemMode]);
 
   // 11. Scenario Analysis (only for Battery modes)
   const scenarios = useMemo(() => {
@@ -1242,7 +1284,8 @@ export const App: React.FC = () => {
   // and project state. BLOCKED or canceled imports do not mutate either store.
   const handleImportProject = async (importedData: unknown): Promise<boolean> => {
     try {
-      const restored = restoreProjectTransferEnvelope(importedData);
+      const unpacked=unpackOperationalProject(importedData);
+      const restored = restoreProjectTransferEnvelope(unpacked.project);
       const migrationResult = restored.migrationResult;
       if (!restored.success || restored.migrationStatus === 'BLOCKED_INCONSISTENT') {
         const reasons = migrationResult.blockerReasons.join('\n') || migrationResult.warnings.join('\n');
@@ -1263,6 +1306,7 @@ export const App: React.FC = () => {
         }
       }
 
+      if(unpacked.study)await saveOperationalStudy(unpacked.study);
       const equipmentCommit = await commitRestoredCustomEquipmentWithCrossTabLock(restored);
       if (!equipmentCommit.success) {
         setSaveToast(lang === 'fa'
@@ -1300,6 +1344,8 @@ export const App: React.FC = () => {
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
       if (clean.outageHours !== undefined) setOutageHours(clean.outageHours);
       setTrackerConfig(clean.trackerConfig !== undefined ? clean.trackerConfig : null);
+      setOperationalEnergy(null);
+      setOperationalStudyId(clean.operationalStudyId??null);
       setReportMetadata(restored.metadata);
       setProjectImportRevision((revision) => revision + 1);
 
@@ -2000,7 +2046,7 @@ export const App: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    setShowReportModal(true);
+                    requestOfficialReport();
                     setIsCommandPaletteOpen(false);
                   }}
                   className="px-2 py-1 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 flex items-center gap-1 font-bold"
@@ -2251,7 +2297,7 @@ export const App: React.FC = () => {
 
           {/* Golden Generate EPC Official Report Button */}
           <button
-            onClick={() => setShowReportModal(true)}
+            onClick={() => requestOfficialReport()}
             className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition"
             title={lang === 'fa' ? 'صدور گزارش رسمی مهندسی EPC (Ctrl+E)' : 'Generate Official EPC Report (Ctrl+E)'}
           >
@@ -2288,12 +2334,12 @@ export const App: React.FC = () => {
           </div>
 
           <div className="studio-hud-pill">
-            <span className="text-slate-400">{lang === 'en' ? 'Annual P50:' : 'تولید سالانه:'}</span>
-            <strong className="text-emerald-400">{(annualYieldKwh / 1000).toFixed(1)} MWh</strong>
+            <span className="text-slate-400">{lang === 'en' ? 'Modeled annual PV:' : 'تولید مدل‌شدهٔ سالانه PV:'}</span>
+            <strong className="text-emerald-400">{(annualPvGenerationKwh / 1000).toFixed(1)} MWh</strong>
           </div>
 
           <div className="studio-hud-pill hidden md:inline-flex">
-            <span className="text-slate-400">PR:</span>
+            <span className="text-slate-400">PR (screening):</span>
             <strong className="text-purple-400">{((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1)}%</strong>
           </div>
 
@@ -2433,7 +2479,7 @@ export const App: React.FC = () => {
                   <span>{t.saveProject}</span>
                 </button>
                 <button
-                  onClick={() => setShowReportModal(true)}
+                  onClick={() => requestOfficialReport()}
                   className="w-full py-1.5 px-2 studio-btn-primary flex items-center justify-center gap-1.5 text-[11px] font-bold rounded"
                 >
                   <FileText className="w-3.5 h-3.5 text-amber-300" />
@@ -2450,7 +2496,7 @@ export const App: React.FC = () => {
                   <Save className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setShowReportModal(true)}
+                  onClick={() => requestOfficialReport()}
                   className="p-2 rounded bg-sky-600 text-theme-strong"
                   title={t.generateReport}
                 >
@@ -2465,6 +2511,11 @@ export const App: React.FC = () => {
         <div className={`flex-1 flex flex-col ${marginOffsetClass} min-h-screen transition-all duration-200`}>
           {/* Main Operational Workspace Content */}
           <main className="p-4 sm:p-6 flex-1 w-full max-w-7xl mx-auto space-y-5">
+            <div data-testid="active-energy-source" className="border rounded p-3 text-sm" dir="auto">
+              {adoptedEnergy?`Operational engineering scenario — ${adoptedEnergy.year}: ${adoptedEnergy.exportKwh.toFixed(3)} kWh export; ${adoptedEnergy.importKwh.toFixed(3)} kWh import. Source ${adoptedEnergy.sourceSha256}. not_field_validated. Finance uses the mode-specific valued energy (export / PV self-consumption / served load); gross PV generation is separate. Waterfall and representative-day plots remain screening references, no double loss. Report actions open the source-aware operational dossier; screening curves and PR are excluded.`:'Energy / finance source: screening waterfall estimate (not field validated)'}
+              {operationalRestoreError&&<p role="alert">{operationalRestoreError} — Screening only; operational source was not restored.</p>}
+              {adoptedEnergy&&<button onClick={()=>changeOperationalEnergy(null)}>Return to screening</button>}
+            </div>
             {/* WORKFLOW PHASE STEPPER & BREADCRUMB */}
             <div className="p-3 bg-industrial-surface border border-[#1E293B] rounded-lg flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 sm:gap-3 truncate">
@@ -2848,6 +2899,7 @@ export const App: React.FC = () => {
             {/* SITE & CLIMATE MAP TAB */}
             {activeTab === 'climate' && (
             <ClimateTab
+              operationalContext={operationalContext} operationalEnergy={adoptedEnergy} onOperationalEnergyChange={changeOperationalEnergy}
               referenceContext={{hasTracker:Boolean(trackerConfig),tiltDeg:city.optimalTiltAnnualDeg,installationEnvironment:siteOverrides.installationEnvironment??'ground_mount'}}
               selectedCity={city}
               onCityChange={transitionSite}
@@ -2893,7 +2945,7 @@ export const App: React.FC = () => {
               city={city}
               systemMode={systemMode}
               targetPowerplantCapacityKw={targetPowerplantCapacityKw}
-              annualYieldMwh={waterfallReport.netAnnualEnergyExportMwh}
+              annualYieldMwh={annualPvGenerationKwh/1000}
               trackerConfig={trackerConfig}
               onTrackerConfigChange={setTrackerConfig}
               cityLatitude={city.latitude}
@@ -3244,8 +3296,9 @@ export const App: React.FC = () => {
       </div>
       </div>
 
+      {showOperationalReport&&adoptedEnergy&&<React.Suspense fallback={null}><OperationalReportModal receipt={adoptedEnergy} financial={financialResult} projectName={projectName} projectInputSnapshot={buildProjectInputSnapshot()} engineeringSnapshot={{city,siteOverrides,acRequirements,cableFeederInputs,mvVoltageKv,trackerConfig,pendingImportedEmbedmentDepthM,loads,loadAnalysis,module:selectedModule,inverter:selectedInverter,inverterClustering,arrayDesign,batterySizing,protection:protectionSystem,structural:effectiveStructuralSnapshot??null,bayArchitecture,generatorSizing,shading:{applied:appliedShadingRecord,isStale:isShadingStale,qualification:"Independent screening assessment; not reapplied to adopted energy"},reportMetadata,simulationQualification:"Representative screening day only; NOT the adopted annual dispatch"}} onClose={()=>setShowOperationalReport(false)}/></React.Suspense>}
       {/* OFFICIAL EPC REPORT MODAL */}
-      {showReportModal && (
+      {showReportModal && !adoptedEnergy && (
         <React.Suspense fallback={null}>
           <OfficialReportModal
             projectName={projectName}

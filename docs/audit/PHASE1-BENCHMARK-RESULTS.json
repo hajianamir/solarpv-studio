@@ -1,0 +1,1288 @@
+{
+  "schemaVersion": 1,
+  "scope": "reference research W/L only; NOT product/annual field validation",
+  "pvlibVersion": "0.13.1",
+  "runtime": {
+    "python": "3.11.2",
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "scipy": "1.15.3"
+  },
+  "runnerSha256": "62a0408d716893353fe39c458027c5a5b73935b7d3ece8d5752fba4727b1a0a9",
+  "manifestSha256": "93c4c65bdd96eb5f092e25b293e86c9ac3ca392f6361de11a49e49353f24132b",
+  "protocolSha256": "8ed27408da706938a249751317171ac5f5706976a00540e284da487fff3a035e",
+  "verifiedFiles": 43,
+  "weather": [
+    {
+      "file": "12839.tm2",
+      "city": "MIAMI",
+      "latitude": 25.8,
+      "longitude": -80.26666666666667,
+      "timezoneOffsetHours": -5.0,
+      "rows": 8760,
+      "calendar": "synthetic typical year 2001; NOT measured chronology",
+      "timestampContract": "TMY2 raw hour 1..24: preceding hour, midpoint hour-0.5; raw radiation Wh/m2 over 1 h -> numerical W/m2 mean",
+      "qc": {
+        "missing": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0,
+          "temp_air": 0,
+          "wind_speed": 0
+        },
+        "negativeIrradiance": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0
+        },
+        "invalidRange": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0,
+          "temp_air": 0,
+          "wind_speed": 0
+        },
+        "nativeIndexMonotonic": true,
+        "nativeDuplicateTimestamps": 0,
+        "canonicalIndexUnique": true,
+        "canonicalHourly": true,
+        "canonicalFirstTimestamp": "2001-01-01T00:30:00-05:00",
+        "canonicalLastTimestamp": "2001-12-31T23:30:00-05:00"
+      },
+      "temperatureRange_C": [
+        3.3,
+        33.9
+      ],
+      "windRange_ms": [
+        0.0,
+        13.9
+      ],
+      "ghi_kWh_m2": 1792.618,
+      "modelScenarioStatus": "run",
+      "measuredPVTruth": false,
+      "irradianceClosureDiagnostic": {
+        "n": 3971,
+        "rmse_W_m2": 8.91812220174924,
+        "bias_W_m2": -1.4736831854248034,
+        "status": "diagnostic_only_not_acceptance",
+        "caveat": "hourly averages versus midpoint solar geometry; closure alone cannot rule out correlated sensor faults"
+      },
+      "illustrativeAC_kWh_per_1kWdc": {
+        "faiman": 1697.2715860986582,
+        "sapm_open_rack_glass_polymer": 1674.201110113145
+      },
+      "thermalChoiceSensitivity_percent": -1.3592683795846106,
+      "notFieldValidated": true
+    },
+    {
+      "file": "703165TY.csv",
+      "city": "\"SAND POINT\"",
+      "latitude": 55.317,
+      "longitude": -160.517,
+      "timezoneOffsetHours": -9.0,
+      "rows": 8760,
+      "calendar": "synthetic typical year 2001; NOT measured chronology",
+      "timestampContract": "TMY3 raw hour 1..24: preceding hour, midpoint hour-0.5; radiation Wh/m2 over 1 h -> numerical W/m2 mean",
+      "qc": {
+        "missing": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0,
+          "temp_air": 0,
+          "wind_speed": 0
+        },
+        "negativeIrradiance": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0
+        },
+        "invalidRange": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0,
+          "temp_air": 0,
+          "wind_speed": 0
+        },
+        "nativeIndexMonotonic": false,
+        "nativeDuplicateTimestamps": 0,
+        "canonicalIndexUnique": true,
+        "canonicalHourly": true,
+        "canonicalFirstTimestamp": "2001-01-01T00:30:00-09:00",
+        "canonicalLastTimestamp": "2001-12-31T23:30:00-09:00"
+      },
+      "temperatureRange_C": [
+        -10.6,
+        19.4
+      ],
+      "windRange_ms": [
+        0.0,
+        23.7
+      ],
+      "ghi_kWh_m2": 829.243,
+      "modelScenarioStatus": "run",
+      "measuredPVTruth": false,
+      "irradianceClosureDiagnostic": {
+        "n": 3405,
+        "rmse_W_m2": 0.6660434029970902,
+        "bias_W_m2": 0.060913141089768974,
+        "status": "diagnostic_only_not_acceptance",
+        "caveat": "hourly averages versus midpoint solar geometry; closure alone cannot rule out correlated sensor faults"
+      },
+      "illustrativeAC_kWh_per_1kWdc": {
+        "faiman": 939.9399152107206,
+        "sapm_open_rack_glass_polymer": 932.5968714718135
+      },
+      "thermalChoiceSensitivity_percent": -0.7812248017216028,
+      "notFieldValidated": true
+    },
+    {
+      "file": "723170TYA.CSV",
+      "city": "\"GREENSBORO PIEDMONT TRIAD INT\"",
+      "latitude": 36.1,
+      "longitude": -79.95,
+      "timezoneOffsetHours": -5.0,
+      "rows": 8760,
+      "calendar": "synthetic typical year 2001; NOT measured chronology",
+      "timestampContract": "TMY3 raw hour 1..24: preceding hour, midpoint hour-0.5; radiation Wh/m2 over 1 h -> numerical W/m2 mean",
+      "qc": {
+        "missing": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0,
+          "temp_air": 0,
+          "wind_speed": 0
+        },
+        "negativeIrradiance": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0
+        },
+        "invalidRange": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0,
+          "temp_air": 0,
+          "wind_speed": 0
+        },
+        "nativeIndexMonotonic": false,
+        "nativeDuplicateTimestamps": 0,
+        "canonicalIndexUnique": true,
+        "canonicalHourly": true,
+        "canonicalFirstTimestamp": "2001-01-01T00:30:00-05:00",
+        "canonicalLastTimestamp": "2001-12-31T23:30:00-05:00"
+      },
+      "temperatureRange_C": [
+        -16.7,
+        35.6
+      ],
+      "windRange_ms": [
+        0.0,
+        15.4
+      ],
+      "ghi_kWh_m2": 1566.203,
+      "modelScenarioStatus": "run",
+      "measuredPVTruth": false,
+      "irradianceClosureDiagnostic": {
+        "n": 3912,
+        "rmse_W_m2": 1.3948836763715702,
+        "bias_W_m2": 0.3125630367800881,
+        "status": "diagnostic_only_not_acceptance",
+        "caveat": "hourly averages versus midpoint solar geometry; closure alone cannot rule out correlated sensor faults"
+      },
+      "illustrativeAC_kWh_per_1kWdc": {
+        "faiman": 1576.0068387859142,
+        "sapm_open_rack_glass_polymer": 1561.7538780822647
+      },
+      "thermalChoiceSensitivity_percent": -0.9043717547970398,
+      "notFieldValidated": true
+    },
+    {
+      "file": "NLD_Amsterdam062400_IWEC.epw",
+      "city": "AMSTERDAM",
+      "latitude": 52.3,
+      "longitude": 4.77,
+      "timezoneOffsetHours": 1.0,
+      "rows": 8760,
+      "calendar": "synthetic typical year 2001; NOT measured chronology",
+      "timestampContract": "EPW raw hour 1..24: preceding hour, midpoint hour-0.5; raw radiation Wh/m2 over 1 h -> numerical W/m2 mean",
+      "qc": {
+        "missing": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0,
+          "temp_air": 0,
+          "wind_speed": 0
+        },
+        "negativeIrradiance": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0
+        },
+        "invalidRange": {
+          "ghi": 0,
+          "dni": 0,
+          "dhi": 0,
+          "temp_air": 0,
+          "wind_speed": 0
+        },
+        "nativeIndexMonotonic": false,
+        "nativeDuplicateTimestamps": 0,
+        "canonicalIndexUnique": true,
+        "canonicalHourly": true,
+        "canonicalFirstTimestamp": "2001-01-01T00:30:00+01:00",
+        "canonicalLastTimestamp": "2001-12-31T23:30:00+01:00"
+      },
+      "temperatureRange_C": [
+        -8.4,
+        32.7
+      ],
+      "windRange_ms": [
+        0.0,
+        22.1
+      ],
+      "ghi_kWh_m2": 982.481,
+      "modelScenarioStatus": "run",
+      "measuredPVTruth": false,
+      "irradianceClosureDiagnostic": {
+        "n": 3379,
+        "rmse_W_m2": 1.4339690472537647,
+        "bias_W_m2": 0.13017803327890676,
+        "status": "diagnostic_only_not_acceptance",
+        "caveat": "hourly averages versus midpoint solar geometry; closure alone cannot rule out correlated sensor faults"
+      },
+      "illustrativeAC_kWh_per_1kWdc": {
+        "faiman": 989.0397521027536,
+        "sapm_open_rack_glass_polymer": 979.9197652931231
+      },
+      "thermalChoiceSensitivity_percent": -0.9221051823489312,
+      "notFieldValidated": true
+    }
+  ],
+  "laboratory": [
+    {
+      "module": "CIGS1-001",
+      "technology": "Copper indium gallium selenide",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 73.66,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 1.1391120494075477,
+            "mae_W": 0.9523565220563052,
+            "bias_W": 0.5919015312683361,
+            "nrmse_stc": 0.015464458992771487,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.39255118260497673,
+            "mae_W": 0.3460863639029578,
+            "bias_W": 0.22431113282641016,
+            "nrmse_stc": 0.005329231368517197,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.22730535413699413,
+            "mae_W": 0.1716177036103428,
+            "bias_W": 0.0016497756694369887,
+            "nrmse_stc": 0.003085872307045807,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.22639665036637455,
+            "mae_W": 0.19347124703235372,
+            "bias_W": 0.18836347757432984,
+            "nrmse_stc": 0.0030735358453214032,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "CIGS39013",
+      "technology": "Copper indium gallium selenide",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 127.71,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 5.149948553584579,
+            "mae_W": 4.332429510082348,
+            "bias_W": 2.6491806374120714,
+            "nrmse_stc": 0.04032533516235674,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 1.1978614826381977,
+            "mae_W": 0.9683860099143887,
+            "bias_W": -0.4220354027341043,
+            "nrmse_stc": 0.009379543361038273,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 1.1883099606701795,
+            "mae_W": 0.9511167899487271,
+            "bias_W": -0.0012556064317552629,
+            "nrmse_stc": 0.009304752647953798,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 1.8233163012912876,
+            "mae_W": 1.7578060037433343,
+            "bias_W": 1.7578060037433343,
+            "nrmse_stc": 0.014277004943162539,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "CIGS39017",
+      "technology": "Copper indium gallium selenide",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 140.55,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 5.841869854168748,
+            "mae_W": 4.526771247917536,
+            "bias_W": 2.7340509732868097,
+            "nrmse_stc": 0.04156435328472962,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 2.382646391245119,
+            "mae_W": 2.176664121904262,
+            "bias_W": -2.176664121904262,
+            "nrmse_stc": 0.016952304455674982,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 2.2605870739632814,
+            "mae_W": 1.9116548803720048,
+            "bias_W": 0.1953560436434504,
+            "nrmse_stc": 0.016083863920051806,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 2.5022301744417796,
+            "mae_W": 2.2240640618819207,
+            "bias_W": 2.2240640618819207,
+            "nrmse_stc": 0.017803131799656917,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "CIGS8-001",
+      "technology": "Copper indium gallium selenide",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 70.06,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 1.7058430913396072,
+            "mae_W": 1.4117299124941072,
+            "bias_W": 0.8637722624294767,
+            "nrmse_stc": 0.024348317033108868,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.8286192641366193,
+            "mae_W": 0.7122877946895466,
+            "bias_W": 0.6290071355136959,
+            "nrmse_stc": 0.011827280390188686,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.5264773186129194,
+            "mae_W": 0.4306103564222828,
+            "bias_W": 0.00022802972732153629,
+            "nrmse_stc": 0.007514663411546094,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.5763385362117164,
+            "mae_W": 0.5214216490225745,
+            "bias_W": -0.005520183043483229,
+            "nrmse_stc": 0.008226356497455272,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "CdTe75638",
+      "technology": "Cadmium telluride",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 64.28,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.8241236979874818,
+            "mae_W": 0.6621698425301019,
+            "bias_W": 0.41462533463625983,
+            "nrmse_stc": 0.012820841599058521,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.45351693166879137,
+            "mae_W": 0.3751482869386796,
+            "bias_W": -0.2950566464103493,
+            "nrmse_stc": 0.007055334966844918,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.39420500909309336,
+            "mae_W": 0.2885541694857216,
+            "bias_W": -0.00021255344619823072,
+            "nrmse_stc": 0.00613262304127401,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.14379815306747948,
+            "mae_W": 0.1091959193404719,
+            "bias_W": -0.04643154771709609,
+            "nrmse_stc": 0.0022370590085171046,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "CdTe75669",
+      "technology": "Cadmium telluride",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 62.35,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.6568966517030854,
+            "mae_W": 0.49080307307927523,
+            "bias_W": 0.3309913461114227,
+            "nrmse_stc": 0.010535631943914762,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.481285984463532,
+            "mae_W": 0.41527731366160126,
+            "bias_W": -0.39297742286826437,
+            "nrmse_stc": 0.0077191015952451,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.11414691463111956,
+            "mae_W": 0.08185356971203823,
+            "bias_W": 4.819478359071224e-05,
+            "nrmse_stc": 0.0018307444207076111,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.09737440227910754,
+            "mae_W": 0.07629803737087452,
+            "bias_W": 0.07601521949453272,
+            "nrmse_stc": 0.0015617386091276268,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "HIT05662",
+      "technology": "Amorphous silicon/crystalline silicon (HIT)",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 218.48,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.8358187202067019,
+            "mae_W": 0.6678745360050042,
+            "bias_W": 0.4035951681747963,
+            "nrmse_stc": 0.003825607470737376,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.6447040502589735,
+            "mae_W": 0.5079104435108803,
+            "bias_W": -0.32453822742039523,
+            "nrmse_stc": 0.0029508607207020024,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.27996984417501086,
+            "mae_W": 0.23284398937123493,
+            "bias_W": 0.00011949395592806648,
+            "nrmse_stc": 0.0012814438125915914,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.42501065161529344,
+            "mae_W": 0.3511142665918688,
+            "bias_W": -0.3511142665918688,
+            "nrmse_stc": 0.0019453069004727822,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "HIT05667",
+      "technology": "Amorphous silicon/crystalline silicon (HIT)",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 214.48,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.994775223005969,
+            "mae_W": 0.7965804458762976,
+            "bias_W": 0.42345400172366077,
+            "nrmse_stc": 0.004638079182235961,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.7712629549475964,
+            "mae_W": 0.6736510323737477,
+            "bias_W": -0.35971035514703215,
+            "nrmse_stc": 0.0035959667798750304,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.4647138759268862,
+            "mae_W": 0.4128191383526539,
+            "bias_W": 4.09629978103491e-05,
+            "nrmse_stc": 0.0021667002794054746,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.46748710035262253,
+            "mae_W": 0.41118607935353424,
+            "bias_W": 0.14267163129832028,
+            "nrmse_stc": 0.00217963027020059,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "aSiTandem72-46",
+      "technology": "Amorphous silicon tandem junction",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 38.38,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.8356638867107885,
+            "mae_W": 0.7391851925367211,
+            "bias_W": 0.4221341140664403,
+            "nrmse_stc": 0.02177342070637802,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.8099742349168398,
+            "mae_W": 0.7067334921265184,
+            "bias_W": 0.7067334921265184,
+            "nrmse_stc": 0.021104070737801975,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.12069767089426721,
+            "mae_W": 0.09485165679047813,
+            "bias_W": -0.00017044792200545297,
+            "nrmse_stc": 0.003144806432888671,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.10184760223754209,
+            "mae_W": 0.086022625126058,
+            "bias_W": -0.03763985180870103,
+            "nrmse_stc": 0.002653663424636323,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "aSiTandem90-31",
+      "technology": "Amorphous silicon tandem junction",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 40.98,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.8168506723634791,
+            "mae_W": 0.7327990795594514,
+            "bias_W": 0.4120539158803238,
+            "nrmse_stc": 0.01993291050179305,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.7546417907211216,
+            "mae_W": 0.633344733868738,
+            "bias_W": 0.633344733868738,
+            "nrmse_stc": 0.018414880203053235,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.16670822347383574,
+            "mae_W": 0.12841233823717205,
+            "bias_W": -0.00023242080234442408,
+            "nrmse_stc": 0.0040680386401619265,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.11906916521117712,
+            "mae_W": 0.10349393596912293,
+            "bias_W": -0.005191784887000968,
+            "nrmse_stc": 0.002905543318964791,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "aSiTriple28324",
+      "technology": "Amorphous silicon triple junction",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 60.01,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 1.0787787761546461,
+            "mae_W": 0.9894391131672814,
+            "bias_W": 0.5277949294761655,
+            "nrmse_stc": 0.017976650160883956,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.9888718523378923,
+            "mae_W": 0.7515103285845738,
+            "bias_W": 0.7454489469773465,
+            "nrmse_stc": 0.016478451130443134,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.26243605157806915,
+            "mae_W": 0.21029321451838742,
+            "bias_W": -0.0006278953450190213,
+            "nrmse_stc": 0.004373205325413584,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.20220164600689058,
+            "mae_W": 0.17409822034893452,
+            "bias_W": -0.028777140319752686,
+            "nrmse_stc": 0.003369465855805542,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "aSiTriple28325",
+      "technology": "Amorphous silicon triple junction",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 59.28,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 1.087703662487331,
+            "mae_W": 0.9974546332488486,
+            "bias_W": 0.5290570510275592,
+            "nrmse_stc": 0.018348577302417866,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.9503070653648908,
+            "mae_W": 0.7382893089443124,
+            "bias_W": 0.7382893089443124,
+            "nrmse_stc": 0.016030820940703287,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.24942710654393618,
+            "mae_W": 0.20195799252509458,
+            "bias_W": -0.00016177182046857771,
+            "nrmse_stc": 0.004207609759513093,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.21989506608784334,
+            "mae_W": 0.17114032276796878,
+            "bias_W": -0.15042255902242196,
+            "nrmse_stc": 0.003709430939403565,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "mSi0166",
+      "technology": "Multi-crystalline silicon",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 46.24,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.7349215254529373,
+            "mae_W": 0.6140964954502047,
+            "bias_W": 0.385095602480981,
+            "nrmse_stc": 0.015893631605816118,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.49488172751430554,
+            "mae_W": 0.433246302460286,
+            "bias_W": 0.433246302460286,
+            "nrmse_stc": 0.010702459505067161,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.047559029186568645,
+            "mae_W": 0.04060722580924381,
+            "bias_W": 1.266868758076356e-05,
+            "nrmse_stc": 0.0010285257177026091,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.0822811871725963,
+            "mae_W": 0.0732368898998305,
+            "bias_W": 0.07270704464048805,
+            "nrmse_stc": 0.0017794374388537262,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "mSi0188",
+      "technology": "Multi-crystalline silicon",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 45.91,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.6475408597681087,
+            "mae_W": 0.5440899626816635,
+            "bias_W": 0.3417010930602679,
+            "nrmse_stc": 0.01410457111235262,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.41327492862296195,
+            "mae_W": 0.35401395547684206,
+            "bias_W": 0.35401395547684206,
+            "nrmse_stc": 0.009001849893769592,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.036442258584717925,
+            "mae_W": 0.03174627376070346,
+            "bias_W": -1.4914985453732636e-06,
+            "nrmse_stc": 0.0007937760528145922,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.08857596597710708,
+            "mae_W": 0.07720834984289719,
+            "bias_W": 0.06282309453366135,
+            "nrmse_stc": 0.001929339271991006,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "mSi0247",
+      "technology": "Multi-crystalline silicon",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 45.82,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.6972905823839225,
+            "mae_W": 0.5927923968316994,
+            "bias_W": 0.3658430924970204,
+            "nrmse_stc": 0.015218039772673995,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.4961735908797626,
+            "mae_W": 0.4366686515813131,
+            "bias_W": 0.4366686515813131,
+            "nrmse_stc": 0.01082875580270106,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.03709532459537472,
+            "mae_W": 0.032219251307936424,
+            "bias_W": 1.044931259112462e-06,
+            "nrmse_stc": 0.0008095880531509105,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.07952869534053411,
+            "mae_W": 0.07459958390601311,
+            "bias_W": 0.07459958390601311,
+            "nrmse_stc": 0.0017356764587632936,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "mSi0251",
+      "technology": "Multi-crystalline silicon",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 45.66,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.6801354906238416,
+            "mae_W": 0.5905137938844297,
+            "bias_W": 0.3552732438594786,
+            "nrmse_stc": 0.014895652444674588,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.45480376013899554,
+            "mae_W": 0.38657230687797234,
+            "bias_W": 0.38657230687797234,
+            "nrmse_stc": 0.009960660537428724,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.05764490324673531,
+            "mae_W": 0.04034489762852752,
+            "bias_W": 5.313950250570206e-06,
+            "nrmse_stc": 0.001262481455250445,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.08023592806815125,
+            "mae_W": 0.06253782484319655,
+            "bias_W": 0.044495438798723676,
+            "nrmse_stc": 0.0017572476580847843,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "mSi460A8",
+      "technology": "Multi-crystalline silicon",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 81.29,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.8803070047383573,
+            "mae_W": 0.7802642672102289,
+            "bias_W": 0.4448568443928767,
+            "nrmse_stc": 0.010829216444068855,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.4000658370379211,
+            "mae_W": 0.3521742667812582,
+            "bias_W": 0.24805432558708299,
+            "nrmse_stc": 0.004921464350325022,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.1934076742062661,
+            "mae_W": 0.17402480823444297,
+            "bias_W": -0.00012438747342950288,
+            "nrmse_stc": 0.002379230830437521,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.18633033835312232,
+            "mae_W": 0.17677483643913186,
+            "bias_W": -0.022528280519296118,
+            "nrmse_stc": 0.0022921680200900765,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "mSi460BB",
+      "technology": "Multi-crystalline silicon",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 80.84,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.5852863676661776,
+            "mae_W": 0.5034178639773627,
+            "bias_W": 0.2972688210624775,
+            "nrmse_stc": 0.0072400589765732005,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.36527156946756534,
+            "mae_W": 0.3004584607532171,
+            "bias_W": -0.09087926629412853,
+            "nrmse_stc": 0.004518450884061917,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.06265226085275563,
+            "mae_W": 0.05101866660894383,
+            "bias_W": -3.3843356056125393e-06,
+            "nrmse_stc": 0.0007750155968920785,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.11895321380430848,
+            "mae_W": 0.10806190548803347,
+            "bias_W": -0.10806190548803347,
+            "nrmse_stc": 0.0014714647922353845,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "xSi11246",
+      "technology": "Single-crystalline silicon",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 77.12,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.5760604057321297,
+            "mae_W": 0.47510533407640637,
+            "bias_W": -0.11856531811227249,
+            "nrmse_stc": 0.007469662937397947,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.9191676556963867,
+            "mae_W": 0.8737086348876879,
+            "bias_W": -0.8737086348876879,
+            "nrmse_stc": 0.011918667734652317,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.37567733093549865,
+            "mae_W": 0.29961597251610095,
+            "bias_W": 0.000554736612068174,
+            "nrmse_stc": 0.004871334685366943,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.4418847022832488,
+            "mae_W": 0.38433841956437576,
+            "bias_W": 0.3672824208042975,
+            "nrmse_stc": 0.005729832757822209,
+            "n": 6
+          }
+        }
+      }
+    },
+    {
+      "module": "xSi12922",
+      "technology": "Single-crystalline silicon",
+      "rows": 18,
+      "trainRows": 12,
+      "holdoutRows": 6,
+      "trainingStc_W": 82.14,
+      "irradianceRange": [
+        100,
+        1100
+      ],
+      "temperatureRange": [
+        15.0,
+        65.0
+      ],
+      "parametersNotAdopted": true,
+      "models": {
+        "pvwatts_form_fit": {
+          "train": {
+            "rmse_W": 0.35000622214835714,
+            "mae_W": 0.2876188367673114,
+            "bias_W": 0.11502987551022992,
+            "nrmse_stc": 0.004261093525059132,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.5898735205461848,
+            "mae_W": 0.53461365417697,
+            "bias_W": -0.53461365417697,
+            "nrmse_stc": 0.007181318730778973,
+            "n": 6
+          }
+        },
+        "adr_fit": {
+          "train": {
+            "rmse_W": 0.15046988414913923,
+            "mae_W": 0.11949541015937282,
+            "bias_W": 7.356339227948538e-05,
+            "nrmse_stc": 0.0018318710025461314,
+            "n": 12
+          },
+          "holdout": {
+            "rmse_W": 0.19272179757871588,
+            "mae_W": 0.18563680622812365,
+            "bias_W": 0.10317396680213993,
+            "nrmse_stc": 0.002346260014350084,
+            "n": 6
+          }
+        }
+      }
+    }
+  ],
+  "measuredFieldTrack": {
+    "status": "NOT_EXECUTED",
+    "reason": "original multi-climate field binary data unavailable"
+  },
+  "empiricalAccuracyAcceptance": "NOT_ASSIGNED: no invented universal threshold"
+}

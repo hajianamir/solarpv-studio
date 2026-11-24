@@ -1,0 +1,7 @@
+# برنامه پیش از کد مرحله۵۱
+2026-11-03؛ شاخهarena/237e6ea2-solarpv-studio؛ پایه5438fb5؛ تغییرات قدیمی محفوظ.
+موجودی: مسیر پژوهشی۴۸–۵۰ مستقل از StudyResult است؛ controller واقعی، منحنی deratingسازنده و اندازه‌گیری سریع ارائه نشده. مدل انرژی ساعتی دست‌نخورده می‌ماند.
+دامنه: مدل کاهش‌مرتبه صریح و فرضی، نه P&O/incrementalconductance یا firmware واقعی. دو lagمرتبه‌اول برای توان قابل‌ردیابیDCو فرمانAC؛ حرارت lumpedRCاینورتر؛ deratingخطیفرضی؛ RK4زیرثانیه/ثانیه و انتگرال انرژی در همان ODE. ورودی ZOHزیر‌بازه با timestampدارایZ/offset و durationصریح، بدون gap/overlap. گام حداکثر tau/10 وRC/10؛ بودجه محدود؛ توقف درخطا/لغو، بدونfallback. محدودکنندهٔسختمحلیACجداازفرمانlagاست و کنترلPOIشبکه نیست.
+معادلات فرضی: dm/dt=(availableDC-m)/tauMPPT؛dc/dt=(setpointAC-c)/tauControl؛ P=min(eta*min(m,availableDC),c,hardLimit,rating*derate(T)) باکف‌صفر؛ dT/dt=(P*(1/eta-1)-(T-Ta)/R)/C؛dE/dt=P. RCوetaوlagبایدازمنبعکاربرآیند؛ صحتمنبعاحرازنمی‌شود.
+مرجع عددی بررسی‌شده پیش از کد: https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html . oracle مستقل DOP853باtoleranceسخت و پاسخ‌پلهٔتحلیلیمرتبه‌اول وRC؛ این مرجع فیزیکی تجهیزات نیست. مدل فرضی برایفیزیکپروژهتأییدشده نیست.
+تست‌ها: پلهMPPTوفرمان، انرژی، حدودتوان، خاموشی،cooling،thermalderating،همگراییگام،مرجعDOP853،زمانUTCوgap،بودجه/cancel،strictinput،regressionقبلی. خروجی conditional/blockتا فراهم‌شدن اندازه‌گیری سریع مستقل،منابعپارامتر،تأییدمهندس وgateپاسخ واقعی.

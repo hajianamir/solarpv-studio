@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "applied-research-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:25:47.512Z",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "acceptedScope": [
+    "bounded nonlinear PVWatts and real discounted LCOE scenarios",
+    "Gregorian pinned local-calendar bill ensembles"
+  ],
+  "evidenceLevel": "upstream_software_and_calendar_regression_not_field_calibration",
+  "deploymentDefault": "off",
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python -m unittest scripts.test_applied_research -v",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-applied.ts",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/appliedResearch.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:references",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-applied-browser.ts",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/applied_research.py": "627f8c6049928051b07ad4aae28b78a36d4d4f5b654f5b16729ce93ead137cca",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/appliedResearch.ts": "2bde682819471bcbd1f7f96473793e839e57af480417dfba2d843e88ecd81ab8",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_applied_research.py": "ea531218b7f65fa7712a6a2ce7506bdaa922bbf6fc2df0dcc59e033561138173",
+    "scripts/test-applied.ts": "928e4973fdcba71467ea75450507bc7670298d0af2a9cd74d2452fb041fb998a",
+    "scripts/test-applied-browser.ts": "1dfbc5380d18c6de0bdce13af20327d5a38d29b63ef8eeb34415856c9974d4c1",
+    "scripts/verify-applied.ts": "eccee3fce0055429334e64680537347ce908c502e0162f907068bbb0ad096775",
+    "docs/examples/applied/local.json": "845ac87c67006c3bd343386b26d5f410b5ee5adbceda9d52df18deb04ec85b4a",
+    "docs/examples/applied/pv.json": "9f5f86692eefb1564a1a0fd7581d4753d5a6befccdc01c19c19e95c11dabbe95",
+    "docs/features/APPLIED-RESEARCH-SPEC.fa.md": "849f480cede99f6a0ad524961ce6090e4a2de04b6e157f80df005981f9a20ad2",
+    "docs/features/APPLIED-RESEARCH.fa.md": "087d19471cf6e02785a65ba8f9d45693159766a737c920f7c4517be28ab65b81",
+    "docs/reference-data/manifest.json": "7c54caad59a002a2d872db9b31ec2cf4ae03ee3900d709a1ad9dba534b648eb1",
+    "docs/reference-data/tz/tzif-manifest.json": "ca6a2fa9abbe183b05216944e9b847868799df960413d2c9f14026a1319f1fc2",
+    "docs/audit/REFERENCE-MODELS-GATE.json": "d6b45d59566c878828d0b671472f674071c684ce70916438e9245de89a5932d8",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687"
+  }
+}

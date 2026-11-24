@@ -1,0 +1,7 @@
+# مرحله۵۲ — موجودی و برنامه قبل از کد
+2026-11-03؛ شاخهarena/237e6ea2-solarpv-studio،HEADپایه5438fb5. تغییرات قدیمی حفظ می‌شوند.
+موجودی: productionدارایsingleaxisوoffsetهایقدیمی است؛ مسیرجدید مستقل است و قراردادهایقدیمی تغییرنمی‌کنند. survey/actuator/windtelemetry/حرکتواقعی ارائه نشده‌اند.
+مرجع پیش از کد: مستندات pvlib.tracking.singleaxis و calc_axis_tilt/calc_cross_axis_tilt؛ https://pvlib-python.readthedocs.io/en/stable/reference/generated/pvlib.tracking.singleaxis.html . نسخه اجرایی pinnedازrequirementsخوانده می‌شود، نه نسخه جاری سایت. southaxis،thetaمثبت=غرب،axisTiltمثبت=نزولدرجهتaxis؛ crossaxisمثبت southaxis=نزولبهغرب.
+دامنه: زمین صفحه‌ای با slopeTilt/slopeAzimuthصریح(azimuthجهتنزولشیب)،محورموازیصفحه،ردیف‌هایهمسانموازی،GCR=width/pitch. datumوsourceاجباریولی احرازاصالتنمی‌شوند. نهterrain3Dواقعی یا surveyvalidation. pvlibbacktrackingهدفهندسیایده‌آلرا می‌دهد؛ slew/stowممکن استآنرا نقض کنند و ادعایبی‌سایگی نمی‌شود.
+قرارداد offset: physicalTheta=encoderTheta+encoderOffset؛ اعمالیک‌باره. حالت اولیهصریح،هدفخورشیددرابتدایintervalباZOH؛ بادباارتفاعمنبع‌داراعلامی و hysteresisstow؛ شبzenith>=90. سرعتثابتdeg/s،حرکتتاحدرسیدنبههدف؛motorWهنگامحرکت،idleWفقطباقیماندهinterval؛تعدادactuatorصریح. انرژیجدامی‌ماندوخودکارازauxiliaryیاyieldکسرنمی‌شود. logزاویهبعدازintervalاختیاریوصریحبرایمقایسهاست.
+تست پس از کد: oracleبردارمسطحشرق/غرب،فرمولمستقلbacktracking،معکوس‌بودنtilt/offset،شیبصفحه،slew/stow/hysteresis/night،انرژیموتورباواحدزمان،UTC/gap/nonfinite/حدود و cancel/budget؛regressionپژوهشیوتولید. gateعملیاتیهمیشهblockedتابررسیمهندسیوsurvey/telemetry/لاگواقعی.

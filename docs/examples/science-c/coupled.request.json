@@ -1,0 +1,58 @@
+{
+  "operation": "pvt_pem_coupled",
+  "plan": {
+    "schemaVersion": "pvt-pem-coupled-v1",
+    "source": "Synthetic compositional energy/Faraday benchmark, not measured coupled equipment validation",
+    "contextSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "areaM2": 1,
+    "transferEfficiency": 0.95,
+    "hydrogenToleranceKg": 0.001,
+    "collector": {
+      "source": "Synthetic analytical acceptance fixture; not field calibration",
+      "contextSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "schemaVersion": "pvt-pcm-v1",
+      "intervalS": 100,
+      "stepS": 10,
+      "massKgM2": 1,
+      "heatCapacityJkgK": 2000,
+      "latentJkg": 10000,
+      "meltC": 30,
+      "initialC": 30,
+      "initialMeltFraction": 0,
+      "absorptance": 1,
+      "efficiencyRef": 0.2,
+      "gammaPerK": 0,
+      "ambientLossWm2K": 0,
+      "fluidUaWm2K": 0,
+      "temperatureToleranceC": 0.001,
+      "records": [
+        {
+          "timestamp": "2026-01-01T00:00:00Z",
+          "solarWm2": 50,
+          "airC": 30,
+          "inletC": 30,
+          "flowHeatCapacityWm2K": 0
+        }
+      ]
+    },
+    "electrolyzer": {
+      "source": "Synthetic analytical acceptance fixture; not field calibration",
+      "contextSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "schemaVersion": "pem-dispatch-v1",
+      "intervalS": 100,
+      "cells": 1,
+      "reversibleV": 1.5,
+      "activationV": 0,
+      "exchangeCurrentA": 1,
+      "resistanceOhm": 0,
+      "maximumCurrentA": 100,
+      "minimumCurrentA": 0,
+      "rampAPerS": 100,
+      "faradaicEfficiency": 1,
+      "hydrogenHhvJMol": 285840,
+      "auxiliaryW": 0,
+      "startupS": 0,
+      "startupW": 0
+    }
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "operation": "bill_ensemble",
+  "plan": {
+    "source": "Synthetic acceptance fixture only; not measured or licensed inventory",
+    "contextSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "schemaVersion": "bill-ensemble-v1",
+    "unit": "kWh",
+    "timeBasis": "fixed_UTC_no_DST",
+    "months": [
+      {
+        "month": "2024-02",
+        "energyKwh": 290
+      }
+    ],
+    "shapes": [
+      {
+        "id": "flat",
+        "source": "Synthetic flat daily weights, not inferred load",
+        "hourWeights": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "evening",
+        "source": "Synthetic evening daily weights, not inferred load",
+        "hourWeights": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          1
+        ]
+      },
+      {
+        "id": "day",
+        "source": "Synthetic daytime daily weights, not inferred load",
+        "hourWeights": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    ]
+  }
+}

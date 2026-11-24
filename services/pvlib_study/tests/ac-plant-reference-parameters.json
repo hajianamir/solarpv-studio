@@ -1,0 +1,16 @@
+{
+  "transformer": {"ratingVa": 15000, "noLoadLossFraction": 0.002, "loadLossFraction": 0.015},
+  "auxiliaryPowerW": 40,
+  "acAvailability": {
+    "source": "SYNTHETIC numerical test schedule only; not operational records",
+    "quality": "assumed",
+    "records": [
+      {"timestamp":"2017-04-01T17:00:00Z","availableFraction":1},
+      {"timestamp":"2017-04-01T18:00:00Z","availableFraction":0.5},
+      {"timestamp":"2017-04-01T19:00:00Z","availableFraction":0},
+      {"timestamp":"2017-04-01T20:00:00Z","availableFraction":0.8},
+      {"timestamp":"2017-04-01T21:00:00Z","availableFraction":1},
+      {"timestamp":"2017-04-01T22:00:00Z","availableFraction":1}
+    ]
+  }
+}

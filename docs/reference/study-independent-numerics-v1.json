@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "study-independent-numerics-v1",
+  "classification": "analytic/published numerical evidence; not field validation; synthetic inputs",
+  "sources": {
+    "pvwatts": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.inverter.pvwatts.html",
+    "heat": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.temperature.pvsyst_cell.html"
+  },
+  "absoluteTolerance": 1e-9,
+  "heat": [
+    {"poa": 1000, "ambient": 10, "wind": 1, "uc": 29, "uv": 0, "eta": 0.1, "alpha": 0.9, "expectedC": 37.93103448275862},
+    {"poa": 800, "ambient": 20, "wind": 5, "uc": 25, "uv": 3, "eta": 0.2, "alpha": 0.8, "expectedC": 32.8},
+    {"poa": 0, "ambient": -10, "wind": 0, "uc": 25, "uv": 3, "eta": 0.2, "alpha": 0.8, "expectedC": -10}
+  ],
+  "pvwatts": [
+    {"dcW": 0, "dcLimitW": 10000, "etaNom": 0.96, "expectedW": 0},
+    {"dcW": 10000, "dcLimitW": 10000, "etaNom": 0.96, "expectedW": 9600},
+    {"dcW": 20000, "dcLimitW": 10000, "etaNom": 0.96, "expectedW": 9600}
+  ]
+}

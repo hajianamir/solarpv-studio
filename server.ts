@@ -46,6 +46,8 @@ import {
 } from './src/engine/dataGateway/geocodeCache.js';
 import { isRealInternetEnabled } from './src/engine/env/runtimeEnv.js';
 import { createClientRateLimiter } from './src/server/clientRateLimit.js';
+import { createStudyRouter } from './src/server/pvlibStudy.js';
+import { createResearchRouter } from './src/server/researchApi.js';
 
 const app = express();
 const rawPort = Number(process.env.PORT) || Number(process.env.APP_PORT);
@@ -71,7 +73,7 @@ function securityHeadersMiddleware(_req: Request, res: Response, next: (e?: any)
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      isProductionEnv() ? "script-src 'self'" : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.tile.opentopomap.org https://server.arcgisonline.com",
@@ -117,6 +119,9 @@ const BUILT_IN_CATALOG_IDS = new Set<string>([
 // per process; distributed deployments must additionally enforce a shared edge limit.
 app.use('/api/v1/gateway/geocode', createClientRateLimiter({ windowMs: 60_000, maxRequests: 30 }));
 app.use('/api/v1/reports/generate', createClientRateLimiter({ windowMs: 60_000, maxRequests: 20 }));
+// Independent study route: bounded parser/auth before the generic API body parser.
+app.use('/api/v1/research', createResearchRouter({resolveIdentity:resolveRequesterIdentity}));
+app.use('/api/v1/studies', createStudyRouter({resolveIdentity:resolveRequesterIdentity,production:isProductionEnv,configuredAuth:isAuthConfigured}));
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '2mb' }));
 
 // Robust JSON body parse error handler (P3-01 / MAIN-01)

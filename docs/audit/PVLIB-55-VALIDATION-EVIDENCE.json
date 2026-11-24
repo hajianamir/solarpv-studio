@@ -1,0 +1,644 @@
+{
+  "schemaVersion": "phase55-local-validation-evidence-v1",
+  "classification": "local Linux dirty-working-tree; not remote exact-SHA CI or field validation",
+  "rounds": [
+    {
+      "schemaVersion": "local-validation-round-v1",
+      "round": 1,
+      "machineStartedUTC": "2026-11-21T18:12:18.557412+00:00",
+      "head": "5438fb59f4bb5cde05c20818b780464e1fe28752",
+      "sourceSnapshotSha256": "b709d77ce281e1fe4bb5b7bdeb7b6e126003ed79986aafd131aa3611631ba80f",
+      "classification": "dirty-working-tree local Linux; not remote exact-SHA CI",
+      "suites": [
+        {
+          "name": "research-python",
+          "command": [
+            "/home/user/solarpv-studio/.cache/thermal-research/venv/bin/python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "services/pvlib_research/tests",
+            "-v"
+          ],
+          "exitCode": 0,
+          "seconds": 4.196,
+          "log": "research-python.log",
+          "logSha256": "635eae2d25d2f51add97421b1a40bdbc95e086131db5ae1f69791c8c23e504d8"
+        },
+        {
+          "name": "production-python",
+          "command": [
+            "/home/user/solarpv-studio/.cache/thermal-research/venv/bin/python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "services/pvlib_study/tests",
+            "-v"
+          ],
+          "exitCode": 0,
+          "seconds": 51.286,
+          "log": "production-python.log",
+          "logSha256": "3f39998fcb0456fc5eb3f8119d5ade442772e6a3828b7de87122602fa788f3b9"
+        },
+        {
+          "name": "integrated-contract",
+          "command": [
+            "npx",
+            "tsx",
+            "scripts/test-integrated-study.ts"
+          ],
+          "exitCode": 0,
+          "seconds": 5.692,
+          "log": "integrated-contract.log",
+          "logSha256": "b462fd28c34717bdfb33cd387e61ec6e17c2b0126b1e6b1b62ffe643cc24a8f0"
+        },
+        {
+          "name": "study-workflow",
+          "command": [
+            "npm",
+            "run",
+            "test:study:workflow"
+          ],
+          "exitCode": 0,
+          "seconds": 60.796,
+          "log": "study-workflow.log",
+          "logSha256": "ce1226a67ea7b4bc010febd7c0f0989e82ba8f41a291a763be7f23e2bd8138ad"
+        },
+        {
+          "name": "lint",
+          "command": [
+            "npm",
+            "run",
+            "lint"
+          ],
+          "exitCode": 0,
+          "seconds": 30.193,
+          "log": "lint.log",
+          "logSha256": "154a52662327364becf56b8d4990d9847e0d17f8bf658bc03aa13ca40ed25c98"
+        },
+        {
+          "name": "build",
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "exitCode": 0,
+          "seconds": 13.411,
+          "log": "build.log",
+          "logSha256": "810846215148b193385d1033a0393d9be5732d2235e15782ae3e9c2966de0c8a"
+        },
+        {
+          "name": "core-benchmarks",
+          "command": [
+            "npm",
+            "test"
+          ],
+          "exitCode": 0,
+          "seconds": 16.079,
+          "log": "core-benchmarks.log",
+          "logSha256": "9b0924b54554c8c820981948e38d5ef466f702c645e7acf4a81371d5af6bbdce"
+        },
+        {
+          "name": "direct-http-process",
+          "command": [
+            "npm",
+            "run",
+            "test:study"
+          ],
+          "exitCode": 0,
+          "seconds": 3.947,
+          "log": "direct-http-process.log",
+          "logSha256": "064c9de397b01250a4ce88cce357546985fc00cb825b9af0819ca5c49c190307"
+        },
+        {
+          "name": "study-browser",
+          "command": [
+            "npm",
+            "run",
+            "test:study:browser"
+          ],
+          "exitCode": 0,
+          "seconds": 74.162,
+          "log": "study-browser.log",
+          "logSha256": "30f246b5a5703a8274f1039c180a9fd2640bb7a1ceba608b8c4a461747db439a"
+        },
+        {
+          "name": "integrated-browser",
+          "command": [
+            "npx",
+            "tsx",
+            "scripts/test-integrated-browser.ts"
+          ],
+          "exitCode": 0,
+          "seconds": 2.68,
+          "log": "integrated-browser.log",
+          "logSha256": "8ad052f1ff8341e491c003789ac98711155f7977f6e1b5294f89090a472aeb0c"
+        },
+        {
+          "name": "general-browser",
+          "command": [
+            "npm",
+            "run",
+            "test:browser"
+          ],
+          "exitCode": 0,
+          "seconds": 58.942,
+          "log": "general-browser.log",
+          "logSha256": "73fa2a39b279d338f5e3f02f0772fee306e06b6cf4b55565ae0796551f6cc678"
+        },
+        {
+          "name": "binary-export-readback",
+          "command": [
+            "npm",
+            "run",
+            "verify:exports"
+          ],
+          "exitCode": 0,
+          "seconds": 0.871,
+          "log": "binary-export-readback.log",
+          "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+        },
+        {
+          "name": "smoke",
+          "command": [
+            "npm",
+            "run",
+            "test:smoke"
+          ],
+          "exitCode": 0,
+          "seconds": 0.467,
+          "log": "smoke.log",
+          "logSha256": "2f8807a7067ed867063cea0cadb73e8536c3890cd0e709fd545ece85d38f32df"
+        },
+        {
+          "name": "gateway",
+          "command": [
+            "npm",
+            "run",
+            "test:gateway"
+          ],
+          "exitCode": 0,
+          "seconds": 3.029,
+          "log": "gateway.log",
+          "logSha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+        },
+        {
+          "name": "remediation",
+          "command": [
+            "npm",
+            "run",
+            "test:remediation"
+          ],
+          "exitCode": 0,
+          "seconds": 0.668,
+          "log": "remediation.log",
+          "logSha256": "b41b9f62c8925207dbece6fbe6a292e611985ab28236bb8159ff2f6b66fe0c03"
+        },
+        {
+          "name": "audit",
+          "command": [
+            "npm",
+            "run",
+            "test:audit"
+          ],
+          "exitCode": 0,
+          "seconds": 10.155,
+          "log": "audit.log",
+          "logSha256": "dd9c1cfffcf70f04c73264f9d64dfe825a6143df79c8f5d93f81da937201b216"
+        }
+      ],
+      "passed": 16,
+      "failed": 0,
+      "machineEndedUTC": "2026-11-21T18:17:55.139209+00:00"
+    },
+    {
+      "schemaVersion": "local-validation-round-v1",
+      "round": 2,
+      "machineStartedUTC": "2026-11-21T18:18:45.642462+00:00",
+      "head": "5438fb59f4bb5cde05c20818b780464e1fe28752",
+      "sourceSnapshotSha256": "177524e2f82e85533d1553bb541e53ff1035a2c1452c8ceb8003658acfd98b16",
+      "classification": "dirty-working-tree local Linux; not remote exact-SHA CI",
+      "suites": [
+        {
+          "name": "research-python",
+          "command": [
+            "/home/user/solarpv-studio/.cache/thermal-research/venv/bin/python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "services/pvlib_research/tests",
+            "-v"
+          ],
+          "exitCode": 0,
+          "seconds": 4.253,
+          "log": "research-python.log",
+          "logSha256": "1607f2f6d4fc484f4c984fa547bdb961bca30e7a5015cda9c02496011811cb11"
+        },
+        {
+          "name": "production-python",
+          "command": [
+            "/home/user/solarpv-studio/.cache/thermal-research/venv/bin/python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "services/pvlib_study/tests",
+            "-v"
+          ],
+          "exitCode": 0,
+          "seconds": 51.086,
+          "log": "production-python.log",
+          "logSha256": "bd15dcf77a98276c948273091609e8b2e8adf5812d7c7248b00a4b48d3b7356b"
+        },
+        {
+          "name": "integrated-contract",
+          "command": [
+            "npx",
+            "tsx",
+            "scripts/test-integrated-study.ts"
+          ],
+          "exitCode": 0,
+          "seconds": 5.845,
+          "log": "integrated-contract.log",
+          "logSha256": "b462fd28c34717bdfb33cd387e61ec6e17c2b0126b1e6b1b62ffe643cc24a8f0"
+        },
+        {
+          "name": "study-workflow",
+          "command": [
+            "npm",
+            "run",
+            "test:study:workflow"
+          ],
+          "exitCode": 0,
+          "seconds": 62.097,
+          "log": "study-workflow.log",
+          "logSha256": "ce1226a67ea7b4bc010febd7c0f0989e82ba8f41a291a763be7f23e2bd8138ad"
+        },
+        {
+          "name": "lint",
+          "command": [
+            "npm",
+            "run",
+            "lint"
+          ],
+          "exitCode": 0,
+          "seconds": 31.019,
+          "log": "lint.log",
+          "logSha256": "154a52662327364becf56b8d4990d9847e0d17f8bf658bc03aa13ca40ed25c98"
+        },
+        {
+          "name": "build",
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "exitCode": 0,
+          "seconds": 12.693,
+          "log": "build.log",
+          "logSha256": "2bb9bc8db01d8645c7eb2c7180099da7dd7cc017206cfdfbbbb4af7459b5d3fc"
+        },
+        {
+          "name": "core-benchmarks",
+          "command": [
+            "npm",
+            "test"
+          ],
+          "exitCode": 0,
+          "seconds": 15.852,
+          "log": "core-benchmarks.log",
+          "logSha256": "22a4ccdf3ea1219f27fa05e17d4f7cb84046a7da82f99cbd582b34018040c007"
+        },
+        {
+          "name": "direct-http-process",
+          "command": [
+            "npm",
+            "run",
+            "test:study"
+          ],
+          "exitCode": 0,
+          "seconds": 3.91,
+          "log": "direct-http-process.log",
+          "logSha256": "735d224c074ec33692cf612f8f48807c89b0f18c58dad39c599bb831e378523d"
+        },
+        {
+          "name": "study-browser",
+          "command": [
+            "npm",
+            "run",
+            "test:study:browser"
+          ],
+          "exitCode": 0,
+          "seconds": 73.39,
+          "log": "study-browser.log",
+          "logSha256": "30f246b5a5703a8274f1039c180a9fd2640bb7a1ceba608b8c4a461747db439a"
+        },
+        {
+          "name": "integrated-browser",
+          "command": [
+            "npx",
+            "tsx",
+            "scripts/test-integrated-browser.ts"
+          ],
+          "exitCode": 0,
+          "seconds": 2.731,
+          "log": "integrated-browser.log",
+          "logSha256": "8ad052f1ff8341e491c003789ac98711155f7977f6e1b5294f89090a472aeb0c"
+        },
+        {
+          "name": "general-browser",
+          "command": [
+            "npm",
+            "run",
+            "test:browser"
+          ],
+          "exitCode": 0,
+          "seconds": 59.765,
+          "log": "general-browser.log",
+          "logSha256": "ae2c173442343d0dcb89568f9e145c6a65391c8b77bc3172f9dbe53952e985a7"
+        },
+        {
+          "name": "binary-export-readback",
+          "command": [
+            "npm",
+            "run",
+            "verify:exports"
+          ],
+          "exitCode": 0,
+          "seconds": 0.821,
+          "log": "binary-export-readback.log",
+          "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+        },
+        {
+          "name": "smoke",
+          "command": [
+            "npm",
+            "run",
+            "test:smoke"
+          ],
+          "exitCode": 0,
+          "seconds": 0.416,
+          "log": "smoke.log",
+          "logSha256": "1803b1045803ad07be35508449f0d7562c6ef4de3c22c3dd84637450f3798c8f"
+        },
+        {
+          "name": "gateway",
+          "command": [
+            "npm",
+            "run",
+            "test:gateway"
+          ],
+          "exitCode": 0,
+          "seconds": 2.936,
+          "log": "gateway.log",
+          "logSha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+        },
+        {
+          "name": "remediation",
+          "command": [
+            "npm",
+            "run",
+            "test:remediation"
+          ],
+          "exitCode": 0,
+          "seconds": 0.769,
+          "log": "remediation.log",
+          "logSha256": "b41b9f62c8925207dbece6fbe6a292e611985ab28236bb8159ff2f6b66fe0c03"
+        },
+        {
+          "name": "audit",
+          "command": [
+            "npm",
+            "run",
+            "test:audit"
+          ],
+          "exitCode": 0,
+          "seconds": 9.29,
+          "log": "audit.log",
+          "logSha256": "de19c28ad4dae89e7a7026b18e7d1f9f7036dbfe83fadc5789694944c2f49f63"
+        }
+      ],
+      "passed": 16,
+      "failed": 0,
+      "machineEndedUTC": "2026-11-21T18:24:22.525226+00:00"
+    },
+    {
+      "schemaVersion": "local-validation-round-v1",
+      "round": 3,
+      "machineStartedUTC": "2026-11-21T18:25:05.427318+00:00",
+      "head": "5438fb59f4bb5cde05c20818b780464e1fe28752",
+      "sourceSnapshotSha256": "fb63295033b3b01aaf45befdc6d7b72d27d98436ed966adb79a2f84692522b30",
+      "classification": "dirty-working-tree local Linux; not remote exact-SHA CI",
+      "suites": [
+        {
+          "name": "research-python",
+          "command": [
+            "/home/user/solarpv-studio/.cache/thermal-research/venv/bin/python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "services/pvlib_research/tests",
+            "-v"
+          ],
+          "exitCode": 0,
+          "seconds": 4.238,
+          "log": "research-python.log",
+          "logSha256": "e33b7af4cfbb73609bfed7a935915eba219ff3724d6fef264be7668ecd75b01b"
+        },
+        {
+          "name": "production-python",
+          "command": [
+            "/home/user/solarpv-studio/.cache/thermal-research/venv/bin/python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "services/pvlib_study/tests",
+            "-v"
+          ],
+          "exitCode": 0,
+          "seconds": 50.889,
+          "log": "production-python.log",
+          "logSha256": "81537aecdcf200e338b21e6c772d838b956548344f1c0bf9e9e3928fd144757c"
+        },
+        {
+          "name": "integrated-contract",
+          "command": [
+            "npx",
+            "tsx",
+            "scripts/test-integrated-study.ts"
+          ],
+          "exitCode": 0,
+          "seconds": 5.484,
+          "log": "integrated-contract.log",
+          "logSha256": "b462fd28c34717bdfb33cd387e61ec6e17c2b0126b1e6b1b62ffe643cc24a8f0"
+        },
+        {
+          "name": "study-workflow",
+          "command": [
+            "npm",
+            "run",
+            "test:study:workflow"
+          ],
+          "exitCode": 0,
+          "seconds": 59.569,
+          "log": "study-workflow.log",
+          "logSha256": "ce1226a67ea7b4bc010febd7c0f0989e82ba8f41a291a763be7f23e2bd8138ad"
+        },
+        {
+          "name": "lint",
+          "command": [
+            "npm",
+            "run",
+            "lint"
+          ],
+          "exitCode": 0,
+          "seconds": 29.854,
+          "log": "lint.log",
+          "logSha256": "154a52662327364becf56b8d4990d9847e0d17f8bf658bc03aa13ca40ed25c98"
+        },
+        {
+          "name": "build",
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "exitCode": 0,
+          "seconds": 12.594,
+          "log": "build.log",
+          "logSha256": "ccdc0980218186c0cc43628e8e36146b4d98063c89da48967866ff2e84f31b5d"
+        },
+        {
+          "name": "core-benchmarks",
+          "command": [
+            "npm",
+            "test"
+          ],
+          "exitCode": 0,
+          "seconds": 14.521,
+          "log": "core-benchmarks.log",
+          "logSha256": "dc9933de0ec12d88f4c397437f38a5ac278b515a99e83649559e4bd194550bd8"
+        },
+        {
+          "name": "direct-http-process",
+          "command": [
+            "npm",
+            "run",
+            "test:study"
+          ],
+          "exitCode": 0,
+          "seconds": 3.9,
+          "log": "direct-http-process.log",
+          "logSha256": "da82ad0e4cfd2a40e2453f65838081e7790d2bcb067bfbba473b02e0dc34da01"
+        },
+        {
+          "name": "study-browser",
+          "command": [
+            "npm",
+            "run",
+            "test:study:browser"
+          ],
+          "exitCode": 0,
+          "seconds": 73.406,
+          "log": "study-browser.log",
+          "logSha256": "30f246b5a5703a8274f1039c180a9fd2640bb7a1ceba608b8c4a461747db439a"
+        },
+        {
+          "name": "integrated-browser",
+          "command": [
+            "npx",
+            "tsx",
+            "scripts/test-integrated-browser.ts"
+          ],
+          "exitCode": 0,
+          "seconds": 2.689,
+          "log": "integrated-browser.log",
+          "logSha256": "8ad052f1ff8341e491c003789ac98711155f7977f6e1b5294f89090a472aeb0c"
+        },
+        {
+          "name": "general-browser",
+          "command": [
+            "npm",
+            "run",
+            "test:browser"
+          ],
+          "exitCode": 0,
+          "seconds": 55.859,
+          "log": "general-browser.log",
+          "logSha256": "c353b70569208a631dda8023f4890738894a80959a535c89836d2dd17387598b"
+        },
+        {
+          "name": "binary-export-readback",
+          "command": [
+            "npm",
+            "run",
+            "verify:exports"
+          ],
+          "exitCode": 0,
+          "seconds": 0.777,
+          "log": "binary-export-readback.log",
+          "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+        },
+        {
+          "name": "smoke",
+          "command": [
+            "npm",
+            "run",
+            "test:smoke"
+          ],
+          "exitCode": 0,
+          "seconds": 0.366,
+          "log": "smoke.log",
+          "logSha256": "c038b2e9ba6b01101cd73a3d423dfbb68d95de85f4d9a2ad45902760bc3710c8"
+        },
+        {
+          "name": "gateway",
+          "command": [
+            "npm",
+            "run",
+            "test:gateway"
+          ],
+          "exitCode": 0,
+          "seconds": 2.983,
+          "log": "gateway.log",
+          "logSha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+        },
+        {
+          "name": "remediation",
+          "command": [
+            "npm",
+            "run",
+            "test:remediation"
+          ],
+          "exitCode": 0,
+          "seconds": 0.568,
+          "log": "remediation.log",
+          "logSha256": "b41b9f62c8925207dbece6fbe6a292e611985ab28236bb8159ff2f6b66fe0c03"
+        },
+        {
+          "name": "audit",
+          "command": [
+            "npm",
+            "run",
+            "test:audit"
+          ],
+          "exitCode": 0,
+          "seconds": 8.839,
+          "log": "audit.log",
+          "logSha256": "f8c3ccb6d017e7af00c34dba1629eac27c58b2081ab1c4433cbcb2baf1560e8c"
+        }
+      ],
+      "passed": 16,
+      "failed": 0,
+      "machineEndedUTC": "2026-11-21T18:30:31.972728+00:00"
+    }
+  ],
+  "finalCodeSnapshotSha256": "fb63295033b3b01aaf45befdc6d7b72d27d98436ed966adb79a2f84692522b30",
+  "unchangedSinceFinalRound": true
+}

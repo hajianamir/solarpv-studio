@@ -1,0 +1,12 @@
+{
+  "operation": "pvice_massflow",
+  "plan": {
+    "source": "Derived from frozen upstream software fixture; NOT independent field qualification",
+    "contextSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "schemaVersion": "pvice-massflow-v1",
+    "baseline": "us_glass_baseline",
+    "installationScale": 0.001,
+    "collectionPct": null,
+    "lifetimeYears": null
+  }
+}

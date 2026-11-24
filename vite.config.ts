@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -25,6 +25,10 @@ function buildServiceWorkerPrecache(): Plugin {
           if (file && !file.endsWith('.map')) assets.add(`/${file}`);
         }
       }
+      // Vite emits dedicated Worker chunks outside manifest entries. Cache them for offline jobs.
+      for (const file of readdirSync(path.join(outDir, 'assets'))) {
+        if (/\.worker-[\w-]+\.js$/.test(file)) assets.add(`/assets/${file}`);
+      }
       const sortedAssets = [...assets].sort();
       const source = readFileSync(swPath, 'utf8');
       const version = createHash('sha256')
@@ -46,6 +50,21 @@ function buildServiceWorkerPrecache(): Plugin {
   };
 }
 
+function uqSourceIdentity() {
+  const files: Record<string,string> = {};
+  const visit = (dir: string) => {
+    for (const entry of readdirSync(dir, {withFileTypes:true})) {
+      const file = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) visit(file);
+      else if (/\.(?:ts|tsx|json|css)$/.test(file)) files[file] = createHash('sha256').update(readFileSync(file)).digest('hex');
+    }
+  };
+  visit('src');
+  for (const file of ['package.json','package-lock.json','vite.config.ts','tsconfig.json','tsconfig.node.json']) files[file] = createHash('sha256').update(readFileSync(file)).digest('hex');
+  const sorted = Object.fromEntries(Object.entries(files).sort(([a],[b])=>a<b?-1:a>b?1:0));
+  return {files:sorted,bundleSha256:createHash('sha256').update(JSON.stringify(sorted)).digest('hex')};
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const realInternet =
@@ -60,6 +79,8 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.VITE_REAL_INTERNET': JSON.stringify(realInternet),
       __SOLARPV_PRODUCTION__: JSON.stringify(mode === 'production'),
+      // HMR changes source after config evaluation; do not claim a stable identity for dev builds.
+      __SOLARPV_UQ_SOURCE__: mode === 'production' ? JSON.stringify(uqSourceIdentity()) : 'null',
     },
     server: {
       host: '0.0.0.0',
@@ -95,10 +116,16 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
+            'research-forcing': ['./docs/reference-data/pvlib/forcing.json'],
             'vendor-three': ['three'],
             'vendor-leaflet': ['leaflet'],
             'vendor-react': ['react', 'react-dom'],
             'vendor-lucide': ['lucide-react'],
+            'vendor-pdf-font': ['@pdf-lib/fontkit'],
+            'vendor-pdf': ['pdf-lib'],
+            'vendor-spreadsheet': ['exceljs'],
+            'vendor-docx': ['docx'],
+            'vendor-validation': ['zod'],
           },
         },
       },

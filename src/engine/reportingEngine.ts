@@ -1,3 +1,4 @@
+import { downloadBlob } from "../browser/download";
 // Advanced Engineering Report Generator & Multi-Format Exporter
 // Generates professional Dossiers, true OOXML Word (.docx via docx), and true OOXML Excel (.xlsx via exceljs) (OUT-04)
 
@@ -300,14 +301,7 @@ export async function exportToWordDocument(
   const blob = await generateDocxBlob(htmlContent, { title: cleanName });
 
   if (typeof document !== 'undefined') {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = cleanName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, cleanName);
   }
 
   return blob;
@@ -381,14 +375,7 @@ export async function exportToExcelWorkbook(
   const blob = await generateXlsxBlob(sheets, numberFormats);
 
   if (typeof document !== 'undefined') {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = cleanName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, cleanName);
   }
 
   return blob;

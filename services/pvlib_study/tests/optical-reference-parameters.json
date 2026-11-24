@@ -1,0 +1,4 @@
+{
+  "physicalIam": {"frontN": 1.526, "frontK": 4, "frontL": 0.002, "rearN": 1.5, "rearK": 3, "rearL": 0.0025},
+  "sapmSpectral": {"A0": 0.96, "A1": 0.02, "A2": -0.001, "A3": 0.00001, "A4": -0.0000001, "minAbsoluteAirmass": 0.5, "maxAbsoluteAirmass": 10}
+}

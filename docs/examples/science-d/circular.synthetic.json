@@ -1,0 +1,71 @@
+{
+  "operation": "circular_lca",
+  "plan": {
+    "source": "Synthetic acceptance fixture only; not measured or licensed inventory",
+    "contextSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "schemaVersion": "circular-lca-v1",
+    "functionalUnit": "kgCO2e_per_delivered_kWh",
+    "deliveredEnergyKwh": 10000,
+    "boundary": "cradle_to_eol",
+    "allocation": "cutoff_no_credit",
+    "manufacturingYield": 0.8,
+    "secondaryInputFraction": 0.2,
+    "collectionFraction": 0.9,
+    "reuseFraction": 0.1,
+    "recyclingYield": 0.8,
+    "manufacturingCostPerKg": 4,
+    "eolCostPerKg": 2,
+    "factors": {
+      "virgin": {
+        "low": 8.0,
+        "central": 10,
+        "high": 12.0,
+        "source": "Synthetic independent factor assumption",
+        "license": "CC0 synthetic fixture",
+        "unit": "kgCO2e_per_kg"
+      },
+      "secondary": {
+        "low": 1.6,
+        "central": 2,
+        "high": 2.4,
+        "source": "Synthetic independent factor assumption",
+        "license": "CC0 synthetic fixture",
+        "unit": "kgCO2e_per_kg"
+      },
+      "manufacturing": {
+        "low": 2.4000000000000004,
+        "central": 3,
+        "high": 3.5999999999999996,
+        "source": "Synthetic independent factor assumption",
+        "license": "CC0 synthetic fixture",
+        "unit": "kgCO2e_per_kg"
+      },
+      "eol": {
+        "low": 0.8,
+        "central": 1,
+        "high": 1.2,
+        "source": "Synthetic independent factor assumption",
+        "license": "CC0 synthetic fixture",
+        "unit": "kgCO2e_per_kg"
+      }
+    },
+    "cohorts": [
+      {
+        "id": "cohort_1",
+        "installedYear": 2020,
+        "installedKg": 100,
+        "retirements": [
+          {
+            "year": 2040,
+            "kg": 40
+          },
+          {
+            "year": 2045,
+            "kg": 60
+          }
+        ]
+      }
+    ],
+    "currency": "USD"
+  }
+}
