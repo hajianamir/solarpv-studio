@@ -123,6 +123,7 @@ import {
 
 // Components - Core Suite
 import { LoadProfilingTab } from './components/LoadProfilingTab';
+const ResearchWorkspace = React.lazy(() => import('./components/ResearchWorkspace'));
 const ClimateTab = React.lazy(() => import('./components/ClimateTab').then(m => ({default:m.ClimateTab})));
 import { PvArrayEngineeringTab } from './components/PvArrayEngineeringTab';
 const FinancialTab = React.lazy(() => import('./components/FinancialTab').then(m => ({default:m.FinancialTab})));
@@ -166,7 +167,8 @@ export type SystemMode = 'powerplant' | 'ongrid' | 'offgrid';
 export type ActiveModuleTab =
   | 'climate'
   | 'loads'
-  | 'system_mode'
+  | 'electrical_requirements'
+  | 'research'
   | 'array'
   | 'harmonics_grid'
   | 'mv_substation'
@@ -199,6 +201,8 @@ export const App: React.FC = () => {
   const [operationalRestoreError,setOperationalRestoreError]=useState('');
   const [operationalEnergy,setOperationalEnergy]=useState<OperationalEnergy|null>(null);
   const [systemMode, setSystemMode] = useState<SystemMode>('powerplant');
+  const lastCustomerMode = useRef<'ongrid'|'offgrid'>('ongrid');
+  useEffect(()=>{if(systemMode !== 'powerplant') lastCustomerMode.current=systemMode;},[systemMode]);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showOperationalReport,setShowOperationalReport]=useState(false);
   const operationalReportBlockedRef=useRef(false);
@@ -504,11 +508,11 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (systemMode === 'powerplant') {
       if (activeTab === 'loads' || activeTab === 'bess' || activeTab === 'scenarios' || activeTab === 'sim24h') {
-        setActiveTab('system_mode');
+        setActiveTab('electrical_requirements');
       }
     } else {
-      if (activeTab === 'mv_substation') {
-        setActiveTab('system_mode');
+      if (activeTab === 'mv_substation' || activeTab === 'electrical_requirements') {
+        setActiveTab('loads');
       }
     }
   }, [systemMode, activeTab]);
@@ -1390,11 +1394,11 @@ export const App: React.FC = () => {
         },
         {
           phase: 2,
-          categoryTitle: lang === 'fa' ? 'فاز ۲: ساختار سیستم و بی‌های MV' : 'Phase 2: Topology & MV Bays',
+          categoryTitle: lang === 'fa' ? 'فاز ۲: تجهیزات و بی‌های MV' : 'Phase 2: Equipment & MV Bays',
           tabs: [
             {
-              id: 'system_mode' as ActiveModuleTab,
-              title: lang === 'fa' ? `${t.tabSystemMode} & بی‌های MV` : `${t.tabSystemMode} & MV Bays`,
+              id: 'electrical_requirements' as ActiveModuleTab,
+              title: lang === 'fa' ? 'الزامات AC و بی‌های MV' : 'AC Requirements & MV Bays',
               icon: <Sliders className="w-4 h-4 text-sky-400" />,
               code: 'MV Turnkey',
               badge: mvVoltageKv === null ? (lang === 'fa' ? 'ولتاژ MV نامشخص' : 'MV voltage unknown') : `${mvVoltageKv} kV`,
@@ -1530,6 +1534,10 @@ export const App: React.FC = () => {
             },
           ],
         },
+        {phase: 7, categoryTitle: lang === 'fa' ? 'محیط مستقل پژوهش' : 'Separate Research Workspace', tabs: [{
+          id: 'research' as ActiveModuleTab, title: lang === 'fa' ? 'پژوهش و آزمایشگاه' : 'Research & Laboratory',
+          icon: <Activity className="w-4 h-4 text-violet-400" />, code: 'Research only', badge: lang === 'fa' ? 'جدا از طراحی' : 'Isolated',
+        }]},
       ];
     } else {
       // In On-Grid & Off-Grid modes: SHOW Loads, MOVE Battery to PV Engineering, HIDE MV Substation
@@ -1556,15 +1564,8 @@ export const App: React.FC = () => {
         },
         {
           phase: 2,
-          categoryTitle: lang === 'fa' ? 'فاز ۲: ساختار سیستم و سناریوی اتصال' : 'Phase 2: Topology & Inverter Strategy',
+          categoryTitle: lang === 'fa' ? 'فاز ۲: انتخاب تجهیزات' : 'Phase 2: Equipment Selection',
           tabs: [
-            {
-              id: 'system_mode' as ActiveModuleTab,
-              title: t.tabSystemMode,
-              icon: <Sliders className="w-4 h-4 text-sky-400" />,
-              code: 'Grid Tie',
-              badge: systemMode.toUpperCase(),
-            },
             {
               id: 'catalog' as ActiveModuleTab,
               title: t.tabCatalog,
@@ -1712,6 +1713,10 @@ export const App: React.FC = () => {
             },
           ],
         },
+        {phase: 7, categoryTitle: lang === 'fa' ? 'محیط مستقل پژوهش' : 'Separate Research Workspace', tabs: [{
+          id: 'research' as ActiveModuleTab, title: lang === 'fa' ? 'پژوهش و آزمایشگاه' : 'Research & Laboratory',
+          icon: <Activity className="w-4 h-4 text-violet-400" />, code: 'Research only', badge: lang === 'fa' ? 'جدا از طراحی' : 'Isolated',
+        }]},
       ];
     }
   }, [systemMode, t, lang, city.peakSunHours, mvVoltageKv, customBaysCount, arrayDesign.totalPvCapacityKwp, arrayDesign.effectiveDeratingFactor, loadAnalysis.totalDailyEnergyKwh, batterySizing.grossCapacityKwh, simulationResult.isSelfSufficient, simulationResult.isGenerationDeratingAssessed, simulationResult.isPowerLimitsAssessed, financialResult.irrPct, financialResult.isIrrDefined]);
@@ -1721,19 +1726,21 @@ export const App: React.FC = () => {
     return menuSections.flatMap((s) => s.tabs);
   }, [menuSections]);
 
+  // Research is discoverable/searchable, but never an automatic engineering step.
+  const workflowTabsList = useMemo(()=>flattenedTabsList.filter(tab=>tab.id !== 'research'),[flattenedTabsList]);
   const currentTabIndex = useMemo(() => {
-    return flattenedTabsList.findIndex((t) => t.id === activeTab);
-  }, [flattenedTabsList, activeTab]);
+    return workflowTabsList.findIndex((t) => t.id === activeTab);
+  }, [workflowTabsList, activeTab]);
 
   const handlePrevTab = () => {
     if (currentTabIndex > 0) {
-      setActiveTab(flattenedTabsList[currentTabIndex - 1].id);
+      setActiveTab(workflowTabsList[currentTabIndex - 1].id);
     }
   };
 
   const handleNextTab = () => {
-    if (currentTabIndex < flattenedTabsList.length - 1) {
-      setActiveTab(flattenedTabsList[currentTabIndex + 1].id);
+    if (currentTabIndex >= 0 && currentTabIndex < workflowTabsList.length - 1) {
+      setActiveTab(workflowTabsList[currentTabIndex + 1].id);
     }
   };
 
@@ -1842,6 +1849,41 @@ export const App: React.FC = () => {
       <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid={`ac-confirmed-${target.replace(':','-')}`} checked={value.confirmed} onChange={(e) => patchAcConnection(target, { confirmed: e.target.checked })} />{lang === 'fa' ? 'این الزام محلی را تأیید می‌کنم' : 'I confirm this local requirement'}</label>
       {!isValidAcConnection(value) && <p role="alert" className="ac-validation-error rounded px-2 py-1 text-xs">{lang === 'fa' ? 'مقادیر باید مثبت و متناهی باشند.' : 'Values must be finite and positive.'}</p>}
     </fieldset>
+  );
+
+  const acRequirementsPanel = (
+                <section aria-labelledby="ac-requirements-heading" data-testid="ac-requirements-panel" className="mt-6 rounded-xl border border-amber-700/50 bg-amber-950/10 p-4 space-y-3">
+                  <div>
+                    <h3 id="ac-requirements-heading" className="font-bold text-amber-300">{lang === 'fa' ? 'الزامات الکتریکی AC — ورودی صریح کاربر' : 'AC electrical requirements — explicit user input'}</h3>
+                    <p className="text-xs text-theme-muted mt-1">{lang === 'fa' ? 'ولتاژ/فاز/فرکانس محلی به‌صورت خودکار حدس زده نمی‌شود. سرویس بار، خروجی اینورتر، شبکه LV و تزریق MV/HV مستقل‌اند. اطلاعات ناقص، تأیید طراحی نیست.' : 'Local voltage/phase/frequency are never guessed. Load service, inverter output, LV grid, and MV/HV injection are separate. Incomplete data is not design approval.'}</p>
+                  </div>
+                  <div className={`rounded-md p-2 text-xs ${acAssessment.status === 'compatible' ? 'bg-emerald-900/30 text-emerald-200' : acAssessment.status === 'incompatible' ? 'bg-red-900/30 text-red-200' : 'bg-amber-900/30 text-amber-200'}`} role="status" data-testid="ac-requirements-assessment" data-status={acAssessment.status}>
+                    {acAssessment.status === 'compatible' ? (lang === 'fa' ? 'الزامات ثبت‌شده سازگارند؛ این بررسی، مطالعه حفاظت/اتصال نیست.' : 'Recorded requirements are compatible; this is not a protection/interconnection study.') : acAssessment.reasons.map((reason) => <div key={reason}>{reason}</div>)}
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {renderAcConnectionFields('loadService', currentAcRequirements.loadService, lang === 'fa' ? 'سرویس AC بارهای سایت' : 'Site load AC service')}
+                    {renderAcConnectionFields('inverterOutput', currentAcRequirements.inverterOutput, lang === 'fa' ? 'الزام خروجی AC اینورتر' : 'Inverter AC output requirement')}
+                    {renderAcConnectionFields('lvGrid', currentAcRequirements.lvGrid, lang === 'fa' ? 'اتصال شبکه فشار ضعیف (جدا از تزریق MV)' : 'Low-voltage grid interface (separate from MV injection)')}
+                  </div>
+                  <fieldset className="rounded-lg border border-industrial-border p-3 space-y-2">
+                    <legend className="px-1 text-xs font-bold text-theme-strong">{lang === 'fa' ? 'شاهد دیتاشیت اینورتر (اظهار کاربر)' : 'Inverter datasheet evidence (user attestation)'}</legend>
+                    <p className="text-[11px] text-theme-muted">{lang === 'fa' ? 'دادهٔ کاتالوگ داخلی احراز رسمی نشده است. URL و فرکانس نامی را از دیتاشیت دقیق مدل وارد کنید؛ سامانه اصالت URL را تأیید نمی‌کند.' : 'Built-in catalog facts are not officially authenticated. Enter the exact-model datasheet URL and nominal frequency; the app does not authenticate the URL.'}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'فرکانس نامی خروجی اینورتر (Hz)' : 'Inverter nameplate output frequency (Hz)'}<input data-testid="ac-inverter-nameplate-frequency" type="number" min="0" step="any" value={currentAcRequirements.inverterNameplate.nominalFrequencyHz ?? ''} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, nominalFrequencyHz: e.target.value === '' ? null : Number(e.target.value), userConfirmed: false } }))} className="studio-input mt-1 w-full" /></label>
+                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'پیوند دیتاشیت دقیق مدل (HTTPS)' : 'Exact-model datasheet URL (HTTPS)'}<input data-testid="ac-inverter-nameplate-url" type="url" value={currentAcRequirements.inverterNameplate.sourceUrl} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, sourceUrl: e.target.value, userConfirmed: false } }))} className="studio-input mt-1 w-full" placeholder="https://manufacturer.example/..." /></label>
+                    </div>
+                    <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid="ac-inverter-nameplate-confirmed" checked={currentAcRequirements.inverterNameplate.userConfirmed} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, userConfirmed: e.target.checked } }))} />{lang === 'fa' ? 'فاز/ولتاژ/فرکانس را با دیتاشیت همین مدل تطبیق دادم (اظهار کاربر؛ تأیید مستقل نیست)' : 'I checked phase/voltage/frequency against this exact model datasheet (user assertion; not independently verified)'}</label>
+                  </fieldset>
+                  <fieldset className="rounded-lg border border-industrial-border p-3">
+                    <legend className="px-1 text-xs font-bold text-theme-strong">{lang === 'fa' ? 'نقطه تزریق پس از ترانسفورماتور' : 'Post-transformer grid injection point'}</legend>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'سطح شبکه' : 'Network level'}<select aria-label="Grid injection level" data-testid="ac-injection-level" value={currentAcRequirements.injection.level} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, level: e.target.value as AcRequirements['injection']['level'], confirmed: false } }))} className="studio-input mt-1 w-full"><option value="unknown">Unknown</option><option value="not_applicable">Not applicable</option><option value="lv">LV</option><option value="mv">MV</option><option value="hv">HV</option></select></label>
+                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'ولتاژ نامی (kV)' : 'Nominal voltage (kV)'}<input aria-label="Grid injection nominal kV" data-testid="ac-injection-voltage" type="number" min="0" step="any" value={currentAcRequirements.injection.nominalKv ?? ''} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, nominalKv: e.target.value === '' ? null : Number(e.target.value), confirmed: false } }))} className="studio-input mt-1 w-full" /></label>
+                      <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid="ac-injection-confirmed" checked={currentAcRequirements.injection.confirmed} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, confirmed: e.target.checked } }))} />{lang === 'fa' ? 'مورد تأیید است' : 'Confirmed'}</label>
+                    </div>
+                  </fieldset>
+                  {systemMode !== 'powerplant' && loads.length > 0 && <details className="rounded-lg border border-industrial-border p-3"><summary className="cursor-pointer text-xs font-bold">{lang === 'fa' ? 'نیاز AC هر بار (در صورت تفاوت با سرویس سایت)' : 'Per-load AC requirement (when different from site service)'}</summary><div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">{loads.map((load) => renderAcConnectionFields(`load:${load.id}`, currentAcRequirements.loadOverrides[load.id] ?? createUnknownAcRequirements().loadService, `${load.name} — ${lang === 'fa' ? 'نیاز مستقل' : 'load-specific requirement'}`))}</div></details>}
+                </section>
   );
 
   return (
@@ -2201,7 +2243,7 @@ export const App: React.FC = () => {
         {/* Center: Quick System Operating Mode Pill */}
         <div className="flex items-center gap-1 bg-industrial-bg p-1 rounded-lg border border-[#1E293B] text-[10px] font-bold">
           <button
-            onClick={() => setSystemMode('powerplant')}
+            data-testid="project-family-powerplant" onClick={() => setSystemMode('powerplant')}
             className={`px-2 sm:px-2.5 py-1 rounded transition flex items-center gap-1 ${
               systemMode === 'powerplant'
                 ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
@@ -2212,26 +2254,15 @@ export const App: React.FC = () => {
             <span>{t.modePowerplant}</span>
           </button>
           <button
-            onClick={() => setSystemMode('ongrid')}
+            data-testid="project-family-loads" onClick={() => { if(systemMode === 'powerplant') setSystemMode(lastCustomerMode.current); setActiveTab('loads'); }}
             className={`px-2 sm:px-2.5 py-1 rounded transition flex items-center gap-1 ${
-              systemMode === 'ongrid'
+              systemMode !== 'powerplant'
                 ? 'bg-sky-500 text-slate-950 font-black shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Grid className="w-3 h-3" />
-            <span>{t.modeOnGrid}</span>
-          </button>
-          <button
-            onClick={() => setSystemMode('offgrid')}
-            className={`px-2 sm:px-2.5 py-1 rounded transition flex items-center gap-1 ${
-              systemMode === 'offgrid'
-                ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Zap className="w-3 h-3" />
-            <span>{t.modeOffGrid}</span>
+            <span>{lang === 'fa' ? 'بار خانگی / صنعتی' : 'Residential / Industrial'}</span>
           </button>
         </div>
 
@@ -2558,9 +2589,9 @@ export const App: React.FC = () => {
 
                 <button
                   onClick={handleNextTab}
-                  disabled={currentTabIndex >= flattenedTabsList.length - 1}
+                  disabled={currentTabIndex < 0 || currentTabIndex >= workflowTabsList.length - 1}
                   className={`p-1.5 sm:px-2 sm:py-1 rounded border flex items-center gap-1 transition ${
-                    currentTabIndex < flattenedTabsList.length - 1
+                    currentTabIndex >= 0 && currentTabIndex < workflowTabsList.length - 1
                       ? 'bg-industrial-surface hover:bg-industrial-surface text-slate-200 border-[#283548]'
                       : 'opacity-40 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-600'
                   }`}
@@ -2571,127 +2602,11 @@ export const App: React.FC = () => {
                 </button>
               </div>
             </div>
-          {/* SYSTEM MODE & GRID ARCHITECTURE TAB */}
-          {activeTab === 'system_mode' && (
-            <div className="space-y-6">
-              <div className="studio-card">
-                <h2 className="text-xl font-bold text-sky-400 mb-2 flex items-center gap-2">
-                  <Sliders className="w-6 h-6 text-amber-400" />
-                  {lang === 'fa'
-                    ? 'تعیین ساختار کاری سیستم و نحوه اتصال به شبکه (System Mode & Grid Strategy)'
-                    : 'System Architecture & Grid Interconnection Strategy'}
-                </h2>
-                <p className="text-slate-300 text-xs leading-relaxed">
-                  {lang === 'fa'
-                    ? 'نحوه اتصال به شبکه مبنای محاسبات آرایه PV، عدم نیاز یا سایزینگ باتری، اینورترهای رشته‌ای در برابر پست‌های یکپارچه Turnkey و آرایش بی‌های فشار متوسط است.'
-                    : 'The grid connection topology governs PV sizing, battery requirements, inverter selection (string vs MV Turnkey), and medium-voltage collector bay architecture.'}
-                </p>
-
-                <section aria-labelledby="ac-requirements-heading" data-testid="ac-requirements-panel" className="mt-6 rounded-xl border border-amber-700/50 bg-amber-950/10 p-4 space-y-3">
-                  <div>
-                    <h3 id="ac-requirements-heading" className="font-bold text-amber-300">{lang === 'fa' ? 'الزامات الکتریکی AC — ورودی صریح کاربر' : 'AC electrical requirements — explicit user input'}</h3>
-                    <p className="text-xs text-theme-muted mt-1">{lang === 'fa' ? 'ولتاژ/فاز/فرکانس محلی به‌صورت خودکار حدس زده نمی‌شود. سرویس بار، خروجی اینورتر، شبکه LV و تزریق MV/HV مستقل‌اند. اطلاعات ناقص، تأیید طراحی نیست.' : 'Local voltage/phase/frequency are never guessed. Load service, inverter output, LV grid, and MV/HV injection are separate. Incomplete data is not design approval.'}</p>
-                  </div>
-                  <div className={`rounded-md p-2 text-xs ${acAssessment.status === 'compatible' ? 'bg-emerald-900/30 text-emerald-200' : acAssessment.status === 'incompatible' ? 'bg-red-900/30 text-red-200' : 'bg-amber-900/30 text-amber-200'}`} role="status" data-testid="ac-requirements-assessment" data-status={acAssessment.status}>
-                    {acAssessment.status === 'compatible' ? (lang === 'fa' ? 'الزامات ثبت‌شده سازگارند؛ این بررسی، مطالعه حفاظت/اتصال نیست.' : 'Recorded requirements are compatible; this is not a protection/interconnection study.') : acAssessment.reasons.map((reason) => <div key={reason}>{reason}</div>)}
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    {renderAcConnectionFields('loadService', currentAcRequirements.loadService, lang === 'fa' ? 'سرویس AC بارهای سایت' : 'Site load AC service')}
-                    {renderAcConnectionFields('inverterOutput', currentAcRequirements.inverterOutput, lang === 'fa' ? 'الزام خروجی AC اینورتر' : 'Inverter AC output requirement')}
-                    {renderAcConnectionFields('lvGrid', currentAcRequirements.lvGrid, lang === 'fa' ? 'اتصال شبکه فشار ضعیف (جدا از تزریق MV)' : 'Low-voltage grid interface (separate from MV injection)')}
-                  </div>
-                  <fieldset className="rounded-lg border border-industrial-border p-3 space-y-2">
-                    <legend className="px-1 text-xs font-bold text-theme-strong">{lang === 'fa' ? 'شاهد دیتاشیت اینورتر (اظهار کاربر)' : 'Inverter datasheet evidence (user attestation)'}</legend>
-                    <p className="text-[11px] text-theme-muted">{lang === 'fa' ? 'دادهٔ کاتالوگ داخلی احراز رسمی نشده است. URL و فرکانس نامی را از دیتاشیت دقیق مدل وارد کنید؛ سامانه اصالت URL را تأیید نمی‌کند.' : 'Built-in catalog facts are not officially authenticated. Enter the exact-model datasheet URL and nominal frequency; the app does not authenticate the URL.'}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'فرکانس نامی خروجی اینورتر (Hz)' : 'Inverter nameplate output frequency (Hz)'}<input data-testid="ac-inverter-nameplate-frequency" type="number" min="0" step="any" value={currentAcRequirements.inverterNameplate.nominalFrequencyHz ?? ''} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, nominalFrequencyHz: e.target.value === '' ? null : Number(e.target.value), userConfirmed: false } }))} className="studio-input mt-1 w-full" /></label>
-                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'پیوند دیتاشیت دقیق مدل (HTTPS)' : 'Exact-model datasheet URL (HTTPS)'}<input data-testid="ac-inverter-nameplate-url" type="url" value={currentAcRequirements.inverterNameplate.sourceUrl} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, sourceUrl: e.target.value, userConfirmed: false } }))} className="studio-input mt-1 w-full" placeholder="https://manufacturer.example/..." /></label>
-                    </div>
-                    <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid="ac-inverter-nameplate-confirmed" checked={currentAcRequirements.inverterNameplate.userConfirmed} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, userConfirmed: e.target.checked } }))} />{lang === 'fa' ? 'فاز/ولتاژ/فرکانس را با دیتاشیت همین مدل تطبیق دادم (اظهار کاربر؛ تأیید مستقل نیست)' : 'I checked phase/voltage/frequency against this exact model datasheet (user assertion; not independently verified)'}</label>
-                  </fieldset>
-                  <fieldset className="rounded-lg border border-industrial-border p-3">
-                    <legend className="px-1 text-xs font-bold text-theme-strong">{lang === 'fa' ? 'نقطه تزریق پس از ترانسفورماتور' : 'Post-transformer grid injection point'}</legend>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
-                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'سطح شبکه' : 'Network level'}<select aria-label="Grid injection level" data-testid="ac-injection-level" value={currentAcRequirements.injection.level} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, level: e.target.value as AcRequirements['injection']['level'], confirmed: false } }))} className="studio-input mt-1 w-full"><option value="unknown">Unknown</option><option value="not_applicable">Not applicable</option><option value="lv">LV</option><option value="mv">MV</option><option value="hv">HV</option></select></label>
-                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'ولتاژ نامی (kV)' : 'Nominal voltage (kV)'}<input aria-label="Grid injection nominal kV" data-testid="ac-injection-voltage" type="number" min="0" step="any" value={currentAcRequirements.injection.nominalKv ?? ''} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, nominalKv: e.target.value === '' ? null : Number(e.target.value), confirmed: false } }))} className="studio-input mt-1 w-full" /></label>
-                      <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid="ac-injection-confirmed" checked={currentAcRequirements.injection.confirmed} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, confirmed: e.target.checked } }))} />{lang === 'fa' ? 'مورد تأیید است' : 'Confirmed'}</label>
-                    </div>
-                  </fieldset>
-                  {systemMode !== 'powerplant' && loads.length > 0 && <details className="rounded-lg border border-industrial-border p-3"><summary className="cursor-pointer text-xs font-bold">{lang === 'fa' ? 'نیاز AC هر بار (در صورت تفاوت با سرویس سایت)' : 'Per-load AC requirement (when different from site service)'}</summary><div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">{loads.map((load) => renderAcConnectionFields(`load:${load.id}`, currentAcRequirements.loadOverrides[load.id] ?? createUnknownAcRequirements().loadService, `${load.name} — ${lang === 'fa' ? 'نیاز مستقل' : 'load-specific requirement'}`))}</div></details>}
-                </section>
-
-                {/* 3 Main Topologies */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                  {/* Powerplant */}
-                  <div
-                    onClick={() => setSystemMode('powerplant')}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${
-                      systemMode === 'powerplant'
-                        ? 'border-amber-500 bg-amber-950/20'
-                        : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-amber-400 flex items-center gap-2 text-sm sm:text-base">
-                        <Building2 className="w-5 h-5 shrink-0" />
-                        {lang === 'fa' ? 'نیروگاه تجاری (IPP Powerplant)' : 'Utility Powerplant (IPP)'}
-                      </h3>
-                      {systemMode === 'powerplant' && <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />}
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      {lang === 'fa'
-                        ? 'اتصال مستقیم به شبکه فشار متوسط (20kV/33kV). محاسبات باتری و بارهای الکتریکی به طور کامل غیرضروری و حذف می‌شوند.'
-                        : 'Direct MV grid injection (20kV/33kV). Battery storage and local load profiling are bypassed.'}
-                    </p>
-                  </div>
-
-                  {/* On-grid with Backup */}
-                  <div
-                    onClick={() => setSystemMode('ongrid')}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${
-                      systemMode === 'ongrid'
-                        ? 'border-sky-500 bg-sky-950/20'
-                        : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-sky-400 flex items-center gap-2 text-sm sm:text-base">
-                        <Grid className="w-5 h-5 shrink-0" />
-                        {lang === 'fa' ? 'متصل به شبکه با پشتیبان (On-grid)' : 'On-Grid with Backup'}
-                      </h3>
-                      {systemMode === 'ongrid' && <CheckCircle2 className="w-5 h-5 text-sky-400 shrink-0" />}
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      {lang === 'fa'
-                        ? 'تأمین بار از شبکه و PV. باتری صرفاً بر مبنای ساعات قطعی و خاموشی شبکه در ساعات اوج بار سایز می‌شود.'
-                        : 'Supplies local loads via grid and PV. Battery storage is sized strictly for grid outage hours.'}
-                    </p>
-                  </div>
-
-                  {/* Off-grid */}
-                  <div
-                    onClick={() => setSystemMode('offgrid')}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${
-                      systemMode === 'offgrid'
-                        ? 'border-emerald-500 bg-emerald-950/20'
-                        : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-emerald-400 flex items-center gap-2 text-sm sm:text-base">
-                        <Zap className="w-5 h-5 shrink-0" />
-                        {lang === 'fa' ? 'مستقل از شبکه (Off-grid Standalone)' : 'Standalone Off-Grid'}
-                      </h3>
-                      {systemMode === 'offgrid' && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      {lang === 'fa'
-                        ? 'عدم دسترسی به شبکه سراسری. سایزینگ بر مبنای بار ۲۴ ساعته و روزهای خودمختاری ابری (Autonomy) انجام می‌پذیرد.'
-                        : '100% autonomous off-grid operation. Sizing is governed by 24h load profile and autonomy days.'}
-                    </p>
-                  </div>
-                </div>
-
+          {/* Utility electrical design only. Customer grid policy lives with loads. */}
+          {activeTab === 'electrical_requirements' && systemMode === 'powerplant' && (
+            <div className="studio-card space-y-5" data-testid="utility-electrical-design">
+              <h2 className="text-xl font-bold text-sky-400">{lang === 'fa' ? 'الزامات AC و طراحی بی‌های MV نیروگاه' : 'Utility AC requirements & MV bays'}</h2>
+              {acRequirementsPanel}
                 {/* POWERPLANT SPECIFIC ARCHITECTURE: STRING vs MV TURNKEY & BAY BREAKDOWN */}
                 {systemMode === 'powerplant' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-5">
@@ -2846,6 +2761,34 @@ export const App: React.FC = () => {
                   </div>
                 )}
 
+            </div>
+          )}
+
+          <React.Suspense fallback={<TabSuspenseFallback lang={lang} />}>
+            {/* SITE & CLIMATE MAP TAB */}
+            {activeTab === 'climate' && (
+            <ClimateTab
+              operationalContext={operationalContext} operationalEnergy={adoptedEnergy} onOperationalEnergyChange={changeOperationalEnergy}
+              referenceContext={{hasTracker:Boolean(trackerConfig),tiltDeg:city.optimalTiltAnnualDeg,installationEnvironment:siteOverrides.installationEnvironment??'ground_mount'}}
+              selectedCity={city}
+              onCityChange={transitionSite}
+              onCreate3dRooftop={(newCity) => {
+                transitionSite(newCity);
+                setActiveTab('3d_viewer');
+              }}
+              lang={lang}
+            />
+          )}
+
+          {/* ELECTRICAL LOADS TAB (Hidden in Powerplant mode) */}
+          {activeTab === 'research' && <ResearchWorkspace latitude={city.latitude} longitude={city.longitude} lang={lang} context={operationalContext}/>}
+          {activeTab === 'loads' && systemMode !== 'powerplant' && (
+            <div className="space-y-6">
+              <section className="studio-card space-y-4" data-testid="load-grid-policy">
+                <h2 className="font-bold text-lg">{lang === 'fa' ? 'اتصال بارهای خانگی و صنعتی به شبکه' : 'Residential & industrial load grid connection'}</h2>
+                <div className="flex flex-wrap gap-3">
+                  {(['ongrid','offgrid'] as const).map(mode => <button key={mode} data-testid={`load-mode-${mode}`} aria-pressed={systemMode===mode} onClick={()=>setSystemMode(mode)} className={`px-4 py-3 rounded-lg border font-bold ${systemMode===mode?'border-sky-400 bg-sky-500/20 text-sky-300':'border-industrial-border text-theme-muted'}`}>{mode==='ongrid' ? (lang==='fa'?'متصل به شبکه (On-grid)':'On-grid') : (lang==='fa'?'مستقل از شبکه (Off-grid)':'Off-grid')}</button>)}
+                </div>
                 {/* Specific Parameter Config for On-Grid / Off-Grid */}
                 {systemMode === 'ongrid' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
@@ -2891,28 +2834,9 @@ export const App: React.FC = () => {
                     </p>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
 
-          <React.Suspense fallback={<TabSuspenseFallback lang={lang} />}>
-            {/* SITE & CLIMATE MAP TAB */}
-            {activeTab === 'climate' && (
-            <ClimateTab
-              operationalContext={operationalContext} operationalEnergy={adoptedEnergy} onOperationalEnergyChange={changeOperationalEnergy}
-              referenceContext={{hasTracker:Boolean(trackerConfig),tiltDeg:city.optimalTiltAnnualDeg,installationEnvironment:siteOverrides.installationEnvironment??'ground_mount'}}
-              selectedCity={city}
-              onCityChange={transitionSite}
-              onCreate3dRooftop={(newCity) => {
-                transitionSite(newCity);
-                setActiveTab('3d_viewer');
-              }}
-              lang={lang}
-            />
-          )}
-
-          {/* ELECTRICAL LOADS TAB (Hidden in Powerplant mode) */}
-          {activeTab === 'loads' && systemMode !== 'powerplant' && (
+              </section>
+              {acRequirementsPanel}
             <LoadProfilingTab
               loads={loads}
               onLoadsChange={setLoads}
@@ -2926,6 +2850,7 @@ export const App: React.FC = () => {
               peakSunHours={city.peakSunHours}
               lang={lang}
             />
+            </div>
           )}
 
           {/* PV ARRAY ENGINEERING TAB */}

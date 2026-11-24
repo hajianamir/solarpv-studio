@@ -30,7 +30,6 @@ export const translations = {
     // Tabs
     tabSiteLocation: 'نقشه و داده‌های اقلیمی',
     tabLoads: 'بارهای الکتریکی خانگی و صنعتی',
-    tabSystemMode: 'مدیریت سناریو و اتصال',
     tabPvEngineering: 'طراحی پیشرفته آرایه PV',
     tabUpstreamGrid: 'تحلیل شبکه بالادست و THD',
     tabMvSubstation: 'پست فشار متوسط و BOM',
@@ -98,7 +97,6 @@ export const translations = {
     // Tabs
     tabSiteLocation: 'Map & NASA Climate Data',
     tabLoads: 'Residential & Industrial Loads',
-    tabSystemMode: 'System Mode & Grid Connection',
     tabPvEngineering: 'Advanced PV Array Engineering',
     tabUpstreamGrid: 'Upstream Grid & Harmonics Analysis',
     tabMvSubstation: 'MV Substation & Protection BOM',

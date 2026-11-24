@@ -1,3 +1,4 @@
+import {chooseResearchExample} from './research-browser-navigation';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
@@ -16,10 +17,10 @@ try{
  browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']});
  const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),c=Buffer.from(JSON.stringify({sub:'research-browser',iss:'research',aud:'research',exp:Math.floor(Date.now()/1000)+300})).toString('base64url');const token=`${h}.${c}.${createHmac('sha256',secret).update(`${h}.${c}`).digest('base64url')}`;
  const context=await browser.newContext({extraHTTPHeaders:{Authorization:`Bearer ${token}`},acceptDownloads:true,serviceWorkers:'block'});const page=await context.newPage();await page.route('https://**/*',r=>r.abort());const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base);await page.getByTestId('workflow-tab-climate').locator(':visible').first().click();const panel=page.getByTestId('research-editor');await panel.waitFor();const input=panel.getByLabel('Research JSON');const run=panel.getByRole('button',{name:'Run research',exact:true});
+ await page.goto(base);await page.getByTestId('workflow-tab-research').locator(':visible').first().click();const panel=page.getByTestId('research-editor');await panel.waitFor();const input=panel.getByLabel('Research JSON');const run=panel.getByRole('button',{name:'Run research',exact:true});
  let jobs=0;
  for(const [label,name] of [['Material inventory example','inventory']]){
-  jobs++;await panel.getByRole('button',{name:label,exact:true}).click();await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});
+  jobs++;await chooseResearchExample(panel,label);await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});
   const request=ResearchRequestSchema.parse(JSON.parse(await readFile(`docs/examples/references/${name}.json`,'utf8')));
   validateResearchResponse(JSON.parse(await panel.getByTestId('research-result').innerText()),request);
  }
@@ -27,6 +28,6 @@ try{
  await panel.getByLabel('Import research').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:await readFile(file)});assert.equal(await panel.getByTestId('research-result').count(),0);
  await page.route('**/api/v1/research/run',async route=>{await new Promise(r=>setTimeout(r,700));try{await route.continue();}catch{}});
  await run.click();await panel.getByRole('button',{name:'Cancel research',exact:true}).click();await page.waitForTimeout(900);assert.equal(await panel.getByTestId('research-result').count(),0);
- await page.route('**/api/v1/research/capabilities',async route=>{const response=await route.fetch();const body=await response.json();body.materialInventoryEnabled=false;body.operations=body.operations.filter((x:string)=>x!=='pvice_inventory');await route.fulfill({response,json:body});});await page.reload();await page.getByTestId('workflow-tab-climate').locator(':visible').first().click();await panel.waitFor();await panel.getByRole('button',{name:'Material inventory example',exact:true}).click();await run.and(page.locator(':disabled')).waitFor({state:'visible',timeout:10000});assert.equal(await run.isDisabled(),true);
+ await page.route('**/api/v1/research/capabilities',async route=>{const response=await route.fetch();const body=await response.json();body.materialInventoryEnabled=false;body.operations=body.operations.filter((x:string)=>x!=='pvice_inventory');await route.fulfill({response,json:body});});await page.reload();await page.getByTestId('workflow-tab-research').locator(':visible').first().click();await panel.waitFor();await chooseResearchExample(panel,'Material inventory example');await run.and(page.locator(':disabled')).waitFor({state:'visible',timeout:10000});assert.equal(await run.isDisabled(),true);
  assert.deepEqual(errors,[]);console.log('PASS material inventory production Chromium, JWT, schema/input-bound results, archive download/restore and cancel/stale suppression');
 }finally{await browser?.close();child.kill('SIGTERM');}

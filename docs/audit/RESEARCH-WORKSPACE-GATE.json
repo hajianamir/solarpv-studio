@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "research-workspace-gate-v1",
+  "softwareStatus": "ready-for-review",
+  "scope": [
+    "independent lazy research workspace with four tool sections and thirteen model topics",
+    "utility AC/MV engineering preserved without customer mode dashboard",
+    "on/off-grid policy with loads; project family navigation and explicit restore preserved"
+  ],
+  "boundary": {
+    "projectSchemaChanged": false,
+    "numericalEngineChanged": false,
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "fieldQualificationClaimed": false
+  },
+  "notTested": [
+    "all optional scientific runtimes and every A1-D3 acceptance suite",
+    "native Windows/Safari"
+  ],
+  "checks": [
+    {
+      "command": "npm run lint:types",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx eslint src/App.tsx src/components/ClimateTab.tsx src/components/ResearchEditor.tsx src/components/ResearchWorkspace.tsx src/helpContent.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run verify:help",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm test",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run build",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-research-workspace-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-browser-regressions.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-research-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-calibration-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-direct-pvlib-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-foundation-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "src/App.tsx": "d68dcde21dc6c6f05dc08cc70bb559e7448368b4101892b8e5b7419ca34d6d9e",
+    "src/components/ClimateTab.tsx": "8ddfa564028ffc03469478ffa94cdbed83ec451cd244a3623a955b70c24d418b",
+    "src/components/ResearchEditor.tsx": "64768a0eb10a94db2b4658e57c0063f05a34c766f2fd59cd89cee7aee74ae7c7",
+    "src/components/ResearchWorkspace.tsx": "a589081414b9c2cc4a65f683e33d92a2456e3027b36c67ad96bc9eedf7a7e4e7",
+    "src/helpContent.ts": "2f274805cc9e0ad6a3ca34c45be10d703f646d4e54ee4634e0e69a0b4d5d5669",
+    "src/i18n.ts": "e2e138a80096bf4382a88566fe35ed7da7dba9bf77c7a30d1aacf0c4baa1d8a1",
+    "src/engine/core/benchmarks/unitTestsCore.ts": "343be726bdf58ece5891e216b066ac0c0b2d09fd47309a270ac1396e37f5fffc",
+    "scripts/research-browser-navigation.ts": "45108dd80fca02249c4fea63091c89636d2df792ad7b41577858c2772b573998",
+    "scripts/test-research-workspace-browser.ts": "dec86cbd59671f673c4bc90d7d67d3267469cf0930cd1d6076f38765181c089b",
+    "scripts/test-browser-regressions.ts": "6cc47ffcd2fd5416074a0bdea22523c56d9775316e456a95d6ab591ffdf2569d",
+    "scripts/test-research-browser.ts": "86eec1f405350bee4a671eb72ddb19094301305dca58583fe1a99dd23c9b3efc",
+    "scripts/test-calibration-browser.ts": "9cc60c33ff8523f82cb95330026890c2b723fce635b6167c28fc8532c712c710",
+    "scripts/test-direct-pvlib-browser.ts": "ac0a8b11f1c6148ba080350a31656faa596aab694eb8b79744f220659c2d511c",
+    "scripts/verify-research-workspace.ts": "e9d3430fdc9de8d569238bccf1db3f03af045aeded1600984bcc8f2c8b3f04d7",
+    "docs/features/RESEARCH-WORKSPACE-SPEC.fa.md": "413bd45674bba4057017e5ca0c1f4573e725f7ac1e249c88512a104b6e31e9d0",
+    "docs/features/RESEARCH-WORKSPACE.fa.md": "5ee0b0ce42ed3983e1a7498cc1d4e9c638959a8f0e57b91eb7e696e84a92b6b1",
+    "CHANGELOG.md": "1c243cbb255e19dfcf6976b927450c2a03d7a7c5ef770985890a27fe72cf40b5"
+  }
+}

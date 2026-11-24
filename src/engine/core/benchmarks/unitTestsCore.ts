@@ -961,7 +961,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     `208/120 V 60 Hz explicit on-grid=${acCompatibleNorthAmerican.status}; 400 V inverter mismatch=${acIncompatibleInverter.status}; legacy AC stays unknown=${acOldProjectMigration.project.acRequirements === null}; infinite load voltage/injection are incomplete.`);
 
   const contextualHelpPages = [
-    'climate', 'loads', 'system_mode', 'array', 'harmonics_grid', 'mv_substation', 'bess',
+    'climate', 'research', 'loads', 'electrical_requirements', 'array', 'harmonics_grid', 'mv_substation', 'bess',
     'cables_bom', 'structural', 'sim24h', 'waterfall_loss', 'financial', 'sld', 'cad_layout',
     '3d_viewer', 'scenarios', 'catalog', 'iran_regulations', 'solar_pumping', 'iv_curve', 'rfc3_reports',
   ];

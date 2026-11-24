@@ -1,3 +1,4 @@
+import {openResearch} from './research-browser-navigation';
 import {fieldEvidenceReview,fieldEvidenceCriteriaCsv,fieldEvidenceRowsCsv} from '../src/studies/fieldEvidenceReview';
 import {energyUncertaintyReview,energyUncertaintyBudgetCsv} from '../src/studies/energyUncertaintyReview';
 import {outputCalibrationReview,outputCalibrationRowsCsv} from '../src/studies/outputCalibrationReview';
@@ -42,13 +43,14 @@ try{
   await page.goto(base);
   const tab=async(name:string)=>{await page.getByTestId(`workflow-tab-${name}`).locator(':visible').first().click();};
   await tab('climate');
-  const panel=page.getByTestId('pvlib-study-panel');await panel.waitFor();
+  const panel=page.getByTestId('pvlib-study-panel');
+  await tab('climate');
   await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();
   await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');
-  await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();
+  await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();await openResearch(page,'studies');await panel.waitFor();
   const waterfall=page.getByRole('heading',{name:/PVsyst-Grade Loss Waterfall/}).locator('../..');
   await tab('waterfall_loss');await waterfall.waitFor();const before=await waterfall.locator('table').allTextContents();assert.ok(before.length);
-  await tab('climate');
+  await openResearch(page,'studies');await panel.waitFor();
   const request=JSON.parse(await readFile('services/pvlib_study/tests/synthetic-study.json','utf8'));
   request.system.arrayPdc0W=8800;request.system.electrical=JSON.parse(await readFile('services/pvlib_study/tests/desoto-reference-parameters.json','utf8'));
   request.system.faiman={u0:30,u1:5,windHeightM:10};request.system.acExportLimitW=100;
@@ -124,10 +126,11 @@ try{
   const csvPromise=page.waitForEvent('download');await page.getByTestId('download-study-csv').click();assert.ok((await csvPromise).suggestedFilename().endsWith('.csv'));
   // Persist a real result, reload the browser, restore without rerunning, then vary a parameter.
   await page.getByTestId('save-study').click();await page.getByTestId('saved-study-entry').waitFor();
-  await page.reload();await tab('climate');
+  await page.reload();await openResearch(page,'studies');
+  await tab('climate');
   await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();
   await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');
-  await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();
+  await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();await openResearch(page,'studies');await panel.waitFor();
   await page.getByTestId('saved-study-entry').getByRole('button',{name:/^Restore$|^بازیابی$/}).click();
   await page.getByTestId('pvlib-study-result').waitFor();
   await page.getByTestId('dc-cable-result').waitFor();assert.equal(await page.getByLabel('Study sharedLoopResistanceOhm',{exact:true}).inputValue(),'0.3');
@@ -205,8 +208,9 @@ try{
   const multiResult=JSON.parse(await readDownload('download-study-json'));assert.deepEqual(multiResult.request.system.mpptInputs,mpptInputs);assert.ok(multiResult.samples.some((row:Record<string,number>)=>Math.abs(row.m0_operatingVoltageV-row.m1_operatingVoltageV)>20));assert.equal('operatingVoltageV' in multiResult.samples[0],false);assert.ok((await readDownload('download-study-csv')).includes('m1_operatingVoltageV'));assert.ok((await readDownload('download-study-report')).includes('Independent MPPT energy by input'));
   const multiArchive=await readDownload('backup-study');await page.getByLabel('Restore study archive').setInputFiles({name:'multi-mppt.json',mimeType:'application/json',buffer:Buffer.from(multiArchive)});await page.getByTestId('multi-mppt-result').waitFor();assert.equal(await page.getByLabel('Study electrical model',{exact:true}).inputValue(),'multi');assert.deepEqual(JSON.parse(await page.getByLabel('Study MPPT inputs JSON',{exact:true}).inputValue()),mpptInputs);
   await page.getByTestId('save-study').click();await pollBrowser(page,()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===2);
-  await page.reload();await tab('climate');
-  await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();
+  await page.reload();await openResearch(page,'studies');
+  await tab('climate');
+  await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();await openResearch(page,'studies');await panel.waitFor();
   const multiEntry=page.getByTestId('saved-study-entry').filter({hasText:'SYNTHETIC MULTI MPPT TEST'});await multiEntry.getByRole('button',{name:/^Restore$|^بازیابی$/}).click();await page.getByTestId('multi-mppt-result').waitFor();assert.deepEqual(JSON.parse(await readDownload('download-study-json')),multiResult);
   // Step 37: independent inverter models, complete child reports and durable restore.
   const inverterBlocks=JSON.parse(await readFile('docs/examples/inverter-blocks.synthetic.json','utf8'));
@@ -243,8 +247,9 @@ try{
   const periodRange={startUtc:'2017-04-01T16:30:00Z',endUtc:'2017-04-01T17:30:00Z'};await page.getByLabel('Measurement period start',{exact:true}).fill(periodRange.startUtc);await page.getByLabel('Measurement period end',{exact:true}).fill(periodRange.endUtc);await page.getByTestId('apply-measurement-period').click();await page.getByTestId('measurement-residual-chart').waitFor();assert.equal(await page.getByTestId('measurement-residual-chart').locator('circle').count(),1);
   const periodAnalysis=measurementPeriods(blockResult,periodRange);assert.deepEqual(JSON.parse(await readDownload('download-measurement-period-json')),periodAnalysis);assert.equal(await readDownload('download-measurement-period-summary-csv'),measurementPeriodSummaryCsv(periodAnalysis));assert.equal(await readDownload('download-measurement-period-residual-csv'),measurementResidualCsv(periodAnalysis));assert.ok(blockReport.includes('study-measurement-period-analysis-v1'));assert.ok((await page.getByTestId('measurement-period-table').innerText()).includes('2017-04-01'));
   const blockArchive=await readDownload('backup-study');await page.getByLabel('Restore study archive').setInputFiles({name:'inverter-blocks.json',mimeType:'application/json',buffer:Buffer.from(blockArchive)});await page.getByTestId('inverter-block-result').waitFor();await pollBrowser(page,()=>document.querySelector<HTMLInputElement>('[aria-label="Measurement period start"]')?.value==='');assert.equal(await page.getByLabel('Measurement period start',{exact:true}).inputValue(),'');assert.equal(await page.getByTestId('measurement-residual-chart').locator('circle').count(),2);assert.equal(await page.getByLabel('Study electrical model',{exact:true}).inputValue(),'blocks');assert.deepEqual(JSON.parse(await page.getByLabel('Study inverter blocks JSON',{exact:true}).inputValue()),inverterBlocks);
-  await page.getByTestId('save-study').click();await pollBrowser(page,()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===3);await page.reload();await tab('climate');
-  await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();
+  await page.getByTestId('save-study').click();await pollBrowser(page,()=>document.querySelectorAll('[data-testid="saved-study-entry"]').length===3);await page.reload();await openResearch(page,'studies');
+  await tab('climate');
+  await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();await openResearch(page,'studies');await panel.waitFor();
   await page.getByTestId('saved-study-entry').filter({hasText:'SYNTHETIC INVERTER BLOCK TEST'}).getByRole('button',{name:/^Restore$|^بازیابی$/}).click();await page.getByTestId('inverter-block-result').waitFor();assert.deepEqual(JSON.parse(await readDownload('download-study-json')),blockResult);assert.equal(await page.getByTestId('measurement-input-entry').count(),1);assert.deepEqual(JSON.parse(await readDownload('download-measurement-comparison')),comparisonDownload);assert.equal(await page.getByLabel('Study auxiliary enabled',{exact:true}).inputValue(),'schedule');assert.equal(await page.getByLabel('Study auxiliarySchedule CSV',{exact:true}).inputValue(),auxiliaryCsv);assert.equal(await page.getByLabel('Study export enabled',{exact:true}).inputValue(),'schedule');assert.equal(await page.getByLabel('Study exportSchedule CSV',{exact:true}).inputValue(),capCsv);await page.getByTestId('weather-import-trace').waitFor();assert.equal(await page.getByLabel('Study AC cable enabled',{exact:true}).inputValue(),'yes');assert.equal(await page.getByLabel('Study resistancePerPhaseOhm',{exact:true}).inputValue(),'0.4');
   // Validation tools: explicit assumptions, annual guard, actual reports, saved-plan recompute + exact-result protocol package/tamper/size/reconfirm + dedicated calibration raw/corrected review/exports/reset + sourced uncertainty budget/exports/cancellation/duplicate and stale-file regression, no field claim.
   await page.getByTestId('study-validation-tools').locator('summary').click();await page.getByTestId('example-energy_uncertainty').click();const uncertaintyPlan=JSON.parse(await page.getByLabel('Study validation plan',{exact:true}).inputValue());assert.equal(await page.getByTestId('run-study-validation').isDisabled(),true);

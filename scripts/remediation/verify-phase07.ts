@@ -1058,7 +1058,7 @@ function getElementValue(node: any): string {
   if (modalCloseBtn) triggerReactClick(modalCloseBtn);
   await waitForCondition(() => findElementById(appContainer, 'report-modal-close-btn') === null);
 
-  // Navigate to 'system_mode' tab to mutate project capacity while Structural Tab is unmounted
+  // Navigate to 'electrical_requirements' tab to mutate project capacity while Structural Tab is unmounted
   const systemModeTabBtn =
     findElementByTagAndText(appContainer, 'BUTTON', 'بی‌های MV') ||
     findElementByTagAndText(appContainer, 'BUTTON', 'Topology & MV Bays') ||
