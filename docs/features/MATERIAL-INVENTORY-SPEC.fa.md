@@ -1,0 +1,9 @@
+# پذیرش زیرمجموعهٔ D2: مواد متعدد و تطبیق موجودی
+
+ورودی versioned `pvice-inventory-v1` با هویت context، installationScale و فهرست یکتای حداکثر7 مادهٔ frozen: glass,silicon,silver,copper,aluminium_frames,encapsulant,backsheet. module baseline US و مواد از commit378a012a0602062ad52f14120d672f362dcc018a PV ICE، version0.4.3، مجوز/هش در manifest. این داده‌ها متوسط تاریخی/پیش‌بینی c-Si هستند، نه موجودی واقعی محل. پارامترهای سفارشی/site BOM و محاسبهٔ LCA/کربن/هزینه خارج دامنه‌اند.
+
+inventory اختیاری versioned با source/documentSha256/contextSha256، unit=kg و boundary=annual_selected_material_flows؛ مشاهدات یکتا year/material/metric برای virginStockKg،landfillKg،usedInModulesKg، observedKg و absoluteToleranceKg صریح. مرز/واحد نامعلوم رد شود، context متفاوت fail-closed با not_matched و بدون comparison؛ سال/مادهٔ خارج horizon/selection رد شود. tolerance قاعدهٔ تصمیم است، نه interval آماری یا اثبات صحت اندازه‌گیری. نبود inventory=not_provided. match context صرفاً تطبیق اظهار است؛ خروجی هرگز projectApproved نمی‌شود.
+
+actual PV ICE محاسبهٔ هم‌زمان مواد در runtime اختیاری جدا، نه پیاده‌سازی بدل. trace و totals هر ماده، جمع فقط مواد منتخب (بدون ادعای کل ماژول). دو ledger manufacturing/landfill و oracle مستقل area*mass_per_area برای usedInModulesKg. residual تطبیق=model-observed؛ وضعیت inside/outside tolerance. آزمایش برابر/اختلاف/صفر/ناهماهنگی context/واحد/کلید تکراری، scale و انتخاب مواد، upstream golden شیشه، منبع/immutability/offline الزامی است.
+
+اتصال strict TS/Python/API/SDK/editor با flag مستقل MATERIAL_INVENTORY_ENABLED به‌علاوه REFERENCE_MODELS_ENABLED و پایهٔ research (همه default-off)، runtime جدا و rollback. آزمون‌های Python،شاهد TS،tamper/API/auth/SDK/browser و کل گیت قبلی لازم‌اند. بدون attach مالی/annual energy، status insufficient_evidence/projectApproval blocked. همهٔ D2 یا A1–D3 با این برش تمام نمی‌شوند.

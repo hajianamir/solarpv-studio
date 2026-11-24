@@ -1,0 +1,28 @@
+{
+  "source": "Synthetic analytical acceptance fixture; not field calibration",
+  "contextSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "schemaVersion": "pvt-pcm-v1",
+  "intervalS": 100,
+  "stepS": 10,
+  "massKgM2": 1,
+  "heatCapacityJkgK": 2000,
+  "latentJkg": 10000,
+  "meltC": 30,
+  "initialC": 30,
+  "initialMeltFraction": 0,
+  "absorptance": 1,
+  "efficiencyRef": 0,
+  "gammaPerK": 0,
+  "ambientLossWm2K": 0,
+  "fluidUaWm2K": 0,
+  "temperatureToleranceC": 0.001,
+  "records": [
+    {
+      "timestamp": "2026-01-01T00:00:00Z",
+      "solarWm2": 50,
+      "airC": 30,
+      "inletC": 30,
+      "flowHeatCapacityWm2K": 0
+    }
+  ]
+}

@@ -1,0 +1,702 @@
+{
+  "schemaVersion": "capability-manifest-v1",
+  "capabilities": [
+    {
+      "id": "N01",
+      "title": "طراحی/بهینه‌سازی هم‌زمان PV و BESS",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "بهینه‌ساز مشترک ظرفیت PV، توان/انرژی BESS و inverter همراه CAPEX و قیود تحویل؛ optimum شبکهٔ SOC را optimum طراحی پیوسته ننامیم",
+      "executors": [
+        "src/studies/advancedDispatch.ts",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/PvlibStudyPanel.tsx",
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-advanced-dispatch.ts",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "N02",
+      "title": "BESS مستقل/هیبرید با تولید خارجی PV/باد/شبکه",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "workflow مستقل BESS و import عمومی تولید خارجی با origin/واحد/timezone، جلوگیری از انتساب نادرست باد به PV و تطبیق قیود اتصال؛ DC-coupled پژوهشی جای محصول کامل نیست",
+      "executors": [
+        "src/studies/operatingDispatch.ts",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-operating-dispatch.ts",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "N03",
+      "title": "محدودیت تحویل/صادرات انرژی",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "قرارداد واحد POI برای import/export و الزام تحویل قراردادی، penalty/availability و infeasibility؛ تفکیک cap توان از سهمیهٔ انرژی",
+      "executors": [
+        "services/pvlib_study/worker.py",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "services/pvlib_study/tests/test_export_limit_schedule.py",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "N04",
+      "title": "auxiliaries ثابت و ساعتی BESS و OPEX",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "این مصرف کمکی نیروگاه است نه HVAC باتری. مدل بار حرارتی BESS، weather interpolation با policy صریح، فن/پمپ/standby و جریان انرژی/هزینه بدون دوباره‌شماری لازم است",
+      "executors": [
+        "services/pvlib_study/worker.py",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "services/pvlib_study/tests/test_auxiliary_schedule.py",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "N05",
+      "title": "اگریولتائیک: برق+محصول، خرداقلیم، LER",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "PAR/DLI مکانی، ET/soil water، crop model، شاهد محصول و کنترل هم‌مکان؛ LER با مرجع مستقل و boundary یکسان",
+      "executors": [
+        "services/pvlib_research/science_c.py",
+        "src/studies/scienceC.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_c.py",
+        "scripts/test-science-c.ts",
+        "scripts/test-science-c-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded authenticated C research: declared trip deadline/Volt-Var screen (not GFM/utility certificate), simplified Agri/FPV water/heat, isothermal PEM and lumped PCM only. Not full capability, field qualification, spatial Stefan, coupled PEM/PV-T or automatic energy/finance adoption."
+    },
+    {
+      "id": "N06",
+      "title": "FPV: خنک‌شدن آب و تبخیر",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "solver معتبر آب-هوا-ماژول، پوشش سطح مخزن، تراز آب/تبخیر و اعتبارسنجی پیدا نشد؛ درصد ثابت cooling/evaporation پذیرفته نیست",
+      "executors": [
+        "services/pvlib_research/science_c.py",
+        "src/studies/scienceC.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_c.py",
+        "scripts/test-science-c.ts",
+        "scripts/test-science-c-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded authenticated C research: declared trip deadline/Volt-Var screen (not GFM/utility certificate), simplified Agri/FPV water/heat, isothermal PEM and lumped PCM only. Not full capability, field qualification, spatial Stefan, coupled PEM/PV-T or automatic energy/finance adoption."
+    },
+    {
+      "id": "N07",
+      "title": "PV→الکترولایزر و H2 دینامیک",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "solver واقعی polarization/Faradaic efficiency، part-load، startup/ramp، توان auxiliaries، تراز جرم/انرژی، پروفیل زمانی و مسیر UI/API لازم است",
+      "executors": [
+        "services/pvlib_research/science_c.py",
+        "src/studies/scienceC.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_c.py",
+        "scripts/test-science-c.ts",
+        "scripts/test-science-c-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded authenticated C research: declared trip deadline/Volt-Var screen (not GFM/utility certificate), simplified Agri/FPV water/heat, isothermal PEM and lumped PCM only. Not full capability, field qualification, spatial Stefan, coupled PEM/PV-T or automatic energy/finance adoption."
+    },
+    {
+      "id": "N08",
+      "title": "P50/P75/P90/P99 انرژی و ریسک مالی",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "P50/P90 قابل نمایش است؛ در مسیر مالی P75/P99 با شواهد tail و بازهٔ خطای برآورد کامل نیست. پارامترهای مالی اکتشافی پروژه‌کالیبره نیستند. تعمیم همهٔ مسیرها به یک توزیع مجاز نیست",
+      "executors": [
+        "src/engine/core/uncertaintyPropagation.ts",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/FinancialTab.tsx",
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-financial-uq-worker.ts",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "N09",
+      "title": "محرک‌های اصلی عدم‌قطعیت",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "سهم علّی یا سهم واریانس مستقل انرژی نیست؛ تفکیک معتبر و attribution وابسته به همبستگی، interaction و خطای تخمین باقی است",
+      "executors": [
+        "src/studies/energyUncertaintyReview.ts",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-energy-uncertainty-review.ts",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "N10",
+      "title": "sensor-light twin + SCADA + Health Index",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "ingest عملیاتی SCADA، asset identity، بازه‌های outage/curtailment، drift و reference مستقل/peer، هشدار false-positive کنترل‌شده و Health Index تعریف‌شده باقی است؛ CSV comparison دوقلو نیست",
+      "executors": [
+        "src/studies/measurementComparison.ts",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-measurement-comparison.ts",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "N11",
+      "title": "RUL و خوشه‌بندی کم‌عملکردی",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "Censored cohort Kaplan–Meier, pointwise CI and site/time IPCW screening implemented; individualized SCADA/ML RUL, predictive intervals, competing risks and field qualification remain absent.",
+      "executors": [
+        "src/engine/environmentalAgingEngine.ts",
+        "services/pvlib_research/portfolio.py",
+        "services/pvlib_research/survival.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-advanced-dispatch.ts",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py",
+        "scripts/test_survival.py",
+        "scripts/test-survival.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "N12",
+      "title": "کتابخانه GFL/GFM، Volt-Var، Droop، Q",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "کتابخانهٔ GFM و سناریوهای mode transition/ضعف شبکه، قیود current limiting، Volt-Var/Droop نسخه‌دار و benchmark بستهٔ کامل نیست؛ PLL/dq به‌تنهایی GFM نیست",
+      "executors": [
+        "services/power_dynamics/control.py",
+        "services/pvlib_research/science_c.py",
+        "src/studies/scienceC.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-physical-models.ts",
+        "scripts/test_science_c.py",
+        "scripts/test-science-c.ts",
+        "scripts/test-science-c-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded authenticated C research: declared trip deadline/Volt-Var screen (not GFM/utility certificate), simplified Agri/FPV water/heat, isothermal PEM and lumped PCM only. Not full capability, field qualification, spatial Stefan, coupled PEM/PV-T or automatic energy/finance adoption."
+    },
+    {
+      "id": "N13",
+      "title": "screening کد شبکه: ride-through و anti-islanding",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "rulepack کشور/utility، نسخه/دستهٔ اتصال، مدرک سازنده و سه‌حالتهٔ pass/fail/insufficient-evidence؛ anti-islanding آزمون مستقل است و با envelope ولتاژ اثبات نمی‌شود",
+      "executors": [
+        "services/power_dynamics/control.py",
+        "services/pvlib_research/science_c.py",
+        "src/studies/scienceC.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-physical-models.ts",
+        "scripts/test_science_c.py",
+        "scripts/test-science-c.ts",
+        "scripts/test-science-c-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded authenticated C research: declared trip deadline/Volt-Var screen (not GFM/utility certificate), simplified Agri/FPV water/heat, isothermal PEM and lumped PCM only. Not full capability, field qualification, spatial Stefan, coupled PEM/PV-T or automatic energy/finance adoption."
+    },
+    {
+      "id": "N14",
+      "title": "دستیار LLM برای تنظیمات و اثر LCOE",
+      "classification": "operational",
+      "maturity": "planned",
+      "limitations": "command schema محدود، sandbox سناریو، provenance اثر، diff/undo، جلوگیری از prompt injection، منع تغییر مالی/انرژی از متن خارجی و سیاست offline/provider لازم است",
+      "executors": [],
+      "ui": [],
+      "tests": [],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "LLM capability remains planned. D3 offers only deterministic offline read-only typed proposals and snapshot-grounded facts, not a model/provider or financial impact calculation."
+    },
+    {
+      "id": "N15",
+      "title": "تولید گزارش فنی/خلاصه با LLM",
+      "classification": "operational",
+      "maturity": "planned",
+      "limitations": "grounding فقط روی evidence bundle، کنترل ادعا/اعداد/ارجاع، حذف اسرار و عدم ارسال داده بدون قرارداد صریح",
+      "executors": [],
+      "ui": [],
+      "tests": [],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "LLM capability remains planned. D3 offers only deterministic offline read-only typed proposals and snapshot-grounded facts, not a model/provider or financial impact calculation."
+    },
+    {
+      "id": "N16",
+      "title": "قبض ماهانه→بار سالانه",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "ورود قبض و دوره/تعرفه، OCR اختیاری، تبدیل تقویم/واحد، حفظ kWh ماهانه، ensemble عدم‌قطعیت؛ از قبض ماهانه بار ساعتی یکتا قابل شناسایی نیست",
+      "executors": [
+        "src/engine/loadProfiles.ts",
+        "services/pvlib_research/science_d.py",
+        "src/studies/scienceD.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_d.py",
+        "scripts/test-science-d.ts",
+        "scripts/test-science-d-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded D research substrate only: declared Arrhenius/RH retention, explicit cohort cutoff LCA/mass ledger, or caller-shaped monthly-preserving profiles. No full capability, PVDeg/PV ICE adapter, field RUL, certified inventory, measured hourly load or financial adoption."
+    },
+    {
+      "id": "N17",
+      "title": "LCA و carbon footprint",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "inventory نسخه‌دار مواد/انرژی/حمل، functional unit، مرز و allocation، عامل انتشار منطقه‌ای، داده/مجوز و گزارش قابل trace؛ نام ISO در registry اثبات LCA نیست",
+      "executors": [
+        "services/pvlib_research/science_d.py",
+        "src/studies/scienceD.ts",
+        "services/pvlib_research/reference_models.py",
+        "src/studies/referenceModels.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_d.py",
+        "scripts/test-science-d.ts",
+        "scripts/test-science-d-browser.ts",
+        "scripts/test_reference_models.py",
+        "scripts/test-reference-models.ts",
+        "scripts/test-reference-models-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded D research substrate only: declared Arrhenius/RH retention, explicit cohort cutoff LCA/mass ledger, or caller-shaped monthly-preserving profiles. No full capability, PVDeg/PV ICE adapter, field RUL, certified inventory, measured hourly load or financial adoption. Selected actual pinned PVDeg Arrhenius / PV ICE glass mass-flow / coherent tmm adapters now have separately gated upstream-fixture replay. Compiled Si optical constants are not measured stack/EQE validation. No full phase, RUL, certified LCA or finance adoption."
+    },
+    {
+      "id": "N18",
+      "title": "جریان مواد EOL، بازیافت و repowering",
+      "classification": "operational",
+      "maturity": "partial",
+      "limitations": "cohort/material ledger، reuse/recycle/landfill، manufacturing scrap، repowering، mass closure و adapter مستقل PV ICE؛ منفعت مالی/کربنی دوبار حساب نشود",
+      "executors": [
+        "services/pvlib_research/science_d.py",
+        "src/studies/scienceD.ts",
+        "services/pvlib_research/reference_models.py",
+        "src/studies/referenceModels.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_d.py",
+        "scripts/test-science-d.ts",
+        "scripts/test-science-d-browser.ts",
+        "scripts/test_reference_models.py",
+        "scripts/test-reference-models.ts",
+        "scripts/test-reference-models-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded D research substrate only: declared Arrhenius/RH retention, explicit cohort cutoff LCA/mass ledger, or caller-shaped monthly-preserving profiles. No full capability, PVDeg/PV ICE adapter, field RUL, certified inventory, measured hourly load or financial adoption. Selected actual pinned PVDeg Arrhenius / PV ICE glass mass-flow / coherent tmm adapters now have separately gated upstream-fixture replay. Compiled Si optical constants are not measured stack/EQE validation. No full phase, RUL, certified LCA or finance adoption."
+    },
+    {
+      "id": "R01",
+      "title": "Monte Carlo ray tracing + مدار + مقاومت لایه‌ای",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "ray tracer MC با convergence/seed، نگاشت مکانی سلول/substring/لایه و تبادل دوطرفهٔ حرارت/الکتریسیته لازم است؛ `integrated.py` در اصل composition چند DC worker و inverter مشترک است، نه حل‌گر کامل OET B1 now adds bounded horizontal ideal-diode steady patch OET with explicit opaque triangles and two-way thermal feedback; general geometry/MC/multireflection/reverse/hotspot and external validation remain absent.",
+      "executors": [
+        "services/pvlib_research/diode_network.py",
+        "services/pvlib_research/advanced_thermal.py",
+        "services/pvlib_research/science_b.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-research-api.ts",
+        "scripts/test_science_b.py",
+        "scripts/test-science-b.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability."
+    },
+    {
+      "id": "R02",
+      "title": "توزیع مکانی T/I و mismatch زاویه‌ای/حرارتی",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "mesh مشترک، hotspot و bypass heating، همگرایی و parameter/domain validation؛ دو node میانگین جای نقشهٔ حرارتی نیست B1 now adds bounded horizontal ideal-diode steady patch OET with explicit opaque triangles and two-way thermal feedback; general geometry/MC/multireflection/reverse/hotspot and external validation remain absent.",
+      "executors": [
+        "services/pvlib_research/advanced_thermal.py",
+        "services/pvlib_research/science_b.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-research-api.ts",
+        "scripts/test_science_b.py",
+        "scripts/test-science-b.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability."
+    },
+    {
+      "id": "R03",
+      "title": "bifacial و tracker دقیق",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "finite rows، edge effects، ناهمگنی مکانی و مقایسه با ray tracer/دادهٔ rear؛ مدل ۲بعدی منظم را solver عمومی ندانیم B1 now adds bounded horizontal ideal-diode steady patch OET with explicit opaque triangles and two-way thermal feedback; general geometry/MC/multireflection/reverse/hotspot and external validation remain absent.",
+      "executors": [
+        "services/pvlib_study/worker.py",
+        "services/pvlib_research/science_b.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "services/pvlib_study/tests/test_tracking.py",
+        "scripts/test_science_b.py",
+        "scripts/test-science-b.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability."
+    },
+    {
+      "id": "R04",
+      "title": "سایهٔ نزدیک درخت/ساختمان با دقت بالا",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "کالیبراسیون هندسه، canopy/transmittance فصل‌مند، diffuse blocking، electrical mapping و شاهد میدانی؛ گرافیک سه‌بعدی معیار دقت نیست B1 now adds bounded horizontal ideal-diode steady patch OET with explicit opaque triangles and two-way thermal feedback; general geometry/MC/multireflection/reverse/hotspot and external validation remain absent.",
+      "executors": [
+        "src/engine/roof3dShadingEngine.ts",
+        "services/pvlib_research/science_b.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_b.py",
+        "scripts/test-science-b.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability."
+    },
+    {
+      "id": "R05",
+      "title": "الکتروشیمی-حرارتی باتری و SEI/LAM",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "thermal coupling، SPMe/DFN اختیاری و SEI/plating/LAM پارامترگذاری‌شده با ظرفیت/ولتاژ/دما و همگرایی B2 adds pinned published-cell thermal SPM/SPMe/DFN and optional same-set SEI research; not general aging/plating/mechanics or runaway/safety qualification.",
+      "executors": [
+        "services/power_dynamics/electrochemistry.py",
+        "services/pvlib_research/battery_pybamm.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-physical-models.ts",
+        "scripts/test_science_b.py",
+        "scripts/test-science-b.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability."
+    },
+    {
+      "id": "R06",
+      "title": "thermal runaway سلول/ماژول",
+      "classification": "research",
+      "maturity": "planned",
+      "limitations": "kinetics واکنش، کالریمتری، propagation/contact/venting و پارامتر سلول؛ خارج از ادعای ایمنی/گواه آتش B2 adds pinned published-cell thermal SPM/SPMe/DFN and optional same-set SEI research; not general aging/plating/mechanics or runaway/safety qualification.",
+      "executors": [],
+      "ui": [],
+      "tests": [],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability."
+    },
+    {
+      "id": "R07",
+      "title": "مکانیکی-الکتروشیمیایی/تنش نفوذ Li",
+      "classification": "research",
+      "maturity": "planned",
+      "limitations": "swelling/stress/cracking و coupling به active material با آزمون mesh و شواهد مکانیکی؛ معادل SPM diffusion نیست B2 adds pinned published-cell thermal SPM/SPMe/DFN and optional same-set SEI research; not general aging/plating/mechanics or runaway/safety qualification.",
+      "executors": [],
+      "ui": [],
+      "tests": [],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability."
+    },
+    {
+      "id": "R08",
+      "title": "گذرای PV-T+PEM با پلهٔ تابش و دبی",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "موازنهٔ سیال/پمپ، تبادل حرارت، electrochemical/stack states و step/flow benchmarks کوپل‌شده؛ transient فعلی PV-T/PEM نیست",
+      "executors": [
+        "services/pvlib_research/transient.py",
+        "services/pvlib_research/science_c.py",
+        "src/studies/scienceC.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "services/pvlib_research/tests/test_transient.py",
+        "scripts/test_science_c.py",
+        "scripts/test-science-c.ts",
+        "scripts/test-science-c-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded authenticated C research: declared trip deadline/Volt-Var screen (not GFM/utility certificate), simplified Agri/FPV water/heat, isothermal PEM and lumped PCM only. Not full capability, field qualification, spatial Stefan, coupled PEM/PV-T or automatic energy/finance adoption."
+    },
+    {
+      "id": "R09",
+      "title": "PCM برای پایداری حرارتی",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "enthalpy/phase fraction، latent heat، hysteresis در صورت نیاز و ذوب/انجماد با مرجع Stefan و conservation",
+      "executors": [
+        "services/pvlib_research/science_c.py",
+        "src/studies/scienceC.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_c.py",
+        "scripts/test-science-c.ts",
+        "scripts/test-science-c-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded authenticated C research: declared trip deadline/Volt-Var screen (not GFM/utility certificate), simplified Agri/FPV water/heat, isothermal PEM and lumped PCM only. Not full capability, field qualification, spatial Stefan, coupled PEM/PV-T or automatic energy/finance adoption."
+    },
+    {
+      "id": "R10",
+      "title": "spectral mismatch، خصوصاً HJT و perovskite/Si",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "طیف وابسته به طول موج، EQE/SR فناوری، مرجع طیفی و integration؛ چندجمله‌ای broadband معادل mismatch کامل طیفی نیست B3 adds common-grid final-stack EQE integration and ideal 2T/4T research; no optical-stack solver, luminescent coupling or measured technology qualification.",
+      "executors": [
+        "services/pvlib_study/worker.py",
+        "services/pvlib_research/science_b.py",
+        "services/pvlib_research/reference_models.py",
+        "src/studies/referenceModels.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "services/pvlib_study/tests/test_optical_models.py",
+        "scripts/test_science_b.py",
+        "scripts/test-science-b.ts",
+        "scripts/test_reference_models.py",
+        "scripts/test-reference-models.ts",
+        "scripts/test-reference-models-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability. Selected actual pinned PVDeg Arrhenius / PV ICE glass mass-flow / coherent tmm adapters now have separately gated upstream-fixture replay. Compiled Si optical constants are not measured stack/EQE validation. No full phase, RUL, certified LCA or finance adoption."
+    },
+    {
+      "id": "R11",
+      "title": "مدل اپتیکی/الکتریکی tandem",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "دو زیرسلول، 2T/4T، current matching، recombination/optical coupling و دادهٔ EQE/IV؛ چند substring تک‌پیوندی، tandem نیست B3 adds common-grid final-stack EQE integration and ideal 2T/4T research; no optical-stack solver, luminescent coupling or measured technology qualification.",
+      "executors": [
+        "services/pvlib_research/science_b.py",
+        "services/pvlib_research/reference_models.py",
+        "src/studies/referenceModels.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_b.py",
+        "scripts/test-science-b.ts",
+        "scripts/test_reference_models.py",
+        "scripts/test-reference-models.ts",
+        "scripts/test-reference-models-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded ideal final-stack EQE / 2T–4T electrical model only; no optical-stack, technology or field acceptance. Selected actual pinned PVDeg Arrhenius / PV ICE glass mass-flow / coherent tmm adapters now have separately gated upstream-fixture replay. Compiled Si optical constants are not measured stack/EQE validation. No full phase, RUL, certified LCA or finance adoption."
+    },
+    {
+      "id": "R12",
+      "title": "Nested MC برای aleatory/epistemic",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "outer model uncertainty/inner variability روی مدل واقعی با budgets/checkpoints و دو مؤلفهٔ واریانس؛ صرف داشتن دو گروه factor یا چند سال nested general solver نیست",
+      "executors": [
+        "services/pvlib_research/uncertainty.py",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "services/pvlib_research/tests/test_research.py",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "R13",
+      "title": "GSA برای انرژی و LCOE",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "sampler/evaluator/analyzer معتبر، S1/ST/interaction و CI برای مستقل‌ها؛ روش جدا و صریح برای correlated inputs؛ Ishigami و linear oracle لازم است",
+      "executors": [
+        "src/studies/energyUncertaintyReview.ts",
+        "services/pvlib_research/portfolio.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-energy-uncertainty-review.ts",
+        "scripts/test-portfolio.ts",
+        "scripts/test_portfolio.py"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate and bounded A1–A3 analytics; not full capability acceptance, field calibration or bankability."
+    },
+    {
+      "id": "R14",
+      "title": "تخریب فیزیکی PV: رطوبت، LeTID، UV، تنش حرارتی",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "stateful mechanism و پارامتر فناوری، history زمانی و adapter منتخب PVDeg؛ loss درصدی یا annual degradation معادل فیزیک رطوبت/UV نیست؛ افت مجدد روی loss موجود اعمال نشود",
+      "executors": [
+        "src/engine/environmentalAgingEngine.ts",
+        "services/pvlib_research/science_d.py",
+        "src/studies/scienceD.ts",
+        "services/pvlib_research/reference_models.py",
+        "src/studies/referenceModels.ts"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test_science_d.py",
+        "scripts/test-science-d.ts",
+        "scripts/test-science-d-browser.ts",
+        "scripts/test_reference_models.py",
+        "scripts/test-reference-models.ts",
+        "scripts/test-reference-models-browser.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Bounded D research substrate only: declared Arrhenius/RH retention, explicit cohort cutoff LCA/mass ledger, or caller-shaped monthly-preserving profiles. No full capability, PVDeg/PV ICE adapter, field RUL, certified inventory, measured hourly load or financial adoption. Selected actual pinned PVDeg Arrhenius / PV ICE glass mass-flow / coherent tmm adapters now have separately gated upstream-fixture replay. Compiled Si optical constants are not measured stack/EQE validation. No full phase, RUL, certified LCA or finance adoption."
+    },
+    {
+      "id": "R15",
+      "title": "API پایتون برای SPM/گذرای/MC و workflow پژوهش",
+      "classification": "research",
+      "maturity": "partial",
+      "limitations": "SDK نصب‌پذیر/نسخه‌دار Python با typed client، docs/notebook، job persistence، resume/checkpoint و batch؛ transient/MC در API شش‌عملیاتی فعلی عرضه نشده‌اند و صرف وجود فایل Python SDK کامل نیست",
+      "executors": [
+        "src/server/researchApi.ts",
+        "services/pvlib_research/api_worker.py"
+      ],
+      "ui": [
+        "src/components/ResearchEditor.tsx"
+      ],
+      "tests": [
+        "scripts/test-research-api.ts"
+      ],
+      "evidenceLevel": "not_field_validated",
+      "evidenceScope": "Related substrate only; not acceptance of the full proposed capability."
+    }
+  ],
+  "externalBlockers": [
+    "owner_license_rights",
+    "native_safari_evidence",
+    "windows_execution_evidence",
+    "independent_field_data"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "uq-literature-reference-v1",
+  "policy": "Published case-study aggregates for comparison only. Not original time-series, not calibration of a user's site, not permission to redistribute underlying SCADA. No distribution or CV is inferred from assessment ranges.",
+  "references": [
+    {
+      "id": "bolzano-iea2020",
+      "caseType": "reported real-site assessment comparison",
+      "location": "Bolzano, Italy",
+      "source": "IEA PVPS T13-18:2020, section 3 case-study results",
+      "url": "https://iea-pvps.org/wp-content/uploads/2021/01/Report-IEA%E2%80%93PVPS-T13-18_2020-Uncertainties-in-Yield-Assessments-and-PV-LCOE-1.pdf",
+      "unit": "kWh/kWp/year",
+      "publishedP50AssessmentRange": [1095, 1406],
+      "publishedP90AssessmentRange": [997, 1274],
+      "publishedMeasuredMean2010to2019": 1275,
+      "extraction": "Search-extracted report text; PDF reader retrieved introductory/method sections but is limited to 30 pages. Ranges are across assessments, NOT one probability interval or paired P50/P90 sample."
+    },
+    {
+      "id": "alice-springs-iea2020",
+      "caseType": "reported real-site assessment comparison",
+      "location": "Alice Springs, Australia",
+      "source": "IEA PVPS T13-18:2020, section 3 case-study results",
+      "url": "https://iea-pvps.org/wp-content/uploads/2021/01/Report-IEA%E2%80%93PVPS-T13-18_2020-Uncertainties-in-Yield-Assessments-and-PV-LCOE-1.pdf",
+      "unit": "kWh/kWp/year",
+      "publishedP50AssessmentRange": [1757, 1985],
+      "publishedP90AssessmentRange": [1631, 1819],
+      "extraction": "Search-extracted report text, not raw operating data. Ranges must not be converted into site CV or averaged into a universal default."
+    },
+    {
+      "id": "golden-nrel2023",
+      "caseType": "published simulated demonstration, NOT an operating plant validation",
+      "location": "Golden, Colorado, USA",
+      "source": "NREL/PR-7A40-86169, example uncertainty analysis",
+      "url": "https://docs.nrel.gov/docs/fy23osti/86169.pdf",
+      "capacityMwDc": 100,
+      "weatherYears": [2000, 2020],
+      "combinedP90Kwh": 147224000,
+      "iavP90Kwh": 149776000,
+      "factorP90Fraction": 0.955788,
+      "extraction": "Search-extracted poster table; direct PDF fetch failed. Values are separate distributions and are not to be multiplied or claimed reproduced without the original inputs."
+    }
+  ],
+  "methodSource": "https://docs.nrel.gov/docs/fy23osti/84993.pdf",
+  "dataCandidateOnly": "PVDAQ public datasets: https://catalog.data.gov/dataset/photovoltaic-data-acquisition-pvdaq-public-datasets . Catalog describes CC BY 4.0. No raw PVDAQ series, asset-specific license evidence, or independent frozen baseline was ingested in this change."
+}

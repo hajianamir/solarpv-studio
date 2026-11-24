@@ -1,0 +1,786 @@
+[
+  {
+    "year": 1995,
+    "installedMw": 12.5,
+    "efficiencyPct": 12.5,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 848.4214286,
+      "silver": 88.0,
+      "copper": 5.376,
+      "aluminium_frames": 3091.18541,
+      "encapsulant": 846.0,
+      "backsheet": 180.0
+    }
+  },
+  {
+    "year": 1996,
+    "installedMw": 9.667666667,
+    "efficiencyPct": 12.7,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 831.7857143,
+      "silver": 84.57142857,
+      "copper": 5.376,
+      "aluminium_frames": 3017.416546,
+      "encapsulant": 846.0,
+      "backsheet": 186.48
+    }
+  },
+  {
+    "year": 1997,
+    "installedMw": 11.622,
+    "efficiencyPct": 12.88,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 815.15,
+      "silver": 81.14285714,
+      "copper": 5.376,
+      "aluminium_frames": 2700.0,
+      "encapsulant": 846.0,
+      "backsheet": 192.96
+    }
+  },
+  {
+    "year": 1998,
+    "installedMw": 11.781,
+    "efficiencyPct": 13.06,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 798.5142857,
+      "silver": 77.71428571,
+      "copper": 5.376,
+      "aluminium_frames": 2540.372671,
+      "encapsulant": 846.0,
+      "backsheet": 199.44
+    }
+  },
+  {
+    "year": 1999,
+    "installedMw": 16.88466667,
+    "efficiencyPct": 13.24,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 781.8785714,
+      "silver": 74.28571429,
+      "copper": 5.376,
+      "aluminium_frames": 2484.698914,
+      "encapsulant": 846.0,
+      "backsheet": 205.92
+    }
+  },
+  {
+    "year": 2000,
+    "installedMw": 20.92666667,
+    "efficiencyPct": 13.42,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 765.2428571,
+      "silver": 45.34857143,
+      "copper": 5.376,
+      "aluminium_frames": 2433.962264,
+      "encapsulant": 846.0,
+      "backsheet": 212.4
+    }
+  },
+  {
+    "year": 2001,
+    "installedMw": 27.985,
+    "efficiencyPct": 13.6,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 748.6071429,
+      "silver": 43.15428571,
+      "copper": 5.376,
+      "aluminium_frames": 2387.533875,
+      "encapsulant": 846.0,
+      "backsheet": 218.88
+    }
+  },
+  {
+    "year": 2002,
+    "installedMw": 42.476,
+    "efficiencyPct": 13.72222222,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 731.9714286,
+      "silver": 40.96,
+      "copper": 5.376,
+      "aluminium_frames": 2344.887348,
+      "encapsulant": 846.0,
+      "backsheet": 225.36
+    }
+  },
+  {
+    "year": 2003,
+    "installedMw": 59.745,
+    "efficiencyPct": 13.84444444,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 715.3357143,
+      "silver": 38.76571429,
+      "copper": 5.376,
+      "aluminium_frames": 2317.892053,
+      "encapsulant": 846.0,
+      "backsheet": 231.84
+    }
+  },
+  {
+    "year": 2004,
+    "installedMw": 94.752,
+    "efficiencyPct": 13.96666667,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 698.7,
+      "silver": 36.57142857,
+      "copper": 5.376,
+      "aluminium_frames": 2256.019262,
+      "encapsulant": 846.0,
+      "backsheet": 238.0421533
+    }
+  },
+  {
+    "year": 2005,
+    "installedMw": 96.58117322,
+    "efficiencyPct": 14.08888889,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 582.25,
+      "silver": 34.37714286,
+      "copper": 5.376,
+      "aluminium_frames": 2113.832853,
+      "encapsulant": 846.0,
+      "backsheet": 244.2271062
+    }
+  },
+  {
+    "year": 2006,
+    "installedMw": 98.21307161,
+    "efficiencyPct": 14.21111111,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 465.8,
+      "silver": 32.18285714,
+      "copper": 5.376,
+      "aluminium_frames": 2083.479481,
+      "encapsulant": 846.0,
+      "backsheet": 270.8423713
+    }
+  },
+  {
+    "year": 2007,
+    "installedMw": 324.2327484,
+    "efficiencyPct": 14.33333333,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 442.51,
+      "silver": 29.98857143,
+      "copper": 5.376,
+      "aluminium_frames": 2054.68216,
+      "encapsulant": 846.0,
+      "backsheet": 297.3911439
+    }
+  },
+  {
+    "year": 2008,
+    "installedMw": 314.5851087,
+    "efficiencyPct": 14.45555556,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 419.22,
+      "silver": 27.79428571,
+      "copper": 5.376,
+      "aluminium_frames": 2027.324225,
+      "encapsulant": 846.0,
+      "backsheet": 323.8726852
+    }
+  },
+  {
+    "year": 2009,
+    "installedMw": 431.2448039,
+    "efficiencyPct": 14.57777778,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 419.22,
+      "silver": 25.6,
+      "copper": 5.376,
+      "aluminium_frames": 2001.30039,
+      "encapsulant": 846.0,
+      "backsheet": 350.2862454
+    }
+  },
+  {
+    "year": 2010,
+    "installedMw": 719.8444376,
+    "efficiencyPct": 14.7,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 419.22,
+      "silver": 12.32741617,
+      "copper": 5.376,
+      "aluminium_frames": 1987.150659,
+      "encapsulant": 846.0,
+      "backsheet": 376.6310634
+    }
+  },
+  {
+    "year": 2011,
+    "installedMw": 1781.377078,
+    "efficiencyPct": 15.1,
+    "massGM2": {
+      "glass": 8000.0,
+      "silicon": 419.22,
+      "silver": 10.27284681,
+      "copper": 5.376,
+      "aluminium_frames": 1966.59313,
+      "encapsulant": 846.0,
+      "backsheet": 402.906367
+    }
+  },
+  {
+    "year": 2012,
+    "installedMw": 3064.162281,
+    "efficiencyPct": 15.4,
+    "massGM2": {
+      "glass": 8080.0,
+      "silicon": 419.22,
+      "silver": 8.218277449,
+      "copper": 5.376,
+      "aluminium_frames": 1962.986198,
+      "encapsulant": 846.0,
+      "backsheet": 424.8202585
+    }
+  },
+  {
+    "year": 2013,
+    "installedMw": 4037.449113,
+    "efficiencyPct": 16.0,
+    "massGM2": {
+      "glass": 8160.0,
+      "silicon": 419.22,
+      "silver": 5.752794214,
+      "copper": 5.376,
+      "aluminium_frames": 1619.458128,
+      "encapsulant": 846.0,
+      "backsheet": 446.1403774
+    }
+  },
+  {
+    "year": 2014,
+    "installedMw": 3722.199485,
+    "efficiencyPct": 16.3,
+    "massGM2": {
+      "glass": 8292.7,
+      "silicon": 419.22,
+      "silver": 5.341880342,
+      "copper": 5.376,
+      "aluminium_frames": 1592.739726,
+      "encapsulant": 848.09,
+      "backsheet": 450.12
+    }
+  },
+  {
+    "year": 2015,
+    "installedMw": 6834.328813,
+    "efficiencyPct": 17.0,
+    "massGM2": {
+      "glass": 8225.6625,
+      "silicon": 419.22,
+      "silver": 4.520052597,
+      "copper": 5.78816,
+      "aluminium_frames": 1495.242424,
+      "encapsulant": 850.28,
+      "backsheet": 469.0487197
+    }
+  },
+  {
+    "year": 2016,
+    "installedMw": 12897.66595,
+    "efficiencyPct": 17.5,
+    "massGM2": {
+      "glass": 8158.8875,
+      "silicon": 419.22,
+      "silver": 4.099757009,
+      "copper": 6.20032,
+      "aluminium_frames": 1412.526316,
+      "encapsulant": 852.81,
+      "backsheet": 488.5530337
+    }
+  },
+  {
+    "year": 2017,
+    "installedMw": 9784.506215,
+    "efficiencyPct": 17.7,
+    "massGM2": {
+      "glass": 8289.75,
+      "silicon": 419.22,
+      "silver": 4.079110301,
+      "copper": 7.20384,
+      "aluminium_frames": 1379.820896,
+      "encapsulant": 847.99,
+      "backsheet": 480.4229167
+    }
+  },
+  {
+    "year": 2018,
+    "installedMw": 9352.529448,
+    "efficiencyPct": 18.4,
+    "massGM2": {
+      "glass": 8350.15,
+      "silicon": 410.8550083,
+      "silver": 4.312833823,
+      "copper": 7.45472,
+      "aluminium_frames": 1361.666667,
+      "encapsulant": 848.955,
+      "backsheet": 472.8983333
+    }
+  },
+  {
+    "year": 2019,
+    "installedMw": 10949.78234,
+    "efficiencyPct": 19.2,
+    "massGM2": {
+      "glass": 8607.5,
+      "silicon": 402.1406667,
+      "silver": 4.14730981,
+      "copper": 8.26112,
+      "aluminium_frames": 1343.647059,
+      "encapsulant": 851.31,
+      "backsheet": 463.212
+    }
+  },
+  {
+    "year": 2020,
+    "installedMw": 14903.79,
+    "efficiencyPct": 20.0,
+    "massGM2": {
+      "glass": 8975.5,
+      "silicon": 395.5418334,
+      "silver": 3.594965445,
+      "copper": 8.22528,
+      "aluminium_frames": 1343.647059,
+      "encapsulant": 849.445,
+      "backsheet": 432.5328
+    }
+  },
+  {
+    "year": 2021,
+    "installedMw": 16455.56,
+    "efficiencyPct": 20.9,
+    "massGM2": {
+      "glass": 9284.5875,
+      "silicon": 388.943,
+      "silver": 3.341278869,
+      "copper": 8.27008,
+      "aluminium_frames": 1272.176471,
+      "encapsulant": 809.71,
+      "backsheet": 408.816
+    }
+  },
+  {
+    "year": 2022,
+    "installedMw": 15227.23,
+    "efficiencyPct": 21.1,
+    "massGM2": {
+      "glass": 9626.5,
+      "silicon": 384.285,
+      "silver": 3.093634022,
+      "copper": 8.31488,
+      "aluminium_frames": 1250.735294,
+      "encapsulant": 782.7075,
+      "backsheet": 398.3772
+    }
+  },
+  {
+    "year": 2023,
+    "installedMw": 15224.02,
+    "efficiencyPct": 21.88587403,
+    "massGM2": {
+      "glass": 9805.45,
+      "silicon": 374.969,
+      "silver": 2.898863882,
+      "copper": 8.38656,
+      "aluminium_frames": 1229.294118,
+      "encapsulant": 778.335,
+      "backsheet": 387.8432
+    }
+  },
+  {
+    "year": 2024,
+    "installedMw": 16634.43,
+    "efficiencyPct": 22.20562728,
+    "massGM2": {
+      "glass": 9977.4,
+      "silicon": 365.653,
+      "silver": 2.692895407,
+      "copper": 8.45824,
+      "aluminium_frames": 1215.0,
+      "encapsulant": 756.045,
+      "backsheet": 382.425
+    }
+  },
+  {
+    "year": 2025,
+    "installedMw": 18114.89427,
+    "efficiencyPct": 22.47034948,
+    "massGM2": {
+      "glass": 9940.2375,
+      "silicon": 359.8305,
+      "silver": 2.542951049,
+      "copper": 8.195413333,
+      "aluminium_frames": 1200.705882,
+      "encapsulant": 720.427,
+      "backsheet": 377.4666
+    }
+  },
+  {
+    "year": 2026,
+    "installedMw": 19727.11986,
+    "efficiencyPct": 22.6966295,
+    "massGM2": {
+      "glass": 9901.5,
+      "silicon": 354.008,
+      "silver": 2.401262207,
+      "copper": 7.932586667,
+      "aluminium_frames": 1191.176471,
+      "encapsulant": 692.0926667,
+      "backsheet": 362.2988
+    }
+  },
+  {
+    "year": 2027,
+    "installedMw": 21482.83353,
+    "efficiencyPct": 22.89448321,
+    "massGM2": {
+      "glass": 10008.40556,
+      "silicon": 348.5736667,
+      "silver": 2.266884489,
+      "copper": 7.66976,
+      "aluminium_frames": 1181.647059,
+      "encapsulant": 680.2781111,
+      "backsheet": 346.0429333
+    }
+  },
+  {
+    "year": 2028,
+    "installedMw": 23394.80571,
+    "efficiencyPct": 23.07043369,
+    "massGM2": {
+      "glass": 10113.40556,
+      "silicon": 343.1393333,
+      "silver": 2.129634828,
+      "copper": 7.394986667,
+      "aluminium_frames": 1172.117647,
+      "encapsulant": 668.3333333,
+      "backsheet": 329.8706667
+    }
+  },
+  {
+    "year": 2029,
+    "installedMw": 25476.94342,
+    "efficiencyPct": 23.22897228,
+    "massGM2": {
+      "glass": 10216.5,
+      "silicon": 337.705,
+      "silver": 1.992776413,
+      "copper": 7.120213333,
+      "aluminium_frames": 1162.588235,
+      "encapsulant": 670.1973333,
+      "backsheet": 312.095
+    }
+  },
+  {
+    "year": 2030,
+    "installedMw": 27744.39138,
+    "efficiencyPct": 23.3733262,
+    "massGM2": {
+      "glass": 10170.91111,
+      "silicon": 335.376,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1153.058824,
+      "encapsulant": 671.7413333,
+      "backsheet": 294.8944444
+    }
+  },
+  {
+    "year": 2031,
+    "installedMw": 30213.64222,
+    "efficiencyPct": 23.50589418,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2032,
+    "installedMw": 32902.65637,
+    "efficiencyPct": 23.62850877,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2033,
+    "installedMw": 35830.99279,
+    "efficiencyPct": 23.7426023,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2034,
+    "installedMw": 39019.95115,
+    "efficiencyPct": 23.84931597,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2035,
+    "installedMw": 42492.7268,
+    "efficiencyPct": 23.94957409,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2036,
+    "installedMw": 46274.57949,
+    "efficiencyPct": 24.04413599,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2037,
+    "installedMw": 50393.01706,
+    "efficiencyPct": 24.13363324,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2038,
+    "installedMw": 54877.99558,
+    "efficiencyPct": 24.21859695,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2039,
+    "installedMw": 59762.13719,
+    "efficiencyPct": 24.29947807,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2040,
+    "installedMw": 65080.9674,
+    "efficiencyPct": 24.3766628,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2041,
+    "installedMw": 70873.1735,
+    "efficiencyPct": 24.45048453,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2042,
+    "installedMw": 77180.88594,
+    "efficiencyPct": 24.52123306,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2043,
+    "installedMw": 84049.98479,
+    "efficiencyPct": 24.5891619,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2044,
+    "installedMw": 91530.43343,
+    "efficiencyPct": 24.65449415,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2045,
+    "installedMw": 99676.64201,
+    "efficiencyPct": 24.71742718,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2046,
+    "installedMw": 108547.8631,
+    "efficiencyPct": 24.77813646,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2047,
+    "installedMw": 118208.623,
+    "efficiencyPct": 24.8367787,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2048,
+    "installedMw": 128729.1904,
+    "efficiencyPct": 24.89349446,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2049,
+    "installedMw": 140186.0884,
+    "efficiencyPct": 24.94841027,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  },
+  {
+    "year": 2050,
+    "installedMw": 152662.6502,
+    "efficiencyPct": 25.00164048,
+    "massGM2": {
+      "glass": 10125.01111,
+      "silicon": 333.047,
+      "silver": 1.856311209,
+      "copper": 6.84544,
+      "aluminium_frames": 1143.529412,
+      "encapsulant": 673.2853333,
+      "backsheet": 277.7316667
+    }
+  }
+]

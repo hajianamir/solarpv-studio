@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "feature-gate-v1",
+  "feature": "UQ-003",
+  "testedAt": "2026-11-24T14:21:00.712Z",
+  "status": "ready-for-review",
+  "scope": "Opt-in legacy LCOE/NPV CDF and adverse-tail presentation only; no model changes or public product release.",
+  "featureFlags": "Independent local checkboxes, explicit mode true by default since UQ-005; legacy opt-out tested.",
+  "researchGate": "No adoption introduced; existing gates unchanged.",
+  "boundary": true,
+  "documentation": true,
+  "fileSha256": {
+    "src/studies/financialMetricQuantiles.ts": "d0380fbec933bd6650ec75e932cf5cb87f10ddf03fd19945edbb5a8eeb144704",
+    "src/components/FinancialMetricQuantiles.tsx": "01c16b213f0efabd862a6c2abc6f1f5c1f835e345fc0dc9667e8e12304de268e",
+    "src/components/FinancialTab.tsx": "457f30cb26aad3f9986ed23c09566972616df303a24e22b8243925649a95a2f7",
+    "docs/features/UQ-003-METRIC-QUANTILES.fa.md": "9b94f06f8390230f93fbf4e27f7e0a77710561bdd3c9c65b5571b2062edf6e58",
+    "scripts/test-financial-metric-quantiles.ts": "3ba01b1432b36bb44eb56e36901012977d060fc39302b25f6138cab2a7d9eb9a",
+    "scripts/test-financial-energy-quantiles-browser.ts": "0f8dd1b1db2f31f63decac8551f488b873c57614820e53d648f4e5fe1601e92c"
+  },
+  "checks": [
+    {
+      "command": "npm run verify:uq:display",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-financial-metric-quantiles.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ]
+}

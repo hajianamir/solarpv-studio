@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "science-d-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:24:56.911Z",
+  "softwareStatus": "ready-for-review",
+  "fullPhaseStatus": {
+    "D1": "partial_declared_Arrhenius_RH_retention_not_PVDeg_adapter_or_calibrated_RUL",
+    "D2": "partial_cohort_cutoff_ledger_and_declared_factor_bounds_not_PV_ICE_or_certified_LCA",
+    "D3": "partial_month_preserving_profiles_and_offline_typed_proposal_not_LLM"
+  },
+  "overallReleaseStatus": "blocked_incomplete_roadmap_and_missing_field_inventory_evidence",
+  "deploymentDefault": "off",
+  "flags": {
+    "PVLIB_RESEARCH_ENABLED": true,
+    "SCIENCE_D_ENABLED": true
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked",
+    "safetyApproval": "not_assessed"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python -m unittest scripts.test_science_d -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-science-d.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run lint:types",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/scienceD.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python scripts/verify_science_c_kernels.py",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-science-d-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/science_d.py": "b7f9ccc239f0fe5d43eab05879248b86dfba4b95c594ecede81cd511cdd7766a",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/scienceD.ts": "92ba4d7430e92db9f369d7328b01ac2d5ba2d3114c0bdf06d6a2c9aa6b1e2f79",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "src/capabilities/manifest.json": "38008723ef466957488182995eec1b57991b677d88f4847b4641b2ec26bbd6ce",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_science_d.py": "cc2c8c6aceaf92765d63e0d64c51e412bda69893fac6b6ab8bb750d13b2e2566",
+    "scripts/test-science-d.ts": "d6237ea470937676e7a334e47c381a7d4a3edbd9c3fb5d9fb2873ddc40ed2a03",
+    "scripts/test-science-d-browser.ts": "4c67e43f017727c5bcd55bc937b58776483bfe2b44a836c6c8683b6b00ca5d58",
+    "scripts/verify-science-d.ts": "7c2063f8bfa7988d58fa3f667bef8bcd05a12f03ab62ff75551e5183d420cc36",
+    "docs/examples/science-d/degradation.synthetic.json": "9ffaac761352d2b4e7a581096fd45232814b64d0a3b38f68bd8cfa2750bd7205",
+    "docs/examples/science-d/circular.synthetic.json": "701e60155c4173fac7117ade27714ae7c9a1363767e9be51d61f27ad5fc6742b",
+    "docs/examples/science-d/bills.synthetic.json": "a349e893e63c28e356fd5d5162c9e574e2d4d5628b07779043d5f2a56cff0480",
+    "docs/examples/science-d/scenario.synthetic.json": "c0f3c48c4c2d8c6fd3d548ccc032ad74eec3460edea147329b290c9d6cc82a23",
+    "docs/features/D1-D3-SPEC.fa.md": "3077c68ad4de476ba655f6ac04bc76c15db47fff5b7c009da84869ca1de2e762",
+    "docs/features/D1-D3-IMPLEMENTATION.fa.md": "349d24ab9e22473ab5632362553a85fb997b1bed3a91c1f7ea134f946d673966",
+    "docs/audit/C1-C3-KERNEL-GATE.json": "210746d117719ef2221bfd00b6dc8ed3a60b39b2740077677bc1dec439434d0b",
+    "docs/audit/B1-B3-GATE.json": "95695f96f9a9557de618e9bcc077f1cc969210321fa07b74bd84ab95bd10c32d",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    ".github/workflows/foundation-acceptance.yml": "282a07fe47534668da2ae1c0c1451d0bed17adc7d3c836f0b0c5c364df49049f"
+  }
+}

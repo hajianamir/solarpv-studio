@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "material-inventory-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:26:05.745Z",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "acceptedScope": [
+    "actual pinned PV ICE selected seven-material US baseline replay",
+    "versioned declared annual-kg inventory comparison with explicit context and boundary",
+    "authenticated API, SDK and editor integration"
+  ],
+  "evidenceLevel": "upstream_software_and_baseline_replay_not_verified_site_inventory",
+  "notCompleted": [
+    "verified real-site inventory and BOM",
+    "full global stock/cohort closure qualification",
+    "whole-module LCA or cost/EOL reconciliation",
+    "other remaining A1-D3 roadmap"
+  ],
+  "flags": {
+    "MATERIAL_INVENTORY_ENABLED": true,
+    "deploymentDefault": "off",
+    "requiresBaseAndReferenceFlags": true,
+    "separateRuntimeRequired": true
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python scripts/acquire_reference_data.py",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.cache/reference-env/bin/python -m unittest scripts.test_material_inventory -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-inventory.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/materialInventory.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:incoherent",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-inventory-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/material_inventory.py": "2efc451687fc7f73ab3a4d97ca25621a8557da742831d2506298302d70b1eaf9",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/materialInventory.ts": "ceca14a9115b840da34141fc46547bf5b458ec3743141c8a51b2926069f85210",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_material_inventory.py": "ffd3a8a9e56acac13269a2a8ff3b4615bb5e71693add899e8895855126ea2721",
+    "scripts/test-inventory.ts": "20306bdacc75317854502a3538aae3d746ccd26d9cad8e14b6c8d6c5042d119d",
+    "scripts/test-inventory-browser.ts": "ef527290a37538cf017ceeb9f286bdddaa6b5758c114691fb9526a1e8f324ade",
+    "scripts/verify-inventory.ts": "5d2a2f199059dd018015ff26751314e350b9c28d09e171b03e6bafb5f3ddc925",
+    "scripts/acquire_reference_data.py": "6db705665ea2e59fcf9a03da4561910b0d62c73ba2aa5704bd3cbd4e32cb8969",
+    "docs/reference-data/manifest.json": "7c54caad59a002a2d872db9b31ec2cf4ae03ee3900d709a1ad9dba534b648eb1",
+    "docs/reference-data/pvice/material-summary.json": "f867a5b610172726e57072dc72dc921aede47bd532ac0133960954aef3a4cb53",
+    "docs/reference-data/pvice/us-module.csv": "0540d5da1034bc619ed57d29a4e607f81d283be57e4f813bafb250ffa630a569",
+    "docs/reference-data/pvice/LICENSE.txt": "04d700dfa32f51db31d607553566669f73445944c6429ab17568290ad4a33441",
+    "docs/reference-data/pvice/us-glass.csv": "35488da9257f5b219895e8493cac6e23d784ca26f3147eb3ff29f8a2ef476e0d",
+    "docs/reference-data/pvice/us-silicon.csv": "363a54e24c00fb543140b8a09fe1eace9522bf2f78735c62543996ec0e133428",
+    "docs/reference-data/pvice/us-silver.csv": "b7d227a1f7d1fec1db0001717d7c271f1f04eb4764a8d4fe3cffb64fb3ff7959",
+    "docs/reference-data/pvice/us-copper.csv": "c94ab51cc721ad18d5796ca9d018290a3fd686450ba82a8a8beca525218bc2a2",
+    "docs/reference-data/pvice/us-aluminium_frames.csv": "983dfae6fcd4c505f91298b878a319937cc0c2b2e65a7141d5f4327c2d03c443",
+    "docs/reference-data/pvice/us-encapsulant.csv": "413c780ef2fda66059c894b87ffcf9a06a35cec41db4e2a55175dcfc608c9329",
+    "docs/reference-data/pvice/us-backsheet.csv": "160f8ff27b21201f9d4bdd784326990c7e75b686430724370e7684ba68bf7cc1",
+    "docs/examples/references/inventory.json": "e88298f131192105355c1215907ccf117ce684c91f3d9cdeb61d1897672dde2f",
+    "docs/features/MATERIAL-INVENTORY-SPEC.fa.md": "9a17f21e88aaea730099a44cbfa5bcba008e647ce8a922eeb279a180cfbb9021",
+    "docs/features/MATERIAL-INVENTORY.fa.md": "8b24aa7caa4a379e55996d2ec170341bd914554a44b453cfba05dd0e5ee80745",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/INCOHERENT-OPTICS-GATE.json": "0575cb7c557487734b6ec21544ec5d3425aaeb66934bdf61931e79c10b414e0a",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    "CHANGELOG.md": "211a6db5e8763bdd215cf82025041f018f7dccaa60a8db5ebe4e9b7ac3275ddf"
+  }
+}

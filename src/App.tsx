@@ -123,9 +123,9 @@ import {
 
 // Components - Core Suite
 import { LoadProfilingTab } from './components/LoadProfilingTab';
-import { ClimateTab } from './components/ClimateTab';
+const ClimateTab = React.lazy(() => import('./components/ClimateTab').then(m => ({default:m.ClimateTab})));
 import { PvArrayEngineeringTab } from './components/PvArrayEngineeringTab';
-import { FinancialTab } from './components/FinancialTab';
+const FinancialTab = React.lazy(() => import('./components/FinancialTab').then(m => ({default:m.FinancialTab})));
 import { SingleLineDiagram } from './components/SingleLineDiagram';
 import { CatalogTab } from './components/CatalogTab';
 

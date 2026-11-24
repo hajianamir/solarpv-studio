@@ -1,0 +1,68 @@
+{
+  "operation": "coherent_optics",
+  "plan": {
+    "source": "Derived from frozen upstream software fixture; NOT independent field qualification",
+    "contextSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "schemaVersion": "coherent-optics-v1",
+    "angleDeg": 5.729577951308232,
+    "polarization": "s",
+    "wavelengthNm": [
+      100,
+      101
+    ],
+    "irradianceWm2Nm": [
+      0.5,
+      0.5
+    ],
+    "layers": [
+      {
+        "thicknessNm": null,
+        "n": [
+          1,
+          1
+        ],
+        "k": [
+          0,
+          0
+        ],
+        "source": "Synthetic constants from tmm upstream Mathematica regression, NOT measured technology"
+      },
+      {
+        "thicknessNm": 2,
+        "n": [
+          2,
+          2
+        ],
+        "k": [
+          4,
+          4
+        ],
+        "source": "Synthetic constants from tmm upstream Mathematica regression, NOT measured technology"
+      },
+      {
+        "thicknessNm": 3,
+        "n": [
+          3,
+          3
+        ],
+        "k": [
+          0.3,
+          0.3
+        ],
+        "source": "Synthetic constants from tmm upstream Mathematica regression, NOT measured technology"
+      },
+      {
+        "thicknessNm": null,
+        "n": [
+          1,
+          1
+        ],
+        "k": [
+          0.1,
+          0.1
+        ],
+        "source": "Synthetic constants from tmm upstream Mathematica regression, NOT measured technology"
+      }
+    ]
+  }
+}

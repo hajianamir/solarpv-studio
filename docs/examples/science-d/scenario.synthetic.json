@@ -1,0 +1,18 @@
+{
+  "operation": "grounded_scenario",
+  "plan": {
+    "source": "Synthetic acceptance fixture only; not measured or licensed inventory",
+    "contextSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "schemaVersion": "grounded-scenario-v1",
+    "snapshot": {
+      "id": "synthetic_snapshot",
+      "pvCapacityKwp": 5,
+      "batteryCapacityKwh": 10
+    },
+    "command": {
+      "kind": "propose_set",
+      "field": "pvCapacityKwp",
+      "value": 7
+    }
+  }
+}

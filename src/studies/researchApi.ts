@@ -1,3 +1,17 @@
+import {BatteryProtocolRequestSchema,batteryProtocolOperations,validateBatteryProtocolResult} from './batteryProtocol';
+import {IntervalCalibrationRequestSchema,intervalCalibrationOperations,validateIntervalCalibrationResult} from './intervalCalibration';
+import {CouplingRequestSchema,couplingOperations,validateCouplingResult} from './pvtPemCoupling';
+import {MaterialInventoryRequestSchema,materialInventoryOperations,validateMaterialInventoryResult} from './materialInventory';
+import {IncoherentRequestSchema,incoherentOperations,validateIncoherentResult} from './incoherentOptics';
+import {SpatialRequestSchema,spatialOperations,validateSpatialResult} from './spatialResearch';
+import {AppliedRequestSchema,appliedOperations,validateAppliedResult} from './appliedResearch';
+import {ReferenceRequestSchema,referenceOperations,validateReferenceResult} from './referenceModels';
+import {ScienceCRequestSchema,scienceCOperations,validateScienceCResult} from './scienceC';
+import {ScienceDRequestSchema,scienceDOperations,validateScienceDResult} from './scienceD';
+import {ScienceBRequestSchema,scienceBOperations,validateScienceBResult} from './scienceB';
+import {SurvivalRequestSchema,survivalOperations,validateSurvivalResult} from './portfolioSurvival';
+import {AdvancedRequestSchema,advancedOperations,validateAdvancedResult} from './portfolioAdvanced';
+import {PortfolioRequestSchema,portfolioOperations,validatePortfolioResult} from './portfolioAnalytics';
 import {z} from 'zod';
 import {DcCoupledPlanSchema,SpmPlanSchema,DqControlPlanSchema,physicalOperations,validatePhysicalResult} from './physicalModels';
 import {IntegratedPlanSchema,validateIntegratedResult} from './integratedStudy';
@@ -30,6 +44,7 @@ export const DiodeNetworkPlanSchema=z.object({schemaVersion:z.literal('diode-net
  if(new Set(names).size!==names.length||ids.length!==names.length||new Set(ids).size!==ids.length||ids.some(s=>!names.includes(s)))ctx.addIssue({code:'custom',message:'Every substring exactly once in wiring'});
 });
 export const ResearchRequestSchema=z.discriminatedUnion('operation',[
+ ...PortfolioRequestSchema.options,...AdvancedRequestSchema.options,SurvivalRequestSchema,...ScienceBRequestSchema.options,...ScienceDRequestSchema.options,...ScienceCRequestSchema.options,...ReferenceRequestSchema.options,...AppliedRequestSchema.options,...SpatialRequestSchema.options,...IncoherentRequestSchema.options,...MaterialInventoryRequestSchema.options,...CouplingRequestSchema.options,...IntervalCalibrationRequestSchema.options,...BatteryProtocolRequestSchema.options,
  z.object({operation:z.literal('integrated'),plan:IntegratedPlanSchema}).strict(),
  z.object({operation:z.literal('thermal_two_node'),plan:TwoNodePlanSchema}).strict(),
  z.object({operation:z.literal('diode_network'),plan:DiodeNetworkPlanSchema}).strict(),
@@ -41,9 +56,23 @@ export type ResearchRequest=z.infer<typeof ResearchRequestSchema>;
 const numeric=z.number().finite();const hash=z.string().regex(/^[a-f0-9]{64}$/);
 const generic=z.object({schemaVersion:z.string(),algorithmVersion:z.literal('1.0.0'),plan:z.unknown(),planSha256:hash,validationStatus:z.literal('not_field_validated'),projectApproval:z.literal('blocked')}).passthrough();
 export function validateResearchResponse(value:unknown,request:ResearchRequest){
- const envelope=z.object({schemaVersion:z.literal('research-api-result-v1'),operation:z.enum(['integrated','thermal_two_node','diode_network',...physicalOperations]),requestCanonicalJson:z.string(),requestSha256:hash,result:z.unknown(),runtime:z.object({python:z.string(),pvlib:z.literal('0.13.1'),numpy:z.string(),scipy:z.string(),codeSha256:hash}).strict()}).strict().parse(value);
+ const envelope=z.object({schemaVersion:z.literal('research-api-result-v1'),operation:z.enum(['integrated','thermal_two_node','diode_network',...physicalOperations,...portfolioOperations,...advancedOperations,...survivalOperations,...scienceBOperations,...scienceDOperations,...scienceCOperations,...referenceOperations,...appliedOperations,...spatialOperations,...incoherentOperations,...materialInventoryOperations,...couplingOperations,...intervalCalibrationOperations,...batteryProtocolOperations]),requestCanonicalJson:z.string(),requestSha256:hash,result:z.unknown(),runtime:z.object({python:z.string(),pvlib:z.literal('0.13.1'),numpy:z.string(),scipy:z.string(),codeSha256:hash}).strict()}).strict().parse(value);
  if(envelope.operation!==request.operation||weatherSha256(envelope.requestCanonicalJson)!==envelope.requestSha256||stable(parseStudyJson(envelope.requestCanonicalJson,8*1024*1024))!==stable(request))throw new Error('Research response input binding mismatch');
- if(request.operation==='dc_coupled'||request.operation==='electrochemical_spm'||request.operation==='dq_protection_control'){validatePhysicalResult(envelope.result,request.plan);}
+ if(request.operation==='battery_protocol'){validateBatteryProtocolResult(envelope.result,request);}
+ else if(request.operation==='interval_calibration'){validateIntervalCalibrationResult(envelope.result,request);}
+ else if(request.operation==='pvt_pem_coupled'){validateCouplingResult(envelope.result,request);}
+ else if(request.operation==='pvice_inventory'){validateMaterialInventoryResult(envelope.result,request);}
+ else if(request.operation==='incoherent_optics'){validateIncoherentResult(envelope.result,request);}
+ else if(request.operation==='stefan_spatial'){validateSpatialResult(envelope.result,request);}
+ else if(request.operation==='bill_local_ensemble'||request.operation==='pv_lcoe_scenarios'){validateAppliedResult(envelope.result,request);}
+ else if(request.operation==='pvdeg_acceleration'||request.operation==='pvice_massflow'||request.operation==='coherent_optics'){validateReferenceResult(envelope.result,request);}
+ else if(request.operation==='grid_support'||request.operation==='agri_water'||request.operation==='fpv_balance'||request.operation==='pem_dispatch'||request.operation==='pvt_pcm'){validateScienceCResult(envelope.result,request);}
+ else if(request.operation==='degradation_exposure'||request.operation==='circular_lca'||request.operation==='bill_ensemble'||request.operation==='grounded_scenario'){validateScienceDResult(envelope.result,request);}
+ else if(request.operation==='oet_patch'||request.operation==='battery_pybamm'||request.operation==='tandem_spectrum'){validateScienceBResult(envelope.result,request);}
+ else if(request.operation==='cohort_survival'){validateSurvivalResult(envelope.result,request.plan);}
+ else if(request.operation==='uq_convergence'||request.operation==='hybrid_design'||request.operation==='twin_site_holdout'){validateAdvancedResult(envelope.result,request);}
+ else if(request.operation==='project_uq'||request.operation==='hybrid_sizing'||request.operation==='batch_twin'){validatePortfolioResult(envelope.result,request);}
+ else if(request.operation==='dc_coupled'||request.operation==='electrochemical_spm'||request.operation==='dq_protection_control'){validatePhysicalResult(envelope.result,request.plan);}
  else if(request.operation==='integrated'){const r=validateIntegratedResult(envelope.result);if(stable(r.plan)!==stable(request.plan))throw new Error('Integrated response plan mismatch');}
  else{
   const r=generic.parse(envelope.result);if(stable(r.plan)!==stable(request.plan))throw new Error('Research plan mismatch');

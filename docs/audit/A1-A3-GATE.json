@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "portfolio-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:24:35.964Z",
+  "softwareStatus": "ready-for-review",
+  "scope": "Bounded multi-budget UQ, enumerated LP and global finite-horizon MILP design, site/time twin holdout and right-censored cohort survival; not completion of every roadmap requirement",
+  "roadmapPhaseStatus": {
+    "A1": "partial_project_calibration_and_general_nonlinear_model_remaining",
+    "A2": "partial_global_linear_MILP_bound_ready_equipment_lifetime_and_product_qualification_remaining",
+    "A3": "partial_cohort_survival_and_site_time_holdout_ready_individualized_RUL_and_field_qualification_remaining"
+  },
+  "fieldStatus": "blocked_missing_independent_project_evidence",
+  "completionStatus": "incomplete_software_and_field_scope",
+  "completionAssessment": {
+    "missingSoftware": [
+      "A1_general_nonlinear_PV_LCOE_nested_GSA",
+      "A1_cross_group_dependence_and_legacy_harmonization",
+      "A2_lifetime_equipment_HVAC_diesel_utility_and_product_UI",
+      "A3_operational_event_pipeline_and_individualized_RUL_with_calibration"
+    ],
+    "missingIndependentEvidence": [
+      "project_calibration_and_full_reference_reproduction",
+      "equipment_and_utility_qualification",
+      "frozen_raw_SCADA_baseline_and_failure_censoring_labels"
+    ],
+    "review": "docs/features/A1-A3-COMPLETION-REVIEW.fa.md"
+  },
+  "overallReleaseStatus": "blocked_incomplete_software_and_external_evidence",
+  "testFlags": {
+    "PVLIB_RESEARCH_ENABLED": true,
+    "PORTFOLIO_ANALYTICS_ENABLED": true
+  },
+  "deploymentDefault": "off",
+  "researchBoundary": {
+    "projectApproval": "blocked",
+    "automaticEnergyAdoption": false,
+    "financeMutation": false
+  },
+  "referencePolicy": "Two published site-assessment aggregates and one simulated demonstration; no CV inferred, no claim of reproducing the source projects",
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python -m unittest scripts.test_portfolio scripts.test_portfolio_advanced scripts.test_survival -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-portfolio.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-survival.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/portfolioSurvival.ts src/studies/portfolioAdvanced.ts src/studies/portfolioAnalytics.ts src/studies/portfolioDataAdapters.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:foundation",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-portfolio-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/survival.py": "f79c67056bc4ce2ace71c4df09a911d10feb56e04129d4ace8eae9121f601cf2",
+    "src/studies/portfolioSurvival.ts": "3f730de5e9eec7db2cd1257587ee417ed05e122f18cd0977a9d00d4d17e5f2da",
+    "scripts/test_survival.py": "2ec3b1c5a332001646033c883e87af2c64d9f6facaca2a9cbf1b559c16be8acc",
+    "scripts/test-survival.ts": "5b9e39880a0190057c8bc9fe11e288ab1f0bce11448a66a76b1cd2c83b2d9f26",
+    "docs/examples/portfolio/survival.synthetic.json": "1928b83c7161ea7edb823de0abdfe96347215aec4b06582e70ba295c31f0670e",
+    "docs/features/COHORT-SURVIVAL.fa.md": "10d8c011e2bd9dfc55dbd42da8f803584927e70e7c99affe0bef68086ac267f2",
+    "docs/features/A1-A3-COMPLETION-REVIEW.fa.md": "afe96b5ec1cd127cf8427adf1482ff968196573cfd4cadfb88530114317da6e9",
+    "services/pvlib_research/portfolio_advanced.py": "7aec3403ac010b9c0d747fa6117ef3291d2a32de5e99f5e1e4db678243b08222",
+    "src/studies/portfolioAdvanced.ts": "05a643f66623a3e2267d7b562c656c85e9030b5f451480c066eb40649df6d435",
+    "scripts/test_portfolio_advanced.py": "05815001ee54b52a706afe109ae840c2a8ffa2d4931e305951cbdb5155e34151",
+    "docs/examples/portfolio/convergence.synthetic.json": "0a08288ba4952c99c9b519157bb5403d2e5abc5edca802bea6ca9b2eaf68d048",
+    "docs/examples/portfolio/design.synthetic.json": "3057a8fffecc5656b0cacec6bdf5b62db0b87e312e065575d7b4b8f521bd2ef6",
+    "docs/examples/portfolio/holdout.synthetic.json": "edbe6abd718e11f58fd83b1d900c4598f377915581c5a1ecb4d122efb27f0ca7",
+    "services/pvlib_research/portfolio.py": "b4b4dc479e623ffd090b169a5244a57ff244e7a25dab942fe21d182db6754f4f",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/portfolioAnalytics.ts": "b6342b328cb8d48bfe16ac437a55cbe76a656a5f5ed60754d51aa4896ec2efb7",
+    "src/studies/portfolioDataAdapters.ts": "d91008fe3ec59d41c1af28e8ebe4dd82752a8c63093e0e876c584fbf6557ae04",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "src/capabilities/manifest.json": "38008723ef466957488182995eec1b57991b677d88f4847b4641b2ec26bbd6ce",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "docs/examples/portfolio/literature-references.json": "20d8402be80d17649bf3a0783feddac4ae16030f31e4010a164961b0ec7c2fc9",
+    "docs/examples/portfolio/uq.synthetic.json": "566746e08a8fc1f0b66ba20d2b8e7dd36758603ac6dd568090113e4505bc417c",
+    "docs/examples/portfolio/hybrid.synthetic.json": "6e2bc3376bbdc1f3777c88a31a0006a15acb92eca4d8bf7f81bfd2d584ec565d",
+    "docs/examples/portfolio/twin.synthetic.json": "003aef605ee1addcf5739e87934d5a96d90bb83745a11d935bd1a1978830238e",
+    "scripts/test_portfolio.py": "6fb97e5c46f4d1bac63fe783b7d4c2568a1819a255fa94dfb31b8357f963501e",
+    "scripts/test-portfolio.ts": "14cf44fa15bfed19b5855c658398f3ea757f8d31110e4b65186ab06242260081",
+    "scripts/test-portfolio-browser.ts": "dc206c37647be96f778a866f2c269c23c983c20505fa19f5e816be0696f8a54e",
+    "scripts/verify-portfolio.ts": "7e076bd83f94227da56057630324a9bba9e632db7709e391760e2a688481707b",
+    "docs/features/A1-A3-ANALYTICS.fa.md": "19d6c3907651be51a100f7d3d482f4bfcd70bf4d9283b46ff00aaa2d430940a6",
+    "docs/audit/F0-F1-GATE.json": "d8915396017bc480151da71fc16ac9d68c62ed6a64f00b26b01c5f9e1c05c646",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    ".github/workflows/foundation-acceptance.yml": "282a07fe47534668da2ae1c0c1451d0bed17adc7d3c836f0b0c5c364df49049f"
+  }
+}

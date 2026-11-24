@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "chen-measured-benchmark-gate-v1",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "physicalQualification": "not_established",
+  "projectApproval": "blocked",
+  "safetyApproval": "not_assessed",
+  "automaticEnergyAdoption": false,
+  "financeMutation": false,
+  "evidenceLevel": "retrospective_published_measurement_comparison_not_independent_project_qualification",
+  "expensiveExperimentRecomputedThisInvocation": false,
+  "checks": [
+    {
+      "command": [
+        "/home/user/solarpv-studio/.venv/bin/python",
+        "scripts/verify_chen_validation_data.py"
+      ],
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "command": [
+        "/home/user/solarpv-studio/.venv/bin/python",
+        "-m",
+        "unittest",
+        "scripts.test_battery_protocol",
+        "scripts.test_chen_measured_benchmark",
+        "-v"
+      ],
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "command": "original-data and independent metric witness",
+      "passed": true
+    },
+    {
+      "command": "git diff --check",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/chen_measured_benchmark.py": "fb4e65984f7330245e7a11f9aa06b61d42fe9b8b63cc026cdded7c38877a606f",
+    "scripts/run_chen_measured_benchmark.py": "b23c5a2041122bc672ce302fa1f4c2b1c0fae2c7b2533405e979af7e75879974",
+    "scripts/test_chen_measured_benchmark.py": "db4ec043d44d10c7af76ccea921f379050496cc1f819dc9094edbc66299e930f",
+    "scripts/verify_chen_measured_benchmark.py": "49f2b6f13972afe112923edbc683589a5bec9a660c9084f7a27a4eb32c64d053",
+    "docs/features/CHEN-MEASURED-BENCHMARK-SPEC.fa.md": "f2fe01af9f0a672946827f7fd62a68caed6c602a2e8e9376c9e3e2f6425ceba2",
+    "docs/features/CHEN-MEASURED-BENCHMARK.fa.md": "9904f44991058f5a43986830332f4b18c593a03a704bc71ed837aeed6c99e749",
+    "docs/features/CHEN-MEASURED-RESULTS.fa.md": "a51a4036248578be84cd48abf85a9ad9fedf8f49cf55b3ccb0c6edec919940f3",
+    "docs/audit/CHEN-MEASURED-BENCHMARK.json": "6ade1b33eab3c29936b5409b1cfb9625b12d2f89617c3daf4e14688fa4aacd6b",
+    "docs/audit/CHEN-VALIDATION-DATA-GATE.json": "26e092580e7607e2b9ca20f45cf449d98d2a5f1788276cad156b5b118ff0993f"
+  }
+}

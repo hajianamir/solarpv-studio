@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "feature-gate-v1",
+  "feature": "UQ-002",
+  "testedAt": "2026-11-24T14:20:58.135Z",
+  "status": "ready-for-review",
+  "scope": "Opt-in financial energy card and standalone PDF only; Chromium component harness, not full-app E2E or native Safari.",
+  "featureFlag": "Local checkbox; explicit mode true by default since UQ-005, legacy opt-out remains. No persisted preference.",
+  "researchGate": "No research result or adoption path added; existing gates unchanged.",
+  "boundary": true,
+  "documentation": true,
+  "checks": [
+    {
+      "command": "npm run verify:uq:contract",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-financial-energy-quantiles.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-financial-energy-quantiles-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run build",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ]
+}

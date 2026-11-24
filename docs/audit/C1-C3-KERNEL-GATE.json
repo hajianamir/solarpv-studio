@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "science-c-kernel-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:24:47.649884+00:00",
+  "kernelChecksPassed": true,
+  "softwareStatus": "kernel_checks_only_see_C1_C3_INTEGRATION_GATE",
+  "fullPhaseStatus": {
+    "C1": "partial_bounded_kernels_not_field_validated",
+    "C2": "partial_bounded_kernels_not_field_validated",
+    "C3": "partial_bounded_kernels_not_field_validated"
+  },
+  "overallReleaseStatus": "blocked",
+  "productIntegrationAssessment": "not_assessed_by_kernel_gate",
+  "financeMutation": false,
+  "automaticEnergyAdoption": false,
+  "projectApproval": "blocked",
+  "safetyApproval": "not_assessed",
+  "checks": [
+    {
+      "command": [
+        "/home/user/solarpv-studio/.venv/bin/python",
+        "-m",
+        "unittest",
+        "scripts.test_science_c",
+        "-v"
+      ],
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "verify:science-b"
+      ],
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/science_c.py": "b80f0b4c21a312887c9f7d30be20814a5b1b612a2615b40b2035526be8a61ef7",
+    "scripts/test_science_c.py": "709ccfa1ffb5cfd22af0931a438c93ae643eac97b5ea68257a806bbefbb18c46",
+    "scripts/verify_science_c_kernels.py": "896b971f383535fc812596e834446ed87daaab9a9329ee3f2849715f47487ccc",
+    "docs/features/C1-C3-SPEC.fa.md": "2e7cc497e37c22ab24e582cff916e0bc2346ccb7e0675d4f14c3a1a0d5adcc4b",
+    "docs/features/C1-C3-IMPLEMENTATION.fa.md": "247d4650f68a4a88b9348b26a58fbc374f0a4f76886dd047a99c6d6789e4f920",
+    "docs/audit/B1-B3-GATE.json": "95695f96f9a9557de618e9bcc077f1cc969210321fa07b74bd84ab95bd10c32d",
+    "docs/examples/science-c/agri.request.json": "7e12826c16f6963058c4ecdadc0486364a2a291d900f3cb0abcd6352e4421b21",
+    "docs/examples/science-c/agri.synthetic.json": "567b91639233bf71a45ebba3a4f19dbe497f1bf4b9e051664b7d09e29eb3c99f",
+    "docs/examples/science-c/coupled.request.json": "09a35cb042000f18c40cc623d3d5616a74d7f46c1afde1f074680d63469e88a4",
+    "docs/examples/science-c/fpv.request.json": "0864969b88997509de24e7850921e01fe74f858a91561c8e4278e9959a5a4c65",
+    "docs/examples/science-c/fpv.synthetic.json": "f801e758ab9785a4e799d1c7ec86c43935d99a059a6cd7571478e0ffce4b22be",
+    "docs/examples/science-c/grid.request.json": "4cd3d9d484c77600f7d744113484fa19799cf2a9603245752ea7ae2f37914888",
+    "docs/examples/science-c/grid.synthetic.json": "8662f764388135a62ebf1e8118b9a921274c3366606ab35b847e60e320e4c372",
+    "docs/examples/science-c/pcm.request.json": "bd044370e31639be5b7080f371a43a9b6b2728ed4e192261103079c267310de9",
+    "docs/examples/science-c/pcm.synthetic.json": "47a6c61d2563851b5db1221044ebdfa31bfd4326168fe8273b6fdbf6a54bcbaf",
+    "docs/examples/science-c/pem.request.json": "9cd7490afdcaf03815b9fc20518711e70819abc9756435a6a260cf75cd75278b",
+    "docs/examples/science-c/pem.synthetic.json": "455809a6cd62cd0355f23e55cd1a5b8b0031b0b6474336630624d5dd67fe7aa6"
+  }
+}

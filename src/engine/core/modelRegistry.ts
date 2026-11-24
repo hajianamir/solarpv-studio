@@ -5,6 +5,9 @@
 
 export interface ModelSemverEntry {
   modelId: string;
+  /** Declaration only unless linked to a verified executor; never a certification. */
+  implementationStatus?: 'planned' | 'partial';
+  capabilityIds?: string[];
   name: string;
   version: string; // Semantic Versioning x.y.z
   /** Optional source-backed date; omitted where the original modification date cannot be verified. */
@@ -18,6 +21,8 @@ export interface ModelSemverEntry {
 export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
   multiphysics_bipv_fpv: {
     modelId: 'multiphysics_bipv_fpv',
+    implementationStatus: 'planned',
+    capabilityIds: ['N06', 'R01'],
     name: 'Multiphysics Electro-Thermal & FPV Engine',
     version: '3.0.0',
     lastModified: '2026-10-28',
@@ -54,6 +59,8 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
   },
   lca_lifecycle_sustainability: {
     modelId: 'lca_lifecycle_sustainability',
+    implementationStatus: 'planned',
+    capabilityIds: ['N17', 'N18'],
     name: 'ISO 14040/44 Life Cycle Assessment & EOL Salvage Engine',
     version: '3.0.0',
     lastModified: '2026-10-28',
@@ -71,6 +78,8 @@ export const PHYSICS_MODEL_REGISTRY: Record<string, ModelSemverEntry> = {
   },
   hydrogen_grid_stability: {
     modelId: 'hydrogen_grid_stability',
+    implementationStatus: 'planned',
+    capabilityIds: ['N07'],
     name: 'Green Hydrogen Electrolyzer & Screening-Level Grid Stability Engine',
     version: '3.0.0',
     lastModified: '2026-10-28',

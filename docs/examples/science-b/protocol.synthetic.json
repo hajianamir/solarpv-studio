@@ -1,0 +1,34 @@
+{
+  "operation": "battery_protocol",
+  "plan": {
+    "schemaVersion": "battery-protocol-v1",
+    "source": "Published Chen2020 PyBaMM numerical benchmark, not project cell calibration",
+    "model": "SPMe",
+    "parameterSet": "Chen2020",
+    "sei": false,
+    "initialSoc": 0.5,
+    "temperatureK": 298.15,
+    "meshPoints": 6,
+    "relativeTolerance": 1e-06,
+    "voltageToleranceV": 0.02,
+    "temperatureToleranceK": 0.1,
+    "capacityToleranceAh": 1e-06,
+    "contextSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "samplesPerStep": 5,
+    "maxTimeStepS": 10,
+    "steps": [
+      {
+        "currentA": 1,
+        "durationS": 30
+      },
+      {
+        "currentA": 0,
+        "durationS": 30
+      },
+      {
+        "currentA": -1,
+        "durationS": 30
+      }
+    ]
+  }
+}

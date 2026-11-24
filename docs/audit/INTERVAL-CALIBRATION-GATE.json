@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "interval-calibration-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:26:17.130Z",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "acceptedScope": [
+    "absolute-residual exact decimal rank formula and explicit unbounded intervals",
+    "descriptive disjoint-site temporal holdout metrics with nonoverlapping windows",
+    "authenticated API, SDK and editor integration"
+  ],
+  "evidenceLevel": "author_software_reference_and_analytic_rank_verification_not_project_calibration",
+  "notCompleted": [
+    "verified project data and model-freeze audit",
+    "exchangeability or calibrated operational coverage",
+    "general UQ harmonization and tail validation",
+    "censored RUL intervals",
+    "other remaining A1-D3 roadmap"
+  ],
+  "flags": {
+    "INTERVAL_CALIBRATION_ENABLED": true,
+    "deploymentDefault": "off",
+    "requiresBaseResearchFlag": true
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked",
+    "coverageGuarantee": "not_established"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python scripts/acquire_reference_data.py",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python -m unittest scripts.test_interval_calibration -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-calibration.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/intervalCalibration.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:coupling",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-calibration-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/interval_calibration.py": "af5dfcaab78121b1cbb27fbe0fd5566247c5b750649d988b28309ea730b75695",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/intervalCalibration.ts": "466232cd77079b8aa9c27643e3d667d23dcd8299902414291dca342c51ebb509",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_interval_calibration.py": "282e3429e7122f27c9124d01a1843fe80c8f47cf7f9e98ebbaf26839ab379ebc",
+    "scripts/test-calibration.ts": "54c8813a39be790bfbd6138a450dda38d96a222566c13492fda088169ffafeb4",
+    "scripts/test-calibration-browser.ts": "29ca684c721405495101233a39b5ca0360d738625ec98d39af15397484b00d08",
+    "scripts/verify-calibration.ts": "3fa4575fb52bf29d27fbfc3120134a9280820ddf8fbf6363492ae976f247ce60",
+    "scripts/acquire_reference_data.py": "6db705665ea2e59fcf9a03da4561910b0d62c73ba2aa5704bd3cbd4e32cb8969",
+    "docs/reference-data/manifest.json": "7c54caad59a002a2d872db9b31ec2cf4ae03ee3900d709a1ad9dba534b648eb1",
+    "docs/reference-data/conformal/correctness-checks.ipynb": "8801fde49597aa615f2ba669cbcc73bbe918f782a2e95c0641f390bb6aec4886",
+    "docs/reference-data/conformal/LICENSE.txt": "f5cc5421f2a30ad67c7e766dffbce1da33f117652206b703063e45894c62ef3c",
+    "docs/examples/references/calibration.json": "dd80decf2d048f2b2b0f035a3d4eb0c2086249c49458102b3dd09f4204f059bd",
+    "docs/features/INTERVAL-CALIBRATION-SPEC.fa.md": "04041ede65e4d2593d0179c93ea8c7f0e5b16df03e60bcff1e7b7ac404835ab2",
+    "docs/features/INTERVAL-CALIBRATION.fa.md": "45f37ef81512e26504c8443d372eb9b11ead4cf371576e498695505309b40dab",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/PVT-PEM-COUPLING-GATE.json": "2d372c14820dce047c877f17a1077a3a091d7fca3e5b4a09b4bcf6eb68880dd1",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    "CHANGELOG.md": "211a6db5e8763bdd215cf82025041f018f7dccaa60a8db5ebe4e9b7ac3275ddf"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "operation": "pv_lcoe_scenarios",
+  "plan": {
+    "source": "Registered upstream modeled forcing / caller scenario assumptions; not measured or calibrated project",
+    "contextSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "schemaVersion": "pv-lcoe-scenarios-v1",
+    "weather": {
+      "kind": "registered_psm3"
+    },
+    "currency": "USD",
+    "years": 25,
+    "realDiscountRate": 0.05,
+    "annualDegradationFraction": 0.005,
+    "baseEnergyBasis": "undegraded",
+    "alreadyAppliedMechanisms": [],
+    "scenarios": [
+      {
+        "id": "base",
+        "dcKwp": 5,
+        "acKw": 4,
+        "gammaPerK": -0.004,
+        "inverterEfficiency": 0.96,
+        "staticLossFraction": 0.1,
+        "irradianceScale": 1,
+        "temperatureShiftC": 0,
+        "capex": 6000,
+        "annualOpex": 100,
+        "replacements": [
+          {
+            "year": 12,
+            "cost": 1000
+          }
+        ]
+      },
+      {
+        "id": "higher_resource",
+        "dcKwp": 5,
+        "acKw": 4,
+        "gammaPerK": -0.004,
+        "inverterEfficiency": 0.96,
+        "staticLossFraction": 0.1,
+        "irradianceScale": 1.1,
+        "temperatureShiftC": 0,
+        "capex": 6000,
+        "annualOpex": 100,
+        "replacements": [
+          {
+            "year": 12,
+            "cost": 1000
+          }
+        ]
+      },
+      {
+        "id": "higher_dc",
+        "dcKwp": 6,
+        "acKw": 4,
+        "gammaPerK": -0.004,
+        "inverterEfficiency": 0.96,
+        "staticLossFraction": 0.1,
+        "irradianceScale": 1,
+        "temperatureShiftC": 0,
+        "capex": 7000,
+        "annualOpex": 100,
+        "replacements": [
+          {
+            "year": 12,
+            "cost": 1000
+          }
+        ]
+      }
+    ]
+  }
+}

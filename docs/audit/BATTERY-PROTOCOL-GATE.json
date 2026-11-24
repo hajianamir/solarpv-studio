@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "battery-protocol-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:26:26.883Z",
+  "softwareStatus": "ready-for-review",
+  "allRemainingItemsCompleted": false,
+  "acceptedScope": [
+    "short piecewise constant signed-current cell protocols with continuous electrochemical/thermal state",
+    "separate mesh/tolerance/configured internal-time-bound sensitivity and coulomb/heating witnesses",
+    "authenticated API, SDK and editor integration"
+  ],
+  "evidenceLevel": "pinned_upstream_software_and_analytic_ledgers_not_measured_cell_validation",
+  "notCompleted": [
+    "CV/event-driven or long cycling",
+    "measured cell validation and calibrated thermal behavior",
+    "actual accepted-step statistics or general convergence-order proof",
+    "plating mechanics runaway pack safety",
+    "other remaining A1-D3 roadmap"
+  ],
+  "flags": {
+    "BATTERY_PROTOCOL_ENABLED": true,
+    "deploymentDefault": "off",
+    "requiresBaseResearchFlag": true
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked",
+    "safetyApproval": "not_assessed"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python scripts/acquire_reference_data.py",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python -m unittest scripts.test_battery_protocol -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-battery-protocol.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/batteryProtocol.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:calibration",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-battery-protocol-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/battery_protocol.py": "b3c927d5cc421381fae97de361283d5166109eabe35f8328fff1f44972ce5b13",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/batteryProtocol.ts": "eb7a31e034d3c6ab6bf6387822af9317570401392a54d1d8b5c0f839b34f22f0",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_battery_protocol.py": "cf0a69d084860511b8f10670fdafa60bb4006a11b5cff39f517610aa2003bfdb",
+    "scripts/test-battery-protocol.ts": "114f4da3a3ddac2c6fe76388bc1cd67b9bbaf1ed6e345829fff6243473c4b7bd",
+    "scripts/test-battery-protocol-browser.ts": "36078602fa542f2d8af1b455e3a577e2c7be6a66a2a44e5fc2e5d929dc1b1bc6",
+    "scripts/verify-battery-protocol.ts": "825fb2567881b51d72374d70b65dcf99b7d9713511aaa94e6b7d0ef551413e24",
+    "scripts/acquire_reference_data.py": "6db705665ea2e59fcf9a03da4561910b0d62c73ba2aa5704bd3cbd4e32cb8969",
+    "docs/reference-data/manifest.json": "7c54caad59a002a2d872db9b31ec2cf4ae03ee3900d709a1ad9dba534b648eb1",
+    "docs/reference-data/pybamm/Chen2020.txt": "7c360a546a76492585e147231caee2f8f4fe29222b893cb12091dc4d158f62f0",
+    "docs/reference-data/pybamm/OKane2022.txt": "561c05aaee976979e9e1022daa0595c04a3f834d644ea0abe3546919e362883f",
+    "docs/reference-data/pybamm/simulation-tests.txt": "e1fb1ec298be2b5ff4c3de9fe76666a21de519c584ad4edd7377318e27f5265b",
+    "docs/reference-data/pybamm/LICENSE.txt": "586953e8ef87b1fc2c81c27f880dae79c7474c5ff17a8b478ac977c4f4da8361",
+    "docs/examples/science-b/protocol.synthetic.json": "87c9eb516d86fdbcb282b21dbb0c8fd45653b7b35191baa77888167b0af2ae02",
+    "docs/features/BATTERY-PROTOCOL-SPEC.fa.md": "d1d1fdaf7f3eed5b0601a604825ea4bb9e32bb5eb68a2806270fc25f87b8d605",
+    "docs/features/BATTERY-PROTOCOL.fa.md": "9377d9428ed74babf60ff3fac5c849bfed5b6fb1ca74964b0ab6b9ced013db1c",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/INTERVAL-CALIBRATION-GATE.json": "da41cea7e6e54995253543264fd96b0b4a5561c84e89b444e1a1241fdd0b63ff",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    "CHANGELOG.md": "211a6db5e8763bdd215cf82025041f018f7dccaa60a8db5ebe4e9b7ac3275ddf"
+  }
+}

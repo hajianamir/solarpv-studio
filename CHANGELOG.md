@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_(No unreleased changes.)_
+### Added
+- Opt-in B2 `battery_protocol`: pinned PyBaMM current/rest/charge stages with preserved cell state, separate spatial/tolerance/IDAS-step-bound sensitivity, charge/heating ledgers, strict independent output witnesses and authenticated API/SDK/editor integration. Default-off `BATTERY_PROTOCOL_ENABLED`; no energy/finance adoption, measured-cell or safety qualification. See BATTERY-PROTOCOL.fa.md and its gate receipt.
 
 ## [1.0.3] - 2026-11-04
 
@@ -121,3 +122,45 @@ _(No unreleased changes.)_
 [1.0.2]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/hajianamir/solarpv-studio/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hajianamir/solarpv-studio/releases/tag/v1.0.0
+
+## Applied research (bounded A1/D3; default off)
+
+- Add authenticated nonlinear PVWatts/LCOE scenarios and pinned Gregorian local-calendar/DST bill ensembles with API/SDK/editor support.
+- Add upstream pvlib/IANA provenance, independent TypeScript witnesses, offline numerical, security/rollback and browser tests.
+- No automatic finance/energy adoption, calibrated UQ, measured-load claim or full A1–D3 completion. See `docs/features/APPLIED-RESEARCH.fa.md`.
+
+## C3 spatial research kernel (partial, opt-in CLI only)
+
+- Add bounded conservative 1D isothermal enthalpy finite-volume melting kernel; no API/SDK/UI integration or PV-T/PEM coupling claimed.
+- Add independently generated 70-digit Neumann fixtures, 13 tests including space/time refinement, energy conservation, offline execution and CLI rollback.
+- No annual-energy/finance adoption or experimental/material qualification. See `docs/features/STEFAN-SPATIAL.fa.md`.
+
+## Spatial Stefan product integration (bounded C3)
+
+- Add strict authenticated API/SDK/editor path for existing Stefan kernel behind independent default-off SPATIAL_RESEARCH_ENABLED.
+- Add O(cells) constitutive/grid/energy witnesses (not a full PDE proof), tamper/flag/rollback and production browser archive/cancel tests.
+- Preserve research-only boundary; no coupling, field qualification or full A1–D3 completion claim. See `docs/features/SPATIAL-INTEGRATION.fa.md`.
+
+## B3 all-incoherent optics (bounded, default off)
+
+- Add actual optional tmm0.2.0 incoherent adapter for normal incidence and all-thick layers with nonabsorbing outer media.
+- Add independent geometric-series/phase-average witnesses, frozen engine-source provenance, API/SDK/editor, auth and dual flag rollback tests.
+- No roughness, mixed-stack, measured EQE, electrical yield or full-roadmap claim. See `docs/features/INCOHERENT-OPTICS.fa.md`.
+
+## D2 selected-material inventory research (default off)
+
+- Add real PV ICE replay for seven frozen c-Si baseline materials and versioned caller-declared annual kg reconciliation with explicit context/boundary.
+- Add source acquisition/projection, independent area/mass and ledger witnesses, glass regression, auth/flag rollback, API/SDK/editor and browser tests.
+- No verified site inventory, whole-module LCA, carbon/cost credits or full-roadmap completion claimed. See `docs/features/MATERIAL-INVENTORY.fa.md`.
+
+## C3 bounded one-way PV-T/PCM to PEM coupling (default off)
+
+- Derive PEM mean interval electrical feed solely from collector electrical energy, area and transfer efficiency; reject manual nested forcing.
+- Add coarse/fine H2 sensitivity, signed global energy ledger, API/SDK/editor and independent flag rollback tests.
+- No thermal feedback, preheat credits, instantaneous-power feasibility, real equipment validation or full-roadmap claim. See `docs/features/PVT-PEM-COUPLING.fa.md`.
+
+## A1 descriptive interval calibration interface (default off)
+
+- Add exact-rank absolute-residual bands, explicit unbounded small-sample encoding and disjoint-site temporal holdout metrics; reject overlapping measurement windows.
+- Add pinned author notebook/license provenance, independent finite-population/rank tests, API/SDK/editor and auth/flag/rollback/browser coverage.
+- Exchangeability and model freeze remain unverified; no field calibration, energy P90, censored RUL interval, automatic finance adoption or full-roadmap completion. See `docs/features/INTERVAL-CALIBRATION.fa.md`.

@@ -1,0 +1,168 @@
+{
+  "schemaVersion": "reference-models-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:25:41.006Z",
+  "softwareStatus": "ready-for-review",
+  "acceptedScope": [
+    "actual pinned PVDeg Arrhenius adapter and 8760-hour upstream weather replay",
+    "actual pinned PV ICE glass baseline adapter and three unmodified upstream tests",
+    "coherent tmm adapter with independent admittance matrix and compiled Si constants example"
+  ],
+  "allRemainingItemsCompleted": false,
+  "fullRoadmapStatus": "incomplete_software_and_independent_field_evidence",
+  "evidenceLevel": "upstream_software_regression_and_compiled_constants_not_field_qualification",
+  "remainingSoftware": {
+    "A1": "general nonlinear PV/LCOE UQ evaluator and legacy harmonization",
+    "A2": "full lifecycle/equipment sizing and operational product qualification",
+    "A3": "operational ingestion/event and calibrated individual RUL pipelines",
+    "B1": "general geometry/MC/spatial thermal and Radiance comparison",
+    "B2": "extended protocols/temporal refinement and mechanics; no runaway without data",
+    "B3": "broader incoherent/rough optics and independent technology EQE benchmark; coherent adapter separately gated",
+    "C1": "official rulepack registry and separate GFM dynamics",
+    "C2": "microclimate models and crop/reservoir holdout runner",
+    "C3": "direct PV-T/PEM coupling and spatial Stefan solver",
+    "D1": "broader degradation mechanisms and calibrated RUL intervals; selected Arrhenius adapter separately gated",
+    "D2": "site/versioned inventory reconciliation beyond separately gated selected PV ICE glass adapter",
+    "D3": "local calendar/DST and explicitly opt-in model/provider workflow"
+  },
+  "externalEvidenceRequired": [
+    "licensed independent SCADA and failure/censoring labels",
+    "equipment-specific thermal/electrochemical and optical reference benchmarks",
+    "official utility rulepacks and interconnection tests",
+    "crop/reservoir control holdouts",
+    "licensed technology-specific inventory and factors",
+    "model/provider licensing and data-egress policy before LLM"
+  ],
+  "flags": {
+    "REFERENCE_MODELS_ENABLED": true,
+    "deploymentDefault": "off",
+    "separateRuntimeRequired": true
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked",
+    "safetyApproval": "not_assessed"
+  },
+  "checks": [
+    {
+      "command": "/home/user/solarpv-studio/.venv/bin/python scripts/acquire_reference_data.py",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.cache/reference-env/bin/python scripts/build_reference_examples.py",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.cache/reference-env/bin/python -m unittest scripts.test_reference_models -v",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-reference-models.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/home/user/solarpv-studio/.cache/reference-env/bin/python -m pip check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/referenceModels.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:remaining",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-reference-models-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "services/pvlib_research/reference_models.py": "f9fe8534bf74a1e10b2642a282c799ae789a119a3ebc9cd5341fed141aed4e07",
+    "services/pvlib_research/requirements-references.txt": "0c7eaa9dbf9ba425cf16f37303ff10c43d0795b08e56ab0d60a44a82d2586c2d",
+    "services/pvlib_research/requirements-references.lock.txt": "9199694e74c2a006e270bc224edc44e7636973c33fefba44dbba2b59c1ab7713",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/referenceModels.ts": "f9fb70b9e6eb204cfc19d5ff75ad6d1bb28f459b9560caa8d6026d7b21981bcf",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "src/capabilities/manifest.json": "38008723ef466957488182995eec1b57991b677d88f4847b4641b2ec26bbd6ce",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_reference_models.py": "f738d2a0adbf6c0f990e076b718b661707d5371225932474071d2a771e3aa4b8",
+    "scripts/test-reference-models.ts": "2efce7d340e46987edeca3d35bdbabed66867621b06d9d1d4c4b323862e859d5",
+    "scripts/test-reference-models-browser.ts": "2c7501a6a0181a8d5f9186e673dee05aef1f8d5b821f5c22c9854cd84e1c093e",
+    "scripts/acquire_reference_data.py": "6db705665ea2e59fcf9a03da4561910b0d62c73ba2aa5704bd3cbd4e32cb8969",
+    "scripts/build_reference_examples.py": "512c28b8fe976a3fa805812907f19b35489e0a307146822b01f7cb66a1307bb6",
+    "scripts/verify-reference-models.ts": "d61817387d843031f77cc85284938d2add104be3fe12168461b95377f9aed17b",
+    "docs/examples/references/pvdeg.json": "709728bfefd26948c0de0fb6565bae94b4f480a5713ef2c840efd806bb0164de",
+    "docs/examples/references/pvice.json": "e274538954d63cf4eb3e6f55fcd3df830cc8ec5835d9f5d2a543538a5968d3dc",
+    "docs/examples/references/optics.json": "a040b910d7c6ab1b3961aa3cdb2ed881f466d842754453ba5abeb60b532ced9b",
+    "docs/examples/references/silicon.json": "8a4a317c87524beb32b170487a5db7c27b0acca003cd276b8352d70c438fede1",
+    "docs/reference-data/manifest.json": "7c54caad59a002a2d872db9b31ec2cf4ae03ee3900d709a1ad9dba534b648eb1",
+    "docs/features/REFERENCE-ADAPTERS-SPEC.fa.md": "a273bb7703dee5b1e7f0e0b3bb05cb012aba3f0c38ac63060029886e0dff9a67",
+    "docs/features/REFERENCE-ADAPTERS.fa.md": "8029336f86d1bcc4f55decfa0072225efdb88b7c3caa3b8d370fa4edb6333e52",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/A1-D3-REMAINING-GATE.json": "a3eaf405cfc16fc01b15f466fd34dc7128b30c028435b5d21226ac924ea0d4d9",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    ".github/workflows/foundation-acceptance.yml": "282a07fe47534668da2ae1c0c1451d0bed17adc7d3c836f0b0c5c364df49049f",
+    "docs/reference-data/pybamm/LICENSE.txt": "586953e8ef87b1fc2c81c27f880dae79c7474c5ff17a8b478ac977c4f4da8361",
+    "docs/reference-data/pybamm/Chen2020.txt": "7c360a546a76492585e147231caee2f8f4fe29222b893cb12091dc4d158f62f0",
+    "docs/reference-data/pybamm/OKane2022.txt": "561c05aaee976979e9e1022daa0595c04a3f834d644ea0abe3546919e362883f",
+    "docs/reference-data/pybamm/simulation-tests.txt": "e1fb1ec298be2b5ff4c3de9fe76666a21de519c584ad4edd7377318e27f5265b",
+    "docs/reference-data/conformal/correctness-checks.ipynb": "8801fde49597aa615f2ba669cbcc73bbe918f782a2e95c0641f390bb6aec4886",
+    "docs/reference-data/conformal/LICENSE.txt": "f5cc5421f2a30ad67c7e766dffbce1da33f117652206b703063e45894c62ef3c",
+    "docs/reference-data/pvlib/inverter-tests.txt": "67e6d7f9247f7355faa98b84e4c3f5c334214263b5b1f192d8900100f3a409fa",
+    "docs/reference-data/pvlib/pvsystem-tests.txt": "a945fbcbfe6e100b206095d18a5983cf341e24e8fd699a6707b00057b281e006",
+    "docs/reference-data/pvlib/LICENSE.txt": "a02e12ddaada3cf0d5dbdd8affdd577c2eec640758a95842a304f7513b8c0be4",
+    "docs/reference-data/tz/northamerica.txt": "382bc1672c47ca0c8e2cf303a34cb9da689c9bca0e0c3d7f5cde884c05cb49f4",
+    "docs/reference-data/tz/europe.txt": "a33695f21dff308ba3e900244a083450331d8aa215a641f612eb218e49b272d9",
+    "docs/reference-data/tz/australasia.txt": "d5cac9647eda54e639524689fdf8459a7da67e3d9a9acaecefd0c3507dd256fd",
+    "docs/reference-data/tz/LICENSE.txt": "0613408568889f5739e5ae252b722a2659c02002839ad970a63dc5e9174b27cf",
+    "docs/reference-data/silicon/Green-2008.yml": "4b785ec47ca9a5ac71626dc90194115fba00575689a52c2baf1e78676c752ce4",
+    "docs/reference-data/silicon/LICENSE.txt": "36ffd9dc085d529a7e60e1276d73ae5a030b020313e6c5408593a6ae2af39673",
+    "docs/reference-data/pvdeg/weather.csv": "bb1221c90bfec3837fc0685ea5eaa19927d0caccd6246bb6fea24d11ba01543d",
+    "docs/reference-data/pvdeg/upstream-tests.txt": "690855d095eaa3cea9b415ae6d1407f9fe0cda22e23fff6223d58cda4f6020ee",
+    "docs/reference-data/pvdeg/LICENSE.txt": "cde84f4597b12e867ab60ab0d4a8a2617c46bfbe2c0c9bb213ae107cf436b1cd",
+    "docs/reference-data/pvice/test-module.csv": "1084b47956506a4e340a231aac20b110a9f7f8dfa2dae729d79fc3440fb9e7ee",
+    "docs/reference-data/pvice/test-glass.csv": "2e85d4b71c00ac26aad5bb58a9f58dd38d0a8411221d3a04cebb68839d6ab3a6",
+    "docs/reference-data/pvice/us-module.csv": "0540d5da1034bc619ed57d29a4e607f81d283be57e4f813bafb250ffa630a569",
+    "docs/reference-data/pvice/us-glass.csv": "35488da9257f5b219895e8493cac6e23d784ca26f3147eb3ff29f8a2ef476e0d",
+    "docs/reference-data/pvice/us-silicon.csv": "363a54e24c00fb543140b8a09fe1eace9522bf2f78735c62543996ec0e133428",
+    "docs/reference-data/pvice/us-silver.csv": "b7d227a1f7d1fec1db0001717d7c271f1f04eb4764a8d4fe3cffb64fb3ff7959",
+    "docs/reference-data/pvice/us-copper.csv": "c94ab51cc721ad18d5796ca9d018290a3fd686450ba82a8a8beca525218bc2a2",
+    "docs/reference-data/pvice/us-aluminium_frames.csv": "983dfae6fcd4c505f91298b878a319937cc0c2b2e65a7141d5f4327c2d03c443",
+    "docs/reference-data/pvice/us-encapsulant.csv": "413c780ef2fda66059c894b87ffcf9a06a35cec41db4e2a55175dcfc608c9329",
+    "docs/reference-data/pvice/us-backsheet.csv": "160f8ff27b21201f9d4bdd784326990c7e75b686430724370e7684ba68bf7cc1",
+    "docs/reference-data/pvice/upstream-tests.txt": "e621a51c3a2a46f6867f1faa94a193d1e26c34c751ea1e4ed610e42ce634d179",
+    "docs/reference-data/pvice/LICENSE.txt": "04d700dfa32f51db31d607553566669f73445944c6429ab17568290ad4a33441",
+    "docs/reference-data/tmm/upstream-tests.txt": "d37c6580656d5094c12e84baf7af1d310732b250eeb7fa9430aa73d421c32940",
+    "docs/reference-data/tmm/engine-source.txt": "0b6831a436bc2be5f1c035d3aa79a88dcc4c7e000dd32e095f968a51afb35628",
+    "docs/reference-data/tmm/LICENSE.txt": "d0446f2bf4cfba6dcb4c5428e02e4181d55b72efb6abd141a889a992601c29e5",
+    "docs/reference-data/pvice/input-summary.json": "6e13b73154a50f2a9f0a61dce709325b682660d4e1d8b1f611f81d1f2686db5d",
+    "docs/reference-data/pvice/material-summary.json": "f867a5b610172726e57072dc72dc921aede47bd532ac0133960954aef3a4cb53",
+    "docs/reference-data/pvlib/forcing.json": "9035f97ae1f55a28e6908fc451cc5270dfe5ac9bd34bfe735589bed5052d7201",
+    "docs/reference-data/tz/tzif-manifest.json": "ca6a2fa9abbe183b05216944e9b847868799df960413d2c9f14026a1319f1fc2"
+  }
+}

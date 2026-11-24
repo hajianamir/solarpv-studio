@@ -1,0 +1,49 @@
+{
+  "series": {
+    "schemaVersion": "external-series-v1",
+    "kind": "external_generation",
+    "origin": "wind",
+    "source": "SYNTHETIC documentation only, not field data",
+    "sourceVersion": "1",
+    "quality": "assumed",
+    "context": {
+      "projectId": "SYNTHETIC-project",
+      "assetId": "SYNTHETIC-meter",
+      "projectRevisionSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "latitude": 40,
+      "longitude": -74,
+      "boundary": "poi"
+    },
+    "timezone": "UTC",
+    "intervalMinutes": 60,
+    "timestampConvention": "interval_end",
+    "statistic": "interval_mean",
+    "unit": "kW",
+    "records": [
+      {
+        "timestamp": "2024-02-29T01:00:00Z",
+        "value": 2,
+        "quality": "valid"
+      },
+      {
+        "timestamp": "2024-02-29T02:00:00Z",
+        "value": 3,
+        "quality": "valid"
+      }
+    ],
+    "powerConvention": "positive_export_negative_import"
+  },
+  "target": {
+    "context": {
+      "projectId": "SYNTHETIC-project",
+      "assetId": "SYNTHETIC-meter",
+      "projectRevisionSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "latitude": 40,
+      "longitude": -74,
+      "boundary": "poi"
+    },
+    "startUtc": "2024-02-29T00:00:00Z",
+    "endUtc": "2024-02-29T02:00:00Z",
+    "intervalMinutes": 60
+  }
+}

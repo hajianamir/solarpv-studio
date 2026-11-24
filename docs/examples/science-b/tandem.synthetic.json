@@ -1,0 +1,47 @@
+{
+  "operation": "tandem_spectrum",
+  "plan": {
+    "schemaVersion": "tandem-spectrum-v1",
+    "source": "SYNTHETIC flat spectra and final-stack EQE; no measured technology claim",
+    "wavelengthNm": [
+      400,
+      500,
+      600,
+      700,
+      800
+    ],
+    "irradianceWm2Nm": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "referenceWm2Nm": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "topEqe": [
+      0.4,
+      0.4,
+      0.4,
+      0.4,
+      0.4
+    ],
+    "bottomEqe": [
+      0.4,
+      0.4,
+      0.4,
+      0.4,
+      0.4
+    ],
+    "normalizationWm2": null,
+    "topJ0Am2": 1e-08,
+    "bottomJ0Am2": 1e-08,
+    "topNVtV": 0.03,
+    "bottomNVtV": 0.03
+  }
+}

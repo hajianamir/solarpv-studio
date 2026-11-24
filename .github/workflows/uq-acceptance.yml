@@ -1,0 +1,58 @@
+name: Financial UQ reproducibility and browser acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches: ['arena/237e6ea2-solarpv-studio']
+    paths: ['src/**', 'scripts/**', 'package*.json', 'vite.config.ts', '.github/workflows/uq-acceptance.yml']
+  pull_request:
+    paths: ['src/**', 'scripts/**', 'package*.json', 'vite.config.ts', '.github/workflows/uq-acceptance.yml']
+permissions:
+  contents: read
+jobs:
+  uq:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: '${{ matrix.os }}'
+    timeout-minutes: 25
+    env:
+      VITE_REAL_INTERNET: 'false'
+      REAL_INTERNET: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node scripts/ci-command.mjs npm ci
+      - name: Locate native Windows Chromium
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $paths = @('C:\Program Files\Google\Chrome\Application\chrome.exe','C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe','C:\Program Files\Microsoft\Edge\Application\msedge.exe')
+          $browser = $paths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $browser) { throw 'Native Windows Chromium unavailable; no false pass' }
+          "BROWSER_EXECUTABLE_PATH=$browser" >> $env:GITHUB_ENV
+      - run: npm run lint:types
+      - run: npm run test:uq:contract
+      - run: npm run test:uq:worker
+      - run: npm run test:uq:archive
+      - run: npm run test:uq:display
+      - run: npm run test:uq:metrics
+      - run: npm run build
+      - run: npm run test:uq:e2e
+      - name: Record exact checkout and runtime
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p .cache/uq-platform
+          git rev-parse HEAD > .cache/uq-platform/checkout.txt
+          node -p 'JSON.stringify({platform:process.platform,node:process.version,sha:process.env.GITHUB_SHA})' > .cache/uq-platform/runtime.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: 'uq-${{ matrix.os }}'
+          path: |
+            docs/audit/UQ-004-E2E.json
+            .cache/uq-platform/

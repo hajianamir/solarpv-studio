@@ -77,13 +77,16 @@ export interface FinancialUqResult {
   annualGenerationMwh: MetricDistributionOutput;
   lcoeUsdPerMwh: MetricDistributionOutput;
   npvUsd: MetricDistributionOutput;
+  /** @deprecated Legacy heuristic enum, not a credit/investment rating. UI must not present it as certification. */
   bankableRiskCategory: 'LOW_RISK' | 'INVESTMENT_GRADE' | 'ELEVATED_VOLATILITY' | 'HIGH_UNCERTAINTY';
   tornadoSensitivityRanking: Array<{
     variableId: string;
     name: string;
+    /** Legacy field name: normalized Pearson r² score, NOT additive variance attribution. */
     varianceContributionPercent: number;
     sensitivityType?: 'aleatory' | 'epistemic';
   }>;
+  /** Naive SD/sqrt(N); not an LHS/copula convergence guarantee or calibrated uncertainty interval. */
   convergenceStandardErrorNpvUsd?: number;
   trialStatusBreakdown?: {
     totalTrials: number;
@@ -92,6 +95,7 @@ export interface FinancialUqResult {
     paybackAchievedTrials: number;
     paybackUnachievedTrials: number;
   };
+  /** Legacy group names: sums of normalized correlation scores, not a validated stochastic decomposition. */
   uncertaintyDecomposition?: {
     aleatoryVariancePct: number;
     epistemicVariancePct: number;

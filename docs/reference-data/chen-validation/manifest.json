@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "chen-validation-acquisition-v1",
+  "originalDoi": "10.5281/zenodo.4032561",
+  "originalMetadataUrl": "https://zenodo.org/api/records/4032561",
+  "license": "CC-BY-4.0",
+  "licenseEvidence": "Original publisher metadata.license.id=cc-by-4.0; fetched via page tool. Metadata subset is transcribed, not an exact API-byte snapshot.",
+  "mirrorRepository": "sayaan1808/battery-fast-charging-optimization-revised",
+  "mirrorCommit": "7a2eefffbc24009e282d6d69b7fe26e1f6cc49a0",
+  "identityCaveat": "Publisher MD5 and size corroborate accidental byte identity, not a cryptographic authenticity signature; local SHA256 and pinned Git blobs lock subsequent replay.",
+  "transformations": "none; original CSV bytes preserved",
+  "qualification": "acquisition_integrity_only_not_model_or_project_validation",
+  "files": [
+    {
+      "path": "docs/reference-data/chen-validation/LGM50_cell02.csv",
+      "size": 597715,
+      "publisherMd5": "0bbf959cbfc367296ec69d7a74d2f5c1",
+      "gitBlob": "2eb28aa8b8e54486570d9fcfec974ff16aee5000",
+      "sha256": "650e7f9ac5217b4db158047e50b6b464100b13f4859002421114edebca629b35"
+    },
+    {
+      "path": "docs/reference-data/chen-validation/LGM50_cell03.csv",
+      "size": 590794,
+      "publisherMd5": "a09cbd8eff0af55dfe9bc8728fa89908",
+      "gitBlob": "9e449192a360cb5b5cb3d869910d9115b57cd467",
+      "sha256": "fcc13423786d6044f3ec41b1b278fb1d42ff55018666be743243f7c34b1b98cb"
+    },
+    {
+      "path": "docs/reference-data/chen-validation/LGM50_cell04.csv",
+      "size": 595967,
+      "publisherMd5": "f17615476283d2e15087165697ff9d7c",
+      "gitBlob": "56633161b79a7f8e86a7c7f5ed4e973975c28fe4",
+      "sha256": "e1cbb60e79911824d5559f12db8e8ecdd4781d077a45f5b1ecbcf103aa271d9e"
+    }
+  ]
+}

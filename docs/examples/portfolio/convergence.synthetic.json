@@ -1,0 +1,52 @@
+{
+  "operation": "uq_convergence",
+  "plan": {
+    "schemaVersion": "uq-convergence-v1",
+    "source": "SYNTHETIC multi-budget numerical benchmark only",
+    "base": {
+      "schemaVersion": "project-uq-v1",
+      "source": "SYNTHETIC method benchmark; literature ranges do not calibrate these CVs",
+      "baselineKwh": 1275,
+      "epistemicCv": 0.05,
+      "aleatoryCv": 0.03,
+      "outer": 300,
+      "inner": 300,
+      "seed": 42,
+      "relativeCiTolerance": 0.05,
+      "referenceId": "bolzano-iea2020",
+      "inputBasis": "literature_benchmark",
+      "gsaSamples": 16384,
+      "referenceCapacityKwp": 1,
+      "correlatedGaussianLinear": {
+        "coefficients": [
+          1,
+          2
+        ],
+        "correlation": [
+          [
+            1,
+            0.5
+          ],
+          [
+            0.5,
+            1
+          ]
+        ]
+      }
+    },
+    "budgets": [
+      {
+        "outer": 100,
+        "inner": 100
+      },
+      {
+        "outer": 300,
+        "inner": 300
+      }
+    ],
+    "seeds": [
+      42,
+      43
+    ]
+  }
+}

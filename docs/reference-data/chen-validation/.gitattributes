@@ -1,0 +1,2 @@
+# Original publisher CSV checksums require exact CRLF bytes on every platform.
+*.csv -text

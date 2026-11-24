@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "remaining-software-gate-v1",
+  "runtimeTimestamp": "2026-11-24T14:25:27.525Z",
+  "softwareStatus": "ready-for-review",
+  "acceptedScope": "C1-C3 authenticated API/SDK/editor integration with independent witnesses and PCM monotonicity guard; all previous bounded regressions",
+  "fullRoadmapStatus": "incomplete_software_and_external_evidence",
+  "allRemainingItemsCompleted": false,
+  "remainingSoftware": {
+    "A1": "general nonlinear PV/LCOE UQ evaluator and legacy harmonization",
+    "A2": "full lifecycle/equipment sizing and operational product qualification",
+    "A3": "operational ingestion/event and calibrated individual RUL pipelines",
+    "B1": "general geometry/MC/spatial thermal and Radiance comparison",
+    "B2": "extended protocols/temporal refinement and mechanics; no runaway without data",
+    "B3": "broader incoherent/rough optics and independent technology EQE benchmark; coherent adapter separately gated",
+    "C1": "official rulepack registry and separate GFM dynamics",
+    "C2": "microclimate models and crop/reservoir holdout runner",
+    "C3": "direct PV-T/PEM coupling and spatial Stefan solver",
+    "D1": "broader degradation mechanisms and calibrated RUL intervals; selected Arrhenius adapter separately gated",
+    "D2": "site/versioned inventory reconciliation beyond separately gated selected PV ICE glass adapter",
+    "D3": "local calendar/DST and explicitly opt-in model/provider workflow"
+  },
+  "externalEvidenceRequired": [
+    "licensed independent SCADA and failure/censoring labels",
+    "equipment-specific thermal/electrochemical and optical reference benchmarks",
+    "official utility rulepacks and interconnection tests",
+    "crop/reservoir control holdouts",
+    "licensed technology-specific inventory and factors",
+    "model/provider licensing and data-egress policy before LLM"
+  ],
+  "flags": {
+    "deploymentDefault": "off",
+    "research": "PVLIB_RESEARCH_ENABLED",
+    "scienceC": "SCIENCE_C_ENABLED"
+  },
+  "boundary": {
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "projectApproval": "blocked",
+    "safetyApproval": "not_assessed"
+  },
+  "checks": [
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npm run verify:science-d",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-science-c.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs npx eslint --max-warnings=0 src/studies/scienceC.ts src/studies/researchApi.ts src/server/researchApi.ts src/components/ResearchEditor.tsx",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node node_modules/tsx/dist/cli.mjs scripts/test-science-c-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "/usr/local/bin/node scripts/ci-command.mjs git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    "scripts/test-financial-uq-e2e.ts": "4aaa15f1a29a540fd232febd30eb37d41d275439435bd86c6d9c8723d526766a",
+    "services/pvlib_research/science_c.py": "b80f0b4c21a312887c9f7d30be20814a5b1b612a2615b40b2035526be8a61ef7",
+    "services/pvlib_research/api_worker.py": "6e418ba0051f1982fe765793442f034016babeec8d3f10e24dca4e80fda0a319",
+    "src/studies/scienceC.ts": "dc65bbf20d83b62b88c79cf88c6fc209646251041b5a7a42f8c123dc9c0b92eb",
+    "src/studies/researchApi.ts": "d632cc71d5b86373014c3b54de5ffac9c4fbf83dd70d95bad9c8cf8ad7cafb5c",
+    "src/server/researchApi.ts": "871ec34f0a178bc2826b4d34dba8c7aefddf6caa1e903a85c6f4b850717130fc",
+    "src/components/ResearchEditor.tsx": "da7a10aae40e8ff7ea351f1acda662ea316cc4ad407ee68287c5b2596f1d670a",
+    "src/capabilities/manifest.json": "38008723ef466957488182995eec1b57991b677d88f4847b4641b2ec26bbd6ce",
+    "sdk/solarpv_sdk/__init__.py": "f2a1b2b9b003c3f77224af4fa83cc40aa470051bc4a021fb0cb47777e4458c78",
+    "scripts/test_science_c.py": "709ccfa1ffb5cfd22af0931a438c93ae643eac97b5ea68257a806bbefbb18c46",
+    "scripts/test-science-c.ts": "0fcb900ed456f6f3872c0970e6ad6083e04be29a66eab2698effd47e24d1c696",
+    "scripts/test-science-c-browser.ts": "34452f5fb6e9e53adf365e9bb2331cdd2b6e2a8e8f23150de83188480a2f39ed",
+    "scripts/verify_science_c_kernels.py": "896b971f383535fc812596e834446ed87daaab9a9329ee3f2849715f47487ccc",
+    "scripts/verify-remaining.ts": "a8d7b9c6679a1f09757b46c49f77bd80e819cf28ab2e8f41dd1d975c765b1adb",
+    "docs/features/C1-C3-INTEGRATION.fa.md": "57413942be0c411ca79d38e65ad8eea6cc07a72ea871befbf10a05274ff33063",
+    "docs/features/C1-C3-IMPLEMENTATION.fa.md": "247d4650f68a4a88b9348b26a58fbc374f0a4f76886dd047a99c6d6789e4f920",
+    "docs/features/C1-C3-SPEC.fa.md": "2e7cc497e37c22ab24e582cff916e0bc2346ccb7e0675d4f14c3a1a0d5adcc4b",
+    "docs/features/A1-D3-REMAINING.fa.md": "462fabb57a0e99b6d059d1da0d0ee6422496ceaf656d5dbec01ab502a2ec55d8",
+    "docs/audit/D1-D3-GATE.json": "fafa6098ac05c49db83000622175c0c02b5d9a2f3cd188a91470d376b2290b38",
+    "docs/audit/C1-C3-KERNEL-GATE.json": "210746d117719ef2221bfd00b6dc8ed3a60b39b2740077677bc1dec439434d0b",
+    "docs/audit/B1-B3-GATE.json": "95695f96f9a9557de618e9bcc077f1cc969210321fa07b74bd84ab95bd10c32d",
+    "package.json": "78c39148a054fb3b9b33d233c51406510ca9bdcbe54e72e034fef5cfd6eb4687",
+    ".github/workflows/foundation-acceptance.yml": "282a07fe47534668da2ae1c0c1451d0bed17adc7d3c836f0b0c5c364df49049f",
+    "docs/examples/science-c/grid.request.json": "4cd3d9d484c77600f7d744113484fa19799cf2a9603245752ea7ae2f37914888",
+    "docs/examples/science-c/grid.synthetic.json": "8662f764388135a62ebf1e8118b9a921274c3366606ab35b847e60e320e4c372",
+    "docs/examples/science-c/agri.request.json": "7e12826c16f6963058c4ecdadc0486364a2a291d900f3cb0abcd6352e4421b21",
+    "docs/examples/science-c/agri.synthetic.json": "567b91639233bf71a45ebba3a4f19dbe497f1bf4b9e051664b7d09e29eb3c99f",
+    "docs/examples/science-c/fpv.request.json": "0864969b88997509de24e7850921e01fe74f858a91561c8e4278e9959a5a4c65",
+    "docs/examples/science-c/fpv.synthetic.json": "f801e758ab9785a4e799d1c7ec86c43935d99a059a6cd7571478e0ffce4b22be",
+    "docs/examples/science-c/pem.request.json": "9cd7490afdcaf03815b9fc20518711e70819abc9756435a6a260cf75cd75278b",
+    "docs/examples/science-c/pem.synthetic.json": "455809a6cd62cd0355f23e55cd1a5b8b0031b0b6474336630624d5dd67fe7aa6",
+    "docs/examples/science-c/pcm.request.json": "bd044370e31639be5b7080f371a43a9b6b2728ed4e192261103079c267310de9",
+    "docs/examples/science-c/pcm.synthetic.json": "47a6c61d2563851b5db1221044ebdfa31bfd4326168fe8273b6fdbf6a54bcbaf"
+  }
+}

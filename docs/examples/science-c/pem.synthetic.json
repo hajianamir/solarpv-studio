@@ -1,0 +1,25 @@
+{
+  "source": "Synthetic analytical acceptance fixture; not field calibration",
+  "contextSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "schemaVersion": "pem-dispatch-v1",
+  "intervalS": 10,
+  "cells": 10,
+  "reversibleV": 1.5,
+  "activationV": 0,
+  "exchangeCurrentA": 1,
+  "resistanceOhm": 0,
+  "maximumCurrentA": 100,
+  "minimumCurrentA": 0,
+  "rampAPerS": 100,
+  "faradaicEfficiency": 1,
+  "hydrogenHhvJMol": 285840,
+  "auxiliaryW": 50,
+  "startupS": 0,
+  "startupW": 0,
+  "records": [
+    {
+      "timestamp": "2026-01-01T00:00:00Z",
+      "availableW": 800
+    }
+  ]
+}

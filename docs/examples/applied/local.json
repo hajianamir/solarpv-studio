@@ -1,0 +1,80 @@
+{
+  "operation": "bill_local_ensemble",
+  "plan": {
+    "source": "Registered upstream modeled forcing / caller scenario assumptions; not measured or calibrated project",
+    "contextSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "schemaVersion": "bill-local-ensemble-v1",
+    "unit": "kWh",
+    "calendar": "gregorian",
+    "timeZone": "America/New_York",
+    "intervalMinutes": 60,
+    "months": [
+      {
+        "month": "2024-03",
+        "energyKwh": 300
+      }
+    ],
+    "shapes": [
+      {
+        "id": "flat",
+        "source": "Synthetic flat hourly weights, not inferred from the monthly bill",
+        "hourWeights": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "evening",
+        "source": "Synthetic evening hourly weights, not a measured demand profile",
+        "hourWeights": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          1
+        ]
+      }
+    ]
+  }
+}

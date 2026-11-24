@@ -1,0 +1,4 @@
+# Install in a SEPARATE environment, not the core/PyBaMM environment.
+# python3 -m venv .cache/reference-env
+# .cache/reference-env/bin/python -m pip install -r services/pvlib_research/requirements-references.txt
+-r requirements-references.lock.txt

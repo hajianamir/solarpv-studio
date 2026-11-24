@@ -1,0 +1,18 @@
+{
+  "operation": "stefan_spatial",
+  "plan": {
+    "schemaVersion": "stefan-spatial-v1",
+    "source": "Ogoh and Groulx, Stefan validation paper, section 3 Table 1; analytic idealization, not measured material validation",
+    "contextSha256": "9836ed7085eb90c594815b61197ef706c1888e168e5112b6d1df1449395cf265",
+    "lengthM": 0.28,
+    "cells": 160,
+    "durationS": 10800,
+    "fourier": 0.3,
+    "conductivityWmK": 0.21,
+    "densityKgm3": 750,
+    "heatCapacityJkgK": 2400,
+    "latentHeatJkg": 175000,
+    "meltingK": 313,
+    "wallK": 350
+  }
+}
