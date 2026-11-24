@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Double-clickable Windows `install.bat`: installs lockfile-pinned app and development dependencies, verifies them, and initializes `.env` without replacing existing settings. `start.bat` and the managed Windows runner reuse it for repairs; Node.js/npm prerequisites are checked with actionable errors. Optional Python research engines remain separate.
+
+### Fixed
+- PC launcher now detects stale/missing direct dependencies (including `@noble/hashes`) even when `node_modules` already exists, repairs them through npm, and rechecks before starting. The managed server uses direct Node + tsx without a Windows shell shim, avoiding DEP0190 and preserving spaced paths. See `docs/features/PC-LAUNCHER-DEPENDENCY-REPAIR.md`.
+
+### Added
 - Opt-in B2 `battery_protocol`: pinned PyBaMM current/rest/charge stages with preserved cell state, separate spatial/tolerance/IDAS-step-bound sensitivity, charge/heating ledgers, strict independent output witnesses and authenticated API/SDK/editor integration. Default-off `BATTERY_PROTOCOL_ENABLED`; no energy/finance adoption, measured-cell or safety qualification. See BATTERY-PROTOCOL.fa.md and its gate receipt.
 
 ## [1.0.3] - 2026-11-04

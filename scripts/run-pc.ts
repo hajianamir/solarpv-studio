@@ -13,7 +13,7 @@
  * 7. Manages clean process termination and terminal signals.
  */
 
-import { spawn, exec, execSync, type ChildProcess } from 'child_process';
+import { spawn, exec, execSync, execFileSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import http from 'http';
@@ -102,16 +102,23 @@ SolarPV Studio نیازمند Node.js نسخه ${MIN_NODE_MAJOR} یا بالات
  * Ensures node_modules are installed.
  */
 function ensureDependencies(): void {
-  const nodeModulesPath = path.join(ROOT_DIR, 'node_modules');
-  if (!fs.existsSync(nodeModulesPath)) {
-    console.log(`${c.yellow}⚙ وابستگی‌های پروژه یافت نشد. در حال نصب خودکار (npm install)...${c.reset}`);
-    try {
-      execSync('npm install', { stdio: 'inherit', cwd: ROOT_DIR });
-      console.log(`${c.green}✔ وابستگی‌ها با موفقیت نصب شدند.${c.reset}`);
-    } catch (err) {
-      console.error(`${c.red}خطا در نصب بسته‌ها با npm install:${c.reset}`, err);
-      process.exit(1);
-    }
+  const preflight = path.join(ROOT_DIR, 'scripts', 'check-pc-dependencies.mjs');
+  try {
+    execFileSync(process.execPath, [preflight], {cwd: ROOT_DIR, stdio: 'pipe'});
+    return;
+  } catch {
+    console.log(`${c.yellow}Project dependencies are missing or stale; running the dependency installer...${c.reset}`);
+  }
+  try {
+    // Fixed command only: no paths or caller-provided arguments are sent to a shell.
+    const command = process.platform === 'win32'
+      ? 'call install.bat --no-pause'
+      : 'npm ci --include=dev --no-audit --no-fund';
+    execSync(command, {stdio: 'inherit', cwd: ROOT_DIR});
+    execFileSync(process.execPath, [preflight], {cwd: ROOT_DIR, stdio: 'inherit'});
+  } catch {
+    console.error(`${c.red}Dependency repair failed. On Windows, run install.bat in the project folder and retry.${c.reset}`);
+    process.exit(1);
   }
 }
 
@@ -246,29 +253,15 @@ async function main() {
     PORT: String(port),
   };
 
-  // Run server using tsx
-  const isWindows = process.platform === 'win32';
-  const tsxBin = path.join(ROOT_DIR, 'node_modules', '.bin', isWindows ? 'tsx.cmd' : 'tsx');
+  // Launch Node directly, not a .cmd shim. This preserves Windows paths with
+  // spaces and avoids shell:true argument concatenation (Node DEP0190).
   const serverScript = path.join(ROOT_DIR, 'server.ts');
-
-  let serverProcess: ChildProcess;
-
-  if (fs.existsSync(tsxBin)) {
-    serverProcess = spawn(tsxBin, [serverScript], {
-      cwd: ROOT_DIR,
-      env: childEnv,
-      stdio: 'inherit',
-      shell: isWindows,
-    });
-  } else {
-    // Fallback to npx tsx
-    serverProcess = spawn(isWindows ? 'npx.cmd' : 'npx', ['tsx', serverScript], {
-      cwd: ROOT_DIR,
-      env: childEnv,
-      stdio: 'inherit',
-      shell: isWindows,
-    });
-  }
+  const serverProcess = spawn(process.execPath, ['--import', 'tsx', serverScript], {
+    cwd: ROOT_DIR,
+    env: childEnv,
+    stdio: 'inherit',
+    shell: false,
+  });
 
   serverProcess.on('error', (err) => {
     console.error(`${c.red}خطا در راه‌اندازی فرآیند سرور:${c.reset}`, err);

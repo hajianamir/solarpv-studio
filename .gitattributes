@@ -4,3 +4,7 @@ benchmarks/reference_files/*.sam -text
 # Versioned direct-study parameter fixtures have byte-level SHA256 identities.
 # Keep the actual bytes identical on Windows and Unix; do not weaken hash checks.
 services/pvlib_study/tests/*reference-parameters.json text eol=lf
+
+# The Windows launcher intentionally retains CRLF line endings.
+start.bat whitespace=cr-at-eol
+install.bat whitespace=cr-at-eol
