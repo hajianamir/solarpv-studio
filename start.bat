@@ -21,14 +21,14 @@ copy /y ".env.example" ".env" >nul
 if errorlevel 1 goto :EnvFailed
 :EnvReady
 
-if not exist "node_modules\.bin\tsx.cmd" goto :InstallDependencies
-if not exist "node_modules\dotenv" goto :InstallDependencies
-if not exist "node_modules\exceljs" goto :InstallDependencies
-if not exist "node_modules\uuid" goto :InstallDependencies
+node scripts\check-pc-dependencies.mjs
+if errorlevel 1 goto :InstallDependencies
 goto :DependenciesReady
 :InstallDependencies
-echo [INFO] Installing project dependencies. This may take a few minutes...
-call npm install --no-audit --no-fund --loglevel=error
+echo [INFO] Running the project installer to repair dependencies...
+call "%~dp0install.bat" --no-pause
+if errorlevel 1 goto :InstallFailed
+node scripts\check-pc-dependencies.mjs
 if errorlevel 1 goto :InstallFailed
 :DependenciesReady
 
@@ -55,7 +55,7 @@ goto :Failure
 echo [ERROR] Could not create .env from .env.example. Check folder permissions.
 goto :Failure
 :InstallFailed
-echo [ERROR] npm install failed. Check the network/proxy and retry.
+echo [ERROR] Installation failed. Run install.bat and review the errors before retrying.
 goto :Failure
 :Failure
 set "APP_EXIT_CODE=1"
