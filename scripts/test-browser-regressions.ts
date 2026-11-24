@@ -1,3 +1,4 @@
+import {selectLoadMode} from './research-browser-navigation';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -233,7 +234,7 @@ async function main() {
   assert.match(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), /241, 245, 249/);
   assert.equal(await page.evaluate(() => localStorage.getItem('solarpv_theme')), 'light');
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'Light theme changed the Persian RTL layout direction');
-  await clickTab('system_mode');
+  await clickTab('electrical_requirements');
   const warningContrast = await page.getByTestId('ac-requirements-assessment').evaluate((el) => {
     const style = getComputedStyle(el);
     const colorRgb = style.color.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
@@ -280,7 +281,7 @@ async function main() {
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
   console.log('[PASS] Light theme tokens, F1 dialog, RTL header toggle and localStorage reload persistence');
 
-  await clickTab('system_mode');
+  await clickTab('electrical_requirements');
   assert.equal(await page.getByTestId('ac-requirements-assessment').getAttribute('data-status'), 'incomplete', 'unknown AC requirements must never be presented as compatible');
   const acField = async (target: string, field: string) => page.getByTestId(`ac-input-${target}-${field}`);
   await page.getByTestId('ac-phase-loadService').selectOption('three');
@@ -322,7 +323,7 @@ async function main() {
   await page.getByText(/(LV grid interface:|رابط شبکه LV:).*?(UNCONFIRMED|تأییدنشده)/).waitFor();
   await page.getByText(/(Post-transformer injection:|تزریق پس از ترانسفورماتور:).*?mv; 20 kV; (user-confirmed|تأیید کاربر)/).waitFor();
   await page.getByText(/(internal collector busbar:|باسبار داخلی کلکتور:) 20 kV/).waitFor();
-  await clickTab('system_mode');
+  await clickTab('electrical_requirements');
   await page.getByTitle('ذخیره پروژه (Ctrl+S)').click();
   const savedAcProject = await page.evaluate(() => JSON.parse(localStorage.getItem('solarpv_project_save') ?? 'null'));
   assert.equal(savedAcProject?.acRequirements?.inverterOutput?.lineToLineVolts, 800, 'project save omitted confirmed inverter AC interface');
@@ -374,18 +375,18 @@ async function main() {
   page.off('dialog', acceptRestoreDialogs);
   assert.equal(await page.getByTestId('feeder-dc-string-oneWayLengthM').inputValue(), '24.5', 'restoring the local project did not restore feeder inputs');
   console.log('[PASS] Feeder input persists in local save, report project export and explicit local restore');
-  await clickTab('system_mode');
+  await clickTab('electrical_requirements');
 
   // Changing a stored plant target must not leak into either customer-mode AC
   // reference or DC/AC denominator; switching back restores the plant target.
-  await clickTab('system_mode');
+  await clickTab('electrical_requirements');
   const plantTargetInput = page.locator('#target-plant-capacity-input');
   await plantTargetInput.fill('2000');
   await clickTab('array');
   assert.match(await page.getByTestId('array-ac-reference').innerText(), /2000[.]0/);
   assert.ok(await page.getByTestId('workflow-tab-harmonics_grid').locator(':visible').count() > 0,
     'Powerplant navigation does not expose the upstream-grid/harmonics tab');
-  await page.getByRole('button', { name: 'On-Grid' }).click();
+  await selectLoadMode(page,'ongrid');
   await clickTab('array');
   const ongridAcReference = await page.getByTestId('array-ac-reference').innerText();
   assert.ok(!ongridAcReference.includes('2000.0'), `on-grid AC reference leaked the powerplant target: ${ongridAcReference}`);
@@ -402,7 +403,7 @@ async function main() {
   assert.match(await helpDialog.locator('#context-help-method').innerText(), /typical inverter spectrum|طیف ثابتِ نمونهٔ اینورتر/i);
   assert.match(await helpDialog.locator('#context-help-limitations').innerText(), /screening estimates|غربالگری بدانید/i);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'On-Grid' }).click();
+  await selectLoadMode(page,'ongrid');
   await page.getByTestId('workflow-tab-harmonics_grid').waitFor({ timeout: 10000 });
   assert.ok(await page.getByTestId('workflow-tab-harmonics_grid').locator(':visible').count() > 0,
     'On-grid navigation must expose upstream-grid/harmonics analysis');
@@ -418,7 +419,7 @@ async function main() {
   await helpDialog.waitFor();
   assert.match(await helpDialog.locator('#context-help-method').innerText(), /(SCR = upstream Ssc \/ plant MW|SCR = توان اتصال کوتاه بالادست)/i);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Off-Grid' }).click();
+  await selectLoadMode(page,'offgrid');
   await page.getByTestId('workflow-tab-harmonics_grid').waitFor({ state: 'detached', timeout: 10000 });
   assert.equal(await page.getByText(/Harmonics Analysis|تحلیل هارمونیک/).count(), 0, 'off-grid mode retained harmonic analysis rendering');
   await clickTab('array');
@@ -433,7 +434,7 @@ async function main() {
     assert.equal(await page.getByTestId(testId).count(), 0, `off-grid exposes misleading ${testId} CAPEX row`);
   }
   await page.getByRole('button', { name: 'نیروگاهی' }).click();
-  await clickTab('system_mode');
+  await clickTab('electrical_requirements');
   await plantTargetInput.fill('1000');
   await clickTab('financial');
   await page.locator('#fin-pricing-substation').waitFor({ timeout: 10000 });
@@ -743,7 +744,7 @@ async function main() {
     return catalog?.custom?.inverters?.find((item: { modelName: string }) => item.modelName === 'MV Identity Probe') ?? null;
   });
   assert.ok(identityRecord?.id && identityRecord.origin === 'custom' && identityRecord.technology === 'mv_turnkey', 'real catalog UI did not persist the custom inverter identity');
-  await clickTab('system_mode');
+  await clickTab('electrical_requirements');
   await page.getByText(/Integrated MV Turnkey Skid Stations|پست‌های یکپارچه کانتینری/).click();
   await clickTab('array');
   await page.locator('#pv-inverter-picker-select').selectOption(identityRecord.id);
@@ -762,7 +763,7 @@ async function main() {
 
   // A negative power edit on a single load must be clamped to the schema's
   // positive minimum, remain saveable, and never produce an unrelated bay error.
-  await page.getByRole('button', { name: /آف.*گرید|Off.*Grid/i }).first().click();
+  await selectLoadMode(page,'offgrid');
   await clickTab('loads');
   await page.locator('#load-preset-picker').selectOption('preset_workshop');
   const threePhasePreset = page.getByTestId('load-phase-2');
@@ -882,7 +883,7 @@ async function main() {
   const acImportDialog = await acImportDialogPromise;
   if (acImportDialog) await acImportDialog.accept();
   await tabA.getByText(/Project applied after your confirmation|پروژه با تأیید شما بازیابی شد|Project loaded successfully|پروژه با موفقیت بارگذاری شد/).waitFor({ timeout: 15000 });
-  await tabA.getByTestId('workflow-tab-system_mode').locator(':visible').first().click();
+  await tabA.getByTestId('workflow-tab-electrical_requirements').locator(':visible').first().click();
   assert.equal(await tabA.getByTestId('ac-phase-inverterOutput').inputValue(), 'three', 'import did not restore inverter phase requirement');
   assert.equal(await tabA.getByTestId('ac-inverter-nameplate-frequency').inputValue(), '50', 'import did not restore inverter datasheet frequency');
   assert.equal(await tabA.getByTestId('ac-injection-voltage').inputValue(), '20', 'import did not restore injection voltage independently');

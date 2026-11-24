@@ -1,3 +1,4 @@
+import {chooseResearchExample} from './research-browser-navigation';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
@@ -16,12 +17,12 @@ try{
  browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']});
  const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),c=Buffer.from(JSON.stringify({sub:'research-browser',iss:'research',aud:'research',exp:Math.floor(Date.now()/1000)+300})).toString('base64url');const token=`${h}.${c}.${createHmac('sha256',secret).update(`${h}.${c}`).digest('base64url')}`;
  const context=await browser.newContext({extraHTTPHeaders:{Authorization:`Bearer ${token}`},acceptDownloads:true});const page=await context.newPage();await page.route('https://**/*',r=>r.abort());const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base);await page.getByTestId('workflow-tab-climate').locator(':visible').first().click();const panel=page.getByTestId('research-editor');await panel.waitFor();const input=panel.getByLabel('Research JSON');const run=panel.getByRole('button',{name:'Run research',exact:true});
+ await page.goto(base);await page.getByTestId('workflow-tab-research').locator(':visible').first().click();const panel=page.getByTestId('research-editor');await panel.waitFor();const input=panel.getByLabel('Research JSON');const run=panel.getByRole('button',{name:'Run research',exact:true});
  let jobs=0;
  for(const [label,name] of [['UQ literature comparison example','uq'],['Hybrid LP sizing example','hybrid'],['Batch twin synthetic example','twin'],['Multi-budget convergence','convergence'],['Global capacity MILP','design'],['Site/time holdout','holdout'],['Censored cohort survival','survival']]){
   // Respect the unmodified six-jobs-per-minute production limiter.
   if(jobs++===6)await page.waitForTimeout(61000);
-  await panel.getByRole('button',{name:label,exact:true}).click();await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});
+  await chooseResearchExample(panel,label);await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});
   const request=ResearchRequestSchema.parse(JSON.parse(await readFile(`docs/examples/portfolio/${name}.synthetic.json`,'utf8')));
   const value=JSON.parse(await panel.getByTestId('research-result').innerText());validateResearchResponse(value,request);assert.equal(value.result.projectApproval,'blocked');
  }

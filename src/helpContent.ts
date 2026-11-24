@@ -38,19 +38,23 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
       limitations: 'ساعات فراتر از پنجرهٔ اقلیمی نرمال می‌شوند (مازاد روز ممکن است به شب منتقل شود) و هشدار می‌گیرند. خروجی بر برنامهٔ واردشده و قواعد هم‌زمانی تکیه دارد، نه برداشت میدانی بار.',
     },
   },
-  system_mode: {
+  electrical_requirements: {
     en: {
-      title: 'System mode',
-      inputs: 'Select Powerplant, On-grid customer, or Off-grid customer in the mode controls. Then review the mode-specific inputs on this page, such as plant AC target, inverter strategy, outage/autonomy and equipment choices when shown.',
-      method: 'This selector changes which calculations and workflow modules are active. Powerplant sizing uses the explicit plant AC target; customer PV sizing uses load/outage demand. Off-grid has no upstream utility-grid/harmonic analysis.',
+      title: 'Utility AC requirements & MV bays',
+      inputs: 'Review explicit AC requirements, plant AC target, inverter technology and MV collector bays. Residential/industrial on-grid and off-grid policy is configured in Electrical Loads, not here.',
+      method: 'Powerplant sizing uses the explicit plant AC target. AC service, inverter output, LV grid and post-transformer injection requirements are assessed separately from MV collector voltage. Unknown or unconfirmed values remain incomplete; MV equipment and bay inputs remain engineering inputs, not a customer mode selector.',
       limitations: 'Changing mode does not validate a utility agreement, protection study, equipment choice or site design. Existing project inputs can remain stored when a mode hides their controls; hidden values are not automatically evidence of applicability.',
     },
     fa: {
-      title: 'حالت سیستم',
-      inputs: 'از کنترل حالت، نیروگاه، مصرف‌کنندهٔ متصل به شبکه یا مصرف‌کنندهٔ مستقل را انتخاب کنید. سپس ورودی‌های همان حالت را که در صفحه دیده می‌شوند—مانند هدف AC نیروگاه، راهبرد اینورتر، خاموشی/خودمختاری و تجهیزات—بازبینی کنید.',
-      method: 'این انتخاب محاسبات و ماژول‌های گردش‌کار فعال را تغییر می‌دهد. سایزینگ نیروگاه از هدف صریح AC استفاده می‌کند؛ سایزینگ PV مصرف‌کننده از بار/خاموشی پیروی می‌کند. در حالت مستقل، تحلیل شبکهٔ بالادست و هارمونیک کاربرد ندارد.',
+      title: 'الزامات AC و بی‌های MV نیروگاه',
+      inputs: 'الزامات صریح AC، هدف توان نیروگاه، فناوری اینورتر و آرایش بی‌های MV را بازبینی کنید. انتخاب on-grid/off-grid و خاموشی/خودمختاری مصرف‌کننده فقط در بارهای الکتریکی است.',
+      method: 'سایزینگ نیروگاه از هدف صریح AC استفاده می‌کند. سرویس AC، خروجی اینورتر، شبکه LV و تزریق پس از ترانس مستقل از ولتاژ کلکتور MV بررسی می‌شوند. دادهٔ نامشخص یا تأییدنشده ناقص می‌ماند؛ تجهیزات MV و بی‌ها ورودی مهندسی‌اند، نه انتخاب‌گر حالت مصرف‌کننده.',
       limitations: 'تغییر حالت، قرارداد اتصال، مطالعهٔ حفاظت، انتخاب تجهیز یا طراحی محل را تأیید نمی‌کند. ورودی‌های پروژه ممکن است هنگام پنهان‌شدن کنترل‌ها ذخیره بمانند؛ باقی‌ماندن مقدار به‌معنای کاربرد آن در حالت جاری نیست.',
     },
+  },
+  research: {
+    en: {title:'Independent research workspace', inputs:'Choose a research section and topic, then load an example or import a plan. Explicit inputs and authentication/feature flags are still required.', method:'Models, PVlib studies, operating experiments and external data comparisons are isolated from ordinary site/climate editing. Leaving a tool cancels its work and does not adopt its results.', limitations:'Research output is not field qualification, safety certification or automatic energy/finance approval.'},
+    fa: {title:'محیط مستقل پژوهش', inputs:'زیرتب و موضوع پژوهش را انتخاب و نمونه یا طرح خود را وارد کنید. ورودی صریح، احراز هویت و پرچم‌های فعال‌سازی همچنان لازم‌اند.', method:'مدل‌ها، مطالعات PVlib، آزمایش بهره‌برداری و مقایسهٔ داده از صفحهٔ عادی اقلیم جدا هستند. خروج از ابزار کار جاری را لغو می‌کند و نتیجه را خودکار نمی‌پذیرد.', limitations:'خروجی پژوهش تأیید میدانی، گواه ایمنی یا مجوز ورود خودکار به انرژی/مالی نیست.'},
   },
   array: {
     en: {
@@ -324,7 +328,8 @@ const GENERIC: Record<HelpLanguage, HelpCopy> = {
 export const HELP_SOURCE_REFERENCES: Record<string, string> = {
   climate: 'src/engine/climaticData.ts — getClimateData(), fetchClimateData(); src/engine/types/climateTypes.ts — calculateDesignDaylightHours().',
   loads: 'src/engine/loadProfiles.ts — analyzeLoadProfile(), normalizeLoadItemToWindow().',
-  system_mode: 'src/engine/systemModeCapacity.ts — calculateLoadModeDailySizingTargetKwh(), resolveArrayAcReferenceKw(), isUpstreamGridAnalysisAvailable(); src/engine/acRequirements.ts — assessAcRequirements(), evaluateLoadAcCurrents(); src/engine/core/projectMigration.ts — AcRequirementsSchema; src/App.tsx — explicit local AC interface editor and mode flow.',
+  research: 'src/components/ResearchWorkspace.tsx; src/components/ResearchEditor.tsx; src/studies/researchApi.ts — isolated tools and validated research contracts.',
+  electrical_requirements: 'src/engine/systemModeCapacity.ts — calculateLoadModeDailySizingTargetKwh(), resolveArrayAcReferenceKw(), isUpstreamGridAnalysisAvailable(); src/engine/acRequirements.ts — assessAcRequirements(), evaluateLoadAcCurrents(); src/engine/core/projectMigration.ts — AcRequirementsSchema; src/App.tsx — explicit local AC interface editor and mode flow.',
   array: 'src/engine/pvEngineAdvanced.ts — designPvArray(); src/engine/core/thermalDerate.ts — calculateThermalDerate().',
   harmonics_grid: 'src/engine/harmonicsEngine.ts — analyzePowerplantHarmonics(), analyzeUpstreamGridConditions().',
   mv_substation: 'src/engine/mvSubstationEngine.ts — designMvSubstation().',

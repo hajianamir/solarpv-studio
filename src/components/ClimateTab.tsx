@@ -6,11 +6,8 @@ import { formatCoordinates } from '../engine/geoCoordinates';
 import { formatPsh } from '../engine/formatters';
 
 import {ReferenceLossImport} from './ReferenceLossImport';
-import {AdvancedDispatchPanel} from './AdvancedDispatchPanel';
 import {OperationalEnergyPanel} from './OperationalEnergyPanel';
 import type {OperationalContext,OperationalEnergy} from '../studies/operationalEnergy';
-import {ResearchEditor} from './ResearchEditor';
-import {PvlibStudyPanel} from './PvlibStudyPanel';
 
 const SiteLocationMap = React.lazy(() => import('./SiteLocationMap'));
 
@@ -322,11 +319,6 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
 
   return (
     <div className="space-y-6">
-      <OperationalEnergyPanel context={operationalContext??null} receipt={operationalEnergy??null} onChange={onOperationalEnergyChange??(()=>{})}/>
-      <AdvancedDispatchPanel context={operationalContext??null}/>
-      <ResearchEditor latitude={selectedCity.latitude} longitude={selectedCity.longitude} lang={lang}/>
-      <PvlibStudyPanel latitude={selectedCity.latitude} longitude={selectedCity.longitude} lang={lang}/>
-      <ReferenceLossImport city={selectedCity} context={referenceContext} onChange={onCityChange} lang={lang}/>
       {/* Title */}
       <div className="studio-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -981,6 +973,10 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
           </table>
         </div>
       </div>
+      <section className="studio-card" data-testid="operational-import-tools"><h2 className="font-bold">{lang==='fa'?'ورود انرژی معتبر و ضرایب افت مرجع':'Verified energy import & reference loss inputs'}</h2><div className="mt-4 space-y-4">
+      <OperationalEnergyPanel context={operationalContext??null} receipt={operationalEnergy??null} onChange={onOperationalEnergyChange??(()=>{})}/>
+      <ReferenceLossImport city={selectedCity} context={referenceContext} onChange={onCityChange} lang={lang}/>
+      </div></section>
     </div>
   );
 };

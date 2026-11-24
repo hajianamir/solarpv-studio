@@ -1,3 +1,4 @@
+import {selectLoadMode,openResearch} from './research-browser-navigation';
 import { readbackPdf } from "./pdf-readback";
 import ExcelJS from "exceljs";
 import { unzipSync } from "fflate";
@@ -81,13 +82,7 @@ try {
     .click();
   page.on("dialog", (dialog) => void dialog.accept());
   for (const mode of ["powerplant", "ongrid", "offgrid"] as const) {
-    if (mode !== "powerplant")
-      await page
-        .getByRole("button", {
-          name: mode === "ongrid" ? "On-Grid" : "Off-Grid",
-          exact: true,
-        })
-        .click();
+    if (mode !== "powerplant") await selectLoadMode(page, mode);
     await tab("climate");
     const panel = page.getByTestId("operational-energy-panel");
     const down = page.waitForEvent("download", { timeout: 180_000 });
@@ -143,6 +138,7 @@ try {
       },
     };
     if (process.env.TEST_ADVANCED !== "false") {
+      await openResearch(page,"dispatch");
       const advanced = page.getByTestId("advanced-dispatch-panel");
       const originalSource = await page
         .getByTestId("active-energy-source")
@@ -309,6 +305,7 @@ try {
         ).includes("-999"),
       );
     }
+    await tab("climate");
     await panel.getByLabel("Import operational annual results").setInputFiles({
       name: "synthetic-mode.json",
       mimeType: "application/json",

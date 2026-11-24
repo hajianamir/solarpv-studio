@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Isolate research from site/climate editing in a lazy-loaded, bilingual Research & Laboratory tab with four tool sections and thirteen model topics, accessible keyboard/RTL/mobile navigation, and unchanged research authentication/adoption boundaries.
+- Remove the duplicate System Mode & Grid Strategy dashboard: retain utility AC requirements and MV bay engineering under `electrical_requirements`, and place customer on-grid/off-grid policy with outage/autonomy inputs in Electrical Loads. Preserve project schema, engine calculations, saved inputs, and the last customer mode when switching project families. Update help and browser regression navigation. See `docs/features/RESEARCH-WORKSPACE.fa.md`.
+
 ### Added
 - Double-clickable Windows `install.bat`: installs lockfile-pinned app and development dependencies, verifies them, and initializes `.env` without replacing existing settings. `start.bat` and the managed Windows runner reuse it for repairs; Node.js/npm prerequisites are checked with actionable errors. Optional Python research engines remain separate.
 

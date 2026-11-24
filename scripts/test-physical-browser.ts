@@ -1,3 +1,4 @@
+import {chooseResearchExample} from './research-browser-navigation';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
@@ -20,13 +21,13 @@ try{
  browser=await engine.launch({headless:true,executablePath,args:engine===chromium?['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']:[]});
  const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),c=Buffer.from(JSON.stringify({sub:'research-browser',iss:'research',aud:'research',exp:Math.floor(Date.now()/1000)+300})).toString('base64url');const token=`${h}.${c}.${createHmac('sha256',secret).update(`${h}.${c}`).digest('base64url')}`;
  const context=await browser.newContext({extraHTTPHeaders:{Authorization:`Bearer ${token}`},acceptDownloads:true});const page=await context.newPage();await page.route('https://**/*',r=>r.abort());const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base);await page.getByTestId('workflow-tab-climate').locator(':visible').first().click();const panel=page.getByTestId('research-editor');await panel.waitFor();const input=panel.getByLabel('Research JSON');const run=panel.getByRole('button',{name:'Run research',exact:true});
+ await page.goto(base);await page.getByTestId('workflow-tab-research').locator(':visible').first().click();const panel=page.getByTestId('research-editor');await panel.waitFor();const input=panel.getByLabel('Research JSON');const run=panel.getByRole('button',{name:'Run research',exact:true});
  await input.fill('{');assert.equal(await run.isDisabled(),true);
  await input.fill(JSON.stringify(thermalExample));await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});validateResearchResponse(JSON.parse(await panel.getByTestId('research-result').innerText()),ResearchRequestSchema.parse(thermalExample));
  const download=page.waitForEvent('download');await panel.getByRole('button',{name:'Download research archive',exact:true}).click();const d=await download,p=await d.path();assert.ok(p);const archive=await readFile(p,'utf8');assert.equal(JSON.parse(archive).schemaVersion,'research-editor-archive-v1');
  await panel.getByLabel('Import research').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:Buffer.from(archive)});assert.equal(await panel.getByTestId('research-result').count(),0);
  await input.fill(JSON.stringify(circuitExample));await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});
- await panel.getByRole('button',{name:'Integrated synthetic example',exact:true}).click();await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});assert.equal(JSON.parse(await panel.getByTestId('research-result').innerText()).operation,'integrated');
+ await chooseResearchExample(panel,'Integrated synthetic example');await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});assert.equal(JSON.parse(await panel.getByTestId('research-result').innerText()).operation,'integrated');
  for(const [button,example] of [['DC-coupled synthetic example',dcExample],['SPM Chen2020 synthetic protocol',spmExample],['dq control / protection synthetic example',controlExample]] as const){
   await panel.getByRole('button',{name:button,exact:true}).click();assert.equal(await run.isDisabled(),false);
   await run.click();await panel.getByTestId('research-result').waitFor({timeout:30000});
@@ -48,6 +49,6 @@ try{
  await page.route('**/api/v1/research/run',async route=>{await new Promise(r=>setTimeout(r,1000));try{await route.continue();}catch{}});
  await run.click();await panel.getByRole('button',{name:'Cancel research',exact:true}).click();await page.waitForTimeout(1300);assert.equal(await panel.getByTestId('research-result').count(),0);assert.equal(await run.isDisabled(),false);
  await page.unroute('**/api/v1/research/run');await run.click();await panel.getByTestId('research-result').waitFor();
- await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();await panel.getByTestId('research-result').waitFor({state:'hidden'});assert.equal(await panel.getByTestId('research-result').count(),0);
+ await page.getByTestId('workflow-tab-climate').locator(':visible').first().click();await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();await page.getByTestId('workflow-tab-research').locator(':visible').first().click();await panel.waitFor();assert.equal(await panel.getByTestId('research-result').count(),0);
  assert.deepEqual(errors,[]);console.log(`PASS real browser (${process.env.BROWSER_ENGINE??'chromium'}): six research operations including DC/SPM/dq, three DC operating modes, actual JWT/API, physical archive disk readback/import, cancel/stale/site invalidation`);
 }finally{await browser?.close();child.kill('SIGTERM');}
