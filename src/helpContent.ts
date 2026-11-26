@@ -200,14 +200,14 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
     en: {
       title: '2D CAD layout',
       inputs: 'Set structure type, land length/width, row pitch, tilt, module wattage and road width in this page. These are local CAD inputs; they are not automatically a surveyed parcel boundary.',
-      method: 'The layout engine places rows/tables within the entered rectangle and reports geometric quantities such as packing/GCR and spacing, then renders/export the generated layout.',
-      limitations: 'The current tool uses simplified geometry and entered dimensions. It does not check title boundaries, setbacks, topography, drainage, geotechnical constraints or construction access unless represented by a specific input.',
+      method: 'The engine uses axis-aligned table footprints and a fixed service corridor: station bays sit beside the central through-road. Requested pitch is increased when needed for footprint clearance and the 0.01 m drawing grid; effective pitch owns placement, GCR, the shading indicator and DXF annotations. SVG and DXF share returned road/station polygons.',
+      limitations: 'A 10 m table/station setback, 4 m perimeter road, 12×8 m bays, 2 m road-to-bay gap and 4 m bay spacing are internal screening assumptions, not jurisdictional requirements. No parcel survey, terrain, drainage, turning radius, electrical/fire clearance or construction-access approval is provided. GCR is projected collector chord/effective pitch, not site utilization; the shading angle is a simplified indicator, not an annual assessment.',
     },
     fa: {
       title: 'جانمایی CAD دوبعدی',
       inputs: 'نوع سازه، طول/عرض زمین، فاصلهٔ ردیف، شیب، توان ماژول و عرض راه را در همین صفحه تنظیم کنید. این‌ها ورودی‌های محلی CAD هستند و مرز نقشه‌برداری‌شدهٔ ملک نیستند.',
-      method: 'موتور جانمایی ردیف/میزها را در مستطیل واردشده می‌چیند و کمیت‌های هندسی مانند تراکم/GCR و فاصله را گزارش و طرح را ترسیم/صادر می‌کند.',
-      limitations: 'ابزار از هندسهٔ ساده و ابعاد واردشده استفاده می‌کند. مالکیت/مرز، عقب‌نشینی، توپوگرافی، زهکشی، ژئوتکنیک و دسترسی اجرا را بررسی نمی‌کند مگر آنکه ورودی مشخصی برای آن وجود داشته باشد.',
+      method: 'موتور از سطح میزهای محورموازی و کریدور ثابت خدماتی استفاده می‌کند؛ پست‌ها کنار مسیر عبور قرار می‌گیرند. گام درخواستی در صورت نیاز برای رفع تداخل و انطباق با شبکه ۰٫۰۱ متری افزایش می‌یابد؛ جانمایی، GCR، شاخص سایه و عنوان DXF از گام مؤثر استفاده می‌کنند. چندضلعی راه و پست در SVG و DXF یکسان است.',
+      limitations: 'حاشیه ۱۰ متری میز/پست، راه پیرامونی ۴ متری، پست ۱۲×۸ متر، فاصله ۲ متری از راه و فاصله ۴ متری بین پست‌ها فرض مقدماتی‌اند، نه الزام مقرراتی. نقشه‌برداری، توپوگرافی، زهکشی، شعاع گردش و فاصله ایمنی برق/آتش بررسی نشده‌اند و طرح تأیید اجرا نیست. GCR نسبت عرض تصویرشده کلکتور به گام مؤثر است، نه بهره‌برداری کل زمین؛ زاویه سایه نیز ارزیابی سالانه نیست.',
     },
   },
   '3d_viewer': {

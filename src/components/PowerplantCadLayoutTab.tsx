@@ -36,7 +36,10 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
     roadWidthM,
   };
 
-  const cadResult: PowerplantCadLayoutResult = generatePowerplantLayout(layoutParams);
+  const {result: cadResult, error: layoutError} = (() : {result: PowerplantCadLayoutResult | null; error: string | null} => {
+    try { return {result: generatePowerplantLayout(layoutParams), error: null}; }
+    catch (error) { return {result: null, error: error instanceof Error ? error.message : String(error)}; }
+  })();
 
   return (
     <div className="space-y-6">
@@ -50,8 +53,8 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
         </h1>
         <p className="text-slate-400 text-xs">
           {isEn
-            ? 'Automated spatial racking layout for fixed-tilt or 1P single-axis trackers, Ground Coverage Ratio (GCR), inter-row shading limit angle, and MV substation positioning.'
-            : 'چیدمان خودکار استراکچرهای فیکس یا ترکر تک‌محوره، محاسبه نسبت پوشش زمین (GCR)، زاویه بحرانی سایه‌اندازی و جانمایی پست‌های فشار متوسط'}
+            ? 'Axis-aligned screening layout, not an optimized or construction-approved civil design. Road access, turning radii and electrical clearances require project-specific review.'
+            : 'جانمایی مقدماتی محورموازی؛ نه طرح بهینه یا تأیید اجرایی. دسترسی، شعاع گردش و فاصله‌های ایمنی نیازمند بررسی مختص پروژه‌اند.'}
         </p>
       </div>
 
@@ -162,13 +165,21 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
             <div className="p-2.5 bg-industrial-surface border border-industrial-border/80 rounded-lg w-full text-center">
               <span className="text-[10px] text-slate-400 block">{isEn ? 'Estimated Capacity:' : 'ظرفیت کل زمین:'}</span>
               <span className="text-base font-bold font-mono text-industrial-warning">
-                {cadResult.installedCapacityDcMwp.toFixed(2)} MWp
+                {cadResult ? `${cadResult.installedCapacityDcMwp.toFixed(3)} MWp` : '—'}
               </span>
             </div>
           </div>
         </div>
       </div>
 
+      {layoutError && <div role="alert" data-testid="cad-layout-error" className="studio-card text-red-300">{isEn ? 'Layout unavailable: ' : 'جانمایی ناممکن: '}{layoutError}</div>}
+      {cadResult && <>
+      <div data-testid="cad-pitch-summary" className="studio-card text-xs text-slate-300">
+        {isEn
+          ? `Requested pitch: ${cadResult.requestedRowPitchM} m | Effective pitch: ${cadResult.effectiveRowPitchM} m. GCR = projected collector chord / effective pitch (not site utilization).`
+          : `گام درخواستی: ${cadResult.requestedRowPitchM} متر | گام مؤثر: ${cadResult.effectiveRowPitchM} متر. GCR برابر عرض تصویرشده کلکتور تقسیم بر گام مؤثر است، نه بهره‌برداری کل زمین.`}
+        {cadResult.pitchAdjusted && <p role="status" data-testid="cad-pitch-adjusted" className="text-amber-300">{isEn ? 'Pitch increased to prevent footprint overlap and align to the 0.01 m drawing grid.' : 'گام برای جلوگیری از تداخل سطح میزها و انطباق با شبکه ترسیم ۰٫۰۱ متری افزایش یافت.'}</p>}
+      </div>
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
@@ -189,8 +200,8 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           <div className="text-[10px] text-slate-400 mt-0.5">
             {cadResult.groundCoverageRatioGcr <= 0.45
               ? isEn
-                ? '✓ Optimal (No critical )'
-                : '✓ بدون سایه بحرانی'
+                ? 'Low geometric coverage; annual shading unassessed'
+                : 'پوشش هندسی کم؛ سایه سالانه ارزیابی نشده'
               : isEn
               ? 'Dense layout'
               : 'متراکم'}
@@ -211,7 +222,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
             {cadResult.shadingLimitAngleDeg}°
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {isEn ? 'Winter 9:00 AM Criterion' : 'ساعت ۹ صبح زمستان'}
+            {isEn ? 'Simplified geometry indicator; not an annual shade test' : 'شاخص ساده هندسی؛ نه آزمون سایه سالانه'}
           </div>
         </div>
       </div>
@@ -222,7 +233,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           <h3 className="font-bold text-industrial-accent text-sm flex items-center gap-2">
             <Layers className="w-4 h-4 text-industrial-accent" />
             {isEn
-              ? 'True-Scale CAD Spatial Layout of PV Tables & Civil Infrastructure'
+              ? 'Screening CAD Layout of PV Tables & Reserved Infrastructure'
               : 'نقشه‌برداری CAD جانمایی مهندسی با مقیاس واقعی استراکچرها و زیرساخت'}
           </h3>
 
@@ -273,7 +284,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
                 : `مقیاس مهندسی واقعی: هر پیکسل معادل ${(1 / Math.min((860 - 70) / landLengthM, (420 - 90) / landWidthM)).toFixed(2)} متر | جانمایی ${cadResult.tables.length} میز فیزیکی واقعی (${cadResult.rowsCount} ردیف در ${cadResult.tablesPerRow} ستون)`}
             </span>
           </div>
-          <span className="text-slate-400 text-[10px]">AutoCAD DXF R15 Compliant</span>
+          <span className="text-slate-400 text-[10px]">ASCII DXF R15 — screening geometry</span>
         </div>
 
         <div className="overflow-x-auto bg-industrial-bg p-4 rounded-lg border border-industrial-border flex justify-center">
@@ -296,7 +307,6 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
               const boundaryH = landWidthM * scale;
               const startX = padX + (maxDrawW - boundaryW) / 2;
               const startY = padY + (maxDrawH - boundaryH) / 2;
-              const midXM = landLengthM / 2;
 
               return (
                 <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} className="select-none font-sans min-w-[700px]">
@@ -318,50 +328,24 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
                       : `محدوده واقعی زمین (${landLengthM}m × ${landWidthM}m — ${cadResult.totalLandAreaHectares} هکتار)`}
                   </text>
 
-                  {/* Perimeter Road & Setback Buffer */}
-                  {boundaryW > 24 * scale && boundaryH > 24 * scale && (
-                    <rect
-                      x={startX + 6 * scale}
-                      y={startY + 6 * scale}
-                      width={boundaryW - 12 * scale}
-                      height={boundaryH - 12 * scale}
-                      rx="3"
-                      fill="#1e293b"
-                      stroke="#475569"
-                      strokeWidth="1"
-                      opacity="0.4"
-                    />
-                  )}
-
-                  {/* Main Access Central Corridor */}
-                  <rect
-                    x={startX + (midXM - roadWidthM / 2) * scale}
-                    y={startY + 6 * scale}
-                    width={Math.max(4, roadWidthM * scale)}
-                    height={Math.max(0, boundaryH - 12 * scale)}
-                    fill="#f59e0b"
-                    opacity="0.25"
-                  />
-                  <line
-                    x1={startX + midXM * scale}
-                    y1={startY + 6 * scale}
-                    x2={startX + midXM * scale}
-                    y2={startY + boundaryH - 6 * scale}
-                    stroke="#f59e0b"
-                    strokeWidth="2"
-                    strokeDasharray="6 3"
-                    opacity="0.8"
-                  />
+                  {/* The same returned polygons own SVG siting and DXF export. */}
+                  {cadResult.reservedZones.filter(zone => zone.kind === 'road').map(zone => (
+                    <rect key={zone.id} data-cad-kind="road" data-cad-id={zone.id}
+                      x={startX + zone.xM * scale} y={startY + zone.yM * scale}
+                      width={zone.lengthM * scale} height={zone.widthM * scale}
+                      fill="#f59e0b" opacity="0.25" />
+                  ))}
 
                   {/* Dynamically Placed PV Tables matching Land Dimensions & Table Counts */}
                   {cadResult.tables.map((tbl) => {
                     const tx = startX + tbl.xM * scale;
                     const ty = startY + tbl.yM * scale;
-                    const tw = Math.max(2, tbl.lengthM * scale);
-                    const th = Math.max(1.5, tbl.widthM * scale);
+                    const tw = tbl.lengthM * scale;
+                    const th = tbl.widthM * scale;
                     return (
                       <g key={tbl.id}>
                         <rect
+                          data-cad-kind="table" data-cad-id={tbl.id}
                           x={tx}
                           y={ty}
                           width={tw}
@@ -386,27 +370,14 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
                     );
                   })}
 
-                  {/* Central MV Power Station Skid */}
-                  <rect
-                    x={startX + (midXM - 6) * scale}
-                    y={startY + 12 * scale}
-                    width={Math.max(12, 12 * scale)}
-                    height={Math.max(8, 8 * scale)}
-                    rx="2"
-                    fill="#8b5cf6"
-                    stroke="#c084fc"
-                    strokeWidth="1.5"
-                  />
-                  <text
-                    x={startX + midXM * scale}
-                    y={startY + 12 * scale + Math.max(6, 5 * scale)}
-                    fill="#ffffff"
-                    fontSize={Math.max(7, Math.min(10, 8 * scale))}
-                    fontWeight="bold"
-                    textAnchor="middle"
-                  >
-                    MV Skid
-                  </text>
+                  {cadResult.reservedZones.filter(zone => zone.kind === 'mv_station').map(zone => (
+                    <rect key={zone.id} data-cad-kind="mv_station" data-cad-id={zone.id}
+                      x={startX + zone.xM * scale} y={startY + zone.yM * scale}
+                      width={zone.lengthM * scale} height={zone.widthM * scale}
+                      fill="#8b5cf6" stroke="#c084fc" strokeWidth="0.5">
+                      <title>{zone.id}</title>
+                    </rect>
+                  ))}
 
                   {/* North Arrow Compass Indicator */}
                   <g transform={`translate(${svgW - 40}, 45)`}>
@@ -445,6 +416,7 @@ export const PowerplantCadLayoutTab: React.FC<PowerplantCadLayoutTabProps> = ({ 
           </div>
         </div>
       </div>
+      </>}
     </div>
   );
 };

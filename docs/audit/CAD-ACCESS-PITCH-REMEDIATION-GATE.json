@@ -1,0 +1,335 @@
+{
+  "scope": "Confirmed CAD/M06-M09 findings from independent audit of 71a7c2b",
+  "baseline": "71a7c2b52d8a109cb710e38e561c49e635c54698",
+  "decision": {
+    "implementation": "IMPLEMENTED",
+    "verification": "PARTIAL",
+    "release": "BLOCKED",
+    "rationale": "Software geometry, artifact and browser acceptance checks pass; required independently sourced expression references are missing. No civil-design approval or complete-release PASS is claimed."
+  },
+  "sourceSha256": {
+    "src/engine/powerplantCadLayout.ts": "f1a9f6c73b3f1b4974836c3619cf2af3376bc8b457e179e561d080f41b481984",
+    "src/components/PowerplantCadLayoutTab.tsx": "3eaa01921fc73f44f6438b61d0e9050bc39d6dd39e0d8413fa17b26f066c14c0",
+    "src/helpContent.ts": "ef283261b8f3d4349521672beecb8a2be7ae873fa286c0db4dd5a4ddce032300",
+    "scripts/audit-m01-to-m22-remediation-test.ts": "6daabf412c1f4a92939bd0a40a06d2616f93dfb807f3395dad6a76ce403880fb",
+    "scripts/test-cad-audit-remediation.ts": "b6dd4431d42587fc55cb66f41bafcffbe11a3b565d82f897b81b6dd3d54c40da",
+    "scripts/test-cad-audit-browser.ts": "4231a3c272e43212b57d27380b5ebac65a5e35fd1a920a22ca0a4df5f9c0b28f",
+    "scripts/run-all-benchmarks.ts": "8d1876502706030b2fe03d32350c2f0794c52a36a8056764edfb32f39e657373",
+    "package.json": "56854966bf4f785756e3c9f4f395b7f2a7db8b5b9e25ecf2c8ad10c5c3ac62dc",
+    ".github/workflows/ci.yml": "9c6f74ea772e8788eae88610de7c3a8dd5c6df5232bf2d64e73442450fc81bb7"
+  },
+  "acceptance": {
+    "AC-01": "PASS within tested domain: zero station/road, table/road, table/station and station/station overlap; connected positive-width road-strip graph; all positive road/table/station polygons within site",
+    "AC-02": "PASS requested/effective pitch returned; placement, GCR, simplified shade indicator, UI and DXF use effective pitch",
+    "AC-03": "PASS actual DXF polygon readback/parity, every station rendered, production SVG/model parity, mismatched export parameters rejected",
+    "AC-04": "PASS invalid siting suppresses result/export; controls remain usable and valid input recovers in production Chromium",
+    "AC-05": "PASS consent rejection without project mutation; project creation prerequisite before ownership/report assertions; M01-M22 144/144"
+  },
+  "sample": {
+    "siteM": [
+      500,
+      500
+    ],
+    "tiltDeg": 30,
+    "requestedPitchM": 7,
+    "centralRoadWidthM": 12,
+    "acceptedTables": 748,
+    "mvStations": 7,
+    "stationRoadOverlapM2": 0,
+    "horizontalPitchCases": [
+      {
+        "requestedM": 3,
+        "effectiveM": 4.6,
+        "gcr": 0.999,
+        "acceptedTables": 1144
+      },
+      {
+        "requestedM": 4,
+        "effectiveM": 4.6,
+        "gcr": 0.999,
+        "acceptedTables": 1144
+      },
+      {
+        "requestedM": 4.6,
+        "effectiveM": 4.6,
+        "gcr": 0.999,
+        "acceptedTables": 1144
+      }
+    ]
+  },
+  "checks": {
+    "npmCi": "PASS locked dependencies",
+    "lint": "PASS 0 errors, 93 warnings",
+    "productionBuild": "PASS",
+    "cadAnalyticalAndDxfReadback": "PASS 58 layouts plus invalid-site/parameter/sensitivity assertions; internal geometry constraints, NOT independently sourced physical validation",
+    "cadProductionBrowser": "PASS actual production application route, fa/en pitch notice, SVG geometry, real DXF download, invalid-layout suppression/recovery; external provider requests blocked",
+    "testRemaining": "PASS component geometry, 27 prior layouts, worker lifecycle, real HTTP POA and Chromium worker/fallback checks",
+    "recovery": "PASS 9 subprocess scenarios",
+    "exports": "PASS DOCX/XLSX/JSON readback and re-import",
+    "smoke": "PASS 5 in-memory scenarios; stored-target report retains retired-reference WARN",
+    "coverage": {
+      "status": "PASS",
+      "scope": "src/engine/core/** as configured, not whole application",
+      "statementsPct": 91.33,
+      "branchesPct": 66.13,
+      "functionsPct": 72.81,
+      "linesPct": 91.33
+    },
+    "fullUi": "PASS 81 layout checks; run before final extra road-rounding boundary guard, whose valid-layout behavior is unchanged and whose rejection is covered by final targeted tests",
+    "fullBrowser": "PASS existing browser regression suite with supported 360000ms timeout; same evidence-reuse scope as fullUi",
+    "helpSourceMap": "PASS",
+    "testAll": {
+      "status": "FAIL",
+      "exitCode": 1,
+      "completedBeforeFailure": [
+        "npm test",
+        "R1-R11 85/85",
+        "engineering audit 70/70",
+        "M01-M22 144/144",
+        "all-phases 56/56",
+        "API sizing/thermal 34/34",
+        "F04",
+        "geocode cache",
+        "help",
+        "physics registry metadata",
+        "rate-limit/auth HTTP",
+        "source invariants",
+        "engine-claim guards",
+        "reference-gate own tests"
+      ],
+      "failure": "Final changed-expression independent-reference gate: 52 missing records. Gate and evidence manifest NOT weakened or populated with internal expected outputs."
+    }
+  },
+  "independentReferenceGate": {
+    "status": "FAIL_NOT_WAIVED",
+    "missingRecords": 52,
+    "expressions": [
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#0827e3071a9d",
+        "expression": "zone.xM+zone.lengthM"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#58ee96206304",
+        "expression": "zone.yM+zone.widthM"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#aab00a1062ae",
+        "expression": "dxf+=addRect('ROADS',zone.xM,zone.yM,zone.xM+zone.lengthM,zone.yM+zone.widthM)"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#c523ffbc964f",
+        "expression": "landWidthM+9"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#d27fd2772824",
+        "expression": "params[key]!==layout.layoutParameters[key]"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#da3fdc413431",
+        "expression": "zone.kind==='road'"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#daed9efb3d77",
+        "expression": "dxf+=addText('ANNOTATION',`GCR:${layout.groundCoverageRatioGcr}|Effectivepitch:${layout.effectiveRowPitchM}m|Requestedpitch:${layout.requestedRowPitchM}m|Tilt:${params.arrayTiltDeg}deg`,15,landWidthM-34,2.5)"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#fc05533159b2",
+        "expression": "dxf+=addText('ANNOTATION','SCREENINGLAYOUT-NOTACONSTRUCTIONORACCESS-COMPLIANCEAPPROVAL',5,landWidthM+9,2)"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#0e5f36a7e8f4",
+        "expression": "literal:xM:6"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#0fb3fa700c71",
+        "expression": "literal:widthM:4"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#23bdfe42af71",
+        "expression": "zone.xM<10"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#2959f8c95105",
+        "expression": "landWidthM>=20"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#29ed267dc8be",
+        "expression": "landLengthM>=20"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#2b48633b8594",
+        "expression": "table.xM<corridorRight"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#2e6ff99cd282",
+        "expression": "roadRight+2"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#383fb07ab91a",
+        "expression": "Math.ceil(tableLengthM*100)/100"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#3871c71539f7",
+        "expression": "table.xM+table.lengthM>corridorLeft"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#413cb3f999e9",
+        "expression": "Math.round((projectedCollectorWidth/rowStep)*1000)/1000"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#475526619249",
+        "expression": "literal:xM:6"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#519aabe87016",
+        "expression": "literal:xM:6"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#524cd4bef0f3",
+        "expression": "projectedCollectorWidth/rowStep"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#54a5ea0e3a23",
+        "expression": "zone.widthM>0"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#557fc43b83a9",
+        "expression": "zone.xM+zone.lengthM>landLengthM-10"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#56518e93ee28",
+        "expression": "zone.yM+zone.widthM>landWidthM-10"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#5e8b1e387322",
+        "expression": "literal:yM:10"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#617dc5fcc39d",
+        "expression": "literal:widthM:4"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#63a6bf3bd1c0",
+        "expression": "Math.ceil(tableWidthM*100)/100"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#6b53cf2107d1",
+        "expression": "landWidthM-20"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#6c26f408a84e",
+        "expression": "literal:[...rowCounts.values()].reduce((max,count)=>Math.max(max,count),0)"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#7657995fb893",
+        "expression": "literal:yM:10"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#7797b68a8161",
+        "expression": "landWidthM-20"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#7947725008ff",
+        "expression": "roadLeft<0"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#7d8bd8a0fe54",
+        "expression": "landLengthM-10"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#8bd3e0544db6",
+        "expression": "Math.abs(rowStep-rowPitchM)>1e-9"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#8d7abe543cf6",
+        "expression": "Math.ceil(Math.max(rowPitchM,tableConfig.tableWidthM)*100)/100"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#91e4b739fffe",
+        "expression": "literal:yM:10"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#94e8486bcc1a",
+        "expression": "roadLeft+effectiveRoadWidthM"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#969b01b47c39",
+        "expression": "literal:lengthM:4"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#97f4e9ead1c1",
+        "expression": "stationX+12"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#9d7b1af83b36",
+        "expression": "Math.round((midX-effectiveRoadWidthM/2)*100)/100"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#a26876302a05",
+        "expression": "effectiveRoadWidthM>0"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#aa1c10b79f52",
+        "expression": "landWidthM-10"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#ade2e6b5c2b0",
+        "expression": "landWidthM-20"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#b82929191a4b",
+        "expression": "Math.max(0.5,rowStep-tableWidthM*Math.cos(tiltRad))"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#bcca36f81b9b",
+        "expression": "landLengthM-12"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#bef456bd58d8",
+        "expression": "roadRight>landLengthM"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#c3dea09e04ca",
+        "expression": "zone.lengthM>0"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#d5f55559441e",
+        "expression": "Math.max(max,count)"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#db50458b639f",
+        "expression": "landLengthM-12"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#df166d265a30",
+        "expression": "midX-effectiveRoadWidthM/2"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#dfb1a54699e7",
+        "expression": "Math.ceil(roadWidthM*100)/100"
+      },
+      {
+        "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#e2a1ae31a2d0",
+        "expression": "literal:lengthM:4"
+      }
+    ]
+  },
+  "review": [
+    "Contract/import/serialized-consumer review followed by tracing engine -> SVG -> DXF; no automatic CAD capacity adoption into financial/annual-energy inputs found in the inspected call sites",
+    "Geometry/capacity review followed by independent interval-constraint implementation and real DXF parser; assumptions remain screening-only",
+    "Failure/lifecycle review followed by disposable M01-M22 tests, full aggregate chain and production browser invalid-input/export recovery checks"
+  ],
+  "limitations": [
+    "No surveyed parcel/topography/civil/access/turning-radius/fire/electrical-clearance approval",
+    "Station size, gaps, setbacks and AC/MV station sizing remain declared screening assumptions",
+    "No final Docker runtime, Windows/Safari native or new Python/field validation performed in this task",
+    "Prior whole-model validation blockers are not resolved by these component/software checks"
+  ],
+  "financialBoundary": "CAD parameters/results remain local to the CAD workflow. No financial/annual-energy/research-adoption code changed.",
+  "guide": "docs/features/CAD-ACCESS-PITCH-REMEDIATION.fa.md",
+  "gitActions": "None requested or performed",
+  "historicalStatus": {
+    "supersededBy": "docs/audit/CAD-INDEPENDENT-VERIFICATION-GATE.json",
+    "note": "Historical pre-serializer snapshot: source hashes and 52-expression count are not current. Retained for provenance only."
+  }
+}

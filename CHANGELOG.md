@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Independent CAD artifact verification
+- Independently check module/DC-capacity accounting with Decimal and artifact counts, site area with GEOS, and row aggregates from artifact coordinates; reject five additional corrupted metrics. These component checks do not waive full-model reference requirements.
+- Fix a real external-parser failure in DXF export: supply R2000 entity subclasses and LAYER table metadata; use deterministic unique handles with HANDSEED and explicit meter/metric headers.
+- Add pinned test-only ezdxf/Shapely/GEOS verification of 61 actual files, structural audit without repair, geometric constraints and third-party round-trip; include ten reason-specific negative cases and a dedicated CI job.
+- Add a complete advisory review of 56 changed CAD expressions. This inventory neither waives the reference gate nor labels internal siting policy as independent engineering validation. See docs/features/CAD-INDEPENDENT-ARTIFACT-VERIFICATION.fa.md.
+
+### CAD access-road and pitch audit remediation
+- Separate MV station bays from the central through-road and reserve their full corridor before accepting PV tables; derive capacity from the accepted footprints.
+- Return requested/effective pitch with explicit centimeter-grid adjustment; use effective pitch for placement, GCR, shading indicator and DXF annotations.
+- Render/export the same road and station polygons, including explicit perimeter strips and every station; suppress unavailable layouts/exports and disclose screening-only siting assumptions.
+- Add rectangle/connectivity and actual DXF read-back tests plus production Chromium SVG/download/error-recovery checks; include geometry regressions in the main suite and CI.
+- Fix M06/M09 setup: require analytical-screening consent, assert project creation before authorization checks, test missing-consent rejection, and isolate the M01–M22 persistence path.
+- See docs/features/CAD-ACCESS-PITCH-REMEDIATION.fa.md for acceptance, limitations and rollback. Independent expression-reference and final-runtime release requirements are not waived.
+
 ### Portable agent skills
 - Refine the project skill into a normative procedure: defined terminology, stable requirement/phase IDs, explicit phase exit evidence, criterion-to-check traceability, numerical comparator semantics, scoped stop conditions, and independent implementation/verification/release states. Align review guidance and templates with those definitions.
 - Restructure the primary skill as a task-routed bundle: six detailed reference guides, nine task runbooks, three reusable delivery assets, and nine explicit native-agent evaluation cases. Sync and verify complete bundles, including missing/drift/link checks, without claiming native-client or semantic certification.

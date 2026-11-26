@@ -98,7 +98,11 @@
     "test:accepted-audit": "tsx scripts/test-accepted-vmp-audit.ts",
     "skills:sync": "node scripts/sync-agent-skills.mjs --write",
     "skills:check": "node scripts/sync-agent-skills.mjs --check",
-    "test:skills": "node scripts/test-agent-skills.mjs"
+    "test:skills": "node scripts/test-agent-skills.mjs",
+    "test:cad:audit": "tsx scripts/test-cad-audit-remediation.ts",
+    "test:cad:browser": "tsx scripts/test-cad-audit-browser.ts",
+    "test:cad:independent": "tsx scripts/test-cad-independent.ts",
+    "test:cad:evidence-review": "tsx scripts/test-cad-evidence-review.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

@@ -39,11 +39,19 @@ import { StructuralHazardProvider } from '../src/engine/dataGateway/structuralHa
 import { CircuitBreaker } from '../src/engine/dataGateway/circuitBreaker';
 import { calculateSolarPump } from '../src/engine/solarPumpEngine';
 import { buildExcelWorkbookXml, escapeXml } from '../src/engine/reportingEngine';
-import { app, setPersistPathForTesting, db as activeDb } from '../server';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
+
+// Configure isolation BEFORE importing the server: never seed/write the user's default DB.
+const auditScratch = fs.mkdtempSync(path.join(os.tmpdir(), 'solarpv-m01-m22-'));
+const auditPersistPath = path.join(auditScratch, 'snapshot.json');
+process.env.NODE_ENV = 'test';
+process.env.SOLARPV_DB_FILE = auditPersistPath;
+process.on('exit', () => fs.rmSync(auditScratch, {recursive:true,force:true}));
+const { app, setPersistPathForTesting, db: activeDb } = await import('../server');
+
 
 let passes = 0;
 let failures = 0;
@@ -558,14 +566,31 @@ async function runM01ToM22TestSuite(): Promise<void> {
     const aliceProjectRoute = (app as any)._router.stack
       .find((r: any) => r.route && r.route.path === '/api/v1/projects/quick-size' && r.route.methods.post)
       ?.route.stack[0].handle;
-    let aliceBody: any = null;
+    let noConsentStatus = 200;
+    let noConsentBody: any = null;
+    const projectCountBeforeConsentCheck = activeDb.projects.size;
     await aliceProjectRoute({
-      body: { projectName: 'Alice Array', dailyKwh: 30, autonomyDays: 1, latitude: 35.6, longitude: 51.3, ownerId: 'alice' },
+      body: {projectName:'Consent rejection',dailyKwh:30,autonomyDays:1,latitude:35.6,longitude:51.3,ownerId:'alice'}, headers:{},
+    }, {
+      status(code:number) { noConsentStatus = code; return this; },
+      json(body:any) { noConsentBody = body; return this; },
+    });
+    assert(noConsentStatus === 422 && noConsentBody?.code === 'SCREENING_CONSENT_REQUIRED' && activeDb.projects.size === projectCountBeforeConsentCheck,
+      'M06 prerequisite: missing screening consent rejects creation without project mutation');
+    let aliceBody: any = null;
+    let aliceStatus = 200;
+    await aliceProjectRoute({
+      body: { projectName: 'Alice Array', dailyKwh: 30, autonomyDays: 1, latitude: 35.6, longitude: 51.3, ownerId: 'alice', allowAnalyticalEstimate: true },
       headers: {},
     }, {
-      status() { return this; },
+      status(code: number) { aliceStatus = code; return this; },
       json(d: any) { aliceBody = d; return this; },
     });
+    assert(aliceStatus === 200 && typeof aliceBody?.projectId === 'string' && aliceBody.projectId.length > 0,
+      'M06 prerequisite: Alice project is successfully created before authorization assertions', `status=${aliceStatus}`);
+    if (aliceStatus !== 200 || typeof aliceBody?.projectId !== 'string' || !aliceBody.projectId) {
+      throw new Error('M06 setup failed: project creation must succeed before authorization/report tests');
+    }
     sharedAliceProjectId = aliceBody.projectId;
 
     let bobPushBody: any = null;
@@ -1074,7 +1099,7 @@ async function runM01ToM22TestSuite(): Promise<void> {
     );
 
     // Reset the injected failure path and remove the cross-platform blocker.
-    setPersistPathForTesting('./data/solar-db-snapshot.json');
+    setPersistPathForTesting(auditPersistPath);
     fs.rmSync(persistBlockerPath, { force: true });
   }
 

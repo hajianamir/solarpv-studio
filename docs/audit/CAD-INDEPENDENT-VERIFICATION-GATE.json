@@ -1,0 +1,114 @@
+{
+  "baseline": "71a7c2b52d8a109cb710e38e561c49e635c54698",
+  "date": "2026-11-03",
+  "decision": {
+    "implementation": "IMPLEMENTED scoped artifact corrections",
+    "verification": "PARTIAL",
+    "release": "BLOCKED"
+  },
+  "sourceSha256": {
+    "src/engine/powerplantCadLayout.ts": "71e9ad0edb38c945bd3bc11ea8b96499d087937c1b337c50434e19cd110fc2a7",
+    "scripts/test-cad-independent.ts": "188eb9705ae5c05cb71ac783d8be0221b6dad87d2772edb989cffb2f19a22a72",
+    "scripts/cad_reference/verify.py": "a03b489c804c14f6ce71c5cb65ea8a39d210e47a5693e34d3fc950809e6e92ca",
+    "scripts/cad_reference/requirements.txt": "16ddfd3cbc9f32af3fc30f273332f2c5aa2fc1b5bcc0966d79f6398a5404ba01",
+    "scripts/test-cad-evidence-review.ts": "e9cee61989b9866f5ea6ad68a0f2ed3f2237472c5ee229c8a8c071c6ed98cfce",
+    ".github/workflows/ci.yml": "39429d721702ea62ed4ce238f38568f40a969ee529c54fbf94d00e64c6728580",
+    "package.json": "0e276179004096c508766b419f2f505ac2f20e56347ebc8bc91ccf5e69ee09f7"
+  },
+  "tests": {
+    "independentArtifact": {
+      "result": "PASS",
+      "files": 61,
+      "reasonSpecificNegatives": 10,
+      "ezdxf": "1.4.3",
+      "Shapely": "2.1.2",
+      "GEOS": "3.13.1"
+    },
+    "internalCad": {
+      "result": "PASS",
+      "cases": 58
+    },
+    "evidenceInventory": {
+      "result": "PASS advisory only",
+      "expressions": 56,
+      "missingIndependentReferenceRecords": 56
+    },
+    "lint": {
+      "exit": 0,
+      "errors": 0,
+      "warnings": 93
+    },
+    "build": {
+      "exit": 0
+    },
+    "productionChromiumCad": {
+      "exit": 0
+    },
+    "exportReadback": {
+      "exit": 0
+    },
+    "inMemorySmoke": {
+      "exit": 0,
+      "cases": 5
+    },
+    "coreCoverage": {
+      "exit": 0,
+      "statementsPct": 91.33,
+      "branchesPct": 66.13,
+      "functionsPct": 72.81,
+      "linesPct": 91.33
+    },
+    "aggregate": {
+      "exit": 1,
+      "runtimeM01M22Passed": 144,
+      "runtimeM01M22Failed": 0,
+      "blocker": "Independent-expression reference gate; 56 CAD expressions lack registered records"
+    },
+    "container": {
+      "exit": 1,
+      "blocker": "Docker version failed: spawnSync docker ENOENT"
+    },
+    "remoteCI": {
+      "result": "NOT_RUN",
+      "configuration": "Dedicated independent-artifact job added; full history required for baseline inventory"
+    }
+  },
+  "limits": [
+    "No gate or independent-evidence manifest waiver",
+    "No copied model outputs registered as independent fixtures",
+    "No native Windows/Safari/iOS validation",
+    "No civil/fire/access/field approval or optimal-packing certification",
+    "External artifact checks are not full-return per-expression independent reference fixtures"
+  ],
+  "historicalReceipt": "docs/audit/CAD-ACCESS-PITCH-REMEDIATION-GATE.json",
+  "logs": "Local .cache/cad-independent*.log (ephemeral, not tracked)",
+  "followup": {
+    "scope": "Independent accounting checks; no runtime changes",
+    "checks": [
+      "module accounting from DXF table count and declared configuration",
+      "DC capacity using Decimal and input wattage",
+      "site area from GEOS",
+      "row accounting from geometric ordinates",
+      "five reason-specific metric corruption tests"
+    ],
+    "rerunPassed": [
+      "independentArtifact",
+      "internalCad",
+      "evidenceInventory",
+      "lint",
+      "build",
+      "productionChromiumCad"
+    ],
+    "rerunBlocked": {
+      "independentReferenceGate": 1,
+      "container": 1
+    },
+    "notRerunThisFollowup": [
+      "aggregate",
+      "exportReadback",
+      "inMemorySmoke",
+      "coreCoverage"
+    ],
+    "logs": "Local .cache/cad-accounting-*.log; ephemeral"
+  }
+}
