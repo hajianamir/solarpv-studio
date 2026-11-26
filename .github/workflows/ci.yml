@@ -61,7 +61,9 @@ jobs:
       - name: Require independent reference fixtures for every changed formula expression
         run: npx tsx scripts/verify-physics-reference-gate.ts
         env:
-          PHYSICS_DIFF_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
+          # Follow-up commits on a feature branch must not hide earlier formula
+          # changes by comparing only with the preceding push.
+          PHYSICS_DIFF_BASE: ${{ github.event.pull_request.base.sha || (github.ref == 'refs/heads/main' && github.event.before) || 'origin/main' }}
       - name: Verify public API client rate-limit contract
         run: npm run verify:rate-limit
       - name: Verify browser-safe source invariants

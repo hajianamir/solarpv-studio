@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Final runtime validation follow-up
+- Fix a real final-image boot failure: copy registered `docs/reference-data` required by server-imported study contracts into the runner stage.
+- Surface bounded, escaped container failure diagnostics through GitHub Checks while preserving failure status and redacting the generated runtime secret.
+- Replace stale inline-batch text expectations with the delegated launcher preflight checks; exercise missing/broken/repaired dotenv and uuid entry points.
+- Keep feature-branch physics checks relative to main rather than the previous push, so follow-up commits cannot hide earlier unreferenced formula changes.
+
 ### Independent CAD artifact verification
 - Independently check module/DC-capacity accounting with Decimal and artifact counts, site area with GEOS, and row aggregates from artifact coordinates; reject five additional corrupted metrics. These component checks do not waive full-model reference requirements.
 - Fix a real external-parser failure in DXF export: supply R2000 entity subclasses and LAYER table metadata; use deterministic unique handles with HANDSEED and explicit meter/metric headers.

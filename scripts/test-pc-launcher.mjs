@@ -33,6 +33,16 @@ try {
   write('node_modules/@noble/hashes/package.json', JSON.stringify({name: '@noble/hashes', version: '2.0.0'}));
   assert.ok(dependencyProblems(fixture).some(p => p.includes('expected 1.8.0')));
 
+  // These packages used to be checked by folder-name text in start.bat.
+  // Exercise the delegated resolver: missing metadata, broken exports, repair.
+  for (const [name, entry] of [['dotenv', 'dotenv/config'], ['uuid', 'uuid']]) {
+    write('package.json', JSON.stringify({dependencies: {[name]: '1.0.0'}}));
+    assert.ok(dependencyProblems(fixture).some(p => p.includes(name)));
+    write(`node_modules/${name}/package.json`, JSON.stringify({name, version:'1.0.0', exports: name === 'dotenv' ? {'./config':'./index.js'} : './index.js'}));
+    assert.ok(dependencyProblems(fixture).some(p => p.includes(entry) && p.includes('not resolvable')));
+    write(`node_modules/${name}/index.js`, 'module.exports = {};');
+    assert.deepEqual(dependencyProblems(fixture), []);
+  }
   assert.deepEqual(dependencyProblems(root), []);
   // Exercise the real tsx registration using Node directly with a spaced TS path.
   write('server with spaces.ts', "const value: number = 42; console.log(value, process.argv[2]);");
