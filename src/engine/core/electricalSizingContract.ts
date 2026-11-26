@@ -1,3 +1,4 @@
+import { resolveVmpTemperatureCoefficient } from './vmpTemperatureCoefficient';
 /**
  * Electrical Sizing, MPPT Hard-Blocking & Powerplant Fleet Contract (Phase 05 Remediation)
  *
@@ -153,11 +154,8 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
   const stringVocMaxColdV = Number((input.modulesPerString * singleVocCold).toFixed(2));
 
   const effectiveHotC = input.cellTempHotC ?? (input.ambientTempMaxC + 25.0);
-  const vmpCoeffPct = input.tempCoeffVmpPct ?? (
-    input.tempCoeffPmpPct !== undefined && input.tempCoeffIscPct !== undefined
-      ? input.tempCoeffPmpPct - input.tempCoeffIscPct
-      : (input.tempCoeffPmpPct ?? -0.30)
-  );
+  const vmpCoefficient = resolveVmpTemperatureCoefficient(input.tempCoeffVmpPct, input.tempCoeffPmpPct ?? -0.30, input.tempCoeffPmpPct === undefined ? undefined : input.tempCoeffIscPct);
+  const vmpCoeffPct = vmpCoefficient.coefficientPct;
   const singleVmpHot = input.moduleVmp * (1.0 + (vmpCoeffPct / 100.0) * (effectiveHotC - 25.0));
   const stringVmpMinHotV = Number((input.modulesPerString * singleVmpHot).toFixed(2));
   // With no cold-cell input, minimum ambient temperature is used as the explicit cold-Vmp proxy.
@@ -183,6 +181,7 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
 
   const blockingErrors: string[] = [];
   const warnings: string[] = [];
+  if (vmpCoefficient.warning) warnings.push(vmpCoefficient.warning);
 
   let isCurrentFeasible = allocation.isValid;
   if (!allocation.isValid) {

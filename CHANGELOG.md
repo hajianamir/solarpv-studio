@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Portable agent skills
+- Refine the project skill into a normative procedure: defined terminology, stable requirement/phase IDs, explicit phase exit evidence, criterion-to-check traceability, numerical comparator semantics, scoped stop conditions, and independent implementation/verification/release states. Align review guidance and templates with those definitions.
+- Restructure the primary skill as a task-routed bundle: six detailed reference guides, nine task runbooks, three reusable delivery assets, and nine explicit native-agent evaluation cases. Sync and verify complete bundles, including missing/drift/link checks, without claiming native-client or semantic certification.
+- Add a comprehensive `solarpv-studio-engineering` primary skill for the entire project lifecycle, with architecture ownership, risk-based verification, domain acceptance, security/data/financial boundaries, platform delivery and release stop conditions. Keep audit/navigation/string-sizing as specialist companions.
+- Standardize all four skills on shared SKILL.md name/description YAML frontmatter, usage triggers, procedures, and output contracts.
+- Add Codex `.agents/skills` and Claude Code `.claude/skills` discovery copies with dependency-free sync/validation commands and CI parity checks. No numerical-model behavior changes.
+
+### Accepted audit corrections
+- Preserve optional manufacturer Vmp temperature coefficients through catalog selection, adapters and project snapshots; validate negative finite values across voltage-window engines and HTTP percent/fraction aliases.
+- Share coefficient selection and disclose that Pmp/Isc fallbacks are not guaranteed conservative; retain missing-data numerical defaults.
+- Add corrected AGENTS.md and audit/navigation/string-sizing skills without unsupported “verified” anchors or blanket coefficient-conservatism claims. See docs/features/VMP-COEFFICIENT-AUDIT.md for acceptance, limits and rollback.
+
 ### Remaining remediation (2026-11-03)
 - Fixed deterministic POA azimuth contracts, owned concurrent shading workers and cooperative cancellation, CAD footprint/count consistency, rear-beam geometry, tracker shading/energy weighting, and low-load diesel rounding/zero-load handling.
 - Added pinned independent component-geometry fixtures and HTTP/native Chromium/lifecycle regressions (`npm run test:remaining`). See `docs/operations/PRIORITIZED-REMEDIATION.fa.md` for acceptance, rollback and limits.

@@ -540,10 +540,23 @@ app.post('/api/v1/electrical/string-sizing', (req: Request, res: Response) => {
       }
     }
 
+    // Fraction/°C takes precedence, but reject contradictory aliases rather than guessing units.
+    const { betaVmpPerC, tempCoeffVmpPct } = req.body;
+    for (const coefficient of [betaVmpPerC, tempCoeffVmpPct]) {
+      if (coefficient !== undefined && (typeof coefficient !== 'number' || !Number.isFinite(coefficient) || coefficient >= 0)) {
+        return res.status(400).json({ error: 'Vmp temperature coefficient must be a negative finite number' });
+      }
+    }
+    if (betaVmpPerC !== undefined && tempCoeffVmpPct !== undefined && Math.abs(betaVmpPerC * 100 - tempCoeffVmpPct) > 1e-12) {
+      return res.status(400).json({ error: 'Conflicting Vmp coefficient aliases' });
+    }
+    const resolvedBetaVmp = betaVmpPerC ?? (tempCoeffVmpPct === undefined ? undefined : tempCoeffVmpPct / 100);
+
     const result = calculateStringSizing({
       ...req.body,
       betaVocPerC: rawBeta,
       betaPmpPerC: rawBetaPmp,
+      betaVmpPerC: resolvedBetaVmp,
       cellTempMaxC: resolvedCellTempMaxC,
     });
 

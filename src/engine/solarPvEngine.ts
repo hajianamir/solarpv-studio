@@ -1,3 +1,4 @@
+import { resolveVmpTemperatureCoefficient } from './core/vmpTemperatureCoefficient';
 // SolarPV Studio Core Calculation Engine
 // Faithful TypeScript implementation of pv-math, pv-electrical, pv-finance, and pv-shading
 
@@ -290,9 +291,9 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
       ? betaPmpPerC
       : safeBetaVocPerC;
 
-  const safeBetaVmpPerC = req.betaVmpPerC ?? safeBetaPmpPerC;
-  if (!Number.isFinite(safeBetaVmpPerC)) throw new Error('betaVmpPerC must be finite');
-  if (req.betaVmpPerC === undefined) warnings.push('Vmp temperature coefficient is approximated from Pmp/Voc; verify against manufacturer data.');
+  const vmpCoefficient = resolveVmpTemperatureCoefficient(req.betaVmpPerC === undefined ? undefined : req.betaVmpPerC * 100, safeBetaPmpPerC * 100);
+  const safeBetaVmpPerC = vmpCoefficient.coefficientPct / 100;
+  if (req.betaVmpPerC === undefined) warnings.push(vmpCoefficient.warning!);
   const vocMaxTemp = panelVoc * (1.0 + safeBetaVocPerC * (tempMinC - 25.0));
 
   // Hot-case MPPT screening; use a measured Vmp coefficient when supplied.

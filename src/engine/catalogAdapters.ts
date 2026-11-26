@@ -31,6 +31,7 @@ export function catalogModuleToEngine(m: CatalogPvModule): PvModule {
     betaVocPerC: m.tempCoeffVocPct / 100.0,
     noctC: m.noctC ?? 45.0,
     tempCoeffPmpPct: m.tempCoeffPmpPct,
+    tempCoeffVmpPct: m.tempCoeffVmpPct,
   };
 }
 

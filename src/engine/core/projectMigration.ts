@@ -318,7 +318,7 @@ export const ModuleSpecsSchema = z.object({
   tempCoeffVocPct: z.number(),
   tempCoeffPmpPct: z.number(),
   tempCoeffIscPct: z.number().optional(),
-  tempCoeffVmpPct: z.number().optional(),
+  tempCoeffVmpPct: z.number().finite().negative().optional(),
   noctC: z.number().default(45),
   lengthM: z.number().positive().optional(),
   widthM: z.number().positive().optional(),

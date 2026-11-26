@@ -52,6 +52,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
   const [modCellType, setModCellType] = useState<'N-Type TOPCon' | 'P-Type PERC' | 'HJT Bifacial'>('N-Type TOPCon');
   const [modNoctC, setModNoctC] = useState(45.0);
   const [modTempCoeffVoc, setModTempCoeffVoc] = useState(-0.25);
+  const [modTempCoeffVmp, setModTempCoeffVmp] = useState('');
   const [modTempCoeffPmp, setModTempCoeffPmp] = useState(-0.29);
   const [modLengthMm, setModLengthMm] = useState(2278);
   const [modWidthMm, setModWidthMm] = useState(1134);
@@ -109,6 +110,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
       efficiencyPct: computedModuleEffPct > 0 && computedModuleEffPct <= 35 ? computedModuleEffPct : 22.4,
       tempCoeffVocPct: Number(modTempCoeffVoc),
       tempCoeffPmpPct: Number(modTempCoeffPmp),
+      tempCoeffVmpPct: modTempCoeffVmp.trim() === '' ? undefined : Number(modTempCoeffVmp),
       lengthMm: Number(modLengthMm),
       widthMm: Number(modWidthMm),
       weightKg: Number(modWeightKg),
@@ -687,6 +689,11 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ lang = 'fa' }) => {
                       onChange={(e) => setModTempCoeffVoc(Number(e.target.value))}
                       className="studio-input w-full"
                     />
+                  </div>
+                  <div>
+                    <label htmlFor="cat-mod-tc-vmp" className="text-slate-300 block mb-1">{isFa ? 'ضریب Vmp سازنده (%/°C، اختیاری):' : 'Manufacturer β_Vmp (%/°C, optional):'}</label>
+                    <input id="cat-mod-tc-vmp" type="number" step="any" value={modTempCoeffVmp} onChange={(e) => setModTempCoeffVmp(e.target.value)} className="studio-input w-full" />
+                    <p className="text-xs text-slate-400">{isFa ? 'خالی: نامعلوم؛ جایگزین Pmp تضمین محافظه‌کاری ندارد.' : 'Blank means unknown; the Pmp proxy is not guaranteed conservative.'}</p>
                   </div>
                   <div>
                     <label htmlFor="cat-mod-tc-pmp" className="text-slate-300 block mb-1">{isFa ? 'ضریب دمای Pmp (%/°C):' : 'γ_Pmp (%/°C):'}</label>

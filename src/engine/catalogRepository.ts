@@ -259,6 +259,11 @@ export class CatalogRepository {
   public validateModule(mod: Partial<CatalogPvModule>): CatalogValidationResult {
     const errorsFa: string[] = [];
     const errorsEn: string[] = [];
+    if (mod.tempCoeffVmpPct !== undefined && (typeof mod.tempCoeffVmpPct !== 'number' || !Number.isFinite(mod.tempCoeffVmpPct) || mod.tempCoeffVmpPct >= 0)) {
+      errorsFa.push('ضریب دمای Vmp باید عددی متناهی و منفی باشد.');
+      errorsEn.push('Vmp temperature coefficient must be finite and negative.');
+    }
+
 
     if (!mod.modelName || typeof mod.modelName !== 'string' || !mod.modelName.trim()) {
       errorsFa.push('نام مدل پنل نمی‌تواند خالی باشد.');

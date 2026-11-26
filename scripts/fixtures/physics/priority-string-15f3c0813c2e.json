@@ -22,7 +22,7 @@
     "status": "infeasible",
     "hasWarning": true,
     "warnings": [
-      "Vmp temperature coefficient is approximated from Pmp/Voc; verify against manufacturer data.",
+      "Vmp temperature coefficient is approximated from Pmp/Voc; not guaranteed conservative for hot or cold MPPT limits. Verify manufacturer Vmp data; this is screening, not conformity assessment.",
       "Minimum required modules exceeds maximum allowed string voltage."
     ],
     "effectiveCellTempMaxC": 25

@@ -20,6 +20,7 @@ export interface PvModule {
   betaVocPerC: number;
   noctC?: number;
   tempCoeffPmpPct?: number;
+  tempCoeffVmpPct?: number;
 }
 
 export interface Inverter {

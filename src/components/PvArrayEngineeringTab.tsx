@@ -18,7 +18,7 @@ function moduleFromCatalog(found: EnhancedCatalogModule): ModuleSpecs {
     id: found.id, origin: found.origin, manufacturer: found.manufacturer, modelName: found.modelName,
     pmpWatts: found.pmpWatts, vocVolts: found.vocVolts, vmpVolts: found.vmpVolts,
     iscAmps: found.iscAmps, impAmps: found.impAmps, tempCoeffVocPct: found.tempCoeffVocPct,
-    tempCoeffPmpPct: found.tempCoeffPmpPct, noctC: found.noctC ?? 45,
+    tempCoeffPmpPct: found.tempCoeffPmpPct, tempCoeffVmpPct: found.tempCoeffVmpPct, noctC: found.noctC ?? 45,
     lengthM: found.lengthMm / 1000, widthM: found.widthMm / 1000,
     weightKg: found.weightKg, bifacialityFactor: found.bifacialityFactor,
   };
@@ -120,7 +120,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
   }, [catalogVersion]);
   const matchingModule = allModules.find((item) => item.id === selectedModule.id &&
     matchesCatalogProjection(selectedModule, moduleFromCatalog(item)) &&
-    selectedModule.tempCoeffIscPct === undefined && selectedModule.tempCoeffVmpPct === undefined);
+    selectedModule.tempCoeffIscPct === undefined);
   const matchingInverter = allInverters.find((item) => item.id === selectedInverter.id &&
     matchesCatalogProjection(selectedInverter, inverterFromCatalog(item)));
   const selectedModulePickerValue = matchingModule?.id ?? '__selected_module_snapshot__';
