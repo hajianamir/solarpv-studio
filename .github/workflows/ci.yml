@@ -19,6 +19,30 @@ jobs:
       - name: Build and boot final image without source mounts
         run: node scripts/test-container-runtime.mjs
 
+  cad-independent-artifacts:
+    name: Independent DXF and GEOS geometry verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.3'
+          cache: 'npm'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: scripts/cad_reference/requirements.txt
+      - run: npm ci
+      - name: Install pinned test-only CAD references
+        run: python -m pip install -r scripts/cad_reference/requirements.txt
+      - name: Parse and audit actual DXF; verify geometry with GEOS
+        run: npm run test:cad:independent
+      - name: Keep advisory expression review complete without waiving references
+        run: npm run test:cad:evidence-review
+
   physics-model-registry-gate:
     name: Physics Registry & Independent Reference Gate
     runs-on: ubuntu-latest
@@ -37,7 +61,9 @@ jobs:
       - name: Require independent reference fixtures for every changed formula expression
         run: npx tsx scripts/verify-physics-reference-gate.ts
         env:
-          PHYSICS_DIFF_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
+          # Follow-up commits on a feature branch must not hide earlier formula
+          # changes by comparing only with the preceding push.
+          PHYSICS_DIFF_BASE: ${{ github.event.pull_request.base.sha || (github.ref == 'refs/heads/main' && github.event.before) || 'origin/main' }}
       - name: Verify public API client rate-limit contract
         run: npm run verify:rate-limit
       - name: Verify browser-safe source invariants
@@ -103,6 +129,11 @@ jobs:
         run: npm run test:browser
         env:
           BROWSER_TEST_TIMEOUT_MS: 360000
+
+      - name: CAD road/station geometry and DXF read-back
+        run: npm run test:cad:audit
+      - name: Production CAD rendering and download
+        run: npm run test:cad:browser
 
       - name: Targeted priority mutation gate
         run: npx tsx scripts/test-priority-audit-mutations.ts

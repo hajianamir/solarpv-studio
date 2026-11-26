@@ -19,6 +19,7 @@ import { buildProvenanceRows } from '../src/engine/provenance/provenanceBuilder'
 import { createDefaultProjectV3, migrateProjectToV3 } from '../src/engine/core/projectMigration';
 import { generateScenarios } from '../src/engine/scenarioEngine';
 import fs from 'fs';
+import {spawnSync} from 'node:child_process';
 
 let passCount = 0;
 let failCount = 0;
@@ -456,9 +457,10 @@ async function runAuditVerification() {
   const batContent = batRaw.toString('utf8');
   const pcLauncher = fs.readFileSync('scripts/run-pc.ts', 'utf8');
   const appServer = fs.readFileSync('server.ts', 'utf8');
-  assert(batContent.includes('node -e') && batContent.includes('process.versions.node'), 'start.bat validates the installed Node major version before launching');
-  assert(batContent.includes('node_modules\\dotenv'), 'start.bat checks for node_modules\\dotenv dependency synchronization');
-  assert(batContent.includes('node_modules\\uuid'), 'start.bat checks for node_modules\\uuid dependency synchronization');
+  assert(batContent.includes('node scripts\\check-node-version.mjs') && batContent.includes('if errorlevel 1 goto :UnsupportedNode'), 'start.bat delegates Node validation and stops on failure');
+  assert(batContent.includes('node scripts\\check-pc-dependencies.mjs') && batContent.includes('if errorlevel 1 goto :InstallDependencies'), 'start.bat delegates dependency validation and repairs on failure');
+  const preflight = spawnSync(process.execPath, ['scripts/test-pc-launcher.mjs'], {encoding:'utf8', timeout:30000});
+  assert(preflight.status === 0, 'Real launcher preflights reject unsupported Node and missing/broken startup dependencies including dotenv and uuid', preflight.status === 0 ? undefined : preflight.stderr);
   assert(pcLauncher.includes('process.env.PORT || process.env.APP_PORT') && pcLauncher.includes("['.env', '.env.example']"), 'PC launcher resolves APP_PORT/PORT from environment files');
   assert(appServer.includes("await import('dotenv/config')"), 'server loads .env configuration before resolving runtime settings');
 

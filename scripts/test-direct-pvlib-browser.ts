@@ -48,7 +48,7 @@ try{
   await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();
   await page.locator('#climate-latitude-input').fill('32.2');await page.locator('#climate-longitude-input').fill('-110.9');
   await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();await openResearch(page,'studies');await panel.waitFor();
-  const waterfall=page.getByRole('heading',{name:/PVsyst-Grade Loss Waterfall/}).locator('../..');
+  const waterfall=page.getByRole('heading',{name:/Preliminary Annual Loss Budget & Performance Ratio|بودجهٔ تخمینی تلفات سالانه و ضریب عملکرد/}).locator('../..');
   await tab('waterfall_loss');await waterfall.waitFor();const before=await waterfall.locator('table').allTextContents();assert.ok(before.length);
   await openResearch(page,'studies');await panel.waitFor();
   const request=JSON.parse(await readFile('services/pvlib_study/tests/synthetic-study.json','utf8'));

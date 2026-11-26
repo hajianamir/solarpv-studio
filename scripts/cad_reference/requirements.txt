@@ -1,0 +1,7 @@
+# Test-only complete dependency pins for Python 3.11. Not application dependencies.
+ezdxf==1.4.3
+shapely==2.1.2
+numpy==2.2.6
+fonttools==4.59.0
+pyparsing==3.2.3
+typing_extensions==4.14.1

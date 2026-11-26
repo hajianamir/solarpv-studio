@@ -2,6 +2,7 @@ import {spawnSync} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {setTimeout as delay} from 'node:timers/promises';
+const runtimeSecret=randomBytes(32).toString('hex');
 const suffix=randomBytes(6).toString('hex');
 const image=`solarpv-runtime-smoke:${suffix}`;
 const name=`solarpv-runtime-smoke-${suffix}`;
@@ -17,7 +18,7 @@ try{
  docker(['build','--tag',image,'.']);
  docker(['run','--detach','--name',name,'--publish','127.0.0.1::3000',
   '--env','INTERNAL_GATEWAY_SECRET','--env','SOLARPV_DB_FILE=/tmp/solarpv-smoke-db.json',image],
-  {env:{...process.env,INTERNAL_GATEWAY_SECRET:randomBytes(32).toString('hex')}});
+  {env:{...process.env,INTERNAL_GATEWAY_SECRET:runtimeSecret}});
  const port=docker(['inspect','--format','{{(index (index .NetworkSettings.Ports "3000/tcp") 0).HostPort}}',name]);
  let healthy=false;
  for(let attempt=0;attempt<60;attempt++){
@@ -30,6 +31,17 @@ try{
  }
  assert.ok(healthy,'Fresh final image must serve healthy /api/health without a source bind mount');
  console.log('PASS real Docker final image: standalone production boot and health endpoint; no source bind mounts. Python scientific runtimes not certified by this smoke test.');
+}catch(error){
+ // Surface bounded diagnostics through the Checks API when runner log storage
+ // is unreachable. The exit status remains failing; never turn this into skip.
+ if(process.env.GITHUB_ACTIONS==='true'){
+  const logs=spawnSync('docker',['logs','--tail','40',name],{encoding:'utf8',timeout:10000,maxBuffer:64000});
+  const message=(String(error instanceof Error?error.message:error)+'\n'+(logs.stdout??'')+'\n'+(logs.stderr??''))
+   .replaceAll(runtimeSecret,'[REDACTED]').slice(-12000)
+   .replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
+  console.error(`::error title=Standalone container failure::${message}`);
+ }
+ throw error;
 }finally{
  spawnSync('docker',['rm','--force',name],{stdio:'ignore'});
  spawnSync('docker',['image','rm',image],{stdio:'ignore'});

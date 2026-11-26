@@ -32,6 +32,9 @@ COPY --from=builder /app/server.ts ./server.ts
 # as the engine. Keep the complete transitive source tree, not an engine-only slice.
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/services ./services
+# Study request/result contracts imported by the server bind to registered
+# reference metadata at module load. Keep these files in the final image too.
+COPY --from=builder /app/docs/reference-data ./docs/reference-data
 
 EXPOSE 3000
 

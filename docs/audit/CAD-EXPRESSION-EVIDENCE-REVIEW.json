@@ -1,0 +1,408 @@
+{
+  "baseline": "71a7c2b52d8a109cb710e38e561c49e635c54698",
+  "sourceFile": "src/engine/powerplantCadLayout.ts",
+  "sourceSha256": "71e9ad0edb38c945bd3bc11ea8b96499d087937c1b337c50434e19cd110fc2a7",
+  "reviewRole": "Advisory classification ONLY; no expression is excluded from the existing reference gate. Not an independent fixture manifest.",
+  "classificationCounts": {
+    "siting_policy": 14,
+    "geometry_or_metric_derivation": 17,
+    "artifact_serialization": 9,
+    "input_contract": 1,
+    "input_or_feasibility_contract": 13,
+    "layout_aggregation": 2
+  },
+  "expressions": [
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf.handle#259e42e2f125",
+      "expression": "literal:(nextHandle++).toString(16)",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf.handle#c5518a7f09a6",
+      "expression": "nextHandle++",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#0827e3071a9d",
+      "expression": "zone.xM+zone.lengthM",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#41987981c094",
+      "expression": "literal:nextHandle.toString(16)",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#58ee96206304",
+      "expression": "zone.yM+zone.widthM",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#93a7bedb760e",
+      "expression": "literal:nextHandle=0x100",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#aab00a1062ae",
+      "expression": "dxf+=addRect('ROADS',zone.xM,zone.yM,zone.xM+zone.lengthM,zone.yM+zone.widthM)",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#c523ffbc964f",
+      "expression": "landWidthM+9",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#d27fd2772824",
+      "expression": "params[key]!==layout.layoutParameters[key]",
+      "category": "input_contract",
+      "assessment": "Parameter snapshot agreement is a software precondition, tested by rejection cases; not physical validation.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#da3fdc413431",
+      "expression": "zone.kind==='road'",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#daed9efb3d77",
+      "expression": "dxf+=addText('ANNOTATION',`GCR:${layout.groundCoverageRatioGcr}|Effectivepitch:${layout.effectiveRowPitchM}m|Requestedpitch:${layout.requestedRowPitchM}m|Tilt:${params.arrayTiltDeg}deg`,15,landWidthM-34,2.5)",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantDxf#fc05533159b2",
+      "expression": "dxf+=addText('ANNOTATION','SCREENINGLAYOUT-NOTACONSTRUCTIONORACCESS-COMPLIANCEAPPROVAL',5,landWidthM+9,2)",
+      "category": "artifact_serialization",
+      "assessment": "External ezdxf import/audit and roundtrip plus GEOS geometry checks support artifact-level behavior, not exact AST sensitivity or independent full-return targets.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#0e5f36a7e8f4",
+      "expression": "literal:xM:6",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#0fb3fa700c71",
+      "expression": "literal:widthM:4",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#23bdfe42af71",
+      "expression": "zone.xM<10",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#2959f8c95105",
+      "expression": "landWidthM>=20",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#29ed267dc8be",
+      "expression": "landLengthM>=20",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#2b48633b8594",
+      "expression": "table.xM<corridorRight",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#2e6ff99cd282",
+      "expression": "roadRight+2",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#383fb07ab91a",
+      "expression": "Math.ceil(tableLengthM*100)/100",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#3871c71539f7",
+      "expression": "table.xM+table.lengthM>corridorLeft",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#413cb3f999e9",
+      "expression": "Math.round((projectedCollectorWidth/rowStep)*1000)/1000",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#475526619249",
+      "expression": "literal:xM:6",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#519aabe87016",
+      "expression": "literal:xM:6",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#524cd4bef0f3",
+      "expression": "projectedCollectorWidth/rowStep",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#54a5ea0e3a23",
+      "expression": "zone.widthM>0",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#557fc43b83a9",
+      "expression": "zone.xM+zone.lengthM>landLengthM-10",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#56518e93ee28",
+      "expression": "zone.yM+zone.widthM>landWidthM-10",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#5e8b1e387322",
+      "expression": "literal:yM:10",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#617dc5fcc39d",
+      "expression": "literal:widthM:4",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#63a6bf3bd1c0",
+      "expression": "Math.ceil(tableWidthM*100)/100",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#6b53cf2107d1",
+      "expression": "landWidthM-20",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#6c26f408a84e",
+      "expression": "literal:[...rowCounts.values()].reduce((max,count)=>Math.max(max,count),0)",
+      "category": "layout_aggregation",
+      "assessment": "Software aggregation over accepted tables. Count/parity tests do not independently certify the packing strategy.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#7657995fb893",
+      "expression": "literal:yM:10",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#7797b68a8161",
+      "expression": "landWidthM-20",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#7947725008ff",
+      "expression": "roadLeft<0",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#7d8bd8a0fe54",
+      "expression": "landLengthM-10",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#8bd3e0544db6",
+      "expression": "Math.abs(rowStep-rowPitchM)>1e-9",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#8d7abe543cf6",
+      "expression": "Math.ceil(Math.max(rowPitchM,tableConfig.tableWidthM)*100)/100",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#91e4b739fffe",
+      "expression": "literal:yM:10",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#94e8486bcc1a",
+      "expression": "roadLeft+effectiveRoadWidthM",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#969b01b47c39",
+      "expression": "literal:lengthM:4",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#97f4e9ead1c1",
+      "expression": "stationX+12",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#9d7b1af83b36",
+      "expression": "Math.round((midX-effectiveRoadWidthM/2)*100)/100",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#a26876302a05",
+      "expression": "effectiveRoadWidthM>0",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#aa1c10b79f52",
+      "expression": "landWidthM-10",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#ade2e6b5c2b0",
+      "expression": "landWidthM-20",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#b82929191a4b",
+      "expression": "Math.max(0.5,rowStep-tableWidthM*Math.cos(tiltRad))",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#bcca36f81b9b",
+      "expression": "landLengthM-12",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#bef456bd58d8",
+      "expression": "roadRight>landLengthM",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#c3dea09e04ca",
+      "expression": "zone.lengthM>0",
+      "category": "input_or_feasibility_contract",
+      "assessment": "Boundary/filter/eligibility rule; current geometry and rejection cases provide behavioral evidence, not a registered independent AST reference.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#d5f55559441e",
+      "expression": "Math.max(max,count)",
+      "category": "layout_aggregation",
+      "assessment": "Software aggregation over accepted tables. Count/parity tests do not independently certify the packing strategy.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#db50458b639f",
+      "expression": "landLengthM-12",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#df166d265a30",
+      "expression": "midX-effectiveRoadWidthM/2",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#dfb1a54699e7",
+      "expression": "Math.ceil(roadWidthM*100)/100",
+      "category": "geometry_or_metric_derivation",
+      "assessment": "Coordinate/grid/ratio calculation. Internal tests and external artifact geometry checks do not constitute a separately sourced full-output fixture for this expression.",
+      "referenceGateSatisfiedByThisReview": false
+    },
+    {
+      "formulaId": "src/engine/powerplantCadLayout.ts#generatePowerplantLayout#e2a1ae31a2d0",
+      "expression": "literal:lengthM:4",
+      "category": "siting_policy",
+      "assessment": "A chosen setback, gap, bay/envelope or shade-span policy. Geometry tests verify consequences, not regulatory applicability or optimality.",
+      "referenceGateSatisfiedByThisReview": false
+    }
+  ]
+}

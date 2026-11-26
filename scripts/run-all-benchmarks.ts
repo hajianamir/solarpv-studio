@@ -1,3 +1,4 @@
+import './test-cad-audit-remediation';
 import './test-remaining-product-fixes';
 import './test-priority-structural-claims';
 import './test-priority-reference-registry';
