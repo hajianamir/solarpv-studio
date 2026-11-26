@@ -206,6 +206,7 @@ export function evaluatePhysicalLossModels(
     bifacialDiag = evaluatePhysicalBifacialGain(input.bifacial);
   } else {
     bifacialDiag = {
+      activeCapPct: 25,
       gainFraction: 0.0,
       gainPct: 0.0,
       unclampedGainPct: 0.0,

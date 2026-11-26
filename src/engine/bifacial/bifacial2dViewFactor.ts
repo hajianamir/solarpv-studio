@@ -103,7 +103,8 @@ export function calculateBifacialViewFactor(
 ): BifacialViewFactorResult {
   const t0 = performance.now();
 
-  const N = geometry.sliceCount && geometry.sliceCount >= 4 ? geometry.sliceCount : 10;
+  const N = geometry.sliceCount ?? 10;
+  if (!Number.isInteger(N) || N < 4 || N > 256) throw new RangeError('sliceCount must be an integer from 4 to 256');
   const tiltRad = (geometry.tiltDeg * Math.PI) / 180.0;
   const sinTilt = Math.sin(tiltRad);
   const cosTilt = Math.cos(tiltRad);
@@ -158,7 +159,7 @@ export function calculateBifacialViewFactor(
     // With row-to-row mutual blockage by adjacent northern row:
     const baseVfSkyRear = 0.5 * (1.0 - cosTilt);
     const adjacentRowSkyBlockage = 0.08 * gcr * (1.0 - normPos);
-    const vfSky = Math.max(0.015, baseVfSkyRear - adjacentRowSkyBlockage);
+    const vfSky = Math.max(0, baseVfSkyRear - adjacentRowSkyBlockage);
 
     // Heuristic rear-to-ground factor. The isolated-plane relation is classical,
     // but this adjacent-row blockage expression is an unvalidated approximation,
@@ -171,7 +172,12 @@ export function calculateBifacialViewFactor(
     // Irradiance components on rear slice i
     const rearSkyDiffuse = vfSky * irradiance.dhiWm2;
     const rearGroundReflected = vfGround * effectiveGroundExitance;
-    const rearDirectBeam = 0.08 * geometry.albedo * irradiance.frontPoaWm2 * (1.0 - gcr * 0.5);
+    // Direct beam is DNI projected on the rear normal, never a second
+    // albedo/front-POA contribution (ground reflection is accounted above).
+    const azimuthDifferenceRad = (irradiance.solarAzimuthDeg - geometry.azimuthDeg) * Math.PI / 180;
+    const frontCosAoi = Math.cos(zenithRad) * cosTilt + Math.sin(zenithRad) * sinTilt * Math.cos(azimuthDifferenceRad);
+    const rearDirectBeam = irradiance.solarZenithDeg < 90
+      ? Math.max(0, irradiance.dniWm2) * Math.max(0, -frontCosAoi) : 0;
 
     const rearTotal = rearSkyDiffuse + rearGroundReflected + rearDirectBeam;
 

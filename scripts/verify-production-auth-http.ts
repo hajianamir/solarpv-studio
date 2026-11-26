@@ -45,7 +45,7 @@ async function createProject(authorization?: string, extraHeaders: Record<string
       ...(authorization ? { authorization } : {}),
       ...extraHeaders,
     },
-    body: JSON.stringify({ dailyKwh: 20, autonomyDays: 1, latitude: 40.7, longitude: -74, persist: false }),
+    body: JSON.stringify({ allowAnalyticalEstimate: true, dailyKwh: 20, autonomyDays: 1, latitude: 40.7, longitude: -74, persist: false }),
   });
 }
 

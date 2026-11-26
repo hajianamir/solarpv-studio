@@ -31,11 +31,10 @@ export function calculateLoadModeDailySizingTargetKwh(
   outageHours: number
 ): number | null {
   if (systemMode === 'powerplant') return null;
-  // Preserve the existing `value || 20` fallback and Math.max behavior exactly;
-  // load and outage sizing semantics are intentionally not tightened here.
-  const dailyLoad = totalDailyLoadKwh || 20;
-  if (systemMode === 'ongrid') {
-    return Math.max(1, (dailyLoad / 24) * outageHours);
+  // Zero is a real load, not an absent observation. No synthetic 20 kWh/day.
+  if (!Number.isFinite(totalDailyLoadKwh) || totalDailyLoadKwh < 0 || !Number.isFinite(outageHours) || outageHours < 0) {
+    throw new RangeError('Load and outage hours must be finite and non-negative');
   }
-  return Math.max(1, dailyLoad);
+  if (systemMode === 'ongrid') return (totalDailyLoadKwh / 24) * outageHours;
+  return totalDailyLoadKwh;
 }

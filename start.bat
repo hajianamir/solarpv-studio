@@ -9,7 +9,7 @@ echo.
 
 where node >nul 2>&1
 if errorlevel 1 goto :NoNode
-node -e "if (Number(process.versions.node.split('.')[0]) < 20) process.exit(1)"
+node scripts\check-node-version.mjs
 if errorlevel 1 goto :UnsupportedNode
 where npm >nul 2>&1
 if errorlevel 1 goto :NoNpm
@@ -41,10 +41,10 @@ if not "%APP_EXIT_CODE%"=="0" echo [ERROR] SolarPV Studio launcher exited with c
 goto :Finish
 
 :NoNode
-echo [ERROR] Node.js is not installed. Install Node.js 20 LTS or 22 from https://nodejs.org
+echo [ERROR] Node.js is not installed. Install Node.js 22.13+ or 24 LTS from https://nodejs.org
 goto :Failure
 :UnsupportedNode
-echo [ERROR] Node.js 20 or newer is required. Detected: 
+echo [ERROR] Node.js 20.19+, 22.13+, or 24+ is required. Detected:
 echo [ERROR] Current node version:
 node -v
 goto :Failure

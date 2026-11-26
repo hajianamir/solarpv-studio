@@ -50,9 +50,7 @@ import { type ClimateCity, type SiteGeotechnicalOverrides, getEffectiveClimateCi
 import { formatPsh } from '../engine/formatters';
 import { type ElectricalLoadItem, type LoadAnalysisResult } from '../engine/loadProfiles';
 import type { InverterClusteringResult } from '../engine/inverterClustering';
-import { evaluateLoadAcCurrents } from '../engine/acRequirements';
 import { type PvArrayDesignResult, type ModuleSpecs, type InverterSpecs } from '../engine/pvEngineAdvanced';
-import type { AcRequirements } from '../engine/acRequirements';
 import { type BatteryBankSizingResult } from '../engine/batteryEngine';
 import { type CompleteProtectionSystemResult } from '../engine/protectionBomEngine';
 import { type Simulation24hResult, type GeneratorSizingResult } from '../engine/simulation24hEngine';
@@ -78,7 +76,6 @@ interface OfficialReportModalProps {
   module: ModuleSpecs;
   inverter: InverterSpecs;
   inverterClustering?: InverterClusteringResult;
-  acRequirements?: AcRequirements | null;
   mvCollectorVoltageKv?: number | null;
   arrayDesign: PvArrayDesignResult;
   batterySizing: BatteryBankSizingResult;
@@ -123,7 +120,6 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
   module,
   inverter,
   inverterClustering,
-  acRequirements,
   mvCollectorVoltageKv,
   arrayDesign,
   batterySizing,
@@ -155,7 +151,6 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
     () => buildProjectProvenanceSnapshot(effectiveCity, siteOverrides),
     [effectiveCity, siteOverrides]
   );
-  const loadAcCurrentSchedule = useMemo(() => evaluateLoadAcCurrents(loads, acRequirements), [loads, acRequirements]);
 
   const isSnapshotValid = Boolean(
     structuralSnapshot && structuralSnapshot.isAvailable && !structuralSnapshot.isStale
@@ -349,26 +344,10 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Retrieval Date', effectiveCity.dataRetrievalDate ?? ''],
     ];
 
-    const connectionRows = (label: string, connection: AcRequirements['loadService'] | undefined) => [
-      label, connection?.phase ?? 'unknown', connection?.lineToLineVolts ?? 'unknown',
-      connection?.lineToNeutralVolts ?? 'unknown', connection?.frequencyHz ?? 'unknown',
-      connection?.powerFactor ?? 'unknown', connection?.availableFaultCurrentKa ?? 'unknown',
-      connection?.faultClearingTimeSec ?? 'unknown', connection?.confirmed ? 'user confirmed' : 'UNCONFIRMED',
-    ];
     const electricalSheet = [
       ['ELECTRICAL SCHEDULE & CABLES', ''],
-      ['AC requirements: service and device interfaces are separate; missing values remain unknown.', ''],
-      ['Interface', 'Phase', 'Line-line V', 'Line-neutral V', 'Frequency Hz', 'PF', 'Fault kA', 'Clearing s', 'Status'],
-      connectionRows('Load service', acRequirements?.loadService),
-      connectionRows('Inverter output requirement', acRequirements?.inverterOutput),
-      ['Inverter nameplate frequency', acRequirements?.inverterNameplate.nominalFrequencyHz ?? 'unknown Hz', '', '', '', '', '', '', acRequirements?.inverterNameplate.userConfirmed ? `USER-ATTESTED (URL not authenticated): ${acRequirements.inverterNameplate.sourceUrl}` : 'UNVERIFIED'],
-      connectionRows('LV grid', acRequirements?.lvGrid),
-      ...Object.entries(acRequirements?.loadOverrides ?? {}).map(([id, connection]) => connectionRows(`Load-specific: ${id}`, connection)),
-      ['Grid injection point', acRequirements?.injection.level ?? 'unknown', acRequirements?.injection.nominalKv ?? 'unknown kV', '', '', '', '', '', acRequirements?.injection.confirmed ? 'user confirmed' : 'UNCONFIRMED'],
       ['Internal MV collector busbar (separate design input)', '—', mvCollectorVoltageKv ?? 'unknown kV', '', '', '', '', '', mvCollectorVoltageKv === null || mvCollectorVoltageKv === undefined ? 'UNSPECIFIED' : 'user selected; not a utility authorization'],
       ['MV substation protection/design', '—', '—', '—', '—', '—', '—', '—', 'NOT ASSESSED: transformer, utility fault study, earthing and protection coordination data missing'],
-      ['Load current screening (explicit phase/voltage/PF only)', 'Phase', 'Voltage V', 'Current A', 'Basis', 'Status'],
-      ...loadAcCurrentSchedule.map((load) => [load.name, load.phase, load.voltageVolts ?? 'unknown', load.currentAmps ?? 'not calculated', load.basis, load.status]),
       ['AC phase balance summary', 'Leg', 'Active-equivalent load (W)', 'Current (A)', 'Basis'],
       ...(['L1', 'L2', 'L3'] as const).map((leg) => [leg, leg, loadAnalysis.phaseLegWatts[leg], loadAnalysis.phaseLegAmps[leg], `${loadAnalysis.phaseCurrentBasis.phaseNeutralVolts} V L-N, ${loadAnalysis.phaseCurrentBasis.lineToLineVolts} V L-L, PF ${loadAnalysis.phaseCurrentBasis.powerFactor}${loadAnalysis.phaseCurrentBasis.isConfirmed ? ' (confirmed site service)' : ' (illustrative assumption)'}`]),
       ['3-phase AC load W', loadAnalysis.threePhaseLoadWatts],
@@ -1600,14 +1579,8 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <span className="text-[10px] text-slate-400 font-mono">IEEE 80 / IEC 60364</span>
               </h3>
 
-              <div data-testid="report-ac-requirements" className="rounded border border-amber-600/40 bg-amber-950/10 p-3 text-xs space-y-2">
-                <strong>{isEn ? 'Explicit AC interfaces (unknown values remain unknown)' : 'رابط‌های AC صریح (مقدار نامعلوم، نامعلوم باقی می‌ماند)'}</strong>
-                <div>{isEn ? 'Load service' : 'سرویس بار'}: {acRequirements?.loadService.confirmed ? `${acRequirements.loadService.phase}, ${acRequirements.loadService.lineToLineVolts ?? '—'} V L-L, ${acRequirements.loadService.lineToNeutralVolts ?? '—'} V L-N, ${acRequirements.loadService.frequencyHz ?? '—'} Hz` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
-                <div>{isEn ? 'Inverter output requirement' : 'الزام خروجی اینورتر'}: {acRequirements?.inverterOutput.confirmed ? `${acRequirements.inverterOutput.phase}, ${acRequirements.inverterOutput.lineToLineVolts ?? '—'} V L-L, ${acRequirements.inverterOutput.lineToNeutralVolts ?? '—'} V L-N, ${acRequirements.inverterOutput.frequencyHz ?? '—'} Hz` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
-                <div>{isEn ? 'Inverter nameplate evidence' : 'شاهد دیتاشیت اینورتر'}: {acRequirements?.inverterNameplate.userConfirmed ? `${acRequirements.inverterNameplate.nominalFrequencyHz ?? 'unknown'} Hz; USER-ATTESTED URL (not authenticated): ${acRequirements.inverterNameplate.sourceUrl}` : (isEn ? 'UNVERIFIED' : 'احراز نشده')}</div>
-                <div>{isEn ? 'LV grid' : 'شبکه LV'}: {acRequirements?.lvGrid.confirmed ? `${acRequirements.lvGrid.phase}, ${acRequirements.lvGrid.lineToLineVolts ?? '—'} V L-L, ${acRequirements.lvGrid.lineToNeutralVolts ?? '—'} V L-N, ${acRequirements.lvGrid.frequencyHz ?? '—'} Hz` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
-                <div>{isEn ? 'Grid injection (not interchangeable with LV service)' : 'تزریق شبکه (متمایز از سرویس LV)'}: {acRequirements?.injection.confirmed ? `${acRequirements.injection.level}, ${acRequirements.injection.nominalKv ?? '—'} kV` : (isEn ? 'UNCONFIRMED' : 'تأییدنشده')}</div>
-                <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr><th>{isEn ? 'Load' : 'بار'}</th><th>{isEn ? 'Phase/voltage' : 'فاز/ولتاژ'}</th><th>{isEn ? 'Calculated current' : 'جریان محاسباتی'}</th><th>{isEn ? 'Basis/status' : 'مبنا/وضعیت'}</th></tr></thead><tbody>{loadAcCurrentSchedule.map((load) => <tr key={load.id}><td>{load.name}</td><td>{load.phase} / {load.voltageVolts ?? 'unknown'} V</td><td>{load.currentAmps === null ? (isEn ? 'not calculated' : 'محاسبه نشده') : `${load.currentAmps.toFixed(2)} A`}</td><td>{load.basis} / {load.status}</td></tr>)}</tbody></table></div>
+              <div data-testid="report-load-phase-screening" className="rounded border border-amber-600/40 bg-amber-950/10 p-3 text-xs space-y-2">
+                <strong>{isEn ? 'Load phase screening (illustrative currents only)' : 'غربالگری فاز بار (جریان‌ها صرفاً نمایشی)'}</strong>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
                   {(['L1', 'L2', 'L3'] as const).map((leg) => <div key={leg} className="p-2 rounded bg-slate-900/50">{leg}: {Math.round(loadAnalysis.phaseLegWatts[leg])} W / {loadAnalysis.phaseLegAmps[leg].toFixed(2)} A</div>)}
                   <div className="p-2 rounded bg-slate-900/50">{isEn ? '3-phase load' : 'بار سه‌فاز'}: {Math.round(loadAnalysis.threePhaseLoadWatts)} W</div>

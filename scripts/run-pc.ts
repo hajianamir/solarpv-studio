@@ -4,7 +4,7 @@
  * Cross-platform runner for Windows, macOS, and Linux PCs.
  *
  * Responsibilities:
- * 1. Checks Node.js runtime requirements (>= 20.0.0).
+ * 1. Checks Node.js runtime requirements (20.19+, 22.13+, or >=24).
  * 2. Checks and initializes .env configuration if not present.
  * 3. Detects available TCP port (default: 3000, fallback: 3001-3010).
  * 4. Spawns the SolarPV Studio application server (server.ts).
@@ -19,7 +19,6 @@ import fs from 'fs';
 import http from 'http';
 import net from 'net';
 
-const MIN_NODE_MAJOR = 20;
 const ROOT_DIR = process.cwd();
 
 /** Read the port without depending on dotenv, which may not be installed yet. */
@@ -86,11 +85,12 @@ ${c.cyan}${c.bold}==============================================================
  * Validates that current Node version meets requirements.
  */
 function checkNodeVersion(): void {
-  const currentMajor = parseInt(process.versions.node.split('.')[0], 10);
-  if (currentMajor < MIN_NODE_MAJOR) {
+  try {
+    execFileSync(process.execPath, [path.join(ROOT_DIR, 'scripts/check-node-version.mjs')], {stdio: 'pipe'});
+  } catch {
     console.error(`
 ${c.red}${c.bold}خطا: نگارش Node.js قدیمی است!${c.reset}
-SolarPV Studio نیازمند Node.js نسخه ${MIN_NODE_MAJOR} یا بالاتر است.
+SolarPV Studio نیازمند Node.js نسخه 20.19 / 22.13 / 24 یا بالاتر است.
 نسخه فعلی شما: ${process.version}
 لطفاً آخرین نسخه LTS را از https://nodejs.org دریافت و نصب فرمایید.
 `);

@@ -1,0 +1,209 @@
+{
+  "schemaVersion": "workspace-design-gate-v1",
+  "status": "ready-for-review",
+  "environment": {
+    "platform": "linux",
+    "node": "v22.22.3",
+    "browser": "bundled Chromium"
+  },
+  "scope": [
+    "shared screen design system, semantic color states, cards, forms, tables, dialogs and workflow shell",
+    "local licensed Persian, English and monospace fonts",
+    "persistent presentation-only density",
+    "responsive RTL/LTR, keyboard drawer, reduced motion and print shell separation"
+  ],
+  "boundary": {
+    "uiRefreshChangesEnergyOrFinanceFormulas": false,
+    "uiRefreshChangesProjectSchema": false,
+    "automaticResearchAdoption": false,
+    "earlierBranchChangesPreserved": true
+  },
+  "layoutChecks": {
+    "status": "PASS",
+    "checks": [
+      "fa/dark/climate/desktop",
+      "fa/dark/electrical_requirements/desktop",
+      "fa/dark/catalog/desktop",
+      "fa/dark/array/desktop",
+      "fa/dark/cables_bom/desktop",
+      "fa/dark/financial/desktop",
+      "fa/dark/research/desktop",
+      "fa/dark/sld/desktop",
+      "fa/light/climate/desktop",
+      "fa/light/electrical_requirements/desktop",
+      "fa/light/catalog/desktop",
+      "fa/light/array/desktop",
+      "fa/light/cables_bom/desktop",
+      "fa/light/financial/desktop",
+      "fa/light/research/desktop",
+      "fa/light/sld/desktop",
+      "en/dark/climate/desktop",
+      "en/dark/electrical_requirements/desktop",
+      "en/dark/catalog/desktop",
+      "en/dark/array/desktop",
+      "en/dark/cables_bom/desktop",
+      "en/dark/financial/desktop",
+      "en/dark/research/desktop",
+      "en/dark/sld/desktop",
+      "en/light/climate/desktop",
+      "en/light/electrical_requirements/desktop",
+      "en/light/catalog/desktop",
+      "en/light/array/desktop",
+      "en/light/cables_bom/desktop",
+      "en/light/financial/desktop",
+      "en/light/research/desktop",
+      "en/light/sld/desktop",
+      "en/light/climate/1440",
+      "en/light/electrical_requirements/1440",
+      "en/light/catalog/1440",
+      "en/light/array/1440",
+      "en/light/cables_bom/1440",
+      "en/light/financial/1440",
+      "en/light/research/1440",
+      "en/light/sld/1440",
+      "en/light/climate/1280",
+      "en/light/electrical_requirements/1280",
+      "en/light/catalog/1280",
+      "en/light/array/1280",
+      "en/light/cables_bom/1280",
+      "en/light/financial/1280",
+      "en/light/research/1280",
+      "en/light/sld/1280",
+      "en/light/climate/1024",
+      "en/light/electrical_requirements/1024",
+      "en/light/catalog/1024",
+      "en/light/array/1024",
+      "en/light/cables_bom/1024",
+      "en/light/financial/1024",
+      "en/light/research/1024",
+      "en/light/sld/1024",
+      "en/light/climate/768",
+      "en/light/electrical_requirements/768",
+      "en/light/catalog/768",
+      "en/light/array/768",
+      "en/light/cables_bom/768",
+      "en/light/financial/768",
+      "en/light/research/768",
+      "en/light/sld/768",
+      "en/light/climate/390",
+      "en/light/electrical_requirements/390",
+      "en/light/catalog/390",
+      "en/light/array/390",
+      "en/light/cables_bom/390",
+      "en/light/financial/390",
+      "en/light/research/390",
+      "en/light/sld/390",
+      "en/light/climate/320",
+      "en/light/electrical_requirements/320",
+      "en/light/catalog/320",
+      "en/light/array/320",
+      "en/light/cables_bom/320",
+      "en/light/financial/320",
+      "en/light/research/320",
+      "en/light/sld/320",
+      "fa/light/climate/mobile"
+    ],
+    "localFonts": true,
+    "projectInputIsolation": true,
+    "nativeSafariWindowsTested": false
+  },
+  "limitations": [
+    "Representative screen/state coverage, not every arbitrary user dataset",
+    "No native Windows/Safari/iOS or screen-reader certification",
+    "No full WebGL/CAD visual matrix",
+    "Print shell tested; no claim of identical PDF pagination",
+    "Existing no-explicit-any lint warnings remain"
+  ],
+  "checks": [
+    {
+      "command": "npm run lint",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run build",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm test",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run test:dependencies",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run test:ac-retirement",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run verify:exports",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run verify:help",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-research-workspace-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-browser-regressions.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run test:ui",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm audit",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "sourceSha256": {
+    "src/App.tsx": "b6e5c01cd7374da8330fe70122b226a1a3b7118507c673df1f6d4bdd505e3b29",
+    "src/main.tsx": "011eccc55c47d1b907b2b66edfe3ba1f89558f66d4c13b0ad26e75914f632329",
+    "src/index.css": "eb207389234767c0b443b5b42d8e4fef906886c47b4927e9f90d654481b33000",
+    "src/styles/workspace.css": "1a2be56c021183a7c9e06a19382fffb1d72ef3460d0c794e6f4cef572f9a58a6",
+    "index.html": "5af0b899c12c7f2123518548d29da0a37df72ee3344c332852387b9ced86fd10",
+    "tailwind.config.js": "21a00f730579780a63bcf78e06ae225b1295b9aa024cd80435d193f17c9dca5c",
+    "package.json": "8612891fc264ef745bd6aeec9d57daedec127f6c3a6ed44c5a49363bb1095adf",
+    "package-lock.json": "cebfe714b44bc31c4ec32ec39ccb5264d352e45c7d5b2ad2bbd9559dc3bf8087",
+    ".github/workflows/ci.yml": "4e762f57ec92065314df71eb6c2a97f6ab6e449b62bb9bd35eec494bdfb662be",
+    "scripts/test-ui-refresh-browser.ts": "ceff2d22163dcfafe14c00cf092489b0cde3422756c32fdfb89f569ddb301bcd",
+    "scripts/verify-ui-refresh.ts": "4c2eba9c9b3cf271ca96b8ed8c4a134e4a450b9cbc0718b20fba93e021a4ed40",
+    "docs/features/WORKSPACE-DESIGN-SYSTEM.fa.md": "aa2bf255626036dadc93795cf8ec1025d0cd956382e524407028ff99b361e0be",
+    "CHANGELOG.md": "f7a71b4220ee875f72929f3c0e595fd327ccb12fa9a6f4bd5ad4c7da080e4bef",
+    "public/fonts/licenses/Inter-OFL.txt": "3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345",
+    "public/fonts/licenses/Vazirmatn-OFL.txt": "e6f4ce7b6c830d5a25a4f8ac777c267cd7d3c180bc2a7150ca57cbb9b280c4b7",
+    "public/fonts/licenses/JetBrainsMono-OFL.txt": "403581b69dac5cff4079205e01c6b467e56af449ecbd7247693ddb1baafa005b"
+  }
+}

@@ -25,6 +25,7 @@ import { simulateBipvThermalStep } from '../../bipv/bipvThermalEngine';
 export type VerificationType = 'cross_validation' | 'implementation_verification';
 
 export interface ValidationMetricResult {
+  evidenceStatus?: 'retired_unverified_target';
   testId: string;
   name: string;
   sourceStandard: string;
@@ -148,6 +149,14 @@ export function runSystemCrossValidation(customCalculatedValues?: Partial<Record
       'estimated'
     )
   );
+
+  // The old 10.4% target is not a reproduced SAM run. Removing the
+  // nonphysical rear-beam proxy must not be "fixed" by tuning to that target.
+  // Preserve its discrepancy visibly, but retire it as a gating reference.
+  const retiredBifacialMetric = metrics[metrics.length - 1];
+  retiredBifacialMetric.evidenceStatus = 'retired_unverified_target';
+  retiredBifacialMetric.status = 'WARN';
+  retiredBifacialMetric.details = 'RETIRED unverified stored gain target; discrepancy is retained, not calibrated away. Independent rear-beam component checks run separately; whole-model bifacial gain remains unvalidated. ' + retiredBifacialMetric.details;
 
   // 2. Sandia 5-Parameter PV Pmp at (800 W/m2, 45C) — computed LIVE by the single-diode engine
   const sandiaRes = calculateSingleDiodeCurve(

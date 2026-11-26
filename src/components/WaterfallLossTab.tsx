@@ -73,13 +73,13 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
         <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">
           <Layers className="w-5 h-5 text-industrial-success shrink-0" />
           {isFa
-            ? 'درخت تفصیلی تلفات انرژی و ضریب عملکرد (PVsyst-Grade Loss Waterfall & PR)'
-            : 'PVsyst-Grade Loss Waterfall Tree & Performance Ratio (PR)'}
+            ? 'بودجهٔ تخمینی تلفات سالانه و ضریب عملکرد'
+            : 'Preliminary Annual Loss Budget & Performance Ratio'}
         </h1>
         <p className="text-slate-400 text-xs">
           {isFa
-            ? 'تحلیل ۱۴ مرحله‌ای زنجیره اتلاف انرژی از تشعشع خام اتمسفری تا تزریق خالص به شبکه و محاسبه ضریب عملکرد نیروگاه (Performance Ratio)'
-            : '14-stage optical and electrical energy balance modeling from extraterrestrial horizontal irradiance to net grid export with IEC 61724 PR.'}
+            ? 'برآورد غربالگری با ضرایب تجربی و تلفات پیش‌فرض؛ شبیه‌سازی ساعتی آب‌وهوامحور یا اعتبارسنجی PVsyst نیست. بهرهٔ شیب، ترکر و دوطرفه نیازمند بررسی مستقل‌اند.'
+            : 'Screening estimate with empirical gains and default losses; not a weather-driven hourly simulation or PVsyst validation. Tilt, tracker and bifacial gains require independent verification.'}
         </p>
       </div>
 

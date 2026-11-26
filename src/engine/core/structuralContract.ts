@@ -2,7 +2,8 @@
  * Structural & Geotechnical Engineering Contract
  * Phase 07 Remediation — Single Source of Truth for Structural Physics & Honesty
  *
- * Conforming to:
+ * Background references only — not a compliance determination; legacy empirical
+ * wind coefficients and site assumptions are not validated against these editions:
  * - ASCE 7-22 Chapters 26, 27, 29, 30 (Wind velocity pressure & aerodynamic coefficients)
  * - Eurocode 7 (EN 1997-1) §7.6 (Pile uplift, lateral resistance, factor of safety)
  * - Iranian National Building Code Part 6 (مبحث ۶ مقررات ملی ساختمان - بارهای وارد بر ساختمان)
@@ -156,7 +157,7 @@ export interface UnifiedWindPressureResult {
 }
 
 /**
- * Calculate ASCE 7-22 velocity pressure exposure coefficient Kz.
+ * Calculate legacy screening Kz; no literal ASCE 7-22 table validation.
  */
 export function calculateUnifiedKz(
   exposure: ExposureCategory = 'C',
@@ -194,7 +195,7 @@ export function calculateUnifiedKz(
 }
 
 /**
- * ASCE 7-22 Eq. 26.10-1 velocity pressure q_z (Pa).
+ * Legacy ASCE-style velocity pressure q_z (Pa), with Kd included; NOT verified as ASCE 7-22 Eq. 26.10-1.
  * Single source of truth across all modules.
  *
  * q_z = 0.613 * K_z * K_zt * K_d * K_e * V^2 (Pa)
@@ -909,11 +910,12 @@ export function exportStructuralSheetRows(
 ): StructuralSheetRow[] {
   if (!snapshot || !snapshot.isAvailable) {
     return [
-      ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
+      ['PRELIMINARY STRUCTURAL SCREENING — NOT CODE CERTIFIED', '', '', ''],
+      ['Design Certification', 'NOT CERTIFIED', '-', 'Assumed soil/hazards and empirical wind coefficients; site evidence and licensed review required'],
       ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
       ['Structural Analysis Status', 'UNAVAILABLE', '-', 'Run calculation in Structural & Foundation Tab'],
       ['Structural Assessment', 'UNASSESSED', '-', 'No current valid snapshot; provide valid selected-module dimensions and mass, then recalculate.'],
-      ['Velocity Wind Pressure (qz)', 'UNAVAILABLE', 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
+      ['Velocity Wind Pressure (qz)', 'UNAVAILABLE', 'N/m²', 'Legacy qz incl. Kd; ASCE 7-22 compliance unverified'],
       ['Wind Uplift Force per Table', 'UNAVAILABLE', 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
       ['Wind Downforce per Table', 'UNAVAILABLE', 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
       ['Overturning Moment per Table', 'UNAVAILABLE', 'kN·m', 'Derived arm (W/2 + h*sin beta)'],
@@ -934,11 +936,12 @@ export function exportStructuralSheetRows(
 
   if (snapshot.isStale) {
     return [
-      ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
+      ['PRELIMINARY STRUCTURAL SCREENING — NOT CODE CERTIFIED', '', '', ''],
+      ['Design Certification', 'NOT CERTIFIED', '-', 'Assumed soil/hazards and empirical wind coefficients; site evidence and licensed review required'],
       ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
       ['Structural Analysis Status', 'STALE — Inputs Modified', '-', 'Recalculation in Structural Tab Required'],
       ['Structural Assessment', 'UNASSESSED', '-', 'The snapshot is stale; provide valid current inputs and recalculate.'],
-      ['Velocity Wind Pressure (qz)', 'STALE', 'N/m²', 'ASCE 7-22 Eq. 26.10-1 (Recalculation Required)'],
+      ['Velocity Wind Pressure (qz)', 'STALE', 'N/m²', 'Legacy qz incl. Kd; unverified (Recalculation Required)'],
       ['Wind Uplift Force per Table', 'STALE', 'kN', 'ASCE 7-22 §27.3 Net Uplift (Recalculation Required)'],
       ['Wind Downforce per Table', 'STALE', 'kN', 'ASCE 7-22 §27.3 Net Downforce (Recalculation Required)'],
       ['Overturning Moment per Table', 'STALE', 'kN·m', 'Derived arm (Recalculation Required)'],
@@ -1000,7 +1003,8 @@ export function exportStructuralSheetRows(
   }
 
   return [
-    ['STRUCTURAL SIZING & CIVIL FOUNDATIONS (ASCE 7-22 / INBC 6 / EUROCODE 7)', '', '', ''],
+    ['PRELIMINARY STRUCTURAL SCREENING — NOT CODE CERTIFIED', '', '', ''],
+    ['Design Certification', 'NOT CERTIFIED', '-', 'Assumed soil/hazards and empirical wind coefficients; site evidence and licensed review required'],
     ['Parameter', 'Calculated Value', 'Design Unit', 'Design Standard / Limit'],
     ['Structural Analysis Status', 'SYNCHRONIZED', '-', 'Live Structural Tab Snapshot'],
     ['Selected PV Module Catalog ID', snapshot.moduleId ?? 'LEGACY / NO ID', '-', snapshot.moduleOrigin ?? 'Origin unverified; exact input dimensions/mass retained in snapshot'],
@@ -1008,7 +1012,7 @@ export function exportStructuralSheetRows(
     ['Selected PV Module Length', snapshot.moduleLengthM ?? 'UNASSESSED', 'm', 'Selected catalog/user module specification'],
     ['Selected PV Module Width', snapshot.moduleWidthM ?? 'UNASSESSED', 'm', 'Selected catalog/user module specification'],
     ['Selected PV Module Mass', snapshot.moduleWeightKg ?? 'UNASSESSED', 'kg/module', 'Selected catalog/user module specification'],
-    ['Velocity Wind Pressure (qz)', snapshot.qzPa, 'N/m²', 'ASCE 7-22 Eq. 26.10-1'],
+    ['Velocity Wind Pressure (qz)', snapshot.qzPa, 'N/m²', 'Legacy qz incl. Kd; ASCE 7-22 compliance unverified'],
     ['Wind Uplift Force per Table', snapshot.windUpliftForceKn, 'kN', 'ASCE 7-22 §27.3 Net Uplift'],
     ['Wind Downforce per Table', snapshot.windDownforceKn, 'kN', 'ASCE 7-22 §27.3 Net Downforce'],
     ['Overturning Moment per Table', snapshot.windOverturningMomentKnM, 'kN·m', 'Derived arm (W/2 + h*sin beta)'],

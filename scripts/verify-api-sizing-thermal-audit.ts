@@ -325,7 +325,7 @@ async function runProbe() {
   };
 
   // 1. Missing latitude returns HTTP 400
-  await quickSizeRoute({ body: { dailyKwh: 20, autonomyDays: 1 } }, mockQsRes);
+  await quickSizeRoute({ body: { allowAnalyticalEstimate: true, dailyKwh: 20, autonomyDays: 1 } }, mockQsRes);
   check(
     'F-03: Route POST /api/v1/projects/quick-size without latitude returns HTTP 400',
     qsStatus === 400 && qsBody.error.includes('latitude is required'),
@@ -336,7 +336,7 @@ async function runProbe() {
   qsStatus = 200;
   qsBody = null;
   await quickSizeRoute({
-    body: { dailyKwh: 20, autonomyDays: 1, latitude: 35.6895, longitude: 51.389, projectName: 'Live Quick Size Test' },
+    body: { allowAnalyticalEstimate: true, dailyKwh: 20, autonomyDays: 1, latitude: 35.6895, longitude: 51.389, projectName: 'Live Quick Size Test' },
   }, mockQsRes);
 
   check(
@@ -349,7 +349,7 @@ async function runProbe() {
   qsStatus = 200;
   qsBody = null;
   await quickSizeRoute({
-    body: { dailyKwh: 20, autonomyDays: 1.5, latitude: 35.6895, longitude: 51.389, projectName: 'Live Canonical Test 1.5d' },
+    body: { allowAnalyticalEstimate: true, dailyKwh: 20, autonomyDays: 1.5, latitude: 35.6895, longitude: 51.389, projectName: 'Live Canonical Test 1.5d' },
   }, mockQsRes);
 
   check(
@@ -413,7 +413,7 @@ async function runProbe() {
   // 4b. Quick-size with save: false does not persist to database (Z-03)
   const initialDbProjectsCount = serverDb.projects.size;
   await quickSizeRoute({
-    body: { dailyKwh: 20, autonomyDays: 1, latitude: 35.6895, longitude: 51.389, save: false },
+    body: { allowAnalyticalEstimate: true, dailyKwh: 20, autonomyDays: 1, latitude: 35.6895, longitude: 51.389, save: false },
   }, mockQsRes);
   check(
     'Z-03: Route POST /api/v1/projects/quick-size with save: false does not persist project to server DB',

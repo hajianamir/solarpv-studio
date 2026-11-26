@@ -29,6 +29,7 @@ export interface BifacialGainInput {
 }
 
 export interface BifacialGainDiagnostics {
+  activeCapPct: number;
   gainFraction: number;
   gainPct: number;
   unclampedGainPct: number;
@@ -111,6 +112,7 @@ export function evaluateBifacialGainWithDiagnostics(input: BifacialGainInput): B
 
   if (input.isBifacial === false) {
     return {
+      activeCapPct: modelUsed === 'view_factor_2d' ? 25 : 15,
       gainFraction: 0.0,
       gainPct: 0.0,
       unclampedGainPct: 0.0,
@@ -123,6 +125,7 @@ export function evaluateBifacialGainWithDiagnostics(input: BifacialGainInput): B
   const bf = Math.max(0, input.bifacialityFactor ?? 0);
   if (bf <= 0) {
     return {
+      activeCapPct: modelUsed === 'view_factor_2d' ? 25 : 15,
       gainFraction: 0.0,
       gainPct: 0.0,
       unclampedGainPct: 0.0,
@@ -163,11 +166,12 @@ export function evaluateBifacialGainWithDiagnostics(input: BifacialGainInput): B
     const gainPct = Number(Math.min(25.0, Math.max(0.0, unclampedGainPct)).toFixed(2));
     const gainFraction = Number((gainPct / 100.0).toFixed(4));
     return {
+      activeCapPct: 25,
       gainFraction,
       gainPct,
       unclampedGainPct,
       isClampedAt15Pct: false,
-      clampedExcessPct: 0.0,
+      clampedExcessPct: Number(Math.max(0, unclampedGainPct - 25).toFixed(4)),
       modelUsed: 'view_factor_2d',
     };
   }
@@ -184,6 +188,7 @@ export function evaluateBifacialGainWithDiagnostics(input: BifacialGainInput): B
   const gainFraction = Number((gainPct / 100.0).toFixed(4));
 
   return {
+    activeCapPct: 15,
     gainFraction,
     gainPct,
     unclampedGainPct,

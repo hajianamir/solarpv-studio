@@ -546,7 +546,15 @@ async function invokeInstrumentedProduction(
     const productionModule = await import(pathToFileURL(temporaryModule).href) as Record<string, unknown>;
     const productionFunction = productionModule[record.productionExport];
     assert.equal(typeof productionFunction, 'function', `${sourceFile}: exported production function ${record.productionExport} was not found`);
-    const output = await (productionFunction as (...args: unknown[]) => unknown)(...inputs);
+    let output: unknown;
+    try {
+      output = await (productionFunction as (...args: unknown[]) => unknown)(...inputs);
+    } catch (error) {
+      // Only an executed mutant's runtime rejection is an output-sensitivity
+      // witness. Baseline failures, import errors and missing exports still fail.
+      if (!mutateFormula || visits.length === 0 || !(error instanceof Error)) throw error;
+      output = { __physicsMutantRuntimeRejection: { name: error.name, message: error.message } };
+    }
     return { output, visits: visits.length, numericProperties: [...numericProperties] };
   } finally {
     if (previousProbe === undefined) Reflect.deleteProperty(globalThis, symbol);

@@ -244,6 +244,17 @@ try {
   fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, formulaId: compoundUnit.formulaId, productionExport: 'accumulate', inputs: [2, 3], expected: 5 }));
   await executeReferenceFixture(compoundRecord, fixtureRepo);
 
+  // A mutated guard may throw rather than return another number: that is
+  // sensitivity, not a reason to skip the guard. Baseline rejection is never evidence.
+  const guardSource = 'export function guarded(x: number) { if (x < 0) throw new Error("negative"); return x; }';
+  const guardUnit = extractFormulaUnits('src/engine/exampleEngine.ts', guardSource).find(unit => unit.expression === 'x<0')!;
+  const guardRecord = { ...validRecord, formulaId: guardUnit.formulaId, productionExport: 'guarded' };
+  fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), guardSource);
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, formulaId: guardUnit.formulaId, productionExport: 'guarded', inputs: [2], expected: 2 }));
+  await executeReferenceFixture(guardRecord, fixtureRepo);
+  fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, formulaId: guardUnit.formulaId, productionExport: 'guarded', inputs: [-2], expected: -2 }));
+  await assert.rejects(() => executeReferenceFixture(guardRecord, fixtureRepo), /negative/);
+
   const incrementSource = 'export function increment(value: number) { value++; return value; }';
   const incrementUnit = extractFormulaUnits('src/engine/exampleEngine.ts', incrementSource)
     .find((unit) => unit.expression === 'value++')!;

@@ -174,22 +174,13 @@ export function computeTrackerState(
   const maxA = config.maxRotationDeg;
   theta = Math.max(-maxA, Math.min(maxA, theta));
 
-  // Row-to-row shading fraction: eliminated by backtracking; otherwise the
-  // geometry term temp >= 1 means rows shade each other.
-  const axesDistance = 1 / config.gcr;
-  const temp = Math.abs(axesDistance * cosd(omegaIdeal));
-  // PR-2a-7-FOLLOWUP (ISSUE-3): a near-flat panel (|omegaIdeal| < 5 deg, e.g.
-  // winter-solstice noon at mid latitudes) casts no row-to-row shadow, so the
-  // heuristic temp-1 must not be applied there. With backtracking enabled the
-  // correction already guarantees shadingFraction = 0 by design.
-  const shadingFraction = (() => {
-    // With backtracking enabled, row-to-row shading is eliminated by design.
-    if (config.enableBacktracking) return 0.0;
-    // PR-2a-7-FOLLOWUP (ISSUE-3): a near-flat panel (|omegaIdeal| < 5 deg, e.g.
-    // winter-solstice noon at mid latitudes) casts no row-to-row shadow.
-    if (Math.abs(omegaIdeal) < 5.0) return 0.0;
-    return Math.min(1, Math.max(0, temp - 1));
-  })();
+  // Anderson & Jensen (2024), Eq.12, identical parallel rows on flat
+  // cross-axis terrain and zero surface/axis offset (pvlib shaded_fraction1d).
+  // Use ACTUAL clamped rotation: mechanical limits can leave residual shade
+  // even with backtracking enabled.
+  const incidenceProjection = Math.abs(cosd(theta - omegaIdeal));
+  const shadingFraction = incidenceProjection > 1e-12
+    ? Math.min(1, Math.max(0, 1 - cosd(omegaIdeal) / (config.gcr * incidenceProjection))) : (cosd(omegaIdeal) < 0 ? 1 : 0);
 
   const { surfaceTiltDeg, surfaceAzimuthDeg } = surfaceOrientation(theta, config.axisTiltDeg, 0);
   const proj = aoiProjection(surfaceTiltDeg, surfaceAzimuthDeg, zenithDeg, azimuthDeg);
@@ -245,7 +236,8 @@ export function simulateTrackerAnnual(
     states.push(st);
     if (st.isDay) {
       poaSumWh += st.poaWm2; // 1-hour steps → W·h
-      shadeSum += st.shadingFraction;
+      const beam = Math.max(0, p.dni * aoiProjection(st.surfaceTiltDeg, st.surfaceAzimuthDeg, p.zenithRad * RAD, p.azimuthRad * RAD));
+      shadeSum += beam * st.shadingFraction;
       dayHours++;
       if (Math.abs(st.rotationDeg - st.trueTrackingDeg) > 1e-9) backtrackHours++;
       maxAbs = Math.max(maxAbs, Math.abs(st.rotationDeg));
@@ -262,7 +254,8 @@ export function simulateTrackerAnnual(
   }
 
   const annualPoaKwhPerM2 = poaSumWh / 1000;
-  const annualShadingLossFraction = dayHours > 0 ? shadeSum / dayHours : 0;
+  // Lost direct-beam energy / unshaded total POA; diffuse is not row-beam loss.
+  const annualShadingLossFraction = poaSumWh > 0 ? shadeSum / poaSumWh : 0;
   const annualTranspositionGainPct =
     fixedBaseline && fixedPoaSumWh > 0
       ? ((poaSumWh - fixedPoaSumWh) / fixedPoaSumWh) * 100

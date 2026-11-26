@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862",
+  "independentOfImplementation": true,
+  "productionExport": "calculateSolarPosition",
+  "inputs": [
+    -33.87,
+    151.21,
+    1705354200
+  ],
+  "expected": {
+    "zenithDeg": 61.13343020870835,
+    "azimuthDeg": 97.17138319144664,
+    "elevationDeg": 28.86657,
+    "azimuthSouthDeg": -82.828617
+  },
+  "tolerances": {
+    "absolute": 0.05,
+    "relative": 0
+  },
+  "independentCalculation": "Run scripts/fixtures/generate-priority-solar.py using pinned pvlib 0.13.1. All solar outputs from NREL SPA, elevation=90-geometric zenith, south azimuth=north azimuth-180; not field validation.",
+  "referenceSource": {
+    "title": "pvlib-python NREL SPA solar position",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.solarposition.get_solarposition.html",
+    "version": "pvlib 0.13.1",
+    "locator": "get_solarposition, geometric zenith and north-clockwise azimuth, altitude=0, UTC"
+  }
+}

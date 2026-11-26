@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import type { AcConnectionRequirement, AcRequirements } from '../engine/acRequirements';
 import { Layers, Download, ZoomIn, ZoomOut, Info, Shield, Zap, Sun, Battery as BatteryIcon } from 'lucide-react';
 
 interface SldProps {
@@ -20,7 +19,6 @@ interface SldProps {
   acCurrentAmps: number | null;
   acOutputVoltageVolts: number | null;
   acFrequencyHz: number | null;
-  acRequirements?: AcRequirements | null;
   mvCollectorVoltageKv?: number | null;
   dcCableMm2: number | null;
   batCableMm2: number | null;
@@ -50,7 +48,6 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
   acCurrentAmps,
   acOutputVoltageVolts,
   acFrequencyHz,
-  acRequirements,
   mvCollectorVoltageKv,
   dcCableMm2,
   batCableMm2,
@@ -67,15 +64,6 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
 
   const targetResistance = targetGroundResistanceOhms ?? null;
   const bessBondingMm2 = batteryRackBondingMm2 ?? null;
-  const describeConnection = (connection?: AcConnectionRequirement) => {
-    if (!connection) return isEn ? 'unknown / not supplied' : 'نامشخص / وارد نشده';
-    const status = connection.confirmed ? (isEn ? 'user-confirmed' : 'تأیید کاربر') : (isEn ? 'UNCONFIRMED' : 'تأییدنشده');
-    return `${status}; ${connection.phase}; L-L ${connection.lineToLineVolts ?? 'unknown'} V; L-N ${connection.lineToNeutralVolts ?? 'unknown'} V; ${connection.frequencyHz ?? 'unknown'} Hz; PF ${connection.powerFactor ?? 'unknown'}; fault ${connection.availableFaultCurrentKa ?? 'unknown'} kA; clear ${connection.faultClearingTimeSec ?? 'unknown'} s`;
-  };
-  const injection = acRequirements?.injection;
-  const describeInjection = !injection || !injection.confirmed
-    ? `${injection?.level ?? 'unknown'}; ${injection?.nominalKv ?? 'unknown'} kV; ${isEn ? 'UNCONFIRMED' : 'تأییدنشده'}`
-    : `${injection.level}; ${injection.level === 'not_applicable' ? 'not applicable' : `${injection.nominalKv ?? 'unknown'} kV`}; ${isEn ? 'user-confirmed' : 'تأیید کاربر'}`;
 
   const elementDetails: Record<string, { title: string; specs: string[]; standard: string }> = {
     pv_array: {
@@ -113,10 +101,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
       title: isEn ? "Solar Inverter / Power Conversion System (PCS)" : "اینورتر شارژر هیبرید خورشیدی (Solar Hybrid Inverter)",
       specs: [
         isEn ? `Nominal Rating: ${inverterKw * inverterCount} kW AC (${inverterCount > 1 ? `${inverterCount}× ${inverterKw}kW Units Paralleled` : `${inverterKw}kW`})` : `توان نامی: ${inverterKw * inverterCount} کیلووات (${inverterCount > 1 ? `${inverterCount} دستگاه ${inverterKw}kW موازی` : `${inverterKw}kW`})`,
-        isEn ? `Inverter model phase: ${isThreePhase ? 'three-phase' : 'single-phase'}; confirmed inverter terminal: ${describeConnection(acRequirements?.inverterOutput)}` : `فاز مدل اینورتر: ${isThreePhase ? 'سه‌فاز' : 'تک‌فاز'}؛ رابط ترمینال تأییدشده: ${describeConnection(acRequirements?.inverterOutput)}`,
-        isEn ? `Customer load service: ${describeConnection(acRequirements?.loadService)}` : `سرویس بار مشتری: ${describeConnection(acRequirements?.loadService)}`,
-        isEn ? `LV grid interface: ${describeConnection(acRequirements?.lvGrid)}` : `رابط شبکه LV: ${describeConnection(acRequirements?.lvGrid)}`,
-        isEn ? `Post-transformer injection: ${describeInjection}; internal collector busbar: ${mvCollectorVoltageKv ?? 'unknown'} kV (separate input)` : `تزریق پس از ترانسفورماتور: ${describeInjection}؛ باسبار داخلی کلکتور: ${mvCollectorVoltageKv ?? 'نامشخص'} kV (ورودی مستقل)`,
+        isEn ? `Catalog phase: ${isThreePhase ? 'three' : 'single'}; internal MV collector: ${mvCollectorVoltageKv ?? 'unknown'} kV. Grid connection not verified.` : `فاز کاتالوگ: ${isThreePhase ? 'سه‌فاز' : 'تک‌فاز'}؛ باسبار داخلی MV: ${mvCollectorVoltageKv ?? 'نامشخص'} kV. اتصال شبکه تأیید نشده.`,
         isEn ? `Max Conversion Efficiency: 98.6%` : `حداکثر بازدهی تبدیل: ۹۷.۶٪`,
         isEn ? `Battery Communication: Galvanically Isolated CAN Bus / RS485` : `پروتکل ارتباطی باتری: CAN Bus / RS485 با ایزولاسیون کامل`,
       ],
@@ -358,7 +343,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
                   {inverterKw * inverterCount} kW AC
                 </text>
                 <text x="492" y="215" textAnchor="middle" fill="#cbd5e1" fontSize="8.5">
-                  {acOutputVoltageVolts === null ? (isEn ? 'AC voltage unconfirmed' : 'ولتاژ AC تأیید نشده') : `${acOutputVoltageVolts} V${isThreePhase ? ' 3P' : ' 1P'}${acFrequencyHz === null ? ' / ? Hz' : ` / ${acFrequencyHz} Hz`}`}
+                  {acOutputVoltageVolts === null ? (isEn ? 'Catalog voltage unknown' : 'ولتاژ کاتالوگ نامشخص') : `${acOutputVoltageVolts} V${isThreePhase ? ' 3P' : ' 1P'}${acFrequencyHz === null ? ' / ? Hz' : ` / ${acFrequencyHz} Hz`}`}
                 </text>
               </g>
 

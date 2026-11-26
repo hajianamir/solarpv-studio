@@ -749,6 +749,96 @@
       "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
     },
     {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1",
+      "fixtureFile": "scripts/fixtures/physics/solar-spa-00621e7ddbb1.json",
+      "productionExport": "calculateSolarPosition",
+      "referenceTitle": "pvlib-python NREL SPA solar position",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.solarposition.get_solarposition.html",
+      "referenceVersion": "pvlib 0.13.1",
+      "referenceLocator": "get_solarposition, geometric zenith and north-clockwise azimuth, altitude=0, UTC"
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1",
+      "fixtureFile": "scripts/fixtures/physics/solar-spa-6e29caf63dd1.json",
+      "productionExport": "calculateSolarPosition",
+      "referenceTitle": "pvlib-python NREL SPA solar position",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.solarposition.get_solarposition.html",
+      "referenceVersion": "pvlib 0.13.1",
+      "referenceLocator": "get_solarposition, geometric zenith and north-clockwise azimuth, altitude=0, UTC"
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862",
+      "fixtureFile": "scripts/fixtures/physics/solar-spa-df1bf2813862.json",
+      "productionExport": "calculateSolarPosition",
+      "referenceTitle": "pvlib-python NREL SPA solar position",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.solarposition.get_solarposition.html",
+      "referenceVersion": "pvlib 0.13.1",
+      "referenceLocator": "get_solarposition, geometric zenith and north-clockwise azimuth, altitude=0, UTC"
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e",
+      "fixtureFile": "scripts/fixtures/physics/priority-string-15f3c0813c2e.json",
+      "productionExport": "calculateStringSizing",
+      "referenceTitle": "OpenStax University Physics Volume 2: Kirchhoff's Rules",
+      "referenceUrl": "https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules",
+      "referenceVersion": "2016",
+      "referenceLocator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb",
+      "fixtureFile": "scripts/fixtures/physics/priority-string-304a58d8f5cb.json",
+      "productionExport": "calculateStringSizing",
+      "referenceTitle": "OpenStax University Physics Volume 2: Kirchhoff's Rules",
+      "referenceUrl": "https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules",
+      "referenceVersion": "2016",
+      "referenceLocator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#330fd1d268bc",
+      "fixtureFile": "scripts/fixtures/physics/priority-string-330fd1d268bc.json",
+      "productionExport": "calculateStringSizing",
+      "referenceTitle": "OpenStax University Physics Volume 2: Kirchhoff's Rules",
+      "referenceUrl": "https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules",
+      "referenceVersion": "2016",
+      "referenceLocator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#39f160937538",
+      "fixtureFile": "scripts/fixtures/physics/priority-string-39f160937538.json",
+      "productionExport": "calculateStringSizing",
+      "referenceTitle": "OpenStax University Physics Volume 2: Kirchhoff's Rules",
+      "referenceUrl": "https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules",
+      "referenceVersion": "2016",
+      "referenceLocator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#662449347fa2",
+      "fixtureFile": "scripts/fixtures/physics/priority-string-662449347fa2.json",
+      "productionExport": "calculateStringSizing",
+      "referenceTitle": "OpenStax University Physics Volume 2: Kirchhoff's Rules",
+      "referenceUrl": "https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules",
+      "referenceVersion": "2016",
+      "referenceLocator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#7ab524546462",
+      "fixtureFile": "scripts/fixtures/physics/priority-string-7ab524546462.json",
+      "productionExport": "calculateStringSizing",
+      "referenceTitle": "OpenStax University Physics Volume 2: Kirchhoff's Rules",
+      "referenceUrl": "https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules",
+      "referenceVersion": "2016",
+      "referenceLocator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#a3b536e1aff7",
+      "fixtureFile": "scripts/fixtures/physics/priority-string-a3b536e1aff7.json",
+      "productionExport": "calculateStringSizing",
+      "referenceTitle": "OpenStax University Physics Volume 2: Kirchhoff's Rules",
+      "referenceUrl": "https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules",
+      "referenceVersion": "2016",
+      "referenceLocator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
+    },
+    {
       "formulaId": "src/engine/financialEngine.ts#performFinancialAnalysis#07cbbf982780",
       "fixtureFile": "scripts/fixtures/physics/grid-import-07cbbf982780.json",
       "productionExport": "performFinancialAnalysis",

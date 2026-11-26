@@ -18,6 +18,7 @@ export interface Triangle {
 export type { PvModule, Inverter, Battery } from './types/equipmentTypes';
 import type { PvModule, Inverter, Battery } from './types/equipmentTypes';
 import type { InstallationEnvironment } from './types/climateTypes';
+import { performFinancialAnalysis } from './financialEngine';
 import { getClimateData } from './climaticData';
 import { calculateThermalDerate } from './core/thermalDerate';
 import {
@@ -27,6 +28,7 @@ import {
 } from './core/solarGeometryContract';
 
 export interface Project {
+  quickSizingAssessment?: QuickSizingResponse['assessment'];
   id: string;
   name: string;
   latitude: number;
@@ -61,6 +63,15 @@ export interface QuickSizingRequest {
 }
 
 export interface QuickSizingResponse {
+  assessment: {
+    status: 'screening_only';
+    climateSource: string;
+    climateConfidence: 'analytical_estimate';
+    yieldMethod: 'sizing_equation_reversal_not_independent_simulation';
+    financialBasis: 'financialEngine_default_ongrid_nominal';
+    designGrade: false;
+    warnings: string[];
+  };
   projectId: string;
   projectName: string;
   systemCapacityKwp: number;
@@ -81,6 +92,7 @@ export interface StringSizingRequest {
   installationEnvironment?: InstallationEnvironment;
   useCellTemp?: boolean; // When true or when noctC/cellTempMaxC provided, use cell temperature for Vmp_min hot
   betaVocPerC: number;
+  betaVmpPerC?: number; // Measured Vmp coefficient, fraction/°C. Preferred to the Pmp proxy.
   betaPmpPerC?: number;   // NEW (BUG-6) — temperature coefficient of Pmp, fraction/°C, negative
                           //       e.g. -0.0030 means -0.30 %/°C
   inverterVdcMax: number;
@@ -89,6 +101,7 @@ export interface StringSizingRequest {
 }
 
 export interface StringSizingResponse {
+  status: 'feasible' | 'infeasible';
   minModules: number;
   maxModules: number;
   hasWarning: boolean;
@@ -264,6 +277,10 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
   } = req;
 
   const warnings: string[] = [];
+  for (const value of [panelVoc, panelVmp, inverterVdcMax, inverterMpptMin, inverterMpptMax]) {
+    if (!Number.isFinite(value) || value <= 0) throw new Error('String voltage inputs must be finite and positive');
+  }
+  if (![tempMinC, tempMaxC].every(Number.isFinite) || tempMinC > tempMaxC) throw new Error('Invalid string temperature range');
   const safeBetaVocPerC =
     typeof betaVocPerC === 'number' && Number.isFinite(betaVocPerC) && betaVocPerC < 0
       ? betaVocPerC
@@ -273,10 +290,13 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
       ? betaPmpPerC
       : safeBetaVocPerC;
 
+  const safeBetaVmpPerC = req.betaVmpPerC ?? safeBetaPmpPerC;
+  if (!Number.isFinite(safeBetaVmpPerC)) throw new Error('betaVmpPerC must be finite');
+  if (req.betaVmpPerC === undefined) warnings.push('Vmp temperature coefficient is approximated from Pmp/Voc; verify against manufacturer data.');
   const vocMaxTemp = panelVoc * (1.0 + safeBetaVocPerC * (tempMinC - 25.0));
 
-  // IEC 62548 §7.2: hot-case MPPT floor uses operating cell temperature and
-  // the Pmp temperature coefficient (typically steeper than Voc).
+  // Hot-case MPPT screening; use a measured Vmp coefficient when supplied.
+  // Pmp/Voc fallback is an approximation, not a code-compliance determination.
   // Single source of truth: unified thermal model (calculateThermalDerate).
   let effectiveHotCellTempC = tempMaxC;
   if (req.cellTempMaxC !== undefined && Number.isFinite(req.cellTempMaxC)) {
@@ -290,16 +310,15 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
     effectiveHotCellTempC = thermal.cellTempHotC;
   }
 
-  const vmpHotCoeff = safeBetaPmpPerC;
+  const vmpHotCoeff = safeBetaVmpPerC;
   const vmpMinTemp = panelVmp * (1.0 + vmpHotCoeff * (effectiveHotCellTempC - 25.0));
 
+  if (![vocMaxTemp, vmpMinTemp].every(v => Number.isFinite(v) && v > 0)) throw new Error('Invalid temperature-adjusted module voltage');
   const maxModulesVmax = Math.floor(inverterVdcMax / vocMaxTemp);
-  // Per IEC 62548 §7.2 the MPPT upper-bound is governed by the HIGHEST Vmp,
-  // which occurs at the coldest design temperature. Use the Pmp temperature
-  // coefficient when supplied; otherwise fall back to the Voc coefficient
-  // (documented conservative approximation).
-  const vmpColdCoeff = safeBetaPmpPerC;
+  // Cold-case MPPT upper bound. A Pmp/Voc proxy is not guaranteed conservative.
+  const vmpColdCoeff = safeBetaVmpPerC;
   const singleModuleVmpMaxCold = panelVmp * (1.0 + vmpColdCoeff * (tempMinC - 25.0));
+  if (!Number.isFinite(singleModuleVmpMaxCold) || singleModuleVmpMaxCold <= 0) throw new Error('Invalid cold module voltage');
   const maxModulesMppt = Math.floor(inverterMpptMax / singleModuleVmpMaxCold);
   const maxModules = Math.min(maxModulesVmax, maxModulesMppt);
 
@@ -311,7 +330,8 @@ export function calculateStringSizing(req: StringSizingRequest): StringSizingRes
 
   return {
     minModules: Math.max(1, minModules),
-    maxModules: Math.max(1, maxModules),
+    maxModules: Math.max(0, maxModules),
+    status: maxModules < Math.max(1, minModules) ? 'infeasible' : 'feasible',
     hasWarning: warnings.length > 0,
     warnings,
     effectiveCellTempMaxC: Number(effectiveHotCellTempC.toFixed(2)),
@@ -556,9 +576,10 @@ export function calculateSolarPosition(
 
   const secondsInDay = ((normalizedTs % 86400) + 86400) % 86400;
   const timeOffset = eqOfTime + 4.0 * longitudeDeg;
-  const trueSolarTime = secondsInDay / 60.0 + timeOffset;
+  // Wrap before the morning/afternoon branch, including across the UTC date boundary.
+  const trueSolarTime = ((secondsInDay / 60.0 + timeOffset) % 1440 + 1440) % 1440;
 
-  const hourAngle = trueSolarTime / 4.0 < 0.0 ? trueSolarTime / 4.0 + 180.0 : trueSolarTime / 4.0 - 180.0;
+  const hourAngle = trueSolarTime / 4.0 - 180.0;
 
   const latRad = toRad(latitudeDeg);
   const declRad = toRad(declination);
@@ -751,14 +772,12 @@ export function performQuickSizing(
 
   const autonomyDays = typeof req.autonomyDays === 'number' && Number.isFinite(req.autonomyDays) ? Math.max(0, req.autonomyDays) : 0;
 
-  let peakSunHours: number;
-  try {
-    const climate = getClimateData(req.latitude, req.longitude ?? 51.389);
-    peakSunHours = climate.peakSunHours;
-  } catch {
-    peakSunHours = Math.max(3.5, 6.0 - Math.abs(req.latitude) * 0.05);
+  if (!Number.isFinite(req.longitude) || req.longitude < -180 || req.longitude > 180) {
+    throw new Error('longitude is required and must be between -180 and 180');
   }
-  // Unified standard derating factor between quick sizing and annual yield estimation (Phase 3)
+  const climate = getClimateData(req.latitude, req.longitude);
+  const peakSunHours = climate.peakSunHours;
+  // Screening sizing allowance, not an independently simulated annual yield.
   const standardQuickSizingDerate = 0.78;
   const requiredArrayKwp = req.dailyKwh / (peakSunHours * standardQuickSizingDerate);
 
@@ -871,16 +890,28 @@ export function performQuickSizing(
 
   const annualYieldKwh = actualCapacityKwp * peakSunHours * 365.0 * standardQuickSizingDerate;
 
-  const capex = (actualCapacityKwp * 1100.0) + (batteryCount * battery.capacityKwh * 350.0);
-  const opexAnnual = capex * 0.015;
-  const lcoeVal = calculateLcoe(capex, opexAnnual, annualYieldKwh, 0.05, 25);
+  const financial = performFinancialAnalysis(actualCapacityKwp, batteryCount * battery.capacityKwh,
+    inverterCount * inverter.pnomAcKw, annualYieldKwh, undefined, 25, 'ongrid');
+  if (financial.lcoeUsdPerKwh === null) throw new Error('Screening LCOE is undefined');
+  const lcoeVal = financial.lcoeUsdPerKwh;
 
   const projectId = `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
   const projectName = req.projectName?.trim() || "Quick PV Project";
 
   const shouldPersist = req.saveProject !== false && req.persist !== false;
 
+  const assessment: QuickSizingResponse['assessment'] = {
+      status: 'screening_only', climateSource: climate.dataSourceEn,
+      climateConfidence: 'analytical_estimate', designGrade: false,
+      yieldMethod: 'sizing_equation_reversal_not_independent_simulation',
+      financialBasis: 'financialEngine_default_ongrid_nominal',
+      warnings: ['Analytical climate is not measured or reanalysis weather.',
+        'Annual yield reverses the sizing equation; it does not verify demand coverage or dispatch.',
+        'LCOE is a nominal screening result using regional default assumptions, not a bankable quote.'],
+    };
+
   const project: Project = {
+    quickSizingAssessment: assessment,
     id: projectId,
     name: projectName,
     latitude: req.latitude,
@@ -915,6 +946,7 @@ export function performQuickSizing(
   }
 
   return {
+    assessment,
     projectId,
     projectName,
     systemCapacityKwp: actualCapacityKwp,
