@@ -94,7 +94,11 @@
     "test:ui": "tsx scripts/test-ui-refresh-browser.ts",
     "test:recovery": "tsx scripts/test-snapshot-recovery.ts",
     "test:container": "node scripts/test-container-runtime.mjs",
-    "test:remaining": "tsx scripts/test-remaining-product-fixes.ts && tsx scripts/test-remaining-shading-lifecycle.ts && tsx scripts/test-remaining-poa-http.ts && tsx scripts/test-remaining-worker-browser.ts"
+    "test:remaining": "tsx scripts/test-remaining-product-fixes.ts && tsx scripts/test-remaining-shading-lifecycle.ts && tsx scripts/test-remaining-poa-http.ts && tsx scripts/test-remaining-worker-browser.ts",
+    "test:accepted-audit": "tsx scripts/test-accepted-vmp-audit.ts",
+    "skills:sync": "node scripts/sync-agent-skills.mjs --write",
+    "skills:check": "node scripts/sync-agent-skills.mjs --check",
+    "test:skills": "node scripts/test-agent-skills.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

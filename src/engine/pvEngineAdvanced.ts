@@ -1,3 +1,4 @@
+import { resolveVmpTemperatureCoefficient } from './core/vmpTemperatureCoefficient';
 // Advanced PV Array Engineering, String Sizing & Deratings (IEC 62548 / NEC 690.7)
 
 import { calculateThermalDerate } from './core/thermalDerate';
@@ -19,7 +20,7 @@ export interface ModuleSpecs {
   tempCoeffVocPct: number;  // e.g. -0.28 %/°C
   tempCoeffPmpPct: number;  // e.g. -0.32 %/°C
   tempCoeffIscPct?: number; // e.g. +0.045 %/°C (IEC 60891 semiconductor current coefficient)
-  tempCoeffVmpPct?: number; // e.g. -0.36 %/°C (or derived gamma_Pmp - alpha_Isc)
+  tempCoeffVmpPct?: number; // Manufacturer Vmp coefficient, %/°C; missing data uses a disclosed proxy.
   noctC: number;            // e.g. 45 °C
   /** Absent legacy dimensions are retained as unknown, not catalog facts. */
   lengthM?: number;         // e.g. 2.278 m
@@ -205,18 +206,10 @@ export function designPvArray(
   const vocTempCoeffDec = module.tempCoeffVocPct / 100.0; // negative number
   const singleModuleVocMaxCold = module.vocVolts * (1.0 + vocTempCoeffDec * (deratings.ambientTempMinC - 25.0));
 
-  // Hot condition Vmp_min:
-  // IEC 60891 & IEC 62548 semiconductor physics:
-  // gamma_Pmp ≈ gamma_Vmp + alpha_Isc => gamma_Vmp = gamma_Pmp - alpha_Isc
-  // Evaluated at cell temperature (cellTempHotC via unified NOCT model).
-  // When tempCoeffVmpPct is explicitly specified, use it.
-  // When tempCoeffIscPct is provided, decouple via (gamma_Pmp - alpha_Isc).
-  // Otherwise, default to tempCoeffPmpPct for benchmark baseline compatibility.
-  const vmpTempCoeffPct = module.tempCoeffVmpPct ?? (
-    module.tempCoeffIscPct !== undefined
-      ? module.tempCoeffPmpPct - module.tempCoeffIscPct
-      : module.tempCoeffPmpPct
-  );
+  // Measured beta_Vmp is preferred; Pmp/Isc substitutes remain disclosed proxies.
+  const vmpCoefficient = resolveVmpTemperatureCoefficient(module.tempCoeffVmpPct, module.tempCoeffPmpPct, module.tempCoeffIscPct);
+  if (vmpCoefficient.warning) warnings.push(vmpCoefficient.warning);
+  const vmpTempCoeffPct = vmpCoefficient.coefficientPct;
   const vmpTempCoeffDec = vmpTempCoeffPct / 100.0;
   const singleModuleVmpMinHot = module.vmpVolts * (1.0 + vmpTempCoeffDec * (cellTempHotC - 25.0));
 

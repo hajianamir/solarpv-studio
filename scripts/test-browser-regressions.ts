@@ -737,6 +737,7 @@ async function main() {
     await target.getByRole('button', { name: /Add Custom Equipment to Catalog|افزودن تجهیز دلخواه جدید به کاتالوگ/ }).click();
     await target.locator('#cat-mod-manufacturer').fill('Arena Multitab Test');
     await target.locator('#cat-mod-model').fill(`Concurrent-${suffix}`);
+    if (suffix === 'A') await target.locator('#cat-mod-tc-vmp').fill('-0.4');
   };
   await Promise.all([fillCustomModule(tabA, 'A'), fillCustomModule(tabB, 'B')]);
   const saveModuleButtonA = tabA.getByRole('button', { name: /Validate & Save Module|ثبت و اعتبارسنجی در کاتالوگ/ });
@@ -764,6 +765,18 @@ async function main() {
   await tabA.getByText('Concurrent-A').waitFor({ timeout: 10000 });
   await tabA.getByText('Concurrent-B').waitFor({ timeout: 10000 });
 
+  // Optional measured Vmp data must survive real catalog form → selection → project save.
+  const measuredModule = catalogState.custom.modules.find((item: {modelName:string}) => item.modelName === 'Concurrent-A');
+  assert.equal(measuredModule.tempCoeffVmpPct, -0.4);
+  assert.equal(catalogState.custom.modules.find((item: {modelName:string}) => item.modelName === 'Concurrent-B').tempCoeffVmpPct, undefined);
+  await tabA.getByTestId('workflow-tab-array').locator(':visible').first().click();
+  await tabA.locator('#pv-module-picker-select').selectOption(measuredModule.id);
+  await tabA.locator('#pv-module-picker-select').blur();
+  await tabA.keyboard.press('Control+s');
+  const measuredProject = await tabA.evaluate(() => JSON.parse(localStorage.getItem('solarpv_project_save') ?? 'null'));
+  assert.equal(measuredProject.selectedModule.tempCoeffVmpPct, -0.4);
+  await tabA.getByTestId('workflow-tab-catalog').locator(':visible').first().click();
+
   // Exercise real batch snapshots via UI-generated project JSON after both writes.
   await tabA.keyboard.press('Control+e');
   await tabA.getByRole('button', { name: 'سفارشی‌سازی' }).click();
@@ -775,6 +788,8 @@ async function main() {
   const catalogEnvelope = JSON.parse(await readFile(catalogJsonPath, 'utf8'));
   const snapshotModelNames = catalogEnvelope.customEquipmentSnapshots.modules.map((item: { modelName: string }) => item.modelName);
   assert.ok(snapshotModelNames.includes('Concurrent-A') && snapshotModelNames.includes('Concurrent-B'), 'UI-generated batch snapshot omitted one concurrent catalog save');
+  assert.equal(catalogEnvelope.projectData.selectedModule.tempCoeffVmpPct, -0.4);
+  assert.equal(catalogEnvelope.customEquipmentSnapshots.modules.find((item: {modelName:string}) => item.modelName === 'Concurrent-A').tempCoeffVmpPct, -0.4);
   const canceledEnvelope = structuredClone(catalogEnvelope);
   canceledEnvelope.projectData.version = '2.0.0';
   canceledEnvelope.projectData.pendingImportedEmbedmentDepthM = 1.25;
@@ -822,6 +837,8 @@ async function main() {
   const postRestoreCatalog = await tabA.evaluate(() => JSON.parse(localStorage.getItem('solarpv_custom_catalog_v4') ?? 'null'));
   const postRestoreNames = (postRestoreCatalog?.custom?.modules ?? []).map((item: { modelName: string }) => item.modelName);
   assert.ok(postRestoreNames.includes('Concurrent-A') && postRestoreNames.includes('Concurrent-B'), 'batch snapshot restore lost catalog records');
+  assert.equal(postRestoreCatalog.custom.modules.find((item: {modelName:string}) => item.modelName === 'Concurrent-A').tempCoeffVmpPct, -0.4);
+  console.log('[PASS] Measured Vmp coefficient survives catalog form, selection, project save/export and catalog re-import.');
   console.log('[PASS] Two real tabs concurrently save custom catalog items; storage-event refresh and reload preserve both; UI batch export/import round-trips both records.');
 
   // Inject a real Storage API exception in a separate page. Catalog save must

@@ -78,7 +78,13 @@ jobs:
       - name: Run Benchmark Test Suite
         run: npm test
 
-      - name: Smoke Test (5 end-to-end flows)
+      - name: Portable agent skill format and discovery parity
+        run: npm run test:skills
+
+      - name: Accepted audit coefficient and provenance regressions
+        run: npm run test:accepted-audit
+
+      - name: In-memory integration smoke test
         run: npm run test:smoke
 
       - name: Provider Gateway Regression Tests

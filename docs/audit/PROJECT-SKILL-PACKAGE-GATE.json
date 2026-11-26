@@ -1,0 +1,28 @@
+{
+  "scope": "Whole-project agent skill packaging, guidance and structural verification",
+  "status": "PACKAGE_CHECKS_PASS_NATIVE_BEHAVIOR_NOT_EVALUATED",
+  "primarySkill": "skills/solarpv-studio-engineering/SKILL.md",
+  "acceptance": {
+    "projectWideDomainGuidance": "Present: UI, numerical engineering, operations/storage, research/measurements, finance/UQ, APIs/Python/security, persistence/recovery, reports, offline and platform delivery",
+    "taskSpecificProcedures": "Nine runbooks covering defects, features, numerical models, studies, migrations, security, refactoring, releases and read-only audits",
+    "progressiveDisclosure": "Concise entry point links six bundled reference guides",
+    "reusableAssets": "Change-plan and findings-register Markdown templates plus JSON verification-receipt template with non-success defaults",
+    "clientDiscovery": "Complete bundles synchronized to .agents/skills and .claude/skills using regular files",
+    "behavioralEvaluationDesign": "Nine expected/prohibited-action scenarios and a review rubric; NOT executed in native clients"
+  },
+  "executedChecks": {
+    "nodeSyntaxChecks": "PASS sync-agent-skills.mjs and test-agent-skills.mjs",
+    "skillsCheck": "PASS four skill bundles, thirteen canonical source files",
+    "skillTests": "PASS metadata, local resource links, npm command inventory, domain/runbook presence, template defaults, recursive copy parity, missing/drift rejection, non-Windows symlink rejection and unrelated-skill preservation",
+    "acceptedAuditRegression": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "limitations": [
+    "Structural/content tests do not demonstrate semantic completeness or correct future agent decisions",
+    "Native Codex and Claude Code invocation and evaluation scenarios were not executed",
+    "No physics, financial, security or application runtime certification is granted",
+    "Existing independent-reference and runtime release blockers remain unchanged"
+  ],
+  "rollback": "Restore the prior canonical skill bundle and sync matching discovery copies, or remove the generated directories for this skill without touching unrelated skills; no application data migration",
+  "gitActions": "No commit, push or PR action requested or performed in this task"
+}

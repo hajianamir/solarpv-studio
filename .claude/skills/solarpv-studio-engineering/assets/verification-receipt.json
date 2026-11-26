@@ -1,0 +1,64 @@
+{
+  "templateOnly": true,
+  "templateVersion": 1,
+  "taskId": "REPLACE_WITH_TASK_ID",
+  "baseline": {
+    "commit": "REPLACE_WITH_COMMIT",
+    "branch": "REPLACE_WITH_ASSIGNED_BRANCH",
+    "relevantDirtyScope": [],
+    "preExistingFailures": []
+  },
+  "decision": {
+    "implementation": "NOT_STARTED",
+    "verification": "NOT_ASSESSED",
+    "release": "NOT_ASSESSED",
+    "rationale": "TEMPLATE_NOT_ASSESSED"
+  },
+  "scope": [],
+  "nonGoals": [],
+  "acceptance": [
+    {
+      "id": "AC-01",
+      "preconditions": "REPLACE_WITH_INPUT_MODE_PROJECT_AND_PRECONDITIONS",
+      "action": "REPLACE_WITH_ACTION",
+      "expected": "REPLACE_WITH_OBSERVABLE_OUTPUT_AND_FAILURE_BEHAVIOR",
+      "thresholdAndRationale": null,
+      "status": "NOT_RUN",
+      "checkIds": ["CHECK-01"],
+      "limitations": []
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHECK-01",
+      "acceptanceIds": ["AC-01"],
+      "required": null,
+      "applicabilityRationale": "REPLACE_WITH_SCOPE_AND_POLICY_BASIS",
+      "commandOrReviewMethod": "REPLACE_WITH_ACTUAL_METHOD",
+      "testedRevisionAndDirtyScope": "REPLACE_WITH_TESTED_PATCH_IDENTITY",
+      "environmentAndReferenceVersions": {},
+      "expectedAssertions": [],
+      "status": "NOT_RUN",
+      "evidenceClass": null,
+      "observed": "NOT_EXECUTED",
+      "artifacts": [],
+      "limitations": [],
+      "priorAttempts": []
+    }
+  ],
+  "boundaryReviews": {
+    "numerical": "NOT_ASSESSED",
+    "financialAdoption": "NOT_ASSESSED",
+    "security": "NOT_ASSESSED",
+    "dataIntegrity": "NOT_ASSESSED",
+    "compatibility": "NOT_ASSESSED"
+  },
+  "stopConditions": [],
+  "rollback": {
+    "mechanism": "REPLACE_WITH_SUPPORTED_STRATEGY",
+    "dataAndSchemaImplications": "NOT_ASSESSED",
+    "postRollbackChecks": []
+  },
+  "documentation": [],
+  "gitActions": []
+}

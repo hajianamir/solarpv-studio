@@ -32,7 +32,7 @@ for unit in units:
     minimum = next(n for n in range(1, 201) if n * hot_vmp >= 100)
     allowed = [n for n in range(1, 201) if n*cold_voc <= limit and n*cold_vmp <= 550]
     maximum = allowed[-1] if allowed else 0
-    warnings = ['Vmp temperature coefficient is approximated from Pmp/Voc; verify against manufacturer data.']
+    warnings = ['Vmp temperature coefficient is approximated from Pmp/Voc; not guaranteed conservative for hot or cold MPPT limits. Verify manufacturer Vmp data; this is screening, not conformity assessment.']
     if minimum > maximum:
         warnings.append('Minimum required modules exceeds maximum allowed string voltage.')
     result = dict(minModules=minimum, maxModules=maximum,

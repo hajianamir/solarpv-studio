@@ -13,6 +13,8 @@ export interface CatalogPvModule {
   efficiencyPct: number;
   tempCoeffVocPct: number;
   tempCoeffPmpPct: number;
+  /** Manufacturer Vmp coefficient in %/°C; absent means unknown, never fabricated. */
+  tempCoeffVmpPct?: number;
   lengthMm: number;
   widthMm: number;
   weightKg: number;

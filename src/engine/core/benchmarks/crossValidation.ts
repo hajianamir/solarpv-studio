@@ -4,6 +4,9 @@
  *
  * Runs internal stored-target checks with per-metric evidence classifications.
  * A PASS is software regression evidence, not an engineering validation certificate.
+ * Vmp coefficient-selection/window regressions run in scripts/test-accepted-vmp-audit.ts:
+ * synthetic product-rule and endpoint algebra checks, NOT independently reproduced
+ * manufacturer data, IEC conformity assessment, or a whole-model validation target.
  */
 
 import {

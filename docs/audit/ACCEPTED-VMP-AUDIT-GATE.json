@@ -1,0 +1,51 @@
+{
+  "scope": "Accepted audit corrections: optional measured Vmp data path, validation, disclosed proxies, agent guidance",
+  "status": "IMPLEMENTED_REGRESSION_TESTED_RELEASE_BLOCKED",
+  "checks": {
+    "lint": "PASS: zero errors, 93 warnings",
+    "build": "PASS",
+    "npmTest": "PASS executable checks; stored-target report remains WARN",
+    "smoke": "PASS 5 in-memory integration scenarios; retired bifacial WARN accepted explicitly, other warnings/failures rejected",
+    "coverage": {
+      "status": "PASS",
+      "scope": "package test:coverage includes src/engine/core/**; not whole application coverage",
+      "statementsPct": 91.33,
+      "branchesPct": 66.13,
+      "functionsPct": 72.81,
+      "linesPct": 91.33
+    },
+    "acceptedAudit": "PASS synthetic algebra/window/invalid-input/catalog/schema/real HTTP checks; NOT independent physical validation",
+    "browser": "PASS with BROWSER_TEST_TIMEOUT_MS=240000; default 90000ms attempt timed out after new Vmp flow had passed",
+    "exports": "PASS DOCX/XLSX/JSON + re-import",
+    "engineClaimGuards": "PASS",
+    "retiredAcBoundary": "PASS all three modes",
+    "diffCheck": "PASS"
+  },
+  "referenceGate": {
+    "status": "FAIL_NOT_WAIVED",
+    "missingChangedExpressionRecords": [
+      "src/engine/catalogRepository.ts#@class:CatalogRepository.@method:validateModule#0b59fba14897",
+      "src/engine/catalogRepository.ts#@class:CatalogRepository.@method:validateModule#d2bce71aa4f5",
+      "src/engine/catalogRepository.ts#@class:CatalogRepository.@method:validateModule#f0187a04e805",
+      "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#0570e0d8d8cd",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#95134fca4f1f",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#ec631eb56735",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#f4dc82696b2d"
+    ],
+    "reason": "Seven new/changed expression records lack accepted independent fixtures. Internal analytic tests are not relabeled independent. Separate prior whole-model blockers are not resolved by this work."
+  },
+  "provenance": "Seven prior Decimal-generated string fixtures regenerated with warning-text changes only; no numerical reference outputs changed. New counterexamples are explicitly synthetic.",
+  "unchangedScope": [
+    "clipping heuristic",
+    "wind elevation formula",
+    "harmonics model",
+    "research adoption to annual energy/finance gates"
+  ],
+  "limitations": [
+    "No new field or standards conformity certification",
+    "Docker runtime not verified in this task",
+    "Primary-source verification of proposed clipping/wind/harmonics changes remains pending"
+  ],
+  "guide": "docs/features/VMP-COEFFICIENT-AUDIT.md",
+  "commitOrPush": "Not requested; none performed"
+}

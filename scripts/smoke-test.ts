@@ -108,11 +108,21 @@ const elapsedMs = performance.now() - t0;
 console.log(`  ✓ Stored-target comparison harness: [${crossReport.overallStatus}] (${crossReport.testsPassed}/${crossReport.testsRun} passed; not independent validation)`);
 console.log(`  ✓ Live Bifacial 2.5D View-Factor: ${bifacialSim.bifacialGainPercent}% gain, latency: ${bifacialSim.computeLatencyMs} ms`);
 console.log(`  ✓ Total Benchmark Execution Time: ${elapsedMs.toFixed(2)} ms`);
-if (crossReport.overallStatus !== 'PASS') {
+// Regression gate accepts ONLY the explicitly retired, unverified target warning.
+// It must still reject any failed metric or an additional/unclassified warning.
+const acceptsStoredTargetReport = (report: typeof crossReport): boolean =>
+  report.testsFailed === 0 && report.metrics.every(metric => metric.status === 'PASS' || (
+    metric.status === 'WARN' && metric.testId === 'VAL-BIFACIAL-01' && metric.evidenceStatus === 'retired_unverified_target'
+  ));
+if (acceptsStoredTargetReport({...crossReport, testsFailed: 1}) ||
+    acceptsStoredTargetReport({...crossReport, metrics: [...crossReport.metrics, {...crossReport.metrics[0], testId: 'unexpected-warning', status: 'WARN', evidenceStatus: undefined}]})) {
+  throw new Error('Smoke gate must reject real failures and unexpected warnings');
+}
+if (!acceptsStoredTargetReport(crossReport)) {
   console.error('FATAL: Step 3 failed on benchmark execution.');
   process.exit(1);
 }
-console.log('  -> Status: SUCCESS [PASS]\n');
+console.log('  -> Executable smoke status: SUCCESS [PASS]; stored-target evidence retains WARN, not physics validation.\n');
 
 // -----------------------------------------------------------------------------
 // Step 4: Import v2 Legacy File (RECOVERED_WITH_WARNINGS)
@@ -150,5 +160,5 @@ if (malformedResult.migrationStatus !== 'BLOCKED_INCONSISTENT') {
 console.log('  -> Status: SUCCESS [PASS]\n');
 
 console.log('================================================================================');
-console.log(' SMOKE TEST RESULT: 5/5 USER FLOWS PASSED WITH 100% SUCCESS');
+console.log(' SMOKE TEST RESULT: 5/5 IN-MEMORY INTEGRATION SCENARIOS PASSED (NOT BROWSER E2E)');
 console.log('================================================================================');
