@@ -1,3 +1,7 @@
+import './test-remaining-product-fixes';
+import './test-priority-structural-claims';
+import './test-priority-reference-registry';
+import './test-priority-audit';
 /**
  * Automated Core Benchmark & Validation Suite Runner
  * SolarPV Studio v3.0 - Phase 1 Final Verification
@@ -78,7 +82,7 @@ console.log(`| Torque Tube Diameter / Clearance       | 0.12 / 0.10      | meter
 console.log(`| Direct Normal Irradiance (DNI)         | 720.00           | W/m2                |`);
 console.log(`| Diffuse Horizontal Irradiance (DHI)    | 130.00           | W/m2                |`);
 console.log(`| Rear Ground-Reflected Irradiance       | 110.50           | W/m2                |`);
-console.log(`| Target Annual Bifacial Gain            | 10.40            | %                   |`);
+console.log(`| Retired unverified gain target            | 10.40            | %                   |`);
 console.log('+----------------------------------------+------------------+---------------------+\n');
 
 console.log(`Manifest-claimed module: ${GOLDEN_SANDIA_PV.moduleName}`);
@@ -426,6 +430,6 @@ if (!bipvtAreaOk) {
 }
 
 console.log('================================================================================');
-console.log(' SUMMARY: ALL 6 BENCHMARKS, INTERNAL SYNTHETIC REGRESSIONS & BIPV/T CHECKS PASS');
+console.log(' SUMMARY: EXECUTABLE REGRESSIONS & BIPV/T CHECKS PASS; STORED-TARGET REPORT WARN (RETIRED UNVERIFIED BIFACIAL TARGET)');
 console.log('================================================================================');
 

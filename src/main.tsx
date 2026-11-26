@@ -1,8 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import '@fontsource-variable/inter/wght.css';
+import '@fontsource-variable/jetbrains-mono';
+import '@fontsource-variable/vazirmatn';
 import './index.css';
 import 'leaflet/dist/leaflet.css';
+import './styles/workspace.css';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 declare const __SOLARPV_PRODUCTION__: boolean;

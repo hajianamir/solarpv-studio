@@ -6,6 +6,11 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {dependencyProblems} from './check-pc-dependencies.mjs';
 
+import {isSupportedNode} from './check-node-version.mjs';
+
+for (const version of ['20.19.0', '20.20.0', '22.13.0', '22.22.3', '24.0.0', '26.0.0']) assert.ok(isSupportedNode(version), version);
+for (const version of ['18.20.0', '20.18.9', '21.7.0', '22.12.9', '23.0.0', 'bad', '24.0.0-rc.1']) assert.ok(!isSupportedNode(version), version);
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'solarpv launcher spaces '));
 const write = (name, text) => {const target = path.join(fixture, name); fs.mkdirSync(path.dirname(target), {recursive: true}); fs.writeFileSync(target, text);};
@@ -40,6 +45,7 @@ try {
   assert.match(batch, /if errorlevel 1 goto :InstallDependencies/);
   assert.ok(batch.includes('call "%~dp0install.bat" --no-pause'));
   assert.ok(!batch.includes('call npm install'));
+  assert.ok(batch.includes('node scripts\\check-node-version.mjs'));
   const installer = fs.readFileSync(path.join(root, 'install.bat'), 'utf8');
   assert.ok(installer.includes('cd /d "%~dp0"'));
   assert.ok(installer.includes('call npm ci --include=dev --no-audit --no-fund'));
@@ -49,6 +55,7 @@ try {
   assert.ok(installer.includes('if /i "%~1"=="--no-pause" goto :Exit'));
   assert.ok(installer.includes('exit /b %INSTALL_EXIT_CODE%'));
   assert.ok(installer.includes('if not exist "package-lock.json" goto :MissingLock'));
+  assert.ok(installer.includes('node scripts\\check-node-version.mjs'));
   assert.ok(installer.includes('where node >nul 2>&1'));
   assert.ok(installer.includes('where npm >nul 2>&1'));
   assert.ok(installer.includes('set "INSTALL_EXIT_CODE=1"'));

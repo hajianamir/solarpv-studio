@@ -13,3 +13,8 @@ __pycache__/
 services/pvlib_study/.venv/
 # Local pinned Python validation environment
 /.venv/
+
+# Regenerable test output; executable tests and reference fixtures stay tracked.
+/coverage/
+/test-results/
+/playwright-report/

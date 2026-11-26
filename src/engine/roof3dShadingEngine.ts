@@ -1036,18 +1036,19 @@ export function computeTableShadingGeometricMesh(
  * Runs 8760-hour or fast-screening annual 3D geometric mesh ray-traced shading simulation
  * across the 3D scene and generates cell-level heatmaps strictly reconciled with the waterfall engine.
  */
-export function simulateAnnual3dShading(
+function* annualShadingSteps(
   scene: Scene3DState,
   peakSunHours: number = 5.2,
   ambientTempMaxC: number = 40.0,
   options?: ShadingSimulationOptions
-): AnnualShading3dResult {
+): Generator<void, AnnualShading3dResult, void> {
   if (typeof peakSunHours !== 'number' || !isFinite(peakSunHours) || peakSunHours <= 0) {
     throw new Error(
       `simulateAnnual3dShading: peakSunHours must be a finite positive number (> 0), received ${peakSunHours}`
     );
   }
 
+  yield;
   const lat = scene.anchorLocation.latitude;
   const isFull8760 = options?.simulationMode === 'hourly_8760';
   const stepDays = isFull8760 ? 1 : (options?.stepDays ?? 3);
@@ -1057,12 +1058,14 @@ export function simulateAnnual3dShading(
   // Build 3D planar facets for all obstacles in scene
   const allObstacleFacets: PlanarFacet3D[] = [];
   for (const obs of scene.obstacles) {
+    yield;
     allObstacleFacets.push(...buildObstacleFacets(obs));
   }
 
   // Pre-build planar facets for all PV tables to support inter-row self-shading
   const tableFacetsMap = new Map<string, PlanarFacet3D[]>();
   for (const table of scene.pvTables) {
+    yield;
     tableFacetsMap.set(table.id, buildTableFacets(table));
   }
 
@@ -1070,6 +1073,7 @@ export function simulateAnnual3dShading(
   // to avoid re-allocating and concatenating arrays on every single hourly time step (P3-05 optimization)
   const occlusionFacetsByTable = new Map<string, PlanarFacet3D[]>();
   for (const table of scene.pvTables) {
+    yield;
     const tableOcclusion: PlanarFacet3D[] = [...allObstacleFacets];
     for (const [id, f] of tableFacetsMap.entries()) {
       if (id !== table.id) {
@@ -1094,6 +1098,7 @@ export function simulateAnnual3dShading(
   > = new Map();
 
   for (const table of scene.pvTables) {
+    yield;
     tableData.set(table.id, {
       unshadedKwh: 0,
       shadedKwh: 0,
@@ -1116,6 +1121,7 @@ export function simulateAnnual3dShading(
   for (let day = 1; day <= 365; day += safeStepDays) {
     const weight = Math.min(safeStepDays, 365 - day + 1);
     for (let hour = 0; hour < 24; hour++) {
+      yield;
       const sun = calculateSunPathPosition(lat, day, hour);
       if (!sun.isDaylight || sun.altitudeDeg < 1.0) continue;
       const altRad = (sun.altitudeDeg * Math.PI) / 180.0;
@@ -1139,6 +1145,7 @@ export function simulateAnnual3dShading(
     const weight = Math.min(safeStepDays, 365 - day + 1);
 
     for (let hour = 0; hour < 24; hour++) {
+      yield;
       const sun = calculateSunPathPosition(lat, day, hour);
       if (!sun.isDaylight || sun.altitudeDeg < 1.0) continue;
 
@@ -1162,6 +1169,7 @@ export function simulateAnnual3dShading(
       const albedo = resolvedAlbedo;
 
       for (const table of scene.pvTables) {
+    yield;
         const stats = tableData.get(table.id)!;
         stats.daylightHours += weight;
 
@@ -1220,6 +1228,7 @@ export function simulateAnnual3dShading(
   const tableHeatmap: TableHeatmapCell[] = [];
 
   for (const table of scene.pvTables) {
+    yield;
     const stats = tableData.get(table.id)!;
     const unshadedKwh = Math.round(stats.unshadedKwh);
     const shadedKwh = Math.round(stats.shadedKwh);
@@ -1396,6 +1405,36 @@ export function simulateAnnual3dShading(
 
   return result;
 }
+
+/** Synchronous compatibility API drains exactly the same numerical steps. */
+export function simulateAnnual3dShading(scene: Scene3DState, peakSunHours=5.2, ambientTempMaxC=40, options?: ShadingSimulationOptions): AnnualShading3dResult {
+  const steps=annualShadingSteps(scene,peakSunHours,ambientTempMaxC,options);
+  let next=steps.next();
+  while(!next.done){
+    if(options?.abortSignal?.aborted) throw new Error('Simulation aborted by user');
+    next=steps.next();
+  }
+  return next.value;
+}
+
+/** Cooperative fallback: yields to timers/UI between bounded mesh/hour steps.
+ * A single mesh evaluation is not preemptible; use a Worker for heavy scenes.
+ */
+export async function simulateAnnual3dShadingCooperative(scene: Scene3DState, peakSunHours=5.2, ambientTempMaxC=40, options?: ShadingSimulationOptions): Promise<AnnualShading3dResult> {
+  const steps=annualShadingSteps(scene,peakSunHours,ambientTempMaxC,options);
+  try {
+    for(;;){
+      await new Promise<void>(resolve=>setTimeout(resolve,0));
+      const deadline=performance.now()+8;
+      do {
+        if(options?.abortSignal?.aborted) throw new Error('Simulation aborted by user');
+        const next=steps.next();
+        if(next.done) return next.value;
+      } while(performance.now()<deadline);
+    }
+  } finally { steps.return(undefined as never); }
+}
+
 
 export const DEFAULT_ROOFTOP_SCENE: Scene3DState = {
   anchorLocation: { latitude: 35.6892, longitude: 51.3890, elevationM: 1200 },

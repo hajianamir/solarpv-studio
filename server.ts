@@ -156,12 +156,22 @@ app.use(jsonErrorHandler);
 // In-Memory Database store with persistent file recovery
 const db = new InMemorySolarDatabase();
 let DB_PERSIST_PATH = process.env.SOLARPV_DB_FILE || path.resolve(process.cwd(), 'data/solar-db-snapshot.json');
+// A failed recovery permanently latches this path read-only for this process.
+// Shutdown handlers and later API writes must not replace the original evidence.
+const recoveryBlockedPaths = new Set<string>();
+function isDatabaseRecoveryBlocked(): boolean {
+  return recoveryBlockedPaths.has(path.resolve(DB_PERSIST_PATH));
+}
 
 function setPersistPathForTesting(newPath: string): void {
   DB_PERSIST_PATH = newPath;
 }
 
 function saveDatabase(): boolean {
+  if (isDatabaseRecoveryBlocked()) {
+    console.error('[SolarPV Studio] Snapshot recovery failed: persistence is blocked; original file preserved.');
+    return false;
+  }
   try {
     const dir = path.dirname(DB_PERSIST_PATH);
     if (!fs.existsSync(dir)) {
@@ -179,18 +189,42 @@ function saveDatabase(): boolean {
 }
 
 function loadDatabase(): void {
+  if (isDatabaseRecoveryBlocked()) return;
   try {
-    if (fs.existsSync(DB_PERSIST_PATH)) {
-      const raw = fs.readFileSync(DB_PERSIST_PATH, 'utf-8');
-      const parsed = JSON.parse(raw);
-      const ok = db.importSnapshot(parsed);
-      if (ok) {
-        console.log(`[SolarPV Studio] Restored database from snapshot: ${db.projects.size} projects loaded.`);
-        return;
+    // Only ENOENT permits creating a new snapshot. Permission, I/O, JSON and
+    // schema errors must never be interpreted as an empty database.
+    const raw = fs.readFileSync(DB_PERSIST_PATH, 'utf-8');
+    const parsed = JSON.parse(raw);
+    const mapFields = ['projects', 'pvModules', 'inverters', 'batteries'] as const;
+    const valid = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      && parsed.version === 1 && Array.isArray(parsed.outbox)
+      && mapFields.every(field => Array.isArray(parsed[field]) && parsed[field].every(
+        (entry: unknown) => Array.isArray(entry) && entry.length === 2
+          && typeof entry[0] === 'string' && entry[1] !== null
+          && typeof entry[1] === 'object' && !Array.isArray(entry[1]),
+      ));
+    if (!valid) throw new Error('Unsupported or malformed snapshot schema');
+    // Validate import off to the side so a partial import cannot leak into db.
+    const candidate = new InMemorySolarDatabase();
+    if (!candidate.importSnapshot(parsed)) throw new Error('Snapshot import rejected');
+    if (!db.importSnapshot(candidate.exportSnapshot())) throw new Error('Snapshot restore failed');
+    console.log(`[SolarPV Studio] Restored database from snapshot: ${db.projects.size} projects loaded.`);
+    return;
+  } catch (err) {
+    let genuinelyMissing = false;
+    if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
+      try {
+        // A dangling symlink is still an existing recovery artifact, not a new DB.
+        fs.lstatSync(DB_PERSIST_PATH);
+      } catch (statError) {
+        genuinelyMissing = Boolean(statError && typeof statError === 'object' && 'code' in statError && statError.code === 'ENOENT');
       }
     }
-  } catch (err) {
-    console.warn('[SolarPV Studio] Could not load database snapshot, starting with initial seeds:', err);
+    if (!genuinelyMissing) {
+      recoveryBlockedPaths.add(path.resolve(DB_PERSIST_PATH));
+      console.error('[SolarPV Studio] Snapshot recovery failed; persistence disabled. Preserve the original and restore a verified backup before restarting.');
+      return;
+    }
   }
 
   // Seed Tehran Villa System if database has no projects
@@ -204,8 +238,6 @@ function loadDatabase(): void {
           dailyKwh: 20.0,
           autonomyDays: 1.5,
           moduleId: DEFAULT_MODULES[0]?.id || 'mod-default',
-          inverterId: DEFAULT_INVERTERS[0]?.id || 'inv-default',
-          batteryId: DEFAULT_BATTERIES[0]?.id || 'bat-default',
         },
         db
       );
@@ -235,6 +267,9 @@ process.on('SIGTERM', () => {
 
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
+  if (isDatabaseRecoveryBlocked()) {
+    return res.status(503).json({ status: 'degraded', persistence: 'recovery_blocked', readOnly: true });
+  }
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -386,6 +421,9 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
       ? Number(body.azimuthDeg)
       : (body.surfaceAzimuthDeg !== undefined ? Number(body.surfaceAzimuthDeg) : 0);
 
+    if (body.surfaceAzimuthConvention !== undefined && !['north_clockwise', 'south_zero'].includes(body.surfaceAzimuthConvention)) {
+      return res.status(400).json({ error: 'Unknown surfaceAzimuthConvention' });
+    }
     let effectiveSurfaceAzimuthNorth: number;
     if (body.surfaceAzimuthNorthDeg !== undefined) {
       effectiveSurfaceAzimuthNorth = asNorthAzimuthDeg(Number(body.surfaceAzimuthNorthDeg));
@@ -397,13 +435,8 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
     } else if (body.surfaceAzimuthConvention === 'south_zero') {
       effectiveSurfaceAzimuthNorth = southToNorthAzimuth(rawAzimuth);
     } else {
-      // Default convention: project surface azimuth default is south-zero (0 = South).
-      // If client explicitly co-aligned using north-clockwise 180 for both surface and sun, preserve 180.
-      if (rawAzimuth === 180 && sunAzimuthDeg === 180) {
-        effectiveSurfaceAzimuthNorth = 180;
-      } else {
-        effectiveSurfaceAzimuthNorth = southToNorthAzimuth(rawAzimuth);
-      }
+      // Legacy default is always south-zero, independent of the sun angle.
+      effectiveSurfaceAzimuthNorth = southToNorthAzimuth(rawAzimuth);
     }
 
     if (
@@ -525,6 +558,9 @@ app.post('/api/v1/electrical/string-sizing', (req: Request, res: Response) => {
       });
     }
 
+    if (result.status === 'infeasible') {
+      return res.status(422).json({ ...result, error: 'No feasible string length within module/inverter voltage limits.' });
+    }
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -908,7 +944,7 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
     if (latitude === undefined || typeof latitude !== 'number' || !Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
       return res.status(400).json({ error: `latitude is required and must be between -90 and 90, got ${latitude}` });
     }
-    if (longitude !== undefined && (typeof longitude !== 'number' || !Number.isFinite(longitude) || longitude < -180 || longitude > 180)) {
+    if (typeof longitude !== 'number' || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
       return res.status(400).json({ error: `longitude must be between -180 and 180, got ${longitude}` });
     }
 
@@ -919,6 +955,9 @@ app.post('/api/v1/projects/quick-size', (req: Request, res: Response) => {
     const isSecure = isProductionEnv() || isAuthConfigured();
     if (isSecure && !requesterOwnerId) {
       return res.status(401).json({ error: 'Authentication required: creating projects requires a verified identity.' });
+    }
+    if (req.body.allowAnalyticalEstimate !== true) {
+      return res.status(422).json({ error: 'Analytical climate only: explicit allowAnalyticalEstimate=true is required for screening.', code: 'SCREENING_CONSENT_REQUIRED', designGrade: false });
     }
     const resolvedOwnerId = requesterOwnerId || ownerId;
     const shouldPersist = req.body.saveProject !== false && req.body.persist !== false && req.body.save !== false;
@@ -1926,4 +1965,4 @@ if (process.env.NODE_ENV !== 'test' && isMainModule) {
   });
 }
 
-export { app, db, saveDatabase, loadDatabase, DB_PERSIST_PATH, setPersistPathForTesting };
+export { app, db, saveDatabase, loadDatabase, DB_PERSIST_PATH, setPersistPathForTesting, isDatabaseRecoveryBlocked };

@@ -10,7 +10,7 @@ echo.
 
 where node >nul 2>&1
 if errorlevel 1 goto :NoNode
-node -e "if (Number(process.versions.node.split('.')[0]) < 20) process.exit(1)"
+node scripts\check-node-version.mjs
 if errorlevel 1 goto :UnsupportedNode
 where npm >nul 2>&1
 if errorlevel 1 goto :NoNpm
@@ -42,7 +42,7 @@ echo [ERROR] Node.js was not found. Install Node.js LTS from https://nodejs.org
 echo [INFO] Include npm during setup, then close this window and run install.bat again.
 goto :Finish
 :UnsupportedNode
-echo [ERROR] Node.js 20 or newer is required. Install a supported LTS version.
+echo [ERROR] Node.js 20.19+, 22.13+, or 24+ is required. Install a supported LTS version.
 node -v
 goto :Finish
 :NoNpm

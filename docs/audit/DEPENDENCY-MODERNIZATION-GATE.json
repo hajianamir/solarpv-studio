@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "dependency-modernization-gate-v1",
+  "status": "ready-for-review",
+  "environment": {
+    "platform": "Linux",
+    "node": "22.22.3"
+  },
+  "checks": [
+    {
+      "command": "npm ci",
+      "result": "PASS; no deprecation warnings"
+    },
+    {
+      "command": "npm run test:dependencies",
+      "result": "PASS"
+    },
+    {
+      "command": "npm run verify:exports",
+      "result": "PASS"
+    },
+    {
+      "command": "npm run lint",
+      "result": "PASS; 0 errors, 93 existing warnings"
+    },
+    {
+      "command": "npm run build",
+      "result": "PASS"
+    },
+    {
+      "command": "npm test",
+      "result": "PASS"
+    },
+    {
+      "command": "npx tsx scripts/test-browser-regressions.ts",
+      "result": "PASS"
+    },
+    {
+      "command": "npm audit",
+      "result": "PASS; 0 vulnerabilities at execution time"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "boundary": {
+    "engineeringOrFinanceFormulasChanged": false,
+    "projectSchemaChanged": false,
+    "newAccuracyClaim": false
+  },
+  "limitations": [
+    "ExcelJS overrides exceed upstream declared ranges; tested consumer paths only",
+    "Native Windows/macOS not executed",
+    "Node 20/24 remote CI not executed in this session",
+    "No claim that every optional scientific suite was rerun"
+  ],
+  "fileSha256": {
+    ".github/workflows/ci.yml": "cb5904d1575e5a2cfff9c2baef7b96bcd7dc0e252ef3377a0674e28a1749d913",
+    "CHANGELOG.md": "992075ac6ae7176ddae61c4e6167b9644881cee6be8b1570c705746a121e3156",
+    "docs/features/PC-LAUNCHER-DEPENDENCY-REPAIR.md": "c3c01dd6525aa172da3a102a2100426d7d0abd4e100f74f667522030ada8e108",
+    "eslint.config.js": "a92f90d56193186efd328446658c3a54d9c4584a589ebc19cc74c767fec890af",
+    "install.bat": "43d9427e9ba604c46d84269396e8aff7b8007f9378ac8a6cc75a5b8bdd13f858",
+    "package-lock.json": "7de169e73326e76113630aa492001e18b39a8432cf32e1cb04f06203a52f052a",
+    "package.json": "26afd1373a0f5ce6b82f6d3e4b09ac125e29a5dd3a9512453a5ad6301bc0c0b1",
+    "scripts/run-pc.ts": "e92d5fd5baf5b81029744e434cee8e9ef6b2730cdcc52c26201fdefdb6b00876",
+    "scripts/test-pc-launcher.mjs": "0e105fd711ec4b332a141950fec7556b57f6607b851fd2ae8a8c3919b08b6bd3",
+    "start.bat": "6450eae09baf798f707253e4d69ccdd93057b1a7bb896a366234276571949881",
+    "scripts/check-node-version.mjs": "db22c7397734eaecfffbce3e8dac23edf9e91d79a4d93c85b5f2133cfe15f19e",
+    "scripts/test-dependency-modernization.ts": "124d532fed1b8ff5973d3058a69e8c6537f18f6db3de60c1605ef87e7ebb2e0c",
+    "docs/features/DEPENDENCY-MODERNIZATION.fa.md": "d702b0cba9f7b8eed0c4d6fac1e15304149ff5f416c4ee0915652262c62c3c73"
+  }
+}

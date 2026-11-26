@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "ac-retirement-research-execution-gate-v1",
+  "softwareStatus": "ready-for-review",
+  "scope": [
+    "independent lazy research workspace with four tool sections and thirteen model topics",
+    "retired explicit AC state, schema, engine and report references; independent MV and feeder safety inputs retained",
+    "guided research forms, explicit blockers and actual authenticated server-calculated result tables",
+    "on/off-grid policy with loads; project family navigation and explicit restore preserved"
+  ],
+  "boundary": {
+    "projectSchemaChanged": true,
+    "retiredFieldRemoved": true,
+    "numericalFormulaChanged": false,
+    "recomputedLegacySizingMayDiffer": true,
+    "automaticEnergyAdoption": false,
+    "financeMutation": false,
+    "fieldQualificationClaimed": false
+  },
+  "notTested": [
+    "all optional scientific runtimes and every A1-D3 acceptance suite",
+    "native Windows/Safari"
+  ],
+  "checks": [
+    {
+      "command": "npm run lint:types",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run lint:eslint",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run test:ac-retirement",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run verify:exports",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-research-api.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run verify:help",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm test",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npm run build",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-research-workspace-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-browser-regressions.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-research-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-calibration-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-direct-pvlib-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "npx tsx scripts/test-foundation-browser.ts",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": "git diff --check",
+      "passed": true,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "fileSha256": {
+    ".env.example": "5e47cc4ed324e576112f37a1840acbaa0513baf61f1dabae55b5bcd49b971bda",
+    "src/components/ResearchStudyView.tsx": "e3a3373866e164a8f5b91bfec7fab3739dd77c80a53d801c8c1edb805de7055c",
+    "src/components/ProtectionBomTab.tsx": "11fbd137122db841b5c771934be491e73968853a26d3f369d9d66bb1c7bc4445",
+    "src/components/LoadProfilingTab.tsx": "100dd1aef7dba89ac0365ef4c791efd7faff38c371e55ec2ca6ef537a734b185",
+    "src/components/OfficialReportModal.tsx": "e2492f923bddc406a5a1c7f6290a44f54776684482a99d20ee333d29839a824b",
+    "src/components/SingleLineDiagram.tsx": "9f93fcef6363400266c3da6146e465249ba7097497a58e7722d4a534806a76b0",
+    "src/engine/core/projectMigration.ts": "c00a12f34d6039fbeacc288b4991a023e5534cadbe977c0917f0fcea3068fe97",
+    "src/engine/inverterClustering.ts": "943575313e0f26fcbc7651385a5f25396486a382dda44ed8040389afb472dbdb",
+    "src/server/researchApi.ts": "50727de1d688e32cc3c38193834b5d2434500bdbcc2298deab271ec669dd72ee",
+    "scripts/test-ac-retirement.ts": "c353053bb8628f2417918a3dfef6e2f388116376bff90233c140d5491e950b6a",
+    "docs/features/AC-RETIREMENT-RESEARCH-EXECUTION.fa.md": "960399147770fdafc6df4115d8fb63f5766154b03542b79b2211b5c263298e21",
+    "src/App.tsx": "ae0c9e143db52f687f33ac663613114f0c3c5992a1a7ee93d5d49d70748cf50e",
+    "src/components/ClimateTab.tsx": "8ddfa564028ffc03469478ffa94cdbed83ec451cd244a3623a955b70c24d418b",
+    "src/components/ResearchEditor.tsx": "f1fa8478d340165c991c62cdea52eebae46eb8c6e6748e7aefb258b52088a6ec",
+    "src/components/ResearchWorkspace.tsx": "a589081414b9c2cc4a65f683e33d92a2456e3027b36c67ad96bc9eedf7a7e4e7",
+    "src/helpContent.ts": "553d37a3ea7bfc86ed3d720fc4426800101606ed73f7b1142961d88f6990736b",
+    "src/i18n.ts": "e2e138a80096bf4382a88566fe35ed7da7dba9bf77c7a30d1aacf0c4baa1d8a1",
+    "src/engine/core/benchmarks/unitTestsCore.ts": "ffe58f9b2b5f6fc257027eedd04caa479dd2f36aa852f70ea94f98061efd598b",
+    "scripts/research-browser-navigation.ts": "d21733e71176969b3103a0112bb1ad6805c3401400aaba82819a841d92c33ecf",
+    "scripts/test-research-workspace-browser.ts": "c4a52aa232e95af044c586c83c650f65629e31763f81c5d3cb2d5920b7790232",
+    "scripts/test-browser-regressions.ts": "f993ee155051983544d1e5b28137c3f253c7b4399c0e159dc2f375d9ab4dabe3",
+    "scripts/test-research-browser.ts": "bc46b2aba08bd838af88c178d60eac72066b1d39cfad068ea1dc75aa5d1eb33e",
+    "scripts/test-calibration-browser.ts": "9cc60c33ff8523f82cb95330026890c2b723fce635b6167c28fc8532c712c710",
+    "scripts/test-direct-pvlib-browser.ts": "ac0a8b11f1c6148ba080350a31656faa596aab694eb8b79744f220659c2d511c",
+    "scripts/verify-research-workspace.ts": "a9469f0e130d7ef7cef1018ab7e9d082d58e238c9174e336e97fc600a34e8728",
+    "docs/features/RESEARCH-WORKSPACE-SPEC.fa.md": "6eccfe6e12a25644c26da590901346dfbd245e5579c8dd22e55c864a7bbc1a9d",
+    "docs/features/RESEARCH-WORKSPACE.fa.md": "2e5c226b9d6bcfbd93082a30d413bd6cfedce911788e98ea4641c14791a3b2e0",
+    "CHANGELOG.md": "c62321fc28913c61a2d3fe431fde8d4de90447e0eb750432675e54cccbf5cc35"
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "status": "PARTIAL_PHASE1_RECOVERY_ACCEPTED_CONTAINER_PENDING_CAD_NOT_STARTED",
+  "branch": "arena/68cadb56-solarpv-studio",
+  "scope": [
+    "snapshot recovery data preservation",
+    "production packaging fix and real-image CI gate",
+    "bounded cleanup of obsolete instructions and generated output"
+  ],
+  "sourceSha256": {
+    "server.ts": "39a05246f175fa541f18a61deea88a2a0fb743fe1b8f49fb74f6be2ff2bd7951",
+    "Dockerfile": "af1cd89f1f55cb8f1856878d297692d72c9838a098616c9427e2053edd4cd624",
+    ".github/workflows/ci.yml": "cc450f2cb4aacd503b97a08b670b12f68a4d8e254bce275d2156e47ee855580b",
+    ".gitignore": "0e8eacabc144b1389a518bf77a4fdd60e2c13a2b88ab7d92d07d947d8604fc7f",
+    "package.json": "fbf28b64e93e6cec8a1e9cc1c5e86b4cef526493945e43a3f065395508bc9e64",
+    "scripts/test-snapshot-recovery.ts": "b9e158c2969e9c57f5948bf454c8ba4dcfbda6ffb59a3ca2df727803288db50b",
+    "scripts/test-container-runtime.mjs": "1d536688403b1157532d6918eee3590e74b2b7e28d78a826dd0ec16f7e95444d",
+    "docs/operations/PRIORITIZED-REMEDIATION.fa.md": "1feb8b4a04883e08e33e7e70012d95ec5dfcc4ce45b3c485e540a6b8523253fe",
+    "CHANGELOG.md": "009a055fb62fc33eef76e6a796bf1cd1d59036822e3a1694d5ba723fc60a7926"
+  },
+  "checks": [
+    {
+      "command": "npm run lint",
+      "status": "PASS",
+      "log": ".cache/phase1-lint.log",
+      "logSha256": "9e97325285b8a392ff191f5b028bded18ff948f204aee0ae54f82bff59a21721"
+    },
+    {
+      "command": "npm run test:recovery",
+      "status": "PASS",
+      "log": ".cache/phase1-recovery.log",
+      "logSha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+    },
+    {
+      "command": "npm run build",
+      "status": "PASS",
+      "log": ".cache/phase1-build.log",
+      "logSha256": "445306de364f436e1b6cd118a5eb4201e31c22fdc3969877929d5b2025bbd3ad"
+    },
+    {
+      "command": "npm test",
+      "status": "PASS",
+      "log": ".cache/phase1-core.log",
+      "logSha256": "e59c93415ed6673824fbff4b5a1b9dafcc3f86e87356e045d7d43e9d0deb433b"
+    },
+    {
+      "command": "npm run verify:rate-limit",
+      "status": "PASS",
+      "log": ".cache/phase1-api.log",
+      "logSha256": "82c8b54d9d5a1f808db1157bd14bb2be74d5b5c492a0c812c56ff626d00a3dd9"
+    },
+    {
+      "command": "npm run verify:exports",
+      "status": "PASS",
+      "log": ".cache/phase1-exports.log",
+      "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+    },
+    {
+      "command": "npm run test:container",
+      "status": "UNAVAILABLE_DOCKER_ENOENT",
+      "log": ".cache/phase1-container.log",
+      "logSha256": "c57caa736ef80e05077e60c5295be5ce95d8f15ad0765e21d433643e8a554d53"
+    }
+  ],
+  "recovery": {
+    "scenarios": 9,
+    "bytePreservationThrough": [
+      "module import",
+      "direct save",
+      "SIGINT",
+      "SIGTERM"
+    ],
+    "healthOnRecoveryFailure": "HTTP 503 degraded",
+    "normalEmptyAndPopulatedRestore": true,
+    "symlinkTestScope": "Linux; not native Windows"
+  },
+  "cleanup": {
+    "files": [
+      {
+        "path": "coverage/tmp/coverage-2263-1793728311294-0.json",
+        "bytes": 266628,
+        "sha256": "9d3b09dfd3a4b327fc6250c42a3d0c73473cf9b71b89581c256f3bc1c086f36b",
+        "reason": "regenerable V8 coverage temporary output"
+      },
+      {
+        "path": "coverage/tmp/coverage-2264-1793728309811-0.json",
+        "bytes": 91048,
+        "sha256": "216ce6fce7dd39dd9fa90de39a14cb5f5ffb8a4e9ba113db2527731ad20c55f5",
+        "reason": "regenerable V8 coverage temporary output"
+      },
+      {
+        "path": "coverage/tmp/coverage-2281-1793728311240-1.json",
+        "bytes": 359723,
+        "sha256": "b9800282493dd03e1fb7135c243c1f402b919eb136edd1d98ee2ea32693b3ae2",
+        "reason": "regenerable V8 coverage temporary output"
+      },
+      {
+        "path": "coverage/tmp/coverage-2281-1793728311259-0.json",
+        "bytes": 1698359,
+        "sha256": "5d68fe5f72ad7674df1241eb1834e66167102e060ad63c148df7b3c073c93345",
+        "reason": "regenerable V8 coverage temporary output"
+      },
+      {
+        "path": "coverage/tmp/coverage-4868-1793738973310-0.json",
+        "bytes": 266622,
+        "sha256": "b4a06aa0e48e1de6830d756253e3aad908cd30b4eb49c5685924abc271eb7788",
+        "reason": "regenerable V8 coverage temporary output"
+      },
+      {
+        "path": "coverage/tmp/coverage-4869-1793738971370-0.json",
+        "bytes": 91049,
+        "sha256": "e9979d4aed82e2d5a08fb1d20d3059002e449b11b13a18b57d4f78eff0e49819",
+        "reason": "regenerable V8 coverage temporary output"
+      },
+      {
+        "path": "coverage/tmp/coverage-4886-1793738973247-1.json",
+        "bytes": 359724,
+        "sha256": "4f1064b560e34f029541f7254e6eb350f5c5af0ae01d050a506efbc830b584f0",
+        "reason": "regenerable V8 coverage temporary output"
+      },
+      {
+        "path": "coverage/tmp/coverage-4886-1793738973268-0.json",
+        "bytes": 1733721,
+        "sha256": "6729c4c66a4f788ba95b596dbba9df285a243e6df8a2c75a944fd4adac36328b",
+        "reason": "regenerable V8 coverage temporary output"
+      },
+      {
+        "path": "docs/audit/EXECUTION-UNIT-FINALIZATION-PROMPT-EN.md",
+        "bytes": 7984,
+        "sha256": "a33a158c7967c5ad832a9788b6ba686c30fe9af80776dbe7ec1a669ff41cd82f",
+        "reason": "obsolete PR28 session instructions for other branches, not current implementation/evidence"
+      },
+      {
+        "path": "docs/audit/EXECUTION-UNIT-NEXT-STEPS-PROMPT-EN.md",
+        "bytes": 5035,
+        "sha256": "436ab8f3cbae401bf00fc46751e7e0a8e7eaebbe0a8229f678c8a6a202e516dd",
+        "reason": "obsolete PR28 session instructions for other branches, not current implementation/evidence"
+      },
+      {
+        "path": "docs/audit/EXECUTION-UNIT-POST-VALIDATION-PROMPT-EN.md",
+        "bytes": 3998,
+        "sha256": "980fbd7ca8cecaf0d30cd371db5127689a2ce474e730c3facdcdc51c8eddbe3c",
+        "reason": "obsolete PR28 session instructions for other branches, not current implementation/evidence"
+      },
+      {
+        "path": "docs/audit/EXECUTION-UNIT-BRANCH-MISMATCH-ADDENDUM-EN.md",
+        "bytes": 1793,
+        "sha256": "edeaf6efaaa31020fb12487fe4e17c83af24afeb60b91fbd0ac2bdff7c45f323",
+        "reason": "obsolete PR28 session instructions for other branches, not current implementation/evidence"
+      }
+    ],
+    "activeTestsAndReferencedEvidencePreserved": true
+  },
+  "remaining": [
+    "Phase1 CAD boundary/roads/equipment constraints and capacity filtering",
+    "Real Docker image execution (Docker unavailable locally; CI job added but not executed here)",
+    "Phase2 POA convention, worker cancellation, bifacial/tracker, fuel and zero-load corrections",
+    "Prior independent physics registry gaps remain open"
+  ],
+  "boundary": {
+    "scientificFormulasChangedThisStep": false,
+    "financeEnergyAdoption": false,
+    "originalDirtyWorkPreserved": true,
+    "commitOrPush": false
+  },
+  "limitations": [
+    "No Docker run/image certification in this environment",
+    "No claim of complete remediation or full release readiness",
+    "Lint retains 93 existing warnings and zero errors",
+    "Global physics gate has prior documented gaps; this receipt does not override it"
+  ]
+}

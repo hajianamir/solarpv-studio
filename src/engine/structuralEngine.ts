@@ -1,5 +1,5 @@
 // Structural Mounting & Civil Foundation Engineering Engine
-// Conforming to ASCE 7-22, Iranian National Building Code Part 6 (مبحث ۶ مقررات ملی ساختمان), and ACI 318
+// Preliminary legacy structural screening; no ASCE 7-22 / INBC / ACI compliance certification.
 
 import {
   calculateBromsPileSizing,
@@ -130,7 +130,7 @@ export interface StructuralParametersInput {
 }
 
 /**
- * ASCE 7-22 Eq. 26.10-1 velocity pressure q_z (Pa).
+ * Legacy ASCE-style velocity pressure q_z (Pa), with Kd included; NOT verified as ASCE 7-22 Eq. 26.10-1.
  * SINGLE source of truth for wind pressure across structuralEngine and
  * foundationRecommendation. Do NOT duplicate the formula elsewhere.
  */
@@ -147,7 +147,7 @@ export interface WindPressureResult {
 export type ExposureCategory = 'B' | 'C' | 'D';
 
 /**
- * Calculates ASCE 7-22 Table 26.10-1 velocity pressure exposure coefficient Kz
+ * Calculates legacy screening exposure coefficient Kz; the ASCE 7-22 table has not been independently verified
  * as a function of exposure category (B, C, D) and structure height z (m).
  */
 export function calculateKz(
@@ -207,6 +207,8 @@ export interface StructuralRemedialGuidance {
 }
 
 export interface StructuralAnalysisResult {
+  /** Diagnostic safety factors never certify an assumed-input design. */
+  certificationStatus: 'not_certified';
   tableAreaM2: number;
   tableSlopedWidthM: number;
   totalArrayAreaM2: number;
@@ -864,10 +866,10 @@ export function calculateStructuralAndFoundations(
     case 'surface_ballasted_block':
       isStructurallySafe = fosOverturning >= 1.5 && fosSliding >= 1.4 && isBearingCapacitySafe;
       safetyReasonEn = isStructurallySafe
-        ? `Surface precast ballast block verified (Overturning FoS = ${fosOverturning} >= 1.5, sliding FoS = ${fosSliding} >= 1.4). Zero ground penetration required for refusal/rocky ground.`
+        ? `Surface precast ballast block meets assumed screening thresholds only (Overturning FoS = ${fosOverturning} >= 1.5, sliding FoS = ${fosSliding} >= 1.4). Zero ground penetration required for refusal/rocky ground.`
         : `Surface ballast insufficient against wind action (Overturning FoS = ${fosOverturning}, Sliding FoS = ${fosSliding}). Increase ballast block mass.`;
       safetyReasonFa = isStructurallySafe
-        ? `بلوک بتنی پیش‌ساخته سطحی تأیید است (FoS واژگونی = ${fosOverturning} >= ۱.۵، FoS لغزش = ${fosSliding} >= ۱.۴). بدون نیاز به کوبش در خاک‌های سخت/سنگی.`
+        ? `بلوک بتنی پیش‌ساخته صرفاً آستانه‌های فرضی غربالگری را برآورده می‌کند (FoS واژگونی = ${fosOverturning} >= ۱.۵، FoS لغزش = ${fosSliding} >= ۱.۴). بدون نیاز به کوبش در خاک‌های سخت/سنگی.`
         : `وزن بلوک سطحی در برابر باد ناکافی است. جرم بلوک بتنی را افزایش دهید.`;
       break;
     case 'pre_drilled_grouted_pile': {
@@ -996,9 +998,9 @@ export function calculateStructuralAndFoundations(
   }
 
   let engineeringRemarksFa =
-    'ارزیابی اولیه پایداری سازه و فونداسیون در مودهای بررسی‌شده (کشش، باربری خاک و برش جانبی برمز) طبق مبحث ۶ و ۷ مقررات ملی و ASCE 7-22 ارضا شده است. مودهای ارزیابی‌نشده (اتصالات کلمپ، انکرهای شیمیایی، گردابه‌های گوشه و پاسخ لرزه‌ای) مستثنی بوده و انطباق اجرایی منوط به گمانه‌زنی ژئوتکنیک و طراحی تفصیلی است.';
+    'غربالگری اولیه کشش، باربری و پاسخ جانبی برمز با ورودی‌ها و ضرایب تجربی فرضی است. انطباق با ASCE 7-22 یا مقررات ملی اثبات نشده است. خاک و خطرات نیازمند شواهد اختصاصی سایت‌اند؛ اتصالات، گردابه‌ها و تحلیل لرزه‌ای ارزیابی نشده‌اند. تأییدیه طراحی صادر نمی‌شود.';
   let engineeringRemarksEn =
-    'Preliminary screening structural stability and foundation sizing compliant with INBC Part 6 & ASCE 7-22 for evaluated failure modes (uplift, bearing, Broms lateral). Unassessed modes (purlin clamps, chemical anchors, corner vortices, seismic dynamics) excluded; definitive certification subject to borehole testing and detailed engineering.';
+    'Preliminary screening of uplift, bearing and Broms lateral response using assumed inputs and legacy empirical coefficients. ASCE 7-22 / INBC compliance is NOT established. Soil and hazard values require site-specific evidence; purlin clamps, chemical anchors, corner vortices and seismic dynamics are unassessed. No design certification is issued.';
   if (!isStructurallySafe) {
     if (!isRooftopOrShed && !hasFrostData) {
       engineeringRemarksFa = 'هشدار مهندسی: عمق یخبندان ساختگاه نامشخص است؛ بدون گمانه‌زنی و تعیین عمق یخبندان، پایداری شمع قابل تأیید نیست.';
@@ -1055,6 +1057,7 @@ export function calculateStructuralAndFoundations(
     upliftCapacityProvenance,
     assumedGroutBondKpa,
     isStructurallySafe,
+    certificationStatus: 'not_certified',
     isScreeningPreliminary: true,
     screeningDisclaimerFa,
     screeningDisclaimerEn,

@@ -8,7 +8,7 @@ in both package.json and package-lock.json; an old local installation can lack i
 Double-click `install.bat`, wait for `[OK] Installation complete`, then double-click
 `start.bat`. No terminal command is required. You can also run these files from a terminal.
 
-The installer requires Node.js 20 or newer with npm already installed; if missing,
+The installer requires Node.js 20.19+, 22.13+, or 24+ with npm already installed; if missing,
 it explains how to install Node.js LTS. It does not download or alter system runtimes
 automatically. It runs `npm ci --include=dev` against the committed lockfile, so it
 recreates node_modules (close any running server first) and includes tsx/Vite even

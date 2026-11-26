@@ -25,7 +25,7 @@ try{
  for(const spoof of ([{'x-user-id':'alice'},{'x-user-id':'alice','x-gateway-secret':'fake'},{Authorization:'Bearer alice'}] as Record<string,string>[])){const r=await fetch(`${base}/api/v1/research/run`,{method:'POST',headers:{'Content-Type':'application/json',...spoof},body:'{'});assert.equal(r.status,401);authCases++;}
  const malformed=await fetch(`${base}/api/v1/research/run`,{method:'POST',headers:headers(),body:'{'});assert.equal(malformed.status,400);assert.equal(malformed.headers.get('cache-control'),'no-store');
  const projects=await fetch(`${base}/api/v1/projects`);assert.equal(projects.status,401);
- const created=await fetch(`${base}/api/v1/projects/quick-size`,{method:'POST',headers:headers(),body:JSON.stringify({projectName:'phase6-owned',dailyKwh:30,autonomyDays:1,latitude:35,longitude:51,ownerId:'bob'})});
+ const created=await fetch(`${base}/api/v1/projects/quick-size`,{method:'POST',headers:headers(),body:JSON.stringify({projectName:'phase6-owned',allowAnalyticalEstimate:true,dailyKwh:30,autonomyDays:1,latitude:35,longitude:51,ownerId:'bob'})});
  // Use the public quick-sizing route name from the app's contract.
  assert.equal(created.status,200,await created.clone().text());const id=(await created.json()).projectId;assert.ok(id);
  const own=await fetch(`${base}/api/v1/projects/${id}`,{headers:headers()});assert.equal(own.status,200);assert.equal((await own.json()).ownerId,'alice');

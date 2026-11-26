@@ -1,6 +1,6 @@
 // Adaptive Power Inverter, Auto-Voltage Stepping & Paralleling Engine
 
-import type { AcPhase } from './acRequirements';
+type AcPhase = 'single' | 'three' | 'unknown';
 
 export type InverterEngineeringClass =
   | 'residential_micro'

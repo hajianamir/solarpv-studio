@@ -11,7 +11,8 @@ export default [
     languageOptions: { parser: tsParser },
     plugins: { '@typescript-eslint': tsPlugin, 'react-hooks': reactHooks },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // Preserve the existing two-rule contract; React Compiler adoption is separate.
+      'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error', // the key rule (BUG-1 class)
       '@typescript-eslint/no-explicit-any': ['warn', { ignoreRestArgs: true }],
     },

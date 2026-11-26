@@ -612,8 +612,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
         </h1>
         <p className="text-slate-400 text-xs">
           {isEn
-            ? 'Preliminary screening estimation per ASCE 7-22 & INBC Part 6 principles: Evaluates baseline wind and geotechnical loads. Not detailed design certification or substitute for a licensed structural engineer.'
-            : 'ارزیابی و غربالگری اولیه مهندسی بر مبنای اصول مبحث ۶ و ASCE 7-22: تخمین اولیه بارهای باد و ژئوتکنیک؛ جایگزین طراحی تفصیلی یا تاییدیه مهندس محاسب ذی‌صلاح نمی‌باشد.'}
+            ? 'Assumption-based screening only: legacy wind coefficients and site soil/hazards are not verified ASCE 7-22 / INBC design inputs. Green safety factors do not establish compliance or site suitability. No certification is issued.'
+            : 'فقط غربالگری با فرضیات: ضرایب باد و داده خاک و خطرات برای انطباق با ASCE 7-22 و مقررات ملی تأیید نشده‌اند. ضریب اطمینان سبز به معنی انطباق یا مناسب‌بودن سایت نیست؛ تأییدیه طراحی صادر نمی‌شود.'}
         </p>
       </div>
 

@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-03",
+  "scope": "Remaining operational/product fixes; not whole-model certification",
+  "releaseStatus": "BLOCKED_PENDING_INDEPENDENT_MODEL_AND_CONTAINER_EVIDENCE",
+  "checks": {
+    "lint": "PASS; 0 errors, 93 warnings",
+    "productionBuild": "PASS",
+    "npmTest": "PASS executable regressions; stored-target report WARN",
+    "remainingTargetedSuite": "PASS: 1260 independent tracker geometries, 128 rear-beam geometries, 27 CAD layouts, fuel/zero-load, Worker lifecycle, real HTTP POA and native Chromium workers",
+    "snapshotRecovery": "PASS 9 subprocess scenarios",
+    "apiSizingThermal": "PASS 34/34",
+    "exportReadback": "PASS DOCX/XLSX/JSON and re-import",
+    "ui": "PASS 81 layout checks",
+    "browserRegressions": "PASS",
+    "engineClaimGuards": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "numericalEvidence": {
+    "reference": "pvlib 0.13.1, independently generated component fixtures",
+    "maxTrackerShadeFractionError": 2.6645352591003757e-15,
+    "notEvidenceOf": ["annual/site yield accuracy", "field validation", "whole bifacial model validity", "production-bundle worker coverage"],
+    "retiredBifacialTarget": {
+      "storedPercent": 10.4,
+      "currentPercentApprox": 9.22,
+      "relativeDiscrepancyPercentApprox": 11.35,
+      "status": "WARN retired_unverified_target",
+      "decision": "Retain target/discrepancy visibly; do not tune corrected geometry to an unreproduced reference. This is a reference retirement, not a successful independent comparison."
+    }
+  },
+  "unresolved": [
+    "Docker unavailable locally; actual image runtime/CI result not verified",
+    "Independent whole-model physics registry retains 8 blocked entries from prior gate; not rerun or waived here",
+    "Heavy shading still has browser Worker/cooperative fallback; this is not authenticated Python/server migration",
+    "No native Windows/Safari/iOS or field accuracy certification"
+  ],
+  "safety": "No new research-to-financial/annual-energy bypass. Existing temporal/project/registered research gates retained.",
+  "guide": "docs/operations/PRIORITIZED-REMEDIATION.fa.md",
+  "commitOrPush": "Not requested; none performed"
+}

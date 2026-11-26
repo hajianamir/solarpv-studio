@@ -45,7 +45,6 @@ import { UserFinancialPricingSchema } from '../projectMigration';
 import { DEFAULT_FINANCIAL_PRICING } from '../../financialEngine';
 import { getClimateData } from '../../climaticData';
 import { formatPsh } from '../../formatters';
-import { assessAcRequirements, createUnknownAcRequirements, evaluateLoadAcCurrents, isValidAcConnection, updateAcConnection } from '../../acRequirements';
 import { evaluateInverterClustering } from '../../inverterClustering';
 import { getContextualHelp } from '../../../helpContent';
 import { ExternalDataGateway, CircuitBreaker } from '../../dataGateway';
@@ -223,7 +222,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
   // 2.1 Clean Golden Run
   const cleanCross = runSystemCrossValidation();
-  assert('Validation', 'Nominal Cross-Validation PASS Branch', cleanCross.overallStatus === 'PASS', 'Clean run returned overall PASS');
+  assert('Validation', 'Nominal report preserves retired-reference warning', cleanCross.overallStatus === 'WARN' && cleanCross.metrics.find(m=>m.testId==='VAL-BIFACIAL-01')?.evidenceStatus==='retired_unverified_target', 'Unreproduced bifacial target remains visible WARN, not a green validation claim');
 
   // 2.2 Trigger WARN Branch (relErr > tolerance && relErr <= 1.5 * tolerance)
   // VAL-SANDIA-02 has nominal 410.20 and tolerance 1.5%.
@@ -899,66 +898,16 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     twoDecimalPshFormatting && fallbackSitePreservesModelPrecision && fallbackSiteHasExplicitClimateProvenance,
     `PSH display ${formatPsh(0)}/${formatPsh(5.3)}/${formatPsh(5.236)}; fallback fields explicitly identify modeled temperatures/PSH and fixed unverified albedo.`
   );
-  let ac = createUnknownAcRequirements();
-  ac = updateAcConnection(ac, 'loadService', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: null, confirmed: true });
-  ac = updateAcConnection(ac, 'inverterOutput', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.92, availableFaultCurrentKa: 10, faultClearingTimeSec: 0.1, confirmed: true });
-  ac = updateAcConnection(ac, 'lvGrid', { phase: 'three', lineToLineVolts: 208, lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: null, confirmed: true });
-  ac = { ...ac, injection: { level: 'not_applicable', nominalKv: null, confirmed: true }, inverterNameplate: { nominalFrequencyHz: 60, sourceUrl: 'https://vendor.example/exact-model-datasheet', userConfirmed: true } };
-  const acRequiresReconfirmation = updateAcConnection(ac, 'loadService', { frequencyHz: 50 });
-  ac = updateAcConnection(ac, 'loadService', { powerFactor: 0.9, confirmed: true });
-  ac = updateAcConnection(ac, 'load:single-load', { phase: 'single', lineToNeutralVolts: 120, frequencyHz: 60, powerFactor: 0.8, confirmed: true });
-  const loadAcCurrentResults = evaluateLoadAcCurrents([
-    { id: 'site-load', name: 'Three-phase site load', ratedWatts: 2000, quantity: 1, isDc: false, acPhase: 'three' },
-    { id: 'single-load', name: 'Explicit single-phase load', ratedWatts: 1000, quantity: 1, isDc: false },
-    { id: 'dc-load', name: 'DC load', ratedWatts: 500, quantity: 1, isDc: true },
-  ], ac);
-  const threePhaseOnSinglePhaseService = evaluateLoadAcCurrents(
-    [{ id: 'three-on-single', name: 'Three-phase motor', ratedWatts: 3000, quantity: 1, isDc: false, acPhase: 'three' }],
-    { ...ac, loadService: { ...ac.loadService, phase: 'single', lineToLineVolts: null, lineToNeutralVolts: 120 } },
-  )[0];
-  const infiniteLoadVoltageResult = evaluateLoadAcCurrents(
-    [{ id: 'infinite-voltage', name: 'Invalid voltage load', ratedWatts: 1000, quantity: 1, isDc: false }],
-    { ...ac, loadService: { ...ac.loadService, lineToNeutralVolts: Infinity } },
-  )[0];
-  const infiniteInjectionAssessment = assessAcRequirements(
-    { ...ac, injection: { level: 'mv', nominalKv: Infinity, confirmed: true } },
-    { isThreePhase: true, acVoltageVac: 208 },
-    'powerplant',
-  );
-  const acCompatibleNorthAmerican = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid');
-  const acIncompatibleInverter = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 400 }, 'ongrid');
-  const acIncompatibleCatalogFrequency = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208, frequencyHz: 50 }, 'ongrid');
-  const acCompatibleCatalogFrequency = assessAcRequirements(ac, { isThreePhase: true, acVoltageVac: 208, frequencyHz: 60 }, 'ongrid');
-  const clusterUnknownPhase = evaluateInverterClustering(5000, 7000, 5, 500).acPhaseType;
-  const clusterExplicitPhase = evaluateInverterClustering(5000, 7000, 5, 500, 'single').acPhaseType;
-  const acOldProjectMigration = migrateProjectToV3({ version: '3.0.0', projectName: 'Legacy AC unknown' });
-  const { inverterNameplate: _missingLegacyNameplate, ...legacyAcWithoutNameplate } = createUnknownAcRequirements();
-  const acPriorSchemaMigration = migrateProjectToV3({ ...REAL_WORLD_V2_TEST_VECTORS[0].rawPayload, acRequirements: legacyAcWithoutNameplate });
-  assert('AC REQUIREMENTS', 'Explicit phase/voltage/frequency, LV-vs-injection separation, mismatch and legacy unknown handling',
-    acCompatibleNorthAmerican.status === 'compatible' && acIncompatibleInverter.status === 'incompatible'
-      && acIncompatibleCatalogFrequency.status === 'incompatible'
-      && acIncompatibleCatalogFrequency.reasons.some((reason) => reason.includes('catalog frequency'))
-      && acCompatibleCatalogFrequency.status === 'compatible'
-      && acOldProjectMigration.project.acRequirements === null
+  const acOldProjectMigration = migrateProjectToV3({ version: '3.0.0', projectName: 'Legacy AC removed' });
+  const acRetiredMigration = migrateProjectToV3({ ...REAL_WORLD_V2_TEST_VECTORS[0].rawPayload, acRequirements: { inverterOutput: { confirmed: true, lineToLineVolts: -1 }, injection: { nominalKv: 999, confirmed: true } } });
+  assert('AC RETIREMENT', 'Retired interface payload cannot influence current engineering inputs',
+    !('acRequirements' in acOldProjectMigration.project)
+      && !('acRequirements' in acRetiredMigration.project)
       && acOldProjectMigration.project.mvVoltageKv === null
-      && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.userConfirmed === false
-      && acPriorSchemaMigration.project.acRequirements?.inverterNameplate.nominalFrequencyHz === null
-      && acPriorSchemaMigration.warnings.some((warning) => warning.includes('inverter nameplate evidence'))
-      && acOldProjectMigration.requiresUserConfirmation
-      && acOldProjectMigration.warnings.some((warning) => warning.includes('acRequirements'))
-      && clusterUnknownPhase === 'unknown' && clusterExplicitPhase === 'single'
-      && isValidAcConnection(ac.loadService)
-      && acRequiresReconfirmation.loadService.confirmed === false
-      && assessAcRequirements({ ...ac, inverterOutput: { ...ac.inverterOutput, lineToLineVolts: -208 } }, { isThreePhase: true, acVoltageVac: 208 }, 'ongrid').status === 'incomplete'
-      && loadAcCurrentResults[0].status === 'assessed' && Math.abs((loadAcCurrentResults[0].currentAmps ?? 0) - 6.17) < 0.02
-      && loadAcCurrentResults[1].basis === 'per_load_override' && loadAcCurrentResults[1].status === 'assessed'
-      && loadAcCurrentResults[2].status === 'dc_not_applicable'
-      && loadAcCurrentResults[0].phase === 'three'
-      && threePhaseOnSinglePhaseService.status === 'incomplete'
-      && infiniteLoadVoltageResult.status === 'incomplete' && infiniteLoadVoltageResult.currentAmps === null
-      && infiniteInjectionAssessment.status === 'incomplete'
-      && !assessAcRequirements(createUnknownAcRequirements(), { isThreePhase: true }, 'powerplant').reasons.some((reason) => reason.includes('230')),
-    `208/120 V 60 Hz explicit on-grid=${acCompatibleNorthAmerican.status}; 400 V inverter mismatch=${acIncompatibleInverter.status}; legacy AC stays unknown=${acOldProjectMigration.project.acRequirements === null}; infinite load voltage/injection are incomplete.`);
+      && acRetiredMigration.warnings.some(w => w.includes('Retired acRequirements'))
+      && evaluateInverterClustering(5000, 7000, 5, 500).acPhaseType === 'unknown'
+      && evaluateInverterClustering(5000, 7000, 5, 500, 'single').acPhaseType === 'single',
+    'Legacy AC data are discarded with a warning, never used as equipment/feeder/MV inputs; actual load phase still governs clustering.');
 
   const contextualHelpPages = [
     'climate', 'research', 'loads', 'electrical_requirements', 'array', 'harmonics_grid', 'mv_substation', 'bess',
@@ -1703,9 +1652,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const summerNoonBt = computeTrackerState({ zenithRad: 12.24 * d, azimuthRad: 180 * d }, cfgBt);
     assert(
       'TRACKER-SHADING',
-      '[TRACKER-SHADING] winter-noon no-bt <= 0.10; winter-9am > 0; summer-noon ~0; bt noon = 0',
+      '[TRACKER-SHADING] pvlib 0.13.1 winter-9am fraction = 0 at GCR .33; noon fractions ~0',
       winterNoon.shadingFraction <= 0.10 &&
-        winter9.shadingFraction > 0 &&
+        Math.abs(winter9.shadingFraction) < 1e-10 && // independent pvlib shaded_fraction1d oracle: 0 at zenith72.8601/az137.2458, clamp60
         summerNoonNoBt.shadingFraction <= 0.10 &&
         summerNoonBt.shadingFraction === 0,
       `winterNoon(noBt)=${winterNoon.shadingFraction.toFixed(3)} (omega=${winterNoon.trueTrackingDeg.toFixed(2)}deg) | winter9am(noBt)=${winter9.shadingFraction.toFixed(3)} | summerNoon(noBt)=${summerNoonNoBt.shadingFraction.toFixed(3)} | summerNoon(bt)=${summerNoonBt.shadingFraction.toFixed(3)}`
@@ -3974,11 +3923,12 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       report.implementationVerificationCount === 3 &&
       report.metrics.find(m => m.testId === 'VAL-BIFACIAL-01')?.verificationType === 'implementation_verification' &&
       report.metrics.find(m => m.testId === 'VAL-BIFACIAL-01')?.confidence === 'estimated' &&
-      report.testsPassed === 6 &&
+      report.testsPassed === 5 && report.testsWarned === 1 &&
+      report.metrics.find(m => m.testId === 'VAL-BIFACIAL-01')?.evidenceStatus === 'retired_unverified_target' &&
       report.testsFailed === 0;
     assert(
       'F2-R7',
-      'Six benchmark metrics have evidence classes; stored bifacial target is not labeled independent (3 cross-validation tags, 3 implementation checks)',
+      'Six metrics retain evidence classes and a visible retired bifacial warning (5 PASS, 1 WARN; not full model validation)',
       ok,
       `testsRun=${report.testsRun}, crossValidationCount=${report.crossValidationCount}, implementationVerificationCount=${report.implementationVerificationCount}`
     );

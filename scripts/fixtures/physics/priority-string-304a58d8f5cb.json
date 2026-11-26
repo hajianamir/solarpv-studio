@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb",
+  "independentOfImplementation": true,
+  "productionExport": "calculateStringSizing",
+  "inputs": [
+    {
+      "panelVoc": 60,
+      "panelVmp": 50,
+      "tempMinC": 0,
+      "tempMaxC": 25,
+      "betaVocPerC": -0.0028,
+      "betaPmpPerC": -0.0035,
+      "inverterVdcMax": 600,
+      "inverterMpptMin": 100,
+      "inverterMpptMax": 550
+    }
+  ],
+  "expected": {
+    "minModules": 2,
+    "maxModules": 9,
+    "status": "feasible",
+    "hasWarning": true,
+    "warnings": [
+      "Vmp temperature coefficient is approximated from Pmp/Voc; verify against manufacturer data."
+    ],
+    "effectiveCellTempMaxC": 25
+  },
+  "independentCalculation": "scripts/fixtures/generate-priority-strings.py uses independent Decimal series-voltage addition and exhaustive integer enumeration, not the production floor/ceil implementation. This verifies feasibility under assumed voltage/temperature inputs only, not standards compliance or measured coefficients.",
+  "tolerances": {
+    "absolute": 1e-10,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "OpenStax University Physics Volume 2: Kirchhoff's Rules",
+    "url": "https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules",
+    "version": "2016",
+    "locator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
+  }
+}

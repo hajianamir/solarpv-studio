@@ -35,7 +35,6 @@ import {
   type DcSystemEarthingType,
 } from '../engine/protectionBomEngine';
 import type { InstallationEnvironment } from '../engine/types/climateTypes';
-import type { AcConnectionRequirement } from '../engine/acRequirements';
 
 interface ProtectionBomTabProps {
   systemCapacityKw?: number;
@@ -46,9 +45,7 @@ interface ProtectionBomTabProps {
   inverterDcContinuousCurrentAmps?: number;
   systemDcVoltage?: number;
   isThreePhase?: boolean;
-  acOutputRequirement?: AcConnectionRequirement | null;
   inverterAcVoltageVac?: number;
-  inverterNameplateAttested?: boolean;
   ambientTempC?: number;
   totalModulesCount?: number;
   dcSystemEarthing?: DcSystemEarthingType;
@@ -133,9 +130,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
   inverterDcContinuousCurrentAmps = 250,
   systemDcVoltage = 48,
   isThreePhase = true,
-  acOutputRequirement = null,
   inverterAcVoltageVac,
-  inverterNameplateAttested = false,
   ambientTempC = 42,
   totalModulesCount = 100,
   dcSystemEarthing = 'floating',
@@ -261,37 +256,22 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       return result;
     };
     const calculatedNonAcRuns = runs.map((run) => assessFeeder(run));
-    const ac = acOutputRequirement;
-    const acInput = feederInputs['ac-output'] ?? {};
-    const acVoltage = acInput.isThreePhase ? ac?.lineToLineVolts : (ac?.lineToNeutralVolts ?? ac?.lineToLineVolts);
-    const phaseMatches = ac?.phase === (acInput.isThreePhase ? 'three' : 'single');
-    const acInputsConfirmed = Boolean(ac?.confirmed && phaseMatches && acVoltage && acVoltage > 0
-      && ac.frequencyHz && ac.frequencyHz > 0
-      && ac.powerFactor && ac.powerFactor > 0 && ac.powerFactor <= 1
-      && ac.availableFaultCurrentKa && ac.availableFaultCurrentKa > 0
-      && ac.faultClearingTimeSec && ac.faultClearingTimeSec > 0
-      && inverterNameplateAttested
-      && !(inverterAcVoltageVac !== undefined && ac.lineToLineVolts !== null
-        && Math.abs(inverterAcVoltageVac - ac.lineToLineVolts) > Math.max(1, ac.lineToLineVolts * 0.01))
-      && acInput.nominalVoltageVolts !== undefined && Math.abs(acInput.nominalVoltageVolts - acVoltage) <= Math.max(1, acVoltage * 0.01)
-      && acInput.powerFactor === ac.powerFactor
-      && acInput.expectedIscKa === ac.availableFaultCurrentKa
-      && acInput.faultClearingTimeSec === ac.faultClearingTimeSec);
     const acBase: CableRunConfig = {
       id: 'ac-output', sectionNameFa: 'کابل AC خروجی اینورتر به ترانسفورماتور یا تابلوی اصلی',
       sectionNameEn: 'Inverter AC Output to Transformer / Main Board', oneWayLengthM: 0,
       designCurrentAmps: 0, nominalVoltageVolts: 0, conductorMaterial: 'copper', insulationType: 'xlpe',
       allowableDropPct: 0, isDc: false, isThreePhase,
     };
-    const acRun = acInputsConfirmed
+    // Use the complete per-feeder engineering inputs, not a second AC questionnaire.
+    const acInput = feederInputs['ac-output'];
+    const modelPhaseMatches = acInput?.isThreePhase === isThreePhase;
+    const modelVoltageMatches = inverterAcVoltageVac === undefined || (acInput?.nominalVoltageVolts !== undefined
+      && Math.abs(acInput.nominalVoltageVolts - inverterAcVoltageVac) <= Math.max(1, inverterAcVoltageVac * 0.01));
+    const acRun = modelPhaseMatches && modelVoltageMatches
       ? assessFeeder(acBase)
-      : createUnassessedCableRun(acBase,
-          !ac?.confirmed ? 'AC connection requirements are not confirmed.'
-            : !phaseMatches ? 'Feeder phase does not match the confirmed AC interface.'
-              : !inverterNameplateAttested ? 'Exact inverter nameplate evidence is not attested.'
-                : 'Confirm interface voltage, PF, fault data and match them to the saved per-feeder input before assessment.');
+      : createUnassessedCableRun(acBase, 'Feeder phase/voltage must match the selected inverter catalog. Catalog data are not an independently verified grid study.');
     return [calculatedNonAcRuns[0], calculatedNonAcRuns[1], acRun, ...calculatedNonAcRuns.slice(2)];
-  }, [feederInputs, isThreePhase, acOutputRequirement, inverterAcVoltageVac, inverterNameplateAttested, isUtilityPowerplant]);
+  }, [feederInputs, isThreePhase, inverterAcVoltageVac, isUtilityPowerplant]);
 
   // 2. Earthing Analysis (IEEE 80 Sverak + Touch/Step verification + DC Earthing Architecture)
   const earthingResult = useMemo(() => {
@@ -349,7 +329,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         deviceFa: 'کلید اتوماتیک کمپکت خروجی AC اینورتر (MCCB / ACB)',
         deviceEn: 'Molded Case Circuit Breaker (MCCB)',
         specificationFa: 'IEC 60947-2 با رله الکترونیکی LSI قابل تنظیم',
-        rating: cableRuns[2]?.isAssessed === false ? (lang === 'fa' ? 'نیازمند الزام تأییدشده AC؛ انتخاب کلید انجام نشده' : 'Requires confirmed AC requirement; breaker not selected') : `${Math.ceil((cableRuns[2]?.config.designCurrentAmps ?? 0) / 50) * 50}A / 50kA`,
+        rating: cableRuns[2]?.isAssessed !== true ? (lang === 'fa' ? 'ورودی فیدر/مطالعه خطا ناقص؛ انتخاب کلید انجام نشده' : 'Incomplete feeder/fault study; breaker not selected') : `${cableRuns[2].config.protectiveDeviceRatingAmps}A / ${cableRuns[2].config.protectiveDeviceBreakingCapacityKa}kA (${cableRuns[2].config.protectiveDeviceReference})`,
         quantity: isUtilityPowerplant ? Math.max(2, Math.ceil(systemCapacityKw / 300)) : 1,
         locationFa: 'خروجی AC اینورتر در تابلوی اصلی توزیع',
       },

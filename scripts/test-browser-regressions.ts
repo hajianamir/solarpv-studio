@@ -235,41 +235,11 @@ async function main() {
   assert.equal(await page.evaluate(() => localStorage.getItem('solarpv_theme')), 'light');
   assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'Light theme changed the Persian RTL layout direction');
   await clickTab('electrical_requirements');
-  const warningContrast = await page.getByTestId('ac-requirements-assessment').evaluate((el) => {
-    const style = getComputedStyle(el);
-    const colorRgb = style.color.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
-    const bgRgb = style.backgroundColor.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
-    const linear = [0.2126, 0.7152, 0.0722];
-    let textLum = 0; let bgLum = 0;
-    for (let i = 0; i < 3; i++) {
-      const c = colorRgb[i] / 255; const b = bgRgb[i] / 255;
-      textLum += (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4) * linear[i];
-      bgLum += (b <= 0.04045 ? b / 12.92 : ((b + 0.055) / 1.055) ** 2.4) * linear[i];
-    }
-    return (Math.max(textLum, bgLum) + 0.05) / (Math.min(textLum, bgLum) + 0.05);
-  });
-  assert.ok(warningContrast >= 4.5, `Light theme AC warning contrast is too low: ${warningContrast}`);
-  const invalidAcVoltage = page.getByTestId('ac-input-loadService-lineToLineVolts');
-  await invalidAcVoltage.focus();
-  const phaseFocusStyle = await invalidAcVoltage.evaluate((el) => ({ focused: document.activeElement === el, outline: getComputedStyle(el).outlineStyle, outlineColor: getComputedStyle(el).outlineColor }));
-  assert.ok(phaseFocusStyle.focused && phaseFocusStyle.outline === 'solid' && phaseFocusStyle.outlineColor === 'rgb(29, 78, 216)', `Light-theme focused-input indicator missing: ${JSON.stringify(phaseFocusStyle)}`);
-  await invalidAcVoltage.fill('-1');
-  const invalidAcAlert = page.locator('fieldset').filter({ has: invalidAcVoltage }).getByRole('alert');
-  await invalidAcAlert.waitFor();
-  const invalidTextContrast = await invalidAcAlert.evaluate((el) => {
-    const s = getComputedStyle(el);
-    const color = s.color.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
-    const bg = s.backgroundColor.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
-    const weights = [0.2126, 0.7152, 0.0722]; let a = 0; let b = 0;
-    for (let i = 0; i < 3; i++) {
-      const c = color[i] / 255; const d = bg[i] / 255;
-      a += (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4) * weights[i];
-      b += (d <= 0.04045 ? d / 12.92 : ((d + 0.055) / 1.055) ** 2.4) * weights[i];
-    }
-    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-  });
-  assert.ok(invalidTextContrast >= 4.5, `Light-theme validation error contrast is too low: ${invalidTextContrast}`);
-  await invalidAcVoltage.fill('');
+  assert.equal(await page.getByTestId('ac-requirements-panel').count(), 0);
+  const capacityInput = page.locator('#target-plant-capacity-input');
+  await capacityInput.focus();
+  const phaseFocusStyle = await capacityInput.evaluate((el) => ({ focused: document.activeElement === el, outline: getComputedStyle(el).outlineStyle }));
+  assert.ok(phaseFocusStyle.focused && phaseFocusStyle.outline === 'solid', 'Light-theme focused-input indicator missing');
   await page.getByTestId('context-help-button').click();
   await helpDialog.waitFor();
   assert.match(await helpDialog.evaluate((el) => getComputedStyle(el).backgroundColor), /255, 255, 255/);
@@ -282,52 +252,11 @@ async function main() {
   console.log('[PASS] Light theme tokens, F1 dialog, RTL header toggle and localStorage reload persistence');
 
   await clickTab('electrical_requirements');
-  assert.equal(await page.getByTestId('ac-requirements-assessment').getAttribute('data-status'), 'incomplete', 'unknown AC requirements must never be presented as compatible');
-  const acField = async (target: string, field: string) => page.getByTestId(`ac-input-${target}-${field}`);
-  await page.getByTestId('ac-phase-loadService').selectOption('three');
-  await (await acField('loadService', 'lineToLineVolts')).fill('208');
-  await (await acField('loadService', 'lineToNeutralVolts')).fill('120');
-  await (await acField('loadService', 'frequencyHz')).fill('60');
-  await page.getByTestId('ac-confirmed-loadService').check();
-  await (await acField('loadService', 'frequencyHz')).fill('59');
-  assert.equal(await page.getByTestId('ac-confirmed-loadService').isChecked(), false, 'editing confirmed service data must require reconfirmation');
-  await (await acField('loadService', 'frequencyHz')).fill('60');
-  await page.getByTestId('ac-confirmed-loadService').check();
-  await page.getByTestId('ac-phase-inverterOutput').selectOption('three');
-  await (await acField('inverterOutput', 'lineToLineVolts')).fill('400');
-  await (await acField('inverterOutput', 'lineToNeutralVolts')).fill('230');
-  await (await acField('inverterOutput', 'frequencyHz')).fill('50');
-  await (await acField('inverterOutput', 'powerFactor')).fill('0.95');
-  await (await acField('inverterOutput', 'availableFaultCurrentKa')).fill('25');
-  await (await acField('inverterOutput', 'faultClearingTimeSec')).fill('0.1');
-  await page.getByTestId('ac-confirmed-inverterOutput').check();
-  await page.getByTestId('ac-inverter-nameplate-frequency').fill('50');
-  await page.getByTestId('ac-inverter-nameplate-url').fill('https://fixture.invalid/exact-model-datasheet.pdf');
-  await page.getByTestId('ac-inverter-nameplate-confirmed').check();
-  assert.equal(await page.getByTestId('ac-requirements-assessment').getAttribute('data-status'), 'incompatible', 'mismatch against an explicitly user-attested inverter nameplate must be rejected');
-  await page.getByTestId('ac-inverter-nameplate-url').fill('https://fixture.invalid/changed-datasheet.pdf');
-  assert.equal(await page.getByTestId('ac-inverter-nameplate-confirmed').isChecked(), false, 'editing the datasheet reference must clear its user-attestation');
-  await page.getByTestId('ac-inverter-nameplate-url').fill('https://fixture.invalid/exact-model-datasheet.pdf');
-  await page.getByTestId('ac-inverter-nameplate-confirmed').check();
-  await (await acField('inverterOutput', 'lineToLineVolts')).fill('800');
-  await (await acField('inverterOutput', 'lineToNeutralVolts')).fill('462');
-  await page.getByTestId('ac-confirmed-inverterOutput').check();
-  await page.getByTestId('ac-injection-level').selectOption('mv');
-  await page.getByTestId('ac-injection-voltage').fill('20');
-  await page.getByTestId('ac-injection-confirmed').check();
+  assert.equal(await page.getByTestId('ac-requirements-panel').count(), 0);
   await page.locator('#mv-voltage-select').fill('20');
-  assert.equal(await page.getByTestId('ac-requirements-assessment').getAttribute('data-status'), 'compatible', 'explicit 800V/20kV project interfaces should pass input-compatibility screening only');
-  await clickTab('sld');
-  await page.locator('svg g.cursor-pointer').filter({ hasText: /DC \/ AC/ }).click({ force: true });
-  await page.getByText(/(Customer load service:|سرویس بار مشتری:).*?(user-confirmed|تأیید کاربر)/).waitFor();
-  await page.getByText(/(LV grid interface:|رابط شبکه LV:).*?(UNCONFIRMED|تأییدنشده)/).waitFor();
-  await page.getByText(/(Post-transformer injection:|تزریق پس از ترانسفورماتور:).*?mv; 20 kV; (user-confirmed|تأیید کاربر)/).waitFor();
-  await page.getByText(/(internal collector busbar:|باسبار داخلی کلکتور:) 20 kV/).waitFor();
-  await clickTab('electrical_requirements');
   await page.getByTitle('ذخیره پروژه (Ctrl+S)').click();
   const savedAcProject = await page.evaluate(() => JSON.parse(localStorage.getItem('solarpv_project_save') ?? 'null'));
-  assert.equal(savedAcProject?.acRequirements?.inverterOutput?.lineToLineVolts, 800, 'project save omitted confirmed inverter AC interface');
-  assert.equal(savedAcProject?.acRequirements?.injection?.nominalKv, 20, 'project save omitted the separate injection interface');
+  assert.equal('acRequirements' in savedAcProject, false, 'retired AC input leaked into saved project');
   assert.equal(savedAcProject?.mvVoltageKv, 20, 'project save omitted explicit MV busbar voltage');
   await page.keyboard.press('Control+e');
   await page.getByRole('button', { name: 'سفارشی‌سازی' }).click();
@@ -337,16 +266,14 @@ async function main() {
   const acProjectPath = path.join(artifactDir!, 'ac-requirements-project.solarpv.json');
   await acProjectDownload.saveAs(acProjectPath);
   const acExportEnvelope = JSON.parse(await readFile(acProjectPath, 'utf8'));
-  assert.equal(acExportEnvelope.projectData.acRequirements?.inverterOutput?.lineToLineVolts, 800, 'project export dropped explicit inverter voltage');
-  assert.equal(acExportEnvelope.projectData.acRequirements?.inverterNameplate?.nominalFrequencyHz, 50, 'project export dropped user-attested nameplate frequency');
-  assert.equal(acExportEnvelope.projectData.acRequirements?.inverterNameplate?.userConfirmed, true, 'project export dropped nameplate verification state');
+  assert.equal('acRequirements' in acExportEnvelope.projectData, false);
   assert.equal(acExportEnvelope.projectData.mvVoltageKv, 20, 'project export dropped separate collector busbar voltage');
   await page.locator('#report-modal-close-btn').click();
   await clickTab('cables_bom');
   const unassessedCableRows = page.getByTestId('cable-run-unassessed');
   await unassessedCableRows.first().waitFor({ timeout: 10000 });
   assert.ok(await unassessedCableRows.count() >= 3, 'DC string, DC main and AC cables must remain unassessed without measured project routes');
-  assert.match(await unassessedCableRows.last().innerText(), /route length|measured length|AC connection requirements|fault data|feeder phase|nameplate|confirm interface|incomplete feeder/i, 'AC cable must stay unassessed without a measured route and confirmed interface/fault study');
+  assert.match(await unassessedCableRows.last().innerText(), /route length|measured length|AC connection requirements|fault data|feeder phase|nameplate|confirm interface|incomplete feeder|Feeder phase/i, 'AC cable must stay unassessed without a measured route and confirmed interface/fault study');
   const feederLength = page.getByTestId('feeder-dc-string-oneWayLengthM');
   await feederLength.fill('24.5');
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -884,9 +811,7 @@ async function main() {
   if (acImportDialog) await acImportDialog.accept();
   await tabA.getByText(/Project applied after your confirmation|پروژه با تأیید شما بازیابی شد|Project loaded successfully|پروژه با موفقیت بارگذاری شد/).waitFor({ timeout: 15000 });
   await tabA.getByTestId('workflow-tab-electrical_requirements').locator(':visible').first().click();
-  assert.equal(await tabA.getByTestId('ac-phase-inverterOutput').inputValue(), 'three', 'import did not restore inverter phase requirement');
-  assert.equal(await tabA.getByTestId('ac-inverter-nameplate-frequency').inputValue(), '50', 'import did not restore inverter datasheet frequency');
-  assert.equal(await tabA.getByTestId('ac-injection-voltage').inputValue(), '20', 'import did not restore injection voltage independently');
+  assert.equal(await tabA.getByTestId('ac-requirements-panel').count(), 0, 'retired AC editor returned after import');
   assert.equal(await tabA.locator('#mv-voltage-select').inputValue(), '20', 'import did not restore separate collector busbar voltage');
   await clickTab('climate');
   await tabA.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
@@ -1077,7 +1002,7 @@ async function main() {
   onlineVite.kill('SIGTERM');
   console.log('[PASS] Online-configured browser path refreshed two coordinate-specific mocked gateway sites, retained manual albedo override, then used explicitly labelled offline analytical fallback; fixtures are clearly synthetic and are not climate claims.');
 
-  console.log('Browser regression checks: offline lazy route, waiting SW update, AC interfaces, F-04 reports, metadata remount, UI export/import, multitab catalog persistence, injected pre-write failures, unsizable UI and mocked online climate PASS');
+  console.log('Browser regression checks: offline lazy route, waiting SW update, retired AC isolation and feeder safety, F-04 reports, metadata remount, UI export/import, multitab catalog persistence, injected pre-write failures, unsizable UI and mocked online climate PASS');
 }
 
 let suiteTimeoutHandle: NodeJS.Timeout;

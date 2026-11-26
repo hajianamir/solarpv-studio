@@ -47,7 +47,7 @@ profile = [dict(dayOfYear=d, rainfallMm=0, dustStormOccurred=False,
 snow = dict(annualSnowLossPercent=0, snowCoverageDays=0, avalancheDammingRisk='NONE', maxSnowStructuralLoadKnM2=0)
 soiling = dict(annualAverageSoilingLossPercent=0, maxMonthlySoilingLossPercent=0,
     recommendedWashingCyclesPerYear=2, dustStormVulnerabilityCategory='LOW', dailyProfile=profile)
-bifacial = dict(gainFraction=0, gainPct=0, unclampedGainPct=0,
+bifacial = dict(activeCapPct=25, gainFraction=0, gainPct=0, unclampedGainPct=0,
     isClampedAt15Pct=False, clampedExcessPct=0, modelUsed='view_factor_2d')
 for unit in units:
     owner = unit['functionName']

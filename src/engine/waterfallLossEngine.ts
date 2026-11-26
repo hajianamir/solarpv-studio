@@ -1,4 +1,5 @@
-// Comprehensive 14-Stage PVsyst-Grade Waterfall Loss Tree & 8760h Performance Ratio (PR) Engine
+// Preliminary scalar annual loss budget with empirical defaults.
+// Not a PVsyst-grade or weather-driven 8760-hour simulation.
 
 import { calculateThermalDerate } from './core/thermalDerate';
 import type { InstallationEnvironment } from './types/climateTypes';

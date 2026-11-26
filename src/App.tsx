@@ -151,7 +151,6 @@ import { migrateProjectToV3 } from './engine/core/projectMigration';
 import { createProjectTransferEnvelope, restoreProjectTransferEnvelope, commitRestoredCustomEquipmentWithCrossTabLock } from './engine/offlineTransferEngine';
 import { generateTraceId } from './engine/core/modelRegistry';
 import { formatPsh } from './engine/formatters';
-import { assessAcRequirements, createUnknownAcRequirements, isValidAcConnection, updateAcConnection, type AcConnectionRequirement, type AcRequirements } from './engine/acRequirements';
 import { getContextualHelp } from './helpContent';
 
 // Fallback component for lazy-loaded tabs (MAIN-05)
@@ -215,8 +214,40 @@ export const App: React.FC = () => {
       return 'dark';
     }
   });
+  const [uiDensity,setUiDensity]=useState<'comfortable'|'compact'>(()=>{
+    try{return localStorage.getItem('solarpv_ui_density')==='compact'?'compact':'comfortable';}catch{return 'comfortable';}
+  });
+  const shellRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{try{localStorage.setItem('solarpv_ui_density',uiDensity);}catch{/* Session-only when storage is blocked. */}},[uiDensity]);
+  useEffect(()=>{
+    const shell=shellRef.current;if(!shell)return;
+    const measure=()=>document.documentElement.style.setProperty('--studio-shell-height',`${shell.getBoundingClientRect().height}px`);
+    measure();const observer=new ResizeObserver(measure);observer.observe(shell);
+    return()=>{observer.disconnect();document.documentElement.style.removeProperty('--studio-shell-height');};
+  },[]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [updateWaiting, setUpdateWaiting] = useState(false);
+  useEffect(()=>{
+    if(!isMobileMenuOpen)return;
+    const desktop=window.matchMedia('(min-width:1024px)');
+    const closeOnDesktop=()=>{if(desktop.matches)setIsMobileMenuOpen(false);};
+    closeOnDesktop();desktop.addEventListener('change',closeOnDesktop);
+    const previousFocus=document.activeElement as HTMLElement|null;
+    const previousOverflow=document.body.style.overflow;
+    const nav=document.getElementById('studio-navigation');
+    const controls=()=>Array.from(nav?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href]')??[]).filter(el=>el.getClientRects().length>0);
+    const focusInside=()=>{if(!nav?.contains(document.activeElement))controls()[0]?.focus({preventScroll:true});};
+    const afterTransition=(event:TransitionEvent)=>{if(event.target===nav)focusInside();};
+    nav?.addEventListener('transitionend',afterTransition);
+    const focusFrame=requestAnimationFrame(focusInside);document.body.style.overflow='hidden';
+    const keys=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();setIsMobileMenuOpen(false);}
+      if(event.key==='Tab'){const items=controls(),first=items[0],last=items.at(-1);if(!nav?.contains(document.activeElement)){event.preventDefault();(event.shiftKey?last:first)?.focus();}else if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}
+    };
+    document.addEventListener('keydown',keys);
+    return()=>{cancelAnimationFrame(focusFrame);nav?.removeEventListener('transitionend',afterTransition);desktop.removeEventListener('change',closeOnDesktop);document.removeEventListener('keydown',keys);document.body.style.overflow=previousOverflow;previousFocus?.focus();};
+  },[isMobileMenuOpen]);
+
 
   // Off-grid projects have no upstream utility connection. Do not preserve a
   // mounted/active harmonic screen when switching into that mode.
@@ -398,8 +429,6 @@ export const App: React.FC = () => {
     acVoltageVac: defaultUtilInv.acVoltageVac,
   });
 
-  const [acRequirements, setAcRequirements] = useState<AcRequirements | null>(null);
-  const acAssessment = useMemo(() => assessAcRequirements(acRequirements, selectedInverter, systemMode), [acRequirements, selectedInverter, systemMode]);
   const [selectedChemistry, setSelectedChemistry] = useState<BatteryChemistry>('lifepo4');
   const [autonomyDays, setAutonomyDays] = useState<number>(1.5);
   const [outageHours, setOutageHours] = useState<number>(6); // For ongrid mode blackout calculation
@@ -459,7 +488,6 @@ export const App: React.FC = () => {
   // Auto-switch inverters when Inverter Technology changes
   const handleInverterTechChange = (tech: InverterTechnology) => {
     setInverterTech(tech);
-    setAcRequirements((current) => current ? { ...current, inverterNameplate: { ...current.inverterNameplate, userConfirmed: false } } : current);
     const inverters = catalogRepo.getInverters();
     if (tech === 'mv_turnkey') {
       const turnkey = inverters.find((i) => i.technology === 'mv_turnkey');
@@ -553,7 +581,6 @@ export const App: React.FC = () => {
     cableFeederInputs,
     selectedModule,
     selectedInverter,
-    acRequirements,
     selectedChemistry,
     autonomyDays,
     outageHours,
@@ -720,12 +747,8 @@ export const App: React.FC = () => {
       analyzeLoadProfile(loads, {
         daylightHoursDesign: city.daylightHoursDesign,
         nightHoursDesign: city.nightHoursDesign,
-      }, acRequirements?.loadService.confirmed ? {
-        lineToLineVolts: acRequirements.loadService.lineToLineVolts ?? undefined,
-        phaseNeutralVolts: acRequirements.loadService.lineToNeutralVolts ?? undefined,
-        powerFactor: acRequirements.loadService.powerFactor ?? undefined,
-      } : undefined),
-    [loads, city.daylightHoursDesign, city.nightHoursDesign, acRequirements]
+      }),
+    [loads, city.daylightHoursDesign, city.nightHoursDesign]
   );
 
   // 2. Compute Target Energy Demand Based on System Mode
@@ -815,11 +838,7 @@ export const App: React.FC = () => {
   // project architecture before calculating the array. This avoids a DC/AC ratio
   // calculated against one inverter while the plant has several.
   const sizingBayPlan = useMemo(() => {
-    const injectionAtDeclaredBusbar = acRequirements?.injection.confirmed
-      && (acRequirements.injection.level === 'mv' || acRequirements.injection.level === 'hv')
-      && acRequirements.injection.nominalKv !== null && mvVoltageKv !== null
-      && Math.abs(acRequirements.injection.nominalKv - mvVoltageKv) < 0.01;
-    if (systemMode !== 'powerplant' || isSiteUnsizable || mvVoltageKv === null || !injectionAtDeclaredBusbar) return undefined;
+    if (systemMode !== 'powerplant' || isSiteUnsizable || mvVoltageKv === null || !Number.isFinite(mvVoltageKv) || mvVoltageKv <= 0) return undefined;
     const dcPlanningMwp = ((targetPowerplantCapacityKw || 1000) * 1.25) / 1000;
     return designPowerplantBays(
       (targetPowerplantCapacityKw || 1000) / 1000,
@@ -829,7 +848,7 @@ export const App: React.FC = () => {
       mvVoltageKv,
       selectedInverter.pnomAcKw,
     );
-  }, [systemMode, isSiteUnsizable, targetPowerplantCapacityKw, inverterTech, customBaysCount, mvVoltageKv, selectedInverter.pnomAcKw, acRequirements]);
+  }, [systemMode, isSiteUnsizable, targetPowerplantCapacityKw, inverterTech, customBaysCount, mvVoltageKv, selectedInverter.pnomAcKw]);
   const sizingFleetInverterCount = sizingBayPlan?.bays.reduce((count, bay) => count + bay.inverterCount, 0);
 
   // Compute load/power-based inverter fleet before unified array sizing so the
@@ -850,14 +869,14 @@ export const App: React.FC = () => {
       peakWatts,
       selectedInverter.pnomAcKw,
       selectedInverter.vmpptMaxVolts,
-      loadAnalysis.hasThreePhaseAcLoad
-        ? 'three'
-        : (acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.phase : 'unknown'),
+      systemMode === 'powerplant'
+        ? (selectedInverter.isThreePhase ? 'three' : 'single')
+        : loadAnalysis.hasThreePhaseAcLoad ? 'three' : loadAnalysis.singlePhaseLoadWatts > 0 ? 'single' : 'unknown',
       selectedInverter.isThreePhase,
-      loadAnalysis.maxPhaseLoadWatts,
-      acRequirements?.loadService.confirmed ? acRequirements.loadService.powerFactor ?? undefined : undefined
+      systemMode === 'powerplant' ? 0 : loadAnalysis.maxPhaseLoadWatts,
+      undefined // PF is not inferred from retired AC interface data.
     );
-  }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter, acRequirements]);
+  }, [systemMode, targetPowerplantCapacityKw, loadAnalysis, selectedInverter]);
 
   const arrayDesign = useMemo(() => {
     if (isSiteUnsizable) {
@@ -1027,11 +1046,7 @@ export const App: React.FC = () => {
 
   // 6. Powerplant MV Bay Architecture (for Powerplant mode)
   const bayArchitecture: PowerplantBayArchitectureResult | undefined = useMemo(() => {
-    const injectionAtDeclaredBusbar = acRequirements?.injection.confirmed
-      && (acRequirements.injection.level === 'mv' || acRequirements.injection.level === 'hv')
-      && acRequirements.injection.nominalKv !== null && mvVoltageKv !== null
-      && Math.abs(acRequirements.injection.nominalKv - mvVoltageKv) < 0.01;
-    if (systemMode !== 'powerplant' || mvVoltageKv === null || !injectionAtDeclaredBusbar) return undefined;
+    if (systemMode !== 'powerplant' || mvVoltageKv === null || !Number.isFinite(mvVoltageKv) || mvVoltageKv <= 0) return undefined;
     return designPowerplantBays(
       (targetPowerplantCapacityKw || 1000) / 1000.0,
       arrayDesign.totalPvCapacityKwp / 1000.0,
@@ -1048,7 +1063,6 @@ export const App: React.FC = () => {
     customBaysCount,
     mvVoltageKv,
     selectedInverter,
-    acRequirements,
   ]);
 
   // 7. Complete Protection System (Cables, Earthing & Lightning)
@@ -1333,7 +1347,6 @@ export const App: React.FC = () => {
       setCableFeederInputs((clean.cableFeederInputs ?? {}) as CableFeederInputMap);
       if (clean.selectedModule) setSelectedModule(clean.selectedModule as ModuleSpecs);
       if (clean.selectedInverter) setSelectedInverter(clean.selectedInverter as InverterSpecs);
-      setAcRequirements(clean.acRequirements ?? null);
       if (clean.projectName) setProjectName(clean.projectName);
       if (clean.systemMode) setSystemMode(clean.systemMode as SystemMode);
       if (clean.inverterTech) setInverterTech(clean.inverterTech as InverterTechnology);
@@ -1398,7 +1411,7 @@ export const App: React.FC = () => {
           tabs: [
             {
               id: 'electrical_requirements' as ActiveModuleTab,
-              title: lang === 'fa' ? 'الزامات AC و بی‌های MV' : 'AC Requirements & MV Bays',
+              title: lang === 'fa' ? 'ظرفیت و بی‌های MV' : 'Capacity & MV Bays',
               icon: <Sliders className="w-4 h-4 text-sky-400" />,
               code: 'MV Turnkey',
               badge: mvVoltageKv === null ? (lang === 'fa' ? 'ولتاژ MV نامشخص' : 'MV voltage unknown') : `${mvVoltageKv} kV`,
@@ -1827,68 +1840,12 @@ export const App: React.FC = () => {
     return evaluateEffectiveStructuralSnapshot(structuralSnapshot, currentStructuralInputHash);
   }, [structuralSnapshot, currentStructuralInputHash]);
 
-  const currentAcRequirements = acRequirements ?? createUnknownAcRequirements();
-  const patchAcConnection = (target: 'loadService' | 'inverterOutput' | 'lvGrid' | `load:${string}`, patch: Partial<AcConnectionRequirement>) => {
-    setAcRequirements((current) => updateAcConnection(current, target, patch));
-  };
-  const renderAcConnectionFields = (target: 'loadService' | 'inverterOutput' | 'lvGrid' | `load:${string}`, value: AcConnectionRequirement, title: string) => (
-    <fieldset key={target} className="rounded-lg border border-industrial-border p-3 space-y-2">
-      <legend className="px-1 text-xs font-bold text-theme-strong">{title}</legend>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'فاز' : 'Phase'}
-          <select aria-label={`${title} phase`} data-testid={`ac-phase-${target.replace(':','-')}`} value={value.phase} onChange={(e) => patchAcConnection(target, { phase: e.target.value as AcConnectionRequirement['phase'] })} className="studio-input mt-1 w-full">
-            <option value="unknown">{lang === 'fa' ? 'نامشخص' : 'Unknown'}</option><option value="single">{lang === 'fa' ? 'تک‌فاز' : 'Single-phase'}</option><option value="three">{lang === 'fa' ? 'سه‌فاز' : 'Three-phase'}</option>
-          </select>
-        </label>
-        {(['lineToLineVolts', 'lineToNeutralVolts', 'frequencyHz', 'powerFactor', 'availableFaultCurrentKa', 'faultClearingTimeSec'] as const).map((field) => (
-          <label key={field} className="text-[11px] text-theme-muted">{field === 'lineToLineVolts' ? (lang === 'fa' ? 'فاز-فاز (V)' : 'Line-line (V)') : field === 'lineToNeutralVolts' ? (lang === 'fa' ? 'فاز-نول (V)' : 'Line-neutral (V)') : field === 'frequencyHz' ? (lang === 'fa' ? 'فرکانس (Hz)' : 'Frequency (Hz)') : field === 'powerFactor' ? (lang === 'fa' ? 'ضریب توان (0 تا 1)' : 'Power factor (0–1)') : field === 'availableFaultCurrentKa' ? (lang === 'fa' ? 'جریان اتصال کوتاه در نقطه (kA)' : 'Prospective fault current (kA)') : (lang === 'fa' ? 'زمان قطع حفاظت (s)' : 'Protection clearing time (s)')}
-            <input aria-label={`${title} ${field}`} data-testid={`ac-input-${target.replace(':','-')}-${field}`} type="number" min="0" step="any" value={value[field] ?? ''} onChange={(e) => patchAcConnection(target, { [field]: e.target.value === '' ? null : Number(e.target.value) })} className="studio-input mt-1 w-full" />
-          </label>
-        ))}
-      </div>
-      <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid={`ac-confirmed-${target.replace(':','-')}`} checked={value.confirmed} onChange={(e) => patchAcConnection(target, { confirmed: e.target.checked })} />{lang === 'fa' ? 'این الزام محلی را تأیید می‌کنم' : 'I confirm this local requirement'}</label>
-      {!isValidAcConnection(value) && <p role="alert" className="ac-validation-error rounded px-2 py-1 text-xs">{lang === 'fa' ? 'مقادیر باید مثبت و متناهی باشند.' : 'Values must be finite and positive.'}</p>}
-    </fieldset>
-  );
-
-  const acRequirementsPanel = (
-                <section aria-labelledby="ac-requirements-heading" data-testid="ac-requirements-panel" className="mt-6 rounded-xl border border-amber-700/50 bg-amber-950/10 p-4 space-y-3">
-                  <div>
-                    <h3 id="ac-requirements-heading" className="font-bold text-amber-300">{lang === 'fa' ? 'الزامات الکتریکی AC — ورودی صریح کاربر' : 'AC electrical requirements — explicit user input'}</h3>
-                    <p className="text-xs text-theme-muted mt-1">{lang === 'fa' ? 'ولتاژ/فاز/فرکانس محلی به‌صورت خودکار حدس زده نمی‌شود. سرویس بار، خروجی اینورتر، شبکه LV و تزریق MV/HV مستقل‌اند. اطلاعات ناقص، تأیید طراحی نیست.' : 'Local voltage/phase/frequency are never guessed. Load service, inverter output, LV grid, and MV/HV injection are separate. Incomplete data is not design approval.'}</p>
-                  </div>
-                  <div className={`rounded-md p-2 text-xs ${acAssessment.status === 'compatible' ? 'bg-emerald-900/30 text-emerald-200' : acAssessment.status === 'incompatible' ? 'bg-red-900/30 text-red-200' : 'bg-amber-900/30 text-amber-200'}`} role="status" data-testid="ac-requirements-assessment" data-status={acAssessment.status}>
-                    {acAssessment.status === 'compatible' ? (lang === 'fa' ? 'الزامات ثبت‌شده سازگارند؛ این بررسی، مطالعه حفاظت/اتصال نیست.' : 'Recorded requirements are compatible; this is not a protection/interconnection study.') : acAssessment.reasons.map((reason) => <div key={reason}>{reason}</div>)}
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    {renderAcConnectionFields('loadService', currentAcRequirements.loadService, lang === 'fa' ? 'سرویس AC بارهای سایت' : 'Site load AC service')}
-                    {renderAcConnectionFields('inverterOutput', currentAcRequirements.inverterOutput, lang === 'fa' ? 'الزام خروجی AC اینورتر' : 'Inverter AC output requirement')}
-                    {renderAcConnectionFields('lvGrid', currentAcRequirements.lvGrid, lang === 'fa' ? 'اتصال شبکه فشار ضعیف (جدا از تزریق MV)' : 'Low-voltage grid interface (separate from MV injection)')}
-                  </div>
-                  <fieldset className="rounded-lg border border-industrial-border p-3 space-y-2">
-                    <legend className="px-1 text-xs font-bold text-theme-strong">{lang === 'fa' ? 'شاهد دیتاشیت اینورتر (اظهار کاربر)' : 'Inverter datasheet evidence (user attestation)'}</legend>
-                    <p className="text-[11px] text-theme-muted">{lang === 'fa' ? 'دادهٔ کاتالوگ داخلی احراز رسمی نشده است. URL و فرکانس نامی را از دیتاشیت دقیق مدل وارد کنید؛ سامانه اصالت URL را تأیید نمی‌کند.' : 'Built-in catalog facts are not officially authenticated. Enter the exact-model datasheet URL and nominal frequency; the app does not authenticate the URL.'}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'فرکانس نامی خروجی اینورتر (Hz)' : 'Inverter nameplate output frequency (Hz)'}<input data-testid="ac-inverter-nameplate-frequency" type="number" min="0" step="any" value={currentAcRequirements.inverterNameplate.nominalFrequencyHz ?? ''} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, nominalFrequencyHz: e.target.value === '' ? null : Number(e.target.value), userConfirmed: false } }))} className="studio-input mt-1 w-full" /></label>
-                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'پیوند دیتاشیت دقیق مدل (HTTPS)' : 'Exact-model datasheet URL (HTTPS)'}<input data-testid="ac-inverter-nameplate-url" type="url" value={currentAcRequirements.inverterNameplate.sourceUrl} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, sourceUrl: e.target.value, userConfirmed: false } }))} className="studio-input mt-1 w-full" placeholder="https://manufacturer.example/..." /></label>
-                    </div>
-                    <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid="ac-inverter-nameplate-confirmed" checked={currentAcRequirements.inverterNameplate.userConfirmed} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), inverterNameplate: { ...(current ?? createUnknownAcRequirements()).inverterNameplate, userConfirmed: e.target.checked } }))} />{lang === 'fa' ? 'فاز/ولتاژ/فرکانس را با دیتاشیت همین مدل تطبیق دادم (اظهار کاربر؛ تأیید مستقل نیست)' : 'I checked phase/voltage/frequency against this exact model datasheet (user assertion; not independently verified)'}</label>
-                  </fieldset>
-                  <fieldset className="rounded-lg border border-industrial-border p-3">
-                    <legend className="px-1 text-xs font-bold text-theme-strong">{lang === 'fa' ? 'نقطه تزریق پس از ترانسفورماتور' : 'Post-transformer grid injection point'}</legend>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
-                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'سطح شبکه' : 'Network level'}<select aria-label="Grid injection level" data-testid="ac-injection-level" value={currentAcRequirements.injection.level} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, level: e.target.value as AcRequirements['injection']['level'], confirmed: false } }))} className="studio-input mt-1 w-full"><option value="unknown">Unknown</option><option value="not_applicable">Not applicable</option><option value="lv">LV</option><option value="mv">MV</option><option value="hv">HV</option></select></label>
-                      <label className="text-[11px] text-theme-muted">{lang === 'fa' ? 'ولتاژ نامی (kV)' : 'Nominal voltage (kV)'}<input aria-label="Grid injection nominal kV" data-testid="ac-injection-voltage" type="number" min="0" step="any" value={currentAcRequirements.injection.nominalKv ?? ''} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, nominalKv: e.target.value === '' ? null : Number(e.target.value), confirmed: false } }))} className="studio-input mt-1 w-full" /></label>
-                      <label className="flex items-center gap-2 text-[11px] text-theme-muted"><input type="checkbox" data-testid="ac-injection-confirmed" checked={currentAcRequirements.injection.confirmed} onChange={(e) => setAcRequirements((current) => ({ ...(current ?? createUnknownAcRequirements()), injection: { ...(current ?? createUnknownAcRequirements()).injection, confirmed: e.target.checked } }))} />{lang === 'fa' ? 'مورد تأیید است' : 'Confirmed'}</label>
-                    </div>
-                  </fieldset>
-                  {systemMode !== 'powerplant' && loads.length > 0 && <details className="rounded-lg border border-industrial-border p-3"><summary className="cursor-pointer text-xs font-bold">{lang === 'fa' ? 'نیاز AC هر بار (در صورت تفاوت با سرویس سایت)' : 'Per-load AC requirement (when different from site service)'}</summary><div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">{loads.map((load) => renderAcConnectionFields(`load:${load.id}`, currentAcRequirements.loadOverrides[load.id] ?? createUnknownAcRequirements().loadService, `${load.name} — ${lang === 'fa' ? 'نیاز مستقل' : 'load-specific requirement'}`))}</div></details>}
-                </section>
-  );
 
   return (
     <div
-      className={`min-h-screen bg-industrial-bg text-slate-100 flex flex-col ${isRtl ? 'font-vazir' : 'font-sans'}`}
+      data-density={uiDensity}
+      data-testid="studio-workspace"
+      className={`studio-app min-h-screen bg-industrial-bg text-slate-100 flex flex-col ${isRtl ? 'font-vazir' : 'font-sans'}`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       {updateWaiting && (
@@ -1900,7 +1857,7 @@ export const App: React.FC = () => {
       )}
       {/* Toast Notification */}
       {saveToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-theme-strong px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-emerald-400 shadow-xl">
+        <div role="status" aria-live="polite" className="studio-toast fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-theme-strong px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-emerald-400 shadow-xl">
           <CheckCircle2 className="w-4 h-4" />
           <span>{saveToast}</span>
         </div>
@@ -2180,8 +2137,10 @@ export const App: React.FC = () => {
         </div>
       )}
 
+      <a className="studio-skip-link" href="#studio-main">{lang==='fa'?'رفتن به محتوای اصلی':'Skip to workspace'}</a>
+      <div ref={shellRef} className="studio-shell">
       {/* TOP MODERN ENGINEERING COCKPIT APP BAR */}
-      <header className="bg-industrial-bg border-b border-[#1E293B] sticky top-0 z-30 px-3 sm:px-5 py-2 flex items-center justify-between gap-3 select-none">
+      <header className="studio-topbar bg-industrial-bg border-b border-[#1E293B] sticky top-0 z-30 px-3 sm:px-5 py-2 flex items-center justify-between gap-3 select-none">
         {/* Left Side (or Right in RTL): Brand, Project Title, Revision */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           {/* Mobile Menu Hamburger */}
@@ -2189,6 +2148,8 @@ export const App: React.FC = () => {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden p-1.5 rounded-lg bg-industrial-surface border border-slate-700 text-slate-300 hover:text-theme-strong"
             aria-label="Toggle navigation menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="studio-navigation"
           >
             <Menu className="w-4 h-4 text-sky-400" />
           </button>
@@ -2197,6 +2158,8 @@ export const App: React.FC = () => {
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="hidden lg:flex p-1.5 rounded-lg bg-industrial-surface hover:bg-industrial-surface border border-[#283548] text-slate-300 hover:text-sky-400 transition"
+            aria-expanded={!isSidebarCollapsed}
+            aria-controls="studio-navigation"
             title={lang === 'fa' ? 'جمع/باز کردن سایدبار (Ctrl+B)' : 'Toggle Sidebar (Ctrl+B)'}
           >
             {isSidebarCollapsed ? (
@@ -2233,7 +2196,7 @@ export const App: React.FC = () => {
               title={lang === 'fa' ? 'نام پروژه را ویرایش کنید' : 'Click to edit project name'}
             />
             {lastSavedTime && (
-              <span className="text-[10px] text-slate-400 font-mono hidden xl:inline-block px-1.5 py-0.5 rounded bg-slate-800/80">
+              <span className="studio-save-stamp text-[10px] text-slate-400 font-mono hidden xl:inline-block px-1.5 py-0.5 rounded bg-slate-800/80">
                 {t.lastSaved} {lastSavedTime}
               </span>
             )}
@@ -2241,9 +2204,9 @@ export const App: React.FC = () => {
         </div>
 
         {/* Center: Quick System Operating Mode Pill */}
-        <div className="flex items-center gap-1 bg-industrial-bg p-1 rounded-lg border border-[#1E293B] text-[10px] font-bold">
+        <div className="studio-family-switch flex items-center gap-1 bg-industrial-bg p-1 rounded-lg border border-[#1E293B] text-[10px] font-bold">
           <button
-            data-testid="project-family-powerplant" onClick={() => setSystemMode('powerplant')}
+            data-testid="project-family-powerplant" aria-pressed={systemMode==='powerplant'} onClick={() => setSystemMode('powerplant')}
             className={`px-2 sm:px-2.5 py-1 rounded transition flex items-center gap-1 ${
               systemMode === 'powerplant'
                 ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
@@ -2254,7 +2217,7 @@ export const App: React.FC = () => {
             <span>{t.modePowerplant}</span>
           </button>
           <button
-            data-testid="project-family-loads" onClick={() => { if(systemMode === 'powerplant') setSystemMode(lastCustomerMode.current); setActiveTab('loads'); }}
+            data-testid="project-family-loads" aria-pressed={systemMode!=='powerplant'} onClick={() => { if(systemMode === 'powerplant') setSystemMode(lastCustomerMode.current); setActiveTab('loads'); }}
             className={`px-2 sm:px-2.5 py-1 rounded transition flex items-center gap-1 ${
               systemMode !== 'powerplant'
                 ? 'bg-sky-500 text-slate-950 font-black shadow-sm'
@@ -2267,7 +2230,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Right Side (or Left in RTL): Actions Cluster */}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
+        <div className="studio-toolbar-actions flex items-center gap-1.5 sm:gap-2 text-xs">
           <button
             type="button"
             data-testid="context-help-button"
@@ -2297,6 +2260,7 @@ export const App: React.FC = () => {
             <span className="hidden md:inline">{theme === 'dark' ? (lang === 'fa' ? 'روشن' : 'Light') : (lang === 'fa' ? 'تیره' : 'Dark')}</span>
           </button>
 
+          <button type="button" data-testid="density-toggle" aria-pressed={uiDensity==='compact'} aria-label={lang==='fa'?'تغییر تراکم نمایش':'Toggle interface density'} title={lang==='fa'?'تراکم نمایش: راحت / فشرده':'Display density: comfortable / compact'} className="studio-btn studio-density-toggle" onClick={()=>setUiDensity(v=>v==='comfortable'?'compact':'comfortable')}><Grid className="w-3.5 h-3.5"/><span className="hidden xl:inline">{uiDensity==='compact'?(lang==='fa'?'فشرده':'Compact'):(lang==='fa'?'راحت':'Comfortable')}</span></button>
           {/* Quick Jump / Command Palette Trigger */}
           <button
             onClick={() => setIsCommandPaletteOpen(true)}
@@ -2329,7 +2293,7 @@ export const App: React.FC = () => {
           {/* Golden Generate EPC Official Report Button */}
           <button
             onClick={() => requestOfficialReport()}
-            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition"
+            className="studio-report-trigger px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition"
             title={lang === 'fa' ? 'صدور گزارش رسمی مهندسی EPC (Ctrl+E)' : 'Generate Official EPC Report (Ctrl+E)'}
           >
             <FileText className="w-3.5 h-3.5 text-slate-950" />
@@ -2349,7 +2313,7 @@ export const App: React.FC = () => {
       </header>
 
       {/* COCKPIT HEADS-UP DISPLAY (HUD) TELEMETRY RIBBON */}
-      <div className="bg-industrial-bg border-b border-[#1E293B] px-3 sm:px-5 py-2 flex items-center justify-between overflow-x-auto gap-4 scrollbar-none text-[11px] font-mono shrink-0 select-none">
+      <div className="studio-telemetry bg-industrial-bg border-b border-[#1E293B] px-3 sm:px-5 py-2 flex items-center justify-between overflow-x-auto gap-4 scrollbar-none text-[11px] font-mono shrink-0 select-none">
         {/* Metric Badges */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <div className="studio-hud-pill">
@@ -2397,16 +2361,17 @@ export const App: React.FC = () => {
 
           <div className="hidden sm:flex items-center gap-1.5 text-emerald-400 font-bold">
             <Shield className="w-3 h-3 text-emerald-400" />
-            <span>IEC / ASCE / INBC ✓</span>
+            <span>{lang==='fa'?'مراجع طراحی · نه گواهی انطباق':'Design references · not certification'}</span>
           </div>
         </div>
       </div>
 
+      </div>
       {/* WORKSPACE BODY WITH ADAPTIVE SIDEBAR (NATIVE LTR / RTL MIRRORING) */}
       <div className="flex-1 flex relative">
         {/* COLLAPSIBLE ENGINEERING SIDEBAR DOCKED ACCORDING TO LANGUAGE */}
-        <aside
-          className={`bg-industrial-bg flex flex-col fixed inset-y-0 z-40 overflow-hidden transition-all duration-200 top-[88px] ${
+        <aside role={isMobileMenuOpen?'dialog':undefined} aria-modal={isMobileMenuOpen?true:undefined} data-mobile-open={isMobileMenuOpen} id="studio-navigation" aria-label={lang==='fa'?'ناوبری فضای مهندسی':'Engineering workspace navigation'}
+          className={`studio-sidebar bg-industrial-bg flex flex-col fixed inset-y-0 z-40 overflow-hidden transition-all duration-200 top-[88px] ${
             isRtl ? 'right-0 border-l border-[#1E293B]' : 'left-0 border-r border-[#1E293B]'
           } ${sidebarWidthClass} ${
             isMobileMenuOpen
@@ -2434,6 +2399,7 @@ export const App: React.FC = () => {
             {/* Mobile Close Button */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
+              aria-label={lang==='fa'?'بستن ناوبری':'Close navigation'}
               className="lg:hidden p-1 rounded text-slate-400 hover:text-theme-strong"
             >
               <X className="w-4 h-4" />
@@ -2441,12 +2407,12 @@ export const App: React.FC = () => {
           </div>
 
           {/* Workflow Menu List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-3.5 text-xs scrollbar-thin scrollbar-thumb-slate-800">
+          <div className="studio-nav-scroll flex-1 overflow-y-auto p-2 space-y-3.5 text-xs scrollbar-thin scrollbar-thumb-slate-800">
             {menuSections.map((section, idx) => (
               <div key={idx} className="space-y-1">
                 {/* Category Header (Hidden in rail mode) */}
                 {!isSidebarCollapsed && (
-                  <div className="text-[10px] font-extrabold text-sky-400 px-2 py-0.5 uppercase tracking-wider bg-industrial-surface rounded border-r-2 border-sky-500 flex items-center justify-between">
+                  <div className="studio-nav-category text-[10px] font-extrabold text-sky-400 px-2 py-0.5 uppercase tracking-wider bg-industrial-surface rounded border-r-2 border-sky-500 flex items-center justify-between">
                     <span>{section.categoryTitle}</span>
                     <span className="text-[9px] font-mono text-slate-500">P{section.phase}</span>
                   </div>
@@ -2461,11 +2427,12 @@ export const App: React.FC = () => {
                       <button
                         key={tab.id}
                         data-testid={`workflow-tab-${tab.id}`}
+                        aria-current={isActive?'page':undefined}
                         onClick={() => {
                           setActiveTab(tab.id);
                           setIsMobileMenuOpen(false);
                         }}
-                        className={`w-full flex items-center ${
+                        className={`studio-nav-item w-full flex items-center ${
                           isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-2.5 py-1.5'
                         } rounded-md transition-all text-xs ${
                           isActive
@@ -2481,7 +2448,7 @@ export const App: React.FC = () => {
 
                         {!isSidebarCollapsed && tab.badge && (
                           <span
-                            className={`text-[9px] font-mono px-1.5 py-0.2 rounded shrink-0 ${
+                            className={`studio-nav-badge text-[9px] font-mono px-1.5 py-0.2 rounded shrink-0 ${
                               isActive
                                 ? 'bg-sky-700/80 text-theme-strong font-bold'
                                 : 'bg-industrial-surface text-slate-400 border border-slate-800'
@@ -2539,16 +2506,20 @@ export const App: React.FC = () => {
         </aside>
 
         {/* MAIN OPERATIONAL WORKSPACE OFFSET BY INTELLIGENT SIDEBAR */}
-        <div className={`flex-1 flex flex-col ${marginOffsetClass} min-h-screen transition-all duration-200`}>
+        <div className={`studio-content flex-1 flex flex-col ${marginOffsetClass} min-h-screen transition-all duration-200`}>
           {/* Main Operational Workspace Content */}
-          <main className="p-4 sm:p-6 flex-1 w-full max-w-7xl mx-auto space-y-5">
-            <div data-testid="active-energy-source" className="border rounded p-3 text-sm" dir="auto">
+          <main id="studio-main" tabIndex={-1} className="studio-main p-4 sm:p-6 flex-1 w-full max-w-7xl mx-auto space-y-5">
+            <section className="studio-page-heading" aria-label={lang==='fa'?'نمای کلی صفحه':'Page overview'}>
+              <div><p className="studio-eyebrow">{lang==='fa'?'فضای کار مهندسی خورشیدی':'SOLAR ENGINEERING WORKSPACE'}<span aria-hidden="true"> / </span>{activeSectionInfo.categoryTitle}</p><h1>{activeSectionInfo.tabTitle}</h1><p className="studio-page-description">{getContextualHelp(activeTab,systemMode,lang==='fa'?'fa':'en').inputs}</p></div>
+              <div className="studio-page-context"><MapPin className="w-4 h-4"/><span>{lang==='fa'?city.nameFa:city.nameEn}</span><span className="studio-context-dot" aria-hidden="true"/><span>{lang==='fa'?'پروژه فعال':'Active project'}</span></div>
+            </section>
+            <div data-testid="active-energy-source" className="studio-source-note border rounded p-3 text-sm" dir="auto">
               {adoptedEnergy?`Operational engineering scenario — ${adoptedEnergy.year}: ${adoptedEnergy.exportKwh.toFixed(3)} kWh export; ${adoptedEnergy.importKwh.toFixed(3)} kWh import. Source ${adoptedEnergy.sourceSha256}. not_field_validated. Finance uses the mode-specific valued energy (export / PV self-consumption / served load); gross PV generation is separate. Waterfall and representative-day plots remain screening references, no double loss. Report actions open the source-aware operational dossier; screening curves and PR are excluded.`:'Energy / finance source: screening waterfall estimate (not field validated)'}
               {operationalRestoreError&&<p role="alert">{operationalRestoreError} — Screening only; operational source was not restored.</p>}
               {adoptedEnergy&&<button onClick={()=>changeOperationalEnergy(null)}>Return to screening</button>}
             </div>
             {/* WORKFLOW PHASE STEPPER & BREADCRUMB */}
-            <div className="p-3 bg-industrial-surface border border-[#1E293B] rounded-lg flex items-center justify-between gap-3 text-xs">
+            <div className="studio-workflow-bar p-3 bg-industrial-surface border border-[#1E293B] rounded-lg flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 sm:gap-3 truncate">
                 <div className="p-2 rounded-md bg-sky-500/20 text-sky-400 border border-sky-500/30">
                   {activeSectionInfo.tabIcon}
@@ -2605,8 +2576,7 @@ export const App: React.FC = () => {
           {/* Utility electrical design only. Customer grid policy lives with loads. */}
           {activeTab === 'electrical_requirements' && systemMode === 'powerplant' && (
             <div className="studio-card space-y-5" data-testid="utility-electrical-design">
-              <h2 className="text-xl font-bold text-sky-400">{lang === 'fa' ? 'الزامات AC و طراحی بی‌های MV نیروگاه' : 'Utility AC requirements & MV bays'}</h2>
-              {acRequirementsPanel}
+              <h2 className="text-xl font-bold text-sky-400">{lang === 'fa' ? 'ظرفیت و طراحی بی‌های MV نیروگاه' : 'Utility capacity & MV bays'}</h2>
                 {/* POWERPLANT SPECIFIC ARCHITECTURE: STRING vs MV TURNKEY & BAY BREAKDOWN */}
                 {systemMode === 'powerplant' && (
                   <div className="mt-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-5">
@@ -2717,7 +2687,7 @@ export const App: React.FC = () => {
                           className="studio-input w-full font-mono font-bold text-emerald-300"
                           aria-label={lang === 'fa' ? 'ولتاژ باسبار جمع‌آوری MV بر حسب kV' : 'MV collector busbar voltage in kV'}
                         />
-                        {mvVoltageKv === null && <p role="alert" className="mt-1 text-[10px] text-amber-700">{lang === 'fa' ? 'معماری بی‌های MV تا ورود ولتاژ صریح محاسبه/تأیید نمی‌شود.' : 'MV bay architecture is withheld until an explicit voltage is entered.'}</p>}
+                        {(mvVoltageKv === null || !Number.isFinite(mvVoltageKv) || mvVoltageKv <= 0) && <p role="alert" className="mt-1 text-[10px] text-amber-700">{lang === 'fa' ? 'آرایش مقدماتی MV فقط با ولتاژ مثبت و صریح محاسبه می‌شود؛ تأیید اتصال شبکه نیست.' : 'Preliminary MV architecture requires a positive explicit voltage; not grid-connection approval.'}</p>}
                       </div>
                     </div>
 
@@ -2836,7 +2806,6 @@ export const App: React.FC = () => {
                 )}
 
               </section>
-              {acRequirementsPanel}
             <LoadProfilingTab
               loads={loads}
               onLoadsChange={setLoads}
@@ -2861,8 +2830,6 @@ export const App: React.FC = () => {
               selectedInverter={selectedInverter}
               onInverterChange={(inverter) => {
                 const catalogItem = inverter.id ? catalogRepo.getInverters().find((item) => item.id === inverter.id) : undefined;
-                const identityChanged = inverter.id !== selectedInverter.id || inverter.manufacturer !== selectedInverter.manufacturer || inverter.modelName !== selectedInverter.modelName;
-                if (identityChanged) setAcRequirements((current) => current ? { ...current, inverterNameplate: { ...current.inverterNameplate, userConfirmed: false } } : current);
                 setSelectedInverter({ ...inverter, acVoltageVac: inverter.acVoltageVac ?? catalogItem?.acVoltageVac });
               }}
               arrayDesign={arrayDesign}
@@ -2931,9 +2898,7 @@ export const App: React.FC = () => {
               inverterDcContinuousCurrentAmps={inverterClustering.inverterDcContinuousCurrentAmps}
               systemDcVoltage={inverterClustering.recommendedDcVoltageVdc || 48}
               isThreePhase={selectedInverter.isThreePhase}
-              acOutputRequirement={acRequirements?.inverterOutput ?? null}
               inverterAcVoltageVac={selectedInverter.acVoltageVac}
-              inverterNameplateAttested={Boolean(currentAcRequirements.inverterNameplate.userConfirmed && currentAcRequirements.inverterNameplate.sourceUrl.startsWith('https://') && currentAcRequirements.inverterNameplate.nominalFrequencyHz === currentAcRequirements.inverterOutput.frequencyHz)}
               ambientTempC={city.tempMaxC}
               totalModulesCount={arrayDesign.totalModulesCount}
               dcSystemEarthing={dcSystemEarthing}
@@ -3053,9 +3018,8 @@ export const App: React.FC = () => {
               inverterKw={inverterClustering.totalInverterCapacityKw}
               inverterCount={inverterClustering.parallelUnitsCount}
               isThreePhase={selectedInverter.isThreePhase}
-              acOutputVoltageVolts={acRequirements?.inverterOutput.confirmed ? (acRequirements.inverterOutput.phase === 'three' ? acRequirements.inverterOutput.lineToLineVolts : (acRequirements.inverterOutput.lineToNeutralVolts ?? acRequirements.inverterOutput.lineToLineVolts)) : null}
-              acFrequencyHz={acRequirements?.inverterOutput.confirmed ? acRequirements.inverterOutput.frequencyHz : null}
-              acRequirements={acRequirements}
+              acOutputVoltageVolts={selectedInverter.acVoltageVac ?? null}
+              acFrequencyHz={selectedInverter.frequencyHz ?? null}
               mvCollectorVoltageKv={mvVoltageKv}
               batteryKwh={batterySizing.grossCapacityKwh}
               batteryVoltageVdc={batterySizing.systemVoltageVdc}
@@ -3221,7 +3185,7 @@ export const App: React.FC = () => {
       </div>
       </div>
 
-      {showOperationalReport&&adoptedEnergy&&<React.Suspense fallback={null}><OperationalReportModal receipt={adoptedEnergy} financial={financialResult} projectName={projectName} projectInputSnapshot={buildProjectInputSnapshot()} engineeringSnapshot={{city,siteOverrides,acRequirements,cableFeederInputs,mvVoltageKv,trackerConfig,pendingImportedEmbedmentDepthM,loads,loadAnalysis,module:selectedModule,inverter:selectedInverter,inverterClustering,arrayDesign,batterySizing,protection:protectionSystem,structural:effectiveStructuralSnapshot??null,bayArchitecture,generatorSizing,shading:{applied:appliedShadingRecord,isStale:isShadingStale,qualification:"Independent screening assessment; not reapplied to adopted energy"},reportMetadata,simulationQualification:"Representative screening day only; NOT the adopted annual dispatch"}} onClose={()=>setShowOperationalReport(false)}/></React.Suspense>}
+      {showOperationalReport&&adoptedEnergy&&<React.Suspense fallback={null}><OperationalReportModal receipt={adoptedEnergy} financial={financialResult} projectName={projectName} projectInputSnapshot={buildProjectInputSnapshot()} engineeringSnapshot={{city,siteOverrides,cableFeederInputs,mvVoltageKv,trackerConfig,pendingImportedEmbedmentDepthM,loads,loadAnalysis,module:selectedModule,inverter:selectedInverter,inverterClustering,arrayDesign,batterySizing,protection:protectionSystem,structural:effectiveStructuralSnapshot??null,bayArchitecture,generatorSizing,shading:{applied:appliedShadingRecord,isStale:isShadingStale,qualification:"Independent screening assessment; not reapplied to adopted energy"},reportMetadata,simulationQualification:"Representative screening day only; NOT the adopted annual dispatch"}} onClose={()=>setShowOperationalReport(false)}/></React.Suspense>}
       {/* OFFICIAL EPC REPORT MODAL */}
       {showReportModal && !adoptedEnergy && (
         <React.Suspense fallback={null}>
@@ -3234,7 +3198,6 @@ export const App: React.FC = () => {
             module={selectedModule}
             inverter={selectedInverter}
             inverterClustering={inverterClustering}
-            acRequirements={acRequirements}
             mvCollectorVoltageKv={mvVoltageKv}
             arrayDesign={arrayDesign}
             batterySizing={batterySizing}

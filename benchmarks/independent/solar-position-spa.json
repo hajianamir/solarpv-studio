@@ -1,0 +1,7105 @@
+{
+  "reference": "pvlib 0.13.1 solarposition.get_solarposition default NREL SPA; geometric zenith (not apparent); altitude=0; UTC; daylight 5<zenith<85",
+  "tolerancesDegrees": {
+    "zenith": 0.05,
+    "azimuth": 0.15
+  },
+  "rows": [
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705276800,
+      "zenith": 30.12266163213743,
+      "azimuth": 73.32601095092082
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705278600,
+      "zenith": 24.30614163620001,
+      "azimuth": 64.80627717872221
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705280400,
+      "zenith": 18.979496451840816,
+      "azimuth": 52.43187877275528
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705282200,
+      "zenith": 14.716850792906556,
+      "azimuth": 33.091432348458966
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705284000,
+      "zenith": 12.666387976320138,
+      "azimuth": 4.5087817133044155
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705285800,
+      "zenith": 13.856238062561161,
+      "azimuth": 334.1215349055817
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705287600,
+      "zenith": 17.63943828791288,
+      "azimuth": 312.19232172116256
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705289400,
+      "zenith": 22.747704130367097,
+      "azimuth": 298.2368604317063
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705291200,
+      "zenith": 28.462747388410797,
+      "azimuth": 288.8643778924487
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705293000,
+      "zenith": 34.4672057482441,
+      "azimuth": 281.9798135380963
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705294800,
+      "zenith": 40.613339204668655,
+      "azimuth": 276.5003420016043
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705296600,
+      "zenith": 46.823183103091914,
+      "azimuth": 271.84798602154206
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705298400,
+      "zenith": 53.04936680677843,
+      "azimuth": 267.69057153043883
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705300200,
+      "zenith": 59.258583705820556,
+      "azimuth": 263.82094827766684
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705302000,
+      "zenith": 65.42381809691739,
+      "azimuth": 260.09856948293486
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705303800,
+      "zenith": 71.52018956325277,
+      "azimuth": 256.419395326298
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705305600,
+      "zenith": 77.5223565503604,
+      "azimuth": 252.69929909365396
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705307400,
+      "zenith": 83.40257677093507,
+      "azimuth": 248.86429084702587
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705348800,
+      "zenith": 79.3168647237028,
+      "azimuth": 108.33756597540491
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705350600,
+      "zenith": 73.34898565725162,
+      "azimuth": 104.58059918674081
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705352400,
+      "zenith": 67.27916434890636,
+      "azimuth": 100.8855061502037
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705354200,
+      "zenith": 61.13343020870835,
+      "azimuth": 97.17138319144664
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705356000,
+      "zenith": 54.936792820357375,
+      "azimuth": 93.34061693265943
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705357800,
+      "zenith": 48.71561749915866,
+      "azimuth": 89.26468621202719
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705359600,
+      "zenith": 42.501248292868844,
+      "azimuth": 84.75896556055415
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1705361400,
+      "zenith": 36.33650011127874,
+      "azimuth": 79.53491383372881
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713139200,
+      "zenith": 51.58709545588348,
+      "azimuth": 37.28054675768112
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713141000,
+      "zenith": 48.19884318743415,
+      "azimuth": 28.686175286757475
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713142800,
+      "zenith": 45.6753136173378,
+      "azimuth": 19.17122796834809
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713144600,
+      "zenith": 44.16790587226352,
+      "azimuth": 8.91791262544001
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713146400,
+      "zenith": 43.78336308698111,
+      "azimuth": 358.28162844673966
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713148200,
+      "zenith": 44.55120943319276,
+      "azimuth": 347.72526843894445
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713150000,
+      "zenith": 46.413579839394046,
+      "azimuth": 337.68840222925223
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713151800,
+      "zenith": 49.24469723595039,
+      "azimuth": 328.47142817245145
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713153600,
+      "zenith": 52.886499972296235,
+      "azimuth": 320.19916862584284
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713155400,
+      "zenith": 57.180680922205894,
+      "azimuth": 312.8558028369157
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713157200,
+      "zenith": 61.987287296170535,
+      "azimuth": 306.34390406619985
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713159000,
+      "zenith": 67.19097392235227,
+      "azimuth": 300.5331243124969
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713160800,
+      "zenith": 72.70001340143126,
+      "azimuth": 295.28912079405575
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713162600,
+      "zenith": 78.44236113404891,
+      "azimuth": 290.48659076904704
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713164400,
+      "zenith": 84.36115907975632,
+      "azimuth": 286.01273529865193
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713214800,
+      "zenith": 82.51791245838746,
+      "azimuth": 72.37210742266893
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713216600,
+      "zenith": 76.6672463323786,
+      "azimuth": 67.79141264827456
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713218400,
+      "zenith": 71.01276480542779,
+      "azimuth": 62.84657989325467
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713220200,
+      "zenith": 65.61614341758735,
+      "azimuth": 57.42169264592292
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713222000,
+      "zenith": 60.55561425783033,
+      "azimuth": 51.3894623233827
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1713223800,
+      "zenith": 55.93029578088471,
+      "azimuth": 44.61750435862024
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721001600,
+      "zenith": 62.4135452750236,
+      "azimuth": 31.98082210669071
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721003400,
+      "zenith": 59.449488010817944,
+      "azimuth": 24.750080311751105
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721005200,
+      "zenith": 57.226188485381186,
+      "azimuth": 16.97572451416238
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721007000,
+      "zenith": 55.833488503006684,
+      "azimuth": 8.775379210323138
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721008800,
+      "zenith": 55.334909487250584,
+      "azimuth": 0.3348033424121013
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721010600,
+      "zenith": 55.75471385928798,
+      "azimuth": 351.88375914338917
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721012400,
+      "zenith": 57.07242859603968,
+      "azimuth": 343.6539841134326
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721014200,
+      "zenith": 59.227485966240096,
+      "azimuth": 335.8363048671875
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721016000,
+      "zenith": 62.13171906542093,
+      "azimuth": 328.5545612224841
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721017800,
+      "zenith": 65.684320799521,
+      "azimuth": 321.86236218703647
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721019600,
+      "zenith": 69.7844303919785,
+      "azimuth": 315.75628388624045
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721021400,
+      "zenith": 74.33919515355694,
+      "azimuth": 310.19490501220724
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721023200,
+      "zenith": 79.26753219670917,
+      "azimuth": 305.11595574993544
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721025000,
+      "zenith": 84.50087548261783,
+      "azimuth": 300.4484509051116
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721079000,
+      "zenith": 84.87765162095806,
+      "azimuth": 59.99741674150334
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721080800,
+      "zenith": 79.61282308810848,
+      "azimuth": 55.36249783917344
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721082600,
+      "zenith": 74.64688773079625,
+      "azimuth": 50.32114353596387
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721084400,
+      "zenith": 70.04744419943891,
+      "azimuth": 44.801413318046514
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1721086200,
+      "zenith": 65.89468385135979,
+      "azimuth": 38.73912426591539
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728950400,
+      "zenith": 34.29994251234526,
+      "azimuth": 48.41199147575969
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728952200,
+      "zenith": 30.06143788457714,
+      "azimuth": 36.94853282659551
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728954000,
+      "zenith": 26.938489661078222,
+      "azimuth": 22.80347639269138
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728955800,
+      "zenith": 25.355331667942835,
+      "azimuth": 6.309053959838479
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728957600,
+      "zenith": 25.602956709170144,
+      "azimuth": 349.0255617704448
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728959400,
+      "zenith": 27.631406771058472,
+      "azimuth": 333.0521393777936
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728961200,
+      "zenith": 31.08962931341351,
+      "azimuth": 319.6277677384278
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728963000,
+      "zenith": 35.55558146704896,
+      "azimuth": 308.8183991876126
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728964800,
+      "zenith": 40.68914617400356,
+      "azimuth": 300.12797167772175
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728966600,
+      "zenith": 46.256823884374235,
+      "azimuth": 292.9947058696691
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728968400,
+      "zenith": 52.10581898342614,
+      "azimuth": 286.96244818275244
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728970200,
+      "zenith": 58.135276499537646,
+      "azimuth": 281.6948520600258
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728972000,
+      "zenith": 64.27595981264491,
+      "azimuth": 276.9480497339713
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728973800,
+      "zenith": 70.47742021405722,
+      "azimuth": 272.54160405606075
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728975600,
+      "zenith": 76.69999167092634,
+      "azimuth": 268.33622061634287
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1728977400,
+      "zenith": 82.90958309462721,
+      "azimuth": 264.2178907180159
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1729022400,
+      "zenith": 81.06864027086203,
+      "azimuth": 94.79640362953347
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1729024200,
+      "zenith": 74.84469004046645,
+      "azimuth": 90.68196981141364
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1729026000,
+      "zenith": 68.61556380491203,
+      "azimuth": 86.45272088639791
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1729027800,
+      "zenith": 62.41598912779521,
+      "azimuth": 81.98934949971255
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1729029600,
+      "zenith": 56.28737577688239,
+      "azimuth": 77.14323402199454
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1729031400,
+      "zenith": 50.283598914435665,
+      "azimuth": 71.71866356074247
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1729033200,
+      "zenith": 44.480081540004406,
+      "azimuth": 65.4477983429208
+    },
+    {
+      "site": "Sydney",
+      "latitude": -33.87,
+      "longitude": 151.21,
+      "utcTs": 1729035000,
+      "zenith": 38.988511863483055,
+      "azimuth": 57.95884907153163
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705276800,
+      "zenith": 69.75497400887195,
+      "azimuth": 137.776061750821
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705278600,
+      "zenith": 65.91108429058339,
+      "azimuth": 144.07943049481122
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705280400,
+      "zenith": 62.63360416334238,
+      "azimuth": 150.932495819111
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705282200,
+      "zenith": 60.01787712646141,
+      "azimuth": 158.3207210690622
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705284000,
+      "zenith": 58.15513781922769,
+      "azimuth": 166.17371161031042
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705285800,
+      "zenith": 57.12037174724769,
+      "azimuth": 174.35821736837624
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705287600,
+      "zenith": 56.959401668090436,
+      "azimuth": 182.6873930828536
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705289400,
+      "zenith": 57.679649544301064,
+      "azimuth": 190.9486314963938
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705291200,
+      "zenith": 59.24854211388099,
+      "azimuth": 198.94166655829883
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705293000,
+      "zenith": 61.60030306396173,
+      "azimuth": 206.51165810975795
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705294800,
+      "zenith": 64.64808289001162,
+      "azimuth": 213.56546376416742
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705296600,
+      "zenith": 68.29680924976077,
+      "azimuth": 220.06976812307659
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705298400,
+      "zenith": 72.45330541522902,
+      "azimuth": 226.03790972928468
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705300200,
+      "zenith": 77.03246779383629,
+      "azimuth": 231.51371035005823
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705302000,
+      "zenith": 81.9599725457235,
+      "azimuth": 236.55769046482447
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705357800,
+      "zenith": 83.76608119406478,
+      "azimuth": 121.59747706465686
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705359600,
+      "zenith": 78.71650473973504,
+      "azimuth": 126.49804962869086
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1705361400,
+      "zenith": 73.989716129987,
+      "azimuth": 131.80735918878713
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713139200,
+      "zenith": 44.75658859113894,
+      "azimuth": 115.1244559382526
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713141000,
+      "zenith": 39.41714006098378,
+      "azimuth": 122.76368780886139
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713142800,
+      "zenith": 34.566455198499185,
+      "azimuth": 132.0537173483009
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713144600,
+      "zenith": 30.45703465359277,
+      "azimuth": 143.51556804686828
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713146400,
+      "zenith": 27.43821800611179,
+      "azimuth": 157.49548663267274
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713148200,
+      "zenith": 25.90362310319611,
+      "azimuth": 173.64854289416803
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713150000,
+      "zenith": 26.120331631074897,
+      "azimuth": 190.54038678913966
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713151800,
+      "zenith": 28.04699081529006,
+      "azimuth": 206.25723045262424
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713153600,
+      "zenith": 31.365242682592452,
+      "azimuth": 219.62210167541875
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713155400,
+      "zenith": 35.68091650431516,
+      "azimuth": 230.51366754695823
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713157200,
+      "zenith": 40.66702568477044,
+      "azimuth": 239.35802252824527
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713159000,
+      "zenith": 46.093470133565255,
+      "azimuth": 246.6734456660576
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713160800,
+      "zenith": 51.80672996923103,
+      "azimuth": 252.8953462778628
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713162600,
+      "zenith": 57.703929029167625,
+      "azimuth": 258.3517227344241
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713164400,
+      "zenith": 63.7135747427603,
+      "azimuth": 263.28380950098455
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713166200,
+      "zenith": 69.78303885697771,
+      "azimuth": 267.87176353894506
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713168000,
+      "zenith": 75.87059236909717,
+      "azimuth": 272.25536155335203
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713169800,
+      "zenith": 81.94016092729404,
+      "azimuth": 276.5490645970422
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713214800,
+      "zenith": 80.26999737280369,
+      "azimuth": 84.40102800848416
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713216600,
+      "zenith": 74.18512672220115,
+      "azimuth": 88.69076904889687
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713218400,
+      "zenith": 68.08994112065767,
+      "azimuth": 93.09608788175501
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713220200,
+      "zenith": 62.02108503799937,
+      "azimuth": 97.73639609937612
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713222000,
+      "zenith": 56.02188829942009,
+      "azimuth": 102.75999644534875
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1713223800,
+      "zenith": 50.14813173156693,
+      "azimuth": 108.36079282771004
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721001600,
+      "zenith": 39.02283559524606,
+      "azimuth": 99.79848032023915
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721003400,
+      "zenith": 33.08740329401843,
+      "azimuth": 106.05489866130472
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721005200,
+      "zenith": 27.36415121437887,
+      "azimuth": 114.02476897727945
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721007000,
+      "zenith": 22.054494449075378,
+      "azimuth": 124.93217829282816
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721008800,
+      "zenith": 17.570341874833176,
+      "azimuth": 140.8535008624778
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721010600,
+      "zenith": 14.71348764663746,
+      "azimuth": 163.9902098247003
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721012400,
+      "zenith": 14.494506734955891,
+      "azimuth": 191.9165538819641
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721014200,
+      "zenith": 17.016526674487523,
+      "azimuth": 216.12572691830096
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721016000,
+      "zenith": 21.321069888309367,
+      "azimuth": 233.01560768505672
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721017800,
+      "zenith": 26.54237366923794,
+      "azimuth": 244.51527045917223
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721019600,
+      "zenith": 32.22170635376275,
+      "azimuth": 252.82681955545885
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721021400,
+      "zenith": 38.13577249239931,
+      "azimuth": 259.2844739130247
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721023200,
+      "zenith": 44.16836969907282,
+      "azimuth": 264.63406438197586
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721025000,
+      "zenith": 50.25197836373882,
+      "azimuth": 269.3066059247909
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721026800,
+      "zenith": 56.34213002486248,
+      "azimuth": 273.5672493979921
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721028600,
+      "zenith": 62.405423080166315,
+      "azimuth": 277.5912207120521
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721030400,
+      "zenith": 68.41335530737942,
+      "azimuth": 281.5035331827023
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721032200,
+      "zenith": 74.33874607590073,
+      "azimuth": 285.4008014792647
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721034000,
+      "zenith": 80.15333120029268,
+      "azimuth": 289.3638896485537
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721075400,
+      "zenith": 81.08321740060128,
+      "azimuth": 70.07844438048699
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721077200,
+      "zenith": 75.28994417695326,
+      "azimuth": 74.06709038652008
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721079000,
+      "zenith": 69.38135133836715,
+      "azimuth": 77.97947397460615
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721080800,
+      "zenith": 63.386192636676796,
+      "azimuth": 81.89522293040409
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721082600,
+      "zenith": 57.331864189231815,
+      "azimuth": 85.90840447174122
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721084400,
+      "zenith": 51.24672902635218,
+      "azimuth": 90.13925539044152
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1721086200,
+      "zenith": 45.16349445565282,
+      "azimuth": 94.75421967308364
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728950400,
+      "zenith": 56.215924587773955,
+      "azimuth": 134.6182502914387
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728952200,
+      "zenith": 52.17860064164976,
+      "azimuth": 142.2950513897029
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728954000,
+      "zenith": 48.826281495159776,
+      "azimuth": 150.87511093991031
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728955800,
+      "zenith": 46.313072424524435,
+      "azimuth": 160.33585228334903
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728957600,
+      "zenith": 44.78406390386386,
+      "azimuth": 170.5092817208257
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728959400,
+      "zenith": 44.34326551608482,
+      "azimuth": 181.06675998124607
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728961200,
+      "zenith": 45.02326512422829,
+      "azimuth": 191.57595737832358
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728963000,
+      "zenith": 46.77444377898288,
+      "azimuth": 201.6181319822156
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728964800,
+      "zenith": 49.48117516170992,
+      "azimuth": 210.89696193423683
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728966600,
+      "zenith": 52.99405117769989,
+      "azimuth": 219.27872945005868
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728968400,
+      "zenith": 57.16034030966921,
+      "azimuth": 226.7656982568371
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728970200,
+      "zenith": 61.84273385337222,
+      "azimuth": 233.44313986820544
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728972000,
+      "zenith": 66.92645904929203,
+      "azimuth": 239.43290278167996
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728973800,
+      "zenith": 72.31912656844794,
+      "azimuth": 244.86439932104116
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728975600,
+      "zenith": 77.94736487853696,
+      "azimuth": 249.86069862151453
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1728977400,
+      "zenith": 83.75263309843635,
+      "azimuth": 254.53418237859114
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1729027800,
+      "zenith": 82.66389206905019,
+      "azimuth": 106.59007172760317
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1729029600,
+      "zenith": 76.90702097492994,
+      "azimuth": 111.33241274478968
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1729031400,
+      "zenith": 71.3407572090795,
+      "azimuth": 116.41962347182562
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1729033200,
+      "zenith": 66.02667720529138,
+      "azimuth": 121.9653535900195
+    },
+    {
+      "site": "Tokyo",
+      "latitude": 35.68,
+      "longitude": 139.69,
+      "utcTs": 1729035000,
+      "zenith": 61.04196442926012,
+      "azimuth": 128.0928832063649
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705276800,
+      "zenith": 16.904135471914458,
+      "azimuth": 24.739751623211646
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705278600,
+      "zenith": 15.600670565595877,
+      "azimuth": 0.013755182795421206
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705280400,
+      "zenith": 16.908446886673445,
+      "azimuth": 335.29320797865034
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705282200,
+      "zenith": 20.325489925857468,
+      "azimuth": 316.03891552972993
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705284000,
+      "zenith": 24.99087165191341,
+      "azimuth": 302.43693149631986
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705285800,
+      "zenith": 30.319055760850333,
+      "azimuth": 292.6423648226564
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705287600,
+      "zenith": 35.9988204155436,
+      "azimuth": 285.16905134782075
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705289400,
+      "zenith": 41.86622037488211,
+      "azimuth": 279.1100767306521
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705291200,
+      "zenith": 47.82827293677799,
+      "azimuth": 273.92835095864575
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705293000,
+      "zenith": 53.82652516884826,
+      "azimuth": 269.2940494669947
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705294800,
+      "zenith": 59.81969365510473,
+      "azimuth": 264.99264734727285
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705296600,
+      "zenith": 65.77486032945718,
+      "azimuth": 260.87501067026415
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705298400,
+      "zenith": 71.66257552546577,
+      "azimuth": 256.8297060363743
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705300200,
+      "zenith": 77.4537889554843,
+      "azimuth": 252.7669970081963
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705302000,
+      "zenith": 83.11763395383308,
+      "azimuth": 248.6091914760483
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705341600,
+      "zenith": 83.24070562145539,
+      "azimuth": 111.37862587066002
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705343400,
+      "zenith": 77.5806973352711,
+      "azimuth": 107.20979785253337
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705345200,
+      "zenith": 71.79294427242297,
+      "azimuth": 103.13593434581378
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705347000,
+      "zenith": 65.90850637948262,
+      "azimuth": 99.07906165406354
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705348800,
+      "zenith": 59.95664095279258,
+      "azimuth": 94.94915119301459
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705350600,
+      "zenith": 53.96703710292801,
+      "azimuth": 90.63449354960665
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705352400,
+      "zenith": 47.97290848194482,
+      "azimuth": 85.9857721518116
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705354200,
+      "zenith": 42.015923365722394,
+      "azimuth": 80.78859477324778
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705356000,
+      "zenith": 36.155040351821846,
+      "azimuth": 74.71420290693311
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705357800,
+      "zenith": 30.483852196895334,
+      "azimuth": 67.22923988968296
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705359600,
+      "zenith": 25.166749049613827,
+      "azimuth": 57.43799095086473
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1705361400,
+      "zenith": 20.513919833029618,
+      "azimuth": 43.88433974365927
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713139200,
+      "zenith": 46.97827513068618,
+      "azimuth": 7.080649589413611
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713141000,
+      "zenith": 46.77407794052533,
+      "azimuth": 356.95297037156877
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713142800,
+      "zenith": 47.62388796898548,
+      "azimuth": 346.9414324546592
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713144600,
+      "zenith": 49.47241693345334,
+      "azimuth": 337.38898310571403
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713146400,
+      "zenith": 52.21147007354132,
+      "azimuth": 328.53160364739983
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713148200,
+      "zenith": 55.706475258357464,
+      "azimuth": 320.47406259206537
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713150000,
+      "zenith": 59.82061247925101,
+      "azimuth": 313.21249965451165
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713151800,
+      "zenith": 64.42981098067928,
+      "azimuth": 306.67497888417137
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713153600,
+      "zenith": 69.42878965891566,
+      "azimuth": 300.75736929874404
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713155400,
+      "zenith": 74.73130021776548,
+      "azimuth": 295.3466109630939
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713157200,
+      "zenith": 80.2676007040212,
+      "azimuth": 290.332531578866
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713209400,
+      "zenith": 82.6201980095103,
+      "azimuth": 71.3797381580261
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713211200,
+      "zenith": 77.0244327855857,
+      "azimuth": 66.48354172610476
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713213000,
+      "zenith": 71.64122014314128,
+      "azimuth": 61.23280901667289
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713214800,
+      "zenith": 66.53496318416273,
+      "azimuth": 55.52101992405659
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713216600,
+      "zenith": 61.78514668171614,
+      "azimuth": 49.23707841182954
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713218400,
+      "zenith": 57.4892328978111,
+      "azimuth": 42.273822329897826
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713220200,
+      "zenith": 53.76361619517084,
+      "azimuth": 34.54638835083057
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713222000,
+      "zenith": 50.74006981374498,
+      "azimuth": 26.022917730736594
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1713223800,
+      "zenith": 48.5544661568039,
+      "azimuth": 16.76385211417903
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721001600,
+      "zenith": 58.67379494281171,
+      "azimuth": 7.349952307854323
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721003400,
+      "zenith": 58.32860437705658,
+      "azimuth": 359.17370547555015
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721005200,
+      "zenith": 58.83900636098382,
+      "azimuth": 351.0163597224827
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721007000,
+      "zenith": 60.18288640633483,
+      "azimuth": 343.06740117364825
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721008800,
+      "zenith": 62.3054167768139,
+      "azimuth": 335.4818226181819
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721010600,
+      "zenith": 65.12905037706905,
+      "azimuth": 328.3615047058223
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721012400,
+      "zenith": 68.56522942928623,
+      "azimuth": 321.75264837733664
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721014200,
+      "zenith": 72.52441309318205,
+      "azimuth": 315.65496288387305
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721016000,
+      "zenith": 76.9228072597033,
+      "azimuth": 310.03552231520337
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721017800,
+      "zenith": 81.6858131641868,
+      "azimuth": 304.84181376982804
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721075400,
+      "zenith": 80.63724880765959,
+      "azimuth": 54.236140778401875
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721077200,
+      "zenith": 75.93105537906276,
+      "azimuth": 48.963048023085605
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721079000,
+      "zenith": 71.6026053422118,
+      "azimuth": 43.25111131529036
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721080800,
+      "zenith": 67.72863309329503,
+      "azimuth": 37.05009297237001
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721082600,
+      "zenith": 64.39475014169889,
+      "azimuth": 30.33162113201115
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721084400,
+      "zenith": 61.691423569962105,
+      "azimuth": 23.10284167941012
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1721086200,
+      "zenith": 59.70653830019488,
+      "azimuth": 15.420117008139528
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728950400,
+      "zenith": 28.27498235136664,
+      "azimuth": 3.5117201976271417
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728952200,
+      "zenith": 28.71615010254218,
+      "azimuth": 347.95647995312004
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728954000,
+      "zenith": 30.69853492752526,
+      "azimuth": 333.49926405080976
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728955800,
+      "zenith": 33.948139877026655,
+      "azimuth": 320.9996820844458
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728957600,
+      "zenith": 38.134263534623315,
+      "azimuth": 310.57028157975753
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728959400,
+      "zenith": 42.97338275980435,
+      "azimuth": 301.90914475278913
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728961200,
+      "zenith": 48.25637690075318,
+      "azimuth": 294.6146381638746
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728963000,
+      "zenith": 53.837327412804036,
+      "azimuth": 288.32692422059716
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728964800,
+      "zenith": 59.614735842473266,
+      "azimuth": 282.76068382301185
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728966600,
+      "zenith": 65.51600299672828,
+      "azimuth": 277.69729383421804
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728968400,
+      "zenith": 71.48656931109872,
+      "azimuth": 272.9680076276863
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728970200,
+      "zenith": 77.4826099932125,
+      "azimuth": 268.4383588573687
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1728972000,
+      "zenith": 83.46600760090425,
+      "azimuth": 263.99585442246087
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729017000,
+      "zenith": 80.00973225166874,
+      "azimuth": 93.68637916879646
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729018800,
+      "zenith": 74.0061893422766,
+      "azimuth": 89.2252531475554
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729020600,
+      "zenith": 68.00931982992653,
+      "azimuth": 84.61806956172899
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729022400,
+      "zenith": 62.059396622071255,
+      "azimuth": 79.74160693340036
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729024200,
+      "zenith": 56.20486488517187,
+      "azimuth": 74.44392003398116
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729026000,
+      "zenith": 50.50848203960235,
+      "azimuth": 68.52977939501045
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729027800,
+      "zenith": 45.056468244091775,
+      "azimuth": 61.74302655124569
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729029600,
+      "zenith": 39.97207548950081,
+      "azimuth": 53.75103976904899
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729031400,
+      "zenith": 35.4340038070721,
+      "azimuth": 44.15108687562429
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729033200,
+      "zenith": 31.694547255401574,
+      "azimuth": 32.55117063787213
+    },
+    {
+      "site": "Auckland",
+      "latitude": -36.85,
+      "longitude": 174.76,
+      "utcTs": 1729035000,
+      "zenith": 29.076256512089742,
+      "azimuth": 18.811555495054847
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705293000,
+      "zenith": 82.64992850632463,
+      "azimuth": 122.8220496511455
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705294800,
+      "zenith": 77.67760166846924,
+      "azimuth": 127.80881731016575
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705296600,
+      "zenith": 73.04402170113993,
+      "azimuth": 133.21907501948
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705298400,
+      "zenith": 68.82195433752537,
+      "azimuth": 139.11488037290246
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705300200,
+      "zenith": 65.09513735325093,
+      "azimuth": 145.54322185639694
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705302000,
+      "zenith": 61.95597893558775,
+      "azimuth": 152.522759011086
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705303800,
+      "zenith": 59.499916949144676,
+      "azimuth": 160.02770366395373
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705305600,
+      "zenith": 57.81581646584407,
+      "azimuth": 167.97370912027236
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705307400,
+      "zenith": 56.97331746179276,
+      "azimuth": 176.2138589717606
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705309200,
+      "zenith": 57.0102957394753,
+      "azimuth": 184.55224194801986
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705311000,
+      "zenith": 57.925047249989476,
+      "azimuth": 192.77526155647786
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705312800,
+      "zenith": 59.67665446155945,
+      "azimuth": 200.69010718139538
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705314600,
+      "zenith": 62.193364003622385,
+      "azimuth": 208.15485414098669
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705316400,
+      "zenith": 65.3853037198837,
+      "azimuth": 215.09042147902926
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705318200,
+      "zenith": 69.1569691438535,
+      "azimuth": 221.47538424526851
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705320000,
+      "zenith": 73.4165021619286,
+      "azimuth": 227.33142129145895
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705321800,
+      "zenith": 78.08101471634737,
+      "azimuth": 232.70730380934154
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1705323600,
+      "zenith": 83.07866082178145,
+      "azimuth": 237.6659853796543
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713150000,
+      "zenith": 79.08152972928863,
+      "azimuth": 85.56982020878166
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713151800,
+      "zenith": 72.99111505773453,
+      "azimuth": 89.88372089210554
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713153600,
+      "zenith": 66.90001991752878,
+      "azimuth": 94.33956923904725
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713155400,
+      "zenith": 60.84622253344668,
+      "azimuth": 99.06209853482062
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713157200,
+      "zenith": 54.87557734260381,
+      "azimuth": 104.20789884500374
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713159000,
+      "zenith": 49.04814633377188,
+      "azimuth": 109.98309730189527
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713160800,
+      "zenith": 43.44804268064847,
+      "azimuth": 116.66697532652319
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713162600,
+      "zenith": 38.19891446100858,
+      "azimuth": 124.63803624264625
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713164400,
+      "zenith": 33.48685391342004,
+      "azimuth": 134.38215638392995
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713166200,
+      "zenith": 29.586947735807797,
+      "azimuth": 146.4156523031595
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713168000,
+      "zenith": 26.868506206560518,
+      "azimuth": 160.98566689889458
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713169800,
+      "zenith": 25.71728513916048,
+      "azimuth": 177.5095879469584
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713171600,
+      "zenith": 26.342546832866518,
+      "azimuth": 194.33324120157297
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713173400,
+      "zenith": 28.626317375312674,
+      "azimuth": 209.6038338197191
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713175200,
+      "zenith": 32.212115957601526,
+      "azimuth": 222.39950672258857
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713177000,
+      "zenith": 36.711681513078226,
+      "azimuth": 232.7819884297291
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713178800,
+      "zenith": 41.81982286467495,
+      "azimuth": 241.23249619894204
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713180600,
+      "zenith": 47.32627169612508,
+      "azimuth": 248.26111130724686
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713182400,
+      "zenith": 53.09130911857589,
+      "azimuth": 254.27969284183717
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713184200,
+      "zenith": 59.020813557031985,
+      "azimuth": 259.59477393150564
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713186000,
+      "zenith": 65.04864402808133,
+      "azimuth": 264.43175772254085
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713187800,
+      "zenith": 71.12534412188047,
+      "azimuth": 268.9600386230668
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713189600,
+      "zenith": 77.21093791633443,
+      "azimuth": 273.3124413430449
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1713191400,
+      "zenith": 83.27012278667739,
+      "azimuth": 277.5992254325448
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721010600,
+      "zenith": 79.69539848932833,
+      "azimuth": 70.90169466048224
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721012400,
+      "zenith": 73.8769370536365,
+      "azimuth": 74.8625474801683
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721014200,
+      "zenith": 67.94935691348512,
+      "azimuth": 78.76366564424313
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721016000,
+      "zenith": 61.94087118463143,
+      "azimuth": 82.6868923063621
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721017800,
+      "zenith": 55.87877740035893,
+      "azimuth": 86.73063828940082
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721019600,
+      "zenith": 49.7919328468383,
+      "azimuth": 91.02305033586799
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721021400,
+      "zenith": 43.714481876137924,
+      "azimuth": 95.74481138179522
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721023200,
+      "zenith": 37.69234465818456,
+      "azimuth": 101.17078876374478
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721025000,
+      "zenith": 31.795923788125336,
+      "azimuth": 107.74981992275195
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721026800,
+      "zenith": 26.147413362853747,
+      "azimuth": 116.26080731425913
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721028600,
+      "zenith": 20.98303326392329,
+      "azimuth": 128.09397198357368
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721030400,
+      "zenith": 16.787491333547322,
+      "azimuth": 145.4954855106629
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721032200,
+      "zenith": 14.454809078555755,
+      "azimuth": 170.17444246506432
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721034000,
+      "zenith": 14.89811733471835,
+      "azimuth": 197.9301980472531
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721035800,
+      "zenith": 17.911239833678266,
+      "azimuth": 220.4549453199295
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721037600,
+      "zenith": 22.47499143209538,
+      "azimuth": 235.89692220430015
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721039400,
+      "zenith": 27.823340689059464,
+      "azimuth": 246.52588562420215
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721041200,
+      "zenith": 33.566482513885056,
+      "azimuth": 254.33925513293448
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721043000,
+      "zenith": 39.51281300684671,
+      "azimuth": 260.5051103995157
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721044800,
+      "zenith": 45.56022601714032,
+      "azimuth": 265.67916592424535
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721046600,
+      "zenith": 51.6477301626442,
+      "azimuth": 270.2456098967301
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721048400,
+      "zenith": 57.73396750729567,
+      "azimuth": 274.4446549818945
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721050200,
+      "zenith": 63.78696022546926,
+      "azimuth": 278.4378063083046
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721052000,
+      "zenith": 69.77869799049392,
+      "azimuth": 282.3423782661721
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721053800,
+      "zenith": 75.68189933842498,
+      "azimuth": 286.25070226253916
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1721055600,
+      "zenith": 81.46775517755627,
+      "azimuth": 290.2414028662862
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728963000,
+      "zenith": 81.2074187436884,
+      "azimuth": 107.39589528005564
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728964800,
+      "zenith": 75.48090876400867,
+      "azimuth": 112.2084077350612
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728966600,
+      "zenith": 69.95575399861633,
+      "azimuth": 117.39040198465932
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728968400,
+      "zenith": 64.69665293879319,
+      "azimuth": 123.05891087348482
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728970200,
+      "zenith": 59.78493124205576,
+      "azimuth": 129.34035589328016
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728972000,
+      "zenith": 55.32252398363329,
+      "azimuth": 136.36259341113038
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728973800,
+      "zenith": 51.43426484632493,
+      "azimuth": 144.23501410783928
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728975600,
+      "zenith": 48.265356924676105,
+      "azimuth": 153.0118256528027
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728977400,
+      "zenith": 45.96954886451685,
+      "azimuth": 162.64063696987057
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728979200,
+      "zenith": 44.68484881798105,
+      "azimuth": 172.91651132461675
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728981000,
+      "zenith": 44.50064385896756,
+      "azimuth": 183.4812730156486
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728982800,
+      "zenith": 45.43061064016438,
+      "azimuth": 193.89721021609367
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728984600,
+      "zenith": 47.40817148899798,
+      "azimuth": 203.76829342016845
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728986400,
+      "zenith": 50.307648356845725,
+      "azimuth": 212.83579825575788
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728988200,
+      "zenith": 53.977248483963145,
+      "azimuth": 221.00087968185437
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728990000,
+      "zenith": 58.2671269442752,
+      "azimuth": 228.28865606435915
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728991800,
+      "zenith": 63.04517393229709,
+      "azimuth": 234.7952131877832
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728993600,
+      "zenith": 68.20208856869782,
+      "azimuth": 240.64516268117882
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728995400,
+      "zenith": 73.65024986479855,
+      "azimuth": 245.96659661867807
+    },
+    {
+      "site": "Tehran",
+      "latitude": 35.69,
+      "longitude": 51.39,
+      "utcTs": 1728997200,
+      "zenith": 79.32005858624173,
+      "azimuth": 250.87982203649418
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705309200,
+      "zenith": 83.69095113641431,
+      "azimuth": 136.31393065013185
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705311000,
+      "zenith": 80.65597675908322,
+      "azimuth": 142.67165756785937
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705312800,
+      "zenith": 78.04040380646612,
+      "azimuth": 149.26939021311614
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705314600,
+      "zenith": 75.8947450934539,
+      "azimuth": 156.0997892530088
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705316400,
+      "zenith": 74.26522505076657,
+      "azimuth": 163.13643686330465
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705318200,
+      "zenith": 73.1902701349821,
+      "azimuth": 170.33369713828574
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705320000,
+      "zenith": 72.6969756819765,
+      "azimuth": 177.62937347728143
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705321800,
+      "zenith": 72.79826703488132,
+      "azimuth": 184.95041027205008
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705323600,
+      "zenith": 73.49144085479722,
+      "azimuth": 192.22088508246748
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705325400,
+      "zenith": 74.75847366592382,
+      "azimuth": 199.37064260420473
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705327200,
+      "zenith": 76.56801343342045,
+      "azimuth": 206.34265488935472
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705329000,
+      "zenith": 78.87853834728108,
+      "azimuth": 213.09771880858807
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705330800,
+      "zenith": 81.64195549941095,
+      "azimuth": 219.61609013949905
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1705332600,
+      "zenith": 84.80696523980502,
+      "azimuth": 225.89658065513618
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713160800,
+      "zenith": 82.29607000203528,
+      "azimuth": 83.67626093205325
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713162600,
+      "zenith": 77.63095819311827,
+      "azimuth": 89.49606336907902
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713164400,
+      "zenith": 72.96184724807489,
+      "azimuth": 95.41754867214848
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713166200,
+      "zenith": 68.33927699860634,
+      "azimuth": 101.5280893039378
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713168000,
+      "zenith": 63.81884371968843,
+      "azimuth": 107.92355574641465
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713169800,
+      "zenith": 59.46403082046118,
+      "azimuth": 114.7088154897798
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713171600,
+      "zenith": 55.349263471052204,
+      "azimuth": 121.99585295543665
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713173400,
+      "zenith": 51.56276177075594,
+      "azimuth": 129.89705037602346
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713175200,
+      "zenith": 48.208163291320005,
+      "azimuth": 138.510183389137
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713177000,
+      "zenith": 45.40298688368607,
+      "azimuth": 147.89192365331598
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713178800,
+      "zenith": 43.271213836823094,
+      "azimuth": 158.02080970319457
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713180600,
+      "zenith": 41.92781941281569,
+      "azimuth": 168.7613161950435
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713182400,
+      "zenith": 41.456693109951054,
+      "azimuth": 179.85375255921463
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713184200,
+      "zenith": 41.88955885844222,
+      "azimuth": 190.95361958732067
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713186000,
+      "zenith": 43.19686877384304,
+      "azimuth": 201.714589407912
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713187800,
+      "zenith": 45.2962662032775,
+      "azimuth": 211.87250406045476
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713189600,
+      "zenith": 48.0734039355316,
+      "azimuth": 221.28684871515281
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713191400,
+      "zenith": 51.40417064543919,
+      "azimuth": 229.93225931651003
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713193200,
+      "zenith": 55.17047949731302,
+      "azimuth": 237.86307524229508
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713195000,
+      "zenith": 59.267969574730145,
+      "azimuth": 245.17603821357994
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713196800,
+      "zenith": 63.607713484616426,
+      "azimuth": 251.98330829963788
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713198600,
+      "zenith": 68.1146711138547,
+      "azimuth": 258.39704986509236
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713200400,
+      "zenith": 72.72485656250467,
+      "azimuth": 264.5224474538083
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713202200,
+      "zenith": 77.38227830713636,
+      "azimuth": 270.45567767055996
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1713204000,
+      "zenith": 82.03609598990658,
+      "azimuth": 276.2843327955676
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721019600,
+      "zenith": 83.09438507794945,
+      "azimuth": 63.9461106707389
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721021400,
+      "zenith": 78.80951188607028,
+      "azimuth": 69.52686346750068
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721023200,
+      "zenith": 74.3663389594162,
+      "azimuth": 75.06281085541411
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721025000,
+      "zenith": 69.80686962680085,
+      "azimuth": 80.61959681627212
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721026800,
+      "zenith": 65.17325315558438,
+      "azimuth": 86.27356469443691
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721028600,
+      "zenith": 60.509621480172505,
+      "azimuth": 92.11481282089102
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721030400,
+      "zenith": 55.864573424554436,
+      "azimuth": 98.25154488683484
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721032200,
+      "zenith": 51.294542400595,
+      "azimuth": 104.81553361812598
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721034000,
+      "zenith": 46.86835792698016,
+      "azimuth": 111.96779994116065
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721035800,
+      "zenith": 42.67325307681544,
+      "azimuth": 119.90174109246226
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721037600,
+      "zenith": 38.82208291915563,
+      "azimuth": 128.83680535547
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721039400,
+      "zenith": 35.45995465299546,
+      "azimuth": 138.98856537633662
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721041200,
+      "zenith": 32.764912671595226,
+      "azimuth": 150.49437097941887
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721043000,
+      "zenith": 30.932340227914672,
+      "azimuth": 163.2860913280564
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721044800,
+      "zenith": 30.133117311609737,
+      "azimuth": 176.964612750917
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721046600,
+      "zenith": 30.454128934533436,
+      "azimuth": 190.8173793843007
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721048400,
+      "zenith": 31.859660921636973,
+      "azimuth": 204.06164928849455
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721050200,
+      "zenith": 34.20798022958981,
+      "azimuth": 216.14727684240563
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721052000,
+      "zenith": 37.307649343466316,
+      "azimuth": 226.87419574617005
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721053800,
+      "zenith": 40.96990358849233,
+      "azimuth": 236.30899398225287
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721055600,
+      "zenith": 45.034902652636475,
+      "azimuth": 244.64592308509623
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721057400,
+      "zenith": 49.376569441898035,
+      "azimuth": 252.10853297394976
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721059200,
+      "zenith": 53.89758226215637,
+      "azimuth": 258.90320353686894
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721061000,
+      "zenith": 58.522038627555,
+      "azimuth": 265.2048846985008
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721062800,
+      "zenith": 63.18884129291648,
+      "azimuth": 271.1573506495065
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721064600,
+      "zenith": 67.84653110003362,
+      "azimuth": 276.8782976389424
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721066400,
+      "zenith": 72.44944287876604,
+      "azimuth": 282.4650881244554
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721068200,
+      "zenith": 76.95487197724555,
+      "azimuth": 287.9996347932124
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1721070000,
+      "zenith": 81.32097782133374,
+      "azimuth": 293.55202469868885
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728977400,
+      "zenith": 81.34756165396058,
+      "azimuth": 115.98010880884976
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728979200,
+      "zenith": 77.27636060339515,
+      "azimuth": 122.28733081372428
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728981000,
+      "zenith": 73.48604483148274,
+      "azimuth": 128.87397956121595
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728982800,
+      "zenith": 70.04123426564244,
+      "azimuth": 135.78780736827923
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728984600,
+      "zenith": 67.01098548979951,
+      "azimuth": 143.06048511600738
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728986400,
+      "zenith": 64.46657249414602,
+      "azimuth": 150.70020083303314
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728988200,
+      "zenith": 62.477406866897695,
+      "azimuth": 158.68406857484365
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728990000,
+      "zenith": 61.10514441807014,
+      "azimuth": 166.95299961654905
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728991800,
+      "zenith": 60.39674508360247,
+      "azimuth": 175.41237435710696
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728993600,
+      "zenith": 60.37805855770459,
+      "azimuth": 183.94088175124213
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728995400,
+      "zenith": 61.0498669531892,
+      "azimuth": 192.40688115149098
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728997200,
+      "zenith": 62.3877673396814,
+      "azimuth": 200.68796852099965
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1728999000,
+      "zenith": 64.34593795720265,
+      "azimuth": 208.68766775608174
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1729000800,
+      "zenith": 66.86346477562665,
+      "azimuth": 216.34474892263606
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1729002600,
+      "zenith": 69.87130219421509,
+      "azimuth": 223.63432016457665
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1729004400,
+      "zenith": 73.29825818502556,
+      "azimuth": 230.562939767148
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1729006200,
+      "zenith": 77.07518749364034,
+      "azimuth": 237.16108136379157
+    },
+    {
+      "site": "London",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "utcTs": 1729008000,
+      "zenith": 81.13731420707201,
+      "azimuth": 243.47567296792505
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705323600,
+      "zenith": 84.02860300479925,
+      "azimuth": 124.65608703544399
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705325400,
+      "zenith": 79.5067701241471,
+      "azimuth": 130.0465240229986
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705327200,
+      "zenith": 75.34065540197419,
+      "azimuth": 135.80204399943648
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705329000,
+      "zenith": 71.59841492435731,
+      "azimuth": 141.9653911031811
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705330800,
+      "zenith": 68.35466930194227,
+      "azimuth": 148.5606543073235
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705332600,
+      "zenith": 65.6873038140449,
+      "azimuth": 155.5838623662114
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705334400,
+      "zenith": 63.671877544532116,
+      "azimuth": 162.99371331053771
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705336200,
+      "zenith": 62.373823101875345,
+      "azimuth": 170.70619524069355
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705338000,
+      "zenith": 61.83968869445884,
+      "azimuth": 178.59746971251138
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705339800,
+      "zenith": 62.08973052611232,
+      "azimuth": 186.51740644001976
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705341600,
+      "zenith": 63.11437637420281,
+      "azimuth": 194.31149503899482
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705343400,
+      "zenith": 64.87591897945764,
+      "azimuth": 201.84424862218663
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705345200,
+      "zenith": 67.31477652429619,
+      "azimuth": 209.01632991901906
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705347000,
+      "zenith": 70.35806452154223,
+      "azimuth": 215.77123261691253
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705348800,
+      "zenith": 73.9279509575748,
+      "azimuth": 222.0924351082711
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705350600,
+      "zenith": 77.94811832196899,
+      "azimuth": 227.9950394192113
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1705352400,
+      "zenith": 82.347801214747,
+      "azimuth": 233.51608529160006
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713178800,
+      "zenith": 82.71463017668052,
+      "azimuth": 83.01540517057583
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713180600,
+      "zenith": 77.04274204147758,
+      "azimuth": 87.82406265716145
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713182400,
+      "zenith": 71.35279266586937,
+      "azimuth": 92.72136396599649
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713184200,
+      "zenith": 65.68670302387314,
+      "azimuth": 97.81646009131629
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713186000,
+      "zenith": 60.092016083482015,
+      "azimuth": 103.23798857044557
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713187800,
+      "zenith": 54.6266065680411,
+      "azimuth": 109.14336489284062
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713189600,
+      "zenith": 49.36519535982157,
+      "azimuth": 115.7292964344723
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713191400,
+      "zenith": 44.408379403465986,
+      "azimuth": 123.24034786707927
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713193200,
+      "zenith": 39.894317345360825,
+      "azimuth": 131.96562007826395
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713195000,
+      "zenith": 36.01065929368298,
+      "azimuth": 142.19962298284764
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713196800,
+      "zenith": 32.99738886224986,
+      "azimuth": 154.1269215031532
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713198600,
+      "zenith": 31.12029261521451,
+      "azimuth": 167.61062054723618
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713200400,
+      "zenith": 30.595945114384747,
+      "azimuth": 182.00028134521338
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713202200,
+      "zenith": 31.493556056167414,
+      "azimuth": 196.24170204841218
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713204000,
+      "zenith": 33.6966025308273,
+      "azimuth": 209.35235848813275
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713205800,
+      "zenith": 36.96538890423914,
+      "azimuth": 220.82560696256368
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713207600,
+      "zenith": 41.03564564330415,
+      "azimuth": 230.6340513226212
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713209400,
+      "zenith": 45.6803063126366,
+      "azimuth": 239.00869937946507
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713211200,
+      "zenith": 50.72573868696301,
+      "azimuth": 246.24997278905653
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713213000,
+      "zenith": 56.04494587845561,
+      "azimuth": 252.63687375646998
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713214800,
+      "zenith": 61.54516905122704,
+      "azimuth": 258.4008038985709
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713216600,
+      "zenith": 67.15682770604838,
+      "azimuth": 263.7270202207025
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713218400,
+      "zenith": 72.8252124507168,
+      "azimuth": 268.76429908551336
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713220200,
+      "zenith": 78.50452079915462,
+      "azimuth": 273.6352693719358
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1713222000,
+      "zenith": 84.15350421647636,
+      "azimuth": 278.44520825212425
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721039400,
+      "zenith": 81.9788359627534,
+      "azimuth": 68.59804858247588
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721041200,
+      "zenith": 76.610422369183,
+      "azimuth": 73.1426216929658
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721043000,
+      "zenith": 71.11216686328012,
+      "azimuth": 77.62437595480833
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721044800,
+      "zenith": 65.51855830237207,
+      "azimuth": 82.12399933115023
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721046600,
+      "zenith": 59.86330553997505,
+      "azimuth": 86.7364111062131
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721048400,
+      "zenith": 54.18185292624835,
+      "azimuth": 91.57989814152506
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721050200,
+      "zenith": 48.514961677058885,
+      "azimuth": 96.81070673880504
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721052000,
+      "zenith": 42.914339544983456,
+      "azimuth": 102.64659330423001
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721053800,
+      "zenith": 37.45220158114085,
+      "azimuth": 109.40478917748788
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721055600,
+      "zenith": 32.238323069062595,
+      "azimuth": 117.56015749983135
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721057400,
+      "zenith": 27.45055133261853,
+      "azimuth": 127.81623446687433
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721059200,
+      "zenith": 23.383951620651757,
+      "azimuth": 141.1079740360983
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721061000,
+      "zenith": 20.497950037624918,
+      "azimuth": 158.2177302340683
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721062800,
+      "zenith": 19.34475416124893,
+      "azimuth": 178.53537058267773
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721064600,
+      "zenith": 20.22858476554542,
+      "azimuth": 199.1033010769447
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721066400,
+      "zenith": 22.911496531342195,
+      "azimuth": 216.7358163449656
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721068200,
+      "zenith": 26.849510660664954,
+      "azimuth": 230.51397182824445
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721070000,
+      "zenith": 31.561386799025776,
+      "azimuth": 241.12348775321536
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721071800,
+      "zenith": 36.7317276745107,
+      "azimuth": 249.51627889825724
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721073600,
+      "zenith": 42.170075479338976,
+      "azimuth": 256.4309120615284
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721075400,
+      "zenith": 47.75961331388611,
+      "azimuth": 262.3692486789767
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721077200,
+      "zenith": 53.42428680821455,
+      "azimuth": 267.66604870634677
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721079000,
+      "zenith": 59.110325788285806,
+      "azimuth": 272.5499691973418
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721080800,
+      "zenith": 64.77592379788153,
+      "azimuth": 277.1839940917779
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721082600,
+      "zenith": 70.38521352291507,
+      "azimuth": 281.69058688335144
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721084400,
+      "zenith": 75.90447725988986,
+      "azimuth": 286.16726033693914
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1721086200,
+      "zenith": 81.29952224907458,
+      "azimuth": 290.69631966422764
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1728993600,
+      "zenith": 81.29620076781644,
+      "azimuth": 109.62724947251934
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1728995400,
+      "zenith": 76.0407349783,
+      "azimuth": 114.9609409530367
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1728997200,
+      "zenith": 71.01650522890719,
+      "azimuth": 120.64669559960919
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1728999000,
+      "zenith": 66.29187956221011,
+      "azimuth": 126.78183191336598
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729000800,
+      "zenith": 61.94870267332648,
+      "azimuth": 133.46136540247858
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729002600,
+      "zenith": 58.083654341292736,
+      "azimuth": 140.76726673179257
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729004400,
+      "zenith": 54.807007224605556,
+      "azimuth": 148.7496184770023
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729006200,
+      "zenith": 52.23670432746888,
+      "azimuth": 157.400214258309
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729008000,
+      "zenith": 50.48596544257052,
+      "azimuth": 166.6254596772078
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729009800,
+      "zenith": 49.644949967502086,
+      "azimuth": 176.23379461560376
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729011600,
+      "zenith": 49.761387775969844,
+      "azimuth": 185.95476778921406
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729013400,
+      "zenith": 50.82856631728455,
+      "azimuth": 195.4925158299566
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729015200,
+      "zenith": 52.787104928636516,
+      "azimuth": 204.5917769262222
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729017000,
+      "zenith": 55.53951449573957,
+      "azimuth": 213.08419129150246
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729018800,
+      "zenith": 58.97001511856263,
+      "azimuth": 220.8986667441503
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729020600,
+      "zenith": 62.96171047974495,
+      "azimuth": 228.04359297738085
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729022400,
+      "zenith": 67.40734716604499,
+      "azimuth": 234.5788135104678
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729024200,
+      "zenith": 72.21391724566982,
+      "azimuth": 240.59071962070527
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729026000,
+      "zenith": 77.30310672506755,
+      "azimuth": 246.17545279749424
+    },
+    {
+      "site": "NewYork",
+      "latitude": 40.7,
+      "longitude": -74,
+      "utcTs": 1729027800,
+      "zenith": 82.6095668607582,
+      "azimuth": 251.42984425775353
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705276800,
+      "zenith": 46.797751415613455,
+      "azimuth": 205.8488669287203
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705278600,
+      "zenith": 50.28302207523047,
+      "azimuth": 213.9375907275596
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705280400,
+      "zenith": 54.533078290059706,
+      "azimuth": 220.94402236155594
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705282200,
+      "zenith": 59.38333235725877,
+      "azimuth": 226.9502219313929
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705284000,
+      "zenith": 64.69822933793694,
+      "azimuth": 232.0908984170599
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705285800,
+      "zenith": 70.37176969479971,
+      "azimuth": 236.5091133257072
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705287600,
+      "zenith": 76.32313234855383,
+      "azimuth": 240.33518516537947
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705289400,
+      "zenith": 82.49124669412603,
+      "azimuth": 243.6796910755321
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705341600,
+      "zenith": 80.53187243986278,
+      "azimuth": 117.19877495056693
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705343400,
+      "zenith": 74.41481588656828,
+      "azimuth": 120.67444342243078
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705345200,
+      "zenith": 68.52992105883294,
+      "azimuth": 124.66352700177305
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705347000,
+      "zenith": 62.94358529891871,
+      "azimuth": 129.28359916633633
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705348800,
+      "zenith": 57.74368163900283,
+      "azimuth": 134.67134849400446
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705350600,
+      "zenith": 53.04503045899198,
+      "azimuth": 140.9723960899758
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705352400,
+      "zenith": 48.99299546088902,
+      "azimuth": 148.31409890794185
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705354200,
+      "zenith": 45.76045994396609,
+      "azimuth": 156.7525152746034
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705356000,
+      "zenith": 43.530987086263735,
+      "azimuth": 166.1962073156168
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705357800,
+      "zenith": 42.4632823912812,
+      "azimuth": 176.34202802851144
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705359600,
+      "zenith": 42.64490557861826,
+      "azimuth": 186.69081788588062
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1705361400,
+      "zenith": 44.06041306326845,
+      "azimuth": 196.67900568756187
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713139200,
+      "zenith": 24.195106072571647,
+      "azimuth": 245.2293873618098
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713141000,
+      "zenith": 30.723281104853115,
+      "azimuth": 252.79590530475946
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713142800,
+      "zenith": 37.487256961735575,
+      "azimuth": 258.13008745764694
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713144600,
+      "zenith": 44.37147277936341,
+      "azimuth": 262.2442141479311
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713146400,
+      "zenith": 51.31858289658494,
+      "azimuth": 265.64986344513306
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713148200,
+      "zenith": 58.29583879663197,
+      "azimuth": 268.6327937816764
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713150000,
+      "zenith": 65.28174825168034,
+      "azimuth": 271.3689412097153
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713151800,
+      "zenith": 72.26002028627047,
+      "azimuth": 273.97790924953796
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713153600,
+      "zenith": 79.21638539727749,
+      "azimuth": 276.5501575181156
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713200400,
+      "zenith": 79.67247137252689,
+      "azimuth": 83.07230884223515
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713202200,
+      "zenith": 72.71562217087848,
+      "azimuth": 85.62398339770425
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713204000,
+      "zenith": 65.73503728843006,
+      "azimuth": 88.20175089784323
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713205800,
+      "zenith": 58.74455593466302,
+      "azimuth": 90.89295153388991
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713207600,
+      "zenith": 51.75967575546868,
+      "azimuth": 93.81187952213673
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713209400,
+      "zenith": 44.800466267738,
+      "azimuth": 97.12530810917616
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713211200,
+      "zenith": 37.89704230757713,
+      "azimuth": 101.10252622177757
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713213000,
+      "zenith": 31.101539137414676,
+      "azimuth": 106.2238638647155
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713214800,
+      "zenith": 24.51822689898684,
+      "azimuth": 113.43966116470023
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713216600,
+      "zenith": 18.390502352352968,
+      "azimuth": 124.82772250118234
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713218400,
+      "zenith": 13.373643159423438,
+      "azimuth": 144.9626961194794
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713220200,
+      "zenith": 11.102905672207413,
+      "azimuth": 178.7092908732518
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713222000,
+      "zenith": 13.097066006882002,
+      "azimuth": 213.23204233456877
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1713223800,
+      "zenith": 17.987703486842975,
+      "azimuth": 234.23437579379018
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721001600,
+      "zenith": 19.258405128502076,
+      "azimuth": 274.3258660588078
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721003400,
+      "zenith": 26.2198789749957,
+      "azimuth": 275.6007222514156
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721005200,
+      "zenith": 33.16553951514535,
+      "azimuth": 276.977642159939
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721007000,
+      "zenith": 40.090190494576035,
+      "azimuth": 278.4376001990505
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721008800,
+      "zenith": 46.987975623918565,
+      "azimuth": 279.98210983780245
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721010600,
+      "zenith": 53.852125116478604,
+      "azimuth": 281.6215644369441
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721012400,
+      "zenith": 60.674651124015426,
+      "azimuth": 283.3720526948247
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721014200,
+      "zenith": 67.44595534341767,
+      "azimuth": 285.2547055502954
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721016000,
+      "zenith": 74.1543132653465,
+      "azimuth": 287.2960947888871
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721017800,
+      "zenith": 80.78518254434383,
+      "azimuth": 289.52925974531496
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721061000,
+      "zenith": 83.98849858536342,
+      "azimuth": 69.38425124214177
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721062800,
+      "zenith": 77.4004191562377,
+      "azimuth": 71.7335035118544
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721064600,
+      "zenith": 70.72628234789869,
+      "azimuth": 73.87384691851514
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721066400,
+      "zenith": 63.98232580312549,
+      "azimuth": 75.84262049038864
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721068200,
+      "zenith": 57.181544563817475,
+      "azimuth": 77.67029741451347
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721070000,
+      "zenith": 50.33449265962542,
+      "azimuth": 79.38197539663781
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721071800,
+      "zenith": 43.44987662494075,
+      "azimuth": 80.99850832902393
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721073600,
+      "zenith": 36.53500182546385,
+      "azimuth": 82.537315403035
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721075400,
+      "zenith": 29.59611112797358,
+      "azimuth": 84.01282398742819
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721077200,
+      "zenith": 22.638647546776724,
+      "azimuth": 85.43622867837962
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721079000,
+      "zenith": 15.667464397212825,
+      "azimuth": 86.81293266008214
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721080800,
+      "zenith": 8.686998635193149,
+      "azimuth": 88.12527313988613
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721084400,
+      "zenith": 5.285440539299202,
+      "azimuth": 271.24791795172916
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1721086200,
+      "zenith": 12.269315590640346,
+      "azimuth": 272.47942465599124
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1728950400,
+      "zenith": 39.177228466010384,
+      "azimuth": 222.8578186092928
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1728952200,
+      "zenith": 44.29384949136626,
+      "azimuth": 230.93949995919468
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1728954000,
+      "zenith": 49.972251978275125,
+      "azimuth": 237.45952019047286
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1728955800,
+      "zenith": 56.04022301972784,
+      "azimuth": 242.80531515615348
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1728957600,
+      "zenith": 62.38219685761051,
+      "azimuth": 247.28500303166913
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1728959400,
+      "zenith": 68.92026306799215,
+      "azimuth": 251.12988350947666
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1728961200,
+      "zenith": 75.6008658825637,
+      "azimuth": 254.51198063613288
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1728963000,
+      "zenith": 82.38615539541189,
+      "azimuth": 257.56144420602703
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729011600,
+      "zenith": 83.31900154912785,
+      "azimuth": 102.26733008720703
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729013400,
+      "zenith": 76.53467921343334,
+      "azimuth": 105.29884005428084
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729015200,
+      "zenith": 69.85348747883751,
+      "azimuth": 108.65130827485189
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729017000,
+      "zenith": 63.31233902617001,
+      "azimuth": 112.45073503571871
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729018800,
+      "zenith": 56.96317245039257,
+      "azimuth": 116.86257823105416
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729020600,
+      "zenith": 50.881119297174344,
+      "azimuth": 122.1081557158418
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729022400,
+      "zenith": 45.17701268987528,
+      "azimuth": 128.48137749903378
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729024200,
+      "zenith": 40.015268032204894,
+      "azimuth": 136.35251806008796
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729026000,
+      "zenith": 35.63444390653827,
+      "azimuth": 146.11989439687164
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729027800,
+      "zenith": 32.35497463699163,
+      "azimuth": 158.03157664716355
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729029600,
+      "zenith": 30.53495199101217,
+      "azimuth": 171.8299422968878
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729031400,
+      "zenith": 30.437897280393067,
+      "azimuth": 186.46355235158185
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729033200,
+      "zenith": 32.079496336256426,
+      "azimuth": 200.41763317829208
+    },
+    {
+      "site": "Honolulu",
+      "latitude": 21.3,
+      "longitude": -157.8,
+      "utcTs": 1729035000,
+      "zenith": 35.21703132877634,
+      "azimuth": 212.5592990258557
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705320000,
+      "zenith": 81.3407347940162,
+      "azimuth": 111.39014228781639
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705321800,
+      "zenith": 74.37096757453926,
+      "azimuth": 111.95957308939109
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705323600,
+      "zenith": 67.43842570964884,
+      "azimuth": 112.9244717731682
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705325400,
+      "zenith": 60.56682520882022,
+      "azimuth": 114.36555881655295
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705327200,
+      "zenith": 53.78897630360813,
+      "azimuth": 116.41450573776825
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705329000,
+      "zenith": 47.15364855841291,
+      "azimuth": 119.28107695352861
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705330800,
+      "zenith": 40.73799080206898,
+      "azimuth": 123.2996314961776
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705332600,
+      "zenith": 34.67089052206847,
+      "azimuth": 129.00369063500938
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705334400,
+      "zenith": 29.176649681060063,
+      "azimuth": 137.21867687868098
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705336200,
+      "zenith": 24.646634133253485,
+      "azimuth": 149.04630899266033
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705338000,
+      "zenith": 21.697474104944817,
+      "azimuth": 165.23896376920493
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705339800,
+      "zenith": 21.008184551413834,
+      "azimuth": 184.4340996363041
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705341600,
+      "zenith": 22.785337801572766,
+      "azimuth": 202.65327178985115
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705343400,
+      "zenith": 26.537120634831503,
+      "azimuth": 216.86927602767508
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705345200,
+      "zenith": 31.56530107448713,
+      "azimuth": 226.92663858022865
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705347000,
+      "zenith": 37.35539033638777,
+      "azimuth": 233.88684183818174
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705348800,
+      "zenith": 43.60168807959935,
+      "azimuth": 238.74971586133282
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705350600,
+      "zenith": 50.13012465292642,
+      "azimuth": 242.1987793223288
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705352400,
+      "zenith": 56.83909815307666,
+      "azimuth": 244.66659731058104
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705354200,
+      "zenith": 63.666359082902694,
+      "azimuth": 246.4240140171267
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705356000,
+      "zenith": 70.57149373998706,
+      "azimuth": 247.64126924786564
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705357800,
+      "zenith": 77.5264823846884,
+      "azimuth": 248.42464214576546
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1705359600,
+      "zenith": 84.51034143422007,
+      "azimuth": 248.83752693506813
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713182400,
+      "zenith": 78.66225056547898,
+      "azimuth": 79.71612549640372
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713184200,
+      "zenith": 71.28616396081125,
+      "azimuth": 79.31791488231431
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713186000,
+      "zenith": 63.92257908330353,
+      "azimuth": 78.69596125113208
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713187800,
+      "zenith": 56.57874208258784,
+      "azimuth": 77.78893222105137
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713189600,
+      "zenith": 49.265552166343326,
+      "azimuth": 76.49263571748389
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713191400,
+      "zenith": 42.00087462697933,
+      "azimuth": 74.62631067940214
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713193200,
+      "zenith": 34.81679391641194,
+      "azimuth": 71.85895581951036
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713195000,
+      "zenith": 27.77752434600393,
+      "azimuth": 67.53285705020693
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713196800,
+      "zenith": 21.030543598889267,
+      "azimuth": 60.19410402727277
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713198600,
+      "zenith": 14.977734997194815,
+      "azimuth": 46.28327511842599
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713200400,
+      "zenith": 10.851908233000572,
+      "azimuth": 18.264124024456805
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713202200,
+      "zenith": 11.071946402630687,
+      "azimuth": 338.6899503412777
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713204000,
+      "zenith": 15.453122122503103,
+      "azimuth": 312.2008725252815
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713205800,
+      "zenith": 21.595716150984146,
+      "azimuth": 299.1007890666687
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713207600,
+      "zenith": 28.37740248907609,
+      "azimuth": 292.12099674719497
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713209400,
+      "zenith": 35.43229195247016,
+      "azimuth": 287.9734652907804
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713211200,
+      "zenith": 42.62401460540034,
+      "azimuth": 285.3071679893144
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713213000,
+      "zenith": 49.8923817020215,
+      "azimuth": 283.5048932509322
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713214800,
+      "zenith": 57.20699137083321,
+      "azimuth": 282.2535610008142
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713216600,
+      "zenith": 64.55075367145626,
+      "azimuth": 281.3812982582553
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713218400,
+      "zenith": 71.91314150304567,
+      "azimuth": 280.78883195396986
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1713220200,
+      "zenith": 79.28707586819357,
+      "azimuth": 280.41789539653365
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721044800,
+      "zenith": 80.75140575223529,
+      "azimuth": 68.27715654435781
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721046600,
+      "zenith": 73.79865840343578,
+      "azimuth": 67.62018523476917
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721048400,
+      "zenith": 66.88850828931758,
+      "azimuth": 66.55563143458863
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721050200,
+      "zenith": 60.04629792994338,
+      "azimuth": 64.99703412491067
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721052000,
+      "zenith": 53.307398497499925,
+      "azimuth": 62.804893181718626
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721053800,
+      "zenith": 46.72464476050238,
+      "azimuth": 59.75862212354576
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721055600,
+      "zenith": 40.38172498647045,
+      "azimuth": 55.509572970026056
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721057400,
+      "zenith": 34.41802625645967,
+      "azimuth": 49.509164652948016
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721059200,
+      "zenith": 29.07368660286454,
+      "azimuth": 40.93219728301733
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721061000,
+      "zenith": 24.75807731202663,
+      "azimuth": 28.748324440883664
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721062800,
+      "zenith": 22.086438003137033,
+      "azimuth": 12.444054111957712
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721064600,
+      "zenith": 21.677430784779972,
+      "azimuth": 353.66380328665207
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721066400,
+      "zenith": 23.64909634901109,
+      "azimuth": 336.201930532785
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721068200,
+      "zenith": 27.4929829607417,
+      "azimuth": 322.629944753563
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721070000,
+      "zenith": 32.550561796674906,
+      "azimuth": 312.9621787553859
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721071800,
+      "zenith": 38.34190186285661,
+      "azimuth": 306.20693388734605
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721073600,
+      "zenith": 44.57868903406885,
+      "azimuth": 301.44504330942385
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721075400,
+      "zenith": 51.094204903605785,
+      "azimuth": 298.04224325628286
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721077200,
+      "zenith": 57.789746441410465,
+      "azimuth": 295.59227939029734
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721079000,
+      "zenith": 64.60411624362551,
+      "azimuth": 293.8381459003515
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721080800,
+      "zenith": 71.49719186911807,
+      "azimuth": 292.61708710488676
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1721082600,
+      "zenith": 78.4409269118239,
+      "azimuth": 291.82710503441547
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1728991800,
+      "zenith": 82.4499227222439,
+      "azimuth": 98.84754029401103
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1728993600,
+      "zenith": 75.04015253117865,
+      "azimuth": 99.06454326430264
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1728995400,
+      "zenith": 67.63677858992699,
+      "azimuth": 99.45738411149836
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1728997200,
+      "zenith": 60.24427878862767,
+      "azimuth": 100.06518567532504
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1728999000,
+      "zenith": 52.86904170633318,
+      "azimuth": 100.95584924153417
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729000800,
+      "zenith": 45.52107680965337,
+      "azimuth": 102.2465859807071
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729002600,
+      "zenith": 38.217588945812615,
+      "azimuth": 104.14797037810831
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729004400,
+      "zenith": 30.991412978269658,
+      "azimuth": 107.06719988311181
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729006200,
+      "zenith": 23.914061622791806,
+      "azimuth": 111.88166446024559
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729008000,
+      "zenith": 17.17186672588865,
+      "azimuth": 120.77830154956342
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729009800,
+      "zenith": 11.378434721497598,
+      "azimuth": 140.00058446508905
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729011600,
+      "zenith": 8.699688455728392,
+      "azimuth": 180.83152760574154
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729013400,
+      "zenith": 11.555170812495419,
+      "azimuth": 220.90305904421797
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729015200,
+      "zenith": 17.406014898435743,
+      "azimuth": 239.5476353070679
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729017000,
+      "zenith": 24.166123434561683,
+      "azimuth": 248.22373978864675
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729018800,
+      "zenith": 31.250256957130972,
+      "azimuth": 252.9409949194598
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729020600,
+      "zenith": 38.47913726754108,
+      "azimuth": 255.8088313973922
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729022400,
+      "zenith": 45.78342434270669,
+      "azimuth": 257.67842332976244
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729024200,
+      "zenith": 53.131091692035724,
+      "azimuth": 258.946546891319
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729026000,
+      "zenith": 60.50527254238891,
+      "azimuth": 259.81896565100493
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729027800,
+      "zenith": 67.89610023447428,
+      "azimuth": 260.4103364376893
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729029600,
+      "zenith": 75.29723273457557,
+      "azimuth": 260.7869852134282
+    },
+    {
+      "site": "Quito",
+      "latitude": -0.18,
+      "longitude": -78.47,
+      "utcTs": 1729031400,
+      "zenith": 82.70418182132562,
+      "azimuth": 260.98687803084164
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705276800,
+      "zenith": 79.74108166877842,
+      "azimuth": 111.88589812284425
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705278600,
+      "zenith": 72.8046350453139,
+      "azimuth": 112.75554219846452
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705280400,
+      "zenith": 65.92267356058488,
+      "azimuth": 114.05157822362423
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705282200,
+      "zenith": 59.123428028558116,
+      "azimuth": 115.87210189372752
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705284000,
+      "zenith": 52.44706250404374,
+      "azimuth": 118.37205334857043
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705285800,
+      "zenith": 45.954213080900274,
+      "azimuth": 121.79282828426983
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705287600,
+      "zenith": 39.74122661188017,
+      "azimuth": 126.50953245539938
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705289400,
+      "zenith": 33.96766523567827,
+      "azimuth": 133.0957737144342
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705291200,
+      "zenith": 28.903052662226713,
+      "azimuth": 142.36526786873247
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705293000,
+      "zenith": 24.986415853841194,
+      "azimuth": 155.19310670617642
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705294800,
+      "zenith": 22.81967131474765,
+      "azimuth": 171.65640131219004
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705296600,
+      "zenith": 22.90636501064259,
+      "azimuth": 189.708427911754
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705298400,
+      "zenith": 25.223333257242146,
+      "azimuth": 205.94384636548696
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705300200,
+      "zenith": 29.244190562204317,
+      "azimuth": 218.48987384151962
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705302000,
+      "zenith": 34.3743307724772,
+      "azimuth": 227.53121692540643
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705303800,
+      "zenith": 40.188744109239416,
+      "azimuth": 233.95643240200462
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705305600,
+      "zenith": 46.42806539242668,
+      "azimuth": 238.56287063128715
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705307400,
+      "zenith": 52.938731075987675,
+      "azimuth": 241.907321901336
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705309200,
+      "zenith": 59.62779248791561,
+      "azimuth": 244.35305514632913
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705311000,
+      "zenith": 66.43656312820613,
+      "azimuth": 246.13381193127555
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705312800,
+      "zenith": 73.32603099669228,
+      "azimuth": 247.39960988723902
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1705314600,
+      "zenith": 80.26866720111259,
+      "azimuth": 248.24528308734148
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713139200,
+      "zenith": 76.16453028526502,
+      "azimuth": 80.16992181354499
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713141000,
+      "zenith": 68.77793640813046,
+      "azimuth": 79.92916129950623
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713142800,
+      "zenith": 61.39940680824018,
+      "azimuth": 79.47435929755966
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713144600,
+      "zenith": 54.0351241802036,
+      "azimuth": 78.74617388723743
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713146400,
+      "zenith": 46.69436707761839,
+      "azimuth": 77.64067052723391
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713148200,
+      "zenith": 39.39258585357776,
+      "azimuth": 75.97130745848227
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713150000,
+      "zenith": 32.15847759476817,
+      "azimuth": 73.3811298654498
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713151800,
+      "zenith": 25.052787155514835,
+      "azimuth": 69.11488260522202
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713153600,
+      "zenith": 18.22836283837661,
+      "azimuth": 61.334215929989114
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713155400,
+      "zenith": 12.170061514899558,
+      "azimuth": 44.823180883140026
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713157200,
+      "zenith": 8.670724516357083,
+      "azimuth": 7.704536158260453
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713159000,
+      "zenith": 10.653352289335572,
+      "azimuth": 324.0522524367302
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713160800,
+      "zenith": 16.218369689106026,
+      "azimuth": 302.56108531336986
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713162600,
+      "zenith": 22.88610547516174,
+      "azimuth": 292.90517330798286
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713164400,
+      "zenith": 29.92749104415732,
+      "azimuth": 287.8319360853984
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713166200,
+      "zenith": 37.12950076082563,
+      "azimuth": 284.83412673488044
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713168000,
+      "zenith": 44.41286331972451,
+      "azimuth": 282.9323837104804
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713169800,
+      "zenith": 51.74187476238592,
+      "azimuth": 281.6817394341381
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713171600,
+      "zenith": 59.098002239441996,
+      "azimuth": 280.85598696964394
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713173400,
+      "zenith": 66.47045254549141,
+      "azimuth": 280.3312048041049
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713175200,
+      "zenith": 73.85223821804578,
+      "azimuth": 280.0369515321544
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713177000,
+      "zenith": 81.23830843744491,
+      "azimuth": 279.933867550219
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1713223800,
+      "zenith": 83.49472740152353,
+      "azimuth": 79.871690186649
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721001600,
+      "zenith": 78.05179323413005,
+      "azimuth": 68.32568162687875
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721003400,
+      "zenith": 71.09704518825234,
+      "azimuth": 67.73081465920018
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721005200,
+      "zenith": 64.18188635735142,
+      "azimuth": 66.71544995484044
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721007000,
+      "zenith": 57.33221898165915,
+      "azimuth": 65.18278892720343
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721008800,
+      "zenith": 50.58475881794301,
+      "azimuth": 62.975202756847295
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721010600,
+      "zenith": 43.995538268238676,
+      "azimuth": 59.83885015280555
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721012400,
+      "zenith": 37.6558150161707,
+      "azimuth": 55.36244700259522
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721014200,
+      "zenith": 31.722872029590427,
+      "azimuth": 48.880057896002256
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721016000,
+      "zenith": 26.478154956804126,
+      "azimuth": 39.36709648100066
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721017800,
+      "zenith": 22.415623585376196,
+      "azimuth": 25.5803347629153
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721019600,
+      "zenith": 20.26320632066067,
+      "azimuth": 7.24359262792575
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721021400,
+      "zenith": 20.629527062430896,
+      "azimuth": 347.1991840511677
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721023200,
+      "zenith": 23.396450877492427,
+      "azimuth": 330.0139278194915
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721025000,
+      "zenith": 27.85610130746248,
+      "azimuth": 317.5331470401055
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721026800,
+      "zenith": 33.33339150366419,
+      "azimuth": 308.9933499470361
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721028600,
+      "zenith": 39.402951751991104,
+      "azimuth": 303.1585193894648
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721030400,
+      "zenith": 45.82610033479111,
+      "azimuth": 299.1101334982245
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721032200,
+      "zenith": 52.46850193955174,
+      "azimuth": 296.26534310417094
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721034000,
+      "zenith": 59.251071379540605,
+      "azimuth": 294.26511026265945
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721035800,
+      "zenith": 66.12440956070729,
+      "azimuth": 292.8873308654023
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721037600,
+      "zenith": 73.05552355774765,
+      "azimuth": 291.994096715309
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1721039400,
+      "zenith": 80.02062235552917,
+      "azimuth": 291.50151520887795
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728950400,
+      "zenith": 73.04278892935744,
+      "azimuth": 99.4320943952813
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728952200,
+      "zenith": 65.6525126896288,
+      "azimuth": 100.09741661066266
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728954000,
+      "zenith": 58.28054144791395,
+      "azimuth": 101.01572567637339
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728955800,
+      "zenith": 50.936009691642916,
+      "azimuth": 102.2793071846038
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728957600,
+      "zenith": 43.63383600203833,
+      "azimuth": 104.04560976559765
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728959400,
+      "zenith": 36.400492403869976,
+      "azimuth": 106.5980441158249
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728961200,
+      "zenith": 29.28793218649694,
+      "azimuth": 110.48913960705124
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728963000,
+      "zenith": 22.412321032898618,
+      "azimuth": 116.91686113317502
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728964800,
+      "zenith": 16.0813679172241,
+      "azimuth": 128.80521000053767
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728966600,
+      "zenith": 11.255851202467056,
+      "azimuth": 153.17892996432192
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728968400,
+      "zenith": 10.32328569769166,
+      "azimuth": 193.2991177012099
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728970200,
+      "zenith": 14.079627033080143,
+      "azimuth": 224.26774096888087
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728972000,
+      "zenith": 20.041937012040066,
+      "azimuth": 239.56243681662826
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728973800,
+      "zenith": 26.774587024825372,
+      "azimuth": 247.4647020788443
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728975600,
+      "zenith": 33.820131219401645,
+      "azimuth": 252.07312383325097
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728977400,
+      "zenith": 41.0171061130521,
+      "azimuth": 255.01853773763446
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728979200,
+      "zenith": 48.29725459355605,
+      "azimuth": 257.02106264332707
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728981000,
+      "zenith": 55.62724533022413,
+      "azimuth": 258.4371867681759
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728982800,
+      "zenith": 62.98890222387748,
+      "azimuth": 259.459835760254
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728984600,
+      "zenith": 70.37139087940207,
+      "azimuth": 260.20014829291074
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1728986400,
+      "zenith": 77.76772651133513,
+      "azimuth": 260.7243807063861
+    },
+    {
+      "site": "Singapore",
+      "latitude": 1.35,
+      "longitude": 103.82,
+      "utcTs": 1729035000,
+      "zenith": 80.40990451738111,
+      "azimuth": 99.34002320933473
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705276800,
+      "zenith": 41.30949975539389,
+      "azimuth": 176.9466936021579
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705278600,
+      "zenith": 41.580368152246436,
+      "azimuth": 187.504371711155
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705280400,
+      "zenith": 43.115102384709935,
+      "azimuth": 197.63331296797068
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705282200,
+      "zenith": 45.786597776023044,
+      "azimuth": 206.86268743204963
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705284000,
+      "zenith": 49.41046532049984,
+      "azimuth": 214.96226084008362
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705285800,
+      "zenith": 53.794096915346884,
+      "azimuth": 221.913442340169
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705287600,
+      "zenith": 58.76712511913864,
+      "azimuth": 227.82189321404306
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705289400,
+      "zenith": 64.19202145684278,
+      "azimuth": 232.8404070419692
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705291200,
+      "zenith": 69.96297435781699,
+      "azimuth": 237.12357361920874
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705293000,
+      "zenith": 76.00033592730435,
+      "azimuth": 240.80805607984902
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705294800,
+      "zenith": 82.24452369816542,
+      "azimuth": 244.00724295154401
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705347000,
+      "zenith": 79.60450139789133,
+      "azimuth": 117.15443338329982
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705348800,
+      "zenith": 73.42939822194882,
+      "azimuth": 120.53483379156239
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705350600,
+      "zenith": 67.4820170579219,
+      "azimuth": 124.4444374504888
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705352400,
+      "zenith": 61.82931654751779,
+      "azimuth": 129.00705252156507
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705354200,
+      "zenith": 56.56084087657672,
+      "azimuth": 134.36926118043658
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705356000,
+      "zenith": 51.794996340455114,
+      "azimuth": 140.69062158394945
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705357800,
+      "zenith": 47.68364054481823,
+      "azimuth": 148.11493843483174
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705359600,
+      "zenith": 44.409688701352,
+      "azimuth": 156.71126382315822
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1705361400,
+      "zenith": 42.169236357444895,
+      "azimuth": 166.38580587762306
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713139200,
+      "zenith": 10.133874902601363,
+      "azimuth": 180.5142346424083
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713141000,
+      "zenith": 12.497613243702489,
+      "azimuth": 216.98426519685208
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713142800,
+      "zenith": 17.729729979013513,
+      "azimuth": 237.40214620107577
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713144600,
+      "zenith": 24.01992279977982,
+      "azimuth": 248.42310071398438
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713146400,
+      "zenith": 30.719668364016194,
+      "azimuth": 255.256593272857
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713148200,
+      "zenith": 37.604309953221055,
+      "azimuth": 260.0606811167061
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713150000,
+      "zenith": 44.58090035022045,
+      "azimuth": 263.77774288793535
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713151800,
+      "zenith": 51.603751050085044,
+      "azimuth": 266.8723172074475
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713153600,
+      "zenith": 58.646632051256724,
+      "azimuth": 269.60113325742964
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713155400,
+      "zenith": 65.69201911316509,
+      "azimuth": 272.1219464753408
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713157200,
+      "zenith": 72.72625137488217,
+      "azimuth": 274.54257099869096
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713159000,
+      "zenith": 79.73696349412887,
+      "azimuth": 276.94554698420086
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713205800,
+      "zenith": 79.4483732729036,
+      "azimuth": 82.94712850070283
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713207600,
+      "zenith": 72.43448321481637,
+      "azimuth": 85.32816235515202
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713209400,
+      "zenith": 65.39678158201917,
+      "azimuth": 87.72453849408458
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713211200,
+      "zenith": 58.34730795189614,
+      "azimuth": 90.21759066477841
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713213000,
+      "zenith": 51.2992871883527,
+      "azimuth": 92.91367527731757
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713214800,
+      "zenith": 44.26960755899513,
+      "azimuth": 95.9688058122698
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713216600,
+      "zenith": 37.28350808956222,
+      "azimuth": 99.63796884411971
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713218400,
+      "zenith": 30.385063219556436,
+      "azimuth": 104.38569383806464
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713220200,
+      "zenith": 23.66462656752772,
+      "azimuth": 111.16464390321164
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713222000,
+      "zenith": 17.343943011451984,
+      "azimuth": 122.19696661848684
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1713223800,
+      "zenith": 12.081348055557669,
+      "azimuth": 143.0175557090513
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721003400,
+      "zenith": 5.887525379796955,
+      "azimuth": 285.54671259097404
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721005200,
+      "zenith": 12.795480784040336,
+      "azimuth": 278.9758722652639
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721007000,
+      "zenith": 19.768892719368182,
+      "azimuth": 277.97189453225343
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721008800,
+      "zenith": 26.74720725948829,
+      "azimuth": 278.21959421319247
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721010600,
+      "zenith": 33.716186317198414,
+      "azimuth": 278.97149969710017
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721012400,
+      "zenith": 40.667836351220735,
+      "azimuth": 280.00161949133803
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721014200,
+      "zenith": 47.595295749740764,
+      "azimuth": 281.22544407424675
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721016000,
+      "zenith": 54.49145293884053,
+      "azimuth": 282.61120658215714
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721017800,
+      "zenith": 61.34828370659589,
+      "azimuth": 284.15191984536887
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721019600,
+      "zenith": 68.15632204977078,
+      "azimuth": 285.8550744339562
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721021400,
+      "zenith": 74.90408469098422,
+      "azimuth": 287.7387626781903
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721023200,
+      "zenith": 81.57734842984776,
+      "azimuth": 289.830646985169
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721066400,
+      "zenith": 84.10053316161452,
+      "azimuth": 69.39379844398775
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721068200,
+      "zenith": 77.45859203212862,
+      "azimuth": 71.58267926792786
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721070000,
+      "zenith": 70.7355918398652,
+      "azimuth": 73.55200960047779
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721071800,
+      "zenith": 63.94702247630158,
+      "azimuth": 75.33379529672266
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721073600,
+      "zenith": 57.105290892796454,
+      "azimuth": 76.95071406940178
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721075400,
+      "zenith": 50.22051864310858,
+      "azimuth": 78.41597603799562
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721077200,
+      "zenith": 43.301153196450315,
+      "azimuth": 79.73118037980066
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721079000,
+      "zenith": 36.35447967463522,
+      "azimuth": 80.8800318852808
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721080800,
+      "zenith": 29.387146206827993,
+      "azimuth": 81.81154324932169
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721082600,
+      "zenith": 22.40599262129966,
+      "azimuth": 82.3902662580362
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721084400,
+      "zenith": 15.420401504294688,
+      "azimuth": 82.20967356603074
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1721086200,
+      "zenith": 8.455270423159618,
+      "azimuth": 79.4837549941891
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728950400,
+      "zenith": 28.844256497095316,
+      "azimuth": 187.5143023734519
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728952200,
+      "zenith": 30.661468862394408,
+      "azimuth": 202.03921008360922
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728954000,
+      "zenith": 34.018644198675695,
+      "azimuth": 214.4336825666726
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728955800,
+      "zenith": 38.51445029173114,
+      "azimuth": 224.4296303128967
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728957600,
+      "zenith": 43.79866536881893,
+      "azimuth": 232.35351807149598
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728959400,
+      "zenith": 49.61882053641971,
+      "azimuth": 238.6789740551301
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728961200,
+      "zenith": 55.80604177316562,
+      "azimuth": 243.8246118629055
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728963000,
+      "zenith": 62.24929594179283,
+      "azimuth": 248.11080320634744
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728964800,
+      "zenith": 68.87482337783328,
+      "azimuth": 251.77206564530078
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728966600,
+      "zenith": 75.63247869190138,
+      "azimuth": 254.979721501386
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1728968400,
+      "zenith": 82.48713808509976,
+      "azimuth": 257.8616195421303
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729017000,
+      "zenith": 82.68243282542724,
+      "azimuth": 102.28486258095438
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729018800,
+      "zenith": 75.83808892612379,
+      "azimuth": 105.17865739688341
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729020600,
+      "zenith": 69.09261157632739,
+      "azimuth": 108.39891008975559
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729022400,
+      "zenith": 62.481528869439416,
+      "azimuth": 112.07298696404968
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729024200,
+      "zenith": 56.05544911119926,
+      "azimuth": 116.37097873360364
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729026000,
+      "zenith": 49.888583394724996,
+      "azimuth": 121.524685522347
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729027800,
+      "zenith": 44.09218957348541,
+      "azimuth": 127.84889967358896
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729029600,
+      "zenith": 38.83458285155022,
+      "azimuth": 135.75161814913918
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729031400,
+      "zenith": 34.365712388022196,
+      "azimuth": 145.6889789923713
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729033200,
+      "zenith": 31.02965710302569,
+      "azimuth": 157.9673625031994
+    },
+    {
+      "site": "DateLine",
+      "latitude": 20,
+      "longitude": -179.9,
+      "utcTs": 1729035000,
+      "zenith": 29.218024891326344,
+      "azimuth": 172.31691906921628
+    }
+  ]
+}

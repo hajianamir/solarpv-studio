@@ -17,8 +17,16 @@ try{
  const save=async()=>{await page.locator('textarea:focus,input:focus').evaluateAll(elements=>elements.forEach(e=>(e as HTMLElement).blur()));await page.keyboard.press('Control+s');const data=await page.evaluate(()=>JSON.parse(localStorage.getItem('solarpv_project_save')??'null'));assert.ok(data);delete data.savedAt;delete data.traceId;return data;};
  await page.goto(base);await tab('climate');await page.getByTestId('climate-psh-display').waitFor();
  assert.equal(researchRequests,0);for(const id of ['research-editor','pvlib-study-panel','advanced-dispatch-panel','external-data-review'])assert.equal(await page.getByTestId(id).count(),0);
- assert.equal(await page.getByTestId('workflow-tab-system_mode').count(),0);await tab('electrical_requirements');await page.locator('#target-plant-capacity-input').fill('2500');assert.equal(await page.getByTestId('load-grid-policy').count(),0);assert.equal(await page.locator('#outage-hours-input').count(),0);
- const before=await save();await openResearch(page);await page.getByTestId('research-editor').waitFor();assert.ok(researchRequests>0);const panel=page.getByTestId('research-editor');
+ assert.equal(await page.getByTestId('workflow-tab-system_mode').count(),0);assert.equal(await page.getByTestId('ac-requirements-panel').count(),0);await tab('electrical_requirements');await page.locator('#target-plant-capacity-input').fill('2500');assert.equal(await page.getByTestId('load-grid-policy').count(),0);assert.equal(await page.locator('#outage-hours-input').count(),0);
+ const before=await save();await openResearch(page);await page.getByTestId('research-editor').waitFor();assert.ok(researchRequests>0);const panel=page.getByTestId('research-editor');await panel.getByTestId('research-execution-status').getByText(/PVLIB_RESEARCH_ENABLED/).first().waitFor();
+ // Failed capability checks must be visible/retryable and fail closed.
+ await page.route('**/api/v1/research/capabilities',r=>r.fulfill({status:503,body:'unavailable'}));
+ await panel.getByTestId('research-execution-status').getByRole('button').click();
+ await panel.getByTestId('research-execution-status').getByText(/وضعیت سرور دریافت نشد/).waitFor();
+ assert.equal(await panel.getByRole('button',{name:'Run research',exact:true}).isDisabled(),true);
+ await page.unroute('**/api/v1/research/capabilities');
+ await panel.getByTestId('research-execution-status').getByRole('button').click();
+ await panel.getByTestId('research-execution-status').getByText(/PVLIB_RESEARCH_ENABLED/).first().waitFor();
  const topics=panel.getByRole('tab');assert.equal(await topics.count(),13);
  for(const t of await topics.all()){
   await t.click();const active=panel.locator('[data-research-topic]:visible');assert.equal(await active.count(),1);assert.equal(await t.getAttribute('aria-selected'),'true');
@@ -42,5 +50,5 @@ try{
  await page.getByRole('button',{name:'EN',exact:true}).click();await openResearch(page);assert.equal(await page.getByTestId('research-workspace').getAttribute('dir'),'ltr');await page.getByTestId('research-section-studies').click();await page.getByTestId('pvlib-study-panel').waitFor();
  // Mobile + RTL navigation remains accessible through the drawer.
  await page.getByRole('button',{name:'فا',exact:true}).click();await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Toggle navigation menu'}).click();await tab('climate');await page.getByTestId('climate-psh-display').waitFor();await page.getByRole('button',{name:'Toggle navigation menu'}).click();await tab('research');await page.getByTestId('research-workspace').waitFor();assert.equal(await page.getByTestId('research-workspace').getAttribute('dir'),'rtl');
- assert.deepEqual(errors,[]);console.log('PASS production Chromium fa/en + mobile RTL, isolated research/lazy requests, all topics/examples, keyboard, unchanged saved inputs, AC/MV preservation, load-only grid policy and save/reload');
+ assert.deepEqual(errors,[]);console.log('PASS production Chromium fa/en + mobile RTL, isolated research/lazy requests, all topics/examples, keyboard, unchanged saved inputs, AC editor removal, MV preservation, load-only grid policy and save/reload');
 }finally{await browser?.close();child.kill('SIGTERM');}

@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'IBM Plex Sans', 'Vazirmatn', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        vazir: ['Vazirmatn', '-apple-system', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', '"JetBrains Mono"', 'monospace'],
+        sans: ['Inter Variable', 'Inter', 'IBM Plex Sans', 'Vazirmatn Variable', 'Vazirmatn', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        vazir: ['Vazirmatn Variable', 'Vazirmatn', '-apple-system', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'JetBrains Mono Variable', '"JetBrains Mono"', 'Vazirmatn Variable', 'monospace'],
       },
       colors: {
         // Industrial engineering design system (PR-2a-6 REPAIR / Ambiguity G)
@@ -42,15 +42,15 @@ export default {
         '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
       },
       borderRadius: {
-        // No pill shapes: mild rectangular radius only.
+        // Shared radii: controls, cards, dialogs, and true circular indicators.
         none: '0',
         sm: '0.25rem',
         DEFAULT: '0.375rem',
         md: '0.5rem',
-        lg: '0.5rem',
-        xl: '0.5rem',
-        '2xl': '0.5rem',
-        full: '0.375rem',
+        lg: '0.75rem',
+        xl: '1rem',
+        '2xl': '1.5rem',
+        full: '9999px',
       },
       animation: {
         // Only state-change motion (< 150ms); no decorative animation.

@@ -300,6 +300,7 @@ export function sizeDieselGenerator(
   peakSurgeWatts: number,
   continuousOutageHours: number = 24
 ): GeneratorSizingResult {
+  if (![continuousLoadWatts, peakSurgeWatts, continuousOutageHours].every(value=>Number.isFinite(value)&&value>=0)) throw new RangeError('Generator loads and hours must be finite and non-negative');
   const continuousKw = continuousLoadWatts / 1000.0;
   const peakKw = peakSurgeWatts / 1000.0;
 
@@ -313,8 +314,8 @@ export function sizeDieselGenerator(
 
   // Fuel consumption estimate: ~0.26 to 0.28 liters per kWh of generated power
   const averageHourlyLoadKw = continuousKw * 0.85;
-  const fuelConsumptionLitersPerHour = Math.round(averageHourlyLoadKw * 0.27 * 10) / 10;
-  const dailyFuelConsumptionLiters = Math.round(fuelConsumptionLitersPerHour * 24);
+  const fuelConsumptionLitersPerHour = averageHourlyLoadKw * 0.27;
+  const dailyFuelConsumptionLiters = fuelConsumptionLitersPerHour * 24;
 
   // Minimum fuel tank size based on user outage hours + 20% reserve
   const minFuelTankSizeLiters = Math.ceil(fuelConsumptionLitersPerHour * continuousOutageHours * 1.20);

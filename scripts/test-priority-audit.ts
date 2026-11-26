@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {calculateSolarPosition,calculateStringSizing,performQuickSizing,InMemorySolarDatabase, type QuickSizingRequest} from '../src/engine/solarPvEngine';
+import {performFinancialAnalysis} from '../src/engine/financialEngine';
+const fixture=JSON.parse(readFileSync('benchmarks/independent/solar-position-spa.json','utf8'));
+let maxZenith=0,maxAzimuth=0;
+for(const row of fixture.rows){
+ const r=calculateSolarPosition(row.latitude,row.longitude,row.utcTs);
+ const z=Math.abs(r.zenithDeg-row.zenith);const a=Math.abs(((r.azimuthDeg-row.azimuth+540)%360)-180);
+ maxZenith=Math.max(z,maxZenith);maxAzimuth=Math.max(a,maxAzimuth);
+ assert.ok(z<fixture.tolerancesDegrees.zenith,`${row.site} zenith ${z}`);
+ assert.ok(a<fixture.tolerancesDegrees.azimuth,`${row.site} azimuth ${a}`);
+ assert.deepEqual(calculateSolarPosition(row.latitude,row.longitude,row.utcTs*1000),r);
+}
+const base={panelVoc:60,panelVmp:50,tempMinC:25,tempMaxC:25,betaVocPerC:-.0028,betaPmpPerC:-.0035,inverterVdcMax:48,inverterMpptMin:10,inverterMpptMax:48};
+const impossible=calculateStringSizing(base);assert.equal(impossible.maxModules,0);assert.equal(impossible.status,'infeasible');assert.equal(impossible.hasWarning,true);
+const feasible=calculateStringSizing({...base,inverterVdcMax:600,inverterMpptMax:550,inverterMpptMin:100});assert.equal(feasible.status,'feasible');assert.equal(feasible.maxModules,10);
+assert.equal(calculateStringSizing({...base,inverterVdcMax:600,inverterMpptMax:550,inverterMpptMin:100,betaVmpPerC:-.002}).warnings?.length,0);
+assert.throws(()=>calculateStringSizing({...base,panelVoc:0}),/positive/);
+assert.throws(()=>calculateStringSizing({...base,betaVmpPerC:NaN}),/finite/);
+const req={projectName:'priority audit',latitude:35.69,longitude:51.39,dailyKwh:20,autonomyDays:1.5,persist:false};
+const db=new InMemorySolarDatabase();
+assert.throws(()=>performQuickSizing({...req,longitude:undefined} as unknown as QuickSizingRequest,db),/longitude/);
+assert.throws(()=>performQuickSizing({...req,longitude:NaN},db),/longitude/);
+const quick=performQuickSizing({...req,persist:true},db);const project=db.projects.get(quick.projectId)!;
+assert.equal(quick.assessment.designGrade,false);assert.equal(quick.assessment.climateConfidence,'analytical_estimate');assert.match(quick.assessment.yieldMethod,/not_independent/);
+const battery=db.batteries.get(project.batteryId!)!;const inverter=db.inverters.get(project.inverterId!)!;
+assert.ok(battery.capacityKwh<100,'Residential automatic selection must not pick a utility storage container');
+const financial=performFinancialAnalysis(quick.systemCapacityKwp,quick.batteryCount*battery.capacityKwh,quick.inverterCount*inverter.pnomAcKw,quick.estimatedAnnualYieldKwh,undefined,25,'ongrid');
+assert.equal(quick.lcoeUsdPerKwh,financial.lcoeUsdPerKwh);
+console.log(JSON.stringify({status:'PASS',solarRows:fixture.rows.length,maxZenithErrorDeg:maxZenith,maxAzimuthErrorDeg:maxAzimuth,stringInfeasible:impossible,quickFinancialParity:true,automaticStorageKwh:battery.capacityKwh},null,2));

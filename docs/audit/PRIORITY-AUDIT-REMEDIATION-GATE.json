@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "status": "BLOCKED_PENDING_INDEPENDENT_REFERENCE_REGISTRATION_AND_MODEL_REPLACEMENTS",
+  "branch": "arena/68cadb56-solarpv-studio",
+  "baseCommit": "fb0abc32449f94c796ae999ed51686bb1503e36c",
+  "sourceSha256": {
+    "src/engine/solarPvEngine.ts": "f0fd2f066c3c1eb3edc2b854c8749662ed274d98593e81ca677dc2f2c40fd216",
+    "src/engine/waterfallLossEngine.ts": "1cc1472b171d9c8b1c1db5ecdb8aef2d4c76f379a7445224075a4da245d021a3",
+    "src/components/WaterfallLossTab.tsx": "4daf619b81b2bcce123aaaa9c9b0d71e96584511f2b008fb0224d4b8c4a28585",
+    "server.ts": "03a76fc8abe5474690b5adf94c810515969496212ddf6e58a72af874c98bc596",
+    "scripts/run-all-benchmarks.ts": "c94d550576c77bdde829c95297668c1e541adabd7f416c6282ebfff0a22385fc",
+    "scripts/test-priority-audit.ts": "6f6dc6222b2bf9fc054d3c4fddfcf37f0aea4af540a7cce23ec1b8c513f363f9",
+    "scripts/test-priority-audit-http.ts": "0b9fa014d5a3ba63adc8bc7a4d926fdd1d3ceedd423ee000ca88e56068c27231",
+    "scripts/test-priority-audit-mutations.ts": "19eb7c984bc57406f2b3876bfa5ac12b40ced67b6978d48b5df9e4071b8f8c09",
+    "scripts/fixtures/generate-priority-solar.py": "868f2d78dda3a68fcef9e9d8746156ed62c584bc08b70ddda8c17e37d82a317e",
+    "benchmarks/independent/solar-position-spa.json": "31475254ef847ff513c9d517c21fd7093f1df8de4619f3e6f1a84fabb01be631",
+    "scripts/verify-production-auth-http.ts": "afaeb3e51955405735490dc344776d37aa6399b2320776cb1ba6f35411fe4afa",
+    "scripts/verify-api-sizing-thermal-audit.ts": "45a983ec8e707134daf66968902fd96336f24d25130079ac435662424c387091",
+    "scripts/test-phase6-security.ts": "5d682f83eca3824d4e3e4e07f17b9180a9e794388c7d3c443cb9950168934c64",
+    ".github/workflows/ci.yml": "3db999b24c41209a293ef604773f646e91e5f2e662e3953dda456879bc32b4f8",
+    "docs/features/PRIORITY-AUDIT-REMEDIATION.fa.md": "9c7e228568858f720465ae5673cf0f77f7ce643f86514dd4e050838da9737d40",
+    "CHANGELOG.md": "0a3a8f6060442d8abcf8b77c103e62b1ee36b5a379e311c00332f455a58b46ed",
+    "scripts/verify-physics-reference-gate.ts": "7ee4ab11ead0cdc1bdd3629711b610fc48d2b607902f433cddaf977d9ce0cecb",
+    "scripts/test-physics-reference-gate.ts": "bd623e4eb42cd45dd1385b35840f486b7a87620dbb899a4b78dd93b05d63f5f5",
+    "scripts/physics-reference-evidence.json": "14ac1dedde899d2fb335649f235e8b177cd19352d131872cbe317e62d3f9d682",
+    "scripts/test-priority-reference-registry.ts": "b227cda281a20339da9b6c10ed5806cb1bcb78019bafb1cf6c4ebac5a567f1ad",
+    "scripts/test-priority-structural-claims.ts": "58ed5afb187c53bf7e13ddd28415d2955fa9165872ab85b20c0aaeda82ebe091",
+    "scripts/fixtures/generate-priority-strings.py": "aff67df8578e4f7ac906452622d9e79ca0cf56d66cac41a48b6bf6e9d927f6b5",
+    "src/engine/structuralEngine.ts": "f7164742859addb6399f7f88f8e813c0cf2210ef2aafcab9cbf08150f24e2318",
+    "src/engine/core/structuralContract.ts": "dfced447424370d5a5f3f469e7fadb889974a1e29e04210ec4f14a627ee69d70",
+    "src/components/StructuralFoundationTab.tsx": "20beee252f2be875c98026689ef1430923fd25f698a83773defb1999bcc62ca5",
+    "scripts/fixtures/physics/solar-spa-00621e7ddbb1.json": "63c560ebe932fbd461353918eb9775f1a1f006c8e1475e7e7e8b582f9afea8e5",
+    "scripts/fixtures/physics/solar-spa-6e29caf63dd1.json": "c142de3acaffcde5c56769b3150024e22bccc515f0d9d6859803d2a2fd83b5e4",
+    "scripts/fixtures/physics/solar-spa-df1bf2813862.json": "6da6756c52067c1c8925f271a622bf298480399fd3de3f3bc99b5611d174bb11",
+    "scripts/fixtures/physics/priority-string-15f3c0813c2e.json": "483338838d20ef4e1e7abe1149e906d88d4c639703c9317399c76cb51edac7a6",
+    "scripts/fixtures/physics/priority-string-304a58d8f5cb.json": "44a3bbfb656fc5c729f40eb437bf9d56b651480f26721b65bf5147a78439195a",
+    "scripts/fixtures/physics/priority-string-330fd1d268bc.json": "d0a7666414b4d99b244a940c11f992cada6f7798a6a98e70bab3329d72cc16f6",
+    "scripts/fixtures/physics/priority-string-39f160937538.json": "423a5b017e1c968564eaa6d10261150967b72637c90001639502a9acfd664e2a",
+    "scripts/fixtures/physics/priority-string-662449347fa2.json": "f1bedbbe829a0a5d7d0bb80f6ed9489528cf92f650b7c39ce5959060c874b9af",
+    "scripts/fixtures/physics/priority-string-7ab524546462.json": "0ab9d87c706660bf8b71825bbd63cd154b91df1fe06a5870eebb742af58ff10c",
+    "scripts/fixtures/physics/priority-string-a3b536e1aff7.json": "9eef8deb11c9640f7c6b7ea5aa015726790abfd667975e320b2ab6f98978a113"
+  },
+  "checks": [
+    {
+      "command": "npm run lint",
+      "status": "PASS",
+      "log": ".cache/completion-lint.log",
+      "logSha256": "9e97325285b8a392ff191f5b028bded18ff948f204aee0ae54f82bff59a21721"
+    },
+    {
+      "command": "npm run build",
+      "status": "PASS",
+      "log": ".cache/completion-build.log",
+      "logSha256": "29a60d0e296bcedc785a45d3ea9a32efb1b2ccce1e7b1ebc3a5d3cf09456f85d"
+    },
+    {
+      "command": "npm test",
+      "status": "PASS",
+      "log": ".cache/completion-core.log",
+      "logSha256": "8da13b1e75c466f9963d61b11ae8f771f364a7079674424d4659388ff2de0d8c"
+    },
+    {
+      "command": "npx tsx scripts/test-priority-reference-registry.ts",
+      "status": "PASS",
+      "log": ".cache/completion-priority-registry.log",
+      "logSha256": "8b2d32e1f9c402b06cab5fe2c209bb0e47bd099c3572224214671882f46a29db"
+    },
+    {
+      "command": "npx tsx scripts/test-physics-reference-gate.ts",
+      "status": "PASS",
+      "log": ".cache/completion-reference-selftest.log",
+      "logSha256": "7cf3bb8841908958e3db07c5f6e1b10ab29681a833ce07b2c300b46abca5c3be"
+    },
+    {
+      "command": "npx tsx scripts/test-priority-structural-claims.ts",
+      "status": "PASS",
+      "log": ".cache/completion-structural-claims.log",
+      "logSha256": "4827095083db13b7b934a246139e298720b7cb125980fb78455f3cd130b11262"
+    },
+    {
+      "command": "npx tsx scripts/test-priority-audit-mutations.ts",
+      "status": "PASS",
+      "log": ".cache/completion-mutations.log",
+      "logSha256": "51ae6990d85056447801dfb91e30403bb3a36f040eb3ab8881762f57a4ae95e3"
+    },
+    {
+      "command": "npx tsx scripts/test-priority-audit-http.ts",
+      "status": "PASS",
+      "log": ".cache/completion-http.log",
+      "logSha256": "c089481e1af8fbec42fba5eb210f1703b634526e89486c2d3f223699019b937d"
+    },
+    {
+      "command": "PVLIB_PYTHON=<installed pinned runtime> npm run test:study:workflow",
+      "status": "PASS",
+      "log": ".cache/completion-hourly-workflow.log",
+      "logSha256": "ce1226a67ea7b4bc010febd7c0f0989e82ba8f41a291a763be7f23e2bd8138ad"
+    },
+    {
+      "command": "npm run test:ui",
+      "status": "PASS",
+      "log": ".cache/completion-ui.log",
+      "logSha256": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a"
+    },
+    {
+      "command": "npm run test:browser",
+      "status": "PASS",
+      "log": ".cache/completion-browser.log",
+      "logSha256": "0ae20c4a78c4564895947fdca1f1b1f34a2a65a95605d92ffd3872b057117ab7"
+    },
+    {
+      "command": "npm run verify:exports",
+      "status": "PASS",
+      "log": ".cache/completion-exports.log",
+      "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+    },
+    {
+      "command": "npm run verify:engine-claims",
+      "status": "PASS",
+      "log": ".cache/completion-claims.log",
+      "logSha256": "21593f07b8ea67944b3cd9ea5c921da23bfba9a151cc767eb3ebfb30fee184dc"
+    },
+    {
+      "command": "npm run verify:physics-reference-gate",
+      "status": "BLOCKED",
+      "log": ".cache/completion-physics.log",
+      "logSha256": "ab5d116e208936daf7d1d996ed8711b79d82532b2f6c5679a01de4a04d107261"
+    }
+  ],
+  "solarReference": {
+    "engine": "pvlib 0.13.1 NREL SPA",
+    "samples": 887,
+    "maxZenithErrorDeg": 0.005863801425533666,
+    "maxAzimuthErrorDeg": 0.022482629825390177,
+    "notFieldValidation": true
+  },
+  "targetedMutationGate": {
+    "killed": 4,
+    "total": 4,
+    "wholeEngineScore": false
+  },
+  "implemented": [
+    "B-01 UTC solar wrap",
+    "S-01 infeasible status, HTTP 422, no unsafe clamp, measured Vmp coefficient option",
+    "B-03 required longitude and scale-matched seed",
+    "F-05 shared financial engine pricing/basis",
+    "F-01 and B-02 screening provenance/strict HTTP opt-in and persisted assessment",
+    "F-03/F-04 withdrawal of PVsyst-grade waterfall wording",
+    "10 registered independent exact-node fixtures now run in npm test",
+    "Runtime-rejecting mutant sensitivity with fail-closed baseline/import negative tests",
+    "Explicit not_certified structural result and spreadsheet boundary; no numeric ASCE replacement"
+  ],
+  "notCompleted": [
+    "8 independent registry witnesses remain: 6 Quick-size expressions and 2 prior migration guards; solar/string obligations now registered and executed",
+    "Hourly yield replacement, empirical tilt/tracker anchor removal",
+    "Validated bifacial default replacement",
+    "Site geotechnics and official hazard replacement",
+    "ASCE 7-22 literal implementation and worked examples",
+    "Global macro/dispatch finance replacement",
+    "Whole-engine mutation testing and full independent validation"
+  ],
+  "boundary": {
+    "noAutomaticResearchAdoption": true,
+    "noNewScientificAccuracyClaim": true,
+    "previousChangesPreserved": true,
+    "existingProjectsNotAutomaticallyResized": true
+  },
+  "notes": [
+    "All reported PASS checks executed; global physics gate remains exit 1 with eight missing witness records",
+    "Fixture regeneration repeated and manifest SHA unchanged",
+    "Existing lint warnings remain (0 errors, 93 warnings)",
+    "Full Python workflow passed using pinned local pvlib 0.13.1; synthetic tests are not field validation",
+    "No automatic research-energy adoption or financial mutation",
+    "No commit/push and no claim of all-findings completion"
+  ],
+  "registeredIndependentPriorityWitnesses": {
+    "count": 10,
+    "formulaIds": [
+      "src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1",
+      "src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1",
+      "src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#330fd1d268bc",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#39f160937538",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#662449347fa2",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#7ab524546462",
+      "src/engine/solarPvEngine.ts#calculateStringSizing#a3b536e1aff7"
+    ],
+    "execution": "Exact production export, full expected-output comparison, node visitation and output-sensitive AST mutation",
+    "scope": "SPA solar geometry and integer feasibility under supplied voltage assumptions; not site climate or code compliance"
+  },
+  "structuralCertificationBoundary": {
+    "certificationStatus": "not_certified",
+    "foundationPathsTested": 8,
+    "sheetStates": "current, stale and unavailable explicitly carry NOT CERTIFIED",
+    "unchangedNumericModel": true,
+    "standardsImplementationCompleted": false
+  },
+  "remainingRegistryViolations": [
+    "src/engine/core/projectMigration.ts#migrateProjectToV3#616a89d82531: expected exactly one independent reference fixture record, found 0",
+    "src/engine/core/projectMigration.ts#migrateProjectToV3#9689b9db2c55: expected exactly one independent reference fixture record, found 0",
+    "src/engine/solarPvEngine.ts#performQuickSizing#88c4e7dfad8d: expected exactly one independent reference fixture record, found 0",
+    "src/engine/solarPvEngine.ts#performQuickSizing#891c0e19f096: expected exactly one independent reference fixture record, found 0",
+    "src/engine/solarPvEngine.ts#performQuickSizing#8a659ac1ae3b: expected exactly one independent reference fixture record, found 0",
+    "src/engine/solarPvEngine.ts#performQuickSizing#9b0a62462d2c: expected exactly one independent reference fixture record, found 0",
+    "src/engine/solarPvEngine.ts#performQuickSizing#c80f83d4d6a5: expected exactly one independent reference fixture record, found 0",
+    "src/engine/solarPvEngine.ts#performQuickSizing#e8827b659151: expected exactly one independent reference fixture record, found 0"
+  ]
+}

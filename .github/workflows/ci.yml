@@ -8,6 +8,17 @@ on:
   workflow_dispatch:
 
 jobs:
+  production-container-smoke:
+    name: Standalone production container health
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.3'
+      - name: Build and boot final image without source mounts
+        run: node scripts/test-container-runtime.mjs
+
   physics-model-registry-gate:
     name: Physics Registry & Independent Reference Gate
     runs-on: ubuntu-latest
@@ -40,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['20', '22']
+        node-version: ['20', '22', '24']
     steps:
       - uses: actions/checkout@v4
 
@@ -52,8 +63,14 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Dependency compatibility and deprecation gate
+        run: npm run test:dependencies
+
       - name: Lint (tsc --noEmit)
         run: npm run lint
+
+      - name: Retired AC input isolation
+        run: npm run test:ac-retirement
 
       - name: Build Application
         run: npm run build
@@ -70,10 +87,23 @@ jobs:
       - name: Install Chromium Runtime Libraries
         run: sudo apt-get update && sudo apt-get install -y libnspr4 libnss3
 
+      - name: Remaining product fixes and real Worker cancellation
+        run: npm run test:remaining
+
+      - name: Snapshot recovery preserves original bytes through shutdown
+        run: npm run test:recovery
+
       - name: Real Browser Regressions (cold offline)
         run: npm run test:browser
         env:
           BROWSER_TEST_TIMEOUT_MS: 360000
+
+      - name: Targeted priority mutation gate
+        run: npx tsx scripts/test-priority-audit-mutations.ts
+      - name: Priority audit API screening contract
+        run: npx tsx scripts/test-priority-audit-http.ts
+      - name: Responsive workspace design acceptance
+        run: npm run test:ui
 
       - name: Binary Export Read-back (DOCX/XLSX/JSON)
         run: npm run verify:exports

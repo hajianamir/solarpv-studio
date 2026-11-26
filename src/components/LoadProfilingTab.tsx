@@ -219,7 +219,7 @@ export const LoadProfilingTab: React.FC<LoadProfilingTabProps> = ({
         <span className="text-amber-300">{isFa ? 'بار سه‌فاز:' : '3-phase:'} {Math.round(analysisResult.threePhaseLoadWatts ?? 0)} W</span>
         <span className="text-slate-300">{isFa ? 'بیشینه فاز:' : 'Max leg:'} {Math.round(analysisResult.maxPhaseLoadWatts ?? 0)} W</span>
         <span className="text-slate-300">{isFa ? 'عدم تعادل:' : 'Unbalance:'} {(analysisResult.phaseUnbalancePct ?? 0).toFixed(1)}%</span>
-        <span className="text-[10px] text-slate-500">{analysisResult.phaseCurrentBasis?.isConfirmed ? (isFa ? 'از ولتاژ و ضریب توان تأییدشدهٔ سرویس AC محاسبه شده؛ بارهای دارای override مستقل هنوز باید جداگانه بازبینی شوند.' : 'Calculated from confirmed AC service voltage and PF; loads with individual overrides require separate review.') : (isFa ? 'جریان صرفاً نمایشی با ۲۳۰/۴۰۰ ولت و PF=1؛ برای طراحی، ولتاژ و PF واقعی را در الزامات AC تأیید کنید.' : 'Illustrative only at 230/400 V and PF=1; confirm actual voltage and PF in AC requirements for design.')}</span>
+        <span className="text-[10px] text-slate-500">{analysisResult.phaseCurrentBasis?.isConfirmed ? (isFa ? 'از مبنای ولتاژ و ضریب توان ارائه‌شده به موتور محاسبه شده؛ تأیید طراحی نیست.' : 'Calculated from the voltage/PF basis supplied to the engine; not design approval.') : (isFa ? 'جریان صرفاً نمایشی با ۲۳۰/۴۰۰ ولت و PF=1 است؛ برای طراحی از ورودی‌های مستقل فیدر و مطالعهٔ واقعی شبکه استفاده کنید.' : 'Illustrative only at 230/400 V and PF=1; use independent feeder inputs and an actual network study for design.')}</span>
       </div>
 
       {/* Preset Selector & Action Bar */}
