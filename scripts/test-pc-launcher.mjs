@@ -34,14 +34,19 @@ try {
   assert.ok(dependencyProblems(fixture).some(p => p.includes('expected 1.8.0')));
 
   // These packages used to be checked by folder-name text in start.bat.
-  // Exercise the delegated resolver: missing metadata, broken exports, repair.
+  // Exercise separate CLI processes exactly as start.bat does before/after
+  // installation. Node 20/24 cache failed package resolutions in-process.
+  const checkFresh = () => spawnSync(process.execPath, [path.join(root, 'scripts/check-pc-dependencies.mjs')], {cwd: fixture, encoding:'utf8'});
   for (const [name, entry] of [['dotenv', 'dotenv/config'], ['uuid', 'uuid']]) {
     write('package.json', JSON.stringify({dependencies: {[name]: '1.0.0'}}));
-    assert.ok(dependencyProblems(fixture).some(p => p.includes(name)));
+    let probe = checkFresh();
+    assert.equal(probe.status, 1); assert.ok(probe.stderr.includes(name));
     write(`node_modules/${name}/package.json`, JSON.stringify({name, version:'1.0.0', exports: name === 'dotenv' ? {'./config':'./index.js'} : './index.js'}));
-    assert.ok(dependencyProblems(fixture).some(p => p.includes(entry) && p.includes('not resolvable')));
+    probe = checkFresh();
+    assert.equal(probe.status, 1); assert.ok(probe.stderr.includes(entry) && probe.stderr.includes('not resolvable'));
     write(`node_modules/${name}/index.js`, 'module.exports = {};');
-    assert.deepEqual(dependencyProblems(fixture), []);
+    probe = checkFresh();
+    assert.equal(probe.status, 0, probe.stderr);
   }
   assert.deepEqual(dependencyProblems(root), []);
   // Exercise the real tsx registration using Node directly with a spaced TS path.
