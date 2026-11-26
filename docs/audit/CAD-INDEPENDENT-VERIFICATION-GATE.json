@@ -12,8 +12,13 @@
     "scripts/cad_reference/verify.py": "a03b489c804c14f6ce71c5cb65ea8a39d210e47a5693e34d3fc950809e6e92ca",
     "scripts/cad_reference/requirements.txt": "16ddfd3cbc9f32af3fc30f273332f2c5aa2fc1b5bcc0966d79f6398a5404ba01",
     "scripts/test-cad-evidence-review.ts": "e9cee61989b9866f5ea6ad68a0f2ed3f2237472c5ee229c8a8c071c6ed98cfce",
-    ".github/workflows/ci.yml": "39429d721702ea62ed4ce238f38568f40a969ee529c54fbf94d00e64c6728580",
-    "package.json": "0e276179004096c508766b419f2f505ac2f20e56347ebc8bc91ccf5e69ee09f7"
+    ".github/workflows/ci.yml": "2eb868d3ea65c6d73f8634895f10df298b15074fa9ca095c0ad556476ac98610",
+    "package.json": "0e276179004096c508766b419f2f505ac2f20e56347ebc8bc91ccf5e69ee09f7",
+    "Dockerfile": "28776d431044a63826fb32716a20355c2035715654cc9b875fc1e80f81b04ba4",
+    "scripts/test-container-runtime.mjs": "3dd46f0e44557654ff728ab5576232c842619d2a9de31781955d392fffa45f46",
+    "scripts/test-pc-launcher.mjs": "125e5025f643cfc28782440dbca5683a452e763353550688ca9bf883ff06615c",
+    "scripts/verify-audit-remediation.ts": "1a90a59a8bedf1a8e8f42fd1d657b5dd926b1953d7969c84e2e69ed9fdc130c4",
+    "scripts/test-direct-pvlib-browser.ts": "4b89520d16954071a2ce9780df85a1cdb5f789b75daafdf38f7a980662e5b9f3"
   },
   "tests": {
     "independentArtifact": {
@@ -65,18 +70,20 @@
       "blocker": "Independent-expression reference gate; 56 CAD expressions lack registered records"
     },
     "container": {
-      "exit": 1,
-      "blocker": "Docker version failed: spawnSync docker ENOENT"
+      "result": "PASS remote real Docker",
+      "jobUrl": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563625",
+      "historicalLocalFailure": "docker ENOENT; resolved for validation by remote runner",
+      "historicalRemoteFailure": "missing /app/docs/reference-data/manifest.json; fixed Dockerfile"
     },
     "remoteCI": {
-      "result": "NOT_RUN",
-      "configuration": "Dedicated independent-artifact job added; full history required for baseline inventory"
+      "result": "COMPLETED WITH REFERENCE GATE FAILURE",
+      "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453"
     }
   },
   "limits": [
     "No gate or independent-evidence manifest waiver",
     "No copied model outputs registered as independent fixtures",
-    "No native Windows/Safari/iOS validation",
+    "Windows operational CI passed; no Safari/iOS validation",
     "No civil/fire/access/field approval or optimal-packing certification",
     "External artifact checks are not full-return per-expression independent reference fixtures"
   ],
@@ -110,5 +117,101 @@
       "coreCoverage"
     ],
     "logs": "Local .cache/cad-accounting-*.log; ephemeral"
+  },
+  "finalRuntimeValidation": {
+    "testedCommit": "3222aabae1a5e6cf143308f9ee08b92d8cccd16b",
+    "ciUrl": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453",
+    "ciConclusion": "failure: independent reference gate only",
+    "checks": [
+      {
+        "conclusion": "success",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024564450",
+        "name": "Direct pvlib study (windows-2022, Python 3.11)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563885",
+        "name": "Build and Validate SolarPV Studio (Node 24)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563753",
+        "name": "Build and Validate SolarPV Studio (Node 20)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563723",
+        "name": "Windows operational validation (Node 22)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563640",
+        "name": "Physics Registry & Independent Reference Gate",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563625",
+        "name": "Standalone production container health",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563555",
+        "name": "Build and Validate SolarPV Studio (Node 22)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563510",
+        "name": "Direct pvlib study (ubuntu-latest, Python 3.11)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "details_url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172453/job/140024563356",
+        "name": "Independent DXF and GEOS geometry verification",
+        "status": "completed"
+      }
+    ],
+    "local": {
+      "testRemediation": {
+        "passed": 74,
+        "failed": 0
+      },
+      "testAll": {
+        "exit": 1,
+        "base": "71a7c2b52d8a109cb710e38e561c49e635c54698",
+        "runtimeM01M22Passed": 144,
+        "reason": "56 missing independently sourced formula fixtures"
+      },
+      "launcherPreflight": {
+        "node20": "PASS 20.20.2",
+        "node22": "PASS 22.22.3",
+        "node24": "PASS 24.22.3"
+      },
+      "directStudyBrowser": "PASS with pinned real Python runtime; synthetic inputs",
+      "lint": "PASS 0 errors, 93 warnings"
+    },
+    "fixedFindings": [
+      "Final Docker image omitted docs/reference-data imported by server study contracts; copied registered reference assets",
+      "Remediation tests expected obsolete inline batch checks; now execute delegated launcher behavior",
+      "Node 20/24 resolver negative cache affected in-process repair tests; use separate CLI invocations as real batch launcher does",
+      "Direct study browser expected retired PVsyst-Grade heading; use current screening-only bilingual title",
+      "Feature-branch reference gate compared with previous push; compare with main to retain earlier formula changes"
+    ],
+    "unresolved": [
+      "56 changed expressions still lack registered independent whole-return fixtures; no manifest entries invented or gate waiver",
+      "No field/civil/fire/safety/conformity approval inferred"
+    ],
+    "scope": "Complete current CI Pipeline executed; separate foundation workflow recorded separately. Documentation-only receipt commit after testedCommit does not change runtime.",
+    "foundation": {
+      "conclusion": "success",
+      "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45853172466/job/140024563019"
+    }
   }
 }

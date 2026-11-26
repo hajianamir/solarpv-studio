@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Final runtime validation follow-up
+- Final tested runtime revision `3222aab`: real-container health, Node 20/22/24, Windows operational validation, Linux/Windows pvlib study, independent CAD artifacts and foundation checks pass remotely. The independent formula-reference gate remains failed (56 records missing); no full-release PASS.
+- Update the direct-study isolation test to locate the current screening-only waterfall title without removing the unchanged-screening assertions.
 - Fix a real final-image boot failure: copy registered `docs/reference-data` required by server-imported study contracts into the runner stage.
 - Surface bounded, escaped container failure diagnostics through GitHub Checks while preserving failure status and redacting the generated runtime secret.
 - Replace stale inline-batch text expectations with the delegated launcher preflight checks; exercise missing/broken/repaired dotenv and uuid entry points.
