@@ -1,0 +1,292 @@
+{
+  "date": "2026-11-03",
+  "branch": "arena/958d0027-solarpv-studio",
+  "base": "a5b2c5f8eac89b3be3a9148f786653e0ee11815a",
+  "scope": "U05 separate versioned explicit-reference input/De Soto translation/bounded Isc-Voc-continuous MPP numerical API; not a legacy consumer replacement",
+  "implementation": "IMPLEMENTED within bounded numerical-library scope",
+  "verification": "VERIFIED_WITHIN_SCOPE; complete fitting/consumer adoption and U05/Phase3 remain PARTIAL",
+  "release": "BLOCKED; earlier Phase2/3 and unresolved legacy/model-applicability gates retained",
+  "commands": [
+    {
+      "command": "npm run lint",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:smoke",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:coverage",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase1",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase2",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase3",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:accepted-audit",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:exports",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:engine-claims",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:help",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:physics-registry",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:physics-reference-gate",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:phase1-evidence",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase1:browser",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:browser",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:ui",
+      "exitCode": 0
+    }
+  ],
+  "postReviewReruns": [
+    {
+      "command": "npm run lint",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase3",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:physics-reference-gate",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:phase1-evidence",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:help",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase1:browser",
+      "exitCode": 0
+    }
+  ],
+  "additionalChecks": [
+    {
+      "command": ".venv/bin/python scripts/fixtures/generate-bounded-diode.py --check",
+      "exitCode": 0,
+      "result": "Offline exact oracle byte reproduction with network operations denied"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "acceptance": {
+    "B1": "Strict model/basis/reference/constants/conditions/provenance/iteration input; normalized result snapshot and JSON replay;51malformed/unsupported request cases",
+    "B2": "Finite guarded bracketed roots, residual acceptance, budget exhaustion and distinct dark/unavailable/available; no fake clipped-exponential roots or beta seed",
+    "B3": "72external full-reference cases;862component/numerical-policy vectors. Domain/analytic/budget vectors explicitly labeled, not called external physical-model cases",
+    "B4": "Legacy numerical API/body and its failed-seed witness unchanged; explicit re-export identity/no mutation; new bounded same-parameter root resolves defect. No App/I-V/calibration/catalog/project/HTTP/annual/finance selection or durable migration",
+    "B5": "66current new expressions individually executed/mutation-sensitive, full applicable regression and postreview reruns pass; three substantive review/followup research rounds and rollback in ADR-025"
+  },
+  "observed": {
+    "maxima": {
+      "vocVolts": 2.407432475592941e-08,
+      "iscAmps": 4.906297590423492e-12,
+      "vmpVolts": 7.713151717325673e-08,
+      "impAmps": 6.6082139760226255e-12,
+      "pmpWatts": 3.5288394428789616e-10
+    },
+    "legacyWitness": {
+      "legacyVoc": 188.23,
+      "boundedVoc": 45.00065763179139,
+      "boundedResidualAmps": 3.552097505021834e-11,
+      "legacyApiUnchanged": true
+    },
+    "lintErrors": 0,
+    "existingLintWarnings": 93,
+    "newModuleExpressionsExecutedAndSensitivityChecked": 66,
+    "inventoryModules": 150,
+    "auditFindingsRetained": 56,
+    "ordinaryGateSummary": "No tracked formula-expression changes relative to HEAD because the new source remains untracked. The gate nevertheless executed all registered manifest records, including66new nodes; focused tests independently require exact coverage of all66current units and execute them."
+  },
+  "failedAttempts": [
+    {
+      "attempt": "Extra high-Rsh1e300ohm full pvlib Brent reference",
+      "failure": "Floating-point endpoint sign cancellation rejected bracket",
+      "resolution": "Not adopted as successful external output; separately labeled60digit Decimal ideal-Voc limiting witness, finite-shunt perturbation below1e-290V"
+    },
+    {
+      "attempt": "Exploratory pvlib LambertW at same extreme boundary",
+      "failure": "Overflow/NaN; strict JSON serialization rejected nonfinite reference data",
+      "resolution": "No NaN target stored and no reference tolerance widened; external solver limitation retained"
+    },
+    {
+      "attempt": "Initial internal helper parameter default128",
+      "failure": "Exact-reference harness requires formula inside directly exported function body, not a parameter initializer",
+      "resolution": "Public schema remains owner of default; internal helper requires explicit validated budget. No harness exception or gate weakening."
+    }
+  ],
+  "research": "Pinned pvlib0.13.1 translation/gradient/fitting/parameter sources inspected and reference functions independently executed. Full upstream test suite not executed. Three agent self-review rounds, not independent human/field reviews.",
+  "prerequisites": "Locked Node/Python environments restored; exact historical baseline Git objects fetched for pre-existing tests, no branch change or expectation substitution. Environments/logs remain ignored.",
+  "limitations": [
+    "Attribution is caller-supplied, not authenticated manufacturer applicability",
+    "No summary-input fitting or beta/gamma constraint",
+    "No arbitrary parameter/technology/field/conformity validation",
+    "Extreme finite ratios may be unavailable because finite bracketing arithmetic fails",
+    "Legacy188.23V path remains unchanged/qualified, not silently fixed",
+    "No operational model selection, durable schema migration or financial adoption; all new result variants explicitly ineligible",
+    "Retired unverified bifacial target remains WARN; inherited CAD reference debt and earlier gates not waived"
+  ],
+  "sourceSha256": {
+    "src/contracts/referenceDiode.ts": "8734e0b4f402df8cd52157af5f1919845455879ed5d65c09b81ebc24bd22fad5",
+    "src/engine/core/referenceDiodeSolver.ts": "445412fc03e64cac9b432a2b77e60675bbc6e442f2365299161f08dd5169aa31",
+    "src/engine/singleDiodeModel.ts": "c960d090ee6f83d5f8e7958503135af322bffe5146fa1be60172e23c10cdf95f",
+    "scripts/test-bounded-diode.ts": "72e77f6b57486ba389f287d5a36aecee3c2f6df350f64b87d3922668d1d0fc32",
+    "scripts/fixtures/generate-bounded-diode.py": "409de160059069d4a30760f0b7546c5504de17b662e6e49463845c66c0b45b76",
+    "scripts/register-bounded-diode-evidence.ts": "1c055637ca4525d175a96191c8569652c5c8af249cf4a0d16bbed5ee417674ca",
+    "scripts/fixtures/physics/bounded-diode-pvlib.json": "9f03dff4dde99c8cd63f92fd698a070f3ed7eafea8e1dc24af6902fe23c13c47",
+    "scripts/physics-reference-evidence.json": "07c6522c6037e39a4e8d986d754ce6e8f923babda92fc80e77da75c2e97f9a7a",
+    "docs/adr/ADR-025-bounded-explicit-reference-diode.md": "3fda986e000fc566b31bac1756cba549f1038f2a196a4268251fe14b913a8849",
+    "docs/guides/bounded-reference-diode.md": "829975afc13007d59dddd48ddfa0e3598c77f45e5f4b04966cb6fdacd354656e",
+    "docs/audit/dual-independent-audit-review/PHASE-3-BOUNDED-DIODE-PLAN.md": "52fb1f8030c92030df506eeef2a5ec6b23de8b425490c7d9d01f6bc6dfa3a473",
+    "docs/audit/dual-independent-audit-review/phase3-bounded-diode-evidence-card.md": "71ed6b93734c50c35d0a6fe649c238c95774b6ff14e7d80995d5a40baf36f338",
+    "docs/audit/dual-independent-audit-review/phase3-bounded-diode-comparison.json": "f2ac9ac02321cdeba7b5eae7af714aa3aea664a284b4ef1d3f6c954e5a58dd69",
+    "package.json": "c6307cd294aa142f0464b2ac8f25393039c5c82080fa9d6b5a00f6548d5494e6"
+  },
+  "expressionFixtureSha256": {
+    "bounded-diode-01ffd38de704.json": "c7b672dd462bc3f9ca7b48aa5a4ac22960e42c2929cc3c3f4d9fed067b65f39c",
+    "bounded-diode-02991e367c43.json": "f541b9d53b2b680ff1c7e9b17dbd949b6bf46938f0d515a53b13ee2b8dd43b4b",
+    "bounded-diode-049c21ccc5dc.json": "f626073ad331abefc1dc56f2ad0cb87732ce615a27a101b2be9bf6d934d743cf",
+    "bounded-diode-07f4b9e5f19d.json": "e324907fc851ed410b5762af07cc6f1c52fbcdb659e152b5fcabe901ede7906f",
+    "bounded-diode-0d7ee38dc92a.json": "4be4bf7b8d23a9dfc594af533ff55f37a1df56e032034bd7406f4b32e5e82966",
+    "bounded-diode-0e0a749e80a7.json": "d2c542635838ad551178e64b01f23042667be87bef4a641c4da4f22fc6125609",
+    "bounded-diode-147548ecca9a.json": "951859d06282021ba6c3b80535844525ccfa749ce6a31935bf8ae5a38873f92d",
+    "bounded-diode-1636f67ed8b5.json": "cc9796137bf74fa907f0e6512d8d3ce7a3d1e98f72fe4bb96bea715081d803b1",
+    "bounded-diode-2117353cb998.json": "9cacefdab223dc08f6effef1bc71a1bbd75a8d5885f0d677b5974ebf241c0672",
+    "bounded-diode-2122d023a3b9.json": "3d28e9074f89026170ce0c22e451b23907f9447a9c8eb25b213a435ee27effee",
+    "bounded-diode-255b0bc78fb4.json": "914a2f615bbaa2b450085fd4cbf8c65860be1e8752931597c26794e7651ca8ae",
+    "bounded-diode-34408fc2b16a.json": "a95e1933a4400e7da4d5db7f4fb46f6449df9fe14fd674f431c8dcbe4c069d02",
+    "bounded-diode-3ca6626f8b00.json": "b310a1da88223dd878ffd505b1e10428b75daafe0e70048c27dc3bd90a49202d",
+    "bounded-diode-45ff115d3181.json": "67d527a5d16ba8d3e318b55d78051100f6dd4882116c1034f0504ff295f67249",
+    "bounded-diode-4721d769a35a.json": "aee687c85ebe5abe030ef5222d8da0fb570175698ef536bd9db496684629c475",
+    "bounded-diode-49fc83862dce.json": "c7a7275aa4370e3a5dd1def8ccdc8319cde70d8d2942ba4a6d5fa0f9462b629c",
+    "bounded-diode-4cd75e133a31.json": "f577601c5215ac2ce7366eee60532895284ab16496bd3ca562886e0b62c331c3",
+    "bounded-diode-54f974b0ecea.json": "1f5c6981d5433e6f84586aca5e6c33960fa7960d3841a7cd355f33221c7c5444",
+    "bounded-diode-5bfcb2c90429.json": "7871c62e194acc7419262e1f05f8514fdefcf993b4b612312985b889b0040043",
+    "bounded-diode-5c853170cb96.json": "7937086ba380a9edde9537c63d882637adb91f70256905951fcdd5abb151fde8",
+    "bounded-diode-775e7cda92ef.json": "98135fcfc451f3acef814b21f211547495e809dcae76e0a3bc75b374f9377608",
+    "bounded-diode-778e911812d8.json": "8e1c7bf3bc7e39c85b5c32226ffbe5a20c2e925fe1699a199bd596c2e1d2d79a",
+    "bounded-diode-79c2a7590420.json": "4f9b356db56d5f3d4d36e436f911e754ed61669c4641a1236ab53231f054966f",
+    "bounded-diode-7bd873a9d917.json": "7e43296d97fbaf13ddd9db955d425f27b703f3caf1ac4c6a782c5f5b7af2fe23",
+    "bounded-diode-7fc6513b8b1c.json": "0e8ac048a4ca32e9c41c99136cbb7e00ebc3f12b5bc393c30b5f1e2900354057",
+    "bounded-diode-7fc8029efeb1.json": "afc334d66458d0397e4f3f9b3bd323202345ca44db377e787ac40783bb1030f9",
+    "bounded-diode-81e293c77d07.json": "95d9fe307899b442dd7157051911818882936752b8514b836b5ebac48f0e5e44",
+    "bounded-diode-84545f05cb79.json": "58beb1eac5b75263d6d757a03334cac42ac0e432a74eebb5e9620926bb49a337",
+    "bounded-diode-88c9a9d67a4e.json": "c0ff6f654b0429f3455a1c683dc7444d26eb9a5c02702cf468d043332c21015c",
+    "bounded-diode-8abbba0c7a59.json": "640e273466b30e4067416a183f9b4a32cad22fa2e346fd12f82eba380e3cb275",
+    "bounded-diode-8fb0b034608c.json": "a6483cb4532e887433325fce2fccdf79c3778fd89d95f994395c92ca2d94c505",
+    "bounded-diode-9220febc412e.json": "1119b35c52b5fd1137265eeb82a0d499159b4ac7a0805dfcd2081bccd2e56f32",
+    "bounded-diode-95e2d293a644.json": "3bdea1e52eb39e974715b14517a666d495b6624fa69671d6776312ccb0423ad5",
+    "bounded-diode-99d0ec59ee8a.json": "495c93b087eda62a9f75f107521cb20e856ec0bede8125a63e4ab3b3734d979e",
+    "bounded-diode-9a30b344fbd3.json": "0acdaabba0791487d817a1d8a47146064acce333e1ad49f96c62c61a7644e66d",
+    "bounded-diode-a3c58fb796b9.json": "9dae513c287144393078d008fc637484b754ec44d3476f53c3f68f66102a6a5c",
+    "bounded-diode-a83365e36e47.json": "df91dfa2f8c1a580587fd852800fc0d4edfe6ac764c4c14a3e2a0f4348acef16",
+    "bounded-diode-a8c27b96057b.json": "4bad9a8e38d83a06297908f4a7979aac41398a3579fc61255332929d184656f8",
+    "bounded-diode-a97c5d0f0f3d.json": "c8394a0ff70757d26680576732967580137e2fca84475ab86fa5550a7b8b1f75",
+    "bounded-diode-acbc4c8bd049.json": "bc5a448177be1eda5b9bf13ac3349887280d1c39e664d51067ec581bee21fc92",
+    "bounded-diode-b44900a9203f.json": "df65ab1be2a253241feaa0d59dc953c0e4b8f0fe89fc1ee8e4644874461d9585",
+    "bounded-diode-b4632b6a721a.json": "befeedcf3b375f647dc89c73b45a47aca545796d09425424fe6410a616852ad9",
+    "bounded-diode-b53fee123ddf.json": "e337d50f7bd225a502ddd4db999008a938cee2eb5be35176e8ad4834b08c38fc",
+    "bounded-diode-b74f86e3fc5b.json": "2677d81c484bdc8167da4e63e72391daa0b6364205fbb59ded321365ee959564",
+    "bounded-diode-bbc4d583732e.json": "174e217d7405926a6c06178e5343383eb9c509e9530ba23cf2d49337644df057",
+    "bounded-diode-c03d4c480648.json": "ac6647896c55dcc28be0315e1ee00c6ba0cc6fc83338625acb8d305b489d5415",
+    "bounded-diode-c5b63588a5ef.json": "0ff9f65677b149b1830a7767b4373dc467671273f25288eb7ceaa69f34fe283d",
+    "bounded-diode-c6150b040569.json": "5e8171ef33d4408ae820150fab505443a446467f5cbdef95905079fb172c979a",
+    "bounded-diode-ca7fbbd2b1ce.json": "c51edba3285e1b6fd28a7eb06a3b27d837ede8328ac7143ac42d5c1d3f6d059d",
+    "bounded-diode-cf232ff89506.json": "1bf488069ffcccd33df4614b4bf32eb39ad663b063605babc88cfee3f06b82d8",
+    "bounded-diode-d9e647cd7763.json": "f50132b980e6b6da8dce019751b7b0e651e3a936a33bf5d885faf8a94e09d5b0",
+    "bounded-diode-de015636edb4.json": "704d2d9e63e9ef50fdfe8131c70199c0fa860774fac3838422fee4847e2dd2e4",
+    "bounded-diode-e1990dc59557.json": "54cf299f56dc38fe6532cb5a44c08409f69ede5a55280ebf9be2b0631ae16de6",
+    "bounded-diode-e4b3277ac769.json": "87ddf8566c78b52e87007f991ceeb0c12f1155eaa48801b2e31e13457b471b20",
+    "bounded-diode-e572136a1724.json": "2a2fc751870f880135717e779ae8d5ed066f353012d63956e783ab091f35aa52",
+    "bounded-diode-ea8def01b5d3.json": "c817ab1e068182e8435ac10f2d631461c90a4a1b10386809fe754b2a1928dd57",
+    "bounded-diode-ead4361ee7a7.json": "f48ef7a1897c3b5e6276f4aee0c484978347df48a2f6a869b8327654727d2639",
+    "bounded-diode-ec4ca70c805e.json": "654a1c74b88e75945639ce90f3a003c5174da860f29346986e013c78e77d697e",
+    "bounded-diode-edfec1d83fe9.json": "c4ddb69107aa4993093e249af15f3b97297be73be43863ac169090efd37229e6",
+    "bounded-diode-f49e22384f8d.json": "4416e849c838ec14e6f3cdc72c81eb5c10e50218368f5b81a92f02f5f23914a2",
+    "bounded-diode-f78d88985ab0.json": "896db5c7697004851097bc2a9b9d71f956fedadb96db4c710a6884601b46550c",
+    "bounded-diode-f7e09cee0865.json": "a560026debeec4e7e1d0ff69d9cc999951f1ca07dfbab77f265ea08747ea6b52",
+    "bounded-diode-fadf8a0f81f5.json": "192e2a03663c83d3589ade30141ed2a3a36b62061540c8731659fc12a1b79583",
+    "bounded-diode-fd11927b6f8f.json": "200994a33c36554f88a5e486bd5704870fc066f9498532819958ee7c7031ed9a",
+    "bounded-diode-fda434794892.json": "153dc36ab1786051c13e191f264129439612c13782539460d284458e7f8fcc5f",
+    "bounded-diode-febae5497404.json": "35807bfc228934e283cf8c302568008279d8828888df074e51c3c48949decc95"
+  },
+  "executionLogSha256": {
+    "final/build.log": "c8300b1e5a83aa52ae9c19f9e14728160d9627df8fe4be10ac80adf29c5dff72",
+    "final/lint.log": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965",
+    "final/test-accepted-audit.log": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89",
+    "final/test-browser.log": "e96da55ae64c36f95b5993945d6557f67f228ef22497446cda209338e5df5948",
+    "final/test-coverage.log": "1a4d8b90cef334e56e655e5661838a1cff238a80a846bafb2994a8b7d1916671",
+    "final/test-phase1-browser.log": "96d2fef3fa6090a4a1b7a821369dd6eb6c5a1455b5139cb0bb31f56e6d7724ea",
+    "final/test-phase1.log": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db",
+    "final/test-phase2.log": "8be9ade7d3a711d8d226ef09eff6d3ea13be4837453061bba9430713de8f9661",
+    "final/test-phase3.log": "9e095ea2f1e4d9a402d48373895a534ab640c2663f681d55c33ba5acaf6509ca",
+    "final/test-smoke.log": "c40b7f8e237089357dfb25d2ad67488b6a489e6f439ddde0bcb293aa42ca3dfa",
+    "final/test-ui.log": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a",
+    "final/test.log": "8e25b63ae35092e9a7e6ecc49858f1ae873af1f99a77da7d1d8a0a7b3f6de6c8",
+    "final/verify-engine-claims.log": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122",
+    "final/verify-exports.log": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe",
+    "final/verify-help.log": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0",
+    "final/verify-phase1-evidence.log": "d442a6ab71446a85012fee9fa34a34a928db1b5ee167390763180e55bc2c5bc4",
+    "final/verify-physics-reference-gate.log": "6f31fda1eeebf8b743a5fa6c3228dc0d2f57f5e0b6267889eac34ce5078fec55",
+    "final/verify-physics-registry.log": "94e7288aaf1de9be1efb558f9643804634ef881dc23d8492fb6d056a173bf3c7",
+    "postreview/build.log": "888f08d0caa13f9c88f8ef8e19e131c71acc28e943a1fa004d2b1351ca5883df",
+    "postreview/lint.log": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965",
+    "postreview/test-phase1-browser.log": "96d2fef3fa6090a4a1b7a821369dd6eb6c5a1455b5139cb0bb31f56e6d7724ea",
+    "postreview/test-phase3.log": "2908ffea9fcd17574926c1bae4d24c1a79313e4bf9d2321aefe7c409b5a06986",
+    "postreview/verify-help.log": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0",
+    "postreview/verify-phase1-evidence.log": "d442a6ab71446a85012fee9fa34a34a928db1b5ee167390763180e55bc2c5bc4",
+    "postreview/verify-physics-reference-gate.log": "6f31fda1eeebf8b743a5fa6c3228dc0d2f57f5e0b6267889eac34ce5078fec55"
+  },
+  "gitActions": "No commit, push or PR requested/performed; only exact historical evidence object fetches"
+}

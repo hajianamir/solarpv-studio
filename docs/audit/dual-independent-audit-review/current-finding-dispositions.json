@@ -65,7 +65,8 @@
       "plannedStages": "P3 U05",
       "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
       "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
-      "schedulingClarification": null
+      "schedulingClarification": null,
+      "phase3Progress": "ADR-024: independent explicit-reference specialization executed with pvlib0.13.1 (48cases,3888points); parameter/grid arithmetic passes declared conversion/quantization budgets. Exact Isc/MPP discrepancies reported separately. Unused gamma, beta-seed limitation and a severe unconverged-root witness retained; aggregate vt comment corrected and misleading bypass/UI claims qualified in both languages with actual browser tests. Production numerical formulas unchanged. Summary-input fitting, arbitrary-input convergence, full U05 validation and adoption/release remain BLOCKED/PARTIAL; see Phase3 status/evidence card/comparison. Further ADR-025 continuation: separate strict explicit-reference API with De Soto translation and bounded residual-checked Isc/Voc/continuous MPP;72external full cases,862component/policy vectors,51invalid contracts and66executed sensitive expressions. New kernel resolves the same-parameter seed defect, but legacy API/extraction remains unchanged and no consumer/adoption migration is implemented. Full fitting, applicability and U05 completion remain open."
     },
     {
       "id": "A-F08",

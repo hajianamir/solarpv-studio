@@ -943,6 +943,678 @@
       "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."
     },
     {
+      "path": "src/engine/core/referenceDiodeSolver.ts",
+      "sourceSha256": "445412fc03e64cac9b432a2b77e60675bbc6e442f2365299161f08dd5169aa31",
+      "inputsAndTypes": [],
+      "wholeModelConformity": null,
+      "implementationClassification": "current_source_not_independently_validated_as_a_whole",
+      "independentlyValidatedWholeModelDomain": null,
+      "evidence": [
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#0d7ee38dc92a",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-0d7ee38dc92a.json",
+          "productionExport": "evaluateDiodeState",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "4be4bf7b8d23a9dfc594af533ff55f37a1df56e032034bd7406f4b32e5e82966"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#45ff115d3181",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-45ff115d3181.json",
+          "productionExport": "evaluateDiodeState",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "67d527a5d16ba8d3e318b55d78051100f6dd4882116c1034f0504ff295f67249"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#a83365e36e47",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-a83365e36e47.json",
+          "productionExport": "evaluateDiodeState",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "df91dfa2f8c1a580587fd852800fc0d4edfe6ac764c4c14a3e2a0f4348acef16"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#c03d4c480648",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-c03d4c480648.json",
+          "productionExport": "evaluateDiodeState",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "ac6647896c55dcc28be0315e1ee00c6ba0cc6fc83338625acb8d305b489d5415"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f49e22384f8d",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-f49e22384f8d.json",
+          "productionExport": "evaluateDiodeState",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "4416e849c838ec14e6f3cdc72c81eb5c10e50218368f5b81a92f02f5f23914a2"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f7e09cee0865",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-f7e09cee0865.json",
+          "productionExport": "evaluateDiodeState",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "a560026debeec4e7e1d0ff69d9cc999951f1ca07dfbab77f265ea08747ea6b52"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#01ffd38de704",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-01ffd38de704.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "c7b672dd462bc3f9ca7b48aa5a4ac22960e42c2929cc3c3f4d9fed067b65f39c"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#02991e367c43",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-02991e367c43.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "f541b9d53b2b680ff1c7e9b17dbd949b6bf46938f0d515a53b13ee2b8dd43b4b"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#1636f67ed8b5",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-1636f67ed8b5.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "cc9796137bf74fa907f0e6512d8d3ce7a3d1e98f72fe4bb96bea715081d803b1"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2117353cb998",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-2117353cb998.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "9cacefdab223dc08f6effef1bc71a1bbd75a8d5885f0d677b5974ebf241c0672"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2122d023a3b9",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-2122d023a3b9.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "3d28e9074f89026170ce0c22e451b23907f9447a9c8eb25b213a435ee27effee"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-34408fc2b16a.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "a95e1933a4400e7da4d5db7f4fb46f6449df9fe14fd674f431c8dcbe4c069d02"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#4cd75e133a31",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-4cd75e133a31.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "f577601c5215ac2ce7366eee60532895284ab16496bd3ca562886e0b62c331c3"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#54f974b0ecea",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-54f974b0ecea.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "1f5c6981d5433e6f84586aca5e6c33960fa7960d3841a7cd355f33221c7c5444"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#5c853170cb96",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-5c853170cb96.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "7937086ba380a9edde9537c63d882637adb91f70256905951fcdd5abb151fde8"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#7fc8029efeb1",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-7fc8029efeb1.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "afc334d66458d0397e4f3f9b3bd323202345ca44db377e787ac40783bb1030f9"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#88c9a9d67a4e",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-88c9a9d67a4e.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "c0ff6f654b0429f3455a1c683dc7444d26eb9a5c02702cf468d043332c21015c"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#95e2d293a644",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-95e2d293a644.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "3bdea1e52eb39e974715b14517a666d495b6624fa69671d6776312ccb0423ad5"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#99d0ec59ee8a",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-99d0ec59ee8a.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "495c93b087eda62a9f75f107521cb20e856ec0bede8125a63e4ab3b3734d979e"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b44900a9203f",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-b44900a9203f.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "df65ab1be2a253241feaa0d59dc953c0e4b8f0fe89fc1ee8e4644874461d9585"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b53fee123ddf",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-b53fee123ddf.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "e337d50f7bd225a502ddd4db999008a938cee2eb5be35176e8ad4834b08c38fc"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#bbc4d583732e",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-bbc4d583732e.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "174e217d7405926a6c06178e5343383eb9c509e9530ba23cf2d49337644df057"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c5b63588a5ef",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-c5b63588a5ef.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "0ff9f65677b149b1830a7767b4373dc467671273f25288eb7ceaa69f34fe283d"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c6150b040569",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-c6150b040569.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "5e8171ef33d4408ae820150fab505443a446467f5cbdef95905079fb172c979a"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#cf232ff89506",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-cf232ff89506.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "1bf488069ffcccd33df4614b4bf32eb39ad663b063605babc88cfee3f06b82d8"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#e4b3277ac769",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-e4b3277ac769.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "87ddf8566c78b52e87007f991ceeb0c12f1155eaa48801b2e31e13457b471b20"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#ea8def01b5d3",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-ea8def01b5d3.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "c817ab1e068182e8435ac10f2d631461c90a4a1b10386809fe754b2a1928dd57"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#febae5497404",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-febae5497404.json",
+          "productionExport": "evaluateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "35807bfc228934e283cf8c302568008279d8828888df074e51c3c48949decc95"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#049c21ccc5dc",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-049c21ccc5dc.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "f626073ad331abefc1dc56f2ad0cb87732ce615a27a101b2be9bf6d934d743cf"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#07f4b9e5f19d",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-07f4b9e5f19d.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "e324907fc851ed410b5762af07cc6f1c52fbcdb659e152b5fcabe901ede7906f"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#0e0a749e80a7",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-0e0a749e80a7.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "d2c542635838ad551178e64b01f23042667be87bef4a641c4da4f22fc6125609"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#147548ecca9a",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-147548ecca9a.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "951859d06282021ba6c3b80535844525ccfa749ce6a31935bf8ae5a38873f92d"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#255b0bc78fb4",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-255b0bc78fb4.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "914a2f615bbaa2b450085fd4cbf8c65860be1e8752931597c26794e7651ca8ae"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#49fc83862dce",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-49fc83862dce.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "c7a7275aa4370e3a5dd1def8ccdc8319cde70d8d2942ba4a6d5fa0f9462b629c"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#5bfcb2c90429",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-5bfcb2c90429.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "7871c62e194acc7419262e1f05f8514fdefcf993b4b612312985b889b0040043"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#775e7cda92ef",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-775e7cda92ef.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "98135fcfc451f3acef814b21f211547495e809dcae76e0a3bc75b374f9377608"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7bd873a9d917",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-7bd873a9d917.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "7e43296d97fbaf13ddd9db955d425f27b703f3caf1ac4c6a782c5f5b7af2fe23"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7fc6513b8b1c",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-7fc6513b8b1c.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "0e8ac048a4ca32e9c41c99136cbb7e00ebc3f12b5bc393c30b5f1e2900354057"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#84545f05cb79",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-84545f05cb79.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "58beb1eac5b75263d6d757a03334cac42ac0e432a74eebb5e9620926bb49a337"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#8abbba0c7a59",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-8abbba0c7a59.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "640e273466b30e4067416a183f9b4a32cad22fa2e346fd12f82eba380e3cb275"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#9220febc412e",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-9220febc412e.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "1119b35c52b5fd1137265eeb82a0d499159b4ac7a0805dfcd2081bccd2e56f32"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a3c58fb796b9",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-a3c58fb796b9.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "9dae513c287144393078d008fc637484b754ec44d3476f53c3f68f66102a6a5c"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a8c27b96057b",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-a8c27b96057b.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "4bad9a8e38d83a06297908f4a7979aac41398a3579fc61255332929d184656f8"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#acbc4c8bd049",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-acbc4c8bd049.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "bc5a448177be1eda5b9bf13ac3349887280d1c39e664d51067ec581bee21fc92"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ca7fbbd2b1ce",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-ca7fbbd2b1ce.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "c51edba3285e1b6fd28a7eb06a3b27d837ede8328ac7143ac42d5c1d3f6d059d"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#d9e647cd7763",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-d9e647cd7763.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "f50132b980e6b6da8dce019751b7b0e651e3a936a33bf5d885faf8a94e09d5b0"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#e572136a1724",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-e572136a1724.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "2a2fc751870f880135717e779ae8d5ed066f353012d63956e783ab091f35aa52"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ead4361ee7a7",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-ead4361ee7a7.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "f48ef7a1897c3b5e6276f4aee0c484978347df48a2f6a869b8327654727d2639"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fadf8a0f81f5",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-fadf8a0f81f5.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "192e2a03663c83d3589ade30141ed2a3a36b62061540c8731659fc12a1b79583"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fd11927b6f8f",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-fd11927b6f8f.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "200994a33c36554f88a5e486bd5704870fc066f9498532819958ee7c7031ed9a"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fda434794892",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-fda434794892.json",
+          "productionExport": "solveBoundedDiodeRoot",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "153dc36ab1786051c13e191f264129439612c13782539460d284458e7f8fcc5f"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#3ca6626f8b00",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-3ca6626f8b00.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "b310a1da88223dd878ffd505b1e10428b75daafe0e70048c27dc3bd90a49202d"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#4721d769a35a",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-4721d769a35a.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "aee687c85ebe5abe030ef5222d8da0fb570175698ef536bd9db496684629c475"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#778e911812d8",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-778e911812d8.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "8e1c7bf3bc7e39c85b5c32226ffbe5a20c2e925fe1699a199bd596c2e1d2d79a"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#79c2a7590420",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-79c2a7590420.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "4f9b356db56d5f3d4d36e436f911e754ed61669c4641a1236ab53231f054966f"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#81e293c77d07",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-81e293c77d07.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "95d9fe307899b442dd7157051911818882936752b8514b836b5ebac48f0e5e44"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#8fb0b034608c",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-8fb0b034608c.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "a6483cb4532e887433325fce2fccdf79c3778fd89d95f994395c92ca2d94c505"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#9a30b344fbd3",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-9a30b344fbd3.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "0acdaabba0791487d817a1d8a47146064acce333e1ad49f96c62c61a7644e66d"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#a97c5d0f0f3d",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-a97c5d0f0f3d.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "c8394a0ff70757d26680576732967580137e2fca84475ab86fa5550a7b8b1f75"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b4632b6a721a",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-b4632b6a721a.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "befeedcf3b375f647dc89c73b45a47aca545796d09425424fe6410a616852ad9"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b74f86e3fc5b",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-b74f86e3fc5b.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "2677d81c484bdc8167da4e63e72391daa0b6364205fbb59ded321365ee959564"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#de015636edb4",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-de015636edb4.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "704d2d9e63e9ef50fdfe8131c70199c0fa860774fac3838422fee4847e2dd2e4"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#e1990dc59557",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-e1990dc59557.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "54cf299f56dc38fe6532cb5a44c08409f69ede5a55280ebf9be2b0631ae16de6"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#ec4ca70c805e",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-ec4ca70c805e.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "654a1c74b88e75945639ce90f3a003c5174da860f29346986e013c78e77d697e"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#edfec1d83fe9",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-edfec1d83fe9.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "c4ddb69107aa4993093e249af15f3b97297be73be43863ac169090efd37229e6"
+        },
+        {
+          "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#f78d88985ab0",
+          "fixtureFile": "scripts/fixtures/physics/bounded-diode-f78d88985ab0.json",
+          "productionExport": "translateReferenceDiode",
+          "referenceTitle": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+          "referenceUrl": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+          "referenceVersion": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+          "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation.",
+          "fixtureSha256": "896db5c7697004851097bc2a9b9d71f956fedadb96db4c710a6884601b46550c"
+        }
+      ],
+      "applicability": "Component references only; units, tolerances and tested domain are defined in each linked fixture. Not blanket coverage.",
+      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."
+    },
+    {
       "path": "src/engine/core/scalarTransposition.ts",
       "sourceSha256": "0114ec9fdf7fcd8d04b985ae8c08c541b4f984d0af67043a06a7b400c83d5636",
       "inputsAndTypes": [],
@@ -3666,19 +4338,19 @@
     },
     {
       "path": "src/engine/singleDiodeModel.ts",
-      "sourceSha256": "87c58b2f3b4cff1798d900a2765a43f537a1bfab52631a5a51e26b82ba2cbbbe",
+      "sourceSha256": "c960d090ee6f83d5f8e7958503135af322bffe5146fa1be60172e23c10cdf95f",
       "inputsAndTypes": [
         {
           "name": "DiodeParameters",
-          "line": 5
+          "line": 12
         },
         {
           "name": "IvPoint",
-          "line": 16
+          "line": 23
         },
         {
           "name": "IvCurveResult",
-          "line": 22
+          "line": 29
         }
       ],
       "wholeModelConformity": null,
@@ -5520,6 +6192,38 @@
       "path": "src/contracts/mpptCurrentComparison.ts",
       "sourceSha256": "b9cea5db8a96fccc2215f5603c9d6ceafa1df9e4577fc20efded35bd980856b1",
       "inputsAndTypes": [],
+      "wholeModelConformity": null,
+      "implementationClassification": "current_source_not_independently_validated_as_a_whole",
+      "independentlyValidatedWholeModelDomain": null,
+      "evidence": [],
+      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",
+      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."
+    },
+    {
+      "path": "src/contracts/referenceDiode.ts",
+      "sourceSha256": "8734e0b4f402df8cd52157af5f1919845455879ed5d65c09b81ebc24bd22fad5",
+      "inputsAndTypes": [
+        {
+          "name": "ReferenceDiodeRequest",
+          "line": 26
+        },
+        {
+          "name": "ReferenceDiodeInput",
+          "line": 27
+        },
+        {
+          "name": "DiodeConditionParameters",
+          "line": 33
+        },
+        {
+          "name": "DiodeRootTarget",
+          "line": 34
+        },
+        {
+          "name": "ReferenceDiodeResult",
+          "line": 35
+        }
+      ],
       "wholeModelConformity": null,
       "implementationClassification": "current_source_not_independently_validated_as_a_whole",
       "independentlyValidatedWholeModelDomain": null,

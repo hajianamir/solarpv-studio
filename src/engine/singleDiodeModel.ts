@@ -1,4 +1,11 @@
-// 5-Parameter Single-Diode Model for PV Cells, Modules & Strings (De Soto / SAM Formulation)
+// Explicit reference solving is a separate opt-in API, never a legacy fallback.
+export {evaluateReferenceDiode} from './core/referenceDiodeSolver';
+export type {ReferenceDiodeRequest,ReferenceDiodeInput,ReferenceDiodeResult} from '../contracts/referenceDiode';
+
+// Legacy single-diode screening solver with De Soto-style parameter translation.
+// Summary-input extraction is a heuristic, not a complete De Soto/CEC fit.
+// tempCoeffPmpPct is retained but unused; tempCoeffVocPct seeds the Voc solver
+// rather than constraining a fitted beta_Voc relation. See ADR-024.
 // Solves: I = I_ph - I_0 * [exp((V + I*R_s)/(n*V_t)) - 1] - (V + I*R_s)/R_sh
 // Incorporates bandgap energy temperature dependence Eg(T) and irradiance-scaled Rsh(G)
 
@@ -8,7 +15,7 @@ export interface DiodeParameters {
   rs: number;        // Series resistance (Ohms)
   rsh: number;       // Shunt resistance (Ohms)
   n: number;         // Diode ideality factor (typically 1.0 to 1.3 for modern TOPCon/PERC)
-  vt: number;        // Thermal voltage (V) = (k * T) / q
+  vt: number;        // Legacy aggregate Ns*k*T/q (V), all series cells, excluding n; n*vt = nNsVth
   cellsPerModule?: number;
   moduleAreaM2?: number;
 }
@@ -107,7 +114,8 @@ export function calculateSingleDiodeCurve(
   const aActual = aActualModule * nSeries;
   const vt = (cellsInSeries * BOLTZMANN * tempK) / ELECTRON_CHARGE;
 
-  // Reference Series and Shunt resistance per module (De Soto parameter extraction)
+  // Reference Rs/Rsh per module: legacy summary-input extraction heuristic;
+  // customParams can supply external reference values (Rs/Rsh are string totals).
   const rshRefModule = customParams?.rsh !== undefined
     ? customParams.rsh / nSeries
     : Math.max(50.0, (stcVoc / Math.max(1e-6, stcIsc - stcImp)) * 10.0);

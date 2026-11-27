@@ -93,9 +93,12 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
         </h1>
         <p className="text-slate-400 text-xs">
           {isEn
-            ? '5-parameter single-diode solar cell modeling with Newton-Raphson solver, irradiance/temperature sweeps, and bypass diode multi-peak simulation.'
-            : 'شبیه‌سازی مدل پنج‌پارامتری تک‌دیودی سلول خورشیدی (Single-Diode Model) با حلگر نیوتن-رافسون و پایش فعال شدن دیودهای بای‌پس'}
+            ? 'Legacy single-diode screening curve with a fixed illustrative module and an 80-step sampled MPP; not a measured tracer or catalog-selected module.'
+            : 'منحنی غربالگری تک‌دیودی با ماژول نمونه ثابت و MPP نمونه‌برداری‌شده ۸۰گامی؛ نه منحنی اندازه‌گیری‌شده یا ماژول منتخب کاتالوگ'}
         </p>
+        <p data-testid="single-diode-qualification" className="text-xs text-industrial-warning mt-2">{isEn
+          ? 'Reference-parameter arithmetic is tested separately from fitting. gamma_Pmp is not fitted; beta_Voc only seeds the solver. Scalar Isc is approximate; solver convergence is not certified. No annual-energy or financial adoption is enabled by this page.'
+          : 'آزمون حساب پارامترهای مرجع از برازش جداست. gamma_Pmp برازش نمی‌شود؛ beta_Voc فقط حدس اولیه حلگر است. Isc اسکالر تقریبی و همگرایی حلگر تأییدنشده است. این صفحه مجوز انتقال به انرژی سالانه یا مالی ایجاد نمی‌کند.'}</p>
       </div>
 
       {/* Interactive Controls */}
@@ -169,15 +172,15 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
             />
             <span className="font-semibold">
               {isEn
-                ? 'Simulate Partial Shading & Bypass Diode Activation (Multi-Peak Curve)'
-                : 'شبیه‌سازی سایه‌اندازی جزئی و پله دیود بای‌پس (Partial Shading Multi-Peak)'}
+                ? 'Cosmetic shading illustration (not a bypass-diode circuit model)'
+                : 'نمایش ظاهری سایه (نه مدل مدار دیود بای‌پس)'}
             </span>
           </label>
         </div>
       </div>
 
       {/* KPI Specs Matrix */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+      <div data-testid="iv-curve-metrics" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
         <div className="p-2.5 bg-industrial-surface border border-industrial-border rounded-lg">
           <span className="text-slate-400 block mb-0.5">{isEn ? 'Max Power (Pmp)' : 'توان ماکزیمم (Pmp)'}</span>
           <span className="text-base font-bold font-mono text-industrial-success">
@@ -313,8 +316,8 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
             <AlertCircle className="w-4 h-4 text-industrial-warning shrink-0" />
             <span>
               {isEn
-                ? 'Partial Shading Phenomenon: Bypass diodes conduct when cell groups are shaded, creating a characteristic multi-peak knee in the I-V curve. Modern inverters with Global MPPT Scanning locate the true global peak.'
-                : 'پدیده سایه‌اندازی جزئی: دیودهای بای‌پاس در ولتاژ بالاتر از ۷۰٪ فعال شده و شکل مشخصه I-V پله‌ای می‌شود؛ اینورترهای مجهز به Global MPPT Scan نقطه توان ماکزیمم سراسری را بدون گیر افتادن در قله‌های فرعی پیدا می‌کنند.'}
+                ? 'Cosmetic illustration only: this toggle clips plotted current/power values. It does not solve shaded cell groups, bypass-diode activation or global MPPT; the KPI values remain the unshaded model outputs.'
+                : 'فقط نمایش ظاهری: کلید مقادیر جریان/توان رسم‌شده را محدود می‌کند؛ گروه سلول سایه‌دار، فعال‌شدن دیود بای‌پس یا MPPT سراسری حل نمی‌شود. شاخص‌ها همچنان خروجی مدل بدون سایه هستند.'}
             </span>
           </div>
         )}

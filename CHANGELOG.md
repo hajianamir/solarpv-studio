@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased — Phase3 primary-source research and offline reference cases
+
+- Acquire 28 SHA256-pinned public source/data artifacts with a repeatable GitHub acquisition script and offline integrity checks; retain large upstream files in ignored cache.
+- Add executed references for 60 thermal, 16 M&R IAM, 96 infinite-sheds, 30 full-year clipping, 27 pump duty, six financial and 20 Student-t CDF cases, plus an explicitly seeded De Soto fit with retained default-fit failure and coefficient residuals. No production numerical replacement or automatic adoption.
+- Replay actual thermal/bifacial/pump discrepancies without laundering them into accuracy PASS; integrate research replay into `test:phase3`. Document each package's evidence, decisions and remaining manufacturer/site/normative/runtime/integration stops in `PHASE-3-DEEP-RESEARCH.md`. Phase3 remains partial and release blocked.
+
+## Unreleased — production UQ convergence diagnostic
+
+- Add opt-in offline multi-budget/multi-seed diagnostics around the unchanged production Gaussian financial sampler, deterministic per-run hashes and explicit ascending CDF envelopes for energy, NPV and LCOE. Integrate regression checks into `test:phase3`. No public consumer or financial adoption.
+- Reject non-Gaussian families in this new diagnostic: legacy Student-t latents use a normal marginal CDF and must not be represented as a validated t-copula. Existing legacy behavior is not silently changed or reinterpreted.
+- Selected-seed ranges are not confidence intervals or an N=100 guarantee. See ADR-026. U20, full Phase3 and release remain incomplete/blocked.
+
+## Unreleased — bounded explicit-reference diode API
+
+- Add strict versioned `desoto_reference_bounded_v1` per-module STC inputs and an explicit public `evaluateReferenceDiode` API, separate from legacy summary-input extraction. Retain normalized input/provenance/conditions, model identity and financial-adoption ineligibility in successful/dark results.
+- Implement separate De Soto translation and bounded implicit Isc/Voc/continuous-MPP roots, without beta-based Newton guesses or exponential clipping. Invalid, nonfinite and unconverged inputs return explicit unavailable results; darkness remains distinct zero output.
+- Add72independent full-reference cases,862component/solver-policy comparisons,51invalid-contract tests and66executed mutation-sensitive expression witnesses. Same-parameter failed-root witness converges to45.0006576V in the new kernel; the old API and its188.23V defect remain unchanged/qualified, not silently reinterpreted.
+- No App/I–V/calibration/catalog/project/HTTP/annual/financial selection, durable schema change or automatic fallback. See ADR-025 and the bounded-reference guide/evidence card for numerical domain, source hashes, failures, rollback and remaining fitting/adoption limits. Full U05/Phase3 and release are not complete.
+
+
+## Unreleased — Phase3 single-diode reference boundary
+
+- Start independent U05 evidence work without waiving incomplete Phase2/release gates. Add a pinned offline pvlib0.13.1 generator,48explicit-reference parameter cases/3,888curve points, offline replay and a model evidence card with domain/source hashes/tolerances and unresolved regimes.
+- Separate reference-parameter translation from heuristic STC extraction and sampled versus optimized MPP. Preserve all production numerical formulas/signatures/results; clarify aggregate legacy vt semantics in comments only.
+- Reproduce unused gamma_Pmp, beta-as-initial-seed, approximate Isc and a severe extreme-beta unconverged Voc defect. Keep solver-reliability/adoption claims blocked rather than adjusting tolerance or silently substituting another model.
+- Correct bilingual I–V page/help claims: fixed illustrative module,80interval sampled MPP and cosmetic shading toggle, not a bypass-diode circuit simulation. Add actual production-browser KPI-invariance assertions.
+- See ADR-024, `PHASE-3-PLAN.md`, `PHASE-3-STATUS.md` and `docs/guides/single-diode-validation.md` for evidence limits, next numerical repair and rollback. This is not full U05/Phase3 validation, conformity or financial-adoption approval.
+
+
 ## Unreleased — named production scalar transposition owner
 
 - Extract unchanged fixed-tilt screening arithmetic into `core/scalarTransposition.ts`, named `legacy_latitude_tilt_screen_v1`; retain the old waterfall export as a deprecated identity re-export. No energy coefficients, report shape or project inputs changed.

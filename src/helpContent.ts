@@ -284,13 +284,13 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
     en: {
       title: 'I–V curve model',
       inputs: 'Set irradiance, cell temperature and series-module count; the current page uses a fixed single-module reference parameter set. The partial-shading toggle modifies the displayed curve shape.',
-      method: 'The single-diode model evaluates current/voltage points and derives I–V and P–V characteristics and maximum-power-point values from those inputs and fixed reference parameters.',
+      method: 'Legacy single-diode screening with heuristic STC extraction and De Soto-style parameter translation. gamma_Pmp is unused; beta_Voc only seeds the solver. MPP is sampled on an80step grid; scalar Isc is approximate. The shading checkbox only alters plotted points, not bypass circuits or KPI outputs.',
       limitations: 'This is not using the currently selected catalog module and is not a measured tracer curve. Do not compare with field measurements unless the reference parameters and test conditions are reconciled.',
     },
     fa: {
       title: 'مدل منحنی I–V',
       inputs: 'تابش، دمای سلول و تعداد ماژول سری را تنظیم کنید؛ این صفحه از مجموعه پارامتر مرجع ثابت یک ماژول استفاده می‌کند. کلید سایهٔ جزئی شکل منحنی نمایش‌داده‌شده را تغییر می‌دهد.',
-      method: 'مدل تک‌دیودی نقاط جریان/ولتاژ را محاسبه و از آن‌ها مشخصه‌های I–V و P–V و مقادیر نقطهٔ بیشینهٔ توان را استخراج می‌کند.',
+      method: 'غربالگری تک‌دیودی با استخراج ابتکاری STC و انتقال پارامتر به سبک De Soto؛ gamma_Pmp استفاده نمی‌شود و beta_Voc فقط حدس اولیه است. MPP روی شبکه ۸۰گامی و Isc تقریبی است. کلید سایه فقط رسم را تغییر می‌دهد، نه مدار بای‌پس یا شاخص‌ها.',
       limitations: 'این صفحه از ماژول کاتالوگ انتخاب‌شده استفاده نمی‌کند و منحنی tracer اندازه‌گیری‌شده نیست. بدون تطبیق پارامتر مرجع و شرایط آزمون با اندازه‌گیری میدانی مقایسه نکنید.',
     },
   },

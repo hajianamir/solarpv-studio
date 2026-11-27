@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b4632b6a721a",
+  "independentOfImplementation": true,
+  "productionExport": "translateReferenceDiode",
+  "inputs": [
+    {
+      "modelPolicy": "desoto_reference_bounded_v1",
+      "reference": {
+        "basis": "per_module_stc",
+        "photocurrentA": 7.545,
+        "saturationCurrentA": 1.94e-9,
+        "seriesResistanceOhm": 0.094,
+        "shuntResistanceOhm": 15.72,
+        "diodeFactorV": 0.473,
+        "alphaScAperC": 0.003,
+        "referenceCellTempC": 25,
+        "referenceIrradianceWm2": 1000,
+        "bandgapEv": 1.121,
+        "bandgapTemperatureCoefficientPerK": -0.0002677,
+        "provenance": {
+          "source": "pvlib0.13.1 tests/conftest.py (test vector, not verified catalog)",
+          "recordId": "cec_module_params"
+        }
+      },
+      "conditions": {
+        "effectiveIrradianceWm2": 50,
+        "cellTempC": -20,
+        "seriesModules": 1
+      },
+      "iterationLimit": 128
+    }
+  ],
+  "expected": {
+    "iph": 0.37050000000000005,
+    "i0": 2.738044340973344e-13,
+    "rs": 0.094,
+    "rsh": 314.40000000000003,
+    "a": 0.4016097601878249
+  },
+  "independentCalculation": "Offline independent pvlib0.13.1 oracle for explicit reference diode solver.\n\nNo production TypeScript imports, execution or numerical targets. Source-pinned\nupstream parameter vectors; De Soto translation and Bishop88/brentq reference\nsolving. Contract rejection/budget vectors are specification tests, not physical data.\nHigh-Rsh endpoint uses a separately labeled Decimal ideal-Voc limit because\nexternal floating-point solvers fail there; no failed external run is adopted.\n Selected vector evidence class: independent_component. Solver-budget and analytic/invalid boundaries are explicitly specified numerical-policy tests, not field evidence. Witness selected only for exact-node reach/sensitivity; complete oracle pool is independently replayed.",
+  "tolerances": {
+    "absolute": 1e-15,
+    "relative": 1e-8
+  },
+  "referenceSource": {
+    "title": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+    "url": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+    "version": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+    "locator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation."
+  }
+}

@@ -261,6 +261,8 @@ Phases are dependency/acceptance stages, not deadlines. Each work package ends i
 
 ### Phase 3 — Validate model quality and eliminate architectural drift
 
+Execution started with an independent U05 reference/qualification slice; see [Phase3 status](PHASE-3-STATUS.md) and [execution plan](PHASE-3-PLAN.md). Phase2 remains incomplete; this independent experiment does not waive preceding exit/adoption gates.
+
 **Objective:** improve fidelity only where reference evidence supports it; do not confuse consolidation with validation. **Indicative effort:** 10–20 engineering days; data/source acquisition may extend it. Depends on Phase2 interfaces; independent experiments may begin earlier but cannot auto-adopt outputs.
 
 | Package | Work and experiment design | Acceptance/evidence boundary |

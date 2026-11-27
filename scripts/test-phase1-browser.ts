@@ -60,6 +60,13 @@ try {
  }
 
  await page.getByRole('button',{name:'EN',exact:true}).click();
+ await tab('iv_curve');
+ assert.match(await page.getByTestId('single-diode-qualification').innerText(),/gamma_Pmp is not fitted/);
+ const unshadedIvMetrics=await page.getByTestId('iv-curve-metrics').innerText();
+ await page.locator('#iv-partial-shading-checkbox').check();
+ assert.match(await page.getByText('Cosmetic illustration only:',{exact:false}).innerText(),/KPI values remain the unshaded model outputs/);
+ assert.equal(await page.getByTestId('iv-curve-metrics').innerText(),unshadedIvMetrics,'Cosmetic shading must not imply recalculated electrical metrics');
+
  await tab('iran_regulations');
  await page.locator('#iran-reg-interest-rate').fill('0');
  await page.locator('#iran-reg-debt-ratio').fill('35');

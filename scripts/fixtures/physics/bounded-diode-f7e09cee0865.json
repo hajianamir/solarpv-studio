@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f7e09cee0865",
+  "independentOfImplementation": true,
+  "productionExport": "evaluateDiodeState",
+  "inputs": [
+    {
+      "iph": 0.01,
+      "i0": 1e-15,
+      "rs": 4,
+      "rsh": 10000,
+      "a": 1.2
+    },
+    17.69802691092397
+  ],
+  "expected": {
+    "current": 0.008230194767177968,
+    "voltage": 17.66510613185526,
+    "power": 0.14538726404803862,
+    "powerDerivative": 0.006466938885011261
+  },
+  "independentCalculation": "Offline independent pvlib0.13.1 oracle for explicit reference diode solver.\n\nNo production TypeScript imports, execution or numerical targets. Source-pinned\nupstream parameter vectors; De Soto translation and Bishop88/brentq reference\nsolving. Contract rejection/budget vectors are specification tests, not physical data.\nHigh-Rsh endpoint uses a separately labeled Decimal ideal-Voc limit because\nexternal floating-point solvers fail there; no failed external run is adopted.\n Selected vector evidence class: independent_component. Solver-budget and analytic/invalid boundaries are explicitly specified numerical-policy tests, not field evidence. Witness selected only for exact-node reach/sensitivity; complete oracle pool is independently replayed.",
+  "tolerances": {
+    "absolute": 2e-7,
+    "relative": 1e-8
+  },
+  "referenceSource": {
+    "title": "pvlib0.13.1 De Soto translation and Bishop88 bounded implicit single diode reference",
+    "url": "https://github.com/pvlib/pvlib-python/blob/v0.13.1/pvlib/singlediode.py",
+    "version": "pvlib0.13.1; scipy1.15.3; upstream test vectors conftest.py",
+    "locator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation."
+  }
+}
