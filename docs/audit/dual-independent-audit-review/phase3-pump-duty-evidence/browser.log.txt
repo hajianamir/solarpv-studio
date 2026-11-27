@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:phase1:browser
+> tsx scripts/test-phase1-browser.ts
+
+PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence and custom Iranian policy/zero-interest/project-vs-equity NPV import/export. External providers blocked; not field validation.

@@ -1,0 +1,16 @@
+
+> solarpv-studio@1.0.3 verify:phase4:integration
+> node scripts/phase4-verification.mjs integration
+
+PASS npm run test:accepted-audit (1045ms)
+PASS npm run test:remaining (6643ms)
+PASS npm run test:recovery (5599ms)
+PASS npm run verify:exports (1198ms)
+PASS npm run test:browser (82473ms)
+PASS npm run test:ui (38179ms)
+PASS npm run test:pdf (5474ms)
+PASS npm run test:browser:download (378ms)
+PASS npm run test:uq:worker (1481ms)
+PASS npm run test:uq:archive (609ms)
+PASS npm run test:gateway (3272ms)
+Receipt: .cache/phase4/integration-2026-11-27T16-21-53-670Z-5784/receipt.json

@@ -1,5 +1,13 @@
 # Reconciliation of two independent audits and four-phase remediation plan
 
+## Current U19 continuation (task date2026-11-03)
+
+A separately selected steady-duty energy comparison now distinguishes hydraulic/shaft/motor-electrical/DC-input boundaries and aggregate deficit, without PSH-inferred runtime, legacy numeric changes or water/finance guarantees. The initially empty form is deliberately temporary and does not migrate/persist project policy. ADR-030 and `phase3-pump-duty-verification.json` record bounded evidence and stops; equipment curves, chronological water/solar feasibility and durable versioned selection remain open. **U19 PARTIAL; Phase2 INCOMPLETE; Phase3 PARTIAL; release BLOCKED.** Historical assessment/implementation statements below retain their original scope.
+
+## Current U16b/U16c continuation (task date 2026-11-03)
+
+On `arena/e2cfedea-solarpv-studio`, the current Iranian UI now selects an explicit full-precision conventional annual IRR assessment with named search domain, residual guard and unavailable reasons. Project/equity series use the existing unrounded ledgers; legacy public IRR fields, NPV, cash flows and saved settings remain compatible. This follows the separate qualified benefit-proxy precision continuation. ADR-029, the IRR assessment plan/reviews and `phase23-irr-verification.json` record bounded evidence and failures. No all-root/XIRR/global finance/whole-model acceptance follows from this change. **Phase2 INCOMPLETE; Phase3 PARTIAL; release BLOCKED.** The original assessment scope below and historical implementation snapshots remain unchanged as history, not the current patch description.
+
 ## 1. Scope, revision and decision
 
 **Reviewed code:** `0c4d7cadc7db6001459ea36fdf9a3d1403179a71` (main merge of PR #49). Working branch: `arena/6a50ab5f-solarpv-studio`.
@@ -283,6 +291,8 @@ Execution started with an independent U05 reference/qualification slice; see [Ph
 **Flag/rollback:** persisted explicit model versions and opt-in selectors for replacements; incompatible/stale saved results invalidated, not reinterpreted. Retain qualified screening adapters where safe. Disable a new model on reference failure without falling back silently to another calculation.
 
 ### Phase 4 — Full-system verification, traceability and release disposition
+
+Execution started through a bounded local verification slice; see [Phase4 plan](PHASE-4-PLAN.md) and [current status](PHASE-4-STATUS.md). Phase2/3 and required reference/platform release stops remain active.
 
 **Objective:** verify the exact final revision and issue a truthful release decision. **Indicative effort:** 5–8 engineering days plus external-runtime/data availability. Depends on accepted Phase1–3 scope; blocked models must have explicit non-adoption/disabled behavior.
 

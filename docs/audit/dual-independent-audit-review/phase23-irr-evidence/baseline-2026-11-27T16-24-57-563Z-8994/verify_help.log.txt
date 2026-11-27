@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 verify:help
+> tsx scripts/verify-help-source-references.ts
+
+[PASS] F1 has 22 page source maps; every referenced path and called code identifier exists.

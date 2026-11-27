@@ -269,15 +269,15 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
   solar_pumping: {
     en: {
       title: 'Solar water pumping',
-      inputs: 'Enter well depth, tank/head elevation, pipe length/diameter, daily water volume and irrigation type; the selected site’s PSH is also used. Use measured static/dynamic levels and actual pipe data where possible.',
-      method: 'The engine estimates flow as daily water volume ÷ (PSH × 0.90), adds static/elevation and Hazen–Williams pipe-friction head to form TDH, then estimates hydraulic power and pump/VFD sizing using its flow-based efficiency profile.',
-      limitations: 'The water source, drawdown, pressure demand, pump curve and seasonal water availability are not measured by this screen. Confirm the duty point with field tests and manufacturer curves.',
+      inputs: 'Legacy screen: enter well depth, tank elevation, pipe data, daily volume and irrigation type; site PSH is used only by that heuristic. The separate opt-in duty comparison requires explicit volume, constant TDH, runtime, density/gravity, pump/motor/drive efficiencies and DC energy; it copies no legacy defaults.',
+      method: 'Legacy nameplate/monthly heuristics remain unassessed. The explicit pump_steady_duty_energy_v1 comparison uses rho*g*V*H and separate efficiency stages to distinguish hydraulic, shaft, motor electrical and drive DC power/energy plus aggregate daily DC deficit.',
+      limitations: 'No aggregate deficit is not startup or water-delivery feasibility. Equipment curves, NPSH/drawdown, drive limits and chronology remain unassessed; synthetic monthly factors are not a forecast. Explicit comparison inputs are temporary and not saved in projects; no finance/annual-energy adoption.',
     },
     fa: {
       title: 'پمپاژ خورشیدی آب',
-      inputs: 'عمق چاه، ارتفاع مخزن/هد، طول و قطر لوله، حجم آب روزانه و نوع آبیاری را وارد کنید؛ PSH محل نیز استفاده می‌شود. در صورت امکان تراز ایستابی/دینامیکی و مشخصات واقعی لوله را اندازه بگیرید.',
-      method: 'موتور دبی را برابر حجم آب روزانه ÷ (PSH × ۰٫۹۰) برآورد می‌کند، هد استاتیک/ارتفاع و افت اصطکاک لولهٔ Hazen–Williams را برای TDH جمع می‌کند و سپس توان هیدرولیکی و پمپ/VFD را با پروفایل بازده تابع دبی تخمین می‌زند.',
-      limitations: 'منبع آب، افت سطح، فشار موردنیاز، منحنی پمپ و دسترسی فصلی آب در این صفحه اندازه‌گیری نمی‌شوند. نقطهٔ کار را با آزمون محل و منحنی سازنده تأیید کنید.',
+      inputs: 'مدل قدیمی از عمق، مخزن، لوله، حجم روزانه، نوع آبیاری و PSH محل استفاده می‌کند. مقایسه اختیاری جدید نیازمند حجم، هد ثابت، ساعات کار، چگالی/گرانش، راندمان پمپ/موتور/درایو و انرژی DC صریح است؛ هیچ فرض قدیمی کپی نمی‌شود.',
+      method: 'توان نامی و ضرایب ماهانه قدیمی تأیید نشده‌اند. مقایسه pump_steady_duty_energy_v1 با rho*g*V*H و مراحل راندمان جدا، توان و انرژی هیدرولیکی، محور، ورودی موتور و ورودی DC درایو و کسری تجمیعی روزانه را محاسبه می‌کند.',
+      limitations: 'نبود کسری تجمیعی، امکان راه‌اندازی یا آبدهی را ثابت نمی‌کند. منحنی تجهیزات، افت سطح/NPSH، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند؛ ضرایب ماهانه مصنوعی‌اند. ورودی مقایسه موقت است و در پروژه ذخیره نمی‌شود؛ انتقال مالی/انرژی سالانه ندارد.',
     },
   },
   iv_curve: {
@@ -345,7 +345,7 @@ export const HELP_SOURCE_REFERENCES: Record<string, string> = {
   scenarios: 'src/engine/scenarioEngine.ts — generateScenarios().',
   catalog: 'src/engine/catalogRepository.ts — CatalogRepository; src/engine/equipmentCatalogData.ts — built-in records.',
   iran_regulations: 'src/components/IranianRegulationsTab.tsx — reference display; no authority query/certification function.',
-  solar_pumping: 'src/engine/solarPumpEngine.ts — calculateSolarPump().',
+  solar_pumping: 'src/engine/solarPumpEngine.ts — calculateSolarPump() legacy screening; src/engine/core/pumpDutyEnergy.ts — assessPumpDutyEnergy() explicit steady-duty energy, not equipment/chronological validation.',
   iv_curve: 'src/engine/singleDiodeModel.ts — calculateSingleDiodeCurve().',
   rfc3_reports: 'src/components/RFC3ReportsTab.tsx — report composition and displayed checks; each check links to its engine module.',
 };

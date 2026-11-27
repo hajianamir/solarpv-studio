@@ -1,0 +1,45 @@
+
+> solarpv-studio@1.0.3 test:smoke
+> tsx scripts/smoke-test.ts
+
+================================================================================
+ SolarPV Studio v3.0 - Automated Module Integration & Runtime Smoke Test
+================================================================================
+
+[Step 1/5] Initializing API-Driven Climate Gateway and equipment catalogs (ADR-005)...
+  ✓ Dynamic Global Coordinates Tested: 10/10 (ADR-005 Pure API Model)
+  ✓ Default Site: Tehran (Default Engineering Site) (5.172432 PSH)
+  ✓ Equipment Catalog: 25 PV Modules, 33 Inverters
+  ✓ Default System Mode: 'powerplant' (Utility scale 1000 kW)
+  -> Status: SUCCESS [PASS]
+
+[Step 2/5] Verifying RFC 3.0 Continuous Compliance Mode...
+  ✓ Phantom Feature Flags removed per R5 (Continuous Compliance Mode active)
+  ✓ Benchmark Execution Rule: Independent of UI feature flags (Continuous Compliance Mode)
+  ✓ Modal Navigation Tabs verified: ['validation', 'lhs_stats', 'migration', 'registry', 'unit_tests']
+  -> Status: SUCCESS [PASS]
+
+[Step 3/5] Running internal stored-target comparison harness (not an independent validation)...
+  ✓ Stored-target comparison harness: [WARN] (5/6 passed; not independent validation)
+  ✓ Live Bifacial 2.5D View-Factor: 9.22% gain, latency: 0.202 ms
+  ✓ Total Benchmark Execution Time: 9.79 ms
+  -> Executable smoke status: SUCCESS [PASS]; stored-target evidence retains WARN, not physics validation.
+
+[Step 4/5] Loading legacy v2 project vector (MIGR-01-POWERPLANT-1MW)...
+  ✓ Migration Status: [RECOVERED_WITH_WARNINGS]
+  ✓ Trace ID: MIGR-mwz85xsp-9a01b1a5-8518-4e00-9cf7-cd169a483735
+  ✓ Warnings Generated: 31 warning(s)
+  ✓ Confirmation Required: true
+  ✓ Target Powerplant Capacity: 1000 kW
+  -> Status: SUCCESS [PASS]
+
+[Step 5/5] Loading physically inconsistent payload (MIGR-05-CORRUPTED-INCONSISTENT)...
+  ✓ Migration Status: [BLOCKED_INCONSISTENT]
+  ✓ Trace ID: MIGR-mwz85xtb-c55661cf-81dd-49a3-a72f-048f2b83c756
+  ✓ Blocker Reason: "Physical contradiction: targetPowerplantCapacityKw is non-positive (-50 kW)"
+  ✓ UI Action: Mutation blocked, error toast displayed, zero state pollution.
+  -> Status: SUCCESS [PASS]
+
+================================================================================
+ SMOKE TEST RESULT: 5/5 IN-MEMORY INTEGRATION SCENARIOS PASSED (NOT BROWSER E2E)
+================================================================================

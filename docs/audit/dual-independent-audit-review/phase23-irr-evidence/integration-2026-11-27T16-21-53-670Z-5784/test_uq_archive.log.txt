@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:uq:archive
+> tsx scripts/test-financial-uq-archive.ts
+
+PASS UQ archive: canonical versioned migration, exact replay, input/result/code/context hashes, immutable roundtrip, tamper/duplicate/size/nonfinite/unknown-schema rejection

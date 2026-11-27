@@ -1,0 +1,23 @@
+
+> solarpv-studio@1.0.3 test:phase1:browser
+> tsx scripts/test-phase1-browser.ts
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /cash-flow ledger retains full precision/. Input:
+
+'این برآورد فرضی از ورودی انرژی سالانه نشان‌داده‌شده در بالا استفاده می‌کند، نه جایگزین روز نماینده × ۳۶۵ یا پیش‌بینی ساعتی معتبر. دفتر محاسبات انرژی و جریان نقدی دقت کامل را حفظ می‌کند؛ فقط ردیف‌های نمایشی تولید به مگاوات‌ساعت صحیح و مبالغ به میلیون تومان گرد می‌شوند. LCOE قدیمی همچنان یک مقدار گرد‌شده است.'
+
+    at check (/home/user/solarpv-studio/scripts/test-phase1-browser.ts:69:10)
+    at async <anonymous> (/home/user/solarpv-studio/scripts/test-phase1-browser.ts:73:11) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'این برآورد فرضی از ورودی انرژی سالانه نشان‌داده‌شده در بالا استفاده می‌کند، نه جایگزین روز نماینده × ۳۶۵ یا پیش‌بینی ساعتی معتبر. دفتر محاسبات انرژی و جریان نقدی دقت کامل را حفظ می‌کند؛ فقط ردیف‌های نمایشی تولید به مگاوات‌ساعت صحیح و مبالغ به میلیون تومان گرد می‌شوند. LCOE قدیمی همچنان یک مقدار گرد‌شده است.',
+  expected: /cash-flow ledger retains full precision/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

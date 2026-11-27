@@ -2027,6 +2027,492 @@
       "referenceLocator": "bishop88, bishop88_v_from_i, bishop88_mpp; pvsystem.calcparams_desoto/singlediode. Diode voltage x=V+I*Rs; I/V/P and dp/dx from independent reference. Per-module STC to string conditions. Contract/budget vectors and Decimal ideal-Voc limiting witness are separately labeled; not external whole-model validation."
     },
     {
+      "formulaId": "src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#666c44e04193",
+      "fixtureFile": "scripts/fixtures/physics/iranian-benefit-666c44e04193.json",
+      "productionExport": "evaluateIranianBenefitIndicators",
+      "referenceTitle": "Independent 60-digit Decimal dimensional arithmetic for explicitly assumed screening rates",
+      "referenceUrl": "https://docs.python.org/3/library/decimal.html",
+      "referenceVersion": "Python decimal, precision 60",
+      "referenceLocator": "MWh * 1000 kWh/MWh * Toman/kWh / 1000000 Toman/million; kWp * million Toman/kWp. Exact decimal unit conversion, not tariff/avoided-loss validation."
+    },
+    {
+      "formulaId": "src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#78a2d0dbd3a1",
+      "fixtureFile": "scripts/fixtures/physics/iranian-benefit-78a2d0dbd3a1.json",
+      "productionExport": "evaluateIranianBenefitIndicators",
+      "referenceTitle": "Independent 60-digit Decimal dimensional arithmetic for explicitly assumed screening rates",
+      "referenceUrl": "https://docs.python.org/3/library/decimal.html",
+      "referenceVersion": "Python decimal, precision 60",
+      "referenceLocator": "MWh * 1000 kWh/MWh * Toman/kWh / 1000000 Toman/million; kWp * million Toman/kWp. Exact decimal unit conversion, not tariff/avoided-loss validation."
+    },
+    {
+      "formulaId": "src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#9b200709e029",
+      "fixtureFile": "scripts/fixtures/physics/iranian-benefit-9b200709e029.json",
+      "productionExport": "evaluateIranianBenefitIndicators",
+      "referenceTitle": "Independent 60-digit Decimal dimensional arithmetic for explicitly assumed screening rates",
+      "referenceUrl": "https://docs.python.org/3/library/decimal.html",
+      "referenceVersion": "Python decimal, precision 60",
+      "referenceLocator": "MWh * 1000 kWh/MWh * Toman/kWh / 1000000 Toman/million; kWp * million Toman/kWp. Exact decimal unit conversion, not tariff/avoided-loss validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#00a3777b7872",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-00a3777b7872.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#054e87ddf650",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-054e87ddf650.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#06b488bff3c9",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-06b488bff3c9.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#084def5a9fe1",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-084def5a9fe1.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#13df65eee5de",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-13df65eee5de.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#1bb74ab4944f",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-1bb74ab4944f.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#27ddcd5f6aad",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-27ddcd5f6aad.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#3137568ff2e3",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-3137568ff2e3.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#31dab05bbf43",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-31dab05bbf43.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#38e61125f124",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-38e61125f124.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#3c86e0eee434",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-3c86e0eee434.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#3fa784ecb9e4",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-3fa784ecb9e4.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#5273bc3461e1",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-5273bc3461e1.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#6b077a52a709",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-6b077a52a709.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#6cec279b06af",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-6cec279b06af.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#6faf7452ef4b",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-6faf7452ef4b.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#71a2ac75bc38",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-71a2ac75bc38.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#783fab0c271b",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-783fab0c271b.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#8e3b6339ba05",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-8e3b6339ba05.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#a46a4574ad6d",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-a46a4574ad6d.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#aa2abbbed1c5",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-aa2abbbed1c5.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#bd08f1fbf0e6",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-bd08f1fbf0e6.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#e964eea98ff0",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-e964eea98ff0.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#e9823240b0dc",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-e9823240b0dc.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#ef9d6d03a7df",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-ef9d6d03a7df.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#f03d6cfcba8e",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-f03d6cfcba8e.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#fabf17a15639",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-fabf17a15639.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#fb17c73969c3",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-fb17c73969c3.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#fc308309f3cd",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-fc308309f3cd.json",
+      "productionExport": "assessPeriodicIrr",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#3f76523c1b2e",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-3f76523c1b2e.json",
+      "productionExport": "evaluatePeriodicNpv",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#84228b48cc0c",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-84228b48cc0c.json",
+      "productionExport": "evaluatePeriodicNpv",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#95042c99d6d4",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-95042c99d6d4.json",
+      "productionExport": "evaluatePeriodicNpv",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#974f9baf6141",
+      "fixtureFile": "scripts/fixtures/physics/periodic-irr-974f9baf6141.json",
+      "productionExport": "evaluatePeriodicNpv",
+      "referenceTitle": "Periodic cash-flow IRR equation and independent Decimal bisection",
+      "referenceUrl": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "referenceVersion": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+      "referenceLocator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#05f8b69d8881",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-05f8b69d8881.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#11a977d37072",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-11a977d37072.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#1406d30c54b7",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-1406d30c54b7.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#333f9bfdd296",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-333f9bfdd296.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#34feadf8240b",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-34feadf8240b.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#4bfe92046bc3",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-4bfe92046bc3.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#4ee4547e71b3",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-4ee4547e71b3.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#5018c66ff417",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-5018c66ff417.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#5cde07ddb1d2",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-5cde07ddb1d2.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#6278ebd4df20",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-6278ebd4df20.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#6fac04b9b615",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-6fac04b9b615.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#a5b9afbebd52",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-a5b9afbebd52.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c418006bf49d",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-c418006bf49d.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c42994af6dd0",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-c42994af6dd0.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c972fb52ae3c",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-c972fb52ae3c.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#ca99f73525a6",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-ca99f73525a6.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#efa30bb53b6b",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-efa30bb53b6b.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
+      "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#ffdaec5ddf08",
+      "fixtureFile": "scripts/fixtures/physics/pump-duty-energy-ffdaec5ddf08.json",
+      "productionExport": "assessPumpDutyEnergy",
+      "referenceTitle": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+      "referenceUrl": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+      "referenceVersion": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+      "referenceLocator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+    },
+    {
       "formulaId": "src/engine/financialEngine.ts#performFinancialAnalysis#07cbbf982780",
       "fixtureFile": "scripts/fixtures/physics/grid-import-07cbbf982780.json",
       "productionExport": "performFinancialAnalysis",

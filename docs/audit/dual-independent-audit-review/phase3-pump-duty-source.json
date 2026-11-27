@@ -1,0 +1,11 @@
+{
+  "repository": "OpenWaterAnalytics/EPANET",
+  "commit": "4d8d82ddc260fce216af9321fc3d9a4646ac6827",
+  "path": "src/hydraul.c",
+  "url": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+  "sha256": "382e465b8947e115e307626db8a33f384e680f77925aa7d0f70d119db9e4d01b",
+  "bytes": 32358,
+  "method": "GitHub contents API, base64 decoded; source inspected, EPANET not executed",
+  "locator": "getenergy and addenergy",
+  "qualification": "US customary aggregate-efficiency head*flow power and power*time energy context. Does not validate SI inputs, separate stage efficiencies, pump curves, VFD duties or PV chronology."
+}

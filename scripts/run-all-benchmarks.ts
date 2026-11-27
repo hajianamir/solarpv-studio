@@ -186,26 +186,17 @@ if (!claytonGuarded) {
   process.exit(1);
 }
 
-// Test 4.3: Kurtosis & Tail-Thickness Verification (Student-t vs Gaussian)
-const nSamples = 10000;
-const nu = 5; // Theoretical kurtosis = 3*(5-2)/(5-4) = 9.0
-const samplesGauss = sampleBivariateCopula('gaussian_copula', 0.25, nSamples, 5, 42);
-const samplesStudent = sampleBivariateCopula('students_t_copula', 0.25, nSamples, nu, 42);
-
+// Test 4.3: Gaussian regression and explicit Student-t retirement.
+// Latent kurtosis never established uniform copula margins. The former tail check
+// is replaced by the fail-closed policy, not relabeled as scientific validation.
+const samplesGauss = sampleBivariateCopula('gaussian_copula', 0.25, 10000, 5, 42);
 const kurtGauss = calculateSampleKurtosis(samplesGauss.map(s => s.latent1));
-const kurtStudent = calculateSampleKurtosis(samplesStudent.map(s => s.latent1));
-const kurtosisRatio = kurtStudent / kurtGauss;
-const excessKurtGauss = kurtGauss - 3.0;
-const excessKurtStudent = kurtStudent - 3.0;
-
-console.log(`• Gaussian Sample Kurtosis:   ${kurtGauss.toFixed(3)} (Excess Kurtosis: ${excessKurtGauss.toFixed(3)})`);
-console.log(`• Student's t (nu=5) Kurtosis: ${kurtStudent.toFixed(3)} (Excess Kurtosis: ${excessKurtStudent.toFixed(3)})`);
-console.log(`• Tail Heaviness Factor:      ${kurtosisRatio.toFixed(2)}x heavier tails on t-copula (Kurtosis > Gaussian) -> [PASS]\n`);
-
-if (kurtStudent <= kurtGauss) {
-  console.error('FATAL: Student-t copula failed to generate higher kurtosis than Gaussian');
-  process.exit(1);
-}
+console.log(`• Gaussian latent sample kurtosis (diagnostic only): ${kurtGauss.toFixed(3)}`);
+let studentRetired = false;
+try { sampleBivariateCopula('students_t_copula', .25, 10000, 5, 42); }
+catch (error) { studentRetired = error instanceof Error && error.message === 'UQ_STUDENT_T_RETIRED_INVALID_MARGINAL_TRANSFORM'; }
+if (!studentRetired) throw new Error('Student-t must not execute or silently fall back to Gaussian');
+console.log('• Student-t retirement: new execution rejected; no Gaussian fallback -> [PASS]');
 
 // -----------------------------------------------------------------------------
 // 5. Internal Screening Sensitivity / Regression Checks

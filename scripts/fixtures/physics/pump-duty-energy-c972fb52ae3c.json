@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c972fb52ae3c",
+  "independentOfImplementation": true,
+  "productionExport": "assessPumpDutyEnergy",
+  "inputs": [
+    {
+      "modelPolicy": "pump_steady_duty_energy_v1",
+      "powerBoundary": "dc_bus_to_vfd",
+      "dailyWaterVolumeM3": 0.5,
+      "totalDynamicHeadM": 0,
+      "pumpingHoursPerDay": 0.25,
+      "densityKgPerM3": 1000,
+      "gravityMPerS2": 9.81,
+      "pumpHydraulicEfficiency": 0.6,
+      "motorEfficiency": 0.8,
+      "driveEfficiency": 0.95,
+      "availableDcEnergyKwhPerDay": 0
+    }
+  ],
+  "expected": {
+    "status": "available",
+    "input": {
+      "modelPolicy": "pump_steady_duty_energy_v1",
+      "powerBoundary": "dc_bus_to_vfd",
+      "dailyWaterVolumeM3": 0.5,
+      "totalDynamicHeadM": 0,
+      "pumpingHoursPerDay": 0.25,
+      "densityKgPerM3": 1000,
+      "gravityMPerS2": 9.81,
+      "pumpHydraulicEfficiency": 0.6,
+      "motorEfficiency": 0.8,
+      "driveEfficiency": 0.95,
+      "availableDcEnergyKwhPerDay": 0
+    },
+    "modelPolicy": "pump_steady_duty_energy_v1",
+    "powerBoundary": "dc_bus_to_vfd",
+    "flowRateM3PerHour": 2,
+    "hydraulicEnergyKwhPerDay": 0,
+    "hydraulicPowerKw": 0,
+    "pumpShaftPowerKw": 0,
+    "motorElectricalPowerKw": 0,
+    "driveDcInputPowerKw": 0,
+    "pumpShaftEnergyKwhPerDay": 0,
+    "motorElectricalEnergyKwhPerDay": 0,
+    "requiredDcEnergyKwhPerDay": 0,
+    "dailyDcEnergyDeficitKwh": 0,
+    "dailyEnergyBalance": "no_aggregate_deficit",
+    "equipmentReadiness": "unassessed",
+    "chronologicalWaterDelivery": "unassessed",
+    "waterDeliveryGuaranteed": false,
+    "financialAdoptionEligible": false
+  },
+  "independentCalculation": "Independent 60-digit Decimal steady-duty SI energy accounting.\nNo production imports/execution/network. Direct Joule/day arithmetic and explicit\nstage efficiency products; no equipment curve or field/annual applicability claim.\n",
+  "tolerances": {
+    "absolute": 1e-10,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "Steady-duty hydraulic work identity and explicit efficiency-stage accounting",
+    "url": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydraul.c",
+    "version": "EPANET2.2 getenergy reference context; independent Decimal SI identity v1",
+    "locator": "getenergy: power proportional to flow*head*specific gravity divided by aggregate efficiency (US customary). Here explicit SI work=rho*g*V*H joules; joules/3600000=kWh. Declared pump/motor/drive stage efficiencies are test inputs, not source equipment data."
+  }
+}

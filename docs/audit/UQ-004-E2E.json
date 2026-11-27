@@ -4,7 +4,7 @@
   "surface": "Full production App + Express server + real dedicated Worker; offline App reload",
   "parity": "All fields except clock-based traceId exactly equal direct legacy engine",
   "responsiveness": {
-    "ticks": 36,
+    "ticks": 34,
     "ok": true
   },
   "checks": [
@@ -19,7 +19,7 @@
     "energy-source unchanged",
     "offline worker after App reload"
   ],
-  "manifestBytes": 18399,
+  "manifestBytes": 25739,
   "notTested": [
     "native Safari",
     "all unrelated application features"

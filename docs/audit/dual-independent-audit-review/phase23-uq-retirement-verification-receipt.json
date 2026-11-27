@@ -1,0 +1,445 @@
+{
+  "schemaVersion": "phase23-uq-retirement-verification-v1",
+  "taskDate": "2026-11-03",
+  "baseCheckout": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+  "branch": "arena/e2cfedea-solarpv-studio",
+  "revision": "uncommitted working tree; executable-input manifest and artifact hashes identify scope",
+  "clockQualification": "Run timestamps are sandbox clock observations, including 2026-11-27 values; no wall-clock attestation.",
+  "implementation": "Retired Student-t public/Worker execution and versioned archive compatibility implemented; Gaussian arithmetic unchanged",
+  "verification": "Targeted retirement/archive/actual-Worker/production-UQ-browser checks pass. Baseline 13/13 pass. Integration attempt 10/11 pass, broad browser times out at project save; exact unchanged isolated browser rerun passes. Underlying intermittent cause not established; original failed receipt retained.",
+  "release": "BLOCKED",
+  "artifactSha256": {
+    "src/contracts/financialUqExecutionPolicy.ts": "1053cba09ea0c21e833fcb6129e5e9bffe40c36463f0dbf3be0cda7110b5f57e",
+    "src/engine/core/uncertaintyPropagation.ts": "e8ca4b65fe454058a1810d96cba59b3f7ef071d6391d4d270e86116ae4add269",
+    "src/studies/financialUqRunner.ts": "5eecacf57da080ebdc97aefa593fe4c75c8bd1b814eb37ebdfcb8f26ea9649e8",
+    "src/studies/financialUqArchive.ts": "5740fe0373c4edc36e03b271d519c9cf0a5621f7e1ddbff9fb1d33bfbf4ebd53",
+    "src/components/FinancialUqArchivePanel.tsx": "837f7f8186f46e906c0c1a388070c766c7cd0b285d08c8ef56cbd37854d7389b",
+    "scripts/run-all-benchmarks.ts": "1dc873ed9db2ff09134659c91b2779e0296074fbdf8bd77ca7a8641ca5ce6819",
+    "scripts/test-financial-uq-retirement.ts": "9ef297a2eb014cde46d17209c836dab19628ada71c23909c0a6c49efef9ea032",
+    "scripts/test-financial-uq-worker.ts": "d06ca962b1fb184a16fee33ee2b4193dbb09f9bd930920373132238351a507b2",
+    "scripts/test-financial-uq-e2e.ts": "75607a2695af6129d488a4da1d3dd2780f6cfeb02d6745b7a3da23b42e595eca",
+    "scripts/fixtures/generate-retired-uq-archive.ts": "44a3405ec5954a085de40365ffa5ba8e57c785e09b1bc0389a6ce5dd8ce2e551",
+    "scripts/fixtures/financial-uq-retirement.json": "190dffe13358b58d15e1c00469dabc62fdb27219b4884303da594904b424911f",
+    ".github/workflows/uq-acceptance.yml": "ffa649584ae0e26df7aa20387f86bb01ca10112d663fc57e7a87aed4d0ea9830",
+    "package.json": "b6dd0e60d5e11e82d42120cb43b286f79bb7cd17deb6d7b2c4bcdcf7641468c4"
+  },
+  "sourceManifestSha256": "576c01ed4b28587092d6aca47e8fb2ea8550f8828989871fc439d841277244ca",
+  "runs": [
+    {
+      "schemaVersion": "phase4-local-verification-v1",
+      "suite": "baseline",
+      "startedAt": "2026-11-27T12:02:01.081Z",
+      "checkout": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+      "branch": "arena/e2cfedea-solarpv-studio",
+      "initialWorkingTree": " M .github/workflows/uq-acceptance.yml\n M CHANGELOG.md\n M docs/audit/dual-independent-audit-review/REPORT-AND-FOUR-PHASE-PLAN.md\n M docs/audit/dual-independent-audit-review/current-implementation-evidence.json\n M docs/features/UQ-005-REPRODUCIBILITY.fa.md\n M package.json\n M scripts/run-all-benchmarks.ts\n M scripts/test-financial-uq-e2e.ts\n M scripts/test-financial-uq-worker.ts\n M src/components/FinancialUqArchivePanel.tsx\n M src/engine/core/uncertaintyPropagation.ts\n M src/studies/financialUqArchive.ts\n M src/studies/financialUqRunner.ts\n?? docs/adr/ADR-027-retire-invalid-student-t-execution.md\n?? docs/audit/dual-independent-audit-review/PHASE-2-3-REMAINING-EXECUTION.md\n?? docs/audit/dual-independent-audit-review/PHASE-4-PLAN.md\n?? docs/audit/dual-independent-audit-review/PHASE-4-STATUS.md\n?? docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json\n?? docs/audit/dual-independent-audit-review/phase4-start-verification-receipt.json\n?? scripts/fixtures/financial-uq-retirement.json\n?? scripts/fixtures/generate-retired-uq-archive.ts\n?? scripts/phase4-verification.mjs\n?? scripts/test-financial-uq-retirement.ts\n?? scripts/test-phase4-verification.mjs\n?? src/contracts/financialUqExecutionPolicy.ts\n",
+      "runtime": {
+        "node": "v22.22.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "packageScriptsSha256": "678b1e9a4c2bc2dcb6efdf3e5065ca3657c806ad97a354034953a1e4b2f51383",
+      "lockfileSha256": "cebfe714b44bc31c4ec32ec39ccb5264d352e45c7d5b2ad2bbd9559dc3bf8087",
+      "sourceBefore": {
+        "sha256": "b63f9da71cf56b9507ce472d9133da732a592e35cc0eaa7b3da4741b15bfe32b",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase23-uq-retirement-source-manifest.json",
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets."
+      },
+      "results": [
+        {
+          "script": "test:phase4",
+          "definition": "node scripts/test-phase4-verification.mjs",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 232,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/test_phase4.log",
+          "logSha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+        },
+        {
+          "script": "lint",
+          "definition": "npm run lint:types && npm run lint:eslint",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 46359,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/lint.log",
+          "logSha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+        },
+        {
+          "script": "build",
+          "definition": "vite build",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 22856,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/build.log",
+          "logSha256": "86574f15b2aec695d4df1ec3874ed8bfeb2f526e131fc43de5762168f335bc13"
+        },
+        {
+          "script": "test",
+          "definition": "tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 28348,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/test.log",
+          "logSha256": "57537e5cbe83a91278ace448a1d92eba5cfac4b1f65d798d56ebc3c1a54c6eae"
+        },
+        {
+          "script": "test:smoke",
+          "definition": "tsx scripts/smoke-test.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 488,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/test_smoke.log",
+          "logSha256": "02efdb06d2bbd05130090869b717b8d5092bcdc8e06b303d48595945bb6bdbfa"
+        },
+        {
+          "script": "test:coverage",
+          "definition": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 48245,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/test_coverage.log",
+          "logSha256": "cc29ffbe7abc203936e56d364738652ba224fb52101585d36662e7f483c1637d"
+        },
+        {
+          "script": "test:phase1",
+          "definition": "tsx scripts/test-phase1-boundaries.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1702,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/test_phase1.log",
+          "logSha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db"
+        },
+        {
+          "script": "test:phase2",
+          "definition": "tsx scripts/test-phase2-uplift.ts && tsx scripts/test-phase2-thermal.ts && tsx scripts/test-phase2-lightning.ts && tsx scripts/test-phase2-cable.ts && tsx scripts/test-phase2-broms.ts && tsx scripts/test-phase2-finance.ts && tsx scripts/test-phase2-thermal-owner.ts && tsx scripts/test-phase2-hemisphere.ts && tsx scripts/test-phase2-clipping.ts && tsx scripts/test-phase2-lcoe.ts && tsx scripts/test-phase2-mppt-current.ts && tsx scripts/test-phase2-named-waterfall.ts && tsx scripts/test-phase2-transposition.ts && tsx scripts/test-phase2-iranian-policy.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 14261,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/test_phase2.log",
+          "logSha256": "8be9ade7d3a711d8d226ef09eff6d3ea13be4837453061bba9430713de8f9661"
+        },
+        {
+          "script": "test:phase3",
+          "definition": "tsx scripts/test-phase3-single-diode.ts && tsx scripts/test-bounded-diode.ts && npm run test:uq:convergence && npm run test:phase3:research && npm run test:uq:retirement",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 7095,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/test_phase3.log",
+          "logSha256": "98717b6b12ada3b6ff49cd79ae876236b55fed7446f2116f769d0a249b0f4673"
+        },
+        {
+          "script": "verify:phase1-evidence",
+          "definition": "tsx scripts/phase1-evidence-inventory.ts --check",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1691,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/verify_phase1-evidence.log",
+          "logSha256": "665d3dcc9f8917c5d419eaa73d989d368ea2516c542f30b4056afb17701517c5"
+        },
+        {
+          "script": "verify:physics-reference-gate",
+          "definition": "python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 9095,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/verify_physics-reference-gate.log",
+          "logSha256": "6f31fda1eeebf8b743a5fa6c3228dc0d2f57f5e0b6267889eac34ce5078fec55"
+        },
+        {
+          "script": "verify:help",
+          "definition": "tsx scripts/verify-help-source-references.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 289,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/verify_help.log",
+          "logSha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+        },
+        {
+          "script": "verify:engine-claims",
+          "definition": "tsx scripts/verify-engine-claims.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 445,
+          "log": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/verify_engine-claims.log",
+          "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+        }
+      ],
+      "scope": "Sequential local verification only; logs may contain project/test data and remain in ignored cache. Historical receipts are not rerun evidence.",
+      "sourceAfter": {
+        "sha256": "b63f9da71cf56b9507ce472d9133da732a592e35cc0eaa7b3da4741b15bfe32b",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase23-uq-retirement-source-manifest.json",
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets."
+      },
+      "sourceStable": true,
+      "finishedAt": "2026-11-27T12:05:02.330Z",
+      "assessment": {
+        "softwareChecks": "PASS_WITHIN_SELECTED_SUITE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "originalReceiptPath": ".cache/phase4/baseline-2026-11-27T12-02-01-081Z-13338/receipt.json",
+      "originalReceiptSha256": "f1196ccfadd42fd5e9e670c7ec69a28921578087c58bbf2c749f159b74036f33"
+    },
+    {
+      "schemaVersion": "phase4-local-verification-v1",
+      "suite": "integration",
+      "startedAt": "2026-11-27T12:05:02.465Z",
+      "checkout": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+      "branch": "arena/e2cfedea-solarpv-studio",
+      "initialWorkingTree": " M .github/workflows/uq-acceptance.yml\n M CHANGELOG.md\n M docs/audit/dual-independent-audit-review/REPORT-AND-FOUR-PHASE-PLAN.md\n M docs/audit/dual-independent-audit-review/current-implementation-evidence.json\n M docs/features/UQ-005-REPRODUCIBILITY.fa.md\n M package.json\n M scripts/run-all-benchmarks.ts\n M scripts/test-financial-uq-e2e.ts\n M scripts/test-financial-uq-worker.ts\n M src/components/FinancialUqArchivePanel.tsx\n M src/engine/core/uncertaintyPropagation.ts\n M src/studies/financialUqArchive.ts\n M src/studies/financialUqRunner.ts\n?? docs/adr/ADR-027-retire-invalid-student-t-execution.md\n?? docs/audit/dual-independent-audit-review/PHASE-2-3-REMAINING-EXECUTION.md\n?? docs/audit/dual-independent-audit-review/PHASE-4-PLAN.md\n?? docs/audit/dual-independent-audit-review/PHASE-4-STATUS.md\n?? docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json\n?? docs/audit/dual-independent-audit-review/phase4-start-verification-receipt.json\n?? scripts/fixtures/financial-uq-retirement.json\n?? scripts/fixtures/generate-retired-uq-archive.ts\n?? scripts/phase4-verification.mjs\n?? scripts/test-financial-uq-retirement.ts\n?? scripts/test-phase4-verification.mjs\n?? src/contracts/financialUqExecutionPolicy.ts\n",
+      "runtime": {
+        "node": "v22.22.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "packageScriptsSha256": "678b1e9a4c2bc2dcb6efdf3e5065ca3657c806ad97a354034953a1e4b2f51383",
+      "lockfileSha256": "cebfe714b44bc31c4ec32ec39ccb5264d352e45c7d5b2ad2bbd9559dc3bf8087",
+      "sourceBefore": {
+        "sha256": "b63f9da71cf56b9507ce472d9133da732a592e35cc0eaa7b3da4741b15bfe32b",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase23-uq-retirement-source-manifest.json",
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets."
+      },
+      "results": [
+        {
+          "script": "test:accepted-audit",
+          "definition": "tsx scripts/test-accepted-vmp-audit.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 827,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_accepted-audit.log",
+          "logSha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89"
+        },
+        {
+          "script": "test:remaining",
+          "definition": "tsx scripts/test-remaining-product-fixes.ts && tsx scripts/test-remaining-shading-lifecycle.ts && tsx scripts/test-remaining-poa-http.ts && tsx scripts/test-remaining-worker-browser.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 4310,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_remaining.log",
+          "logSha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547"
+        },
+        {
+          "script": "test:recovery",
+          "definition": "tsx scripts/test-snapshot-recovery.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 5293,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_recovery.log",
+          "logSha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+        },
+        {
+          "script": "verify:exports",
+          "definition": "tsx scripts/verify-export-artifact-readback.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 939,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/verify_exports.log",
+          "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+        },
+        {
+          "script": "test:browser",
+          "definition": "tsx scripts/test-browser-regressions.ts",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 55132,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_browser.log",
+          "logSha256": "5d22de27547326d66916ee6f7db3c59b24eaf1b2be6e4de8a2486c5cdac2de09"
+        },
+        {
+          "script": "test:ui",
+          "definition": "tsx scripts/test-ui-refresh-browser.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 38043,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_ui.log",
+          "logSha256": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a"
+        },
+        {
+          "script": "test:pdf",
+          "definition": "tsx scripts/test-report-pdf.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 5387,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_pdf.log",
+          "logSha256": "c31240f7ebc04464487cbe33f8d47c857b76c869137d3384016c33459807647f"
+        },
+        {
+          "script": "test:browser:download",
+          "definition": "tsx scripts/test-browser-download.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 275,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_browser_download.log",
+          "logSha256": "e78ef663c5ddb7b09abf261382d0bc69759be1ebdde7ddb120d7ebe0c4c8ea6c"
+        },
+        {
+          "script": "test:uq:worker",
+          "definition": "tsx scripts/test-financial-uq-worker.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1317,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_uq_worker.log",
+          "logSha256": "7d83fc9289bde9e70b60f44bbe8e34cbf2447578546cec5148cffbd6c64e583c"
+        },
+        {
+          "script": "test:uq:archive",
+          "definition": "tsx scripts/test-financial-uq-archive.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 541,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_uq_archive.log",
+          "logSha256": "1f88aafbbe815437fcc1efaed74682801b422eb81dc99d128e8bda98b71f7f34"
+        },
+        {
+          "script": "test:gateway",
+          "definition": "tsx scripts/test-data-gateway-regressions.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 3233,
+          "log": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/test_gateway.log",
+          "logSha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+        }
+      ],
+      "scope": "Sequential local verification only; logs may contain project/test data and remain in ignored cache. Historical receipts are not rerun evidence.",
+      "sourceAfter": {
+        "sha256": "b63f9da71cf56b9507ce472d9133da732a592e35cc0eaa7b3da4741b15bfe32b",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase23-uq-retirement-source-manifest.json",
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets."
+      },
+      "sourceStable": true,
+      "finishedAt": "2026-11-27T12:06:57.890Z",
+      "assessment": {
+        "softwareChecks": "FAILED_OR_INCOMPLETE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "originalReceiptPath": ".cache/phase4/integration-2026-11-27T12-05-02-465Z-17445/receipt.json",
+      "originalReceiptSha256": "3fcb30b7d7c474af892f6ba78e595002bec368775078cff46dbe7e7e2367fc59"
+    }
+  ],
+  "extraCommands": [
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "log": ".cache/phase23-retirement/build.log"
+    },
+    {
+      "command": "npm run test:uq:e2e",
+      "exitCode": 0,
+      "log": ".cache/phase23-retirement/test_uq_e2e.log"
+    },
+    {
+      "command": "npm run test:browser (isolated unchanged rerun)",
+      "exitCode": 0,
+      "log": ".cache/phase23-retirement/browser-rerun.log"
+    },
+    {
+      "command": "npm run test:uq:retirement",
+      "exitCode": 0,
+      "scope": "direct focused execution, also executed/logged inside baseline test:phase3"
+    },
+    {
+      "command": "npm run test:uq:worker",
+      "exitCode": 0,
+      "scope": "direct focused execution and integration command log"
+    },
+    {
+      "command": "npm run test:uq:archive",
+      "exitCode": 0,
+      "scope": "direct focused execution and integration command log"
+    },
+    {
+      "command": "npx tsx scripts/fixtures/generate-retired-uq-archive.ts --check",
+      "exitCode": 0,
+      "log": ".cache/phase23-retirement/historical-fixture-check.log"
+    },
+    {
+      "command": "npm run verify:phase1-evidence",
+      "exitCode": 0,
+      "log": ".cache/phase23-retirement/final-inventory.log"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "extraLogSha256": {
+    ".cache/phase23-retirement/verify_phase4_baseline.log": "58420146671bdaa8aef4ac9c4dfe24aeb32f7390a8fba440b54cc1878352c0b3",
+    ".cache/phase23-retirement/build.log": "0ae40a5e00577d9d1754d19eb596be2884337bde2909a6f17f7d8e0175205d1d",
+    ".cache/phase23-retirement/verify_phase4_integration.log": "cf9f1b7dde9fc9b15b123bc8370a167885dd4b5cc6ae2faac56825072a4f6820",
+    ".cache/phase23-retirement/test_uq_e2e.log": "6f3c4f23282b20ad43a910ca60148165120dcc8c63e6c364eec80b9976f0fb5f",
+    ".cache/phase23-retirement/browser-rerun.log": "c221ae8441bb50995400827fe87c8457a1d019736295c017e3536ed7c18dafc7",
+    ".cache/phase23-retirement/final-inventory.log": "665d3dcc9f8917c5d419eaa73d989d368ea2516c542f30b4056afb17701517c5",
+    ".cache/phase23-retirement/historical-fixture-check.log": "01f2529e286226531297b5fe0f61353f771e30867b6fc299aa4b35d7d0f378c8"
+  },
+  "scientificFollowup": {
+    "sourceUrl": "https://github.com/scipy/scipy/blob/e29dcb65a2040f04819b426a04b60d44a8f69c04/scipy/stats/_continuous_distns.py",
+    "refetchedSourceSha256": "4011a3b7e9308639b3537f9766d9e42525f2e0a0ba88893b0defe4dd364215fe",
+    "hashMatchedPriorManifest": true,
+    "observation": "Student-t CDF is sc.stdtr(df,x), not normal CDF; existing independent df5 1% quantile witness maps to ~0.000382815 under normal CDF, not .01. No new numerical replacement or tolerance."
+  },
+  "historicalFixture": "Actual base engine/archive execution; synthetic default pricing, two source hashes and normalized trace/runtime metadata. Internal compatibility/unchanged-Gaussian regressions, not independent scientific validation.",
+  "failure": {
+    "id": "P23-RT01",
+    "command": "npm run test:browser",
+    "site": "scripts/test-browser-regressions.ts:715",
+    "observation": "10000ms timeout waiting for saved-project toast after Ctrl+S",
+    "followup": "Inspected exact assertion and App save message; exact unchanged isolated suite passed. No save production/test code changed; root cause not established. Original integration attempt stays FAILED_OR_INCOMPLETE."
+  },
+  "remaining": [
+    "U20 calibrated distributions, interval/coverage and any corrected Student-t method remain open",
+    "Phase2 U02/U16b/U09b annual/economic/rating reconciliation remains queued, not implemented by this slice",
+    "Phase3 other model/integration/applicability requirements remain open",
+    "Inherited CAD56, missing external reference/manufacturer/site/normative and Docker/native platform gates remain blocked",
+    "No full new test:audit or complete final release matrix executed; no current patch remote CI claimed"
+  ],
+  "rollback": "Disable new execution/export/replay while preserving read-only files. VITE_FINANCIAL_UQ_WORKER=false remains available; never restore the invalid t path.",
+  "logAvailability": "Raw logs remain local ignored artifacts; durable receipt retains outcomes and hashes, not remote complete logs."
+}

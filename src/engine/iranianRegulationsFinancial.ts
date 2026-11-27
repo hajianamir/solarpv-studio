@@ -26,7 +26,9 @@ export interface IranianFinancialModelResult {
   totalCapexMillionToman: number;
   equityContributionMillionToman: number;
   bankLoanMillionToman: number;
+  /** @deprecated Legacy rounded/guess-selected metric. Use assessPeriodicIrr for explicit domain/status. */
   projectIrrPct: number | null;
+  /** @deprecated Legacy rounded/guess-selected metric. Use assessPeriodicIrr for explicit domain/status. */
   equityIrrPct: number | null;
   /** @deprecated Equity NPV alias. Prefer equityNpvMillionToman/projectNpvMillionToman. */
   npvMillionToman: number;
@@ -38,7 +40,9 @@ export interface IranianFinancialModelResult {
   discountedPaybackYears: number | null;
   paybackStatus: 'achieved' | 'not_achieved';
   lcoeTomanPerKwh: number | null;
+  /** @deprecated Rounded legacy screening proxy. Use evaluateIranianBenefitIndicators for explicit rates/full precision. */
   article16PenaltyAvoidedMillionToman: number;
+  /** @deprecated Rounded legacy proxy, not realized avoided loss. Use evaluateIranianBenefitIndicators. */
   summerBlackoutLossPreventedMillionToman: number;
   cashFlow25Years: CashFlowYear[];
 }

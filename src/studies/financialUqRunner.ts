@@ -1,5 +1,6 @@
 import type { FinancialUqResult, FinancialUqRunInput } from '../engine/core/uncertaintyPropagation';
 import { assertFinancialUqResult } from './financialUqResultValidation';
+import { assertFinancialUqCopulaExecutable } from '../contracts/financialUqExecutionPolicy';
 
 export interface UqWorkerPort {
   postMessage(message: unknown): void;
@@ -23,6 +24,8 @@ export function startFinancialUq(input: FinancialUqRunInput, options: {
   const promise = new Promise<FinancialUqResult>((resolve, reject) => {
     rejectJob = reject;
     const fail = (code: string) => { if (!settled) { settled = true; cleanup(); reject(new Error(code)); } };
+    try { assertFinancialUqCopulaExecutable(input.copulaFamily); }
+    catch { fail('UQ_COPULA_EXECUTION_BLOCKED'); return; }
     try {
       // Rollback switch disables this route; it never revives blocking main-thread computation.
       const env = (import.meta as ImportMeta & { env?: { VITE_FINANCIAL_UQ_WORKER?: string } }).env;
@@ -34,6 +37,7 @@ export function startFinancialUq(input: FinancialUqRunInput, options: {
         try {
           if (reply?.ok !== true) throw new Error('UQ_WORKER_FAILED');
           assertFinancialUqResult(reply.value, input.sampleSize ?? 100);
+          assertFinancialUqCopulaExecutable(reply.value.copulaFamilyUsed);
         } catch { fail('UQ_WORKER_FAILED'); return; }
         settled = true; cleanup(); resolve(reply.value);
       };

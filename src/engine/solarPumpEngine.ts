@@ -32,6 +32,9 @@ export interface SolarPumpResult {
   notesFa: string[];
 }
 
+/** Legacy nameplate/monthly screening policy, not assessed equipment or water delivery.
+ * For explicit full-precision duty boundaries use assessPumpDutyEnergy; no curves are inferred.
+ */
 export function calculateSolarPump(input: SolarPumpInput): SolarPumpResult {
   if (
     input.peakSunHours !== undefined &&

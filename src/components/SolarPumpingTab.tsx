@@ -1,3 +1,4 @@
+import {PumpDutyEnergyPanel} from './PumpDutyEnergyPanel';
 import React, { useState } from 'react';
 import { Droplet, Sun, Zap, Gauge, Compass, Activity, CheckCircle2 } from 'lucide-react';
 import { calculateSolarPump, type SolarPumpInput, type SolarPumpResult } from '../engine/solarPumpEngine';
@@ -54,8 +55,8 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
             </h1>
             <p className="text-slate-400 text-xs">
               {isFa
-                ? 'قابلیت مهندسی اختیاری: محاسبه دقیق هد دینامیکی کل (TDH)، دبی آب، توان الکتروموتور شناور و درایو خورشیدی VFD بدون نیاز به باتری'
-                : 'Optional engineering module: Total Dynamic Head (TDH), flow rate, submersible pump HP, and battery-less direct MPPT VFD inverter sizing.'}
+                ? 'تقریب قدیمی هد و توان نامی موتور و آرایه؛ نه انتخاب تأییدشده تجهیزات یا امکان‌پذیری آبدهی'
+                : 'Legacy screening heuristics for hydraulic head and motor/PV nameplates; not assessed equipment selection or water-delivery feasibility.'}
             </p>
           </div>
 
@@ -96,6 +97,8 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
 
       {isEnabled && (
         <>
+          <PumpDutyEnergyPanel lang={lang}/>
+          <p role="note" data-testid="pump-legacy-disclosure" className="studio-card text-xs">{isFa?'مدل قدیمی غربالگری: راندمان‌های فرضی، ساعات کار ۰٫۹×PSH، سری توان موتور و ضرایب ۱٫۲۵/۱٫۳۵ تأیید تجهیزات یا راه‌اندازی نیستند. ضرایب ماهانه مصنوعی‌اند، نه پیش‌بینی آبدهی یا تضمین بدترین ماه.':'Legacy screening: assumed efficiencies, 0.9×PSH runtime, motor series and 1.25/1.35 factors do not establish equipment duty or startup. Monthly factors are synthetic, not water-delivery predictions or a worst-month guarantee.'}</p>
           {/* Hydraulic Parameter Inputs */}
           <div className="studio-card">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 text-xs">
@@ -236,7 +239,7 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
 
             <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
               <div className="text-xs text-slate-400">
-                {isFa ? 'ظرفیت آرایه خورشیدی (PV)' : 'Recommended PV Capacity'}
+                {isFa ? 'تقریب قدیمی توان نامی آرایه' : 'Legacy PV Nameplate Heuristic'}
               </div>
               <div className="text-xl font-bold font-mono text-industrial-warning mt-1">
                 {pumpResult.recommendedPvArrayKwp} <span className="text-xs font-normal text-slate-300">kWp</span>
@@ -252,8 +255,8 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
             <h3 className="font-bold text-industrial-accent text-sm mb-3 flex items-center gap-2">
               <Activity className="w-4 h-4 text-industrial-accent shrink-0" />
               {isFa
-                ? 'برآورد حجم آبدهی ماهانه چاه کشاورزی (۱۲ ماه سال - متر مکعب در ماه)'
-                : '12-Month Estimated Agricultural Water Delivery Profile (m³/month)'}
+                ? 'نمایه مصنوعی قدیمی آبدهی ماهانه (m³/month)'
+                : 'Legacy Synthetic Water Profile (m³/month)'}
             </h3>
 
             <div className="overflow-x-auto bg-industrial-bg p-4 rounded-lg border border-industrial-border -mx-3 sm:mx-0">
@@ -277,12 +280,15 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
             </div>
 
             <div className="mt-3 space-y-1 text-xs text-slate-300 bg-industrial-surface/60 p-3 rounded-lg border border-industrial-border/60">
-              {(isFa ? pumpResult.notesFa : pumpResult.notesFa.map((_, i) => [
-                'Hydraulic TDH calculated based on static lift + friction losses in polyethylene piping.',
-                'Direct solar drive operates via MPPT variable frequency drive (VFD) without chemical storage batteries.',
-                'Submersible motor sized with a safety service factor of 1.25x for prolonged duty cycles.',
-                'Water storage in ground reservoirs during high-irradiance midday hours acts as hydraulic battery storage.'
-              ][i] || '')).map((note, i) => (
+              {(isFa ? [
+                'هد و راندمان‌های قدیمی، فرض غربالگری‌اند؛ منحنی پمپ و شرایط کاویتاسیون تأیید نشده است.',
+                'ضرایب توان نامی، انتخاب معتبر موتور یا ظرفیت پیوسته/اضافه‌بار درایو نیستند.',
+                'نمایه ماهانه مصنوعی است؛ انرژی زمانی، راه‌اندازی و آبدهی تضمین نمی‌شوند.'
+              ] : [
+                'Legacy head and efficiencies are screening assumptions; pump curves and NPSH are unassessed.',
+                'Nameplate factors do not establish motor selection or drive continuous/overload capacity.',
+                'The monthly profile is synthetic; chronological energy, startup and water delivery are not guaranteed.'
+              ]).map((note, i) => (
                 <div key={i} className="flex items-start gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-industrial-accent shrink-0 mt-0.5" />
                   <span>{note}</span>

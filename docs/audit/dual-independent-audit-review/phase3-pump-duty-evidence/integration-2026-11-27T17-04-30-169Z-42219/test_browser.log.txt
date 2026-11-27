@@ -1,0 +1,4 @@
+
+> solarpv-studio@1.0.3 test:browser
+> tsx scripts/test-browser-regressions.ts
+

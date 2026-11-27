@@ -25,11 +25,21 @@ const mutations:((r:typeof fixture)=>void)[]=[
  r=>{r.lcoeUsdPerMwh.unit='USD';},r=>{r.npvUsd.stdDev=Infinity;},r=>{r.sampleCount++;},
  r=>{r.trialStatusBreakdown!.irrDefinedTrials++;},r=>{r.tornadoSensitivityRanking[0].varianceContributionPercent=101;},
  r=>{r.uncertaintyDecomposition!.aleatoryVariancePct=-1;},r=>{r.traceId=' ';},
+ r=>{r.copulaFamilyUsed='students_t_copula';},
 ];
 for(const mutate of mutations){const reply=structuredClone(fixture);mutate(reply);const p=fake();const job=startFinancialUq(input,{workerFactory:()=>p});p.onmessage!({data:{ok:true,value:reply}} as MessageEvent);await assert.rejects(job.promise,/UQ_WORKER_FAILED/);}
 for(const kind of ['error','messageerror','post'] as const){const p=fake();if(kind==='post')p.postMessage=()=>{throw new Error('private');};const job=startFinancialUq(input,{workerFactory:()=>p});if(kind==='error')p.onerror!({preventDefault(){}} as ErrorEvent);if(kind==='messageerror')p.onmessageerror!({} as MessageEvent);await assert.rejects(job.promise,/UQ_WORKER_/);}
 const bundled=await build({entryPoints:['src/studies/financialUq.worker.ts'],bundle:true,write:false,format:'esm',platform:'node',banner:{js:"import {parentPort} from 'node:worker_threads'; globalThis.self = {postMessage: data => parentPort.postMessage(data)}; parentPort.on('message', data => self.onmessage({data}));"}});
 await mkdir('.cache/uq-worker',{recursive:true});await writeFile('.cache/uq-worker/worker.mjs',bundled.outputFiles[0].contents);
+// Bypass the runner and exercise the real worker boundary: retired t must still fail.
+const retiredThread=new Worker(new URL('../.cache/uq-worker/worker.mjs',import.meta.url));
+try {
+ const retiredReply=await new Promise<{ok:boolean;error:string}>((resolve,reject)=>{
+  retiredThread.once('message',resolve);retiredThread.once('error',reject);
+  retiredThread.postMessage({input:{...input,copulaFamily:'students_t_copula'}});
+ });
+ assert.deepEqual(retiredReply,{ok:false,error:'UQ_WORKER_COMPUTATION_FAILED'});
+} finally {await retiredThread.terminate();}
 function nodeFactory(): UqWorkerPort {
   const thread=new Worker(new URL('../.cache/uq-worker/worker.mjs',import.meta.url));
   const adapter:UqWorkerPort={onmessage:null,onerror:null,onmessageerror:null,postMessage:data=>thread.postMessage(data),terminate:()=>{void thread.terminate();}};

@@ -70,6 +70,18 @@ try {
  const corrupt=JSON.parse(archiveText);corrupt.request.seed=43;
  await upload.setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(corrupt))});
  await page.getByTestId('uq-archive-status').filter({hasText:'invalid'}).waitFor();assert.equal(await page.getByTestId('uq-archive-replay').isDisabled(),true);
+ // Historical t archives remain inspectable, never replayable; no automatic model replacement.
+ const historicalFixture=JSON.parse(await readFile('scripts/fixtures/financial-uq-retirement.json','utf8'));
+ await upload.setInputFiles({name:'historical-t-v1.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(historicalFixture.legacyStudentTArchive))});
+ await page.getByTestId('uq-archive-status').filter({hasText:'legacy_read_only'}).waitFor();
+ assert.equal(await page.getByTestId('uq-archive-replay').isDisabled(),true);
+ // Even a source-matching v1 Gaussian snapshot must not be relabeled as v2 execution.
+ const legacyGaussian={...archive,schemaVersion:'financial-uq-archive-v1'} as Record<string,unknown>;
+ delete legacyGaussian.executionPolicy;delete legacyGaussian.archiveSha256;legacyGaussian.archiveSha256=uqHash(legacyGaussian);
+ await upload.setInputFiles({name:'same-code-v1.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(legacyGaussian))});
+ await page.getByTestId('uq-archive-status').filter({hasText:'legacy_read_only'}).waitFor();
+ assert.equal(await page.getByTestId('uq-archive-replay').isDisabled(),true);
+ assert.ok((await page.getByTestId('uq-execution-policy').innerText()).includes('Student-t'));
  const other=structuredClone(archive);other.source.files['src/engine/financialEngine.ts']='f'.repeat(64);other.source.bundleSha256=uqHash(other.source.files);const {archiveSha256:old,...otherPayload}=other;void old;other.archiveSha256=uqHash(otherPayload);
  await upload.setInputFiles({name:'other-code.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(other))});
  await page.getByTestId('uq-archive-status').filter({hasText:'code_mismatch'}).waitFor();assert.equal(await page.getByTestId('uq-archive-replay').isDisabled(),true);

@@ -1,0 +1,18 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /runtime is not inferred from PSH/. Input:
+
+'فقط تراز انرژی با هد و راندمان ثابت؛ ساعات کار از PSH استنتاج نمی‌شود. هیچ مقداری از مدل قدیمی کپی نمی‌شود. نبود کسری روزانه، راه‌اندازی، انتخاب تجهیزات یا آبدهی را تضمین نمی‌کند؛ منحنی پمپ، موتور، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند. ورودی‌ها فقط موقت‌اند و در پروژه ذخیره نمی‌شوند؛ به انرژی سالانه یا مالی منتقل نمی‌شوند.'
+
+    at <anonymous> (/home/user/solarpv-studio/.cache/phase23-pump/english-browser-probe.ts:16:9) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'فقط تراز انرژی با هد و راندمان ثابت؛ ساعات کار از PSH استنتاج نمی‌شود. هیچ مقداری از مدل قدیمی کپی نمی‌شود. نبود کسری روزانه، راه‌اندازی، انتخاب تجهیزات یا آبدهی را تضمین نمی‌کند؛ منحنی پمپ، موتور، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند. ورودی‌ها فقط موقت‌اند و در پروژه ذخیره نمی‌شوند؛ به انرژی سالانه یا مالی منتقل نمی‌شوند.',
+  expected: /runtime is not inferred from PSH/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

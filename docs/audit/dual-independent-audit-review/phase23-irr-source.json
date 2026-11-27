@@ -1,0 +1,9 @@
+{
+  "repository": "numpy/numpy-financial",
+  "commit": "247aa4e2ee4fa7db44915790d5a730b9776d10a7",
+  "path": "numpy_financial/_financial.py",
+  "sha256": "345a52c076648ba5530f826143fcabcf374b852cc25577f5671ce9f344914684",
+  "bytes": 26128,
+  "method": "GitHub contents API, base64 decoded; no upstream executable run",
+  "scope": "Periodic IRR equation and documented multiple-solutions caveat; algorithm is not copied"
+}

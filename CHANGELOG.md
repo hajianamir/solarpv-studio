@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased — explicit steady-duty pump energy comparison
+
+- Add a strict opt-in steady-duty energy policy with explicit volume/head/runtime/fluid/efficiency/DC-energy inputs and separate hydraulic, shaft, motor-electrical and drive-DC boundaries. Preserve full precision; reject invalid and numerical-failure domains.
+- Add an initially empty temporary comparison panel; no PSH/legacy assumptions are copied, no project inputs are saved, and no finance/annual-energy adoption or water guarantee is allowed. Legacy numerical API remains unchanged.
+- Qualify legacy motor/PV/monthly UI as unassessed heuristics; remove the false1.25motor-service-factor claim. Add864independent Decimal comparisons, five numerical-failure witnesses,18executed expression witnesses,48actual-base legacy comparisons and real-browser form/NPV-isolation tests. See ADR-030 and `docs/features/PUMP-DUTY-ENERGY.md`. Full U19 and Phase2/3 remain incomplete.
+
+## Unreleased — explicit conventional periodic IRR assessment
+
+- Add a strict, opt-in annual IRR policy with full-precision rates, explicit project/equity/currency/rate metadata, bounded bisection and normalized residual checks. Distinguish no sign change, unsupported nonconventional flows, outside-domain roots, invalid input and numerical failure.
+- Iranian screen now uses this assessment with localized unavailable reasons instead of the legacy first-guess/rounded scalar. Legacy public financial outputs, ledgers, NPV and saved settings remain unchanged; no automatic financial adoption.
+- Correct stale bilingual table disclosure: annual input and full-precision ledgers are distinct from presentation rounding and the legacy rounded LCOE.
+- Add 164 independent Decimal root/status cases, eight NPV cases, 33 executed expression witnesses, project/equity ledger integration and real-browser assertions. See ADR-029 and `docs/features/PERIODIC-IRR-ASSESSMENT.md`. U16b/U16c remain partial.
+
+## Unreleased — qualified full-precision Iranian benefit indicators
+
+- Add an explicit-policy, strict-input screening indicator API with unrounded penalty/outage proxies; retain old rounded financial API results and cash flows unchanged.
+- Show separate bilingual assumption-qualified million-Toman values, with no automatic financial adoption or guaranteed-savings claim.
+- Add 168 independent Decimal reference cases, three executed expression sensitivity witnesses, negative/serialization/legacy/UI tests and production-browser assertions. See ADR-028 and `docs/features/IRANIAN-BENEFIT-INDICATORS.md`. U16b/U16c and Phase2/3 remain partial.
+
+## Unreleased — retire invalid Student-t UQ execution
+
+- Reject new Student-t financial/sampler/Worker execution without a silent Gaussian fallback. Preserve Gaussian arithmetic and verify exact baseline deterministic hashes in all three system modes. The prior latent-kurtosis benchmark was not a copula-margin validation and now checks explicit retirement instead.
+- Export strict UQ archive v2 with `gaussian-only-retired-student-t-v2` policy. Keep valid v1 archives intact/readable but inspection-only in this engine, including Gaussian v1; unknown policies/families cannot gain replay eligibility. New v2 exports require a v2-capable reader.
+- Add genuine historical v1 fixture generation, direct/actual-Worker/production-browser compatibility tests, bilingual policy disclosure and CI regression coverage. See ADR-027 and `PHASE-2-3-REMAINING-EXECUTION.md`. U20, Phase2/3 and release remain partial/blocked.
+
+## Unreleased — Phase4 verification kickoff
+
+- Add a local baseline/integration/platform verification harness that records exact script definitions, checkout and executable-input hashes, runtime, command exits and log hashes. Preserve failed attempts and reject incomplete or changed-source results; a local PASS never authorizes release.
+- Add negative harness tests and a Phase4 acceptance/work-package plan. No production numerical, saved-project, UI or adoption-policy changes. Phase2/3 and required reference/platform stops remain active.
+
 ## Unreleased — Phase3 primary-source research and offline reference cases
 
 - Acquire 28 SHA256-pinned public source/data artifacts with a repeatable GitHub acquisition script and offline integrity checks; retain large upstream files in ignored cache.
