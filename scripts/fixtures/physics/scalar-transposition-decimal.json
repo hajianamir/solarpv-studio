@@ -1,0 +1,865 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "calculateFixedTiltTranspositionGain",
+  "independentCalculation": "Independent 60-digit Decimal characterization, not physical POA validation.\n\nNo production imports/execution/numerical outputs. Governing policy is the\nrepository's inherited latitude/tilt heuristic at base 0d41fd38. Trigonometry\nis independently evaluated by Decimal Taylor series, not JavaScript Math/libm.\nOne decimal place is inherited policy quantization, not claimed accuracy.\n",
+  "tolerances": {
+    "absolute": 1e-12,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "Independent Decimal characterization of inherited scalar transposition policy",
+    "url": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+    "version": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+    "locator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+  },
+  "cases": [
+    {
+      "inputs": [
+        -1,
+        -90
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        -90
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        -90
+      ],
+      "expected": 0.5
+    },
+    {
+      "inputs": [
+        8,
+        -90
+      ],
+      "expected": 3.7
+    },
+    {
+      "inputs": [
+        20,
+        -90
+      ],
+      "expected": 9.0
+    },
+    {
+      "inputs": [
+        30,
+        -90
+      ],
+      "expected": 12.7
+    },
+    {
+      "inputs": [
+        45,
+        -90
+      ],
+      "expected": 16.6
+    },
+    {
+      "inputs": [
+        60,
+        -90
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        89,
+        -90
+      ],
+      "expected": 15.7
+    },
+    {
+      "inputs": [
+        90,
+        -90
+      ],
+      "expected": 15.6
+    },
+    {
+      "inputs": [
+        59.999999999,
+        -90
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        60,
+        -90
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        60.000000001,
+        -90
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        -1,
+        -60
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        -60
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        -60
+      ],
+      "expected": 0.5
+    },
+    {
+      "inputs": [
+        8,
+        -60
+      ],
+      "expected": 4.2
+    },
+    {
+      "inputs": [
+        20,
+        -60
+      ],
+      "expected": 10.1
+    },
+    {
+      "inputs": [
+        30,
+        -60
+      ],
+      "expected": 14.0
+    },
+    {
+      "inputs": [
+        45,
+        -60
+      ],
+      "expected": 17.5
+    },
+    {
+      "inputs": [
+        60,
+        -60
+      ],
+      "expected": 17.9
+    },
+    {
+      "inputs": [
+        89,
+        -60
+      ],
+      "expected": 14.5
+    },
+    {
+      "inputs": [
+        90,
+        -60
+      ],
+      "expected": 14.3
+    },
+    {
+      "inputs": [
+        52.799999999,
+        -60
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        52.8,
+        -60
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        52.800000000999994,
+        -60
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        -1,
+        -35.69
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        -35.69
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        -35.69
+      ],
+      "expected": 0.9
+    },
+    {
+      "inputs": [
+        8,
+        -35.69
+      ],
+      "expected": 6.8
+    },
+    {
+      "inputs": [
+        20,
+        -35.69
+      ],
+      "expected": 14.6
+    },
+    {
+      "inputs": [
+        30,
+        -35.69
+      ],
+      "expected": 17.3
+    },
+    {
+      "inputs": [
+        45,
+        -35.69
+      ],
+      "expected": 16.9
+    },
+    {
+      "inputs": [
+        60,
+        -35.69
+      ],
+      "expected": 15.2
+    },
+    {
+      "inputs": [
+        89,
+        -35.69
+      ],
+      "expected": 9.3
+    },
+    {
+      "inputs": [
+        90,
+        -35.69
+      ],
+      "expected": 9.0
+    },
+    {
+      "inputs": [
+        31.407199999,
+        -35.69
+      ],
+      "expected": 17.4
+    },
+    {
+      "inputs": [
+        31.4072,
+        -35.69
+      ],
+      "expected": 17.4
+    },
+    {
+      "inputs": [
+        31.407200001,
+        -35.69
+      ],
+      "expected": 17.4
+    },
+    {
+      "inputs": [
+        -1,
+        -8
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        -8
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        -8
+      ],
+      "expected": 2.6
+    },
+    {
+      "inputs": [
+        8,
+        -8
+      ],
+      "expected": 13.2
+    },
+    {
+      "inputs": [
+        20,
+        -8
+      ],
+      "expected": 12.9
+    },
+    {
+      "inputs": [
+        30,
+        -8
+      ],
+      "expected": 12.2
+    },
+    {
+      "inputs": [
+        45,
+        -8
+      ],
+      "expected": 10.5
+    },
+    {
+      "inputs": [
+        60,
+        -8
+      ],
+      "expected": 8.1
+    },
+    {
+      "inputs": [
+        89,
+        -8
+      ],
+      "expected": 2.1
+    },
+    {
+      "inputs": [
+        90,
+        -8
+      ],
+      "expected": 1.8
+    },
+    {
+      "inputs": [
+        7.999999999,
+        -8
+      ],
+      "expected": 13.2
+    },
+    {
+      "inputs": [
+        8,
+        -8
+      ],
+      "expected": 13.2
+    },
+    {
+      "inputs": [
+        8.000000001,
+        -8
+      ],
+      "expected": 13.2
+    },
+    {
+      "inputs": [
+        -1,
+        0
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        0
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        0
+      ],
+      "expected": 2.3
+    },
+    {
+      "inputs": [
+        8,
+        0
+      ],
+      "expected": 12.0
+    },
+    {
+      "inputs": [
+        20,
+        0
+      ],
+      "expected": 11.7
+    },
+    {
+      "inputs": [
+        30,
+        0
+      ],
+      "expected": 11.1
+    },
+    {
+      "inputs": [
+        45,
+        0
+      ],
+      "expected": 9.6
+    },
+    {
+      "inputs": [
+        60,
+        0
+      ],
+      "expected": 7.4
+    },
+    {
+      "inputs": [
+        89,
+        0
+      ],
+      "expected": 1.9
+    },
+    {
+      "inputs": [
+        90,
+        0
+      ],
+      "expected": 1.7
+    },
+    {
+      "inputs": [
+        7.999999999,
+        0
+      ],
+      "expected": 12.0
+    },
+    {
+      "inputs": [
+        8,
+        0
+      ],
+      "expected": 12.0
+    },
+    {
+      "inputs": [
+        8.000000001,
+        0
+      ],
+      "expected": 12.0
+    },
+    {
+      "inputs": [
+        -1,
+        8
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        8
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        8
+      ],
+      "expected": 2.6
+    },
+    {
+      "inputs": [
+        8,
+        8
+      ],
+      "expected": 13.2
+    },
+    {
+      "inputs": [
+        20,
+        8
+      ],
+      "expected": 12.9
+    },
+    {
+      "inputs": [
+        30,
+        8
+      ],
+      "expected": 12.2
+    },
+    {
+      "inputs": [
+        45,
+        8
+      ],
+      "expected": 10.5
+    },
+    {
+      "inputs": [
+        60,
+        8
+      ],
+      "expected": 8.1
+    },
+    {
+      "inputs": [
+        89,
+        8
+      ],
+      "expected": 2.1
+    },
+    {
+      "inputs": [
+        90,
+        8
+      ],
+      "expected": 1.8
+    },
+    {
+      "inputs": [
+        7.999999999,
+        8
+      ],
+      "expected": 13.2
+    },
+    {
+      "inputs": [
+        8,
+        8
+      ],
+      "expected": 13.2
+    },
+    {
+      "inputs": [
+        8.000000001,
+        8
+      ],
+      "expected": 13.2
+    },
+    {
+      "inputs": [
+        -1,
+        35.69
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        35.69
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        35.69
+      ],
+      "expected": 0.9
+    },
+    {
+      "inputs": [
+        8,
+        35.69
+      ],
+      "expected": 6.8
+    },
+    {
+      "inputs": [
+        20,
+        35.69
+      ],
+      "expected": 14.6
+    },
+    {
+      "inputs": [
+        30,
+        35.69
+      ],
+      "expected": 17.3
+    },
+    {
+      "inputs": [
+        45,
+        35.69
+      ],
+      "expected": 16.9
+    },
+    {
+      "inputs": [
+        60,
+        35.69
+      ],
+      "expected": 15.2
+    },
+    {
+      "inputs": [
+        89,
+        35.69
+      ],
+      "expected": 9.3
+    },
+    {
+      "inputs": [
+        90,
+        35.69
+      ],
+      "expected": 9.0
+    },
+    {
+      "inputs": [
+        31.407199999,
+        35.69
+      ],
+      "expected": 17.4
+    },
+    {
+      "inputs": [
+        31.4072,
+        35.69
+      ],
+      "expected": 17.4
+    },
+    {
+      "inputs": [
+        31.407200001,
+        35.69
+      ],
+      "expected": 17.4
+    },
+    {
+      "inputs": [
+        -1,
+        60
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        60
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        60
+      ],
+      "expected": 0.5
+    },
+    {
+      "inputs": [
+        8,
+        60
+      ],
+      "expected": 4.2
+    },
+    {
+      "inputs": [
+        20,
+        60
+      ],
+      "expected": 10.1
+    },
+    {
+      "inputs": [
+        30,
+        60
+      ],
+      "expected": 14.0
+    },
+    {
+      "inputs": [
+        45,
+        60
+      ],
+      "expected": 17.5
+    },
+    {
+      "inputs": [
+        60,
+        60
+      ],
+      "expected": 17.9
+    },
+    {
+      "inputs": [
+        89,
+        60
+      ],
+      "expected": 14.5
+    },
+    {
+      "inputs": [
+        90,
+        60
+      ],
+      "expected": 14.3
+    },
+    {
+      "inputs": [
+        52.799999999,
+        60
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        52.8,
+        60
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        52.800000000999994,
+        60
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        -1,
+        90
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        0,
+        90
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        1,
+        90
+      ],
+      "expected": 0.5
+    },
+    {
+      "inputs": [
+        8,
+        90
+      ],
+      "expected": 3.7
+    },
+    {
+      "inputs": [
+        20,
+        90
+      ],
+      "expected": 9.0
+    },
+    {
+      "inputs": [
+        30,
+        90
+      ],
+      "expected": 12.7
+    },
+    {
+      "inputs": [
+        45,
+        90
+      ],
+      "expected": 16.6
+    },
+    {
+      "inputs": [
+        60,
+        90
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        89,
+        90
+      ],
+      "expected": 15.7
+    },
+    {
+      "inputs": [
+        90,
+        90
+      ],
+      "expected": 15.6
+    },
+    {
+      "inputs": [
+        59.999999999,
+        90
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        60,
+        90
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [
+        60.000000001,
+        90
+      ],
+      "expected": 18.0
+    },
+    {
+      "inputs": [],
+      "expected": 16.8
+    },
+    {
+      "inputs": [
+        0
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        20
+      ],
+      "expected": 14.6
+    },
+    {
+      "inputs": [
+        45
+      ],
+      "expected": 16.9
+    },
+    {
+      "inputs": [
+        90
+      ],
+      "expected": 9.0
+    }
+  ]
+}

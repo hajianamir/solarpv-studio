@@ -188,7 +188,7 @@
       "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
       "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
       "schedulingClarification": null,
-      "phase2Progress": "Partial U16b: Iranian full-precision million-Toman ledger through NPV/IRR and 18 independent Decimal cases retained. Strict simple-LCOE shared owner adds unavailable/null vs valid-zero, full-precision scenarios, explicit rate/currency/energy basis, financial-adoption ineligibility and consumed HTTP degradation; 42 independent Decimal cases, actual HTTP/bilingual/browser checks, preserved deprecated adapter (ADR-018). Explicit Iranian/other-ledger policy migration and full precision/accounting audit remain open."
+      "phase2Progress": "Partial U16b: Iranian full-precision million-Toman ledger through NPV/IRR and 18 independent Decimal cases retained. Strict simple-LCOE shared owner adds unavailable/null vs valid-zero, full-precision scenarios, explicit rate/currency/energy basis, financial-adoption ineligibility and consumed HTTP degradation; 42 independent Decimal cases, actual HTTP/bilingual/browser checks, preserved deprecated adapter (ADR-018). Explicit Iranian/other-ledger policy migration and full precision/accounting audit remain open. Further Iranian-screen continuation (ADR-022): persisted strict TOMAN/nominal discount/escalation and all tab settings; current import rejects invalid supplied policy; missing legacy values receive documented prior UI defaults. Separate fullprecision project/equity NPV corrects mislabeled equity display, preserving deprecated npv alias; near-zero positive annuity cancellation repaired. 48additional independent Decimal cases plus actual custom-policy/zero-interest/NPV/local-save/project-file browser checks. Other-ledger policy, scalar precision/full financing schedules and overall U16b remain open."
     },
     {
       "id": "A-F21",
@@ -398,7 +398,8 @@
       "plannedStages": "P2/P3 U07",
       "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
       "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
-      "schedulingClarification": null
+      "schedulingClarification": null,
+      "phase2Progress": "ADR-023: unchanged named production fixed-tilt owner legacy_latitude_tilt_screen_v1, deprecated identity re-export, bilingual disclosure;122independent Decimal/Taylor cases,15executed mutation-sensitive expression witnesses and153actual-base scalar comparisons. All production configured consumers retain energy/report parity. Unused alternate constant-gain annual API explicitly deprecated and blocked from new production imports, not silently unified. Broader annual-model harmonization/global persisted policy migration and physical accuracy remain open."
     },
     {
       "id": "B-L2",
@@ -506,7 +507,8 @@
       "plannedStages": "P2 U07",
       "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
       "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
-      "schedulingClarification": null
+      "schedulingClarification": null,
+      "phase2Progress": "Production-consumer migration implemented: canonical/App/WaterfallLossTab and roof generator use computeConfiguredWaterfall; no production positional exception remains. Deprecated 17-slot builder/API and arity tests retained. All-slot/default/alias guards, five canonical and four roof independent Decimal cases, exact-node mutation-sensitive call fixtures, 36 canonical plus 4 empty/8 populated roof actual baseline JSON comparisons and cooperative parity (ADR-020/021). Roof generator is directly exported internally and exercised through bounded final-return protocol; no indirect owner waiver. U07a common transposition policy remains open. ADR-023 now implements the named production fixed-tilt owner with unchanged arithmetic, compatibility re-export,122Decimal/Taylor cases,15mutation-sensitive expression witnesses and153base comparisons; no numerical harmonization of unused legacy annual API or persisted global policy selection is claimed."
     },
     {
       "id": "B-L14",

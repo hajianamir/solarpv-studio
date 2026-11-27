@@ -158,13 +158,13 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
     en: {
       title: 'Energy yield & loss waterfall',
       inputs: 'The App supplies actual designed array DC kWp, PSH, ambient temperature, soiling, DC/AC ratio, module temperature coefficients, tracker, bifacial and shading inputs when available. Check stale-shading warnings and the source of each overridden input.',
-      method: 'The shared waterfall applies loss/gain stages sequentially to energy, including temperature/optical/soiling and wiring effects, DC/AC clipping, inverter conversion, collector/transformer and availability/auxiliary stages. Financial analysis consumes the same final annual yield.',
+      method: 'Named transposition policy legacy_latitude_tilt_screen_v1 retains the unvalidated latitude/tilt heuristic, absent-tilt16.8% default and clear-sky relative tracker gain anchored at1.168. It is not a DNI/DHI weather-driven POA model. The shared waterfall applies loss/gain stages sequentially to energy, including temperature/optical/soiling and wiring effects, DC/AC clipping, inverter conversion, collector/transformer and availability/auxiliary stages. Financial analysis consumes the same final annual yield.',
       limitations: 'The output is an annualized model estimate built from assumptions and staged factors, not hourly weather replay or measured plant performance. A stale or absent shading record is not equivalent to a validated shading survey.',
     },
     fa: {
       title: 'تولید انرژی و آبشار تلفات',
       inputs: 'برنامه kWp واقعی آرایهٔ DC طراحی‌شده، PSH، دمای محیط، گردوغبار، نسبت DC/AC، ضرایب دمایی ماژول و در صورت وجود ورودی‌های tracker، bifacial و سایه را می‌فرستد. هشدار سایهٔ stale و منشأ ورودی‌های اصلاح‌شده را بررسی کنید.',
-      method: 'آبشار مشترک مراحل افت/افزایش را به‌ترتیب روی انرژی اعمال می‌کند؛ از جمله دما/اپتیک/گردوغبار و سیم‌کشی، clipping نسبت DC/AC، تبدیل اینورتر، کابل/ترانس کلکتور و دسترس‌پذیری/مصرف داخلی. تحلیل مالی همان تولید سالانهٔ نهایی را مصرف می‌کند.',
+      method: 'سیاست legacy_latitude_tilt_screen_v1 غربالگری تأییدنشده عرض/شیب با پیش‌فرض بهره ۱۶٫۸٪ برای شیب نامشخص و بهره نسبی ردیاب آسمان صاف با مبنای ۱٫۱۶۸ است؛ مدل POA هواشناسی DNI/DHI نیست. آبشار مشترک مراحل افت/افزایش را به‌ترتیب روی انرژی اعمال می‌کند؛ از جمله دما/اپتیک/گردوغبار و سیم‌کشی، clipping نسبت DC/AC، تبدیل اینورتر، کابل/ترانس کلکتور و دسترس‌پذیری/مصرف داخلی. تحلیل مالی همان تولید سالانهٔ نهایی را مصرف می‌کند.',
       limitations: 'خروجی برآورد سالانهٔ مدل از فرض‌ها و ضرایب مرحله‌ای است، نه بازپخش آب‌وهوای ساعتی یا عملکرد اندازه‌گیری‌شده. رکورد سایهٔ stale یا نبود آن، معادل نقشه‌برداری معتبر سایه نیست.',
     },
   },
@@ -255,14 +255,14 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
   iran_regulations: {
     en: {
       title: 'Regulations & tariffs',
-      inputs: 'Review the project capacity and annual-generation figures supplied to the page, plus the regulatory/tariff assumptions shown in its tables.',
-      method: 'This page presents reference/regulatory information alongside project values; its presentation does not itself query an authority or certify eligibility.',
+      inputs: 'Review actual DC capacity and annual energy. Set tariff, debt share, loan interest/term and explicit nominal discount, tariff escalation and OPEX escalation percentages. Zero interest/discount is supported; invalid edits retain the last validated value. Settings persist with project save/export/import.',
+      method: 'Pre-tax 25-year TOMAN nominal screening ledger: separate pre-debt project NPV and post-debt equity NPV at one selected screening discount. Applied tariff floors are shown. No real/nominal conversion, authority query, tax/replacement/salvage schedules or financial adoption eligibility.',
       limitations: 'Capacity is actual installed DC; annual energy uses the Financial screening boundary, never representative-day × 365. This scalar screen is blocked for adopted operational energy because it lacks the import-cost/dispatch ledger. Defaults are illustrative and not verified current tariffs. Tariffs, program eligibility and regulations can change and vary by project. Confirm the current governing documents and terms with the responsible authority before making a financial or compliance decision.',
     },
     fa: {
       title: 'مقررات و تعرفه‌ها',
-      inputs: 'ظرفیت و تولید سالانه‌ای را که به صفحه داده شده، همراه با فرض‌های مقرراتی/تعرفه‌ای جدول‌ها بازبینی کنید.',
-      method: 'این صفحه اطلاعات مرجع/مقررات را کنار مقادیر پروژه نمایش می‌دهد؛ نمایش آن به‌تنهایی از مرجع استعلام نمی‌کند و احراز شرایط نیست.',
+      inputs: 'ظرفیت واقعی DC و انرژی سالانه، تعرفه، سهم وام، نرخ سود و دوره وام، تنزیل اسمی و رشد تعرفه/OPEX را بازبینی کنید. نرخ صفر معتبر است؛ ویرایش نامعتبر آخرین مقدار معتبر را حفظ می‌کند. تنظیمات با پروژه ذخیره و بازیابی می‌شوند.',
+      method: 'دفتر غربالگری ۲۵ساله پیش از مالیات با تومان اسمی؛ NPV پروژه پیش از بدهی و NPV آورده پس از بدهی با یک نرخ تنزیل انتخاب‌شده جدا هستند. کف تعرفه اعمال‌شده نمایش داده می‌شود؛ تبدیل واقعی/اسمی یا محاسبه مالیات/جایگزینی/اسقاط و احراز مالی انجام نمی‌شود.',
       limitations: 'تعرفه، شرایط برنامه و مقررات ممکن است تغییر کنند و به پروژه وابسته‌اند. پیش از تصمیم مالی/انطباق، اسناد معتبر و شرایط جاری را از مرجع مسئول تأیید کنید.',
     },
   },

@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased — named production scalar transposition owner
+
+- Extract unchanged fixed-tilt screening arithmetic into `core/scalarTransposition.ts`, named `legacy_latitude_tilt_screen_v1`; retain the old waterfall export as a deprecated identity re-export. No energy coefficients, report shape or project inputs changed.
+- Name/qualify the policy in bilingual waterfall/help, including the retained tracker1.168anchor. Explicitly deprecate the unused alternate constant-gain annual API rather than silently changing its historical behavior.
+- Add122independent Decimal/Taylor cases,15executed mutation-sensitive expression witnesses,153exact actual-base scalar comparisons and a production-import guard. Existing canonical/roof/report/browser compatibility checks remain. See ADR-023 and the scalar-transposition guide; broader policy migration and annual-model harmonization remain open.
+
+
+## Unreleased — explicit Iranian screening policy and NPV identity
+
+- Persist Iranian-screen inputs and strict TOMAN/nominal discount, tariff escalation and OPEX escalation through tab changes, project save/export/import and report input snapshots. Preserve intentional zero interest/discount; reject invalid edits/imported policies without silently replacing them.
+- Correct the Project NPV label defect by separating pre-debt project and post-debt equity NPV. Keep `npvMillionToman` as a deprecated equity alias. Both use the explicitly selected screening discount, not an assessed WACC/equity-rate model.
+- Stabilize positive near-zero ordinary-loan annuity with log1p/expm1; retain the exact-zero branch. Add48independent Decimal ledgers and actual production-browser zero-interest/custom-policy/local-save/project-file/NPV checks alongside existing18legacycases.
+- Expose policy and financial-adoption ineligibility, entered/applied unverified tariff floors and unavailable numerical failures. Retain legacy eight-argument mathematical policy when no explicit ninth argument is supplied. See ADR-022 and the Iranian economic-policy guide for migration/rollback and remaining U16b limitations.
+
+
+## Unreleased — roof named-waterfall migration and generator references
+
+- Complete the remaining roof production-consumer routing through the named waterfall boundary; remove its production import-guard exception while retaining deprecated positional/17-slot APIs and benchmark compatibility tests.
+- Extend reference execution to directly declared exported synchronous generators: compare final returns, bound next calls, request cleanup on exhaustion, and prevent harness failures from being credited as numerical mutation sensitivity. Existing direct-owner/executed-node/reference/sensitivity requirements remain.
+- Add four independent Decimal/analytic full-return roof cases and eight populated-scene actual base-version comparisons with cooperative parity; preserve snapshot mismatch and invalid-input/cancellation behavior. No physical coefficients or adoption eligibility change. Common transposition and broader Phase2 work remain open; ADR-021 documents evidence and limits.
+
+
+## Unreleased — named canonical waterfall routing
+
+- Route canonical annual yield through the configured named waterfall API shared with App and the waterfall tab. Preserve numerical/default/alias/override semantics and JSON reports; omit inactive undefined tracker diagnostics in memory.
+- Retain and mark the 17-slot tuple and positional APIs deprecated. Add explicit slot/default/alias and import-guard regressions, actual pre/post canonical and roof JSON comparisons, and five independent Decimal composition cases with an executed mutation-sensitive call fixture.
+- Roof's private-generator positional call remains a baseline-pinned exception, not a completed migration. Common transposition policy and overall Phase2 remain partial/release-blocked. See ADR-020 and the updated annual-thermal guide.
+
+
 ## Unreleased — strict simple LCOE and raw MPPT current acceptance
 
 - Add strict named LCOE availability: distinguish invalid/zero-generation/numerical failure (null) from genuine zero-cost energy (0). Centralize discounted cost/energy arithmetic, retain the deprecated numeric adapter's legacy compatibility, and keep full precision through scenario results.

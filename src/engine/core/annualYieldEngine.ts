@@ -14,11 +14,8 @@ import {
   type ThermalDerateResult,
   type ThermalEvaluationMode,
 } from './thermalDerate';
-import {
-  computeWaterfallLosses,
-  type WaterfallLossReport,
-} from '../waterfallLossEngine';
-import { buildWaterfallArgs, withReferenceLossMetadata, type AnnualReferenceInput, type WaterfallArgsInput } from '../waterfallArgs';
+import type { WaterfallLossReport } from '../waterfallLossEngine';
+import { computeConfiguredWaterfall, type AnnualReferenceInput, type WaterfallArgsInput } from '../waterfallArgs';
 import type { InstallationEnvironment } from '../types/climateTypes';
 
 export {
@@ -180,10 +177,7 @@ export function computeCanonicalAnnualYield(
     shadingLossOverridePct: input.shadingLoss3dPct,
     bifacialGainPct: input.bifacialGainPct ?? 0.0,
   };
-  const wfArgs = buildWaterfallArgs(waterfallInput);
-
-  let waterfallReport = computeWaterfallLosses(...wfArgs);
-  waterfallReport=withReferenceLossMetadata(waterfallReport,waterfallInput);
+  const waterfallReport = computeConfiguredWaterfall(waterfallInput);
   const annualYieldKwh = waterfallReport.finalEnergyKwh ?? Math.round(waterfallReport.netAnnualEnergyExportMwh * 1000.0);
   const netAnnualEnergyExportMwh = waterfallReport.netAnnualEnergyExportMwh;
   const specificYieldKwhPerKwp = waterfallReport.specificAnnualYieldKwhPerKwp;
@@ -255,7 +249,9 @@ export interface UnifiedAnnualYieldResult {
 }
 
 /**
- * Calculates unified annual energy yield using single source of truth formulation.
+ * @deprecated Legacy compatibility screen; production uses computeCanonicalAnnualYield.
+ * Its constant 1.168/1.25 transposition is NOT legacy_latitude_tilt_screen_v1.
+ * Kept unchanged for compatibility; do not silently substitute the canonical policy.
  */
 export function calculateUnifiedAnnualYield(
   input: UnifiedAnnualYieldInput

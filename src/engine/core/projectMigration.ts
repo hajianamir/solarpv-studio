@@ -1,3 +1,4 @@
+import {IranianScreenSettingsSchema,createDefaultIranianScreenSettings} from '../../contracts/iranianEconomicPolicy';
 import {MpptRatingEvidenceSchema} from '../../contracts/electricalReadiness';
 // ============================================================================
 // SolarPV Studio v3.0 - Robust Zod Schema Validation & Data Migration (Phase 1a/PR-Fix)
@@ -417,6 +418,7 @@ export const ProjectDataV3Schema = z.object({
   selectedModule: ModuleSpecsSchema,
   selectedInverter: InverterSpecsSchema,
   userPricing: UserFinancialPricingSchema,
+  iranianScreenSettings: IranianScreenSettingsSchema.default(createDefaultIranianScreenSettings),
 
   // Feature Flags
   featureFlags: FeatureFlagsSchema.default(DEFAULT_FEATURE_FLAGS),
@@ -859,6 +861,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
     selectedInverter: raw.selectedInverter && typeof raw.selectedInverter === 'object'
       ? { ...raw.selectedInverter, origin: raw.selectedInverter.id ? (raw.selectedInverter.origin ?? 'legacy') : 'legacy' }
       : { ...getFallbackInverter(), origin: 'legacy' },
+    iranianScreenSettings: raw.iranianScreenSettings,
     userPricing: normalizeLegacyPricing(raw.userPricing), // P1.2: defaults applied here, never in schema
 
     featureFlags,
@@ -984,6 +987,7 @@ export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
     siteOverrides: {},
     loads: [],
     cableFeederInputs: {},
+    iranianScreenSettings: createDefaultIranianScreenSettings(),
     selectedModule: getFallbackModule(),
     selectedInverter: getFallbackInverter(),
     userPricing: { ...DEFAULT_FINANCIAL_PRICING } as ProjectDataV3['userPricing'] & import('../financialEngine').UserFinancialPricing as any,

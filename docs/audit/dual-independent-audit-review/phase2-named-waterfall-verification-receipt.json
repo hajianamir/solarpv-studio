@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "branch": "arena/0743c1ca-solarpv-studio",
+  "baseCommit": "0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb",
+  "commitOrPushPerformed": false,
+  "environment": {
+    "node": "v22.22.3",
+    "dependencySetup": "npm ci --no-audit --no-fund; locked install",
+    "historyPrerequisite": "Shallow checkout lacked immutable 0c4d7ca required by existing AST tests. Fetched that exact commit from origin once; no branch switch or test auto-fetch. Scientific tests/Decimal generator use no network."
+  },
+  "decisions": {
+    "implementation": "IMPLEMENTED within reduced canonical routing scope; PARTIAL U07a and overall Phase2",
+    "verification": "VERIFIED_WITHIN_SCOPE: canonical routing, legacy transport, and explicitly unchanged roof path only",
+    "release": "BLOCKED: full Phase2/model applicability not established"
+  },
+  "acceptance": {
+    "N1": "Canonical uses configured API. Production import guard rejects legacy named/aliased/namespace/re-export/dynamic imports except compatibility module and explicit unchanged roof exception. Deprecated exports retained. Full production migration incomplete.",
+    "N2": "17 explicit slots and defaults, aliases/precedence, zero/NaN transport, tracker null/boolean/config, physical loss inputs, invalid thermal override parity; 19 report cases. Existing 33-fixture reference integration with three timezone subprocesses passed.",
+    "N3": "36 actual base-version canonical JSON report comparisons, 4 actual unchanged roof JSON comparisons. One exact canonical call replacement; all remaining canonical and entire roof formula AST inventory match base. Five independent Decimal full-report composition cases.",
+    "N4": "17 final regression tasks plus independent reference-integration and physics-registry commands passed."
+  },
+  "independentEvidence": {
+    "generator": "scripts/fixtures/physics/generate-named-waterfall.py",
+    "fixture": "scripts/fixtures/physics/named-waterfall-decimal.json",
+    "cases": 5,
+    "precision": "50 decimal digits; tolerance absolute 1e-7 plus relative 1e-12 for binary64 accumulation/conversion only",
+    "changedFormulaUnitsOnThisBase": 1,
+    "executedMutationSensitiveFormula": "src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1",
+    "classification": "Independent arithmetic characterization of unchanged internal screening composition; NOT independent weather/physical model or financial validation",
+    "gateCodeModified": false
+  },
+  "checks": [
+    {
+      "task": "build",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "dist/assets/unitTestsCore-DW_tnQok.js                             261.16 kB │ gzip:  82.41 kB",
+        "dist/assets/vendor-pdf-C54KaIe1.js                                430.78 kB │ gzip: 178.18 kB",
+        "dist/assets/vendor-three-CaFemgdW.js                              472.70 kB │ gzip: 118.08 kB",
+        "dist/assets/vendor-pdf-font-BQ9bhSnR.js                           716.78 kB │ gzip: 329.76 kB",
+        "dist/assets/vendor-spreadsheet-mhZc_zmi.js                        939.78 kB │ gzip: 271.10 kB",
+        "dist/assets/index-BUqH6B3s.js                                     992.02 kB │ gzip: 297.22 kB",
+        "✓ built in 19.75s"
+      ],
+      "logSha256": "ad9c264f6ef67cd3a28b07e02d7b85d29686dfae6564077da228516462f4f928"
+    },
+    {
+      "task": "lint",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "/home/user/solarpv-studio/src/engine/solarPvEngine.ts",
+        "  214:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "  233:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "  246:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "",
+        "✖ 93 problems (0 errors, 93 warnings)",
+        ""
+      ],
+      "logSha256": "e50a53b5a9e06869db4505d47f83ce2241089ac8dd78a34954c38d342d51c6e8"
+    },
+    {
+      "task": "test-accepted-audit",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 test:accepted-audit",
+        "> tsx scripts/test-accepted-vmp-audit.ts",
+        "",
+        "PASS accepted Vmp audit: synthetic hot/cold/STC windows, bias counterexample, three-engine validation, catalog adapter/selection guard, schema roundtrip, HTTP aliases/conflicts/legacy/infeasibility, guidance provenance. Not field or standards validation."
+      ],
+      "logSha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89"
+    },
+    {
+      "task": "test-coverage",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "  goldenDatasets.ts            |     100 |      100 |     100 |     100 |                           ",
+        "  lhsBenchmark.ts              |     100 |      100 |     100 |     100 |                           ",
+        "  migrationTestVectors.ts      |   97.63 |    81.81 |     100 |   97.63 | 338-346                   ",
+        "  sensitivityAnalysis.ts       |   96.01 |    88.13 |     100 |   96.01 | ...96-298,369-370,407-408 ",
+        "  trackerFixtures.ts           |     100 |      100 |     100 |     100 |                           ",
+        "  unitTestsCore.ts             |   99.83 |    59.29 |     100 |   99.83 | ...30,1978,2022,5751-5753 ",
+        "-------------------------------|---------|----------|---------|---------|---------------------------"
+      ],
+      "logSha256": "c14f892cc33f975cbb140b2f6125a1f74ef56ab6074bd7d85aa9894dbf22ead1"
+    },
+    {
+      "task": "test-phase1-browser",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 test:phase1:browser",
+        "> tsx scripts/test-phase1-browser.ts",
+        "",
+        "PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence import/export. External providers blocked; not field validation."
+      ],
+      "logSha256": "f4b67a00ecc69248838bed5cb41df0b3800e6c47f9603ce55c94596fc77ce38d"
+    },
+    {
+      "task": "test-phase1",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "> tsx scripts/test-phase1-boundaries.ts",
+        "",
+        "Phase 1 boundary unit regressions passed (synthetic arithmetic, not model validation).",
+        "PASS explicit azimuth, rating-basis/readiness, persistence, per-channel overload and unsupported economic/bifacial contracts.",
+        "PASS ratio/nameplate, invalid input, unknown 65/90A and screening PR denominator/gain regressions.",
+        "PASS numerical AST parity outside explicitly fixture-gated ADR-015 hot ownership and ADR-019 unrounded current comparison replacements.",
+        "PASS catalog evidence preserves unknowns and rejects malformed rating metadata."
+      ],
+      "logSha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db"
+    },
+    {
+      "task": "test-phase2",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "PASS finance precision: 18 independent 50-digit Decimal ledgers at .5/1/5/10/50/1000kWp, zero/debt/interest cases; unrounded NPV and row accounting; legacy illustrative assumptions remain unvalidated.",
+        "PASS thermal owner: 24 external pvlib conditions, independent MPPT hot-window witness, 9 ground/shed/roof parity cases and explicit override authority; 9 independent SI Ke conditions and pressure propagation/Kd-once checks. Not whole-model validation.",
+        "PASS hemisphere thermal: 32 independent numpy/pvlib policy-integration cases; ±latitude/equator/polar, zero PSH, invalid input and signed canonical/waterfall JSON parity. Synthetic policy verification, NOT measured-weather validation.",
+        "PASS unchanged clipping consolidation: 14 independent Decimal arithmetic characterizations, annual/waterfall precision adapters and historical nonfinite boundaries. NOT external physical clipping validation.",
+        "PASS strict LCOE: 42 independent Decimal cost/energy/ratio cases, valid-zero vs unavailable/overflow, deprecated adapter, full-precision scenarios, bilingual render and real HTTP degradation/metadata/input boundary. Simple unlevered screening only.",
+        "PASS MPPT raw thresholds: 40 independent exact Decimal comparisons, adjacent-float direct/array/central-facade false-pass witnesses, exact-limit acceptance, invalid inputs; rating evidence remains separately unassessed.",
+        "PASS named waterfall: 17 explicit slots/defaults/aliases, 19 report cases, invalid override parity, one independently gated canonical call replacement; all other formula ASTs unchanged, 36 actual canonical and 4 roof baseline/JSON comparisons, mutation-sensitive production import guard (roof exception is pinned to its complete baseline AST). Internal compatibility evidence, not physical validation."
+      ],
+      "logSha256": "526ded4188679d50c92a07677339a3995ec44003e1e91789cd54c424b8c8913e"
+    },
+    {
+      "task": "test-recovery",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "PASS malformed-map",
+        "PASS valid-empty",
+        "PASS valid-populated",
+        "PASS new-file",
+        "PASS io-error-directory",
+        "PASS dangling-symlink",
+        "PASS snapshot recovery: missing vs unreadable/invalid, no seed/partial import, direct-save and SIGINT/SIGTERM preservation, degraded health."
+      ],
+      "logSha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+    },
+    {
+      "task": "test-remaining",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "> solarpv-studio@1.0.3 test:remaining",
+        "> tsx scripts/test-remaining-product-fixes.ts && tsx scripts/test-remaining-shading-lifecycle.ts && tsx scripts/test-remaining-poa-http.ts && tsx scripts/test-remaining-worker-browser.ts",
+        "",
+        "{\"status\":\"PASS\",\"trackerCases\":1260,\"maxShadeError\":2.6645352591003757e-15,\"rearCases\":128,\"layouts\":27,\"fuelTankLiters\":2,\"annualShadingFraction\":0.05651224353318144}",
+        "PASS shading lifecycle: two concurrent jobs, isolated cancellation, capacity, runtime/message/post errors, owned-worker cleanup, sync/cooperative parity, and live fallback timer cancellation. Fake Worker protocol tests; native browser tested separately by browser regression.",
+        "PASS real HTTP POA: deterministic legacy south-zero default, both explicit conventions continuous around 180°, unknown convention rejected.",
+        "PASS real Chromium: two native Workers, cancellation during progress isolated from concurrent completion; live no-Worker fallback processes timer cancellation. Vite module harness, not production bundle coverage."
+      ],
+      "logSha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547"
+    },
+    {
+      "task": "test-remediation",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "  ✓ [PASS] RFC Section A marks default wind speed as unverified rather than implying model/regulatory evidence (provider = UNVERIFIED_DEFAULT, source = default_unverified)",
+        "  ✓ [PASS] RFC Section A reports 500 kPa and USER_OVERRIDE when geotechnical override is active (val = 500 kPa, provider = USER_OVERRIDE)",
+        "",
+        "================================================================================",
+        " AUDIT REMEDIATION VERIFICATION SUMMARY: 74 PASSED, 0 FAILED",
+        "================================================================================",
+        ""
+      ],
+      "logSha256": "951077e39f51296ffbd4f6becbeba6bee576b08642e58b24ceb9b152d6e38b30"
+    },
+    {
+      "task": "test-smoke",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "  ✓ Blocker Reason: \"Physical contradiction: targetPowerplantCapacityKw is non-positive (-50 kW)\"",
+        "  ✓ UI Action: Mutation blocked, error toast displayed, zero state pollution.",
+        "  -> Status: SUCCESS [PASS]",
+        "",
+        "================================================================================",
+        " SMOKE TEST RESULT: 5/5 IN-MEMORY INTEGRATION SCENARIOS PASSED (NOT BROWSER E2E)",
+        "================================================================================"
+      ],
+      "logSha256": "62b38f63d00a37572fc3186fe177eed3d5ccd915db30b74b6e9075c839bf9d84"
+    },
+    {
+      "task": "test",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "| Rear Cavity Duct Dust Deposition       |             0.32 | %                   |",
+        "+----------------------------------------+------------------+---------------------+",
+        "",
+        "[BIPVT-AREA] aperture=14.77% gross=12.70% ratio=0.860 expected_ratio=0.860 (geometry: 1.72/2 m²) PASS",
+        "================================================================================",
+        " SUMMARY: EXECUTABLE REGRESSIONS & BIPV/T CHECKS PASS; STORED-TARGET REPORT WARN (RETIRED UNVERIFIED BIFACIAL TARGET)",
+        "================================================================================"
+      ],
+      "logSha256": "065bce5cff3c9e68b3402bd10d0872b787552f5238ad25167735a80dab7cbe0b"
+    },
+    {
+      "task": "verify-engine-claims",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "Snow/soiling/bifacial provenance contract passed (screening only; no independent field validation claimed).",
+        "Targeted legacy snow/soiling provenance guards and negative regressions passed.",
+        "Internal sensitivity/test labels and background-only dataset preamble guards passed.",
+        "BIPV/snow-input wording and bounded bibliography guards passed (not model validation).",
+        "Visible benchmark runner provenance guards and negative regressions passed.",
+        "Phase 1 surviving-claim containment guards passed.",
+        "PASS Phase 1 economic, bifacial, structural and artifact qualification presence guards (not exhaustive semantic claim verification)."
+      ],
+      "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+    },
+    {
+      "task": "verify-exports",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "[PASS] XLSX read-back preserves the same provenance value, unit, and source as DOCX/JSON",
+        "[PASS] XLSX round-trip preserves project, document ID, revision, and approval fields",
+        "[PASS] XLSX round-trip preserves preparer, reviewer, and client sign-off names",
+        "[PASS] JSON envelope read-back preserves format/schema, project fields, and revision metadata",
+        "[PASS] JSON envelope read-back preserves engineer/company/client sign-off metadata",
+        "[PASS] Re-import of the real serialized JSON restores site coordinates, PSH, and override scope",
+        "Export artifact read-back verification: all checks PASS (DOCX, XLSX, JSON + re-import)"
+      ],
+      "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+    },
+    {
+      "task": "verify-help",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 verify:help",
+        "> tsx scripts/verify-help-source-references.ts",
+        "",
+        "[PASS] F1 has 22 page source maps; every referenced path and called code identifier exists."
+      ],
+      "logSha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+    },
+    {
+      "task": "verify-phase1-evidence",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 verify:phase1-evidence",
+        "> tsx scripts/phase1-evidence-inventory.ts --check",
+        "",
+        "PASS source/evidence inventory: 146 modules; declarations not conformity; whole-model unknowns retained.",
+        "PASS all 56 audit finding dispositions retain source owners and verification plans."
+      ],
+      "logSha256": "d4b08c1dd13a8f8ea1e1b4276033c200271123c9465fe9e44563ff73232afcbf"
+    },
+    {
+      "task": "verify-physics-reference-gate",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e",
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d",
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee",
+        "Independent physics reference gate passed: 1 changed formula expression(s) each have an executed independent fixture."
+      ],
+      "logSha256": "0b973b7ce5af0a719828e677c0402ea9d3c10013f50e42d039fbcefd2234b4f7"
+    },
+    {
+      "task": "reference-integration",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "Explicit energy offset / UTC normalization / fallback PASS (process TZ=default).",
+        "Reference timestamp subprocess PASS: UTC",
+        "Reference timestamp subprocess PASS: America/New_York",
+        "Reference timestamp subprocess PASS: Asia/Tehran",
+        "Reference integration PASS: 33 independent fixtures; replacement/sign/no-double-count, annual/missing/site/geometry fallback, canonical yield and serialization (not field validation)."
+      ],
+      "logSha256": "48c6fde6f03522e70b1c6337f803f021dd8292acf2ce9fd6a977da70f99e4064"
+    },
+    {
+      "task": "physics-registry",
+      "commandExitCode": 0,
+      "result": "PASS",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 verify:physics-registry",
+        "> tsx scripts/verify-physics-model-registry.ts",
+        "",
+        "Physics model registry contract passed (8 model entries)."
+      ],
+      "logSha256": "94e7288aaf1de9be1efb558f9643804634ef881dc23d8492fb6d056a173bf3c7"
+    }
+  ],
+  "attempts": [
+    {
+      "result": "FAIL",
+      "reason": "Initial focused test expected complete formula AST identity. Inspection identified exact calculation-call replacement; added independent Decimal reference and exact old/new ID assertion, not blanket waiver."
+    },
+    {
+      "result": "FAIL",
+      "reason": "Initial broad Phase1/Phase2 historical AST comparison could not read missing historical commit in shallow checkout. Fetched exact immutable commit; fresh complete runs passed."
+    },
+    {
+      "result": "FAIL",
+      "reason": "Initial reference manifest emitted an absolute fixture path. Unchanged gate rejected it. Generator corrected to repository-relative path, canonical manifest regenerated; fresh reference gate passed."
+    }
+  ],
+  "retainedWarnings": [
+    "Lint: 0 errors, 93 warnings.",
+    "Core suite exit zero retains retired/unverified bifacial stored-target WARN; not model validation.",
+    "Prior 56 CAD reference-expression debt, Docker/Safari/deployment/field/conformity/bankability not resolved by this work."
+  ],
+  "remaining": [
+    "Roof private-generator named migration needs evidence-backed directly executable reference strategy; no helper renaming or gate bypass permitted.",
+    "Common named transposition policy and U07a completion",
+    "Full common annual-policy reconciliation and persisted model migration",
+    "Manufacturer-specific electrical factors/conditions and catalog/import/HTTP lifecycle",
+    "Normative wind applicability/persisted policies",
+    "Broader economic-policy migration, debt/project/equity accounting and precision"
+  ],
+  "historicalReceipts": "Preserved unchanged as historical records; prior 28-expression count applies to former branch base, not this one-expression delta.",
+  "fileSha256": {
+    "CHANGELOG.md": "d26f32cd0b25c8dbb633174af2b3a552bc9e212dafb6b28eed9804c81bc05656",
+    "docs/adr/ADR-020-named-canonical-waterfall-routing.md": "628e7e4e5d1b45693cb7eb7b6291a48d40cf014f7e194eccd988b2724460f06d",
+    "docs/audit/dual-independent-audit-review/PHASE-2-NAMED-WATERFALL-PLAN.md": "c76e8216f8da80ccbdc4e8b301df01d85ac520b04a920dbe9afec759adf6b022",
+    "docs/audit/dual-independent-audit-review/PHASE-2-RESEARCH-AND-REVIEW.md": "c9679dfaefb67bbe7443c2b3dbf2a1d2c1ada8dda8c173011b40efdc0bea80bc",
+    "docs/audit/dual-independent-audit-review/PHASE-2-STATUS.md": "9d3d92d886fbeccc3a0ee953ac87c3eb9d33180be7488c25a310fc02ad7874a2",
+    "docs/audit/dual-independent-audit-review/current-finding-dispositions.json": "e9d15762a973f5831a10736b203e2485cf05536173d666e45dd2bb197108e9b9",
+    "docs/audit/dual-independent-audit-review/current-implementation-evidence.json": "b8b6293483283fdd7f6c3fc40c893faad693e831169a7c4ba221ec7fe6f8eb83",
+    "docs/guides/annual-thermal-screening.md": "fd5cb0a58de96ddcbea85efe997093e8c480ad3d5f7e5d6a0221803d6405fab8",
+    "package.json": "cc2a0161cced8183f5f6278e359cfed81b7e0f95c54508a525ce81ba67cd5d37",
+    "scripts/fixtures/physics/generate-named-waterfall.py": "31ee79ccce577dbb177dae5d5fccedd6888693bd3354f501c73e069728b2f6d1",
+    "scripts/fixtures/physics/named-waterfall-decimal.json": "076564aa28dd55dc431c64039774f1c1106e3a30a3b89aa31bf4bdbe6e9f6948",
+    "scripts/physics-reference-evidence.json": "e30799718a26580778eba4ff19b8a1574d762450c157ef9c84be4831aedabb47",
+    "scripts/test-phase2-named-waterfall.ts": "0f8d6436b3e5bbb39e34562637302aa6772be2471017cedc96270bcb9de52fd2",
+    "src/engine/core/annualYieldEngine.ts": "ada5ad59071c14b71f6ed243e3b0989a891b7fcb6c566e176af3beb05a97b714",
+    "src/engine/waterfallArgs.ts": "9abbb51ebbeef05cd8ec4ebfd3f7c6c698a8deadabe701aeddd66516c17ec31f",
+    "src/engine/waterfallLossEngine.ts": "e2237d7d0a03c01fd61da672048566bfb8be5cf1e4d054bd3f00e34bd5a3a6fe"
+  }
+}

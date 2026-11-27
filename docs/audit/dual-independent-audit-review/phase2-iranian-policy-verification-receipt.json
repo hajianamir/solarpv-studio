@@ -1,0 +1,128 @@
+{
+  "date": "2026-11-03",
+  "scope": "Bounded Iranian economic-policy persistence, project/equity NPV identity and stable tiny-rate annuity; not complete U16b or Phase2",
+  "status": "PASS bounded verification; overall release BLOCKED",
+  "commands": [
+    {
+      "command": "npm run lint",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:smoke",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:coverage",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase1",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase2",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:remaining",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:recovery",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:accepted-audit",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:remediation",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:exports",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:engine-claims",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:help",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:physics-registry",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:physics-reference-gate",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:phase1-evidence",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase1:browser",
+      "exitCode": 0
+    }
+  ],
+  "postReviewReruns": [
+    {
+      "command": "npm run lint",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:help",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase1:browser",
+      "exitCode": 0
+    }
+  ],
+  "evidence": {
+    "independentPolicyDecimalCases": 48,
+    "legacyPrecisionCases": 18,
+    "cumulativeChangedExpressionsExecutedAndSensitivityChecked": 11,
+    "lintErrors": 0,
+    "existingLintWarnings": 93,
+    "browser": "Production bundle; custom nominal policy, zero interest, project/equity raw values, tab retention, local save, downloaded project import/re-export. External providers blocked.",
+    "research": "Pinned upstream documentation inspected; upstream SAM not executed; three self-review/research rounds in ADR-022."
+  },
+  "limitations": [
+    "No statutory tariff validation or bankability",
+    "No full financing/tax/replacement/salvage/nonconventional-flow coverage",
+    "Other financial ledgers/policies and scalar precision remain open",
+    "Overall Phase2 incomplete; no conformity or field validation",
+    "No new commit or push"
+  ],
+  "sha256": {
+    "src/contracts/iranianEconomicPolicy.ts": "b4c82624332a56383b09d6c0c973d489856bf9947ec467af977965417186b608",
+    "src/engine/iranianRegulationsFinancial.ts": "a556a21446b223a565a131a815cb918ecbcc93c8d768d725d27b6ca009bebc5e",
+    "src/components/IranianRegulationsTab.tsx": "5871784fc1ad36ba514d96b10ad06c83a4100b8cd59910292d9248e4274c569b",
+    "src/engine/core/projectMigration.ts": "a6f5b0b05c8ce9f03a20408036095b2181073d1d8730edb6ec278d776352dda5",
+    "src/App.tsx": "e2122da55cb547f5e378dec522bcf669830f71a55005ddcaf359e0eaa5e2133a",
+    "src/helpContent.ts": "a1441a1cfa0155c9cab7123531e35be6a96ac9c4b031bff8e6d67a613f1d6e90",
+    "scripts/test-phase2-iranian-policy.ts": "65c5d4bed30719b8d06b8ff28b668dc77650a18cb93540b91f80eeec43846247",
+    "scripts/test-phase1-browser.ts": "5657a04de827387b61555c310c558872c492180e93d5c0af93b2cc04020ee936",
+    "scripts/fixtures/physics/generate-iranian-precision.py": "1f488696105b78519e87da218cfc65423a760a928b971fec49eb2a2be99abf18",
+    "scripts/fixtures/physics/iranian-policy-decimal.json": "cbe08b4498c8645d10d77211a3878fa1e320d1cf0fc5d7bc95b00d5654f4574f",
+    "scripts/physics-reference-evidence.json": "56ad6c7c7adf3c8278995aa0bd6c5722c22802b7e9810efeed009b2f48e2ee06",
+    "docs/adr/ADR-022-explicit-iranian-economic-policy.md": "ee0407e35a3dc2c9fd5e97334f59d0cf5dc87a49a8e7fdbe4831a0de94a9707e",
+    "docs/guides/iranian-economic-policy.md": "75177eee7432e2464ff0b38700c7a7da6fd57d5495bf0eb1f807e7d314c880fc"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "calculateFixedTiltTranspositionGain",
+  "independentCalculation": "Independent 60-digit Decimal characterization, not physical POA validation.\n\nNo production imports/execution/numerical outputs. Governing policy is the\nrepository's inherited latitude/tilt heuristic at base 0d41fd38. Trigonometry\nis independently evaluated by Decimal Taylor series, not JavaScript Math/libm.\nOne decimal place is inherited policy quantization, not claimed accuracy.\n",
+  "tolerances": {
+    "absolute": 1e-12,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "Independent Decimal characterization of inherited scalar transposition policy",
+    "url": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+    "version": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+    "locator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+  },
+  "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#ca9f5664b87f",
+  "inputs": [
+    45,
+    35
+  ],
+  "expected": 16.7
+}

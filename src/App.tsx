@@ -1,3 +1,4 @@
+import {createDefaultIranianScreenSettings,type IranianScreenSettings} from './contracts/iranianEconomicPolicy';
 import {ECONOMIC_ASSUMPTIONS, BIFACIAL_READINESS} from './presentation/phase1Evidence';
 import {buildDesignSummary} from './presentation/designSummary';
 import {createOperationalProjectBundle,unpackOperationalProject} from './studies/operationalProjectTransfer';
@@ -450,6 +451,8 @@ export const App: React.FC = () => {
   const isShadingStale = shadingLifecycle.isStale ?? false;
   const shadingLoss3dPct = isShadingStale ? null : (appliedShadingRecord?.lossPct ?? null);
   
+  const [iranianScreenSettings,setIranianScreenSettings] = useState<IranianScreenSettings>(createDefaultIranianScreenSettings);
+
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
 
@@ -589,6 +592,7 @@ export const App: React.FC = () => {
     targetPowerplantCapacityKw,
     enableDieselGenerator,
     userPricing,
+    iranianScreenSettings,
     trackerConfig,
     metadata: reportMetadata,
     operationalStudyId: operationalEnergy?.studyId??operationalStudyId,
@@ -1368,6 +1372,7 @@ export const App: React.FC = () => {
       if (clean.mvVoltageKv !== undefined) setMvVoltageKv(clean.mvVoltageKv);
       if (clean.targetPowerplantCapacityKw !== undefined) setTargetPowerplantCapacityKw(clean.targetPowerplantCapacityKw);
       if (clean.enableDieselGenerator !== undefined) setEnableDieselGenerator(Boolean(clean.enableDieselGenerator));
+      setIranianScreenSettings(clean.iranianScreenSettings ?? createDefaultIranianScreenSettings());
       if (clean.userPricing) setUserPricing(clean.userPricing as unknown as UserFinancialPricing);
       if (clean.selectedChemistry) setSelectedChemistry(clean.selectedChemistry as BatteryChemistry);
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
@@ -3134,6 +3139,8 @@ export const App: React.FC = () => {
           {/* IRANIAN PPA REGULATIONS TAB */}
           {activeTab === 'iran_regulations' && (
             <IranianRegulationsTab
+              settings={iranianScreenSettings}
+              onSettingsChange={setIranianScreenSettings}
               capacityKwp={designSummary.actualDcKwp}
               annualGenerationMwh={designSummary.annualFinancialEnergyMwh}
               operationalEnergyBlocked={!designSummary.iranianModelAvailable}
