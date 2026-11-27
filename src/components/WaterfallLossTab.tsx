@@ -1,3 +1,4 @@
+import { SCALAR_TRANSPOSITION_DISCLOSURE } from '../engine/core/scalarTransposition';
 import {BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import {ReferenceLossStatus} from './ReferenceLossStatus';
 import React from 'react';
@@ -82,6 +83,7 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
             ? 'برآورد غربالگری با ضرایب تجربی و تلفات پیش‌فرض؛ شبیه‌سازی ساعتی آب‌وهوامحور یا اعتبارسنجی PVsyst نیست. بهرهٔ شیب، ترکر و دوطرفه نیازمند بررسی مستقل‌اند.'
             : 'Screening estimate with empirical gains and default losses; not a weather-driven hourly simulation or PVsyst validation. Tilt, tracker and bifacial gains require independent verification.'}
         </p>
+        <p className="text-slate-400 text-xs" data-testid="scalar-transposition-policy">{SCALAR_TRANSPOSITION_DISCLOSURE[isFa ? 'fa' : 'en']}</p>
       </div>
 
       {/* Tracker info strip — read-only (BUG-3: control lives in PvArrayEngineeringTab) */}

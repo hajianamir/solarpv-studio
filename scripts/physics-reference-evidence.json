@@ -1199,6 +1199,240 @@
       "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
     },
     {
+      "formulaId": "src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1",
+      "fixtureFile": "scripts/fixtures/physics/named-waterfall-decimal.json",
+      "productionExport": "computeCanonicalAnnualYield",
+      "referenceTitle": "Independent Decimal scalar-waterfall routing characterization",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb; unchanged screening policy",
+      "referenceLocator": "Sequential stage energy E_next=E_previous*(1+pct/100), zero tilt => zero transposition gain; first-year kWh, kWp, PSH, percentage points. Independent Decimal arithmetic only, not physical-model validation."
+    },
+    {
+      "formulaId": "src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63",
+      "fixtureFile": "scripts/fixtures/physics/roof-named-waterfall-decimal.json",
+      "productionExport": "annualShadingSteps",
+      "referenceTitle": "Independent Decimal roof-generator routing and empty-scene identities",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/roof3dShadingEngine.ts",
+      "referenceVersion": "base 0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb; unchanged local screening policy",
+      "referenceLocator": "Empty scene: zero table energy/loss; equatorial day1 hours7..17 above 1 degree, weighted PSH integral; sequential Decimal retained-stage composition at zero tilt, NOCT45 and ambient -6.25C giving cell25C. Not whole-model geometry/weather validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0b20eb0546ec",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-0b20eb0546ec.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0273ec42632a",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-0273ec42632a.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0e4500dfa723",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-0e4500dfa723.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#14302e72d23f",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-14302e72d23f.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#2c21b691d7d4",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-2c21b691d7d4.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#43b37a8c9b7a",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-43b37a8c9b7a.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#7f053acf18d8",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-7f053acf18d8.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#b1c45f04216f",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-b1c45f04216f.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#cfb2e3bb6170",
+      "fixtureFile": "scripts/fixtures/physics/iranian-policy-cfb2e3bb6170.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#04fb44f7732d",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-04fb44f7732d.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#44f3119ddced",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-44f3119ddced.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#527dcf3452e7",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-527dcf3452e7.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d083cdece6e",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-5d083cdece6e.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d1463a58902",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-5d1463a58902.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#680f01237b19",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-680f01237b19.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#971fe3ea22db",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-971fe3ea22db.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#9b7af51ccf98",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-9b7af51ccf98.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#a3a8c99d4297",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-a3a8c99d4297.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#b5a906717670",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-b5a906717670.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#c2328fa70623",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-c2328fa70623.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#ca9f5664b87f",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-ca9f5664b87f.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#d92630d4a826",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-d92630d4a826.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#fcc6ae3598e1",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-fcc6ae3598e1.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
+      "formulaId": "src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#feef71cb977d",
+      "fixtureFile": "scripts/fixtures/physics/scalar-transposition-feef71cb977d.json",
+      "productionExport": "calculateFixedTiltTranspositionGain",
+      "referenceTitle": "Independent Decimal characterization of inherited scalar transposition policy",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base 0d41fd38; legacy_latitude_tilt_screen_v1",
+      "referenceLocator": "calculateFixedTiltTranspositionGain; degrees in, percent over GHI out; empirical coefficients unvalidated; independent Taylor-series arithmetic, not weather/field/model-accuracy evidence"
+    },
+    {
       "formulaId": "src/engine/financialEngine.ts#performFinancialAnalysis#07cbbf982780",
       "fixtureFile": "scripts/fixtures/physics/grid-import-07cbbf982780.json",
       "productionExport": "performFinancialAnalysis",

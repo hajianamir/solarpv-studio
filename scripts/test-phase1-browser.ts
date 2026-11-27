@@ -1,3 +1,4 @@
+import {runIranianRegulationFinancialModel} from '../src/engine/iranianRegulationsFinancial';
 import {recommendSharedFoundation} from '../src/engine/geotech/foundationRecommendation';
 import {getDocument} from 'pdfjs-dist/legacy/build/pdf.mjs';
 import {readFile} from 'node:fs/promises';
@@ -21,6 +22,7 @@ try {
  const tab=async(id:string)=>page.getByTestId(`workflow-tab-${id}`).locator(':visible').first().click();
  async function check() {
   await tab('waterfall_loss');
+  assert.match(await page.getByTestId('scalar-transposition-policy').innerText(),/legacy_latitude_tilt_screen_v1/);
   const annual=Number(await page.getByTestId('waterfall-annual-mwh').getAttribute('data-annual-mwh'));
   const pr=Number((await page.getByTestId('waterfall-pr-value').innerText()).replace('%',''));
   assert.equal(await page.getByTestId('summary-waterfall-pr').innerText(),pr.toFixed(1)+'%');
@@ -58,6 +60,27 @@ try {
  }
 
  await page.getByRole('button',{name:'EN',exact:true}).click();
+ await tab('iran_regulations');
+ await page.locator('#iran-reg-interest-rate').fill('0');
+ await page.locator('#iran-reg-debt-ratio').fill('35');
+ await page.locator('#iran-reg-debt-tenor').fill('6');
+ await page.locator('#iran-reg-tariff').fill('5000');
+ await page.locator('#iran-policy-discountRatePct').fill('5');
+ await page.locator('#iran-policy-tariffEscalationPct').fill('0');
+ await page.locator('#iran-policy-opexEscalationPct').fill('3');
+ const screenSettings={framework:'article_16',customTariffToman:5000,loanSharePct:35,loanInterestPct:0,loanTermYears:6,economicPolicy:{modelPolicy:'iranian_screen_economics_v1',currency:'TOMAN',rateBasis:'nominal',discountRatePct:5,tariffEscalationPct:0,opexEscalationPct:3}} as const;
+ await page.locator('#iran-policy-opexEscalationPct').blur();
+ await page.keyboard.press('Control+s');
+ const localSettings=await page.evaluate(()=>JSON.parse(localStorage.getItem('solarpv_project_save')??'{}').iranianScreenSettings);
+ assert.deepEqual(localSettings,screenSettings,'Local save retains the active economics, not prior tab defaults');
+ const screenDc=Number(await page.getByTestId('iranian-input-summary').getAttribute('data-dc-kwp'));
+ const screenMwh=Number(await page.getByTestId('iranian-input-summary').getAttribute('data-annual-mwh'));
+ const expectedIranian=runIranianRegulationFinancialModel(screenDc,screenMwh,'article_16',5000,35,0,6,25,screenSettings.economicPolicy);
+ assert.equal(Number(await page.getByTestId('iranian-project-npv').getAttribute('data-value')),expectedIranian.projectNpvMillionToman);
+ assert.equal(Number(await page.getByTestId('iranian-equity-npv').getAttribute('data-value')),expectedIranian.equityNpvMillionToman);
+ await tab('waterfall_loss');await tab('iran_regulations');
+ assert.equal(await page.locator('#iran-reg-interest-rate').inputValue(),'0','Zero interest and policy survive tab unmount');
+ assert.equal(await page.locator('#iran-policy-discountRatePct').inputValue(),'5');
  await tab('cables_bom');
  await page.getByTestId('feeder-ac-output-parallelArrangement').selectOption('equal_length_equal_sharing');
  await page.getByTestId('feeder-ac-output-equivalentReactanceOhmPerM').fill('0.000096');
@@ -93,6 +116,7 @@ try {
  const jsonPromise=page.waitForEvent('download');await page.getByTitle('Save Project File to Local Machine',{exact:true}).click();
  const jsonPath=await(await jsonPromise).path();assert.ok(jsonPath);
  const envelope=JSON.parse(await readFile(jsonPath,'utf8'));
+ assert.deepEqual(envelope.projectData.iranianScreenSettings,screenSettings,'Actual project export preserves economics and all screen settings');
  const thermalSnapshot=envelope.projectData.reportSnapshot.annualThermalProfile;
  assert.equal(thermalSnapshot.seasonalTemperaturePolicy,'hemisphere_cosine_equator_flat_v1');
  assert.equal(thermalSnapshot.energyAvailability,'positive_reference_irradiation');
@@ -105,15 +129,21 @@ try {
  assert.match(envelope.projectData.cableFeederInputs['ac-output'].impedanceSource,/60 Hz/);
  const ratingEvidence={basis:'factored_array_isc',scope:'per_mppt',source:'SYNTHETIC browser persistence fixture, not manufacturer evidence',sourceDate:null,conditions:'Persistence only; not assessed',requiredMultiplier:1.25,operatingCurrentAmps:envelope.projectData.selectedInverter.imppMaxAmpsPerMppt,shortCircuitCurrentAmps:envelope.projectData.selectedInverter.iscMaxAmpsPerMppt};
  envelope.projectData.selectedInverter.mpptRatingEvidence=ratingEvidence;
+ envelope.projectData.iranianScreenSettings.loanInterestPct=2;
+ envelope.projectData.iranianScreenSettings.economicPolicy.discountRatePct=7;
  page.on('dialog',dialog=>dialog.accept());
  await page.locator('#report-restore-file-input').setInputFiles({name:'phase1-evidence.solarpv.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(envelope))});
  await tab('array');assert.match(await page.getByTestId('electrical-readiness').innerText(),/unassessed/);
+ await tab('iran_regulations');
+ assert.equal(await page.locator('#iran-reg-interest-rate').inputValue(),'2');
+ assert.equal(await page.locator('#iran-policy-discountRatePct').inputValue(),'7');
  await page.keyboard.press('Control+e');
  const savedPromise=page.waitForEvent('download');await page.getByTitle('Save Project File to Local Machine',{exact:true}).click();
  const savedPath=await(await savedPromise).path();assert.ok(savedPath);
  const restored=JSON.parse(await readFile(savedPath,'utf8'));
  assert.deepEqual(restored.projectData.selectedInverter.mpptRatingEvidence,ratingEvidence);
+ assert.deepEqual(restored.projectData.iranianScreenSettings,envelope.projectData.iranianScreenSettings,'Actual import then re-export retains explicit economic policy');
  assert.deepEqual(restored.projectData.cableFeederInputs['ac-output'],envelope.projectData.cableFeederInputs['ac-output']);
  assert.deepEqual(errors,[]);
- console.log('PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence import/export. External providers blocked; not field validation.');
+ console.log('PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence and custom Iranian policy/zero-interest/project-vs-equity NPV import/export. External providers blocked; not field validation.');
 } finally {await browser?.close();await new Promise<void>((resolve,reject)=>server.httpServer.close(e=>e?reject(e):resolve()));}

@@ -21,6 +21,17 @@
     "projectIrrPct": 33.5,
     "equityIrrPct": 39.4,
     "npvMillionToman": 17.69699753815416,
+    "projectNpvMillionToman": 18.52863792383336,
+    "equityNpvMillionToman": 17.69699753815416,
+    "economicPolicy": {
+      "modelPolicy": "iranian_screen_economics_v1",
+      "currency": "TOMAN",
+      "rateBasis": "nominal",
+      "discountRatePct": 20,
+      "tariffEscalationPct": 12.0,
+      "opexEscalationPct": 15.0
+    },
+    "financialAdoptionEligible": false,
     "simplePaybackYears": 5.1,
     "discountedPaybackYears": 7.0,
     "paybackStatus": "achieved",

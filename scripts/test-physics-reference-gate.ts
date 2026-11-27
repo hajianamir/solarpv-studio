@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { assertReferenceValue,decodeReferenceExpected, changedFormulaUnits, executeReferenceFixture, extractFormulaUnits, validateEvidenceRecords } from './verify-physics-reference-gate';
+import { assertReferenceValue,decodeReferenceExpected,drainReferenceGenerator, changedFormulaUnits, executeReferenceFixture, extractFormulaUnits, validateEvidenceRecords } from './verify-physics-reference-gate';
 
 const sourceBefore = `export function calculate(input: number) {\n  const power = input * 2 + 1;\n  return power <= 100;\n}`;
 const sourceAfterCoefficientChange = `export function calculate(input: number) {\n  const power = input * 2 + 1.5;\n  return power <= 100;\n}`;
@@ -262,6 +262,28 @@ try {
   fs.writeFileSync(path.join(fixtureRepo, 'src/engine/exampleEngine.ts'), incrementSource);
   fs.writeFileSync(fixturePath, JSON.stringify({ ...runtimeFixture, formulaId: incrementUnit.formulaId, productionExport: 'increment', inputs: [4], expected: 5 }));
   await executeReferenceFixture(incrementRecord, fixtureRepo);
+  const generatorSource='export function* calculate(input: number) { yield 999; const result=input * 2 + 1.5; yield 888; return result; }';
+  fs.writeFileSync(path.join(fixtureRepo,'src/engine/exampleEngine.ts'),generatorSource);
+  fs.writeFileSync(fixturePath,JSON.stringify(runtimeFixture));
+  await executeReferenceFixture(validRecord,fixtureRepo);
+  fs.writeFileSync(fixturePath,JSON.stringify({...runtimeFixture,expected:999}));
+  await assert.rejects(()=>executeReferenceFixture(validRecord,fixtureRepo),/expected 999/,'Progress yields are not reference outputs');
+  fs.writeFileSync(fixturePath,JSON.stringify(runtimeFixture));
+  fs.writeFileSync(path.join(fixtureRepo,'src/engine/exampleEngine.ts'),generatorSource.replace('return result;','return 7.5;'));
+  await assert.rejects(()=>executeReferenceFixture(validRecord,fixtureRepo),/did not change the production output/,'Executed but unused generator formula must fail sensitivity');
+  fs.writeFileSync(path.join(fixtureRepo,'src/engine/exampleEngine.ts'),generatorSource.replace('const result=input * 2 + 1.5;','const result=7.5; if(false){ input * 2 + 1.5; }'));
+  await assert.rejects(()=>executeReferenceFixture(validRecord,fixtureRepo),/did not execute the exact formula/);
+  fs.writeFileSync(path.join(fixtureRepo,'src/engine/exampleEngine.ts'),generatorSource.replace('function*','async function*'));
+  await assert.rejects(()=>executeReferenceFixture(validRecord,fixtureRepo),/Async generator reference execution is not supported/);
+  fs.writeFileSync(path.join(fixtureRepo,'src/engine/exampleEngine.ts'),'export function calculate(input: number) { const result=input * 2 + 1.5; return [result][Symbol.iterator](); }');
+  await assert.rejects(()=>executeReferenceFixture(validRecord,fixtureRepo),/must be a finite number/,'Ordinary iterator-returning functions are not implicitly drained');
+  fs.writeFileSync(path.join(fixtureRepo,'src/engine/exampleEngine.ts'),'export function* calculate(input: number) { yield; const result=input * 2 + 1.5; if(result!==7.5)throw new Error("application rejection"); return result; }');
+  await executeReferenceFixture(validRecord,fixtureRepo);
+  // A mutant hitting the harness budget is a failed execution, not a scientific
+  // runtime-rejection sensitivity witness. Only application errors qualify.
+  fs.writeFileSync(path.join(fixtureRepo,'src/engine/exampleEngine.ts'),'export function* calculate(input: number) { const result=input * 2 + 1.5; if(result!==7.5)while(true)yield; return result; }');
+  await assert.rejects(()=>executeReferenceFixture(validRecord,fixtureRepo),/exceeded 100000 next calls/);
+
 } finally {
   fs.rmSync(fixtureRepo, { recursive: true, force: true });
 }
@@ -282,3 +304,12 @@ assertReferenceValue({number:12,optional:undefined},explicitUndefined,0,0);
 for(const bad of [{number:12},{number:12,optional:null},{number:13,optional:undefined},{number:12,optional:0}])assert.throws(()=>assertReferenceValue(bad,explicitUndefined,0,0));
 assert.throws(()=>decodeReferenceExpected({$undefined:true,ignored:12}));
 assert.throws(()=>decodeReferenceExpected({$undefined:false}));
+
+assert.equal(drainReferenceGenerator((function*(){yield 123;return 7;})()),7);
+let generatorClosed=false;
+function* endless(){try{while(true)yield;}finally{generatorClosed=true;}}
+assert.throws(()=>drainReferenceGenerator(endless()),/exceeded 100000/);
+assert.equal(generatorClosed,true,'Budget failure closes a suspended generator');
+assert.throws(()=>drainReferenceGenerator({next:()=>({done:true,value:7})}),/synchronous iterator/);
+
+assert.equal(drainReferenceGenerator((function*(){for(let i=0;i<99999;i++)yield;return 7;})()),7,'Final return on the last allowed next call is accepted');

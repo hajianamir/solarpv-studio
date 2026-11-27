@@ -490,6 +490,29 @@ function perturbFormulaValue(value: unknown): unknown {
   return '__physics_probe__';
 }
 
+/** Harness errors must never be credited as mutant application rejection. */
+class ReferenceExecutionError extends Error {}
+
+/** Drain only an AST-declared synchronous generator. Progress yields are not
+ * scientific outputs. This is a next-call budget, not preemption of a next()
+ * that never returns (ordinary fixture execution has the same limitation).
+ */
+export function drainReferenceGenerator(value: unknown): unknown {
+  if (value === null || typeof value !== 'object' ||
+      typeof (value as Iterator<unknown>).next !== 'function' ||
+      typeof (value as Iterable<unknown>)[Symbol.iterator] !== 'function' ||
+      (value as Iterable<unknown>)[Symbol.iterator]() !== value) {
+    throw new ReferenceExecutionError('Declared synchronous generator did not return a synchronous iterator');
+  }
+  const iterator=value as Iterator<unknown>;
+  for(let step=0;step<100000;step++) {
+    const result=iterator.next();
+    if(result.done)return result.value;
+  }
+  try {iterator.return?.();} catch { /* Preserve the original budget failure. */ }
+  throw new ReferenceExecutionError('Reference generator exceeded 100000 next calls');
+}
+
 async function invokeInstrumentedProduction(
   modulePath: string,
   sourceFile: string,
@@ -548,11 +571,18 @@ async function invokeInstrumentedProduction(
     assert.equal(typeof productionFunction, 'function', `${sourceFile}: exported production function ${record.productionExport} was not found`);
     let output: unknown;
     try {
+      const declaration=instrumentSourceFile.statements.find(statement=>
+        ts.isFunctionDeclaration(statement)&&statement.name?.text===record.productionExport);
+      if(declaration&&ts.isFunctionDeclaration(declaration)&&declaration.asteriskToken&&
+          declaration.modifiers?.some(modifier=>modifier.kind===ts.SyntaxKind.AsyncKeyword)) {
+        throw new ReferenceExecutionError('Async generator reference execution is not supported');
+      }
       output = await (productionFunction as (...args: unknown[]) => unknown)(...inputs);
+      if(declaration&&ts.isFunctionDeclaration(declaration)&&declaration.asteriskToken)output=drainReferenceGenerator(output);
     } catch (error) {
       // Only an executed mutant's runtime rejection is an output-sensitivity
       // witness. Baseline failures, import errors and missing exports still fail.
-      if (!mutateFormula || visits.length === 0 || !(error instanceof Error)) throw error;
+      if (!mutateFormula || visits.length === 0 || !(error instanceof Error) || error instanceof ReferenceExecutionError) throw error;
       output = { __physicsMutantRuntimeRejection: { name: error.name, message: error.message } };
     }
     return { output, visits: visits.length, numericProperties: [...numericProperties] };

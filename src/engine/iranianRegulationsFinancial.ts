@@ -1,3 +1,4 @@
+import {IranianEconomicPolicySchema,IranianScreenBaseSchema,assertFiniteIranianResult,type IranianEconomicPolicy} from '../contracts/iranianEconomicPolicy';
 // Iranian tariff/financing screening model; illustrative assumptions, not verified statutory rates.
 // Ledger base unit: MILLION TOMAN, retained as full-precision floating-point amounts.
 // Round only in UI/export formatting; never feed displayed amounts back to NPV/IRR.
@@ -27,7 +28,12 @@ export interface IranianFinancialModelResult {
   bankLoanMillionToman: number;
   projectIrrPct: number | null;
   equityIrrPct: number | null;
+  /** @deprecated Equity NPV alias. Prefer equityNpvMillionToman/projectNpvMillionToman. */
   npvMillionToman: number;
+  projectNpvMillionToman: number;
+  equityNpvMillionToman: number;
+  economicPolicy: IranianEconomicPolicy;
+  financialAdoptionEligible: false;
   simplePaybackYears: number | null;
   discountedPaybackYears: number | null;
   paybackStatus: 'achieved' | 'not_achieved';
@@ -45,8 +51,10 @@ export function runIranianRegulationFinancialModel(
   loanSharePct: number = 70, // 70% debt financing
   loanInterestPct: number = 23.0, // 23% Iranian bank loan interest
   loanTermYears: number = 5,
-  inflationPct: number = 25.0
+  inflationPct: number = 25.0,
+  economicPolicy?: IranianEconomicPolicy
 ): IranianFinancialModelResult {
+  IranianScreenBaseSchema.parse({capacityKwp,annualGenerationMwh,framework,customTariffTomanPerKwh});
   if (
     typeof loanTermYears !== 'number' ||
     !Number.isFinite(loanTermYears) ||
@@ -103,8 +111,8 @@ export function runIranianRegulationFinancialModel(
     } else if (r === 0) {
       annualLoanAnnuity = bankLoanMillionToman / loanTermYears;
     } else {
-      const powTerm = Math.pow(1 + r, loanTermYears);
-      const annuityFactor = (r * powTerm) / (powTerm - 1);
+      // Stable ordinary annuity: avoid subtracting nearly equal powers at small r.
+      const annuityFactor = r / -Math.expm1(-loanTermYears * Math.log1p(r));
       annualLoanAnnuity = bankLoanMillionToman * annuityFactor;
     }
   }
@@ -117,15 +125,21 @@ export function runIranianRegulationFinancialModel(
 
   // Inflation escalation indexing:
   // At default 25% inflation: tariff escalates at ~12% (0.48 * 25%), OPEX at ~15% (0.60 * 25%)
-  const tariffEscalationRate = (inflationPct / 100.0) * 0.48;
-  const opexEscalationRate = (inflationPct / 100.0) * 0.60;
+  // Omitted policy preserves the legacy inflation-indexed specialization.
+  // A supplied policy is strict and authoritative, never silently mixed with it.
+  const resolvedPolicy = economicPolicy === undefined ? IranianEconomicPolicySchema.parse({
+    modelPolicy:'iranian_screen_economics_v1',currency:'TOMAN',rateBasis:'nominal',
+    discountRatePct:20,tariffEscalationPct:inflationPct * 0.48,opexEscalationPct:inflationPct * 0.60,
+  }) : IranianEconomicPolicySchema.parse(economicPolicy);
+  const tariffEscalationRate = economicPolicy === undefined ? (inflationPct / 100.0) * 0.48 : resolvedPolicy.tariffEscalationPct / 100.0;
+  const opexEscalationRate = economicPolicy === undefined ? (inflationPct / 100.0) * 0.60 : resolvedPolicy.opexEscalationPct / 100.0;
 
   let simplePaybackYears: number | null = null;
   let discountedPaybackYears: number | null = null;
   let isSimplePaybackAchieved = false;
   let isDiscountedPaybackAchieved = false;
   let cumulativeDiscounted = -equityContributionMillionToman;
-  const discountRate = 0.20; // 20% cost of capital in IRR
+  const discountRate = resolvedPolicy.discountRatePct / 100.0; // valuation discount, not IRR or loan interest
 
   for (let yr = 1; yr <= 25; yr++) {
     const genMwh = annualGenerationMwh * Math.pow(1.0 - degradationRate, yr - 1);
@@ -245,8 +259,10 @@ export function runIranianRegulationFinancialModel(
   const equityIrrPct = calcIrr(equityCashFlowSeries);
   const projectIrrPct = calcIrr(projectCashFlowSeries);
 
-  // NPV calculation at 20% discount
+  // Separate unlevered project and post-debt equity valuation at the declared rate.
   const npvMillionToman = equityCashFlowSeries.reduce((acc, val, t) => acc + val / Math.pow(1.0 + discountRate, t), 0);
+
+  const projectNpvMillionToman = projectCashFlowSeries.reduce((acc, val, t) => acc + val / Math.pow(1.0 + discountRate, t), 0);
 
   // Article 16 penalty avoidance (typically ~4,000 Toman/kWh penalty for deficit)
   const article16PenaltyAvoidedMillionToman = Math.round((annualGenerationMwh * 1000 * 4200) / 1e6);
@@ -271,7 +287,7 @@ export function runIranianRegulationFinancialModel(
       : null;
   }
 
-  return {
+  const result: IranianFinancialModelResult = {
     frameworkNameFa,
     tariffPerKwhToman,
     totalCapexMillionToman,
@@ -280,6 +296,10 @@ export function runIranianRegulationFinancialModel(
     projectIrrPct,
     equityIrrPct,
     npvMillionToman,
+    projectNpvMillionToman,
+    equityNpvMillionToman: npvMillionToman,
+    economicPolicy: resolvedPolicy,
+    financialAdoptionEligible: false,
     simplePaybackYears,
     discountedPaybackYears,
     paybackStatus: isSimplePaybackAchieved ? 'achieved' : 'not_achieved',
@@ -288,4 +308,6 @@ export function runIranianRegulationFinancialModel(
     summerBlackoutLossPreventedMillionToman,
     cashFlow25Years: cashFlows,
   };
+  assertFiniteIranianResult(result);
+  return result;
 }

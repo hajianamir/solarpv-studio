@@ -1,3 +1,4 @@
+import {IranianScreenSettingsSchema,createDefaultIranianScreenSettings,type IranianScreenSettings} from '../contracts/iranianEconomicPolicy';
 import {ECONOMIC_DISCLOSURE, BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import React, { useState } from 'react';
 import { Scale, TrendingUp, DollarSign, ShieldAlert, Award, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
@@ -13,6 +14,8 @@ interface IranianRegulationsTabProps {
   /** Legacy scalar framework cannot value an adopted dispatch/import ledger. */
   operationalEnergyBlocked?: boolean;
   lang?: 'fa' | 'en';
+  settings?: IranianScreenSettings;
+  onSettingsChange?: (settings:IranianScreenSettings)=>void;
 }
 
 export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
@@ -20,13 +23,20 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
   annualGenerationMwh,
   lang = 'fa',
   operationalEnergyBlocked = false,
+  settings:controlledSettings,
+  onSettingsChange,
 }) => {
   const isFa = lang === 'fa';
-  const [framework, setFramework] = useState<IranianRegulationFramework>('article_16');
-  const [customTariffToman, setCustomTariffToman] = useState<number>(4500);
-  const [loanSharePct, setLoanSharePct] = useState<number>(70);
-  const [loanInterestPct, setLoanInterestPct] = useState<number>(23);
-  const [loanTermYears, setLoanTermYears] = useState<number>(5);
+  const [localSettings,setLocalSettings]=useState(createDefaultIranianScreenSettings);
+  const [inputError,setInputError]=useState(false);
+  const settings=controlledSettings??localSettings;
+  const {framework,customTariffToman,loanSharePct,loanInterestPct,loanTermYears,economicPolicy}=settings;
+  const updateSettings=(patch:Partial<IranianScreenSettings>)=>{
+    const checked=IranianScreenSettingsSchema.safeParse({...settings,...patch});
+    setInputError(!checked.success);
+    if(checked.success){setLocalSettings(checked.data);onSettingsChange?.(checked.data);}
+  };
+
 
   if (operationalEnergyBlocked) return (
     <div role="alert" data-testid="iranian-operational-blocked" className="studio-card">
@@ -36,15 +46,20 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
     </div>
   );
 
-  const modelResult: IranianFinancialModelResult = runIranianRegulationFinancialModel(
+  let modelResult: IranianFinancialModelResult;
+  try {
+  modelResult = runIranianRegulationFinancialModel(
     capacityKwp,
     annualGenerationMwh,
     framework,
     customTariffToman,
     loanSharePct,
     loanInterestPct,
-    loanTermYears
+    loanTermYears,
+    25,
+    economicPolicy
   );
+  } catch {return <div role="alert" data-testid="iranian-model-unavailable">{isFa?'محاسبه مالی در دسترس نیست؛ ورودی یا دامنه عددی نامعتبر است.':'Financial screen unavailable: invalid input or numerical domain.'}</div>;}
 
   const frameworksList = [
     {
@@ -83,8 +98,12 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
       <div role="note" data-testid="iranian-energy-basis" className="studio-card text-sm">
         {isFa ? 'ظرفیت واقعی DC و انرژی سالانهٔ خالص AC از همان مبنای تب مالی؛ نه هدف AC و نه روز نماینده × ۳۶۵. نرخ‌ها و تعدیل‌ها فرض غربالگری‌اند، نه تعرفهٔ رسمی به‌روز.' : 'Actual DC capacity and annual net AC energy use the Financial tab screening basis, not the AC target or a representative day × 365. Rates and escalation are screening assumptions, not verified current official tariffs.'}
         <p>{isFa
-          ? 'بازبینی افشا: ۲۰۲۶-۱۱-۰۳؛ منبع و تاریخ اعتبار نرخ‌ها تأیید نشده. حداقل نرخ چارچوب‌ها ۳۸۰۰/۴۵۰۰/۳۲۰۰/۵۰۰۰ تومان، CAPEX برابر ۳۱٫۵ میلیون تومان/kWp، OPEX برابر ۱٫۵٪، افت سالانه ۰٫۴۵٪ و تنزیل ۲۰٪ است. رشد تعرفه و OPEX برابر ۰٫۴۸ و ۰٫۶۰ ضربدر فرض تورم است؛ مقدار واردشده ممکن است با کف نرخ جایگزین شود.'
-          : 'Disclosure reviewed 2026-11-03; source/effective dates unverified. Framework tariff floors: 3800/4500/3200/5000 Toman/kWh; CAPEX 31.5 million Toman/kWp; OPEX 1.5%; annual degradation 0.45%; discount 20%. Tariff/OPEX escalation = 0.48/0.60 × assumed inflation. The entered tariff may be raised to a framework floor.'}</p>
+          ? `فرض غربالگری، نه نرخ رسمی: CAPEX برابر۳۱٫۵میلیون تومان/kWp، OPEX اولیه۱٫۵٪، افت سالانه۰٫۴۵٪؛ تنزیل اسمی ${economicPolicy.discountRatePct}٪، رشد تعرفه ${economicPolicy.tariffEscalationPct}٪ و رشد OPEX ${economicPolicy.opexEscalationPct}٪. مالیات، جایگزینی و ارزش اسقاط محاسبه نمی‌شوند. مبنای انرژی همچنان غربالگری است؛ پذیرش مالی مجاز نیست.`
+          : `Illustrative, not verified official rates: CAPEX31.5 million Toman/kWp, initial OPEX1.5%, annual degradation0.45%; nominal discount ${economicPolicy.discountRatePct}%, tariff escalation ${economicPolicy.tariffEscalationPct}%, OPEX escalation ${economicPolicy.opexEscalationPct}%. No taxes, replacement or salvage schedules. Energy remains a screening basis; financial adoption is not authorized.`}</p>
+        <p data-testid="iranian-applied-tariff">{isFa
+          ? `تعرفه واردشده ${customTariffToman}، تعرفه اعمال‌شده ${modelResult.tariffPerKwhToman} تومان/kWh. کف‌های فرضی چارچوب ۳۸۰۰/۴۵۰۰/۳۲۰۰/۵۰۰۰ است؛ منبع/تاریخ اعتبار تأیید نشده. یک نرخ تنزیل اسمی انتخاب‌شده برای هر دو NPV استفاده می‌شود، نه WACC یا هزینه آورده تأییدشده.`
+          : `Entered tariff ${customTariffToman}; applied tariff ${modelResult.tariffPerKwhToman} Toman/kWh. Illustrative framework floors3800/4500/3200/5000 remain; source/effective dates unverified. Both NPVs use the selected nominal screening discount, not an assessed WACC or cost of equity.`}</p>
+        <p data-testid="iranian-policy" data-policy={JSON.stringify(modelResult.economicPolicy)}>{economicPolicy.modelPolicy} · TOMAN · nominal · pre-tax · 25 years · financialAdoptionEligible: false</p>
         <div data-testid="iranian-input-summary" data-dc-kwp={capacityKwp} data-annual-mwh={annualGenerationMwh}>{capacityKwp.toFixed(2)} kWp DC · {annualGenerationMwh.toFixed(3)} MWh/yr</div>
       </div>
       {/* Title */}
@@ -111,7 +130,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
           {frameworksList.map((item) => (
             <div
               key={item.id}
-              onClick={() => setFramework(item.id as IranianRegulationFramework)}
+              onClick={() => updateSettings({framework:item.id as IranianRegulationFramework})}
               className={`p-3 rounded-lg border cursor-pointer transition-all ${
                 framework === item.id
                   ? 'bg-sky-950/70 border-sky-400 ring-1 ring-sky-400'
@@ -139,7 +158,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
               type="number"
               step="100"
               value={customTariffToman}
-              onChange={(e) => setCustomTariffToman(parseFloat(e.target.value) || 3000)}
+              onChange={(e) => updateSettings({customTariffToman:e.currentTarget.valueAsNumber})}
               className="studio-input font-mono text-industrial-success font-bold"
             />
           </div>
@@ -153,9 +172,9 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
               type="number"
               step="5"
               min="0"
-              max="90"
+              max="100"
               value={loanSharePct}
-              onChange={(e) => setLoanSharePct(parseInt(e.target.value) || 0)}
+              onChange={(e) => updateSettings({loanSharePct:e.currentTarget.valueAsNumber})}
               className="studio-input font-mono"
             />
           </div>
@@ -169,7 +188,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
               type="number"
               step="1"
               value={loanInterestPct}
-              onChange={(e) => setLoanInterestPct(parseFloat(e.target.value) || 18)}
+              onChange={(e) => updateSettings({loanInterestPct:e.currentTarget.valueAsNumber})}
               className="studio-input font-mono"
             />
           </div>
@@ -183,11 +202,19 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
               type="number"
               step="1"
               value={loanTermYears}
-              onChange={(e) => setLoanTermYears(parseInt(e.target.value) || 5)}
+              onChange={(e) => updateSettings({loanTermYears:e.currentTarget.valueAsNumber})}
               className="studio-input font-mono"
             />
           </div>
         </div>
+      </div>
+
+      <div className="studio-card grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {(['discountRatePct','tariffEscalationPct','opexEscalationPct'] as const).map((key,index)=><label key={key} htmlFor={`iran-policy-${key}`}>
+          {isFa?['نرخ تنزیل اسمی (٪)','رشد سالانه تعرفه (٪)','رشد سالانه OPEX (٪)'][index]:['Nominal discount (%)','Annual tariff escalation (%)','Annual OPEX escalation (%)'][index]}
+          <input id={`iran-policy-${key}`} type="number" step="0.1" value={economicPolicy[key]} onChange={event=>updateSettings({economicPolicy:{...economicPolicy,[key]:event.currentTarget.valueAsNumber}})} className="studio-input"/>
+        </label>)}
+        {inputError&&<p role="alert">{isFa?'ورودی نامعتبر پذیرفته نشد؛ آخرین مقدار معتبر حفظ شد.':'Invalid input rejected; last validated value retained.'}</p>}
       </div>
 
       {/* KPI Cards */}
@@ -206,13 +233,14 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
-            {isFa ? 'ارزش خالص فعلی پروژه (NPV)' : 'Project NPV'}
+            {isFa ? 'ارزش خالص فعلی آورده (Equity NPV)' : 'Equity NPV'}
           </div>
           <div className="text-xl font-bold font-mono text-theme-strong mt-1">
-            {(modelResult.npvMillionToman / 1000).toFixed(1)} <span className="text-xs font-normal text-slate-300">{isFa ? 'میلیارد تومان' : 'Billion Toman'}</span>
+            <span data-testid="iranian-equity-npv" data-value={modelResult.equityNpvMillionToman}>{(modelResult.equityNpvMillionToman / 1000).toFixed(1)}</span> <span className="text-xs font-normal text-slate-300">{isFa ? 'میلیارد تومان' : 'Billion Toman'}</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? 'با نرخ تنزیل ۲۰٪ ریالی' : '20% IRR Discount Rate'}
+            {isFa ? `نرخ تنزیل اسمی ${economicPolicy.discountRatePct}٪، تومان` : `${economicPolicy.discountRatePct}% nominal discount, TOMAN`}
+            <div data-testid="iranian-project-npv" data-value={modelResult.projectNpvMillionToman}>{isFa?'NPV پروژه پیش از بدهی: ':'Project NPV before debt: '}{modelResult.projectNpvMillionToman.toFixed(6)} {isFa?'میلیون تومان':'million Toman'}</div>
           </div>
         </div>
 

@@ -11,8 +11,8 @@
  */
 
 import { calculateSunPathPosition, type SunPosition } from './shadingSunPathEngine';
-import { computeWaterfallLosses, type WaterfallLossReport } from './waterfallLossEngine';
-import { buildWaterfallArgs } from './waterfallArgs';
+import type { WaterfallLossReport } from './waterfallLossEngine';
+import { computeConfiguredWaterfall } from './waterfallArgs';
 import { calculateShadingFactor, type Triangle, type Vec3 } from './solarPvEngine';
 import {
   sunVectorEnuFromNorthAzimuth,
@@ -1036,7 +1036,8 @@ export function computeTableShadingGeometricMesh(
  * Runs 8760-hour or fast-screening annual 3D geometric mesh ray-traced shading simulation
  * across the 3D scene and generates cell-level heatmaps strictly reconciled with the waterfall engine.
  */
-function* annualShadingSteps(
+/** @internal Shared sync/cooperative stepping kernel; progress yields carry no result. */
+export function* annualShadingSteps(
   scene: Scene3DState,
   peakSunHours: number = 5.2,
   ambientTempMaxC: number = 40.0,
@@ -1344,8 +1345,7 @@ function* annualShadingSteps(
   // Array tilt (not flat roof pitch) is passed to waterfall POA transposition
   const resolvedArrayTiltDeg = scene.tiltDeg ?? scene.pvTables[0]?.tiltDeg ?? 25.0;
 
-  const waterfallReport = computeWaterfallLosses(
-    ...buildWaterfallArgs({
+  const waterfallReport = computeConfiguredWaterfall({
       installedCapacityKwp: totalPlantKwp,
       peakSunHours,
       ambientTempMaxC,
@@ -1359,8 +1359,7 @@ function* annualShadingSteps(
       fixedTiltDeg: resolvedArrayTiltDeg,
       latitudeDeg: lat,
       shadingLossOverridePct: aggregateShadingLossPct,
-    })
-  );
+  });
 
   const result: AnnualShading3dResult = {
     sceneState: {

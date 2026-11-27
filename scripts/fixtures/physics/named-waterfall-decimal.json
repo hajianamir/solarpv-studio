@@ -1,0 +1,1151 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1",
+  "independentOfImplementation": true,
+  "productionExport": "computeCanonicalAnnualYield",
+  "inputs": [
+    {
+      "installedCapacityKwp": 100,
+      "peakSunHours": 5,
+      "ambientTempMaxC": 40,
+      "tiltDeg": 0,
+      "latitudeDeg": 0,
+      "annualThermalDerateOverridePct": -10
+    }
+  ],
+  "expected": {
+    "annualYieldKwh": 167468.0,
+    "netAnnualEnergyExportMwh": 167.5,
+    "specificYieldKwhPerKwp": 1675.0,
+    "effectiveYieldFactor": 0.917633,
+    "performanceRatioPct": 91.8,
+    "compoundPerformanceRatioPct": 91.7634,
+    "thermalDeratePctUsed": -10,
+    "clippingLossPctUsed": 0.2,
+    "waterfallReport": {
+      "installedCapacityKwp": 100,
+      "rawGhiEnergyKwh": 182500.0,
+      "effectivePoaEnergyKwh": 182500.0,
+      "stages": [
+        {
+          "id": "near_shading",
+          "nameFa": "تلفات سایه‌اندازی نزدیک بین ردیف‌ها",
+          "nameEn": "Near Shading Loss (Row-to-Row)",
+          "descriptionFa": "سایه‌اندازی ردیف‌های مجاور در اوایل صبح و غروب آفتاب",
+          "descriptionEn": "Inter-row module self-shading during low solar elevation angles (morning/evening).",
+          "nominalEnergyKwh": 182500.0,
+          "percentageLoss": -2.4,
+          "percentageLossRaw": -2.4,
+          "stageOutputKwh": 178120.0
+        },
+        {
+          "id": "iam",
+          "nameFa": "تلفات انعکاس اپتیکی شیشه (IAM / Fresnel)",
+          "nameEn": "Incidence Angle Modifier (IAM)",
+          "descriptionFa": "زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل با کوپل حرارتی dn/dT",
+          "descriptionEn": "Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling.",
+          "nominalEnergyKwh": 178120.0,
+          "percentageLoss": -2.2,
+          "percentageLossRaw": -2.2,
+          "stageOutputKwh": 174201.0
+        },
+        {
+          "id": "soiling",
+          "nameFa": "تلفات غبار (ورودی فرضی/کاربر؛ غربالگری)",
+          "nameEn": "Soiling & Dust Loss (Screening Input)",
+          "descriptionFa": "ورودی فرضی یا کاربر؛ اتصال به مدل معتبر Kimber یا دادهٔ سایت را ثابت نمی‌کند",
+          "descriptionEn": "Assumed/user-defined input; not evidence of a validated Kimber model or site calibration.",
+          "nominalEnergyKwh": 174201.0,
+          "percentageLoss": -4.5,
+          "percentageLossRaw": -4.5,
+          "stageOutputKwh": 166362.0
+        },
+        {
+          "id": "snow",
+          "nameFa": "تلفات برف (برآورد غربالگری)",
+          "nameEn": "Snow Coverage & Shedding Loss (Screening)",
+          "descriptionFa": "ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود",
+          "descriptionEn": "Snow-loss input is zero (no-op); this does not establish a snow-free site.",
+          "nominalEnergyKwh": 166362.0,
+          "percentageLoss": 0.0,
+          "percentageLossRaw": 0.0,
+          "stageOutputKwh": 166362.0
+        },
+        {
+          "id": "thermal",
+          "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
+          "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
+          "descriptionFa": "برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.",
+          "descriptionEn": "Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY.",
+          "nominalEnergyKwh": 166362.0,
+          "percentageLoss": 10.0,
+          "percentageLossRaw": 10.0,
+          "stageOutputKwh": 182999.0
+        },
+        {
+          "id": "quality",
+          "nameFa": "تلورانس توان نامی تولیدکننده (Module Quality)",
+          "nameEn": "Module Quality & Factory Flash Tolerance",
+          "descriptionFa": "تلورانس مثبت توان نامی بر اساس تست فلش کارخانه (Positive Power Tolerance 0~+3%)",
+          "descriptionEn": "Positive factory power sorting tolerance (0~+3%) exceeding nominal nameplate rating.",
+          "nominalEnergyKwh": 182999.0,
+          "percentageLoss": 0.4,
+          "percentageLossRaw": 0.4,
+          "stageOutputKwh": 183731.0
+        },
+        {
+          "id": "lid",
+          "nameFa": "تلفات زوال اولیه نوری (LID & LeTID)",
+          "nameEn": "Light-Induced Degradation (LID & LeTID)",
+          "descriptionFa": "کاهش جزئی راندمان در چند ساعت اول تابش نور خورشید",
+          "descriptionEn": "Initial light-induced silicon lattice recombination loss during initial operating weeks.",
+          "nominalEnergyKwh": 183731.0,
+          "percentageLoss": -1.2,
+          "percentageLossRaw": -1.2,
+          "stageOutputKwh": 181526.0
+        },
+        {
+          "id": "mismatch",
+          "nameFa": "تلفات عدم تطابق مشخصه‌های I-V استرینگ‌ها",
+          "nameEn": "String Module I-V Mismatch Loss",
+          "descriptionFa": "اختلاف جزئی در نقطه کار ماکزیمم (MPP) ماژول‌های متوالی در یک رشته",
+          "descriptionEn": "Current and voltage dispersion at maximum power points among series-connected modules.",
+          "nominalEnergyKwh": 181526.0,
+          "percentageLoss": -1.3,
+          "percentageLossRaw": -1.3,
+          "stageOutputKwh": 179166.0
+        },
+        {
+          "id": "dc_cabling",
+          "nameFa": "تلفات اهمی کابل‌کشی DC خورشیدی (I²R)",
+          "nameEn": "DC Cabling Ohmic Loss (I²R)",
+          "descriptionFa": "مقاومت الکتریکی هادی مسی بین استرینگ‌ها و اینورتر",
+          "descriptionEn": "Resistive power dissipation in PV string homeruns and DC busbars to inverters.",
+          "nominalEnergyKwh": 179166.0,
+          "percentageLoss": -1.4,
+          "percentageLossRaw": -1.4,
+          "stageOutputKwh": 176658.0
+        },
+        {
+          "id": "mppt_tracking",
+          "nameFa": "تلفات ترکینگ نقطه حداکثر توان اینورتر (MPPT)",
+          "nameEn": "Inverter Dynamic MPPT Tracking Loss",
+          "descriptionFa": "خطای دینامیک الگوریتم Perturb & Observe یا Incremental Conductance اینورتر",
+          "descriptionEn": "Dynamic tracking latency of maximum power point algorithms under shifting cloud cover.",
+          "nominalEnergyKwh": 176658.0,
+          "percentageLoss": -0.4,
+          "percentageLossRaw": -0.4,
+          "stageOutputKwh": 175951.0
+        },
+        {
+          "id": "clipping",
+          "nameFa": "تلفات برش توان اینورتر (Clipping Over-paneling)",
+          "nameEn": "Inverter AC Power Clipping (DC/AC Over-paneling)",
+          "descriptionFa": "محدودیت خروجی AC اینورتر در ساعات اوج تابش تابستانه",
+          "descriptionEn": "Inverter AC power clipping limit during peak midday summer hours due to high DC/AC ratio.",
+          "nominalEnergyKwh": 175951.0,
+          "percentageLoss": -0.2,
+          "percentageLossRaw": -0.2,
+          "stageOutputKwh": 175599.0
+        },
+        {
+          "id": "inverter_efficiency",
+          "nameFa": "تلفات بازدهی تبدیل DC به AC اینورتر",
+          "nameEn": "Inverter DC-to-AC Conversion Loss",
+          "descriptionFa": "تلفات کلیدزنی IGBTها و فیلترهای خروجی AC اینورتر (راندمان ۹۷.۸٪)",
+          "descriptionEn": "IGBT switching losses and magnetic filter impedance at 97.8% weighted Euro efficiency.",
+          "nominalEnergyKwh": 175599.0,
+          "percentageLoss": -2.2,
+          "percentageLossRaw": -2.2,
+          "stageOutputKwh": 171736.0
+        },
+        {
+          "id": "mv_transformer",
+          "nameFa": "تلفات کابل AC و ترانسفورماتور پست فشار متوسط",
+          "nameEn": "AC Collector & MV Step-Up Transformer Loss",
+          "descriptionFa": "تلفات بی‌باری (هسته‌ای) و بارداری (مسی) ترانسفورماتور افزاینده ۲۰ یا ۳۳ کیلوولت",
+          "descriptionEn": "Copper resistive and core magnetic losses in 0.4/20kV or 0.8/33kV step-up transformer.",
+          "nominalEnergyKwh": 171736.0,
+          "percentageLoss": -1.5,
+          "percentageLossRaw": -1.5,
+          "stageOutputKwh": 169160.0
+        },
+        {
+          "id": "aux_unavailability",
+          "nameFa": "مصرف داخلی و قابلیت اطمینان شبکه (Availability)",
+          "nameEn": "Substation Auxiliaries & Grid Availability",
+          "descriptionFa": "مصرف فن‌های خنک‌کننده، مانیتورینگ SCADA و قطعی‌های احتمالی خطوط انتقال",
+          "descriptionEn": "Substation cooling fans, SCADA telecontrol power, and scheduled grid maintenance downtime.",
+          "nominalEnergyKwh": 169160.0,
+          "percentageLoss": -1.0,
+          "percentageLossRaw": -1.0,
+          "stageOutputKwh": 167468.0
+        }
+      ],
+      "netAnnualEnergyExportMwh": 167.5,
+      "specificAnnualYieldKwhPerKwp": 1675.0,
+      "performanceRatioPct": 91.8,
+      "finalEnergyKwh": 167468.0,
+      "compoundPerformanceRatioPct": 91.7634,
+      "arithmeticSumLossPct": -7.9
+    }
+  },
+  "cases": [
+    {
+      "inputs": [
+        {
+          "installedCapacityKwp": 100,
+          "peakSunHours": 5,
+          "ambientTempMaxC": 40,
+          "tiltDeg": 0,
+          "latitudeDeg": 0,
+          "annualThermalDerateOverridePct": -10
+        }
+      ],
+      "expected": {
+        "annualYieldKwh": 167468.0,
+        "netAnnualEnergyExportMwh": 167.5,
+        "specificYieldKwhPerKwp": 1675.0,
+        "effectiveYieldFactor": 0.917633,
+        "performanceRatioPct": 91.8,
+        "compoundPerformanceRatioPct": 91.7634,
+        "thermalDeratePctUsed": -10,
+        "clippingLossPctUsed": 0.2,
+        "waterfallReport": {
+          "installedCapacityKwp": 100,
+          "rawGhiEnergyKwh": 182500.0,
+          "effectivePoaEnergyKwh": 182500.0,
+          "stages": [
+            {
+              "id": "near_shading",
+              "nameFa": "تلفات سایه‌اندازی نزدیک بین ردیف‌ها",
+              "nameEn": "Near Shading Loss (Row-to-Row)",
+              "descriptionFa": "سایه‌اندازی ردیف‌های مجاور در اوایل صبح و غروب آفتاب",
+              "descriptionEn": "Inter-row module self-shading during low solar elevation angles (morning/evening).",
+              "nominalEnergyKwh": 182500.0,
+              "percentageLoss": -2.4,
+              "percentageLossRaw": -2.4,
+              "stageOutputKwh": 178120.0
+            },
+            {
+              "id": "iam",
+              "nameFa": "تلفات انعکاس اپتیکی شیشه (IAM / Fresnel)",
+              "nameEn": "Incidence Angle Modifier (IAM)",
+              "descriptionFa": "زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل با کوپل حرارتی dn/dT",
+              "descriptionEn": "Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling.",
+              "nominalEnergyKwh": 178120.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 174201.0
+            },
+            {
+              "id": "soiling",
+              "nameFa": "تلفات غبار (ورودی فرضی/کاربر؛ غربالگری)",
+              "nameEn": "Soiling & Dust Loss (Screening Input)",
+              "descriptionFa": "ورودی فرضی یا کاربر؛ اتصال به مدل معتبر Kimber یا دادهٔ سایت را ثابت نمی‌کند",
+              "descriptionEn": "Assumed/user-defined input; not evidence of a validated Kimber model or site calibration.",
+              "nominalEnergyKwh": 174201.0,
+              "percentageLoss": -4.5,
+              "percentageLossRaw": -4.5,
+              "stageOutputKwh": 166362.0
+            },
+            {
+              "id": "snow",
+              "nameFa": "تلفات برف (برآورد غربالگری)",
+              "nameEn": "Snow Coverage & Shedding Loss (Screening)",
+              "descriptionFa": "ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود",
+              "descriptionEn": "Snow-loss input is zero (no-op); this does not establish a snow-free site.",
+              "nominalEnergyKwh": 166362.0,
+              "percentageLoss": 0.0,
+              "percentageLossRaw": 0.0,
+              "stageOutputKwh": 166362.0
+            },
+            {
+              "id": "thermal",
+              "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
+              "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
+              "descriptionFa": "برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.",
+              "descriptionEn": "Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY.",
+              "nominalEnergyKwh": 166362.0,
+              "percentageLoss": 10.0,
+              "percentageLossRaw": 10.0,
+              "stageOutputKwh": 182999.0
+            },
+            {
+              "id": "quality",
+              "nameFa": "تلورانس توان نامی تولیدکننده (Module Quality)",
+              "nameEn": "Module Quality & Factory Flash Tolerance",
+              "descriptionFa": "تلورانس مثبت توان نامی بر اساس تست فلش کارخانه (Positive Power Tolerance 0~+3%)",
+              "descriptionEn": "Positive factory power sorting tolerance (0~+3%) exceeding nominal nameplate rating.",
+              "nominalEnergyKwh": 182999.0,
+              "percentageLoss": 0.4,
+              "percentageLossRaw": 0.4,
+              "stageOutputKwh": 183731.0
+            },
+            {
+              "id": "lid",
+              "nameFa": "تلفات زوال اولیه نوری (LID & LeTID)",
+              "nameEn": "Light-Induced Degradation (LID & LeTID)",
+              "descriptionFa": "کاهش جزئی راندمان در چند ساعت اول تابش نور خورشید",
+              "descriptionEn": "Initial light-induced silicon lattice recombination loss during initial operating weeks.",
+              "nominalEnergyKwh": 183731.0,
+              "percentageLoss": -1.2,
+              "percentageLossRaw": -1.2,
+              "stageOutputKwh": 181526.0
+            },
+            {
+              "id": "mismatch",
+              "nameFa": "تلفات عدم تطابق مشخصه‌های I-V استرینگ‌ها",
+              "nameEn": "String Module I-V Mismatch Loss",
+              "descriptionFa": "اختلاف جزئی در نقطه کار ماکزیمم (MPP) ماژول‌های متوالی در یک رشته",
+              "descriptionEn": "Current and voltage dispersion at maximum power points among series-connected modules.",
+              "nominalEnergyKwh": 181526.0,
+              "percentageLoss": -1.3,
+              "percentageLossRaw": -1.3,
+              "stageOutputKwh": 179166.0
+            },
+            {
+              "id": "dc_cabling",
+              "nameFa": "تلفات اهمی کابل‌کشی DC خورشیدی (I²R)",
+              "nameEn": "DC Cabling Ohmic Loss (I²R)",
+              "descriptionFa": "مقاومت الکتریکی هادی مسی بین استرینگ‌ها و اینورتر",
+              "descriptionEn": "Resistive power dissipation in PV string homeruns and DC busbars to inverters.",
+              "nominalEnergyKwh": 179166.0,
+              "percentageLoss": -1.4,
+              "percentageLossRaw": -1.4,
+              "stageOutputKwh": 176658.0
+            },
+            {
+              "id": "mppt_tracking",
+              "nameFa": "تلفات ترکینگ نقطه حداکثر توان اینورتر (MPPT)",
+              "nameEn": "Inverter Dynamic MPPT Tracking Loss",
+              "descriptionFa": "خطای دینامیک الگوریتم Perturb & Observe یا Incremental Conductance اینورتر",
+              "descriptionEn": "Dynamic tracking latency of maximum power point algorithms under shifting cloud cover.",
+              "nominalEnergyKwh": 176658.0,
+              "percentageLoss": -0.4,
+              "percentageLossRaw": -0.4,
+              "stageOutputKwh": 175951.0
+            },
+            {
+              "id": "clipping",
+              "nameFa": "تلفات برش توان اینورتر (Clipping Over-paneling)",
+              "nameEn": "Inverter AC Power Clipping (DC/AC Over-paneling)",
+              "descriptionFa": "محدودیت خروجی AC اینورتر در ساعات اوج تابش تابستانه",
+              "descriptionEn": "Inverter AC power clipping limit during peak midday summer hours due to high DC/AC ratio.",
+              "nominalEnergyKwh": 175951.0,
+              "percentageLoss": -0.2,
+              "percentageLossRaw": -0.2,
+              "stageOutputKwh": 175599.0
+            },
+            {
+              "id": "inverter_efficiency",
+              "nameFa": "تلفات بازدهی تبدیل DC به AC اینورتر",
+              "nameEn": "Inverter DC-to-AC Conversion Loss",
+              "descriptionFa": "تلفات کلیدزنی IGBTها و فیلترهای خروجی AC اینورتر (راندمان ۹۷.۸٪)",
+              "descriptionEn": "IGBT switching losses and magnetic filter impedance at 97.8% weighted Euro efficiency.",
+              "nominalEnergyKwh": 175599.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 171736.0
+            },
+            {
+              "id": "mv_transformer",
+              "nameFa": "تلفات کابل AC و ترانسفورماتور پست فشار متوسط",
+              "nameEn": "AC Collector & MV Step-Up Transformer Loss",
+              "descriptionFa": "تلفات بی‌باری (هسته‌ای) و بارداری (مسی) ترانسفورماتور افزاینده ۲۰ یا ۳۳ کیلوولت",
+              "descriptionEn": "Copper resistive and core magnetic losses in 0.4/20kV or 0.8/33kV step-up transformer.",
+              "nominalEnergyKwh": 171736.0,
+              "percentageLoss": -1.5,
+              "percentageLossRaw": -1.5,
+              "stageOutputKwh": 169160.0
+            },
+            {
+              "id": "aux_unavailability",
+              "nameFa": "مصرف داخلی و قابلیت اطمینان شبکه (Availability)",
+              "nameEn": "Substation Auxiliaries & Grid Availability",
+              "descriptionFa": "مصرف فن‌های خنک‌کننده، مانیتورینگ SCADA و قطعی‌های احتمالی خطوط انتقال",
+              "descriptionEn": "Substation cooling fans, SCADA telecontrol power, and scheduled grid maintenance downtime.",
+              "nominalEnergyKwh": 169160.0,
+              "percentageLoss": -1.0,
+              "percentageLossRaw": -1.0,
+              "stageOutputKwh": 167468.0
+            }
+          ],
+          "netAnnualEnergyExportMwh": 167.5,
+          "specificAnnualYieldKwhPerKwp": 1675.0,
+          "performanceRatioPct": 91.8,
+          "finalEnergyKwh": 167468.0,
+          "compoundPerformanceRatioPct": 91.7634,
+          "arithmeticSumLossPct": -7.9
+        }
+      }
+    },
+    {
+      "inputs": [
+        {
+          "installedCapacityKwp": 1,
+          "peakSunHours": 2,
+          "ambientTempMaxC": 40,
+          "tiltDeg": 0,
+          "latitudeDeg": 0,
+          "annualThermalDerateOverridePct": 0
+        }
+      ],
+      "expected": {
+        "annualYieldKwh": 609.0,
+        "netAnnualEnergyExportMwh": 0.6,
+        "specificYieldKwhPerKwp": 609.0,
+        "effectiveYieldFactor": 0.834247,
+        "performanceRatioPct": 83.4,
+        "compoundPerformanceRatioPct": 83.4213,
+        "thermalDeratePctUsed": 0,
+        "clippingLossPctUsed": 0.2,
+        "waterfallReport": {
+          "installedCapacityKwp": 1,
+          "rawGhiEnergyKwh": 730.0,
+          "effectivePoaEnergyKwh": 730.0,
+          "stages": [
+            {
+              "id": "near_shading",
+              "nameFa": "تلفات سایه‌اندازی نزدیک بین ردیف‌ها",
+              "nameEn": "Near Shading Loss (Row-to-Row)",
+              "descriptionFa": "سایه‌اندازی ردیف‌های مجاور در اوایل صبح و غروب آفتاب",
+              "descriptionEn": "Inter-row module self-shading during low solar elevation angles (morning/evening).",
+              "nominalEnergyKwh": 730.0,
+              "percentageLoss": -2.4,
+              "percentageLossRaw": -2.4,
+              "stageOutputKwh": 712.0
+            },
+            {
+              "id": "iam",
+              "nameFa": "تلفات انعکاس اپتیکی شیشه (IAM / Fresnel)",
+              "nameEn": "Incidence Angle Modifier (IAM)",
+              "descriptionFa": "زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل با کوپل حرارتی dn/dT",
+              "descriptionEn": "Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling.",
+              "nominalEnergyKwh": 712.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 697.0
+            },
+            {
+              "id": "soiling",
+              "nameFa": "تلفات غبار (ورودی فرضی/کاربر؛ غربالگری)",
+              "nameEn": "Soiling & Dust Loss (Screening Input)",
+              "descriptionFa": "ورودی فرضی یا کاربر؛ اتصال به مدل معتبر Kimber یا دادهٔ سایت را ثابت نمی‌کند",
+              "descriptionEn": "Assumed/user-defined input; not evidence of a validated Kimber model or site calibration.",
+              "nominalEnergyKwh": 697.0,
+              "percentageLoss": -4.5,
+              "percentageLossRaw": -4.5,
+              "stageOutputKwh": 665.0
+            },
+            {
+              "id": "snow",
+              "nameFa": "تلفات برف (برآورد غربالگری)",
+              "nameEn": "Snow Coverage & Shedding Loss (Screening)",
+              "descriptionFa": "ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود",
+              "descriptionEn": "Snow-loss input is zero (no-op); this does not establish a snow-free site.",
+              "nominalEnergyKwh": 665.0,
+              "percentageLoss": 0.0,
+              "percentageLossRaw": 0.0,
+              "stageOutputKwh": 665.0
+            },
+            {
+              "id": "thermal",
+              "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
+              "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
+              "descriptionFa": "برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.",
+              "descriptionEn": "Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY.",
+              "nominalEnergyKwh": 665.0,
+              "percentageLoss": 0.0,
+              "percentageLossRaw": 0.0,
+              "stageOutputKwh": 665.0
+            },
+            {
+              "id": "quality",
+              "nameFa": "تلورانس توان نامی تولیدکننده (Module Quality)",
+              "nameEn": "Module Quality & Factory Flash Tolerance",
+              "descriptionFa": "تلورانس مثبت توان نامی بر اساس تست فلش کارخانه (Positive Power Tolerance 0~+3%)",
+              "descriptionEn": "Positive factory power sorting tolerance (0~+3%) exceeding nominal nameplate rating.",
+              "nominalEnergyKwh": 665.0,
+              "percentageLoss": 0.4,
+              "percentageLossRaw": 0.4,
+              "stageOutputKwh": 668.0
+            },
+            {
+              "id": "lid",
+              "nameFa": "تلفات زوال اولیه نوری (LID & LeTID)",
+              "nameEn": "Light-Induced Degradation (LID & LeTID)",
+              "descriptionFa": "کاهش جزئی راندمان در چند ساعت اول تابش نور خورشید",
+              "descriptionEn": "Initial light-induced silicon lattice recombination loss during initial operating weeks.",
+              "nominalEnergyKwh": 668.0,
+              "percentageLoss": -1.2,
+              "percentageLossRaw": -1.2,
+              "stageOutputKwh": 660.0
+            },
+            {
+              "id": "mismatch",
+              "nameFa": "تلفات عدم تطابق مشخصه‌های I-V استرینگ‌ها",
+              "nameEn": "String Module I-V Mismatch Loss",
+              "descriptionFa": "اختلاف جزئی در نقطه کار ماکزیمم (MPP) ماژول‌های متوالی در یک رشته",
+              "descriptionEn": "Current and voltage dispersion at maximum power points among series-connected modules.",
+              "nominalEnergyKwh": 660.0,
+              "percentageLoss": -1.3,
+              "percentageLossRaw": -1.3,
+              "stageOutputKwh": 652.0
+            },
+            {
+              "id": "dc_cabling",
+              "nameFa": "تلفات اهمی کابل‌کشی DC خورشیدی (I²R)",
+              "nameEn": "DC Cabling Ohmic Loss (I²R)",
+              "descriptionFa": "مقاومت الکتریکی هادی مسی بین استرینگ‌ها و اینورتر",
+              "descriptionEn": "Resistive power dissipation in PV string homeruns and DC busbars to inverters.",
+              "nominalEnergyKwh": 652.0,
+              "percentageLoss": -1.4,
+              "percentageLossRaw": -1.4,
+              "stageOutputKwh": 642.0
+            },
+            {
+              "id": "mppt_tracking",
+              "nameFa": "تلفات ترکینگ نقطه حداکثر توان اینورتر (MPPT)",
+              "nameEn": "Inverter Dynamic MPPT Tracking Loss",
+              "descriptionFa": "خطای دینامیک الگوریتم Perturb & Observe یا Incremental Conductance اینورتر",
+              "descriptionEn": "Dynamic tracking latency of maximum power point algorithms under shifting cloud cover.",
+              "nominalEnergyKwh": 642.0,
+              "percentageLoss": -0.4,
+              "percentageLossRaw": -0.4,
+              "stageOutputKwh": 640.0
+            },
+            {
+              "id": "clipping",
+              "nameFa": "تلفات برش توان اینورتر (Clipping Over-paneling)",
+              "nameEn": "Inverter AC Power Clipping (DC/AC Over-paneling)",
+              "descriptionFa": "محدودیت خروجی AC اینورتر در ساعات اوج تابش تابستانه",
+              "descriptionEn": "Inverter AC power clipping limit during peak midday summer hours due to high DC/AC ratio.",
+              "nominalEnergyKwh": 640.0,
+              "percentageLoss": -0.2,
+              "percentageLossRaw": -0.2,
+              "stageOutputKwh": 639.0
+            },
+            {
+              "id": "inverter_efficiency",
+              "nameFa": "تلفات بازدهی تبدیل DC به AC اینورتر",
+              "nameEn": "Inverter DC-to-AC Conversion Loss",
+              "descriptionFa": "تلفات کلیدزنی IGBTها و فیلترهای خروجی AC اینورتر (راندمان ۹۷.۸٪)",
+              "descriptionEn": "IGBT switching losses and magnetic filter impedance at 97.8% weighted Euro efficiency.",
+              "nominalEnergyKwh": 639.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 624.0
+            },
+            {
+              "id": "mv_transformer",
+              "nameFa": "تلفات کابل AC و ترانسفورماتور پست فشار متوسط",
+              "nameEn": "AC Collector & MV Step-Up Transformer Loss",
+              "descriptionFa": "تلفات بی‌باری (هسته‌ای) و بارداری (مسی) ترانسفورماتور افزاینده ۲۰ یا ۳۳ کیلوولت",
+              "descriptionEn": "Copper resistive and core magnetic losses in 0.4/20kV or 0.8/33kV step-up transformer.",
+              "nominalEnergyKwh": 624.0,
+              "percentageLoss": -1.5,
+              "percentageLossRaw": -1.5,
+              "stageOutputKwh": 615.0
+            },
+            {
+              "id": "aux_unavailability",
+              "nameFa": "مصرف داخلی و قابلیت اطمینان شبکه (Availability)",
+              "nameEn": "Substation Auxiliaries & Grid Availability",
+              "descriptionFa": "مصرف فن‌های خنک‌کننده، مانیتورینگ SCADA و قطعی‌های احتمالی خطوط انتقال",
+              "descriptionEn": "Substation cooling fans, SCADA telecontrol power, and scheduled grid maintenance downtime.",
+              "nominalEnergyKwh": 615.0,
+              "percentageLoss": -1.0,
+              "percentageLossRaw": -1.0,
+              "stageOutputKwh": 609.0
+            }
+          ],
+          "netAnnualEnergyExportMwh": 0.6,
+          "specificAnnualYieldKwhPerKwp": 609.0,
+          "performanceRatioPct": 83.4,
+          "finalEnergyKwh": 609.0,
+          "compoundPerformanceRatioPct": 83.4213,
+          "arithmeticSumLossPct": -17.9
+        }
+      }
+    },
+    {
+      "inputs": [
+        {
+          "installedCapacityKwp": 1000,
+          "peakSunHours": 6,
+          "ambientTempMaxC": 40,
+          "tiltDeg": 0,
+          "latitudeDeg": 0,
+          "annualThermalDerateOverridePct": 10
+        }
+      ],
+      "expected": {
+        "annualYieldKwh": 1644234.0,
+        "netAnnualEnergyExportMwh": 1644.2,
+        "specificYieldKwhPerKwp": 1644.0,
+        "effectiveYieldFactor": 0.750792,
+        "performanceRatioPct": 75.1,
+        "compoundPerformanceRatioPct": 75.0792,
+        "thermalDeratePctUsed": 10,
+        "clippingLossPctUsed": 0.2,
+        "waterfallReport": {
+          "installedCapacityKwp": 1000,
+          "rawGhiEnergyKwh": 2190000.0,
+          "effectivePoaEnergyKwh": 2190000.0,
+          "stages": [
+            {
+              "id": "near_shading",
+              "nameFa": "تلفات سایه‌اندازی نزدیک بین ردیف‌ها",
+              "nameEn": "Near Shading Loss (Row-to-Row)",
+              "descriptionFa": "سایه‌اندازی ردیف‌های مجاور در اوایل صبح و غروب آفتاب",
+              "descriptionEn": "Inter-row module self-shading during low solar elevation angles (morning/evening).",
+              "nominalEnergyKwh": 2190000.0,
+              "percentageLoss": -2.4,
+              "percentageLossRaw": -2.4,
+              "stageOutputKwh": 2137440.0
+            },
+            {
+              "id": "iam",
+              "nameFa": "تلفات انعکاس اپتیکی شیشه (IAM / Fresnel)",
+              "nameEn": "Incidence Angle Modifier (IAM)",
+              "descriptionFa": "زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل با کوپل حرارتی dn/dT",
+              "descriptionEn": "Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling.",
+              "nominalEnergyKwh": 2137440.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 2090416.0
+            },
+            {
+              "id": "soiling",
+              "nameFa": "تلفات غبار (ورودی فرضی/کاربر؛ غربالگری)",
+              "nameEn": "Soiling & Dust Loss (Screening Input)",
+              "descriptionFa": "ورودی فرضی یا کاربر؛ اتصال به مدل معتبر Kimber یا دادهٔ سایت را ثابت نمی‌کند",
+              "descriptionEn": "Assumed/user-defined input; not evidence of a validated Kimber model or site calibration.",
+              "nominalEnergyKwh": 2090416.0,
+              "percentageLoss": -4.5,
+              "percentageLossRaw": -4.5,
+              "stageOutputKwh": 1996348.0
+            },
+            {
+              "id": "snow",
+              "nameFa": "تلفات برف (برآورد غربالگری)",
+              "nameEn": "Snow Coverage & Shedding Loss (Screening)",
+              "descriptionFa": "ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود",
+              "descriptionEn": "Snow-loss input is zero (no-op); this does not establish a snow-free site.",
+              "nominalEnergyKwh": 1996348.0,
+              "percentageLoss": 0.0,
+              "percentageLossRaw": 0.0,
+              "stageOutputKwh": 1996348.0
+            },
+            {
+              "id": "thermal",
+              "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
+              "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
+              "descriptionFa": "برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.",
+              "descriptionEn": "Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY.",
+              "nominalEnergyKwh": 1996348.0,
+              "percentageLoss": -10.0,
+              "percentageLossRaw": -10.0,
+              "stageOutputKwh": 1796713.0
+            },
+            {
+              "id": "quality",
+              "nameFa": "تلورانس توان نامی تولیدکننده (Module Quality)",
+              "nameEn": "Module Quality & Factory Flash Tolerance",
+              "descriptionFa": "تلورانس مثبت توان نامی بر اساس تست فلش کارخانه (Positive Power Tolerance 0~+3%)",
+              "descriptionEn": "Positive factory power sorting tolerance (0~+3%) exceeding nominal nameplate rating.",
+              "nominalEnergyKwh": 1796713.0,
+              "percentageLoss": 0.4,
+              "percentageLossRaw": 0.4,
+              "stageOutputKwh": 1803900.0
+            },
+            {
+              "id": "lid",
+              "nameFa": "تلفات زوال اولیه نوری (LID & LeTID)",
+              "nameEn": "Light-Induced Degradation (LID & LeTID)",
+              "descriptionFa": "کاهش جزئی راندمان در چند ساعت اول تابش نور خورشید",
+              "descriptionEn": "Initial light-induced silicon lattice recombination loss during initial operating weeks.",
+              "nominalEnergyKwh": 1803900.0,
+              "percentageLoss": -1.2,
+              "percentageLossRaw": -1.2,
+              "stageOutputKwh": 1782253.0
+            },
+            {
+              "id": "mismatch",
+              "nameFa": "تلفات عدم تطابق مشخصه‌های I-V استرینگ‌ها",
+              "nameEn": "String Module I-V Mismatch Loss",
+              "descriptionFa": "اختلاف جزئی در نقطه کار ماکزیمم (MPP) ماژول‌های متوالی در یک رشته",
+              "descriptionEn": "Current and voltage dispersion at maximum power points among series-connected modules.",
+              "nominalEnergyKwh": 1782253.0,
+              "percentageLoss": -1.3,
+              "percentageLossRaw": -1.3,
+              "stageOutputKwh": 1759084.0
+            },
+            {
+              "id": "dc_cabling",
+              "nameFa": "تلفات اهمی کابل‌کشی DC خورشیدی (I²R)",
+              "nameEn": "DC Cabling Ohmic Loss (I²R)",
+              "descriptionFa": "مقاومت الکتریکی هادی مسی بین استرینگ‌ها و اینورتر",
+              "descriptionEn": "Resistive power dissipation in PV string homeruns and DC busbars to inverters.",
+              "nominalEnergyKwh": 1759084.0,
+              "percentageLoss": -1.4,
+              "percentageLossRaw": -1.4,
+              "stageOutputKwh": 1734456.0
+            },
+            {
+              "id": "mppt_tracking",
+              "nameFa": "تلفات ترکینگ نقطه حداکثر توان اینورتر (MPPT)",
+              "nameEn": "Inverter Dynamic MPPT Tracking Loss",
+              "descriptionFa": "خطای دینامیک الگوریتم Perturb & Observe یا Incremental Conductance اینورتر",
+              "descriptionEn": "Dynamic tracking latency of maximum power point algorithms under shifting cloud cover.",
+              "nominalEnergyKwh": 1734456.0,
+              "percentageLoss": -0.4,
+              "percentageLossRaw": -0.4,
+              "stageOutputKwh": 1727519.0
+            },
+            {
+              "id": "clipping",
+              "nameFa": "تلفات برش توان اینورتر (Clipping Over-paneling)",
+              "nameEn": "Inverter AC Power Clipping (DC/AC Over-paneling)",
+              "descriptionFa": "محدودیت خروجی AC اینورتر در ساعات اوج تابش تابستانه",
+              "descriptionEn": "Inverter AC power clipping limit during peak midday summer hours due to high DC/AC ratio.",
+              "nominalEnergyKwh": 1727519.0,
+              "percentageLoss": -0.2,
+              "percentageLossRaw": -0.2,
+              "stageOutputKwh": 1724064.0
+            },
+            {
+              "id": "inverter_efficiency",
+              "nameFa": "تلفات بازدهی تبدیل DC به AC اینورتر",
+              "nameEn": "Inverter DC-to-AC Conversion Loss",
+              "descriptionFa": "تلفات کلیدزنی IGBTها و فیلترهای خروجی AC اینورتر (راندمان ۹۷.۸٪)",
+              "descriptionEn": "IGBT switching losses and magnetic filter impedance at 97.8% weighted Euro efficiency.",
+              "nominalEnergyKwh": 1724064.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 1686134.0
+            },
+            {
+              "id": "mv_transformer",
+              "nameFa": "تلفات کابل AC و ترانسفورماتور پست فشار متوسط",
+              "nameEn": "AC Collector & MV Step-Up Transformer Loss",
+              "descriptionFa": "تلفات بی‌باری (هسته‌ای) و بارداری (مسی) ترانسفورماتور افزاینده ۲۰ یا ۳۳ کیلوولت",
+              "descriptionEn": "Copper resistive and core magnetic losses in 0.4/20kV or 0.8/33kV step-up transformer.",
+              "nominalEnergyKwh": 1686134.0,
+              "percentageLoss": -1.5,
+              "percentageLossRaw": -1.5,
+              "stageOutputKwh": 1660842.0
+            },
+            {
+              "id": "aux_unavailability",
+              "nameFa": "مصرف داخلی و قابلیت اطمینان شبکه (Availability)",
+              "nameEn": "Substation Auxiliaries & Grid Availability",
+              "descriptionFa": "مصرف فن‌های خنک‌کننده، مانیتورینگ SCADA و قطعی‌های احتمالی خطوط انتقال",
+              "descriptionEn": "Substation cooling fans, SCADA telecontrol power, and scheduled grid maintenance downtime.",
+              "nominalEnergyKwh": 1660842.0,
+              "percentageLoss": -1.0,
+              "percentageLossRaw": -1.0,
+              "stageOutputKwh": 1644234.0
+            }
+          ],
+          "netAnnualEnergyExportMwh": 1644.2,
+          "specificAnnualYieldKwhPerKwp": 1644.0,
+          "performanceRatioPct": 75.1,
+          "finalEnergyKwh": 1644234.0,
+          "compoundPerformanceRatioPct": 75.0792,
+          "arithmeticSumLossPct": -27.9
+        }
+      }
+    },
+    {
+      "inputs": [
+        {
+          "installedCapacityKwp": 0,
+          "peakSunHours": 5,
+          "ambientTempMaxC": 40,
+          "tiltDeg": 0,
+          "latitudeDeg": 0,
+          "annualThermalDerateOverridePct": 0
+        }
+      ],
+      "expected": {
+        "annualYieldKwh": 0.0,
+        "netAnnualEnergyExportMwh": 0,
+        "specificYieldKwhPerKwp": 0,
+        "effectiveYieldFactor": 0,
+        "performanceRatioPct": 0,
+        "compoundPerformanceRatioPct": 83.4213,
+        "thermalDeratePctUsed": 0,
+        "clippingLossPctUsed": 0.2,
+        "waterfallReport": {
+          "installedCapacityKwp": 0,
+          "rawGhiEnergyKwh": 0.0,
+          "effectivePoaEnergyKwh": 0.0,
+          "stages": [
+            {
+              "id": "near_shading",
+              "nameFa": "تلفات سایه‌اندازی نزدیک بین ردیف‌ها",
+              "nameEn": "Near Shading Loss (Row-to-Row)",
+              "descriptionFa": "سایه‌اندازی ردیف‌های مجاور در اوایل صبح و غروب آفتاب",
+              "descriptionEn": "Inter-row module self-shading during low solar elevation angles (morning/evening).",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -2.4,
+              "percentageLossRaw": -2.4,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "iam",
+              "nameFa": "تلفات انعکاس اپتیکی شیشه (IAM / Fresnel)",
+              "nameEn": "Incidence Angle Modifier (IAM)",
+              "descriptionFa": "زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل با کوپل حرارتی dn/dT",
+              "descriptionEn": "Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "soiling",
+              "nameFa": "تلفات غبار (ورودی فرضی/کاربر؛ غربالگری)",
+              "nameEn": "Soiling & Dust Loss (Screening Input)",
+              "descriptionFa": "ورودی فرضی یا کاربر؛ اتصال به مدل معتبر Kimber یا دادهٔ سایت را ثابت نمی‌کند",
+              "descriptionEn": "Assumed/user-defined input; not evidence of a validated Kimber model or site calibration.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -4.5,
+              "percentageLossRaw": -4.5,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "snow",
+              "nameFa": "تلفات برف (برآورد غربالگری)",
+              "nameEn": "Snow Coverage & Shedding Loss (Screening)",
+              "descriptionFa": "ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود",
+              "descriptionEn": "Snow-loss input is zero (no-op); this does not establish a snow-free site.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": 0.0,
+              "percentageLossRaw": 0.0,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "thermal",
+              "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
+              "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
+              "descriptionFa": "برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.",
+              "descriptionEn": "Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": 0.0,
+              "percentageLossRaw": 0.0,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "quality",
+              "nameFa": "تلورانس توان نامی تولیدکننده (Module Quality)",
+              "nameEn": "Module Quality & Factory Flash Tolerance",
+              "descriptionFa": "تلورانس مثبت توان نامی بر اساس تست فلش کارخانه (Positive Power Tolerance 0~+3%)",
+              "descriptionEn": "Positive factory power sorting tolerance (0~+3%) exceeding nominal nameplate rating.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": 0.4,
+              "percentageLossRaw": 0.4,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "lid",
+              "nameFa": "تلفات زوال اولیه نوری (LID & LeTID)",
+              "nameEn": "Light-Induced Degradation (LID & LeTID)",
+              "descriptionFa": "کاهش جزئی راندمان در چند ساعت اول تابش نور خورشید",
+              "descriptionEn": "Initial light-induced silicon lattice recombination loss during initial operating weeks.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.2,
+              "percentageLossRaw": -1.2,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "mismatch",
+              "nameFa": "تلفات عدم تطابق مشخصه‌های I-V استرینگ‌ها",
+              "nameEn": "String Module I-V Mismatch Loss",
+              "descriptionFa": "اختلاف جزئی در نقطه کار ماکزیمم (MPP) ماژول‌های متوالی در یک رشته",
+              "descriptionEn": "Current and voltage dispersion at maximum power points among series-connected modules.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.3,
+              "percentageLossRaw": -1.3,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "dc_cabling",
+              "nameFa": "تلفات اهمی کابل‌کشی DC خورشیدی (I²R)",
+              "nameEn": "DC Cabling Ohmic Loss (I²R)",
+              "descriptionFa": "مقاومت الکتریکی هادی مسی بین استرینگ‌ها و اینورتر",
+              "descriptionEn": "Resistive power dissipation in PV string homeruns and DC busbars to inverters.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.4,
+              "percentageLossRaw": -1.4,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "mppt_tracking",
+              "nameFa": "تلفات ترکینگ نقطه حداکثر توان اینورتر (MPPT)",
+              "nameEn": "Inverter Dynamic MPPT Tracking Loss",
+              "descriptionFa": "خطای دینامیک الگوریتم Perturb & Observe یا Incremental Conductance اینورتر",
+              "descriptionEn": "Dynamic tracking latency of maximum power point algorithms under shifting cloud cover.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -0.4,
+              "percentageLossRaw": -0.4,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "clipping",
+              "nameFa": "تلفات برش توان اینورتر (Clipping Over-paneling)",
+              "nameEn": "Inverter AC Power Clipping (DC/AC Over-paneling)",
+              "descriptionFa": "محدودیت خروجی AC اینورتر در ساعات اوج تابش تابستانه",
+              "descriptionEn": "Inverter AC power clipping limit during peak midday summer hours due to high DC/AC ratio.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -0.2,
+              "percentageLossRaw": -0.2,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "inverter_efficiency",
+              "nameFa": "تلفات بازدهی تبدیل DC به AC اینورتر",
+              "nameEn": "Inverter DC-to-AC Conversion Loss",
+              "descriptionFa": "تلفات کلیدزنی IGBTها و فیلترهای خروجی AC اینورتر (راندمان ۹۷.۸٪)",
+              "descriptionEn": "IGBT switching losses and magnetic filter impedance at 97.8% weighted Euro efficiency.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "mv_transformer",
+              "nameFa": "تلفات کابل AC و ترانسفورماتور پست فشار متوسط",
+              "nameEn": "AC Collector & MV Step-Up Transformer Loss",
+              "descriptionFa": "تلفات بی‌باری (هسته‌ای) و بارداری (مسی) ترانسفورماتور افزاینده ۲۰ یا ۳۳ کیلوولت",
+              "descriptionEn": "Copper resistive and core magnetic losses in 0.4/20kV or 0.8/33kV step-up transformer.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.5,
+              "percentageLossRaw": -1.5,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "aux_unavailability",
+              "nameFa": "مصرف داخلی و قابلیت اطمینان شبکه (Availability)",
+              "nameEn": "Substation Auxiliaries & Grid Availability",
+              "descriptionFa": "مصرف فن‌های خنک‌کننده، مانیتورینگ SCADA و قطعی‌های احتمالی خطوط انتقال",
+              "descriptionEn": "Substation cooling fans, SCADA telecontrol power, and scheduled grid maintenance downtime.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.0,
+              "percentageLossRaw": -1.0,
+              "stageOutputKwh": 0.0
+            }
+          ],
+          "netAnnualEnergyExportMwh": 0,
+          "specificAnnualYieldKwhPerKwp": 0,
+          "performanceRatioPct": 0,
+          "finalEnergyKwh": 0.0,
+          "compoundPerformanceRatioPct": 83.4213,
+          "arithmeticSumLossPct": -17.9
+        }
+      }
+    },
+    {
+      "inputs": [
+        {
+          "installedCapacityKwp": 100,
+          "peakSunHours": 0,
+          "ambientTempMaxC": 40,
+          "tiltDeg": 0,
+          "latitudeDeg": 0,
+          "annualThermalDerateOverridePct": 0
+        }
+      ],
+      "expected": {
+        "annualYieldKwh": 0.0,
+        "netAnnualEnergyExportMwh": 0.0,
+        "specificYieldKwhPerKwp": 0.0,
+        "effectiveYieldFactor": 0,
+        "performanceRatioPct": 0,
+        "compoundPerformanceRatioPct": 83.4213,
+        "thermalDeratePctUsed": 0,
+        "clippingLossPctUsed": 0.2,
+        "waterfallReport": {
+          "installedCapacityKwp": 100,
+          "rawGhiEnergyKwh": 0.0,
+          "effectivePoaEnergyKwh": 0.0,
+          "stages": [
+            {
+              "id": "near_shading",
+              "nameFa": "تلفات سایه‌اندازی نزدیک بین ردیف‌ها",
+              "nameEn": "Near Shading Loss (Row-to-Row)",
+              "descriptionFa": "سایه‌اندازی ردیف‌های مجاور در اوایل صبح و غروب آفتاب",
+              "descriptionEn": "Inter-row module self-shading during low solar elevation angles (morning/evening).",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -2.4,
+              "percentageLossRaw": -2.4,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "iam",
+              "nameFa": "تلفات انعکاس اپتیکی شیشه (IAM / Fresnel)",
+              "nameEn": "Incidence Angle Modifier (IAM)",
+              "descriptionFa": "زاویه تابش مایل و بازتابش از سطح شیشه آنتی‌رفلکت پنل با کوپل حرارتی dn/dT",
+              "descriptionEn": "Fresnel optical reflection at oblique sun incidence angles with thermo-optic dn/dT coupling.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "soiling",
+              "nameFa": "تلفات غبار (ورودی فرضی/کاربر؛ غربالگری)",
+              "nameEn": "Soiling & Dust Loss (Screening Input)",
+              "descriptionFa": "ورودی فرضی یا کاربر؛ اتصال به مدل معتبر Kimber یا دادهٔ سایت را ثابت نمی‌کند",
+              "descriptionEn": "Assumed/user-defined input; not evidence of a validated Kimber model or site calibration.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -4.5,
+              "percentageLossRaw": -4.5,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "snow",
+              "nameFa": "تلفات برف (برآورد غربالگری)",
+              "nameEn": "Snow Coverage & Shedding Loss (Screening)",
+              "descriptionFa": "ورودی تلفات برف صفر است؛ نبود برف در سایت از این مقدار اثبات نمی‌شود",
+              "descriptionEn": "Snow-loss input is zero (no-op); this does not establish a snow-free site.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": 0.0,
+              "percentageLossRaw": 0.0,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "thermal",
+              "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
+              "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
+              "descriptionFa": "برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.",
+              "descriptionEn": "Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": 0.0,
+              "percentageLossRaw": 0.0,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "quality",
+              "nameFa": "تلورانس توان نامی تولیدکننده (Module Quality)",
+              "nameEn": "Module Quality & Factory Flash Tolerance",
+              "descriptionFa": "تلورانس مثبت توان نامی بر اساس تست فلش کارخانه (Positive Power Tolerance 0~+3%)",
+              "descriptionEn": "Positive factory power sorting tolerance (0~+3%) exceeding nominal nameplate rating.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": 0.4,
+              "percentageLossRaw": 0.4,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "lid",
+              "nameFa": "تلفات زوال اولیه نوری (LID & LeTID)",
+              "nameEn": "Light-Induced Degradation (LID & LeTID)",
+              "descriptionFa": "کاهش جزئی راندمان در چند ساعت اول تابش نور خورشید",
+              "descriptionEn": "Initial light-induced silicon lattice recombination loss during initial operating weeks.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.2,
+              "percentageLossRaw": -1.2,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "mismatch",
+              "nameFa": "تلفات عدم تطابق مشخصه‌های I-V استرینگ‌ها",
+              "nameEn": "String Module I-V Mismatch Loss",
+              "descriptionFa": "اختلاف جزئی در نقطه کار ماکزیمم (MPP) ماژول‌های متوالی در یک رشته",
+              "descriptionEn": "Current and voltage dispersion at maximum power points among series-connected modules.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.3,
+              "percentageLossRaw": -1.3,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "dc_cabling",
+              "nameFa": "تلفات اهمی کابل‌کشی DC خورشیدی (I²R)",
+              "nameEn": "DC Cabling Ohmic Loss (I²R)",
+              "descriptionFa": "مقاومت الکتریکی هادی مسی بین استرینگ‌ها و اینورتر",
+              "descriptionEn": "Resistive power dissipation in PV string homeruns and DC busbars to inverters.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.4,
+              "percentageLossRaw": -1.4,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "mppt_tracking",
+              "nameFa": "تلفات ترکینگ نقطه حداکثر توان اینورتر (MPPT)",
+              "nameEn": "Inverter Dynamic MPPT Tracking Loss",
+              "descriptionFa": "خطای دینامیک الگوریتم Perturb & Observe یا Incremental Conductance اینورتر",
+              "descriptionEn": "Dynamic tracking latency of maximum power point algorithms under shifting cloud cover.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -0.4,
+              "percentageLossRaw": -0.4,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "clipping",
+              "nameFa": "تلفات برش توان اینورتر (Clipping Over-paneling)",
+              "nameEn": "Inverter AC Power Clipping (DC/AC Over-paneling)",
+              "descriptionFa": "محدودیت خروجی AC اینورتر در ساعات اوج تابش تابستانه",
+              "descriptionEn": "Inverter AC power clipping limit during peak midday summer hours due to high DC/AC ratio.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -0.2,
+              "percentageLossRaw": -0.2,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "inverter_efficiency",
+              "nameFa": "تلفات بازدهی تبدیل DC به AC اینورتر",
+              "nameEn": "Inverter DC-to-AC Conversion Loss",
+              "descriptionFa": "تلفات کلیدزنی IGBTها و فیلترهای خروجی AC اینورتر (راندمان ۹۷.۸٪)",
+              "descriptionEn": "IGBT switching losses and magnetic filter impedance at 97.8% weighted Euro efficiency.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -2.2,
+              "percentageLossRaw": -2.2,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "mv_transformer",
+              "nameFa": "تلفات کابل AC و ترانسفورماتور پست فشار متوسط",
+              "nameEn": "AC Collector & MV Step-Up Transformer Loss",
+              "descriptionFa": "تلفات بی‌باری (هسته‌ای) و بارداری (مسی) ترانسفورماتور افزاینده ۲۰ یا ۳۳ کیلوولت",
+              "descriptionEn": "Copper resistive and core magnetic losses in 0.4/20kV or 0.8/33kV step-up transformer.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.5,
+              "percentageLossRaw": -1.5,
+              "stageOutputKwh": 0.0
+            },
+            {
+              "id": "aux_unavailability",
+              "nameFa": "مصرف داخلی و قابلیت اطمینان شبکه (Availability)",
+              "nameEn": "Substation Auxiliaries & Grid Availability",
+              "descriptionFa": "مصرف فن‌های خنک‌کننده، مانیتورینگ SCADA و قطعی‌های احتمالی خطوط انتقال",
+              "descriptionEn": "Substation cooling fans, SCADA telecontrol power, and scheduled grid maintenance downtime.",
+              "nominalEnergyKwh": 0.0,
+              "percentageLoss": -1.0,
+              "percentageLossRaw": -1.0,
+              "stageOutputKwh": 0.0
+            }
+          ],
+          "netAnnualEnergyExportMwh": 0.0,
+          "specificAnnualYieldKwhPerKwp": 0.0,
+          "performanceRatioPct": 0,
+          "finalEnergyKwh": 0.0,
+          "compoundPerformanceRatioPct": 83.4213,
+          "arithmeticSumLossPct": -17.9
+        }
+      }
+    }
+  ],
+  "independentCalculation": "Independent Decimal characterization of unchanged scalar loss composition.\n\nNo TypeScript imports, execution or production numerical outputs. The source\npolicy is the base-revision waterfall's named percentages, not an independently\nvalidated physical loss model. Human-readable report text uses the pre-existing\ntext-contract template, which is not scientific evidence. Fixture verifies the\ncanonical-to-configured routing call, not weather/financial applicability.\n",
+  "tolerances": {
+    "absolute": 1e-07,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "Independent Decimal scalar-waterfall routing characterization",
+    "url": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
+    "version": "base 0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb; unchanged screening policy",
+    "locator": "Sequential stage energy E_next=E_previous*(1+pct/100), zero tilt => zero transposition gain; first-year kWh, kWp, PSH, percentage points. Independent Decimal arithmetic only, not physical-model validation."
+  }
+}

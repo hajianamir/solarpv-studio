@@ -1,0 +1,185 @@
+{
+  "date": "2026-11-03",
+  "scope": "U07a named unchanged production scalar fixed-tilt owner and compatibility; not physical transposition validation",
+  "implementation": "IMPLEMENTED within bounded scope",
+  "verification": "VERIFIED_WITHIN_SCOPE",
+  "release": "BLOCKED; overall Phase2 incomplete",
+  "commands": [
+    {
+      "command": "npm run lint",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run build",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run test",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run test:smoke",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run test:coverage",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run test:phase1",
+      "finalExitCode": 0,
+      "initialExitCode": 1,
+      "rerunAfterExactHistoricalCommitFetch": true
+    },
+    {
+      "command": "npm run test:phase2",
+      "finalExitCode": 0,
+      "initialExitCode": 1,
+      "rerunAfterExactHistoricalCommitFetch": true
+    },
+    {
+      "command": "npm run test:remaining",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run test:recovery",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run test:accepted-audit",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run test:remediation",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run verify:exports",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run verify:engine-claims",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run verify:help",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run verify:physics-registry",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run verify:physics-reference-gate",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run verify:phase1-evidence",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    },
+    {
+      "command": "npm run test:phase1:browser",
+      "finalExitCode": 0,
+      "initialExitCode": 0,
+      "rerunAfterExactHistoricalCommitFetch": false
+    }
+  ],
+  "acceptance": {
+    "T1": "122independent60digit Decimal/Taylor characterization cases,153actual-base Object.is scalar comparisons; old public export is same function identity",
+    "T2": "15exact extracted expressions individually executed and mutation-sensitive; existing5canonical/4roof Decimal cases,36canonical+4empty/8populatedroof actual-base JSON comparisons;17slots/defaults/aliases and configured consumers retained",
+    "T3": "Shared bilingual UI/help disclosure; static render in both languages and production browser across existing three-mode energy/artifact paths. Legacy alternate annual API retains its different coefficients, deprecated with production import guard.",
+    "T4": "ADR-023 documents three self-review/followup research rounds, sources, limitations and rollback. Full18command regression ultimately passes."
+  },
+  "evidenceLimits": {
+    "arithmetic": "Independent characterization of inherited policy; no empirical coefficient validation",
+    "referenceGate": "11cumulative tracked diff expressions; manifest and focused tests execute the additional15core extraction nodes, including before Git tracks new files",
+    "lint": "0errors,93existingwarnings",
+    "storedTargets": "Retired unverified bifacial target remains WARN; not tuned or waived",
+    "upstream": "pvlib and ECMAScript source inspected; upstream pvlib tests not executed",
+    "persistence": "No schema/energy/report shape changes or new policy selector; global persisted policy versioning remains open",
+    "remaining": "Alternate annual/API/profile harmonization/U02, manufacturer-specific electrical applicability, broader economics and other stated Phase2 gaps remain open"
+  },
+  "failedAttempts": [
+    {
+      "failure": "Dependencies absent in resumed workspace",
+      "resolution": "npm ci --ignore-scripts restored locked dependencies; no lockfile change"
+    },
+    {
+      "failure": "Absolute fixture registry paths rejected",
+      "resolution": "Generator now writes relative workspace paths; regeneration reproduces registry byte-for-byte after existing grid-import registry normalization"
+    },
+    {
+      "failure": "Phase1/Phase2 initial runs lacked historical Git object0c4d7cadc7db6001459ea36fdf9a3d1403179a71",
+      "resolution": "Fetched exactSHA without branch change/baseline substitution; both full commands rerun exit0"
+    }
+  ],
+  "sourceSha256": {
+    "src/engine/core/scalarTransposition.ts": "0114ec9fdf7fcd8d04b985ae8c08c541b4f984d0af67043a06a7b400c83d5636",
+    "src/engine/waterfallLossEngine.ts": "95df7dc0dabdd65fa3d85eb36435a5b27c3be90547909777cdb3f3ef47a8dca8",
+    "src/engine/core/annualYieldEngine.ts": "bdb018bbc4839e7572c6b12a5c82ad4599ca5645976a4d6cc8b902366850e5f3",
+    "src/components/WaterfallLossTab.tsx": "b02835bf0c44cc24bc7692982c26c34d45cdfd47dd9924d36ee437d690cab573",
+    "src/helpContent.ts": "6aec899358752b4355312fe8829f341ad3b527df62656a3669ac4d38d7084e71",
+    "scripts/test-phase2-transposition.ts": "4c45101de4f8cf30482f0b99401c8bb5b957254aa84cf2931270f18c308ffb10",
+    "scripts/test-phase1-browser.ts": "e86ae18877b8ae39ce27bd577031558f22e55097e329365f6ddacf83041577d2",
+    "scripts/fixtures/physics/generate-scalar-transposition.py": "b2a11fa571a427ef92a047c224dce2b28c7419415430c960debd65c274ae0f4e",
+    "scripts/fixtures/physics/scalar-transposition-decimal.json": "056b7fbaa28e487f0b06108eafbdd3c9ae3a85917d82a5f7a58cb374784473f7",
+    "scripts/physics-reference-evidence.json": "c541b4b376d4e62c0f6b272095fb870d920e8ed0f9497c813c1fe2fccd965a0c",
+    "package.json": "5db967d196161816f9c9002ca74a399e4b7b86a60d9aa02b9ec752d852f9a801",
+    "docs/adr/ADR-023-named-scalar-transposition-owner.md": "39def59bc1e96b376889db892698494ab2fa05bfb04a8800bbfffb1ea1d068e3",
+    "docs/guides/scalar-transposition-policy.md": "eb257769a6a906b50da087b7f3505caa5535e85216536419aaae3ffb28b3c254",
+    "docs/audit/dual-independent-audit-review/PHASE-2-TRANSPOSITION-PLAN.md": "8e0dc5a290bbf214421d00bc907b5a22691ce652ae4aaae4e17a271f3ab5f078"
+  },
+  "executionLogSha256": {
+    "build.log": "3134c7755a107f6c687535f579119ad519070063169f320743e615835c4c6c21",
+    "lint.log": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965",
+    "test-accepted-audit.log": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89",
+    "test-coverage.log": "6e6f112eba97f81360642aef2fbb2b9f78947c30a79e96e9b27c7373b3708e97",
+    "test-phase1-browser.log": "96d2fef3fa6090a4a1b7a821369dd6eb6c5a1455b5139cb0bb31f56e6d7724ea",
+    "test-phase1-rerun.log": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db",
+    "test-phase1.log": "80099350fe6a402a3cd934e490e44f803f2702b894a1265d01e9cb227c977a39",
+    "test-phase2-rerun.log": "8be9ade7d3a711d8d226ef09eff6d3ea13be4837453061bba9430713de8f9661",
+    "test-phase2.log": "22ebdfc8e32a47b7486249de8e65e84347f11a967cf5fc3f56d5388f80db331e",
+    "test-recovery.log": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d",
+    "test-remaining.log": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547",
+    "test-remediation.log": "951077e39f51296ffbd4f6becbeba6bee576b08642e58b24ceb9b152d6e38b30",
+    "test-smoke.log": "97d041bb206ff484733a266b51db929f3c928dc4b547697bb10017b3449ba922",
+    "test.log": "8271061704aa9f7661cbc90d4abd8bc995f9a792a5b816e6ba444f3177a2a45f",
+    "verify-engine-claims.log": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122",
+    "verify-exports.log": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe",
+    "verify-help.log": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0",
+    "verify-phase1-evidence.log": "cec18ae2090ffbeb9c6fe8edf71fd288ef71dc929e15a8edd24be7c415bed1ad",
+    "verify-physics-reference-gate.log": "e707886da6c7e8fb4122e8e3244402d538673389ab790488b00332218dd73c25",
+    "verify-physics-registry.log": "94e7288aaf1de9be1efb558f9643804634ef881dc23d8492fb6d056a173bf3c7"
+  },
+  "gitOperations": "Fetched one historical evidence commit; no branch change, commit or push"
+}

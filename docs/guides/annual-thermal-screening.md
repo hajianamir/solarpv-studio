@@ -27,3 +27,17 @@ Independent component/policy arithmetic evidence and limits are recorded in ADR-
 ## Clipping precision is a separate screen
 
 The legacy ILR-only clipping estimate now has one shared owner. Its historic annual API still returns four-decimal values (including the pre-clamp raw field), while the waterfall retains unrounded stage precision. This is unchanged screening arithmetic, not a physical inverter or measured annual clipping model. See ADR-017; no increased forecast accuracy follows from consolidation.
+
+
+## Named calculation API and compatibility
+
+New scalar-waterfall consumers should pass a `WaterfallArgsInput` object to `computeConfiguredWaterfall` from `src/engine/waterfallArgs.ts`. App, the waterfall tab, canonical annual yield and roof shading use this boundary. `computeWaterfallLosses` and `buildWaterfallArgs` remain deprecated compatibility exports with all 17 slots; existing integrations need not reorder positional values during an upgrade. Do not duplicate reference-loss metadata attachment after using the configured API.
+
+The canonical route preserves explicit zero values, defaults, signed thermal overrides and serialized report numbers. Inactive tracker diagnostics are omitted rather than present with undefined; JSON was already identical. This routing change does not change the physical model or authorize finance adoption. The roof stepping kernel is now internally exported and directly reference-tested with a bounded synchronous-generator final-return protocol. There is no production positional-consumer exception. Common transposition policy is still not consolidated.
+
+Development verification requires the immutable base commits used by AST/baseline tests to exist locally (`0c4d7cadc7db6001459ea36fdf9a3d1403179a71` and `0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb`). A shallow checkout may need those objects hydrated as repository setup; tests do not download source or scientific data automatically. Use the Windows `install.bat` for application installation. Rollback is limited to the prior canonical call adapter, not coefficients or safety containment. See ADR-020.
+
+
+### Roof stepping and reference execution
+
+`annualShadingSteps` is an internal sync/cooperative stepping kernel. Each yield is progress only; its final return contains the report. User-facing callers should continue using the sync/cooperative APIs, not interpret yielded values as energy. The reference harness drains directly declared exported synchronous generators for at most100000next calls and compares final reports. It rejects async generators and does not automatically drain ordinary iterator-returning functions. This is a step budget, not preemption of a hung numerical step. See ADR-021 for evidence, limitations and rollback. The independent empty-scene fixture's nonzero declared capacity is deliberately unreconciled, not a valid plant design.
