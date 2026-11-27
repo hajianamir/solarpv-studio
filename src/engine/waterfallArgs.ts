@@ -99,7 +99,7 @@ export interface WaterfallArgsInput {
 export const WATERFALL_ARG_COUNT: number = 17;
 
 /**
- * Pure builder function mapping named WaterfallArgsInput to the strict 16-parameter
+ * Pure builder function mapping named WaterfallArgsInput to the strict 17-parameter
  * positional tuple required by computeWaterfallLosses.
  *
  * Parameter positions:

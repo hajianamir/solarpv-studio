@@ -1,3 +1,5 @@
+import {validateCableInputs, hasCableImpedanceEvidence} from '../contracts/cableAssessment';
+import {candidateVoltageDropVolts} from './core/cableVoltageDrop';
 // Preliminary cable, grounding and lightning screening calculations.
 // Standards references below identify the model's intended context only: current edition,
 // jurisdiction, manufacturer data and project inputs are not independently verified here.
@@ -21,6 +23,10 @@ export interface CableFeederInputs {
   allowableDropPct?: number;
   isDc?: boolean;
   isThreePhase?: boolean;
+  /** Explicit equivalent-circuit AC reactance, including mutual coupling, at design frequency. */
+  equivalentReactanceOhmPerM?: number;
+  parallelArrangement?: 'equal_length_equal_sharing';
+  impedanceSource?: string;
   powerFactor?: number;
   coincidenceFactor?: number;
   ambientTempC?: number;
@@ -52,6 +58,10 @@ export interface CableRunConfig {
   installationMethod?: InstallationMethod; // Defaults to 'cable_tray'
   expectedIscKa?: number;           // Legacy calculation fallback only; not sufficient for final assessment
   faultClearingTimeSec?: number;    // Legacy calculation fallback only; not sufficient for final assessment
+  /** Explicit equivalent-circuit AC reactance, including mutual coupling, at design frequency. */
+  equivalentReactanceOhmPerM?: number;
+  parallelArrangement?: 'equal_length_equal_sharing';
+  impedanceSource?: string;
   powerFactor?: number;
   groupedCircuitsCount?: number;
   protectiveDeviceRatingAmps?: number;
@@ -194,7 +204,10 @@ export interface EarthingAnalysisResult {
 export interface LightningProtectionResult {
   lpsClass: 'Class I' | 'Class II' | 'Class III' | 'Class IV';
   rollingSphereRadiusM: number;
-  protectionAngleDeg: number;
+  protectionAngleDeg: number | null;
+  assessmentStatus: 'unassessed';
+  /** Historical diagnostics only, never approved installation values. */
+  legacyGeometryDiagnostics: {protectionAngleDeg: number; separationDistanceCm: number};
   airTerminalsCount: number;
   airTerminalHeightM: number;
   downConductorsCount: number;
@@ -211,7 +224,7 @@ export interface LightningProtectionResult {
   annualExpectedStrikesNd: number;
   tolerableStrikesNc: number;
   requiredEfficiencyPct: number;
-  separationDistanceCm: number;
+  separationDistanceCm: number | null;
   installationGuidelinesFa: string[];
   installationGuidelinesEn?: string[];
 }
@@ -293,6 +306,7 @@ const MAX_PRACTICAL_SINGLE_CABLE_MM2 = 240.0;
  * Sizing satisfies Voltage Drop + Thermal Ampacity (with Temp/Grouping derating) + Short-circuit withstand.
  */
 export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResult {
+  validateCableInputs(config);
   // 1. Conductor resistance: nominal conductivity is referenced to 20°C.
   // In the absence of manufacturer resistance data or a verified operating temperature,
   // use the insulation-class maximum as a conservative thermal design temperature.
@@ -372,11 +386,14 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   };
 
   const minRequiredTotalMm2 = Math.max(calculatedTheoreticalMm2, shortCircuitWithstandMinMm2);
+  let searchExhausted = false;
+  const dropForCandidate = (section: number, runs: number) => candidateVoltageDropVolts(config, effectiveGamma, section, runs);
+  const checkDrop = (section: number, runs: number) => isVoltageDropWithinLimit(dropForCandidate(section, runs), config.nominalVoltageVolts, config.allowableDropPct);
 
   // Find minimum standard size that satisfies voltage drop, ampacity, and short-circuit
   for (const candidate of STANDARD_CABLE_SECTIONS_MM2) {
     if (
-      candidate >= calculatedTheoreticalMm2 &&
+      checkDrop(candidate, parallelRuns) &&
       checkShortCircuit(candidate, 1) &&
       checkAmpacity(candidate, 1)
     ) {
@@ -389,15 +406,15 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
   // If requires larger than MAX_PRACTICAL_SINGLE_CABLE_MM2 or single cable insufficient
   if (
     minRequiredTotalMm2 > MAX_PRACTICAL_SINGLE_CABLE_MM2 ||
+    !checkDrop(perRunSection, parallelRuns) ||
     !checkAmpacity(perRunSection, parallelRuns) ||
     !checkShortCircuit(perRunSection, parallelRuns)
   ) {
     let foundMultiRun = false;
     for (let runs = 2; runs <= 6; runs++) {
-      const sectionNeededPerRun = calculatedTheoreticalMm2 / runs;
       const matched = STANDARD_CABLE_SECTIONS_MM2.find(
         (s) =>
-          s >= sectionNeededPerRun &&
+          checkDrop(s, runs) &&
           s <= MAX_PRACTICAL_SINGLE_CABLE_MM2 &&
           checkAmpacity(s, runs) &&
           checkShortCircuit(s, runs)
@@ -412,6 +429,7 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
 
     // Fallback if very large (or tight short-circuit / ampacity constraints)
     if (!foundMultiRun) {
+      searchExhausted = true;
       parallelRuns = Math.max(
         parallelRuns,
         Math.ceil(minRequiredTotalMm2 / MAX_PRACTICAL_SINGLE_CABLE_MM2)
@@ -422,28 +440,8 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
 
   const totalEffectiveCrossSection = parallelRuns * perRunSection;
 
-  // 5. Actual Voltage Drop Recalculation
-  let actualDropVolts: number;
-  if (config.isDc) {
-    actualDropVolts = (2.0 * config.oneWayLengthM * config.designCurrentAmps) / (effectiveGamma * totalEffectiveCrossSection);
-  } else if (config.isThreePhase) {
-    const cosPhi = config.powerFactor ?? 0.95;
-    const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
-    const rPerMeter = 1.0 / (effectiveGamma * totalEffectiveCrossSection);
-    const xPerMeter = 0.00008; // 0.08 ohm/km
-    actualDropVolts =
-      Math.sqrt(3) *
-      config.oneWayLengthM *
-      config.designCurrentAmps *
-      (rPerMeter * cosPhi + xPerMeter * sinPhi);
-  } else {
-    const cosPhi = config.powerFactor ?? 0.95;
-    const sinPhi = Math.sqrt(1.0 - cosPhi * cosPhi);
-    const rPerMeter = 1.0 / (effectiveGamma * totalEffectiveCrossSection);
-    const xPerMeter = 0.00008; // 0.08 ohm/km, matching the single-phase sizing model
-    actualDropVolts = 2.0 * config.oneWayLengthM * config.designCurrentAmps
-      * (rPerMeter * cosPhi + xPerMeter * sinPhi);
-  }
+  // Same evaluator as candidate selection; preliminary algebra is diagnostic only.
+  const actualDropVolts = dropForCandidate(perRunSection, parallelRuns);
 
   const actualDropPctUnrounded = (actualDropVolts / config.nominalVoltageVolts) * 100.0;
   const actualDropPct = Number(actualDropPctUnrounded.toFixed(2));
@@ -533,9 +531,13 @@ export function calculateAdvancedCableRun(config: CableRunConfig): CableRunResul
 
   // A feeder pass also requires explicit protection data and, for AC circuits, an
   // explicit motor-start disposition. Active motor starting remains unassessed here.
-  const isCompliant = isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant
+  const isImpedanceAssessed = hasCableImpedanceEvidence(config);
+  const isCompliant = !searchExhausted && isImpedanceAssessed && isDropCompliant && isAmpacityCompliant && isShortCircuitCompliant
     && isProtectionCoordinationAssessed && isProtectionCoordinationCompliant && isMotorStartingAssessed;
   const assessmentNotes = [
+    searchExhausted ? 'Cable candidate search exhausted; returned dimensions are diagnostic only.' : '',
+    !isImpedanceAssessed ? 'AC impedance UNASSESSED: declare equal-length/equal-sharing arrangement and sourced equivalent reactance (including coupling and design frequency). Default reactance is a legacy diagnostic only.' : '',
+    !isDropCompliant || !isAmpacityCompliant || !isShortCircuitCompliant ? 'Candidate search did not satisfy all voltage-drop, ampacity and short-circuit constraints; no accepted cable selection.' : '',
     !isProtectionCoordinationAssessed
       ? 'Protection coordination is unassessed: explicit protective-device and verified fault data are required.'
       : '',
@@ -853,8 +855,9 @@ export function calculateEarthingSystem(
 }
 
 /**
- * Calculates Lightning Protection System (IEC 62305 & IEC 62548)
- * Performs IEC 62305-2 risk assessment and computes safe separation distance 's' (IEC 62305-3).
+ * Legacy lightning screening diagnostics only, not an IEC risk assessment.
+ * Angle/separation are unavailable without applicable height/topology evidence.
+ * Historical diagnostics must not be used as installation guidance.
  */
 export function calculateLightningProtection(
   systemCapacityKw: number,
@@ -930,18 +933,16 @@ export function calculateLightningProtection(
   const separationDistanceCm = Number((separationDistanceM * 100.0).toFixed(1));
 
   const installationGuidelinesFa = [
-    `۱. صاعقه‌گیرهای میله‌ای فرانکلین یا الکترونیکی ESE با شعاع حفاظتی بر اساس گوی غلتان ${rollingSphereRadiusM} متر (کلاس ${lpsClass}).`,
-    `۲. حداقل فاصله جداسازی ایمن (Separation Distance - s) به میزان ${separationDistanceCm} سانتی‌متر بین هادی نزولی صاعقه و کابل‌های DC/AC سولار جهت جلوگیری از ایجاد جرقه جانبی (Side Flash).`,
-    '۳. نصب حداقل ۲ هادی نزولی (Down Conductor) مسی ۵۰ میلی‌متر مربع برای هر دکل صاعقه‌گیر در دو مسیر مجزا به سمت چاه ارت صاعقه.',
-    '۴. نصب سرج ارستر صاعقه‌گیر ترکیبی Type 1+2 DC در ورودی اینورتر با تحمل جریان ضربه‌ای Iimp حداقل 12.5kA و In=20kA.',
-    '۵. نصب سرج ارستر AC کلاس Type 1+2 در تابلوی توزیع جهت مهار موج اضافه ولتاژ صاعقه القایی شبکه.',
-    '۶. در سقف‌های سوله صنعتی فلزی با ضخامت ورق بالای ۰.۵ میلی‌متر، استفاده از ورق به عنوان پایانه صاعقه طبیعی طبق پیوست D استاندارد IEC 62305-3 مجاز است.',
+    'زاویه حفاظتی و فاصله جداسازی بررسی‌نشده‌اند: ارتفاع نسبت به صفحه مرجع، هندسه و توپولوژی هادی‌ها، ضرایب و ویرایش استاندارد باید مستند شوند. از اعداد تشخیصی قدیمی برای نصب استفاده نکنید.',
+    'انتخاب کلاس، SPD و شعاع گوی غلتان در این خروجی فقط غربالگری است؛ ارزیابی ریسک و طراحی اختصاصی محل لازم است.',
   ];
 
   return {
     lpsClass,
     rollingSphereRadiusM,
-    protectionAngleDeg,
+    protectionAngleDeg: null,
+    assessmentStatus: 'unassessed',
+    legacyGeometryDiagnostics: {protectionAngleDeg, separationDistanceCm},
     airTerminalsCount,
     airTerminalHeightM: heightM,
     downConductorsCount,
@@ -957,13 +958,14 @@ export function calculateLightningProtection(
       'ارزیابی اولیه ریسک صاعقه بر مبنای مساحت معادل و شاخص کرانیک منطقه؛ طراحی تفصیلی نهایی نیازمند ارزیابی جامع ریسک R1-R4 طبق IEC 62305-2 است.',
     ],
     notesEn: [
-      'Preliminary lightning risk assessment based on collection area and regional keraunic days; full EPC engineering requires formal IEC 62305-2 R1-R4 risk assessment.',
+      'Protective angle and separation unavailable pending documented geometry/topology. Preliminary lightning risk assessment based on collection area and regional keraunic days; full EPC engineering requires formal IEC 62305-2 R1-R4 risk assessment.',
     ],
     collectionAreaM2,
     annualExpectedStrikesNd,
     tolerableStrikesNc,
     requiredEfficiencyPct,
-    separationDistanceCm,
+    separationDistanceCm: null,
+    installationGuidelinesEn: ['Protective angle and separation UNASSESSED: reference-plane height, conductor topology/current sharing, bonding, medium and applicable edition are not established. Do not use legacy geometry diagnostics for installation. Nominal rolling-sphere/class and SPD values remain screening assumptions, not a risk or conformity assessment.'],
     installationGuidelinesFa,
   };
 }

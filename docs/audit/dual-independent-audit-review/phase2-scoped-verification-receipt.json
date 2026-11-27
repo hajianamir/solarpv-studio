@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "branch": "arena/6a50ab5f-solarpv-studio",
+  "head": "0c4d7cadc7db6001459ea36fdf9a3d1403179a71",
+  "workingTree": "dirty prior work preserved; no commit or push",
+  "implementationStatus": "scoped repairs verified; Phase 2 INCOMPLETE",
+  "releaseStatus": "BLOCKED for full-validation/design-approval claims",
+  "acceptance": {
+    "P2-T1": "PASS signed transfer component, named/legacy/canonical configured parity; not annual-weather accuracy",
+    "P2-S1": "PASS shared wrapper diagnostics/reaction contract, not physical validation",
+    "P2-L1": "PASS unavailable angle/separation, JSON and actual UI rendering; no IEC numerical implementation"
+  },
+  "commands": {
+    "npm run lint": 0,
+    "npm run build": 0,
+    "npm run test": 0,
+    "npm run test:smoke": 0,
+    "npm run test:coverage": 0,
+    "npm run test:phase2": 0,
+    "npm run test:phase1": 0,
+    "npm run test:phase1:browser": 0,
+    "npm run test:recovery": 0,
+    "npm run verify:exports": 0,
+    "npm run verify:engine-claims": 0,
+    "npm run verify:physics-reference-gate": 0,
+    "npm run verify:phase1-evidence": 0
+  },
+  "historicalReference": {
+    "command": "PHYSICS_DIFF_BASE=71a7c2b52d8a109cb710e38e561c49e635c54698 npx tsx scripts/verify-physics-reference-gate.ts",
+    "exitCode": 1,
+    "status": "FAIL inherited 56 CAD reference deficits, not waived"
+  },
+  "failedAttempts": [
+    "reference registry deterministic ordering restored by existing generator; then PASS",
+    "browser nested tab/accessibility selector corrected after two timeouts; then PASS",
+    "sensitivity displayed quantity test corrected to documented two-decimal formatting; then PASS",
+    "inventory stale after source edits; regenerated, then PASS"
+  ],
+  "logs": {
+    ".cache/phase2-review/browser.log": {
+      "sha256": "3946c95ff28dd13895135fc2624f71a4a2da2e176e80f259bc8477e2a7dc07f2",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/build.log": {
+      "sha256": "9824c613fd9926e1eddd2dd5eb44e5f3f132a9e48555c9bae41bf27ba55dda8f",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/historical-reference.log": {
+      "sha256": "20266efd23cf1f5d7784a3be823a6b012eec7703f3fe5f2d193a37f2cad70bd7",
+      "result": "FAIL, inherited reference debt"
+    },
+    ".cache/phase2-review/inventory.log": {
+      "sha256": "2b26b966dd7abeb581392282c6240d9e4a511675fd973f63ccbd53f8eddd97fb",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/lint.log": {
+      "sha256": "695f20b38087eaf23eaa98638d2bdfe31a79577a435cf60408ae9a5a565eedef",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/test-coverage.log": {
+      "sha256": "2ef03f23a30e02dd4947ae23a8ba122c8e95ee3696ab0e3501db21926f73b0a7",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/test-phase1-browser.log": {
+      "sha256": "f4b67a00ecc69248838bed5cb41df0b3800e6c47f9603ce55c94596fc77ce38d",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/test-phase1.log": {
+      "sha256": "e0b9a648aa830999c4352c837a7d6f7e6e2a1b950231823ea1d928966a486bfc",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/test-phase2.log": {
+      "sha256": "ccaeda1e932384bc76d849b64cc180e39b13b4a8cd4828dee53ccb98bf50b48d",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/test-recovery.log": {
+      "sha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/test-smoke.log": {
+      "sha256": "4cdbdf39741164f65b0b1498b0de02b95b633b04b757e251efcf54055b3affbe",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/test.log": {
+      "sha256": "b3edf9a2e7f17738a31365928c3fd2580c44eeb30b2cdf9e69e3ad5bba047b60",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/verify-engine-claims.log": {
+      "sha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/verify-exports.log": {
+      "sha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe",
+      "result": "PASS"
+    },
+    ".cache/phase2-review/verify-physics-reference-gate.log": {
+      "sha256": "0f9a3bb11e6401b61361658ffaa6a2974482f8c0448df51981c4515eb61ae444",
+      "result": "PASS"
+    }
+  },
+  "sourceSha256": {
+    "src/contracts/signedThermalLoss.ts": "612145818604ca22eb492793743afa74792637bd3d893c2a527d17b89ddd8bd8",
+    "src/engine/core/signedThermalStage.ts": "545eb3f59e892a237776cf9f86ec4e94164839a87577ed60e6b0063a65780f36",
+    "src/engine/core/annualYieldEngine.ts": "d052cc0336637e9baa1bd4108f5ba05c749fa1b8ec6ee98d4ee700618a628e3d",
+    "src/engine/waterfallLossEngine.ts": "3e900cfeccbd0551d5806a7dfb9214dd38cba6156188cd8fbe57999459276119",
+    "src/engine/waterfallArgs.ts": "2092b2e98198f898cca31f0cd54d2b262c58bf64e20804afc5d33492ea599b91",
+    "src/engine/geotech/foundationRecommendation.ts": "1e8da87567626f259b8f20801d4608a246205760c3990e7983a79ceab8f7b841",
+    "src/engine/structureRecommendationEngine.ts": "f570595c6650b4e3829aec6e93525898f0ea3818a628f30d3ea1f485eed36726",
+    "src/engine/protectionBomEngine.ts": "479e1fa38034c1558e0096f6c8b946f9851e7865bee20b321974a75e29873423",
+    "src/components/ProtectionBomTab.tsx": "e9a873903b972c21508a63e21ca31901d03020c91204807f13bf64a90e25dc3f",
+    "src/engine/core/benchmarks/unitTestsCore.ts": "70af73f923dd4a5c570df9ec25dc11fa26a1e86c4860787eee0884174b8cae1c",
+    "scripts/test-phase2-uplift.ts": "3f5e5d2e3601b79dd8a5da794708df299e83294219f09b3ab4664800e9b8b6eb",
+    "scripts/test-phase2-thermal.ts": "3b9f6e7b525d0e2275b3fd8672753442fb7737f422803ad352ad360882d681e6",
+    "scripts/test-phase2-lightning.ts": "0f0e8829ee1364d4f77ecc3c6fb503ce26fcc67ddc5a7383db4e61d97bef4940",
+    "scripts/test-phase1-browser.ts": "86b30ab8f02d426768a8d51886009b6f2214c43f72fd3657e7b6abe89d0421e4",
+    "scripts/fixtures/physics/generate-signed-thermal-stage.py": "59372a54f128b8964c64a04f70e12b49c0299ca4c9cb13876042c87047976e50",
+    "scripts/fixtures/physics/pvlib-0131-signed-thermal-stage.json": "1de5965a9f878b636fe2d0c9b7785c794d5a89b25a543fc006be700f6a3abc98",
+    "scripts/physics-reference-evidence.json": "b0fa8f3bd69bd42cfd9732057f9f2f49f8011ee6cc228437db397ff6394dd84e",
+    "package.json": "ce4776579b57036f90edbfe17f0cd58d6883e8c031e744d9a519139ddcb48da6",
+    "docs/adr/ADR-013-phase2-signed-thermal-and-lps-containment.md": "610150a69fdb782022025c22af390139d647d7f5cd308df7134856033f1e8e0a",
+    "docs/audit/dual-independent-audit-review/PHASE-2-STATUS.md": "01074b24dc24fa8555bc9cc69d6addb1138152c7984bb1818cb03eed0c5c7015",
+    "docs/audit/dual-independent-audit-review/PHASE-2-RESEARCH-AND-REVIEW.md": "e663fb2264c1768db0c50394cc604feb4d0b506b6dacfefdaa8d1741ccb0a526",
+    "docs/audit/dual-independent-audit-review/current-implementation-evidence.json": "3f883912398216394138733784b761ca8865b501c20e2349b7301cad333566d4",
+    "docs/audit/dual-independent-audit-review/current-finding-dispositions.json": "957712a25311db8b62eced2fa3c0b9f9f5b9640fe94ea62544d4b6cc6bd6d0b7"
+  },
+  "notExecuted": [
+    "new independent whole-model wind/soil/cable/finance validation",
+    "new complete general/operational browser rerun for this slice",
+    "native Safari/Windows/container/deployment/field checks"
+  ],
+  "limits": [
+    "Synthetic consumer matrices are not independent physical references.",
+    "Fifteen pvlib cases verify sign transfer only.",
+    "Unchanged historical gates and unsupported model domains remain open.",
+    "Do not treat this receipt as Phase 2 completion."
+  ]
+}

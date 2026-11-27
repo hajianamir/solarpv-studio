@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "simulateAnnualHourlyThermalDerate",
+  "referenceSource": {
+    "title": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+    "version": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+    "locator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+  },
+  "independentCalculation": "Independent numpy annual-profile reconstruction and pvlib DC integration.\n\nThis verifies execution of a DECLARED synthetic policy, not climate accuracy.\nNASA/JPL Space Place 'What Causes the Seasons?' (updated 2025-07-29) supports\nopposite seasonal timing, NOT the day-200 peak, amplitude, equator policy or\nmount offsets. Those remain explicitly local screening assumptions.\nNOCT Eq1: DOI10.3390/app10030914. PVWatts DC: pvlib0.13.1.\nNo TypeScript imports, production outputs or network access.\n",
+  "tolerances": {
+    "absolute": 1e-09,
+    "relative": 1e-11
+  },
+  "cases": [],
+  "previousNorthernOnlyPolicySouthDeratePct": -0.39691153733727447,
+  "formulaId": "src/engine/core/hourlyThermalEngine.ts#simulateAnnualHourlyThermalDerate#24a3be6d72b0",
+  "inputs": [
+    {
+      "latitudeDeg": -35,
+      "peakSunHours": 5,
+      "ambientTempMinC": -20,
+      "ambientTempMaxC": 40,
+      "ambientTempMeanC": 10,
+      "noctC": 40,
+      "tempCoeffPmpPct": -0.3,
+      "installationEnvironment": "ground_mount"
+    }
+  ],
+  "expected": {
+    "hourlySamples": 8760,
+    "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+    "energyAvailability": "positive_reference_irradiation",
+    "annualThermalDeratePct": 1.203760035693402,
+    "temperatureSensitivityRangePct": {
+      "low": -0.2962399643065883,
+      "high": 2.7037600356934144
+    },
+    "temperatureSensitivityAllowanceC": 5,
+    "ambientMeanUsedC": 10,
+    "ambientMeanSource": "supplied_annual_mean",
+    "irradianceAnnualKwhM2": 1825,
+    "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+    "isMeasuredHourlyWeather": false,
+    "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+  }
+}

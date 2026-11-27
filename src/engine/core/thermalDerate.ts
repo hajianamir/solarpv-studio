@@ -22,8 +22,8 @@ export interface ThermalDerateResult {
   cellTempHotC: number;
   cellTempAnnualMeanC?: number;
   annualMeanDeratePct?: number;
-  derateFraction: number;      // 0.0 to 1.0
-  deratePct: number;           // 0 to 100
+  derateFraction: number;      // signed annual loss fraction; negative denotes gain
+  deratePct: number;           // signed annual loss percentage; hot-design convention unchanged
   mountingDeltaTC: number;     // screening assumption only; not validated by the NOCT reference fixture
   source: 'NOCT_BASE_WITH_UNVALIDATED_MOUNTING_ASSUMPTIONS';
   evaluationMode: ThermalEvaluationMode;
@@ -52,8 +52,8 @@ export function calculateThermalDerate(input: ThermalDerateInput): ThermalDerate
 
   if (typeof input.ambientTempMeanC === 'number' && Number.isFinite(input.ambientTempMeanC)) {
     cellTempAnnualMeanC = input.ambientTempMeanC + mountingDeltaTC + (noct - 20) * (G / 800);
-    const deltaTAnnual = Math.max(0, cellTempAnnualMeanC - 25);
-    annualMeanDeratePct = Math.abs(input.module.tempCoeffPmpPct) * deltaTAnnual;
+    const deltaTAnnual = cellTempAnnualMeanC - 25;
+    annualMeanDeratePct = -input.module.tempCoeffPmpPct * deltaTAnnual;
   }
 
   const isAnnualEnergy = evalMode === 'annual_energy' && annualMeanDeratePct !== undefined;

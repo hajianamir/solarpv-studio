@@ -229,13 +229,13 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
       title: 'Scenario comparison',
       inputs: 'The App creates three predefined customer-mode alternatives from current PV demand, PSH and load/autonomy inputs, varying battery/economic assumptions. Check the low-PSH notice and each scenario’s displayed assumptions.',
       method: 'The scenario engine calculates each alternative independently and compares PV/battery capacities and modeled financial/yield outputs; it is a fixed set of variants, not a user-defined probabilistic distribution.',
-      limitations: 'Scenario outputs inherit their assumptions and any known scenario-engine floors. They are not probabilities, forecasts, or a substitute for manually validating equipment constraints in the main design pages.',
+      limitations: 'Scenario outputs inherit their assumptions and known scenario-engine floors. LCOE is a pre-tax unlevered USD screen with flat nominal costs and a discounted replacement reserve; unavailable is null, not free electricity. Full precision is retained until display. They are not probabilities, forecasts, or a substitute for manually validating equipment constraints.',
     },
     fa: {
       title: 'مقایسهٔ سناریوها',
       inputs: 'برنامه سه گزینهٔ ازپیش‌تعریف‌شدهٔ حالت مصرف‌کننده را از تقاضای PV، PSH و ورودی بار/خودمختاری می‌سازد و فرض باتری/اقتصادی را تغییر می‌دهد. هشدار PSH پایین و فرض‌های هر گزینه را بررسی کنید.',
       method: 'موتور سناریو هر گزینه را مستقل محاسبه و ظرفیت PV/باتری و خروجی‌های مالی/تولید مدل‌شده را مقایسه می‌کند؛ مجموعه‌ای ثابت از گزینه‌هاست، نه توزیع احتمالاتی دلخواه کاربر.',
-      limitations: 'سناریوها فرض‌ها و کف‌های شناخته‌شدهٔ موتور سناریو را به ارث می‌برند. احتمال، پیش‌بینی یا جایگزین اعتبارسنجی دستی محدودیت تجهیزات در صفحات طراحی نیستند.',
+      limitations: 'سناریوها فرض‌ها و کف‌های شناخته‌شدهٔ موتور را به ارث می‌برند. LCOE غربالگری دلاری بدون مالیات و بدهی با هزینهٔ اسمی ثابت و ذخیرهٔ تنزیل‌شدهٔ تعویض است؛ مقدار ناموجود null است، نه برق رایگان. گرد کردن فقط برای نمایش است. احتمال، پیش‌بینی یا جایگزین اعتبارسنجی تجهیزات نیستند.',
     },
   },
   catalog: {
@@ -257,7 +257,7 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
       title: 'Regulations & tariffs',
       inputs: 'Review the project capacity and annual-generation figures supplied to the page, plus the regulatory/tariff assumptions shown in its tables.',
       method: 'This page presents reference/regulatory information alongside project values; its presentation does not itself query an authority or certify eligibility.',
-      limitations: 'Tariffs, program eligibility and regulations can change and vary by project. Confirm the current governing documents and terms with the responsible authority before making a financial or compliance decision.',
+      limitations: 'Capacity is actual installed DC; annual energy uses the Financial screening boundary, never representative-day × 365. This scalar screen is blocked for adopted operational energy because it lacks the import-cost/dispatch ledger. Defaults are illustrative and not verified current tariffs. Tariffs, program eligibility and regulations can change and vary by project. Confirm the current governing documents and terms with the responsible authority before making a financial or compliance decision.',
     },
     fa: {
       title: 'مقررات و تعرفه‌ها',

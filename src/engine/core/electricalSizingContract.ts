@@ -1,3 +1,5 @@
+import {exceedsMpptOperatingLimit,exceedsLegacyMpptShortCircuitLimit} from './mpptCurrentComparison';
+import {assessElectricalReadiness, type ElectricalReadiness, type MpptRatingEvidence} from '../../contracts/electricalReadiness';
 import { resolveVmpTemperatureCoefficient } from './vmpTemperatureCoefficient';
 /**
  * Electrical Sizing, MPPT Hard-Blocking & Powerplant Fleet Contract (Phase 05 Remediation)
@@ -9,7 +11,8 @@ import { resolveVmpTemperatureCoefficient } from './vmpTemperatureCoefficient';
  * 4. Usable BESS Storage with DoD, Round-Trip Efficiency & Temperature Derating (evaluateUsableBatteryStorage)
  * 5. STC MPP Calibrated Single-Diode Model Curve & Parameter Extraction (calibrateSingleDiodeMpp)
  *
- * IEC 62548 / NEC 690 / IEEE 1562 / IEC 60891 Compliant.
+ * Screening references: IEC 62548 / NEC 690 / IEEE 1562 / IEC 60891.
+ * No standards-conformity assessment is established by this contract.
  */
 
 import {
@@ -44,7 +47,7 @@ import {
   type PvArrayDesignResult,
 } from '../pvEngineAdvanced';
 
-import { calculateThermalDerate } from './thermalDerate';
+import { calculateThermalDerate, type ThermalDerateInput } from './thermalDerate';
 import { allocateStringsToMpptChannels } from './mpptAllocation';
 
 export type {
@@ -95,6 +98,7 @@ export function evaluateInverterRightSizing(
 // ============================================================================
 
 export interface MpptCheckInput {
+  mpptRatingEvidence?: MpptRatingEvidence;
   moduleVoc: number;
   moduleVmp: number;
   moduleIsc: number;
@@ -117,13 +121,17 @@ export interface MpptCheckInput {
   ambientTempMinC: number;
   ambientTempMaxC: number;
   cellTempHotC?: number;
+  noctC?: number;
+  installationEnvironment?: ThermalDerateInput['installationEnvironment'];
   /** Measured/intended string count on each MPPT channel, ordered by inverter then channel. */
   stringsPerMpptAllocation?: number[];
 }
 
 export interface MpptCheckResult {
+  electricalReadiness: ElectricalReadiness;
   isVoltageFeasible: boolean;
   isCurrentFeasible: boolean;
+  /** @deprecated Numerical feasibility alias only; electricalReadiness controls evidence status. Never standards conformity. */
   isCompliant: boolean;
   stringVocMaxColdV: number;
   stringVmpMinHotV: number;
@@ -153,8 +161,16 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
   const singleVocCold = input.moduleVoc * (1.0 + (input.tempCoeffVocPct / 100.0) * (input.ambientTempMinC - 25.0));
   const stringVocMaxColdV = Number((input.modulesPerString * singleVocCold).toFixed(2));
 
-  const effectiveHotC = input.cellTempHotC ?? (input.ambientTempMaxC + 25.0);
   const vmpCoefficient = resolveVmpTemperatureCoefficient(input.tempCoeffVmpPct, input.tempCoeffPmpPct ?? -0.30, input.tempCoeffPmpPct === undefined ? undefined : input.tempCoeffIscPct);
+  // The shared NOCT cell temperature is independent of the power coefficient;
+  // only cellTempHotC is consumed, never this call's derating result.
+  const hotDesignInput: ThermalDerateInput = {
+    module: {noctC: input.noctC, tempCoeffPmpPct: vmpCoefficient.coefficientPct},
+    ambientTempMaxC: input.ambientTempMaxC,
+    installationEnvironment: input.installationEnvironment,
+    evaluationMode: 'hot_design',
+  };
+  const effectiveHotC = input.cellTempHotC ?? calculateThermalDerate(hotDesignInput).cellTempHotC;
   const vmpCoeffPct = vmpCoefficient.coefficientPct;
   const singleVmpHot = input.moduleVmp * (1.0 + (vmpCoeffPct / 100.0) * (effectiveHotC - 25.0));
   const stringVmpMinHotV = Number((input.modulesPerString * singleVmpHot).toFixed(2));
@@ -191,16 +207,16 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
   } else if (allocation.isAssumed) {
     warnings.push('MPPT current compliance uses an assumed balanced round-robin string allocation; verify the actual per-channel wiring before treating this as installed-system compliance.');
   }
-  if (input.inverterImppMaxPerMppt > 0 && operatingCurrentAmps > input.inverterImppMaxPerMppt) {
+  if (input.inverterImppMaxPerMppt > 0 && exceedsMpptOperatingLimit(stringsPerMppt,input.moduleImp,input.inverterImppMaxPerMppt)) {
     isCurrentFeasible = false;
-    const msg = `Operating current (${operatingCurrentAmps}A) exceeds MPPT rating (${input.inverterImppMaxPerMppt}A)`;
+    const msg = `Operating current (display-rounded ${operatingCurrentAmps}A) exceeds MPPT rating (${input.inverterImppMaxPerMppt}A); unrounded per-channel comparison governs`;
     blockingErrors.push(msg);
     warnings.push(msg);
   }
 
-  if (input.inverterIscMaxPerMppt > 0 && shortCircuitCurrentAmps > input.inverterIscMaxPerMppt) {
+  if (input.inverterIscMaxPerMppt > 0 && exceedsLegacyMpptShortCircuitLimit(stringsPerMppt,input.moduleIsc,input.inverterIscMaxPerMppt)) {
     isCurrentFeasible = false;
-    const msg = `Short-circuit current with 1.25 factor (${shortCircuitCurrentAmps}A) exceeds MPPT limit (${input.inverterIscMaxPerMppt}A)`;
+    const msg = `Short-circuit current with legacy 1.25 factor (display-rounded ${shortCircuitCurrentAmps}A) exceeds MPPT limit (${input.inverterIscMaxPerMppt}A); unrounded per-channel comparison governs`;
     blockingErrors.push(msg);
     warnings.push(msg);
   }
@@ -219,7 +235,12 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
     ? Number((((input.inverterImppMaxPerMppt - operatingCurrentAmps) / input.inverterImppMaxPerMppt) * 100).toFixed(2))
     : 0;
 
+  const electricalReadiness = assessElectricalReadiness({evidence: input.mpptRatingEvidence,
+    measuredVmpPct: input.tempCoeffVmpPct, operatingLimit: input.inverterImppMaxPerMppt,
+    shortCircuitLimit: input.inverterIscMaxPerMppt, allocationAssumed: allocation.isAssumed, allocationValid: allocation.isValid});
+  warnings.push(...electricalReadiness.reasons);
   return {
+    electricalReadiness,
     isVoltageFeasible,
     isCurrentFeasible,
     isCompliant: isVoltageFeasible && isCurrentFeasible,
@@ -337,7 +358,7 @@ export interface UsableStorageResult {
 }
 
 /**
- * Calculates battery bank sizing factoring DoD, round-trip efficiency, and Arrhenius/Peukert temperature derating.
+ * Calculates battery bank sizing factoring DoD, round-trip efficiency, and a linear low-temperature capacity screening rule.
  */
 export function evaluateUsableBatteryStorage(
   input: UsableStorageInput

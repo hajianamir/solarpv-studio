@@ -1,0 +1,286 @@
+{
+  "spaStoredReferenceComparison": {
+    "rows": 887,
+    "maxZenith": 0.005863801425533666,
+    "maxAzimuth": 0.022482629825390177,
+    "outsideTolerance": 0,
+    "tolerancesDegrees": {
+      "zenith": 0.05,
+      "azimuth": 0.15
+    },
+    "scope": "Production function vs pre-existing independently sourced fixture; not newly generated SPA or horizon validation"
+  },
+  "evidenceClass": "internal diagnostic reproduction only; candidate equations below are NOT approved reference targets",
+  "wind": [
+    {
+      "elevationM": 0,
+      "actual": {
+        "qzN_M2": 509.4711111111112,
+        "qzKnM2": 0.5094711111111112,
+        "vMs": 33.333333333333336,
+        "kz": 0.88,
+        "kzt": 1,
+        "kd": 0.85,
+        "ke": 1
+      },
+      "candidateMetric119": 1,
+      "candidate8000": 1
+    },
+    {
+      "elevationM": 500,
+      "actual": {
+        "qzN_M2": 500.33263668020487,
+        "qzKnM2": 0.5003326366802049,
+        "vMs": 33.333333333333336,
+        "kz": 0.88,
+        "kzt": 1,
+        "kd": 0.85,
+        "ke": 0.9820628211657063
+      },
+      "candidateMetric119": 0.94223553359123,
+      "candidate8000": 0.9394130628134758
+    },
+    {
+      "elevationM": 1000,
+      "actual": {
+        "qzN_M2": 491.3580806994384,
+        "qzKnM2": 0.4913580806994384,
+        "vMs": 33.333333333333336,
+        "kz": 0.88,
+        "kzt": 1,
+        "kd": 0.85,
+        "ke": 0.9644473847159462
+      },
+      "candidateMetric119": 0.8878078007619501,
+      "candidate8000": 0.8824969025845955
+    },
+    {
+      "elevationM": 1190,
+      "actual": {
+        "qzN_M2": 487.9901155299233,
+        "qzKnM2": 0.4879901155299233,
+        "vMs": 33.333333333333336,
+        "kz": 0.88,
+        "kzt": 1,
+        "kd": 0.85,
+        "ke": 0.9578366758924961
+      },
+      "candidateMetric119": 0.8679596947671187,
+      "candidate8000": 0.8617845341039616
+    },
+    {
+      "elevationM": 2000,
+      "actual": {
+        "qzN_M2": 473.88901588962017,
+        "qzKnM2": 0.4738890158896202,
+        "vMs": 33.333333333333336,
+        "kz": 0.88,
+        "kzt": 1,
+        "kd": 0.85,
+        "ke": 0.9301587578854282
+      },
+      "candidateMetric119": 0.7882026910937704,
+      "candidate8000": 0.7788007830714049
+    }
+  ],
+  "kz": {
+    "omitted": 0.88,
+    "explicit3m": 0.849
+  },
+  "hemisphere": {
+    "north": {
+      "hourlySamples": 8760,
+      "annualThermalDeratePct": 4.269823339637535,
+      "temperatureSensitivityRangePct": {
+        "low": 2.7698233396375116,
+        "high": 5.7698233396375365
+      },
+      "temperatureSensitivityAllowanceC": 5,
+      "ambientMeanUsedC": 18,
+      "ambientMeanSource": "provider_annual_mean",
+      "irradianceAnnualKwhM2": 1825,
+      "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+      "isMeasuredHourlyWeather": false,
+      "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic. The ±temperature band is a sensitivity to an explicit ±5°C bias (or configured amount), not a probability interval or bound on total forecast error."
+    },
+    "south": {
+      "hourlySamples": 8760,
+      "annualThermalDeratePct": 2.949268467639854,
+      "temperatureSensitivityRangePct": {
+        "low": 1.449268467639886,
+        "high": 4.449268467639889
+      },
+      "temperatureSensitivityAllowanceC": 5,
+      "ambientMeanUsedC": 18,
+      "ambientMeanSource": "provider_annual_mean",
+      "irradianceAnnualKwhM2": 1825,
+      "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+      "isMeasuredHourlyWeather": false,
+      "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic. The ±temperature band is a sensitivity to an explicit ±5°C bias (or configured amount), not a probability interval or bound on total forecast error."
+    }
+  },
+  "hotCell": {
+    "fallbackAmbientPlus25": 65,
+    "noct45": 71.25,
+    "noct42": 67.5
+  },
+  "mppt": {
+    "inputs": {
+      "moduleVoc": 50,
+      "moduleVmp": 40,
+      "moduleIsc": 14,
+      "moduleImp": 13,
+      "modulePmp": 520,
+      "tempCoeffVocPct": -0.26,
+      "tempCoeffVmpPct": -0.3,
+      "modulesPerString": 15,
+      "parallelStrings": 1,
+      "inverterVdcMax": 1100,
+      "inverterVmpptMin": 200,
+      "inverterVmpptMax": 1000,
+      "inverterImppMaxPerMppt": 20,
+      "inverterIscMaxPerMppt": 16,
+      "inverterMpptChannels": 1,
+      "inverterPnomAcKw": 10,
+      "ambientTempMinC": 0,
+      "ambientTempMaxC": 40
+    },
+    "output": {
+      "isVoltageFeasible": true,
+      "isCurrentFeasible": false,
+      "isCompliant": false,
+      "stringVocMaxColdV": 798.75,
+      "stringVmpMinHotV": 528,
+      "stringVmpMaxColdV": 645,
+      "effectiveMpptChannels": 1,
+      "stringsPerMppt": 1,
+      "stringsPerMpptAllocation": [
+        1
+      ],
+      "isMpptAllocationAssumed": true,
+      "operatingCurrentAmps": 13,
+      "shortCircuitCurrentAmps": 17.5,
+      "currentSafetyMarginPct": 35,
+      "dcAcRatio": 0.78,
+      "singleInverterDcAcRatio": 0.78,
+      "blockingErrors": [
+        "Short-circuit current with 1.25 factor (17.5A) exceeds MPPT limit (16A)"
+      ],
+      "warnings": [
+        "MPPT current compliance uses an assumed balanced round-robin string allocation; verify the actual per-channel wiring before treating this as installed-system compliance.",
+        "Short-circuit current with 1.25 factor (17.5A) exceeds MPPT limit (16A)"
+      ]
+    }
+  },
+  "diode": {
+    "baseline": {
+      "voc": 42.84,
+      "pmp": 451.1
+    },
+    "gammaOnly": {
+      "voc": 42.84,
+      "pmp": 451.1
+    },
+    "betaOnly": {
+      "voc": 42.84,
+      "pmp": 451.1
+    }
+  },
+  "bifacial": [
+    {
+      "groundCoverRatio": 0.3,
+      "gainFraction": 0.02376
+    },
+    {
+      "groundCoverRatio": 0.6,
+      "gainFraction": 0.04752
+    }
+  ],
+  "coldAnnual": {
+    "cellTempHotC": 21.25,
+    "cellTempAnnualMeanC": 11.25,
+    "annualMeanDeratePct": 0,
+    "deratePct": 0,
+    "derateFraction": 0,
+    "mountingDeltaTC": 0,
+    "source": "NOCT_BASE_WITH_UNVALIDATED_MOUNTING_ASSUMPTIONS",
+    "evaluationMode": "annual_energy",
+    "effectiveAmbientTempC": -20
+  },
+  "poa": {
+    "inputs": {
+      "ghi": 800,
+      "dni": 800,
+      "dhi": 100,
+      "tiltDeg": 30,
+      "azimuthDeg": 0,
+      "sunZenithDeg": 30,
+      "sunAzimuthDeg": 180
+    },
+    "libraryDefault": 494.1033891064341,
+    "explicitSouth": 924.0970348750503
+  },
+  "iran": [
+    {
+      "kwp": 0.5,
+      "capexMillion": 16,
+      "year1": {
+        "year": 1,
+        "generationMwh": 1,
+        "revenueMillionToman": 3,
+        "opexMillionToman": 0,
+        "debtServiceMillionToman": 4,
+        "netCashFlowMillionToman": -1,
+        "cumulativeCashFlowMillionToman": -6,
+        "dscr": 0.75
+      }
+    },
+    {
+      "kwp": 1,
+      "capexMillion": 32,
+      "year1": {
+        "year": 1,
+        "generationMwh": 2,
+        "revenueMillionToman": 7,
+        "opexMillionToman": 0,
+        "debtServiceMillionToman": 8,
+        "netCashFlowMillionToman": -1,
+        "cumulativeCashFlowMillionToman": -11,
+        "dscr": 0.88
+      }
+    },
+    {
+      "kwp": 5,
+      "capexMillion": 158,
+      "year1": {
+        "year": 1,
+        "generationMwh": 8,
+        "revenueMillionToman": 34,
+        "opexMillionToman": 2,
+        "debtServiceMillionToman": 40,
+        "netCashFlowMillionToman": -8,
+        "cumulativeCashFlowMillionToman": -55,
+        "dscr": 0.8
+      }
+    },
+    {
+      "kwp": 10,
+      "capexMillion": 315,
+      "year1": {
+        "year": 1,
+        "generationMwh": 16,
+        "revenueMillionToman": 67,
+        "opexMillionToman": 5,
+        "debtServiceMillionToman": 79,
+        "netCashFlowMillionToman": -17,
+        "cumulativeCashFlowMillionToman": -111,
+        "dscr": 0.78
+      }
+    }
+  ],
+  "catalog": {
+    "total": 25,
+    "measuredVmp": 0
+  },
+  "invalidLcoe": 0
+}

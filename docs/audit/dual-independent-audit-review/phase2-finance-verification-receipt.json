@@ -1,0 +1,539 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "branch": "arena/6a50ab5f-solarpv-studio",
+  "baseCommit": "0c4d7cadc7db6001459ea36fdf9a3d1403179a71",
+  "dirtyTreePreserved": true,
+  "commitOrPushPerformed": false,
+  "decisions": {
+    "implementation": "PARTIAL overall Phase2; strict simple LCOE and unrounded MPPT acceptance implemented",
+    "verification": "Verified within implemented scope only",
+    "release": "BLOCKED: Phase2 incomplete"
+  },
+  "acceptance": {
+    "finance": "42 independent Decimal cases; valid zero vs unavailable null; strict metadata, consumed HTTP degradation, unsupported-field rejection; fullprecision bilingual scenarios and actual customer-mode browser checks. No financial adoption eligibility.",
+    "electrical": "40 independent exact Decimal thresholds plus direct/array/central adjacent-float overload witnesses; exact-limit numerical acceptance retained. Missing manufacturer evidence remains unassessed; no universal factor conversion."
+  },
+  "referenceGate": {
+    "changedExpressionsExecutedAndMutationChecked": 28,
+    "waived": false
+  },
+  "checks": [
+    {
+      "run": "full regression",
+      "task": "build",
+      "result": "PASS",
+      "logSha256": "75048be49b2b30230b0d20cdd239d4f1723a51f0199e22ac03f6c2922445e5c1",
+      "outputTail": [
+        "dist/assets/unitTestsCore-C40Y8xts.js                             261.16 kB │ gzip:  82.41 kB",
+        "dist/assets/vendor-pdf-C54KaIe1.js                                430.78 kB │ gzip: 178.18 kB",
+        "dist/assets/vendor-three-CaFemgdW.js                              472.70 kB │ gzip: 118.08 kB",
+        "dist/assets/vendor-pdf-font-BQ9bhSnR.js                           716.78 kB │ gzip: 329.76 kB",
+        "dist/assets/vendor-spreadsheet-mhZc_zmi.js                        939.78 kB │ gzip: 271.10 kB",
+        "dist/assets/index-DIIuq1ti.js                                     992.00 kB │ gzip: 297.21 kB",
+        "✓ built in 21.72s"
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "lint",
+      "result": "PASS",
+      "logSha256": "e50a53b5a9e06869db4505d47f83ce2241089ac8dd78a34954c38d342d51c6e8",
+      "outputTail": [
+        "/home/user/solarpv-studio/src/engine/solarPvEngine.ts",
+        "  214:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "  233:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "  246:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "",
+        "✖ 93 problems (0 errors, 93 warnings)",
+        ""
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test-accepted-audit",
+      "result": "PASS",
+      "logSha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 test:accepted-audit",
+        "> tsx scripts/test-accepted-vmp-audit.ts",
+        "",
+        "PASS accepted Vmp audit: synthetic hot/cold/STC windows, bias counterexample, three-engine validation, catalog adapter/selection guard, schema roundtrip, HTTP aliases/conflicts/legacy/infeasibility, guidance provenance. Not field or standards validation."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test-coverage",
+      "result": "PASS",
+      "logSha256": "d0bde2afed5d684bc76035de0ddd01d8456e9edc635d6262ecf568831c87d973",
+      "outputTail": [
+        "  goldenDatasets.ts            |     100 |      100 |     100 |     100 |                           ",
+        "  lhsBenchmark.ts              |     100 |      100 |     100 |     100 |                           ",
+        "  migrationTestVectors.ts      |   97.63 |    81.81 |     100 |   97.63 | 338-346                   ",
+        "  sensitivityAnalysis.ts       |   96.01 |    88.13 |     100 |   96.01 | ...96-298,369-370,407-408 ",
+        "  trackerFixtures.ts           |     100 |      100 |     100 |     100 |                           ",
+        "  unitTestsCore.ts             |   99.83 |    59.29 |     100 |   99.83 | ...30,1978,2022,5751-5753 ",
+        "-------------------------------|---------|----------|---------|---------|---------------------------"
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test-phase1-browser",
+      "result": "PASS",
+      "logSha256": "f4b67a00ecc69248838bed5cb41df0b3800e6c47f9603ce55c94596fc77ce38d",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 test:phase1:browser",
+        "> tsx scripts/test-phase1-browser.ts",
+        "",
+        "PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence import/export. External providers blocked; not field validation."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test-phase1",
+      "result": "PASS",
+      "logSha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db",
+      "outputTail": [
+        "> tsx scripts/test-phase1-boundaries.ts",
+        "",
+        "Phase 1 boundary unit regressions passed (synthetic arithmetic, not model validation).",
+        "PASS explicit azimuth, rating-basis/readiness, persistence, per-channel overload and unsupported economic/bifacial contracts.",
+        "PASS ratio/nameplate, invalid input, unknown 65/90A and screening PR denominator/gain regressions.",
+        "PASS numerical AST parity outside explicitly fixture-gated ADR-015 hot ownership and ADR-019 unrounded current comparison replacements.",
+        "PASS catalog evidence preserves unknowns and rejects malformed rating metadata."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test-phase2",
+      "result": "PASS",
+      "logSha256": "207bf1aeecff6c0ebf6c1c3ab0e25752c27a7d8b0c1a6b033f7f688bafc2a99d",
+      "outputTail": [
+        "PASS Broms containment: 144 unsupported domain cases cannot assert safety, 85 previous green-screen witnesses retained as diagnostic only; actual structural consumer blocked.",
+        "PASS finance precision: 18 independent 50-digit Decimal ledgers at .5/1/5/10/50/1000kWp, zero/debt/interest cases; unrounded NPV and row accounting; legacy illustrative assumptions remain unvalidated.",
+        "PASS thermal owner: 24 external pvlib conditions, independent MPPT hot-window witness, 9 ground/shed/roof parity cases and explicit override authority; 9 independent SI Ke conditions and pressure propagation/Kd-once checks. Not whole-model validation.",
+        "PASS hemisphere thermal: 32 independent numpy/pvlib policy-integration cases; ±latitude/equator/polar, zero PSH, invalid input and signed canonical/waterfall JSON parity. Synthetic policy verification, NOT measured-weather validation.",
+        "PASS unchanged clipping consolidation: 14 independent Decimal arithmetic characterizations, annual/waterfall precision adapters and historical nonfinite boundaries. NOT external physical clipping validation.",
+        "PASS strict LCOE: 42 independent Decimal cost/energy/ratio cases, valid-zero vs unavailable/overflow, deprecated adapter, full-precision scenarios, bilingual render and real HTTP degradation/metadata/input boundary. Simple unlevered screening only.",
+        "PASS MPPT raw thresholds: 40 independent exact Decimal comparisons, adjacent-float direct/array/central-facade false-pass witnesses, exact-limit acceptance, invalid inputs; rating evidence remains separately unassessed."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test-recovery",
+      "result": "PASS",
+      "logSha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d",
+      "outputTail": [
+        "PASS malformed-map",
+        "PASS valid-empty",
+        "PASS valid-populated",
+        "PASS new-file",
+        "PASS io-error-directory",
+        "PASS dangling-symlink",
+        "PASS snapshot recovery: missing vs unreadable/invalid, no seed/partial import, direct-save and SIGINT/SIGTERM preservation, degraded health."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test-remaining",
+      "result": "PASS",
+      "logSha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547",
+      "outputTail": [
+        "> solarpv-studio@1.0.3 test:remaining",
+        "> tsx scripts/test-remaining-product-fixes.ts && tsx scripts/test-remaining-shading-lifecycle.ts && tsx scripts/test-remaining-poa-http.ts && tsx scripts/test-remaining-worker-browser.ts",
+        "",
+        "{\"status\":\"PASS\",\"trackerCases\":1260,\"maxShadeError\":2.6645352591003757e-15,\"rearCases\":128,\"layouts\":27,\"fuelTankLiters\":2,\"annualShadingFraction\":0.05651224353318144}",
+        "PASS shading lifecycle: two concurrent jobs, isolated cancellation, capacity, runtime/message/post errors, owned-worker cleanup, sync/cooperative parity, and live fallback timer cancellation. Fake Worker protocol tests; native browser tested separately by browser regression.",
+        "PASS real HTTP POA: deterministic legacy south-zero default, both explicit conventions continuous around 180°, unknown convention rejected.",
+        "PASS real Chromium: two native Workers, cancellation during progress isolated from concurrent completion; live no-Worker fallback processes timer cancellation. Vite module harness, not production bundle coverage."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test-smoke",
+      "result": "PASS",
+      "logSha256": "1e35d9921e23196f29110d114cf4535ddd4b58f959ffeee3f8c645b2d237cadd",
+      "outputTail": [
+        "  ✓ Blocker Reason: \"Physical contradiction: targetPowerplantCapacityKw is non-positive (-50 kW)\"",
+        "  ✓ UI Action: Mutation blocked, error toast displayed, zero state pollution.",
+        "  -> Status: SUCCESS [PASS]",
+        "",
+        "================================================================================",
+        " SMOKE TEST RESULT: 5/5 IN-MEMORY INTEGRATION SCENARIOS PASSED (NOT BROWSER E2E)",
+        "================================================================================"
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "test",
+      "result": "PASS",
+      "logSha256": "100cd7e21e90f1eb3852598f7dc998d653c72b48f4edc96036e891250e617e2a",
+      "outputTail": [
+        "| Rear Cavity Duct Dust Deposition       |             0.32 | %                   |",
+        "+----------------------------------------+------------------+---------------------+",
+        "",
+        "[BIPVT-AREA] aperture=14.77% gross=12.70% ratio=0.860 expected_ratio=0.860 (geometry: 1.72/2 m²) PASS",
+        "================================================================================",
+        " SUMMARY: EXECUTABLE REGRESSIONS & BIPV/T CHECKS PASS; STORED-TARGET REPORT WARN (RETIRED UNVERIFIED BIFACIAL TARGET)",
+        "================================================================================"
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "verify-engine-claims",
+      "result": "PASS",
+      "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122",
+      "outputTail": [
+        "Snow/soiling/bifacial provenance contract passed (screening only; no independent field validation claimed).",
+        "Targeted legacy snow/soiling provenance guards and negative regressions passed.",
+        "Internal sensitivity/test labels and background-only dataset preamble guards passed.",
+        "BIPV/snow-input wording and bounded bibliography guards passed (not model validation).",
+        "Visible benchmark runner provenance guards and negative regressions passed.",
+        "Phase 1 surviving-claim containment guards passed.",
+        "PASS Phase 1 economic, bifacial, structural and artifact qualification presence guards (not exhaustive semantic claim verification)."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "verify-exports",
+      "result": "PASS",
+      "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe",
+      "outputTail": [
+        "[PASS] XLSX read-back preserves the same provenance value, unit, and source as DOCX/JSON",
+        "[PASS] XLSX round-trip preserves project, document ID, revision, and approval fields",
+        "[PASS] XLSX round-trip preserves preparer, reviewer, and client sign-off names",
+        "[PASS] JSON envelope read-back preserves format/schema, project fields, and revision metadata",
+        "[PASS] JSON envelope read-back preserves engineer/company/client sign-off metadata",
+        "[PASS] Re-import of the real serialized JSON restores site coordinates, PSH, and override scope",
+        "Export artifact read-back verification: all checks PASS (DOCX, XLSX, JSON + re-import)"
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "verify-help",
+      "result": "PASS",
+      "logSha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 verify:help",
+        "> tsx scripts/verify-help-source-references.ts",
+        "",
+        "[PASS] F1 has 22 page source maps; every referenced path and called code identifier exists."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "verify-physics-reference-gate",
+      "result": "PASS",
+      "logSha256": "59e88c779f7268d007bee7bc1d075d6421efce6d842ca4020d6ee03cd7facee3",
+      "outputTail": [
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e",
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d",
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee",
+        "Independent physics reference gate passed: 28 changed formula expression(s) each have an executed independent fixture."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "verify-rate-limit",
+      "result": "PASS",
+      "logSha256": "950090394ad1ebe62ffe2c05a37819309e8a5853cebb448e65435ccd0ac90a1d",
+      "outputTail": [
+        "> tsx scripts/verify-client-rate-limit.ts && tsx scripts/verify-rate-limit-http.ts && tsx scripts/verify-production-auth-http.ts",
+        "",
+        "Client rate-limit contract passed (window, per-client isolation, 429 headers, expiry, config validation).",
+        "[SolarPV Studio] Restored database from snapshot: 1 projects loaded.",
+        "Mounted HTTP rate-limit gate passed (30 requests allowed to route; 31st receives 429 without upstream access).",
+        "[SolarPV Studio] Restored database from snapshot: 1 projects loaded.",
+        "Production HTTP auth gate passed: JWT issuer/audience are mandatory and exact; gateway-only remains isolated and authenticated."
+      ]
+    },
+    {
+      "run": "full regression",
+      "task": "verify-source-invariants",
+      "result": "PASS",
+      "logSha256": "b6189dc9d7004202847f924c0e5e0279ae7fd504a49ad75e10cacbac5ebc0be9",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 verify:source-invariants",
+        "> tsx scripts/verify-source-invariants.ts",
+        "",
+        "Node-only source invariants passed (tracker UI is engine-driven; retired phantom feature files remain absent)."
+      ]
+    },
+    {
+      "run": "final consistency",
+      "task": "build-final",
+      "result": "PASS",
+      "logSha256": "01b3138875522c693244373e2b6a407faba0674c1932cf72c571f795201743c7",
+      "outputTail": [
+        "dist/assets/unitTestsCore-CPBM_lSD.js                             261.16 kB │ gzip:  82.41 kB",
+        "dist/assets/vendor-pdf-C54KaIe1.js                                430.78 kB │ gzip: 178.18 kB",
+        "dist/assets/vendor-three-CaFemgdW.js                              472.70 kB │ gzip: 118.08 kB",
+        "dist/assets/vendor-pdf-font-BQ9bhSnR.js                           716.78 kB │ gzip: 329.76 kB",
+        "dist/assets/vendor-spreadsheet-mhZc_zmi.js                        939.78 kB │ gzip: 271.10 kB",
+        "dist/assets/index-BQ3EkVeG.js                                     992.02 kB │ gzip: 297.23 kB",
+        "✓ built in 23.55s"
+      ]
+    },
+    {
+      "run": "final consistency",
+      "task": "lint-final",
+      "result": "PASS",
+      "logSha256": "e50a53b5a9e06869db4505d47f83ce2241089ac8dd78a34954c38d342d51c6e8",
+      "outputTail": [
+        "/home/user/solarpv-studio/src/engine/solarPvEngine.ts",
+        "  214:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "  233:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "  246:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any",
+        "",
+        "✖ 93 problems (0 errors, 93 warnings)",
+        ""
+      ]
+    },
+    {
+      "run": "final consistency",
+      "task": "test-phase1-final",
+      "result": "PASS",
+      "logSha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db",
+      "outputTail": [
+        "> tsx scripts/test-phase1-boundaries.ts",
+        "",
+        "Phase 1 boundary unit regressions passed (synthetic arithmetic, not model validation).",
+        "PASS explicit azimuth, rating-basis/readiness, persistence, per-channel overload and unsupported economic/bifacial contracts.",
+        "PASS ratio/nameplate, invalid input, unknown 65/90A and screening PR denominator/gain regressions.",
+        "PASS numerical AST parity outside explicitly fixture-gated ADR-015 hot ownership and ADR-019 unrounded current comparison replacements.",
+        "PASS catalog evidence preserves unknowns and rejects malformed rating metadata."
+      ]
+    },
+    {
+      "run": "final consistency",
+      "task": "test-phase2-final",
+      "result": "PASS",
+      "logSha256": "207bf1aeecff6c0ebf6c1c3ab0e25752c27a7d8b0c1a6b033f7f688bafc2a99d",
+      "outputTail": [
+        "PASS Broms containment: 144 unsupported domain cases cannot assert safety, 85 previous green-screen witnesses retained as diagnostic only; actual structural consumer blocked.",
+        "PASS finance precision: 18 independent 50-digit Decimal ledgers at .5/1/5/10/50/1000kWp, zero/debt/interest cases; unrounded NPV and row accounting; legacy illustrative assumptions remain unvalidated.",
+        "PASS thermal owner: 24 external pvlib conditions, independent MPPT hot-window witness, 9 ground/shed/roof parity cases and explicit override authority; 9 independent SI Ke conditions and pressure propagation/Kd-once checks. Not whole-model validation.",
+        "PASS hemisphere thermal: 32 independent numpy/pvlib policy-integration cases; ±latitude/equator/polar, zero PSH, invalid input and signed canonical/waterfall JSON parity. Synthetic policy verification, NOT measured-weather validation.",
+        "PASS unchanged clipping consolidation: 14 independent Decimal arithmetic characterizations, annual/waterfall precision adapters and historical nonfinite boundaries. NOT external physical clipping validation.",
+        "PASS strict LCOE: 42 independent Decimal cost/energy/ratio cases, valid-zero vs unavailable/overflow, deprecated adapter, full-precision scenarios, bilingual render and real HTTP degradation/metadata/input boundary. Simple unlevered screening only.",
+        "PASS MPPT raw thresholds: 40 independent exact Decimal comparisons, adjacent-float direct/array/central-facade false-pass witnesses, exact-limit acceptance, invalid inputs; rating evidence remains separately unassessed."
+      ]
+    },
+    {
+      "run": "final consistency",
+      "task": "verify-phase1-evidence-final",
+      "result": "PASS",
+      "logSha256": "d4b08c1dd13a8f8ea1e1b4276033c200271123c9465fe9e44563ff73232afcbf",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 verify:phase1-evidence",
+        "> tsx scripts/phase1-evidence-inventory.ts --check",
+        "",
+        "PASS source/evidence inventory: 146 modules; declarations not conformity; whole-model unknowns retained.",
+        "PASS all 56 audit finding dispositions retain source owners and verification plans."
+      ]
+    },
+    {
+      "run": "final consistency",
+      "task": "verify-physics-reference-gate-final",
+      "result": "PASS",
+      "logSha256": "2b8aab708edd8f5bcf7a9dab60e83ac4f3d095234e1212263174ab722a1c2b9d",
+      "outputTail": [
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e",
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d",
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee",
+        "Independent physics reference gate passed: 28 changed formula expression(s) each have an executed independent fixture."
+      ]
+    },
+    {
+      "run": "postreview",
+      "task": "test-remediation",
+      "result": "PASS",
+      "outputTail": [
+        "  ✓ [PASS] RFC Section A marks default wind speed as unverified rather than implying model/regulatory evidence (provider = UNVERIFIED_DEFAULT, source = default_unverified)",
+        "  ✓ [PASS] RFC Section A reports 500 kPa and USER_OVERRIDE when geotechnical override is active (val = 500 kPa, provider = USER_OVERRIDE)",
+        "",
+        "================================================================================",
+        " AUDIT REMEDIATION VERIFICATION SUMMARY: 74 PASSED, 0 FAILED",
+        "================================================================================",
+        ""
+      ]
+    },
+    {
+      "run": "postreview",
+      "task": "verify-help",
+      "result": "PASS",
+      "outputTail": [
+        "",
+        "> solarpv-studio@1.0.3 verify:help",
+        "> tsx scripts/verify-help-source-references.ts",
+        "",
+        "[PASS] F1 has 22 page source maps; every referenced path and called code identifier exists."
+      ]
+    }
+  ],
+  "postreviewCorrection": "Declared-energy-basis wording initially failed exact fixture metadata comparison. Regenerated independent fixture metadata; focused finance, final build/lint/Phase1/Phase2/inventory/reference checks pass. Failure not waived. Obsolete zero-energy audit assertions corrected to require null/unavailable; remediation passed.",
+  "lint": "0 errors; 93 warnings",
+  "remaining": [
+    "Normative wind/applicability and persisted policies",
+    "Complete common annual consumers/model-policy migration",
+    "Manufacturer-specific factors/conditions and full catalog/import/HTTP lifecycle",
+    "Transposition and full 17-slot migration",
+    "Other-ledger economic policies/migration, debt/project/equity accounting and precision",
+    "Whole-model/deployment/Docker/Safari/field/conformity/bankability not established; inherited 56 CAD expression debt retained"
+  ],
+  "historicalReceipts": "Preserved as historical snapshots; not modified to claim this execution.",
+  "fileSha256": {
+    "docs/adr/ADR-011-phase1-contracts-and-evidence-containment.md": "07c3e1e885ba245ef810d16cb18a8bb4f54fe3123288632eaa6144fa456ea51d",
+    "docs/adr/ADR-012-phase1-exit-review-and-shared-uplift.md": "01e5a6f4b8a07548f3a8b882169a4e7231753b94cb3b71577e0647b639e95025",
+    "docs/adr/ADR-013-phase2-signed-thermal-and-lps-containment.md": "610150a69fdb782022025c22af390139d647d7f5cd308df7134856033f1e8e0a",
+    "docs/adr/ADR-014-phase2-cable-search-pile-containment-and-ledger-precision.md": "b4c2dec2b7628874c53a5f01600e58bda532cc82f906d8b17405614e606846ba",
+    "docs/adr/ADR-015-phase2-thermal-owner-and-wind-si.md": "2aa74de7cfbdee8aa394472c9803a84dc20b44921c7fbf0988cbbe5c7c2fe987",
+    "docs/adr/ADR-016-phase2-hemisphere-and-signed-annual-metadata.md": "c9259ede42cb3ff5c25fd0d4dc41b938f39a827c9b98b08d8515d077701158d5",
+    "docs/adr/ADR-017-unchanged-clipping-screen-owner.md": "1f95ce3d351acd9fd6a0942e3bb6413435e6999988f65ef586ac5f213863d959",
+    "docs/adr/ADR-018-strict-simple-lcoe-assessment.md": "ac7151996e062c184d4fe3d63ce657bd303481ce3312dfb42acd86a23a69c384",
+    "docs/adr/ADR-019-unrounded-mppt-current-acceptance.md": "438867ef4dcab2770d8fccde7f97aa2f169adcc96d2918c4d2edc593ac203ee4",
+    "docs/guides/annual-thermal-screening.md": "8d39ffc841b8aceee0d97d45f383b2739dfc910567df9c4e43543209f68873cc",
+    "docs/guides/simple-lcoe-assessment.md": "c1acf68a40c61779fc9d55b91160319bb1baf4b2934bc409a096c005b44ce9de",
+    "package.json": "00ecce9bf98dfa73ba986990ad974f4c215d4dfb90482f4b9d19a49e3b72d691",
+    "scripts/fixtures/physics/cable-drop-1a9ba7aef2e8.json": "ae6b1433617a3772755476fc98d396e67eb6a28324346bdcfd847964bf822e5a",
+    "scripts/fixtures/physics/cable-drop-1d7521ca31e8.json": "b61554360fa4eb9be4b3779e93b0d90a26e524d8c05c9bd3f89c2b153b7dc405",
+    "scripts/fixtures/physics/cable-drop-415cf24efccc.json": "77d60e09aa70187618a3bc8507921fe11ad11a3e9733c4aae0764359c2132741",
+    "scripts/fixtures/physics/cable-drop-81afbda05730.json": "5d68537d7e13ecb97e6508c85660699fe547b5317db5cc0cacf62203e5162569",
+    "scripts/fixtures/physics/cable-drop-a8c5cc43e447.json": "193564402829a5e8abdee07cbc7f5e4dd6ab408839cddacc5db5aaca30646aba",
+    "scripts/fixtures/physics/cable-drop-d4888039b524.json": "58a9eee759955de3a6986f06ff39d96c91befbcb0968bace88481070b8ce8367",
+    "scripts/fixtures/physics/cable-drop-d5350617b721.json": "b430853fe5c230528c68a78d3b1c2bac48e89d4a53018a6e679d42ad3c9c0554",
+    "scripts/fixtures/physics/cable-drop-decimal.json": "157a04778c6c43607a922d80ba5d42d7262124b20eef57c06fad1d7e7d8b53b3",
+    "scripts/fixtures/physics/generate-cable-drop.py": "af5d5f6b01fb196cc85ea486b86432bc654b4757956d376bbbc7e234f9eb0da1",
+    "scripts/fixtures/physics/generate-hemisphere-thermal.py": "084c7c25bd01ab36c928f7e014e141e82935da69e836a1c33a7caec7f5970438",
+    "scripts/fixtures/physics/generate-iranian-precision.py": "547597387de8db1f9f0040e3730c3f9cca2b3849f78cf318929f502ff647d460",
+    "scripts/fixtures/physics/generate-legacy-clipping.py": "4237bd204f4d7ecabd8c1b280b1d1b261795dae34a679044b63ed2c57b88d4be",
+    "scripts/fixtures/physics/generate-mppt-current-boundaries.py": "01e262a52bbc0b6a193db007d0f0e5fd7fee0626c2953d5dadd7d092c3d72ab9",
+    "scripts/fixtures/physics/generate-signed-thermal-stage.py": "59372a54f128b8964c64a04f70e12b49c0299ca4c9cb13876042c87047976e50",
+    "scripts/fixtures/physics/generate-simple-lcoe.py": "7c470d6d261f7ca1e5359f843e1a7641924027ef0466e1703d6ed79ad86f86c6",
+    "scripts/fixtures/physics/generate-thermal-owner.py": "d6c115a89ed9dfa9fab185a60b1f8937e684e4336cd22e9e5fb014a41a6a2f6c",
+    "scripts/fixtures/physics/generate-wind-elevation-si.py": "ede8f356208575c4c0c371d6d0d0749097db4e568ba83835a030b34c8a8f1902",
+    "scripts/fixtures/physics/hemisphere-reference-24a3be6d72b0.json": "9571ff0068fef485515bcee99750e652b5f32f0f6b6e1a7b175064432db3f895",
+    "scripts/fixtures/physics/hemisphere-reference-3c3cc1db543b.json": "78d52c4e1ac579943744292a9b9334471244c1f5b01437cf89e88a09732cdfd5",
+    "scripts/fixtures/physics/hemisphere-reference-4cb7b1cdfd09.json": "008eaa178fb66952a66f41bb42c94316f2c2aadec5961b376c743f288406bc8d",
+    "scripts/fixtures/physics/hemisphere-reference-6e4ee0c39b90.json": "1e73074ddcb7ab31073b1b148df60a3801236b3f31467972e29ad833bc8c8018",
+    "scripts/fixtures/physics/hemisphere-reference-c10657972417.json": "937feae5c5edf8c36c84cbb8102f7dc4b544ebf2da88cf3619d511fa65487cab",
+    "scripts/fixtures/physics/hemisphere-thermal-pvlib.json": "b5611a56efe9eefc6ced63556d3c9ac26d4ef590021b0e45292b3bd3a9bb69c2",
+    "scripts/fixtures/physics/iranian-precision-041b52bf8c76.json": "b312671bc9ab861c4796b9f2ebcc3ca5638ef75559818964c243bf2ce80bba27",
+    "scripts/fixtures/physics/iranian-precision-68d77e63ef1d.json": "762666fa3df07c7b2a62e3a95f1ff78159aaaeeeef5fc182abad55efb7d87f6b",
+    "scripts/fixtures/physics/iranian-precision-69f23343a515.json": "35b8331a5e0a937fe86f16ded7da1abc52a115ae86df874ab1ca553f5555ad9f",
+    "scripts/fixtures/physics/iranian-precision-6e630b8ca162.json": "095972d1549664334053e008ce5709f3d46a29a0e9c84038720f682317fb49cc",
+    "scripts/fixtures/physics/iranian-precision-754601d564d7.json": "f12bb9415922a19a545251ffa1f9b46a2b3ea0ed269508e069945e2ea791e97d",
+    "scripts/fixtures/physics/iranian-precision-bd40df4c4c9a.json": "934f8edfb1c229f25064a955a57b222c3ee74e8935fa041944599d80211db21e",
+    "scripts/fixtures/physics/iranian-precision-decimal.json": "95b0fd713eb382e1bbca1e01d84cd55d664a39d70d8b8ba2753b20eb9e43044b",
+    "scripts/fixtures/physics/legacy-clipping-9724cdcaea24.json": "f47414e8c52b60fc0bc6ffb3f15a2a98ccf7320cf7f6c02918e56d58918c8e7c",
+    "scripts/fixtures/physics/legacy-clipping-bd8997052b2b.json": "9b83f3325165ef308ad26daa224a67d47b963f2e58d989b346ed144e26b26f60",
+    "scripts/fixtures/physics/legacy-clipping-decimal.json": "1e949b4762306bae0efa305651dd869c6decb25f17d4d0211740d9d769730d7d",
+    "scripts/fixtures/physics/mppt-current-boundaries-decimal.json": "4f4152371d40e2b889a9501c7565c3dd1b2741023fe789ec7dd7446a821d4a24",
+    "scripts/fixtures/physics/mppt-current-reference-d35f36b70f11.json": "d962ca89ba4f6bbf580fccc0c0825de6bef13722194ffcdecd6fca19f0b57233",
+    "scripts/fixtures/physics/mppt-current-reference-f6df7705f25f.json": "a636569ba3114a208f0b962ab221360317337026c849b59f15784b336e30842f",
+    "scripts/fixtures/physics/mppt-hot-owner-independent.json": "44b26bd0e3acba44d83fded59cc01ea999e33d26ce55c73f707b801def9883f5",
+    "scripts/fixtures/physics/mppt-hot-owner-reference.json": "c41342478bd6e9ffc872fb451e8a667b5e474a958c7461dab287f5292e8169bc",
+    "scripts/fixtures/physics/pvlib-0131-signed-thermal-stage.json": "1de5965a9f878b636fe2d0c9b7785c794d5a89b25a543fc006be700f6a3abc98",
+    "scripts/fixtures/physics/simple-lcoe-decimal.json": "3ba1835e011ffe5a35e214a2ec30ab6b4063b10e83e1e1f43103941202fd3879",
+    "scripts/fixtures/physics/simple-lcoe-reference-0223ffd50c23.json": "88ab4a90dd53aec657d18bd2d18ec9a7399f1d23379a46cf7dd39efc3cd22fdf",
+    "scripts/fixtures/physics/simple-lcoe-reference-2ffdcb83e519.json": "13a91cf11e0a91ea3c8f25187cc49b1403bf4844dbfeb477877b45cb06d94339",
+    "scripts/fixtures/physics/simple-lcoe-reference-518725cabf1b.json": "a865e85aec358c797f7981d642a60bb1c1c2b88c23106cb00e2df5e6859e0a58",
+    "scripts/fixtures/physics/simple-lcoe-reference-643659f3eeaa.json": "611e4e930746a4c267d27648069ddea3a2a112f972318c1cf49a8e2bbaf84185",
+    "scripts/fixtures/physics/simple-lcoe-reference-74d58f12ac67.json": "bc4e66248e90ebd06f8d5df2f218f14678813cdf76a4169a0766803729e760b8",
+    "scripts/fixtures/physics/simple-lcoe-reference-a000ea8123ea.json": "0d8222a779b0c793eec26c7bcae9aede85022c828e9b986050f1f3a1a48e966a",
+    "scripts/fixtures/physics/simple-lcoe-reference-a0b439532cd0.json": "75b6db6ae505d80b1a423bc71d7e101987d1cfe2f67ac6eb1b763503a1b78a1c",
+    "scripts/fixtures/physics/simple-lcoe-reference-a69eba4e64d8.json": "4acf556aa84957423824123540ac0694398182f97c6a5fb92d39c5bfcd9b7075",
+    "scripts/fixtures/physics/simple-lcoe-reference-ab7983c07a6e.json": "d764d388e342f6052b975cdeda2c442cf9df5ab757aed568fd82877488612d59",
+    "scripts/fixtures/physics/simple-lcoe-reference-ba69e142c82d.json": "5c5e37f4261c638bca1147d48c3c9b72c7032e94f92466c41f6c655dce699349",
+    "scripts/fixtures/physics/thermal-owner-pvlib.json": "2f408bc056166efa205f0371b04629522430985e747694f0e8110ea8e008a5c2",
+    "scripts/fixtures/physics/thermal-owner-reference-b108d5154aaa.json": "bad117654625a2816090215cffdc9ab10129b655d9453f2585147cd1aff91465",
+    "scripts/fixtures/physics/thermal-owner-reference-b54892b897c5.json": "d3ba2841f600ed65cacdd65c0dea93d7620d4eb91da61d5861d719b1f7cb1143",
+    "scripts/fixtures/physics/wind-elevation-si-decimal.json": "d7daaa6f08f681a0508108b32da77e0634754fb19d0588bf489f336225809580",
+    "scripts/fixtures/physics/wind-elevation-si-reference-c0bfa54bd753.json": "f8df6f5a6e8bf6966b4abaaf74da3be79c17ea4ce9ce3a37d7134cbf6c9ace08",
+    "scripts/fixtures/physics/wind-elevation-si-reference-f5a47ba52f6e.json": "0809ae090aa1e6412d30d51f159b541bf89d49caaf7260915025fba54894840b",
+    "scripts/fixtures/physics/wind-pressure-elevation-independent.json": "d0ad0dc957c7846231ce2a8dc87f4bb2fc8ffeda510b2428e5edbca274cca230",
+    "scripts/fixtures/physics/wind-pressure-elevation-reference-1ba65c64d4e4.json": "95947f8f6e8fbac43ef38f3356b68b36ed42c7f412bd9dcaa5a32919175069fa",
+    "scripts/fixtures/physics/wind-pressure-elevation-reference-4b9e5a997451.json": "32a16f0f29dd15f45268ffff104864c05a4bf3fe964e93c2f1e41e0cdadfcce9",
+    "scripts/phase1-evidence-inventory.ts": "e11a7e6a5d436c0825f2ad70f4e384bea53276b2f1960220f26fccd10bd63859",
+    "scripts/physics-reference-evidence.json": "a279bc29319ee227bd56a13b1031a090c49991c50a9944e26f633a485af1ca30",
+    "scripts/test-operational-browser.ts": "a0cc39271a3846f353776bd63dde9326428b3685c69caba485f30a6e6dc5a015",
+    "scripts/test-phase1-boundaries.ts": "fdd5b98ede7da86b7ec68fb280d474ea720b3faa7bb98513107c65777c8d13d5",
+    "scripts/test-phase1-browser.ts": "3f36e26a45ca5945fa8244cc13fce3328f00165e20c3e9affe5edf036b135145",
+    "scripts/test-phase2-broms.ts": "ea8e17dcb63732a607fbc46eacedb337b434dc5f2bb2d3662f05ebe5c2ed5469",
+    "scripts/test-phase2-cable.ts": "eafe54034d74020044acb1b2d87bde3fb000defcc7038f9f06129a6e78cdee4f",
+    "scripts/test-phase2-clipping.ts": "06fd8045c5208807d541e91379bfed238a4748b998af0418aceda1e375a33da4",
+    "scripts/test-phase2-finance.ts": "0724cc9d67373ed8077658127a66ce43cc76ca57cc5a3dcace314a28ae2132c6",
+    "scripts/test-phase2-hemisphere.ts": "6855d7651c19148819dc4792e57d38449a00fe82d4d175de20a28a3da1acb463",
+    "scripts/test-phase2-lcoe.ts": "edda9c068dfc039f60b0e82e01a94c41844af8318271c8854f8b3795f4ba0aa8",
+    "scripts/test-phase2-lightning.ts": "0f0e8829ee1364d4f77ecc3c6fb503ce26fcc67ddc5a7383db4e61d97bef4940",
+    "scripts/test-phase2-mppt-current.ts": "a071eda232d71cb150d824f3fb7b20660b0bd267b49d5b95a5502a55924086fc",
+    "scripts/test-phase2-thermal-owner.ts": "95f143a3ee12fd5e1380ee15bdc0668ffcd6c98ef043b2f74f7cc7fd2b4b532b",
+    "scripts/test-phase2-thermal.ts": "3b9f6e7b525d0e2275b3fd8672753442fb7737f422803ad352ad360882d681e6",
+    "scripts/test-phase2-uplift.ts": "46a77eea4574a2160370ef0f4572733cf69ac73523ad08fa82e462df9603b21c",
+    "scripts/test-remaining-poa-http.ts": "d771621d8fd6f5250328da0ba2684771410d063ab7389816ad418f2d2446378f",
+    "scripts/verify-audit-remediation.ts": "4868909a1a6661c8364c89f43558090b4f511097a2db3b9939f5ef25d4b00b8b",
+    "scripts/verify-engine-claims.ts": "975a3eec200fe07966612bd017c76861cf416764290243e4bd9702a569f8ef2e",
+    "server.ts": "86147eb5e1953271ba44e42ffb53d6b42d95cafc6b791a9f94bd8f9064f18a1f",
+    "src/App.tsx": "7b723840e854f9847c85f698147d5e6983afec928611a41dcd53f277da374cc8",
+    "src/components/FinancialTab.tsx": "a0f3118252396444b0e8d2aa9173fed9773b40e3b2d07d1eb26825e546fcae41",
+    "src/components/IranianRegulationsTab.tsx": "dfc56fff6754f0cf3a01121c7a07f0d29763de9089e2e7f870484a4c52054969",
+    "src/components/OfficialReportModal.tsx": "2a3038d709504e6224de22131e3bf37b570c10c69f7f2cfa9be8498f4d4a2338",
+    "src/components/ProtectionBomTab.tsx": "9ccb8f4ebfc25b1a4a5896911ebc59752232fcc681afa47fcb86294e552f3d74",
+    "src/components/PvArrayEngineeringTab.tsx": "9c5f3757592b54653b28de12b45f5cc58c2d7ab60f2a2f50cea0352a9c02deae",
+    "src/components/ScenarioComparisonTab.tsx": "63e4073eadfdd187758405c1977039779031f60389ece3a5cd7e6d720a49dea2",
+    "src/components/SingleLineDiagram.tsx": "023f3160378ed9f2f33eaa972d711cc77e188a0802cdd920a5047cd8970495f9",
+    "src/components/StructuralFoundationTab.tsx": "e6a023822be49b18f01b675890ba058e7f59cae75e467b28d9ed70cda510dea0",
+    "src/components/WaterfallLossTab.tsx": "d810415afca6bb8ab75c7c1e4fbb522eea2e1e12e66ef64e1f7a8d2f6497ce97",
+    "src/contracts/cableAssessment.ts": "337e97b9ad19468e261ff4c4fc3609aa36ca0d8e5ba7ee21abe5bd9a2c9e629f",
+    "src/contracts/electricalReadiness.ts": "e2be11ad981a05dc8b7c1cd95add027f3c76789f2e1ea255c7cd8b1d83f92897",
+    "src/contracts/hourlyThermalInput.ts": "5268e3138404cef20fde6a9180c97e844f963aa8677902d078265b4ceebac9bd",
+    "src/contracts/mpptCurrentComparison.ts": "b9cea5db8a96fccc2215f5603c9d6ceafa1df9e4577fc20efded35bd980856b1",
+    "src/contracts/signedThermalLoss.ts": "612145818604ca22eb492793743afa74792637bd3d893c2a527d17b89ddd8bd8",
+    "src/contracts/simpleLcoe.ts": "83284eb8e5fffe5eaac255693199424396af228e62d65dc0f1da66fe24109d7b",
+    "src/contracts/windScreenInput.ts": "a089c10404946accbd0da691ceb9aa9cb87280659328e1fd6d7715031e2c7d3f",
+    "src/engine/catalogRepository.ts": "6053f954c19fa12bcfcc05de5b1088fa3cfad271cbbcc8152d962f70791ee53c",
+    "src/engine/core/annualYieldEngine.ts": "4c30688afe0ce9a723f5889d607a34b8fb769c675343ee33d601bdc5eec4d313",
+    "src/engine/core/benchmarks/trackerFixtures.ts": "3dbaf2a35751d04d85a705619be269bc3eb8f696083a47e9fa592d3a0a8a85c8",
+    "src/engine/core/benchmarks/unitTestsCore.ts": "2b1706e6f26fca2cf9773d8c07bb52834697051ad86565de23f383fa929675fb",
+    "src/engine/core/cableVoltageDrop.ts": "4c71c6dcf2837c7976c066b1849ad1cae02c4c93d80e6088a32c5ee40c4223e9",
+    "src/engine/core/electricalSizingContract.ts": "2c616b555417b49662f9e71ef58349b5643b0e3154eabdcb9b3093bac0eebdae",
+    "src/engine/core/financialContract.ts": "2a8ed00a0e406cf0ffd6ca83a3ba3ddb430b00af5a074051717897ceb3a6c77a",
+    "src/engine/core/hourlyThermalEngine.ts": "bb59b07f5bb1bbcf1053d3a67dbe0b7945e4f9ecd1cade1d154cb44207230be9",
+    "src/engine/core/legacyClippingScreen.ts": "15cbe6d719224f200463694bbb4dbf7d6e66482fa0f1f9a2eb0c2ebb3349b162",
+    "src/engine/core/mpptCurrentComparison.ts": "fe90e0419d72e206ad76f1dd1d496836a87d86024179583208fb7ad5df49d1ff",
+    "src/engine/core/projectMigration.ts": "3ef474202fee4e5bdef1a042ae662e185be063d722e79959b25f082205899327",
+    "src/engine/core/signedThermalStage.ts": "b292335140d08c61d7c45d29cdabda158e306866a6f03c508d0132626e87cbf6",
+    "src/engine/core/simpleLcoe.ts": "a17f34651de2a30606a325447b9ecf5badecf2181e59fb07253f9e40345b9b2c",
+    "src/engine/core/structuralContract.ts": "294991a9a54c85577029ed6b8cb69a4d9a0cd5ad198dfc6fb87d88eac632c78f",
+    "src/engine/core/thermalDerate.ts": "175b793e421dee78f113e55016e2e3cbaf2b19534a32fcbbd237ef0bd26252c0",
+    "src/engine/core/windElevationFactor.ts": "b23aa7573b2142b20ab27eefdaa52bb58f41c8c40fc113043230d59dd578c781",
+    "src/engine/equipmentCatalogData.ts": "91a71b5ed4b2fd21ed62254309732650d864120b94b3133494f7d2c6f34754d8",
+    "src/engine/geotech/bromsMethod.ts": "ccec32e89f237b094c061a41659e73e581a7fca51ed7c9be83f66481e401a735",
+    "src/engine/geotech/foundationRecommendation.ts": "1e8da87567626f259b8f20801d4608a246205760c3990e7983a79ceab8f7b841",
+    "src/engine/iranianRegulationsFinancial.ts": "c360f8e813a427d54eab1d690e1c5c7bf5a5569362dba7a53ae2f544af58c2ff",
+    "src/engine/protectionBomEngine.ts": "b99303a5564d88ff5bc6a51c34967f17e67503e975d0b64369a1664123d85a87",
+    "src/engine/pvEngineAdvanced.ts": "31ba963af7b5343ada659762c61f62209f045de75d3a472eaf3823dcd18e72b3",
+    "src/engine/scenarioEngine.ts": "2b16c1352f561b7135c85024f753207bd97b55ff80fc516327faf374830fc2c8",
+    "src/engine/solarPvEngine.ts": "219c082cbb0496683e2458204148ba99d70774eaf54e52611ec291058d90c781",
+    "src/engine/structuralEngine.ts": "a52f8c5cee1f66cca5bd01dd1951ef649ea2554036bb030117ff3de048a57fec",
+    "src/engine/structureRecommendationEngine.ts": "aa8138bb98d60b3c757ef9428499cd60c8a003fdbbc649ca316dbe6b10d40455",
+    "src/engine/tracker/backtrackingEngine.ts": "64b0fe05c964db6984307620a5b8595b3ee8350715c8ed0fb3aeb6f03be3c5a3",
+    "src/engine/waterfallArgs.ts": "2092b2e98198f898cca31f0cd54d2b262c58bf64e20804afc5d33492ea599b91",
+    "src/engine/waterfallLossEngine.ts": "ded954c25bfbb41ba240dbe06876245ac62096ba411aa10aa18941c6de46591a",
+    "src/helpContent.ts": "71ad80c645194a890660a1559f3425568685e7ae546deefe49b8c17c7ab2fa56",
+    "src/presentation/designSummary.ts": "b8820357f23ace9584cd83d69bc2727949805344d4ab95ba7edd13df90821292",
+    "src/presentation/phase1Evidence.ts": "8eb32c86a6c2df3975f40e3cbb2368d88f702520f33dc346b69c0819bdf9b185",
+    "src/presentation/poaAzimuthRequest.ts": "921e1a6e782e7b0408e8db93dc9c63aba605721fe5817f9fab1ca8705e7f756a"
+  }
+}

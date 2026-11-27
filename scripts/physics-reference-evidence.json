@@ -839,6 +839,366 @@
       "referenceLocator": "10.3 Multiple Voltage Sources: series voltages add. Integer feasibility under supplied voltage limits; assumed linear coefficients are not validated here. Warnings/status are API contracts only."
     },
     {
+      "formulaId": "src/engine/core/signedThermalStage.ts#thermalStagePercentage#4d62ea984c25",
+      "fixtureFile": "scripts/fixtures/physics/pvlib-0131-signed-thermal-stage.json",
+      "productionExport": "thermalStagePercentage",
+      "referenceTitle": "PVWatts DC temperature correction, pvlib",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "0.13.1",
+      "referenceLocator": "PVWatts DC power equation: gamma*(Tcell-Tref); Tref=25 C; G=1000 W/m2, Pdc0=1 W"
+    },
+    {
+      "formulaId": "src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#1a9ba7aef2e8",
+      "fixtureFile": "scripts/fixtures/physics/cable-drop-1a9ba7aef2e8.json",
+      "productionExport": "candidateVoltageDropVolts",
+      "referenceTitle": "Schneider Electrical Installation Guide",
+      "referenceUrl": "https://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf",
+      "referenceVersion": "2010",
+      "referenceLocator": "Chapter G §3.2 fig G27; parallel resistance footnote. Supplied equivalent X, not universal X/N. Decimal synthetic conditions; not insulation/ampacity/impedance validation."
+    },
+    {
+      "formulaId": "src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#1d7521ca31e8",
+      "fixtureFile": "scripts/fixtures/physics/cable-drop-1d7521ca31e8.json",
+      "productionExport": "candidateVoltageDropVolts",
+      "referenceTitle": "Schneider Electrical Installation Guide",
+      "referenceUrl": "https://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf",
+      "referenceVersion": "2010",
+      "referenceLocator": "Chapter G §3.2 fig G27; parallel resistance footnote. Supplied equivalent X, not universal X/N. Decimal synthetic conditions; not insulation/ampacity/impedance validation."
+    },
+    {
+      "formulaId": "src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#415cf24efccc",
+      "fixtureFile": "scripts/fixtures/physics/cable-drop-415cf24efccc.json",
+      "productionExport": "candidateVoltageDropVolts",
+      "referenceTitle": "Schneider Electrical Installation Guide",
+      "referenceUrl": "https://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf",
+      "referenceVersion": "2010",
+      "referenceLocator": "Chapter G §3.2 fig G27; parallel resistance footnote. Supplied equivalent X, not universal X/N. Decimal synthetic conditions; not insulation/ampacity/impedance validation."
+    },
+    {
+      "formulaId": "src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#81afbda05730",
+      "fixtureFile": "scripts/fixtures/physics/cable-drop-81afbda05730.json",
+      "productionExport": "candidateVoltageDropVolts",
+      "referenceTitle": "Schneider Electrical Installation Guide",
+      "referenceUrl": "https://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf",
+      "referenceVersion": "2010",
+      "referenceLocator": "Chapter G §3.2 fig G27; parallel resistance footnote. Supplied equivalent X, not universal X/N. Decimal synthetic conditions; not insulation/ampacity/impedance validation."
+    },
+    {
+      "formulaId": "src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#a8c5cc43e447",
+      "fixtureFile": "scripts/fixtures/physics/cable-drop-a8c5cc43e447.json",
+      "productionExport": "candidateVoltageDropVolts",
+      "referenceTitle": "Schneider Electrical Installation Guide",
+      "referenceUrl": "https://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf",
+      "referenceVersion": "2010",
+      "referenceLocator": "Chapter G §3.2 fig G27; parallel resistance footnote. Supplied equivalent X, not universal X/N. Decimal synthetic conditions; not insulation/ampacity/impedance validation."
+    },
+    {
+      "formulaId": "src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#d4888039b524",
+      "fixtureFile": "scripts/fixtures/physics/cable-drop-d4888039b524.json",
+      "productionExport": "candidateVoltageDropVolts",
+      "referenceTitle": "Schneider Electrical Installation Guide",
+      "referenceUrl": "https://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf",
+      "referenceVersion": "2010",
+      "referenceLocator": "Chapter G §3.2 fig G27; parallel resistance footnote. Supplied equivalent X, not universal X/N. Decimal synthetic conditions; not insulation/ampacity/impedance validation."
+    },
+    {
+      "formulaId": "src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#d5350617b721",
+      "fixtureFile": "scripts/fixtures/physics/cable-drop-d5350617b721.json",
+      "productionExport": "candidateVoltageDropVolts",
+      "referenceTitle": "Schneider Electrical Installation Guide",
+      "referenceUrl": "https://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf",
+      "referenceVersion": "2010",
+      "referenceLocator": "Chapter G §3.2 fig G27; parallel resistance footnote. Supplied equivalent X, not universal X/N. Decimal synthetic conditions; not insulation/ampacity/impedance validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#041b52bf8c76",
+      "fixtureFile": "scripts/fixtures/physics/iranian-precision-041b52bf8c76.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#68d77e63ef1d",
+      "fixtureFile": "scripts/fixtures/physics/iranian-precision-68d77e63ef1d.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#69f23343a515",
+      "fixtureFile": "scripts/fixtures/physics/iranian-precision-69f23343a515.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#6e630b8ca162",
+      "fixtureFile": "scripts/fixtures/physics/iranian-precision-6e630b8ca162.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#754601d564d7",
+      "fixtureFile": "scripts/fixtures/physics/iranian-precision-754601d564d7.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#bd40df4c4c9a",
+      "fixtureFile": "scripts/fixtures/physics/iranian-precision-bd40df4c4c9a.json",
+      "productionExport": "runIranianRegulationFinancialModel",
+      "referenceTitle": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_npv.html",
+      "referenceVersion": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+      "referenceLocator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+    },
+    {
+      "formulaId": "src/engine/core/thermalDerate.ts#calculateThermalDerate#b108d5154aaa",
+      "fixtureFile": "scripts/fixtures/physics/thermal-owner-reference-b108d5154aaa.json",
+      "productionExport": "calculateThermalDerate",
+      "referenceTitle": "NOCT linear temperature and pvlib PVWatts DC temperature correction",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "pvlib 0.13.1; Applied Sciences 2020 10(3)914",
+      "referenceLocator": "PVWatts DC equation; NOCT linear temperature DOI 10.3390/app10030914 Eq1. Synthetic voltage-coefficient/component conditions, not climate or mounting validation."
+    },
+    {
+      "formulaId": "src/engine/core/thermalDerate.ts#calculateThermalDerate#b54892b897c5",
+      "fixtureFile": "scripts/fixtures/physics/thermal-owner-reference-b54892b897c5.json",
+      "productionExport": "calculateThermalDerate",
+      "referenceTitle": "NOCT linear temperature and pvlib PVWatts DC temperature correction",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "pvlib 0.13.1; Applied Sciences 2020 10(3)914",
+      "referenceLocator": "PVWatts DC equation; NOCT linear temperature DOI 10.3390/app10030914 Eq1. Synthetic voltage-coefficient/component conditions, not climate or mounting validation."
+    },
+    {
+      "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#3f70ee8d8180",
+      "fixtureFile": "scripts/fixtures/physics/mppt-hot-owner-reference.json",
+      "productionExport": "evaluateMpptCompatibility",
+      "referenceTitle": "NOCT linear temperature and pvlib PVWatts DC temperature correction",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "pvlib 0.13.1; Applied Sciences 2020 10(3)914",
+      "referenceLocator": "PVWatts DC equation; NOCT linear temperature DOI 10.3390/app10030914 Eq1. Synthetic voltage-coefficient/component conditions, not climate or mounting validation."
+    },
+    {
+      "formulaId": "src/engine/core/windElevationFactor.ts#calculateWindElevationFactor#c0bfa54bd753",
+      "fixtureFile": "scripts/fixtures/physics/wind-elevation-si-reference-c0bfa54bd753.json",
+      "productionExport": "calculateWindElevationFactor",
+      "referenceTitle": "NCSEA Wind Engineering Committee school examples",
+      "referenceUrl": "https://www.ncsea.com/app/uploads/2024/02/Wind-Problems.pdf",
+      "referenceVersion": "February 2024",
+      "referenceLocator": "School site379 feet: Ke=exp(-.0000362*z_e) approximately .986; site1200 ft approximately .96. Component-only SI conversion; exact 0.3048 metre per foot. Not whole pressure-chain validation."
+    },
+    {
+      "formulaId": "src/engine/core/windElevationFactor.ts#calculateWindElevationFactor#f5a47ba52f6e",
+      "fixtureFile": "scripts/fixtures/physics/wind-elevation-si-reference-f5a47ba52f6e.json",
+      "productionExport": "calculateWindElevationFactor",
+      "referenceTitle": "NCSEA Wind Engineering Committee school examples",
+      "referenceUrl": "https://www.ncsea.com/app/uploads/2024/02/Wind-Problems.pdf",
+      "referenceVersion": "February 2024",
+      "referenceLocator": "School site379 feet: Ke=exp(-.0000362*z_e) approximately .986; site1200 ft approximately .96. Component-only SI conversion; exact 0.3048 metre per foot. Not whole pressure-chain validation."
+    },
+    {
+      "formulaId": "src/engine/core/structuralContract.ts#calculateUnifiedWindPressureQz#1ba65c64d4e4",
+      "fixtureFile": "scripts/fixtures/physics/wind-pressure-elevation-reference-1ba65c64d4e4.json",
+      "productionExport": "calculateUnifiedWindPressureQz",
+      "referenceTitle": "NCSEA Wind Engineering Committee school examples",
+      "referenceUrl": "https://www.ncsea.com/app/uploads/2024/02/Wind-Problems.pdf",
+      "referenceVersion": "February 2024",
+      "referenceLocator": "School site379 feet: Ke=exp(-.0000362*z_e) approximately .986; site1200 ft approximately .96. Component-only SI conversion; exact 0.3048 metre per foot. Not whole pressure-chain validation."
+    },
+    {
+      "formulaId": "src/engine/core/structuralContract.ts#calculateUnifiedWindPressureQz#4b9e5a997451",
+      "fixtureFile": "scripts/fixtures/physics/wind-pressure-elevation-reference-4b9e5a997451.json",
+      "productionExport": "calculateUnifiedWindPressureQz",
+      "referenceTitle": "NCSEA Wind Engineering Committee school examples",
+      "referenceUrl": "https://www.ncsea.com/app/uploads/2024/02/Wind-Problems.pdf",
+      "referenceVersion": "February 2024",
+      "referenceLocator": "School site379 feet: Ke=exp(-.0000362*z_e) approximately .986; site1200 ft approximately .96. Component-only SI conversion; exact 0.3048 metre per foot. Not whole pressure-chain validation."
+    },
+    {
+      "formulaId": "src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor#4cb7b1cdfd09",
+      "fixtureFile": "scripts/fixtures/physics/hemisphere-reference-4cb7b1cdfd09.json",
+      "productionExport": "annualEnergyFactor",
+      "referenceTitle": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+      "referenceLocator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+    },
+    {
+      "formulaId": "src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor#6e4ee0c39b90",
+      "fixtureFile": "scripts/fixtures/physics/hemisphere-reference-6e4ee0c39b90.json",
+      "productionExport": "annualEnergyFactor",
+      "referenceTitle": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+      "referenceLocator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+    },
+    {
+      "formulaId": "src/engine/core/hourlyThermalEngine.ts#simulateAnnualHourlyThermalDerate#24a3be6d72b0",
+      "fixtureFile": "scripts/fixtures/physics/hemisphere-reference-24a3be6d72b0.json",
+      "productionExport": "simulateAnnualHourlyThermalDerate",
+      "referenceTitle": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+      "referenceLocator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+    },
+    {
+      "formulaId": "src/engine/core/signedThermalStage.ts#signedThermalLossFromStage#c10657972417",
+      "fixtureFile": "scripts/fixtures/physics/hemisphere-reference-c10657972417.json",
+      "productionExport": "signedThermalLossFromStage",
+      "referenceTitle": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+      "referenceLocator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+    },
+    {
+      "formulaId": "src/engine/core/signedThermalStage.ts#signedThermalLossFromStage#3c3cc1db543b",
+      "fixtureFile": "scripts/fixtures/physics/hemisphere-reference-3c3cc1db543b.json",
+      "productionExport": "signedThermalLossFromStage",
+      "referenceTitle": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+      "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+      "referenceVersion": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+      "referenceLocator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+    },
+    {
+      "formulaId": "src/engine/core/legacyClippingScreen.ts#legacyClippingScreen#9724cdcaea24",
+      "fixtureFile": "scripts/fixtures/physics/legacy-clipping-9724cdcaea24.json",
+      "productionExport": "legacyClippingScreen",
+      "referenceTitle": "Historical clipping heuristic: independent Decimal extraction characterization only",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0c4d7cadc7db6001459ea36fdf9a3d1403179a71/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base0c4d7cadc7db6001459ea36fdf9a3d1403179a71; unchanged policy",
+      "referenceLocator": "Clipping stage: baseline -.2 percentage points, breakpoint1.3, slope6.5 points/ILR, floor-85 points. Historical source attribution, NOT independent physical validation."
+    },
+    {
+      "formulaId": "src/engine/core/legacyClippingScreen.ts#legacyClippingScreen#bd8997052b2b",
+      "fixtureFile": "scripts/fixtures/physics/legacy-clipping-bd8997052b2b.json",
+      "productionExport": "legacyClippingScreen",
+      "referenceTitle": "Historical clipping heuristic: independent Decimal extraction characterization only",
+      "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0c4d7cadc7db6001459ea36fdf9a3d1403179a71/src/engine/waterfallLossEngine.ts",
+      "referenceVersion": "base0c4d7cadc7db6001459ea36fdf9a3d1403179a71; unchanged policy",
+      "referenceLocator": "Clipping stage: baseline -.2 percentage points, breakpoint1.3, slope6.5 points/ILR, floor-85 points. Historical source attribution, NOT independent physical validation."
+    },
+    {
+      "formulaId": "src/engine/core/mpptCurrentComparison.ts#exceedsMpptOperatingLimit#d35f36b70f11",
+      "fixtureFile": "scripts/fixtures/physics/mppt-current-reference-d35f36b70f11.json",
+      "productionExport": "exceedsMpptOperatingLimit",
+      "referenceTitle": "Independent Decimal current-limit comparisons; retained legacy Isc factor qualified by rating basis",
+      "referenceUrl": "https://enphase.com/en-au/download/iq8ac-and-iq8hc-microinverters-data-sheet",
+      "referenceVersion": "Public datasheet retrieved2026-11-03; synthetic threshold arithmetic",
+      "referenceLocator": "Input data (DC): operating vs short-circuit/module ratings and explicit1.25 relation. Independent threshold arithmetic only; product/source-date/scope applicability remains unassessed."
+    },
+    {
+      "formulaId": "src/engine/core/mpptCurrentComparison.ts#exceedsLegacyMpptShortCircuitLimit#f6df7705f25f",
+      "fixtureFile": "scripts/fixtures/physics/mppt-current-reference-f6df7705f25f.json",
+      "productionExport": "exceedsLegacyMpptShortCircuitLimit",
+      "referenceTitle": "Independent Decimal current-limit comparisons; retained legacy Isc factor qualified by rating basis",
+      "referenceUrl": "https://enphase.com/en-au/download/iq8ac-and-iq8hc-microinverters-data-sheet",
+      "referenceVersion": "Public datasheet retrieved2026-11-03; synthetic threshold arithmetic",
+      "referenceLocator": "Input data (DC): operating vs short-circuit/module ratings and explicit1.25 relation. Independent threshold arithmetic only; product/source-date/scope applicability remains unassessed."
+    },
+    {
+      "formulaId": "src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#0223ffd50c23",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-0223ffd50c23.json",
+      "productionExport": "calculateDiscountedLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#643659f3eeaa",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-643659f3eeaa.json",
+      "productionExport": "calculateDiscountedLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#74d58f12ac67",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-74d58f12ac67.json",
+      "productionExport": "calculateDiscountedLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a000ea8123ea",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-a000ea8123ea.json",
+      "productionExport": "calculateDiscountedLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a0b439532cd0",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-a0b439532cd0.json",
+      "productionExport": "calculateDiscountedLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a69eba4e64d8",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-a69eba4e64d8.json",
+      "productionExport": "calculateDiscountedLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#ba69e142c82d",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-ba69e142c82d.json",
+      "productionExport": "calculateDiscountedLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/core/simpleLcoe.ts#assessSimpleLcoe#2ffdcb83e519",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-2ffdcb83e519.json",
+      "productionExport": "assessSimpleLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateLcoe#ab7983c07a6e",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-ab7983c07a6e.json",
+      "productionExport": "calculateLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
+      "formulaId": "src/engine/scenarioEngine.ts#assessScenarioLcoe#518725cabf1b",
+      "fixtureFile": "scripts/fixtures/physics/simple-lcoe-reference-518725cabf1b.json",
+      "productionExport": "assessScenarioLcoe",
+      "referenceTitle": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+      "referenceUrl": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+      "referenceVersion": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+      "referenceLocator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+    },
+    {
       "formulaId": "src/engine/financialEngine.ts#performFinancialAnalysis#07cbbf982780",
       "fixtureFile": "scripts/fixtures/physics/grid-import-07cbbf982780.json",
       "productionExport": "performFinancialAnalysis",

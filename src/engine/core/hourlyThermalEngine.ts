@@ -1,3 +1,4 @@
+import { requireHourlyThermalInput, requireThermalEvaluationArgs } from '../../contracts/hourlyThermalInput';
 import { calculateThermalDerate } from './thermalDerate';
 import type { InstallationEnvironment } from '../types/climateTypes';
 
@@ -17,18 +18,23 @@ export interface HourlyThermalModelInput {
 
 export interface HourlyThermalModelResult {
   hourlySamples: number;
+  seasonalTemperaturePolicy: 'hemisphere_cosine_equator_flat_v1';
+  energyAvailability: 'positive_reference_irradiation' | 'zero_reference_irradiation';
   annualThermalDeratePct: number;
   temperatureSensitivityRangePct: { low: number; high: number };
   temperatureSensitivityAllowanceC: number;
   ambientMeanUsedC: number;
-  ambientMeanSource: 'provider_annual_mean' | 'derived_from_design_extremes';
+  ambientMeanSource: 'supplied_annual_mean' | 'derived_from_design_extremes';
   irradianceAnnualKwhM2: number;
   weatherProfileSource: string;
   isMeasuredHourlyWeather: false;
   methodologyNote: string;
 }
 
-function annualEnergyFactor(input: HourlyThermalModelInput, ambientBiasC: number, ambientMeanC: number): number {
+/** Direct component export for independent numerical verification; not a weather-adoption API. */
+export function annualEnergyFactor(input: HourlyThermalModelInput, ambientBiasC: number, ambientMeanC: number): number {
+  requireHourlyThermalInput(input);
+  requireThermalEvaluationArgs(ambientBiasC, ambientMeanC);
   const latitudeRad = Math.max(-89.9, Math.min(89.9, input.latitudeDeg)) * Math.PI / 180;
   const irradiationWeights: number[] = [];
   const hourlyAmbient: number[] = [];
@@ -40,7 +46,9 @@ function annualEnergyFactor(input: HourlyThermalModelInput, ambientBiasC: number
     const declination = 23.44 * Math.sin((2 * Math.PI * (284 + day)) / 365) * Math.PI / 180;
     const seasonalSolar = Math.sin(latitudeRad) * Math.sin(declination)
       + Math.cos(latitudeRad) * Math.cos(declination);
-    const seasonalTemperature = Math.cos((2 * Math.PI * (day - 200)) / 365);
+    // Retain the legacy northern July peak, reverse in the south; no hemispheric
+    // annual temperature harmonic at the equator. This is policy, not measured weather.
+    const seasonalTemperature = Math.sign(input.latitudeDeg) * Math.cos((2 * Math.PI * (day - 200)) / 365);
 
     for (let hour = 0; hour < 24; hour++) {
       const hourAngle = ((hour + 0.5 - 12) * 15) * Math.PI / 180;
@@ -57,7 +65,7 @@ function annualEnergyFactor(input: HourlyThermalModelInput, ambientBiasC: number
   }
 
   const weightSum = irradiationWeights.reduce((sum, weight) => sum + weight, 0);
-  if (!(weightSum > 0) || !(input.peakSunHours > 0)) return 0;
+  if (!(weightSum > 0) || !(input.peakSunHours > 0)) return 1;
   const annualPshKwhM2 = input.peakSunHours * 365;
   // Every one-hour sample receives an irradiance value in W/m² whose integrated daily/yearly
   // energy exactly matches annual PSH; the temporal distribution remains synthetic.
@@ -85,6 +93,7 @@ function annualEnergyFactor(input: HourlyThermalModelInput, ambientBiasC: number
  * hourly clouds, measured weather, wind, snow and site-specific thermal coefficients are absent.
  */
 export function simulateAnnualHourlyThermalDerate(input: HourlyThermalModelInput): HourlyThermalModelResult {
+  requireHourlyThermalInput(input);
   const safePsh = Number.isFinite(input.peakSunHours) ? Math.max(0, input.peakSunHours) : 0;
   const safeMin = Number.isFinite(input.ambientTempMinC) ? input.ambientTempMinC : 0;
   const safeMax = Number.isFinite(input.ambientTempMaxC) ? input.ambientTempMaxC : safeMin;
@@ -101,6 +110,8 @@ export function simulateAnnualHourlyThermalDerate(input: HourlyThermalModelInput
 
   return {
     hourlySamples: 365 * 24,
+    seasonalTemperaturePolicy: 'hemisphere_cosine_equator_flat_v1',
+    energyAvailability: safePsh > 0 ? 'positive_reference_irradiation' : 'zero_reference_irradiation',
     annualThermalDeratePct: toDeratePct(baseFactor),
     temperatureSensitivityRangePct: {
       low: Math.min(toDeratePct(lowFactor), toDeratePct(highFactor)),
@@ -108,10 +119,10 @@ export function simulateAnnualHourlyThermalDerate(input: HourlyThermalModelInput
     },
     temperatureSensitivityAllowanceC: allowance,
     ambientMeanUsedC,
-    ambientMeanSource: hasProviderMean ? 'provider_annual_mean' : 'derived_from_design_extremes',
+    ambientMeanSource: hasProviderMean ? 'supplied_annual_mean' : 'derived_from_design_extremes',
     irradianceAnnualKwhM2: safePsh * 365,
     weatherProfileSource: 'Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied',
     isMeasuredHourlyWeather: false,
-    methodologyNote: 'Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic. The ±temperature band is a sensitivity to an explicit ±5°C bias (or configured amount), not a probability interval or bound on total forecast error.',
+    methodologyNote: 'Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The ±temperature band is a sensitivity to an explicit ±5°C bias (or configured amount), not a probability interval or bound on total forecast error.',
   };
 }

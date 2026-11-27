@@ -1,0 +1,1700 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "assessSimpleLcoe",
+  "cases": [
+    {
+      "inputs": [
+        {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 890.7557260060296,
+        "discountedEnergyKwh": 46890.687120723545,
+        "lcoeValue": 0.01899643150275689,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 890.7557260060296,
+        "discountedEnergyKwh": 43608.753063065975,
+        "lcoeValue": 0.020426076497024326,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 687.5,
+        "discountedEnergyKwh": 22500.0,
+        "lcoeValue": 0.030555555555555555,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 687.5,
+        "discountedEnergyKwh": 21200.356269215757,
+        "lcoeValue": 0.032428700313791095,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 541.0017938523634,
+        "discountedEnergyKwh": 4920.21526228362,
+        "lcoeValue": 0.10995490339609008,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 541.0017938523634,
+        "discountedEnergyKwh": 4796.379524732351,
+        "lcoeValue": 0.1127937835324974,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 500.0,
+          "opexAnnual": 7.5,
+          "energyAnnual": 900.0,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1781.5114520120592,
+        "discountedEnergyKwh": 93781.37424144709,
+        "lcoeValue": 0.01899643150275689,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1781.5114520120592,
+        "discountedEnergyKwh": 87217.50612613195,
+        "lcoeValue": 0.020426076497024326,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1375.0,
+        "discountedEnergyKwh": 45000.0,
+        "lcoeValue": 0.030555555555555555,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1375.0,
+        "discountedEnergyKwh": 42400.712538431515,
+        "lcoeValue": 0.032428700313791095,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1082.003587704727,
+        "discountedEnergyKwh": 9840.43052456724,
+        "lcoeValue": 0.10995490339609008,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1082.003587704727,
+        "discountedEnergyKwh": 9592.759049464701,
+        "lcoeValue": 0.1127937835324974,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000,
+          "opexAnnual": 15,
+          "energyAnnual": 1800,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 8907.557260060295,
+        "discountedEnergyKwh": 468906.87120723544,
+        "lcoeValue": 0.01899643150275689,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 8907.557260060295,
+        "discountedEnergyKwh": 436087.5306306598,
+        "lcoeValue": 0.020426076497024326,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 6875.0,
+        "discountedEnergyKwh": 225000.0,
+        "lcoeValue": 0.030555555555555555,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 6875.0,
+        "discountedEnergyKwh": 212003.56269215757,
+        "lcoeValue": 0.032428700313791095,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 5410.017938523635,
+        "discountedEnergyKwh": 49202.1526228362,
+        "lcoeValue": 0.10995490339609008,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 5410.017938523635,
+        "discountedEnergyKwh": 47963.795247323505,
+        "lcoeValue": 0.1127937835324974,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 5000,
+          "opexAnnual": 75,
+          "energyAnnual": 9000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 17815.11452012059,
+        "discountedEnergyKwh": 937813.7424144709,
+        "lcoeValue": 0.01899643150275689,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 17815.11452012059,
+        "discountedEnergyKwh": 872175.0612613196,
+        "lcoeValue": 0.020426076497024326,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 13750.0,
+        "discountedEnergyKwh": 450000.0,
+        "lcoeValue": 0.030555555555555555,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 13750.0,
+        "discountedEnergyKwh": 424007.12538431515,
+        "lcoeValue": 0.032428700313791095,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 10820.03587704727,
+        "discountedEnergyKwh": 98404.3052456724,
+        "lcoeValue": 0.10995490339609008,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 10820.03587704727,
+        "discountedEnergyKwh": 95927.59049464701,
+        "lcoeValue": 0.1127937835324974,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 150,
+          "energyAnnual": 18000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 89075.57260060296,
+        "discountedEnergyKwh": 4689068.712072355,
+        "lcoeValue": 0.01899643150275689,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 89075.57260060296,
+        "discountedEnergyKwh": 4360875.306306598,
+        "lcoeValue": 0.020426076497024326,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 68750.0,
+        "discountedEnergyKwh": 2250000.0,
+        "lcoeValue": 0.030555555555555555,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 68750.0,
+        "discountedEnergyKwh": 2120035.626921576,
+        "lcoeValue": 0.032428700313791095,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 54100.17938523635,
+        "discountedEnergyKwh": 492021.526228362,
+        "lcoeValue": 0.10995490339609008,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 54100.17938523635,
+        "discountedEnergyKwh": 479637.952473235,
+        "lcoeValue": 0.1127937835324974,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 50000,
+          "opexAnnual": 750,
+          "energyAnnual": 90000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1781511.452012059,
+        "discountedEnergyKwh": 93781374.24144709,
+        "lcoeValue": 0.01899643150275689,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1781511.452012059,
+        "discountedEnergyKwh": 87217506.12613195,
+        "lcoeValue": 0.020426076497024326,
+        "currency": "USD",
+        "rateBasis": "real",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": -0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "real"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1375000.0,
+        "discountedEnergyKwh": 45000000.0,
+        "lcoeValue": 0.030555555555555555,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1375000.0,
+        "discountedEnergyKwh": 42400712.53843152,
+        "lcoeValue": 0.032428700313791095,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": 0,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1082003.587704727,
+        "discountedEnergyKwh": 9840430.52456724,
+        "lcoeValue": 0.10995490339609008,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 1082003.587704727,
+        "discountedEnergyKwh": 9592759.0494647,
+        "lcoeValue": 0.1127937835324974,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 1000000,
+          "opexAnnual": 15000,
+          "energyAnnual": 1800000,
+          "discountRate": 0.18,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 0,
+          "opexAnnual": 0,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 0.0,
+        "discountedEnergyKwh": 67225.2651826678,
+        "lcoeValue": 0.0,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 0,
+          "opexAnnual": 0,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 100,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 12818.788913208951,
+        "discountedEnergyKwh": 4761.9047619047615,
+        "lcoeValue": 2.6919456717738797,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 100,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 1,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 10190.47619047619,
+        "discountedEnergyKwh": 4761.9047619047615,
+        "lcoeValue": 2.14,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 1,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 100,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 13969.582040008507,
+        "discountedEnergyKwh": 90490.31134315443,
+        "lcoeValue": 0.15437654962898192,
+        "currency": "USD",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 100,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "USD",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "TOMAN",
+          "rateBasis": "nominal"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 12818.788913208951,
+        "discountedEnergyKwh": 67225.2651826678,
+        "lcoeValue": 0.1906840959031862,
+        "currency": "TOMAN",
+        "rateBasis": "nominal",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "TOMAN",
+          "rateBasis": "nominal"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility."
+        ]
+      }
+    },
+    {
+      "inputs": [
+        {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "unspecified",
+          "rateBasis": "unspecified"
+        }
+      ],
+      "expected": {
+        "status": "available",
+        "discountedCosts": 12818.788913208951,
+        "discountedEnergyKwh": 67225.2651826678,
+        "lcoeValue": 0.1906840959031862,
+        "currency": "unspecified",
+        "rateBasis": "unspecified",
+        "modelPolicy": "simple_discounted_lcoe_v1",
+        "financialAdoptionEligible": false,
+        "inputs": {
+          "capex": 10000,
+          "opexAnnual": 200,
+          "energyAnnual": 5000,
+          "discountRate": 0.05,
+          "lifetimeYears": 25,
+          "degradationPct": 0.5,
+          "energyBasis": "delivered",
+          "currency": "unspecified",
+          "rateBasis": "unspecified"
+        },
+        "limitations": [
+          "Pre-tax unlevered screen: constant annual OPEX, first-year energy under the declared basis with geometric degradation; no taxes, debt, escalation, replacement or salvage schedules.",
+          "Numerical arithmetic verification is not validation of project assumptions or financial eligibility.",
+          "Currency unit unspecified; do not compare to a currency-denominated tariff.",
+          "Real/nominal valuation basis unspecified; do not compare mixed-basis alternatives."
+        ]
+      }
+    }
+  ],
+  "independentCalculation": "Independent 50-digit Decimal simple discounted LCOE specialization.\nYear-zero CAPEX + discounted constant end-of-year OPEX divided by discounted\nfirst-year delivered kWh with geometric degradation. Currency and rate basis\nare explicit labels; no taxes, debt, escalation, replacement or salvage schedules.\nSAM LCOE help documents discounted costs/energy and real vs nominal distinction;\nthis is NOT parity with SAM's full tax/debt cashflow. Synthetic costs/rates are\narithmetic cases, not product or jurisdiction assumptions. No TS imports/output.\n",
+  "tolerances": {
+    "absolute": 1e-09,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+    "url": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+    "version": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+    "locator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+  }
+}

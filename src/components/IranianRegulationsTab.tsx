@@ -1,3 +1,4 @@
+import {ECONOMIC_DISCLOSURE, BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import React, { useState } from 'react';
 import { Scale, TrendingUp, DollarSign, ShieldAlert, Award, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
 import {
@@ -9,6 +10,8 @@ import {
 interface IranianRegulationsTabProps {
   capacityKwp: number;
   annualGenerationMwh: number;
+  /** Legacy scalar framework cannot value an adopted dispatch/import ledger. */
+  operationalEnergyBlocked?: boolean;
   lang?: 'fa' | 'en';
 }
 
@@ -16,6 +19,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
   capacityKwp,
   annualGenerationMwh,
   lang = 'fa',
+  operationalEnergyBlocked = false,
 }) => {
   const isFa = lang === 'fa';
   const [framework, setFramework] = useState<IranianRegulationFramework>('article_16');
@@ -23,6 +27,14 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
   const [loanSharePct, setLoanSharePct] = useState<number>(70);
   const [loanInterestPct, setLoanInterestPct] = useState<number>(23);
   const [loanTermYears, setLoanTermYears] = useState<number>(5);
+
+  if (operationalEnergyBlocked) return (
+    <div role="alert" data-testid="iranian-operational-blocked" className="studio-card">
+      {isFa
+        ? 'مدل مالی سادهٔ مقررات ایران برای انرژی عملیاتی پذیرفته‌شده در دسترس نیست: هزینهٔ واردات و دفتر دیسپاچ را محاسبه نمی‌کند. از تب مالی و گزارش عملیاتی استفاده کنید؛ هیچ جایگزینی با تولید خام یا روز نماینده انجام نشد.'
+        : 'The scalar Iranian framework is unavailable for adopted operational energy: it does not value import costs or the dispatch ledger. Use Financial and Operational reports. No gross-PV or representative-day fallback was applied.'}
+    </div>
+  );
 
   const modelResult: IranianFinancialModelResult = runIranianRegulationFinancialModel(
     capacityKwp,
@@ -66,7 +78,15 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="iranian-financial-screen">
+      <div role="note">{ECONOMIC_DISCLOSURE}<p>{BIFACIAL_READINESS.warning}</p></div>
+      <div role="note" data-testid="iranian-energy-basis" className="studio-card text-sm">
+        {isFa ? 'ظرفیت واقعی DC و انرژی سالانهٔ خالص AC از همان مبنای تب مالی؛ نه هدف AC و نه روز نماینده × ۳۶۵. نرخ‌ها و تعدیل‌ها فرض غربالگری‌اند، نه تعرفهٔ رسمی به‌روز.' : 'Actual DC capacity and annual net AC energy use the Financial tab screening basis, not the AC target or a representative day × 365. Rates and escalation are screening assumptions, not verified current official tariffs.'}
+        <p>{isFa
+          ? 'بازبینی افشا: ۲۰۲۶-۱۱-۰۳؛ منبع و تاریخ اعتبار نرخ‌ها تأیید نشده. حداقل نرخ چارچوب‌ها ۳۸۰۰/۴۵۰۰/۳۲۰۰/۵۰۰۰ تومان، CAPEX برابر ۳۱٫۵ میلیون تومان/kWp، OPEX برابر ۱٫۵٪، افت سالانه ۰٫۴۵٪ و تنزیل ۲۰٪ است. رشد تعرفه و OPEX برابر ۰٫۴۸ و ۰٫۶۰ ضربدر فرض تورم است؛ مقدار واردشده ممکن است با کف نرخ جایگزین شود.'
+          : 'Disclosure reviewed 2026-11-03; source/effective dates unverified. Framework tariff floors: 3800/4500/3200/5000 Toman/kWh; CAPEX 31.5 million Toman/kWp; OPEX 1.5%; annual degradation 0.45%; discount 20%. Tariff/OPEX escalation = 0.48/0.60 × assumed inflation. The entered tariff may be raised to a framework floor.'}</p>
+        <div data-testid="iranian-input-summary" data-dc-kwp={capacityKwp} data-annual-mwh={annualGenerationMwh}>{capacityKwp.toFixed(2)} kWp DC · {annualGenerationMwh.toFixed(3)} MWh/yr</div>
+      </div>
       {/* Title */}
       <div className="studio-card">
         <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">

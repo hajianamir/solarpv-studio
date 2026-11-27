@@ -1,0 +1,131 @@
+{
+  "baseline": "0c4d7cadc7db6001459ea36fdf9a3d1403179a71",
+  "branch": "arena/6a50ab5f-solarpv-studio",
+  "task": "Two-pass reconciliation of both supplied audits; code verification and four-phase plan, no application changes",
+  "assessment": "completed targeted review, not whole-repository line audit",
+  "remediationImplementation": "NOT_STARTED_IN_THIS_REVIEW",
+  "verification": "PARTIAL_ENGINEERING_EVIDENCE",
+  "release": "BLOCKED_UNQUALIFIED_VALIDATION",
+  "reportPasses": [
+    "Complete report extraction, overlap/contradiction/scope reconciliation",
+    "Every enumerated finding challenged against current symbols, evidence and selected execution"
+  ],
+  "targetedReviewsAndResearch": [
+    {
+      "review": "Safety contracts and competing remedies",
+      "followup": "Wind public worked examples and Enphase manufacturer Isc footnote; primary standards applicability unresolved"
+    },
+    {
+      "review": "Thermal, SDM and irradiance correctness",
+      "followup": "Versioned pvlib airmass and De Soto contracts, production-function temperature/coefficient probes"
+    },
+    {
+      "review": "Evidence/claims and baseline integrity",
+      "followup": "Inventory100 actual reference records, execute claims/registry/fixtures, fetch missing historical Git object and distinguish branch diff from inherited56 debt"
+    }
+  ],
+  "coverage": {
+    "reportAIds": 26,
+    "reportBIds": 30,
+    "enumeratedIdsAccountedFor": 56,
+    "phases": 4,
+    "scopeLimits": [
+      "Not a complete new source-line audit",
+      "Licensed ASCE/IEC/IEEE clauses not independently obtained",
+      "No current Iranian tariff/market-rate replacement verified",
+      "No field/conformity/bankability validation",
+      "No new Python whole-system or Docker/browser/platform runs; accepted-audit does execute its own HTTP harness"
+    ]
+  },
+  "commands": [
+    {
+      "command": "npm ci",
+      "exit": 0
+    },
+    {
+      "command": "npx tsx docs/audit/dual-independent-audit-review/probes.ts",
+      "exit": 0,
+      "interpretation": "diagnostic execution; SPA comparison separately tagged"
+    },
+    {
+      "command": "npm test",
+      "exit": 0,
+      "qualification": "retired bifacial stored target WARN"
+    },
+    {
+      "command": "npm run test:accepted-audit",
+      "exit": 0
+    },
+    {
+      "command": "npm run verify:engine-claims",
+      "exit": 0
+    },
+    {
+      "command": "npm run test:skills",
+      "exit": 0
+    },
+    {
+      "command": "npm run verify:physics-registry",
+      "exit": 0
+    },
+    {
+      "command": "PHYSICS_DIFF_BASE=0c4d7cadc7db6001459ea36fdf9a3d1403179a71 npm run verify:physics-reference-gate",
+      "exit": 0,
+      "qualification": "no changed production formulas; not inherited reference closure"
+    },
+    {
+      "command": "npm run test:cad:evidence-review",
+      "initialExit": 1,
+      "cause": "shallow checkout missing baseline71a7c2b",
+      "correctiveAction": "git fetch --no-tags origin 71a7c2b52d8a109cb710e38e561c49e635c54698",
+      "rerunExit": 0,
+      "missingRecords": 56
+    },
+    {
+      "command": "PHYSICS_DIFF_BASE=71a7c2b52d8a109cb710e38e561c49e635c54698 npx tsx scripts/verify-physics-reference-gate.ts",
+      "exitAfterFetch": 1,
+      "qualification": "inherited CAD56 missing records reproduced, no waiver"
+    },
+    {
+      "command": "crosswalk completeness check",
+      "exit": 0,
+      "assertions": "all56 IDs exactly once, exactly4 phase headings"
+    }
+  ],
+  "sourceSha256": {
+    "src/App.tsx": "b6e5c01cd7374da8330fe70122b226a1a3b7118507c673df1f6d4bdd505e3b29",
+    "server.ts": "e65979b385d6947ac818ffa51d31f10f6aa8625ae0c69aee7182f43ece6cd8ae",
+    "src/engine/core/structuralContract.ts": "dfced447424370d5a5f3f469e7fadb889974a1e29e04210ec4f14a627ee69d70",
+    "src/engine/core/hourlyThermalEngine.ts": "b15588450278e77b6c03bd601c2dc7402137a59fa5672238a6cc30fab736e81e",
+    "src/engine/core/thermalDerate.ts": "f3f198b37110ea333b9f46824507be6f9473eedac4450d5e2bbcf711536c3d80",
+    "src/engine/core/annualYieldEngine.ts": "e871bbcc75fc006f8e928571b7b65edd13b2e6160304d497b3878bc37ec89339",
+    "src/engine/core/electricalSizingContract.ts": "d597261729dfc508de2e2ee525d8da60605a98a99a3408b0f76e872f5a3baa76",
+    "src/engine/core/vmpTemperatureCoefficient.ts": "e9c9070fe128207fdb24d186b5bf0a94e5cae9910fd7a7e4b857fb9e20595d67",
+    "src/engine/solarPvEngine.ts": "8fad460fbefd089e307c2a15ada2c530cbc99f37caaa1fd3c9ef08405bda1238",
+    "src/engine/singleDiodeModel.ts": "87c58b2f3b4cff1798d900a2765a43f537a1bfab52631a5a51e26b82ba2cbbbe",
+    "src/engine/waterfallLossEngine.ts": "1cc1472b171d9c8b1c1db5ecdb8aef2d4c76f379a7445224075a4da245d021a3",
+    "src/engine/waterfallArgs.ts": "9a93cb18551c5a1c3c3f2bb7d701cbeb46bb39dd1517ac219fd131c66447566d",
+    "src/engine/bifacialGain.ts": "d55bed02049bcb87d0f0961d3df1c35ba3cac5fa2d9fdfb3c2c10e07874473de",
+    "src/engine/bifacial/bifacial2dViewFactor.ts": "07ede2ac49b67c51b4083d151d3adf73b4180800ca8890e37728927360cac098",
+    "src/engine/tracker/backtrackingEngine.ts": "2d9991ac0e7be1cd4cd77f18e08c173652410eddcdf3b5e557b728b3f9fb55af",
+    "src/engine/protectionBomEngine.ts": "b2cfac3f6df7463723e871b3125c5735f1cecf49dc9fa7af295486a547fdd1b7",
+    "src/engine/geotech/bromsMethod.ts": "7c7c49f5566222448ca8e784d3442702582b61b19604bc5e62062e85d23c3086",
+    "src/engine/structureRecommendationEngine.ts": "594d162bc62db778c1e4da78e3a16fea335d9f9b57d8fc0322137902d3cea87c",
+    "src/engine/bipv/bipvThermalEngine.ts": "0ccd0682a3561a9670acd4756ae787eba9fc46c349213f9217dbf1833ef37646",
+    "src/engine/iranianRegulationsFinancial.ts": "7ed8259db06629f92dd518f1a3fd662ea6761959b1e0b5cd85752b3873d3d104",
+    "src/engine/financialEngine.ts": "0cae8745055275b2818e1b72101772d942bdd31781003c9bd28c5d6a5b2a6d84",
+    "src/engine/core/financialContract.ts": "fb50d5bc746429dc6818bb6f62195dd09b4a5ad2013ca7a52e3d6ada73ad6f91",
+    "src/engine/solarPumpEngine.ts": "661fd837e0cb8d83ffed0693a6bfa4757d99dbdc4079ab59a1f740781a37aa28",
+    "src/engine/harmonicsEngine.ts": "48c9e38018d55ddea57a191939f25afc6e1f4f32be0c744a878dd663ac0c5976",
+    "src/engine/climaticData.ts": "60c046effc1c1777c7fb0b34050aa73abd9baad5085bf9b9b6076f476e6a6d12",
+    "src/engine/equipmentCatalogData.ts": "43a823434ba5095622aebf4ad1196104e5ea2b87c1417bb94034fc43df4be523",
+    "src/engine/core/uncertaintyPropagation.ts": "8f70a32346bd368a74f37a92e57e12ccfa4e08f924a34eb64d6e09fe74629491",
+    "scripts/physics-reference-evidence.json": "14ac1dedde899d2fb335649f235e8b177cd19352d131872cbe317e62d3f9d682",
+    "benchmarks/independent/solar-position-spa.json": "31475254ef847ff513c9d517c21fd7093f1df8de4619f3e6f1a84fabb01be631"
+  },
+  "diagnosticArtifactsSha256": {
+    "probes.ts": "2a25037353e11493b6830b55e4f1fb28359e81baed7b726e0c88bafe6e1c92b5",
+    "probe-results.json": "6d047677bb164367b649b966e10e12fca8ef29f93ea1c0397db623ec80b508d5"
+  },
+  "logs": "Local .cache/dual-audit/*.log (ephemeral); durable outcomes above"
+}

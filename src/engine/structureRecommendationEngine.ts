@@ -8,14 +8,10 @@
  * - Frost depth heave protection constraints (L >= d_frost + 1.0 m)
  * - Profile selection: W6x9 vs W6x12 vs Cold-formed C-Channel
  * - 6-Section Detailed Structural Engineering Report generator
- * - Compliance with ASCE 7-22, Eurocode 7 (EN 1997-1), and IBC 2024
+ * - ASCE 7-22, Eurocode 7 (EN 1997-1), and IBC 2024 background references only; conformity unassessed
  */
 
 import { type FoundationType, type SoilType } from './structuralEngine';
-import {
-  calculateUnifiedWindPressureQz,
-  calculateUnifiedLateralShearPerPost,
-} from './core/structuralContract';
 import {
   recommendSharedFoundation,
   scoreFoundationOptions,
@@ -23,7 +19,7 @@ import {
   type FoundationRecommendationOutput,
 } from './geotech/foundationRecommendation';
 
-export interface StructuralRecommendationInput {
+export interface StructuralRecommendationInput extends Pick<FoundationRecommendationInput, 'modulesPerTable' | 'moduleWeightKg' | 'rackingUnitWeightKgM2' | 'tableSlopedWidthM'> {
   siteName?: string;
   latitude: number;
   longitude: number;
@@ -35,15 +31,15 @@ export interface StructuralRecommendationInput {
   frostDepthCm: number;
   basicWindSpeedKmh: number;
   groundSnowLoadKgM2: number;
-  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  /** Required screening input; optional geometry/dead-load fields retain qualified shared defaults. */
   slopeDeg: number;
-  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  /** Required screening input; optional geometry/dead-load fields retain qualified shared defaults. */
   tableAreaM2: number;
-  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  /** Required screening input; optional geometry/dead-load fields retain qualified shared defaults. */
   arrayTiltDeg: number;
-  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  /** Required screening input; optional geometry/dead-load fields retain qualified shared defaults. */
   postsPerTable: number;
-  /** Required — no hard-coded defaults anywhere in this engine (Ambiguity A). */
+  /** Required screening input; optional geometry/dead-load fields retain qualified shared defaults. */
   clearanceHeightM: number;
   elevationM?: number;
   installationEnvironment?: 'ground_mount' | 'industrial_shed' | 'rooftop_flat_concrete';
@@ -71,6 +67,8 @@ export interface BromsPileSizingResult {
   allowableMomentKnM: number;
   fosLateral: number;
   fosMoment: number;
+  assessmentStatus: 'unassessed';
+  legacyScreenPassed: boolean;
   isFosSafe: boolean;
   notes: string;
 }
@@ -89,6 +87,8 @@ export interface FoundationRecommendationResult {
     windSpeedKmh: number;
     lateralShearPerPostKn: number;
     fosLateral: number;
+    assessmentStatus: 'unassessed';
+    legacyScreenPassed: boolean;
     pileAdequate: boolean;
   };
   geotechnicalDisclaimer: string;
@@ -208,7 +208,7 @@ const FOUNDATION_OPTIONS: FoundationOptionScore[] = [
 export function recommendFoundation(input: StructuralRecommendationInput): FoundationRecommendationResult {
   // Delegates to the shared geotech module (single source of truth — same code path
   // used by coreSuiteVerification test suite and StructuralFoundationTab UI, so
-  // test embedment depth === UI embedment depth for every site).
+  // consumer parity can be tested for identical inputs, not every site).
   const shared: FoundationRecommendationOutput = recommendSharedFoundation(input as FoundationRecommendationInput);
 
   // Ranked options from the shared scorer, enriched with UI-only fields
@@ -229,40 +229,23 @@ export function recommendFoundation(input: StructuralRecommendationInput): Found
   const primary = scored[0].type;
 
   // Frost constraint + pile sizing from shared module (no local Broms duplicate)
-  const frostM = input.frostDepthCm / 100.0;
   const bromsResult: BromsPileSizingResult = {
+    ...shared.pileSizing,
     pileSection: shared.pileSection as 'W6x9' | 'W6x12' | 'C150x50x2.5',
     embedmentDepthM: shared.pileDepthM,
-    minDepthForFrostM: Number((frostM + 1.0).toFixed(2)),
-    lateralCapacityKn: shared.factorOfSafetyLateral > 0 ? shared.factorOfSafetyLateral * shared.lateralShearPerPostKn : 0,
-    appliedLateralShearKn: shared.lateralShearPerPostKn,
-    bendingMomentKnM: shared.lateralShearPerPostKn * (0.9 + 0.3 * shared.pileDepthM),
-    allowableMomentKnM: shared.pileSection === 'W6x12' ? 41.4 : shared.pileSection === 'C150x50x2.5' ? 12.1 : 31.4,
-    fosLateral: shared.factorOfSafetyLateral,
-    fosMoment: shared.factorOfSafetyMoment,
-    isFosSafe: shared.factorOfSafetyLateral >= 1.5 && shared.factorOfSafetyMoment >= 1.5,
-    notes: shared.rationale,
   };
 
-  // Sensitivity to +20% wind gust via unified structural contract (ASCE 7-22)
+  // Diagnostic +20% wind sensitivity using the same complete shared input path.
   const sensWindKmh = Math.round(input.basicWindSpeedKmh * 1.2);
-  const sensWindPressure = calculateUnifiedWindPressureQz({
-    basicWindSpeedKmh: sensWindKmh,
-    elevationM: input.elevationM ?? 0,
-  });
-  const sensShearCalc = calculateUnifiedLateralShearPerPost({
-    qzN_M2: sensWindPressure.qzN_M2,
-    tableAreaM2: input.tableAreaM2,
-    arrayTiltDeg: input.arrayTiltDeg,
-    postsPerTable: input.postsPerTable,
-  });
-  const sensLateralShear = sensShearCalc.lateralShearPerPostKn;
+  const sensitivity = recommendSharedFoundation({...input, basicWindSpeedKmh: sensWindKmh});
+  const sensLateralShear = sensitivity.lateralShearPerPostKn;
   const sensFos = Number((bromsResult.lateralCapacityKn / Math.max(0.1, sensLateralShear)).toFixed(2));
 
-  const upliftPerPost = (shared.windPressureQzKnM2 * input.tableAreaM2 * 1.15) / input.postsPerTable;
+  // Authoritative net reaction already includes tilt, dead load and overturning.
+  // Do not substitute a second pressure-times-area coefficient here.
 
   const disclaimer =
-    'Disclaimer: Automated structural recommendations and Broms sizing are preliminary engineering estimates adhering to ASCE 7-22 / Eurocode 7 standards. A licensed Professional Engineer (PE) must perform site-specific geotechnical investigations (SPT/CPT boreholes) and pull-out/lateral load test verification prior to construction.';
+    'Disclaimer: Automated structural recommendations and Broms sizing are preliminary screening estimates, not verified ASCE 7-22 / Eurocode 7 conformity results. A licensed Professional Engineer (PE) must perform site-specific geotechnical investigations (SPT/CPT boreholes) and pull-out/lateral load test verification prior to construction. Pile moment/capacity are forwarded from the shared unvalidated screen; wind sensitivity uses the shared reaction path but remains a legacy capacity screen. Neither is a conformity result.';
 
   const result: FoundationRecommendationResult = {
     input,
@@ -272,13 +255,15 @@ export function recommendFoundation(input: StructuralRecommendationInput): Found
     windPressureQzKnM2: shared.windPressureQzKnM2,
     groundSnowPressureSkKnM2: shared.snowPressureSkKnM2,
     lateralShearPerPostKn: shared.lateralShearPerPostKn,
-    upliftPerPostKn: upliftPerPost,
+    upliftPerPostKn: shared.upliftPerPostKn,
     compressionPerPostKn: shared.compressionPerPostKn,
     sensitivityPlus20Wind: {
       windSpeedKmh: sensWindKmh,
       lateralShearPerPostKn: Number(sensLateralShear.toFixed(2)),
       fosLateral: sensFos,
-      pileAdequate: sensFos >= 1.5,
+      assessmentStatus: 'unassessed',
+      legacyScreenPassed: sensFos >= 1.5,
+      pileAdequate: false,
     },
     geotechnicalDisclaimer: disclaimer,
     reportMarkdown: '',
@@ -297,7 +282,7 @@ export function generateFoundationEngineeringReport(res: FoundationRecommendatio
 
   return `# Civil Foundation & Structural Mounting Recommendation Report
 **Project Location / Site:** Lat ${res.input.latitude.toFixed(4)}°, Lng ${res.input.longitude.toFixed(4)}°
-**Governing Design Codes:** ASCE 7-22 (Wind/Snow Loads) | Eurocode 7 (EN 1997-1) | IBC 2024 Chapter 18
+**Background References (applicability/conformity UNASSESSED):** ASCE 7-22 (Wind/Snow Loads) | Eurocode 7 (EN 1997-1) | IBC 2024 Chapter 18
 
 ---
 
@@ -328,23 +313,24 @@ ${res.allRankedOptions.map(o => `| **${o.rank}** | **${o.nameEn}** | **${o.suita
 
 ---
 
-## 4. Final Recommended Structural Sizing (Broms Method)
+## 4. Preliminary Structural Sizing Screen (Broms assumptions UNASSESSED)
+- **Assessment:** UNASSESSED — pile head restraint, failure regime, groundwater and section properties not established. Dimensions/FoS are legacy diagnostics, not an installation design.
 - **Primary Recommendation:** **${res.primaryRecommendation.toUpperCase()}**
 - **Selected Steel Profile:** **${p.pileSection}** (ASTM A992 Grade 50, $F_y = 345$ MPa)
 - **Required Embedment Depth ($L$):** **${p.embedmentDepthM} m**
-- **Frost Heave Minimum Embedment Threshold:** $d_{frost} + 1.0\\text{m} = ${p.minDepthForFrostM}\\text{ m}$ $\\rightarrow$ **COMPLIANT**
+- **Frost Heave Minimum Embedment Threshold:** $d_{frost} + 1.0\\text{m} = ${p.minDepthForFrostM}\\text{ m}$ $\\rightarrow$ **LEGACY THRESHOLD ONLY; DESIGN UNASSESSED**
 - **Calculated Ultimate Lateral Capacity ($H_{ult}$):** ${p.lateralCapacityKn} kN
 - **Governing Bending Moment ($M_u$):** ${p.bendingMomentKnM} kN·m (Allowable: ${p.allowableMomentKnM} kN·m)
-- **Factor of Safety (Lateral $FoS_H$):** **${p.fosLateral}** (Requirement: $\\ge 1.50$) $\\rightarrow$ **${p.fosLateral >= 1.5 ? 'PASS' : 'FAIL'}**
-- **Factor of Safety (Bending $FoS_M$):** **${p.fosMoment}** (Requirement: $\\ge 1.50$) $\\rightarrow$ **${p.fosMoment >= 1.5 ? 'PASS' : 'FAIL'}**
+- **Factor of Safety (Lateral $FoS_H$):** **${p.fosLateral}** (Requirement: $\\ge 1.50$) $\\rightarrow$ **LEGACY DIAGNOSTIC; DESIGN UNASSESSED**
+- **Factor of Safety (Bending $FoS_M$):** **${p.fosMoment}** (Requirement: $\\ge 1.50$) $\\rightarrow$ **LEGACY DIAGNOSTIC; DESIGN UNASSESSED**
 
 ---
 
 ## 5. Gust Sensitivity Analysis (+20% Extreme Wind)
-- **Elevated Wind Speed:** ${sens.windSpeedKmh} km/h (+20% ASCE 7-22 300-year recurrence)
+- **Elevated Wind Speed:** ${sens.windSpeedKmh} km/h (+20% diagnostic perturbation; not a recurrence-period estimate)
 - **Increased Lateral Shear Demand:** ${sens.lateralShearPerPostKn} kN
 - **Resulting Factor of Safety ($FoS_{gust}$):** **${sens.fosLateral}**
-- **Adequacy Status:** **${sens.pileAdequate ? 'SAFE (No pile resize needed)' : 'UPGRADE REQUIRED (Upgrade to W6x12 or increase embedment)'}**
+- **Adequacy Status:** **UNASSESSED — legacy capacity sensitivity is not a pile-design approval**
 
 ---
 

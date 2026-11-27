@@ -1,3 +1,4 @@
+import { calculateDiscountedLcoe, type SimpleLcoeInput } from './core/simpleLcoe';
 import { resolveVmpTemperatureCoefficient } from './core/vmpTemperatureCoefficient';
 // SolarPV Studio Core Calculation Engine
 // Faithful TypeScript implementation of pv-math, pv-electrical, pv-finance, and pv-shading
@@ -111,6 +112,11 @@ export interface StringSizingResponse {
 }
 
 export interface LcoeRequest {
+  /** New strict HTTP options; omitted basis fields remain explicitly unspecified. */
+  degradationPct?: number;
+  currency?: SimpleLcoeInput['currency'];
+  rateBasis?: SimpleLcoeInput['rateBasis'];
+  energyBasis?: SimpleLcoeInput['energyBasis'];
   capex: number;
   opexAnnual: number;
   energyAnnual: number;
@@ -118,6 +124,7 @@ export interface LcoeRequest {
   lifetimeYears: number;
 }
 
+/** Deprecated minimal success shape; strict HTTP success also carries assessment metadata. */
 export interface LcoeResponse {
   lcoeValue: number;
 }
@@ -365,6 +372,7 @@ export function calculateVoltageDropDc(
 // ----------------------------------------------------
 // FINANCIAL ENGINE (LCOE, NPV, IRR)
 // ----------------------------------------------------
+/** @deprecated Compatibility adapter: invalid input still returns zero. Use assessSimpleLcoe for active decisions. */
 export function calculateLcoe(
   capex: number,
   opexAnnual: number,
@@ -392,19 +400,10 @@ export function calculateLcoe(
 
   // Bound lifetime to physically sensible range [1, 100] years to prevent CPU DoS / infinite loop freeze (R847-05)
   const effectiveYears = Math.min(100, Math.max(1, Math.round(lifetimeYears)));
-  let totalCostPv = safeCapex;
-  for (let t = 1; t <= effectiveYears; t++) {
-    totalCostPv += safeOpex / Math.pow(1.0 + discountRate, t);
-  }
-
-  let totalEnergyPv = 0;
-  const dFrac = safeDegradation / 100.0;
-  for (let t = 1; t <= effectiveYears; t++) {
-    totalEnergyPv += (energyAnnual * Math.pow(1.0 - dFrac, t - 1)) / Math.pow(1.0 + discountRate, t);
-  }
-
+  const totals = calculateDiscountedLcoe({capex:safeCapex,opexAnnual:safeOpex,energyAnnual,discountRate,lifetimeYears:effectiveYears,degradationPct:safeDegradation,energyBasis:'unspecified',currency:'unspecified',rateBasis:'unspecified'});
+  const totalEnergyPv=totals.discountedEnergyKwh;
   if (totalEnergyPv <= 0 || !Number.isFinite(totalEnergyPv)) return 0.0;
-  const res = totalCostPv / totalEnergyPv;
+  const res=totals.lcoeValue;
   return Number.isFinite(res) && res >= 0 ? res : 0.0;
 }
 

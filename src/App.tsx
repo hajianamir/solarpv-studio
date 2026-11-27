@@ -1,3 +1,5 @@
+import {ECONOMIC_ASSUMPTIONS, BIFACIAL_READINESS} from './presentation/phase1Evidence';
+import {buildDesignSummary} from './presentation/designSummary';
 import {createOperationalProjectBundle,unpackOperationalProject} from './studies/operationalProjectTransfer';
 import {parseStudyJson} from './studies/strictStudyJson';
 import {loadOperationalStudy,saveOperationalStudy,operationalCityInputs} from './studies/operationalStudy';
@@ -881,6 +883,7 @@ export const App: React.FC = () => {
   const arrayDesign = useMemo(() => {
     if (isSiteUnsizable) {
       return {
+        electricalReadiness: {status: 'unassessed' as const, conformity: null, legacyShortCircuitMultiplier: 1.25 as const, reasons: ['Site is unsizable.']},
         totalPvCapacityKwp: 0,
         totalModulesCount: 0,
         modulesPerString: 0,
@@ -1248,6 +1251,15 @@ export const App: React.FC = () => {
   const annualYieldKwh = (adoptedEnergy?.financeEnergyKwh??adoptedEnergy?.exportKwh) ?? waterfallReport.netAnnualEnergyExportMwh * 1000.0;
 
   const annualPvGenerationKwh=adoptedEnergy?.dispatch?.pvKwh??adoptedEnergy?.exportKwh??waterfallReport.netAnnualEnergyExportMwh*1000;
+
+  const designSummary = buildDesignSummary({
+    actualDcKwp: arrayDesign.totalPvCapacityKwp,
+    installedAcKw: inverterClustering.totalInverterCapacityKw,
+    requestedAcKw: targetPowerplantCapacityKw,
+    annualFinancialEnergyKwh: annualYieldKwh,
+    waterfallPrPct: waterfallReport.performanceRatioPct,
+    hasAdoptedOperationalEnergy: !!adoptedEnergy,
+  });
 
   // Unified thermal derate for display (PR-2a-7-P0, P0-3) — same value used
   // inside pvEngineAdvanced and waterfallLossEngine.
@@ -2334,8 +2346,8 @@ export const App: React.FC = () => {
           </div>
 
           <div className="studio-hud-pill hidden md:inline-flex">
-            <span className="text-slate-400">PR (screening):</span>
-            <strong className="text-purple-400">{((arrayDesign.effectiveDeratingFactor || 0.805) * 100).toFixed(1)}%</strong>
+            <span className="text-slate-400">{lang === 'en' ? 'Waterfall PR (screening):' : 'PR آبشاری (غربالگری):'}</span>
+            <strong data-testid="summary-waterfall-pr" className="text-purple-400">{designSummary.waterfallPrPct.toFixed(1)}%</strong>
           </div>
 
           <div className="studio-hud-pill hidden lg:inline-flex">
@@ -3004,11 +3016,7 @@ export const App: React.FC = () => {
           {/* SINGLE LINE DIAGRAM */}
           {activeTab === 'sld' && (
             <SingleLineDiagram
-              pvCapacityKwp={
-                systemMode === 'powerplant'
-                  ? targetPowerplantCapacityKw
-                  : arrayDesign.totalPvCapacityKwp
-              }
+              pvCapacityKwp={designSummary.actualDcKwp}
               panelCount={arrayDesign.totalModulesCount}
               modulesPerString={arrayDesign.modulesPerString}
               parallelStrings={arrayDesign.parallelStringsCount}
@@ -3126,12 +3134,9 @@ export const App: React.FC = () => {
           {/* IRANIAN PPA REGULATIONS TAB */}
           {activeTab === 'iran_regulations' && (
             <IranianRegulationsTab
-              capacityKwp={
-                systemMode === 'powerplant'
-                  ? targetPowerplantCapacityKw
-                  : arrayDesign.totalPvCapacityKwp
-              }
-              annualGenerationMwh={(simulationResult.totalGeneration24hKwh * 365) / 1000}
+              capacityKwp={designSummary.actualDcKwp}
+              annualGenerationMwh={designSummary.annualFinancialEnergyMwh}
+              operationalEnergyBlocked={!designSummary.iranianModelAvailable}
               lang={lang}
             />
           )}
@@ -3185,7 +3190,7 @@ export const App: React.FC = () => {
       </div>
       </div>
 
-      {showOperationalReport&&adoptedEnergy&&<React.Suspense fallback={null}><OperationalReportModal receipt={adoptedEnergy} financial={financialResult} projectName={projectName} projectInputSnapshot={buildProjectInputSnapshot()} engineeringSnapshot={{city,siteOverrides,cableFeederInputs,mvVoltageKv,trackerConfig,pendingImportedEmbedmentDepthM,loads,loadAnalysis,module:selectedModule,inverter:selectedInverter,inverterClustering,arrayDesign,batterySizing,protection:protectionSystem,structural:effectiveStructuralSnapshot??null,bayArchitecture,generatorSizing,shading:{applied:appliedShadingRecord,isStale:isShadingStale,qualification:"Independent screening assessment; not reapplied to adopted energy"},reportMetadata,simulationQualification:"Representative screening day only; NOT the adopted annual dispatch"}} onClose={()=>setShowOperationalReport(false)}/></React.Suspense>}
+      {showOperationalReport&&adoptedEnergy&&<React.Suspense fallback={null}><OperationalReportModal receipt={adoptedEnergy} financial={financialResult} projectName={projectName} projectInputSnapshot={buildProjectInputSnapshot()} engineeringSnapshot={{phase1Evidence:{economicAssumptions:ECONOMIC_ASSUMPTIONS,bifacial:BIFACIAL_READINESS,electrical:arrayDesign.electricalReadiness},city,siteOverrides,cableFeederInputs,mvVoltageKv,trackerConfig,pendingImportedEmbedmentDepthM,loads,loadAnalysis,module:selectedModule,inverter:selectedInverter,inverterClustering,arrayDesign,batterySizing,protection:protectionSystem,structural:effectiveStructuralSnapshot??null,bayArchitecture,generatorSizing,shading:{applied:appliedShadingRecord,isStale:isShadingStale,qualification:"Independent screening assessment; not reapplied to adopted energy"},reportMetadata,simulationQualification:"Representative screening day only; NOT the adopted annual dispatch"}} onClose={()=>setShowOperationalReport(false)}/></React.Suspense>}
       {/* OFFICIAL EPC REPORT MODAL */}
       {showReportModal && !adoptedEnergy && (
         <React.Suspense fallback={null}>

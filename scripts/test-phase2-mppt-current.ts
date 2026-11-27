@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {exceedsMpptOperatingLimit,exceedsLegacyMpptShortCircuitLimit} from '../src/engine/core/mpptCurrentComparison';
+import {evaluateMpptCompatibility,resolveElectricalSystemSizing} from '../src/engine/core/electricalSizingContract';
+import {designPvArray} from '../src/engine/pvEngineAdvanced';
+const fixture=JSON.parse(readFileSync('scripts/fixtures/physics/mppt-current-boundaries-decimal.json','utf8'));
+const functions={exceedsMpptOperatingLimit,exceedsLegacyMpptShortCircuitLimit};
+for(const c of fixture.cases)assert.equal(functions[c.owner as keyof typeof functions](...c.inputs as [number,number,number]),c.expected);
+for(const fn of Object.values(functions))for(const inputs of [[-1,10,20],[1.5,10,20],[1,NaN,20],[1,-1,20],[1,10,Infinity],[1,10,0]])assert.throws(()=>fn(...inputs as [number,number,number]),RangeError);
+const above=fixture.cases.find((c:{inputs:number[];expected:boolean})=>c.inputs[0]===1&&c.inputs[1]>20&&c.inputs[1]<20.0001).inputs[1];
+const base=JSON.parse(readFileSync('scripts/fixtures/physics/mppt-hot-owner-independent.json','utf8')).inputs[0];
+for(const kind of ['operating','short_circuit'] as const) {
+ const input={...base,moduleImp:kind==='operating'?above:10,moduleIsc:kind==='short_circuit'?above:25,inverterImppMaxPerMppt:kind==='operating'?20:100,inverterIscMaxPerMppt:kind==='short_circuit'?25:100};
+ const result=evaluateMpptCompatibility(input);
+ assert.equal(result.isCurrentFeasible,false);assert.equal(result.isCompliant,false);
+ assert.ok(result.blockingErrors.some(e=>e.includes('unrounded per-channel')));
+ assert.equal(kind==='operating'?result.operatingCurrentAmps:result.shortCircuitCurrentAmps,kind==='operating'?20:25,'Rounded presentation reproduces the exact old false-pass witness');
+ assert.ok(Number(((kind==='operating'?input.moduleImp:input.moduleIsc*1.25)).toFixed(2)) <= (kind==='operating'?input.inverterImppMaxPerMppt:input.inverterIscMaxPerMppt));
+ const module={manufacturer:'SYNTHETIC',modelName:'Adjacent-float current fixture',pmpWatts:kind==='operating'?800:400,vocVolts:50,vmpVolts:40,iscAmps:input.moduleIsc,impAmps:input.moduleImp,tempCoeffVocPct:-.2,tempCoeffPmpPct:-.3,tempCoeffVmpPct:-.3,noctC:42,lengthM:2,widthM:1};
+ const inverter={manufacturer:'SYNTHETIC',modelName:'No manufacturer applicability asserted',pnomAcKw:5,vdcMaxVolts:100,vmpptMinVolts:1,vmpptMaxVolts:90,iscMaxAmpsPerMppt:input.inverterIscMaxPerMppt,imppMaxAmpsPerMppt:input.inverterImppMaxPerMppt,mpptChannelsCount:1,isThreePhase:false,efficiencyMaxPct:98};
+ const deratings={ambientTempMinC:0,ambientTempMaxC:40,soilingLossPct:2,dcCableLossPct:1,mismatchAndLidLossPct:1,inverterClippingLossPct:0,systemAvailabilityPct:100,groundAlbedo:.2,arrayTiltDeg:30};
+ const array=designPvArray(1,5,module,inverter,deratings,35,{inverterCount:1,stringsPerMpptAllocation:[1]});
+ assert.equal(array.stringsPerMppt,1);assert.equal(array.isMpptCurrentCompliant,false);
+ assert.equal(array.electricalReadiness.status,'unassessed','Precise arithmetic must not manufacture rating evidence');
+ const central=resolveElectricalSystemSizing({targetCapacityKw:1,requiredDailyEnergyKwh:1,module,inverter,deratings,latitudeDeg:35,peakSunHours:5,ambientTempMinC:0,ambientTempMaxC:40,customInverterCount:1});
+ assert.equal(central.arrayDesign.isMpptCurrentCompliant,false,'Central sizing facade must use the same raw-current boundary');
+ const equalModule={...module,impAmps:kind==='operating'?20:module.impAmps,iscAmps:kind==='short_circuit'?20:module.iscAmps};
+ const equal=designPvArray(1,5,equalModule,inverter,deratings,35,{inverterCount:1,stringsPerMpptAllocation:[1]});
+ assert.equal(equal.isMpptCurrentCompliant,true,'Exactly equal raw current remains numerically within its declared limit');
+}
+console.log(`PASS MPPT raw thresholds: ${fixture.cases.length} independent exact Decimal comparisons, adjacent-float direct/array/central-facade false-pass witnesses, exact-limit acceptance, invalid inputs; rating evidence remains separately unassessed.`);

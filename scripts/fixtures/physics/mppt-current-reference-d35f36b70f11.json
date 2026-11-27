@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "cases": [],
+  "independentCalculation": "Independent Decimal comparisons of per-channel current against a declared limit.\nOnly the retained legacy Isc screen uses1.25. Enphase IQ8AC/HC source distinguishes\n14A operating input,25A short-circuit terminal capability and20A maximum paired\nmodule Isc with documented1.25 relation. It does NOT validate a universal factor,\nper-MPPT conversion or this application's synthetic examples as real products.\nExact binary64 input values are converted with Decimal.from_float, not rounded\nstrings. Threshold boolean comparison is exact; no tolerance grants capacity.\n",
+  "tolerances": {
+    "absolute": 0,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "Independent Decimal current-limit comparisons; retained legacy Isc factor qualified by rating basis",
+    "url": "https://enphase.com/en-au/download/iq8ac-and-iq8hc-microinverters-data-sheet",
+    "version": "Public datasheet retrieved2026-11-03; synthetic threshold arithmetic",
+    "locator": "Input data (DC): operating vs short-circuit/module ratings and explicit1.25 relation. Independent threshold arithmetic only; product/source-date/scope applicability remains unassessed."
+  },
+  "formulaId": "src/engine/core/mpptCurrentComparison.ts#exceedsMpptOperatingLimit#d35f36b70f11",
+  "productionExport": "exceedsMpptOperatingLimit",
+  "inputs": [
+    1,
+    20.000000000000004,
+    20
+  ],
+  "expected": true
+}

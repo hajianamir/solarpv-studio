@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "calculateDiscountedLcoe",
+  "cases": [],
+  "independentCalculation": "Independent 50-digit Decimal simple discounted LCOE specialization.\nYear-zero CAPEX + discounted constant end-of-year OPEX divided by discounted\nfirst-year delivered kWh with geometric degradation. Currency and rate basis\nare explicit labels; no taxes, debt, escalation, replacement or salvage schedules.\nSAM LCOE help documents discounted costs/energy and real vs nominal distinction;\nthis is NOT parity with SAM's full tax/debt cashflow. Synthetic costs/rates are\narithmetic cases, not product or jurisdiction assumptions. No TS imports/output.\n",
+  "tolerances": {
+    "absolute": 1e-09,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "SAM LCOE discounted costs/delivered energy; independent Decimal simple pre-tax specialization",
+    "url": "https://samrepo.nlr.gov/help/mtf_lcoe.html",
+    "version": "Public help retrieved2026-11-03; simple_discounted_lcoe_v1",
+    "locator": "Levelized Cost of Energy Equations and Real and Nominal LCOE; simple constant-OPEX unlevered specialization, NOT full SAM taxes/debt implementation."
+  },
+  "formulaId": "src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#643659f3eeaa",
+  "inputs": [
+    {
+      "capex": 10000,
+      "opexAnnual": 200,
+      "energyAnnual": 5000,
+      "discountRate": 0.05,
+      "lifetimeYears": 25,
+      "degradationPct": 0.5,
+      "energyBasis": "delivered",
+      "currency": "USD",
+      "rateBasis": "nominal"
+    }
+  ],
+  "expected": {
+    "discountedCosts": 12818.788913208951,
+    "discountedEnergyKwh": 67225.2651826678,
+    "lcoeValue": 0.1906840959031862
+  }
+}

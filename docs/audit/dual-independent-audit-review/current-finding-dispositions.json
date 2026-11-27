@@ -1,0 +1,531 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "scope": "All 26 Audit A and 30 Audit B findings accounted for; Phase 1 disposition is not closure of later model validation",
+  "findings": [
+    {
+      "id": "A-F01",
+      "baselineSourceOwnerEvidence": "`core/structuralContract.ts:231–237`, metric argument + feet-like exponent",
+      "assessmentDisposition": "Confirmed mismatch; resolve SI coefficient/edition and raw-vs-adjusted pressure before replacement. Do not accept B's competing equation by voting.",
+      "plannedStages": "P1/P2 U01",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F02",
+      "baselineSourceOwnerEvidence": "`core/hourlyThermalEngine.ts:38–55` phase fixed at day 200",
+      "assessmentDisposition": "Confirmed hemisphere-insensitive synthetic season; make phase explicit, hemisphere-aware and documented. Bias magnitude depends on inputs.",
+      "plannedStages": "P2 U02",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F03",
+      "baselineSourceOwnerEvidence": "`core/annualYieldEngine.ts:149–176`; App `:1214` supplies hourly override",
+      "assessmentDisposition": "Confirmed canonical/App thermal-policy mismatch; one annual evaluator with complete inputs/provenance.",
+      "plannedStages": "P2 U02",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null,
+      "phase2Progress": "Synthetic seasonal temperature now reverses across hemispheres; equator annual harmonic explicitly zero, zero-PSH thermal budget neutral, invalid/missing inputs reject. 32 independent numpy/pvlib policy-integration cases, original southern-phase defect witness, canonical/waterfall signed metadata parity and actual XLSX/JSON thermal-profile readback. Complete common annual policy across quick-sizing HTTP/App/direct paths and global model migration remain open; ADR-016. Not weather validation."
+    },
+    {
+      "id": "A-F04",
+      "baselineSourceOwnerEvidence": "`App.tsx:3128–3135` passes AC target and day×365",
+      "assessmentDisposition": "Confirmed financial boundary defect. Use actual DC and eligible annual energy with explicit mode/basis.",
+      "plannedStages": "P1 U03",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F05",
+      "baselineSourceOwnerEvidence": "`solarPvEngine.ts:615–622`; `server.ts:427–439`",
+      "assessmentDisposition": "Confirmed legacy HTTP south vs library north default. Version/deprecate; reject ambiguity in new contract, preserve documented legacy behavior.",
+      "plannedStages": "P1 U04",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F06",
+      "baselineSourceOwnerEvidence": "`structuralContract.ts:162–194,225–227`",
+      "assessmentDisposition": "Confirmed omitted/explicit height discontinuity. Resolve default and verify applicable height/exposure tables.",
+      "plannedStages": "P2 U01",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F07",
+      "baselineSourceOwnerEvidence": "`singleDiodeModel.ts:41–50,100–108,171`",
+      "assessmentDisposition": "Confirmed unused gamma; beta only seeds root. Separate parameter translation from extraction; compare non-STC sensitivities or explicitly disclose unsupported coefficients. B's blanket SDM correctness is insufficient.",
+      "plannedStages": "P3 U05",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F08",
+      "baselineSourceOwnerEvidence": "`App.tsx:2337–2338,3007–3013`",
+      "assessmentDisposition": "Confirmed PR source drift and AC/DC SLD mismatch. Use named metrics; handle legitimate zero, not `||0.805`.",
+      "plannedStages": "P1 U03/U06",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F09",
+      "baselineSourceOwnerEvidence": "`waterfallLossEngine.ts:86–120`",
+      "assessmentDisposition": "Confirmed 1.168 tracker anchor differs from site curve. Align baseline/denominator to the actual tracker comparison, not just substitute a constant.",
+      "plannedStages": "P3 U07",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F10",
+      "baselineSourceOwnerEvidence": "`tracker/backtrackingEngine.ts:273+` synthetic path; waterfall scalar use",
+      "assessmentDisposition": "Retain clear-sky limitation; cloudy-climate numerical bias ranges not reproduced. Offer explicit chronology rather than auto-correct by arbitrary clearness scalar.",
+      "plannedStages": "P3 U07",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F11",
+      "baselineSourceOwnerEvidence": "`thermalDerate.ts:47,55`; waterfall `:218–220`",
+      "assessmentDisposition": "Confirmed signed annual thermal inconsistency. Additional consumer issue: waterfall clamps a negative hourly loss override to zero, so fixing thermal leaf alone will not preserve cold gains.",
+      "plannedStages": "P2 U02",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null,
+      "phase2Progress": "Scalar annual owner preserves cold gain and signed gamma (24 pvlib component conditions); canonical thermalDeratePctUsed now retains signed loss instead of abs. Twelve mount/override cases and JSON parity; synthetic profile metadata carried into actual report artifacts. Hot-design convention unchanged. Complete annual policy reconciliation remains open; ADR-015/016."
+    },
+    {
+      "id": "A-F12",
+      "baselineSourceOwnerEvidence": "`thermalDerate.ts:38–46`",
+      "assessmentDisposition": "Retain unvalidated mounting warning. Do not replace offsets without independent domain evidence; characterize low-G sensitivity.",
+      "plannedStages": "P3 U08",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F13",
+      "baselineSourceOwnerEvidence": "`vmpTemperatureCoefficient.ts`; catalog interface `:17` and records",
+      "assessmentDisposition": "Confirmed measured-field gap; 0/25 populated. Datasheet acquisition/provenance, no fabricated beta_Vmp or alpha_Imp/alpha_Isc.",
+      "plannedStages": "P1/P3 U09",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F14",
+      "baselineSourceOwnerEvidence": "`protectionBomEngine.ts:343–353,395–408,423–445`",
+      "assessmentDisposition": "Confirmed fixed X despite parallel R reduction. Use declared equal-sharing topology and recompute voltage drop within each candidate search; do not universally assume X/N for arbitrary arrangements.",
+      "plannedStages": "P2 U10",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F15",
+      "baselineSourceOwnerEvidence": "`protectionBomEngine.ts:736–748,824–827`",
+      "assessmentDisposition": "Confirmed assumed surface/fault/clearing/mesh values; compliance remains null. Add optional explicit sourced fault/surface/clearing inputs and assumption ledger; never make it certified by adding two fields.",
+      "plannedStages": "P2/P3 U11",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F16",
+      "baselineSourceOwnerEvidence": "`protectionBomEngine.ts:889–929`",
+      "assessmentDisposition": "Confirmed class-only angles 55/45/35/25 and comment/code kc mismatch; angle ignores height. Exact tabular/function replacement requires source edition, geometry, topology and domain.",
+      "plannedStages": "P2 U12",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null,
+      "phase2Progress": "Plan-permitted containment implemented for current geometry-free API: angle and separation null/unassessed; legacy diagnostics isolated; bilingual guidance, 48 JSON cases and production browser unavailable rendering verified. No numeric IEC implementation claimed."
+    },
+    {
+      "id": "A-F17",
+      "baselineSourceOwnerEvidence": "`geotech/bromsMethod.ts:64–112`",
+      "assessmentDisposition": "Empirical bending arm confirmed. Capacity remedies disputed; obtain applicable equilibrium/reference cases. Include groundwater/effective stress and pile regime.",
+      "plannedStages": "P2 U13",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null,
+      "phase2Progress": "Contained per ADR-014: current unsupported Broms domain returns unassessed, legacy predicate isolated and deprecated safe flag false; main pile consumer and sensitivity cannot approve a design. 144 containment cases/85 prior green witnesses. No equilibrium or moment replacement/validation."
+    },
+    {
+      "id": "A-F18",
+      "baselineSourceOwnerEvidence": "`structureRecommendationEngine.ts:262,275`",
+      "assessmentDisposition": "Confirmed wrapper rederives uplift with 1.15 despite shared result. Return shared reaction and verify every report/BOM consumer.",
+      "plannedStages": "P1 U14",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": "U14 numerical uplift replacement belongs to Phase 2 implementation table; assessment crosswalk P1 label does not authorize an unsupported equation replacement",
+      "currentProgress": "Phase 2 started: wrapper forwards shared uplift and report consumes it; shared reaction formulas unchanged. Moment/capacity reconstruction and cross-path input provenance still open. See ADR-012/test:phase2.",
+      "phase2Progress": "Wrapper uplift and pile moment/capacity/FoS reconstruction removed in favor of shared values; wind sensitivity reaction also uses complete shared input path. 108 synthetic consistency cases plus production report test. Shared model physical accuracy and wider cross-input reconciliation remain open."
+    },
+    {
+      "id": "A-F19",
+      "baselineSourceOwnerEvidence": "`bipv/bipvThermalEngine.ts:315–337`",
+      "assessmentDisposition": "Confirmed 1.417 enhancement and inverse-length gradient with 12°C floor. Do not certify by fitting one target. Define fixed-mass-flow vs velocity/area conditions, solve balance and local profile.",
+      "plannedStages": "P3 U15",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F20",
+      "baselineSourceOwnerEvidence": "`iranianRegulationsFinancial.ts:85–126,133–179`",
+      "assessmentDisposition": "Confirmed intermediate integer rounding/fixed discount/escalation. Small-system example corrected in §3.5. Use full-precision ledger and explicit economic basis.",
+      "plannedStages": "P2 U16",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null,
+      "phase2Progress": "Partial U16b: Iranian full-precision million-Toman ledger through NPV/IRR and 18 independent Decimal cases retained. Strict simple-LCOE shared owner adds unavailable/null vs valid-zero, full-precision scenarios, explicit rate/currency/energy basis, financial-adoption ineligibility and consumed HTTP degradation; 42 independent Decimal cases, actual HTTP/bilingual/browser checks, preserved deprecated adapter (ADR-018). Explicit Iranian/other-ledger policy migration and full precision/accounting audit remain open."
+    },
+    {
+      "id": "A-F21",
+      "baselineSourceOwnerEvidence": "`annualYieldEngine.ts:100–109`; waterfall `:289–290`",
+      "assessmentDisposition": "Confirmed duplicate heuristic, not “physical” clipping validation. Consolidate without first changing outputs, then benchmark chronological alternatives.",
+      "plannedStages": "P2/P3 U07",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F22",
+      "baselineSourceOwnerEvidence": "`bifacialGain.ts:82–86,179–182`",
+      "assessmentDisposition": "Positive proxy slope reproduced. Do not blindly flip to 1−GCR or promote chord mode to validated. Flag unsupported sensitivity pending external comparisons.",
+      "plannedStages": "P1/P3 U17",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F23",
+      "baselineSourceOwnerEvidence": "`solarPvEngine.ts:538–612`; stored SPA metadata",
+      "assessmentDisposition": "Scope qualification warranted; empirical maxima only apply to tested sites/times. No universal ±0.02° or horizon-accuracy warranty.",
+      "plannedStages": "P4 U18",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F24",
+      "baselineSourceOwnerEvidence": "`solarPumpEngine.ts:89–104,122–143`",
+      "assessmentDisposition": "Rounding/standard-motor coupling confirmed. PV sizing from duty vs nameplate is a design-policy choice requiring startup/VFD/energy constraints; not automatically a defect.",
+      "plannedStages": "P3 U19",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F25",
+      "baselineSourceOwnerEvidence": "`uncertaintyPropagation.ts:80–86,542–585,632`; result validator",
+      "assessmentDisposition": "Retain qualifications. Correlation scores are not Sobol attribution; sampling uncertainty must be measured, not accept a universal ±3–4% from N=100.",
+      "plannedStages": "P3/P4 U20",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "A-F26",
+      "baselineSourceOwnerEvidence": "engine headers and `verify-engine-claims.ts`",
+      "assessmentDisposition": "Existing null-conformity/provenance guards confirmed and executed. Maintain; do not reopen as if no mitigation exists. Broader wording gaps remain below.",
+      "plannedStages": "P1/P4 U18",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-H1",
+      "baselineSourceOwnerEvidence": "`electricalSizingContract.ts:180–203`",
+      "assessmentDisposition": "Partial: factor unconditional, semantics missing. Universal removal refuted by manufacturer example (§3.2). Introduce basis/provenance and unknown-state policy.",
+      "plannedStages": "P1/P2 U09",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-H2",
+      "baselineSourceOwnerEvidence": "`structuralContract.ts:203–237`",
+      "assessmentDisposition": "Partial: metric exponent concern confirmed; e^(−z/8000), Kd=1 universal default and wind-speed wording not accepted. Kd already configurable.",
+      "plannedStages": "P1/P2 U01",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M1",
+      "baselineSourceOwnerEvidence": "thermal offsets `thermalDerate.ts:38–46`",
+      "assessmentDisposition": "Retain disclosed assumption; quantify controlled sensitivity, no unsupported replacement.",
+      "plannedStages": "P3 U08",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M2",
+      "baselineSourceOwnerEvidence": "thermal G default `:35,54`",
+      "assessmentDisposition": "Confirmed scalar annual approximation. Proposed PSH/4 is not a reference-quality repair.",
+      "plannedStages": "P2 U02",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M3",
+      "baselineSourceOwnerEvidence": "`solarPvEngine.ts:285–296`",
+      "assessmentDisposition": "Confirmed fallback uncertainty. A “conservative −0.35” is not conservative at both string bounds. Preserve diagnostics; block unqualified assessment when missing.",
+      "plannedStages": "P1/P2 U09",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M4",
+      "baselineSourceOwnerEvidence": "electrical hot fallback `:156`",
+      "assessmentDisposition": "Confirmed drift; report's NOCT=45 arithmetic wrong. Require/pass shared thermal inputs and compare consumers.",
+      "plannedStages": "P2 U02/U09",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null,
+      "phase2Progress": "Implemented shared hot-temperature fallback in direct MPPT API with optional NOCT/environment; explicit hot-cell input preserved. Independent 349V-vs-old352V witness, direct-export mutation fixture, 9 mount/NOCT consumer comparisons. Not manufacturer coefficient validation; ADR-015."
+    },
+    {
+      "id": "B-M5",
+      "baselineSourceOwnerEvidence": "electrical ratings `:465–477,549–569`",
+      "assessmentDisposition": "Heuristic exists; downstream unassessed/blocking mitigation exists. Improve type/naming, retain hard gate.",
+      "plannedStages": "P1 U09",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M6",
+      "baselineSourceOwnerEvidence": "electrical header `:12`",
+      "assessmentDisposition": "Confirmed remaining “Compliant” wording. Also inspect Broms “Conforming to” and foundation “adhering” language; current claims gate does not catch all scope inflation.",
+      "plannedStages": "P1 U18",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M7",
+      "baselineSourceOwnerEvidence": "clipping duplicate locations above",
+      "assessmentDisposition": "Confirmed heuristic and duplication. One owner + explicit screen metadata; external replacement requires climate/ILR domain evidence.",
+      "plannedStages": "P2/P3 U07",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M8",
+      "baselineSourceOwnerEvidence": "waterfall `:213–220`",
+      "assessmentDisposition": "Confirmed default hot conditions as annual stage. Explicit annual vs design types; preserve old API via qualified adapter.",
+      "plannedStages": "P2 U02",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M9",
+      "baselineSourceOwnerEvidence": "tracker synthetic path `:273+`",
+      "assessmentDisposition": "Confirmed simple profile. Model/bias assessment partial; do not silently add airmass term and present as validated weather.",
+      "plannedStages": "P3 U07",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M10",
+      "baselineSourceOwnerEvidence": "`harmonicsEngine.ts:117–164,184–210`",
+      "assessmentDisposition": "Internal thresholds, synthetic harmonics and 50 Hz confirmed; standard table identities/numerical repairs not established. Do not encode B's B.1/B.2 story as fact. Need applicable PCC/voltage/edition/generation rules and spectrum provenance.",
+      "plannedStages": "P1/P3 U11",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M11",
+      "baselineSourceOwnerEvidence": "Broms `:64–107`",
+      "assessmentDisposition": "Disputed reference/sign remedies; reject L−e substitution pending derivation. “Safe direction” not a whole-model proof.",
+      "plannedStages": "P2 U13",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null,
+      "phase2Progress": "Deep research supports e+L for short free-head drained piles; L-e rejected. Missing head/regime/groundwater/section validation now blocks safe design decisions; legacy diagnostics retained. See ADR-014."
+    },
+    {
+      "id": "B-M12",
+      "baselineSourceOwnerEvidence": "Broms `:53,75,97,134`",
+      "assessmentDisposition": "Different search/pass criteria confirmed. Search exhaustion already blocks; code difference alone does not prove an exhausted design passes. Define lateral target vs section moment acceptance separately, then enforce/document.",
+      "plannedStages": "P2 U13",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null,
+      "phase2Progress": "Search/pass numerical differences remain historical diagnostics, never safe-design acceptance: isFosSafe false, unsupported assessment unassessed, exhaustion retained blocking. Requested policy reconciliation/physical implementation not claimed."
+    },
+    {
+      "id": "B-M13",
+      "baselineSourceOwnerEvidence": "financial defaults `financialEngine.ts:75–97,974`; contract `:79–111`",
+      "assessmentDisposition": "Untraceable/time-sensitive default provenance confirmed; “2017-era” and replacement prices unverified. Require dated sources or explicit non-market assumptions, stale flags and currency basis.",
+      "plannedStages": "P1/P2 U16",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-M14",
+      "baselineSourceOwnerEvidence": "archived appendices 04/06; only matching standards document found",
+      "assessmentDisposition": "Live traceability gap confirmed; archives already prominently marked. Build implementation-specific matrix; not a certificate.",
+      "plannedStages": "P1/P4 U18",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L1",
+      "baselineSourceOwnerEvidence": "`annualYieldEngine.ts:412` vs waterfall `:86–111`",
+      "assessmentDisposition": "Confirmed transposition drift. One named owner with baseline conventions and compatibility tests.",
+      "plannedStages": "P2/P3 U07",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L2",
+      "baselineSourceOwnerEvidence": "waterfall PR `:333`; annual core `:425–426`",
+      "assessmentDisposition": "Definition concern valid; claim that positive gains automatically invalidate PR/requires ≤100 is rejected. Define/label denominators and test signed gains.",
+      "plannedStages": "P1/P2 U06",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L3",
+      "baselineSourceOwnerEvidence": "`bifacial2dViewFactor.ts:~150–180` heuristic factors",
+      "assessmentDisposition": "Retain unvalidated energy/view-factor residual qualification; no claim of energy-conserving Hottel model.",
+      "plannedStages": "P3 U17",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L4",
+      "baselineSourceOwnerEvidence": "`optical/iamEngine.ts` temperature-coupled extension",
+      "assessmentDisposition": "Retain internal-extension distinction. Do not assume universal negligible 0.3% without domain; optional explicit model selection.",
+      "plannedStages": "P3 U08",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L5",
+      "baselineSourceOwnerEvidence": "`singleDiodeModel.ts:11,103–108`",
+      "assessmentDisposition": "vt is module/string aggregate thermal voltage excluding n; internal a includes n. Comment says per-cell kT/q, so naming/docs mismatch is broader than n omission. Preserve field; add clear a/nNsVth alias if needed.",
+      "plannedStages": "P3 U05",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L6",
+      "baselineSourceOwnerEvidence": "tracker header `:2`; fixture generator pins 0.13.1",
+      "assessmentDisposition": "Provenance mismatch confirmed; distinguish actual 0.13.1 fixtures from legacy 0.16.1 claims, not a global search/replace of all versions.",
+      "plannedStages": "P1 U18",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L7",
+      "baselineSourceOwnerEvidence": "electrical battery comment `:340`",
+      "assessmentDisposition": "Confirmed Arrhenius/Peukert overclaim over linear model. Fix wording and negative claims regression.",
+      "plannedStages": "P1 U18",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L8",
+      "baselineSourceOwnerEvidence": "`climaticData.ts:~239–260`; overrides/provenance",
+      "assessmentDisposition": "Retain analytical classification; explicit site-investigation readiness gate for beyond-screening use. A checkbox alone is not geotechnical evidence.",
+      "plannedStages": "P1/P4 U11/U13",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L9",
+      "baselineSourceOwnerEvidence": "climate `:328`",
+      "assessmentDisposition": "Fixed seismic coefficient confirmed. Require jurisdiction/hazard evidence, or unassessed; no invented coordinate lookup.",
+      "plannedStages": "P1/P4 U11",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L10",
+      "baselineSourceOwnerEvidence": "`solarPvEngine.ts:368–386`",
+      "assessmentDisposition": "Invalid-input zero confirmed. Introduce typed unavailable result via compatible adapter; distinguish genuine zero, invalid and undefined denominator.",
+      "plannedStages": "P2 U16",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L11",
+      "baselineSourceOwnerEvidence": "climate `:305`",
+      "assessmentDisposition": "Heuristic elevation confirmed. Audit provider precedence and provenance on every structural consumer; do not silently overwrite explicit user data.",
+      "plannedStages": "P1/P2 U01/U11",
+      "phase1Disposition": "contract/containment implemented; model-specific numerical/data evidence remains qualified or BLOCKED as stated in live matrix",
+      "verificationPlan": "test:phase1, test:phase1:browser, POA HTTP, operational browser, claims and live evidence inventory; later numerical tests per assessment phase tables",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L12",
+      "baselineSourceOwnerEvidence": "`solarPvEngine.ts` quick sizing; assessment response type",
+      "assessmentDisposition": "Retain screening-only sizing-equation-reversal disclosure. Test fleet feasibility; no source found for replacing heuristics with another fixed anchor.",
+      "plannedStages": "P3/P4 U09",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L13",
+      "baselineSourceOwnerEvidence": "`waterfallArgs.ts:99,102–122`",
+      "assessmentDisposition": "16/17 doc mismatch confirmed; named builder still returns 17-slot legacy tuple. Migrate through typed adapter; do not simply delete compatibility/arity tests.",
+      "plannedStages": "P2 U07",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    },
+    {
+      "id": "B-L14",
+      "baselineSourceOwnerEvidence": "solar/financial/contract solvers and wrappers",
+      "assessmentDisposition": "Duplication confirmed; not all APIs have identical purposes/inputs. Consolidate shared kernels only after solver/error/currency/degradation/salvage behavior matrix. Include Iranian solver omitted by simplistic “three solvers” count.",
+      "plannedStages": "P2/P3 U16",
+      "phase1Disposition": "not a Phase 1 numerical replacement; retain assessment disposition and scheduled later-phase work",
+      "verificationPlan": "Assessment phase-specific independent reference and consumer tests before numerical change",
+      "schedulingClarification": null
+    }
+  ],
+  "continuationFindings": [
+    {
+      "id": "P2-E1",
+      "baselineSourceOwnerEvidence": "Current continuation review: electricalSizingContract.evaluateMpptCompatibility and pvEngineAdvanced.designPvArray compared two-decimal rounded currents to limits.",
+      "assessmentDisposition": "Confirmed false pass at adjacent-float operating/legacy-Isc overload; corrected using shared unrounded per-channel predicates.",
+      "plannedStages": "P2 U09b",
+      "phase2Progress": "Implemented raw acceptance in direct MPPT/array/central facade with 40 independent exact Decimal thresholds and original false-pass witnesses; exact-limit acceptance and missing-evidence containment retained. No universal manufacturer factor conversion; ADR-019.",
+      "verificationPlan": "test-phase2-mppt-current.ts plus exact-node mutation fixtures, Phase1 exact AST guard and full regression receipt."
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-03",
+  "branch": "arena/6a50ab5f-solarpv-studio",
+  "phase2Status": "incomplete",
+  "scope": "Thermal owner and wind SI/default-height repairs; not standards/model/release approval",
+  "checks": {
+    "lint": "pass",
+    "build": "pass",
+    "test": "pass",
+    "test:smoke": "pass",
+    "test:coverage": "pass",
+    "test:phase1": "pass",
+    "test:phase2": "pass",
+    "test:phase1:browser": "pass",
+    "test:accepted-audit": "pass",
+    "test:remaining": "pass",
+    "verify:engine-claims": "pass",
+    "verify:physics-reference-gate": "pass"
+  },
+  "independentEvidence": {
+    "thermalPvlibConditions": 24,
+    "elevationDecimalConditions": 9,
+    "mpptHotWitnessVolts": 349,
+    "previousFallbackWitnessVolts": 352
+  },
+  "sha256": {
+    "src/engine/core/thermalDerate.ts": "175b793e421dee78f113e55016e2e3cbaf2b19534a32fcbbd237ef0bd26252c0",
+    "src/engine/core/electricalSizingContract.ts": "47043130014557ba1623ef94a37cc2557d037fdae35e895311f7d827b9934774",
+    "src/engine/core/structuralContract.ts": "294991a9a54c85577029ed6b8cb69a4d9a0cd5ad198dfc6fb87d88eac632c78f",
+    "src/engine/core/windElevationFactor.ts": "b23aa7573b2142b20ab27eefdaa52bb58f41c8c40fc113043230d59dd578c781",
+    "src/contracts/windScreenInput.ts": "a089c10404946accbd0da691ceb9aa9cb87280659328e1fd6d7715031e2c7d3f",
+    "scripts/test-phase2-thermal-owner.ts": "95f143a3ee12fd5e1380ee15bdc0668ffcd6c98ef043b2f74f7cc7fd2b4b532b",
+    "docs/adr/ADR-015-phase2-thermal-owner-and-wind-si.md": "2aa74de7cfbdee8aa394472c9803a84dc20b44921c7fbf0988cbbe5c7c2fe987"
+  },
+  "remaining": [
+    "U02 hemisphere/profile and annual API/App/HTTP/metadata policy reconciliation",
+    "U09b rating-basis-specific manufacturer factors",
+    "U07a scalar consolidation",
+    "U01b normative applicability and model-policy migration",
+    "U16b explicit financial assumptions/migration and remaining ledgers",
+    "Inherited CAD reference debt not waived"
+  ]
+}

@@ -1001,6 +1001,14 @@ export function calculateStructuralAndFoundations(
     'غربالگری اولیه کشش، باربری و پاسخ جانبی برمز با ورودی‌ها و ضرایب تجربی فرضی است. انطباق با ASCE 7-22 یا مقررات ملی اثبات نشده است. خاک و خطرات نیازمند شواهد اختصاصی سایت‌اند؛ اتصالات، گردابه‌ها و تحلیل لرزه‌ای ارزیابی نشده‌اند. تأییدیه طراحی صادر نمی‌شود.';
   let engineeringRemarksEn =
     'Preliminary screening of uplift, bearing and Broms lateral response using assumed inputs and legacy empirical coefficients. ASCE 7-22 / INBC compliance is NOT established. Soil and hazard values require site-specific evidence; purlin clamps, chemical anchors, corner vortices and seismic dynamics are unassessed. No design certification is issued.';
+  if (['rammed_steel_pile', 'ground_screw', 'pre_drilled_grouted_pile'].includes(foundationType)) {
+      // No current call can establish the missing Broms head/regime/groundwater domain.
+      // Preserve legacy diagnostics, but never approve a pile based on them.
+      isStructurallySafe = false;
+      safetyReasonEn = `[UNASSESSED] Broms pile head restraint, failure regime, groundwater/effective unit weight and section properties are not established. Legacy dimensions and FoS are diagnostic only. ${safetyReasonEn}`;
+      safetyReasonFa = `[ارزیابی‌نشده] شرایط سر شمع، رژیم شکست، آب زیرزمینی و مشخصات معتبر مقطع تعیین نشده‌اند؛ ابعاد و ضرایب قدیمی فقط تشخیصی‌اند. ${safetyReasonFa}`;
+  }
+
   if (!isStructurallySafe) {
     if (!isRooftopOrShed && !hasFrostData) {
       engineeringRemarksFa = 'هشدار مهندسی: عمق یخبندان ساختگاه نامشخص است؛ بدون گمانه‌زنی و تعیین عمق یخبندان، پایداری شمع قابل تأیید نیست.';

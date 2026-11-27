@@ -28,8 +28,9 @@ function inverterFromCatalog(found: EnhancedCatalogInverter): InverterSpecs {
   return {
     id: found.id, origin: found.origin, manufacturer: found.manufacturer, modelName: found.modelName,
     pnomAcKw: found.pnomKw, vdcMaxVolts: found.vdcMaxVolts, vmpptMinVolts: found.vmpptMinVolts,
-    vmpptMaxVolts: found.vmpptMaxVolts, iscMaxAmpsPerMppt: found.technology === 'mv_turnkey' ? 120 : 26,
-    imppMaxAmpsPerMppt: found.technology === 'mv_turnkey' ? 100 : 22, mpptChannelsCount: found.mpptCount,
+    vmpptMaxVolts: found.vmpptMaxVolts, mpptRatingEvidence: found.mpptRatingEvidence,
+    iscMaxAmpsPerMppt: found.iscMaxAmpsPerMppt ?? (found.technology === 'mv_turnkey' ? 120 : 26),
+    imppMaxAmpsPerMppt: found.imppMaxAmpsPerMppt ?? (found.technology === 'mv_turnkey' ? 100 : 22), mpptChannelsCount: found.mpptCount,
     efficiencyMaxPct: found.efficiencyMaxPct, isThreePhase: found.isThreePhase,
   };
 }
@@ -164,6 +165,11 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
 
   return (
     <div className="space-y-6">
+      <div role="note" data-testid="electrical-readiness" className="p-3 border border-amber-500 text-sm">
+        {isEn ? 'Electrical readiness: ' : 'آمادگی دادهٔ الکتریکی: '}{arrayDesign.electricalReadiness.status} —
+        {isEn ? 'Legacy voltage/current feasibility flags are internal screens, not conformity or verified rating-basis approval. ' : 'پرچم‌های سازگاری قدیمی فقط غربالگری داخلی‌اند، نه انطباق یا تأیید مبنای جریان. '}
+        {arrayDesign.electricalReadiness.reasons.join(' ')}
+      </div>
       {/* PR-2a-7-P0-FOLLOWUP (ISSUE-2b): Target vs Designed vs Expected — two-step sizing visibility */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border rounded-lg" data-testid="array-ac-reference-card">

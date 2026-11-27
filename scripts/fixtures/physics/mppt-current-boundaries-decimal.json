@@ -1,0 +1,377 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "cases": [
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        1,
+        19.999999999999996,
+        20
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        1,
+        19.999999999999996,
+        25
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        1,
+        20.0,
+        20
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        1,
+        20.0,
+        25
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        1,
+        20.000000000000004,
+        20
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        1,
+        20.000000000000004,
+        25
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        1,
+        20.0001,
+        20
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        1,
+        20.0001,
+        25
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        1,
+        20.004,
+        20
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        1,
+        20.004,
+        25
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        2,
+        19.999999999999996,
+        40
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        2,
+        19.999999999999996,
+        50
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        2,
+        20.0,
+        40
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        2,
+        20.0,
+        50
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        2,
+        20.000000000000004,
+        40
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        2,
+        20.000000000000004,
+        50
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        2,
+        20.0001,
+        40
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        2,
+        20.0001,
+        50
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        2,
+        20.004,
+        40
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        2,
+        20.004,
+        50
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        3,
+        19.999999999999996,
+        60
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        3,
+        19.999999999999996,
+        75
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        3,
+        20.0,
+        60
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        3,
+        20.0,
+        75
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        3,
+        20.000000000000004,
+        60
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        3,
+        20.000000000000004,
+        75
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        3,
+        20.0001,
+        60
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        3,
+        20.0001,
+        75
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        3,
+        20.004,
+        60
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        3,
+        20.004,
+        75
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        6,
+        19.999999999999996,
+        120
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        6,
+        19.999999999999996,
+        150
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        6,
+        20.0,
+        120
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        6,
+        20.0,
+        150
+      ],
+      "expected": false
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        6,
+        20.000000000000004,
+        120
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        6,
+        20.000000000000004,
+        150
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        6,
+        20.0001,
+        120
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        6,
+        20.0001,
+        150
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsMpptOperatingLimit",
+      "inputs": [
+        6,
+        20.004,
+        120
+      ],
+      "expected": true
+    },
+    {
+      "owner": "exceedsLegacyMpptShortCircuitLimit",
+      "inputs": [
+        6,
+        20.004,
+        150
+      ],
+      "expected": true
+    }
+  ],
+  "independentCalculation": "Independent Decimal comparisons of per-channel current against a declared limit.\nOnly the retained legacy Isc screen uses1.25. Enphase IQ8AC/HC source distinguishes\n14A operating input,25A short-circuit terminal capability and20A maximum paired\nmodule Isc with documented1.25 relation. It does NOT validate a universal factor,\nper-MPPT conversion or this application's synthetic examples as real products.\nExact binary64 input values are converted with Decimal.from_float, not rounded\nstrings. Threshold boolean comparison is exact; no tolerance grants capacity.\n",
+  "tolerances": {
+    "absolute": 0,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "Independent Decimal current-limit comparisons; retained legacy Isc factor qualified by rating basis",
+    "url": "https://enphase.com/en-au/download/iq8ac-and-iq8hc-microinverters-data-sheet",
+    "version": "Public datasheet retrieved2026-11-03; synthetic threshold arithmetic",
+    "locator": "Input data (DC): operating vs short-circuit/module ratings and explicit1.25 relation. Independent threshold arithmetic only; product/source-date/scope applicability remains unassessed."
+  }
+}

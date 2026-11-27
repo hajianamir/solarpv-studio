@@ -1,3 +1,4 @@
+import {ECONOMIC_DISCLOSURE, ECONOMIC_ASSUMPTIONS, BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import {ReferenceLossStatus} from './ReferenceLossStatus';
 import React, { useState, useRef, useMemo } from 'react';
 import {
@@ -358,6 +359,9 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['Selected inverter phase/status', inverter.isThreePhase ? 'three-phase catalog' : 'single-phase catalog', inverterClustering?.healthStatusTextFa ?? 'cluster check not supplied'],
       ['Inverter surge requirement (W)', loadAnalysis.recommendedInverterPeakSurgeWatts, 'Screening; verify model transient overload curve'],
       ['Catalog kVA validation', 'NOT ASSESSED', 'Selected inverter catalog record has no verified apparent-power rating'],
+      ['Economic assumption provenance', ECONOMIC_DISCLOSURE, 'Source/effective date: unknown; no official tariff or bankability claim'],
+      ['Bifacial sensitivity readiness', BIFACIAL_READINESS.status, BIFACIAL_READINESS.warning],
+      ['Electrical rating readiness', arrayDesign.electricalReadiness.status, arrayDesign.electricalReadiness.reasons.join(' ') || 'Evidence complete for retained screen only; conformity remains unassessed'],
       ['MPPT current rating provenance', arrayDesign.isMpptRatingEstimated ? 'ESTIMATED / NOT ASSESSED' : arrayDesign.isMpptCurrentAssessed ? 'Input record supplied; source still verify' : 'NOT ASSESSED', arrayDesign.mpptRatingAssessmentNote ?? 'Verify exact manufacturer datasheet; no finite error percentage can be stated for absent or substituted current ratings'],
       ['Battery surge C-rate screening', batterySizing.isSurgeCRateAssessed ? `${batterySizing.actualSurgeCRate.toFixed(2)}C` : 'NOT ASSESSED', `Chemistry limit ${batterySizing.chemistry.maxSurgeCRate}C; ${batterySizing.isSurgeCRateCompliant ? 'within limit' : batterySizing.isSurgeCRateAssessed ? 'EXCEEDS limit' : 'no assessed battery-bank rate'}`],
       ['Conductor Run', 'Design Current (A)', 'Length (m)', 'Material', 'Insulation', 'Protective Device Reference', 'Device Rating (A)', 'Device Breaking Capacity (kA)', 'Prospective Isc (kA)', 'Clearing Time (s)', 'PF', 'Coincidence Factor', 'Grouped Circuits', 'Motor Starting Method', 'Starting Current Estimate (A)', 'Motor Start Voltage-Drop Assessment', 'Protection Coordination Screening', 'Designation', 'Voltage Drop (%)', 'Conductor Resistance Assumption', 'Status'],
@@ -407,7 +411,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       ['24-hour simulator derating factor', simulation.effectiveSystemDeratingFactor, '-', simulation.isGenerationDeratingAssessed ? 'Array sizing non-thermal derates adjusted to the synthetic hourly annual thermal factor' : 'UNASSESSED: legacy illustrative fallback 0.78 is used'],
       ['24-hour PCS power limits', simulation.isPowerLimitsAssessed ? 'ASSESSED' : 'NOT ASSESSED', `charge ${simulation.effectiveMaxChargePowerKw} kW; discharge ${simulation.effectiveMaxDischargePowerKw} kW; ${simulation.powerLimitAssessmentNote}`],
       ['Battery energy boundary', batterySizing.energySemanticsNote, `charge efficiency ${batterySizing.chargeEfficiencyFraction}; discharge efficiency ${batterySizing.dischargeEfficiencyFraction}`],
-      ['Annual thermal model', annualThermalProfile ? `${annualThermalProfile.annualThermalDeratePct.toFixed(2)}% thermal derate over ${annualThermalProfile.hourlySamples} synthetic hourly samples` : 'NOT RUN', annualThermalProfile ? `${annualThermalProfile.weatherProfileSource}; mean ambient ${annualThermalProfile.ambientMeanUsedC.toFixed(1)}°C (${annualThermalProfile.ambientMeanSource}); NOCT base plus mounting ΔT +${envAging.pvImpact.mountingThermalOffsetDeltaTC}°C (unvalidated screening assumption; dependent thermal/yield values are conditional screening outputs, not design-final; numeric change requires site evidence and owner/engineer approval)` : 'No thermal profile'],
+      ['Annual thermal model', annualThermalProfile ? `${annualThermalProfile.annualThermalDeratePct.toFixed(2)}% thermal derate over ${annualThermalProfile.hourlySamples} synthetic hourly samples` : 'NOT RUN', annualThermalProfile ? `${annualThermalProfile.weatherProfileSource}; policy ${annualThermalProfile.seasonalTemperaturePolicy}; ${annualThermalProfile.energyAvailability}; mean ambient ${annualThermalProfile.ambientMeanUsedC.toFixed(1)}°C (${annualThermalProfile.ambientMeanSource}); NOCT base plus mounting ΔT +${envAging.pvImpact.mountingThermalOffsetDeltaTC}°C (unvalidated screening assumption; dependent thermal/yield values are conditional screening outputs, not design-final; numeric change requires site evidence and owner/engineer approval)` : 'No thermal profile'],
       ['Thermal sensitivity (not total forecast uncertainty)', `${Math.min(...thermalYieldSensitivityPct).toFixed(2)}% to ${Math.max(...thermalYieldSensitivityPct).toFixed(2)}% annual-energy change`, `Conditional on ambient temperature bias ±${annualThermalProfile?.temperatureSensitivityAllowanceC ?? 5}°C only; synthetic hourly temperatures; not a confidence interval`],
       ['Solar-resource stress test', `±${resourceStressPct}% annual energy sensitivity`, `Assumed PSH perturbation only (${city.confidence ?? 'unspecified'} climate-data class); actual annual-yield error is not bounded by this scenario`],
       ['Battery usable-energy sensitivity', `${rteLowSensitivityPct.toFixed(2)}% to ${rteHighSensitivityPct.toFixed(2)}%`, 'Recomputed if round-trip efficiency is 5 percentage points below/above the generic chemistry profile; manufacturer data may differ more'],
@@ -513,6 +517,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
       // Derived report values are supplemental evidence only. They do not overwrite
       // the restorable base city, user inputs, or the separate site override layer.
       reportSnapshot: {
+        phase1Evidence: {economicAssumptions: ECONOMIC_ASSUMPTIONS, bifacial: BIFACIAL_READINESS, electrical: arrayDesign.electricalReadiness},
         app: 'SolarPV Studio Engineering Platform',
         exportedAt: new Date().toISOString(),
         effectiveSite: effectiveCity,
@@ -530,6 +535,7 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
         financial,
         bayArchitecture,
         waterfallReport,
+        annualThermalProfile,
       },
     };
 
@@ -892,6 +898,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
           ref={reportContainerRef}
           className="flex-1 overflow-y-auto space-y-6 pr-1 print:p-0 print:overflow-visible print:text-black"
         >
+          <div data-testid="report-phase1-readiness" className="border border-amber-600 p-3 text-xs">
+            <p>{ECONOMIC_DISCLOSURE}</p><p>{BIFACIAL_READINESS.warning}</p>
+            <p>Electrical readiness: {arrayDesign.electricalReadiness.status}; conformity: NOT ASSESSED. {arrayDesign.electricalReadiness.reasons.join(' ')}</p>
+            <p>Elevation, soil and seismic values may be analytical or default assumptions, not surveyed elevation, borehole testing or a governing seismic site classification. Verify project-specific sources before design.</p>
+          </div>
           {/* Cover & Document Header */}
           <div className="text-center border-b border-industrial-border/80 print:border-slate-300 pb-5">
             <div className="flex items-center justify-between mb-3">
@@ -1481,6 +1492,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 {isEn
                   ? `Annual thermal loss uses ${annualThermalProfile?.hourlySamples ?? 0} synthetic hourly samples normalized to annual PSH; it is not measured/reanalysis hourly weather or a TMY. One-at-a-time sensitivity: annual energy changes ${Math.min(...thermalYieldSensitivityPct).toFixed(2)}% to ${Math.max(...thermalYieldSensitivityPct).toFixed(2)}% for an assumed ±${annualThermalProfile?.temperatureSensitivityAllowanceC ?? 5}°C ambient bias; an assumed ±${resourceStressPct}% PSH perturbation changes energy by approximately the same percentage. Battery usable-energy sensitivity to ±5 percentage points RTE is ${rteLowSensitivityPct.toFixed(2)}% to ${rteHighSensitivityPct.toFixed(2)}%. These are not probability intervals or bounds: overall error versus reality is not quantified and may exceed them. PCS/BMS/MPPT errors are unknown without confirmed datasheets.`
                   : `تلفات حرارتی سالانه با ${annualThermalProfile?.hourlySamples ?? 0} نمونهٔ ساعتی مصنوعی و نرمال‌شده به PSH محاسبه می‌شود؛ این دادهٔ ساعتی اندازه‌گیری‌شده/بازتحلیل یا TMY نیست. حساسیت یک‌به‌یک: با فرض بایاس دمای محیط ±${annualThermalProfile?.temperatureSensitivityAllowanceC ?? 5}°C، تغییر انرژی سالانه ${Math.min(...thermalYieldSensitivityPct).toFixed(2)}٪ تا ${Math.max(...thermalYieldSensitivityPct).toFixed(2)}٪ است؛ تغییر فرضی PSH به میزان ±${resourceStressPct}٪ نیز تقریباً همین میزان اثر می‌گذارد. حساسیت انرژی قابل‌استفادهٔ باتری به تغییر ±۵ واحد درصد RTE برابر ${rteLowSensitivityPct.toFixed(2)}٪ تا ${rteHighSensitivityPct.toFixed(2)}٪ است. این‌ها بازهٔ احتمالاتی یا حد خطا نیستند؛ خطای کلی نسبت به واقعیت تعیین نشده و ممکن است بیشتر باشد. خطای PCS/BMS/MPPT بدون دیتاشیت تأییدشده نامعلوم است.`}
+              </div>
+
+              <div data-testid="report-thermal-policy" className="text-[10px] text-slate-400">
+                {isEn ? 'Synthetic thermal policy / energy availability: ' : 'سیاست حرارتی مصنوعی / وضعیت تابش: '}
+                {annualThermalProfile?.seasonalTemperaturePolicy ?? 'historical_unspecified'} · {annualThermalProfile?.energyAvailability ?? 'unavailable'}
               </div>
 
               {/* Loss Waterfall Breakdown Table */}

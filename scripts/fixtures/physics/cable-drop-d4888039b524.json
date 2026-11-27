@@ -1,0 +1,2337 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "candidateVoltageDropVolts",
+  "inputs": [
+    {
+      "isDc": false,
+      "isThreePhase": true,
+      "oneWayLengthM": 250,
+      "designCurrentAmps": 400,
+      "powerFactor": 0.7,
+      "equivalentReactanceOhmPerM": 8e-05
+    },
+    44.44444444444444,
+    95,
+    3
+  ],
+  "expected": 19.46731322752092,
+  "cases": [
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": true,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 47.36842105263158
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 23.68421052631579
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 15.789473684210526
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.894736842105263
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 42.631578947368425
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 49.6058172570335
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 60.06717472153112
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 21.315789473684212
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 28.290027783349288
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 38.751385247846905
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 14.210526315789474
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 21.18476462545455
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 31.64612208995217
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 7.105263157894737
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 14.079501467559815
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 24.540858932057432
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 33.1578947368421
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 44.58418022251067
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 61.723608451013504
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 16.57894736842105
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 28.005232854089613
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 45.14466108259245
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 11.052631578947368
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 22.478917064615928
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 39.61834529311877
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 5.526315789473684
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 16.952601275142243
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 34.09202950364509
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 16.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 40.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 16.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 40.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 16.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 40.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 16.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": false,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 40.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 41.022255968736566
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 41.022255968736566
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 41.022255968736566
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 20.511127984368283
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 20.511127984368283
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 20.511127984368283
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 13.67408532291219
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 13.67408532291219
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 13.67408532291219
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 6.837042661456095
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 6.837042661456095
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 1,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 6.837042661456095
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 36.920030371862914
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 42.95989792007951
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 52.019699242404414
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 18.460015185931457
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 24.499882734148056
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 33.55968405647295
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 12.30667679062097
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 18.34654433883757
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 27.40634566116247
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 6.153338395310485
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 12.193205943527085
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.9,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 21.253007265851984
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 28.715579178115597
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 38.61103267959798
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 53.45421293182156
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 14.357789589057798
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 24.253243090540185
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 39.096423342763764
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 9.571859726038532
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 19.46731322752092
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 34.310493479744494
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 4.785929863019266
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 14.681383364501652
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0.7,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 29.524563616725228
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 13.856406460551018
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        1
+      ],
+      "expected": 34.64101615137755
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 13.856406460551018
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        2
+      ],
+      "expected": 34.64101615137755
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 13.856406460551018
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        3
+      ],
+      "expected": 34.64101615137755
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 0.0
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 8e-05
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 13.856406460551018
+    },
+    {
+      "inputs": [
+        {
+          "isDc": false,
+          "isThreePhase": true,
+          "oneWayLengthM": 250,
+          "designCurrentAmps": 400,
+          "powerFactor": 0,
+          "equivalentReactanceOhmPerM": 0.0002
+        },
+        44.44444444444444,
+        95,
+        6
+      ],
+      "expected": 34.64101615137755
+    }
+  ],
+  "independentCalculation": "Independent Decimal voltage-drop oracle, Schneider EIG 2010 chapter G fig G27.\nNo production imports/outputs. Inputs are explicit synthetic equivalent-circuit\nconditions, NOT manufacturer/site evidence. R=1/(conductivity*S*N) ohm/m;\nDC 2LIR, AC kLI(R PF+X sqrt(1-PF\u00b2)); k=2 or sqrt(3).\nUnits: metre, ampere, mm\u00b2, conductivity m/(ohm mm\u00b2), X ohm/metre, result volt.\n",
+  "tolerances": {
+    "absolute": 1e-10,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "Schneider Electrical Installation Guide",
+    "url": "https://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf",
+    "version": "2010",
+    "locator": "Chapter G \u00a73.2 fig G27; parallel resistance footnote. Supplied equivalent X, not universal X/N. Decimal synthetic conditions; not insulation/ampacity/impedance validation."
+  },
+  "formulaId": "src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#d4888039b524"
+}

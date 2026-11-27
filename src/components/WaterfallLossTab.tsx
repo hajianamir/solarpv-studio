@@ -1,3 +1,4 @@
+import {BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import {ReferenceLossStatus} from './ReferenceLossStatus';
 import React from 'react';
 import { Layers, ArrowDownRight, Award, Info, CheckCircle2, TrendingDown, Sparkles } from 'lucide-react';
@@ -144,13 +145,14 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
       )}
 
       {/* KPI Cards */}
+      <p role="note" data-testid="bifacial-sensitivity-readiness">{BIFACIAL_READINESS.warning}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'انرژی خالص سالانه تزریق به شبکه' : 'Net Annual Grid Export (E_Grid)'}
           </div>
           <div className="text-xl font-bold font-mono text-industrial-success mt-1">
-            {report.netAnnualEnergyExportMwh.toLocaleString()} <span className="text-xs font-normal text-slate-300">MWh/yr</span>
+            <span data-testid="waterfall-annual-mwh" data-annual-mwh={report.netAnnualEnergyExportMwh}>{report.netAnnualEnergyExportMwh.toLocaleString()}</span> <span className="text-xs font-normal text-slate-300">MWh/yr</span>
           </div>
         </div>
 
@@ -168,10 +170,10 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
             {isFa ? 'ضریب عملکرد نیروگاه (PR %)' : 'Performance Ratio (PR %)'}
           </div>
           <div className="text-xl font-bold font-mono text-industrial-accent mt-1">
-            {report.performanceRatioPct}%
+            <span data-testid="waterfall-pr-value">{report.performanceRatioPct}%</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? 'استاندارد جهانی: ۷۸٪ تا ۸۴٪' : 'Tier-1 Benchmark: 78% - 84%'}
+            {isFa ? 'غربالگری: انرژی خالص AC ÷ انرژی مرجع DC پیش از تلفات؛ نه گواهی عملکرد' : 'Screening: net AC energy / pre-loss DC reference energy; not a performance certification'}
           </div>
         </div>
 

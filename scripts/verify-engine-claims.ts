@@ -191,3 +191,44 @@ for (const [index, legacy] of [
     'Restoring an unsupported visible benchmark claim must fail the guard');
 }
 console.log('Visible benchmark runner provenance guards and negative regressions passed.');
+
+// Citation is not conformity; prevent previously surviving whole-model claims.
+for (const [path, forbidden] of [
+  ['src/engine/core/electricalSizingContract.ts', /IEC 62548 \/ NEC 690 \/ IEEE 1562 \/ IEC 60891 Compliant/],
+  ['src/engine/geotech/bromsMethod.ts', /Conforming to:/],
+  ['src/engine/structureRecommendationEngine.ts', /estimates adhering to ASCE/],
+  ['src/engine/core/financialContract.ts', /Official SATBA commercial baseline/],
+  ['src/components/WaterfallLossTab.tsx', /Tier-1 Benchmark: 78% - 84%/],
+] as const) {
+  const reject = (text: string) => assert.doesNotMatch(text, forbidden, path);
+  reject(fs.readFileSync(path, 'utf8'));
+  // Positive match exercises the guard itself, not just today's source.
+  assert.ok(forbidden.test({
+    'src/engine/core/electricalSizingContract.ts': 'IEC 62548 / NEC 690 / IEEE 1562 / IEC 60891 Compliant',
+    'src/engine/geotech/bromsMethod.ts': 'Conforming to:',
+    'src/engine/structureRecommendationEngine.ts': 'estimates adhering to ASCE',
+    'src/engine/core/financialContract.ts': 'Official SATBA commercial baseline',
+    'src/components/WaterfallLossTab.tsx': 'Tier-1 Benchmark: 78% - 84%',
+  }[path]));
+}
+console.log('Phase 1 surviving-claim containment guards passed.');
+
+const phase1Readiness = fs.readFileSync('src/presentation/phase1Evidence.ts','utf8');
+assert.match(phase1Readiness,/bankabilityEligible: false/);
+assert.match(phase1Readiness,/independentlyValidatedDomain: null/);
+assert.match(phase1Readiness,/effectiveDate: null/);
+assert.doesNotMatch(fs.readFileSync('src/engine/geotech/foundationRecommendation.ts','utf8'),/ASCE 7-22 \/ Eurocode 7 \/ INBC Part 6 compliance/);
+for (const path of ['src/components/FinancialTab.tsx','src/components/IranianRegulationsTab.tsx','src/components/OfficialReportModal.tsx']) {
+ assert.match(fs.readFileSync(path,'utf8'),/ECONOMIC_DISCLOSURE/);
+ assert.match(fs.readFileSync(path,'utf8'),/BIFACIAL_READINESS/);
+}
+assert.match(fs.readFileSync('src/components/StructuralFoundationTab.tsx','utf8'),/structural-source-readiness/);
+assert.match(fs.readFileSync('src/components/OfficialReportModal.tsx','utf8'),/report-phase1-readiness/);
+console.log('PASS Phase 1 economic, bifacial, structural and artifact qualification presence guards (not exhaustive semantic claim verification).');
+
+assert.doesNotMatch(fs.readFileSync('src/engine/tracker/backtrackingEngine.ts','utf8'),/Faithful TypeScript port of pvlib 0.16.1/);
+assert.match(fs.readFileSync('src/engine/tracker/backtrackingEngine.ts','utf8'),/component geometry fixtures use pvlib 0.13.1/);
+assert.match(fs.readFileSync('src/engine/core/benchmarks/trackerFixtures.ts','utf8'),/unverified attribution/);
+assert.doesNotMatch(fs.readFileSync('src/engine/core/electricalSizingContract.ts','utf8'),/Arrhenius\/Peukert temperature derating/);
+assert.doesNotMatch(fs.readFileSync('src/engine/structureRecommendationEngine.ts','utf8'),/Compliance with ASCE 7-22|\*\*Governing Design Codes:/);
+assert.match(fs.readFileSync('src/engine/structureRecommendationEngine.ts','utf8'),/applicability\/conformity UNASSESSED/);

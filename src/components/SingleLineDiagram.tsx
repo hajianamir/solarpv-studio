@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import {downloadBlob} from '../browser/download';
+import React, { useState, useRef } from 'react';
 import { Layers, Download, ZoomIn, ZoomOut, Info, Shield, Zap, Sun, Battery as BatteryIcon } from 'lucide-react';
 
 interface SldProps {
@@ -58,6 +59,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
   dcSystemEarthing = 'floating',
   lang = 'fa',
 }) => {
+  const svgRef = useRef<SVGSVGElement>(null);
   const isEn = lang === 'en';
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
@@ -152,6 +154,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
 
   return (
     <div className="space-y-6">
+      <p role="note" data-testid="sld-screening-note">Preliminary screening SLD — not construction design or standards conformity. Actual DC: {pvCapacityKwp.toFixed(2)} kWp. Verify equipment, protection and site conditions.</p>
       {/* Title */}
       <div className="studio-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -164,11 +167,15 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
             </h1>
             <p className="text-slate-400 text-xs">
               {isEn
-                ? 'Standard IEC 61082 schematic diagram showing DC string routing, combiner boxes, SPDs, inverters, BESS, and AC switchgear.'
+                ? 'Illustrative schematic (IEC 61082 background reference, not verified conformity) showing DC string routing, combiner boxes, SPDs, inverters, BESS, and AC switchgear.'
                 : 'شاماتیک دقیق مدار قدرت از استرینگ‌های PV تا باس DC، اینورتر، بانک باتری، تابلوی AC و نقطه اتصال به شبکه'}
             </p>
           </div>
 
+          <button data-testid="sld-export-svg" className="studio-btn" onClick={() => {
+            if (!svgRef.current) return;
+            downloadBlob(new Blob([new XMLSerializer().serializeToString(svgRef.current)], {type: 'image/svg+xml'}), 'screening-sld.svg');
+          }}><Download className="w-4 h-4" />{isEn ? 'Export screening SVG' : 'خروجی SVG غربالگری'}</button>
           {/* Zoom Controls */}
           <div className="flex items-center gap-2 text-xs">
             <button
@@ -200,12 +207,13 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
               transition: 'transform 0.15s ease',
             }}
           >
-            <svg
+            <svg ref={svgRef} xmlns="http://www.w3.org/2000/svg"
               width="980"
               height="430"
               viewBox="0 0 980 430"
               className="select-none font-sans min-w-[850px]"
             >
+              <desc>Preliminary screening SLD; not construction design or standards conformity. Actual DC {pvCapacityKwp.toFixed(2)} kWp; {panelCount} modules. Equipment ratings and protection require manufacturer/site verification.</desc>
               <defs>
                 <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                   <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
@@ -224,7 +232,7 @@ export const SingleLineDiagram: React.FC<SldProps> = ({
                 <text x="85" y="85" textAnchor="middle" fill="#38bdf8" fontSize="12" fontWeight="bold">
                   {isEn ? 'PV Array' : 'آرایه PV'}
                 </text>
-                <text x="85" y="102" textAnchor="middle" fill="#94a3b8" fontSize="9 font-mono">
+                <text data-testid="sld-dc-capacity" data-dc-kwp={pvCapacityKwp} data-panel-count={panelCount} x="85" y="102" textAnchor="middle" fill="#94a3b8" fontSize="9 font-mono">
                   {pvCapacityKwp.toFixed(1)} kWp
                 </text>
 

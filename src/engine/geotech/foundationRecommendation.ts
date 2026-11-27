@@ -5,15 +5,17 @@
  *   - coreSuiteVerification.ts (test suite)
  *   - StructuralFoundationTab.tsx (UI)
  *
- * This guarantees that test_depth == ui_depth for every site.
+ * Shared code enables consumer-parity checks for identical inputs; it does not
+ * establish site accuracy or guarantee every UI/input path has been validated.
  *
  * Implements:
  *   - Multi-criteria foundation scoring (Rammed Steel Pile, Concrete Pier,
  *     Ground Screw, Ballasted Block)
  *   - Broms (1964) lateral pile sizing with frost depth constraint
- *   - ASCE 7-22 / Eurocode 7 / INBC Part 6 compliance
+ *   - ASCE 7-22 / Eurocode 7 / INBC Part 6 background references only; conformity unassessed
  *
- * No hard-coded defaults — every input is required.
+ * Several optional geometry/dead-load inputs retain legacy diagnostic defaults;
+ * absent site data must not be promoted to measured engineering evidence.
  */
 
 import { calculateWindPressureQz, cpUpliftFor, cpDownforceFor, type FoundationType, type SoilType } from '../structuralEngine';
@@ -64,6 +66,8 @@ export interface FoundationRecommendationInput {
 }
 
 export interface FoundationRecommendationOutput {
+  /** Exact shared screening result; does not establish applicability/conformity. */
+  pileSizing: BromsPileSizingResult;
   siteName: string;
   latitude: number;
   longitude: number;
@@ -477,6 +481,7 @@ export function recommendSharedFoundation(
       : bromsResult.embedmentDepthM;
 
   return {
+    pileSizing: bromsResult,
     siteName: siteName ?? `Site (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
     latitude,
     longitude,

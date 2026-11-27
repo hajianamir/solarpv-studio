@@ -2,7 +2,8 @@
  * Broms (1964) Lateral Bearing Capacity Method for Driven Piles
  * SolarPV Studio v3.0 - Geotechnical & Foundation Engineering Engine
  *
- * Conforming to:
+ * Background references only; simplified screening equations below are not a
+ * verified implementation or conformity assessment of these sources:
  * - Broms, B.B. (1964): Lateral Resistance of Piles in Cohesive and Cohesionless Soils
  * - FHWA-NHI-16-009 / GEC 012: Design and Construction of Driven Pile Foundations
  * - Eurocode 7 (EN 1997-1) §7.6: Transverse actions on piles
@@ -22,6 +23,10 @@ export interface BromsPileSizingResult {
   allowableMomentKnM: number;
   fosLateral: number;
   fosMoment: number;
+  /** Unavailable design assessment: current inputs cannot establish regime/head/groundwater. */
+  assessmentStatus: 'unassessed';
+  legacyScreenPassed: boolean;
+  /** @deprecated Safety cannot be established by this legacy screen; always false. */
   isFosSafe: boolean;
   isSearchLimitExhausted?: boolean;
   notes: string;
@@ -150,9 +155,11 @@ export function calculateBromsPileSizing(
     allowableMomentKnM,
     fosLateral,
     fosMoment,
-    isFosSafe: isSafe,
+    assessmentStatus: 'unassessed',
+    legacyScreenPassed: isSafe,
+    isFosSafe: false,
     isSearchLimitExhausted: searchExhausted,
-    notes,
+    notes: `UNASSESSED: head restraint, short/long failure regime, groundwater/effective unit weight, and verified section properties are missing. Legacy dimensions/FoS are diagnostic only; not approved pile sizing. ${notes}`,
   };
 }
 

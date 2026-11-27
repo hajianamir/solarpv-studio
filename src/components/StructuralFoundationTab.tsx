@@ -577,6 +577,9 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
 
   return (
     <div className="space-y-6">
+      <div role="note" data-testid="structural-source-readiness" className="border border-amber-500 p-3 text-xs">
+        {isEn ? 'UNASSESSED governing-source applicability: elevation may be analytical; soil and seismic defaults are not a survey, geotechnical investigation or site classification. Wind/Broms/LPS references do not establish conformity. Verify edition, exposure, height, soil parameters and project loads; preliminary screening only.' : 'کاربرد منابع حاکم بررسی‌نشده است: ارتفاع ممکن است تحلیلی باشد؛ خاک و لرزهٔ پیش‌فرض جای نقشه‌برداری، آزمایش ژئوتکنیک یا طبقه‌بندی محل نیست. ارجاعات باد/Broms/LPS اثبات انطباق نیستند؛ فقط غربالگری مقدماتی.'}
+      </div>
       {!hasValidSelectedModuleSpecs && (
         <div role="alert" className="rounded-lg border border-rose-500/50 bg-rose-500/10 p-4 text-sm text-rose-100">
           {isEn
@@ -1313,7 +1316,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <div>
             <span className="text-slate-400 block text-[10px]">{isEn ? '+20% Wind Gust Adequacy:' : 'مقاومت در باد تندباد (+20%):'}</span>
             <span className={`font-mono font-bold text-sm ${recResult.sensitivityPlus20Wind.pileAdequate ? 'text-industrial-success' : 'text-industrial-warning'}`}>
-              {recResult.sensitivityPlus20Wind.pileAdequate ? 'ADEQUATE' : 'UPGRADE PROFILE'}
+              {lang === 'fa' ? 'ارزیابی‌نشده — فقط غربالگری' : 'UNASSESSED — diagnostic only'}
             </span>
             <span className="text-[9px] text-slate-400 block mt-0.5">
               FoS = {recResult.sensitivityPlus20Wind.fosLateral} @ {recResult.sensitivityPlus20Wind.windSpeedKmh} km/h
@@ -1338,7 +1341,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                 ✕ {isEn ? 'Close' : 'بستن'}
               </button>
             </div>
-            <div className="p-5 overflow-y-auto font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
+            <div data-testid="foundation-recommendation-report" data-input={JSON.stringify(recResult.input)} className="p-5 overflow-y-auto font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
               {recResult.reportMarkdown}
             </div>
           </div>

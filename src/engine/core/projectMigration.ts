@@ -1,3 +1,4 @@
+import {MpptRatingEvidenceSchema} from '../../contracts/electricalReadiness';
 // ============================================================================
 // SolarPV Studio v3.0 - Robust Zod Schema Validation & Data Migration (Phase 1a/PR-Fix)
 // Guarantees zero data loss, safe fallback, and forward/backward compatibility
@@ -125,6 +126,9 @@ export const CableFeederInputsSchema = z.object({
   allowableDropPct: z.number().positive().max(15).optional(),
   isDc: z.boolean().optional(),
   isThreePhase: z.boolean().optional(),
+  equivalentReactanceOhmPerM: z.number().nonnegative().finite().optional(),
+  parallelArrangement: z.literal('equal_length_equal_sharing').optional(),
+  impedanceSource: z.string().nonempty().optional(),
   powerFactor: z.number().positive().max(1).optional(),
   coincidenceFactor: z.number().positive().max(1).optional(),
   ambientTempC: z.number().min(-40).max(90).optional(),
@@ -329,6 +333,7 @@ export const ModuleSpecsSchema = z.object({
 });
 
 export const InverterSpecsSchema = z.object({
+  mpptRatingEvidence: MpptRatingEvidenceSchema.optional(),
   id: z.string().min(1).optional(),
   origin: z.enum(['builtin', 'custom', 'legacy', 'user']).optional(),
   manufacturer: z.string(),

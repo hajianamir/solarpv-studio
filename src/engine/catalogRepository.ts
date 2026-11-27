@@ -1,3 +1,4 @@
+import {appendRatingMetadataErrors} from '../contracts/electricalReadiness';
 /**
  * SolarPV Studio v3.0 - Unified Catalog Repository
  * Single Source of Truth for Equipment Catalogs (Built-in + Custom User Equipment)
@@ -409,6 +410,7 @@ export class CatalogRepository {
     const errorsFa: string[] = [];
     const errorsEn: string[] = [];
 
+    appendRatingMetadataErrors(inv, errorsFa, errorsEn);
     if (!inv.modelName || typeof inv.modelName !== 'string' || !inv.modelName.trim()) {
       errorsFa.push('نام مدل اینورتر نمی‌تواند خالی باشد.');
       errorsEn.push('Inverter model name cannot be empty.');
